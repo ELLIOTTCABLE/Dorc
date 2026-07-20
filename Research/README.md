@@ -206,11 +206,21 @@ and carries the license-contamination map.
   evidence plane · one-catalog) + USER_STORY's "Recovery" section; the
   `dorc lint` lane landed as `notes/27R`/`27S`.
 
-- **r28 (current; seeded 2026-07-19)** — the syntax unification + the errorloom
-  prose pipeline. → **`plans/280`** (charter: two parallel lanes + the serial
-  unify; bless discipline; the resumed `270` §5 horizon) · **`plans/281`** (THE
-  annotation mark-grammar) · **`plans/282`** (errorloom: the transcript-case
-  prose pipeline). Pending-ruling riders: `TODO-ADDTL.md` tail.
+- **r28 (BUILD COMPLETE 2026-07-20; branch `ai/r28-impl`)** — the syntax v0.2
+  unification + the errorloom prose pipeline, both built. Specs: **`plans/280`**
+  (charter) · **`plans/281`** (THE annotation mark-grammar, now v0.2 in-code) ·
+  **`plans/282`** (errorloom: the transcript-case prose pipeline). Build record:
+  **`notes/28A`** (THE conduct ledger — every ruling + the human deferred-queue) ·
+  `notes/28B` (respell map) · `notes/28C` (janitor sweep) · `notes/283`
+  (generation-flip map) · `notes/285a`–`285d` (the DeepSeek errorloom review +
+  conductor adjudication + polish repair-plan). What landed: errorloom the
+  standalone crate; the `281` mark-grammar cutover (`@`/word-verbs/`#:`/v0.2
+  marker; grep-map in `281`'s tail is now history); the `282` generation flip
+  (catalog case-derived, promote-v2, roster retired) + phase-5 case backport;
+  docs/steering re-synthesis. De-passthrough KILLED (opaque sibling lane owns the
+  taint work). Deferred (human-owned, `28A`): the `sm `-prose Fable pass · catalog
+  canonicalization · glued-param seam · errorloom LICENSE/publish. Pending-ruling
+  riders: `TODO-ADDTL.md` tail.
 
 ## Vendor/ (full-history clones)
 

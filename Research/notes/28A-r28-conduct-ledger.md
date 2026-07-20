@@ -736,7 +736,42 @@ Two reported-not-fixed findings banked:
   (`covered()`-slugs ⊆ case-owned) — banked as a cheap round-close/next-round
   rider, NOT urgent (the lists are aligned now).
 
-## §3 — Lane map and state (update on every change)
+## §2z — ROUND CLOSE (conductor, 2026-07-20; stack `ai/r28-impl` @ `3897bb5`, awaiting human fold)
+
+The `280` charter is built. Every lane conductor-cold-verified (cold mandatory per
+`28A:finding-incremental-clippy-serves-stale`); at the close: cold clippy zero, 48
+test suites, e2e 97/97, clean tree.
+
+Three deliverables:
+1. **errorloom** — the standalone publishable crate: d1 transport + d2
+   runner/orchestration/CLI (`28A:rul-errorloom-product-cut` moved bless-orchestration,
+   span-schema, generic gates, CLI, toy-consumer IN) + the `285` outside review
+   (two DeepSeek lanes → `285d` adjudication → last-polish pass). `publish=false`;
+   LICENSE + Cargo metadata + the non_exhaustive-error-enum fork are the human's.
+2. **syntax v0.2 respell** — the `281` mark-grammar cutover, atomic, verdict-surface
+   crosschecked byte-identical-modulo-`@`; `# dorc-lang/v0.2` stamped; single-mark
+   production subset (block model reference-only, `28A:rul-single-mark-production-subset`).
+3. **integration (generation flip)** — `282` phase 4 (catalog case-derived, promote-v2,
+   both fixpoint gates, roster retired behind `is_case_owned`) + phase-5 backport (all
+   covered codes case-owned; fragment goldens retired). de-passthrough (phase 6) KILLED
+   → opaque sibling lane (`284` hand-off).
+
+Plus: docs/steering/registry re-synthesis to v0.2; the janitor sweep (`28C`); the
+ANALYZER-NEEDS union-merge + quarantine restock. Opaque-review NOT run (`28A` §4b
+human exemption).
+
+**The human deferred-queue (all banked, none blocking; do NOT let a successor rebuild these):**
+- Fable `sm `-prose pass — the 5 `[unwritten:]` codes + the `sm `-corpus, under `sm ` rules
+  (§2s; the `28A:finding-old-prose-coupled-to-message-strings` doc-comments ride it).
+- Catalog canonicalization (`28A:rul-catalog-canonicalization-is-conductor`, §2o/§2q) — the
+  `DORC_CATALOG_PROMOTE` diff-inspection that tightens the whole-file byte gate.
+- Glued-param re-hole seam (`28A:rul-glued-param-rehole-seam`, §2o) — three candidate answers.
+- `covered()⊆case-owned` drift guard (`28A:rul-keep-covered-with-drift-guard`, §2u) — one cheap test.
+- errorloom LICENSE/publish + Cargo metadata + the publish-taste fork (`285d`).
+- `touches`→`disturbs` sh-funcname migration half-done (`28A:finding-touches-rename-half-done`, §2t).
+- The standing `TODO-ADDTL` tail riders (unchanged).
+
+## §3 — Lane map and state (final)
 
 | lane | branch | shape | state |
 |---|---|---|---|

@@ -16,15 +16,24 @@
 
 ## ROUND 28 (seeded 2026-07-19 — the current view)
 
-**Conduct seat (2026-07-19, later the same day):** the build conductor is seated on
-**`ai/r28-impl`** (worktree `r28-impl`; base = the folded ai/main tip `40f8005`);
-the round's ONE durable ledger is **`notes/28A`** — it carries the
-`28A:rul-errorloom-product-cut` scope ruling (amends `280` §1: bless orchestration,
-span-map schema, generic case gates, CLI, and a toy consumer move INTO errorloom),
-the syntax-lane pre-rulings (§2), the lane/dispatch state, and the ack-ledger. Lanes
-`ai/r28-errorloom-crate` (transport d1) and `ai/r28-syntax-respell` (phase-A
-proposal → `notes/28B`) are dispatched off `0825f6e`; a human-directed janitor sweep
-of stale worktrees/branches runs alongside.
+**BUILD COMPLETE (2026-07-20) — awaiting the human's fold of `ai/r28-impl` @ `3897bb5`.**
+The whole `280` charter landed on the conductor stack, each lane conductor-cold-verified
+(the incremental-clippy-serves-stale finding `28A:finding-incremental-clippy-serves-stale`
+made cold verification mandatory): **errorloom** the standalone crate (d1 transport + d2
+runner/orchestration/CLI + the `285` DeepSeek review → last-polish pass); the **syntax v0.2
+respell** (the `281` mark-grammar cutover — `@` selectors, word verbs, `safe-across`/
+`undivided-by-transit-across`, unified `disturbs`, `#:` carrier, `# dorc-lang/v0.2`); and the
+**errorloom→workflow integration** (the `282` generation flip: catalog case-derived,
+promote-v2, roster retired, + phase-5 backport of all covered codes; de-passthrough KILLED,
+handed to the opaque sibling lane). Docs/steering/registry re-synthesized to v0.2. The ONE
+durable ledger is **`notes/28A`** (all rulings, the ack-ledger, the deferred-queue). Sibling
+durables: `28B` (respell map) · `28C` (janitor sweep) · `283` (gen-flip map) · `285a–d`
+(errorloom review + adjudication) · `284` (taint hand-off, quarantine). **Human queue
+(all banked in `28A`, none blocking):** the Fable `sm `-prose pass (the `[unwritten:]`
++ `sm ` codes) · the catalog canonicalization · the glued-param re-hole seam · the
+`covered()⊆case-owned` drift guard (cheap) · the errorloom LICENSE/publish + Cargo metadata
++ the non_exhaustive-error-enum publish-taste fork. Opaque-review NOT run this round
+(human-typed exemption, `28A` §4b). Root-doc v0.2 spelling: human-done.
 
 **Where we are:** the user-aid build phase is COMPLETE (below), and round 28 opens
 on two seed documents. **`plans/281`** (the annotation mark-grammar — THE spec of
