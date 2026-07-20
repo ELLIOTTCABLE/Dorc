@@ -133,7 +133,7 @@ impl RunReport {
 pub enum RunError {
     /// An I/O failure (materialize, spawn, capture). Keeps the source
     /// [`std::io::ErrorKind`] (`taste-F1`) so consumers can distinguish
-    /// NotFound / PermissionDenied without string-matching the message.
+    /// `NotFound` / `PermissionDenied` without string-matching the message.
     Io {
         /// The classified I/O error kind.
         kind: std::io::ErrorKind,
