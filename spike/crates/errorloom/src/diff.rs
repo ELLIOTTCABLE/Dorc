@@ -36,12 +36,16 @@ struct Lcs {
 
 impl Lcs {
     fn new(rows: usize, cols: usize) -> Self {
-        let size = rows
-            .saturating_add(1)
-            .saturating_mul(cols.saturating_add(1));
+        let rows1 = rows.saturating_add(1);
+        let cols1 = cols.saturating_add(1);
+        debug_assert!(
+            rows1.checked_mul(cols1).is_some(),
+            "LCS table {rows}x{cols} overflows usize; word streams must stay tiny (taste-F2) — \
+             a saturated size would silently truncate the table and mis-align"
+        );
         Lcs {
             cols,
-            cells: vec![0; size],
+            cells: vec![0; rows1.saturating_mul(cols1)],
         }
     }
 
