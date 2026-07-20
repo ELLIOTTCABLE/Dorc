@@ -216,19 +216,19 @@ prompt you write:
   is answered by measurement in the site's *denoted* context. Reuse-never-acquire:
   the probe lane exercises only authority the connection already holds (no prompting,
   no credential handling); there is NO privilege ordering ("demotion" is not a safety
-  category). Ternary escalation dial, default = shifts only for `tolerates:`-vouched
+  category). Ternary escalation dial, default = shifts only for `safe-across`-vouched
   functions (both-sides consent: author's per-function per-dimension mark × admin's
   dial). Wrapper entry forms are the ONE licensed seat for real context entry;
   predict closure bodies never escalate. Every failure (entry refused, impossible,
   rc 127, in-context decline) lands can't-say ⇒ guard/run. Without entry, a
   substrate-axis fact crosses a boundary only via **pure-predicate carry**
   (unflagged; see next bullet); an ingredient (identity) axis crosses only via the
-  kind-owner's typed `invariant:<axis>` line × the flag. Silence walls.
+  kind-owner's typed `undivided-by-transit-across <axis>` mark × the flag. Silence walls.
 - **pure-predicate-carry** (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
   2026-07-17) — the ONLY unflagged cross-substrate-boundary carry, and the RETIREMENT
   of the old "engine-warranted carried-by row" (it leaned on tool-semantics the engine
   may not hold). A substrate-axis fact travels unflagged iff (A) every marked backing
-  kind carries its owner's `invariant:<axis>` line AND (B) the engine proves the
+  kind carries its owner's `undivided-by-transit-across <axis>` mark AND (B) the engine proves the
   verdict body READ-SET-CLOSED — everything influencing the verdict rc (data AND
   control-flow) traces to the site's argv or a marked read, with no unmarked external
   input. Referent-agnostic: the closure reads MARKS + sh-structure, never tool
@@ -237,7 +237,7 @@ prompt you write:
   (missed-safe loses an elision, never carries a hidden read). Substrate axes ONLY —
   user/identity is excluded, because a shift there changes ACCESS to the body's own
   reads (EACCES flips the answer of a structurally-closed body). netns: `net.*` is
-  per-netns, so the model must forbid `invariant:netns` on network kernel state. The
+  per-netns, so the model must forbid `undivided-by-transit-across netns` on network kernel state. The
   pass is a correctness surface the spike must build and prove; empty-oracle world
   stays byte-identical (no closure attempted).
 - **value-predictions** (`275` · `271:rul-value-prediction-species`) — every
@@ -370,7 +370,7 @@ prompt you write:
   durable; NOTHING re-ingests receipts across runs. The kSTATE reuse-cache stays
   parked; unparking it is a human act hard-coupled to hostile-host security work.
 
-## The authored surface (semantics digest; specs outrank: `277` · `273` · `274` · `275` · `plans/27C`; one-page dialect reference: `278`)
+## The authored surface (semantics digest; specs outrank: `plans/281` (mark grammar v0.2) · `277` · `273` · `274` · `275` · `plans/27C`; one-page dialect reference: `278`)
 
 - **families-and-roles** — a *family* is the name-derived set of `__role` functions
   describing one description-target; two species: COMMAND (`systemctl__*`) and KIND
@@ -386,26 +386,31 @@ prompt you write:
   per-channel DECLINE (that channel ⊤ for consumers) · `return 2` = whole-shape
   decline. `cmd__is_converged()`: the verdict member (see
   rul-vouch-is-verdict-authoring). `cmd__disturbs()` (né touches): at-most claims
-  per MATCHED invocation-shape. `cmd__lend_map()`: the wrapper's dimension member —
-  empty entry for a present key = full lend; contents = mapped lend; a MISSING key
-  = ⊤, walls (the enumerate-every-dimension law; absent-key-means-full-lend is
-  REJECTED). `kind__resolve()`: entity canonicalization within its kind.
-  `kind__disturbance_reaches_only()` · `kind__state_stored_only_in()` (substrate
-  emission lines + the `invariant:<axis>` colon-line; whole-member scope). Naming
-  law: `only` in a role name = complete-by-contract, totalistic-survey-before-
-  authoring; absence = arm-incremental.
+  per MATCHED invocation-shape, emitted `: disturbs KIND[@sel]`. `cmd__lend_map()`:
+  the wrapper's dimension member — a bare `: lends DIM` (no value) = full lend; a
+  valued `printf … : lends DIM` = mapped lend; a MISSING dimension = ⊤, walls (the
+  enumerate-every-dimension law; absent-means-full-lend is REJECTED).
+  `kind__resolve()`: entity canonicalization within its kind.
+  `kind__disturbance_reaches_only()` (emits `: disturbs KIND`, the UNIFIED verb —
+  `281` §5) · `kind__state_stored_only_in()` (`: stored-in <substrate>` emission
+  lines + the `: undivided-by-transit-across <axis>` invariance mark; whole-member
+  scope). Naming law: `only` in a role name = complete-by-contract, totalistic-
+  survey-before-authoring; absence = arm-incremental.
 - **coordinate-semantics** — the flat three-place `(kind, entity, selector)` +
   a context slot (recursive coordinate shapes DECLINED —
   `271:rul-coordinate-shape-flat-three-place`; structure lives in kind-owner
-  functions BETWEEN coordinates). Kinds are reverse-DNS, ≥2 dots. `#` introduces
-  the selector, ATTACHED (valid coordinate char immediately before it). Polarity
-  rides the mark sigil family `:` / `:!` / `:?`, never the coordinate. The bare
-  selector-less form permanently means whole-entity, and reads as ⊤-selector at
-  consumers (collides with every cell). A coordinate names a CELL; names ≠
-  referents (aliasing is why resolve exists). Binds name entities, never cells
-  (SOFT ruling). A verdict/observe mark asserts exactly ONE thing (multi-
-  consequence readings are derivations); brace-alternation `#{a,b}` is
-  claim-emission-marks only.
+  functions BETWEEN coordinates). Kinds are reverse-DNS, ≥2 dots; the keystone
+  disambiguator (`281:rul-verbs-dotless-kinds-dotted`) is that a verb is
+  period-free and a coordinate's kind carries ≥2 periods. `@` introduces the
+  selector, ATTACHED (`281` §R4, the highlight-safe respell of the old `#`;
+  entity-less transitional `KIND:@SEL`). Polarity rides the verdict verb
+  `asserts`/`refutes` (head sugar `:` / `:!`; observe = `reads`/`:?`), never the
+  coordinate. The bare selector-less form permanently means whole-entity, and
+  reads as ⊤-selector at consumers (collides with every cell). A coordinate names
+  a CELL; names ≠ referents (aliasing is why resolve exists). Binds name entities,
+  never cells (SOFT ruling). rc-arity (`281` §7): AT MOST ONE verdict per line;
+  brace-alternation `@{a,b}` (attached) / `verb {a,b}` (whole payload) expands to
+  N cells and is refused ONLY where it would forge a multi-cell verdict.
 - **rho-claim-ladder** (`271:rul-env-claim-inversion`) — bare `"$@"` claims NOTHING
   (⊤; never "claims isolation") · `VAR=x "$@"` = per-variable claim, rest ⊤ ·
   `env "$@"` = full ambient passthrough (the `env` syllable IS the claim) ·
@@ -430,22 +435,30 @@ prompt you write:
 
 ## Language & off-ramp law
 
-- **marker-gates-syntax-only** — `# dorc-lang/v0.1` (exact-match, stands alone,
-  first ~10 lines; the sole sanctioned comment-parse in the product, a closed set
-  of one) gates SYNTAX only — never `__role` name-recognition, never semantics. An
-  unmarked file is plain sh.
+- **marker-gates-syntax-only** — `# dorc-lang/v0.2` (exact-match, stands alone,
+  first ~10 lines) gates SYNTAX only — never `__role` name-recognition, never
+  semantics. An unmarked file is plain sh; a marker naming an UNRECOGNIZED version
+  fails loud, never a silent downgrade (recognized-set = {v0.2}, `281` §2j). TWO
+  sanctioned comment-parses now exist (the `24M` one-parse limit LIFTED by the
+  `281` §2j human ack): this version marker AND the `#:` mark carrier
+  (immediate-colon, closed grammar, strip-if-valid) — neither is sidecar config
+  (`KNOBS:kOOB`).
 - **stability-ledger** (`276:rul-verdicts-never-stable`) — syntax = marker-gated ·
   `__role` names = permanent · verdicts = unstable-and-improving, disowned.
   **plan-as-API** is the named failure-mode: never promise cross-version
   plan-shape stability; anything like `--exit-code` gates on divergence-of-world,
   never plan shape.
-- **strip-is-pure-erasure** — `dorc strip` erases binds + marks whole-statement,
-  erases the `dorc:` prefix, rewrites the shebang-runner; NO in-body name
-  rewriting; `dorc-sh` row-three untouched. Load-bearing subtlety: a bare-mark
-  statement is an annotation-LINE (deleted whole, like a comment — NOT a POSIX `:`
-  command); the author's last substantive command must remain the last
-  status-affecting statement in the stripped body — a stripped-in trailing `:`
-  clobbers the body's tool-rc to 0 = an always-skip guard.
+- **strip-is-pure-erasure** — `dorc strip` erases binds + marks, erases the
+  `dorc:` prefix, rewrites the shebang-runner; NO in-body name rewriting;
+  `dorc-sh` row-three untouched. Per-carrier (`281` §9): a colon-form TRAILING
+  mark region-erases to the block end (command survives); a colon-form STANDALONE
+  mark line-deletes (region-deletes when it shares a line, e.g. a `case` arm); a
+  `#:` block deletes ONLY when it parses as a valid mark-block, else stays a plain
+  comment. Load-bearing subtlety: a bare-mark statement is an annotation-LINE
+  (deleted whole, like a comment — NOT a POSIX `:` command); the author's last
+  substantive command must remain the last status-affecting statement — marks
+  erase to NOTHING (never a null-command), so no stripped-in `:` clobbers the
+  tool-rc to 0.
 - **two-binary-floor** (`276:rul-spec-two-binary-floor`; `KNOBS:kWHICHSH` WELDED) —
   a valid stripped base-dialect text parses and runs identically under
   `posh 0.14.1` and `dash 0.5.12`; where they disagree, the construct is outside
