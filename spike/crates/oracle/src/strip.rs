@@ -10,7 +10,7 @@
 //! * a bind `name : kind = value` → `name=value` (the author's verbatim name + value bytes);
 //! * a trailing verdict/observe mark (`:`/`:!`/`:?` coord) → gone, the command bytes kept;
 //! * a BARE-mark statement (a `:` no-op whose only job is to host a mark — `state_stored_only_in`'s
-//!   `invariant:` line) → deleted WHOLE, never left as a `:` null command. A stripped-in trailing
+//!   `undivided-by-transit-across` line) → deleted WHOLE, never left as a `:` null command. A stripped-in trailing
 //!   `:` would clobber the body's tool-rc to 0, and in guard position that is an always-skip guard
 //!   (the disaster shape, `23H` §9.4). So the author's last SUBSTANTIVE command stays the body's
 //!   last exit-status-affecting statement.
@@ -257,7 +257,7 @@ fn collect_file_strip_edits(body: &[Stmt], src: &str, edits: &mut Vec<(usize, us
 }
 
 /// Is this command a bare `:` no-op whose sole purpose is to host a trailing mark (the
-/// `state_stored_only_in` `invariant:` line)? Only then is the whole statement deleted.
+/// `state_stored_only_in` `undivided-by-transit-across` line)? Only then is the whole statement deleted.
 fn is_bare_colon_host(c: &Command) -> bool {
     matches!(c.words.as_slice(), [Word::Literal(w)] if w == ":")
 }
@@ -373,7 +373,7 @@ mod tests {
 
     /// A marked oracle exercising every strip case: the dorc-sh shebang, a bind, a trailing verdict
     /// mark, a trailing emission mark, and — the load-bearing one — a `state_stored_only_in`
-    /// `invariant:` bare-mark statement (a `:` no-op hosting a mark).
+    /// `undivided-by-transit-across` bare-mark statement (a `:` no-op hosting a mark).
     const MARKED: &str = "#!/usr/bin/env dorc-sh\n\
 # dorc-lang/v0.2\n\
 apt_get__predict() {\n\
@@ -515,7 +515,7 @@ sm_dorc_Package__state_stored_only_in() {\n\
 
     #[test]
     fn line_map_shifts_only_on_whole_deleted_annotation_lines() {
-        // `27R` §4: only the whole-deleted marker (orig 2) + `invariant:` bare-mark (orig 9) shift.
+        // `27R` §4: only the whole-deleted marker (orig 2) + `undivided-by-transit-across` bare-mark (orig 9) shift.
         let m = strip_mapped(MARKED);
         assert_eq!(
             m.line_map,

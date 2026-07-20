@@ -47,13 +47,13 @@ enum FnRole {
     /// pipeline in this body MAY carry a trailing mark (24G §4).
     DisturbanceReachesOnly,
     /// `<munge(kind)>__state_stored_only_in` — the substrate/invariance member (`277` §4e).
-    /// KIND-keyed. Its body carries substrate token marks (`… : fs`) on emission lines plus the
-    /// `invariant:<axis>` colon-line. Recognized-but-INERT at this stage: parsed + reservation-
+    /// KIND-keyed. Its body carries substrate token marks (`… : stored-in fs`) on emission lines plus
+    /// the `undivided-by-transit-across <axis>` colon-line. Recognized-but-INERT at this stage: parsed + reservation-
     /// linted, never semantically consumed (topology/keying is a later stage).
     StateStoredOnlyIn,
     /// `<provider>__lend_map` — the wrapper's DIMENSION member (`271:rul-lend-map`; `273` §3).
     /// COMMAND-keyed (like the wrapper's `predict`). Its body is one entry per dimension: a
-    /// colon-line `:   : user` = full lend, a `printf … : user` = mapped lend, a terminal `"$@"`
+    /// colon-line `: lends user` = full lend, a `printf … : lends user` = mapped lend, a terminal `"$@"`
     /// = the peel boundary. Reuses the predict body dialect; the consumer ([`crate::wrapper`])
     /// reads the per-dimension entries off it. The enumerate-every-dimension law lives in the
     /// consumer (an absent dimension is ⊤ — walls).

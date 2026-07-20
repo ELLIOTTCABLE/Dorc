@@ -182,7 +182,8 @@ mod tests {
     #[test]
     fn wrong_version_marker_is_distinct_from_missing() {
         let mut i = Interner::default();
-        // A dialect bind under a RECOGNIZED-family but WRONG version marker.
+        // A dialect bind under a RECOGNIZED family but a deliberately-UNRECOGNIZED version marker (v0.1;
+        // recognized-set is {v0.2}) — do NOT sweep this literal to v0.2; the test needs the mismatch.
         let src = "# dorc-lang/v0.1\napt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
         let diags = check_dialect_marker(&mut i, src);
         assert_eq!(diags.len(), 1, "one file-level error");

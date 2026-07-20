@@ -42,12 +42,12 @@ use dorc_syntax::sem::UnsetPolicy;
 /// ([`RhoClaim`]), never a `lend_map` mark (`273` §10 "environment belongs to ρ forever").
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Dimension {
-    /// The acting user/identity (`sudo -u`, `su`). `: user`.
+    /// The acting user/identity (`sudo -u`, `su`). `: lends user`.
     User,
-    /// The filesystem view (`chroot`, mount namespace). `: fs-view` — kept DISTINCT from the
+    /// The filesystem view (`chroot`, mount namespace). `: lends fs-view` — kept DISTINCT from the
     /// `fs` substrate token (`273` §8 token-collision).
     FsView,
-    /// The network namespace (`ip netns exec`). `: netns` (`271:rul-networking-unpunt`).
+    /// The network namespace (`ip netns exec`). `: lends netns` (`271:rul-networking-unpunt`).
     Netns,
 }
 
@@ -348,7 +348,7 @@ fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<Diag>) {
                     map.peels = true;
                 }
                 let Some(mark) = &c.mark else { continue };
-                // A dimension entry: the mark's `kind` fragment is the dimension token (`: user`).
+                // A dimension entry: the mark's `kind` fragment is the dimension token (`: lends user`).
                 let token = &mark.target.kind;
                 let Some(dim) = Dimension::from_token(token) else {
                     diags.push(Diag::new(
