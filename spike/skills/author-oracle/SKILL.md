@@ -1,6 +1,6 @@
 ---
 name: author-oracle
-description: Author, extend, or review a Dorc oracle - the plain-sh tool-description artifact whose claims Dorc's planner trusts. Load BEFORE writing or modifying any `__role` function (`*__is_converged`, `*__predict`, `*__disturbs`, `*__lend_map`, `kind__*`) or any file carrying a `# dorc-lang/v0.1` marker. Enforces the mandatory reading order, the tool-research protocol, the dialect floor, and the verification gates.
+description: Author, extend, or review a Dorc oracle - the plain-sh tool-description artifact whose claims Dorc's planner trusts. Load BEFORE writing or modifying any `__role` function (`*__is_converged`, `*__predict`, `*__disturbs`, `*__lend_map`, `kind__*`) or any file carrying a `# dorc-lang/v0.2` marker. Enforces the mandatory reading order, the tool-research protocol, the dialect floor, and the verification gates.
 ---
 
 # author-oracle
@@ -244,13 +244,16 @@ artifact, not a style issue:
   syncs, upgrade-pending), decline permanently and comment why.
 - MULTI-OPERAND: check every operand or decline the shape. A partially-checked
   yes is a wrong yes.
-- MARKS AND BINDS (only in a file carrying `# dorc-lang/v0.1`, exact, own line,
-  first ~10 lines): trailing `: KIND:ENTITY#selector` = verdict mark; `:!` =
+- MARKS AND BINDS (only in a file carrying `# dorc-lang/v0.2`, exact, own line,
+  first ~10 lines): trailing `: KIND:ENTITY@selector` = verdict mark; `:!` =
   complement sense; `:?` = observe (disclose every extra cell your verdict
-  reads). One assertion per marked line. Binds (`x : KIND = "$1"`) name
-  entities, never cells. Kinds are reverse-DNS >= 2 dots; reuse existing kinds
-  as their owners document; never invent tokens outside the engine's closed
-  vocabularies.
+  reads). Meta facts spell their verb as a word: `: disturbs KIND` (footprint),
+  `: safe-across DIM` (context vouch), `: lends DIM` (wrapper dimension),
+  `: stored-in SUBSTRATE` / `: undivided-by-transit-across AXIS` (kind store).
+  At most one verdict per line; one mark per physical line in production (an
+  extra read is its own line). Binds (`x : KIND = "$1"`) name entities, never
+  cells. Kinds are reverse-DNS >= 2 dots; reuse existing kinds as their owners
+  document; never invent tokens outside the engine's closed vocabularies.
 - FOOTPRINTS (`__disturbs`) are at-most claims: matching a shape asserts you
   enumerated EVERYTHING it disturbs. Include cells when unsure; leave the whole
   shape unmatched when the enumeration itself is unsure. A wrong footprint
