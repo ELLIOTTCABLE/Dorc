@@ -9,6 +9,7 @@ set -e
 apt-get update
 apt-get install -y "$(cat /etc/webhost/pkgset)"
 systemctl enable nginx
+
 -- replay --
 $ dorc plan --book=book.sh
 note[cmdsub-operand-top]: apt-get operand 3 is a command-substitution `$(…)` /
@@ -23,11 +24,13 @@ note[cmdsub-operand-top]: apt-get operand 3 is a command-substitution `$(…)` /
    = improvement: If you give the operand a value I can resolve statically (a
       literal, or a variable assigned from one), then I can probe it and skip
       the command once it has converged. If your value must stay dynamic, load
-      an oracle that vouches for this command's convergence, and Dorc will guard
+      an oracle that vouches for this command's convergence, and I will guard
       the command instead of running it every time.
-   = more: 'dorc explain cmdsub-operand-top' tells the full story
+   = more: 'dorc explain cmdsub-operand-top' will explain in detail
+
 $ dorc plan --book=book.sh --format=jsonl
 {"code":"cmdsub-operand-top","severity":"note"}
+
 $ dorc explain cmdsub-operand-top
 cmdsub-operand-top
 
@@ -42,19 +45,20 @@ checking, and nothing a read-only probe could measure. The line keeps
 its place in every plan, and this note is Dorc saying so out loud
 rather than quietly.
 
-   > in your last plan:
-   > book.sh:6  apt-get install -y "$(cat /etc/webhost/pkgset)"
-   >            operand 3 is the unresolvable one; this is the line
-   >            that stayed, and this note is its reason.
+> in your last plan:
+>     book.sh:6 | apt-get install -y "$(cat /etc/webhost/pkgset)"
+>                                    \__________________________/
+>        operand 3 is the unresolvable one; this is the line that stayed, and
+>        this note is its reason.
 
 This is a narrower problem than an undescribed command, and a cheaper
 one to live with. It is worth holding the two apart:
 
-   > $ dorc explain --terse wall
-   > A wall is a command in your book that Dorc knows nothing about: no
-   > fact measured above it can be trusted below it, so the commands
-   > after a wall are re-checked or run instead of being removed from
-   > the plan.
+>     $ dorc explain --terse wall
+>     A wall is a command in your book that Dorc knows nothing about: no
+>     fact measured above it can be trusted below it, so the commands
+>     after a wall are re-checked or run instead of being removed from
+>     the plan.
 
 A wall is about an effect Dorc cannot bound; this note is about a value
 Dorc cannot know. Here the command itself may be perfectly

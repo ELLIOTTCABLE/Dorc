@@ -40,11 +40,11 @@ they are needed; some stay because nothing is known about them; and some
 stay with a check placed in front of them, because their proof could not
 be trusted all the way down the page:
 
-   > $ dorc explain --terse wall
-   > A wall is a command in your book that Dorc knows nothing about: no
-   > fact measured above it can be trusted below it, so the commands
-   > after a wall are re-checked or run instead of being removed from
-   > the plan.
+>     $ dorc explain --terse wall
+>     A wall is a command in your book that Dorc knows nothing about: no
+>     fact measured above it can be trusted below it, so the commands
+>     after a wall are re-checked or run instead of being removed from
+>     the plan.
 
 The plan is the moment of consent, and the only one. Dorc will never ask
 you a question mid-run; every decision is in front of you, in the plan,
@@ -74,4 +74,4 @@ book order, exactly as written. Probes measure, the plan proposes, the
 apply acts; your consent sits in the middle, and it is the only
 interaction there is.
 
-(for the full treatment: dorc explain plan-lifecycle)
+(for the full treatment: `dorc explain plan-lifecycle`)

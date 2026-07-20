@@ -33,10 +33,10 @@ have run.
 Most of the time it does. The exception is a command Dorc knows nothing
 about.
 
-   > $ dorc explain --terse unmodeled
-   > A command is unmodeled when no loaded oracle describes it. Dorc
-   > treats it as capable of changing anything on the host, because in
-   > Dorc, silence never grants permission.
+>     $ dorc explain --terse unmodeled
+>     A command is unmodeled when no loaded oracle describes it. Dorc
+>     treats it as capable of changing anything on the host, because in
+>     Dorc, silence never grants permission.
 
 An unmodeled command that is really going to run is called a wall. Dorc
 cannot know what it touches, so it must assume it may touch anything -
@@ -51,13 +51,14 @@ re-verifying at run time, after the wall has done whatever it does. A
 guarded line is fast and safe; it is just not gone. The cost of a wall
 is paid in attention, not in correctness.
 
-   > worked example (case plan-first-wall):
-   > $ dorc plan --book=book.sh web1
-   >  3  # apt-get update                  # converged: index fresh
-   >  4  hork tune --profile web           # runs: unmodeled ('hork')
-   >  5  ( systemctl_check enable nginx ) \
-   >  5     || systemctl enable nginx      # verify: past 'hork' (line 4)
-   > plan: 1 to run, 1 to verify (1 skipped)
+> worked example (case plan-first-wall):
+>
+>     $ dorc plan --book=book.sh web1
+>      3  # apt-get update                  # converged: index fresh
+>      4  hork tune --profile web           # runs: unmodeled ('hork')
+>      5  ( systemctl_check enable nginx ) \
+>      5     || systemctl enable nginx      # verify: past 'hork' (line 4)
+>     plan: 1 to run, 1 to verify (1 skipped)
 
 Two things are worth reading off that render. The apt-get line, above
 the wall, kept its proof and is gone. The systemctl line measured
