@@ -1373,11 +1373,9 @@ mod tests {
             assert!(!e.when_fires.is_empty(), "`{}`: empty when_fires", e.slug);
             assert!(!e.why.is_empty(), "`{}`: empty why", e.slug);
             assert!(!e.example.is_empty(), "`{}`: empty example", e.slug);
-            // `message` is `Option` (`283:dec-message-becomes-option`): `None` is the legal unwritten
-            // state; a written message must be non-empty (an empty string is an authoring slip).
             assert!(
                 e.message != Some(""),
-                "`{}`: empty message (use None for unwritten)",
+                "`{}`: empty message — unwritten is None, not \"\"",
                 e.slug
             );
         }

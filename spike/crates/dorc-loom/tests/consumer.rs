@@ -47,11 +47,10 @@ fn full_prose_bless_loop_then_structure_bless() {
         "the base render carries the word we edit: {committed}"
     );
 
-    // run: the committed catalog reproduces the committed transcript (fixpoint).
     let corpus = vec![CaseFile::new(CASE_PATH, committed.clone())];
     fixpoint_check(&DorcConsumer::new(), &corpus).expect("committed corpus is a fixpoint");
 
-    // The author edits prose in the transcript (typo -> mistake), far from the `{coord}` param.
+    // The edit stays far from the `{coord}` param: a backtick-glued param would mangle re-holing.
     let edited = committed.replace("typo", "mistake");
     let git = FakeGit::new()
         .commit(CASE_PATH, committed.clone())
@@ -62,13 +61,14 @@ fn full_prose_bless_loop_then_structure_bless() {
     let result = prose_bless(&mut consumer, &git, &edited_corpus, CATALOG_PATH.as_ref())
         .expect("prose-bless succeeds");
 
-    // The mirror absorbed the edit (prose, with the `{coord}` hole re-held, not baked).
     let msg = message_of(&consumer, "dangling-reference");
     assert!(msg.contains("mistake"), "mirror absorbed the edit: {msg}");
     assert!(!msg.contains("typo"), "the old word is gone: {msg}");
-    assert!(msg.contains("{coord}"), "the param stayed a hole: {msg}");
+    assert!(
+        msg.contains("{coord}"),
+        "the param stayed a hole, not baked: {msg}"
+    );
 
-    // Every case re-rendered with the new prose; the regenerated corpus is itself a fixpoint.
     let regenerated = result
         .regenerated()
         .get(Path::new(CASE_PATH))
@@ -77,7 +77,7 @@ fn full_prose_bless_loop_then_structure_bless() {
     let after = vec![CaseFile::new(CASE_PATH, regenerated.clone())];
     fixpoint_check(&consumer, &after).expect("regenerated corpus is a fixpoint");
 
-    // A code/arrangement change: structure-bless regenerates from the (clean, now-edited) catalog.
+    // structure-bless regenerates from the clean, now-edited catalog.
     let git = FakeGit::new()
         .commit(CASE_PATH, regenerated.clone())
         .mark_dirty(CODE_PATH);
@@ -118,9 +118,8 @@ fn dirty_catalog_refuses() {
 
 #[test]
 fn structure_drift_within_prose_bless_refuses() {
-    // HEAD's committed transcript carries a DRIFTED title arrangement (`[…-drift]`) while the current
-    // render is `[dangling-reference]`; the author also edited prose, but only the case shows dirty —
-    // the baseline-verify catches the structural drift and demands structure-bless first.
+    // HEAD's title arrangement drifted from the current render; the prose-edit-only dirty set means
+    // the baseline-verify (not infer_mode) is what must catch it.
     let committed = committed("dangling-reference", "dorc plan --book=book.sh");
     let head_drift = committed.replace("[dangling-reference]", "[dangling-reference-drift]");
     let work = committed.replace("typo", "mistake");
@@ -164,8 +163,6 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
 
 #[test]
 fn fixpoint_gate_catches_a_catalog_hand_edit() {
-    // Hand-edit the mirror (prose) without regenerating the committed transcript: the fixpoint gate
-    // sees the committed transcript no longer reproduce.
     let committed = committed("whylog-absent", "dorc why --last");
     let mut consumer = DorcConsumer::new();
     consumer.set_message("whylog-absent", Some("sm tampered message".to_owned()));
