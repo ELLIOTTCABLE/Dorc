@@ -8,7 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use errorloom::{Git, SubprocessGit};
+use errorloom::{Git, GitError, SubprocessGit};
 
 fn git(repo: &std::path::Path, args: &[&str]) -> Option<bool> {
     let status = Command::new("git")
@@ -64,6 +64,29 @@ fn head_version_and_dirty_paths_over_real_git() {
         facade.dirty_paths().expect("dirty"),
         vec![PathBuf::from("case.txt")]
     );
+
+    let _ = fs::remove_dir_all(&repo);
+}
+
+#[test]
+fn genuine_git_failure_surfaces_a_nonzero_exit() {
+    // An unborn HEAD is a genuine git failure, no longer swallowed as the
+    // "path not in HEAD" None (swe-F2) → NonZeroExit. The repo's own fresh `.git`
+    // dodges any ancestor-repo the temp dir sits in.
+    let repo = std::env::temp_dir().join(format!("errorloom-unborn-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&repo);
+    fs::create_dir_all(&repo).expect("temp repo dir");
+
+    let Some(true) = git(&repo, &["init", "-q", "-b", "main"]) else {
+        let _ = fs::remove_dir_all(&repo);
+        return;
+    };
+
+    let facade = SubprocessGit::new(&repo);
+    assert!(matches!(
+        facade.head_version_of(&PathBuf::from("case.txt")),
+        Err(GitError::NonZeroExit { .. })
+    ));
 
     let _ = fs::remove_dir_all(&repo);
 }

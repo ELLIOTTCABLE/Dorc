@@ -70,13 +70,15 @@ pub trait Consumer {
     /// Any consumer-side failure extracting the text.
     fn editable_text(&self, case: &Case) -> Result<String, Self::Error>;
 
-    /// Apply extracted field-edits into the consumer's catalog.
+    /// Apply extracted field-edits into the consumer's catalog. Taken BY VALUE
+    /// (`taste-F4`): the caller owns and drops the map, so an impl may move each
+    /// [`FieldTemplate`] into its catalog without cloning.
     ///
     /// # Errors
     /// Any consumer-side failure writing the catalog.
     fn apply_field_edits(
         &mut self,
-        edits: &BTreeMap<Self::Key, FieldTemplate>,
+        edits: BTreeMap<Self::Key, FieldTemplate>,
     ) -> Result<(), Self::Error>;
 
     /// Re-render `case`'s full transcript text from CURRENT catalog state
@@ -111,6 +113,13 @@ pub enum GitError {
     Spawn(String),
     /// git ran but its output was not UTF-8.
     NonUtf8,
+    /// git ran but exited nonzero for a reason that is NOT a legitimate
+    /// path-not-in-HEAD signal (`swe-F2`): a genuine failure, no longer conflated
+    /// with an untracked file.
+    NonZeroExit {
+        /// git's captured stderr.
+        stderr: String,
+    },
 }
 
 impl fmt::Display for GitError {
@@ -118,6 +127,7 @@ impl fmt::Display for GitError {
         match self {
             GitError::Spawn(message) => write!(f, "git: cannot run: {message}"),
             GitError::NonUtf8 => f.write_str("git: non-UTF-8 output"),
+            GitError::NonZeroExit { stderr } => write!(f, "git: exited nonzero: {}", stderr.trim()),
         }
     }
 }
@@ -149,7 +159,17 @@ impl Git for SubprocessGit {
             .output()
             .map_err(|e| GitError::Spawn(e.to_string()))?;
         if !output.status.success() {
-            return Ok(None);
+            // `git show HEAD:<path>` exits nonzero BOTH for a path absent from
+            // HEAD (the legitimate untracked signal → None) and for a real git
+            // failure; only the former carries git's tree-lookup phrasing.
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("does not exist in") || stderr.contains("exists on disk, but not in")
+            {
+                return Ok(None);
+            }
+            return Err(GitError::NonZeroExit {
+                stderr: stderr.into_owned(),
+            });
         }
         String::from_utf8(output.stdout)
             .map(Some)
@@ -164,6 +184,11 @@ impl Git for SubprocessGit {
             .arg("--porcelain")
             .output()
             .map_err(|e| GitError::Spawn(e.to_string()))?;
+        if !output.status.success() {
+            return Err(GitError::NonZeroExit {
+                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            });
+        }
         let text = String::from_utf8(output.stdout).map_err(|_| GitError::NonUtf8)?;
         let mut paths: Vec<PathBuf> = Vec::new();
         for line in text.lines() {
@@ -455,7 +480,7 @@ pub fn prose_bless<C: Consumer, G: Git>(
         }
     }
 
-    consumer.apply_field_edits(&edits).map_err(consumer_err)?;
+    consumer.apply_field_edits(edits).map_err(consumer_err)?;
     regenerate(consumer, corpus)
 }
 

@@ -74,9 +74,9 @@ impl Consumer for Toy {
             .unwrap_or_default())
     }
 
-    fn apply_field_edits(&mut self, edits: &BTreeMap<Key, FieldTemplate>) -> Result<(), String> {
+    fn apply_field_edits(&mut self, edits: BTreeMap<Key, FieldTemplate>) -> Result<(), String> {
         for (code, template) in edits {
-            self.catalog.insert(code.clone(), template_words(template));
+            self.catalog.insert(code, template_words(&template));
         }
         Ok(())
     }
