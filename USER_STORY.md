@@ -226,7 +226,7 @@ hint: 'foobar' (line 8) is unmodeled: it is the first wall - an oracle vouching 
 
 Annoyed, our admin puts on the engineer hat for exactly the length of a coffee. `foobar`
 already has a status query (most tools do). They append to the book's own file — oracles and
-runbooks can share a file, once it carries the dialect marker (`# dorc-lang/v0.1`, near the
+runbooks can share a file, once it carries the dialect marker (`# dorc-lang/v0.2`, near the
 top; an unmarked file always stays plain sh, and features requiring non-sh constructs
 require the marker):
 
@@ -237,7 +237,7 @@ foobar__is_converged() {
    sync-certs)
       dest : org.foob.Certs = "$1"
       [ "$2" = "" ] || return 2
-      foobar status --certs-current -- "$dest"    : org.foob.Certs:"$dest"#synced
+      foobar status --certs-current -- "$dest"    : org.foob.Certs:"$dest"@synced
       ;;
    *) return 2 ;;
    esac
@@ -263,7 +263,7 @@ foobar__is_converged() {
 - `[ "$2" = "" ] || return 2` is the arity gate: a two-operand invocation (`foobar
   sync-certs A B`) declines instead of quietly probing only the first operand — without
   it, a half-converged host would under-execute the second one.
-- The trailing `: org.foob.Certs:"$dest"#synced` says: this probe's exit code *establishes*
+- The trailing `: org.foob.Certs:"$dest"@synced` says: this probe's exit code *establishes*
   that cell (`#` introduces the selector — which aspect of the entity this line measures).
   The engine never interprets what "synced" means — it is an opaque token bound to the
   author's probe.
@@ -284,7 +284,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  6  # dpkg -s nginx >/dev/null 2>&1 \
  6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
  7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
- 8  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs#synced
+ 8  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs@synced
  9  # systemctl enable --now nginx                     # converged: service enabled+active
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
@@ -353,7 +353,7 @@ foobar__is_converged() {
    sync-certs|renew)
       dest : org.foob.Certs = "$1"
       [ "$2" = "" ] || { printf 'UNK multi-operand foobar\n' >>"$DORC_REPORT"; return 2; }
-      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"#synced
+      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"@synced
       ;;
    purge-certs) return 2 ;;
    *) printf 'UNK unmodeled foobar verb: %s\n' "$verb" >>"$DORC_REPORT"; return 2 ;;
@@ -389,14 +389,6 @@ What each addition buys — and refuses:
 
 
 ### Stage 5 — the footprint: facts surviving a wall that stays
-
-> (FIXME, updated 2026-07-16: the *mechanism* below is BUILT — the round-24 spike carries
-> authored footprints, probe-time derivation for payload-bound tools, and the differential
-> nets behind them — and the spelling now shows the block-settle RULED layer: `touches()`
-> is renamed `disturbs()` (`271:rul-touches-becomes-disturbs` — the name recruits paranoid
-> completeness), emission lines are raw entities with the kind riding the trailing mark
-> (`271:rul-emission-selector-on-mark`), and `.prop` became `#prop` (`277` §4a). Fine
-> detail stays strawman-tier; the corpus-wide respell lands at `270:block-rebuild`.)
 
 Everything so far elides around walls by *removing* them (stage 3: a converged wall is an
 elided wall, and an elided command casts no wall) or verifies *behind* them (stage 2:
@@ -440,14 +432,14 @@ apt_get__disturbs() {                        # base library (STRAWMAN body)
    while [ "${1#-}" != "$1" ]; do shift; done
    verb="$1"; shift
    case "$verb" in
-   update) :   : sm.dorc.PkgIndex ;;         # whole-kind claim: the kind rides the mark
+   update) : disturbs sm.dorc.PkgIndex ;;    # whole-kind claim: the kind rides the mark
    esac
 }
 
 foobar__disturbs() {                         # appended by foobar's author (STRAWMAN body)
    verb="$1"; shift
    case "$verb" in
-   sync-certs|renew) printf '%s\n' "$1"   : org.foob.Certs ;;
+   sync-certs|renew) printf '%s\n' "$1" : disturbs org.foob.Certs ;;
    esac
 }
 ```
@@ -610,7 +602,7 @@ One gap is left, and it is not the owner's — it is everyone else's. A colleagu
 for some package-fiddling tool honestly declares:
 
 ```sh
-hork__disturbs() { ... tune) printf '%s\n' "$1"   : sm.dorc.Package ;; ... }
+hork__disturbs() { ... tune) printf '%s\n' "$1" : disturbs sm.dorc.Package ;; ... }
 ```
 
 They mean "I touch the nginx package" — the whole thing, files included. But coordinates
@@ -620,9 +612,9 @@ which files a package owns is apt's knowledge, not theirs. So the owner says it 
 everyone:
 
 ```sh
-sm_dorc_Package__disturbance_reaches_only() {   # the package kind's owner (STRAWMAN body)
-   printf '%s\n' "$1"       : sm.dorc.Service   # a package may enable its same-named unit
-   dpkg -L "$1"             : sm.dorc.File      # and reaches exactly the files it installed
+sm_dorc_Package__disturbance_reaches_only() {     # the package kind's owner (STRAWMAN body)
+   printf '%s\n' "$1" : disturbs sm.dorc.Service  # a package may enable its same-named unit
+   dpkg -L "$1" : disturbs sm.dorc.File           # and reaches exactly the files it installed
 }
 ```
 
