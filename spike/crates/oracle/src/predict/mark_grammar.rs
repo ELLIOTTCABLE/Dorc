@@ -1,13 +1,15 @@
-//! The `281` annotation mark-grammar parser — the NEW-grammar path, landed UNWIRED.
+//! The `281` annotation mark-grammar parser — the full mark-block REFERENCE spec-in-code.
 //!
-//! This module implements `plans/281` Part I (the mark grammar) against the CP-A typed
-//! [`MarkKind`] verb set. It lands UNWIRED — `#[cfg(test)]`-gated at the `mod` declaration
-//! (`super`): the production lift/strip path stays on the OLD grammar until the CP-D cutover
-//! (`28A:rul-respell-atomic-cutover`), which un-gates and wires it. So the corpus is untouched
-//! and e2e stays green on the old spellings. Everything here is exercised only by this module's
-//! own unit tests, which pin the license-bearing parse behaviors the conductor reviews at CP-C.
-//! (The four parse diagnostics' literal emit sites still satisfy the production-emit grep —
-//! `diag_tidy::every_catalog_variant_is_constructed` scans `#[cfg(test)]` modules too.)
+//! Implements `plans/281` Part I (the mark grammar) against the CP-A typed [`MarkKind`] verb set.
+//! The v0.2 respell cutover LANDED (`28A` §2k/§2l): production parses the v0.2 grammar, but via
+//! `super::parser` and only its SINGLE-mark-per-line SUBSET (`28A:rul-single-mark-production-subset`:
+//! one `Command.mark` + consumer-side brace expansion). This module stays `#[cfg(test)]`-gated
+//! (`super`) as the FROZEN reference for the fuller mark-BLOCK model — multi-mark lines,
+//! continuations, cross-line rc-arity — adopted in a future `Command.marks: Vec` round (`281` stays
+//! THE spec; that adoption changes zero spellings, only accepts more). Nothing in production calls
+//! it; its unit tests pin the license-bearing block-model parses. (The four parse diagnostics'
+//! literal emit sites still satisfy `diag_tidy::every_catalog_variant_is_constructed`, which scans
+//! `#[cfg(test)]` modules too.)
 //!
 //! Design (`281` §3–§9):
 //! * intros `: :! :? := #: #:! #:? #:=` ([`decode_intro`]); the `#:` carrier reaches the lexer
@@ -392,11 +394,12 @@ struct Parsed {
     block_diags: Vec<Diag>,
 }
 
-/// Parse the marks in an oracle `src` under the new grammar (`281`), UNWIRED from production.
-/// Lexes with the hash-colon-aware [`lex_marks`], splits into statements (on `;`/`;;`/newline),
-/// classifies each, assembles continuation blocks (`28A:rul-continuation-attachment`), and runs
-/// the block-level rc-arity + standalone diagnostics over each assembled block. The landed
-/// entry point CP-D wires into lift/strip; nothing in the production pipeline calls it yet.
+/// Parse the marks in an oracle `src` under the full `281` block grammar — the REFERENCE entry,
+/// not the production path. Lexes with the hash-colon-aware [`lex_marks`], splits into statements
+/// (on `;`/`;;`/newline), classifies each, assembles continuation blocks
+/// (`28A:rul-continuation-attachment`), and runs the block-level rc-arity + standalone diagnostics
+/// over each assembled block. Production parses only the single-mark subset in `super::parser`
+/// (`28A:rul-single-mark-production-subset`); nothing in the production pipeline calls this.
 #[must_use]
 fn parse_marks(src: &str) -> Parsed {
     let tokens = lex_marks(src);
@@ -643,7 +646,7 @@ fn done(kind: StmtKind, line: usize, diags: Vec<Diag>) -> ParsedStmt {
 }
 
 /// Strip the `281` marks + binds from an oracle `src` to floor-legal POSIX (`281` §9) — the
-/// new-grammar counterpart of the OLD [`super::strip`] pass, landed UNWIRED. A trailing mark
+/// reference-only counterpart of the production [`super::strip`] pass. A trailing mark
 /// region-erases from the command end to the block end (the command survives); a standalone
 /// mark line-deletes when it is the whole physical line, else region-erases in place
 /// (`28B:flag-emptied-case-arm`: a case-arm mark leaves a POSIX-valid empty arm — the `;;` is a
@@ -793,9 +796,9 @@ fn line_solitary(src: &str, intro_start: usize, block_end: usize) -> bool {
 
 #[cfg(test)]
 mod tests {
-    //! License-bearing behaviors of the `281` new-grammar parser (mission point 4 · the CP-C
-    //! checkpoint surface). Each test pins one rule from `plans/281` + the `28A` rulings; the
-    //! parser is UNWIRED, so these are the only exercise it gets pre-cutover.
+    //! License-bearing behaviors of the `281` block-grammar reference parser. Each test pins one
+    //! rule from `plans/281` + the `28A` rulings; the parser is REFERENCE-ONLY (production runs the
+    //! single-mark subset in `super::parser`), so these are its only exercise.
 
     use super::*;
     use dorc_core::BytePos;

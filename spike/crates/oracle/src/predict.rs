@@ -40,8 +40,8 @@ mod eval;
 mod lexer;
 mod parser;
 
-// The `281` new-grammar mark parser lands UNWIRED (`28A:rul-respell-atomic-cutover`): reached
-// only by its own unit tests until the CP-D cutover un-gates and wires it into lift/strip.
+// The `281` full-block mark parser is the REFERENCE spec-in-code, `#[cfg(test)]`-gated: production
+// parses the single-mark subset in `parser` (`28A:rul-single-mark-production-subset`), not this.
 #[cfg(test)]
 mod mark_grammar;
 
@@ -508,7 +508,7 @@ package__resolve() {
     }
 
     /// A REACHES funcdef strips with the `__reaches` funcname suffix (24G §4): the typed-emission
-    /// trailing marks (`: service` / `: file`) are annotation-LINEs the strip DELETES WHOLE
+    /// trailing marks (`: disturbs service` / `: disturbs file`) are annotation-LINEs the strip DELETES WHOLE
     /// (strip-fidelity, 23H §9.4 — the reached kind was already interned at LIFT, the vocabulary
     /// fence), leaving the raw emitting commands verbatim as plain runnable sh. Pins that the
     /// typed-emission grammar strips clean (`package.reaches` → `package__reaches`, no mark residue).
