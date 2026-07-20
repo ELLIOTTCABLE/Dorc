@@ -819,7 +819,8 @@ spec rewritten into `282` §12; builder re-woken with these. NOT yet folded to `
 - **`28A:rul-blank-line-is-errorloom`** — the inter-block blank line is an ERRORLOOM
   `render_case` presentation choice (gated "another block follows", not trailing), NOT
   dorc-production output. A future dorc beauty-newline stacking to a double blank is
-  accepted.
+  accepted. SAME family (nit, 2026-07-20): a blank line before each txtar `-- header --`
+  (separating it from the previous body-text), emitted on render + tolerated on read-in.
 - **`28A:rul-following-ness-deferred-punt`** — renderer-owned terminal `:`/`.` is
   DEFERRED (my judgment; human delegated, flagged "may be the gnarly-punt class"). It
   risks the prose-bless byte-equality invariant (load-bearing for the flip gates) for a

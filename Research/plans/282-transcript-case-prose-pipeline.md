@@ -416,6 +416,10 @@ byte-equality gate stays untouched):
   a replay block when another block follows (not trailing). An errorloom presentation
   choice, NOT dorc-production output; a future dorc beauty-newline would stack to a
   double blank, accepted.
+- **txtar section spacing** (`28A:rul-blank-line-is-errorloom`) — a blank line before
+  each `-- header --`, separating it from the end of the previous body-text. errorloom
+  emits it on `render_case` and tolerates it on read-in; same family as the inter-block
+  blank, applies to every case (book-body → `-- replay --`, etc.).
 
 Not code: the human also rewrote actual prose ("Dorc" → "I", etc.) — voice, no
 mechanics owed.
