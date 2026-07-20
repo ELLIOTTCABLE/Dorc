@@ -13,9 +13,16 @@
 pub struct Word(String);
 
 impl Word {
-    /// Wrap a word. The caller owns the no-interior-whitespace invariant.
+    /// Wrap a word. The caller owns the no-interior-whitespace invariant, now
+    /// enforced by a `debug_assert!` (`swe-F8`): a whitespace-bearing "word" would
+    /// silently split the word-diff's alignment.
     pub fn new(text: impl Into<String>) -> Self {
-        Word(text.into())
+        let text = text.into();
+        debug_assert!(
+            !text.chars().any(char::is_whitespace),
+            "Word carries whitespace: {text:?}"
+        );
+        Word(text)
     }
 
     /// The word's text.
@@ -31,9 +38,15 @@ impl Word {
 pub struct ParamName(String);
 
 impl ParamName {
-    /// Wrap a param name.
+    /// Wrap a param name. Param names are single tokens; a `debug_assert!` guards
+    /// the no-whitespace invariant (`swe-F8`).
     pub fn new(name: impl Into<String>) -> Self {
-        ParamName(name.into())
+        let name = name.into();
+        debug_assert!(
+            !name.chars().any(char::is_whitespace),
+            "ParamName carries whitespace: {name:?}"
+        );
+        ParamName(name)
     }
 
     /// The name's text.

@@ -127,7 +127,7 @@ impl Consumer for DorcConsumer {
 
     fn apply_field_edits(
         &mut self,
-        edits: &BTreeMap<FieldKey, FieldTemplate>,
+        edits: BTreeMap<FieldKey, FieldTemplate>,
     ) -> Result<(), String> {
         for (key, template) in edits {
             let entry = self
@@ -135,7 +135,7 @@ impl Consumer for DorcConsumer {
                 .iter_mut()
                 .find(|e| e.slug == key.code)
                 .ok_or_else(|| format!("no catalog entry for `{}`", key.code))?;
-            let flat = flatten_template(template);
+            let flat = flatten_template(&template);
             match key.field {
                 "message" => entry.message = Some(flat),
                 "help" => entry.help = Some(flat),

@@ -44,9 +44,15 @@ impl InstanceId {
 pub struct ArrangementSlug(String);
 
 impl ArrangementSlug {
-    /// Wrap a slug.
+    /// Wrap a slug. Slugs are single hyphenated identifiers; a `debug_assert!`
+    /// guards the no-whitespace invariant (`swe-F8`).
     pub fn new(slug: impl Into<String>) -> Self {
-        ArrangementSlug(slug.into())
+        let slug = slug.into();
+        debug_assert!(
+            !slug.chars().any(char::is_whitespace),
+            "ArrangementSlug carries whitespace: {slug:?}"
+        );
+        ArrangementSlug(slug)
     }
 
     /// The slug's text.

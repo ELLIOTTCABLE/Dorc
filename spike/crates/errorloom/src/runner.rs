@@ -131,10 +131,22 @@ impl RunReport {
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[non_exhaustive]
 pub enum RunError {
-    /// An I/O failure (materialize, spawn, capture); carries the message.
-    Io(String),
+    /// An I/O failure (materialize, spawn, capture). Keeps the source
+    /// [`std::io::ErrorKind`] (`taste-F1`) so consumers can distinguish
+    /// `NotFound` / `PermissionDenied` without string-matching the message.
+    Io {
+        /// The classified I/O error kind.
+        kind: std::io::ErrorKind,
+        /// The source error's rendered message.
+        message: String,
+    },
     /// A replay block had an empty command line.
     EmptyCommand {
+        /// Zero-based block index.
+        block: usize,
+    },
+    /// A replay command line had an unterminated single/double quote (`swe-F3`).
+    UnterminatedQuote {
         /// Zero-based block index.
         block: usize,
     },
@@ -145,10 +157,13 @@ pub enum RunError {
         /// The unresolved program name.
         program: String,
     },
-    /// A command produced non-UTF-8 output; transcripts are text-only.
+    /// A command produced non-UTF-8 output; transcripts are text-only. Keeps a
+    /// lossy preview of the offending bytes (`taste-F3`) for diagnosis.
     NonUtf8Output {
         /// Zero-based block index.
         block: usize,
+        /// A lossy (`U+FFFD`-substituted) preview of the captured bytes.
+        preview: String,
     },
     /// Captured output leaked the sandbox's absolute path (`282` §7).
     SandboxPathLeak {
@@ -164,13 +179,19 @@ pub enum RunError {
 impl std::fmt::Display for RunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RunError::Io(message) => write!(f, "run: io error: {message}"),
+            RunError::Io { kind, message } => write!(f, "run: io error ({kind}): {message}"),
             RunError::EmptyCommand { block } => write!(f, "run: block {block} has no command"),
+            RunError::UnterminatedQuote { block } => {
+                write!(f, "run: block {block} has an unterminated quote")
+            }
             RunError::CommandNotFound { block, program } => {
                 write!(f, "run: block {block} program {program:?} not on PATH")
             }
-            RunError::NonUtf8Output { block } => {
-                write!(f, "run: block {block} produced non-UTF-8 output")
+            RunError::NonUtf8Output { block, preview } => {
+                write!(
+                    f,
+                    "run: block {block} produced non-UTF-8 output: {preview:?}"
+                )
             }
             RunError::SandboxPathLeak { block, line } => {
                 write!(f, "run: block {block} leaked the sandbox path: {line:?}")
@@ -184,16 +205,24 @@ impl std::error::Error for RunError {}
 
 impl From<std::io::Error> for RunError {
     fn from(error: std::io::Error) -> Self {
-        RunError::Io(error.to_string())
+        RunError::Io {
+            kind: error.kind(),
+            message: error.to_string(),
+        }
     }
 }
 
 /// Materialize a case and run its replay blocks, returning the combined output of
 /// each in order.
 ///
+/// Blocking contract (`swe-F5`; churn-avoidance-disclosure): each block runs to
+/// completion with NO timeout at v1 — a case whose command hangs hangs the run.
+/// Cases are trusted internal fixtures, so a wall-clock seam is deferred, not a
+/// silent gap.
+///
 /// # Errors
-/// Returns [`RunError`] for an I/O failure, an empty or unresolvable command,
-/// non-UTF-8 output, or a sandbox-path leak.
+/// Returns [`RunError`] for an I/O failure, an empty or unresolvable command, an
+/// unterminated quote, non-UTF-8 output, or a sandbox-path leak.
 pub fn run_case(case: &Case, env: &RunEnv) -> Result<ReplayCapture, RunError> {
     let base = unique_base()?;
     let result = run_in(case, env, &base);
@@ -239,7 +268,8 @@ fn run_block(
     base: &Path,
     work: &Path,
 ) -> Result<String, RunError> {
-    let parsed = parse_command(command_line);
+    let parsed =
+        parse_command(command_line).map_err(|_| RunError::UnterminatedQuote { block: index })?;
     let Some(program_name) = parsed.argv.first() else {
         return Err(RunError::EmptyCommand { block: index });
     };
@@ -260,6 +290,9 @@ fn run_block(
     for (name, value) in &env.vars {
         command.env(name, value);
     }
+    // A path containing the platform separator cannot be joined; leaving PATH
+    // unset then surfaces as a CommandNotFound rather than a silent misresolve
+    // (taste-F10).
     if let Ok(joined) = std::env::join_paths(&env.path) {
         command.env("PATH", joined);
     }
@@ -277,7 +310,10 @@ fn run_block(
 
     let _status = command.status()?;
     let bytes = fs::read(&capture_path)?;
-    String::from_utf8(bytes).map_err(|_| RunError::NonUtf8Output { block: index })
+    String::from_utf8(bytes).map_err(|error| RunError::NonUtf8Output {
+        block: index,
+        preview: String::from_utf8_lossy(&error.into_bytes()).into_owned(),
+    })
 }
 
 /// A parsed replay command: argv plus an optional `< file` stdin redirect (`282`
@@ -288,11 +324,15 @@ struct ParsedCommand {
     stdin_file: Option<String>,
 }
 
-fn parse_command(line: &str) -> ParsedCommand {
+/// An unterminated quote in a replay command line (`swe-F3`): a marker the runner
+/// maps to [`RunError::UnterminatedQuote`] with the block index in scope.
+struct UnterminatedQuote;
+
+fn parse_command(line: &str) -> Result<ParsedCommand, UnterminatedQuote> {
     let mut argv: Vec<String> = Vec::new();
     let mut stdin_file: Option<String> = None;
     let mut want_stdin = false;
-    for token in tokenize_command(line) {
+    for token in tokenize_command(line)? {
         if want_stdin {
             stdin_file = Some(token);
             want_stdin = false;
@@ -302,12 +342,13 @@ fn parse_command(line: &str) -> ParsedCommand {
             argv.push(token);
         }
     }
-    ParsedCommand { argv, stdin_file }
+    Ok(ParsedCommand { argv, stdin_file })
 }
 
 /// Split a command line into tokens, honoring single/double quotes (no escapes at
-/// v1 — internal tooling, sharp edges fine).
-fn tokenize_command(line: &str) -> Vec<String> {
+/// v1 — internal tooling, sharp edges fine). An unterminated quote is an error
+/// (`swe-F3`), never a silently-accumulated token.
+fn tokenize_command(line: &str) -> Result<Vec<String>, UnterminatedQuote> {
     let mut tokens: Vec<String> = Vec::new();
     let mut current = String::new();
     let mut open = false;
@@ -337,10 +378,13 @@ fn tokenize_command(line: &str) -> Vec<String> {
             }
         }
     }
+    if quote.is_some() {
+        return Err(UnterminatedQuote);
+    }
     if open {
         tokens.push(current);
     }
-    tokens
+    Ok(tokens)
 }
 
 /// Resolve a program name against the injected PATH (absolute path used as-is;
@@ -410,12 +454,17 @@ pub fn bless_structure(
 
 static COUNTER: AtomicU64 = AtomicU64::new(0);
 
+/// The bound on `unique_base`'s retry (`taste-F5`): the counter is
+/// process-monotonic, so only pre-existing stale dirs at `pid-nonce` collide —
+/// a handful at most. A distinctive bounded error beats an unbounded spin.
+const MAX_BASE_ATTEMPTS: u32 = 1024;
+
 /// Create a fresh, uniquely-named session dir under the system temp dir. Unique
 /// by pid + a process-monotonic counter, so concurrent runs never collide; the
 /// non-deterministic path is exactly why the sandbox-leak gate exists.
 fn unique_base() -> std::io::Result<PathBuf> {
     let pid = std::process::id();
-    loop {
+    for _ in 0..MAX_BASE_ATTEMPTS {
         let nonce = COUNTER.fetch_add(1, Ordering::Relaxed);
         let candidate = std::env::temp_dir().join(format!("errorloom-{pid}-{nonce}"));
         match fs::create_dir(&candidate) {
@@ -424,4 +473,8 @@ fn unique_base() -> std::io::Result<PathBuf> {
             Err(error) => return Err(error),
         }
     }
+    Err(std::io::Error::new(
+        std::io::ErrorKind::AlreadyExists,
+        format!("errorloom: no free session dir after {MAX_BASE_ATTEMPTS} attempts"),
+    ))
 }

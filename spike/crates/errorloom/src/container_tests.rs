@@ -12,6 +12,18 @@ fn parse_round_trips_byte_identically() {
 }
 
 #[test]
+fn newlineless_output_still_round_trips_through_to_text() {
+    // A real capture often lacks a trailing newline; injected into a non-final
+    // block it must not fuse the next `$ ` command onto its last line (swe-F6).
+    let mut case =
+        Case::parse("---\n---\n-- replay --\n$ one\nold\n$ two\nold two\n").expect("valid case");
+    case.set_replay_outputs(vec!["captured".to_owned(), "second\n".to_owned()]);
+    let reparsed = Case::parse(&case.to_text()).expect("round-trips");
+    assert_eq!(reparsed.replay().blocks().len(), 2);
+    assert_eq!(reparsed.replay().blocks()[1].command(), "two");
+}
+
+#[test]
 fn frontmatter_scalars_and_lists_parse() {
     let case = Case::parse(SAMPLE).expect("valid case");
     let fm = case.frontmatter();
