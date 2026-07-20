@@ -14,8 +14,11 @@ publish = false
 dorc-core = { path = "../core", version = "0.0.0" }
 errorloom = { path = "../errorloom", version = "0.0.0" }
 # World-as-pipeline (`283:dec-world-two-forms` · `28A` §2n): the marker pilot fires the REAL in-process
-# marker gate over an in-memory source. dorc-oracle pulls only core + syntax (DST-clean, no heavy deps).
+# marker gate over an in-memory source; the cmdsub flagship fires the REAL analysis pipeline (parse →
+# cfg → value → classify) over a book. All are kernel-pure (`inv-determinism`) — DST-clean, no I/O.
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
+dorc-analysis = { path = "../analysis", version = "0.0.0" }
 
 [lints]
 workspace = true
