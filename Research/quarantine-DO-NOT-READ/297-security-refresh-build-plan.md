@@ -1,5 +1,15 @@
 # 297 — Immediate security-refresh build plan
 
+## security-context-and-information-firewall
+
+This plan is intentionally naming- and type-heavy because builders may implement one
+local seam without receiving the broader security reasoning that selected its constraints.
+Private types, explicit transitions, and consequence-bearing names must therefore make the
+safe path natural and suspicious promotions conspicuous without requiring that context.
+The context itself remains quarantined: use `AGENTS.for-builders-only.md` as the sole
+authority for what may cross the firewall, and keep this document focused on construction
+rather than threat exposition.
+
 ## plan-purpose-and-cut
 
 This plan converts round 29's adjudicated findings into one immediate, executable build
@@ -31,48 +41,47 @@ These are ordered for reviewability, not because later work may weaken earlier w
 phase lands only after its focused tests and the full gate pass. Do not bundle unrelated
 round-28 annotation/errorloom work into this lane.
 
-## design-law-for-builders
+## invariant-routing-for-this-build
 
-Apply these constraints throughout every phase.
+`AGENTS.for-builders-only.md` is the sole authority for construction law. This plan adds
+only the staged implementation needed to establish its current report-channel,
+mutation-vouch, ingress/attribution, sink/artifact, authority-mint, and production-fence
+invariants in the spike; phase work remains subject to every applicable `sinv-*` rule.
 
-- `law-authority-never-arrives-in-payload` — a parsed payload may describe an
-  observation, never its host, target, attempt, generation, source set, or authority.
-  Those are immutable controller inputs attached after closed parsing.
-- `law-evidence-never-implies-license` — reachability and a successful observation
-  are insufficient to erase mutation. Preserve the sealed observation/vouch/silence
-  tiers and demand typed vouches by value at every mutation-license mint.
-- `law-no-universal-sanitizer` — parsing, trust, redaction, sensitivity, and sink
-  encoding are separate operations. A value becoming printable does not make it trusted
-  or non-sensitive; a redacted value does not become structurally safe.
-- `law-integrity-loss-stops-mutation` — distinguish ordinary analysis uncertainty
-  from attempt/transport/attribution failure. The former normally retains the authored
-  command or guard; the latter produces an attempt refusal that cannot build apply
-  authority for that attempt.
-- `law-owned-resource-stays-owned` — ownership must live in a handle/type through
-  write, drain, and cleanup. Do not convert it to a pathname `String` and later recreate
-  authority from that string.
-- `law-fixtures-cannot-reenter-production` — fixed nonce/host/attempt values,
-  FNV digests, headerless results, permissive parsers, and test escape hatches remain
-  structurally unavailable to a real transport constructor. A comment is not a fence.
-- `law-receipts-cannot-feed-decisions` — mint-time witnesses, whylogs, report text,
-  and diagnostic encodings remain on the decision-inert plane. Changing narration alone
-  must leave executable bytes unchanged.
-- `law-bounded-observables-only` — current replacement authority covers only the
-  modeled `{Effect, Status, Stdout, Stderr}` tuple and its existing consumption rules.
-  Do not name any result “observational equivalence” without that qualification. New
-  channels require a typed witness and composition/anti-masking tests; otherwise run.
+## builder-context-budget-and-recovery
 
-Preserve `spike/CLAUDE.md`'s `inv-must-may`, `claim-tier-gating`,
-`rul-vouch-is-verdict-authoring`, `two-plane-aid-law`, `inv-one-observable`,
-`inv-probe-sourced-values`, `anti-masking-tests`, `two-surfaces`, and
-`two-phases-opposite-fail-directions`. Preserve the plan crate's private-field sole-mint
-pattern. If a new type makes an old call inconvenient, do not add `From`, `Default`, a
-public field, a generic escape constructor, or a compatibility fallback to get around it.
+Every builder starts with the full project kit in-window: root `README.md`, `DESIGN.md`,
+`IMPLEMENTATION.md`, `USER_STORY.md`, `KNOBS.md`; `spike/CLAUDE.md`;
+`spike/docs/reference/oracle-contract.md`; `AGENTS.for-builders-only.md`; and this plan. A
+phase packet or narrow dispatch brief supplements that reading and never replaces it.
+This makes every additional builder expensive; dispatch is justified when work is both
+security-critical and bounded enough to finish with one coherent local model. Broad or
+exploratory work stays with an existing builder unless its interface can first be frozen.
+
+Before changing code, each phase owner writes a short quarantined phase packet containing:
+
+- exact files, symbols, callers, and authority/sink transitions in scope;
+- frozen type signatures, constructor visibility, dependency direction, and refusal flow;
+- applicable `sinv-*` slugs and independently necessary pre-existing gates;
+- positive, negative, compile-fail, and artifact-identity checks to land;
+- non-goals, forbidden convenience conversions, unresolved decisions, and stop conditions;
+- an ordered call-site checklist separating design work from mechanical migration.
+
+The packet establishes the compression boundary. Context-critical discovery, API design,
+consumer enumeration, and test-oracle selection happen before that boundary. After it,
+the remaining work may be mechanical only: migrate the enumerated sites, land the already
+specified tests, and run the gates. On context compression, reread the phase packet, this
+plan's phase, the applicable `sinv-*` bullets, affected crate `CLAUDE.md` files, and the
+current diff before continuing. Do not automatically reload the whole project kit merely
+to finish a frozen mechanical tail. If the packet does not answer a new design question,
+the call-site inventory changes, or a new conversion/authority mint is needed, the tail is
+not compression-safe: reload the full kit or stop for a fresh bounded dispatch.
 
 ## phase-zero-map-and-freeze-present-seams
 
-Before editing, make a short mechanical inventory in the implementation PR description
-or quarantined work log; do not create a new general security document.
+Before editing, make a short mechanical inventory and the phase packets in the
+implementation PR description or quarantined work log; do not create a new general
+security document.
 
 1. Enumerate every constructor/caller of `MutationErasureLicense`,
    `ReadSubstitutionLicense`, `ReplacementLicense`, `GuardLicense`, vouches,
@@ -335,8 +344,7 @@ Harden the already-present whylog path while this boundary is open:
 - apply/probe executable bytes identical whether persistence succeeds, fails, or narration
   changes.
 
-Do not promise or implement generic secret scrubbing. Treat the whole artifact as sensitive
-and minimize its fields; any proposal to widen stored content is a separate review.
+Collection widening remains outside this phase; `sinv-sensitive-artifacts` governs it.
 
 ## phase-five-production-fences-and-authority-regression-gates
 
@@ -401,23 +409,44 @@ never by injecting the exact value the assertion expects.
 
 ## recommended-dispatch-shape
 
-Use a serial map-then-build sequence because phases touch shared authority and record types.
-Parallelism is appropriate only after phase zero establishes exact ownership:
+Use one continuity owner plus narrowly justified fresh builders. The full-kit reload cost
+rules out splitting every checklist into its own dispatch; compression risk rules out one
+builder carrying the entire round unaided.
 
-1. one senior mapper produces the mint/ingress/sink inventory and mechanical API sketch;
-2. one report-channel builder and one aggregate-vouch builder may work in parallel on
-   disjoint files, each forbidden from changing the other's public interfaces;
-3. merge and verify those two holds before ingress refactoring;
-4. one ingress builder lands bounded/attributed parsing;
-5. one sink/artifact builder lands encoding and whylog hardening atop the new ingress types;
-6. a fresh opaque reviewer checks the exact merged revision against every governed surface,
-   followed by a separate ordinary correctness review and the full gates.
+1. A senior continuity owner performs phase zero, freezes the shared map and phase packets,
+   and owns integration. This owner should continue through phase three after integrating
+   phases one and two: the ingress work is broad and tightly coupled to the map, so reusing
+   context is preferable to paying for another full bootstrap. Its packet must freeze the
+   admission algebra and call-site inventory before code changes make the later tail rote.
+2. Dispatch phase one to a fresh report-channel builder. It is security-critical, narrow,
+   and has a crisp owned-capability boundary and finite negative-test matrix; the full-kit
+   reload is worth buying an uncompressed local implementation.
+3. Dispatch phase two concurrently to a fresh aggregate-vouch builder after phase zero.
+   It is likewise critical and bounded. The two builders work in disjoint files and may
+   not change shared public interfaces frozen by the continuity owner.
+4. The continuity owner integrates and verifies phases one and two before beginning the
+   phase-three ingress packet and implementation. Do not parallelize bounded reading,
+   attribution, admission refusal, and replay migration: their conversion graph is the
+   security boundary, not separable plumbing.
+5. Dispatch phase four's sink inventory, encoder API, and renderer migration to one fresh
+   sink builder after ingress lands. This work is broad rather than cheaply fan-out-able;
+   keep it together behind one frozen sink matrix and tolerate a recoverable compression.
+6. After the sink matrix freezes, the continuity owner may split whylog store hardening to
+   one additional fresh builder only if its files, constructor API, and tests are disjoint
+   from the remaining renderer migration. This is a dynamic exception: filesystem
+   ownership is critical and can become bounded, so an extra full-kit load is justified;
+   if the boundary is not crisp, the sink builder keeps it serially.
+7. Phase five belongs to the continuity owner after all implementation merges. It is an
+   integrated authority-surface pass and must not be fragmented into per-type chores.
+8. A fresh opaque reviewer checks the exact merged revision against every governed surface,
+   followed by a separate ordinary correctness review and the full gates. Fresh review is
+   critical and bounded, so its duplicate context cost is deliberate.
 
-Lower-reasoning builders receive only one phase, its exact invariants, relevant crate
-contracts, negative test table, and an explicit prohibition on inventing conversions or
-resolving product-policy questions. Any need for a generic conversion, permissive default,
-compatibility path, new observable, scope widening, cross-host reuse, or authority mint is a
-stop-and-escalate condition, not builder latitude.
+Every fresh builder receives the full kit plus exactly one frozen phase packet. Builders
+must route authority widening through `sinv-authority-map`; a packet cannot authorize them
+to restate, reinterpret, or relax it. Do not create a new builder merely because a task is
+easy to describe: absent both criticality and a frozen bounded finish, continuity is worth
+more than parallelism.
 
 ## explicit-deferrals-and-reentry
 
@@ -462,3 +491,47 @@ The security refresh is complete only when all of the following are true:
 Do not declare completion on the basis of added checks alone. The central criterion is that
 ordinary local code no longer has a convenient type-correct route from hostile bytes or
 mere observation to broader authority.
+
+## security-name-minting-reasoning
+
+When this build needs a name not already specified, reason in this order:
+
+1. `name-the-security-distinction` — identify the one distinction the type must keep a
+   local builder from forgetting: authority species, epistemic source, scope, ownership,
+   lifecycle, grammar position, or a deliberately weakened boundary. Keep that word even
+   when it makes the name longer.
+2. `make-the-module-carry-context` — let a narrow module path supply routine nouns
+   (`report`, `ingress`, `records`, `resolver`, `whylog`), but assume imports and compiler
+   errors may erase that context. Retain the distinguishing noun when the bare name would
+   become vague or falsely reassuring.
+3. `name-only-enforced-properties` — adjectives such as `Owned`, `Reached`, `Bounded`,
+   `Exclusive`, `Canonical`, or `Verified` are valid only when private construction makes
+   the property unavoidable. Never use an impressive name to compensate for a permissive
+   field, constructor, conversion, or fallback.
+4. `expose-the-consequence` — authority-bearing names should state the planner action they
+   license. Prefer an alarming but accurate name such as mutation erasure over a generic
+   optimization or replacement name when the consequence is unequal.
+5. `preserve-epistemic-species` — use `Observation` for measured/reported input, `Vouch`
+   for authored judgment, `Proof` for a private proposition required by a mint, `License`
+   for authority to perform one action, and `Receipt` for post-mint narration that cannot
+   return to the decision plane. Do not use generic `Result`, `Witness`, or `Evidence`
+   where one of these distinctions governs behavior.
+6. `keep-universal-words-visible` — retain `All`/`Every` when non-emptiness, exact
+   cardinality, ordering, or identity matching is the property. A collection-shaped name
+   can make a partial set look valid.
+7. `separate-orthogonal-axes` — compose types instead of minting compound claims:
+   hostility, recognition, attribution, sensitivity, retention, encoding, freshness, and
+   semantic authority are independent. No `Safe`, `Trusted`, or `Sanitized` umbrella.
+8. `name-the-exact-sink` — encoded values name their destination grammar and position;
+   terminal text, record fields, JSON strings, paths, and POSIX-shell words are not
+   interchangeable. Prefer no type or constructor over a falsely universal one.
+9. `reserve-strong-conclusions` — keep names such as `DecisionId`, `Approved`,
+   `Canonical`, and `Verified` unavailable until every promised binding/check exists.
+   Earlier states name only what they actually bind or establish.
+10. `test-the-name-in-errors` — read the proposed bare import, constructor call, enum
+    match, and compiler failure as a hurried local builder would. Choose the shortest name
+    that still makes the unsafe substitution, widening, or cross-boundary reuse look wrong.
+
+If two names remain plausible, prefer structural separation over vocabulary debate. Mint
+distinct private types first, then shorten names only where module context and impossible
+conversions preserve the distinction without narration.
