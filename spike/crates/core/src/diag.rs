@@ -1675,10 +1675,23 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
 /// greppable `[unwritten: <slug>]` placeholder. Pure; `inv-no-throw`.
 #[must_use]
 pub fn render_message(code: &DiagCode, interner: &crate::Interner) -> String {
+    render_message_with(&crate::catalog::CONST_CATALOG, code, interner)
+}
+
+/// The [`render_message`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog; promote passes its
+/// mutable mirror so an edit renders before any rebuild. `None` from the lookup synthesizes the
+/// `[unwritten: <slug>]` placeholder (both "no entry" and "unwritten message" fold here).
+#[must_use]
+pub fn render_message_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    code: &DiagCode,
+    interner: &crate::Interner,
+) -> String {
     let params = params_of(code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    match crate::catalog::entry(code.slug()) {
-        Some(e) => crate::catalog::fill_template(e.message, &refs),
+    match lookup.message(code.slug()) {
+        Some(t) => crate::catalog::fill_template(t, &refs),
         None => format!("[unwritten: {}]", code.slug()),
     }
 }
@@ -1693,9 +1706,29 @@ pub fn render_message(code: &DiagCode, interner: &crate::Interner) -> String {
 /// [`render_body`] + [`frame_region`] but owns the stage prefix + colour + no-source fallback.
 #[must_use]
 pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Interner) -> String {
+    render_cli_with(
+        &crate::catalog::CONST_CATALOG,
+        diag,
+        src,
+        filename,
+        interner,
+    )
+}
+
+/// The [`render_cli`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
+/// Byte-identical to [`render_cli`] under the const lookup (gate-pinned).
+#[must_use]
+pub fn render_cli_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &crate::Interner,
+) -> String {
     use std::fmt::Write;
     let spec = registry(&diag.code);
-    let body = render_body(diag, interner);
+    let body = render_body_with(lookup, diag, interner);
     let (problem, rest) = match body.split_once('\n') {
         Some((p, r)) => (p, Some(r)),
         None => (body.as_str(), None),
@@ -1736,15 +1769,27 @@ pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Inte
 /// `report()` split its first line onto the title and place the rest after the region. Pure.
 #[must_use]
 pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
+    render_body_with(&crate::catalog::CONST_CATALOG, diag, interner)
+}
+
+/// The [`render_body`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
+/// Byte-identical to [`render_body`] under the const lookup (gate-pinned).
+#[must_use]
+pub fn render_body_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    interner: &crate::Interner,
+) -> String {
     use std::fmt::Write;
     let params = params_of(&diag.code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    let entry = crate::catalog::entry(diag.code.slug());
-    let mut out = match entry {
-        Some(e) => crate::catalog::fill_template(e.message, &refs),
-        None => format!("[unwritten: {}]", diag.code.slug()),
+    let slug = diag.code.slug();
+    let mut out = match lookup.message(slug) {
+        Some(t) => crate::catalog::fill_template(t, &refs),
+        None => format!("[unwritten: {slug}]"),
     };
-    if let Some(help) = entry.and_then(|e| e.help) {
+    if let Some(help) = lookup.help(slug) {
         let _ = write!(
             out,
             "\n  = help: {}",
@@ -1785,6 +1830,19 @@ pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
 /// prose class, so they are classified WHOLE as `Arrangement` pending a ruling. Pure; `inv-no-throw`.
 #[must_use]
 pub fn render_body_tagged(diag: &Diag, interner: &crate::Interner) -> crate::tagged::TaggedRender {
+    render_body_tagged_with(&crate::catalog::CONST_CATALOG, diag, interner)
+}
+
+/// The [`render_body_tagged`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
+/// Byte-identical text to [`render_body_with`] under the const lookup (gate-pinned). An unwritten
+/// (`None`) message tags the synthesized placeholder WHOLE as `Arrangement` (it is not prose-editable).
+#[must_use]
+pub fn render_body_tagged_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    interner: &crate::Interner,
+) -> crate::tagged::TaggedRender {
     use crate::tagged::{Field, Region, Span};
     fn arrange(out: &mut String, spans: &mut Vec<Span>, text: &str, slug: &'static str) {
         if text.is_empty() {
@@ -1800,14 +1858,13 @@ pub fn render_body_tagged(diag: &Diag, interner: &crate::Interner) -> crate::tag
     let params = params_of(&diag.code, interner);
     let refs: Vec<(&'static str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
     let code = diag.code.slug();
-    let entry = crate::catalog::entry(code);
     let mut out = String::new();
     let mut spans: Vec<Span> = Vec::new();
-    match entry {
-        Some(e) => crate::catalog::fill_template_tagged(
+    match lookup.message(code) {
+        Some(t) => crate::catalog::fill_template_tagged(
             &mut out,
             &mut spans,
-            e.message,
+            t,
             &refs,
             code,
             Field::Message,
@@ -1820,7 +1877,7 @@ pub fn render_body_tagged(diag: &Diag, interner: &crate::Interner) -> crate::tag
             "unwritten-placeholder",
         ),
     }
-    if let Some(help) = entry.and_then(|e| e.help) {
+    if let Some(help) = lookup.help(code) {
         arrange(&mut out, &mut spans, "\n  = help: ", "help-connective");
         crate::catalog::fill_template_tagged(
             &mut out,

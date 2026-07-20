@@ -875,6 +875,87 @@ pub fn entry(slug: &str) -> Option<&'static CatalogEntry> {
     CATALOG.iter().find(|e| e.slug == slug)
 }
 
+/// The render seat's view of the prose catalog (`283:dec-mirror-via-catalog-lookup`): the
+/// message/help templates keyed by slug, so a render can source prose from the compiled-in const
+/// OR a promote-time mutable mirror through ONE seat. `None` from [`message`](Self::message) means
+/// "no written message" (either no entry, or an unwritten one) — the render synthesizes the
+/// `[unwritten: <slug>]` placeholder in both cases; `None` from [`help`](Self::help) means "no help
+/// register". Metadata (`when_fires`/`why`/`params`/`example`) is never read at render time and is
+/// not on this trait.
+pub trait CatalogLookup {
+    /// The written message template for `slug`, or `None` to render the unwritten placeholder.
+    fn message(&self, slug: &str) -> Option<&str>;
+    /// The help template for `slug`, or `None` when the code carries no help register.
+    fn help(&self, slug: &str) -> Option<&str>;
+}
+
+/// The production [`CatalogLookup`]: the compiled-in [`CATALOG`] const. Every production render
+/// passes [`CONST_CATALOG`]; promote passes an owned mirror instead (byte-identical renders,
+/// gate-pinned).
+#[derive(Debug)]
+pub struct ConstCatalog;
+
+/// The one production [`CatalogLookup`] value — the compiled-in catalog.
+pub const CONST_CATALOG: ConstCatalog = ConstCatalog;
+
+impl CatalogLookup for ConstCatalog {
+    fn message(&self, slug: &str) -> Option<&str> {
+        entry(slug).map(|e| e.message)
+    }
+    fn help(&self, slug: &str) -> Option<&str> {
+        entry(slug).and_then(|e| e.help)
+    }
+}
+
+/// An owned catalog entry — the promote-time MUTABLE mirror's element (`283:dec-mirror-via-catalog-
+/// lookup`). The compiled-in [`CatalogEntry`] holds `&'static str`, so it cannot carry runtime prose
+/// an author just edited; this owned twin can. `params`/`example` are NOT stored — [`serialize`]
+/// regenerates them from the prose's holes (same as the const codegen). `message: None` is the
+/// unwritten state (`283:dec-message-becomes-option`).
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct OwnedEntry {
+    /// The stable slug (matches [`crate::diag::DiagCode::slug`]).
+    pub slug: String,
+    /// When this diagnostic fires (machine-facing metadata).
+    pub when_fires: String,
+    /// Why the code exists (machine-facing metadata).
+    pub why: String,
+    /// The primary message template, or `None` when unwritten.
+    pub message: Option<String>,
+    /// The help register template, or `None` when the code carries no help.
+    pub help: Option<String>,
+}
+
+/// The compiled-in catalog as an owned, mutable mirror (`283:dec-mirror-via-catalog-lookup`) — the
+/// starting state promote edits before re-serializing. Carry-forward is by construction: an entry
+/// whose prose is not touched serializes back verbatim.
+#[must_use]
+pub fn owned_catalog() -> Vec<OwnedEntry> {
+    CATALOG
+        .iter()
+        .map(|e| OwnedEntry {
+            slug: e.slug.to_owned(),
+            when_fires: e.when_fires.to_owned(),
+            why: e.why.to_owned(),
+            message: Some(e.message.to_owned()),
+            help: e.help.map(str::to_owned),
+        })
+        .collect()
+}
+
+impl CatalogLookup for [OwnedEntry] {
+    fn message(&self, slug: &str) -> Option<&str> {
+        self.iter()
+            .find(|e| e.slug == slug)
+            .and_then(|e| e.message.as_deref())
+    }
+    fn help(&self, slug: &str) -> Option<&str> {
+        self.iter()
+            .find(|e| e.slug == slug)
+            .and_then(|e| e.help.as_deref())
+    }
+}
+
 /// Fill a message template's `{name}` holes from `params` (name → value), leaving `{{`/`}}` as the
 /// literal `{`/`}`. The named-params-only render primitive (`27V` §3 · `AID-NEEDS:law-trust-tier`):
 /// prose never hand-writes values; the engine substitutes them here. An unknown `{name}` (not in
@@ -1049,12 +1130,13 @@ fn template_holes(template: &str) -> Vec<String> {
 // The promote pipeline (`27V` §3 · `AID-NEEDS:law-one-defining-case-per-code`)
 // ===========================================================================
 
-/// The refreshed param SET for an entry — the first-occurrence-ordered, deduped union of the holes in
-/// its `message` and `help` templates. Promote sets `params` to EXACTLY the holes the prose uses
-/// (tightening the gate's `holes ⊆ params` to `holes == params`).
-fn refreshed_params(entry: &CatalogEntry) -> Vec<String> {
+/// The refreshed param SET for a prose pair — the first-occurrence-ordered, deduped union of the
+/// holes in the `message` and `help` templates. Promote sets `params` to EXACTLY the holes the prose
+/// uses (tightening the gate's `holes ⊆ params` to `holes == params`). An unwritten (`None`) message
+/// contributes no holes.
+fn refreshed_params(message: Option<&str>, help: Option<&str>) -> Vec<String> {
     let mut params: Vec<String> = Vec::new();
-    for template in std::iter::once(entry.message).chain(entry.help) {
+    for template in message.into_iter().chain(help) {
         for hole in template_holes(template) {
             if !params.contains(&hole) {
                 params.push(hole);
@@ -1067,14 +1149,19 @@ fn refreshed_params(entry: &CatalogEntry) -> Vec<String> {
 /// The refreshed `example` — the measured render of the current prose (ru-27 / conductor ruling): the
 /// `message` template filled with `<param>` placeholders. Drift-proof by construction (it changes iff
 /// the prose does), and payload-free (no canonical `DiagCode` needed), so promote stays a pure
-/// function of the committed catalog. The particulars ride `27V:rul-output-form-unwelded`.
-fn schematic_example(entry: &CatalogEntry, params: &[String]) -> String {
+/// function of the committed catalog. An unwritten (`None`) message renders its `[unwritten: <slug>]`
+/// placeholder (the same synthesis the render seat performs). The particulars ride
+/// `27V:rul-output-form-unwelded`.
+fn schematic_example(slug: &str, message: Option<&str>, params: &[String]) -> String {
     let placeholders: Vec<(&str, String)> = params
         .iter()
         .map(|p| (p.as_str(), format!("<{p}>")))
         .collect();
     let refs: Vec<(&str, &str)> = placeholders.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    fill_template(entry.message, &refs)
+    match message {
+        Some(template) => fill_template(template, &refs),
+        None => format!("[unwritten: {slug}]"),
+    }
 }
 
 /// The d4b PROMOTE pipeline (`27V` §3; BLESS-law — orchestrator-only, fresh binary, diff inspected;
@@ -1091,11 +1178,24 @@ fn schematic_example(entry: &CatalogEntry, params: &[String]) -> String {
 /// `inv-no-unsafe` family stands: this is codegen-to-committed-source, never a macro.
 #[must_use]
 pub fn promote_catalog_source() -> String {
+    serialize(&owned_catalog())
+}
+
+/// Codegen the committed `CATALOG` const from an OWNED mirror (`283:dec-catalog-stays-generated-
+/// const`) — the promote-v2 serializer, generalized from [`promote_catalog_source`] to owned input so
+/// an author's edited prose (carried on the mirror) becomes committed source. Same shape as the const
+/// codegen: `message`/`help`/`when_fires`/`why` carried verbatim; `params` ⇐ [`refreshed_params`];
+/// `example` ⇐ [`schematic_example`]. Strings emit via `{:?}` (valid Rust escaping); the orchestrator
+/// splices + `cargo fmt`s. `inv-no-unsafe` stands (codegen-to-source, not a macro).
+#[must_use]
+pub fn serialize(entries: &[OwnedEntry]) -> String {
     use std::fmt::Write as _;
     let mut out = String::from("pub const CATALOG: &[CatalogEntry] = &[\n");
-    for e in CATALOG {
-        let params = refreshed_params(e);
-        let example = schematic_example(e, &params);
+    for e in entries {
+        let message = e.message.as_deref();
+        let help = e.help.as_deref();
+        let params = refreshed_params(message, help);
+        let example = schematic_example(&e.slug, message, &params);
         out.push_str("    CatalogEntry {\n");
         let _ = writeln!(out, "        slug: {:?},", e.slug);
         let _ = writeln!(out, "        when_fires: {:?},", e.when_fires);
@@ -1109,8 +1209,8 @@ pub fn promote_catalog_source() -> String {
         }
         out.push_str("],\n");
         let _ = writeln!(out, "        example: {example:?},");
-        let _ = writeln!(out, "        message: {:?},", e.message);
-        match e.help {
+        let _ = writeln!(out, "        message: {:?},", message.unwrap_or_default());
+        match help {
             Some(h) => {
                 let _ = writeln!(out, "        help: Some({h:?}),");
             }
@@ -1285,20 +1385,20 @@ mod tests {
     fn promote_refreshes_params_and_example() {
         // A PASSTHROUGH code (`sm {detail}`): params ⇒ [detail]; example ⇒ the prose with `<detail>`.
         let e = entry("site-unresolvable").expect("passthrough entry");
-        let params = refreshed_params(e);
+        let params = refreshed_params(Some(e.message), e.help);
         assert_eq!(
             params,
             vec!["detail".to_owned()],
             "params = the prose's holes"
         );
         assert_eq!(
-            schematic_example(e, &params),
+            schematic_example(e.slug, Some(e.message), &params),
             "sm <detail>",
             "example = the measured render of the current prose (drift-proof)"
         );
         // A code whose template uses a hole TWICE (`{count}` in munge-name-collision) dedups in params.
         let coll = entry("munge-name-collision").expect("collision entry");
-        let cp = refreshed_params(coll);
+        let cp = refreshed_params(Some(coll.message), coll.help);
         assert_eq!(
             cp.iter().filter(|p| *p == "count").count(),
             1,
