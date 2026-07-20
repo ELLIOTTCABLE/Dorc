@@ -109,6 +109,10 @@ and carries the license-contamination map.
   USER_STORY's "Recovery" section · `notes/27R`/`27S`
   (the `dorc lint` lane) · the r22 spine `plans/22A` + `notes/22D`/`22E` · `plans/111`
   (the round-11 conclusion).
+- **The `dorc explain` teaching surface (density registers · command-block
+  transclusion · the docs-home strawman)** — **`plans/286`** (design-tier,
+  build-punted; the AI-voice carve + the complexity-ceiling law live there);
+  research base `.claude/research/explain-prose-reuse/`.
 
 ## Per-round map
 
