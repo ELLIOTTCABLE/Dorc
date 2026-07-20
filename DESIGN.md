@@ -632,11 +632,11 @@ communicate that they read or write the same information about the machine.
 Strawman-spelling, implemented in the current spike:
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 systemctl__is_converged() {
    case "${1-}" in
-   enable) systemctl is-enabled --quiet -- "${2-}" : sm.dorc.Service:"$2"#enabled ;;
-   start)  systemctl is-active  --quiet -- "${2-}" : sm.dorc.Service:"$2"#active  ;;
+   enable) systemctl is-enabled --quiet -- "${2-}" : sm.dorc.Service:"$2"@enabled ;;
+   start)  systemctl is-active  --quiet -- "${2-}" : sm.dorc.Service:"$2"@active  ;;
    esac
 }
 ```

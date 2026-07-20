@@ -1,0 +1,16 @@
+# WSL distributions are registered to the interactive Windows user, so they are
+# invisible to the sandbox account. Keep the escape hatch scoped to WSL itself.
+prefix_rule(
+    pattern = ["wsl.exe"],
+    decision = "allow",
+    justification = "Use this project's existing Ubuntu WSL toolchain outside the sandbox",
+    match = [
+        "wsl.exe --list --verbose",
+        "wsl.exe -d Ubuntu -- true",
+        "wsl.exe -d Ubuntu --cd /mnt/c/Users/ec/Sync/Code/Dorc zsh -lc pwd",
+    ],
+    not_match = [
+        "wsl --list --verbose",
+        "powershell.exe wsl.exe --list --verbose",
+    ],
+)

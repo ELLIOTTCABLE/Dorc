@@ -44,7 +44,7 @@ and spellings aren't necessarily settled.)
 
 ```sh
 #!/bin/sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 set -eu
 
 CERTS=/etc/nginx/certs
@@ -63,7 +63,7 @@ foobar__is_converged() {
    sync-certs)
       dest : org.foob.Certs = "$1"
       [ "${2-}" = "" ] || return 2
-      foobar status --certs-current -- "$dest"  : org.foob.Certs:"$dest"#synced
+      foobar status --certs-current -- "$dest"  : org.foob.Certs:"$dest"@synced
       ;;
    *) return 2 ;;
    esac
@@ -78,7 +78,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  8  # dpkg -s nginx >/dev/null 2>&1 \
  8  #    || apt-get install -y nginx                   # converged: your guard holds ('dpkg': rc 0)
  9  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
-10  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs#synced
+10  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs@synced
 11  # systemctl enable --now nginx                     # converged: service enabled+active
 12  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 13  ( ufw_check allow 443/tcp ) \

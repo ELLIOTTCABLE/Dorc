@@ -1,0 +1,12 @@
+{
+  "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1968412",
+  "grading-certainty": "+1:SURE",
+  "grading-reasoning": "A not B: first-party vendor security issue, including reproduction, affected products, fixed versions, and errata; fully read.",
+  "relevance-certainty": "+1:SURE",
+  "relevance-description": "Direct precedent for a managed host turning fact-like data into controller-side template injection.",
+  "graded-by": "subagent",
+  "published": "2021-06-07",
+  "retrieved": "2026-07-19",
+  "acquired": "url",
+  "via": "mcp__kagi_ken__kagi_search_fetch followed by full-page web open"
+}
