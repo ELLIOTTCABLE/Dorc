@@ -27,8 +27,8 @@ use crate::lattice::Lattice;
 use crate::solve::{Direction, Graph, solve};
 use crate::value::{ValueFlow, ValueOf};
 use dorc_core::diag::{
-    CmdsubInnerNonleaf, CmdsubOperandTop, Diag, DiagCode as Code, EffectKindDisagreement,
-    OperandPosition, RedirTargetTop, SiteId,
+    CmdsubInnerNonleaf, CmdsubOperandTop, CommandName, Diag, DiagCode as Code,
+    EffectKindDisagreement, OperandPosition, RedirTargetTop, SiteId,
 };
 use dorc_core::{
     Carrier, Context, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken, ProviderId,
@@ -112,7 +112,7 @@ impl DiagSite {
 ///
 /// `pub` only because it appears in the (already-`pub`) [`command_effect`] signature as the
 /// deferred-collector parameter; it carries no decision data and is never consumed cross-crate.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct CmdsubTop {
     /// The ⊤-origin site (its `site.leaf.0` is the CFG node index — the cause-lookup key).
     site: DiagSite,
@@ -122,6 +122,9 @@ pub struct CmdsubTop {
     /// went ⊤ (a `$(…)` subst vs an unresolvable positional vs a dynamic var …), so the disclosure
     /// is specific. Exempt-plane (display only; distinct from the attribution `ProvId` cause).
     top_cause: dorc_core::TopCause,
+    /// The command-word name for the `{command}` fill (`282` §12 item-6): the resolved literal at an
+    /// operand-⊤ site, or [`CommandName::Unclear`] when the command word itself went ⊤.
+    command: CommandName,
 }
 
 /// RECORD a `DiagCode::CmdsubOperandTop` disclosure for post-mint finalization (`22B` §5
@@ -148,6 +151,7 @@ fn emit_cmdsub_operand_top(
     site: Option<DiagSite>,
     position: OperandPosition,
     top_cause: dorc_core::TopCause,
+    command: CommandName,
 ) {
     let Some(site) = site else {
         return; // member-family path: a ⊤ member IS reached here and SUPPRESSED (dedup) — disclosed once at the single-cell fallback; see fn doc f-3b
@@ -156,6 +160,7 @@ fn emit_cmdsub_operand_top(
         site,
         position,
         top_cause,
+        command,
     });
 }
 
@@ -194,6 +199,7 @@ fn finalize_cmdsub_tops(
                     position: top.position,
                     cause: Some(cause),
                     top_cause: top.top_cause,
+                    command: top.command.clone(),
                 }),
                 top.site.span,
             )
@@ -270,7 +276,13 @@ pub fn command_effect(
     let provider_sym = match word0 {
         ValueOf::Literal(s) => s,
         ValueOf::Top(cause) => {
-            emit_cmdsub_operand_top(cmdsub_tops, site, OperandPosition::CommandWord, cause);
+            emit_cmdsub_operand_top(
+                cmdsub_tops,
+                site,
+                OperandPosition::CommandWord,
+                cause,
+                CommandName::Unclear,
+            );
             return vec![CommandEffect::Opaque];
         }
     };
@@ -305,7 +317,13 @@ pub fn command_effect(
                 let position = OperandPosition::Operand(
                     u32::try_from(i.saturating_add(1)).unwrap_or(u32::MAX),
                 );
-                emit_cmdsub_operand_top(cmdsub_tops, site, position, *cause);
+                emit_cmdsub_operand_top(
+                    cmdsub_tops,
+                    site,
+                    position,
+                    *cause,
+                    CommandName::Literal(provider_str.clone()),
+                );
                 return vec![CommandEffect::Opaque];
             }
         }
@@ -3015,6 +3033,25 @@ command__predict() {
             has_code(&diags, "cmdsub-operand-top"),
             "a ⊤ operand must disclose cmdsub-operand-top, never silently Opaque: {diags:?}"
         );
+    }
+
+    #[test]
+    fn cmdsub_operand_top_carries_the_literal_command_name() {
+        // item-6 (`282` §12): a ⊤ OPERAND at a LITERAL-command-word site carries that command word
+        // as `CommandName::Literal`, so the `{command}` fill speaks the command in the caller's terms
+        // (the flagship: `apt-get`). This is the end-to-end literal path — value-flow-derived at the
+        // emit site, never synthesized late. (A ⊤ COMMAND WORD carries `Unclear`; that emit is the
+        // other arm, and const-prop `Resolved` is the marked analysis-side follow-up.)
+        let (mut i, idx, _s) = package_setup();
+        let diags = classify_src_diags("apt-get install -y \"$(date)\"", &mut i, &idx);
+        let command = diags
+            .iter()
+            .find_map(|d| match &d.code {
+                Code::CmdsubOperandTop(p) => Some(p.command.clone()),
+                _ => None,
+            })
+            .expect("a cmdsub-operand-top disclosure fired");
+        assert_eq!(command, CommandName::Literal("apt-get".to_owned()));
     }
 
     #[test]

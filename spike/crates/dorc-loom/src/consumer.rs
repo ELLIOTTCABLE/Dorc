@@ -13,8 +13,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::catalog::{OwnedEntry, owned_catalog};
 use dorc_core::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, DanglingReference,
-    Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed, MarkRcArityExceeded,
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed, MarkRcArityExceeded,
     MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker, MungeNameInvalid,
     OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
     SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
@@ -255,6 +255,7 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
             position: OperandPosition::Operand(1),
             cause: None,
             top_cause: TopCause::UnmodeledExpansion,
+            command: CommandName::Literal("apt-get".to_owned()),
         }),
         "site-unresolvable" => DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: SiteId::leaf(LeafId(4)),

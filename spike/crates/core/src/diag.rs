@@ -328,11 +328,43 @@ impl OperandPosition {
     }
 }
 
-/// Payload of [`DiagCode::CmdsubOperandTop`]: the ⊤-origin site, WHICH position went ⊤, and an
-/// optional ⊤-cause receipt (`228` dc-1 — the exempt-plane hook that links this origin to its
-/// poisoned downstream consumers without each consumer emitting). The `cause` is EXEMPT-plane
-/// (it is a [`ProvId`], opaque and non-`Display`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The command-word name a diagnostic carries for its `{command}` template param (`282` §12
+/// item-6): a value-flow-derived, three-state name so a message can speak the command in the
+/// caller's terms (the human's stated need across MANY future messages). Populated at the analysis
+/// emit site where the resolved argv is known — never synthesized late.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommandName {
+    /// A statically-resolved literal command word — renders the bare name (`apt-get`).
+    Literal(String),
+    /// A dynamic command word that constant-propagation resolved to a known name — renders the
+    /// "which resolves to" phrasing. The TYPE is shaped now; analysis-side population is a marked
+    /// follow-up (it needs value-flow provenance the emit site does not yet distinguish).
+    Resolved(String),
+    /// No single clear command name (a ⊤ command word) — renders a name-free fallback.
+    Unclear,
+}
+
+impl CommandName {
+    /// The `{command}` fill text (`282` §12 item-6): the bare name for a literal, a resolves-to
+    /// clause for a const-prop'd dynamic word, a neutral fallback when no single name is clear. The
+    /// engine-owned canonical formatter for this param (the `describe()` family, `27V` §3).
+    #[must_use]
+    pub fn describe(&self) -> String {
+        match self {
+            CommandName::Literal(name) => name.clone(),
+            CommandName::Resolved(name) => {
+                format!("this dynamic command-word, which resolves to `{name}`,")
+            }
+            CommandName::Unclear => "this command".to_owned(),
+        }
+    }
+}
+
+/// Payload of [`DiagCode::CmdsubOperandTop`]: the ⊤-origin site, WHICH position went ⊤, an optional
+/// ⊤-cause receipt (`228` dc-1 — the exempt-plane hook that links this origin to its poisoned
+/// downstream consumers without each consumer emitting), and the command-word name for `{command}`.
+/// The `cause` is EXEMPT-plane (it is a [`ProvId`], opaque and non-`Display`).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CmdsubOperandTop {
     /// The command-site that went ⊤.
     pub site: SiteId,
@@ -345,6 +377,9 @@ pub struct CmdsubOperandTop {
     /// The category of ⊤-cause, for the template's `{cause}` fill (`top_cause.describe()`); the
     /// message-plane companion to the exempt-plane [`cause`](Self::cause) receipt.
     pub top_cause: TopCause,
+    /// The command-word name for the `{command}` fill (`command.describe()`) — value-flow-derived
+    /// at the emit site (`282` §12 item-6).
+    pub command: CommandName,
 }
 
 /// Payload of [`DiagCode::SiteUnresolvable`]: the probe-unresolvable site and the passthrough
@@ -1595,6 +1630,7 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         DiagCode::CmdsubOperandTop(p) => vec![
             ("position", p.position.describe()),
             ("cause", p.top_cause.describe().to_owned()),
+            ("command", p.command.describe()),
         ],
         DiagCode::RenderHeredocRefused(p) => {
             vec![("verb", p.verb.to_owned()), ("command", p.command.clone())]
@@ -2441,6 +2477,7 @@ mod tests {
             position: pos,
             cause,
             top_cause: TopCause::UnmodeledExpansion,
+            command: CommandName::Literal("apt-get".to_owned()),
         }
     }
 

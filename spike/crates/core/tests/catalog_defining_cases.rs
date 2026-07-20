@@ -20,7 +20,7 @@
 //! the case files, never by membership in this list.
 
 use dorc_core::diag::{
-    self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop,
+    self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
     DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
     MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
     MissingDialectMarker, MungeNameInvalid, OperandPosition, RecordsFactTruncated,
@@ -55,6 +55,7 @@ fn covered() -> Vec<DefiningCase> {
                     position: OperandPosition::Operand(1),
                     cause: None,
                     top_cause: TopCause::UnmodeledExpansion,
+                    command: CommandName::Literal("apt-get".to_owned()),
                 })
             },
         },
