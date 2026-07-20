@@ -45,8 +45,10 @@ design; a hand-rolled word-level diff; `#![forbid(unsafe)]`.
 
 YOUR REMIT — a NARROW, RUST-USER-TASTE code review. Adopt the posture of a demanding senior Rust
 reviewer doing a pre-publication pass, focused on the taste concerns the r/rust community raises about
-library code. Be adversarial and concrete; cite file:line for every finding; rank by severity. Cover
-exactly these axes and no broad-architecture editorializing (that is the other lane's job):
+library code. Be adversarial and concrete; cite file:line for every finding; rank by severity.
+
+Some *non-exhaustive examples* of the sorts of things you may be reviewing for; but your focus is
+up to your own reasoning; step outside of these as you see fit:
 - API ergonomics & derive hygiene: naming; public type surface; `Debug`/`Clone`/`PartialEq`/`Eq`/
   `Hash`/`Default` derives on public types; `#[must_use]` placement; `#[non_exhaustive]` on growable
   public enums; generous inputs (`impl AsRef`/`&str`/`&[T]` vs owned); newtype patterns; `Error` +
@@ -95,26 +97,7 @@ small git façade). Zero external deps; a seeded property test on the transport 
 YOUR REMIT — a BROADER SOFTWARE-ENGINEERING quality review of a published library. Step back from
 line-level taste (the other lane owns that) and judge it as an engineering artifact others will depend
 on, extend, and trust. Be adversarial and concrete; cite file:line; rank by severity; and separate
-"must-fix-before-publish" from "nice-to-have." Cover:
-- Architecture & layering: is the generic-transport / consumer-adapter split clean and honest? Are
-  module boundaries coherent? Is the public API surface the right size — anything leaked that should be
-  private, or hidden that a consumer needs? Are the two traits (consumer + git) the right amount of
-  abstraction, or over/under-abstracted?
-- Correctness & robustness of the risky core (diff / attribution / re-holing): reason about failure
-  modes and edge cases — empty inputs, overlapping matches, whitespace/paragraph boundaries,
-  byte-vs-char / Unicode. Is refuse-on-ambiguity sound? Verify the determinism claim (no hidden
-  nondeterminism: HashMap iteration order, time, env).
-- Testing adequacy for a published library: does the property test actually pin its claimed invariant?
-  Coverage of refusal classes, the runner, the bless modes. Gaps a maintainer would regret;
-  tautological/pass-by-construction tests.
-- Maintainability & evolution: SemVer surface + forward-compat (`#[non_exhaustive]`, sealed traits,
-  stable public deps); MSRV/edition; feature hygiene; what breaks downstream if internals change; is it
-  readable by someone who didn't write it (comments explaining WHY not WHAT; naming; cohesion)?
-- Publication readiness: Cargo.toml metadata completeness for crates.io (description/keywords/
-  categories/repository/license — note what's missing); README as a landing page; doc coverage.
-- Latent hazards: panics reachable from the public API; resource handling (temp dirs, file handles,
-  subprocess); platform assumptions (path separators, LF/CRLF, `.exe`); injection or path-traversal
-  surfaces in the runner/materializer.
+"must-fix-before-publish" from "nice-to-have."
 
 Output: ranked findings (file:line, severity, must-fix-vs-nice-to-have, the concrete issue, the fix in
 words — do NOT make the fix). If the design is appropriately small and honest, say so with evidence; if
