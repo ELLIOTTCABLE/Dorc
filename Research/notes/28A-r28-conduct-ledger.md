@@ -771,6 +771,31 @@ human exemption).
 - `touches`→`disturbs` sh-funcname migration half-done (`28A:finding-touches-rename-half-done`, §2t).
 - The standing `TODO-ADDTL` tail riders (unchanged).
 
+## §2z-post — Flagship errorloom case (post-close addition, human-directed 2026-07-20)
+
+Folded, cold-verified (clippy zero, 48 suites, e2e 97/97 — zero golden churn).
+The flagship: `crates/dorc-loom/cases/cmdsub-operand-top.txt` UPGRADED from
+world-as-payload (spanless) to world-as-pipeline (caret) — a real pi-webhost book
+whose `apt-get install -y "$(cat …)"` drives operand-3 to ⊤, fired through the
+real in-process kernel, rendered with a precise caret frame + `= help:` + a
+`--format=jsonl` machine-view second replay (multi-replay). Builder chose
+`cmdsub-operand-top` over `site-unresolvable` (the latter's emit is cli-binary-
+buried, unreachable as a library call). Prose is human-authorized for THIS file
+only (real sentences, human will rewrite); every other `[unwritten:]`/`sm ` entry
+untouched. TWO things rode in beyond the case file (both cold-green, each its own
+revertable commit) — the human weighs at fold:
+- **`28A:finding-flagship-caret-fix-is-production`** — commit `bbb9fc0` narrows the
+  `cmdsub-operand-top` caret from whole-command to the exact operand word, at the
+  ordinary-command emit site (analysis diag). A genuine improvement (tighter/honest
+  attribution), zero golden churn (stderr-only, unpinned), revertable in isolation.
+  But it IS a production caret-span change, not merely a case file.
+- **`28A:finding-dorc-loom-deps-widen`** — `dorc-loom` now deps `dorc-syntax` +
+  `dorc-analysis` (was core/errorloom/oracle). Inherent to world-as-pipeline pilots
+  (firing a real diagnostic needs the kernel); both kernel-pure/DST-clean so
+  determinism holds; but a real coupling increase on the test-consumer adapter
+  (NOT the published errorloom, which stays dep-free). A `tc`-shaped watch-item if
+  more pipeline pilots each pull more kernel crates.
+
 ## §3 — Lane map and state (final)
 
 | lane | branch | shape | state |
