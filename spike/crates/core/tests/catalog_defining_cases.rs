@@ -1,30 +1,23 @@
-//! The per-code **defining cases** (`27V` §3 · `AID-NEEDS:law-one-defining-case-per-code`): every
-//! catalog code has ONE defining case pinning its colocated TRIPLE render — machine line · terse
-//! line · prose registers — byte-for-byte, so a template/payload change fails loud and re-blesses
-//! consciously (`goldens-churn-freely`; the particulars ride `27V:rul-output-form-unwelded`).
+//! Per-code **defining-case** coverage + the tagged-render byte-equality twins (`27V` §3 · the
+//! `282`/`283` generation flip). Prose ownership and the committed render TRANSCRIPT now live in the
+//! dorc-loom case corpus (`crates/dorc-loom/cases/<slug>.txt`), guarded by the errorloom render-level
+//! `fixpoint_check` (`283` §4a). Phase 5 (`283` §5.9) backported the covered codes to those case files
+//! and retired the old per-register fragment goldens (`tests/defining_cases/*` + `DORC_DEFINING_BLESS`);
+//! this file keeps what stays in `core`:
 //!
-//! # Two-half regime (`tc-defining-case-triple-render-siting`, conductor-accepted d4b)
+//! * **the tagged-render twins** — `render_body_tagged` / `render_cli_tagged` are byte-identical to
+//!   their untagged product renders and carry a gap-free, non-overlapping total span cover, over every
+//!   real `covered()` payload (the shape the dorc-loom adapter feeds `errorloom::TaggedRender::new`).
+//! * **completeness + the coverage RATCHET** (`tc-defining-case-coverage-ratchet`) — every catalog
+//!   code is EITHER case-owned (a dorc-loom case file exists, [`is_case_owned`]) OR on the shrink-only
+//!   [`DEFINING_CASE_RATCHET`]; the partition is `case-owned ∪ ratchet == every catalog slug`. The
+//!   "fires" half stays `diag_tidy::every_catalog_variant_is_constructed` (the emit-site backstop):
+//!   delete a code's sole emit and that gate fails.
 //!
-//! A defining case is TWO colocated halves:
-//! * **fires** — that the code can actually be EMITTED is pinned by
-//!   `diag_tidy::every_catalog_variant_is_constructed` (the production emit-site grep): delete a
-//!   code's sole emit and that gate fails. This is the "a defining case that stops triggering fails
-//!   loud" half, at emit-site granularity — no per-code trigger book is needed here.
-//! * **renders** — THIS harness byte-compares the three renders of a canonical payload against the
-//!   colocated goldens under `tests/defining_cases/<slug>.{machine,terse,prose}`.
-//!
-//! Siting rationale (one line, `27V` §3 build-graph hygiene): unit-tier, NOT 22 new e2e dirs — the
-//! e2e `expected.out` golden captures the PLAN render, not the isolated per-code triple, and new e2e
-//! dirs would need an orchestrator BLESS this builder cannot run; the unit harness is self-contained,
-//! bless-free (`DORC_DEFINING_BLESS=1` regenerates the goldens), and byte-asserts the real deliverable.
-//!
-//! # Coverage: RATCHET (`tc-defining-case-coverage-ratchet`, conductor-accepted)
-//!
-//! The corpus asserts only ~5 codes by identity today; a full 52-case sweep is disproportionate for
-//! one dispatch (the expensive tail is the `records-*` corruption fixtures + the `whylog-*` durables).
-//! [`DEFINING_CASE_RATCHET`] is the SHRINK-ONLY allowlist of not-yet-covered codes; the completeness
-//! gate is `covered ∪ ratchet == every catalog slug`. Every ratchet entry carries a one-line
-//! corruption-injection surface so future coverage is mechanical, not re-derived (conductor rider).
+//! Every ratchet entry carries a one-line trigger surface so a future case is mechanical, not
+//! re-derived (conductor rider). `covered()` is the real-payload set the tagged twins exercise — the
+//! transitional twin of the dorc-loom `canonical_payload` constructors; ownership itself is tracked by
+//! the case files, never by membership in this list.
 
 use dorc_core::diag::{
     self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop,
@@ -34,7 +27,7 @@ use dorc_core::diag::{
     RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension,
     WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent,
 };
-use dorc_core::{BytePos, Interner, LeafId, Severity, Span, TopCause};
+use dorc_core::{BytePos, Interner, LeafId, Span, TopCause};
 
 /// A defining case: the code's stable slug + a constructor for its CANONICAL payload (fixed values so
 /// the renders are deterministic — `inv-determinism`).
@@ -43,9 +36,10 @@ struct DefiningCase {
     build: fn() -> DiagCode,
 }
 
-/// The COVERED codes (`tc-defining-case-coverage-ratchet`): one canonical payload each, chosen to
-/// span the payload species (templated / passthrough / static / conductor-authored-prose). Add a code
-/// here + drop it from [`DEFINING_CASE_RATCHET`] to grow coverage (the ratchet only shrinks).
+/// The canonical real payloads the tagged-render twins exercise: one per covered code, spanning the
+/// payload species (templated / passthrough / static / unwritten). The dorc-loom `canonical_payload`
+/// constructors are the runtime twin of this list; coverage/ownership itself is tracked by the case
+/// files ([`is_case_owned`]), not by membership here.
 #[expect(
     clippy::too_many_lines,
     reason = "one struct literal per covered code — the case table is inherently long and stays \
@@ -398,76 +392,6 @@ const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
     ),
 ];
 
-/// The render triple for a canonical [`DiagCode`] (`27V` §3): machine line (the `project_oob`
-/// wire projection) · terse line (the filled one-line message) · prose (message + help register).
-fn triple(code: &DiagCode, interner: &Interner) -> (String, String, String) {
-    let diag = Diag::new(code.clone(), Span::new(BytePos(0), BytePos(1)));
-    let oob = diag::project_oob(&diag);
-    let site = match oob.site {
-        Some(s) => match s.member {
-            Some(m) => format!("{}.{m}", s.leaf.0),
-            None => s.leaf.0.to_string(),
-        },
-        None => "-".to_owned(),
-    };
-    let machine = format!(
-        "code={} severity={} site={site}",
-        oob.code,
-        sev_word(oob.severity)
-    );
-    let terse = diag::render_message(code, interner);
-    let prose = diag::render_body(&diag, interner);
-    (machine, terse, prose)
-}
-
-fn sev_word(severity: Severity) -> &'static str {
-    match severity {
-        Severity::Error => "error",
-        Severity::Warning => "warning",
-        Severity::Note => "note",
-    }
-}
-
-fn golden_path(slug: &str, register: &str) -> std::path::PathBuf {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/defining_cases")
-        .join(format!("{slug}.{register}"))
-}
-
-/// The defining case = byte-compare of the three renders (`27V` §3). `DORC_DEFINING_BLESS=1`
-/// regenerates the colocated goldens (bless-free unit capture — NOT the orchestrator-only e2e BLESS).
-#[test]
-fn defining_cases_render_triples_byte_match() {
-    let interner = Interner::default();
-    let bless = std::env::var("DORC_DEFINING_BLESS").as_deref() == Ok("1");
-    for case in covered() {
-        let (machine, terse, prose) = triple(&(case.build)(), &interner);
-        for (register, actual) in [("machine", &machine), ("terse", &terse), ("prose", &prose)] {
-            let path = golden_path(case.slug, register);
-            if bless {
-                std::fs::create_dir_all(path.parent().expect("goldens dir")).expect("mkdir");
-                std::fs::write(&path, actual).expect("write golden");
-                continue;
-            }
-            let expected = std::fs::read_to_string(&path).unwrap_or_else(|_| {
-                panic!(
-                    "defining case `{}` missing the `{register}` golden ({}) — run with \
-                     DORC_DEFINING_BLESS=1 to generate it",
-                    case.slug,
-                    path.display()
-                )
-            });
-            assert_eq!(
-                *actual, expected,
-                "defining case `{}` {register} render drifted from its golden (re-bless \
-                 consciously with DORC_DEFINING_BLESS=1 — goldens-churn-freely, 27V:rul-output-\
-                 form-unwelded)",
-                case.slug
-            );
-        }
-    }
-}
-
 /// The tagged twin (`282` §4) of EVERY defining case: [`diag::render_body_tagged`] must be
 /// byte-identical to the `prose` register (the product render never moves — the feature is additive)
 /// and its span map a gap-free, non-overlapping total cover (the shape the `dorc-loom` adapter feeds
@@ -555,34 +479,43 @@ fn defining_case_cli_tagged_matches_render_cli_and_covers() {
     }
 }
 
+/// Whether `slug` is CASE-OWNED: a defining case file exists in the dorc-loom corpus (mirrors the
+/// private predicate in `catalog.rs`). Ownership moved to those files at the `283` flip; phase 5
+/// backported the covered codes, so completeness keys to real case files, not the `covered()` list.
+fn is_case_owned(slug: &str) -> bool {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.txt")))
+        .is_some_and(|case| case.exists())
+}
+
 /// COMPLETENESS (`AID-NEEDS:law-one-defining-case-per-code`, ratchet-tempered): every catalog slug is
-/// EITHER covered by a defining case OR on the shrink-only [`DEFINING_CASE_RATCHET`] — never silently
-/// uncovered. Also: no slug is in BOTH (a covered code must leave the ratchet).
+/// EITHER case-owned (a dorc-loom case file, fixpoint-protected) OR on the shrink-only
+/// [`DEFINING_CASE_RATCHET`] — never silently uncovered. Also: no slug is in BOTH (a case-owned code
+/// must leave the ratchet). This is the phase-5 collapse of the transient `fragment-covered` third
+/// state (`283` §4d): the gate now trusts real case files, not the `covered()` payload table.
 #[test]
-fn every_code_has_a_defining_case_or_is_ratcheted() {
+fn every_code_is_case_owned_or_ratcheted() {
     use std::collections::BTreeSet;
-    let cases = covered();
-    let covered_set: BTreeSet<&str> = cases.iter().map(|c| c.slug).collect();
     let ratchet: BTreeSet<&str> = DEFINING_CASE_RATCHET.iter().map(|(s, _)| *s).collect();
-    assert_eq!(
-        covered_set.len(),
-        cases.len(),
-        "a slug is listed twice in covered()"
-    );
-    if let Some(slug) = covered_set.intersection(&ratchet).next() {
-        panic!("`{slug}` is BOTH covered and ratcheted — a covered code must leave the ratchet");
-    }
+    let catalog: BTreeSet<&str> = dorc_core::catalog::CATALOG.iter().map(|e| e.slug).collect();
     for e in dorc_core::catalog::CATALOG {
+        let owned = is_case_owned(e.slug);
         assert!(
-            covered_set.contains(e.slug) || ratchet.contains(e.slug),
-            "catalog code `{}` has no defining case and is not on DEFINING_CASE_RATCHET — add a \
-             covered() case or a ratchet entry with its trigger surface (silent partial coverage \
-             is not acceptable, 27V §3)",
+            owned || ratchet.contains(e.slug),
+            "catalog code `{}` has no dorc-loom case file and is not on DEFINING_CASE_RATCHET — \
+             backport it to `crates/dorc-loom/cases/{}.txt` or add a ratchet entry with its trigger \
+             surface (silent partial coverage is not acceptable, 27V §3)",
+            e.slug,
+            e.slug
+        );
+        assert!(
+            !(owned && ratchet.contains(e.slug)),
+            "`{}` is BOTH case-owned and ratcheted — a case-owned code must leave the ratchet",
             e.slug
         );
     }
     // The ratchet may not name a retired code (keeps it honest as the catalog shrinks).
-    let catalog: BTreeSet<&str> = dorc_core::catalog::CATALOG.iter().map(|e| e.slug).collect();
     for slug in &ratchet {
         assert!(
             catalog.contains(slug),
