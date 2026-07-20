@@ -836,6 +836,20 @@ spec rewritten into `282` §12; builder re-woken with these. NOT yet folded to `
   must follow the eventual purpose. Escalate if scope leaves the kernel.
 - case-rewrap: all 16 corpus cases stay rewrapped (human: nicer to edit in-editor).
 
+**FOLDED** at `77ebd8e` (2026-07-20, 2-parent merge of `ai/r28-flagship-polish`;
+the flagship conflict resolved to the builder's byte-consistent version — the human's
+`e6edf5e`/`326018ce` aspirational prose is superseded, preserved in history for the
+prose rewrite). Conductor-cold-verified (cargo clean → build → cold-clippy-0 →
+workspace tests → fmt → e2e 97/97). Builder-flagged deferrals, now human-queue:
+(a) gutter `maxDigits` is computed PER-FRAME, not threaded invocation-global — `282`
+§12 spec and as-built diverge only for a hypothetical multi-frame case of differing
+magnitude; (b) mixed-1&2-digit gutter → right-align (conductor extrapolation, no
+worked example); (c) the `Resolved` const-prop `CommandName` variant is type-shaped +
+render-written but analysis never constructs it (needs value-flow provenance).
+Conduct loose ends: `af274753`/`96b8fa5c` carry `Co-Authored-By`/`Claude-Session`
+trailers (violate the no-trailer law — strip at the human's branch-rebase, or on
+go-ahead; a `commit-msg` enforcement hook is offered as the context-independent guard).
+
 ## §3 — Lane map and state (final)
 
 | lane | branch | shape | state |

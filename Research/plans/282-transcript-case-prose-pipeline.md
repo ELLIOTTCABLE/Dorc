@@ -386,7 +386,10 @@ Render-form (touch `core::diag` render_cli / caret plumbing — Dorc-side, cousi
   default (ones-places line up, rustc-standard); when every rendered line-number
   shares ONE digit-width ≤ 2, apply the slack aesthetic — 1-digit CENTERED (` 6 |`),
   all-2-digit LEFT-aligned (`60 |`). ≥3 digits fill (`600|`, `6000|`); mixed widths
-  right-align (`  6|` beneath `600|`, `   6|` beneath `6000|`).
+  right-align (`  6|` beneath `600|`, `   6|` beneath `6000|`). AS-BUILT (`77ebd8e`):
+  `maxDigits` is computed per replay-frame, NOT threaded invocation-global — identical
+  for the single-frame corpus cases; true cross-frame threading is deferred (`28A`
+  §2z-post-2).
 - **`{command}` — typed, not a bare string** (`28A:rul-command-name-typed-three-state`):
   a command-name type expressing static-literal / dynamic-but-const-prop-resolved /
   no-single-clear-name, threaded from the analysis site where value-flow is known (not

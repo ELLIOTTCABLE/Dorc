@@ -16,7 +16,12 @@
 
 ## ROUND 28 (seeded 2026-07-19 — the current view)
 
-**BUILD COMPLETE (2026-07-20) — awaiting the human's fold of `ai/r28-impl` @ `3897bb5`.**
+**BUILD COMPLETE (2026-07-20) — awaiting the human's fold of `ai/r28-impl` @ `77ebd8e`.**
+The human-directed flagship render-polish (`282` §12 / `28A` §2z-post-2) is FOLDED at
+`77ebd8e` (2-parent merge of `ai/r28-flagship-polish`), conductor-cold-verified
+(cargo clean → build → cold-clippy-0 → workspace tests → fmt → e2e 97/97); its
+builder-flagged deferrals + two conduct loose ends (the trailer commits, the offered
+`commit-msg` hook) are banked in `28A` §2z-post-2.
 The whole `280` charter landed on the conductor stack, each lane conductor-cold-verified
 (the incremental-clippy-serves-stale finding `28A:finding-incremental-clippy-serves-stale`
 made cold verification mandatory): **errorloom** the standalone crate (d1 transport + d2
