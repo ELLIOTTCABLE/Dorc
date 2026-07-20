@@ -427,6 +427,30 @@ v0.2-production as one-mark-per-physical-line, the block model
 specified-but-not-yet-accepted (a named seam, `281` remains THE spec); plus
 the §2h rider (one clarifying sentence into `281` §4).
 
+## §2l — The cutover LANDED + FOLDED + conductor-verified (2026-07-20; task 7 closed)
+
+Cutover `79257c0` (224 files, one atomic commit; WIPs squashed clean after the
+API-death recovery) + detachable marker commit `ab7cb4c` (v0.2 stamp;
+recognized-set {v0.2}; wrong-version marked files fall to the LOUD
+`MissingDialectMarker` — the distinct `marker-version-unrecognized` message is
+DEFERRED to the unify lane's empty-loop case-authoring, rider below). Folded @
+`2ca2236`. CONDUCTOR VERIFICATION, own-hand: fresh build · 1018 unit · e2e 97
+BLESSED on my binary with ZERO golden drift except one benign cosmetic flip
+(`strawman24-pipe-guard-floor/expected.ran` — pipeline-stage log-order under
+real pipes; the case's `RAN_ORDER=lax` check tolerates both; my flip restored;
+NIT: bless could skip rewriting lax-order `.ran` files) · gates ok · and the
+no-verdict-change claim MECHANICALLY CROSSCHECKED: every changed disposition/
+summary line across all expected.out diffs is byte-identical modulo `@`/`#`
+(normalized set-diff empty). Builder residue accepted: decode_intro duplicated
+~25 lines (reference module stays frozen spec-in-code); trailing-bind
+⊤-rejects in production; +10 comment budget with per-comment justification;
+reaches/wrapper module doc-comments + CLAUDE.md prose v0.1 mentions → docs
+pass. NEW unify riders: mint `marker-version-unrecognized` through the empty
+loop (ceiling→6 pre-authorized); the lax-order bless nit. SyncThing dropped a
+conflict copy of this ledger into the conductor worktree mid-bless
+(`28A-…sync-conflict-20260719-182207-PHNHRER.md`, untracked) — left in place,
+human-owned cleanup, third incursion class this round.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
