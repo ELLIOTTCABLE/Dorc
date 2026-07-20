@@ -72,6 +72,7 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "ReservedNamespaceSquat",
     // oracle/marker.rs
     "MissingDialectMarker",
+    "MarkerVersionUnrecognized",
     // oracle/entry.rs
     "ToleratesUnknownDimension",
     "ToleratesOverIdentityDependence",
@@ -143,6 +144,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "munge-name-collision",
     "reserved-namespace-squat",
     "missing-dialect-marker",
+    "marker-version-unrecognized",
     "tolerates-unknown-dimension",
     "tolerates-over-identity-dependence",
     "heavy-context-no-tolerance",

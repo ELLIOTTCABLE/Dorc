@@ -124,6 +124,9 @@ pub enum DiagCode {
     // ── oracle/marker.rs (marker gate) ──────────────────────────────────────
     /// A dorc-lang dialect construct appears in a file lacking the version marker.
     MissingDialectMarker(MissingDialectMarker),
+    /// A dorc-lang dialect construct appears in a file whose version marker names an unrecognized
+    /// version (distinct from a wholly-missing marker).
+    MarkerVersionUnrecognized(MarkerVersionUnrecognized),
 
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
@@ -259,6 +262,7 @@ impl DiagCode {
             DiagCode::MungeNameCollision(_) => "munge-name-collision",
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
+            DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
             DiagCode::ToleratesOverIdentityDependence(_) => "tolerates-over-identity-dependence",
             DiagCode::HeavyContextNoTolerance(_) => "heavy-context-no-tolerance",
@@ -528,6 +532,15 @@ pub struct ReservedNamespaceSquat {
 /// marker text is inline in the template. Spanned (the first dialect construct); `site()` = `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingDialectMarker;
+
+/// Payload of [`DiagCode::MarkerVersionUnrecognized`]: the unrecognized `# dorc-lang/vX.Y` version
+/// tag read from the file, distinct from a wholly-missing marker. Spanned (the first dialect
+/// construct); `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkerVersionUnrecognized {
+    /// The unrecognized version marker text found (`{found}`).
+    pub found: String,
+}
 
 /// Payload of [`DiagCode::ToleratesUnknownDimension`] (TEMPLATIZED): the unknown token and the
 /// expected-dimension list. Spanned (the mark span); `site()` returns `None`.
@@ -1235,6 +1248,11 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::DeclareIdentity,
         },
+        DiagCode::MarkerVersionUnrecognized(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::ToleratesUnknownDimension(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
@@ -1604,6 +1622,7 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
         DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
         DiagCode::AidUnloadedSiblingOracle(p) => vec![("detail", p.detail.clone())],
+        DiagCode::MarkerVersionUnrecognized(p) => vec![("found", p.found.clone())],
         DiagCode::MungeNameInvalid(p) => vec![
             ("source", p.source.clone()),
             ("funcname", p.funcname.clone()),
@@ -1675,10 +1694,23 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
 /// greppable `[unwritten: <slug>]` placeholder. Pure; `inv-no-throw`.
 #[must_use]
 pub fn render_message(code: &DiagCode, interner: &crate::Interner) -> String {
+    render_message_with(&crate::catalog::CONST_CATALOG, code, interner)
+}
+
+/// The [`render_message`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog; promote passes its
+/// mutable mirror so an edit renders before any rebuild. `None` from the lookup synthesizes the
+/// `[unwritten: <slug>]` placeholder (both "no entry" and "unwritten message" fold here).
+#[must_use]
+pub fn render_message_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    code: &DiagCode,
+    interner: &crate::Interner,
+) -> String {
     let params = params_of(code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    match crate::catalog::entry(code.slug()) {
-        Some(e) => crate::catalog::fill_template(e.message, &refs),
+    match lookup.message(code.slug()) {
+        Some(t) => crate::catalog::fill_template(t, &refs),
         None => format!("[unwritten: {}]", code.slug()),
     }
 }
@@ -1693,9 +1725,29 @@ pub fn render_message(code: &DiagCode, interner: &crate::Interner) -> String {
 /// [`render_body`] + [`frame_region`] but owns the stage prefix + colour + no-source fallback.
 #[must_use]
 pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Interner) -> String {
+    render_cli_with(
+        &crate::catalog::CONST_CATALOG,
+        diag,
+        src,
+        filename,
+        interner,
+    )
+}
+
+/// The [`render_cli`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
+/// Byte-identical to [`render_cli`] under the const lookup (gate-pinned).
+#[must_use]
+pub fn render_cli_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &crate::Interner,
+) -> String {
     use std::fmt::Write;
     let spec = registry(&diag.code);
-    let body = render_body(diag, interner);
+    let body = render_body_with(lookup, diag, interner);
     let (problem, rest) = match body.split_once('\n') {
         Some((p, r)) => (p, Some(r)),
         None => (body.as_str(), None),
@@ -1730,21 +1782,154 @@ pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Inte
     out
 }
 
+/// The full-transcript tagged twin of [`render_cli`] (`282` §2 · `28A` §2m — the prose-bless
+/// baseline). `text()` is byte-identical to [`render_cli_with`] under the same lookup (gate-pinned);
+/// the span map is the attribution authority the promote flow reads. The composition mirrors
+/// [`render_cli_with`]: the title (`severity[slug]: `, a whole `Arrangement`) around the body's FIRST
+/// LINE (relocated prose spans), then the caret frames (WHOLE `Arrangement` — structure, not prose),
+/// then the body tail (help connective + help + notes — relocated prose/arrangement spans). The
+/// load-bearing move is the TITLE-SPLIT: `render_body_tagged_with`'s span vector is split at the first
+/// `\n` (splitting a straddler — a passthrough `detail` may embed one) and each half re-based into the
+/// composed byte offsets, preserving the gap-free total cover the `dorc-loom` adapter validates
+/// through `errorloom::TaggedRender::new`.
+/// A tool-mode output (`282` §4), never a product surface. Pure; `inv-no-throw`.
+#[must_use]
+pub fn render_cli_tagged(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &crate::Interner,
+) -> crate::tagged::TaggedRender {
+    let body = render_body_tagged_with(lookup, diag, interner);
+    let body_text = body.text();
+    let split = body_text.find('\n');
+    let (head_spans, tail_spans) = split_spans_at(body.spans(), split.unwrap_or(body_text.len()));
+
+    let mut out = String::new();
+    let mut spans: Vec<crate::tagged::Span> = Vec::new();
+    let prefix = format!(
+        "{}[{}]: ",
+        severity_word(registry(&diag.code).severity),
+        diag.code.slug(),
+    );
+    push_arrangement(&mut out, &mut spans, &prefix, "cli-title");
+    let problem = split.map_or(body_text, |n| &body_text[..n]);
+    rebase_spans_into(&mut out, &mut spans, problem, &head_spans, 0);
+
+    if let Some(primary) = diag.primary.span() {
+        let frame = frame_region(primary, src, filename, None, true);
+        push_arrangement(&mut out, &mut spans, &frame, "cli-frame");
+    }
+    for sec in &diag.secondary {
+        if let Some(span) = sec.span() {
+            let frame = frame_region(span, src, filename, sec.label.as_deref(), false);
+            push_arrangement(&mut out, &mut spans, &frame, "cli-frame-secondary");
+        }
+    }
+    // The body tail is `body_text[split..]` (leading `\n` included) — exactly render_cli's re-added
+    // `\n` + rest, so the bytes match while the prose spans move below the frames.
+    if let Some(n) = split {
+        rebase_spans_into(&mut out, &mut spans, &body_text[n..], &tail_spans, n);
+    }
+    crate::tagged::TaggedRender::new(out, spans)
+}
+
+/// Partition `spans` at byte offset `at` into the runs wholly before it and wholly at/after it,
+/// splitting a straddling span into two same-region halves (the passthrough-`detail`-embeds-a-`\n`
+/// case) so both partitions stay gap-free covers of their side.
+fn split_spans_at(
+    spans: &[crate::tagged::Span],
+    at: usize,
+) -> (Vec<crate::tagged::Span>, Vec<crate::tagged::Span>) {
+    use crate::tagged::Span;
+    let mut head = Vec::new();
+    let mut tail = Vec::new();
+    for s in spans {
+        if s.range.end <= at {
+            head.push(s.clone());
+        } else if s.range.start >= at {
+            tail.push(s.clone());
+        } else {
+            head.push(Span {
+                range: s.range.start..at,
+                region: s.region.clone(),
+            });
+            tail.push(Span {
+                range: at..s.range.end,
+                region: s.region.clone(),
+            });
+        }
+    }
+    (head, tail)
+}
+
+/// Append `text` to `out` and re-base each of `src_spans` (whose ranges index from `src_base` in the
+/// source render) into `out`'s byte coordinates, preserving classification — the title-split
+/// relocation primitive.
+fn rebase_spans_into(
+    out: &mut String,
+    spans: &mut Vec<crate::tagged::Span>,
+    text: &str,
+    src_spans: &[crate::tagged::Span],
+    src_base: usize,
+) {
+    let dst_base = out.len();
+    out.push_str(text);
+    let rebase = |offset: usize| offset.saturating_sub(src_base).saturating_add(dst_base);
+    for s in src_spans {
+        spans.push(crate::tagged::Span {
+            range: rebase(s.range.start)..rebase(s.range.end),
+            region: s.region.clone(),
+        });
+    }
+}
+
+/// Push a whole-run [`Arrangement`](crate::tagged::Region::Arrangement) span for `text`.
+fn push_arrangement(
+    out: &mut String,
+    spans: &mut Vec<crate::tagged::Span>,
+    text: &str,
+    slug: &'static str,
+) {
+    if text.is_empty() {
+        return;
+    }
+    let start = out.len();
+    out.push_str(text);
+    spans.push(crate::tagged::Span {
+        range: start..out.len(),
+        region: crate::tagged::Region::Arrangement { slug },
+    });
+}
+
 /// The full rendered MESSAGE TEXT of a diagnostic (`render-1`): the filled catalog message, then
 /// the catalog help + any authored notes/suggestion as ` = help:`/` = note:` continuation lines.
 /// The lint crate uses this verbatim as a finding's message; [`render_cli`] and the cli's
 /// `report()` split its first line onto the title and place the rest after the region. Pure.
 #[must_use]
 pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
+    render_body_with(&crate::catalog::CONST_CATALOG, diag, interner)
+}
+
+/// The [`render_body`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
+/// Byte-identical to [`render_body`] under the const lookup (gate-pinned).
+#[must_use]
+pub fn render_body_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    interner: &crate::Interner,
+) -> String {
     use std::fmt::Write;
     let params = params_of(&diag.code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    let entry = crate::catalog::entry(diag.code.slug());
-    let mut out = match entry {
-        Some(e) => crate::catalog::fill_template(e.message, &refs),
-        None => format!("[unwritten: {}]", diag.code.slug()),
+    let slug = diag.code.slug();
+    let mut out = match lookup.message(slug) {
+        Some(t) => crate::catalog::fill_template(t, &refs),
+        None => format!("[unwritten: {slug}]"),
     };
-    if let Some(help) = entry.and_then(|e| e.help) {
+    if let Some(help) = lookup.help(slug) {
         let _ = write!(
             out,
             "\n  = help: {}",
@@ -1785,6 +1970,19 @@ pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
 /// prose class, so they are classified WHOLE as `Arrangement` pending a ruling. Pure; `inv-no-throw`.
 #[must_use]
 pub fn render_body_tagged(diag: &Diag, interner: &crate::Interner) -> crate::tagged::TaggedRender {
+    render_body_tagged_with(&crate::catalog::CONST_CATALOG, diag, interner)
+}
+
+/// The [`render_body_tagged`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
+/// Byte-identical text to [`render_body_with`] under the const lookup (gate-pinned). An unwritten
+/// (`None`) message tags the synthesized placeholder WHOLE as `Arrangement` (it is not prose-editable).
+#[must_use]
+pub fn render_body_tagged_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    interner: &crate::Interner,
+) -> crate::tagged::TaggedRender {
     use crate::tagged::{Field, Region, Span};
     fn arrange(out: &mut String, spans: &mut Vec<Span>, text: &str, slug: &'static str) {
         if text.is_empty() {
@@ -1800,14 +1998,13 @@ pub fn render_body_tagged(diag: &Diag, interner: &crate::Interner) -> crate::tag
     let params = params_of(&diag.code, interner);
     let refs: Vec<(&'static str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
     let code = diag.code.slug();
-    let entry = crate::catalog::entry(code);
     let mut out = String::new();
     let mut spans: Vec<Span> = Vec::new();
-    match entry {
-        Some(e) => crate::catalog::fill_template_tagged(
+    match lookup.message(code) {
+        Some(t) => crate::catalog::fill_template_tagged(
             &mut out,
             &mut spans,
-            e.message,
+            t,
             &refs,
             code,
             Field::Message,
@@ -1820,7 +2017,7 @@ pub fn render_body_tagged(diag: &Diag, interner: &crate::Interner) -> crate::tag
             "unwritten-placeholder",
         ),
     }
-    if let Some(help) = entry.and_then(|e| e.help) {
+    if let Some(help) = lookup.help(code) {
         arrange(&mut out, &mut spans, "\n  = help: ", "help-connective");
         crate::catalog::fill_template_tagged(
             &mut out,

@@ -122,6 +122,7 @@ name = "dorc-loom"
 version = "0.0.0"
 dependencies = [
  "dorc-core",
+ "dorc-oracle",
  "errorloom",
 ]
 

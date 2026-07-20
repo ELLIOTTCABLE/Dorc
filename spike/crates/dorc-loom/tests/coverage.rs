@@ -12,11 +12,11 @@
 //!   children+suggestion), proving `text()` is byte-identical to [`render_body`]
 //!   and the real `params_of` values attribute correctly.
 
-use dorc_core::catalog::{CATALOG, fill_template_tagged};
+use dorc_core::catalog::{CATALOG, CONST_CATALOG, fill_template_tagged};
 use dorc_core::diag::{
     Applicability, Diag, DiagCode, MissingDialectMarker, MungeNameInvalid, RemediationClass,
     RenderHeredocRefused, SiteId, SiteUnresolvable, Suggestion, WhylogVersionRefused, params_of,
-    render_body, render_body_tagged,
+    render_body, render_body_tagged, render_cli, render_cli_tagged,
 };
 use dorc_core::tagged::{Field, Region, Span, TaggedRender};
 use dorc_core::{BytePos, Interner, LeafId, Span as SourceSpan};
@@ -57,15 +57,28 @@ fn every_catalog_code_maps_to_a_valid_tagged_render() {
 
         let mut out = String::new();
         let mut spans: Vec<Span> = Vec::new();
-        fill_template_tagged(
-            &mut out,
-            &mut spans,
-            e.message,
-            &refs,
-            e.slug,
-            Field::Message,
-            0,
-        );
+        // An unwritten (`None`) message tags its synthesized placeholder WHOLE as Arrangement — the
+        // same arm `render_body_tagged` takes (`283:dec-message-becomes-option`).
+        if let Some(message) = e.message {
+            fill_template_tagged(
+                &mut out,
+                &mut spans,
+                message,
+                &refs,
+                e.slug,
+                Field::Message,
+                0,
+            );
+        } else {
+            let placeholder = format!("[unwritten: {}]", e.slug);
+            out.push_str(&placeholder);
+            spans.push(Span {
+                range: 0..out.len(),
+                region: Region::Arrangement {
+                    slug: "unwritten-placeholder",
+                },
+            });
+        }
         if let Some(help) = e.help {
             let start = out.len();
             out.push_str("\n  = help: ");
@@ -158,4 +171,45 @@ fn representative_real_renders_are_byte_unchanged_and_valid() {
         "notes+suggestion: the tagged twin drifted from render_body"
     );
     to_errorloom(&core).expect("notes+suggestion render is a valid total cover");
+}
+
+/// The FULL-transcript tagged twin (`282` §2 · `28A` §2m): [`render_cli_tagged`] must be byte-
+/// identical to [`render_cli`] and map to a VALID `errorloom::TaggedRender` (the gap-free total cover
+/// through the real adapter) — the title-split relocation validated end-to-end, including a spanned
+/// caret frame and a `detail` passthrough whose value embeds a `\n  = note:` fold (the straddle case
+/// the split must handle).
+#[test]
+fn cli_tagged_twin_is_byte_unchanged_and_covers_through_the_adapter() {
+    let interner = Interner::default();
+    let src = "make install >/etc/motd\nldconfig\n";
+    let span = SourceSpan::new(BytePos(0), BytePos(4));
+
+    let spanned = DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+        site: SiteId::leaf(LeafId(7)),
+        verb: "elide",
+        command: "cat <<EOF".to_owned(),
+    });
+    let folded_detail = DiagCode::SiteUnresolvable(SiteUnresolvable {
+        site: SiteId::leaf(LeafId(4)),
+        detail:
+            "2 sites run unprobed: `make install`, `ldconfig`\n  = note: site runs `make install`"
+                .to_owned(),
+    });
+
+    for code in [spanned, folded_detail] {
+        let diag = Diag::new(code.clone(), span);
+        let core = render_cli_tagged(&CONST_CATALOG, &diag, src, "book.sh", &interner);
+        assert_eq!(
+            core.text(),
+            render_cli(&diag, src, "book.sh", &interner),
+            "code `{}`: the cli tagged twin drifted from render_cli",
+            code.slug()
+        );
+        to_errorloom(&core).unwrap_or_else(|err| {
+            panic!(
+                "code `{}` cli render is not a total cover: {err}",
+                code.slug()
+            )
+        });
+    }
 }
