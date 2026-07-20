@@ -1,0 +1,77 @@
+---
+concept: wall
+---
+-- replay --
+$ dorc explain --terse wall
+A wall is a command in your book that Dorc knows nothing about: no fact
+measured above it can be trusted below it, so the commands after a wall
+are re-checked or run instead of being removed from the plan.
+
+$ dorc explain --summary wall
+When Dorc plans, it removes a command from your book only when it can
+prove the command's work is already done. That proof is built from
+read-only checks that run before anything else does, so it has a hidden
+dependency: the world must hold still between the measurement and the
+moment the line would have run. A command no oracle describes breaks that
+stillness - Dorc cannot know what it will change, so everything measured
+earlier might be stale by the time the lines below it are reached. Such a
+command, when it is really going to run, is a wall: the lines above it
+keep their proofs, and the lines below it fall back to being re-checked
+in place, or simply run.
+
+$ dorc explain wall
+wall
+
+Dorc removes a command from your plan only on proof: a read-only check
+ran on the host, measured the command's work already done, and the
+command's own oracle vouched that measuring-it-done is reason enough not
+to run it. Every one of those measurements happens at planning time,
+before anything runs. So every proof has a hidden dependency: the world
+must hold still between the measurement and the moment the line would
+have run.
+
+Most of the time it does. The exception is a command Dorc knows nothing
+about.
+
+   > $ dorc explain --terse unmodeled
+   > A command is unmodeled when no loaded oracle describes it. Dorc
+   > treats it as capable of changing anything on the host, because in
+   > Dorc, silence never grants permission.
+
+An unmodeled command that is really going to run is called a wall. Dorc
+cannot know what it touches, so it must assume it may touch anything -
+including whatever some check above it measured. From the wall down,
+planning-time proof is spent: a fact measured before the wall may be
+stale after it.
+
+What happens below a wall is a downgrade, not a failure. A line that
+measured already-done cannot be removed from the plan, but it can be
+guarded: its oracle's own check is placed directly in front of it,
+re-verifying at run time, after the wall has done whatever it does. A
+guarded line is fast and safe; it is just not gone. The cost of a wall
+is paid in attention, not in correctness.
+
+   > worked example (case plan-first-wall):
+   > $ dorc plan --book=book.sh web1
+   >  3  # apt-get update                  # converged: index fresh
+   >  4  hork tune --profile web           # runs: unmodeled ('hork')
+   >  5  ( systemctl_check enable nginx ) \
+   >  5     || systemctl enable nginx      # verify: past 'hork' (line 4)
+   > plan: 1 to run, 1 to verify (1 skipped)
+
+Two things are worth reading off that render. The apt-get line, above
+the wall, kept its proof and is gone. The systemctl line measured
+already-done too - but 'hork' stands between the measurement and the
+moment line 5 would run, so its proof does not carry, and the line stays
+in the plan wearing a guard.
+
+Walls fall one command at a time, and always by authorship. An oracle
+describing 'hork' - even the two-minute kind that only answers "is this
+already done?" - lets Dorc measure it, and a wall that measures
+already-done is removed from the plan entirely. A command that will not
+run cannot invalidate anything: a removed wall casts no shadow. This is
+why describing the first wall in a book is the steepest part of the
+value curve; it buys back its own line and every proof it was poisoning.
+
+see also: dorc explain unmodeled; dorc explain guard;
+dorc explain oracle; dorc explain plan-lifecycle

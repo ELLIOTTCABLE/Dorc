@@ -1,0 +1,37 @@
+---
+concept: unmodeled
+---
+-- replay --
+$ dorc explain --terse unmodeled
+A command is unmodeled when no loaded oracle describes it. Dorc treats
+it as capable of changing anything on the host, because in Dorc, silence
+never grants permission.
+
+$ dorc explain --summary unmodeled
+Dorc never guesses what a command does. Everything it knows arrives as
+description: an oracle, written by a person, that models a command's
+checks and effects in runnable shell. A command with no oracle loaded is
+unmodeled, and the safe reading of no-description is any-effect: the
+command may change anything on the host, so nothing may be skipped,
+guarded, or reasoned past on its account. Unmodeled is the normal
+starting state of every command in the world; description is how a
+command graduates out of it, and one small oracle at a time is how a
+book does.
+
+$ dorc explain unmodeled
+unmodeled
+
+Dorc never guesses what a command does. Everything it knows arrives as
+description: an oracle, written by a person, that models a command's
+checks and effects in runnable shell. A command with no oracle loaded is
+unmodeled, and the safe reading of no-description is any-effect: the
+command may change anything on the host, so nothing may be skipped,
+guarded, or reasoned past on its account. Unmodeled is the normal
+starting state of every command in the world; description is how a
+command graduates out of it, and one small oracle at a time is how a
+book does.
+
+(no full page is written for this concept yet; the summary above is the
+deepest register available)
+
+see also: dorc explain wall; dorc explain oracle

@@ -1,0 +1,83 @@
+---
+code: cmdsub-operand-top
+---
+-- book.sh --
+#!/bin/sh
+# pi-webhost provisioning (curated package set from the fleet inventory)
+set -e
+
+apt-get update
+apt-get install -y "$(cat /etc/webhost/pkgset)"
+systemctl enable nginx
+-- replay --
+$ dorc plan --book=book.sh
+note[cmdsub-operand-top]: apt-get operand 3 is a command-substitution `$(…)` /
+   arithmetic / operator-form expansion, so I cannot know its value until the
+   command runs on the host — there is nothing to resolve and no read-only probe
+   to check. I skip commands only when it can prove the command's effect is
+   already in place, so this one is left to run on every apply:
+   --> book.sh:6:20
+   |
+ 6 | apt-get install -y "$(cat /etc/webhost/pkgset)"
+   |                    \__________________________/
+   = improvement: If you give the operand a value I can resolve statically (a
+      literal, or a variable assigned from one), then I can probe it and skip
+      the command once it has converged. If your value must stay dynamic, load
+      an oracle that vouches for this command's convergence, and Dorc will guard
+      the command instead of running it every time.
+   = more: 'dorc explain cmdsub-operand-top' tells the full story
+$ dorc plan --book=book.sh --format=jsonl
+{"code":"cmdsub-operand-top","severity":"note"}
+$ dorc explain cmdsub-operand-top
+cmdsub-operand-top
+
+Dorc plans by resolving, before anything runs, the values a command will
+run with. A literal operand is its own value; a variable operand
+resolves through the book's own assignments, the same way you resolve it
+when you read the script. An operand produced by a command-substitution
+- the `$(...)` form - has no value until the inner command actually runs
+on the host, and at planning time it has not run and will not. There is
+nothing to resolve, nothing to hand to an oracle's own argument
+checking, and nothing a read-only probe could measure. The line keeps
+its place in every plan, and this note is Dorc saying so out loud
+rather than quietly.
+
+   > in your last plan:
+   > book.sh:6  apt-get install -y "$(cat /etc/webhost/pkgset)"
+   >            operand 3 is the unresolvable one; this is the line
+   >            that stayed, and this note is its reason.
+
+This is a narrower problem than an undescribed command, and a cheaper
+one to live with. It is worth holding the two apart:
+
+   > $ dorc explain --terse wall
+   > A wall is a command in your book that Dorc knows nothing about: no
+   > fact measured above it can be trusted below it, so the commands
+   > after a wall are re-checked or run instead of being removed from
+   > the plan.
+
+A wall is about an effect Dorc cannot bound; this note is about a value
+Dorc cannot know. Here the command itself may be perfectly
+well-described - apt-get has an oracle out of the box - but the
+description cannot be applied, because nobody can say which packages
+the line is about until the substitution runs. The two problems often
+travel together: a line like this one both runs every time (this note)
+and, if what it installs is unknowable, is harder for the lines below
+it to reason past.
+
+What you can do about it, wearing either hat:
+
+As the book's author, the cheap fix is spelling the value so it
+resolves: a literal list, or a variable assigned from one earlier in
+the book. Ordinary shell habits are enough; Dorc follows plain
+variable flow. If the value genuinely must come from the host at run
+time - a fleet inventory file, like this one - that is a legitimate
+design, and you are choosing to pay this line on every apply.
+
+As an oracle author, you cannot make the value knowable, but you can
+still buy the guard: a convergence check that answers for the dynamic
+form lets Dorc place that check in front of the line, so on converged
+days the expensive install is a cheap read instead.
+
+see also: dorc explain wall; dorc explain plan-lifecycle;
+dorc explain oracle

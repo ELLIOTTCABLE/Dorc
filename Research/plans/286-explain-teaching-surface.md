@@ -187,6 +187,10 @@ before any machinery: paper-prototype — hand-write ONE real concept page (`wal
 in the target shape (prose + command-blocks + an exhibit) and read it; the
 composed-view authoring experience of writing flowing prose AROUND blocks you
 cannot edit in place is the single untested interaction in this design.
+(EXECUTED early, 2026-07-20, human-directed: strawman case files `286a`–`286d`
+(`.loom`, ruled) + findings `286e` — the composed-authoring premise held at n=1;
+new bites banked there: terse-gloss drift, fallback rulings owed, exhibit
+sequence-honesty, example-library pressure.)
 
 ## §4 — Open forks & seams
 

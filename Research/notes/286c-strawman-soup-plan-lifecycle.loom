@@ -1,0 +1,77 @@
+---
+concept: plan-lifecycle
+covers: probe plan apply
+---
+-- replay --
+$ dorc explain --summary plan-lifecycle
+A Dorc run has two halves separated by your approval. First, planning:
+Dorc ships small read-only checks called probes to the host, all in
+parallel, and folds what they measure into a plan - your book, in its
+original order, with the already-done lines removed and a reason written
+beside every line that stays. Nothing on any host has been changed yet.
+Then, only after you accept it, the apply: the surviving lines run, in
+book order, exactly as written. Probes measure, the plan proposes, the
+apply acts; your consent sits in the middle, and it is the only
+interaction there is.
+
+$ dorc explain plan-lifecycle
+plan-lifecycle
+
+A Dorc run has two halves, and everything about how Dorc behaves follows
+from which half you are in. The halves fail in opposite directions on
+purpose: the first half, unsure, does less; the second half, unsure,
+runs the line.
+
+The first half is planning. Dorc reads your book, and for every command
+an oracle describes, it lifts that oracle's own read-only check - a
+probe - and ships the whole batch to the host at once, in parallel.
+Probes only ever read: an oracle author has vouched, by writing the
+check inside their oracle, that running it changes nothing. A command
+whose oracle is unsure, or whose check looks like it could write, simply
+does not get probed; the command stays in the plan and runs. Probing is
+where Dorc's speed comes from, and it is also the half with the hardest
+promise: presenting a plan is promising that nothing has happened yet.
+
+What the probes measure folds into the plan. The plan is your book - the
+same lines, the same order, nothing reordered or rewritten - with the
+lines whose work is provably already done removed, and a reason written
+beside every line that stays. Some lines stay because the world says
+they are needed; some stay because nothing is known about them; and some
+stay with a check placed in front of them, because their proof could not
+be trusted all the way down the page:
+
+   > $ dorc explain --terse wall
+   > A wall is a command in your book that Dorc knows nothing about: no
+   > fact measured above it can be trusted below it, so the commands
+   > after a wall are re-checked or run instead of being removed from
+   > the plan.
+
+The plan is the moment of consent, and the only one. Dorc will never ask
+you a question mid-run; every decision is in front of you, in the plan,
+before anything acts.
+
+The second half is the apply. The surviving lines run on the host, in
+book order, exactly as written - Dorc never reorders your book, and
+apply speed comes only from lines that are gone, never from lines run
+cleverly. A guarded line re-checks itself in place and falls through to
+running the original command if the check does not hold. If the world
+turns out to differ from what the plan predicted, the apply proceeds and
+flags the difference in its report; it does not stop to ask, because you
+already consented to the plan, and the plan is the whole conversation.
+
+see also: dorc explain wall; dorc explain oracle; dorc explain guard
+
+$ dorc explain probe
+'probe' is part of the plan-lifecycle explainer:
+
+A Dorc run has two halves separated by your approval. First, planning:
+Dorc ships small read-only checks called probes to the host, all in
+parallel, and folds what they measure into a plan - your book, in its
+original order, with the already-done lines removed and a reason written
+beside every line that stays. Nothing on any host has been changed yet.
+Then, only after you accept it, the apply: the surviving lines run, in
+book order, exactly as written. Probes measure, the plan proposes, the
+apply acts; your consent sits in the middle, and it is the only
+interaction there is.
+
+(for the full treatment: dorc explain plan-lifecycle)
