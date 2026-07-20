@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # minimal package oracle (apt/dpkg) — predict() + touches() (STRAWMAN spellings, 24A §1b).
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

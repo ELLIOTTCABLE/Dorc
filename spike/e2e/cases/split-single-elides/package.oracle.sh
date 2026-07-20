@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # minimal package oracle (apt/dpkg), lifted statically by dorc.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

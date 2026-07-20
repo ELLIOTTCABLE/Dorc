@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # firewall oracle (ufw). `ufw allow <rule>` establishes firewall:<rule>#allowed.
 ufw__predict() {
    verb=$1; shift

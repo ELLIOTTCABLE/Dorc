@@ -315,17 +315,17 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "missing-dialect-marker",
         when_fires: "a dorc-lang dialect construct (a bind or trailing mark) appears in a file \
-                     lacking the `# dorc-lang/v0.1` version marker. oracle/marker.rs.",
+                     lacking the `# dorc-lang/v0.2` version marker. oracle/marker.rs.",
         why: "marker-gates-syntax-only: a loud file-level refusal. Static — the marker text is \
               inline (MARKER / MARKER_WINDOW compile-time constants).",
         params: &[],
         example: "sm this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a \
-                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.1` version marker \
-                  (marker-gates-syntax-only): add `# dorc-lang/v0.1` as a standalone comment in the \
+                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.2` version marker \
+                  (marker-gates-syntax-only): add `# dorc-lang/v0.2` as a standalone comment in the \
                   first 10 lines, or drop the dialect (the bare `__role` floor works markerless)",
         message: "sm this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a \
-                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.1` version marker \
-                  (marker-gates-syntax-only): add `# dorc-lang/v0.1` as a standalone comment in the \
+                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.2` version marker \
+                  (marker-gates-syntax-only): add `# dorc-lang/v0.2` as a standalone comment in the \
                   first 10 lines, or drop the dialect (the bare `__role` floor works markerless)",
         help: None,
     },

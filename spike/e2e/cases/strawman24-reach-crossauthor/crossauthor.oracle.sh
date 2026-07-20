@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # strawman24-reach-crossauthor (24G Stage 5 Part B — the reaches() cross-author flagship). An
 
 hork__predict() {

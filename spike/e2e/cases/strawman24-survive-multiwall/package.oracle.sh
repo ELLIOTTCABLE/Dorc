@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # package oracle — predict() install/purge; touches() emits a footprint ONLY for install. purge
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

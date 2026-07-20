@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # guard23 flagship package oracle: predict() resolves the entity; authoring is_converged()
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

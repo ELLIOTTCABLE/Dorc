@@ -1,4 +1,4 @@
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # A coherent sudo wrapper (273 + 27C §3): predict env-scrubs + execs the guest; lend_map maps user
 # and full-lends fs-view + netns (enumerate-every-dimension); the entry form re-runs sudo `-n`
 # (non-interactive by construction). Authoring `sudo__enter` IS the traversal vouch.

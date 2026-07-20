@@ -1,4 +1,4 @@
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # A COHERENT sudo wrapper (273): predict env-scrubs then execs the guest; lend_map answers the
 # user (mapped) and fs-view (full) dimensions and peels to the same tail. netns is unanswered ⇒ ⊤
 # (the enumerate-every-dimension law). Both members flag-strip identically, so their "$@" agree.

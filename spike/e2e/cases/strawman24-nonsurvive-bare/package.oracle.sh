@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # package oracle with predict() but NO touches() — an un-footprinted mutator. Under
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

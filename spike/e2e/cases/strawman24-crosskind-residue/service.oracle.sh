@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # service oracle: `systemctl enable` gates service:<unit>#enabled. NO touches() — the enable is
 systemctl__predict() {
    verb=$1; shift

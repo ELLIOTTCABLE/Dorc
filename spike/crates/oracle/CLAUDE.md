@@ -39,7 +39,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
 ## The authored surface — worked minimum (the one syntax anchor; semantics live in `spike/CLAUDE.md`)
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 systemctl__is_converged() {
    case "${1-}" in
    enable) systemctl is-enabled --quiet -- "${2-}"   : sm.dorc.Service:"$2"@enabled ;;

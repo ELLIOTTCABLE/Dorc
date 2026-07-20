@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # HONEST service oracle: `systemctl start` gates Service:<unit>#active. It backs the downstream
 # elision the lying certsync footprint spares — a DIFFERENT tool's fact, cross-kind from CertBundle.
 systemctl__predict() {

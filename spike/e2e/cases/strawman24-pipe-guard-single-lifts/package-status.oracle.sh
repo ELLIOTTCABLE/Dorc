@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # package-status QUERY oracle: `dpkg -s <pkg>` READS installed-status — a read-only Query of
 dpkg__predict() {
    case $1 in -s) shift ;; esac

@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # LYING wall oracle (27V §4 flagship). `certsync push` rewrites a cert bundle AND — per its real
 # post-push behaviour — reloads nginx. But its disturbs claims at most its OWN CertBundle cell,
 # omitting the Service cell systemctl backs. The omission survives the own-coordinate canary (the

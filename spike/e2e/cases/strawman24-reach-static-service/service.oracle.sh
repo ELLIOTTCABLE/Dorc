@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # Static disturbance_reaches_only() arm: hork's package footprint expands through sm_dorc_Package__disturbance_reaches_only()
 hork__predict() {
    verb=$1; shift

@@ -1,4 +1,4 @@
-//! `marker` — the `# dorc-lang/v0.1` version-comment gate (`marker-gates-syntax-only`, `24M`
+//! `marker` — the `# dorc-lang/v0.2` version-comment gate (`marker-gates-syntax-only`, `24M`
 //! `rul24M-version-comment`). The marker gates SYNTAX only: a file using a dialect construct — a
 //! bind (`name : kind = value`) or a trailing mark (`:`/`:!`/`:?`) — WITHOUT the marker is a loud
 //! error. `__role` NAME-recognition is UNAFFECTED (a bare, markless `foobar__is_converged` pure-
@@ -22,7 +22,7 @@ use crate::predict::{
 
 /// The dialect version marker — exact-match, standalone, within the first 10 physical lines
 /// (`24C:rul24-marker-v0.1`). The SOLE sanctioned comment-parse in the product.
-pub const MARKER: &str = "# dorc-lang/v0.1";
+pub const MARKER: &str = "# dorc-lang/v0.2";
 
 /// How many leading lines the marker may occupy (`24C:rul24-marker-v0.1`: "the first 10 physical
 /// lines"), so a shebang + a purpose header still precede it.
@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn marked_file_passes_silently() {
         let mut i = Interner::default();
-        let src = "# dorc-lang/v0.1\napt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let src = "# dorc-lang/v0.2\napt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
         assert!(
             check_dialect_marker(&mut i, src).is_empty(),
             "a marked file with a bind lifts clean"

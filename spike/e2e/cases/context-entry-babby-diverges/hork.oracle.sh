@@ -1,4 +1,4 @@
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # hork: an inert package-manager stub; `: safe-across user` vouches read-only under a user shift
 # (27C §2), so a sudo-wrapped `hork install` may probe in the root context.
 hork__is_converged() {

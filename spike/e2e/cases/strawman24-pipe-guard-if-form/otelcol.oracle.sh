@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # otelcol oracle — the tool author's own, full role-split (rul-role-split). predict()'s `--version`
 # is a read-only OBSERVE that DELEGATES to the real command, so a composed pipe stage ships this
 # body and prints the genuine version banner on stdout for the downstream grep to read

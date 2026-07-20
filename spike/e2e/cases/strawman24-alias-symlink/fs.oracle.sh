@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # minimal fs (config-file) oracle for a `writeconf <path>` tool — the 24F closure on the `fs` kind.
 writeconf__predict() {
    path : sm.dorc.Fs = "$1"

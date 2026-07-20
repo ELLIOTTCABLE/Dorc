@@ -1,4 +1,4 @@
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # An IDENTITY wrapper (nice): the model drops the niceness (irrelevant to state) and re-execs the
 # guest — a bare-"$@" peel that claims NOTHING on env (271:rul-env-claim-inversion). Its lend_map
 # colon-lines every dimension = full lend (same world everywhere) ⇒ inner = HostDefault.

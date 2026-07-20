@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # Kind-owner resolver case: sm_dorc_Package__resolve() is keyed by KIND — its NAME is the
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

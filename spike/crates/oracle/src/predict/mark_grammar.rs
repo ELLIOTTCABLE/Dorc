@@ -839,7 +839,7 @@ mod tests {
     }
 
     /// The eight legal intros decode to the right carrier + sugar; nothing else is an intro
-    /// (`281` §3). `# dorc-lang/v0.1`-style comments never reach here — the lexer keeps them.
+    /// (`281` §3). `# dorc-lang/v0.2`-style comments never reach here — the lexer keeps them.
     #[test]
     fn intros_decode_the_eight_legal_forms() {
         assert_eq!(
@@ -1069,7 +1069,7 @@ mod tests {
             matches!(malformed.stmts[0].kind, StmtKind::Plain),
             "left a comment"
         );
-        let marker = parse_marks("# dorc-lang/v0.1\ncmd : sm.dorc.X@y\n");
+        let marker = parse_marks("# dorc-lang/v0.2\ncmd : sm.dorc.X@y\n");
         assert!(
             marker
                 .stmts

@@ -1033,7 +1033,7 @@ pub enum SubDiag {
 ///
 /// SEAM (gap-4, RE-PARKED d4b): `Suggestion` has NO production emitter yet — the type stands, the
 /// wiring waits. The natural FIRST emitter is `missing-dialect-marker` (an honest
-/// `Applicability::MachineApplicable` insert of `# dorc-lang/v0.1` into an oracle's first 10 lines),
+/// `Applicability::MachineApplicable` insert of `# dorc-lang/v0.2` into an oracle's first 10 lines),
 /// which unparks WITH the `dorc fix` apply-story (`27S` §4 fix-modes, deferred) — its artifact-vs-
 /// authoring-plane auto-apply boundary needs a human ruling before the first real `MachineApplicable`
 /// lands. Until then the code's `message` already states the fix in prose.

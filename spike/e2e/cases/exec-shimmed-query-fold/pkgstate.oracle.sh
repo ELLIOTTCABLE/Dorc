@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # package-status QUERY oracle (the DESIGN `dpkg -s nginx || apt-get install` idiom).
 dpkg__predict() {
    case $1 in -s) shift ;; esac

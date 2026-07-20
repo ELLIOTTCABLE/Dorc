@@ -136,7 +136,7 @@ pub mod payload;
 /// capture rul24M-bare-dorcism-names prices as accepted-not-prevented.
 pub mod reserved;
 
-/// The `# dorc-lang/v0.1` marker gate (`marker-gates-syntax-only`): dialect constructs (binds,
+/// The `# dorc-lang/v0.2` marker gate (`marker-gates-syntax-only`): dialect constructs (binds,
 /// trailing marks) in an UNMARKED file are a loud error; bare `__role` floor bodies work markerless.
 pub mod marker;
 

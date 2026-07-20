@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # service oracle (systemd). enable->#enabled, start->#active (distinct selectors).
 systemctl__predict() {
    verb=$1; shift
