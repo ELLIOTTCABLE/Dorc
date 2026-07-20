@@ -9,7 +9,7 @@
 //! fires the diagnostic — the marker pilot). Phase 4 lands the payload path; the pipeline arm is the
 //! marker-version-unrecognized pilot.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::catalog::{OwnedEntry, owned_catalog};
 use dorc_core::diag::{
@@ -20,7 +20,7 @@ use dorc_core::diag::{
     SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
     WhylogVersionRefused, WrapperPeelIncoherent, render_cli_tagged, render_cli_with,
 };
-use dorc_core::{Interner, LeafId, TopCause};
+use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
     Case, Consumer, FieldTemplate, Fragment, ParamName, ParamTables, ParamValues,
     Region as LoomRegion, TaggedBaseline, Token, Word, tokenize,
@@ -80,23 +80,22 @@ impl DorcConsumer {
         {
             return fire_marker_gate(slug, section.name(), section.content());
         }
+        if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh") {
+            return fire_book_analysis(slug, section.name(), section.content());
+        }
         let diag = canonical_payload(slug)
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
         Ok((diag, String::new(), String::new()))
     }
 
-    /// The rendered transcript for a case from CURRENT mirror state — the shared body of
-    /// `render_case` and the committed-case seed.
-    fn render_transcript(&self, case: &Case) -> Result<String, String> {
+    /// The human transcript (the diagnostic's CLI render) for a case from CURRENT mirror state,
+    /// plus the diag itself so a sibling `--format=jsonl` replay can render the machine view of the
+    /// SAME world (`282:rul-multi-replay-per-case`).
+    fn render_world(&self, case: &Case) -> Result<(Diag, String), String> {
         let (diag, src, filename) = Self::world_of(case)?;
         let interner = Interner::default();
-        Ok(render_cli_with(
-            &self.mirror,
-            &diag,
-            &src,
-            &filename,
-            &interner,
-        ))
+        let human = render_cli_with(&self.mirror, &diag, &src, &filename, &interner);
+        Ok((diag, human))
     }
 }
 
@@ -146,11 +145,41 @@ impl Consumer for DorcConsumer {
     }
 
     fn render_case(&self, case: &Case) -> Result<String, String> {
-        let output = self.render_transcript(case)?;
+        let (diag, human) = self.render_world(case)?;
+        let outputs = case
+            .replay()
+            .blocks()
+            .iter()
+            .map(|block| {
+                if block.command().contains("--format=jsonl") {
+                    render_diag_jsonl(&diag)
+                } else {
+                    human.clone()
+                }
+            })
+            .collect();
         let mut regenerated = case.clone();
-        regenerated.set_replay_outputs(vec![output]);
+        regenerated.set_replay_outputs(outputs);
         Ok(regenerated.to_text())
     }
+}
+
+/// The compact machine view of a single diagnostic for a `--format=jsonl` replay block (`282` §2
+/// machine-format replay · `282:rul-multi-replay-per-case`): one JSON object carrying the code slug
+/// (the same-slug coherence gate every replay must pass) and its registry severity word. Both are
+/// bare identifiers — no user text, so no escaping is possible — and it is a tool-corpus surface, not
+/// a product API (`27V:rul-output-form-unwelded`; the machine format is free to churn). Trailing LF so
+/// the block round-trips through the container's `set_replay_outputs`/`to_text` unchanged.
+fn render_diag_jsonl(diag: &Diag) -> String {
+    let severity = match diag.severity() {
+        Severity::Error => "error",
+        Severity::Warning => "warning",
+        Severity::Note => "note",
+    };
+    format!(
+        "{{\"code\":\"{}\",\"severity\":\"{severity}\"}}\n",
+        diag.code.slug(),
+    )
 }
 
 /// The world-as-payload canonical constructors, keyed by slug (`283:dec-world-two-forms`). The
@@ -271,6 +300,40 @@ fn fire_marker_gate(
             diag.code.slug()
         ));
     }
+    Ok((diag, source.to_owned(), filename.to_owned()))
+}
+
+/// World-as-pipeline for the cmdsub flagship (`28A` §2n, extended to the analysis kernel): fire the
+/// REAL pipeline (parse → cfg → value → classify with NO oracles loaded) over the materialized
+/// `book.sh`, returning the (spanned) diagnostic whose slug matches the case's `code` + the source its
+/// caret frame resolves against. The ⊤-operand disclosure fires before any oracle argparse, so an
+/// empty [`dorc_oracle::KindIndex`] suffices; the whole path is kernel-pure (`inv-determinism`).
+/// Refuses if the pipeline fired nothing matching the declared slug (honest-trigger coherence).
+fn fire_book_analysis(
+    slug: &str,
+    filename: &str,
+    source: &str,
+) -> Result<(Diag, String, String), String> {
+    let mut interner = Interner::default();
+    let parsed = dorc_syntax::parse(source);
+    let cfg = dorc_analysis::cfg::build(&parsed.value);
+    let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
+    let idx = dorc_oracle::KindIndex::default();
+    let mut arena = ProvArena::new();
+    let diag = dorc_analysis::effect::classify(
+        &cfg.value,
+        &value,
+        &parsed.value,
+        &idx,
+        &[],
+        &BTreeSet::new(),
+        &mut interner,
+        &mut arena,
+    )
+    .diags
+    .into_iter()
+    .find(|d| d.code.slug() == slug)
+    .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))?;
     Ok((diag, source.to_owned(), filename.to_owned()))
 }
 

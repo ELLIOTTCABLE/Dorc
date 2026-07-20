@@ -2519,7 +2519,7 @@ mod tests {
         // The CLI render carries the CATALOG message (filled from the payload), not a `.label`.
         let cli = render_cli(&note, "echo TAIL", "book.sh", &i);
         assert!(
-            cli.contains("command forced to run"),
+            cli.contains("left to run on every apply"),
             "catalog message: {cli}"
         );
         assert!(cli.contains("operand 1 is"), "position param filled: {cli}");
@@ -2633,7 +2633,7 @@ mod tests {
         assert_eq!(d.children.len(), 1);
         assert!(d.suggestion.is_some());
         let cli = render_cli(&d, "01234_56789poisoned_", "book.sh", &Interner::default());
-        assert!(cli.contains("command forced to run"), "{cli}");
+        assert!(cli.contains("left to run on every apply"), "{cli}");
         assert!(cli.contains("cannot be elided"), "{cli}");
         assert!(cli.contains("[provide-model]"), "{cli}");
     }
