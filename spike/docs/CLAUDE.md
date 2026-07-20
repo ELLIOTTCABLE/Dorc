@@ -90,11 +90,12 @@ On any conflict, the corpus outranks these docs, and these docs get re-synthesiz
 1. Root docs: `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`, `USER_STORY.md`,
    `KNOBS.md` (human-audited).
 2. `spike/CLAUDE.md` (the invariant registry; densest correct summary).
-3. The dialect and contract notes: `Research/notes/278` (dorc-lang v0.1 reference),
-   `Research/notes/277` (entity algebra and mark grammar), `Research/notes/276`
-   (dialect rulings), `Research/plans/27C` (wrapper/context spec),
-   `Research/notes/23O` (settled oracle-contract law), `Research/notes/27Q`
-   (stdlib authoring preconditions).
+3. The dialect and contract notes: `Research/plans/281` (THE mark grammar,
+   dorc-lang v0.2 - supersedes the mark grammar of `277` section 4 and `278`
+   section 6), `Research/notes/278` (base-dialect floor reference),
+   `Research/notes/277` (entity algebra), `Research/notes/276` (dialect rulings),
+   `Research/plans/27C` (wrapper/context spec), `Research/notes/23O` (settled
+   oracle-contract law), `Research/notes/27Q` (stdlib authoring preconditions).
 4. The e2e fixtures under `spike/e2e/cases/` for as-built concrete spellings.
 
 Where the design is still provisional (some role-member names, some mark spellings,
