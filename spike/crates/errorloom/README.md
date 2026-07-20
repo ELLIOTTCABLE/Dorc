@@ -1,7 +1,50 @@
 # errorloom
 
-Executable transcript cases as the authoring surface for a CLI tool's
+Executable transcript cases as the authoring-surface for a CLI tool's
 user-facing prose.
+
+**Write your messages directly into your test-files, while looking directly at
+what your user sees.**
+
+Working example, [from Dorc](https://github.com/ELLIOTTCABLE/Dorc/blob/326018ce/spike/crates/dorc-loom/cases/cmdsub-operand-top.txt),
+the project for which I built this library:
+
+```txtar
+---
+code: cmdsub-operand-top
+---
+-- book.sh --
+#!/bin/sh
+# pi-webhost provisioning (curated package set from the fleet inventory)
+set -e
+
+apt-get update
+apt-get install -y "$(cat /etc/webhost/pkgset)"
+systemctl enable nginx
+-- replay --
+$ dorc plan --book=book.sh
+note[cmdsub-operand-top]: apt-get operand 3 is a command-substitution `$(…)` /
+   arithmetic / operator-form expansion, so I cannot know its value until the
+   command runs on the host — there is nothing to resolve and no read-only probe
+   to check. I skip commands only when it can prove the command's effect is
+   already in place, so this one is left to run on every apply:
+   --> book.sh:6:20
+   |
+ 6 | apt-get install -y "$(cat /etc/webhost/pkgset)"
+   |                    \__________________________/
+   = improvement: If you give the operand a value I can resolve statically (a
+      literal, or a variable assigned from one), then I can probe it and skip
+      the command once it has converged. If your value must stay dynamic, load
+      an oracle that vouches for this command's convergence, and Dorc will guard
+      the command instead of running it every time.
+$ dorc plan --book=book.sh --format=jsonl
+{"code":"cmdsub-operand-top","severity":"note"}
+```
+
+If it did't perk your eras: note that *there's no templating in that text.*
+There's no special variables, there's no metadata. `apt-get` isn't written as
+`{{command_name}}` or something. It's *all* diff-driven, derived from the
+demanded separation of prose-bless from structure-bless.
 
 > This was built as internal tooling while heads-down on [Dorc][]. It is
 > *entirely* AI-written; distrust that as suits your risk-profile. (I generally
