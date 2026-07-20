@@ -30,7 +30,8 @@ discipline: one rule per bullet, slugged; append to the matching section.
   region rides the authored vouch; the check is never a completeness gate.
   vouch-scope-is-the-body-never-the-tool: a body-vouch mints no command-family
   fact.
-- **tolerates-vouch** (`27C` §2) — per-function, per-dimension; asserts "this
+- **safe-across-vouch** (né tolerates-vouch; `27C` §2, mark spelled `: safe-across
+  <dim>` per `281` §5) — per-function, per-dimension; asserts "this
   body's effects are read-only BY DESIGN, not by privilege-starvation"; gates
   context-shifted execution under the escalation dial (both-sides consent).
   Wrapper entry forms are the ONE licensed seat for real context entry; predict
@@ -49,13 +50,14 @@ systemctl__is_converged() {
 }
 ```
 
-- **marker-and-names** — the `# dorc-lang/v0.1` marker gates syntax only; `__role`
+- **marker-and-names** — the `# dorc-lang/v0.2` marker gates syntax only; `__role`
   NAME-recognition is permanent and works in unmarked files; names are bare
   munged POSIX NAMEs (dots are dead); families are name-derived, never
   file/author-derived (`271:rul-family`).
 - **minting-law** — verdict (`:`/`:!`) and observe (`:?`) marks on runnable lines
-  MINT selector tokens; claim/disturbs emissions never mint; a mark asserts
-  exactly ONE thing; brace-alternation `@{a,b}` is claim-emission marks only.
+  MINT selector tokens; claim/disturbs emissions never mint; rc-arity caps a line
+  at ONE verdict (`281` §7); brace-alternation `@{a,b}` / `verb {a,b}` expands to
+  N cells and is refused ONLY on verdict payloads.
 
 ## The stdlib quality bar — regression classes, NOT engine holes
 
@@ -97,9 +99,10 @@ honesty + stdlib CI.
 
 ## Direction
 
-- **respell-owns-the-churn** — HEAD fixtures still carry `.prop` selectors and
-  `touches`/`reaches` names; the corpus-respell sweep owns the conversion
-  (`#prop` · `disturbs` · `disturbance_reaches_only`). Never fix piecemeal.
+- **grammar-is-v0.2** (né respell-owns-the-churn) — the authored mark surface is
+  dorc-lang v0.2 (`plans/281`): `@` selectors, word verbs, the `#:` carrier,
+  single-mark-per-line production. The r28 cutover retired the
+  `.prop`/`#`/`touches`/`reaches` spellings corpus-wide; nothing left to convert.
 - **polarity-to-transitions** — the lifted effect is a binary bit at HEAD;
   becomes a typestate transition at the entity-algebra-rebuild (this crate owns
   the lift shape; `analysis` owns the transfer).

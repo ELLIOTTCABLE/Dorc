@@ -32,19 +32,26 @@ bullet, slugged; append to the matching section.
   elision-soundness regression. Redirections are first-class nodes
   (`: > /etc/x` mutates regardless of the no-op command word).
 
-## Law — the dialect surface (parse target; `notes/277` §4 is THE grammar; `notes/278` the reference)
+## Law — the dialect surface (parse target; `plans/281` is THE mark grammar (v0.2); `notes/277` entity algebra; `notes/278` base-dialect reference)
 
-- **marker-gates-syntax** — `# dorc-lang/v0.1`, exact-match, stands alone, first
-  ~10 lines: gates ALL non-POSIX syntax below. An unmarked file is plain sh.
+- **marker-gates-syntax** — `# dorc-lang/v0.2`, exact-match, stands alone, first
+  ~10 lines: gates ALL non-POSIX syntax below. An unmarked file is plain sh; a
+  marker naming an unrecognized version fails loud (recognized-set {v0.2}).
   `__role` NAME-recognition is ungated and permanent.
-- **the-authored-surfaces** — inline binds (`pkg : sm.dorc.Package = "$1"`) ·
-  trailing marks with the sigil family `:` / `:!` / `:?` · the attached-`#`
-  selector (a `#` is a selector-introducer ONLY when a valid coordinate character
-  immediately precedes it — it never fights shell comments) · brace-alternation
-  `@{a,b}` on claim-emission marks only · colon-line marks (a bare `:` command
-  carrying a trailing mark) · the `dorc:` command-word prefix (the only
-  prefix-position dorcism). Kinds are reverse-DNS ≥2 dots; there is no `.prop`
-  production (dots belong to kind names and entity content only).
+- **the-authored-surfaces** — inline binds (`pkg : sm.dorc.Package = "$1"`; the
+  only bind form wired in production — trailing `:=`/`bind` ⊤-rejects) ·
+  trailing/standalone marks with head sugar `:`/`:!`/`:?` for the core verbs
+  (asserts/refutes/reads) and word verbs for the rest (safe-across · disturbs ·
+  lends · stored-in · undivided-by-transit-across); TWO carriers, `:` (salient)
+  and `#:` (inert comment) · the attached-`@` selector (`@` lexes as a word char
+  under the floor shells and needs no comment-avoidance rule; entity-less
+  `KIND:@SEL`) · brace-alternation `@{a,b}` (attached) / `verb {a,b}` (whole
+  payload), refused ONLY on verdict payloads (rc-arity) · a statement-leading
+  `:`/`#:` intro is a standalone mark line (a LONE `:` stays the null command) ·
+  the `dorc:` command-word prefix (the only prefix-position dorcism). Kinds are
+  reverse-DNS ≥2 dots (the verbs-dotless/kinds-dotted keystone, `281` §4); the
+  selector rides `@`, and there is no `.prop` production (dots belong to kind
+  names and entity content only).
 - **charsets-posix-in-spirit** — all lexical minutiae follow
   `271:rul-posix-in-spirit-defaults` (find the POSIX rule, simplify, match in
   spirit): selector tokens are POSIX names in spirit; unquoted entities are the

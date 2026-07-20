@@ -28,28 +28,28 @@ can only be said by a person, about a tool they know, with their name on it.
 ## The disturbs member
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 apt_get__disturbs() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb="$1"; shift
    case "$verb" in
-   update) :   : sm.dorc.PkgIndex ;;
+   update) : disturbs sm.dorc.PkgIndex ;;
    esac
 }
 ```
 
 The member is invoked with a site's arguments, like its siblings. For an
 invocation shape it matches, the body emits the entities that shape disturbs - one
-per line on stdout, with the kind riding a trailing mark. Here the `update` arm
-emits a single whole-kind claim (the package index is one thing; there is no
-entity to name), using `:` - the shell's do-nothing command - as the emission
-line. A tool whose disturbance depends on its operand emits it:
+per line on stdout, each typed by a trailing `: disturbs` mark. Here the `update`
+arm emits a single whole-kind claim (the package index is one thing; there is no
+entity to name), so the mark is just the verb and the kind. A tool whose
+disturbance depends on its operand emits it:
 
 ```sh
 foobar__disturbs() {
    verb="$1"; shift
    case "$verb" in
-   sync-certs|renew) printf '%s\n' "$1"   : org.foob.Certs ;;
+   sync-certs|renew) printf '%s\n' "$1"   : disturbs org.foob.Certs ;;
    esac
 }
 ```
@@ -78,8 +78,8 @@ and it may ask the tool read-only questions at probe time when the honest answer
 lives on the host - a package manager's file payload, for instance, is knowable
 only where the package is.
 
-Precision pays. Claims can carry selectors (`printf '%s\n' "$1"   :
-sm.dorc.Service#{enabled,active}` claims two cells of a service), and the finer
+Precision pays. Claims can carry selectors (`printf '%s\n' "$1"   : disturbs
+sm.dorc.Service@{enabled,active}` claims two cells of a service), and the finer
 your claim, the fewer innocent downstream facts it collides with - a whole-entity
 claim collides with every fact about that entity. But precision is a refinement of
 a complete survey, never a substitute for one.
@@ -122,7 +122,8 @@ the most, and precisely the ones whose authors can survey completely. That is th
 work: say only what you surveyed, match only what you enumerated, and the drifted
 mornings stop costing everyone the rest of the book.
 
-<!-- quoted: USER_STORY.md stage 5 + bought-unsoundness; 277 sections 3, 4c;
+<!-- quoted: USER_STORY.md stage 5 + bought-unsoundness; plans/281 mark grammar
+     v0.2 (disturbs verb, @{a,b} brace); 277 sections 3, 4c;
      spike/CLAUDE.md rul-flag-is-razor-residue, sparing-algebra,
      set-lifting-universal-meet; 271 rul-touches-becomes-disturbs,
      rul-at-most-family-names -->

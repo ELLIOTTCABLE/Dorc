@@ -60,8 +60,11 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
 - **law-rows-are-classes** — rows are aid-*classes* (order ~10²), never error codes.
   Codes (order ~10³ at production grade; close siblings from world-state variants; one
   full prose writeup each, no generic fallback) live in the catalog and its defining
-  cases — never here. Tests and code cite rows as `AID-NEEDS:slug`. If this file starts
-  enumerating messages, it has failed; split the class instead.
+  cases — never here. Code prose is DEFINING-CASE-DERIVED (`282` errorloom generation
+  flip): the case transcript is the authoring surface, and the committed catalog is
+  regenerated from it by promote and fixpoint-protected against hand-edits. Tests and
+  code cite rows as `AID-NEEDS:slug`. If this file starts enumerating messages, it has
+  failed; split the class instead.
 - **law-two-planes-opposite-fail** (`26C` §5b) — the license plane fails toward
   *unsureness*; the aid plane fails toward *narration with attributed confidence*. Aid
   may consume anything, including analyses vetoed for licensing (tool-aware text
@@ -165,7 +168,7 @@ Registry
 
 | aid | what the user learns | demand | moments | grade | mech | st |
 |---|---|---|---|---|---|---|
-| aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining cases + committed catalog (`27V` §3) | S |
+| aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining-case-transcript-authored prose + fixpoint-protected committed catalog (`27V` §3; `282` generation flip) | S |
 | aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`) | O |
 | aid-apply-divergence-report | apply-time divergence from prediction: proceed-and-flag report items, never questions | apply | post◀ rev▶ | m | rul-divergence-proceed; whylog feeds | S |
 | aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane BUILT (`DREP_V1` sink recognized + drained + ingested noise-tolerant; `27U`) | B |

@@ -47,7 +47,7 @@ The new member, `lend_map`, answers the per-dimension question: what does this
 wrapper do to each dimension on the way through? Here is a coherent sudo pair:
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 sudo__predict() {
    while [ "${1#-}" != "$1" ]; do case "$1" in -u) shift 2 ;; *) shift ;; esac; done
    env -i HOME=/root "$@"
@@ -55,19 +55,19 @@ sudo__predict() {
 sudo__lend_map() {
    target=root
    while [ "${1#-}" != "$1" ]; do case "$1" in -u) target="$2"; shift 2 ;; *) shift ;; esac; done
-   printf '%s\n' "$target"   : user
-   :                         : fs-view
-   :                         : netns
+   printf '%s\n' "$target"   : lends user
+   : lends fs-view
+   : lends netns
    "$@"
 }
 ```
 
 Read `lend_map` line by line: for the user dimension it emits a value - this
 wrapper maps the user to `$target` (root unless `-u` said otherwise). For the
-filesystem-view and network dimensions it emits an entry with no value - present
-but empty means "passes through unchanged". The trailing `"$@"` is the same peel
-shape as the predict, and the two must agree about where the guest starts;
-disagreement between the members is caught statically and refused.
+filesystem-view and network dimensions it emits a bare `: lends` with no value -
+present but valueless means "passes through unchanged". The trailing `"$@"` is the
+same peel shape as the predict, and the two must agree about where the guest
+starts; disagreement between the members is caught statically and refused.
 
 The law of this member is enumerate-every-dimension: a dimension your `lend_map`
 does not mention at all is not "unchanged by default" - it is unknown, and it
@@ -75,7 +75,7 @@ walls. This inverts the usual convenience instinct on purpose. Wrappers are
 precisely the commands whose whole job is changing the execution context, so an
 unstated dimension in a wrapper's description is a hole in exactly the place holes
 are most expensive. Say "unchanged" explicitly, once per dimension; it costs one
-colon line.
+`lends` line.
 
 The environment dimension has its own small vocabulary, and it is ordinary shell
 read literally, mostly inside your predict's delegation line. Bare `"$@"` claims
@@ -142,16 +142,16 @@ you know:
 
 ```sh
 foobar__is_converged() {
-   :   : tolerates:user
+   : safe-across user
    ...
 }
 ```
 
-`tolerates:user` says: this body's effects are read-only by design, and running it
-shifted along the user dimension will not mutate. It says nothing about the
+`safe-across user` says: this body's effects are read-only by design, and running
+it shifted along the user dimension will not mutate. It says nothing about the
 answer - answers are supposed to differ per context - and nothing about any other
 function. Vouch the dimensions you have actually thought about; brace alternation
-covers several (`: tolerates:{user,fs-view}`).
+covers several (`: safe-across {user,fs-view}`).
 
 And the wrapper's author consented by publishing the entry form at all.
 
@@ -177,7 +177,8 @@ unstripped form fails loudly rather than half-working. Everything between those
 two - annotations hidden inside opaque strings, cleverness about quoting - is
 refused at plan time. Code is either invited in, or walled out, never smuggled.
 
-<!-- quoted: plans/27C sections 0-3, 6; 273 wrapper surface; spike/CLAUDE.md
+<!-- quoted: plans/27C sections 0-3, 6; 273 wrapper surface; plans/281 mark
+     grammar v0.2 (safe-across, lends spellings); spike/CLAUDE.md
      role-menu lend_map, rho-claim-ladder, wrapper-law, dorc-sh-trio,
      context-entry-probing; 274 reentry trio; 271 rul-lend-map,
      rul-env-claim-inversion, rul-dorc-prefix-head-synthesis;

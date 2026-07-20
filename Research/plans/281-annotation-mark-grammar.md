@@ -89,6 +89,13 @@ Every subsequent mark is **verb-driven**: read a verb, consume exactly the paylo
 and type fix, repeat. The period test is consulted only for the head token, and only to
 separate a verb from a coordinate.
 
+These three head rules apply **per intro line**: because each continuation line re-introduces
+(§3), its first token is decoded by the same three rules afresh — a bare-coordinate `:`
+continuation reads `asserts`, a `:?` continuation reads `reads` — never as a verb-driven
+continuation of the previous line's tail (so a bare-coordinate continuation under a head
+verdict legitimately reads `asserts` and trips the §7 rc-arity rule; the correct behavior,
+`28A:rul-per-intro-head-decode`).
+
 **Keystone invariant** (`rul-verbs-dotless-kinds-dotted`, the entire disambiguation surface):
 verbs are period-free; a coordinate's head (its kind) always contains at least two periods
 (reverse-DNS). Nothing else constrains periods — second-slot payloads (dimension/substrate/axis
