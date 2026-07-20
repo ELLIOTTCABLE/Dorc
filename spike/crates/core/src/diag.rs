@@ -1689,6 +1689,17 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
     }
 }
 
+/// The aid connective word for a code's `= <word>:` catalog-help line (`282` §12 item-2): a
+/// [`RemediationClass::ResolveDynamism`] remediation reads `repair` (the fix is to make the book
+/// statically resolvable), every other class stays `help`. Keyed on the registry class — the human
+/// tunes the fuller class→word map iteratively as error surfaces demand it, not up front.
+fn help_connective(code: &DiagCode) -> &'static str {
+    match registry(code).remediation {
+        RemediationClass::ResolveDynamism => "repair",
+        _ => "help",
+    }
+}
+
 /// The filled catalog message for a code (`27V` §3): `fill_template(catalog message, params_of)`.
 /// A code with no catalog entry (unreachable once the completeness gate is green) renders the
 /// greppable `[unwritten: <slug>]` placeholder. Pure; `inv-no-throw`.
@@ -1932,7 +1943,8 @@ pub fn render_body_with(
     if let Some(help) = lookup.help(slug) {
         let _ = write!(
             out,
-            "\n  = help: {}",
+            "\n  = {}: {}",
+            help_connective(&diag.code),
             crate::catalog::fill_template(help, &refs)
         );
     }
@@ -2018,7 +2030,8 @@ pub fn render_body_tagged_with(
         ),
     }
     if let Some(help) = lookup.help(code) {
-        arrange(&mut out, &mut spans, "\n  = help: ", "help-connective");
+        let connective = format!("\n  = {}: ", help_connective(&diag.code));
+        arrange(&mut out, &mut spans, &connective, "help-connective");
         crate::catalog::fill_template_tagged(
             &mut out,
             &mut spans,
