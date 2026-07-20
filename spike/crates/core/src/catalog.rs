@@ -1456,6 +1456,31 @@ mod tests {
         );
     }
 
+    /// The DORC-SIDE metadata gate (`283:dec-promote-v2` · `28A` §2g — the catch the render-level
+    /// fixpoint misses): serialize regenerates `params` from the prose's holes, so a hand-edit to any
+    /// entry's `params` diverges from the regeneration and trips loudly here. This is the whole-catalog
+    /// form of `promote_refreshes_params_and_example`'s spot-checks — the `params` half of the
+    /// promote→catalog byte-identity, achievable under carry-forward (params ALREADY match the holes).
+    ///
+    /// FLAGGED, not enforced here: the `example` half needs the committed examples canonicalized to
+    /// their schematic form (47/56 are pre-promote hand-authored strawmen), and a WHOLE-BLOCK byte
+    /// gate additionally needs the hand-wrapped literals collapsed to promote's single-line `{:?}`
+    /// form — both are a `DORC_CATALOG_PROMOTE` orchestrator canonicalization (BLESS-law), NOT a
+    /// builder edit. Wire the whole-block byte gate once the conductor's first promote canonicalizes.
+    #[test]
+    fn promote_regenerates_params_byte_identical() {
+        for e in CATALOG {
+            let refreshed = refreshed_params(e.message, e.help);
+            let refreshed: Vec<&str> = refreshed.iter().map(String::as_str).collect();
+            assert_eq!(
+                refreshed, e.params,
+                "catalog `{}`: committed params diverge from the prose's holes — a metadata \
+                 hand-edit (serialize regenerates params from the message/help holes)",
+                e.slug
+            );
+        }
+    }
+
     /// PROMOTE refreshes the machine-facing fields: `params` becomes EXACTLY the prose's holes, and
     /// `example` becomes the schematic measured render (holes → `<param>`), drift-proof.
     #[test]
