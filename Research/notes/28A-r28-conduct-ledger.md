@@ -455,6 +455,19 @@ the §2h rider (one clarifying sentence into `281` §4).
   refused removal, correctly). (2) errorloom LICENSE choice. The `TODO-ADDTL`
   tail riders remain banked (charter law — none block the lanes).
 
+## §4b — Standing exemption (HUMAN-TYPED, 2026-07-20; survives rewind — do not re-derive from AGENTS.md)
+
+Root `AGENTS.md` gained a "Memetic hazards and information hygiene" section
+requiring Fable-class conductors to deploy `.claude/skills/opaque-review` at
+end-of-work. The human TYPED, same sitting: **it does not yet apply to this
+round's conductor** — the reviewer infrastructure is not yet in place. So: the
+round-28 conductor does NOT invoke opaque-review at round close; the directive
+presumably binds future conductors once the human says the infrastructure
+exists. A rewound/compacted successor conductor reading AGENTS.md (or seeing
+the skill listed) must honor THIS typed exemption over the document's text for
+round 28. (The root-AGENTS edit itself is human-authored, single-auth; it flows
+into branches at the human's own fold — never copy it into the worktree.)
+
 ## §5 — Dispatch log
 
 - 2026-07-19: `lane-errorloom-crate` d1 (Opus, worktree, bg) — transport engine.
