@@ -478,6 +478,58 @@ correctly; the CLI aid-chain is a distinct prose surface, untouched. Rulings:
   `aid-unloaded-sibling-oracle`; the genuinely-foreign relays are the
   `syntax-*`/`predict-*` parser-description carriers.
 
+## §2n — Generation-flip map (`notes/283`) rulings (conductor, 2026-07-20)
+
+Map LANDED on `ai/r28-flip-map` @ `9e03647`. Rulings on its ten flags; the
+executor runs the ladder with the map's step-7 checkpoint (stop before the
+flip) honored:
+
+- **`flag-in-process-vs-real-firing`: IN-PROCESS ACCEPTED, one real-fired
+  pilot required** — the conflation the flag exposes: two distinct operations
+  wear "firing." (a) The fixpoint GATE reconstructs a render to verify the
+  prose round-trip — it MUST be in-process (the span map exists only in-process;
+  a subprocess can't emit it). (b) A committed case's transcript must actually
+  be what the binary produces. Resolution by surface-owner: the defining-case
+  corpus tests RENDER COMPOSITION, which `render_cli(_tagged)` IS in production
+  — exercised in-process = faithful; CLI subprocess framing (argv, exit codes,
+  stream muxing) is the E2E corpus's job, already real-binary via `sh
+  e2e/run.sh`. errorloom's `282` §7 subprocess runner is its own generic
+  capability, proven by loom-mock-tool self-tests; Dorc's defining-case
+  consumer need not re-prove it. RIDER: the `marker-version-unrecognized` pilot
+  fires **world-as-pipeline** (the real in-process kernel `syntax→…→plan` over
+  an in-memory marked-bad-version file), giving ONE real-fired proof inside the
+  hermetic tier that in-process reconstruction matches real production. Do NOT
+  add a subprocess-runner case to phase 4. The five roster codes stay
+  world-as-payload (expensive/artificial worlds; phase-5 may upgrade).
+- **`flag-mirror-fights-promote-v1`: ACCEPT** the `CatalogLookup`+`OwnedEntry`
+  render-seat parameterization; reject the dorc-loom-reimplements-`render_cli`
+  alternative (duplicate seat). `&dyn CatalogLookup` in the render path is
+  fine — diagnostics are human-facing, never the network hot-path (perf-
+  doctrine); dynamic dispatch costs nothing that matters.
+- **`flag-roster-retire-needs-mini-backport`: ACCEPT** the phase-4 mini-backport
+  of the five roster codes → case-owned; the roster retires FOR REAL in phase 4.
+  The coupling is clean: exactly the codes losing roster protection gain
+  fixpoint protection.
+- **`flag-ratchet-redefine-not-regrow`: ACCEPT** the transient `fragment-covered`
+  third state; `ratchet_only_shrinks` stays 35≤35, never weakened, never
+  baseline-reset.
+- **`flag-metadata-frontmatter-vs-const`: ACCEPT** frontmatter-derived
+  `when-fires`/`why` for case-owned codes (`282` §8 letter; makes the Dorc-side
+  byte-identical gate meaningful); case-less codes keep const carry-forward
+  (accepted shrinking gap).
+- **`flag-message-option-vs-sentinel`: ACCEPT** `message: Option<&'static str>`
+  (illegal-states-unrepresentable); flag back only if it threads awkwardly.
+- **`flag-editable-text-selection`: ACCEPT** the `--format=` sniff.
+- Confirmed no-action: count is 21/63 (use it); BLESS-law intact (promote-v2
+  orchestrator-only, gates are read-only); multi-paragraph stays unbuilt.
+- **BOTH fixpoint gates required** (`28A` §2g rider stands): errorloom
+  render-level (catches prose hand-edits) AND the Dorc-side
+  promote→catalog-byte-identical (catches metadata hand-edits).
+
+Phase 5 (backport of the remaining 15) + phase 6 (de-passthrough) are SEPARATE
+later dispatches, not this executor's. The executor stops at the map's
+step-7 checkpoint for conductor review before the flip.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
