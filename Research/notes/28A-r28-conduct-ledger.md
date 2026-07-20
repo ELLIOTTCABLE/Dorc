@@ -611,6 +611,51 @@ errors → 1037 unit → 97 e2e → gates ok → drift only the known lax-order
   DX paper-cut for the round-close report. (Does NOT retroactively distrust
   earlier lanes: each was cold-verified at its own fold by me.)
 
+## §2q — Prose + canonicalization DEFERRED to the human sprint (conductor, 2026-07-20)
+
+The 5 `[unwritten:]` codes (`marker-version-unrecognized` + the four `281` mark
+codes) STAY `[unwritten:]` at round close — a deliberate deferral, not an
+omission, on the round's OWN lean `282:lean-machinery-now-prose-lazy` (machinery
+now, prose lazy; `[unwritten:]` is a legal greppable designed state, ceiling 6;
+the prose-quality sprint is a human-owned surface-stability-moment activity,
+`282` §10). Grounds beyond the lean: four of the five are not case-owned yet
+(phase-5 backport owes their case files; clean unprefixed authoring needs them
+first per the re-keyed `message_registers_are_sm_or_unwritten` gate), and
+`marker-version-unrecognized`'s metadata carries a `{found}`-vs-empty-`params`
+mismatch that needs payload-shape verification before a template can safely use
+it. Manufacturing interim prose the human rewrites in the sprint = wet-cement
+churn. The empty-loop pilot DID demonstrate mint→`[unwritten:]`-render; the
+author-from-render step is left to dogfic in the sprint.
+
+Likewise **the catalog canonicalization** (`28A:rul-catalog-canonicalization-
+is-conductor`, §2o): DEFERRED to the same sprint — it rewrites 47 `example`
+strawmen → schematic + single-lines the literals, is a delicate 56-entry
+`DORC_CATALOG_PROMOTE` diff-inspection, and the human is already in `catalog.rs`
+for the prose sprint. The whole-file byte gate stays partial-but-passing
+(params-regen + carry + idempotence) until then; the `FLAGGED` doc-comment
+marks it.
+
+## §2r — Round-28 completion plan (conductor, 2026-07-20)
+
+Three deliverables LANDED: errorloom (complete, folded), syntax v0.2 respell
+(complete, folded, cold-verified), integration-via-generation-flip (phase-4
+DIRECTION landed — catalog case-derived, promote-v2 built, roster retired, loop
+proven with pilots). Remaining charter-scope (`280` §3) mechanical completion,
+sequenced SERIAL after the docs fold to avoid catalog.rs concurrency:
+- **docs re-synthesis** — RUNNING (`ai/r28-docs-resync`; the live-harm item:
+  teaching surfaces still show v0.1 over v0.2 code).
+- **phase 5 (backport)** — the 21 covered codes → case files; retire the 63
+  fragment goldens + `DORC_DEFINING_BLESS`; ratchet re-pointed. Migration only,
+  prose-orthogonal (preserves `[unwritten:]`).
+- **phase 6 (de-passthrough)** — mint the user-sourced-text taint type; audit
+  the 18 ForeignText-ambiguous sites; our-words emit-sites → real templates.
+  A correctness/hygiene property, not "more prose."
+DEFERRED-by-design (explicitly lazy/human-owned; banked, specified): the
+prose-quality sprint (5 unwritten + the `sm `-prose rewrite) · the catalog
+canonicalization (§2q) · phase-7 ratchet burn-down + the records-* tail (`282`
+§9 phase 7) · the glued-param re-hole seam ruling (§2o) · the errorloom LICENSE
++ publish flip. Round closes after phase 6 + the ledger/status/map sync.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
