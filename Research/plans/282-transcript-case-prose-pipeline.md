@@ -376,27 +376,46 @@ PUNT-if-invasive (human-sanctioned). Grep-anchor: `flagship-render-polish`.
 
 Render-form (touch `core::diag` render_cli / caret plumbing — Dorc-side, cousins of
 `AID-NEEDS:kFLOW`):
-- **span-caret `\__/`** — a source-SPAN (AST region, start+end) underlines with
-  `\`+`_`…`_`+`/`, not `^^^`. Door left open for `^^^` on single lexemes; a SET of
-  results all share `\__/`. Don't overengineer a style system.
-- **invocation-global gutter** — the code gutter width holds the HIGHEST source
-  line-number across the WHOLE invocation (all replay blocks), default 3-wide
-  (0-999), so code columns never shift between blocks; 4 incl. the `|`.
-- **`{command}` template param** — the command word (e.g. `apt-get`) is a templated
-  value in the message, not baked prose.
-- **`= repair:` not `= help:`** — the correct follow-up-categorizer term for this
-  error class/category (per-class, not a global rename).
-- **following-ness punctuation** — a fragment renders terminal `:` when content
-  follows, `.` when nothing does; architecture-driven, NOT mechanically-composed
-  grammar (that extreme stays refused, `AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+- **span-caret `\__/`** (LANDED) — a source-SPAN (AST region, start+end) underlines
+  with `\`+`_`…`_`+`/`, not `^^^`. A single lexeme keeps `^`; a secondary span keeps
+  `-`. Three fixed forms — no style-system.
+- **invocation-global gutter** (`28A:rul-gutter-width-invocation-global`) — width
+  `W = max(3, maxDigits)`, `maxDigits` = digits of the LARGEST line-number rendered
+  ANYWHERE in the invocation (all replay blocks), so code columns never shift between
+  blocks; `|` sits at column ≥ 4 always. Placement: right-align each number in W by
+  default (ones-places line up, rustc-standard); when every rendered line-number
+  shares ONE digit-width ≤ 2, apply the slack aesthetic — 1-digit CENTERED (` 6 |`),
+  all-2-digit LEFT-aligned (`60 |`). ≥3 digits fill (`600|`, `6000|`); mixed widths
+  right-align (`  6|` beneath `600|`, `   6|` beneath `6000|`).
+- **`{command}` — typed, not a bare string** (`28A:rul-command-name-typed-three-state`):
+  a command-name type expressing static-literal / dynamic-but-const-prop-resolved /
+  no-single-clear-name, threaded from the analysis site where value-flow is known (not
+  synthesized late). Render: literal → the name; resolved-dynamic → "This dynamic
+  command-word, which resolves to `apt-get`, …"; unresolvable → fallback phrasing (no
+  `{command}` fill). Literal path end-to-end now; the dynamic variants get the TYPE +
+  RENDER shaped now, analysis-population may be a marked follow-up.
+- **`= repair:` not `= help:`** (`28A:rul-connective-minimal-remediation-map`) — keyed
+  on registry `RemediationClass`, MINIMAL for now: `ResolveDynamism`→"repair", all else
+  "help". Core-side (production `dorc plan` says `repair` too); the fuller class→word
+  map is tuned iteratively as errors surface — none exists yet.
+- **following-ness punctuation — DEFERRED** (`28A:rul-following-ness-deferred-punt`):
+  renderer-owned terminal `:`/`.` (`:` when a block follows, `.` when terminal, prose
+  authored without it) is the desired architecture but PUNTED this pass — it risks the
+  prose-bless byte-equality invariant for a refinement the flagship already gets right
+  with a baked `:`. Mechanically-composed grammar stays refused regardless
+  (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
 
-Prose-model (errorloom §3 words-and-paragraphs):
-- **wrap-agnostic source** — committed case prose is hard-wrapped + indented for
-  editing (message continuations 3-sp, repair 6-sp in the target); the RENDER owns
-  layout and reflows stored prose to a pinned canonical width, so source-wrap is
-  invisible to the render. Read-in already collapses `\n`+indent → one space (§3);
-  the render-side canonical-wrap-with-continuation-indent is the new half, and the
-  likeliest punt if invasive.
+Errorloom render (`render_case`, corpus surface — NOT core, so the tagged-twin
+byte-equality gate stays untouched):
+- **canonical wrap** (LANDED) — committed case prose is hard-wrapped + indented for
+  editing (message continuations 3-sp, repair 6-sp); `render_case` reflows stored
+  prose to a pinned canonical width, so source-wrap is invisible. Read-in collapses
+  `\n`+indent → one space (§3). Applies to ALL prose-bearing cases (16), not just the
+  flagship (human: nicer to edit in-editor).
+- **inter-block blank line** (`28A:rul-blank-line-is-errorloom`) — a blank line after
+  a replay block when another block follows (not trailing). An errorloom presentation
+  choice, NOT dorc-production output; a future dorc beauty-newline would stack to a
+  double blank, accepted.
 
 Not code: the human also rewrote actual prose ("Dorc" → "I", etc.) — voice, no
 mechanics owed.

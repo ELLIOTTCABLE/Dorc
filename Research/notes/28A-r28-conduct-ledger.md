@@ -796,6 +796,45 @@ revertable commit) — the human weighs at fold:
   (NOT the published errorloom, which stays dep-free). A `tc`-shaped watch-item if
   more pipeline pilots each pull more kernel crates.
 
+## §2z-post-2 — Flagship polish, decision round (human-adjudicated 2026-07-20)
+
+Six render/prose calls closed after the builder's first pass (`\__/` caret, gutter,
+wrap-all-16 landed on `ai/r28-flagship-polish`; gutter now reworked per below). Full
+spec rewritten into `282` §12; builder re-woken with these. NOT yet folded to `ai/r28-impl`.
+
+- **`28A:rul-gutter-width-invocation-global`** — gutter width `W = max(3, maxDigits)`,
+  `maxDigits` = digits of the LARGEST line-number anywhere in the invocation (all
+  blocks), so columns never shift block-to-block; `|` at col ≥ 4 always. Right-align by
+  default (ones-places match); when every rendered line-number shares ONE width ≤ 2,
+  apply the slack aesthetic — 1-digit CENTERED (` 6 |`), all-2-digit LEFT (`60 |`); ≥3
+  digits fill (`600|`/`6000|`); mixed widths right-align (`  6|` beneath `600|`).
+  OVERRIDES the builder's butting `  6|` (its "human OK'd butting live" claim ≠ the
+  written spec — I did not witness it). Mixed-1&2→right-align is my extrapolation (no
+  human example); veto-able.
+- **`28A:rul-connective-minimal-remediation-map`** — `= help:`→`= repair:` keyed on
+  registry `RemediationClass`, MINIMAL: `ResolveDynamism`→"repair", else "help".
+  CORE-side (production `dorc plan` also says `repair`; re-bless the ResolveDynamism
+  help→repair golden churn). No fuller map exists — human tunes iteratively as errors
+  surface (handling the whole message-category dynamically).
+- **`28A:rul-blank-line-is-errorloom`** — the inter-block blank line is an ERRORLOOM
+  `render_case` presentation choice (gated "another block follows", not trailing), NOT
+  dorc-production output. A future dorc beauty-newline stacking to a double blank is
+  accepted.
+- **`28A:rul-following-ness-deferred-punt`** — renderer-owned terminal `:`/`.` is
+  DEFERRED (my judgment; human delegated, flagged "may be the gnarly-punt class"). It
+  risks the prose-bless byte-equality invariant (load-bearing for the flip gates) for a
+  refinement the flagship already gets right with a baked `:`. Revisit when a genuinely
+  `.`-terminal diagnostic (message, no source-span, no help) exists.
+- **`28A:rul-command-name-typed-three-state`** — `{command}` is TYPED, not a bare
+  `String`: static-literal / dynamic-but-const-prop-resolved / no-single-clear-name,
+  threaded from the analysis site (value-flow known there, not synthesized late).
+  Render: literal→name; resolved-dynamic→"This dynamic command-word, which resolves to
+  `apt-get`, …"; unresolvable→fallback (no fill). Literal path end-to-end now; dynamic
+  variants get TYPE+RENDER shaped now, analysis-population may be a marked follow-up if
+  it needs real value-flow work. Human: name needed in MANY messages, so API naming
+  must follow the eventual purpose. Escalate if scope leaves the kernel.
+- case-rewrap: all 16 corpus cases stay rewrapped (human: nicer to edit in-editor).
+
 ## §3 — Lane map and state (final)
 
 | lane | branch | shape | state |
