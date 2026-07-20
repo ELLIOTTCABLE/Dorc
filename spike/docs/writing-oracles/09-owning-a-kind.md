@@ -28,7 +28,7 @@ The fix is one function, written by the kind's owner, because what "the same
 entity" means is exactly what a kind's owner holds:
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 sm_dorc_Package__resolve() {
    dpkg-query -W -f '${Package}\n' -- "$1" 2>/dev/null || printf '%s\n' "$1"
 }
@@ -63,8 +63,8 @@ says it once, for everyone:
 
 ```sh
 sm_dorc_Package__disturbance_reaches_only() {
-   printf '%s\n' "$1"   : sm.dorc.Service
-   dpkg -L "$1" 2>/dev/null   : sm.dorc.File
+   printf '%s\n' "$1"   : disturbs sm.dorc.Service
+   dpkg -L "$1" 2>/dev/null   : disturbs sm.dorc.File
 }
 ```
 
@@ -73,7 +73,9 @@ same-named service, and exactly the files the package installed. The engine
 applies this to every footprint coordinate of the kind, whoever emitted it - the
 colleague's claim now covers nginx's files without the colleague learning
 anything. Emission lines follow the footprint grammar: entities on stdout, the
-implied kind riding the mark. The first line is static knowledge, resolved at
+kind riding a `: disturbs` mark (the same verb the footprint member uses; a
+reach is a disturbance the kind implies). The first line is static knowledge,
+resolved at
 plan time; the second is a host question, run read-only at probe time, because
 the true payload lives only on the host. Both shapes live in one body, and a line
 can migrate between them as the kind's needs change.
@@ -100,27 +102,29 @@ location not depend on?
 
 ```sh
 sm_dorc_KernelParam__state_stored_only_in() {
-   printf 'kernel-sysctls\n'   : kernel
-   :   : invariant:fs-view
+   printf 'kernel-sysctls\n'   : stored-in kernel
+   : undivided-by-transit-across fs-view
 }
 ```
 
 The emission lines place the state on a substrate - kernel memory here; a
-filesystem path for most kinds (`printf '/var/lib/dpkg\n'   : fs` for the package
-kind). The `only` contract applies with full force: you are declaring the state
-lives in these places and nowhere else.
+filesystem path for most kinds (`printf '/var/lib/dpkg\n'   : stored-in fs` for
+the package kind). The `only` contract applies with full force: you are declaring
+the state lives in these places and nowhere else.
 
-The bare colon-lines carry the interesting part: invariance declarations, one per
-context dimension the state does not vary along. This is where kind ownership
-meets the previous page. Kernel parameters are one store machine-wide, so a fact
-about them measured outside a chroot is still true inside it: `invariant:fs-view`
-says so, and licenses the engine to carry such facts across that boundary - after
-it has independently verified, structurally, that the measuring check read nothing
-else. A package's installed-ness does not depend on who asks: `invariant:user`.
+The `undivided-by-transit-across` lines carry the interesting part: invariance
+declarations, one per context dimension the state does not vary along. This is
+where kind ownership meets the previous page. Kernel parameters are one store
+machine-wide, so a fact about them measured outside a chroot is still true inside
+it: `: undivided-by-transit-across fs-view` says so, and licenses the engine to
+carry such facts across that boundary - after it has independently verified,
+structurally, that the measuring check read nothing else. A package's
+installed-ness does not depend on who asks: `: undivided-by-transit-across user`.
 What you must not do is flatter the kind: a network-parameters kind must not claim
-`invariant:netns` (network state is precisely what varies per network namespace -
-the model refuses that combination loudly), and the package kind must not claim
-`invariant:fs-view` (every chroot has its own package database). Declare only the
+`undivided-by-transit-across netns` (network state is precisely what varies per
+network namespace - the model refuses that combination loudly), and the package
+kind must not claim `undivided-by-transit-across fs-view` (every chroot has its
+own package database). Declare only the
 invariances that are true of the substrate itself, and the engine turns them into
 exactly the cross-context answers they justify; declare none, and facts simply do
 not cross, which is never wrong, only quieter. A declared invariance that
@@ -144,7 +148,8 @@ enforcement behind any of this, deliberately: reverse-DNS naming makes every
 vocabulary's accountable party legible, and the rest is the same human protocol
 that keeps package names and Java packages coherent.
 
-<!-- quoted: USER_STORY.md stages 6-7; 272 store member + invariance; 277
-     sections 4e, 6 divergent-meaning ownership refinement; 271
+<!-- quoted: USER_STORY.md stages 6-7; 272 store member + invariance; plans/281
+     mark grammar v0.2 (disturbs unify, stored-in, undivided-by-transit-across);
+     277 sections 4e, 6 divergent-meaning ownership refinement; 271
      rul-at-most-family-names, rul-invariance-speech-act; plans/27C section 4;
      e2e carry-fsview fixtures -->

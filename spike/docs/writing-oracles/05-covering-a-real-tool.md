@@ -17,14 +17,14 @@ exactly as safe as having no oracle at all.
 Here is the page-four oracle, grown up:
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 foobar__is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs|renew)
       dest : org.foob.Certs = "$1"
       [ "${2-}" = "" ] || return 2
-      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"#synced
+      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"@synced
       ;;
    purge-certs) return 2 ;;
    *) return 2 ;;

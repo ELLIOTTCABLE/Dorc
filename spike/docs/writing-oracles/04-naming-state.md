@@ -25,7 +25,7 @@ Dorc's answer is a small addressing scheme, written inline in your oracle. An
 address is called a coordinate, and it has up to three parts:
 
 ```
-sm.dorc.Service:"$svc"#enabled
+sm.dorc.Service:"$svc"@enabled
 \_____________/ \____/\______/
       kind      entity selector
 ```
@@ -44,8 +44,8 @@ The entity says which one: a package name, a unit name, a path. Simple values
 anything coming from a variable, takes double quotes with normal shell
 interpolation: `"$dest"`.
 
-The selector, introduced by `#`, names one aspect of the entity - one cell of
-state. A systemd unit's `#enabled` and `#active` are different cells: `enable --now`
+The selector, introduced by `@`, names one aspect of the entity - one cell of
+state. A systemd unit's `@enabled` and `@active` are different cells: `enable --now`
 establishes both, but observing one tells you nothing about the other, and a good
 oracle keeps them separate. Selector tokens are simple identifiers (letter or
 underscore first, then letters, digits, underscores). Leaving the selector off
@@ -66,13 +66,14 @@ marks below, are extra syntax that a stock shell would not understand, so a file
 that uses them must declare the dialect once, near the top, on its own line:
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 ```
 
 To every other tool on earth that line is a comment. To Dorc it switches on the
 extra syntax for this file (and pins which version of it, so files never rot as
-the dialect evolves). A file without the marker is treated as plain shell, full
-stop. Function names like `foobar__is_converged` are recognized either way - they
+the dialect evolves; a marker naming a version Dorc does not know is a loud
+error, never a silent fallback to plain shell). A file without the marker is
+treated as plain shell, full stop. Function names like `foobar__is_converged` are recognized either way - they
 are ordinary POSIX names and need no dialect - so the marker becomes necessary
 exactly when you first write a bind or a mark.
 
@@ -82,29 +83,40 @@ A mark rides at the end of a runnable statement, after some whitespace, and stat
 what that statement's exit status means in coordinate terms:
 
 ```sh
-foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"#synced
+foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"@synced
 ```
 
 Read it as: this command reads the world, and its exit status answers for that
 cell - 0 means the cell holds, 1 means it does not. Dorc never interprets the
 token `synced`; it is opaque, meaningful only because this line consistently means
 it. What the mark buys you: the fact now has an address. The plan can report it
-("converged: org.foob.Certs:/etc/nginx/certs#synced" instead of a vague "check
+("converged: org.foob.Certs:/etc/nginx/certs@synced" instead of a vague "check
 passed"), and the machinery that tracks which commands disturb which state can be
 precise about yours instead of conservative about everything.
 
 There are three mark sigils, and each marked line asserts exactly one thing:
 
-    tool query "$x"    : some.kind.Name:"$x"#present      verdict: exit 0 asserts it holds
-    tool absent "$x"   :! some.kind.Name:"$x"#present     verdict, complement sense
-    tool peek "$y"     :? some.kind.Name:"$y"#mode        observe: this line reads that cell
+    tool query "$x"    : some.kind.Name:"$x"@present      verdict: exit 0 asserts it holds
+    tool absent "$x"   :! some.kind.Name:"$x"@present     verdict, complement sense
+    tool peek "$y"     :? some.kind.Name:"$y"@mode        observe: this line reads that cell
 
 The plain `:` form you have seen. The `:!` form is for arms whose converged state
 is an absence - a `remove` verb's check, where exit 0 must mean "the thing is
-gone", which is the complement of `#present` holding. Spelling the sense on the
+gone", which is the complement of `@present` holding. Spelling the sense on the
 mark keeps a hard rule intact: you never invert an exit status yourself (no `!`,
 no exit-code gymnastics), because hand-inverted statuses are how "cannot say"
 accidentally becomes "yes".
+
+These three sigils are one-character shortcuts for the verbs `asserts`, `refutes`,
+and `reads`. Other facts you meet on later pages - a footprint, a context vouch -
+are written with their verb spelled as a word, like `: disturbs org.foob.Certs`;
+the sigils are just the frequent core relations earning a terse form.
+
+Everything so far uses the colon carrier (`:`), which highlights like ordinary
+shell. A mark about genuinely dangerous state can instead ride the comment carrier
+`#:` (`... #: some.kind.Name:"$x"@present`): identical meaning, but inert as a real
+comment even if the file is ever run unstripped, at the cost of rendering greyer.
+The contract reference covers when to prefer it; the colon form is the default.
 
 The `:?` observe form asserts nothing about convergence; it discloses a read. Use
 it when your verdict genuinely depends on some other cell along the way: it tells
@@ -137,14 +149,14 @@ say precisely which certs directory it proved converged.
 Putting the page together, the first oracle grown into its named form:
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 foobar__is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs)
       dest : org.foob.Certs = "$1"
       [ "${2-}" = "" ] || return 2
-      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"#synced
+      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"@synced
       ;;
    *) return 2 ;;
    esac
@@ -157,7 +169,7 @@ mechanically back to plain shell: strip the file and the bind becomes an ordinar
 assignment, the marks vanish whole, and what remains is the defensive check
 function you would have wanted in your shell library anyway.
 
-<!-- quoted: 277 sections 1, 3, 4a-4f; 278 authored-additions; 271
-     rul-selector-introducer-hash, rul-binds-entity-only-provisional;
-     24M reverse-dns kinds; USER_STORY.md stage 3; spike/CLAUDE.md
-     coordinate-semantics, marker-gates-syntax-only -->
+<!-- quoted: plans/281 mark grammar v0.2 (sections 1, 3-6, 8; @ selector, carriers,
+     sugar-vs-verb); 277 sections 1, 3, 4a-4f; 278 authored-additions; 271
+     rul-binds-entity-only-provisional; 24M reverse-dns kinds; USER_STORY.md
+     stage 3; spike/CLAUDE.md coordinate-semantics, marker-gates-syntax-only -->
