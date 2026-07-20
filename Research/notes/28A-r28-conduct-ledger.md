@@ -530,6 +530,58 @@ Phase 5 (backport of the remaining 15) + phase 6 (de-passthrough) are SEPARATE
 later dispatches, not this executor's. The executor stops at the map's
 step-7 checkpoint for conductor review before the flip.
 
+## §2o — Generation-flip CHECKPOINT review + the flip go (conductor, 2026-07-20)
+
+Steps 1–6 landed on `ai/r28-flip-exec` @ `cb99482` (1037 unit / 97 e2e / gates;
+title-split span relocation proven byte-identical to `render_cli` + gap-free
+through `to_errorloom` incl. the straddle case; five FakeGit Consumer scenarios;
+world-as-pipeline marker pilot fires the REAL in-process gate with a real
+spanned caret frame — the §2n rider discharged). Flag dispositions:
+
+- **`flag-render-seat-threading-shape`: ACCEPTED as an IMPROVEMENT** — the
+  `*_with` lookup-siblings + const-delegates shape is within §2n (one seat,
+  parameterized, byte-identical) and edits fewer call sites than 283's
+  thread-everywhere. Better than proposed; keep.
+- **`flag-corpus-and-oracle-dep-sited-in-dorc-loom`: ACCEPTED, forced-correct**
+  — world-as-pipeline needs `oracle::check_dialect_marker`; `core` can't dep
+  `oracle`; 283 §1a flagged the contingency. Corpus + gates + the
+  dorc-loom→dorc-oracle dep (core+syntax only, DST-clean) live in dorc-loom.
+- **`flag-byte-identical-gate-is-partial`: ACCEPTED; whole-file gate DEFERRED to
+  a conductor canonicalization act** — the literal whole-file
+  promote→byte-identity gate is unreachable until `catalog.rs` is canonicalized
+  (47/56 `example` fields are pre-promote hand-strawmen; literals hand-wrapped
+  multi-line), and canonicalizing is `DORC_CATALOG_PROMOTE` = BLESS-law
+  orchestrator-only, correctly NOT run by the builder. The achievable half
+  (params-regen + carry + idempotence) is wired and passing. `28A:rul-catalog-
+  canonicalization-is-conductor`: I run the promote on a fresh binary, INSPECT
+  the diff (schematic examples replacing strawmen + single-line literals — watch
+  for any semantically-richer authored example being flattened; preserve if
+  found), commit the canonicalized catalog, THEN the whole-file byte gate
+  tightens. Paired with the prose-authoring pass. NOT a flip precondition.
+- **`flag-reholing-mangles-glued-params`: NAMED SEAM, human-surfaced at close;
+  NOT a flip blocker** — backtick-GLUED params (`` `{which}` ``, every
+  `whylog-*` code) straddle errorloom's dumb word-boundary, so prose-bless
+  mangles their re-holing (bakes value + dup hole); space-delimited + foreign
+  `detail` re-hole cleanly. Phase 4 unaffected (roster cases are
+  world-as-payload, rendered-never-blessed). But it means whylog-family prose
+  can't yet round-trip the transport. `28A:rul-glued-param-rehole-seam`: three
+  candidate answers for the human (a) teach errorloom's tokenizer backtick =
+  word-boundary — principled (shell-consistent), but reaches into the published
+  crate's core word-model; (b) respell the glued-param prose space-delimited;
+  (c) accept + document. Pairs with the prose-quality sprint (deferred,
+  human-owned). Surface at round close, do not resolve.
+- Count nit (4 stored `[unwritten:]`, not 5): noted.
+
+**THE FLIP: GO (Option B — roster retires under render-level protection).** The
+roster's five codes are already case-owned (step 6c); the render-level
+`fixpoint_check` protects their prose (a catalog hand-edit moves the render off
+the committed case bytes), so the `CONDUCTOR_AUTHORED` roster retires SAFELY on
+that gate alone — the whole-file byte gate is additional metadata protection,
+not a retirement precondition. Flip scope = retire the roster + re-key
+`message_registers_are_sm_or_unwritten` to "sm | None | case-owned" + confirm
+the wired metadata gate stays green. Small, per 283 §5.8. Phase 5 (backport 15)
++ phase 6 (de-passthrough) remain SEPARATE later dispatches.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
