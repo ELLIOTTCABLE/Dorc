@@ -13,12 +13,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::catalog::{OwnedEntry, owned_catalog};
 use dorc_core::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, DanglingReference,
-    Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed, MarkRcArityExceeded,
-    MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker, MungeNameInvalid,
-    OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
-    SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
-    WhylogVersionRefused, WrapperPeelIncoherent, render_cli_tagged, render_cli_with,
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
+    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
+    MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
+    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
+    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_tagged, render_cli_with,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
@@ -154,7 +154,7 @@ impl Consumer for DorcConsumer {
                 if block.command().contains("--format=jsonl") {
                     render_diag_jsonl(&diag)
                 } else {
-                    human.clone()
+                    reflow_to_canonical(&human)
                 }
             })
             .collect();
@@ -162,6 +162,67 @@ impl Consumer for DorcConsumer {
         regenerated.set_replay_outputs(outputs);
         Ok(regenerated.to_text())
     }
+}
+
+/// The corpus's pinned canonical render width (`282` §3): committed transcripts word-wrap HERE, not
+/// at a terminal — a live surface may wrap adaptively, the corpus does not. The committed file's own
+/// hard-wrapping is normalized away on read-in (the whitespace-collapsing prose tokenizer) and
+/// regenerated at this width, so the on-disk layout is render-owned, never author-owned.
+const CANONICAL_WIDTH: usize = 80;
+
+/// Reflow a flat CLI diagnostic render to [`CANONICAL_WIDTH`] (`282` §3, item-6 layout): the title
+/// line wraps under a 3-space hanging indent (the message body under the title) and each
+/// `= help:` / `= note:` block wraps under a 6-space hanging indent, its `=` marker re-aligned to the
+/// frame's gutter column; the caret-frame lines pass through verbatim. This corpus surface owns the
+/// wrap so a committed file's editing-time layout never reaches the fixpoint assertion.
+fn reflow_to_canonical(render: &str) -> String {
+    let mut out: Vec<String> = Vec::new();
+    for (i, line) in render.lines().enumerate() {
+        if i == 0
+            && let Some(cut) = line.find("]: ")
+        {
+            let (prefix, text) = line.split_at(cut.saturating_add(3));
+            out.push(wrap_words(prefix, "   ", text));
+            continue;
+        }
+        if let Some(rest) = line.trim_start().strip_prefix("= ")
+            && let Some(cut) = rest.find(": ")
+        {
+            let marker = rest.get(..cut.saturating_add(2)).unwrap_or(rest);
+            let text = rest.get(cut.saturating_add(2)..).unwrap_or("");
+            out.push(wrap_words(&format!("   = {marker}"), "      ", text));
+            continue;
+        }
+        out.push(line.to_owned());
+    }
+    out.join("\n")
+}
+
+/// Greedy word-wrap of `text` beneath `prefix` (the un-wrapped first-line lead-in) at
+/// [`CANONICAL_WIDTH`], every continuation line carrying `cont_indent`. Column counting is by
+/// `char`, so the one-column `—`/`…` glyphs the prose uses count as one. Pure; total.
+fn wrap_words(prefix: &str, cont_indent: &str, text: &str) -> String {
+    let mut out = String::from(prefix);
+    let mut col = prefix.chars().count();
+    let mut started = false;
+    for word in text.split_whitespace() {
+        let wlen = word.chars().count();
+        if !started {
+            out.push_str(word);
+            col = col.saturating_add(wlen);
+            started = true;
+        } else if col.saturating_add(1).saturating_add(wlen) <= CANONICAL_WIDTH {
+            out.push(' ');
+            out.push_str(word);
+            col = col.saturating_add(1).saturating_add(wlen);
+        } else {
+            out.push('\n');
+            out.push_str(cont_indent);
+            out.push_str(word);
+            col = cont_indent.chars().count().saturating_add(wlen);
+        }
+    }
+    out
 }
 
 /// The compact machine view of a single diagnostic for a `--format=jsonl` replay block (`282` §2
@@ -194,6 +255,7 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
             position: OperandPosition::Operand(1),
             cause: None,
             top_cause: TopCause::UnmodeledExpansion,
+            command: CommandName::Literal("apt-get".to_owned()),
         }),
         "site-unresolvable" => DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: SiteId::leaf(LeafId(4)),

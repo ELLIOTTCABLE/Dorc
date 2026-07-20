@@ -4,10 +4,11 @@ code: marker-version-unrecognized
 -- oracle.sh --
 # dorc-lang/v0.1
 apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
+
 -- replay --
 $ dorc lint oracle.sh
 error[marker-version-unrecognized]: [unwritten: marker-version-unrecognized]
-  --> oracle.sh:2:22
-  |
-2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
-  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   --> oracle.sh:2:22
+   |
+ 2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
+   |                      \__________________________/

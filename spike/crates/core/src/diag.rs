@@ -328,11 +328,43 @@ impl OperandPosition {
     }
 }
 
-/// Payload of [`DiagCode::CmdsubOperandTop`]: the ⊤-origin site, WHICH position went ⊤, and an
-/// optional ⊤-cause receipt (`228` dc-1 — the exempt-plane hook that links this origin to its
-/// poisoned downstream consumers without each consumer emitting). The `cause` is EXEMPT-plane
-/// (it is a [`ProvId`], opaque and non-`Display`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The command-word name a diagnostic carries for its `{command}` template param (`282` §12
+/// item-6): a value-flow-derived, three-state name so a message can speak the command in the
+/// caller's terms (the human's stated need across MANY future messages). Populated at the analysis
+/// emit site where the resolved argv is known — never synthesized late.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommandName {
+    /// A statically-resolved literal command word — renders the bare name (`apt-get`).
+    Literal(String),
+    /// A dynamic command word that constant-propagation resolved to a known name — renders the
+    /// "which resolves to" phrasing. The TYPE is shaped now; analysis-side population is a marked
+    /// follow-up (it needs value-flow provenance the emit site does not yet distinguish).
+    Resolved(String),
+    /// No single clear command name (a ⊤ command word) — renders a name-free fallback.
+    Unclear,
+}
+
+impl CommandName {
+    /// The `{command}` fill text (`282` §12 item-6): the bare name for a literal, a resolves-to
+    /// clause for a const-prop'd dynamic word, a neutral fallback when no single name is clear. The
+    /// engine-owned canonical formatter for this param (the `describe()` family, `27V` §3).
+    #[must_use]
+    pub fn describe(&self) -> String {
+        match self {
+            CommandName::Literal(name) => name.clone(),
+            CommandName::Resolved(name) => {
+                format!("this dynamic command-word, which resolves to `{name}`,")
+            }
+            CommandName::Unclear => "this command".to_owned(),
+        }
+    }
+}
+
+/// Payload of [`DiagCode::CmdsubOperandTop`]: the ⊤-origin site, WHICH position went ⊤, an optional
+/// ⊤-cause receipt (`228` dc-1 — the exempt-plane hook that links this origin to its poisoned
+/// downstream consumers without each consumer emitting), and the command-word name for `{command}`.
+/// The `cause` is EXEMPT-plane (it is a [`ProvId`], opaque and non-`Display`).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CmdsubOperandTop {
     /// The command-site that went ⊤.
     pub site: SiteId,
@@ -345,6 +377,9 @@ pub struct CmdsubOperandTop {
     /// The category of ⊤-cause, for the template's `{cause}` fill (`top_cause.describe()`); the
     /// message-plane companion to the exempt-plane [`cause`](Self::cause) receipt.
     pub top_cause: TopCause,
+    /// The command-word name for the `{command}` fill (`command.describe()`) — value-flow-derived
+    /// at the emit site (`282` §12 item-6).
+    pub command: CommandName,
 }
 
 /// Payload of [`DiagCode::SiteUnresolvable`]: the probe-unresolvable site and the passthrough
@@ -1595,6 +1630,7 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         DiagCode::CmdsubOperandTop(p) => vec![
             ("position", p.position.describe()),
             ("cause", p.top_cause.describe().to_owned()),
+            ("command", p.command.describe()),
         ],
         DiagCode::RenderHeredocRefused(p) => {
             vec![("verb", p.verb.to_owned()), ("command", p.command.clone())]
@@ -1686,6 +1722,17 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         | DiagCode::RecordsGluedLine(_)
         | DiagCode::RecordsHeaderMissing(_)
         | DiagCode::RecordsSentinelNonce(_) => vec![],
+    }
+}
+
+/// The aid connective word for a code's `= <word>:` catalog-help line (`282` §12 item-2): a
+/// [`RemediationClass::ResolveDynamism`] remediation reads `repair` (the fix is to make the book
+/// statically resolvable), every other class stays `help`. Keyed on the registry class — the human
+/// tunes the fuller class→word map iteratively as error surfaces demand it, not up front.
+fn help_connective(code: &DiagCode) -> &'static str {
+    match registry(code).remediation {
+        RemediationClass::ResolveDynamism => "repair",
+        _ => "help",
     }
 }
 
@@ -1932,7 +1979,8 @@ pub fn render_body_with(
     if let Some(help) = lookup.help(slug) {
         let _ = write!(
             out,
-            "\n  = help: {}",
+            "\n  = {}: {}",
+            help_connective(&diag.code),
             crate::catalog::fill_template(help, &refs)
         );
     }
@@ -2018,7 +2066,8 @@ pub fn render_body_tagged_with(
         ),
     }
     if let Some(help) = lookup.help(code) {
-        arrange(&mut out, &mut spans, "\n  = help: ", "help-connective");
+        let connective = format!("\n  = {}: ", help_connective(&diag.code));
+        arrange(&mut out, &mut spans, &connective, "help-connective");
         crate::catalog::fill_template_tagged(
             &mut out,
             &mut spans,
@@ -2291,9 +2340,49 @@ pub fn line_col(src: &str, byte: usize) -> (usize, usize) {
     (line, clamped.saturating_sub(line_start).saturating_add(1))
 }
 
+/// The floor on the gutter's line-number field (item-1 gutter stability): a 3-digit field holds
+/// 0–999, so the `|` column stays put across a book's frames and a code line never shifts relative
+/// to its neighbours. A larger number FILLS/BUTTS the bar (`600|`, `6000|`); the field grows past
+/// this only when a book exceeds 999 lines.
+const GUTTER_MIN_WIDTH: usize = 3;
+
+/// Format line number `l` into the `w`-wide gutter field (item-1 placement): right-aligned by
+/// default (rustc ones-place alignment), EXCEPT a frame whose line numbers ALL share one digit-width
+/// ≤ 2 gets the slack aesthetic — a lone/all-1-digit frame CENTERS (` 6 `), an all-2-digit frame
+/// LEFT-aligns (`60 `). `min_digits`/`max_digits` are the frame's narrowest/widest number widths.
+/// Pure; total.
+fn gutter_field(l: usize, w: usize, min_digits: usize, max_digits: usize) -> String {
+    let num = l.to_string();
+    if min_digits == max_digits && max_digits == 1 {
+        format!("{num:^w$}")
+    } else if min_digits == max_digits && max_digits == 2 {
+        format!("{num:<w$}")
+    } else {
+        format!("{num:>w$}")
+    }
+}
+
+/// The under-span mark for a caret frame. A primary SPAN (a byte region, `run >= 2`) renders the
+/// bracket form `\`+`_`…+`/` — it reads as "this whole extent", not "this point" (the `e6edf5e`
+/// style). A single-column primary keeps a `^` (the door item-1 left open for a lexeme point); a
+/// secondary span keeps its `-` underline. Pure; total.
+fn span_underline(run: usize, primary: bool) -> String {
+    if !primary {
+        return "-".repeat(run);
+    }
+    if run < 2 {
+        return "^".repeat(run);
+    }
+    let mut mark = String::with_capacity(run);
+    mark.push('\\');
+    mark.extend(core::iter::repeat_n('_', run.saturating_sub(2)));
+    mark.push('/');
+    mark
+}
+
 /// A rustc-style caret region for ONE span (ack-8, the diagnostics frame): the `--> file:line:col`
-/// locator, the source line in a `N | …` gutter, and an underline (`^` primary / `-` secondary)
-/// beneath the span with an optional label. This is the shared primitive both the legacy-diag
+/// locator, the source line in a `N | …` gutter, and an underline (`\`…`/` primary span / `-`
+/// secondary) beneath the span with an optional label. This is the shared primitive both the legacy-diag
 /// render (the cli's `report()`) and [`render_cli`]'s multi-span model call, so the frame shape
 /// stays identical whether a diagnostic carries one span or several (cause+effect in one frame).
 ///
@@ -2317,19 +2406,20 @@ pub fn frame_region(
     let hi = span.hi.0 as usize;
     let (line, col) = line_col(src, lo);
     let (hi_line, hi_col) = line_col(src, hi);
-    let marker = if primary { '^' } else { '-' };
-    // The gutter is sized to the WIDEST line number (the last), so the `|` columns align down a
-    // multi-line frame; a single-line span keeps `hi_line == line`, so the width is unchanged.
-    let gutter_w = hi_line.to_string().len();
+    // The gutter field holds the WIDEST rendered line number (the last), floored at
+    // [`GUTTER_MIN_WIDTH`] so the `|` column never shifts across a small/medium book (item-1). The
+    // frame's own number set (first line = narrowest, last = widest) fixes the alignment aesthetic.
+    let min_digits = line.to_string().len();
+    let max_digits = hi_line.to_string().len();
+    let gutter_w = max_digits.max(GUTTER_MIN_WIDTH);
     let gutter = " ".repeat(gutter_w);
     let lines: Vec<&str> = src.lines().collect();
     let mut out = String::new();
-    let _ = write!(out, "\n  --> {filename}:{line}:{col}");
-    let _ = write!(out, "\n{gutter} |");
+    let _ = write!(out, "\n{gutter}--> {filename}:{line}:{col}");
+    let _ = write!(out, "\n{gutter}|");
     for l in line..=hi_line {
         let line_text = lines.get(l.saturating_sub(1)).copied().unwrap_or("");
-        let num = l.to_string();
-        let pad = " ".repeat(gutter_w.saturating_sub(num.len()));
+        let field = gutter_field(l, gutter_w, min_digits, max_digits);
         // This line's slice of the span: from the start column on the FIRST line (0 on continuation
         // lines) to the end column on the LAST line (end-of-line on earlier lines).
         let start = if l == line { col.saturating_sub(1) } else { 0 };
@@ -2339,9 +2429,9 @@ pub fn frame_region(
             line_text.len()
         };
         let run = end.saturating_sub(start).max(1);
-        let underline: String = core::iter::repeat_n(marker, run).collect();
-        let _ = write!(out, "\n{pad}{num} | {line_text}");
-        let _ = write!(out, "\n{gutter} | {}{underline}", " ".repeat(start));
+        let underline = span_underline(run, primary);
+        let _ = write!(out, "\n{field}| {line_text}");
+        let _ = write!(out, "\n{gutter}| {}{underline}", " ".repeat(start));
     }
     if let Some(l) = label {
         let _ = write!(out, " {l}");
@@ -2387,6 +2477,7 @@ mod tests {
             position: pos,
             cause,
             top_cause: TopCause::UnmodeledExpansion,
+            command: CommandName::Literal("apt-get".to_owned()),
         }
     }
 
@@ -2688,8 +2779,8 @@ mod tests {
             "the source line in a gutter: {frame}"
         );
         assert!(
-            frame.contains("^^^^^^^"),
-            "a 7-caret underline under `$(date)`: {frame}"
+            frame.contains("\\_____/"),
+            "a 7-wide span bracket under `$(date)`: {frame}"
         );
     }
 
@@ -2715,17 +2806,17 @@ mod tests {
             "locator on the first line: {frame}"
         );
         assert!(
-            frame.contains("\n 9 | iii"),
-            "line 9 in a width-2 gutter: {frame}"
+            frame.contains("\n  9| iii"),
+            "line 9 in the 3-wide gutter: {frame}"
         );
         assert!(
-            frame.contains("\n10 | jjj"),
+            frame.contains("\n 10| jjj"),
             "line 10 in the aligned gutter: {frame}"
         );
         assert_eq!(
-            frame.matches("\n   | ^^^").count(),
+            frame.matches("\n   | \\_/").count(),
             2,
-            "a per-line `^^^` underline beneath BOTH covered lines (not just the first): {frame}"
+            "a per-line `\\_/` span bracket beneath BOTH covered lines (not just the first): {frame}"
         );
     }
 
@@ -2751,8 +2842,8 @@ mod tests {
         );
         let cli = render_cli(&d, src, "book.sh", &Interner::default());
         assert!(
-            cli.contains("^^^^^^^^^^^"),
-            "primary `^` caret under `run_stage_a`: {cli}"
+            cli.contains("\\_________/"),
+            "primary span bracket under `run_stage_a`: {cli}"
         );
         assert!(
             cli.contains("---------"),

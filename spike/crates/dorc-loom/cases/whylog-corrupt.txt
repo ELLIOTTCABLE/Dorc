@@ -3,5 +3,7 @@ code: whylog-corrupt
 ---
 -- replay --
 $ dorc why --last
-warning[whylog-corrupt]: the saved why-log is damaged and cannot be read back (no end-sentinel — a partial write?)
-  = help: this usually means an interrupted write; re-run `dorc why` live, and the next plan or apply will save a fresh why-log
+warning[whylog-corrupt]: the saved why-log is damaged and cannot be read back
+   (no end-sentinel — a partial write?)
+   = help: this usually means an interrupted write; re-run `dorc why` live, and
+      the next plan or apply will save a fresh why-log
