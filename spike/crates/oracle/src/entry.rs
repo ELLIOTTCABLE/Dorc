@@ -213,7 +213,7 @@ fn leading_shifts_before_guest(body: &[Stmt]) -> Option<usize> {
 // The tolerance vouch (`27C` §2 — the oracle surface)
 // ===========================================================================
 
-/// A lifted `tolerates:` vouch over a verdict body (`27C:vouch-tolerates`): per-function, per-
+/// A lifted `safe-across` vouch over a verdict body (`27C:vouch-tolerates`): per-function, per-
 /// dimension, reachability-scoped. Asserts, for exactly the reached path: "this body's effects are
 /// read-only BY DESIGN, not by privilege-starvation — executing it context-shifted along the named
 /// dimensions will not mutate." It does NOT claim anything about the answer (answers differ per
@@ -281,8 +281,8 @@ impl ToleranceVouch {
 }
 
 /// Lift the [`ToleranceVouch`] from a verdict body (`27C` §2 — the `is_converged` member). Walks the
-/// body for `: tolerates:<dim>` colon-lines: a mark at top level is unconditional; a mark inside a
-/// `case` arm is scoped to that arm's verb patterns. Brace-alternation `tolerates:{user,fs-view}`
+/// body for `: safe-across <dim>` colon-lines: a mark at top level is unconditional; a mark inside a
+/// `case` arm is scoped to that arm's verb patterns. Brace-alternation `safe-across {user,fs-view}`
 /// expands to a per-dimension set. An unknown dimension token is a LOUD diagnostic (`inv-top-reject`)
 /// that mints no tolerance. Pure/total.
 #[must_use]
@@ -293,7 +293,7 @@ pub fn lift_tolerance(verdict: &Predict) -> (ToleranceVouch, Vec<Diag>) {
     (vouch, diags)
 }
 
-/// Recursively collect `tolerates:` marks. `arm` is `Some(patterns, catch_all)` when inside a `case`
+/// Recursively collect `safe-across` marks. `arm` is `Some(patterns, catch_all)` when inside a `case`
 /// arm (the marks scope to it), `None` at top level (unconditional).
 fn collect_tolerance(
     body: &[Stmt],
@@ -376,7 +376,7 @@ fn arm_pattern_literals(arm: &crate::predict::CaseArm) -> (Vec<String>, bool) {
     (verbs, catch_all)
 }
 
-/// Expand a `tolerates:` dimension fragment into tokens: a bare `user` ⇒ `[user]`; a brace-set
+/// Expand a `safe-across` dimension fragment into tokens: a bare `user` ⇒ `[user]`; a brace-set
 /// `{user,fs-view}` ⇒ `[user, fs-view]` (`27C` §2 brace-alternation). Trims whitespace; empty
 /// members are dropped. Referent-agnostic string surgery (the tokens are validated against the
 /// closed dimension vocabulary by the caller).
@@ -987,7 +987,7 @@ fn is_identity_var(w: &Word, interner: &Interner) -> bool {
     matches!(w, Word::Var(sym) if matches!(interner.resolve(*sym), "USER" | "HOME" | "LOGNAME"))
 }
 
-/// Corroboration lint, forward direction (`27C` §6): a `tolerates:user` mark over a body that
+/// Corroboration lint, forward direction (`27C` §6): a `safe-across user` mark over a body that
 /// VISIBLY reads identity ⇒ "are you sure?" — the vouch claims read-only-under-shift, but the body's
 /// answer plainly depends on WHO is asking (a shifted user changes the answer, which is fine, but a
 /// mutation-on-shift would not be). A Warning (recognize-never-license): it never blocks, only asks.
@@ -1009,7 +1009,7 @@ pub fn corroborate_tolerance_over_identity(
 
 /// Corroboration lint, reverse direction (`27C` §6): a body doing heavy context-handling (visible
 /// identity reads) with NO tolerance mark ⇒ the one-line hint (it would become context-shiftable
-/// with a `tolerates:` mark). A Note (recognize-never-license). `None` when the body is already
+/// with a `safe-across` mark). A Note (recognize-never-license). `None` when the body is already
 /// vouched or reads no identity.
 #[must_use]
 pub fn hint_heavy_context_no_vouch(
@@ -1137,11 +1137,11 @@ mod tests {
 
     // ── the tolerance vouch ──────────────────────────────────────────────────────
     // NB the parseable spelling is the colon-line `: safe-across <dim>` (no-op `:` command + a
-    // `: target` mark, exactly like the corpus `: undivided-by-transit-across user`), NOT the spec §2 STRAWMAN
-    // shorthand `: tolerates:<dim>` (a single `:` is a no-op command with an argument, no mark).
+    // `: target` mark, like the corpus `: undivided-by-transit-across user`), NOT an attached-colon
+    // `tolerates:<dim>` token (the retired v0.1 `27C` §2 strawman; a single `:` hosts no mark).
     #[test]
     fn top_level_tolerates_is_unconditional() {
-        // A `tolerates:user` mark at the top of the body vouches user for EVERY verb (the babby
+        // A `safe-across user` mark at the top of the body vouches user for EVERY verb (the babby
         // template).
         let (_i, v) = one_verdict(
             "pipx__is_converged() { : safe-across user\n verb=$1; shift; case \"$verb\" in \
@@ -1163,7 +1163,7 @@ mod tests {
     }
     #[test]
     fn arm_scoped_tolerates_is_per_verb() {
-        // A `tolerates:` mark inside the `install` arm vouches ONLY the install path (reachability-
+        // A `safe-across` mark inside the `install` arm vouches ONLY the install path (reachability-
         // scoped): a `remove` site is NOT licensed to shift (the safe direction).
         let (_i, v) = one_verdict(
             "pipx__is_converged() { verb=$1; shift; case \"$verb\" in \
@@ -1514,7 +1514,7 @@ mod tests {
     // ── §6 mined-idiom lints + disclosure (recognize, never license) ──────────────
     #[test]
     fn corroboration_fires_both_directions() {
-        // Forward (`27C` §6): `tolerates:user` over a body that reads `$USER` ⇒ "are you sure?".
+        // Forward (`27C` §6): `safe-across user` over a body that reads `$USER` ⇒ "are you sure?".
         let (i, v) = one_verdict(
             "x__is_converged() { : safe-across user\n me=$USER; case \"$me\" in \
              root) return 0 ;; *) return 1 ;; esac }",

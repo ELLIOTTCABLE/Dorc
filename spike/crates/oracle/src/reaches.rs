@@ -4,14 +4,14 @@
 //!
 //! ```sh
 //! package__disturbance_reaches_only() {
-//!    printf '%s\n' "$1"    : service     # STATIC arm — traced at plan time, ships nothing
-//!    dpkg -L "$1"          : file        # DYNAMIC arm — escalates, runs read-only at probe
+//!    printf '%s\n' "$1"    : disturbs service   # STATIC arm — traced at plan time, ships nothing
+//!    dpkg -L "$1"          : disturbs file      # DYNAMIC arm — escalates, runs read-only at probe
 //! }
 //! ```
 //!
 //! # Typed emission (24G §4 — the load-bearing novelty)
 //!
-//! An emitting arm's KIND rides a TRAILING ANNOTATION on the emitting command (`: service`); the
+//! An emitting arm's KIND rides a TRAILING ANNOTATION on the emitting command (`: disturbs service`); the
 //! command's stdout lines are RAW ENTITIES (no `kind:` prefix, no `| sed` dressing). The kind symbol
 //! is fixed by the annotation at LIFT — a host can never mint a kind at runtime (the vocabulary
 //! fence, closed at analysis; contrast the `touches()` stringly readback that interns kind-strings

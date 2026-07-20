@@ -4,7 +4,7 @@
 //! netns) — unflagged — iff BOTH hold:
 //!
 //! * **(A) authored axis-invariance** ([`InvarianceIndex`]): every marked backing kind of the fact
-//!   carries its kind-owner's `invariant:<axis>` line inside `kind__state_stored_only_in()`
+//!   carries its kind-owner's `undivided-by-transit-across <axis>` line inside `kind__state_stored_only_in()`
 //!   (`277` §4e). Authored + attributable — a wrong line is the kind-owner's pointable error
 //!   (vouch-species), never the engine's.
 //! * **(B) engine-proved read-set closure** ([`read_set_closed`]): a conservative sh-taint over the
@@ -21,7 +21,7 @@
 //!   user-shift changes ACCESS to the body's own reads (EACCES flips a structurally-closed body's
 //!   answer), so (B) cannot certify it; user rides the enter-context lane or §4(b).
 //! * **netns caveat** — `net.*` state is per-netns, so [`InvarianceIndex::lift`] FORBIDS
-//!   `invariant:netns` on a kind whose store is the `net-kernel` substrate (a loud diagnostic; the
+//!   `undivided-by-transit-across netns` on a kind whose store is the `net-kernel` substrate (a loud diagnostic; the
 //!   claim is not honored). fs-view has no analogue.
 //! * **VERDICT-fact carry only** (human-confirmed 2026-07-17). World-cell VALUE carry rides r26 with
 //!   the capture fold; nothing here transports a value.
@@ -58,12 +58,12 @@ const NET_KERNEL_SUBSTRATE: &str = "net-kernel";
 const PURE_BUILTINS: &[&str] = &[":", "true", "false", "return", "[", "test", "printf"];
 
 // ===========================================================================
-// (A) authored axis-invariance — the `invariant:<axis>` line index
+// (A) authored axis-invariance — the `undivided-by-transit-across <axis>` line index
 // ===========================================================================
 
 /// The (A)-side index (`27C` §4(a)): per marked backing kind, the substrate axes its owner declared
 /// the kind's state INVARIANT across, lifted from every `kind__state_stored_only_in()` body's
-/// `invariant:<axis>` colon-lines (`277` §4e). Keyed by the kind's MUNGED funcname segment
+/// `undivided-by-transit-across <axis>` colon-lines (`277` §4e). Keyed by the kind's MUNGED funcname segment
 /// ([`crate::to_funcname_segment`]) so a dotted mark kind (`sm.dorc.KernelParam`) and the funcdef
 /// name (`sm_dorc_KernelParam__state_stored_only_in`) agree.
 ///
@@ -71,7 +71,7 @@ const PURE_BUILTINS: &[&str] = &[":", "true", "false", "return", "[", "test", "p
 /// (`empty-world-byte-identical`, `silence-licenses-nothing`).
 #[derive(Debug, Clone, Default)]
 pub struct InvarianceIndex {
-    /// Per kind, each invariant [`Dimension`] mapped to its `invariant:<axis>` line's defining
+    /// Per kind, each invariant [`Dimension`] mapped to its `undivided-by-transit-across <axis>` line's defining
     /// `(Span, OracleFileId)` (`tc-disturbs-span-threading`'s sibling — `27V:mech-minting-line-
     /// threading`), so a carry's attribution renders the kind-owner's line as `file:line` (render 3/3;
     /// `27C` §9). The span is the mark's own command line; the file id disambiguates which oracle.
@@ -80,9 +80,9 @@ pub struct InvarianceIndex {
 
 impl InvarianceIndex {
     /// Lift the (A) index from `state_stored_only_in()` bodies (`27C` §4(a); `277` §4e). Each body
-    /// is a [`Predict`]-shaped funcdef; its `invariant:<axis>` colon-lines mark whole-member
+    /// is a [`Predict`]-shaped funcdef; its `undivided-by-transit-across <axis>` colon-lines mark whole-member
     /// invariance. Enforces the **netns caveat**: a kind whose body emits the `net-kernel` substrate
-    /// (`printf … : net-kernel`) and ALSO claims `invariant:netns` is `declarations-genuinely-
+    /// (`printf … : net-kernel`) and ALSO claims `undivided-by-transit-across netns` is `declarations-genuinely-
     /// contradict` — the netns claim is DROPPED and a loud diagnostic emitted (`net.*` is per-netns;
     /// the model must not let an owner claim it netns-invariant). Fail-soft (`inv-no-throw`),
     /// deterministic (`inv-determinism`); reads marks + structure only (`inv-referent-agnostic`).
@@ -102,7 +102,7 @@ impl InvarianceIndex {
                 let scan = scan_state_body(body);
                 let entry = per_kind.entry(kind_munged.clone()).or_default();
                 for (dim, span) in scan.invariant {
-                    // netns caveat: net-kernel state is per-netns ⇒ an `invariant:netns` claim on it
+                    // netns caveat: net-kernel state is per-netns ⇒ an `undivided-by-transit-across netns` claim on it
                     // is a contradiction; drop it and diagnose (never honor a false invariance line).
                     if dim == Dimension::Netns && scan.stores_net_kernel {
                         diags.push(Diag::new(
@@ -122,7 +122,7 @@ impl InvarianceIndex {
         (Self { per_kind }, diags)
     }
 
-    /// Does `kind` (a DOTTED mark kind, e.g. `sm.dorc.KernelParam`) carry an `invariant:<dim>` line
+    /// Does `kind` (a DOTTED mark kind, e.g. `sm.dorc.KernelParam`) carry an `undivided-by-transit-across <dim>` line
     /// (`27C` §4(a)(A))? Munges the mark kind to the funcname segment for the lookup. Absent ⇒ false
     /// (`silence-licenses-nothing`).
     #[must_use]
@@ -132,7 +132,7 @@ impl InvarianceIndex {
             .is_some_and(|dims| dims.contains_key(&dim))
     }
 
-    /// The `invariant:<dim>` line's defining `(Span, OracleFileId)` for `kind` (render 3/3, `27C` §9):
+    /// The `undivided-by-transit-across <dim>` line's defining `(Span, OracleFileId)` for `kind` (render 3/3, `27C` §9):
     /// the kind-owner's attributable line the carry attribution renders as `file:line`. `None` when
     /// the kind carries no such line (`silence-licenses-nothing`).
     #[must_use]
@@ -155,12 +155,12 @@ struct StateBodyScan {
     stores_net_kernel: bool,
 }
 
-/// Scan a `state_stored_only_in()` body for its `invariant:<axis>` lines + `net-kernel` substrate
+/// Scan a `state_stored_only_in()` body for its `undivided-by-transit-across <axis>` lines + `net-kernel` substrate
 /// emissions (`277` §4e). Distinguished by the typed VERB (`MarkKind::Undivided` vs
 /// `MarkKind::StoredIn` with the `net-kernel` substrate token). Whole-member scope (`277` §4e);
 /// control-flow arms are all scanned (over-approximation is safe for the caveat — it can only ADD a
 /// forbid). Substrate axes only reach the index (`from_token` maps `fs-view`/`netns`; a stray
-/// `invariant:user` line is dropped here — user is not a carry axis).
+/// `undivided-by-transit-across user` line is dropped here — user is not a carry axis).
 fn scan_state_body(body: &Predict) -> StateBodyScan {
     let mut invariant = BTreeMap::new();
     let mut stores_net_kernel = false;
@@ -416,7 +416,7 @@ fn reject(reason: RejectReason, span: Option<Span>) -> ClosureReject {
 pub enum CarryDecision {
     /// Carry: the ambient measurement answers the wrapped site across the substrate boundary,
     /// unflagged. The cli keys the fact `Context::HostDefault` (measure ambient). `read_kinds` are
-    /// the marked backing kinds whose owners' `invariant:<axis>` lines licensed the crossing — the
+    /// the marked backing kinds whose owners' `undivided-by-transit-across <axis>` lines licensed the crossing — the
     /// (A) half of the attribution chain the carry note renders (`carried-across-substrate-axis`).
     Carry { read_kinds: BTreeSet<String> },
     /// No carry — the reason drives the wall (and the why-lens), never a permissive default.
@@ -431,7 +431,7 @@ pub enum CarryReject {
     NonSubstrateCrossing(Dimension),
     /// (B) failed — the verdict body is not read-set-closed.
     BodyNotClosed(ClosureReject),
-    /// (A) failed — a marked backing kind carries no `invariant:<dim>` line for a crossed dimension.
+    /// (A) failed — a marked backing kind carries no `undivided-by-transit-across <dim>` line for a crossed dimension.
     KindNotInvariant { kind: String, dim: Dimension },
 }
 
@@ -606,7 +606,7 @@ mod tests {
 
     // ── (A) invariance index + the netns caveat ─────────────────────────────────────────────────
 
-    /// The `invariant:fs-view` line lifts to per-kind invariance (`277` §4e), keyed so a dotted mark
+    /// The `undivided-by-transit-across fs-view` line lifts to per-kind invariance (`277` §4e), keyed so a dotted mark
     /// kind resolves it.
     #[test]
     fn invariance_index_lifts_fsview_line() {
@@ -619,7 +619,7 @@ mod tests {
         assert!(!inv.invariant_across("sm.dorc.Other", Dimension::FsView));
     }
 
-    /// The netns caveat (`27C` §4(a)): a `net-kernel` store claiming `invariant:netns` is a
+    /// The netns caveat (`27C` §4(a)): a `net-kernel` store claiming `undivided-by-transit-across netns` is a
     /// contradiction — the claim is DROPPED and a loud diagnostic emitted (`net.*` is per-netns).
     #[test]
     fn invariance_netns_on_net_kernel_is_dropped_and_diagnosed() {
@@ -674,7 +674,7 @@ mod tests {
     }
 
     /// (`27C` §9 battery row 3): a marked read of a NON-invariant kind walls — (B) holds but (A)
-    /// fails (no `invariant:fs-view` line for the read's kind).
+    /// fails (no `undivided-by-transit-across fs-view` line for the read's kind).
     #[test]
     fn decide_walls_marked_read_of_non_invariant_kind() {
         let body =

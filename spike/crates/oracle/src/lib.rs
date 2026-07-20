@@ -102,13 +102,13 @@ pub mod wrapper;
 
 /// Context ENTRY (`27C` — THE primary lane): the `cmd__enter()` member (the one licensed seat for
 /// real context entry), the two-axis consent decision (mechanical capability × the escalation dial ×
-/// the `tolerates:` vouch), the composition algebra across a peel chain (pointwise fold, ⊤
+/// the `safe-across` vouch), the composition algebra across a peel chain (pointwise fold, ⊤
 /// propagates, order-sensitive), the degrade ladder, and the entry-form author's vouched
 /// self-effects (`27C:rul-probe-mutation-ownership-split`). Builds on [`wrapper`]'s peel model.
 pub mod entry;
 
 /// The pure-predicate carry (`27C` §4(a); steering `pure-predicate-carry`): the ONLY unflagged
-/// cross-substrate-boundary carry. The (A) `invariant:<axis>` index lifted from
+/// cross-substrate-boundary carry. The (A) `undivided-by-transit-across <axis>` index lifted from
 /// `state_stored_only_in()` (with the netns caveat), the (B) read-set-closure sh-taint pass over a
 /// verdict body (default-disqualify, an audited pure-construct safe-list), and the combined carry
 /// decision (substrate axes only; user excluded). Reads marks + structure only
