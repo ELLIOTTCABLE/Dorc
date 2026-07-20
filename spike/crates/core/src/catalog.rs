@@ -1381,32 +1381,32 @@ mod tests {
         }
     }
 
-    /// The three-state prose protocol's third state: slugs whose user-facing prose was authored
-    /// at conductor/human tier (`27V:rul-error-authorship-tier`). A builder adding prose must
-    /// also add the slug HERE — a two-place claim the conductor's diff review catches; never
-    /// extend this list from a builder brief.
-    const CONDUCTOR_AUTHORED: &[&str] = &[
-        "whylog-version-refused",
-        "whylog-book-desync",
-        "whylog-absent",
-        "whylog-corrupt",
-        "aid-unloaded-sibling-oracle",
-    ];
+    /// Whether `slug`'s prose is CASE-OWNED: a defining case file exists for it in the dorc-loom
+    /// corpus (`283` flip / `28A` §2o). This is where prose ownership moved when the
+    /// `CONDUCTOR_AUTHORED` roster retired — a case-owned code's unprefixed prose is protected by the
+    /// render-level `fixpoint_check` (a catalog hand-edit moves the render off the committed case
+    /// bytes), so the roster's two-place bookkeeping is no longer needed.
+    fn is_case_owned(slug: &str) -> bool {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.txt")))
+            .is_some_and(|case| case.exists())
+    }
 
-    /// Gate (`amendment-prose-boundary`): every WRITTEN user-facing register is `sm `-prefixed
-    /// base-tip prose or conductor/human-authored (listed in [`CONDUCTOR_AUTHORED`]) — the mechanical
-    /// enforcement that builders author no new user-facing prose (`27V:rul-error-authorship-tier`).
-    /// Unwritten is now `None` (`283:dec-message-becomes-option`), so a stored `[unwritten:]` string
-    /// is no longer legal — it falls through to a loud failure demanding `None`.
+    /// Gate (`amendment-prose-boundary`, re-keyed at the `283` flip): every WRITTEN user-facing
+    /// register is `sm `-prefixed base-tip prose or CASE-OWNED (a defining case in the dorc-loom
+    /// corpus, fixpoint-protected) — the mechanical enforcement that builders author no new
+    /// user-facing prose (`27V:rul-error-authorship-tier`). Unwritten is `None`
+    /// (`283:dec-message-becomes-option`), so a stored `[unwritten:]` string is not legal either.
     #[test]
     fn message_registers_are_sm_or_unwritten() {
         for e in CATALOG {
             for (field, text) in [("message", e.message), ("help", e.help)] {
                 let Some(text) = text else { continue };
                 assert!(
-                    text.starts_with("sm ") || CONDUCTOR_AUTHORED.contains(&e.slug),
+                    text.starts_with("sm ") || is_case_owned(e.slug),
                     "catalog `{}` {field}: a written register must be `sm `-prefixed base-tip prose \
-                     or a CONDUCTOR_AUTHORED slug (unwritten prose is `None`), got: {text:?}",
+                     or case-owned (a dorc-loom corpus case; unwritten prose is `None`), got: {text:?}",
                     e.slug
                 );
             }
