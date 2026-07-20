@@ -7,11 +7,10 @@ looking directly at what your user sees.**)
 Here's a live example, [from Dorc](https://github.com/ELLIOTTCABLE/Dorc/blob/326018ce/spike/crates/dorc-loom/cases/cmdsub-operand-top.txt),
 the project for which I built this library:
 
-```txtar
+```sh
 ---
 code: cmdsub-operand-top
 ---
-
 -- book.sh --
 #!/bin/sh
 # pi-webhost provisioning (curated package set from the fleet inventory)
@@ -23,29 +22,33 @@ systemctl enable nginx
 
 -- replay --
 $ dorc plan --book=book.sh
-note[cmdsub-operand-top]: apt-get operand 3 is a command-substitution `$(…)` /
-   arithmetic / operator-form expansion, so I cannot know its value until the
+note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` /
+   arithmetic / operator-form expansion, so Dorc cannot know its value until the
    command runs on the host — there is nothing to resolve and no read-only probe
-   to check. I skip commands only when it can prove the command's effect is
-   already in place, so this one is left to run on every apply:
+   to check. Dorc elides a command only when it can prove the command's effect
+   is already in place, so this one is left to run on every apply.
    --> book.sh:6:20
    |
  6 | apt-get install -y "$(cat /etc/webhost/pkgset)"
    |                    \__________________________/
-   = improvement: If you give the operand a value I can resolve statically (a
-      literal, or a variable assigned from one), then I can probe it and skip
-      the command once it has converged. If your value must stay dynamic, load
-      an oracle that vouches for this command's convergence, and Dorc will guard
+   = repair: Give the operand a value Dorc can resolve statically — a literal,
+      or a variable assigned from one — so Dorc can probe it and elide the
+      command once it has converged. If the value must stay dynamic, load an
+      oracle that vouches for this command's convergence, and Dorc will guard
       the command instead of running it every time.
 
 $ dorc plan --book=book.sh --format=jsonl
 {"code":"cmdsub-operand-top","severity":"note"}
+
 ```
 
-If it did't perk your eras: note that *there's no templating in that text.*
-There's no special variables, there's no metadata. `apt-get` isn't written as
-`{{command_name}}` or something. It's *all* diff-driven, derived from the
-demanded separation of prose-bless from structure-bless.
+(Note that none of this rendering is errorloom's; your renderer owns the
+rendering and formatting, errorloom doesn't care. It only cares about the
+distinct *difference* between strutcture, and prose.)
+
+That's the elevator pitch: no separate file to edit. You open your CLI's
+shell-output E2E test-case, and modify the prose right there, looking at exactly
+what your user sees whilei you do so.
 
 > This was built as internal tooling while heads-down on [Dorc][]. It is
 > *entirely* AI-written; distrust that as suits your risk-profile. (I generally
@@ -98,7 +101,7 @@ prose.)
 A case is one txtar archive with a `---`-fenced flat-YAML-subset frontmatter
 head:
 
-```
+```sh
 ---
 code: motd-refused
 when-fires: the leaf-exact render would elide a heredoc-bearing leaf
