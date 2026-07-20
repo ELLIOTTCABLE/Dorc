@@ -582,6 +582,35 @@ not a retirement precondition. Flip scope = retire the roster + re-key
 the wired metadata gate stays green. Small, per 283 §5.8. Phase 5 (backport 15)
 + phase 6 (de-passthrough) remain SEPARATE later dispatches.
 
+## §2p — Flip LANDED + FOLDED + cold-verified (conductor, 2026-07-20)
+
+Flip `a556b13` (roster retired; `message_registers_are_sm_or_unwritten` re-keyed
+to filesystem `is_case_owned(slug)` — a REAL check: delete a case file and the
+ex-roster code's unprefixed prose fails the gate). Folded @ `e072eef`. Phase 4
+COMPLETE: catalog prose is case-file-derived + fixpoint-protected; the 5
+`[unwritten:]` codes (`marker-version-unrecognized` + the 4 mark codes) await
+the conductor prose pass.
+
+CONDUCTOR VERIFICATION was cold-cache by necessity (see the infra finding): full
+`cargo clean` (3.1GB) → rebuild clean → `clippy --all-targets -D warnings` ZERO
+errors → 1037 unit → 97 e2e → gates ok → drift only the known lax-order
+`.ran` (restored). HEAD genuinely clean.
+
+- **`28A:finding-incremental-clippy-serves-stale-clean`** (infra, teeth) — on
+  this Win/mise/worktree setup cargo/clippy incremental caching served
+  STALE-CLEAN lint across per-step runs; 6 genuine latent clippy errors in
+  steps 2–5 (broken doc-link; raw arithmetic vs saturating; unused-self;
+  single_match; expect_used in non-`#[test]` integration helpers) surfaced only
+  when the flip forced a recompile, fixed in `2e03ced`. CONSEQUENCE: the flip's
+  intermediate commits are NOT individually clippy-clean on a cold checkout —
+  only the folded HEAD is (I verified cold). BINDING RIDER for all remaining r28
+  builder briefs in a worktree: run clippy FIRST on a cold cache, or
+  `cargo clean -p <touched crates>` before the clippy gate — per-commit
+  `conduct-bless`/`_gates.sh` clippy signal is otherwise untrustworthy here. The
+  human's standing "codebase is slower than it could be" note + this = a real
+  DX paper-cut for the round-close report. (Does NOT retroactively distrust
+  earlier lanes: each was cold-verified at its own fold by me.)
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
