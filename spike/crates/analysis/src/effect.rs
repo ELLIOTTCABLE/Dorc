@@ -917,7 +917,8 @@ fn node_effects(
     match cfg.node(id).kind {
         CfgNodeKind::Command => {
             let argv = value.argv_values(id);
-            command_effect(
+            let before = cmdsub_tops.len();
+            let effect = command_effect(
                 idx,
                 checks,
                 verdict_providers,
@@ -927,7 +928,9 @@ fn node_effects(
                 cmdsub_tops,
                 Some(site),
                 backings,
-            )
+            );
+            narrow_cmdsub_spans_to_operand(&mut cmdsub_tops[before..], cfg, ast, id);
+            effect
         }
         // An unmodeled construct may mutate anything ⇒ ⊤.
         CfgNodeKind::Top => vec![CommandEffect::Opaque],
@@ -955,6 +958,33 @@ fn node_effects(
             None => vec![CommandEffect::Pure],
         },
         _ => vec![CommandEffect::Pure],
+    }
+}
+
+/// Narrow each just-recorded `cmdsub-operand-top` disclosure's caret from the whole-command span
+/// to the exact ⊤ operand word's span (`aid-caret-span-precision`): a resolved argv is one entry
+/// per source word (a `ValueOf` never word-splits — `value::ValueOf`), so argv position `k` maps
+/// 1:1 onto the `Simple` node's word `k` (word 0 = command word, word `n` = operand `n`). Only the
+/// ORDINARY command path narrows; the peeled/wrapper path (`peeled_node_effects`) keeps the
+/// whole-command span, since a peeled inner-argv index no longer maps onto a book word. A missing
+/// word index falls back to the recorded whole-command span (`inv-no-throw`; never panics).
+fn narrow_cmdsub_spans_to_operand(
+    recorded: &mut [CmdsubTop],
+    cfg: &Cfg,
+    ast: &dorc_syntax::ast::Ast,
+    id: CfgNodeId,
+) {
+    let dorc_syntax::ast::NodeKind::Simple { words, .. } = &ast.node(cfg.node(id).ast).kind else {
+        return;
+    };
+    for top in recorded {
+        let k = match top.position {
+            OperandPosition::CommandWord => 0,
+            OperandPosition::Operand(n) => n as usize,
+        };
+        if let Some(&word_id) = words.get(k) {
+            top.site.span = ast.node(word_id).span;
+        }
     }
 }
 
