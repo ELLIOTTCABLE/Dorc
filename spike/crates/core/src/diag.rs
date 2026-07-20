@@ -1763,6 +1763,126 @@ pub fn render_cli_with(
     out
 }
 
+/// The full-transcript tagged twin of [`render_cli`] (`282` §2 · `28A` §2m — the prose-bless
+/// baseline). `text()` is byte-identical to [`render_cli_with`] under the same lookup (gate-pinned);
+/// the span map is the attribution authority the promote flow reads. The composition mirrors
+/// [`render_cli_with`]: the title (`severity[slug]: ` — [`Arrangement`](crate::tagged::Region::
+/// Arrangement)) around the body's FIRST LINE (relocated prose spans), then the caret frames (WHOLE
+/// `Arrangement` — structure, not prose), then the body tail (help connective + help + notes —
+/// relocated prose/arrangement spans). The load-bearing move is the TITLE-SPLIT: [`render_body_
+/// tagged_with`]'s span vector is split at the first `\n` (splitting a straddler — a passthrough
+/// `detail` may embed one) and each half re-based into the composed byte offsets, preserving the
+/// gap-free total cover the `dorc-loom` adapter validates through `errorloom::TaggedRender::new`.
+/// A tool-mode output (`282` §4), never a product surface. Pure; `inv-no-throw`.
+#[must_use]
+pub fn render_cli_tagged(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &crate::Interner,
+) -> crate::tagged::TaggedRender {
+    let body = render_body_tagged_with(lookup, diag, interner);
+    let body_text = body.text();
+    let split = body_text.find('\n');
+    let (head_spans, tail_spans) = split_spans_at(body.spans(), split.unwrap_or(body_text.len()));
+
+    let mut out = String::new();
+    let mut spans: Vec<crate::tagged::Span> = Vec::new();
+    let prefix = format!(
+        "{}[{}]: ",
+        severity_word(registry(&diag.code).severity),
+        diag.code.slug(),
+    );
+    push_arrangement(&mut out, &mut spans, &prefix, "cli-title");
+    let problem = split.map_or(body_text, |n| &body_text[..n]);
+    rebase_spans_into(&mut out, &mut spans, problem, &head_spans, 0);
+
+    if let Some(primary) = diag.primary.span() {
+        let frame = frame_region(primary, src, filename, None, true);
+        push_arrangement(&mut out, &mut spans, &frame, "cli-frame");
+    }
+    for sec in &diag.secondary {
+        if let Some(span) = sec.span() {
+            let frame = frame_region(span, src, filename, sec.label.as_deref(), false);
+            push_arrangement(&mut out, &mut spans, &frame, "cli-frame-secondary");
+        }
+    }
+    // The body tail is `body_text[split..]` (leading `\n` included) — exactly render_cli's re-added
+    // `\n` + rest, so the bytes match while the prose spans move below the frames.
+    if let Some(n) = split {
+        rebase_spans_into(&mut out, &mut spans, &body_text[n..], &tail_spans, n);
+    }
+    crate::tagged::TaggedRender::new(out, spans)
+}
+
+/// Partition `spans` at byte offset `at` into the runs wholly before it and wholly at/after it,
+/// splitting a straddling span into two same-region halves (the passthrough-`detail`-embeds-a-`\n`
+/// case) so both partitions stay gap-free covers of their side.
+fn split_spans_at(
+    spans: &[crate::tagged::Span],
+    at: usize,
+) -> (Vec<crate::tagged::Span>, Vec<crate::tagged::Span>) {
+    use crate::tagged::Span;
+    let mut head = Vec::new();
+    let mut tail = Vec::new();
+    for s in spans {
+        if s.range.end <= at {
+            head.push(s.clone());
+        } else if s.range.start >= at {
+            tail.push(s.clone());
+        } else {
+            head.push(Span {
+                range: s.range.start..at,
+                region: s.region.clone(),
+            });
+            tail.push(Span {
+                range: at..s.range.end,
+                region: s.region.clone(),
+            });
+        }
+    }
+    (head, tail)
+}
+
+/// Append `text` to `out` and re-base each of `src_spans` (whose ranges index from `src_base` in the
+/// source render) into `out`'s byte coordinates, preserving classification — the title-split
+/// relocation primitive.
+fn rebase_spans_into(
+    out: &mut String,
+    spans: &mut Vec<crate::tagged::Span>,
+    text: &str,
+    src_spans: &[crate::tagged::Span],
+    src_base: usize,
+) {
+    let dst_base = out.len();
+    out.push_str(text);
+    for s in src_spans {
+        spans.push(crate::tagged::Span {
+            range: (s.range.start - src_base + dst_base)..(s.range.end - src_base + dst_base),
+            region: s.region.clone(),
+        });
+    }
+}
+
+/// Push a whole-run [`Arrangement`](crate::tagged::Region::Arrangement) span for `text`.
+fn push_arrangement(
+    out: &mut String,
+    spans: &mut Vec<crate::tagged::Span>,
+    text: &str,
+    slug: &'static str,
+) {
+    if text.is_empty() {
+        return;
+    }
+    let start = out.len();
+    out.push_str(text);
+    spans.push(crate::tagged::Span {
+        range: start..out.len(),
+        region: crate::tagged::Region::Arrangement { slug },
+    });
+}
+
 /// The full rendered MESSAGE TEXT of a diagnostic (`render-1`): the filled catalog message, then
 /// the catalog help + any authored notes/suggestion as ` = help:`/` = note:` continuation lines.
 /// The lint crate uses this verbatim as a finding's message; [`render_cli`] and the cli's

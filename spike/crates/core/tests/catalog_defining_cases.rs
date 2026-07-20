@@ -498,6 +498,53 @@ fn defining_case_tagged_render_matches_prose_and_covers() {
     }
 }
 
+/// The FULL-transcript tagged twin (`282` §2 · `28A` §2m): [`diag::render_cli_tagged`]'s text must be
+/// byte-identical to [`diag::render_cli`] (the title-split relocation never moves a byte) and its span
+/// map a gap-free total cover — the load-bearing check on the title-split span relocation. A fixed
+/// source resolves the canonical span's caret frame; both renders see the same source, so the frame
+/// bytes cancel and only the composition is under test.
+#[test]
+fn defining_case_cli_tagged_matches_render_cli_and_covers() {
+    let interner = Interner::default();
+    let src = "make install >/etc/motd\nldconfig\n";
+    for case in covered() {
+        let diag = Diag::new((case.build)(), Span::new(BytePos(0), BytePos(4)));
+        let tagged = diag::render_cli_tagged(
+            &dorc_core::catalog::CONST_CATALOG,
+            &diag,
+            src,
+            "book.sh",
+            &interner,
+        );
+        assert_eq!(
+            tagged.text(),
+            diag::render_cli(&diag, src, "book.sh", &interner),
+            "defining case `{}`: the cli tagged twin drifted from render_cli",
+            case.slug
+        );
+        let mut expected = 0;
+        for span in tagged.spans() {
+            assert_eq!(
+                span.range.start, expected,
+                "case `{}`: non-contiguous cli span",
+                case.slug
+            );
+            assert!(
+                span.range.end > span.range.start,
+                "case `{}`: empty cli span",
+                case.slug
+            );
+            expected = span.range.end;
+        }
+        assert_eq!(
+            expected,
+            tagged.text().len(),
+            "case `{}`: cli spans stop short of total cover",
+            case.slug
+        );
+    }
+}
+
 /// COMPLETENESS (`AID-NEEDS:law-one-defining-case-per-code`, ratchet-tempered): every catalog slug is
 /// EITHER covered by a defining case OR on the shrink-only [`DEFINING_CASE_RATCHET`] — never silently
 /// uncovered. Also: no slug is in BOTH (a covered code must leave the ratchet).
