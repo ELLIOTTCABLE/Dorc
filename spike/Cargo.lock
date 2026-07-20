@@ -118,6 +118,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dorc-loom"
+version = "0.0.0"
+dependencies = [
+ "dorc-core",
+ "errorloom",
+]
+
+[[package]]
 name = "dorc-oracle"
 version = "0.0.0"
 dependencies = [
