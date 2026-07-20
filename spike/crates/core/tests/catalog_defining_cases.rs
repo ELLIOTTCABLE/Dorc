@@ -29,10 +29,10 @@
 use dorc_core::diag::{
     self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop,
     DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
-    MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent,
+    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
+    MissingDialectMarker, MungeNameInvalid, OperandPosition, RecordsFactTruncated,
+    RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension,
+    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent,
 };
 use dorc_core::{BytePos, Interner, LeafId, Severity, Span, TopCause};
 
@@ -234,6 +234,16 @@ fn covered() -> Vec<DefiningCase> {
         DefiningCase {
             slug: "mark-hashcolon-malformed",
             build: || DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
+        },
+        // The phase-4 empty-loop pilot (`28A` §2l): minted with UNWRITTEN prose, its defining case
+        // pins the greppable `[unwritten:]` render until the conductor authors the message.
+        DefiningCase {
+            slug: "marker-version-unrecognized",
+            build: || {
+                DiagCode::MarkerVersionUnrecognized(MarkerVersionUnrecognized {
+                    found: "# dorc-lang/v0.1".to_owned(),
+                })
+            },
         },
     ]
 }
@@ -649,9 +659,10 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 5 covers the four `281` mark-grammar codes' unwritten messages plus one headroom.
+    // Ceiling 6 covers the four `281` mark-grammar codes plus the `marker-version-unrecognized`
+    // phase-4 pilot's unwritten message, with one headroom (`28A` §2l pre-authorized 5 → 6).
     assert!(
-        unwritten.len() <= 5,
+        unwritten.len() <= 6,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()

@@ -124,6 +124,9 @@ pub enum DiagCode {
     // ── oracle/marker.rs (marker gate) ──────────────────────────────────────
     /// A dorc-lang dialect construct appears in a file lacking the version marker.
     MissingDialectMarker(MissingDialectMarker),
+    /// A dorc-lang dialect construct appears in a file whose version marker names an unrecognized
+    /// version (distinct from a wholly-missing marker).
+    MarkerVersionUnrecognized(MarkerVersionUnrecognized),
 
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
@@ -259,6 +262,7 @@ impl DiagCode {
             DiagCode::MungeNameCollision(_) => "munge-name-collision",
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
+            DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
             DiagCode::ToleratesOverIdentityDependence(_) => "tolerates-over-identity-dependence",
             DiagCode::HeavyContextNoTolerance(_) => "heavy-context-no-tolerance",
@@ -528,6 +532,15 @@ pub struct ReservedNamespaceSquat {
 /// marker text is inline in the template. Spanned (the first dialect construct); `site()` = `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingDialectMarker;
+
+/// Payload of [`DiagCode::MarkerVersionUnrecognized`]: the unrecognized `# dorc-lang/vX.Y` version
+/// tag read from the file, distinct from a wholly-missing marker. Spanned (the first dialect
+/// construct); `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkerVersionUnrecognized {
+    /// The unrecognized version marker text found (`{found}`).
+    pub found: String,
+}
 
 /// Payload of [`DiagCode::ToleratesUnknownDimension`] (TEMPLATIZED): the unknown token and the
 /// expected-dimension list. Spanned (the mark span); `site()` returns `None`.
@@ -1235,6 +1248,11 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::DeclareIdentity,
         },
+        DiagCode::MarkerVersionUnrecognized(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::ToleratesUnknownDimension(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
@@ -1604,6 +1622,7 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
         DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
         DiagCode::AidUnloadedSiblingOracle(p) => vec![("detail", p.detail.clone())],
+        DiagCode::MarkerVersionUnrecognized(p) => vec![("found", p.found.clone())],
         DiagCode::MungeNameInvalid(p) => vec![
             ("source", p.source.clone()),
             ("funcname", p.funcname.clone()),

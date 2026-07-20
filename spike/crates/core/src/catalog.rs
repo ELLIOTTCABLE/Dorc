@@ -348,6 +348,22 @@ pub const CATALOG: &[CatalogEntry] = &[
         ),
         help: None,
     },
+    // ── oracle/marker.rs (version-recognition) ──────────────────────────────
+    //    UNWRITTEN prose (`27V:rul-error-authorship-tier`): minted through the empty loop as the
+    //    phase-4 pilot (`28A` §2l); the conductor authors the message from the render.
+    CatalogEntry {
+        slug: "marker-version-unrecognized",
+        when_fires: "a dorc-lang dialect construct appears in a file whose `# dorc-lang/vX.Y` version \
+                     marker names a version this binary does not recognize (only v0.2 today), distinct \
+                     from a wholly-missing marker. oracle/marker.rs.",
+        why: "marker-gates-syntax-only + versioned-additive: an unrecognized version is a loud \
+              file-level refusal SEPARATE from missing-marker, so a vNEXT/typo'd-version file is not \
+              mis-blamed as markerless (`28A` §2l). `{found}` = the version tag read from the marker.",
+        params: &[],
+        example: "[unwritten: marker-version-unrecognized]",
+        message: None,
+        help: None,
+    },
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     CatalogEntry {
         slug: "tolerates-unknown-dimension",

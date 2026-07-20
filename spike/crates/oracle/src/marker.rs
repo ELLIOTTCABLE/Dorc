@@ -12,7 +12,7 @@
 //! gate fires at the user boundary (every oracle/book the cli loads). The parser is marker-blind;
 //! this pass flags the dialect-in-unmarked-file post-hoc.
 
-use dorc_core::diag::{Diag, DiagCode, MissingDialectMarker};
+use dorc_core::diag::{Diag, DiagCode, MarkerVersionUnrecognized, MissingDialectMarker};
 use dorc_core::{Interner, Span};
 
 use crate::predict::{
@@ -24,6 +24,11 @@ use crate::predict::{
 /// (`24C:rul24-marker-v0.1`). The SOLE sanctioned comment-parse in the product.
 pub const MARKER: &str = "# dorc-lang/v0.2";
 
+/// The version-marker family prefix: a standalone comment opening with it names SOME dorc-lang
+/// version. One that is not the exact [`MARKER`] is an UNRECOGNIZED version (a vNEXT or typo), which
+/// the gate reports distinctly from a wholly-missing marker (`28A` §2l).
+const MARKER_FAMILY: &str = "# dorc-lang/v";
+
 /// How many leading lines the marker may occupy (`24C:rul24-marker-v0.1`: "the first 10 physical
 /// lines"), so a shebang + a purpose header still precede it.
 pub const MARKER_WINDOW: usize = 10;
@@ -34,6 +39,16 @@ pub fn has_marker(src: &str) -> bool {
     src.lines()
         .take(MARKER_WINDOW)
         .any(|l| l.trim_end() == MARKER)
+}
+
+/// The UNRECOGNIZED version marker text in `src`'s first [`MARKER_WINDOW`] lines, if any: a
+/// standalone `# dorc-lang/vX.Y` comment that is not the exact [`MARKER`]. Consulted only when the
+/// exact marker is absent, so a present-but-wrong version is diagnosed distinctly (`28A` §2l).
+fn unrecognized_version_marker(src: &str) -> Option<&str> {
+    src.lines()
+        .take(MARKER_WINDOW)
+        .map(str::trim_end)
+        .find(|l| l.starts_with(MARKER_FAMILY) && *l != MARKER)
 }
 
 /// The marker gate (`marker-gates-syntax-only`). A dialect construct in an UNMARKED source is ONE
@@ -69,10 +84,15 @@ pub fn check_dialect_marker(interner: &mut Interner, src: &str) -> Vec<Diag> {
         }
     }
     match offender {
-        Some(span) => vec![Diag::new(
-            DiagCode::MissingDialectMarker(MissingDialectMarker),
-            span,
-        )],
+        Some(span) => {
+            let code = match unrecognized_version_marker(src) {
+                Some(found) => DiagCode::MarkerVersionUnrecognized(MarkerVersionUnrecognized {
+                    found: found.to_owned(),
+                }),
+                None => DiagCode::MissingDialectMarker(MissingDialectMarker),
+            };
+            vec![Diag::new(code, span)]
+        }
         None => Vec::new(),
     }
 }
@@ -157,6 +177,20 @@ mod tests {
         let diags = check_dialect_marker(&mut i, src);
         assert_eq!(diags.len(), 1, "a trailing mark in an unmarked file errors");
         assert_eq!(diags[0].code.slug(), "missing-dialect-marker");
+    }
+
+    #[test]
+    fn wrong_version_marker_is_distinct_from_missing() {
+        let mut i = Interner::default();
+        // A dialect bind under a RECOGNIZED-family but WRONG version marker.
+        let src = "# dorc-lang/v0.1\napt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let diags = check_dialect_marker(&mut i, src);
+        assert_eq!(diags.len(), 1, "one file-level error");
+        assert_eq!(
+            diags[0].code.slug(),
+            "marker-version-unrecognized",
+            "a wrong-version marker is distinct from a wholly-missing one"
+        );
     }
 
     #[test]
