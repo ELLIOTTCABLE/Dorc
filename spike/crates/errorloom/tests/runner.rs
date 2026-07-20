@@ -85,6 +85,15 @@ fn sandbox_path_leak_refuses() {
 }
 
 #[test]
+fn unterminated_quote_refuses() {
+    // An unterminated quote is a parse error, not a silently-accumulated token
+    // (swe-F3) — caught before any command is spawned.
+    let case = Case::parse("---\n---\n-- replay --\n$ loom-mock-tool 'oops\nx\n").expect("valid");
+    let err = run_case(&case, &env()).unwrap_err();
+    assert!(matches!(err, RunError::UnterminatedQuote { block: 0 }));
+}
+
+#[test]
 fn unresolved_command_refuses() {
     let case =
         Case::parse("---\n---\n-- replay --\n$ no-such-tool out:x\nplaceholder\n").expect("valid");
