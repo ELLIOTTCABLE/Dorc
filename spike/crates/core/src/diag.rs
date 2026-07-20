@@ -2291,11 +2291,27 @@ pub fn line_col(src: &str, byte: usize) -> (usize, usize) {
     (line, clamped.saturating_sub(line_start).saturating_add(1))
 }
 
-/// The floor on the gutter's line-number field (item-2 gutter stability): a 3-digit field holds
-/// 0–999, so the `|` column stays put across a whole invocation of small/medium books and a code
-/// line never shifts relative to its neighbours. A larger number BUTTS the bar (`999|`), conserving
-/// width; the field grows past this only when a book exceeds 999 lines.
+/// The floor on the gutter's line-number field (item-1 gutter stability): a 3-digit field holds
+/// 0–999, so the `|` column stays put across a book's frames and a code line never shifts relative
+/// to its neighbours. A larger number FILLS/BUTTS the bar (`600|`, `6000|`); the field grows past
+/// this only when a book exceeds 999 lines.
 const GUTTER_MIN_WIDTH: usize = 3;
+
+/// Format line number `l` into the `w`-wide gutter field (item-1 placement): right-aligned by
+/// default (rustc ones-place alignment), EXCEPT a frame whose line numbers ALL share one digit-width
+/// ≤ 2 gets the slack aesthetic — a lone/all-1-digit frame CENTERS (` 6 `), an all-2-digit frame
+/// LEFT-aligns (`60 `). `min_digits`/`max_digits` are the frame's narrowest/widest number widths.
+/// Pure; total.
+fn gutter_field(l: usize, w: usize, min_digits: usize, max_digits: usize) -> String {
+    let num = l.to_string();
+    if min_digits == max_digits && max_digits == 1 {
+        format!("{num:^w$}")
+    } else if min_digits == max_digits && max_digits == 2 {
+        format!("{num:<w$}")
+    } else {
+        format!("{num:>w$}")
+    }
+}
 
 /// The under-span mark for a caret frame. A primary SPAN (a byte region, `run >= 2`) renders the
 /// bracket form `\`+`_`…+`/` — it reads as "this whole extent", not "this point" (the `e6edf5e`
@@ -2341,10 +2357,12 @@ pub fn frame_region(
     let hi = span.hi.0 as usize;
     let (line, col) = line_col(src, lo);
     let (hi_line, hi_col) = line_col(src, hi);
-    // The gutter is sized to the WIDEST line number (the last), floored at [`GUTTER_MIN_WIDTH`] so
-    // the `|` column sits at a stable place across small books (item-2 gutter stability); a
-    // multi-line span keeps the `|` columns aligned, a single-line span keeps `hi_line == line`.
-    let gutter_w = hi_line.to_string().len().max(GUTTER_MIN_WIDTH);
+    // The gutter field holds the WIDEST rendered line number (the last), floored at
+    // [`GUTTER_MIN_WIDTH`] so the `|` column never shifts across a small/medium book (item-1). The
+    // frame's own number set (first line = narrowest, last = widest) fixes the alignment aesthetic.
+    let min_digits = line.to_string().len();
+    let max_digits = hi_line.to_string().len();
+    let gutter_w = max_digits.max(GUTTER_MIN_WIDTH);
     let gutter = " ".repeat(gutter_w);
     let lines: Vec<&str> = src.lines().collect();
     let mut out = String::new();
@@ -2352,8 +2370,7 @@ pub fn frame_region(
     let _ = write!(out, "\n{gutter}|");
     for l in line..=hi_line {
         let line_text = lines.get(l.saturating_sub(1)).copied().unwrap_or("");
-        let num = l.to_string();
-        let pad = " ".repeat(gutter_w.saturating_sub(num.len()));
+        let field = gutter_field(l, gutter_w, min_digits, max_digits);
         // This line's slice of the span: from the start column on the FIRST line (0 on continuation
         // lines) to the end column on the LAST line (end-of-line on earlier lines).
         let start = if l == line { col.saturating_sub(1) } else { 0 };
@@ -2364,7 +2381,7 @@ pub fn frame_region(
         };
         let run = end.saturating_sub(start).max(1);
         let underline = span_underline(run, primary);
-        let _ = write!(out, "\n{pad}{num}| {line_text}");
+        let _ = write!(out, "\n{field}| {line_text}");
         let _ = write!(out, "\n{gutter}| {}{underline}", " ".repeat(start));
     }
     if let Some(l) = label {
@@ -2708,7 +2725,7 @@ mod tests {
             "file:line:col locator: {frame}"
         );
         assert!(
-            frame.contains("2| apt-get install $(date)"),
+            frame.contains("2 | apt-get install $(date)"),
             "the source line in a gutter: {frame}"
         );
         assert!(

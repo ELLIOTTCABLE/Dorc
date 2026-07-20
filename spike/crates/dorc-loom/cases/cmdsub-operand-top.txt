@@ -18,7 +18,7 @@ note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` /
    is already in place, so this one is left to run on every apply.
    --> book.sh:6:20
    |
-  6| apt-get install -y "$(cat /etc/webhost/pkgset)"
+ 6 | apt-get install -y "$(cat /etc/webhost/pkgset)"
    |                    \__________________________/
    = help: Give the operand a value Dorc can resolve statically — a literal, or
       a variable assigned from one — so Dorc can probe it and elide the command
