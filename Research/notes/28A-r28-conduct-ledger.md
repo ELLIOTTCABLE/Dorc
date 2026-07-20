@@ -656,6 +656,55 @@ canonicalization (§2q) · phase-7 ratchet burn-down + the records-* tail (`282`
 §9 phase 7) · the glued-param re-hole seam ruling (§2o) · the errorloom LICENSE
 + publish flip. Round closes after phase 6 + the ledger/status/map sync.
 
+## §2s — Human directives 2026-07-20 (scope finalization + next-turn queue)
+
+Human-typed this sitting:
+- **phase-6-de-passthrough KILLED** — an opaque sibling's lane owns the related
+  (secrets/taint) work. Round-28 does NOT build it. Instead a brief
+  mechanical-needs hand-off written to `Research/quarantine-DO-NOT-READ/284`
+  (this round's taint-tracking owed/wanted work; NOT security analysis).
+- **phase-5-backport GREENLIT** for next turn (after the human's ack). The 21
+  covered codes → case files; retire fragment goldens + `DORC_DEFINING_BLESS`;
+  ratchet re-point. Migration only.
+- **Mark-code + `sm `-prose authoring → a FRESH FABLE under `sm ` rules**, NOT
+  deferred-to-human and NOT this conductor (context full). The `282`
+  transcript-authoring surface exists for it; `sm `-tier interim text is the
+  posture. This RE-ASSIGNS §2q's "human sprint" for the prose half → Fable;
+  the catalog canonicalization stays conductor/human.
+- **root-doc spelling drift: DONE by the human** (the docs-pass inventory —
+  README/DESIGN/USER_STORY `@`/v0.2 edits — is discharged; no AI action owed).
+- **NEXT-TURN side-quest (after ack), low-priority**: a two-lane DeepSeek-only
+  `/adversarial-crosscheck` of the PUBLISHABLE errorloom — dual remit (narrow
+  Rust-user-taste code review + broad SWE published-library quality review),
+  scoped EXCLUSIVELY to errorloom, NO mention of dorc, NO mutation. Low-reasoning
+  agents; do not churn on issues. (DeepSeek = the `deepseek-reviewer` lane.)
+
+## §2t — `.rs` comment-respell landing + two reported findings (2026-07-20)
+
+Comment respell LANDED @ `791a8e7`, FOLDED (cold clippy 0 warnings, own-hand). The
+misleading `mark_grammar.rs` header is corrected (now: cutover LANDED, module is
+the `#[cfg(test)]` reference-spec for the future `Vec` block-model,
+`281`-remains-THE-spec). `marker.rs:186`'s `v0.1` literal correctly LEFT (it's the
+`marker-version-unrecognized` fixture; deliberately-unrecognized, comment fenced).
+Two reported-not-fixed findings banked:
+- **`28A:finding-old-prose-coupled-to-message-strings`** — core/cli/plan
+  doc-comments still say `tolerates:`/`invariant:` because they are 1:1-coupled to
+  catalog `message` STRINGS + render `format!` output that also still say v0.1.
+  Respelling only the doc-comment would split doc-vs-emitted-text. This IS the
+  `sm `-prose lazy lane → the FRESH FABLE prose pass (§2s) owns it, message + doc
+  together.
+- **`28A:finding-touches-rename-half-done`** (pre-existing, NOT this round's
+  respell) — the `touches`→`disturbs` / `reaches`→`disturbance_reaches_only`
+  sh-FUNCNAME-suffix migration is half-landed: production strip emits the NEW
+  suffixes (`predict.rs` L119/152) but `predict.rs` docs L108-113/442-514 and
+  hand-built sh fixtures in `cli/main.rs:5911` + `plan/lib.rs:4720/4738` still
+  spell `apt_get__touches()`. Build is GREEN (fixtures pass — the funcname isn't
+  asserted where they live), so LOW severity; distinct from the mark-grammar
+  respell (Rust-side `touches`/`reaches` module/type/method names are
+  deliberately retained). Owed a conductor/next-round investigation, NOT a
+  rushed round-close fix (non-comment; would risk the verified build). Verify in
+  other cells before touching.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
