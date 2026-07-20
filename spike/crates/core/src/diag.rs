@@ -1773,6 +1773,100 @@ pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
     out
 }
 
+/// The span-tagged twin of [`render_body`] (`282` §4, phase-2): the SAME bytes, plus a gap-free
+/// [`crate::tagged::Span`] map classifying every run. A tool-mode output (`282` §4 — never a product
+/// surface); the promote flow reads the map to attribute an author's transcript edits back to catalog
+/// fields. Message and help prose tag through [`crate::catalog::fill_template_tagged`]; the ` = help:`
+/// connective is [`Arrangement`](crate::tagged::Region::Arrangement). `text()` is byte-identical to
+/// [`render_body`] (gate-pinned) — the feature is purely additive, so product renders never move.
+///
+/// FLAG (`282` §4 four-class fit): emit-site-authored notes/suggestion (empty in production — no
+/// `Suggestion`/child emitter exists at HEAD; only the builder tests populate them) do not fit any
+/// prose class, so they are classified WHOLE as `Arrangement` pending a ruling. Pure; `inv-no-throw`.
+#[must_use]
+pub fn render_body_tagged(diag: &Diag, interner: &crate::Interner) -> crate::tagged::TaggedRender {
+    use crate::tagged::{Field, Region, Span};
+    fn arrange(out: &mut String, spans: &mut Vec<Span>, text: &str, slug: &'static str) {
+        if text.is_empty() {
+            return;
+        }
+        let start = out.len();
+        out.push_str(text);
+        spans.push(Span {
+            range: start..out.len(),
+            region: Region::Arrangement { slug },
+        });
+    }
+    let params = params_of(&diag.code, interner);
+    let refs: Vec<(&'static str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    let code = diag.code.slug();
+    let entry = crate::catalog::entry(code);
+    let mut out = String::new();
+    let mut spans: Vec<Span> = Vec::new();
+    match entry {
+        Some(e) => crate::catalog::fill_template_tagged(
+            &mut out,
+            &mut spans,
+            e.message,
+            &refs,
+            code,
+            Field::Message,
+            0,
+        ),
+        None => arrange(
+            &mut out,
+            &mut spans,
+            &format!("[unwritten: {code}]"),
+            "unwritten-placeholder",
+        ),
+    }
+    if let Some(help) = entry.and_then(|e| e.help) {
+        arrange(&mut out, &mut spans, "\n  = help: ", "help-connective");
+        crate::catalog::fill_template_tagged(
+            &mut out,
+            &mut spans,
+            help,
+            &refs,
+            code,
+            Field::Help,
+            0,
+        );
+    }
+    for child in &diag.children {
+        match child {
+            SubDiag::Note(n) => {
+                arrange(
+                    &mut out,
+                    &mut spans,
+                    &format!("\n  = note: {n}"),
+                    "authored-note",
+                );
+            }
+            SubDiag::Help(h) => {
+                arrange(
+                    &mut out,
+                    &mut spans,
+                    &format!("\n  = help: {h}"),
+                    "authored-help",
+                );
+            }
+        }
+    }
+    if let Some(s) = &diag.suggestion {
+        arrange(
+            &mut out,
+            &mut spans,
+            &format!(
+                "\n  = help: {} [{}]",
+                s.message,
+                remediation_tag(s.remediation)
+            ),
+            "authored-suggestion",
+        );
+    }
+    crate::tagged::TaggedRender::new(out, spans)
+}
+
 /// The artifact-comment render (`22B` `render-3`, the ru-12 weld). A shipped `.sh` artifact may
 /// carry AT MOST a FACT-PLANE projection of a diagnostic — a provenance comment naming the
 /// fact, never the narrative prose, the help/remediation, or any [`ProvId`]-derived receipt
