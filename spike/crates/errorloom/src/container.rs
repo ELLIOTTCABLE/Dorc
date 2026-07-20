@@ -319,15 +319,18 @@ impl Case {
         out.push_str("---\n");
         out.push_str(&self.preamble);
         for section in &self.sections {
+            ensure_trailing_lf(&mut out);
             out.push_str("-- ");
             out.push_str(&section.name);
             out.push_str(" --\n");
             out.push_str(&section.content);
         }
+        ensure_trailing_lf(&mut out);
         out.push_str("-- ");
         out.push_str(REPLAY_SECTION);
         out.push_str(" --\n");
         for block in &self.replay.blocks {
+            ensure_trailing_lf(&mut out);
             out.push_str("$ ");
             out.push_str(&block.command);
             out.push('\n');
@@ -378,6 +381,16 @@ impl Case {
             }
         }
         Ok(())
+    }
+}
+
+/// Insert an LF before an about-to-be-written marker/command when the text does
+/// not already end with one (`swe-F6`): a captured output lacking a trailing
+/// newline (or a section content) must never fuse the following `-- name --` /
+/// `$ ` onto its last line, or the case no longer round-trips through parse.
+fn ensure_trailing_lf(out: &mut String) {
+    if !out.is_empty() && !out.ends_with('\n') {
+        out.push('\n');
     }
 }
 
