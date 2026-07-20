@@ -590,35 +590,23 @@ fn count_ratchet_entries(src: &str) -> usize {
         .count()
 }
 
-/// `[unwritten: <slug>]` renders GREPPABLY (`27V` §3): a catalog `message`/`help` that is still the
-/// unwritten placeholder must be EXACTLY `[unwritten: <that entry's slug>]` (never a near-miss that
-/// escapes a grep), and the count is pinned so it only shrinks as prose is authored.
+/// Unwritten prose is `None` and renders GREPPABLY (`27V` §3 · `283:dec-message-becomes-option`): an
+/// unwritten `message` is stored as `None` (never a near-miss string), and the render seat synthesizes
+/// EXACTLY `[unwritten: <slug>]` — the defining-case prose goldens pin that synthesized render
+/// byte-for-byte, so this gate only has to count-and-pin the debt. The count shrinks as prose is
+/// authored and never silently grows (a bump is a conscious conductor act).
 #[test]
 fn unwritten_renders_are_greppable_and_pinned() {
-    let mut unwritten = Vec::new();
-    for e in dorc_core::catalog::CATALOG {
-        let placeholder = format!("[unwritten: {}]", e.slug);
-        for (register, text) in [("message", Some(e.message)), ("help", e.help)] {
-            let Some(text) = text else { continue };
-            if text.contains("[unwritten") {
-                assert_eq!(
-                    text, placeholder,
-                    "catalog `{}` {register} carries a MALFORMED unwritten placeholder — it must be \
-                     exactly `{placeholder}` so `grep '\\[unwritten:'` finds every one",
-                    e.slug
-                );
-                unwritten.push((e.slug, register));
-            }
-        }
-    }
-    // At the base tip the prose is `sm `-prefixed or conductor-authored — zero `[unwritten:]` yet.
-    // This pin SHRINKS to accommodate new codes' placeholders and re-tightens as prose is authored;
-    // it never silently grows unnoticed (a bump here is a conscious conductor act). Ceiling 1 → 5
-    // for the four `281` mark-grammar codes' `[unwritten:]` prose (`28A:rul-new-codes-ship-covered-cases`).
+    let unwritten: Vec<&str> = dorc_core::catalog::CATALOG
+        .iter()
+        .filter(|e| e.message.is_none())
+        .map(|e| e.slug)
+        .collect();
+    // Ceiling 5 covers the four `281` mark-grammar codes' unwritten messages plus one headroom.
     assert!(
         unwritten.len() <= 5,
-        "more `[unwritten:]` placeholders ({}) than the pinned ceiling — each is a conductor prose \
-         debt; bump this ceiling consciously when a new code lands with empty prose: {unwritten:?}",
+        "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
+         debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()
     );
 }

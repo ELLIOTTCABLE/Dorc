@@ -46,7 +46,7 @@ fn fill_template_tagged_is_byte_identical_to_fill_template() {
             .map(|p| (*p, format!("valFor-{p}")))
             .collect();
         let refs: Vec<(&'static str, &str)> = vals.iter().map(|(k, v)| (*k, v.as_str())).collect();
-        for (field, template) in [("message", Some(e.message)), ("help", e.help)] {
+        for (field, template) in [("message", e.message), ("help", e.help)] {
             let Some(template) = template else { continue };
             let (tagged_text, spans) = tag(template, &refs);
             assert_eq!(
