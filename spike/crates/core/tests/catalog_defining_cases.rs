@@ -458,6 +458,46 @@ fn defining_cases_render_triples_byte_match() {
     }
 }
 
+/// The tagged twin (`282` §4) of EVERY defining case: [`diag::render_body_tagged`] must be
+/// byte-identical to the `prose` register (the product render never moves — the feature is additive)
+/// and its span map a gap-free, non-overlapping total cover (the shape the `dorc-loom` adapter feeds
+/// to `errorloom::TaggedRender::new`, `28A:rul-span-cover-stays-total`). Reuses the [`covered`]
+/// canonical payloads, so it tracks the defining-case set with zero duplication.
+#[test]
+fn defining_case_tagged_render_matches_prose_and_covers() {
+    let interner = Interner::default();
+    for case in covered() {
+        let diag = Diag::new((case.build)(), Span::new(BytePos(0), BytePos(1)));
+        let tagged = diag::render_body_tagged(&diag, &interner);
+        assert_eq!(
+            tagged.text(),
+            diag::render_body(&diag, &interner),
+            "defining case `{}`: the tagged twin drifted from render_body",
+            case.slug
+        );
+        let mut expected = 0;
+        for span in tagged.spans() {
+            assert_eq!(
+                span.range.start, expected,
+                "case `{}`: non-contiguous span",
+                case.slug
+            );
+            assert!(
+                span.range.end > span.range.start,
+                "case `{}`: empty span",
+                case.slug
+            );
+            expected = span.range.end;
+        }
+        assert_eq!(
+            expected,
+            tagged.text().len(),
+            "case `{}`: spans stop short of total cover",
+            case.slug
+        );
+    }
+}
+
 /// COMPLETENESS (`AID-NEEDS:law-one-defining-case-per-code`, ratchet-tempered): every catalog slug is
 /// EITHER covered by a defining case OR on the shrink-only [`DEFINING_CASE_RATCHET`] — never silently
 /// uncovered. Also: no slug is in BOTH (a covered code must leave the ratchet).
