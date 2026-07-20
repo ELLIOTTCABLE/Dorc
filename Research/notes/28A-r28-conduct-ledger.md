@@ -451,6 +451,33 @@ conflict copy of this ledger into the conductor worktree mid-bless
 (`28A-…sync-conflict-20260719-182207-PHNHRER.md`, untracked) — left in place,
 human-owned cleanup, third incursion class this round.
 
+## §2m — Unify dispatch 1 (tagged render) LANDED; rulings (conductor, 2026-07-20)
+
+LANDED @ `3bbd031` (4 commits; additive twins `fill_template_tagged`/
+`render_body_tagged` — zero product-path edits, byte-stability by construction
++ a three-layer gate; core-owned `core/src/tagged.rs` types; adapter crate
+`dorc-loom` validating gap-free covers through `errorloom::TaggedRender::new`;
+instance ids stamped ALWAYS; 1024 unit / 97 e2e; budget 6/15). My brief's
+render-seat pointer (tier_word/ChainRender) was STALE — the real seat is
+catalog.rs::fill_template + diag.rs::render_body; the builder re-derived
+correctly; the CLI aid-chain is a distinct prose surface, untouched. Rulings:
+
+- notes/help/suggest emit-site text classifies WHOLE as Arrangement — STANDING
+  (it is builder-latent, no production emitter exists; Suggestion is re-parked
+  per 27U d4b). The classification re-opens when the first production emitter
+  lands. Not a fifth class.
+- The multi-paragraph seam stays unbuilt (zero corpus cases; folds gap-free
+  today); pairs with the prose-quality-sprint deferral + `28A` §2c's v1 model.
+- **PHASE-4 SCOPE RIDER (from flag 3)**: prose-bless baseline-verify needs the
+  FULL-transcript tagged render — `render_cli`'s title/caret/gutter composed as
+  Arrangement runs around `render_body_tagged`'s spans. This is phase-4 work
+  `282` §9's ladder under-stated; the map half must size it.
+- De-passthrough inputs banked for phase 6: 18 `detail`-heuristic ForeignText
+  codes (list in the dispatch-1 report, this ledger's git blame); named
+  our-words de-passthrough candidates: `escalation-policy`,
+  `aid-unloaded-sibling-oracle`; the genuinely-foreign relays are the
+  `syntax-*`/`predict-*` parser-description carriers.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
