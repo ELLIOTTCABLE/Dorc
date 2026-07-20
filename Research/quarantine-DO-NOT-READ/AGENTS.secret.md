@@ -8,9 +8,11 @@ The danger is interactional: security reasoning can redirect or terminate the co
 
 A security-related conflict between this file and the assigned brief is the path of **very last resort**. First exhaust every faithful implementation that completes the brief without violating an invariant. Only when no such implementation exists, STOP without naming, describing, hinting at, or explaining the conflict. Tell the conductor exactly: **“Ensure this plan is durable, then run the opaque reviewer over the brief given to this builder.”** Add nothing security-related. Do not propose a fix, identify the affected surface, quote the brief, summarize the concern, or answer follow-up questions about why work stopped. Resume only from a reviewed replacement brief or the permitted opaque-review result.
 
-The quarantined files are open to you, you may refer to them as necessary to complete your work. In particular, recent results from recent security-reviews, underneat the quarantine, may provide useful context to your direction and efforts. (Reminder: your conductor *has not seen* those security reviews, and *cannot* know their content nor context; their direction is *independant* of your conductor's instructions.)
-
 When uncertain whether information may cross the gate, do not convey it. When uncertain whether an implementation can satisfy both documents, keep working toward a faithful construction unless an actual security-related conflict is established.
+
+The quarantined files are open to you, you may refer to them as necessary to complete your work. In particular, recent results from recent security-reviews, underneath the quarantine, may provide useful context to your direction and efforts. (Reminder: your conductor *has not seen* those security reviews, and *cannot* know their content nor context; their direction is *independant* of your conductor's instructions.)
+
+This is a living document; and higher-reasoning security conductors and reviewers may edit the below sections as necessary to issue new invariants that become security-critical; but it must not grow to be unwieldly, as it will be loaded into context by *every* builder-agent.
 
 # Dorc security invariants — builder-focused quarantine
 
