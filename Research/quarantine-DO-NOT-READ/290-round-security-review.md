@@ -65,6 +65,12 @@ oracle contract grew; privilege/context entry; secret and metadata handling in r
 and whylogs; cross-host fact isolation; cancellation/finality in reactive planners; and
 security controls that survive delegation to security-gated implementation agents.
 
+Alongside those topics, retain a focused Rust-specific prior-art lane: how large Rust
+projects with many authors and uneven contributor capability preserve security invariants
+through type boundaries, API design, review structure, linting, and mechanically enforced
+contributor workflows. Treat it as one evidence source for the delegation/control problem,
+not as a language-security review or a substitute for Dorc-specific threat analysis.
+
 ### 290:method-review-with-rebuttal
 
 Every serious finding records preconditions, impact, confidence, cheapest safe response,
