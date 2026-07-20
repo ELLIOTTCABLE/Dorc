@@ -3,4 +3,7 @@ code: munge-name-invalid
 ---
 -- replay --
 $ dorc lint oracle.sh
-error[munge-name-invalid]: sm `9pkg` munges to the sh function name `9pkg`, which is not a legal NAME: starts with a digit (ca-munge-charclass, 24M §4b) — REFUSED (a broken function name cannot ship; the munger must transliterate or the name must be renamed)
+error[munge-name-invalid]: sm `9pkg` munges to the sh function name `9pkg`,
+   which is not a legal NAME: starts with a digit (ca-munge-charclass, 24M §4b)
+   — REFUSED (a broken function name cannot ship; the munger must transliterate
+   or the name must be renamed)

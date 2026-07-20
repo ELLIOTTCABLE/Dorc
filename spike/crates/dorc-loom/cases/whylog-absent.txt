@@ -4,4 +4,5 @@ code: whylog-absent
 -- replay --
 $ dorc why --last
 warning[whylog-absent]: no saved why-log to read back in `./.dorc/whylog`
-  = help: a why-log is saved when a plan or apply runs with `--whylog-dir`; run one first, or point `--whylog-dir` at the right directory
+   = help: a why-log is saved when a plan or apply runs with `--whylog-dir`; run
+      one first, or point `--whylog-dir` at the right directory

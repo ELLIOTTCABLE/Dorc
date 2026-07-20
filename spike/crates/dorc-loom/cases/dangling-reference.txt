@@ -3,4 +3,6 @@ code: dangling-reference
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[dangling-reference]: sm coordinate sm.dorc.Package:nginx resolved DANGLING — the kind's resolver reports no such entity (a likely typo / stale name); it degrades to may-alias (the site runs)
+note[dangling-reference]: sm coordinate sm.dorc.Package:nginx resolved DANGLING
+   — the kind's resolver reports no such entity (a likely typo / stale name); it
+   degrades to may-alias (the site runs)
