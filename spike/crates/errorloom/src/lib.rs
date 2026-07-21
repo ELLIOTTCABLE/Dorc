@@ -49,6 +49,7 @@ use std::fmt::Debug;
 mod bless;
 mod container;
 mod diff;
+mod editable;
 mod promote;
 mod prose;
 mod runner;
@@ -61,6 +62,10 @@ pub use crate::bless::{
 pub use crate::container::{
     Case, CaseError, Frontmatter, FrontmatterValue, REPLAY_SECTION, ReplayBlock, ReplaySection,
     Section,
+};
+pub use crate::editable::{
+    AlignmentLimitMetadata, EditRefusal, EditRefusalClass, EditTransport, EditableFragment,
+    EditableRender, EditableSection, RenderComponent, SectionEdit, transport_edit,
 };
 pub use crate::promote::{
     AttributedToken, ParamTables, ParamValues, PromoteOutcome, Refusal, RefusalClass, promote,
