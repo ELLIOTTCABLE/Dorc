@@ -29,7 +29,8 @@ use errorloom::{
 };
 
 use crate::{
-    FieldKey, SectionKey, SectionVariableId, TemplateVariableName, to_editable_render, to_errorloom,
+    DorcSectionEdit, FieldKey, SectionKey, SectionVariableId, TemplateVariableName,
+    to_editable_render, to_errorloom,
 };
 
 /// Exact current values by editable section and semantic variable name.
@@ -63,6 +64,15 @@ pub struct DorcConsumer {
     mirror: Vec<OwnedEntry>,
 }
 
+/// Why applying a compiled section to the in-memory mirror refused.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum DorcApplyRefusal {
+    /// The selected diagnostic code is absent from the mirror.
+    MissingCode(String),
+    /// The selected section is not a catalog prose field.
+    IllegalField(&'static str),
+}
+
 impl Default for DorcConsumer {
     fn default() -> Self {
         Self::new()
@@ -89,6 +99,42 @@ impl DorcConsumer {
         if let Some(e) = self.mirror.iter_mut().find(|e| e.slug == slug) {
             e.message = message;
         }
+    }
+
+    /// Apply one accepted compiled section to the in-memory catalog mirror.
+    ///
+    /// # Errors
+    /// Returns [`DorcApplyRefusal`] for an absent code or non-prose field.
+    pub fn apply_section_edit(&mut self, edit: &DorcSectionEdit) -> Result<(), DorcApplyRefusal> {
+        let key = edit.section();
+        let entry = self
+            .mirror
+            .iter_mut()
+            .find(|entry| entry.slug == key.code)
+            .ok_or_else(|| DorcApplyRefusal::MissingCode(key.code.clone()))?;
+        let template = edit
+            .compiled()
+            .fragments()
+            .iter()
+            .map(|fragment| match fragment {
+                crate::CompiledFragment::Text(text) => text.clone(),
+                crate::CompiledFragment::Variable(name) => format!("{{{{{}}}}}", name.0),
+            })
+            .collect();
+        match key.field {
+            "message" => entry.message = Some(template),
+            "help" => entry.help = Some(template),
+            field => return Err(DorcApplyRefusal::IllegalField(field)),
+        }
+        Ok(())
+    }
+
+    /// Re-render a case corpus from the current in-memory mirror.
+    ///
+    /// # Errors
+    /// Returns a case-world materialization refusal.
+    pub fn render_cases(&self, cases: &[Case]) -> Result<Vec<String>, String> {
+        cases.iter().map(|case| self.render_case(case)).collect()
     }
 
     /// Render one case through the core part stream and map it to editable sections.

@@ -22,7 +22,7 @@ use errorloom::{
 };
 
 mod consumer;
-pub use consumer::{DorcConsumer, DorcEditableBaseline, SectionVariables};
+pub use consumer::{DorcApplyRefusal, DorcConsumer, DorcEditableBaseline, SectionVariables};
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod edit;
