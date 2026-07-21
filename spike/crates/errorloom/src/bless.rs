@@ -115,6 +115,8 @@ pub enum BlessError {
     Git(GitError),
     /// A transcript is dirty and cannot be structure-regenerated.
     DirtyCase(PathBuf),
+    /// The generated catalog is dirty and cannot be structure-regenerated.
+    DirtyCatalog(PathBuf),
     /// Case parsing failed.
     Container(CaseError),
     /// The consumer failed to render a case.
@@ -131,10 +133,13 @@ pub fn structure_bless<C: CaseRenderer, G: Git>(
     consumer: &C,
     git: &G,
     corpus: &[CaseFile],
-    _catalog: &Path,
+    catalog: &Path,
 ) -> Result<BlessResult, BlessError> {
     let cases: BTreeSet<_> = corpus.iter().map(CaseFile::path).collect();
     let dirty = git.dirty_paths().map_err(BlessError::Git)?;
+    if let Some(path) = dirty.iter().find(|path| path.as_path() == catalog) {
+        return Err(BlessError::DirtyCatalog(path.clone()));
+    }
     if let Some(path) = dirty
         .into_iter()
         .find(|path| cases.contains(path.as_path()))
@@ -142,6 +147,67 @@ pub fn structure_bless<C: CaseRenderer, G: Git>(
         return Err(BlessError::DirtyCase(path));
     }
     regenerate(consumer, corpus)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Renderer;
+    impl CaseRenderer for Renderer {
+        type Error = String;
+        fn render_case(&self, case: &Case) -> Result<String, Self::Error> {
+            Ok(case.to_text())
+        }
+    }
+    fn corpus() -> Vec<CaseFile> {
+        vec![CaseFile::new(
+            "cases/a.txt",
+            "---\n---\n-- replay --\n$ tool\nok\n",
+        )]
+    }
+    #[test]
+    fn structure_bless_requires_clean_catalog_and_cases() {
+        let catalog = Path::new("catalog.rs");
+        assert!(matches!(
+            structure_bless(
+                &Renderer,
+                &FakeGit::new().mark_dirty("catalog.rs"),
+                &corpus(),
+                catalog
+            ),
+            Err(BlessError::DirtyCatalog(_))
+        ));
+        assert!(matches!(
+            structure_bless(
+                &Renderer,
+                &FakeGit::new().mark_dirty("cases/a.txt"),
+                &corpus(),
+                catalog
+            ),
+            Err(BlessError::DirtyCase(_))
+        ));
+        assert!(matches!(
+            structure_bless(
+                &Renderer,
+                &FakeGit::new().mark_dirty("src/layout.rs"),
+                &corpus(),
+                catalog
+            ),
+            Ok(_)
+        ));
+        assert!(matches!(
+            structure_bless(
+                &Renderer,
+                &FakeGit::new()
+                    .mark_dirty("catalog.rs")
+                    .mark_dirty("cases/a.txt"),
+                &corpus(),
+                catalog
+            ),
+            Err(BlessError::DirtyCatalog(_))
+        ));
+    }
 }
 
 /// Ensure committed cases reproduce exactly.
