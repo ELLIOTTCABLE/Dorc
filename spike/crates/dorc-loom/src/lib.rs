@@ -13,9 +13,12 @@
 //! floor. The prose-promote flow itself lives in errorloom; this adapter only
 //! produces the tagged baseline it consumes.
 
-use dorc_core::tagged::{self, Region as CoreRegion};
+use std::collections::BTreeMap;
+
+use dorc_core::tagged::{self, Region as CoreRegion, RenderPart, RenderParts};
 use errorloom::{
-    ArrangementSlug, InstanceId, ParamName, Region, Span, TaggedRender, TaggedRenderError,
+    ArrangementSlug, EditableFragment, EditableRender, EditableSection, InstanceId, ParamName,
+    Region, RenderComponent, Span, TaggedRender, TaggedRenderError,
 };
 
 mod consumer;
@@ -30,6 +33,145 @@ pub struct FieldKey {
     pub code: String,
     /// Which prose register (`message`/`help`).
     pub field: &'static str,
+}
+
+/// A semantic template variable name.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct TemplateVariableName(pub String);
+
+/// A variable occurrence within one editable section.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct SectionVariableId {
+    /// The semantic catalog parameter name.
+    pub name: TemplateVariableName,
+    /// The zero-based occurrence of `name` in this section.
+    pub occurrence: usize,
+}
+
+/// The identity of one contiguous editable catalog field segment.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct SectionKey {
+    /// The diagnostic code slug.
+    pub code: String,
+    /// The catalog field name.
+    pub field: &'static str,
+    /// The core-emitted field occurrence.
+    pub instance: usize,
+    /// The deterministic split ordinal within this render.
+    pub segment: usize,
+}
+
+/// Map a core render-part stream to generic editable sections.
+#[must_use]
+pub fn to_editable_render(parts: &RenderParts) -> EditableRender<SectionKey, SectionVariableId> {
+    let mut components = Vec::new();
+    let mut section = None;
+    let mut next_segment = 0usize;
+    for part in parts.parts() {
+        match part {
+            RenderPart::TemplateLiteral {
+                text,
+                code,
+                field,
+                instance,
+                ..
+            } => {
+                let key = (*code, *field, *instance);
+                if section
+                    .as_ref()
+                    .is_some_and(|current: &ActiveSection| current.key != key)
+                {
+                    flush_section(&mut components, &mut section);
+                }
+                let current = section.get_or_insert_with(|| {
+                    let active = ActiveSection {
+                        key,
+                        segment: next_segment,
+                        fragments: Vec::new(),
+                        occurrences: BTreeMap::new(),
+                    };
+                    next_segment = next_segment.saturating_add(1);
+                    active
+                });
+                current.fragments.push(EditableFragment::Text(text.clone()));
+            }
+            RenderPart::ParamValue {
+                text,
+                code,
+                field,
+                param,
+                instance,
+            } => {
+                let key = (*code, *field, *instance);
+                if section
+                    .as_ref()
+                    .is_some_and(|current: &ActiveSection| current.key != key)
+                {
+                    flush_section(&mut components, &mut section);
+                }
+                let current = section.get_or_insert_with(|| {
+                    let active = ActiveSection {
+                        key,
+                        segment: next_segment,
+                        fragments: Vec::new(),
+                        occurrences: BTreeMap::new(),
+                    };
+                    next_segment = next_segment.saturating_add(1);
+                    active
+                });
+                let occurrence = current.occurrences.entry(*param).or_default();
+                current.fragments.push(EditableFragment::Variable {
+                    id: SectionVariableId {
+                        name: TemplateVariableName(String::from(*param)),
+                        occurrence: *occurrence,
+                    },
+                    rendered: text.clone(),
+                });
+                *occurrence = occurrence.saturating_add(1);
+            }
+            RenderPart::ForeignText { text, param } => {
+                flush_section(&mut components, &mut section);
+                components.push(RenderComponent::FixedVariable {
+                    id: SectionVariableId {
+                        name: TemplateVariableName(String::from(*param)),
+                        occurrence: 0,
+                    },
+                    rendered: text.clone(),
+                });
+            }
+            RenderPart::Arrangement { text, .. } => {
+                flush_section(&mut components, &mut section);
+                components.push(RenderComponent::Structure(text.clone()));
+            }
+        }
+    }
+    flush_section(&mut components, &mut section);
+    EditableRender::new(components)
+}
+
+struct ActiveSection {
+    key: (&'static str, tagged::Field, usize),
+    segment: usize,
+    fragments: Vec<EditableFragment<SectionVariableId>>,
+    occurrences: BTreeMap<&'static str, usize>,
+}
+
+fn flush_section(
+    components: &mut Vec<RenderComponent<SectionKey, SectionVariableId>>,
+    section: &mut Option<ActiveSection>,
+) {
+    let Some(section) = section.take() else {
+        return;
+    };
+    components.push(RenderComponent::EditableSection(EditableSection::new(
+        SectionKey {
+            code: String::from(section.key.0),
+            field: section.key.1.as_str(),
+            instance: section.key.2,
+            segment: section.segment,
+        },
+        section.fragments,
+    )));
 }
 
 /// Map a core-owned tagged render onto an `errorloom::TaggedRender`, keyed by
