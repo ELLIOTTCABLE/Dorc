@@ -101,7 +101,7 @@ fn fixpoint_gate_catches_a_catalog_hand_edit() {
     consumer.set_message("whylog-absent", Some("sm tampered message".to_owned()));
     let corpus = vec![CaseFile::new(CASE_PATH, committed)];
     let err = fixpoint_check(&consumer, &corpus).unwrap_err();
-    assert!(matches!(err, BlessError::Fixpoint { .. }), "got {err:?}");
+    assert!(matches!(err, BlessError::Fixpoint(_)), "got {err:?}");
 }
 
 #[test]

@@ -10,12 +10,8 @@
 //! - the [`Case`] container — txtar sections with flat-YAML frontmatter;
 //! - the replay runner ([`run_case`], [`check_run`], [`bless_structure`]) — runs a
 //!   case's `$ ` command blocks in a caller-injected sandbox ([`RunEnv`]);
-//! - the transport engine ([`promote`]) — word-diffs a [`TaggedRender`] against an
-//!   edited transcript, attributes each change, and yields per-field prose edits or
-//!   a blunt [`Refusal`];
-//! - the bless orchestration ([`prose_bless`], [`structure_bless`],
-//!   [`fixpoint_check`]) over the [`Consumer`] and [`Git`] traits — the two bless
-//!   modes, their exclusivity, and the CI fixpoint gate.
+//! - the nested editable-section transport ([`EditableRender`]);
+//! - structure regeneration and the [`fixpoint_check`] gate over [`CaseRenderer`].
 //!
 //! The one hard-tested guarantee (`282` §5): an edit confined to one template
 //! region round-trips exactly, modulo whitespace normalization.
@@ -48,16 +44,11 @@ use std::fmt::Debug;
 
 mod bless;
 mod container;
-mod diff;
 mod editable;
-mod promote;
-mod prose;
 mod runner;
-mod span;
 
 pub use crate::bless::{
-    BlessError, BlessMode, BlessResult, CaseFile, CaseRenderer, Consumer, FakeGit, Git, GitError,
-    ModeRefusal, SubprocessGit, TaggedBaseline, fixpoint_check, infer_mode, prose_bless,
+    BlessError, BlessResult, CaseFile, CaseRenderer, FakeGit, Git, GitError, fixpoint_check,
     structure_bless,
 };
 pub use crate::container::{
@@ -69,16 +60,9 @@ pub use crate::editable::{
     EditableRender, EditableSection, RenderComponent, SectionEdit, transport_edit,
     transport_edit_allow_removal,
 };
-pub use crate::promote::{
-    AttributedToken, ParamTables, ParamValues, PromoteOutcome, Refusal, RefusalClass, promote,
-};
-pub use crate::prose::{
-    FieldTemplate, Fragment, Paragraph, ParamName, Prose, Token, Word, tokenize,
-};
 pub use crate::runner::{
     Drift, ReplayCapture, RunEnv, RunError, RunReport, bless_structure, check_run, run_case,
 };
-pub use crate::span::{ArrangementSlug, InstanceId, Region, Span, TaggedRender, TaggedRenderError};
 
 /// What a consumer's opaque field key must satisfy. errorloom groups, sorts, and
 /// compares by the key but never inspects it (Dorc's key is `(code, field)`).
@@ -89,5 +73,3 @@ impl<T: Clone + Ord + Debug> ConsumerKey for T {}
 
 #[cfg(test)]
 mod container_tests;
-#[cfg(test)]
-mod tests;
