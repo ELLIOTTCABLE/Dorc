@@ -436,7 +436,7 @@ fn fire_book_analysis(
 }
 
 /// Flatten an errorloom [`FieldTemplate`] to the mirror's single-`String` form (`28A` §2c v1 — one
-/// paragraph today): words verbatim, holes as `{param}`, paragraphs joined by a blank line.
+/// paragraph today): words verbatim, holes as `{{param}}`, paragraphs joined by a blank line.
 fn flatten_template(template: &FieldTemplate) -> String {
     template
         .paragraphs()
@@ -446,7 +446,7 @@ fn flatten_template(template: &FieldTemplate) -> String {
                 .iter()
                 .map(|f| match f {
                     Fragment::Word(w) => w.as_str().to_owned(),
-                    Fragment::Hole(name) => format!("{{{}}}", name.as_str()),
+                    Fragment::Hole(name) => format!("{{{{{}}}}}", name.as_str()),
                 })
                 .collect::<Vec<_>>()
                 .join(" ")

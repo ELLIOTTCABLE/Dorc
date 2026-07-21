@@ -70,7 +70,7 @@ fn full_prose_bless_loop_then_structure_bless() {
     assert!(msg.contains("mistake"), "mirror absorbed the edit: {msg}");
     assert!(!msg.contains("typo"), "the old word is gone: {msg}");
     assert!(
-        msg.contains("{coord}"),
+        msg.contains("{{coord}}"),
         "the param stayed a hole, not baked: {msg}"
     );
 
