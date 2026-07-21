@@ -106,14 +106,23 @@ impl DorcConsumer {
     /// # Errors
     /// Returns [`DorcApplyRefusal`] for an absent code or non-prose field.
     pub fn apply_section_edit(&mut self, edit: &DorcSectionEdit) -> Result<(), DorcApplyRefusal> {
-        let key = edit.section();
+        self.apply_compiled_section(edit.section(), edit.compiled())
+    }
+
+    fn apply_compiled_section(
+        &mut self,
+        key: &SectionKey,
+        compiled: &crate::CompiledSection,
+    ) -> Result<(), DorcApplyRefusal> {
+        if !matches!(key.field, "message" | "help") {
+            return Err(DorcApplyRefusal::IllegalField(key.field));
+        }
         let entry = self
             .mirror
             .iter_mut()
             .find(|entry| entry.slug == key.code)
             .ok_or_else(|| DorcApplyRefusal::MissingCode(key.code.clone()))?;
-        let template = edit
-            .compiled()
+        let template = compiled
             .fragments()
             .iter()
             .map(|fragment| match fragment {
@@ -121,10 +130,10 @@ impl DorcConsumer {
                 crate::CompiledFragment::Variable(name) => format!("{{{{{}}}}}", name.0),
             })
             .collect();
-        match key.field {
-            "message" => entry.message = Some(template),
-            "help" => entry.help = Some(template),
-            field => return Err(DorcApplyRefusal::IllegalField(field)),
+        if key.field == "message" {
+            entry.message = Some(template);
+        } else {
+            entry.help = Some(template);
         }
         Ok(())
     }
@@ -574,8 +583,8 @@ fn editable_variables(
 mod tests {
     use super::*;
     use crate::{
-        CompileRefusal, DorcSectionEditRefusal, compile_preview, compile_section_edit,
-        render_compile_preview,
+        CompileRefusal, DorcSectionEditRefusal, compile_fragments, compile_preview,
+        compile_section_edit, render_compile_preview,
     };
     use errorloom::{EditableFragment, EditableSection, RenderComponent};
 
@@ -1069,5 +1078,78 @@ mod tests {
         );
         assert!(!interpretation.contains("hidden"));
         assert!(!interpretation.contains("foreign"));
+    }
+
+    #[test]
+    fn applying_compiled_markers_preserves_duplicate_empty_and_nul_variables() {
+        let section = SectionKey {
+            code: String::from("dangling-reference"),
+            field: "message",
+            instance: 0,
+            segment: 0,
+        };
+        let baseline = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                section.clone(),
+                vec![
+                    variable("empty", 0, ""),
+                    EditableFragment::Text(String::from(" ")),
+                    variable("nul", 0, "\0"),
+                    EditableFragment::Text(String::from(" remove-me ")),
+                    variable("removed", 0, "gone"),
+                ],
+            ),
+        )]);
+        let edit = compile_section_edit(&baseline, "{{nul}} {{empty}} {{nul}}")
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        let mut consumer = DorcConsumer::new();
+
+        consumer
+            .apply_section_edit(&edit)
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(
+            consumer
+                .mirror()
+                .iter()
+                .find(|entry| entry.slug == "dangling-reference")
+                .and_then(|entry| entry.message.as_deref()),
+            Some("{{nul}} {{empty}} {{nul}}")
+        );
+    }
+
+    #[test]
+    fn applying_missing_code_or_illegal_field_leaves_the_mirror_unchanged() {
+        let mut consumer = DorcConsumer::new();
+        let before = consumer.mirror().to_vec();
+        let compiled =
+            compile_fragments(&[], &BTreeMap::new()).unwrap_or_else(|error| panic!("{error:?}"));
+
+        assert_eq!(
+            consumer.apply_compiled_section(
+                &SectionKey {
+                    code: String::from("missing-code"),
+                    field: "message",
+                    instance: 0,
+                    segment: 0,
+                },
+                &compiled,
+            ),
+            Err(DorcApplyRefusal::MissingCode(String::from("missing-code")))
+        );
+        assert_eq!(consumer.mirror(), before);
+
+        assert_eq!(
+            consumer.apply_compiled_section(
+                &SectionKey {
+                    code: String::from("dangling-reference"),
+                    field: "when_fires",
+                    instance: 0,
+                    segment: 0,
+                },
+                &compiled,
+            ),
+            Err(DorcApplyRefusal::IllegalField("when_fires"))
+        );
+        assert_eq!(consumer.mirror(), before);
     }
 }

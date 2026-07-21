@@ -15,7 +15,7 @@
 
 use std::path::Path;
 
-use dorc_loom::{DorcConsumer, TemplateVariableName};
+use dorc_loom::{DorcConsumer, TemplateVariableName, compile_section_edit};
 use errorloom::{
     BlessError, Case, CaseFile, CaseRenderer, FakeGit, ModeRefusal, fixpoint_check, prose_bless,
     structure_bless,
@@ -208,4 +208,47 @@ fn fixpoint_gate_catches_a_catalog_hand_edit() {
     let corpus = vec![CaseFile::new(CASE_PATH, committed)];
     let err = fixpoint_check(&consumer, &corpus).unwrap_err();
     assert!(matches!(err, BlessError::Fixpoint { .. }), "got {err:?}");
+}
+
+#[test]
+fn applied_template_regenerates_complete_multi_replay_case() {
+    let text = "---\ncode: dangling-reference\nwhen-fires: preserved frontmatter\n---\n\
+                -- input.txt --\nsource bytes stay unchanged\n\
+                -- replay --\n\
+                $ dorc plan --book=input.txt\nstale human bytes\n\
+                $ dorc plan --book=input.txt --format=jsonl\nstale machine bytes\n";
+    let case = Case::parse(text).expect("case parses");
+    let mut consumer = DorcConsumer::new();
+    let baseline = consumer
+        .editable_baseline(&case)
+        .expect("editable baseline");
+    let original = "sm coordinate sm.dorc.Package:nginx resolved DANGLING — the kind's resolver reports no such entity (a likely typo / stale name); it degrades to may-alias (the site runs)";
+    assert!(baseline.render().text().contains(original));
+    let dirty = baseline.render().text().replace(
+        original,
+        "{{coord}} is dangling; inspect {{coord}} before applying",
+    );
+    let edit = compile_section_edit(&baseline, &dirty).expect("strict markers compile");
+    consumer.apply_section_edit(&edit).expect("apply edit");
+
+    assert_eq!(
+        message_of(&consumer, "dangling-reference"),
+        "{{coord}} is dangling; inspect {{coord}} before applying"
+    );
+    let regenerated = consumer.render_cases(&[case]).expect("render cases");
+    assert_eq!(regenerated.len(), 1);
+    let regenerated = &regenerated[0];
+    assert!(regenerated.contains("when-fires: preserved frontmatter"));
+    assert!(regenerated.contains("-- input.txt --\nsource bytes stay unchanged\n"));
+    assert!(regenerated.contains("$ dorc plan --book=input.txt"));
+    assert!(regenerated.contains("$ dorc plan --book=input.txt --format=jsonl"));
+    assert!(regenerated.contains("sm.dorc.Package:nginx is dangling"));
+    assert!(regenerated.contains("{\"code\":\"dangling-reference\",\"severity\":\"note\"}"));
+    assert!(!regenerated.contains("stale human bytes"));
+    assert!(!regenerated.contains("stale machine bytes"));
+
+    let reparsed = Case::parse(regenerated).expect("regenerated case parses");
+    assert_eq!(reparsed.replay().blocks().len(), 2);
+    fixpoint_check(&consumer, &[CaseFile::new(CASE_PATH, regenerated.clone())])
+        .expect("mutated consumer reproduces regenerated case");
 }
