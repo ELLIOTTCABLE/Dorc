@@ -3,7 +3,9 @@
 //! bytes), and its span map must be a gap-free cover that classifies holes as
 //! `ParamValue`/`ForeignText` and literal prose as `TemplateLiteral`.
 
-use dorc_core::catalog::{CATALOG, fill_template, fill_template_tagged, is_foreign_param};
+use dorc_core::catalog::{
+    CATALOG, TemplatePart, fill_template, fill_template_tagged, is_foreign_param, parse_template,
+};
 use dorc_core::tagged::{Field, Region, Span};
 
 /// Fill `template` through the tagged twin with an empty offset base, returning
@@ -61,6 +63,18 @@ fn fill_template_tagged_is_byte_identical_to_fill_template() {
             assert_total_cover(&spans, tagged_text.len());
         }
     }
+}
+
+#[test]
+fn parse_template_returns_ordered_parts_and_literal_single_braces() {
+    assert_eq!(
+        parse_template("before {literal} {{name}} after"),
+        Ok(vec![
+            TemplatePart::Literal(String::from("before {literal} ")),
+            TemplatePart::Hole(String::from("name")),
+            TemplatePart::Literal(String::from(" after")),
+        ]),
+    );
 }
 
 #[test]

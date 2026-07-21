@@ -1065,7 +1065,7 @@ pub enum TemplateRefusal {
 /// Returns [`TemplateRefusal`] for invalid template syntax or an unknown parameter.
 pub fn fill_template(template: &str, params: &[(&str, &str)]) -> Result<String, TemplateRefusal> {
     let mut out = String::with_capacity(template.len());
-    for part in scan_template(template)? {
+    for part in parse_template(template)? {
         match part {
             TemplatePart::Literal(text) => out.push_str(&text),
             TemplatePart::Hole(name) => {
@@ -1112,7 +1112,7 @@ pub fn fill_template_tagged(
         },
     };
     let mut lit_start = out.len();
-    for part in scan_template(template)? {
+    for part in parse_template(template)? {
         match part {
             TemplatePart::Literal(text) => out.push_str(&text),
             TemplatePart::Hole(name) => {
@@ -1161,12 +1161,20 @@ pub fn is_foreign_param(param: &str) -> bool {
     param == "detail"
 }
 
-enum TemplatePart {
+/// One run in a parsed catalog template.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum TemplatePart {
+    /// Literal text, including any single braces.
     Literal(String),
+    /// A named `{{name}}` substitution hole.
     Hole(String),
 }
 
-fn scan_template(template: &str) -> Result<Vec<TemplatePart>, TemplateRefusal> {
+/// Parse a strict catalog template into ordered literal and substitution runs.
+///
+/// # Errors
+/// Returns [`TemplateRefusal::Malformed`] for invalid double-brace syntax.
+pub fn parse_template(template: &str) -> Result<Vec<TemplatePart>, TemplateRefusal> {
     let mut parts = Vec::new();
     let mut literal = String::new();
     let mut chars = template.chars().peekable();
@@ -1210,7 +1218,7 @@ fn scan_template(template: &str) -> Result<Vec<TemplatePart>, TemplateRefusal> {
 /// preserving, NOT deduped (a hole used twice appears twice); callers that need a param SET dedup.
 /// Pure.
 fn template_holes(template: &str) -> Result<Vec<String>, TemplateRefusal> {
-    Ok(scan_template(template)?
+    Ok(parse_template(template)?
         .into_iter()
         .filter_map(|part| match part {
             TemplatePart::Literal(_) => None,
