@@ -4,6 +4,7 @@ use std::fmt;
 
 const MAX_RENDER_SCALARS: usize = 4_096;
 const MAX_ALIGNMENT_STATES: usize = 1_000_000;
+const MAX_REMOVABLE_OCCURRENCES: usize = 12;
 
 /// An outer render component.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -246,7 +247,91 @@ pub fn transport_edit<S: Clone, V: Clone>(
     baseline: &EditableRender<S, V>,
     edited: &str,
 ) -> Result<EditTransport<S, V>, EditRefusal> {
-    transport_edit_with_budget(baseline, edited, &mut WorkBudget::new())
+    transport_edit_with_budget(baseline, edited, None, &mut WorkBudget::new())
+}
+
+/// Attributes an edit while allowing a uniquely inferred omission of variables.
+///
+/// A selected occurrence is omitted before the required-anchor alignment runs.
+/// Adjacent text coalesces through [`EditableSection::new`]. The search considers
+/// at most twelve occurrences per section.
+///
+/// # Errors
+/// Returns [`EditRefusal`] when no unique minimum-removal interpretation exists.
+pub fn transport_edit_allow_removal<S: Clone, V: Clone>(
+    baseline: &EditableRender<S, V>,
+    edited: &str,
+) -> Result<EditTransport<S, V>, EditRefusal> {
+    let baseline_scalars = capped_render_scalar_len(baseline);
+    let edited_scalars = capped_scalar_len(edited);
+    if baseline_scalars > MAX_RENDER_SCALARS || edited_scalars > MAX_RENDER_SCALARS {
+        return Err(limit_refusal(baseline_scalars, edited_scalars));
+    }
+    if baseline.text() == edited {
+        return Ok(EditTransport::Unchanged);
+    }
+
+    let mut work = WorkBudget::new();
+    for (component_index, component) in baseline.components.iter().enumerate() {
+        let RenderComponent::EditableSection(section) = component else {
+            continue;
+        };
+        if section_interior(baseline, component_index, edited).is_none() {
+            continue;
+        }
+        let occurrences = section
+            .fragments
+            .iter()
+            .filter(|fragment| matches!(fragment, EditableFragment::Variable { .. }))
+            .count();
+        if occurrences > MAX_REMOVABLE_OCCURRENCES {
+            return Err(limit_refusal(baseline_scalars, edited_scalars));
+        }
+        let candidate_count = 1usize << occurrences;
+        for removals in 0..=occurrences {
+            let mut successes = Vec::new();
+            for mask in 0..candidate_count {
+                if mask.count_ones() as usize != removals {
+                    continue;
+                }
+                let transformed = demote_occurrences(baseline, component_index, mask);
+                match transport_edit_with_budget(
+                    &transformed,
+                    edited,
+                    Some(component_index),
+                    &mut work,
+                ) {
+                    Ok(EditTransport::Edited(edit)) => successes.push(edit),
+                    Ok(EditTransport::Unchanged) => {
+                        if let Some(RenderComponent::EditableSection(transformed_section)) =
+                            transformed.components.get(component_index)
+                        {
+                            successes.push(SectionEdit {
+                                section: transformed_section.id.clone(),
+                                fragments: transformed_section.fragments.clone(),
+                            });
+                        }
+                    }
+                    Err(refusal) if refusal.class() == EditRefusalClass::AlignmentLimitExceeded => {
+                        return Err(limit_refusal(baseline_scalars, edited_scalars));
+                    }
+                    Err(_) => {}
+                }
+            }
+            match successes.len() {
+                0 => {}
+                1 => return Ok(EditTransport::Edited(successes.remove(0))),
+                _ => {
+                    return Err(refuse(
+                        EditRefusalClass::AmbiguousAttribution,
+                        &baseline.text(),
+                        edited,
+                    ));
+                }
+            }
+        }
+    }
+    Err(classify_refusal(baseline, edited))
 }
 
 /// The required-retention transport core, parameterized so bounded callers can
@@ -258,6 +343,7 @@ pub fn transport_edit<S: Clone, V: Clone>(
 fn transport_edit_with_budget<S: Clone, V: Clone>(
     baseline: &EditableRender<S, V>,
     edited: &str,
+    only_component: Option<usize>,
     work: &mut WorkBudget,
 ) -> Result<EditTransport<S, V>, EditRefusal> {
     let baseline_scalars = capped_render_scalar_len(baseline);
@@ -273,6 +359,9 @@ fn transport_edit_with_budget<S: Clone, V: Clone>(
     let mut successful = Vec::new();
     let mut saw_limit = false;
     for (index, component) in baseline.components.iter().enumerate() {
+        if only_component.is_some_and(|only| only != index) {
+            continue;
+        }
         let RenderComponent::EditableSection(section) = component else {
             continue;
         };
@@ -309,6 +398,61 @@ fn transport_edit_with_budget<S: Clone, V: Clone>(
             edited,
         )),
     }
+}
+
+fn section_interior<'a, S, V>(
+    baseline: &'a EditableRender<S, V>,
+    component_index: usize,
+    edited: &'a str,
+) -> Option<&'a str> {
+    let prefix: String = baseline
+        .components
+        .get(..component_index)?
+        .iter()
+        .map(component_text)
+        .collect();
+    let suffix: String = baseline
+        .components
+        .get(component_index.saturating_add(1)..)?
+        .iter()
+        .map(component_text)
+        .collect();
+    edited
+        .strip_prefix(&prefix)
+        .and_then(|rest| rest.strip_suffix(&suffix))
+}
+
+fn demote_occurrences<S: Clone, V: Clone>(
+    baseline: &EditableRender<S, V>,
+    component_index: usize,
+    mask: usize,
+) -> EditableRender<S, V> {
+    let mut components = baseline.components.clone();
+    let Some(RenderComponent::EditableSection(section)) = components.get(component_index) else {
+        return EditableRender::new(components);
+    };
+    let mut occurrence = 0usize;
+    let fragments = section
+        .fragments
+        .iter()
+        .cloned()
+        .filter_map(|fragment| match fragment {
+            EditableFragment::Variable { .. } if mask & (1usize << occurrence) != 0 => {
+                occurrence = occurrence.saturating_add(1);
+                None
+            }
+            EditableFragment::Variable { id, rendered } => {
+                occurrence = occurrence.saturating_add(1);
+                Some(EditableFragment::Variable { id, rendered })
+            }
+            EditableFragment::Text(text) => Some(EditableFragment::Text(text)),
+        })
+        .collect();
+    let section_id = section.id.clone();
+    if let Some(component) = components.get_mut(component_index) {
+        *component = RenderComponent::EditableSection(EditableSection::new(section_id, fragments));
+    }
+    EditableRender::new(components)
 }
 
 #[expect(

@@ -806,6 +806,132 @@ fn editable_transport_allows_one_sided_text_outer_edge_insertions() {
 }
 
 #[test]
+fn removal_transport_removes_variable_and_adjacent_punctuation() {
+    let render = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("use `")),
+                EditableFragment::Variable {
+                    id: String::from("command"),
+                    rendered: String::from("apt-get"),
+                },
+                EditableFragment::Text(String::from("` and ")),
+                EditableFragment::Variable {
+                    id: String::from("target"),
+                    rendered: String::from("wombat\0!?"),
+                },
+                EditableFragment::Text(String::from(" now")),
+            ],
+        ),
+    )]);
+    assert!(transport_edit(&render, "use and wombat\0!? now").is_err());
+    let EditTransport::Edited(edit) =
+        transport_edit_allow_removal(&render, "use and wombat\0!? now")
+            .expect("omitted command becomes ordinary removed text")
+    else {
+        panic!("expected edit")
+    };
+    assert_eq!(fragments_text(edit.fragments()), "use and wombat\0!? now");
+    assert_eq!(
+        edit.fragments()
+            .iter()
+            .filter(|fragment| matches!(fragment, EditableFragment::Variable { .. }))
+            .count(),
+        1,
+    );
+}
+
+#[test]
+fn removal_transport_handles_multiple_variables_and_ambiguous_equal_values() {
+    let multiple = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("a")),
+                EditableFragment::Variable {
+                    id: String::from("one"),
+                    rendered: String::from("ONE"),
+                },
+                EditableFragment::Text(String::from(",")),
+                EditableFragment::Variable {
+                    id: String::from("two"),
+                    rendered: String::from("TWO"),
+                },
+                EditableFragment::Text(String::from("z")),
+            ],
+        ),
+    )]);
+    let EditTransport::Edited(edit) = transport_edit_allow_removal(&multiple, "az")
+        .expect("both omitted variables are removable")
+    else {
+        panic!("expected edit")
+    };
+    assert_eq!(fragments_text(edit.fragments()), "az");
+
+    let repeated = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Variable {
+                    id: String::from("first"),
+                    rendered: String::from("x"),
+                },
+                EditableFragment::Variable {
+                    id: String::from("second"),
+                    rendered: String::from("x"),
+                },
+            ],
+        ),
+    )]);
+    assert_eq!(
+        transport_edit_allow_removal(&repeated, "x")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::AmbiguousAttribution,
+    );
+}
+
+#[test]
+fn removal_transport_retains_empty_variables_and_bounds_occurrences() {
+    let empty = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("a")),
+                EditableFragment::Variable {
+                    id: String::from("empty"),
+                    rendered: String::new(),
+                },
+                EditableFragment::Text(String::from("b")),
+            ],
+        ),
+    )]);
+    assert_eq!(
+        transport_edit_allow_removal(&empty, "ab"),
+        Ok(EditTransport::Unchanged)
+    );
+
+    let mut fragments = vec![EditableFragment::Text(String::from("q"))];
+    for id in 0..13 {
+        fragments.push(EditableFragment::Variable {
+            id,
+            rendered: String::from("x"),
+        });
+    }
+    fragments.push(EditableFragment::Text(String::from("z")));
+    let oversized = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(0u32, fragments),
+    )]);
+    assert_eq!(
+        transport_edit_allow_removal(&oversized, "changed")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::AlignmentLimitExceeded,
+    );
+}
+
+#[test]
 fn editable_transport_large_structured_baseline_refuses_before_rendering() {
     let render = EditableRender::<String, String>::new(vec![RenderComponent::EditableSection(
         EditableSection::new(

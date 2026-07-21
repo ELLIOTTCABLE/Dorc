@@ -66,6 +66,7 @@ pub use crate::container::{
 pub use crate::editable::{
     AlignmentLimitMetadata, EditRefusal, EditRefusalClass, EditTransport, EditableFragment,
     EditableRender, EditableSection, RenderComponent, SectionEdit, transport_edit,
+    transport_edit_allow_removal,
 };
 pub use crate::promote::{
     AttributedToken, ParamTables, ParamValues, PromoteOutcome, Refusal, RefusalClass, promote,
