@@ -73,3 +73,5 @@ impl<T: Clone + Ord + Debug> ConsumerKey for T {}
 
 #[cfg(test)]
 mod container_tests;
+#[cfg(test)]
+mod tests;
