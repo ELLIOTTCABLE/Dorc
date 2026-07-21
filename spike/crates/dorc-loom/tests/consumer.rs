@@ -167,6 +167,38 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
 }
 
 #[test]
+fn editable_baseline_renders_a_defining_case_with_help() {
+    let case = Case::parse(include_str!("../cases/whylog-book-desync.txt")).expect("case parses");
+    let baseline = DorcConsumer::new()
+        .editable_baseline(&case)
+        .expect("editable baseline");
+    assert!(baseline.render().text().contains("= help:"));
+    assert!(
+        baseline
+            .render()
+            .components()
+            .iter()
+            .filter_map(|component| match component {
+                errorloom::RenderComponent::EditableSection(section) => Some(section.id().field),
+                _ => None,
+            })
+            .any(|field| field == "message")
+    );
+    assert!(
+        baseline
+            .render()
+            .components()
+            .iter()
+            .filter_map(|component| match component {
+                errorloom::RenderComponent::EditableSection(section) => Some(section.id().field),
+                _ => None,
+            })
+            .any(|field| field == "help")
+    );
+    assert!(format!("{:?}", baseline.params()).contains("which"));
+}
+
+#[test]
 fn fixpoint_gate_catches_a_catalog_hand_edit() {
     let committed = committed("whylog-absent", "dorc why --last");
     let mut consumer = DorcConsumer::new();

@@ -18,15 +18,38 @@ use dorc_core::diag::{
     MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_tagged, render_cli_with,
+    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_parts,
+    render_cli_tagged, render_cli_with,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
-    Case, Consumer, FieldTemplate, Fragment, ParamName, ParamTables, ParamValues,
-    Region as LoomRegion, TaggedBaseline, Token, Word, tokenize,
+    Case, Consumer, EditableFragment, EditableRender, FieldTemplate, Fragment, ParamName,
+    ParamTables, ParamValues, Region as LoomRegion, RenderComponent, TaggedBaseline, Token, Word,
+    tokenize,
 };
 
-use crate::{FieldKey, to_errorloom};
+use crate::{FieldKey, SectionKey, SectionVariableId, to_editable_render, to_errorloom};
+
+/// A case render ready for generic editable transport.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct DorcEditableBaseline {
+    render: EditableRender<SectionKey, SectionVariableId>,
+    params: ParamTables<SectionKey>,
+}
+
+impl DorcEditableBaseline {
+    /// The editable diagnostic render.
+    #[must_use]
+    pub fn render(&self) -> &EditableRender<SectionKey, SectionVariableId> {
+        &self.render
+    }
+
+    /// Current parameter values keyed by editable section.
+    #[must_use]
+    pub fn params(&self) -> &ParamTables<SectionKey> {
+        &self.params
+    }
+}
 
 /// The Dorc consumer of the errorloom bless loop. Holds the mutable catalog mirror prose-bless edits
 /// into; renders every case through the one production render seat parameterized by that mirror.
@@ -61,6 +84,19 @@ impl DorcConsumer {
         if let Some(e) = self.mirror.iter_mut().find(|e| e.slug == slug) {
             e.message = message;
         }
+    }
+
+    /// Render one case through the core part stream and map it to editable sections.
+    ///
+    /// # Errors
+    /// Returns the case-world materialization refusal.
+    pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+        let (diag, src, filename) = Self::world_of(case)?;
+        let interner = Interner::default();
+        let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
+        let render = to_editable_render(&parts);
+        let params = editable_param_tables(&render);
+        Ok(DorcEditableBaseline { render, params })
     }
 
     /// The (diag, source, filename) a case materializes into (`283:dec-world-two-forms`). A case
@@ -443,6 +479,37 @@ fn param_tables(render: &errorloom::TaggedRender<FieldKey>) -> ParamTables<Field
     let mut tables = ParamTables::new();
     for (key, values) in per_key {
         tables.insert(key, values);
+    }
+    tables
+}
+
+fn editable_param_tables(
+    render: &EditableRender<SectionKey, SectionVariableId>,
+) -> ParamTables<SectionKey> {
+    let mut tables = ParamTables::new();
+    for component in render.components() {
+        let RenderComponent::EditableSection(section) = component else {
+            continue;
+        };
+        let mut values = ParamValues::new();
+        let mut has_values = false;
+        for fragment in section.fragments() {
+            let EditableFragment::Variable { id, rendered } = fragment else {
+                continue;
+            };
+            let words = tokenize(rendered)
+                .into_iter()
+                .filter_map(|token| match token {
+                    Token::Word(word) => Some(word),
+                    Token::ParagraphBreak => None,
+                })
+                .collect();
+            values.insert(ParamName::new(&id.name.0), words);
+            has_values = true;
+        }
+        if has_values {
+            tables.insert(section.id().clone(), values);
+        }
     }
     tables
 }
