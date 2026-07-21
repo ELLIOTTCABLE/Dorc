@@ -27,6 +27,8 @@ mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod edit;
 pub use edit::{DorcSectionEdit, DorcSectionEditRefusal, compile_section_edit};
+mod preview;
+pub use preview::{CompilePreview, compile_preview};
 
 /// The opaque consumer key errorloom groups prose fields by: Dorc's
 /// `(code, field)` (`28A` §1). errorloom compares/sorts it but never inspects it;

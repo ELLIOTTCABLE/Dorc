@@ -524,7 +524,7 @@ fn editable_variables(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CompileRefusal, DorcSectionEditRefusal, compile_section_edit};
+    use crate::{CompileRefusal, DorcSectionEditRefusal, compile_preview, compile_section_edit};
     use errorloom::{EditableFragment, EditableSection, RenderComponent};
 
     fn key(segment: usize) -> SectionKey {
@@ -846,6 +846,128 @@ mod tests {
         assert_eq!(
             compile_section_edit(&baseline, "unchanged"),
             Err(DorcSectionEditRefusal::Unchanged)
+        );
+    }
+
+    #[test]
+    fn preview_replaces_one_message_section_in_the_full_transcript() {
+        let message = key(0);
+        let baseline = baseline(vec![
+            RenderComponent::Structure(String::from("message: ")),
+            RenderComponent::EditableSection(EditableSection::new(
+                message.clone(),
+                vec![
+                    EditableFragment::Text(String::from("run ")),
+                    variable("path", 0, "/x"),
+                    EditableFragment::Text(String::from(" using ")),
+                    variable("command", 0, "apt-get"),
+                ],
+            )),
+            RenderComponent::Structure(String::from("\nhelp: ")),
+            RenderComponent::EditableSection(EditableSection::new(
+                key(1),
+                vec![EditableFragment::Text(String::from("unchanged"))],
+            )),
+            RenderComponent::FixedVariable {
+                id: SectionVariableId {
+                    name: TemplateVariableName(String::from("foreign")),
+                    occurrence: 0,
+                },
+                rendered: String::from(" [foreign]"),
+            },
+        ]);
+
+        let preview = compile_preview(
+            &baseline,
+            "message: run {{command}} using {{path}}\nhelp: unchanged [foreign]",
+        )
+        .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(preview.section(), &message);
+        assert_eq!(
+            preview.concrete(),
+            "message: run apt-get using /x\nhelp: unchanged [foreign]"
+        );
+        assert!(!preview.concrete().contains("{{"));
+        assert_eq!(
+            preview.used_bindings(),
+            &[
+                (
+                    TemplateVariableName(String::from("command")),
+                    String::from("apt-get")
+                ),
+                (
+                    TemplateVariableName(String::from("path")),
+                    String::from("/x")
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn preview_keeps_exact_bindings_through_duplication_removal_and_nul() {
+        let duplicate = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key(0),
+                vec![
+                    EditableFragment::Text(String::from("run ")),
+                    variable("command", 0, "apt-get"),
+                    EditableFragment::Text(String::from(" using ")),
+                    variable("path", 0, "/x"),
+                ],
+            ),
+        )]);
+        let duplicate = compile_preview(
+            &duplicate,
+            "run {{command}} then {{command}} using {{path}}",
+        )
+        .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(duplicate.concrete(), "run apt-get then apt-get using /x");
+
+        let omitted = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key(0),
+                vec![
+                    EditableFragment::Text(String::from("run `")),
+                    variable("command", 0, "apt-get"),
+                    EditableFragment::Text(String::from("` using ")),
+                    variable("path", 0, "/x"),
+                ],
+            ),
+        )]);
+        let omitted =
+            compile_preview(&omitted, "run using /x").unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(omitted.concrete(), "run using /x");
+        assert_eq!(
+            omitted.used_bindings(),
+            &[(
+                TemplateVariableName(String::from("path")),
+                String::from("/x")
+            )]
+        );
+
+        let exact = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key(0),
+                vec![
+                    EditableFragment::Text(String::from("values ")),
+                    variable("empty", 0, ""),
+                    EditableFragment::Text(String::from(" ")),
+                    variable("nul", 0, "\0"),
+                ],
+            ),
+        )]);
+        let exact = compile_preview(&exact, "values {{empty}} {{nul}}")
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(exact.concrete(), "values  \0");
+        assert_eq!(
+            exact.used_bindings(),
+            &[
+                (TemplateVariableName(String::from("empty")), String::new()),
+                (
+                    TemplateVariableName(String::from("nul")),
+                    String::from("\0")
+                ),
+            ]
         );
     }
 }
