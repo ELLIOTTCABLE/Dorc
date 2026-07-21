@@ -19,6 +19,7 @@ pub enum CompiledFragment {
 pub struct CompiledSection {
     fragments: Vec<CompiledFragment>,
     used: Vec<TemplateVariableName>,
+    bindings: std::collections::BTreeMap<TemplateVariableName, String>,
 }
 
 impl CompiledSection {
@@ -32,17 +33,19 @@ impl CompiledSection {
     pub fn used(&self) -> &[TemplateVariableName] {
         &self.used
     }
+    /// Validated exact bindings.
+    #[must_use]
+    pub fn bindings(&self) -> &std::collections::BTreeMap<TemplateVariableName, String> {
+        &self.bindings
+    }
     /// Render exact bound bytes.
     #[must_use]
-    pub fn text(
-        &self,
-        values: &std::collections::BTreeMap<TemplateVariableName, String>,
-    ) -> String {
+    pub fn text(&self) -> String {
         self.fragments
             .iter()
             .map(|fragment| match fragment {
                 CompiledFragment::Text(text) => text.clone(),
-                CompiledFragment::Variable(name) => values.get(name).cloned().unwrap_or_default(),
+                CompiledFragment::Variable(name) => self.bindings[name].clone(),
             })
             .collect()
     }
@@ -70,8 +73,13 @@ pub fn compile_section(
     let parsed: Result<Vec<_>, _> = edit
         .fragments()
         .iter()
-        .map(|fragment| match fragment {
-            EditableFragment::Text(text) => parse_text(text),
+        .enumerate()
+        .map(|(index, fragment)| match fragment {
+            EditableFragment::Text(text) => parse_text(
+                text,
+                nearest_before(edit.fragments(), index),
+                nearest_after(edit.fragments(), index),
+            ),
             EditableFragment::Variable { id, .. } => {
                 Ok(vec![CompiledFragment::Variable(id.name.clone())])
             }
@@ -118,23 +126,35 @@ pub fn compile_section(
             }
         }
     }
-    Ok(CompiledSection { fragments, used })
+    let bindings = used
+        .iter()
+        .map(|name| (name.clone(), values[name].clone()))
+        .collect();
+    Ok(CompiledSection {
+        fragments,
+        used,
+        bindings,
+    })
 }
 
-fn parse_text(text: &str) -> Result<Vec<CompiledFragment>, CompileRefusal> {
+fn parse_text(
+    text: &str,
+    external_before: Option<char>,
+    external_after: Option<char>,
+) -> Result<Vec<CompiledFragment>, CompileRefusal> {
     let parts = parse_template(text).map_err(CompileRefusal::Template)?;
     let mut out = Vec::new();
     for (index, part) in parts.iter().enumerate() {
         match part {
             TemplatePart::Literal(text) => out.push(CompiledFragment::Text(text.clone())),
             TemplatePart::Hole(name) => {
-                let before = parts
+                let previous = parts
                     .get(index.wrapping_sub(1))
                     .and_then(|part| match part {
                         TemplatePart::Literal(text) => text.chars().last(),
                         TemplatePart::Hole(_) => None,
                     });
-                let after = index
+                let next = index
                     .checked_add(1)
                     .and_then(|next| parts.get(next))
                     .and_then(|part| match part {
@@ -142,8 +162,18 @@ fn parse_text(text: &str) -> Result<Vec<CompiledFragment>, CompileRefusal> {
                         TemplatePart::Hole(_) => None,
                     });
                 let name = TemplateVariableName(name.clone());
-                if before.is_some_and(|c| !c.is_whitespace())
-                    || after.is_some_and(|c| !c.is_whitespace())
+                if matches!(
+                    index
+                        .checked_sub(1)
+                        .and_then(|previous| parts.get(previous)),
+                    Some(TemplatePart::Hole(_))
+                ) || matches!(
+                    index.checked_add(1).and_then(|next| parts.get(next)),
+                    Some(TemplatePart::Hole(_))
+                ) || previous
+                    .or(external_before)
+                    .is_some_and(|c| !c.is_whitespace())
+                    || next.or(external_after).is_some_and(|c| !c.is_whitespace())
                 {
                     return Err(CompileRefusal::AttachedMarker(name));
                 }
@@ -154,6 +184,26 @@ fn parse_text(text: &str) -> Result<Vec<CompiledFragment>, CompileRefusal> {
     Ok(out)
 }
 
+fn nearest_before(fragments: &[EditableFragment<SectionVariableId>], index: usize) -> Option<char> {
+    fragments[..index]
+        .iter()
+        .rev()
+        .find_map(|fragment| match fragment {
+            EditableFragment::Text(text) | EditableFragment::Variable { rendered: text, .. } => {
+                text.chars().last()
+            }
+        })
+}
+fn nearest_after(fragments: &[EditableFragment<SectionVariableId>], index: usize) -> Option<char> {
+    fragments.get(index.saturating_add(1)..).and_then(|rest| {
+        rest.iter().find_map(|fragment| match fragment {
+            EditableFragment::Text(text) | EditableFragment::Variable { rendered: text, .. } => {
+                text.chars().next()
+            }
+        })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,7 +211,7 @@ mod tests {
     #[test]
     fn strict_markers_require_whole_tokens() {
         assert_eq!(
-            parse_text("run {{command}} \0"),
+            parse_text("run {{command}} \0", None, None),
             Ok(vec![
                 CompiledFragment::Text(String::from("run ")),
                 CompiledFragment::Variable(TemplateVariableName(String::from("command"))),
@@ -169,11 +219,11 @@ mod tests {
             ])
         );
         assert!(matches!(
-            parse_text("run({{command}})"),
+            parse_text("run({{command}})", None, None),
             Err(CompileRefusal::AttachedMarker(_))
         ));
         assert!(matches!(
-            parse_text("{{command}"),
+            parse_text("{{command}", None, None),
             Err(CompileRefusal::Template(_))
         ));
     }
