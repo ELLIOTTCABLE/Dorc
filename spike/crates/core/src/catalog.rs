@@ -1056,25 +1056,10 @@ impl CatalogLookup for Vec<OwnedEntry> {
 #[must_use]
 pub fn fill_template(template: &str, params: &[(&str, &str)]) -> String {
     let mut out = String::with_capacity(template.len());
-    let mut chars = template.chars().peekable();
-    while let Some(c) = chars.next() {
-        match c {
-            '{' if chars.peek() == Some(&'{') => {
-                chars.next();
-                out.push('{');
-            }
-            '}' if chars.peek() == Some(&'}') => {
-                chars.next();
-                out.push('}');
-            }
-            '{' => {
-                let mut name = String::new();
-                for nc in chars.by_ref() {
-                    if nc == '}' {
-                        break;
-                    }
-                    name.push(nc);
-                }
+    for part in scan_template(template) {
+        match part {
+            TemplatePart::Literal(text) => out.push_str(&text),
+            TemplatePart::Hole(name) => {
                 if let Some((_, v)) = params.iter().find(|(k, _)| *k == name) {
                     out.push_str(v);
                 } else {
@@ -1083,7 +1068,6 @@ pub fn fill_template(template: &str, params: &[(&str, &str)]) -> String {
                     out.push('}');
                 }
             }
-            _ => out.push(c),
         }
     }
     out
@@ -1119,25 +1103,10 @@ pub fn fill_template_tagged(
         },
     };
     let mut lit_start = out.len();
-    let mut chars = template.chars().peekable();
-    while let Some(c) = chars.next() {
-        match c {
-            '{' if chars.peek() == Some(&'{') => {
-                chars.next();
-                out.push('{');
-            }
-            '}' if chars.peek() == Some(&'}') => {
-                chars.next();
-                out.push('}');
-            }
-            '{' => {
-                let mut name = String::new();
-                for nc in chars.by_ref() {
-                    if nc == '}' {
-                        break;
-                    }
-                    name.push(nc);
-                }
+    for part in scan_template(template) {
+        match part {
+            TemplatePart::Literal(text) => out.push_str(&text),
+            TemplatePart::Hole(name) => {
                 if let Some(&(param, value)) = params.iter().find(|(k, _)| *k == name) {
                     if out.len() > lit_start {
                         spans.push(literal(lit_start..out.len()));
@@ -1167,7 +1136,6 @@ pub fn fill_template_tagged(
                     out.push('}');
                 }
             }
-            _ => out.push(c),
         }
     }
     if out.len() > lit_start {
@@ -1185,23 +1153,29 @@ pub fn is_foreign_param(param: &str) -> bool {
     param == "detail"
 }
 
-/// Collect a template's `{name}` holes (skipping `{{`/`}}` escapes) — the gate-test primitive
-/// (`holes ⊆ declared params`) AND the [`promote_catalog_source`] param-refresh source. Order-
-/// preserving, NOT deduped (a hole used twice appears twice); callers that need a param SET dedup.
-/// Pure.
-#[must_use]
-fn template_holes(template: &str) -> Vec<String> {
-    let mut holes = Vec::new();
+enum TemplatePart {
+    Literal(String),
+    Hole(String),
+}
+
+fn scan_template(template: &str) -> Vec<TemplatePart> {
+    let mut parts = Vec::new();
+    let mut literal = String::new();
     let mut chars = template.chars().peekable();
     while let Some(c) = chars.next() {
         match c {
             '{' if chars.peek() == Some(&'{') => {
                 chars.next();
+                literal.push('{');
             }
             '}' if chars.peek() == Some(&'}') => {
                 chars.next();
+                literal.push('}');
             }
             '{' => {
+                if !literal.is_empty() {
+                    parts.push(TemplatePart::Literal(std::mem::take(&mut literal)));
+                }
                 let mut name = String::new();
                 for nc in chars.by_ref() {
                     if nc == '}' {
@@ -1209,12 +1183,30 @@ fn template_holes(template: &str) -> Vec<String> {
                     }
                     name.push(nc);
                 }
-                holes.push(name);
+                parts.push(TemplatePart::Hole(name));
             }
-            _ => {}
+            _ => literal.push(c),
         }
     }
-    holes
+    if !literal.is_empty() {
+        parts.push(TemplatePart::Literal(literal));
+    }
+    parts
+}
+
+/// Collect a template's `{name}` holes (skipping `{{`/`}}` escapes) — the gate-test primitive
+/// (`holes ⊆ declared params`) AND the [`promote_catalog_source`] param-refresh source. Order-
+/// preserving, NOT deduped (a hole used twice appears twice); callers that need a param SET dedup.
+/// Pure.
+#[must_use]
+fn template_holes(template: &str) -> Vec<String> {
+    scan_template(template)
+        .into_iter()
+        .filter_map(|part| match part {
+            TemplatePart::Literal(_) => None,
+            TemplatePart::Hole(name) => Some(name),
+        })
+        .collect()
 }
 
 // ===========================================================================
