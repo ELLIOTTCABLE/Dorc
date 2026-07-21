@@ -150,6 +150,10 @@ pub fn structure_bless<C: CaseRenderer, G: Git>(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::items_after_test_module,
+    reason = "helpers stay below public API"
+)]
 mod tests {
     use super::*;
 
@@ -187,15 +191,15 @@ mod tests {
             ),
             Err(BlessError::DirtyCase(_))
         ));
-        assert!(matches!(
+        assert!(
             structure_bless(
                 &Renderer,
                 &FakeGit::new().mark_dirty("src/layout.rs"),
                 &corpus(),
                 catalog
-            ),
-            Ok(_)
-        ));
+            )
+            .is_ok()
+        );
         assert!(matches!(
             structure_bless(
                 &Renderer,

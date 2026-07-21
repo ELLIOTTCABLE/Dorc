@@ -28,9 +28,9 @@ fn seeded_disjoint_text_edits_preserve_opaque_variables() {
     for seed in 0..64u8 {
         let baseline = render(vec![
             EditableFragment::Text(format!("left-{seed} ")),
-            variable(1, values[usize::from(seed % values.len() as u8)]),
+            variable(1, values[usize::from(seed % 5)]),
             EditableFragment::Text(format!(" middle-{seed} ")),
-            variable(2, values[usize::from((seed + 1) % values.len() as u8)]),
+            variable(2, values[usize::from((seed + 1) % 5)]),
             EditableFragment::Text(format!(" right-{seed}")),
         ]);
         let edited = baseline
@@ -47,7 +47,7 @@ fn seeded_disjoint_text_edits_preserve_opaque_variables() {
                 .iter()
                 .filter_map(|f| match f {
                     EditableFragment::Variable { id, .. } => Some(*id),
-                    _ => None,
+                    EditableFragment::Text(_) => None,
                 })
                 .collect::<Vec<_>>(),
             vec![1, 2]
@@ -83,7 +83,7 @@ fn equal_values_keep_identity_and_ambiguous_removal_refuses() {
             .iter()
             .filter_map(|f| match f {
                 EditableFragment::Variable { id, .. } => Some(*id),
-                _ => None,
+                EditableFragment::Text(_) => None,
             })
             .collect::<Vec<_>>(),
         vec![1, 2]
@@ -161,7 +161,7 @@ fn bounded_alignment_refuses_scalar_and_work_exhaustion() {
         .flat_map(|id| [variable(id, "x"), EditableFragment::Text(" ".into())])
         .collect();
     let baseline = render(fragments);
-    let edited = baseline.text().replacen(" ", "!", 1);
+    let edited = baseline.text().replacen(' ', "!", 1);
     assert_eq!(
         refusal(&baseline, &edited),
         EditRefusalClass::AlignmentLimitExceeded
