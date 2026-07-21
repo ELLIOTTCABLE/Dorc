@@ -23,9 +23,9 @@ use dorc_core::diag::{
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
-    Case, Consumer, EditableFragment, EditableRender, FieldTemplate, Fragment, ParamName,
-    ParamTables, ParamValues, Region as LoomRegion, RenderComponent, TaggedBaseline, Token, Word,
-    tokenize,
+    Case, CaseRenderer, Consumer, EditableFragment, EditableRender, FieldTemplate, Fragment,
+    ParamName, ParamTables, ParamValues, Region as LoomRegion, RenderComponent, TaggedBaseline,
+    Token, Word, tokenize,
 };
 
 use crate::{
@@ -140,9 +140,31 @@ impl DorcConsumer {
     }
 }
 
+impl CaseRenderer for DorcConsumer {
+    type Error = String;
+
+    fn render_case(&self, case: &Case) -> Result<String, String> {
+        let (diag, human) = self.render_world(case)?;
+        let outputs = case
+            .replay()
+            .blocks()
+            .iter()
+            .map(|block| {
+                if block.command().contains("--format=jsonl") {
+                    render_diag_jsonl(&diag)
+                } else {
+                    reflow_to_canonical(&human)
+                }
+            })
+            .collect();
+        let mut regenerated = case.clone();
+        regenerated.set_replay_outputs(outputs);
+        Ok(regenerated.to_text())
+    }
+}
+
 impl Consumer for DorcConsumer {
     type Key = FieldKey;
-    type Error = String;
 
     fn tagged_render(&self, case: &Case) -> Result<TaggedBaseline<FieldKey>, String> {
         let (diag, src, filename) = Self::world_of(case)?;
@@ -183,25 +205,6 @@ impl Consumer for DorcConsumer {
             }
         }
         Ok(())
-    }
-
-    fn render_case(&self, case: &Case) -> Result<String, String> {
-        let (diag, human) = self.render_world(case)?;
-        let outputs = case
-            .replay()
-            .blocks()
-            .iter()
-            .map(|block| {
-                if block.command().contains("--format=jsonl") {
-                    render_diag_jsonl(&diag)
-                } else {
-                    reflow_to_canonical(&human)
-                }
-            })
-            .collect();
-        let mut regenerated = case.clone();
-        regenerated.set_replay_outputs(outputs);
-        Ok(regenerated.to_text())
     }
 }
 

@@ -8,8 +8,8 @@
 use std::collections::BTreeMap;
 
 use errorloom::{
-    ArrangementSlug, BlessError, Case, CaseFile, Consumer, FakeGit, FieldTemplate, Fragment,
-    ModeRefusal, ParamTables, Region, Span, TaggedBaseline, TaggedRender, fixpoint_check,
+    ArrangementSlug, BlessError, Case, CaseFile, CaseRenderer, Consumer, FakeGit, FieldTemplate,
+    Fragment, ModeRefusal, ParamTables, Region, Span, TaggedBaseline, TaggedRender, fixpoint_check,
     prose_bless, structure_bless,
 };
 
@@ -51,9 +51,16 @@ impl Toy {
     }
 }
 
+impl CaseRenderer for Toy {
+    type Error = String;
+
+    fn render_case(&self, case: &Case) -> Result<String, String> {
+        self.rendered_case_text(case)
+    }
+}
+
 impl Consumer for Toy {
     type Key = Key;
-    type Error = String;
 
     fn tagged_render(&self, case: &Case) -> Result<TaggedBaseline<Key>, String> {
         let code = case
@@ -80,9 +87,15 @@ impl Consumer for Toy {
         }
         Ok(())
     }
+}
+
+struct RenderOnly;
+
+impl CaseRenderer for RenderOnly {
+    type Error = String;
 
     fn render_case(&self, case: &Case) -> Result<String, String> {
-        self.rendered_case_text(case)
+        Ok(case.to_text())
     }
 }
 
@@ -207,6 +220,19 @@ fn fixpoint_gate_catches_a_catalog_hand_edit() {
     let corpus = vec![CaseFile::new(CASE_PATH, committed())];
     let err = fixpoint_check(&toy, &corpus).unwrap_err();
     assert!(matches!(err, BlessError::Fixpoint { .. }));
+}
+
+#[test]
+fn render_only_supports_structure_bless_and_fixpoint() {
+    let corpus = vec![CaseFile::new(CASE_PATH, committed())];
+    let git = FakeGit::new().mark_dirty(CODE_PATH);
+    fixpoint_check(&RenderOnly, &corpus).expect("render-only fixpoint");
+    let blessed = structure_bless(&RenderOnly, &git, &corpus, CATALOG_PATH.as_ref())
+        .expect("render-only structure bless");
+    assert_eq!(
+        blessed.regenerated().get(std::path::Path::new(CASE_PATH)),
+        Some(&committed())
+    );
 }
 
 fn template_words(template: &FieldTemplate) -> Vec<String> {

@@ -56,8 +56,9 @@ mod runner;
 mod span;
 
 pub use crate::bless::{
-    BlessError, BlessMode, BlessResult, CaseFile, Consumer, FakeGit, Git, GitError, ModeRefusal,
-    SubprocessGit, TaggedBaseline, fixpoint_check, infer_mode, prose_bless, structure_bless,
+    BlessError, BlessMode, BlessResult, CaseFile, CaseRenderer, Consumer, FakeGit, Git, GitError,
+    ModeRefusal, SubprocessGit, TaggedBaseline, fixpoint_check, infer_mode, prose_bless,
+    structure_bless,
 };
 pub use crate::container::{
     Case, CaseError, Frontmatter, FrontmatterValue, REPLAY_SECTION, ReplayBlock, ReplaySection,

@@ -47,13 +47,23 @@ impl<K> TaggedBaseline<K> {
     }
 }
 
-/// What a consumer must provide for errorloom to drive the bless loop (`282` §6 /
-/// `28A` §1). The catalog and case schema live entirely behind these methods.
-pub trait Consumer {
-    /// The consumer's opaque field key (Dorc: `(code, field)`).
-    type Key: ConsumerKey;
+/// What generic case regeneration requires (`tc-phase-two-promotion-continuity`).
+pub trait CaseRenderer {
     /// The consumer's error, surfaced through [`BlessError::Consumer`].
     type Error: fmt::Display;
+
+    /// Re-render `case`'s full transcript text from current state.
+    ///
+    /// # Errors
+    /// Any renderer-side failure regenerating the case.
+    fn render_case(&self, case: &Case) -> Result<String, Self::Error>;
+}
+
+/// What prose promotion additionally requires. The catalog and case schema live
+/// entirely behind these methods.
+pub trait Consumer: CaseRenderer {
+    /// The consumer's opaque field key (Dorc: `(code, field)`).
+    type Key: ConsumerKey;
 
     /// The tagged render of `case`'s editable transcript from CURRENT catalog
     /// state — the prose-bless baseline whose span map is the attribution
@@ -80,13 +90,6 @@ pub trait Consumer {
         &mut self,
         edits: BTreeMap<Self::Key, FieldTemplate>,
     ) -> Result<(), Self::Error>;
-
-    /// Re-render `case`'s full transcript text from CURRENT catalog state
-    /// (structure-bless regeneration and the fixpoint gate).
-    ///
-    /// # Errors
-    /// Any consumer-side failure regenerating the case.
-    fn render_case(&self, case: &Case) -> Result<String, Self::Error>;
 }
 
 /// A two-method git façade (`282:rul-git-repo-dependence-accepted`): just enough
@@ -481,7 +484,7 @@ pub fn prose_bless<C: Consumer, G: Git>(
     }
 
     consumer.apply_field_edits(edits).map_err(consumer_err)?;
-    regenerate(consumer, corpus)
+    regenerate::<C, C::Key>(consumer, corpus)
 }
 
 /// Structure-bless: regenerate every case from the (unchanged) catalog (`282`
@@ -490,17 +493,17 @@ pub fn prose_bless<C: Consumer, G: Git>(
 /// # Errors
 /// [`BlessError`] for a wrong mode, a git failure, a parse failure, or a consumer
 /// error.
-pub fn structure_bless<C: Consumer, G: Git>(
+pub fn structure_bless<C: CaseRenderer, G: Git>(
     consumer: &C,
     git: &G,
     corpus: &[CaseFile],
     catalog: &Path,
-) -> Result<BlessResult, BlessError<C::Key>> {
+) -> Result<BlessResult, BlessError<()>> {
     let case_paths: Vec<PathBuf> = corpus.iter().map(|c| c.path.clone()).collect();
     if infer_mode(git, catalog, &case_paths)? != BlessMode::Structure {
         return Err(BlessError::Mode(ModeRefusal::NotStructure));
     }
-    regenerate(consumer, corpus)
+    regenerate::<C, ()>(consumer, corpus)
 }
 
 /// The CI fixpoint gate (`282` §6): every committed case must re-render to its own
@@ -509,10 +512,10 @@ pub fn structure_bless<C: Consumer, G: Git>(
 ///
 /// # Errors
 /// [`BlessError::Fixpoint`] with the drifted cases, or a parse / consumer error.
-pub fn fixpoint_check<C: Consumer>(
+pub fn fixpoint_check<C: CaseRenderer>(
     consumer: &C,
     corpus: &[CaseFile],
-) -> Result<(), BlessError<C::Key>> {
+) -> Result<(), BlessError<()>> {
     let mut drifted: Vec<PathBuf> = Vec::new();
     for case_file in corpus {
         let case = Case::parse(&case_file.text).map_err(BlessError::Container)?;
@@ -528,10 +531,10 @@ pub fn fixpoint_check<C: Consumer>(
     }
 }
 
-fn regenerate<C: Consumer>(
+fn regenerate<C: CaseRenderer, K>(
     consumer: &C,
     corpus: &[CaseFile],
-) -> Result<BlessResult, BlessError<C::Key>> {
+) -> Result<BlessResult, BlessError<K>> {
     let mut regenerated: BTreeMap<PathBuf, String> = BTreeMap::new();
     for case_file in corpus {
         let case = Case::parse(&case_file.text).map_err(BlessError::Container)?;

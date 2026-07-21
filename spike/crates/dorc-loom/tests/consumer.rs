@@ -17,7 +17,7 @@ use std::path::Path;
 
 use dorc_loom::{DorcConsumer, TemplateVariableName};
 use errorloom::{
-    BlessError, Case, CaseFile, Consumer, FakeGit, ModeRefusal, fixpoint_check, prose_bless,
+    BlessError, Case, CaseFile, CaseRenderer, FakeGit, ModeRefusal, fixpoint_check, prose_bless,
     structure_bless,
 };
 
