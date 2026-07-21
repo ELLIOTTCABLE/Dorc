@@ -1,8 +1,7 @@
 //! Core-owned render-part vocabulary (`282` §4).
 
-/// Which catalog prose field a template run came from (`282` §4 — the `field` of
-/// [`Region::TemplateLiteral`]/[`Region::ParamValue`]). The render fills exactly
-/// these two registers.
+/// Which catalog prose field a [`RenderPart`] came from (`282` §4). The render
+/// fills exactly these two registers.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Field {
     /// The primary [`crate::catalog::CatalogEntry::message`] register.

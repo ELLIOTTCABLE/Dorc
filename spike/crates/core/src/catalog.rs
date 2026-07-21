@@ -1485,9 +1485,8 @@ mod tests {
     ///
     /// FLAGGED, not enforced here: the `example` half needs the committed examples canonicalized to
     /// their schematic form (47/56 are pre-promote hand-authored strawmen), and a WHOLE-BLOCK byte
-    /// gate additionally needs the hand-wrapped literals collapsed to promote's single-line `{:?}`
-    /// form — both are a `DORC_CATALOG_PROMOTE` orchestrator canonicalization (BLESS-law), NOT a
-    /// builder edit. Wire the whole-block byte gate once the conductor's first promote canonicalizes.
+    /// gate additionally needs the hand-wrapped literals collapsed to a canonical form. The retired
+    /// `DORC_CATALOG_PROMOTE` writer must not be used for that work; phase three owns its replacement.
     #[test]
     fn promote_regenerates_params_byte_identical() {
         for e in CATALOG {
@@ -1533,10 +1532,8 @@ mod tests {
         assert!(src.trim_end().ends_with("];"));
     }
 
-    /// The orchestrator's RUN entry for promote (BLESS-law — orchestrator-only, fresh binary, diff
-    /// inspected; the builder NEVER runs it with the env set): `DORC_CATALOG_PROMOTE=1` writes the
-    /// regenerated `CATALOG` block to `target/catalog-promoted.rs` for diff + splice into
-    /// `catalog.rs`, followed by `cargo fmt`. A no-op without the env, so the ordinary suite is inert.
+    /// Legacy, retired promotion writer. Phase two has no durable promotion entry point; phase three
+    /// replaces this with the content-bound, atomic compile/promote workflow.
     #[test]
     fn promote_writer_gated() {
         if std::env::var("DORC_CATALOG_PROMOTE").as_deref() != Ok("1") {
