@@ -898,3 +898,69 @@ into branches at the human's own fold — never copy it into the worktree.)
   `28B`, no engine edits.
 - 2026-07-19: janitor (Opus, primary checkout, bg) — survey + guarded cleanup +
   dropped-work report; report to conductor scratchpad, findings banked here after.
+
+## §6 — Post-close errorloom template-compiler handoff (2026-07-21)
+
+- **`28A:rul-phase-two-lineage-preservation`** — +SURE: worker lineage is
+  `ai/r28-errorloom-phase2`, based on ai/main's existing `0c259317` phase-one
+  merge; pre-handoff code tip `2c117c49`. The primary checkout carries unrelated
+  human dirt and remains radioactive to workers. Final integration must
+  rebase/fast-forward, never create another merge and never rewrite `0c259317`.
+  Granular landings are discoverable as `git log 0c259317..HEAD`; do not casually
+  squash or re-derive them.
+- **`28A:rul-template-policy-ownership`** — +SURE: this executes evolved
+  `282:phase-dorc-template-compiler`. Generic errorloom owns renderer-stamped
+  editable transport only; dorc-loom owns strict `{{name}}` policy. Exact identity
+  and visible interpretation outrank convenience. Phase two deliberately removes
+  Dorc's old interpreter although durable promotion returns only in phase three.
+- **`28A:impl-template-compiler-current-surface`** — +SURE: implemented: shared
+  bounded alignment; disjoint hunks and inclusive boundary attribution;
+  deterministic optional-removal inference; strict parser API; `RenderParts` as
+  Dorc's sole provenance; nested adapter/baseline exact values including empty/NUL;
+  strict whole-token markers; move/duplicate/remove within one editable section;
+  concrete compile preview with first-use exact bindings; in-memory catalog apply;
+  full case/corpus re-render; and `CaseRenderer` preserving structure-bless and
+  fixpoint. Removed: Dorc's old `Consumer`/`TaggedRender`/re-holer and env-gated
+  `DORC_CATALOG_PROMOTE` writer. Generic standalone errorloom legacy `Consumer`
+  machinery remains for now.
+- **`28A:rul-template-compiler-phase-boundaries`** — +SURE: accepted constraints:
+  sole editable-section edge markers work; shared/ambiguous boundaries refuse;
+  fields split around immutable components refuse as `SplitEditableField` until
+  full field reconstruction exists; attached/glued markers defer to phase 5. Phase
+  two has no CLI, content-bound receipt, atomic writes, committed used-variable
+  replay, `vars --all`, unused-variable insertion, durable promotion, or
+  value-based/global heuristic re-hole. Do not pull in known passthrough
+  type-gating debt (`282:rul-passthrough-type-gated`; `284` opaque-lane handoff).
+- **`28A:impl-template-compiler-checkpoints`** — +SURE: `563c3ff7` preview data;
+  `b4ae63f7` inspection; `2ab8a58c` render-only trait; `8acbeba8` in-memory apply;
+  `1fc54ed5` adversarial tests and mutation-order correction; `883d3586` old Dorc
+  promotion removal; `a0f3f38f` provenance collapse to `RenderParts`; `2c117c49`
+  split-field refusal. The small public `CaseRenderer` concept and temporary loss
+  of manual durable promotion were accepted to retain generic structure/fixpoint
+  support while removing a live duplicate interpreter: maintainability/correctness
+  over interim convenience.
+- **`28A:ver-template-compiler-review-state`** — +SURE: every final
+  correction/cutover commit passed root typos, fmt, cold clippy `-D warnings`,
+  focused errorloom/core/dorc-loom tests, and cargo-deny. Two read-only reviews
+  found split-field overwrite (fixed at `2c117c49`) and the known passthrough debt.
+  A cold FULL-workspace build/test/clippy/fmt/deny/typos plus foreground e2e has
+  NOT run after the complete series.
+- **`28A:debt-live-document-synchronization`** — +SURE: before declaring phase two
+  closed, sync stale live claims in `spike/crates/errorloom/README.md` and
+  `src/lib.rs` (old tagged `Consumer` foreground), `spike/CLAUDE.md`
+  defining-case bullet (`DORC_CATALOG_PROMOTE`/Dorc `Consumer`),
+  `core/src/tagged.rs` `Field` docs (removed `Region` variants), `plans/282` §5/§9
+  (phase status/boundary), and `Research/LIVING_STATUS.md` (missing post-close
+  lane). Historical `283`/earlier `28A` sections stay historical; do not rewrite.
+- **`28A:rul-next-conductor-closeout-order`** — +SURE: (1) sync those live
+  docs/status, using prompt-review if `CLAUDE.md` changes substantively; (2) run
+  review-pass; (3) cold full gates plus foreground `sh e2e/run.sh`; (4) run the
+  pending required opaque-review gate and resolve constraints to explicit ACK; (5)
+  rebase/fast-forward phase two into ai/main without touching primary dirt. Only
+  then begin phase three: CLI compile/promote, fresh receipt, git/touched-set gate,
+  atomic catalog+case update, committed used inventory, and `vars --all` as ruled.
+- **`28A:map-template-compiler-source-anchors`** — +SURE: current public/source
+  anchors: errorloom `editable.rs`; core `catalog.rs`/`tagged.rs`/`diag.rs`;
+  dorc-loom `lib.rs`, `consumer.rs`, `compile.rs`, `edit.rs`, `preview.rs`,
+  `inspect.rs`; tests `coverage.rs`, `consumer.rs`, `compile.rs`,
+  `editable_render.rs`, `fixpoint.rs`.
