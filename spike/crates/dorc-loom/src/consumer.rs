@@ -611,21 +611,21 @@ mod tests {
     }
 
     #[test]
-    fn marker_moves_one_variable_without_rediscovering_an_equal_sibling() {
+    fn marker_moves_command_after_preserved_path_identity() {
         let section = key(0);
         let baseline = baseline(vec![RenderComponent::EditableSection(
             EditableSection::new(
                 section.clone(),
                 vec![
                     EditableFragment::Text(String::from("run ")),
-                    variable("command", 0, "apt-get"),
-                    EditableFragment::Text(String::from(" using ")),
                     variable("path", 0, "/x"),
+                    EditableFragment::Text(String::from(" using ")),
+                    variable("command", 0, "apt-get"),
                 ],
             ),
         )]);
 
-        let edit = compile_section_edit(&baseline, "run {{command}} using /x")
+        let edit = compile_section_edit(&baseline, "run {{command}} using {{path}}")
             .unwrap_or_else(|error| panic!("{error:?}"));
         assert_eq!(edit.section(), &section);
         assert_eq!(edit.compiled().text(), "run apt-get using /x");
@@ -639,7 +639,7 @@ mod tests {
     }
 
     #[test]
-    fn omission_retains_backticks_and_no_marker_edits_use_generic_transport() {
+    fn omission_removes_variable_and_its_surrounding_backticks() {
         let baseline = baseline(vec![RenderComponent::EditableSection(
             EditableSection::new(
                 key(0),
@@ -651,9 +651,9 @@ mod tests {
                 ],
             ),
         )]);
-        let edit = compile_section_edit(&baseline, "run `` using /x")
+        let edit = compile_section_edit(&baseline, "run using /x")
             .unwrap_or_else(|error| panic!("{error:?}"));
-        assert_eq!(edit.compiled().text(), "run `` using /x");
+        assert_eq!(edit.compiled().text(), "run using /x");
         assert_eq!(
             edit.compiled().used(),
             &[TemplateVariableName(String::from("path"))]
@@ -731,6 +731,44 @@ mod tests {
     }
 
     #[test]
+    fn markers_can_be_the_entire_first_or_last_section_content() {
+        let entire = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(key(0), vec![variable("command", 0, "apt-get")]),
+        )]);
+        let first = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key(0),
+                vec![
+                    variable("command", 0, "apt-get"),
+                    EditableFragment::Text(String::from(" later")),
+                ],
+            ),
+        )]);
+        let last = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key(0),
+                vec![
+                    EditableFragment::Text(String::from("earlier ")),
+                    variable("command", 0, "apt-get"),
+                ],
+            ),
+        )]);
+
+        for (baseline, dirty) in [
+            (entire, "{{command}}"),
+            (first, "{{command}} later"),
+            (last, "earlier {{command}}"),
+        ] {
+            let edit =
+                compile_section_edit(&baseline, dirty).unwrap_or_else(|error| panic!("{error:?}"));
+            assert_eq!(
+                edit.compiled().text(),
+                dirty.replace("{{command}}", "apt-get")
+            );
+        }
+    }
+
+    #[test]
     fn malformed_unknown_and_attached_markers_refuse_structurally() {
         let baseline = baseline(vec![RenderComponent::EditableSection(
             EditableSection::new(
@@ -758,15 +796,17 @@ mod tests {
     }
 
     #[test]
-    fn structure_markers_and_cross_section_edits_do_not_license_an_edit() {
-        let section =
-            EditableSection::new(key(0), vec![EditableFragment::Text(String::from("words"))]);
+    fn structure_markers_and_shared_boundaries_do_not_license_an_edit() {
+        let section = EditableSection::new(
+            key(0),
+            vec![EditableFragment::Text(String::from(" editable"))],
+        );
         let structure = baseline(vec![
-            RenderComponent::Structure(String::from("before ")),
+            RenderComponent::Structure(String::from("before structure")),
             RenderComponent::EditableSection(section),
-            RenderComponent::Structure(String::from(" after")),
         ]);
-        let structure_result = compile_section_edit(&structure, "before {{name}}words after");
+        let structure_result =
+            compile_section_edit(&structure, "before {{name}} structure editable");
         assert!(
             matches!(
                 structure_result,
@@ -775,23 +815,23 @@ mod tests {
             "{structure_result:?}"
         );
 
-        let cross_section = baseline(vec![
+        let shared_boundary = baseline(vec![
             RenderComponent::EditableSection(EditableSection::new(
                 key(0),
-                vec![EditableFragment::Text(String::from("left"))],
+                vec![variable("command", 0, "")],
             )),
             RenderComponent::EditableSection(EditableSection::new(
                 key(1),
-                vec![EditableFragment::Text(String::from("right"))],
+                vec![variable("command", 0, "")],
             )),
         ]);
-        let cross_section_result = compile_section_edit(&cross_section, "LEFTRIGHT");
+        let shared_boundary_result = compile_section_edit(&shared_boundary, "{{command}}");
         assert!(
             matches!(
-                cross_section_result,
-                Err(DorcSectionEditRefusal::Transport(_))
+                shared_boundary_result,
+                Err(DorcSectionEditRefusal::AmbiguousCandidate)
             ),
-            "{cross_section_result:?}"
+            "{shared_boundary_result:?}"
         );
     }
 

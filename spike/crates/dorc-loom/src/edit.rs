@@ -172,7 +172,6 @@ fn marker_candidates<'a>(
             dirty
                 .strip_prefix(&prefix)
                 .and_then(|interior| interior.strip_suffix(&suffix))
-                .filter(|interior| marker_is_within_section(interior))
                 .map(|_| (index, section))
         })
         .collect()
@@ -274,10 +273,4 @@ fn component_text(component: &RenderComponent<SectionKey, SectionVariableId>) ->
 
 fn contains_marker_sigil(text: &str) -> bool {
     text.contains("{{") || text.contains("}}")
-}
-
-fn marker_is_within_section(interior: &str) -> bool {
-    interior
-        .match_indices("{{")
-        .any(|(start, _)| start > 0 && start.saturating_add(2) < interior.len())
 }
