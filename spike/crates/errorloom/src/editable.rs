@@ -242,13 +242,23 @@ impl std::error::Error for EditRefusal {}
 ///
 /// # Errors
 /// Returns [`EditRefusal`] for immutable, variable, ambiguous, or over-limit edits.
+pub fn transport_edit<S: Clone, V: Clone>(
+    baseline: &EditableRender<S, V>,
+    edited: &str,
+) -> Result<EditTransport<S, V>, EditRefusal> {
+    transport_edit_with_budget(baseline, edited, &mut WorkBudget::new())
+}
+
+/// The required-retention transport core, parameterized so bounded callers can
+/// share one alignment budget across multiple candidate renders.
 #[expect(
     clippy::indexing_slicing,
     reason = "enumerate-derived component bounds"
 )]
-pub fn transport_edit<S: Clone, V: Clone>(
+fn transport_edit_with_budget<S: Clone, V: Clone>(
     baseline: &EditableRender<S, V>,
     edited: &str,
+    work: &mut WorkBudget,
 ) -> Result<EditTransport<S, V>, EditRefusal> {
     let baseline_scalars = capped_render_scalar_len(baseline);
     let edited_scalars = capped_scalar_len(edited);
@@ -262,7 +272,6 @@ pub fn transport_edit<S: Clone, V: Clone>(
 
     let mut successful = Vec::new();
     let mut saw_limit = false;
-    let mut work = WorkBudget::new();
     for (index, component) in baseline.components.iter().enumerate() {
         let RenderComponent::EditableSection(section) = component else {
             continue;
@@ -281,7 +290,7 @@ pub fn transport_edit<S: Clone, V: Clone>(
         else {
             continue;
         };
-        match align_section(section, interior, &mut work) {
+        match align_section(section, interior, work) {
             Ok(fragments) => successful.push(SectionEdit {
                 section: section.id.clone(),
                 fragments,
