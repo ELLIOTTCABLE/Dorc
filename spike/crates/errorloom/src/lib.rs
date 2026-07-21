@@ -37,7 +37,6 @@
 //! # }
 //! ```
 
-// Fully documented today; fail the build if a new public item lacks docs (taste-F8).
 #![warn(missing_docs)]
 
 use std::fmt::Debug;
