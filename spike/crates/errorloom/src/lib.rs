@@ -64,8 +64,8 @@ pub use crate::container::{
     Section,
 };
 pub use crate::editable::{
-    EditRefusal, EditRefusalClass, EditTransport, EditableFragment, EditableRender,
-    EditableSection, RenderComponent, SectionEdit, transport_edit,
+    AlignmentLimitMetadata, EditRefusal, EditRefusalClass, EditTransport, EditableFragment,
+    EditableRender, EditableSection, RenderComponent, SectionEdit, transport_edit,
 };
 pub use crate::promote::{
     AttributedToken, ParamTables, ParamValues, PromoteOutcome, Refusal, RefusalClass, promote,

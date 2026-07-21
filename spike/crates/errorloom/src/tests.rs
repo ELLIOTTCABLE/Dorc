@@ -560,7 +560,7 @@ fn editable_transport_refuses_immutable_and_ambiguous_boundaries() {
 
 #[test]
 fn editable_transport_refuses_a_touched_section_variable() {
-    let render = EditableRender::new(vec![RenderComponent::EditableSection(
+    let render = EditableRender::<String, String>::new(vec![RenderComponent::EditableSection(
         EditableSection::new(
             String::from("message"),
             vec![
@@ -607,6 +607,300 @@ fn editable_transport_refuses_variable_boundary_and_unattributed_edits() {
             .class(),
         EditRefusalClass::AmbiguousAttribution
     );
+}
+
+#[test]
+fn editable_transport_accepts_disjoint_text_edits_around_untouched_variables() {
+    let render = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("before ")),
+                EditableFragment::Variable {
+                    id: String::from("first"),
+                    rendered: String::from("\0snowman:\u{2603}"),
+                },
+                EditableFragment::Text(String::from(" middle ")),
+                EditableFragment::Variable {
+                    id: String::from("empty"),
+                    rendered: String::new(),
+                },
+                EditableFragment::Text(String::from(" after")),
+            ],
+        ),
+    )]);
+
+    let EditTransport::Edited(edit) = transport_edit(
+        &render,
+        "changed \0snowman:\u{2603} middle altered  a later",
+    )
+    .expect("separated text edits preserve variables") else {
+        panic!("expected edit")
+    };
+    assert_eq!(
+        edit.fragments(),
+        [
+            EditableFragment::Text(String::from("changed ")),
+            EditableFragment::Variable {
+                id: String::from("first"),
+                rendered: String::from("\0snowman:\u{2603}")
+            },
+            EditableFragment::Text(String::from(" middle altered ")),
+            EditableFragment::Variable {
+                id: String::from("empty"),
+                rendered: String::new()
+            },
+            EditableFragment::Text(String::from(" a later")),
+        ]
+    );
+}
+
+#[test]
+fn editable_transport_refuses_over_limit_render() {
+    let long = "x".repeat(4_097);
+    let render = EditableRender::<String, String>::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![EditableFragment::Text(long.clone())],
+        ),
+    )]);
+    let refusal = transport_edit(&render, &format!("{long}! ")).unwrap_err();
+    assert_eq!(refusal.class(), EditRefusalClass::AlignmentLimitExceeded);
+    assert!(refusal.evidence().is_empty());
+    assert_eq!(
+        refusal.limit().expect("limit metadata").scalar_ceiling,
+        4_096
+    );
+}
+
+#[test]
+fn editable_transport_coalesces_consecutive_text_and_rerenders_exactly() {
+    let render = EditableRender::<String, String>::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("a")),
+                EditableFragment::Text(String::from("b")),
+            ],
+        ),
+    )]);
+    let EditTransport::Edited(edit) = transport_edit(&render, "xy").expect("text is editable")
+    else {
+        panic!("expected edit")
+    };
+    assert_eq!(
+        edit.fragments(),
+        [EditableFragment::Text(String::from("xy"))]
+    );
+    assert_eq!(fragments_text(edit.fragments()), "xy");
+}
+
+#[test]
+fn editable_transport_allows_single_section_edges_and_refuses_shared_boundary() {
+    let render = EditableRender::<String, String>::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![EditableFragment::Text(String::from("alpha"))],
+        ),
+    )]);
+    for edited in ["!alpha", "alpha!"] {
+        let EditTransport::Edited(result) =
+            transport_edit(&render, edited).expect("sole section owns its edge")
+        else {
+            panic!("expected edit")
+        };
+        assert_eq!(fragments_text(result.fragments()), edited);
+    }
+    let shared = EditableRender::<String, String>::new(vec![
+        RenderComponent::EditableSection(EditableSection::new(
+            String::from("first"),
+            vec![EditableFragment::Text(String::from("a"))],
+        )),
+        RenderComponent::EditableSection(EditableSection::new(
+            String::from("second"),
+            vec![EditableFragment::Text(String::from("b"))],
+        )),
+    ]);
+    assert_eq!(
+        transport_edit(&shared, "a!b").unwrap_err().class(),
+        EditRefusalClass::AmbiguousAttribution
+    );
+}
+
+#[test]
+fn editable_transport_seals_empty_variable_contacts_but_keeps_sole_empty_section() {
+    for (text, edited) in [("", "x!y"), ("-", "x-!y")] {
+        let render = EditableRender::new(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                String::from("message"),
+                vec![
+                    EditableFragment::Variable {
+                        id: String::from("left"),
+                        rendered: String::from("x"),
+                    },
+                    EditableFragment::Text(String::from(text)),
+                    EditableFragment::Variable {
+                        id: String::from("right"),
+                        rendered: String::from("y"),
+                    },
+                ],
+            ),
+        )]);
+        assert_eq!(
+            transport_edit(&render, edited).unwrap_err().class(),
+            EditRefusalClass::EditableVariableTouched
+        );
+    }
+    let empty = EditableRender::<String, String>::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![EditableFragment::Text(String::new())],
+        ),
+    )]);
+    let EditTransport::Edited(edit) =
+        transport_edit(&empty, "words").expect("sole empty section owns its edge")
+    else {
+        panic!("expected edit")
+    };
+    assert_eq!(fragments_text(edit.fragments()), "words");
+}
+
+#[test]
+fn editable_transport_allows_one_sided_text_outer_edge_insertions() {
+    let left = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Variable {
+                    id: String::from("left"),
+                    rendered: String::from("x"),
+                },
+                EditableFragment::Text(String::from("-")),
+            ],
+        ),
+    )]);
+    let EditTransport::Edited(edit) = transport_edit(&left, "x-!").expect("outer edge is editable")
+    else {
+        panic!("expected edit")
+    };
+    assert_eq!(fragments_text(edit.fragments()), "x-!");
+
+    let right = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("-")),
+                EditableFragment::Variable {
+                    id: String::from("right"),
+                    rendered: String::from("y"),
+                },
+            ],
+        ),
+    )]);
+    let EditTransport::Edited(edit) =
+        transport_edit(&right, "!-y").expect("outer edge is editable")
+    else {
+        panic!("expected edit")
+    };
+    assert_eq!(fragments_text(edit.fragments()), "!-y");
+}
+
+#[test]
+fn editable_transport_large_structured_baseline_refuses_before_rendering() {
+    let render = EditableRender::<String, String>::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![EditableFragment::Text("x".repeat(4_097))],
+        ),
+    )]);
+    let refusal = transport_edit(&render, "edited").unwrap_err();
+    assert_eq!(refusal.class(), EditRefusalClass::AlignmentLimitExceeded);
+    assert!(refusal.evidence().is_empty());
+}
+
+#[test]
+fn editable_transport_refuses_alignment_work_limit() {
+    let mut fragments = Vec::new();
+    fragments.push(EditableFragment::Text(String::from("qq")));
+    for id in 0..240 {
+        fragments.push(EditableFragment::Variable {
+            id,
+            rendered: String::from("a"),
+        });
+    }
+    fragments.push(EditableFragment::Text(String::from("z")));
+    let render = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(0u32, fragments),
+    )]);
+    let edited = format!("bq{}z", "a".repeat(3_998));
+    assert_eq!(
+        transport_edit(&render, &edited).unwrap_err().class(),
+        EditRefusalClass::AlignmentLimitExceeded
+    );
+}
+
+#[test]
+fn editable_transport_seeded_mixed_fragments_preserves_variables_and_rerenders() {
+    for seed in 0..300u64 {
+        let value = if seed % 5 == 0 {
+            String::new()
+        } else {
+            format!("v{seed}\0!?\u{2603}")
+        };
+        let fragments = vec![
+            EditableFragment::Text(format!("L{seed}.")),
+            EditableFragment::Variable {
+                id: (seed, 0),
+                rendered: value.clone(),
+            },
+            EditableFragment::Text(format!(" M{seed};")),
+            EditableFragment::Variable {
+                id: (seed, 1),
+                rendered: value,
+            },
+            EditableFragment::Text(format!(" T{seed}")),
+        ];
+        let render = EditableRender::new(vec![RenderComponent::EditableSection(
+            EditableSection::new(seed, fragments.clone()),
+        )]);
+        let edited = format!(
+            "X{seed}.{} N{seed};{} U{seed}",
+            fragments_text(&fragments[1..2]),
+            fragments_text(&fragments[3..4])
+        );
+        let EditTransport::Edited(result) =
+            transport_edit(&render, &edited).unwrap_or_else(|error| panic!("seed {seed}: {error}"))
+        else {
+            panic!("seed {seed}: unchanged")
+        };
+        let variables: Vec<_> = result
+            .fragments()
+            .iter()
+            .filter_map(|fragment| match fragment {
+                EditableFragment::Variable { id, rendered } => Some((*id, rendered.clone())),
+                EditableFragment::Text(_) => None,
+            })
+            .collect();
+        assert_eq!(
+            variables,
+            vec![
+                ((seed, 0), fragments_text(&fragments[1..2])),
+                ((seed, 1), fragments_text(&fragments[3..4]))
+            ]
+        );
+        assert_eq!(fragments_text(result.fragments()), edited, "seed {seed}");
+    }
+}
+
+fn fragments_text<V>(fragments: &[EditableFragment<V>]) -> String {
+    fragments
+        .iter()
+        .map(|fragment| match fragment {
+            EditableFragment::Text(text) | EditableFragment::Variable { rendered: text, .. } => {
+                text.as_str()
+            }
+        })
+        .collect()
 }
 
 fn build(chunks: Vec<(Region<Key>, &str)>) -> TaggedRender<Key> {
