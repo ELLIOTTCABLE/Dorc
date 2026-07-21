@@ -1,13 +1,12 @@
-//! Per-code **defining-case** coverage + the tagged-render byte-equality twins (`27V` §3 · the
-//! `282`/`283` generation flip). Prose ownership and the committed render TRANSCRIPT now live in the
+//! Per-code **defining-case** coverage (`27V` §3 · the `282`/`283` generation flip). Prose ownership
+//! and the committed render TRANSCRIPT now live in the
 //! dorc-loom case corpus (`crates/dorc-loom/cases/<slug>.txt`), guarded by the errorloom render-level
 //! `fixpoint_check` (`283` §4a). Phase 5 (`283` §5.9) backported the covered codes to those case files
 //! and retired the old per-register fragment goldens (`tests/defining_cases/*` + `DORC_DEFINING_BLESS`);
 //! this file keeps what stays in `core`:
 //!
-//! * **the tagged-render twins** — `render_body_tagged` / `render_cli_tagged` are byte-identical to
-//!   their untagged product renders and carry a gap-free, non-overlapping total span cover, over every
-//!   real `covered()` payload (the shape the dorc-loom adapter feeds `errorloom::TaggedRender::new`).
+//! * **production byte equality** — `render_body_parts` / `render_cli_parts` reproduce their product
+//!   render bytes over every real `covered()` payload.
 //! * **completeness + the coverage RATCHET** (`tc-defining-case-coverage-ratchet`) — every catalog
 //!   code is EITHER case-owned (a dorc-loom case file exists, [`is_case_owned`]) OR on the shrink-only
 //!   [`DEFINING_CASE_RATCHET`]; the partition is `case-owned ∪ ratchet == every catalog slug`. The
@@ -15,8 +14,8 @@
 //!   delete a code's sole emit and that gate fails.
 //!
 //! Every ratchet entry carries a one-line trigger surface so a future case is mechanical, not
-//! re-derived (conductor rider). `covered()` is the real-payload set the tagged twins exercise — the
-//! transitional twin of the dorc-loom `canonical_payload` constructors; ownership itself is tracked by
+//! re-derived (conductor rider). `covered()` is the real-payload set the byte-equality tests exercise —
+//! the transitional twin of the dorc-loom `canonical_payload` constructors; ownership itself is tracked by
 //! the case files, never by membership in this list.
 
 use dorc_core::diag::{
@@ -393,93 +392,6 @@ const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
         "probe-results: a record line after the end-sentinel",
     ),
 ];
-
-/// The tagged twin (`282` §4) of EVERY defining case: [`diag::render_body_tagged`] must be
-/// byte-identical to the `prose` register (the product render never moves — the feature is additive)
-/// and its span map a gap-free, non-overlapping total cover (the shape the `dorc-loom` adapter feeds
-/// to `errorloom::TaggedRender::new`, `28A:rul-span-cover-stays-total`). Reuses the [`covered`]
-/// canonical payloads, so it tracks the defining-case set with zero duplication.
-#[test]
-fn defining_case_tagged_render_matches_prose_and_covers() {
-    let interner = Interner::default();
-    for case in covered() {
-        let diag = Diag::new((case.build)(), Span::new(BytePos(0), BytePos(1)));
-        let tagged = diag::render_body_tagged(&diag, &interner);
-        assert_eq!(
-            tagged.text(),
-            diag::render_body(&diag, &interner),
-            "defining case `{}`: the tagged twin drifted from render_body",
-            case.slug
-        );
-        let mut expected = 0;
-        for span in tagged.spans() {
-            assert_eq!(
-                span.range.start, expected,
-                "case `{}`: non-contiguous span",
-                case.slug
-            );
-            assert!(
-                span.range.end > span.range.start,
-                "case `{}`: empty span",
-                case.slug
-            );
-            expected = span.range.end;
-        }
-        assert_eq!(
-            expected,
-            tagged.text().len(),
-            "case `{}`: spans stop short of total cover",
-            case.slug
-        );
-    }
-}
-
-/// The FULL-transcript tagged twin (`282` §2 · `28A` §2m): [`diag::render_cli_tagged`]'s text must be
-/// byte-identical to [`diag::render_cli`] (the title-split relocation never moves a byte) and its span
-/// map a gap-free total cover — the load-bearing check on the title-split span relocation. A fixed
-/// source resolves the canonical span's caret frame; both renders see the same source, so the frame
-/// bytes cancel and only the composition is under test.
-#[test]
-fn defining_case_cli_tagged_matches_render_cli_and_covers() {
-    let interner = Interner::default();
-    let src = "make install >/etc/motd\nldconfig\n";
-    for case in covered() {
-        let diag = Diag::new((case.build)(), Span::new(BytePos(0), BytePos(4)));
-        let tagged = diag::render_cli_tagged(
-            &dorc_core::catalog::CONST_CATALOG,
-            &diag,
-            src,
-            "book.sh",
-            &interner,
-        );
-        assert_eq!(
-            tagged.text(),
-            diag::render_cli(&diag, src, "book.sh", &interner),
-            "defining case `{}`: the cli tagged twin drifted from render_cli",
-            case.slug
-        );
-        let mut expected = 0;
-        for span in tagged.spans() {
-            assert_eq!(
-                span.range.start, expected,
-                "case `{}`: non-contiguous cli span",
-                case.slug
-            );
-            assert!(
-                span.range.end > span.range.start,
-                "case `{}`: empty cli span",
-                case.slug
-            );
-            expected = span.range.end;
-        }
-        assert_eq!(
-            expected,
-            tagged.text().len(),
-            "case `{}`: cli spans stop short of total cover",
-            case.slug
-        );
-    }
-}
 
 #[test]
 fn defining_case_parts_match_product_renders() {

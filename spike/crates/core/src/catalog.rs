@@ -1128,80 +1128,8 @@ pub fn fill_template_parts(
     Ok(parts)
 }
 
-/// The span-emitting twin of [`fill_template`] (`282` §4): fill `template` into `out`, and for every
-/// run push a [`crate::tagged::Span`] classifying it — literal prose as a
-/// [`TemplateLiteral`](crate::tagged::Region::TemplateLiteral), a filled declared hole as a
-/// [`ParamValue`](crate::tagged::Region::ParamValue), or a `detail`-style passthrough hole
-/// ([`is_foreign_param`]) as [`ForeignText`](crate::tagged::Region::ForeignText). Ranges index into
-/// `out`, so a caller composing several fills (message, `= help:` connective, help) accumulates ONE
-/// gap-free cover. Byte-identical to [`fill_template`] (gate-pinned). Every catalog template is
-/// single-line today, so each field is one paragraph (index 0); the multi-paragraph split is the
-/// `282` §3 seam, deliberately not built. Pure.
-///
-/// # Errors
-/// Returns [`TemplateRefusal`] for invalid template syntax or an unknown parameter.
-pub fn fill_template_tagged(
-    out: &mut String,
-    spans: &mut Vec<crate::tagged::Span>,
-    template: &str,
-    params: &[(&'static str, &str)],
-    code: &'static str,
-    field: crate::tagged::Field,
-    instance: usize,
-) -> Result<(), TemplateRefusal> {
-    use crate::tagged::{Region, Span};
-    let literal = |range: std::ops::Range<usize>| Span {
-        range,
-        region: Region::TemplateLiteral {
-            code,
-            field,
-            paragraph: 0,
-            instance,
-        },
-    };
-    let mut lit_start = out.len();
-    for part in parse_template(template)? {
-        match part {
-            TemplatePart::Literal(text) => out.push_str(&text),
-            TemplatePart::Hole(name) => {
-                if let Some(&(param, value)) = params.iter().find(|(k, _)| *k == name) {
-                    if out.len() > lit_start {
-                        spans.push(literal(lit_start..out.len()));
-                    }
-                    let hole_start = out.len();
-                    out.push_str(value);
-                    if out.len() > hole_start {
-                        let region = if is_foreign_param(param) {
-                            Region::ForeignText { param }
-                        } else {
-                            Region::ParamValue {
-                                code,
-                                field,
-                                param,
-                                instance,
-                            }
-                        };
-                        spans.push(Span {
-                            range: hole_start..out.len(),
-                            region,
-                        });
-                    }
-                    lit_start = out.len();
-                } else {
-                    return Err(TemplateRefusal::UnknownParam(name));
-                }
-            }
-        }
-    }
-    if out.len() > lit_start {
-        spans.push(literal(lit_start..out.len()));
-    }
-    Ok(())
-}
-
-/// Whether a declared param carries passthrough foreign text (`282:rul-passthrough-type-gated`) —
-/// classified as [`ForeignText`](crate::tagged::Region::ForeignText) rather than
-/// [`ParamValue`](crate::tagged::Region::ParamValue). Keyed conservatively on the `detail`
+/// Whether a declared param carries passthrough foreign text (`282:rul-passthrough-type-gated`).
+/// Keyed conservatively on the `detail`
 /// passthrough convention ([`crate::diag::params_of`] yields `detail` for every PASSTHROUGH code);
 /// the type-gated user-sourced distinction is the `282` §8 de-passthrough work, LATER.
 #[must_use]
