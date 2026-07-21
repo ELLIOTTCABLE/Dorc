@@ -451,6 +451,164 @@ fn tagged_render_rejects_a_gap() {
     assert!(TaggedRender::new(String::from("abc.def"), spans).is_err());
 }
 
+#[test]
+fn editable_transport_preserves_glued_mixed_variable_identities() {
+    let render = EditableRender::new(vec![
+        RenderComponent::Structure(String::from("note: ")),
+        RenderComponent::EditableSection(EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("use `")),
+                EditableFragment::Variable {
+                    id: String::from("command"),
+                    rendered: String::from("hork\0-![]"),
+                },
+                EditableFragment::Text(String::from("` before <")),
+                EditableFragment::Variable {
+                    id: String::from("target"),
+                    rendered: String::from("wombat!?"),
+                },
+                EditableFragment::Text(String::from("> now")),
+            ],
+        )),
+    ]);
+
+    let EditTransport::Edited(edit) =
+        transport_edit(&render, "note: run `hork\0-![]` before <wombat!?> now")
+            .expect("unrelated text edit stays in its section")
+    else {
+        panic!("expected a section edit");
+    };
+    assert_eq!(edit.section(), "message");
+    assert_eq!(
+        edit.fragments(),
+        [
+            EditableFragment::Text(String::from("run `")),
+            EditableFragment::Variable {
+                id: String::from("command"),
+                rendered: String::from("hork\0-![]"),
+            },
+            EditableFragment::Text(String::from("` before <")),
+            EditableFragment::Variable {
+                id: String::from("target"),
+                rendered: String::from("wombat!?"),
+            },
+            EditableFragment::Text(String::from("> now")),
+        ]
+    );
+
+    let EditTransport::Edited(edit) =
+        transport_edit(&render, "note: use `hork\0-![]` before <wombat!?> later")
+            .expect("trailing text edit preserves all variable identities")
+    else {
+        panic!("expected a section edit");
+    };
+    assert_eq!(
+        edit.fragments(),
+        [
+            EditableFragment::Text(String::from("use `")),
+            EditableFragment::Variable {
+                id: String::from("command"),
+                rendered: String::from("hork\0-![]"),
+            },
+            EditableFragment::Text(String::from("` before <")),
+            EditableFragment::Variable {
+                id: String::from("target"),
+                rendered: String::from("wombat!?"),
+            },
+            EditableFragment::Text(String::from("> later")),
+        ]
+    );
+}
+
+#[test]
+fn editable_transport_refuses_immutable_and_ambiguous_boundaries() {
+    let render = EditableRender::new(vec![
+        RenderComponent::Structure(String::from("[")),
+        RenderComponent::FixedVariable {
+            id: String::from("code"),
+            rendered: String::from("fixed"),
+        },
+        RenderComponent::Structure(String::from("] ")),
+        RenderComponent::EditableSection(EditableSection::new(
+            String::from("first"),
+            vec![EditableFragment::Text(String::from("alpha"))],
+        )),
+        RenderComponent::EditableSection(EditableSection::new(
+            String::from("second"),
+            vec![EditableFragment::Text(String::from("beta"))],
+        )),
+    ]);
+
+    assert_eq!(
+        transport_edit(&render, "{fixed] alphabeta")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::StructureTouched
+    );
+    assert_eq!(
+        transport_edit(&render, "[other] alphabeta")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::FixedVariableTouched
+    );
+    assert_eq!(
+        transport_edit(&render, "[fixed] x").unwrap_err().class(),
+        EditRefusalClass::CrossSection
+    );
+}
+
+#[test]
+fn editable_transport_refuses_a_touched_section_variable() {
+    let render = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("run ")),
+                EditableFragment::Variable {
+                    id: String::from("command"),
+                    rendered: String::from("hork"),
+                },
+                EditableFragment::Text(String::from(" now")),
+            ],
+        ),
+    )]);
+
+    assert_eq!(
+        transport_edit(&render, "run wombat now")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::EditableVariableTouched
+    );
+}
+
+#[test]
+fn editable_transport_refuses_variable_boundary_and_unattributed_edits() {
+    let render = EditableRender::new(vec![RenderComponent::EditableSection(
+        EditableSection::new(
+            String::from("message"),
+            vec![
+                EditableFragment::Text(String::from("run")),
+                EditableFragment::Variable {
+                    id: String::from("command"),
+                    rendered: String::from("hork"),
+                },
+            ],
+        ),
+    )]);
+
+    assert_eq!(
+        transport_edit(&render, "run hork").unwrap_err().class(),
+        EditRefusalClass::EditableVariableTouched
+    );
+    assert_eq!(
+        transport_edit::<String, String>(&EditableRender::new(vec![]), "orphan")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::AmbiguousAttribution
+    );
+}
+
 fn build(chunks: Vec<(Region<Key>, &str)>) -> TaggedRender<Key> {
     let mut text = String::new();
     let mut spans = Vec::new();
