@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 
 use dorc_core::catalog::{TemplatePart, TemplateRefusal, parse_template};
-use errorloom::{EditableFragment, SectionEdit};
+use errorloom::EditableFragment;
 
-use crate::{SectionKey, SectionVariableId, TemplateVariableName};
+use crate::{SectionVariableId, TemplateVariableName};
 
 /// A compiled Dorc section fragment.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -40,6 +40,10 @@ impl CompiledSection {
     }
     /// Render exact bound bytes.
     #[must_use]
+    #[expect(
+        clippy::indexing_slicing,
+        reason = "compile_section stores every used binding"
+    )]
     pub fn text(&self) -> String {
         self.fragments
             .iter()
@@ -62,23 +66,22 @@ pub enum CompileRefusal {
     AttachedMarker(TemplateVariableName),
 }
 
-/// Compile one generic section edit with exact bindings.
+/// Compile generic section fragments with exact bindings.
 ///
 /// # Errors
 /// Returns [`CompileRefusal`] for invalid markers or bindings.
-pub fn compile_section(
-    edit: &SectionEdit<SectionKey, SectionVariableId>,
+pub fn compile_fragments(
+    source: &[EditableFragment<SectionVariableId>],
     values: &std::collections::BTreeMap<TemplateVariableName, String>,
 ) -> Result<CompiledSection, CompileRefusal> {
-    let parsed: Result<Vec<_>, _> = edit
-        .fragments()
+    let parsed: Result<Vec<_>, _> = source
         .iter()
         .enumerate()
         .map(|(index, fragment)| match fragment {
             EditableFragment::Text(text) => parse_text(
                 text,
-                nearest_before(edit.fragments(), index),
-                nearest_after(edit.fragments(), index),
+                nearest_before(source, index),
+                nearest_after(source, index),
             ),
             EditableFragment::Variable { id, .. } => {
                 Ok(vec![CompiledFragment::Variable(id.name.clone())])
@@ -86,8 +89,7 @@ pub fn compile_section(
         })
         .collect();
     let parsed = parsed?;
-    let explicit: BTreeSet<_> = edit
-        .fragments()
+    let explicit: BTreeSet<_> = source
         .iter()
         .zip(&parsed)
         .flat_map(|(source, fragments)| match source {
@@ -103,9 +105,9 @@ pub fn compile_section(
         .collect();
     let mut fragments = Vec::new();
     let mut used = Vec::new();
-    for (source, fragments_for_source) in edit.fragments().iter().zip(parsed) {
+    for (source_fragment, fragments_for_source) in source.iter().zip(parsed) {
         for fragment in fragments_for_source {
-            if let EditableFragment::Variable { id, .. } = source
+            if let EditableFragment::Variable { id, .. } = source_fragment
                 && explicit.contains(&id.name)
             {
                 continue;
@@ -185,7 +187,9 @@ fn parse_text(
 }
 
 fn nearest_before(fragments: &[EditableFragment<SectionVariableId>], index: usize) -> Option<char> {
-    fragments[..index]
+    fragments
+        .get(..index)
+        .unwrap_or_default()
         .iter()
         .rev()
         .find_map(|fragment| match fragment {

@@ -24,7 +24,7 @@ use errorloom::{
 mod consumer;
 pub use consumer::{DorcConsumer, DorcEditableBaseline, SectionVariables};
 mod compile;
-pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_section};
+pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 
 /// The opaque consumer key errorloom groups prose fields by: Dorc's
 /// `(code, field)` (`28A` §1). errorloom compares/sorts it but never inspects it;
