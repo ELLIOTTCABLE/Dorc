@@ -1883,6 +1883,117 @@ pub fn render_cli_tagged(
     crate::tagged::TaggedRender::new(out, spans)
 }
 
+/// The ordered-parts twin of [`render_cli`].
+#[must_use]
+pub fn render_cli_parts(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &crate::Interner,
+) -> crate::tagged::RenderParts {
+    let body = render_body_parts_with(lookup, diag, interner);
+    let body_text = body.text();
+    let split = body_text.find('\n');
+    let (head, tail) = split_parts_at(&body, split.unwrap_or(body_text.len()));
+    let mut parts = crate::tagged::RenderParts::new();
+    push_arrangement_part(
+        &mut parts,
+        format!(
+            "{}[{}]: ",
+            severity_word(registry(&diag.code).severity),
+            diag.code.slug(),
+        ),
+        "cli-title",
+    );
+    parts.append(head);
+    if let Some(primary) = diag.primary.span() {
+        push_arrangement_part(
+            &mut parts,
+            frame_region(primary, src, filename, None, true),
+            "cli-frame",
+        );
+    }
+    for secondary in &diag.secondary {
+        if let Some(span) = secondary.span() {
+            push_arrangement_part(
+                &mut parts,
+                frame_region(span, src, filename, secondary.label.as_deref(), false),
+                "cli-frame-secondary",
+            );
+        }
+    }
+    if split.is_some() {
+        parts.append(tail);
+    }
+    parts
+}
+
+fn push_arrangement_part(parts: &mut crate::tagged::RenderParts, text: String, slug: &'static str) {
+    if !text.is_empty() {
+        parts.push(crate::tagged::RenderPart::Arrangement { text, slug });
+    }
+}
+
+fn split_parts_at(
+    parts: &crate::tagged::RenderParts,
+    at: usize,
+) -> (crate::tagged::RenderParts, crate::tagged::RenderParts) {
+    let mut head = crate::tagged::RenderParts::new();
+    let mut tail = crate::tagged::RenderParts::new();
+    let mut offset: usize = 0;
+    for part in parts.parts() {
+        let text = part.text();
+        let end = offset.saturating_add(text.len());
+        if text.is_empty() || end <= at {
+            head.push(part.clone());
+        } else if offset >= at {
+            tail.push(part.clone());
+        } else {
+            let split = at.saturating_sub(offset);
+            head.push(part_with_text(part, String::from(&text[..split])));
+            tail.push(part_with_text(part, String::from(&text[split..])));
+        }
+        offset = end;
+    }
+    (head, tail)
+}
+
+fn part_with_text(part: &crate::tagged::RenderPart, text: String) -> crate::tagged::RenderPart {
+    use crate::tagged::RenderPart;
+
+    match part {
+        RenderPart::TemplateLiteral {
+            code,
+            field,
+            paragraph,
+            instance,
+            ..
+        } => RenderPart::TemplateLiteral {
+            text,
+            code,
+            field: *field,
+            paragraph: *paragraph,
+            instance: *instance,
+        },
+        RenderPart::ParamValue {
+            code,
+            field,
+            param,
+            instance,
+            ..
+        } => RenderPart::ParamValue {
+            text,
+            code,
+            field: *field,
+            param,
+            instance: *instance,
+        },
+        RenderPart::ForeignText { param, .. } => RenderPart::ForeignText { text, param },
+        RenderPart::Arrangement { slug, .. } => RenderPart::Arrangement { text, slug },
+    }
+}
+
 /// Partition `spans` at byte offset `at` into the runs wholly before it and wholly at/after it,
 /// splitting a straddling span into two same-region halves (the passthrough-`detail`-embeds-a-`\n`
 /// case) so both partitions stay gap-free covers of their side.
@@ -2007,6 +2118,82 @@ pub fn render_body_with(
         );
     }
     out
+}
+
+/// The ordered-parts twin of [`render_body`].
+#[must_use]
+pub fn render_body_parts(diag: &Diag, interner: &crate::Interner) -> crate::tagged::RenderParts {
+    render_body_parts_with(&crate::catalog::CONST_CATALOG, diag, interner)
+}
+
+fn render_body_parts_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    interner: &crate::Interner,
+) -> crate::tagged::RenderParts {
+    let params = params_of(&diag.code, interner);
+    let refs: Vec<(&'static str, &str)> = params
+        .iter()
+        .map(|(key, value)| (*key, value.as_str()))
+        .collect();
+    let code = diag.code.slug();
+    let mut parts = crate::tagged::RenderParts::new();
+    match lookup.message(code) {
+        Some(template) => match crate::catalog::fill_template_parts(
+            template,
+            &refs,
+            code,
+            crate::tagged::Field::Message,
+            0,
+        ) {
+            Ok(field_parts) => parts.append(field_parts),
+            Err(_) => push_arrangement_part(
+                &mut parts,
+                format!("[invalid catalog template: {code}]"),
+                "invalid-template",
+            ),
+        },
+        None => push_arrangement_part(
+            &mut parts,
+            format!("[unwritten: {code}]"),
+            "unwritten-placeholder",
+        ),
+    }
+    if let Some(help) = lookup.help(code) {
+        push_arrangement_part(
+            &mut parts,
+            format!("\n  = {}: ", help_connective(&diag.code)),
+            "help-connective",
+        );
+        match crate::catalog::fill_template_parts(help, &refs, code, crate::tagged::Field::Help, 0)
+        {
+            Ok(field_parts) => parts.append(field_parts),
+            Err(_) => push_arrangement_part(
+                &mut parts,
+                format!("[invalid catalog template: {code}]"),
+                "invalid-template",
+            ),
+        }
+    }
+    for child in &diag.children {
+        let (text, slug) = match child {
+            SubDiag::Note(note) => (format!("\n  = note: {note}"), "authored-note"),
+            SubDiag::Help(help) => (format!("\n  = help: {help}"), "authored-help"),
+        };
+        push_arrangement_part(&mut parts, text, slug);
+    }
+    if let Some(suggestion) = &diag.suggestion {
+        push_arrangement_part(
+            &mut parts,
+            format!(
+                "\n  = help: {} [{}]",
+                suggestion.message,
+                remediation_tag(suggestion.remediation)
+            ),
+            "authored-suggestion",
+        );
+    }
+    parts
 }
 
 /// The span-tagged twin of [`render_body`] (`282` §4, phase-2): the SAME bytes, plus a gap-free

@@ -27,6 +27,7 @@ use dorc_core::diag::{
     RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension,
     WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent,
 };
+use dorc_core::tagged::RenderPart;
 use dorc_core::{BytePos, Interner, LeafId, Span, TopCause};
 
 /// A defining case: the code's stable slug + a constructor for its CANONICAL payload (fixed values so
@@ -478,6 +479,54 @@ fn defining_case_cli_tagged_matches_render_cli_and_covers() {
             case.slug
         );
     }
+}
+
+#[test]
+fn defining_case_parts_match_product_renders() {
+    let interner = Interner::default();
+    let src = "make install >/etc/motd\nldconfig\n";
+    for case in covered() {
+        let diag = Diag::new((case.build)(), Span::new(BytePos(0), BytePos(4)));
+        assert_eq!(
+            diag::render_body_parts(&diag, &interner).text(),
+            diag::render_body(&diag, &interner),
+            "defining case `{}`: body parts drifted",
+            case.slug
+        );
+        assert_eq!(
+            diag::render_cli_parts(
+                &dorc_core::catalog::CONST_CATALOG,
+                &diag,
+                src,
+                "book.sh",
+                &interner
+            )
+            .text(),
+            diag::render_cli(&diag, src, "book.sh", &interner),
+            "defining case `{}`: cli parts drifted",
+            case.slug
+        );
+    }
+}
+
+#[test]
+fn body_parts_keep_empty_parameter_identity() {
+    let diag = Diag::new(
+        DiagCode::WhylogVersionRefused(WhylogVersionRefused {
+            found: String::new(),
+        }),
+        Span::new(BytePos(0), BytePos(1)),
+    );
+    let parts = diag::render_body_parts(&diag, &Interner::default());
+    assert_eq!(parts.text(), diag::render_body(&diag, &Interner::default()));
+    assert!(parts.parts().iter().any(|part| matches!(
+        part,
+        RenderPart::ParamValue {
+            text,
+            param: "found",
+            ..
+        } if text.is_empty()
+    )));
 }
 
 /// Whether `slug` is CASE-OWNED: a defining case file exists in the dorc-loom corpus (mirrors the

@@ -97,6 +97,11 @@ impl RenderParts {
         self.0.push(part);
     }
 
+    /// Append another ordered stream.
+    pub fn append(&mut self, other: Self) {
+        self.0.extend(other.0);
+    }
+
     /// The ordered runs, including empty parameter values.
     #[must_use]
     pub fn parts(&self) -> &[RenderPart] {
