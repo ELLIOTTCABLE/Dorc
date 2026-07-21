@@ -524,7 +524,10 @@ fn editable_variables(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CompileRefusal, DorcSectionEditRefusal, compile_preview, compile_section_edit};
+    use crate::{
+        CompileRefusal, DorcSectionEditRefusal, compile_preview, compile_section_edit,
+        render_compile_preview,
+    };
     use errorloom::{EditableFragment, EditableSection, RenderComponent};
 
     fn key(segment: usize) -> SectionKey {
@@ -969,5 +972,53 @@ mod tests {
                 ),
             ]
         );
+    }
+
+    #[test]
+    fn inspection_renders_interpretation_bindings_and_concrete_view_deterministically() {
+        let baseline = baseline(vec![
+            RenderComponent::Structure(String::from("message: ")),
+            RenderComponent::EditableSection(EditableSection::new(
+                key(0),
+                vec![
+                    EditableFragment::Text(String::from("run ")),
+                    variable("path", 0, "/x"),
+                    EditableFragment::Text(String::from(" using ")),
+                    variable("command", 0, "apt-get"),
+                ],
+            )),
+            RenderComponent::Structure(String::from("\nhelp: ")),
+            RenderComponent::EditableSection(EditableSection::new(
+                key(1),
+                vec![variable("unused", 0, "hidden")],
+            )),
+            RenderComponent::FixedVariable {
+                id: SectionVariableId {
+                    name: TemplateVariableName(String::from("foreign")),
+                    occurrence: 0,
+                },
+                rendered: String::from(" [foreign]"),
+            },
+        ]);
+        let preview = compile_preview(
+            &baseline,
+            "message: run {{command}} using {{path}}\nhelp: hidden [foreign]",
+        )
+        .unwrap_or_else(|error| panic!("{error:?}"));
+
+        let inspection = render_compile_preview(&preview);
+        let (interpretation, concrete) = inspection
+            .split_once("\nconcrete:\n")
+            .unwrap_or_else(|| panic!("missing concrete view: {inspection:?}"));
+        assert_eq!(
+            interpretation,
+            "interpreted: Text(\"run \") | Variable({{command}}) | Text(\" using \") | Variable({{path}})\nbindings:\n{{command}} = \"apt-get\"\n{{path}} = \"/x\""
+        );
+        assert_eq!(
+            concrete,
+            "message: run apt-get using /x\nhelp: hidden [foreign]"
+        );
+        assert!(!interpretation.contains("hidden"));
+        assert!(!interpretation.contains("foreign"));
     }
 }

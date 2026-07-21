@@ -27,6 +27,8 @@ mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod edit;
 pub use edit::{DorcSectionEdit, DorcSectionEditRefusal, compile_section_edit};
+mod inspect;
+pub use inspect::render_compile_preview;
 mod preview;
 pub use preview::{CompilePreview, compile_preview};
 
