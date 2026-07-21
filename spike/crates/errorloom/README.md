@@ -81,10 +81,12 @@ The prose drifts away from what a user actually experiences.
 errorloom inverts the direction: the authoring surface is the *executable
 transcript case*, a recorded run of the tool (input state + the exact bytes the
 command printed). Authors edit the *rendered transcript*, seeing exactly what a
-user sees - effectively an end-to-end test-case. errorloom then extracts the
-edits back into the catalog by a word-level diff, attributed through the
-render's own provenance. The catalog becomes a derived artifact; the committed
-transcript is the source of truth.
+user sees - effectively an end-to-end test-case. The renderer supplies an
+editable tree beside those bytes: immutable structure, immutable data, and
+editable prose containing opaque variable identities. errorloom transports an
+edit through that tree; the consumer compiles the result into its own catalog.
+The catalog becomes a derived artifact; the committed transcript is the source
+of truth.
 
 Lineage (steal-instead-of-invent is The Way): cram / Mercurial t-tests, Go
 `txtar` + `testscript`, `rustc tests/ui --bless`, insta, terraform-plugin-docs.
@@ -188,138 +190,39 @@ fn transcripts_are_byte_stable() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-The primary **prose-promote** flow is deliberately *not* in the CLI: it needs
-consumer callbacks (see below).
+The generic CLI deliberately stops at transcript execution and structure-bless.
+Template syntax, payload lookup, and catalog generation are consumer policy;
+errorloom provides the identity-preserving transport those tools build on.
 
 
-## Library API: the promote flow and the two bless modes
+## Library API: editable transport
 
-Prose-promote is library-only because it needs a [`Consumer`] (a baseline tagged
-render for a case, apply field-edits, re-render a case) and a two-method [`Git`]
-(`head_version_of`, `dirty_paths`; a subprocess-`git` impl ships, a `FakeGit` is
-provided for tests). errorloom drives the loop; the catalog and case schema stay
-consumer-side.
+Your renderer hands errorloom an `EditableRender`: the rendered bytes expressed
+as an ordered tree of three component classes.
 
-There's two bless modes under a mechanical exclusivity law (meaning both *must*
-be executed separately):
+ - `Structure` is immutable layout: frames, labels, carets, and whitespace.
+ - `FixedVariable` is immutable rendered data outside editable prose.
+ - `EditableSection` contains an ordered `Text | Variable` series. Section and
+   variable IDs are opaque consumer types.
 
- - `prose_bless`: structure is frozen; an author edited words in a transcript.
+`transport_edit` accepts ordinary prose edits in exactly one section while
+preserving every untouched variable by identity before tokenization.
+`transport_edit_allow_removal` additionally accepts a uniquely-attributable
+variable omission. Both are bounded and refuse structure edits, fixed-data
+edits, cross-section changes, ambiguous attribution, and excessive work.
 
-   Legal only when the touched-set is case-files-only and the catalog is
-   clean.
+The returned `SectionEdit` is deliberately not a catalog template. A consumer
+compiles its text using its own strict syntax, resolves names against its typed
+payload, and regenerates a concrete render. For example, Dorc owns the spelling
+`{{path}}`; errorloom sees those bytes only as consumer-editable text. This is
+the boundary that lets other consumers use another template language without
+putting that language into errorloom.
 
-   errorloom re-renders each dirty case from the current catalog (the baseline),
-   word-diffs it against the author's edited transcript, attributes each change
-   through the span map, re-holes param values, regenerates the catalog, and
-   re-renders the corpus. A "baseline-verify" re-renders with current state
-   and requires it to match HEAD's transcript *everywhere except prose regions*
-   - a mismatch means the structure moved, so it refuses with "structure-bless
-   first". (This verify is the 'never-both'.)
-
- - `structure_bless`: catalog prose is frozen; code or arrangement changed.
-
-   Legal only when the touched-set is code-only with case prose untouched. Every
-   transcript is regenerated from scratch; prose provably cannot have drifted
-   because it only flows from the unchanged catalog.
-
- - In both classes dirty, or a dirty (hand-edited) catalog, is refused.
-   errorloom's approach is the only accepted approach.
-
-Finally, the CI fixpoint gate (`fixpoint_check`): every committed case must
-re-render to its own committed bytes. A catalog hand-edit (prose or metadata)
-moves the render off the committed transcript, so the gate catches it. This is
-what lets the promote flow be trusted without a hand-maintained authorship
-roster.
-
-A consumer, sketched:
-
-```rust
-use std::collections::BTreeMap;
-use errorloom::{Case, Consumer, FieldTemplate, ParamTables, TaggedBaseline, TaggedRender};
-
-struct MyTool {
-    catalog: BTreeMap<(String, String), String>,
-}
-
-impl Consumer for MyTool {
-    type Key = (String, String); // opaque to errorloom; Dorc's is `(code, field)`
-    type Error = String;
-
-    // The attribution baseline: render from CURRENT catalog state, one Span
-    // per byte-run (the span-map contract, below)
-    fn tagged_render(&self, case: &Case) -> Result<TaggedBaseline<Self::Key>, String> {
-        let (text, spans) = todo!("your tagged renderer");
-        let render = TaggedRender::new(text, spans).map_err(|e| e.to_string())?;
-        Ok(TaggedBaseline::new(render, ParamTables::new()))
-    }
-
-    // The transcript block the author edits, as it sits on disk
-    fn editable_text(&self, case: &Case) -> Result<String, String> {
-        Ok(case.replay().blocks().first()
-            .map(|b| b.output().to_owned()).unwrap_or_default())
-    }
-
-    fn apply_field_edits(&mut self, edits: &BTreeMap<Self::Key, FieldTemplate>)
-    -> Result<(), String> {
-        todo!("write each template back into your catalog")
-    }
-
-    fn render_case(&self, case: &Case) -> Result<String, String> {
-        todo!("the whole case text, re-rendered from CURRENT catalog state")
-    }
-}
-```
-
-... and the drive loop:
-
-```rust
-use std::path::Path;
-use errorloom::{CaseFile, SubprocessGit, fixpoint_check, prose_bless};
-
-let mut corpus = Vec::new();
-for path in case_paths { // git-relative; they're compared against `git status`
-    corpus.push(CaseFile::new(&path, std::fs::read_to_string(&path)?));
-}
-let git = SubprocessGit::new(".");
-
-// e.g. in CI: every committed case must re-render to its own committed bytes.
-fixpoint_check(&tool, &corpus)?;
-
-// An author edited words in a transcript. Extract, regenerate, write back;
-// the review surface is the resulting git diff
-let blessed = prose_bless(&mut tool, &git, &corpus, Path::new("src/catalog.rs"))?;
-for (path, text) in blessed.regenerated() {
-    std::fs::write(path, text)?;
-}
-
-// ... and `structure_bless(&tool, &git, &corpus, ...)` in the same shape.
-```
-
-
-## The span-map contract
-
-Your tagged-renderer hands `promote` a [`TaggedRender`]: the rendered bytes plus
-a [`Span`] map classifying every run as a [`Region`]. The map is validated on
-construction to be a **gap-free, non-overlapping total cover** of the render
-bytes - region lookup must be total. Whitespace and other structure between
-prose runs are covered as `Arrangement` runs; there are no holes.
-
-The regions:
-
- - **`TemplateLiteral { key, paragraph, instance }`** - the field's own prose
-   words, the ONLY editable class.
- - **`ParamValue { key, param, instance }`** - interpolated payload; editing it
-   refuses (it is data, not prose).
- - **`ForeignText { param }`** - passthrough foreign text; editing it refuses.
- - **`Arrangement { slug }`** - render-owned structure (numbering, connectives,
-   tier words); edit it by structure-bless, not prose-bless.
-
-Instance discriminators (`instance: Option<InstanceId>`, Dorc's
-`28A:rul-tagged-render-emits-instance-ids`): a field may render more than once
-in a transcript. When you stamp each render with an `InstanceId`, promotion
-groups spans into instances by *exact* identity; when absent, it falls back to
-structural inference (paragraph/adjacency). Opting in is per-key,
-all-or-nothing.
+Structure regeneration and CI fixpoint checking remain generic. Implement
+`CaseRenderer`, pass the committed cases to `fixpoint_check`, and use
+`structure_bless` only when case transcripts and the generated catalog are
+clean. The consumer-specific compile/promote command is responsible for
+catalog writes and for proving its own compile-to-render fixpoint.
 
 
 ## Status

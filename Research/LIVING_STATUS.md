@@ -14,6 +14,27 @@
 
 ---
 
+## ERRORLOOM TEMPLATE COMPILER (post-round-28, 2026-07-21)
+
+**PHASE TWO COMPLETE on `ai/r28-errorloom-phase2` @ `01523f2c`; not yet folded.**
+`282:phase-generic-editable-sections` + `282:phase-dorc-template-compiler` now form
+one authority: errorloom transports renderer-stamped editable sections and preserves
+opaque variable identity; dorc-loom compiles strict whole-token `{{name}}` markers.
+Authors can preserve, remove, move, duplicate, or introduce an ordinary value already
+present in the current typed diagnostic payload without editing catalog Rust. Used/all
+inventories are distinct; foreign values remain unavailable; catalog params derive
+from compiled holes. The old tagged-region/param-table/re-holing/prose-bless stack is
+gone. Two closeout review defects (dirty-catalog structure bless; deleted generic
+transport properties) are repaired. Fresh WSL build + workspace tests + foreground
+e2e 97/97 + fmt/clippy/deny/typos are green. Durable ledger: `28A` §6/§6b; plan:
+`282` §§4-6/§9/§13.
+
+**NEXT:** phase three, split into bounded builder units: compile/inspection CLI;
+content-bound receipt + touched-set gate; atomic generated catalog/case promotion +
+committed used inventory / full-inventory query; then the command-variable dogfood.
+The generated-lock ownership change retains its proposal/go checkpoint. Adjacent or
+glued newly-positioned markers stay phase 5.
+
 ## ROUND 28 (seeded 2026-07-19 — the current view)
 
 **BUILD COMPLETE (2026-07-20) — awaiting the human's fold of `ai/r28-impl` @ `77ebd8e`.**

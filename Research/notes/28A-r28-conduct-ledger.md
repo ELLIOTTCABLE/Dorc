@@ -960,7 +960,67 @@ into branches at the human's own fold — never copy it into the worktree.)
   then begin phase three: CLI compile/promote, fresh receipt, git/touched-set gate,
   atomic catalog+case update, committed used inventory, and `vars --all` as ruled.
 - **`28A:map-template-compiler-source-anchors`** — +SURE: current public/source
-  anchors: errorloom `editable.rs`; core `catalog.rs`/`tagged.rs`/`diag.rs`;
-  dorc-loom `lib.rs`, `consumer.rs`, `compile.rs`, `edit.rs`, `preview.rs`,
-  `inspect.rs`; tests `coverage.rs`, `consumer.rs`, `compile.rs`,
-  `editable_render.rs`, `fixpoint.rs`.
+   anchors: errorloom `editable.rs`; core `catalog.rs`/`tagged.rs`/`diag.rs`;
+   dorc-loom `lib.rs`, `consumer.rs`, `compile.rs`, `edit.rs`, `preview.rs`,
+   `inspect.rs`; tests `coverage.rs`, `consumer.rs`, `compile.rs`,
+   `editable_render.rs`, `fixpoint.rs`.
+
+## §6b — Phase-two closeout and corrections (2026-07-21)
+
+- **`28A:rul-current-payload-marker-insertion`** — phase two is not complete unless
+  explicit `{{name}}` can introduce any ordinary value already carried by the current
+  typed diagnostic payload. The marker is the authority; rendered-byte inference is
+  not. LANDED at `dcbb1555`: used and full inventories stay distinct, foreign values
+  stay excluded, and applying a compiled field derives catalog params from its holes.
+  The motivating `{{command}}` addition now needs no catalog `.rs` edit.
+- **`28A:rul-old-template-stack-retired`** — SUPERSEDES §6's statement that generic
+  legacy `Consumer` machinery remains. The nested editable transport is a replacement,
+  not a compatibility sibling (`282` §5). Generic errorloom keeps its runner,
+  container, editable transport, structure regeneration, and fixpoint gate; Dorc owns
+  template compilation. The old tagged-region/param-table/re-holing/prose-bless stack
+  is removed at `53ea1591`.
+- **`28A:rul-phase-three-command-boundary`** — phase three owns the complete durable
+  command workflow as one unit: `dorc-loom compile/promote`, content-bound receipts,
+  touched-set/git gating, atomic catalog+case writes, committed `vars --used`, and the
+  `vars --all` query. Phase two owns the pure compiler and pure used/all inventories;
+  it does not mint a temporary CLI or receipt format.
+- **`28A:ver-phase-two-review-closure`** — review found two real defects: structure
+  bless failed to reject a dirty generated catalog (`9d2fb9e`), and deletion of the
+  old stack accidentally deleted errorloom's owning-layer transport property suite
+  (`f1c2b37c`, lint repair `ae302cda`). Both are fixed. The claimed break from removing
+  the legacy public API was rejected as the intended pre-1.0 replacement.
+- **`28A:ver-phase-two-all-green`** — branch `ai/r28-errorloom-phase2` at `01523f2c`:
+  fresh WSL workspace build, workspace tests, foreground e2e 97/97, fmt, cold clippy
+  `-D warnings`, cargo-deny, and typos all pass. The earlier e2e failure came from WSL
+  selecting a stale Windows `.exe` after package-clean; a fresh WSL build produced the
+  native binary the harness already prefers. No harness weakening or product change.
+
+## §6c — Fresh phase-three conductor handoff (2026-07-21)
+
+- **`28A:state-phase-two-accepted`** — phase two is CLOSED at code tip `01523f2c`
+  plus the immediately-following documentation sync. The north-star kernel is real:
+  a transcript edit may add/move/duplicate/remove a current typed payload variable,
+  compile it visibly, apply it in memory, and re-render concrete bytes without a
+  catalog `.rs` edit. Do not rebuild or retain the deleted tagged-promotion path.
+- **`28A:read-phase-three-first`** — fresh conductor reads root docs → current
+  `Research/LIVING_STATUS.md` → all of `spike/CLAUDE.md` → this ledger WHOLE (with
+  §6/§6b/§6c freshest) → `plans/282` WHOLE → current errorloom/dorc-loom public APIs
+  and tests. Historical `283` describes the retired direct promote path; use it only
+  as provenance, never as implementation instruction.
+- **`28A:rul-phase-three-smaller-dispatches`** — the phase-two builder compacted
+  after one effective work-unit grew across discovery, corrections, verification,
+  review, and repair. Split phase three into three fresh builder units without
+  atomizing it: (1) read-only compile/inspection + inventory command surfaces;
+  (2) content-bound receipt and git/touched-set gate; (3) atomic generated-lock/case
+  writes + committed used inventory + command-variable dogfood/fixpoint. Preserve
+  the `282` §9 generated-lock proposal/go checkpoint before unit 3.
+- **`28A:state-phase-three-worktree-base`** — base a NEW phase-three worktree on
+  `ai/r28-errorloom-phase2` after this docs landing. Do not reuse the context-heavy
+  phase-two builder. The primary `ai/main` checkout remains human-dirty in
+  `spike/crates/errorloom/README.md` and the flagship case; never access or modify it
+  from builders. The human resolves those concurrent edits during fold/rebase.
+- **`28A:gate-phase-three-integration`** — phase two has one complete green run and
+  review closure, but is not folded or pushed. The required opaque-review ACK and
+  final integration remain outstanding; the fresh conductor may review the unchanged
+  phase-two base together with phase three, but no final fold is complete without the
+  explicit gate. Never push.

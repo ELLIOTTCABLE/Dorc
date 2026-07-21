@@ -517,18 +517,21 @@ prompt you write:
   case; the **committed transcript CASE is the authoring surface** and the compiled
   `core::catalog.rs` const-table is DERIVED from it (`282:rul-transcript-is-the-
   authoring-surface`). Cases live at `crates/dorc-loom/cases/<slug>.txt` (txtar +
-  flat-YAML frontmatter). Prose regenerates ONLY by explicit promote-v2
-  (`DORC_CATALOG_PROMOTE`; BLESS-law: orchestrator-only, fresh binary, diff
-  inspected) driving `errorloom::prose_bless` over the `dorc-loom` `Consumer`; the
-  build parses the catalog and never auto-tracks case files (the lag IS the
-  assertion). Templates are named-params-only; `message`/`help` are
+  flat-YAML frontmatter). The phase-two compiler is split by ownership: errorloom
+  transports renderer-stamped editable sections and opaque variable identities;
+  dorc-loom alone parses strict whole-token `{{name}}`, resolves it against the
+  current typed payload, and compiles catalog fields. The old tagged-region/
+  param-table/re-holing/prose-bless path is dead; never restore it. Durable promotion
+  is deliberately absent until phase three lands `dorc-loom compile/promote`, a
+  content-bound receipt, and atomic generated catalog+case writes. The build parses
+  the catalog and never auto-tracks case files (the lag IS the assertion).
+  `message`/`help` are
   `Option<&'static str>` (`None` renders the `[unwritten:]` placeholder at render
   time, never a stored string); interpolated values use engine-owned canonical
   formatters; sibling codes come from world-state/license variants ONLY, never
   grammar-fit (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Two fixpoint gates
-  guard it: errorloom render-level (catches prose hand-edits) + the Dorc-side
-  promote→catalog gate (params-regen today; whole-file byte-identity after the
-  conductor canonicalization, `28A` §2o/§2q).
+  remain the destination: errorloom render-level + Dorc's generated-catalog
+  byte-identity gate (phase three).
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
   defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
   unwritten); prose is a conductor/human act issued from the builder's when/why/how

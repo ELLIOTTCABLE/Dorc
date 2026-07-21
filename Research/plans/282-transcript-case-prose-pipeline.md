@@ -324,22 +324,20 @@ enforces defining-case ownership and applies edits to the catalog lock.
 
 ## §9 — Phases (the implementor's ladder; serial, each gated)
 
-1. **`282:phase-generic-editable-sections`** — **IMPLEMENTED BUT NOT ACCEPTED** on
-   `ai/r28-errorloom-polish` at `ea758a62`: the nested types and a minimal opaque
-   consumer seam exist, but the current common-prefix/common-suffix implementation
-   collapses disjoint edits into one coarse hunk. Editing text both before and after
-   an untouched variable therefore refuses incorrectly. Conversely, its non-empty
-   overlap test can ACCEPT deletion/replacement of the immediately-adjacent fixed
-   character. Its refusal also carries only a class, and its seeded property test
-   still exercises the old transport. FIRST next act: replace coarse attribution with
-   disjoint-hunk alignment, make boundary contact inclusive, carry attributed refusal
-   evidence, and add the §5 multi-hunk/boundary properties. Phase 2 is blocked on
-   this gate.
-2. **`282:phase-dorc-template-compiler`** — double-brace grammar; section-local
-   movement/removal/duplication; conservative re-holing; committed used inventory;
-   optional easy current-payload unused-variable insertion. Route the Dorc adapter
-   through the accepted nested seam, then remove the old template-specific transport;
-   do not maintain both.
+1. **`282:phase-generic-editable-sections`** — **COMPLETE** on
+   `ai/r28-errorloom-phase2`: bounded disjoint-hunk alignment, inclusive boundary
+   attribution, unique minimum-removal inference, attributed refusals, and the seeded
+   mixed-fragment identity/refusal properties are green. The generic layer preserves
+   opaque variable identities and knows no Dorc template syntax.
+2. **`282:phase-dorc-template-compiler`** — **COMPLETE** on the same branch: strict
+   double-brace grammar; section-local movement/removal/duplication; insertion from
+   any ordinary value already carried by the current typed diagnostic payload;
+   separate deterministic used/all inventories; concrete compile preview; and
+   in-memory catalog application with params derived from compiled holes. Dorc routes
+   exclusively through the nested seam; the old generic and Dorc template-specific
+   tagged-promotion/re-holing stacks are removed. The command-shaped presentation of
+   used/all inventories moves with phase 3's CLI rather than creating an interim
+   invocation surface.
 3. **`282:phase-compile-promote-loop`** — interpretation render + bound receipt;
    direct atomic catalog-lock/case generation; legacy promote paths absent.
 4. **`282:phase-command-embed-dogfood`** — perform the motivating command-variable
