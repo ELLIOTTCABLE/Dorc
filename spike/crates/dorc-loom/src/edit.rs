@@ -95,7 +95,8 @@ pub fn compile_section_edit(
         };
         match transport_edit_allow_removal(&transformed, dirty) {
             Ok(EditTransport::Edited(edit)) if edit.section() == section.id() => {
-                match compile_fragments(edit.fragments(), section_values(baseline, section.id())) {
+                let values = available_values(baseline, section.id());
+                match compile_fragments(edit.fragments(), &values) {
                     Ok(compiled) => {
                         refuse_split_field(baseline.render(), section.id())?;
                         successful.push(DorcSectionEdit {
@@ -142,8 +143,9 @@ fn compile_transport(
     let EditTransport::Edited(edit) = transport.map_err(DorcSectionEditRefusal::Transport)? else {
         return Err(DorcSectionEditRefusal::Unchanged);
     };
-    let compiled = compile_fragments(edit.fragments(), section_values(baseline, edit.section()))
-        .map_err(DorcSectionEditRefusal::Compile)?;
+    let values = available_values(baseline, edit.section());
+    let compiled =
+        compile_fragments(edit.fragments(), &values).map_err(DorcSectionEditRefusal::Compile)?;
     refuse_split_field(baseline.render(), edit.section())?;
     Ok(DorcSectionEdit {
         section: edit.section().clone(),
@@ -222,7 +224,7 @@ fn transform_marked_section(
             TemplatePart::Literal(_) => None,
         })
         .collect();
-    let values = section_values(baseline, section.id());
+    let values = available_values(baseline, section.id());
     for name in &names {
         if !values.contains_key(name) {
             return Err(DorcSectionEditRefusal::UnknownVariable(name.clone()));
@@ -275,15 +277,16 @@ fn section_interior<'a>(
         .and_then(|interior| interior.strip_suffix(&suffix))
 }
 
-fn section_values<'a>(
-    baseline: &'a DorcEditableBaseline,
+fn available_values(
+    baseline: &DorcEditableBaseline,
     section: &SectionKey,
-) -> &'a std::collections::BTreeMap<TemplateVariableName, String> {
-    baseline.variables().get(section).unwrap_or(&EMPTY_VALUES)
+) -> std::collections::BTreeMap<TemplateVariableName, String> {
+    let mut values = baseline.all_variables().clone();
+    if let Some(rendered) = baseline.variables().get(section) {
+        values.extend(rendered.clone());
+    }
+    values
 }
-
-static EMPTY_VALUES: std::collections::BTreeMap<TemplateVariableName, String> =
-    std::collections::BTreeMap::new();
 
 fn component_text(component: &RenderComponent<SectionKey, SectionVariableId>) -> String {
     match component {

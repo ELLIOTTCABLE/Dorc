@@ -7,7 +7,7 @@
 
 use std::path::Path;
 
-use dorc_loom::{DorcConsumer, TemplateVariableName, compile_section_edit};
+use dorc_loom::{DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit};
 use errorloom::{
     BlessError, Case, CaseFile, CaseRenderer, FakeGit, fixpoint_check, structure_bless,
 };
@@ -158,4 +158,140 @@ fn applied_template_regenerates_complete_multi_replay_case() {
     assert_eq!(reparsed.replay().blocks().len(), 2);
     fixpoint_check(&consumer, &[CaseFile::new(CASE_PATH, regenerated.clone())])
         .expect("mutated consumer reproduces regenerated case");
+}
+
+#[test]
+fn explicit_marker_can_introduce_an_unused_typed_payload_value() {
+    let case = Case::parse("---\ncode: cmdsub-operand-top\n---\n-- replay --\n$ dorc plan\n")
+        .expect("case parses");
+    let mut consumer = DorcConsumer::new();
+    let baseline = consumer.editable_baseline(&case).expect("baseline renders");
+    let section_text = baseline
+        .render()
+        .components()
+        .iter()
+        .find_map(|component| match component {
+            errorloom::RenderComponent::EditableSection(section)
+                if section.id().field == "message" =>
+            {
+                Some(
+                    section
+                        .fragments()
+                        .iter()
+                        .map(|fragment| match fragment {
+                            errorloom::EditableFragment::Text(text)
+                            | errorloom::EditableFragment::Variable { rendered: text, .. } => {
+                                text.clone()
+                            }
+                        })
+                        .collect::<String>(),
+                )
+            }
+            _ => None,
+        })
+        .expect("message section");
+    let dirty = baseline
+        .render()
+        .text()
+        .replacen(&section_text, "run {{command}}", 1);
+    let edit = compile_section_edit(&baseline, &dirty).expect("typed marker compiles");
+    assert_eq!(edit.compiled().text(), "run apt-get");
+    assert_eq!(
+        edit.compiled().used(),
+        &[TemplateVariableName(String::from("command"))]
+    );
+    consumer.apply_section_edit(&edit).expect("apply");
+    let entry = consumer
+        .mirror()
+        .iter()
+        .find(|entry| entry.slug == "cmdsub-operand-top")
+        .expect("entry");
+    assert_eq!(entry.message.as_deref(), Some("run {{command}}"));
+    assert_eq!(entry.params, ["command"]);
+    assert!(
+        consumer
+            .render_case(&case)
+            .expect("re-render")
+            .contains("run apt-get")
+    );
+}
+
+#[test]
+fn payload_inventory_excludes_unknown_and_foreign_values() {
+    let cmdsub = Case::parse("---\ncode: cmdsub-operand-top\n---\n-- replay --\n$ dorc plan\n")
+        .expect("case parses");
+    let baseline = DorcConsumer::new()
+        .editable_baseline(&cmdsub)
+        .expect("baseline renders");
+    assert_eq!(
+        baseline.used_variables(),
+        vec![
+            (
+                TemplateVariableName(String::from("position")),
+                String::from("operand 1")
+            ),
+            (
+                TemplateVariableName(String::from("cause")),
+                String::from(
+                    "a command-substitution `$(…)` / arithmetic / operator-form expansion"
+                ),
+            ),
+        ]
+    );
+    assert!(
+        !baseline
+            .used_variables()
+            .iter()
+            .any(|(name, _)| name.0 == "command")
+    );
+    assert_eq!(
+        baseline
+            .all_variables()
+            .get(&TemplateVariableName(String::from("command"))),
+        Some(&String::from("apt-get"))
+    );
+    assert!(
+        baseline
+            .all_variables()
+            .contains_key(&TemplateVariableName(String::from("position")))
+    );
+    let section_text = baseline
+        .render()
+        .components()
+        .iter()
+        .find_map(|component| match component {
+            errorloom::RenderComponent::EditableSection(section)
+                if section.id().field == "message" =>
+            {
+                Some(
+                    section
+                        .fragments()
+                        .iter()
+                        .map(|fragment| match fragment {
+                            errorloom::EditableFragment::Text(text)
+                            | errorloom::EditableFragment::Variable { rendered: text, .. } => {
+                                text.clone()
+                            }
+                        })
+                        .collect::<String>(),
+                )
+            }
+            _ => None,
+        })
+        .expect("message section");
+    let dirty = baseline
+        .render()
+        .text()
+        .replacen(&section_text, "{{unknown}}", 1);
+    assert!(matches!(
+        compile_section_edit(&baseline, &dirty),
+        Err(DorcSectionEditRefusal::UnknownVariable(_))
+    ));
+
+    let foreign = Case::parse("---\ncode: site-unresolvable\n---\n-- replay --\n$ dorc plan\n")
+        .expect("case parses");
+    let baseline = DorcConsumer::new()
+        .editable_baseline(&foreign)
+        .expect("foreign baseline");
+    assert!(baseline.all_variables().is_empty());
 }

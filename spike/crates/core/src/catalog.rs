@@ -1015,6 +1015,8 @@ pub struct OwnedEntry {
     pub message: Option<String>,
     /// The help register template, or `None` when the code carries no help.
     pub help: Option<String>,
+    /// Template holes in first-use order across message then help.
+    pub params: Vec<String>,
 }
 
 /// The compiled-in catalog as an owned, mutable mirror (`283:dec-mirror-via-catalog-lookup`) — the
@@ -1030,6 +1032,7 @@ pub fn owned_catalog() -> Vec<OwnedEntry> {
             why: e.why.to_owned(),
             message: e.message.map(str::to_owned),
             help: e.help.map(str::to_owned),
+            params: e.params.iter().map(|param| (*param).to_owned()).collect(),
         })
         .collect()
 }

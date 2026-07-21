@@ -9,7 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::catalog::{OwnedEntry, owned_catalog};
+use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_core::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
     DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
@@ -33,6 +33,7 @@ pub type SectionVariables = BTreeMap<SectionKey, BTreeMap<TemplateVariableName, 
 pub struct DorcEditableBaseline {
     render: EditableRender<SectionKey, SectionVariableId>,
     variables: SectionVariables,
+    all_variables: BTreeMap<TemplateVariableName, String>,
 }
 
 impl DorcEditableBaseline {
@@ -46,6 +47,32 @@ impl DorcEditableBaseline {
     #[must_use]
     pub fn variables(&self) -> &SectionVariables {
         &self.variables
+    }
+
+    /// Ordinary typed payload values, including values not currently rendered.
+    #[must_use]
+    pub fn all_variables(&self) -> &BTreeMap<TemplateVariableName, String> {
+        &self.all_variables
+    }
+
+    /// Rendered editable variables in deterministic first-use order.
+    #[must_use]
+    pub fn used_variables(&self) -> Vec<(TemplateVariableName, String)> {
+        let mut used = Vec::new();
+        for component in self.render.components() {
+            let RenderComponent::EditableSection(section) = component else {
+                continue;
+            };
+            for fragment in section.fragments() {
+                let EditableFragment::Variable { id, rendered } = fragment else {
+                    continue;
+                };
+                if !used.iter().any(|(name, _)| name == &id.name) {
+                    used.push((id.name.clone(), rendered.clone()));
+                }
+            }
+        }
+        used
     }
 }
 
@@ -126,6 +153,21 @@ impl DorcConsumer {
         } else {
             entry.help = Some(template);
         }
+        entry.params = entry
+            .message
+            .iter()
+            .chain(entry.help.iter())
+            .flat_map(|template| parse_template(template).unwrap_or_default())
+            .filter_map(|part| match part {
+                dorc_core::catalog::TemplatePart::Hole(name) => Some(name),
+                dorc_core::catalog::TemplatePart::Literal(_) => None,
+            })
+            .fold(Vec::new(), |mut params, name| {
+                if !params.contains(&name) {
+                    params.push(name);
+                }
+                params
+            });
         Ok(())
     }
 
@@ -147,7 +189,16 @@ impl DorcConsumer {
         let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
         let render = to_editable_render(&parts);
         let variables = editable_variables(&render)?;
-        Ok(DorcEditableBaseline { render, variables })
+        let all_variables = dorc_core::diag::params_of(&diag.code, &interner)
+            .into_iter()
+            .filter(|(name, _)| !is_foreign_param(name))
+            .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
+            .collect();
+        Ok(DorcEditableBaseline {
+            render,
+            variables,
+            all_variables,
+        })
     }
 
     /// The (diag, source, filename) a case materializes into (`283:dec-world-two-forms`). A case
@@ -514,7 +565,11 @@ mod tests {
     ) -> DorcEditableBaseline {
         let render = EditableRender::new(components);
         let variables = editable_variables(&render).unwrap_or_else(|error| panic!("{error}"));
-        DorcEditableBaseline { render, variables }
+        DorcEditableBaseline {
+            render,
+            variables,
+            all_variables: BTreeMap::new(),
+        }
     }
 
     #[test]
