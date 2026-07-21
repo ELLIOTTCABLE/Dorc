@@ -22,7 +22,7 @@ use errorloom::{
 };
 
 mod consumer;
-pub use consumer::{DorcConsumer, DorcEditableBaseline};
+pub use consumer::{DorcConsumer, DorcEditableBaseline, SectionVariables};
 
 /// The opaque consumer key errorloom groups prose fields by: Dorc's
 /// `(code, field)` (`28A` §1). errorloom compares/sorts it but never inspects it;

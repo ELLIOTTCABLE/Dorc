@@ -28,13 +28,18 @@ use errorloom::{
     tokenize,
 };
 
-use crate::{FieldKey, SectionKey, SectionVariableId, to_editable_render, to_errorloom};
+use crate::{
+    FieldKey, SectionKey, SectionVariableId, TemplateVariableName, to_editable_render, to_errorloom,
+};
+
+/// Exact current values by editable section and semantic variable name.
+pub type SectionVariables = BTreeMap<SectionKey, BTreeMap<TemplateVariableName, String>>;
 
 /// A case render ready for generic editable transport.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct DorcEditableBaseline {
     render: EditableRender<SectionKey, SectionVariableId>,
-    params: ParamTables<SectionKey>,
+    variables: SectionVariables,
 }
 
 impl DorcEditableBaseline {
@@ -44,10 +49,10 @@ impl DorcEditableBaseline {
         &self.render
     }
 
-    /// Current parameter values keyed by editable section.
+    /// Exact current variable values keyed by editable section.
     #[must_use]
-    pub fn params(&self) -> &ParamTables<SectionKey> {
-        &self.params
+    pub fn variables(&self) -> &SectionVariables {
+        &self.variables
     }
 }
 
@@ -95,8 +100,8 @@ impl DorcConsumer {
         let interner = Interner::default();
         let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
         let render = to_editable_render(&parts);
-        let params = editable_param_tables(&render);
-        Ok(DorcEditableBaseline { render, params })
+        let variables = editable_variables(&render)?;
+        Ok(DorcEditableBaseline { render, variables })
     }
 
     /// The (diag, source, filename) a case materializes into (`283:dec-world-two-forms`). A case
@@ -483,33 +488,93 @@ fn param_tables(render: &errorloom::TaggedRender<FieldKey>) -> ParamTables<Field
     tables
 }
 
-fn editable_param_tables(
+fn editable_variables(
     render: &EditableRender<SectionKey, SectionVariableId>,
-) -> ParamTables<SectionKey> {
-    let mut tables = ParamTables::new();
+) -> Result<SectionVariables, String> {
+    let mut variables = SectionVariables::new();
     for component in render.components() {
         let RenderComponent::EditableSection(section) = component else {
             continue;
         };
-        let mut values = ParamValues::new();
-        let mut has_values = false;
         for fragment in section.fragments() {
             let EditableFragment::Variable { id, rendered } = fragment else {
                 continue;
             };
-            let words = tokenize(rendered)
-                .into_iter()
-                .filter_map(|token| match token {
-                    Token::Word(word) => Some(word),
-                    Token::ParagraphBreak => None,
-                })
-                .collect();
-            values.insert(ParamName::new(&id.name.0), words);
-            has_values = true;
-        }
-        if has_values {
-            tables.insert(section.id().clone(), values);
+            let values = variables.entry(section.id().clone()).or_default();
+            match values.entry(id.name.clone()) {
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    entry.insert(rendered.clone());
+                }
+                std::collections::btree_map::Entry::Occupied(entry) if entry.get() != rendered => {
+                    return Err(format!(
+                        "section {:?} renders `{}` as both {:?} and {:?}",
+                        section.id(),
+                        id.name.0,
+                        entry.get(),
+                        rendered
+                    ));
+                }
+                std::collections::btree_map::Entry::Occupied(_) => {}
+            }
         }
     }
-    tables
+    Ok(variables)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use errorloom::EditableSection;
+
+    #[test]
+    fn editable_variables_preserve_empty_values_and_refuse_disagreement() {
+        let key = SectionKey {
+            code: String::from("code"),
+            field: "message",
+            instance: 0,
+            segment: 0,
+        };
+        let empty = EditableRender::new(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key.clone(),
+                vec![EditableFragment::Variable {
+                    id: SectionVariableId {
+                        name: TemplateVariableName(String::from("name")),
+                        occurrence: 0,
+                    },
+                    rendered: String::new(),
+                }],
+            ),
+        )]);
+        assert_eq!(
+            editable_variables(&empty),
+            Ok(BTreeMap::from([(
+                key.clone(),
+                BTreeMap::from([(TemplateVariableName(String::from("name")), String::new())]),
+            )]))
+        );
+
+        let conflicting = EditableRender::new(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key,
+                vec![
+                    EditableFragment::Variable {
+                        id: SectionVariableId {
+                            name: TemplateVariableName(String::from("name")),
+                            occurrence: 0,
+                        },
+                        rendered: String::from("left"),
+                    },
+                    EditableFragment::Variable {
+                        id: SectionVariableId {
+                            name: TemplateVariableName(String::from("name")),
+                            occurrence: 1,
+                        },
+                        rendered: String::from("right"),
+                    },
+                ],
+            ),
+        )]);
+        assert!(editable_variables(&conflicting).is_err());
+    }
 }

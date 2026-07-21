@@ -15,7 +15,7 @@
 
 use std::path::Path;
 
-use dorc_loom::DorcConsumer;
+use dorc_loom::{DorcConsumer, TemplateVariableName};
 use errorloom::{
     BlessError, Case, CaseFile, Consumer, FakeGit, ModeRefusal, fixpoint_check, prose_bless,
     structure_bless,
@@ -195,7 +195,9 @@ fn editable_baseline_renders_a_defining_case_with_help() {
             })
             .any(|field| field == "help")
     );
-    assert!(format!("{:?}", baseline.params()).contains("which"));
+    assert!(baseline.variables().values().any(|variables| {
+        variables.get(&TemplateVariableName(String::from("which"))) == Some(&String::from("book"))
+    }));
 }
 
 #[test]
