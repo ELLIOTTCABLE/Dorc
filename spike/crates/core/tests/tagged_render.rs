@@ -4,9 +4,10 @@
 //! `ParamValue`/`ForeignText` and literal prose as `TemplateLiteral`.
 
 use dorc_core::catalog::{
-    CATALOG, TemplatePart, fill_template, fill_template_tagged, is_foreign_param, parse_template,
+    CATALOG, TemplatePart, fill_template, fill_template_parts, fill_template_tagged,
+    is_foreign_param, parse_template,
 };
-use dorc_core::tagged::{Field, Region, Span};
+use dorc_core::tagged::{Field, Region, RenderPart, Span};
 
 /// Fill `template` through the tagged twin with an empty offset base, returning
 /// the bytes and the span map (the standalone shape the corpus sweep uses).
@@ -75,6 +76,42 @@ fn parse_template_returns_ordered_parts_and_literal_single_braces() {
             TemplatePart::Literal(String::from(" after")),
         ]),
     );
+}
+
+#[test]
+fn fill_template_parts_preserves_bytes_and_empty_values() {
+    for entry in CATALOG {
+        let values: Vec<(&'static str, String)> = entry
+            .params
+            .iter()
+            .map(|param| (*param, format!("value-for-{param}")))
+            .collect();
+        let refs: Vec<(&'static str, &str)> = values
+            .iter()
+            .map(|(param, value)| (*param, value.as_str()))
+            .collect();
+        for template in entry.message.into_iter().chain(entry.help) {
+            let parts = match fill_template_parts(template, &refs, entry.slug, Field::Message, 0) {
+                Ok(parts) => parts,
+                Err(error) => panic!("{}: {error:?}", entry.slug),
+            };
+            assert_eq!(fill_template(template, &refs), Ok(parts.text()));
+        }
+    }
+
+    let parts = fill_template_parts("a{{empty}}b", &[("empty", "")], "code", Field::Message, 3)
+        .unwrap_or_else(|error| panic!("{error:?}"));
+    assert_eq!(parts.text(), "ab");
+    assert!(matches!(
+        &parts.parts()[1],
+        RenderPart::ParamValue {
+            text,
+            code: "code",
+            field: Field::Message,
+            param: "empty",
+            instance: 3,
+        } if text.is_empty()
+    ));
 }
 
 #[test]

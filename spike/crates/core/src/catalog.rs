@@ -1080,6 +1080,54 @@ pub fn fill_template(template: &str, params: &[(&str, &str)]) -> Result<String, 
     Ok(out)
 }
 
+/// Fill a template into ordered render parts without dropping empty parameter values.
+///
+/// # Errors
+/// Returns [`TemplateRefusal`] for invalid template syntax or an unknown parameter.
+pub fn fill_template_parts(
+    template: &str,
+    params: &[(&'static str, &str)],
+    code: &'static str,
+    field: crate::tagged::Field,
+    instance: usize,
+) -> Result<crate::tagged::RenderParts, TemplateRefusal> {
+    use crate::tagged::{RenderPart, RenderParts};
+
+    let mut parts = RenderParts::new();
+    for part in parse_template(template)? {
+        match part {
+            TemplatePart::Literal(text) if !text.is_empty() => {
+                parts.push(RenderPart::TemplateLiteral {
+                    text,
+                    code,
+                    field,
+                    paragraph: 0,
+                    instance,
+                });
+            }
+            TemplatePart::Literal(_) => {}
+            TemplatePart::Hole(name) => {
+                let Some(&(param, value)) = params.iter().find(|(key, _)| *key == name) else {
+                    return Err(TemplateRefusal::UnknownParam(name));
+                };
+                let text = String::from(value);
+                if is_foreign_param(param) {
+                    parts.push(RenderPart::ForeignText { text, param });
+                } else {
+                    parts.push(RenderPart::ParamValue {
+                        text,
+                        code,
+                        field,
+                        param,
+                        instance,
+                    });
+                }
+            }
+        }
+    }
+    Ok(parts)
+}
+
 /// The span-emitting twin of [`fill_template`] (`282` §4): fill `template` into `out`, and for every
 /// run push a [`crate::tagged::Span`] classifying it — literal prose as a
 /// [`TemplateLiteral`](crate::tagged::Region::TemplateLiteral), a filled declared hole as a
