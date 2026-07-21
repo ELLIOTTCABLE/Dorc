@@ -1757,7 +1757,8 @@ pub fn render_message_with(
     let params = params_of(code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
     match lookup.message(code.slug()) {
-        Some(t) => crate::catalog::fill_template(t, &refs),
+        Some(t) => crate::catalog::fill_template(t, &refs)
+            .unwrap_or_else(|_| format!("[invalid catalog template: {}]", code.slug())),
         None => format!("[unwritten: {}]", code.slug()),
     }
 }
@@ -1973,7 +1974,8 @@ pub fn render_body_with(
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
     let slug = diag.code.slug();
     let mut out = match lookup.message(slug) {
-        Some(t) => crate::catalog::fill_template(t, &refs),
+        Some(t) => crate::catalog::fill_template(t, &refs)
+            .unwrap_or_else(|_| format!("[invalid catalog template: {slug}]")),
         None => format!("[unwritten: {slug}]"),
     };
     if let Some(help) = lookup.help(slug) {
@@ -1982,6 +1984,7 @@ pub fn render_body_with(
             "\n  = {}: {}",
             help_connective(&diag.code),
             crate::catalog::fill_template(help, &refs)
+                .unwrap_or_else(|_| format!("[invalid catalog template: {slug}]"))
         );
     }
     // Authored children + suggestion: empty in production, exercised by the builder tests.
@@ -2049,15 +2052,26 @@ pub fn render_body_tagged_with(
     let mut out = String::new();
     let mut spans: Vec<Span> = Vec::new();
     match lookup.message(code) {
-        Some(t) => crate::catalog::fill_template_tagged(
-            &mut out,
-            &mut spans,
-            t,
-            &refs,
-            code,
-            Field::Message,
-            0,
-        ),
+        Some(t) => {
+            if crate::catalog::fill_template_tagged(
+                &mut out,
+                &mut spans,
+                t,
+                &refs,
+                code,
+                Field::Message,
+                0,
+            )
+            .is_err()
+            {
+                arrange(
+                    &mut out,
+                    &mut spans,
+                    &format!("[invalid catalog template: {code}]"),
+                    "invalid-template",
+                );
+            }
+        }
         None => arrange(
             &mut out,
             &mut spans,
@@ -2068,7 +2082,7 @@ pub fn render_body_tagged_with(
     if let Some(help) = lookup.help(code) {
         let connective = format!("\n  = {}: ", help_connective(&diag.code));
         arrange(&mut out, &mut spans, &connective, "help-connective");
-        crate::catalog::fill_template_tagged(
+        if crate::catalog::fill_template_tagged(
             &mut out,
             &mut spans,
             help,
@@ -2076,7 +2090,16 @@ pub fn render_body_tagged_with(
             code,
             Field::Help,
             0,
-        );
+        )
+        .is_err()
+        {
+            arrange(
+                &mut out,
+                &mut spans,
+                &format!("[invalid catalog template: {code}]"),
+                "invalid-template",
+            );
+        }
     }
     for child in &diag.children {
         match child {

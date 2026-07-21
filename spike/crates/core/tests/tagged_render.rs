@@ -11,14 +11,17 @@ use dorc_core::tagged::{Field, Region, Span};
 fn tag(template: &str, params: &[(&'static str, &str)]) -> (String, Vec<Span>) {
     let mut out = String::new();
     let mut spans = Vec::new();
-    fill_template_tagged(
-        &mut out,
-        &mut spans,
-        template,
-        params,
-        "the-code",
-        Field::Message,
-        0,
+    assert_eq!(
+        fill_template_tagged(
+            &mut out,
+            &mut spans,
+            template,
+            params,
+            "the-code",
+            Field::Message,
+            0,
+        ),
+        Ok(())
     );
     (out, spans)
 }
@@ -50,8 +53,8 @@ fn fill_template_tagged_is_byte_identical_to_fill_template() {
             let Some(template) = template else { continue };
             let (tagged_text, spans) = tag(template, &refs);
             assert_eq!(
-                tagged_text,
                 fill_template(template, &refs),
+                Ok(tagged_text.clone()),
                 "code `{}` {field}: tagged fill drifted from fill_template",
                 e.slug
             );
@@ -62,9 +65,8 @@ fn fill_template_tagged_is_byte_identical_to_fill_template() {
 
 #[test]
 fn fill_template_tagged_classifies_holes_literals_and_foreign() {
-    // Literal + two holes + escaped braces; `detail` is foreign, `name` is a value.
     let (text, spans) = tag(
-        "start {{brace}} {name} mid {detail} end",
+        "start {brace} {{name}} mid {{detail}} end",
         &[("name", "NN"), ("detail", "DD")],
     );
     assert_eq!(text, "start {brace} NN mid DD end");
@@ -89,15 +91,30 @@ fn fill_template_tagged_classifies_holes_literals_and_foreign() {
 }
 
 #[test]
-fn fill_template_tagged_skips_empty_values_and_folds_unknown_holes() {
-    // An empty value emits no span; an undeclared `{gap}` folds into the literal.
-    let (text, spans) = tag("a{x}b{gap}c", &[("x", "")]);
-    assert_eq!(text, "ab{gap}c");
+fn fill_template_tagged_skips_empty_values_and_refuses_unknown_holes() {
+    let (text, spans) = tag("a{{x}}b", &[("x", "")]);
+    assert_eq!(text, "ab");
     assert_total_cover(&spans, text.len());
     assert!(
         spans
             .iter()
             .all(|s| matches!(s.region, Region::TemplateLiteral { .. })),
-        "no ParamValue span for an empty or undeclared hole: {spans:?}"
+        "no ParamValue span for an empty hole: {spans:?}"
+    );
+    let mut out = String::new();
+    let mut spans = Vec::new();
+    assert_eq!(
+        fill_template_tagged(
+            &mut out,
+            &mut spans,
+            "a{{gap}}b",
+            &[],
+            "the-code",
+            Field::Message,
+            0,
+        ),
+        Err(dorc_core::catalog::TemplateRefusal::UnknownParam(
+            String::from("gap")
+        )),
     );
 }

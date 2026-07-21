@@ -68,7 +68,8 @@ fn every_catalog_code_maps_to_a_valid_tagged_render() {
                 e.slug,
                 Field::Message,
                 0,
-            );
+            )
+            .expect("catalog template is valid");
         } else {
             let placeholder = format!("[unwritten: {}]", e.slug);
             out.push_str(&placeholder);
@@ -88,7 +89,8 @@ fn every_catalog_code_maps_to_a_valid_tagged_render() {
                     slug: "help-connective",
                 },
             });
-            fill_template_tagged(&mut out, &mut spans, help, &refs, e.slug, Field::Help, 0);
+            fill_template_tagged(&mut out, &mut spans, help, &refs, e.slug, Field::Help, 0)
+                .expect("catalog template is valid");
         }
 
         let core = TaggedRender::new(out, spans);

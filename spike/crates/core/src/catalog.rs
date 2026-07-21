@@ -78,7 +78,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   command only when it can prove the command's effect is already in place, so this \
                   one is left to run on every apply.",
         message: Some(
-            "{position} is {cause}, so Dorc cannot know its value until the command runs on the \
+            "{{position}} is {{cause}}, so Dorc cannot know its value until the command runs on the \
              host — there is nothing to resolve and no read-only probe to check. Dorc elides a \
              command only when it can prove the command's effect is already in place, so this one \
              is left to run on every apply.",
@@ -101,7 +101,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "sm 2 sites run unprobed (no read-only check could be shipped): `make install`, \
                   `ldconfig` — run `dorc why` for the per-site detail (the apply runs each anyway, \
                   to stay safe)",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -115,7 +115,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   its span covers the `<<` operator, not the body lines, so substituting it would \
                   strand the heredoc body — it runs verbatim",
         message: Some(
-            "sm leaf-exact render refuses to {verb} a heredoc-bearing command (`{command}`): \
+            "sm leaf-exact render refuses to {{verb}} a heredoc-bearing command (`{{command}}`): \
                   its span covers the `<<` operator, not the body lines, so substituting it would \
                   strand the heredoc body — it runs verbatim",
         ),
@@ -131,7 +131,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "sm command `id -u` runs inside a `$(…)` substitution ⇒ effect-bearing but not \
                   independently elidable (it runs whenever its enclosing line runs)",
         message: Some(
-            "sm command `{inner}` runs inside a `$(…)` substitution ⇒ effect-bearing but not \
+            "sm command `{{inner}}` runs inside a `$(…)` substitution ⇒ effect-bearing but not \
                   independently elidable (it runs whenever its enclosing line runs)",
         ),
         help: None,
@@ -164,7 +164,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   body's positional is ⊤ — it runs as an ordinary unmodeled command (depth-2 \
                   positional threading is out of the modeled subset)",
         message: Some(
-            "sm call `{name}` not inlined: its argument references a positional \
+            "sm call `{{name}}` not inlined: its argument references a positional \
                   (`$1`..`$9`/`$#`) that does not thread through two inline levels ⇒ the inner \
                   body's positional is ⊤ — it runs as an ordinary unmodeled command (depth-2 \
                   positional threading is out of the modeled subset)",
@@ -180,7 +180,7 @@ pub const CATALOG: &[CatalogEntry] = &[
               parser's own description of the construct rides `detail`.",
         params: &["detail"],
         example: "sm process substitution `<(…)` is not modeled",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -190,7 +190,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "inv-no-throw: errors are data. PASSTHROUGH — the parser's description rides `detail`.",
         params: &["detail"],
         example: "sm unterminated double-quote",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     // ── analysis/cfg.rs (PASSTHROUGH) ───────────────────────────────────────
@@ -203,7 +203,7 @@ pub const CATALOG: &[CatalogEntry] = &[
               slug carries top/⊤ wording (law-plain-language-surfaces, 24H ack-4).",
         params: &["detail"],
         example: "sm unsupported construct (⊤): un-probeable and un-skippable",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -214,7 +214,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "sm errexit state is ⊤ at one or more commands; failure-edges added conservatively \
                   (over-approximate, sound)",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -228,7 +228,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "sm call to `helper` exceeds the inline-depth budget (8); not inlined — it runs \
                   as an ordinary unmodeled command",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -242,7 +242,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   function before a regular builtin): analysis treats the bare word `test` as the \
                   builtin when classifying effects and minting stand-ins, so builtin-dependent \
                   conclusions may be unsound for this book",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     // ── analysis/effect.rs (PASSTHROUGH) ────────────────────────────────────
@@ -255,7 +255,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "sm check annotation kind `sm.dorc.Package` disagrees with the effect-map kind \
                   `sm.dorc.File` for this verb — the annotation (declared identity) wins",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     // ── oracle/predict.rs (PASSTHROUGH) ─────────────────────────────────────
@@ -267,7 +267,7 @@ pub const CATALOG: &[CatalogEntry] = &[
               rides `detail`.",
         params: &["detail"],
         example: "sm check body uses `[[ … ]]`, outside the check dialect",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -278,7 +278,7 @@ pub const CATALOG: &[CatalogEntry] = &[
               `detail`.",
         params: &["detail"],
         example: "sm check body ends mid-`case` (missing `esac`)",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     // ── oracle/reserved.rs (TEMPLATIZED) ────────────────────────────────────
@@ -293,8 +293,8 @@ pub const CATALOG: &[CatalogEntry] = &[
                   starts with a digit (ca-munge-charclass, 24M §4b) — REFUSED (a broken function \
                   name cannot ship; the munger must transliterate or the name must be renamed)",
         message: Some(
-            "sm `{source}` munges to the sh function name `{funcname}`, which is not a legal \
-                  NAME: {problem} (ca-munge-charclass, 24M §4b) — REFUSED (a broken function name \
+            "sm `{{source}}` munges to the sh function name `{{funcname}}`, which is not a legal \
+                  NAME: {{problem}} (ca-munge-charclass, 24M §4b) — REFUSED (a broken function name \
                   cannot ship; the munger must transliterate or the name must be renamed)",
         ),
         help: None,
@@ -310,9 +310,9 @@ pub const CATALOG: &[CatalogEntry] = &[
                   same-named funcdefs, last-writer-wins; align with the reingest-collision floor: \
                   refuse-and-run)",
         message: Some(
-            "sm `{source}` munges to the sh function name `{funcname}`, shared by {count} \
-                  distinct source names ({names}) — REFUSED, never silently merged (the shipped \
-                  artifact would carry {count} same-named funcdefs, last-writer-wins; align with \
+            "sm `{{source}}` munges to the sh function name `{{funcname}}`, shared by {{count}} \
+                  distinct source names ({{names}}) — REFUSED, never silently merged (the shipped \
+                  artifact would carry {{count}} same-named funcdefs, last-writer-wins; align with \
                   the reingest-collision floor: refuse-and-run)",
         ),
         help: None,
@@ -330,11 +330,11 @@ pub const CATALOG: &[CatalogEntry] = &[
                   here (run-verbatim), but a shipped oracle preamble of the same name would collide \
                   (last-writer-wins). Rename it to stay clear of `*__predict`.",
         message: Some(
-            "sm book function `{name}` squats the reserved `{role}` oracle namespace \
+            "sm book function `{{name}}` squats the reserved `{{role}}` oracle namespace \
                   (rul24M-bare-dorcism-names): if unintended, it coincidentally matches an emitted \
                   oracle function name — it is treated as an ordinary opaque command here \
                   (run-verbatim), but a shipped oracle preamble of the same name would collide \
-                  (last-writer-wins). Rename it to stay clear of `*{role}`.",
+                  (last-writer-wins). Rename it to stay clear of `*{{role}}`.",
         ),
         help: None,
     },
@@ -386,8 +386,8 @@ pub const CATALOG: &[CatalogEntry] = &[
                   one of user, netns, fs-view); the mark vouches nothing and the site stays walled \
                   on that dimension (`27C` §2).",
         message: Some(
-            "sm `{token}` is not a known context dimension on a `tolerates:` vouch (expected \
-                  one of {expected}); the mark vouches nothing and the site stays walled on that \
+            "sm `{{token}}` is not a known context dimension on a `tolerates:` vouch (expected \
+                  one of {{expected}}); the mark vouches nothing and the site stays walled on that \
                   dimension (`27C` §2).",
         ),
         help: None,
@@ -439,7 +439,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   fs-view); the line mints no lend and the dimension it meant to answer stays ⊤ \
                   (walls). Dimension marks are an engine-owned closed vocabulary (`273` §8).",
         message: Some(
-            "sm `{token}` is not a known lend_map dimension (expected one of {expected}); the \
+            "sm `{{token}}` is not a known lend_map dimension (expected one of {{expected}}); the \
                   line mints no lend and the dimension it meant to answer stays ⊤ (walls). \
                   Dimension marks are an engine-owned closed vocabulary (`273` §8).",
         ),
@@ -456,7 +456,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   `sm_dorc_KernelParam` — network kernel state is namespaced, never netns-invariant",
         message: Some(
             "sm `invariant:netns` is forbidden on the per-netns `net-kernel` store of \
-                  `{kind_munged}` — network kernel state is namespaced, never netns-invariant",
+                  `{{kind_munged}}` — network kernel state is namespaced, never netns-invariant",
         ),
         help: None,
     },
@@ -472,7 +472,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
                   Split it into one marked probe line per cell.",
         message: Some(
-            "sm verdict and observe marks are single-cell; brace alternation `@{{a,b}}` is \
+            "sm verdict and observe marks are single-cell; brace alternation `@{a,b}` is \
                   claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
                   Split it into one marked probe line per cell.",
         ),
@@ -597,8 +597,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "sm fact lane truncated: 3 of 5 declared site records received — the 2 unseen \
                   site(s) fold Unknown (run)",
         message: Some(
-            "sm fact lane truncated: {received} of {declared} declared site records received \
-                  — the {unseen} unseen site(s) fold Unknown (run)",
+            "sm fact lane truncated: {{received}} of {{declared}} declared site records received \
+                  — the {{unseen}} unseen site(s) fold Unknown (run)",
         ),
         help: None,
     },
@@ -611,7 +611,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "sm the records header failed integrity on host (a mis-plumbed peer host's \
                   stream) — the whole read unit is refused, the host runs (kFAIL-perform)",
         message: Some(
-            "sm the records header failed integrity on {which} — the whole read unit is \
+            "sm the records header failed integrity on {{which}} — the whole read unit is \
                   refused, the host runs (kFAIL-perform)",
         ),
         help: None,
@@ -624,7 +624,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["count"],
         example: "sm 2 torn (no terminal token) record line(s) discarded (counted, never folded)",
         message: Some(
-            "sm {count} torn (no terminal token) record line(s) discarded (counted, never \
+            "sm {{count}} torn (no terminal token) record line(s) discarded (counted, never \
                   folded)",
         ),
         help: None,
@@ -637,7 +637,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["count"],
         example: "sm 1 alien (non-nonce) record line(s) discarded (counted, never folded)",
         message: Some(
-            "sm {count} alien (non-nonce) record line(s) discarded (counted, never folded)",
+            "sm {{count}} alien (non-nonce) record line(s) discarded (counted, never folded)",
         ),
         help: None,
     },
@@ -650,7 +650,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "sm 1 late (after the end-sentinel) record line(s) discarded (counted, never \
                   folded)",
         message: Some(
-            "sm {count} late (after the end-sentinel) record line(s) discarded (counted, \
+            "sm {{count}} late (after the end-sentinel) record line(s) discarded (counted, \
                   never folded)",
         ),
         help: None,
@@ -666,7 +666,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "sm touches() footprint omits this command's own effect coordinate (at-least ⊄ \
                   at-most) — footprint refused, the site walls",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -677,7 +677,7 @@ pub const CATALOG: &[CatalogEntry] = &[
               leak into greenfield as a permanent per-escalation requirement.",
         params: &["site", "call"],
         example: "sm site 4: touches() escalated to host-derivation (dpkg-query -W nginx)",
-        message: Some("sm site {site}: touches() escalated to host-derivation ({call})"),
+        message: Some("sm site {{site}}: touches() escalated to host-derivation ({{call}})"),
         help: None,
     },
     CatalogEntry {
@@ -690,7 +690,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "sm site 4: derived footprint family incomplete (declared n=3, received 2) — \
                   footprint refused, the site walls total (an at-most claim cannot be partial)",
         message: Some(
-            "sm site {site}: derived footprint family incomplete ({reason}) — footprint \
+            "sm site {{site}}: derived footprint family incomplete ({{reason}}) — footprint \
                   refused, the site walls total (an at-most claim cannot be partial)",
         ),
         help: None,
@@ -705,7 +705,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "sm escalation policy: probe re-uses connection authority (cap-net-admin) for \
                   `tolerates:`-vouched functions only (default); entry forms: sudo. Forbid with \
                   --no-probe-escalation; widen with --escalate-any-probe.",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -717,7 +717,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "sm elision carried across the fs-view axis: backing kind `sm_dorc_File` vouches \
                   `invariant:fs-view`; the verdict body is read-set-closed",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -729,7 +729,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "sm this `sudo`-wrapped site could elide with a `tolerates:user` vouch on its \
                   is_converged (adoption hint)",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     // ── cli/main.rs (resolver / reaches confusability; SPANLESS) ────────────
@@ -744,7 +744,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   at-most-one-resolver-per-kind (24F §3): BOTH refused, the kind keeps \
                   token-equality (never first-wins-silently)",
         message: Some(
-            "sm kind '{kind}' has {count} resolvers across oracle files — \
+            "sm kind '{{kind}}' has {{count}} resolvers across oracle files — \
                   at-most-one-resolver-per-kind (24F §3): BOTH refused, the kind keeps \
                   token-equality (never first-wins-silently)",
         ),
@@ -761,7 +761,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   provider — resolvers are keyed by KIND, not command (corr-kind-keying §10); this \
                   mints identity for a kind no coordinate may use (a likely mis-key)",
         message: Some(
-            "sm resolver '{name}.resolve()' is keyed to a name matching a known COMMAND \
+            "sm resolver '{{name}}.resolve()' is keyed to a name matching a known COMMAND \
                   provider — resolvers are keyed by KIND, not command (corr-kind-keying §10); this \
                   mints identity for a kind no coordinate may use (a likely mis-key)",
         ),
@@ -778,7 +778,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   reports no such entity (a likely typo / stale name); it degrades to may-alias \
                   (the site runs)",
         message: Some(
-            "sm coordinate {coord} resolved DANGLING — the kind's resolver reports no such \
+            "sm coordinate {{coord}} resolved DANGLING — the kind's resolver reports no such \
                   entity (a likely typo / stale name); it degrades to may-alias (the site runs)",
         ),
         help: None,
@@ -794,7 +794,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   at-most-one-reaches-per-kind (24G §4): BOTH refused, the kind's footprints do \
                   not expand (never first-wins-silently)",
         message: Some(
-            "sm kind '{kind}' has {count} reach-functions across oracle files — \
+            "sm kind '{{kind}}' has {{count}} reach-functions across oracle files — \
                   at-most-one-reaches-per-kind (24G §4): BOTH refused, the kind's footprints do \
                   not expand (never first-wins-silently)",
         ),
@@ -810,7 +810,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   provider — reaches is keyed by KIND, not command (24G §4); this expands a kind \
                   no coordinate may use (a likely mis-key)",
         message: Some(
-            "sm reach-function '{name}.reaches()' is keyed to a name matching a known COMMAND \
+            "sm reach-function '{{name}}.reaches()' is keyed to a name matching a known COMMAND \
                   provider — reaches is keyed by KIND, not command (24G §4); this expands a kind \
                   no coordinate may use (a likely mis-key)",
         ),
@@ -829,7 +829,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). The \
                   entry form drops/transforms args the fold relied on; make the entry pass the \
                   fold's guest verbatim.",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     CatalogEntry {
@@ -844,7 +844,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   incoherence (273 §5, declarations-genuinely-contradict). The guest would start at \
                   a different token depending on which member dispatched; fix the argparse so both \
                   peel to the same tail.",
-        message: Some("sm {detail}"),
+        message: Some("sm {{detail}}"),
         help: None,
     },
     // ── `dorc why --last` durable reader (`27V` Lane B) — the phase's FIRST `[unwritten:]` entries;
@@ -864,7 +864,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "this whylog was written in format `dorc-whylog/2`, which this dorc \
                   (understands `dorc-whylog/1`) cannot replay — re-run `dorc why` live instead",
         message: Some(
-            "the saved why-log uses format `{found}`, which this version of dorc cannot \
+            "the saved why-log uses format `{{found}}`, which this version of dorc cannot \
                   read back",
         ),
         help: Some(
@@ -889,7 +889,7 @@ pub const CATALOG: &[CatalogEntry] = &[
                   `book.sh`), so its recorded decisions cannot be faithfully replayed — re-run \
                   `dorc why` live",
         message: Some(
-            "the saved why-log no longer matches what is on disk: `{which}` has changed \
+            "the saved why-log no longer matches what is on disk: `{{which}}` has changed \
                   since it was written",
         ),
         help: Some(
@@ -910,7 +910,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["dir"],
         example: "no whylog to replay in `./.dorc/whylog` — run a plan or apply first (its run \
                   writes the durable that `dorc why --last` reads back)",
-        message: Some("no saved why-log to read back in `{dir}`"),
+        message: Some("no saved why-log to read back in `{{dir}}`"),
         help: Some(
             "a why-log is saved when a plan or apply runs with `--whylog-dir`; run one \
                     first, or point `--whylog-dir` at the right directory",
@@ -929,7 +929,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "the whylog durable is damaged (no end-sentinel — a partial write?) and cannot be \
                   replayed — re-run `dorc why` live",
-        message: Some("the saved why-log is damaged and cannot be read back ({detail})"),
+        message: Some("the saved why-log is damaged and cannot be read back ({{detail}})"),
         help: Some(
             "this usually means an interrupted write; re-run `dorc why` live, and the \
                     next plan or apply will save a fresh why-log",
@@ -949,7 +949,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh` — load it \
                   with `--oracle` (or `--oracle-dir`) to model its tool; dorc never auto-loads siblings",
-        message: Some("sibling oracle files exist on disk but were not loaded: {detail}"),
+        message: Some("sibling oracle files exist on disk but were not loaded: {{detail}}"),
         help: Some(
             "load them with `--oracle <file>` (or point `--oracle-dir` at their directory); \
              dorc never loads an oracle you did not name",
@@ -1047,30 +1047,37 @@ impl CatalogLookup for Vec<OwnedEntry> {
     }
 }
 
-/// Fill a message template's `{name}` holes from `params` (name → value), leaving `{{`/`}}` as the
-/// literal `{`/`}`. The named-params-only render primitive (`27V` §3 · `AID-NEEDS:law-trust-tier`):
-/// prose never hand-writes values; the engine substitutes them here. An unknown `{name}` (not in
-/// `params`) renders as the literal `{name}` — the gate `template_holes_are_declared_params` makes
-/// that unreachable for committed entries, so this is only a defensive fallback (`inv-no-throw`:
-/// returns data, never panics). Pure.
-#[must_use]
-pub fn fill_template(template: &str, params: &[(&str, &str)]) -> String {
+/// Why a catalog template cannot be rendered.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum TemplateRefusal {
+    /// The template contains malformed double braces.
+    Malformed,
+    /// The template names a parameter the payload does not provide.
+    UnknownParam(String),
+}
+
+/// Fill a message template's `{{name}}` holes from `params` (name → value). The named-params-only
+/// render primitive (`27V` §3 · `AID-NEEDS:law-trust-tier`): prose never hand-writes values; the
+/// engine substitutes them here. Single braces are literal; malformed holes and missing params
+/// refuse. Pure.
+///
+/// # Errors
+/// Returns [`TemplateRefusal`] for invalid template syntax or an unknown parameter.
+pub fn fill_template(template: &str, params: &[(&str, &str)]) -> Result<String, TemplateRefusal> {
     let mut out = String::with_capacity(template.len());
-    for part in scan_template(template) {
+    for part in scan_template(template)? {
         match part {
             TemplatePart::Literal(text) => out.push_str(&text),
             TemplatePart::Hole(name) => {
                 if let Some((_, v)) = params.iter().find(|(k, _)| *k == name) {
                     out.push_str(v);
                 } else {
-                    out.push('{');
-                    out.push_str(&name);
-                    out.push('}');
+                    return Err(TemplateRefusal::UnknownParam(name));
                 }
             }
         }
     }
-    out
+    Ok(out)
 }
 
 /// The span-emitting twin of [`fill_template`] (`282` §4): fill `template` into `out`, and for every
@@ -1079,10 +1086,12 @@ pub fn fill_template(template: &str, params: &[(&str, &str)]) -> String {
 /// [`ParamValue`](crate::tagged::Region::ParamValue), or a `detail`-style passthrough hole
 /// ([`is_foreign_param`]) as [`ForeignText`](crate::tagged::Region::ForeignText). Ranges index into
 /// `out`, so a caller composing several fills (message, `= help:` connective, help) accumulates ONE
-/// gap-free cover. Byte-identical to [`fill_template`] (gate-pinned); an unknown `{name}` folds into
-/// the literal run (defensive — the `holes ⊆ params` gate makes it unreachable for committed
-/// entries). Every catalog template is single-line today, so each field is one paragraph (index 0);
-/// the multi-paragraph split is the `282` §3 seam, deliberately not built. Pure; `inv-no-throw`.
+/// gap-free cover. Byte-identical to [`fill_template`] (gate-pinned). Every catalog template is
+/// single-line today, so each field is one paragraph (index 0); the multi-paragraph split is the
+/// `282` §3 seam, deliberately not built. Pure.
+///
+/// # Errors
+/// Returns [`TemplateRefusal`] for invalid template syntax or an unknown parameter.
 pub fn fill_template_tagged(
     out: &mut String,
     spans: &mut Vec<crate::tagged::Span>,
@@ -1091,7 +1100,7 @@ pub fn fill_template_tagged(
     code: &'static str,
     field: crate::tagged::Field,
     instance: usize,
-) {
+) -> Result<(), TemplateRefusal> {
     use crate::tagged::{Region, Span};
     let literal = |range: std::ops::Range<usize>| Span {
         range,
@@ -1103,7 +1112,7 @@ pub fn fill_template_tagged(
         },
     };
     let mut lit_start = out.len();
-    for part in scan_template(template) {
+    for part in scan_template(template)? {
         match part {
             TemplatePart::Literal(text) => out.push_str(&text),
             TemplatePart::Hole(name) => {
@@ -1131,9 +1140,7 @@ pub fn fill_template_tagged(
                     }
                     lit_start = out.len();
                 } else {
-                    out.push('{');
-                    out.push_str(&name);
-                    out.push('}');
+                    return Err(TemplateRefusal::UnknownParam(name));
                 }
             }
         }
@@ -1141,6 +1148,7 @@ pub fn fill_template_tagged(
     if out.len() > lit_start {
         spans.push(literal(lit_start..out.len()));
     }
+    Ok(())
 }
 
 /// Whether a declared param carries passthrough foreign text (`282:rul-passthrough-type-gated`) —
@@ -1158,7 +1166,7 @@ enum TemplatePart {
     Hole(String),
 }
 
-fn scan_template(template: &str) -> Vec<TemplatePart> {
+fn scan_template(template: &str) -> Result<Vec<TemplatePart>, TemplateRefusal> {
     let mut parts = Vec::new();
     let mut literal = String::new();
     let mut chars = template.chars().peekable();
@@ -1166,47 +1174,49 @@ fn scan_template(template: &str) -> Vec<TemplatePart> {
         match c {
             '{' if chars.peek() == Some(&'{') => {
                 chars.next();
-                literal.push('{');
-            }
-            '}' if chars.peek() == Some(&'}') => {
-                chars.next();
-                literal.push('}');
-            }
-            '{' => {
                 if !literal.is_empty() {
                     parts.push(TemplatePart::Literal(std::mem::take(&mut literal)));
                 }
-                let mut name = String::new();
-                for nc in chars.by_ref() {
-                    if nc == '}' {
-                        break;
+                let Some(first) = chars.next() else {
+                    return Err(TemplateRefusal::Malformed);
+                };
+                if !first.is_ascii_alphabetic() && first != '_' {
+                    return Err(TemplateRefusal::Malformed);
+                }
+                let mut name = String::from(first);
+                loop {
+                    match chars.next() {
+                        Some('}') if chars.next() == Some('}') => break,
+                        Some(next) if next.is_ascii_alphanumeric() || next == '_' => {
+                            name.push(next);
+                        }
+                        _ => return Err(TemplateRefusal::Malformed),
                     }
-                    name.push(nc);
                 }
                 parts.push(TemplatePart::Hole(name));
             }
+            '}' if chars.peek() == Some(&'}') => return Err(TemplateRefusal::Malformed),
             _ => literal.push(c),
         }
     }
     if !literal.is_empty() {
         parts.push(TemplatePart::Literal(literal));
     }
-    parts
+    Ok(parts)
 }
 
-/// Collect a template's `{name}` holes (skipping `{{`/`}}` escapes) — the gate-test primitive
+/// Collect a template's `{{name}}` holes — the gate-test primitive
 /// (`holes ⊆ declared params`) AND the [`promote_catalog_source`] param-refresh source. Order-
 /// preserving, NOT deduped (a hole used twice appears twice); callers that need a param SET dedup.
 /// Pure.
-#[must_use]
-fn template_holes(template: &str) -> Vec<String> {
-    scan_template(template)
+fn template_holes(template: &str) -> Result<Vec<String>, TemplateRefusal> {
+    Ok(scan_template(template)?
         .into_iter()
         .filter_map(|part| match part {
             TemplatePart::Literal(_) => None,
             TemplatePart::Hole(name) => Some(name),
         })
-        .collect()
+        .collect())
 }
 
 // ===========================================================================
@@ -1220,9 +1230,11 @@ fn template_holes(template: &str) -> Vec<String> {
 fn refreshed_params(message: Option<&str>, help: Option<&str>) -> Vec<String> {
     let mut params: Vec<String> = Vec::new();
     for template in message.into_iter().chain(help) {
-        for hole in template_holes(template) {
-            if !params.contains(&hole) {
-                params.push(hole);
+        if let Ok(holes) = template_holes(template) {
+            for hole in holes {
+                if !params.contains(&hole) {
+                    params.push(hole);
+                }
             }
         }
     }
@@ -1242,7 +1254,7 @@ fn schematic_example(slug: &str, message: Option<&str>, params: &[String]) -> St
         .collect();
     let refs: Vec<(&str, &str)> = placeholders.iter().map(|(k, v)| (*k, v.as_str())).collect();
     match message {
-        Some(template) => fill_template(template, &refs),
+        Some(template) => fill_template(template, &refs).unwrap_or_default(),
         None => format!("[unwritten: {slug}]"),
     }
 }
@@ -1314,28 +1326,34 @@ pub fn serialize(entries: &[OwnedEntry]) -> String {
 mod tests {
     use super::*;
 
-    /// `fill_template` substitutes declared holes and passes brace-escapes / unknown-hole /
-    /// `[unwritten:]` text through faithfully (`inv-no-throw`: never panics).
     #[test]
-    fn fill_template_substitutes_and_escapes() {
+    fn fill_template_substitutes_and_refuses_invalid_holes() {
         assert_eq!(
             fill_template(
-                "sm site runs `{source_excerpt}`",
+                "sm site runs `{{source_excerpt}}`",
                 &[("source_excerpt", "make install")]
             ),
-            "sm site runs `make install`"
+            Ok(String::from("sm site runs `make install`"))
         );
         assert_eq!(
-            fill_template("a {{literal}} brace", &[]),
-            "a {literal} brace"
+            fill_template("a {literal} brace", &[]),
+            Ok(String::from("a {literal} brace"))
         );
-        // An [unwritten:] placeholder has no holes ⇒ renders greppably verbatim.
         assert_eq!(
             fill_template("[unwritten: dq-foo]", &[]),
-            "[unwritten: dq-foo]"
+            Ok(String::from("[unwritten: dq-foo]"))
         );
-        // An unknown hole is left literal (defensive; the gate forbids it for committed entries).
-        assert_eq!(fill_template("hi {absent}", &[]), "hi {absent}");
+        assert_eq!(
+            fill_template("hi {{absent}}", &[]),
+            Err(TemplateRefusal::UnknownParam(String::from("absent"))),
+        );
+        for template in ["{{", "{{name}", "{{ name}}", "{{name!}}", "{{a{{b}}", "}}"] {
+            assert_eq!(
+                fill_template(template, &[]),
+                Err(TemplateRefusal::Malformed),
+                "{template:?}",
+            );
+        }
     }
 
     /// Gate: no two catalog entries share a slug (each code has AT MOST one entry — the
@@ -1354,7 +1372,7 @@ mod tests {
     fn template_holes_are_declared_params() {
         for e in CATALOG {
             for template in e.message.into_iter().chain(e.help) {
-                for hole in template_holes(template) {
+                for hole in template_holes(template).expect("catalog template syntax") {
                     assert!(
                         e.params.contains(&hole.as_str()),
                         "catalog `{}`: template hole `{{{hole}}}` is not a declared param {:?}",
