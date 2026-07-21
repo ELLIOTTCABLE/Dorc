@@ -210,15 +210,34 @@ enforces defining-case ownership and applies edits to the catalog lock.
 - Unchanged variables survive with arbitrary bytes, punctuation, and mixed/glued
   spans. Only a hunk touching a variable or its adjacent fixed text requires an
   explicit consumer marker.
+- An edit is a SEQUENCE of disjoint hunks, not one envelope from first difference
+  to last difference. Multiple text hunks in one editable section remain legal when
+  untouched variables lie between them. Common-prefix/common-suffix may trim equal
+  edges but MUST NOT classify the entire middle as touched; attribution aligns each
+  hunk independently against the stamped fragment series.
+- Variable-boundary contact is inclusive: insertion at a boundary, or a non-empty
+  hunk whose start/end ABUTS a variable after equal-edge trimming, touches that
+  variable. Thus deleting/replacing the backtick immediately before a variable
+  refuses even though the hunk does not overlap the variable's rendered bytes;
+  unchanged adjacent bytes trim away and do not create false contact.
 - Insertions at section boundaries, cross-section variable movement, edits to
   structure/fixed variables, ambiguous re-holing, and contradictory interpretations
   of one template refuse.
 - Refusals are blunt (`282:rul-internal-tool-sharp-edges`): dump the section streams,
-  region table, interpretation, and offending hunk; never fuzzy-match.
+  region table, interpretation, and every offending hunk; never fuzzy-match. A
+  class-only error is insufficient for both standalone errorloom UX and the Dorc
+  compile preview.
 - The hard-tested generic property: any unrelated text edit preserves every untouched
   variable identity, and consumer compile → regenerate → re-render reproduces the
-  accepted edited words modulo whitespace normalization. Property-test mixed/glued
-  spans and every refusal class.
+  accepted edited words modulo whitespace normalization. The seeded generator edits
+  arbitrary subsets of text fragments on BOTH sides of arbitrary mixed/glued variable
+  values; deterministic examples alone do not discharge this property. Property-test
+  every refusal class as well.
+- The nested transport is a replacement seam, not a second permanent API. Once the
+  Dorc adapter emits/consumes it, remove the old template-specific
+  `TaggedRender`/`Region::{TemplateLiteral,ParamValue}` promotion path and its
+  parameter-table re-holer. No compatibility dual-stack: that fossilized methodology
+  would violate `282:rul-errorloom-enables-template-consumers`.
 
 ## §6 — Compile, promote, and git gating
 
@@ -305,12 +324,22 @@ enforces defining-case ownership and applies edits to the catalog lock.
 
 ## §9 — Phases (the implementor's ladder; serial, each gated)
 
-1. **`282:phase-generic-editable-sections`** — errorloom's nested generic region
-   model, identity-preserving untouched-variable transport, consumer compilation
-   seam, and adversarial mixed/glued-span tests.
+1. **`282:phase-generic-editable-sections`** — **IMPLEMENTED BUT NOT ACCEPTED** on
+   `ai/r28-errorloom-polish` at `ea758a62`: the nested types and a minimal opaque
+   consumer seam exist, but the current common-prefix/common-suffix implementation
+   collapses disjoint edits into one coarse hunk. Editing text both before and after
+   an untouched variable therefore refuses incorrectly. Conversely, its non-empty
+   overlap test can ACCEPT deletion/replacement of the immediately-adjacent fixed
+   character. Its refusal also carries only a class, and its seeded property test
+   still exercises the old transport. FIRST next act: replace coarse attribution with
+   disjoint-hunk alignment, make boundary contact inclusive, carry attributed refusal
+   evidence, and add the §5 multi-hunk/boundary properties. Phase 2 is blocked on
+   this gate.
 2. **`282:phase-dorc-template-compiler`** — double-brace grammar; section-local
    movement/removal/duplication; conservative re-holing; committed used inventory;
-   optional easy current-payload unused-variable insertion.
+   optional easy current-payload unused-variable insertion. Route the Dorc adapter
+   through the accepted nested seam, then remove the old template-specific transport;
+   do not maintain both.
 3. **`282:phase-compile-promote-loop`** — interpretation render + bound receipt;
    direct atomic catalog-lock/case generation; legacy promote paths absent.
 4. **`282:phase-command-embed-dogfood`** — perform the motivating command-variable
@@ -340,11 +369,12 @@ checkpoint before execution.
 ## §11 — Confidence
 
 +SURE: the as-built inventory; single-seat render fill; human-typed product boundary,
-double-brace, untouched-variable, compile-before-promote, and generated-lock rulings.
-~SUSPECT: the generic nested transport remains small; current-payload unused-variable
-insertion is nearly free; a content-bound receipt is sufficient to prevent unseen
-promotion. -GUESS: phase sizing; the generic/Dorc split may expose one additional
-adapter seam during implementation.
+double-brace, untouched-variable, compile-before-promote, and generated-lock rulings;
+the `ea758a62` coarse-hunk and refusal-evidence gaps (code-reviewed 2026-07-21).
+~SUSPECT: the corrected disjoint-hunk nested transport remains small;
+current-payload unused-variable insertion is nearly free; a content-bound receipt is
+sufficient to prevent unseen promotion. -GUESS: phase sizing; the generic/Dorc split
+may expose one additional adapter seam during implementation.
 
 ## §12 — Follow-up: human-directed flagship-render polish (rider, 2026-07-20)
 
@@ -446,12 +476,15 @@ Spellings below are ruled unless marked latitude.
 - **`282:rul-untouched-variable-preservation`** — unrelated prose edits NEVER require
   retyping variables, regardless of a variable's bytes, length, charset, punctuation,
   or adjacency. An untouched variable is preserved by renderer identity before word
-  tokenization, not rediscovered from its rendered value. This invariant lands in the
-  first pass, including mixed-span/glued words. If an edit touches or overlaps the
-  variable or its immediately-adjacent fixed text (remove a backtick; change
-  `apt-get` into `apt-get yourarg`), the author must write `{{command}} yourarg`.
-  Full spacing/glue support for newly-positioned markers remains the next phase;
-  unsupported adjacency refuses rather than emitting spacing-corrupted output.
+  tokenization, not rediscovered from its rendered value. This includes multiple
+  disjoint edits in the same section with untouched variables between them; a coarse
+  first-to-last changed envelope violates the invariant. If an edit touches or
+  overlaps the variable or its immediately-adjacent fixed text (remove a backtick;
+  change `apt-get` into `apt-get yourarg`), the author must write
+  `{{command}} yourarg`. Full spacing/glue support for newly-positioned markers
+  remains the next phase; unsupported adjacency refuses rather than emitting
+  spacing-corrupted output. Boundary attribution is inclusive after equal-edge
+  trimming: abutting insertion/deletion/replacement counts as touching the variable.
 - **`282:rul-rehole-deliberately-stupid`** — heuristic re-holing is only an aid for a
   rendered value already present in the SAME editable series. It is exact, anchored by
   surviving text, minimum-length/charset-gated, and never fuzzy, substring,
