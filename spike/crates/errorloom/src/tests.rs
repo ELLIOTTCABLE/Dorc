@@ -893,6 +893,47 @@ fn removal_transport_handles_multiple_variables_and_ambiguous_equal_values() {
 }
 
 #[test]
+fn removal_transport_checks_all_sections_before_returning() {
+    let shared_boundary = EditableRender::<String, String>::new(vec![
+        RenderComponent::EditableSection(EditableSection::new(
+            String::from("first"),
+            vec![EditableFragment::Text(String::from("a"))],
+        )),
+        RenderComponent::EditableSection(EditableSection::new(
+            String::from("second"),
+            vec![EditableFragment::Text(String::from("b"))],
+        )),
+    ]);
+    assert_eq!(
+        transport_edit_allow_removal(&shared_boundary, "a!b")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::AmbiguousAttribution,
+    );
+
+    let mut fragments = Vec::new();
+    for id in 0..13 {
+        fragments.push(EditableFragment::Variable {
+            id,
+            rendered: String::from("x"),
+        });
+    }
+    let later_limit = EditableRender::<u32, u32>::new(vec![
+        RenderComponent::EditableSection(EditableSection::new(
+            0u32,
+            vec![EditableFragment::Text(String::from("a"))],
+        )),
+        RenderComponent::EditableSection(EditableSection::new(1u32, fragments)),
+    ]);
+    assert_eq!(
+        transport_edit_allow_removal(&later_limit, "a!xxxxxxxxxxxxx")
+            .unwrap_err()
+            .class(),
+        EditRefusalClass::AlignmentLimitExceeded,
+    );
+}
+
+#[test]
 fn removal_transport_retains_empty_variables_and_bounds_occurrences() {
     let empty = EditableRender::new(vec![RenderComponent::EditableSection(
         EditableSection::new(

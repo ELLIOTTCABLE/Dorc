@@ -271,7 +271,7 @@ pub fn transport_edit_allow_removal<S: Clone, V: Clone>(
         return Ok(EditTransport::Unchanged);
     }
 
-    let mut work = WorkBudget::new();
+    let mut candidates = Vec::new();
     for (component_index, component) in baseline.components.iter().enumerate() {
         let RenderComponent::EditableSection(section) = component else {
             continue;
@@ -287,9 +287,17 @@ pub fn transport_edit_allow_removal<S: Clone, V: Clone>(
         if occurrences > MAX_REMOVABLE_OCCURRENCES {
             return Err(limit_refusal(baseline_scalars, edited_scalars));
         }
-        let candidate_count = 1usize << occurrences;
-        for removals in 0..=occurrences {
-            let mut successes = Vec::new();
+        candidates.push((component_index, occurrences));
+    }
+
+    let mut work = WorkBudget::new();
+    for removals in 0..=MAX_REMOVABLE_OCCURRENCES {
+        let mut successes = Vec::new();
+        for &(component_index, occurrences) in &candidates {
+            if removals > occurrences {
+                continue;
+            }
+            let candidate_count = 1usize << occurrences;
             for mask in 0..candidate_count {
                 if mask.count_ones() as usize != removals {
                     continue;
@@ -318,16 +326,16 @@ pub fn transport_edit_allow_removal<S: Clone, V: Clone>(
                     Err(_) => {}
                 }
             }
-            match successes.len() {
-                0 => {}
-                1 => return Ok(EditTransport::Edited(successes.remove(0))),
-                _ => {
-                    return Err(refuse(
-                        EditRefusalClass::AmbiguousAttribution,
-                        &baseline.text(),
-                        edited,
-                    ));
-                }
+        }
+        match successes.len() {
+            0 => {}
+            1 => return Ok(EditTransport::Edited(successes.remove(0))),
+            _ => {
+                return Err(refuse(
+                    EditRefusalClass::AmbiguousAttribution,
+                    &baseline.text(),
+                    edited,
+                ));
             }
         }
     }
