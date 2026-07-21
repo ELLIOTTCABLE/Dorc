@@ -1,7 +1,5 @@
-//! The Dorc [`errorloom::Consumer`] (`282` §2 · `283:dec-consumer-in-dorc-loom`): the four methods
-//! errorloom drives the bless loop over, implemented against a MUTABLE owned-catalog mirror
-//! ([`dorc_core::catalog::OwnedEntry`]). errorloom owns extraction/orchestration; this consumer owns
-//! the catalog, the tagged-render seat, and how a case's world materializes into a diagnostic.
+//! The Dorc case renderer and compiled-edit applier (`282` §5 · §13), implemented against a mutable
+//! owned-catalog mirror ([`dorc_core::catalog::OwnedEntry`]).
 //!
 //! World-form dispatch (`283:dec-world-two-forms`): a `-- world --`-only case is WORLD-AS-PAYLOAD (a
 //! canonical constructor keyed by slug — the phase-4 floor for the artificial/expensive-world codes);
@@ -18,19 +16,13 @@ use dorc_core::diag::{
     MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_parts,
-    render_cli_tagged, render_cli_with,
+    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
-use errorloom::{
-    Case, CaseRenderer, Consumer, EditableFragment, EditableRender, FieldTemplate, Fragment,
-    ParamName, ParamTables, ParamValues, Region as LoomRegion, RenderComponent, TaggedBaseline,
-    Token, Word, tokenize,
-};
+use errorloom::{Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent};
 
 use crate::{
-    DorcSectionEdit, FieldKey, SectionKey, SectionVariableId, TemplateVariableName,
-    to_editable_render, to_errorloom,
+    DorcSectionEdit, SectionKey, SectionVariableId, TemplateVariableName, to_editable_render,
 };
 
 /// Exact current values by editable section and semantic variable name.
@@ -57,8 +49,7 @@ impl DorcEditableBaseline {
     }
 }
 
-/// The Dorc consumer of the errorloom bless loop. Holds the mutable catalog mirror prose-bless edits
-/// into; renders every case through the one production render seat parameterized by that mirror.
+/// The Dorc case renderer and compiled-edit applier.
 #[derive(Debug)]
 pub struct DorcConsumer {
     mirror: Vec<OwnedEntry>,
@@ -215,51 +206,6 @@ impl CaseRenderer for DorcConsumer {
         let mut regenerated = case.clone();
         regenerated.set_replay_outputs(outputs);
         Ok(regenerated.to_text())
-    }
-}
-
-impl Consumer for DorcConsumer {
-    type Key = FieldKey;
-
-    fn tagged_render(&self, case: &Case) -> Result<TaggedBaseline<FieldKey>, String> {
-        let (diag, src, filename) = Self::world_of(case)?;
-        let interner = Interner::default();
-        let core = render_cli_tagged(&self.mirror, &diag, &src, &filename, &interner);
-        let render = to_errorloom(&core).map_err(|e| e.to_string())?;
-        let params = param_tables(&render);
-        Ok(TaggedBaseline::new(render, params))
-    }
-
-    fn editable_text(&self, case: &Case) -> Result<String, String> {
-        // The human render block — the first replay block whose command is NOT a `--format=` machine
-        // view (`28A` §2n): machine blocks are whole-structural, never prose-edited.
-        Ok(case
-            .replay()
-            .blocks()
-            .iter()
-            .find(|b| !b.command().contains("--format="))
-            .map(|b| b.output().to_owned())
-            .unwrap_or_default())
-    }
-
-    fn apply_field_edits(
-        &mut self,
-        edits: BTreeMap<FieldKey, FieldTemplate>,
-    ) -> Result<(), String> {
-        for (key, template) in edits {
-            let entry = self
-                .mirror
-                .iter_mut()
-                .find(|e| e.slug == key.code)
-                .ok_or_else(|| format!("no catalog entry for `{}`", key.code))?;
-            let flat = flatten_template(&template);
-            match key.field {
-                "message" => entry.message = Some(flat),
-                "help" => entry.help = Some(flat),
-                other => return Err(format!("edit named unknown field `{other}`")),
-            }
-        }
-        Ok(())
     }
 }
 
@@ -496,54 +442,6 @@ fn fire_book_analysis(
     .find(|d| d.code.slug() == slug)
     .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))?;
     Ok((diag, source.to_owned(), filename.to_owned()))
-}
-
-/// Flatten an errorloom [`FieldTemplate`] to the mirror's single-`String` form (`28A` §2c v1 — one
-/// paragraph today): words verbatim, holes as `{{param}}`, paragraphs joined by a blank line.
-fn flatten_template(template: &FieldTemplate) -> String {
-    template
-        .paragraphs()
-        .iter()
-        .map(|p| {
-            p.fragments()
-                .iter()
-                .map(|f| match f {
-                    Fragment::Word(w) => w.as_str().to_owned(),
-                    Fragment::Hole(name) => format!("{{{{{}}}}}", name.as_str()),
-                })
-                .collect::<Vec<_>>()
-                .join(" ")
-        })
-        .collect::<Vec<_>>()
-        .join("\n\n")
-}
-
-/// Build the re-holing param tables errorloom needs from the tagged render's own `ParamValue` spans:
-/// each `(code, field)` key maps its declared params to the word-sequence they rendered as. Foreign
-/// (`ForeignText`) holes are excluded — they are never re-holed prose.
-fn param_tables(render: &errorloom::TaggedRender<FieldKey>) -> ParamTables<FieldKey> {
-    let mut per_key: BTreeMap<FieldKey, ParamValues> = BTreeMap::new();
-    for span in render.spans() {
-        if let LoomRegion::ParamValue { key, param, .. } = &span.region {
-            let value = render.text().get(span.range.clone()).unwrap_or_default();
-            let words: Vec<Word> = tokenize(value)
-                .into_iter()
-                .filter_map(|t| match t {
-                    Token::Word(w) => Some(w),
-                    Token::ParagraphBreak => None,
-                })
-                .collect();
-            per_key
-                .entry(key.clone())
-                .or_default()
-                .insert(ParamName::new(param.as_str()), words);
-        }
-    }
-    let mut tables = ParamTables::new();
-    for (key, values) in per_key {
-        tables.insert(key, values);
-    }
-    tables
 }
 
 fn editable_variables(

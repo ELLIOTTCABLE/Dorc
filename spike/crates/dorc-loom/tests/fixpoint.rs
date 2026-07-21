@@ -1,8 +1,4 @@
-//! The two phase-4 fixpoint gates (`283` §4a · `28A` §2g — BOTH required) plus the promote-v2
-//! orchestrator entry. GIT-FREE CI gates (`283:dec-gates-are-git-free`): the render-level fixpoint
-//! and hygiene run over the committed case corpus in-process; only the interactive BLESS touches git
-//! (`SubprocessGit`, gated). At this checkpoint the corpus is the two phase-4 pilots (`283` §1d);
-//! before step 6 populates it the gates pass vacuously.
+//! The render-level case fixpoint and hygiene gates.
 
 #![expect(
     clippy::expect_used,
@@ -62,41 +58,4 @@ fn corpus_cases_are_hygienic() {
         case.check_hygiene(Some("code"))
             .unwrap_or_else(|e| panic!("case `{}` hygiene: {e}", case_file.path().display()));
     }
-}
-
-/// The promote-v2 ORCHESTRATOR entry (`283:dec-promote-v2-composes-errorloom`; BLESS-law — the builder
-/// BUILDS this, the ORCHESTRATOR runs it with `DORC_CATALOG_PROMOTE=1` from a fresh binary and inspects
-/// the diff). It composes errorloom's interactive bless (`prose_bless` driving the [`DorcConsumer`]
-/// over `SubprocessGit`) with `core::catalog::serialize` of the resulting mirror, written to
-/// `target/` for the splice + `cargo fmt`. A no-op without the env, so the ordinary suite is inert;
-/// `SubprocessGit` rides ONLY this bless, never the git-free CI gates above.
-#[test]
-fn promote_v2_writer_gated() {
-    if std::env::var("DORC_CATALOG_PROMOTE").as_deref() != Ok("1") {
-        return;
-    }
-    let repo = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .expect("crates/dorc-loom -> crates -> spike");
-    let catalog = Path::new("crates/core/src/catalog.rs");
-    let git = errorloom::SubprocessGit::new(repo);
-
-    let mut consumer = DorcConsumer::new();
-    let corpus = load_corpus();
-    let result = errorloom::prose_bless(&mut consumer, &git, &corpus, catalog)
-        .expect("prose-bless over the corpus");
-
-    // Overwrite the corpus with the re-rendered transcripts, then codegen the catalog from the
-    // now-edited mirror — the orchestrator diffs, splices into catalog.rs, and `cargo fmt`s.
-    for (path, text) in result.regenerated() {
-        std::fs::write(corpus_dir().join(path), text).expect("write regenerated case");
-    }
-    let promoted = dorc_core::catalog::serialize(consumer.mirror());
-    let out = repo.join("target/catalog-promoted.rs");
-    std::fs::write(&out, promoted).expect("write promoted catalog");
-    eprintln!(
-        "promote-v2: wrote {} (diff, splice into catalog.rs, cargo fmt)",
-        out.display()
-    );
 }
