@@ -53,6 +53,8 @@ pub enum DorcSectionEditRefusal {
     MarkerOutsideEditableSection,
     /// The generic transport selected a section other than the marker candidate.
     CandidateMismatch,
+    /// The selected field is split around immutable render components.
+    SplitEditableField(SectionKey),
 }
 
 /// Compile one dirty transcript edit through the generic transport.
@@ -94,10 +96,13 @@ pub fn compile_section_edit(
         match transport_edit_allow_removal(&transformed, dirty) {
             Ok(EditTransport::Edited(edit)) if edit.section() == section.id() => {
                 match compile_fragments(edit.fragments(), section_values(baseline, section.id())) {
-                    Ok(compiled) => successful.push(DorcSectionEdit {
-                        section: section.id().clone(),
-                        compiled,
-                    }),
+                    Ok(compiled) => {
+                        refuse_split_field(baseline.render(), section.id())?;
+                        successful.push(DorcSectionEdit {
+                            section: section.id().clone(),
+                            compiled,
+                        });
+                    }
                     Err(refusal) => refusals.push(DorcSectionEditRefusal::Compile(refusal)),
                 }
             }
@@ -139,10 +144,34 @@ fn compile_transport(
     };
     let compiled = compile_fragments(edit.fragments(), section_values(baseline, edit.section()))
         .map_err(DorcSectionEditRefusal::Compile)?;
+    refuse_split_field(baseline.render(), edit.section())?;
     Ok(DorcSectionEdit {
         section: edit.section().clone(),
         compiled,
     })
+}
+
+fn refuse_split_field(
+    render: &EditableRender<SectionKey, SectionVariableId>,
+    selected: &SectionKey,
+) -> Result<(), DorcSectionEditRefusal> {
+    let segments = render
+        .components()
+        .iter()
+        .filter_map(|component| match component {
+            RenderComponent::EditableSection(section) => Some(section.id()),
+            _ => None,
+        })
+        .filter(|section| {
+            section.code == selected.code
+                && section.field == selected.field
+                && section.instance == selected.instance
+        })
+        .count();
+    if segments > 1 {
+        return Err(DorcSectionEditRefusal::SplitEditableField(selected.clone()));
+    }
+    Ok(())
 }
 
 fn marker_candidates<'a>(

@@ -755,7 +755,7 @@ mod tests {
     }
 
     #[test]
-    fn structure_markers_and_shared_boundaries_do_not_license_an_edit() {
+    fn structure_markers_and_split_fields_do_not_license_an_edit() {
         let section = EditableSection::new(
             key(0),
             vec![EditableFragment::Text(String::from(" editable"))],
@@ -788,7 +788,7 @@ mod tests {
         assert!(
             matches!(
                 shared_boundary_result,
-                Err(DorcSectionEditRefusal::AmbiguousCandidate)
+                Err(DorcSectionEditRefusal::SplitEditableField(_))
             ),
             "{shared_boundary_result:?}"
         );
@@ -824,7 +824,11 @@ mod tests {
             )),
             RenderComponent::Structure(String::from("\nhelp: ")),
             RenderComponent::EditableSection(EditableSection::new(
-                key(1),
+                SectionKey {
+                    field: "help",
+                    segment: 1,
+                    ..message.clone()
+                },
                 vec![EditableFragment::Text(String::from("unchanged"))],
             )),
             RenderComponent::FixedVariable {
@@ -932,10 +936,11 @@ mod tests {
 
     #[test]
     fn inspection_renders_interpretation_bindings_and_concrete_view_deterministically() {
+        let message = key(0);
         let baseline = baseline(vec![
             RenderComponent::Structure(String::from("message: ")),
             RenderComponent::EditableSection(EditableSection::new(
-                key(0),
+                message.clone(),
                 vec![
                     EditableFragment::Text(String::from("run ")),
                     variable("path", 0, "/x"),
@@ -945,7 +950,11 @@ mod tests {
             )),
             RenderComponent::Structure(String::from("\nhelp: ")),
             RenderComponent::EditableSection(EditableSection::new(
-                key(1),
+                SectionKey {
+                    field: "help",
+                    segment: 1,
+                    ..message
+                },
                 vec![variable("unused", 0, "hidden")],
             )),
             RenderComponent::FixedVariable {
@@ -1049,5 +1058,83 @@ mod tests {
             Err(DorcApplyRefusal::IllegalField("when_fires"))
         );
         assert_eq!(consumer.mirror(), before);
+    }
+
+    #[test]
+    fn split_editable_fields_refuse_every_segment_without_conflating_other_fields() {
+        let split = SectionKey {
+            code: String::from("code"),
+            field: "message",
+            instance: 0,
+            segment: 0,
+        };
+        let split_tail = SectionKey {
+            segment: 1,
+            ..split.clone()
+        };
+        let split_baseline = baseline(vec![
+            RenderComponent::EditableSection(EditableSection::new(
+                split.clone(),
+                vec![
+                    EditableFragment::Text(String::from("prefix ")),
+                    variable("left", 0, "left"),
+                ],
+            )),
+            RenderComponent::FixedVariable {
+                id: SectionVariableId {
+                    name: TemplateVariableName(String::from("foreign")),
+                    occurrence: 0,
+                },
+                rendered: String::from(" fixed "),
+            },
+            RenderComponent::EditableSection(EditableSection::new(
+                split_tail.clone(),
+                vec![
+                    EditableFragment::Text(String::from("suffix ")),
+                    variable("right", 0, "right"),
+                ],
+            )),
+        ]);
+        assert_eq!(
+            compile_section_edit(&split_baseline, "changed left fixed suffix right"),
+            Err(DorcSectionEditRefusal::SplitEditableField(split.clone()))
+        );
+        assert_eq!(
+            compile_section_edit(&split_baseline, "{{left}} fixed suffix right"),
+            Err(DorcSectionEditRefusal::SplitEditableField(split))
+        );
+        assert_eq!(
+            compile_section_edit(&split_baseline, "prefix left fixed changed right"),
+            Err(DorcSectionEditRefusal::SplitEditableField(split_tail))
+        );
+
+        let first = key(0);
+        let second = SectionKey {
+            field: "help",
+            segment: 1,
+            ..first.clone()
+        };
+        let other_instance = SectionKey {
+            instance: 1,
+            segment: 2,
+            ..first.clone()
+        };
+        let unsplit = baseline(vec![
+            RenderComponent::EditableSection(EditableSection::new(
+                first,
+                vec![EditableFragment::Text(String::from("first"))],
+            )),
+            RenderComponent::Structure(String::from("|")),
+            RenderComponent::EditableSection(EditableSection::new(
+                second,
+                vec![EditableFragment::Text(String::from("help"))],
+            )),
+            RenderComponent::Structure(String::from("|")),
+            RenderComponent::EditableSection(EditableSection::new(
+                other_instance,
+                vec![EditableFragment::Text(String::from("second"))],
+            )),
+        ]);
+        assert!(compile_section_edit(&unsplit, "changed|help|second").is_ok());
     }
 }
