@@ -129,11 +129,11 @@ fn compile_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
-    gate_touched_set(cases)?;
     let inspection = inspect_cases(cases, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
+    gate_touched_set(cases)?;
     let packet = encode_receipt(&inspection).map_err(|error| error.to_string())?;
     receipt_store().publish(&packet)?;
     Ok(ExitCode::SUCCESS)
@@ -144,7 +144,6 @@ fn promote_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
-    gate_touched_set(cases)?;
     let packet = receipt_store()
         .read()
         .map_err(|error| format!("promote receipt: {error}"))?;
@@ -152,6 +151,7 @@ fn promote_cases(
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
+    gate_touched_set(cases)?;
     validate_receipt(&packet, &inspection).map_err(|error| format!("promote refused: {error}"))?;
     writeln!(
         out,
