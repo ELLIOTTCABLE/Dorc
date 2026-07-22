@@ -309,15 +309,15 @@ struct Args {
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
 /// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
-#[expect(
-    clippy::too_many_lines,
-    reason = "one linear arg surface: the help/version pre-scan, the mode + why-address token, then the flag/positional loop with did-you-mean; splitting it would scatter the ONE parse"
-)]
 fn parse_args() -> Result<Invocation, String> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     parse_args_from(raw)
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear arg surface: the help/version pre-scan, the mode + why-address token, then the flag/positional loop with did-you-mean; splitting it would scatter the ONE parse"
+)]
 fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
     // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
     // errors, and they win even alongside a malformed flag (the conventional precedence).
