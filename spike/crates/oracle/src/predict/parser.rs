@@ -13,7 +13,11 @@ use super::ast::{
 };
 use super::lexer::{Tok, Token, lex};
 use super::{VERB_BINDING, lift_failure};
-use dorc_core::{Carrier, Interner, Span, Symbol};
+use dorc_core::diag::{
+    DiagCode, MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer,
+    MarkUnknownVerb,
+};
+use dorc_core::{Carrier, Diag, Interner, Span, Symbol};
 use dorc_syntax::sem;
 
 /// The provider-name suffix marking a command-keyed check (`apt_get__predict`); the
@@ -901,16 +905,22 @@ impl Parser<'_> {
             Some(Sugar::Bang) => MarkKind::Refutes,
             Some(Sugar::Question) => MarkKind::Reads,
             Some(Sugar::Equals) => {
-                return Err(self.fail_here(
+                return Err(self.fail_mark(
+                    intro,
+                    marker_span,
                     "trailing bind marks (`:=` / `bind`) are not accepted in v0.2 production \
-                     (`28A:rul-single-mark-production-subset`); type the value inline `name : KIND = value`",
+                      (`28A:rul-single-mark-production-subset`); type the value inline `name : KIND = value`",
                 ));
             }
             None => {
                 let head = match self.peek() {
                     Some(Tok::Word { lexeme, .. }) => lexeme.clone(),
                     _ => {
-                        return Err(self.fail_here("dialect mark requires a verb or coordinate"));
+                        return Err(self.fail_mark(
+                            intro,
+                            marker_span,
+                            "dialect mark requires a verb or coordinate",
+                        ));
                     }
                 };
                 if head.contains('.') {
@@ -918,30 +928,49 @@ impl Parser<'_> {
                 } else {
                     self.bump(); // rule 3: consume the verb word
                     if head == "bind" {
-                        return Err(self.fail_here(
+                        return Err(self.fail_mark(
+                            intro,
+                            marker_span,
                             "trailing bind marks (`bind`) are not accepted in v0.2 production \
-                             (`28A:rul-single-mark-production-subset`)",
+                              (`28A:rul-single-mark-production-subset`)",
                         ));
                     }
                     match mark_verb(&head) {
                         Some(k) => k,
                         None => {
-                            return Err(self.fail_here(&format!(
-                                "unknown mark verb `{head}` (expected one of: {})",
-                                expected_verbs()
-                            )));
+                            if intro.carrier == MarkCarrier::Hash {
+                                return Err(self.fail_mark(
+                                    intro,
+                                    marker_span,
+                                    "malformed hash-colon mark",
+                                ));
+                            }
+                            self.out.push(Diag::new(
+                                DiagCode::MarkUnknownVerb(MarkUnknownVerb {
+                                    token: head,
+                                    expected: expected_verbs().to_owned(),
+                                }),
+                                self.peek_span().unwrap_or(marker_span),
+                            ));
+                            return Err(true);
                         }
                     }
                 }
             }
         };
         let Some((lexeme, _quoting, target_span)) = self.take_word() else {
-            return Err(self.fail_here("dialect mark requires a payload after the verb"));
+            return Err(self.fail_mark(
+                intro,
+                marker_span,
+                "dialect mark requires a payload after the verb",
+            ));
         };
         let Some(parsed) = split_mark_target(&lexeme, '@') else {
-            return Err(
-                self.fail_here("malformed dialect mark target (expected `kind:entity@selector`)")
-            );
+            return Err(self.fail_mark(
+                intro,
+                marker_span,
+                "malformed dialect mark target (expected `kind:entity@selector`)",
+            ));
         };
         // rider-selector-charset-unenforced (`277` §4b / `281` §6): a selector is a POSIX name in
         // spirit (or a brace-alternation `{a,b}`, expanded consumer-side). A violating selector is
@@ -949,7 +978,9 @@ impl Parser<'_> {
         if let Some(prop) = &parsed.prop
             && !is_valid_selector(prop)
         {
-            return Err(self.fail_here(
+            return Err(self.fail_mark(
+                intro,
+                marker_span,
                 "selector must be a POSIX name (letter/underscore, then letters/digits/underscores) \
                  or a brace-alternation `{a,b}`",
             ));
@@ -963,6 +994,20 @@ impl Parser<'_> {
             },
             span: marker_span.to(target_span),
         })
+    }
+
+    /// A malformed `#:` carrier remains a comment and reports its dedicated warning; ordinary
+    /// colon carriers retain the parser's existing out-of-dialect refusal.
+    fn fail_mark(&mut self, intro: MarkIntro, marker_span: Span, message: &str) -> bool {
+        if intro.carrier == MarkCarrier::Hash {
+            self.out.push(Diag::new(
+                DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
+                marker_span,
+            ));
+            true
+        } else {
+            self.fail_here(message)
+        }
     }
 
     // --- words & tests ------------------------------------------------------
@@ -1396,6 +1441,106 @@ fn mark_verb(word: &str) -> Option<MarkKind> {
 fn expected_verbs() -> &'static str {
     "asserts, refutes, reads, bind, safe-across, disturbs, lends, stored-in, \
      undivided-by-transit-across"
+}
+
+/// Validate the production parser's one-mark lexical subset across every physical line. This is
+/// deliberately not the reference block parser: it recognizes only one carrier per line and emits
+/// diagnostics without constructing multi-mark AST state.
+#[must_use]
+pub(crate) fn lint_mark_subset(src: &str) -> Vec<Diag> {
+    let mut diags = Vec::new();
+    let mut prior_trailing_rc = false;
+    for line in lex(src).split(|token| matches!(token.kind, Tok::Newline)) {
+        let words: Vec<_> = line
+            .iter()
+            .filter_map(|token| match &token.kind {
+                Tok::Word { lexeme, .. } => Some((lexeme.as_str(), token.span)),
+                _ => None,
+            })
+            .collect();
+        let Some((intro_index, intro)) = words
+            .iter()
+            .enumerate()
+            .find_map(|(index, (word, _))| mark_marker(word).map(|intro| (index, intro)))
+        else {
+            prior_trailing_rc = false;
+            continue;
+        };
+        if is_inline_bind(&words, intro_index, intro) {
+            prior_trailing_rc = false;
+            continue;
+        }
+        let intro_span = words[intro_index].1;
+        let payload = &words[intro_index.saturating_add(1)..];
+        let Some((kind, payload_span)) = decode_subset_head(intro, payload, &mut diags, intro_span)
+        else {
+            prior_trailing_rc = false;
+            continue;
+        };
+        let rc_consumer = matches!(kind, MarkKind::Asserts | MarkKind::Refutes);
+        let standalone_consumer = rc_consumer || kind == MarkKind::Reads;
+        if intro_index == 0 && standalone_consumer {
+            let code = if prior_trailing_rc && rc_consumer {
+                DiagCode::MarkRcArityExceeded(MarkRcArityExceeded)
+            } else {
+                DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer)
+            };
+            diags.push(Diag::new(code, payload_span));
+        }
+        prior_trailing_rc = intro_index != 0 && rc_consumer;
+    }
+    diags
+}
+
+fn is_inline_bind(words: &[(&str, Span)], intro_index: usize, intro: MarkIntro) -> bool {
+    intro_index == 1
+        && intro.carrier == MarkCarrier::Colon
+        && intro.sugar.is_none()
+        && words.first().is_some_and(|(word, _)| sem::is_name(word))
+        && words.get(3).is_some_and(|(word, _)| *word == "=")
+        && words.get(4).is_some_and(|(word, _)| !word.is_empty())
+}
+
+fn decode_subset_head(
+    intro: MarkIntro,
+    payload: &[(&str, Span)],
+    diags: &mut Vec<Diag>,
+    intro_span: Span,
+) -> Option<(MarkKind, Span)> {
+    let (kind, payload_index) = match intro.sugar {
+        Some(Sugar::Bang) => (MarkKind::Refutes, 0),
+        Some(Sugar::Question) => (MarkKind::Reads, 0),
+        Some(Sugar::Equals) => return None,
+        None => {
+            let (head, span) = *payload.first()?;
+            if head.contains('.') {
+                (MarkKind::Asserts, 0)
+            } else {
+                let Some(kind) = mark_verb(head) else {
+                    let code = if intro.carrier == MarkCarrier::Hash {
+                        DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed)
+                    } else {
+                        DiagCode::MarkUnknownVerb(MarkUnknownVerb {
+                            token: head.to_owned(),
+                            expected: expected_verbs().to_owned(),
+                        })
+                    };
+                    diags.push(Diag::new(
+                        code,
+                        if intro.carrier == MarkCarrier::Hash {
+                            intro_span
+                        } else {
+                            span
+                        },
+                    ));
+                    return None;
+                };
+                (kind, 1)
+            }
+        }
+    };
+    let (_, span) = *payload.get(payload_index)?;
+    Some((kind, span))
 }
 
 /// A syntactically-split mark target — every fragment OPAQUE (`inv-referent-agnostic`,

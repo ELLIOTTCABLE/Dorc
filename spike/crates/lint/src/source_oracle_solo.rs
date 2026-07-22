@@ -53,14 +53,6 @@ impl LintSource for OracleValidate {
             }
         }
         for oracle in ctx.oracles {
-            for diag in dorc_oracle::predict::lint_mark_blocks(&oracle.src) {
-                out.push(diag_to_finding(
-                    &oracle.path,
-                    &oracle.src,
-                    &diag,
-                    self.name(),
-                ));
-            }
             let verdicts = VerdictSet::lift(&mut interner, &oracle.src).value;
             for provider in verdicts.providers() {
                 if let Some(verdict) = verdicts.get(provider) {

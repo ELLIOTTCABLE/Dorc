@@ -10,15 +10,10 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[mark-unknown-verb]: [unwritten: mark-unknown-verb]
-   --> oracle.sh:2:44
-   |
- 2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
-   |                                            ^
   error[marker-version-unrecognized]: [unwritten: marker-version-unrecognized]
    --> oracle.sh:2:22
    |
  2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
    |                      \__________________________/
 
-dorc lint: 2 error(s), 0 warning(s), 0 info(s) across 1 file(s).
+dorc lint: 1 error(s), 0 warning(s), 0 info(s) across 1 file(s).

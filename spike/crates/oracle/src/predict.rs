@@ -40,6 +40,7 @@ mod eval;
 mod lexer;
 mod parser;
 
+#[cfg(test)]
 mod mark_grammar;
 
 pub use ast::{Mark, MarkKind, MarkTarget, Predict, PredictSet, Stmt};
@@ -47,7 +48,6 @@ pub use derive::{DerivedEffect, ValueClaim, derive_predict};
 pub use eval::{
     Resolution, Resolved, ResolvedEntity, StageStdout, TopReason, evaluate, predict_stage_stdout,
 };
-pub use mark_grammar::lint_mark_blocks;
 pub use parser::lift_predicts;
 
 // The touches-footprint lift (`crate::touches`, 24A §1b) reuses the predict dialect: the
@@ -58,7 +58,7 @@ pub(crate) use ast::{CaseArm, Command, Pattern, Test, Word};
 pub(crate) use eval::{eval_test, pattern_matches, resolve_word};
 pub(crate) use parser::{
     brace_tokens, lift_enters, lift_lend_maps, lift_reaches, lift_resolvers,
-    lift_state_stored_only_in, lift_touches, lift_verdicts_converged,
+    lift_state_stored_only_in, lift_touches, lift_verdicts_converged, lint_mark_subset,
 };
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
