@@ -27,6 +27,8 @@ pub use receipt::{
 };
 mod receipt_store;
 pub use receipt_store::{FsReceiptStore, ReceiptStore};
+mod repository;
+pub use repository::{GitRepository, ProseClassification, Repository, classify_prose_changes};
 
 /// A semantic template variable name.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

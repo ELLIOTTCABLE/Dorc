@@ -13,6 +13,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
+use std::ops::Range;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -41,6 +42,31 @@ pub struct Case {
     preamble: String,
     sections: Vec<Section>,
     replay: ReplaySection,
+}
+
+/// Byte layout of the mutable replay-output islands in one parsed case.
+///
+/// The container owns these spans only; consumers decide whether an output is
+/// editable. Every byte outside them remains structural transcript text.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct CaseLayout {
+    replay_outputs: Vec<Range<usize>>,
+}
+
+impl CaseLayout {
+    /// Replay output byte spans in source order.
+    #[must_use]
+    pub fn replay_outputs(&self) -> &[Range<usize>] {
+        &self.replay_outputs
+    }
+
+    /// Compare all container bytes other than replay outputs exactly.
+    #[must_use]
+    pub fn same_non_replay_output_bytes(&self, text: &str, other: &Self, other_text: &str) -> bool {
+        self.replay_outputs.len() == other.replay_outputs.len()
+            && non_output_chunks(text, &self.replay_outputs)
+                .eq(non_output_chunks(other_text, &other.replay_outputs))
+    }
 }
 
 /// The opaque flat frontmatter map: `key: value` scalars and `key:` + `- item`
@@ -367,6 +393,51 @@ impl Case {
         })
     }
 
+    /// Parse the generic container and identify only its replay-output spans.
+    ///
+    /// This intentionally exposes raw container layout without assigning any
+    /// consumer-specific meaning to the output bytes.
+    pub fn raw_layout(text: &str) -> Result<CaseLayout, CaseError> {
+        let case = Self::parse(text)?;
+        let replay_header = format!("-- {REPLAY_SECTION} --\n");
+        let replay_start = text
+            .rfind(&replay_header)
+            .map(|offset| offset.saturating_add(replay_header.len()))
+            .ok_or(CaseError::NoReplaySection)?;
+        let replay = text.get(replay_start..).ok_or(CaseError::NoReplaySection)?;
+        let mut commands = Vec::new();
+        let mut offset = replay_start;
+        for line in replay.split_inclusive('\n') {
+            if line.strip_suffix('\n').unwrap_or(line).starts_with("$ ") {
+                commands.push(offset);
+            }
+            offset = offset.saturating_add(line.len());
+        }
+        if commands.len() != case.replay.blocks.len() {
+            return Err(CaseError::ReplayPreamble);
+        }
+        let mut replay_outputs = Vec::new();
+        for (index, command_start) in commands.iter().copied().enumerate() {
+            let command_end = text
+                .get(command_start..)
+                .and_then(|rest| {
+                    rest.find('\n')
+                        .map(|end| command_start.saturating_add(end + 1))
+                })
+                .ok_or(CaseError::EmptyReplay)?;
+            let raw_end = commands
+                .get(index.saturating_add(1))
+                .copied()
+                .unwrap_or(text.len());
+            let raw = text
+                .get(command_end..raw_end)
+                .ok_or(CaseError::EmptyReplay)?;
+            let end = command_end.saturating_add(strip_trailing_separator(raw).len());
+            replay_outputs.push(command_end..end);
+        }
+        Ok(CaseLayout { replay_outputs })
+    }
+
     /// The opaque frontmatter map.
     #[must_use]
     pub fn frontmatter(&self) -> &Frontmatter {
@@ -481,6 +552,26 @@ impl Case {
         }
         Ok(())
     }
+}
+
+fn non_output_chunks<'a>(
+    text: &'a str,
+    spans: &'a [Range<usize>],
+) -> impl Iterator<Item = &'a str> {
+    let mut chunks = Vec::with_capacity(spans.len().saturating_add(1));
+    let mut start = 0;
+    for span in spans {
+        let Some(chunk) = text.get(start..span.start) else {
+            return Vec::new().into_iter();
+        };
+        chunks.push(chunk);
+        start = span.end;
+    }
+    match text.get(start..) {
+        Some(chunk) => chunks.push(chunk),
+        None => return Vec::new().into_iter(),
+    }
+    chunks.into_iter()
 }
 
 /// Insert an LF before an about-to-be-written marker/command when the text does

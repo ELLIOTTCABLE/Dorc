@@ -151,6 +151,31 @@ fn set_replay_outputs_rewrites_only_output() {
 }
 
 #[test]
+fn raw_layout_excludes_only_replay_outputs() {
+    let head = "---\ncode: one\n---\npreamble\n-- book.sh --\nbook\n\n-- replay --\n$ tool one\nold\n\n$ tool two\nold two\n";
+    let prose = head.replace(
+        "old\n\n$ tool two\nold two",
+        "new words\n\n$ tool two\nnewer words",
+    );
+    let frontmatter = prose.replace("code: one", "code: two");
+    let command = prose.replace("$ tool two", "$ tool changed");
+    let whitespace = prose.replace("preamble\n", "preamble \n");
+    let head_layout = Case::raw_layout(head).expect("layout");
+    assert!(head_layout.same_non_replay_output_bytes(
+        head,
+        &Case::raw_layout(&prose).expect("layout"),
+        &prose,
+    ));
+    for changed in [&frontmatter, &command, &whitespace] {
+        assert!(!head_layout.same_non_replay_output_bytes(
+            head,
+            &Case::raw_layout(changed).expect("layout"),
+            changed,
+        ));
+    }
+}
+
+#[test]
 fn parser_limits_admit_the_boundary_and_refuse_the_next_item_before_storage() {
     let section = format!("{}\n", "s".repeat(MAX_SECTION_BYTES.saturating_sub(1)));
     let at_section = format!("---\n---\n-- book --\n{section}-- replay --\n$ go\nok\n");

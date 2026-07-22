@@ -2,12 +2,12 @@
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command as ProcessCommand, ExitCode};
+use std::process::ExitCode;
 
 use dorc_loom::{
-    DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, InspectedCompilation, InspectedReplay,
-    ReceiptStore, compile_preview, encode_receipt, render_compile_preview, replay_case_with_inputs,
-    validate_receipt,
+    DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
+    InspectedReplay, ReceiptStore, Repository, classify_prose_changes, compile_preview,
+    encode_receipt, render_compile_preview, replay_case_with_inputs, validate_receipt,
 };
 use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
@@ -130,8 +130,8 @@ fn compile_cases(
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
-    let touched = gate_touched_set(cases)?;
-    let inspection = inspect_cases(cases, &touched, env, out)?;
+    let (repository, paths, touched) = gate_touched_set(cases)?;
+    let inspection = inspect_cases(&repository, &paths, &touched, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
@@ -149,8 +149,8 @@ fn promote_cases(
         .read()
         .map_err(|error| format!("promote receipt: {error}"))?;
     validate_case_inputs(cases)?;
-    let touched = gate_touched_set(cases)?;
-    let inspection = inspect_cases(cases, &touched, env, out)?;
+    let (repository, paths, touched) = gate_touched_set(cases)?;
+    let inspection = inspect_cases(&repository, &paths, &touched, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
@@ -164,29 +164,24 @@ fn promote_cases(
 }
 
 fn inspect_cases(
-    cases: &[PathBuf],
+    repository: &GitRepository,
+    paths: &[(String, PathBuf)],
     touched: &std::collections::BTreeSet<String>,
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<Option<InspectedCompilation>, String> {
     let consumer = DorcConsumer::new();
     let mut refused = false;
-    let mut paths: Vec<_> = cases
-        .iter()
-        .map(|path| Ok((canonical_case_path(path)?, path)))
-        .collect::<Result<_, String>>()?;
-    paths.sort_by(|left, right| left.0.cmp(&right.0));
-    if paths.windows(2).any(|pair| {
-        pair.first()
-            .zip(pair.get(1))
-            .is_some_and(|(left, right)| left.0 == right.0)
-    }) {
-        return Err("duplicate selected case".to_owned());
-    }
     let mut selected = Vec::new();
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in paths {
+        let relative_path = relative_path.clone();
         let (case, source) = load_with_text(path)?;
+        let head = repository.head_bytes(&relative_path)?;
+        let head = std::str::from_utf8(&head)
+            .map_err(|_| format!("HEAD case is not UTF-8: {relative_path}"))?;
+        let head_case = Case::parse(head)
+            .map_err(|error| format!("parse HEAD case {relative_path}: {error}"))?;
         selected.push(relative_path.clone());
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
         let mut previews = Vec::new();
@@ -199,18 +194,34 @@ fn inspect_cases(
             })
             .map_err(|error| format!("{}: {error}", path.display()))?;
         let mut inspected_replays = Vec::new();
-        for (index, (block, routed)) in case.replay().blocks().iter().zip(results).enumerate() {
+        for (index, ((block, head_block), routed)) in case
+            .replay()
+            .blocks()
+            .iter()
+            .zip(head_case.replay().blocks())
+            .zip(results)
+            .enumerate()
+        {
+            let changed_from_head = block.output() != head_block.output();
             let dirty = unreflow(block.output());
             if let Some(render) = routed.editable_render().cloned() {
                 let baseline = consumer
                     .baseline_from_render(&case, render)
                     .map_err(|error| format!("{}: {error}", path.display()))?;
-                match compile_preview(&baseline, &dirty) {
-                    Ok(preview) => previews.push((index, preview)),
-                    Err(DorcSectionEditRefusal::Unchanged) => {}
-                    Err(error) => case_refusal = Some((index, error, dirty)),
+                if changed_from_head {
+                    match compile_preview(&baseline, &dirty) {
+                        Ok(preview) => previews.push((index, preview)),
+                        Err(error) => case_refusal = Some((index, error, dirty)),
+                    }
                 }
             } else {
+                if block.output() != routed.output() || head_block.output() != routed.output() {
+                    case_refusal = Some((
+                        index,
+                        DorcSectionEditRefusal::Unchanged,
+                        "bytes-only replay changed".to_owned(),
+                    ));
+                }
                 writeln!(out, "replay: {index} bytes-only").map_err(|error| error.to_string())?;
             }
             inspected_replays.push((index, block.command().to_owned(), routed));
@@ -273,147 +284,32 @@ fn catalog_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog.rs")
 }
 
-fn canonical_case_path(path: &Path) -> Result<String, String> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
-    let absolute =
-        std::fs::canonicalize(path).map_err(|error| format!("canonicalize case: {error}"))?;
-    let root =
-        std::fs::canonicalize(root).map_err(|error| format!("canonicalize repository: {error}"))?;
-    let relative = absolute
-        .strip_prefix(root)
-        .map_err(|_| "case is outside spike worktree".to_owned())?;
-    let path = relative.to_string_lossy().replace('\\', "/");
-    if path.is_empty() || path.contains("../") {
-        return Err("unsafe case path".to_owned());
-    }
-    Ok(path)
-}
-
-/// The receipt may bind only transcript-prose edits. Git is deliberately queried
-/// at this CLI edge; the classification itself is a closed, deterministic policy.
-fn gate_touched_set(cases: &[PathBuf]) -> Result<std::collections::BTreeSet<String>, String> {
-    let root = git_root()?;
-    let selected: std::collections::BTreeSet<_> = cases
+/// The receipt may bind only transcript-prose edits. Repository reads are isolated
+/// in `GitRepository`; this command owns only selection and inspection orchestration.
+fn gate_touched_set(
+    cases: &[PathBuf],
+) -> Result<
+    (
+        GitRepository,
+        Vec<(String, PathBuf)>,
+        std::collections::BTreeSet<String>,
+    ),
+    String,
+> {
+    let repository = GitRepository::open()?;
+    let mut paths: Vec<_> = cases
         .iter()
-        .map(|path| repo_path(&root, path))
+        .map(|path| {
+            repository
+                .repository_path(path)
+                .map(|relative| (relative, path.clone()))
+        })
         .collect::<Result<_, _>>()?;
-    let catalog = repo_path(&root, &catalog_path())?;
-    let mut touched = std::collections::BTreeSet::new();
-    for (index, worktree, path) in git_status(&root)? {
-        if path == catalog {
-            return Err("catalog is not clean against HEAD".to_owned());
-        }
-        if !selected.contains(&path) || index != ' ' || !matches!(worktree, ' ' | 'M') {
-            return Err(format!("dirty path outside selected prose edits: {path}"));
-        }
-        if worktree == 'M' {
-            validate_prose_only(&root, &path)?;
-            touched.insert(path);
-        }
-    }
-    Ok(touched)
-}
-
-fn git_root() -> Result<PathBuf, String> {
-    let output = ProcessCommand::new("git")
-        .args(["rev-parse", "--show-toplevel"])
-        .output()
-        .map_err(|error| format!("locate git repository: {error}"))?;
-    if !output.status.success() {
-        return Err("dorc-loom requires a git repository".to_owned());
-    }
-    let text = String::from_utf8(output.stdout).map_err(|_| "git root is not UTF-8".to_owned())?;
-    Ok(PathBuf::from(text.trim()))
-}
-
-fn repo_path(root: &Path, path: &Path) -> Result<String, String> {
-    let path =
-        std::fs::canonicalize(path).map_err(|error| format!("canonicalize path: {error}"))?;
-    let root =
-        std::fs::canonicalize(root).map_err(|error| format!("canonicalize git root: {error}"))?;
-    let relative = path
-        .strip_prefix(root)
-        .map_err(|_| "path is outside git repository".to_owned())?;
-    Ok(relative.to_string_lossy().replace('\\', "/"))
-}
-
-fn git_status(root: &Path) -> Result<Vec<(char, char, String)>, String> {
-    let output = ProcessCommand::new("git")
-        .args(["status", "--porcelain=v1", "-z"])
-        .current_dir(root)
-        .output()
-        .map_err(|error| format!("read git status: {error}"))?;
-    if !output.status.success() {
-        return Err("read git status failed".to_owned());
-    }
-    let mut entries = Vec::new();
-    for record in output
-        .stdout
-        .split(|byte| *byte == 0)
-        .filter(|record| !record.is_empty())
-    {
-        let Some((&index_byte, rest)) = record.split_first() else {
-            return Err("malformed git porcelain status".to_owned());
-        };
-        let Some((&worktree_byte, rest)) = rest.split_first() else {
-            return Err("malformed git porcelain status".to_owned());
-        };
-        let Some((&separator, path)) = rest.split_first() else {
-            return Err("malformed git porcelain status".to_owned());
-        };
-        if separator != b' ' {
-            return Err("malformed git porcelain status".to_owned());
-        }
-        let index = char::from(index_byte);
-        let worktree = char::from(worktree_byte);
-        let path = std::str::from_utf8(path)
-            .map_err(|_| "git status path is not UTF-8".to_owned())?
-            .to_owned();
-        // Rename/copy records have a second NUL-delimited source path. They are rejected
-        // by their XY class before it can be mistaken for an ordinary prose modification.
-        entries.push((index, worktree, path));
-    }
-    Ok(entries)
-}
-
-fn validate_prose_only(root: &Path, path: &str) -> Result<(), String> {
-    let current = std::fs::read_to_string(root.join(path))
-        .map_err(|error| format!("read selected case: {error}"))?;
-    let output = ProcessCommand::new("git")
-        .args(["show", &format!("HEAD:{path}")])
-        .current_dir(root)
-        .output()
-        .map_err(|error| format!("read HEAD case: {error}"))?;
-    if !output.status.success() {
-        return Err("selected case is not present in HEAD".to_owned());
-    }
-    let head = String::from_utf8(output.stdout).map_err(|_| "HEAD case is not UTF-8".to_owned())?;
-    let current_case =
-        Case::parse(&current).map_err(|error| format!("parse selected case: {error}"))?;
-    let head_case = Case::parse(&head).map_err(|error| format!("parse HEAD case: {error}"))?;
-    if current_case
-        .sections()
-        .iter()
-        .map(|section| (section.name(), section.content()))
-        .ne(head_case
-            .sections()
-            .iter()
-            .map(|section| (section.name(), section.content())))
-        || current_case
-            .replay()
-            .blocks()
-            .iter()
-            .map(errorloom::ReplayBlock::command)
-            .ne(head_case
-                .replay()
-                .blocks()
-                .iter()
-                .map(errorloom::ReplayBlock::command))
-        || current_case.frontmatter().scalar("code") != head_case.frontmatter().scalar("code")
-    {
-        return Err(format!("selected case has non-prose changes: {path}"));
-    }
-    Ok(())
+    paths.sort_by(|left, right| left.0.cmp(&right.0));
+    let selected = paths.iter().map(|(path, _)| path.clone()).collect();
+    let catalog = repository.repository_path(&catalog_path())?;
+    let classification = classify_prose_changes(&repository, selected, &catalog)?;
+    Ok((repository, paths, classification.touched().clone()))
 }
 
 const MAX_REFUSAL_EVIDENCE: usize = 4096;

@@ -51,7 +51,7 @@ pub use crate::bless::{
     structure_bless,
 };
 pub use crate::container::{
-    Case, CaseError, CaseReadError, Frontmatter, FrontmatterValue, MAX_CASE_BYTES,
+    Case, CaseError, CaseLayout, CaseReadError, Frontmatter, FrontmatterValue, MAX_CASE_BYTES,
     MAX_REPLAY_BLOCKS, MAX_REPLAY_COMMAND_BYTES, MAX_REPLAY_OUTPUT_BYTES, MAX_SECTION_BYTES,
     MAX_SECTION_COUNT, REPLAY_SECTION, ReplayBlock, ReplaySection, Section, read_case,
     read_case_text,
