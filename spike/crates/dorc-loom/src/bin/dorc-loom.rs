@@ -8,7 +8,9 @@ use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, compile_preview, render_compile_preview,
     replay_case_with_inputs,
 };
-use errorloom::{Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case};
+use errorloom::{
+    Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
+};
 
 const USAGE: &str =
     "usage: dorc-loom <compile [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...>";
@@ -124,11 +126,11 @@ fn compile_cases(
     let consumer = DorcConsumer::new();
     let mut refused = false;
     for path in cases {
-        let case = load(path)?;
+        let (case, source) = load_with_text(path)?;
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
         let mut previews = Vec::new();
         let mut case_refusal = None;
-        let input = ReplayInput::new(case_name(path)?, case.to_text())
+        let input = ReplayInput::new(case_name(path)?, source)
             .map_err(|error| format!("{}: {error}", path.display()))?;
         let results =
             replay_case_with_inputs(&case, &consumer, env, &[input], |command, context| {
@@ -213,8 +215,14 @@ fn print_variables(
     Ok(ExitCode::SUCCESS)
 }
 
-fn load(path: &PathBuf) -> Result<Case, String> {
+fn load(path: &Path) -> Result<Case, String> {
     read_case(path).map_err(|error| format!("{}: {error}", path.display()))
+}
+
+fn load_with_text(path: &Path) -> Result<(Case, String), String> {
+    let source = read_case_text(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let case = Case::parse(&source).map_err(|error| format!("{}: {error}", path.display()))?;
+    Ok((case, source))
 }
 
 fn case_name(path: &Path) -> Result<String, String> {
