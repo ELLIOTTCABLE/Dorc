@@ -29,11 +29,11 @@ Current position:
 | `282:phase-generic-editable-sections` | COMPLETE | bounded identity-preserving generic edit transport |
 | `282:phase-dorc-template-compiler` | COMPLETE | strict `{{name}}` compiler over the current typed payload; in-memory apply and preview |
 | `282:phase-replay-driver-provenance` | COMPLETE | exact replay-result provenance, explicit bytes-only fallback, bounded controlled execution |
-| `282:phase-compile-promote-loop` | NEXT | receipt, touched-set gate, preflighted generated catalog/case publication |
+| `282:phase-compile-promote-loop` | IN PROGRESS | receipt/touched-set gate complete; generated catalog/case publication next |
 | `282:phase-command-embed-dogfood` | PENDING | add `{{command}}` through the flagship transcript and prove the complete workflow |
 | `282:phase-adjacent-fragment-followup` | DEFERRED | newly-positioned attached/glued markers and broader punctuation support |
 
-Current phase-three Unit 1 closeout: `ai/r28-phase3-unit1-cli` at `3e980b86`.
+Current phase-three Unit 2 closeout: `ai/r28-phase3-unit2-receipt` at `a3dcc3d0`.
 
 Phase-two lineage starts from the phase-one fold at `0c259317`; accepted code closed
 at `01523f2c`; current plan/README/steering synchronization closed at `4b95a9b4`.
@@ -47,6 +47,12 @@ unbounded work. The final repair bound `vars` inventory to its exact materialize
 operand and pinned the generic replay-input boundary.
 Unit 2 starts from this accepted replay-result boundary; it must not rediscover or
 reconstruct provenance while binding the compile receipt.
+Unit 2 is independently accepted. The bounded plain-text receipt stores exact case
+and catalog text plus the complete typed inspection; promote re-runs the inspection
+and requires exact packet equality before minting its private witness. The Git gate
+accepts only exact provenance-attributed transcript prose edits. The receipt store
+publishes valid-or-absent under a fixed worktree-local target; ambiguous retained
+backups refuse rather than being deleted automatically.
 
 
 ## 1. Settled architecture
@@ -299,7 +305,7 @@ Do not finalize receipt or generated-lock formats in this unit.
 
 ### Unit 2 - content-bound receipt and touched-set gate
 
-Status: `[ ] next`
+Status: `[x] complete at a3dcc3d0`
 
 Build:
 
@@ -307,8 +313,8 @@ Build:
 - binding to exact case bytes, catalog input bytes, compiler/consumer semantics,
   touched case set, each exact replay result/provenance, and each interpreted
   section/result;
-- a collision-resistant content identity suitable for real files. Fixed IDs, FNV,
-  width-one spike identities, or path-only keys are not acceptable;
+- exact full-text packet identity suitable for real files. Fixed IDs, FNV, width-one
+  spike identities, path-only keys, and hashes are absent;
 - git/touched-set classification enforcing prose-only compile/promote and rejecting a
   dirty generated catalog or mixed prose/structure changes;
 - promote-side recomputation and exact receipt equality checks;
@@ -322,13 +328,12 @@ Acceptance:
 - compile receipt creation is atomic and worktree-local;
 - no promote path can proceed from an interpretation the editor did not inspect.
 
-The digest/dependency and receipt schema are design-bearing. The builder maps the
-available choices and flags a `tc-*` call before selecting a new dependency or public
-format if the answer is not already mechanically forced.
+Human ruling: the private receipt stays plain text and stores complete exact inputs;
+there is no hash dependency. `identity-mode: exact` is the only reserved future seam.
 
 ### Generated-lock checkpoint
 
-Status: `[ ] conductor review required before Unit 3`
+Status: `[ ] next - conductor review required before Unit 3`
 
 Before implementation, map the exact split between:
 
