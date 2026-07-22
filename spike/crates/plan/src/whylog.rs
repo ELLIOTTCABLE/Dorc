@@ -126,6 +126,87 @@ pub struct WhylogParse {
     pub diagnostics: Vec<Diag>,
 }
 
+/// Current replay inputs supplied by an I/O edge.
+#[derive(Debug, Clone, Copy)]
+pub struct WhylogCurrent<'a> {
+    /// Current book bytes.
+    pub book: Option<&'a str>,
+    /// Current oracle bytes by recorded path.
+    pub oracles: &'a [(&'a str, &'a str)],
+}
+
+/// Inspection outcome for one durable.
+#[derive(Debug)]
+pub struct WhylogInspection {
+    /// Parsed durable when replay remains valid.
+    pub doc: Option<WhylogDoc>,
+    /// Typed refusal diagnostics.
+    pub diagnostics: Vec<Diag>,
+}
+
+/// Inspect one exact durable without filesystem or directory access.
+///
+/// Keeps CLI and transcript replay on one typed-refusal path.
+#[must_use]
+pub fn inspect(
+    raw: Option<&str>,
+    identity: &str,
+    current: Option<WhylogCurrent<'_>>,
+) -> WhylogInspection {
+    let Some(raw) = raw else {
+        return WhylogInspection {
+            doc: None,
+            diagnostics: vec![Diag::new_spanless_site(DiagCode::WhylogAbsent(
+                dorc_core::diag::WhylogAbsent {
+                    dir: identity.to_owned(),
+                },
+            ))],
+        };
+    };
+    let parsed = parse(raw);
+    let Some(doc) = parsed.doc else {
+        return WhylogInspection {
+            doc: None,
+            diagnostics: parsed.diagnostics,
+        };
+    };
+    if let Some(current) = current {
+        let desync = current
+            .book
+            .filter(|book| book_digest(book) != doc.book.1)
+            .map(|_| "book".to_owned())
+            .or_else(|| {
+                doc.oracles.iter().find_map(|(path, digest)| {
+                    current.oracles.iter().find_map(|(current_path, source)| {
+                        (*current_path == path && book_digest(source) != *digest)
+                            .then(|| format!("oracle {path}"))
+                    })
+                })
+            });
+        if let Some(which) = desync {
+            return WhylogInspection {
+                doc: None,
+                diagnostics: vec![Diag::new_spanless_site(DiagCode::WhylogBookDesync(
+                    dorc_core::diag::WhylogBookDesync { which },
+                ))],
+            };
+        }
+    }
+    WhylogInspection {
+        doc: Some(doc),
+        diagnostics: Vec::new(),
+    }
+}
+
+fn book_digest(source: &str) -> String {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in source.bytes() {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x100_0000_01b3);
+    }
+    format!("{hash:016x}")
+}
+
 /// Parse a durable's bytes into a [`WhylogDoc`] (`27V` Lane B). Total (`inv-no-throw`): a
 /// wrong-version durable refuses with [`DiagCode::WhylogVersionRefused`]; a truncated/clobbered one
 /// with [`DiagCode::WhylogCorrupt`]. The records block is read by its byte-count prefix (robust to
@@ -365,5 +446,32 @@ mod tests {
                 .iter()
                 .any(|d| d.code.slug() == "whylog-corrupt")
         );
+    }
+
+    #[test]
+    fn exact_inspection_distinguishes_absence_parse_version_and_desync() {
+        let absent = inspect(None, ".whylog", None);
+        assert_eq!(absent.diagnostics[0].code.slug(), "whylog-absent");
+
+        let corrupt = inspect(Some("dorc-whylog/1\n"), ".whylog", None);
+        assert_eq!(corrupt.diagnostics[0].code.slug(), "whylog-corrupt");
+
+        let version = inspect(
+            Some("dorc-whylog/2 nonce=dorc @@dorc@@\ndorc-whylog-end/1 @@dorc@@\n"),
+            ".whylog",
+            None,
+        );
+        assert_eq!(version.diagnostics[0].code.slug(), "whylog-version-refused");
+
+        let durable = serialize(&doc());
+        let desync = inspect(
+            Some(&durable),
+            ".whylog",
+            Some(WhylogCurrent {
+                book: Some("changed book"),
+                oracles: &[("foobar.oracle.sh", "changed oracle")],
+            }),
+        );
+        assert_eq!(desync.diagnostics[0].code.slug(), "whylog-book-desync");
     }
 }

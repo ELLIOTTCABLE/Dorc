@@ -290,6 +290,7 @@ struct Args {
     /// real-tool default is write-quietly-beside-its-work; this spike opt-in is a disclosed
     /// scope-cut, one line to flip later.
     whylog_dir: Option<String>,
+    whylog: Option<String>,
     /// `--last` (`27V` Lane B): `dorc why --last` replays the most recent durable in `--whylog-dir`
     /// through the SAME kernel instead of the live pipeline (determinism is the replay license).
     last: bool,
@@ -314,6 +315,10 @@ struct Args {
 )]
 fn parse_args() -> Result<Invocation, String> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
+    parse_args_from(raw)
+}
+
+fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
     // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
     // errors, and they win even alongside a malformed flag (the conventional precedence).
     if raw.iter().any(|a| a == "-h" || a == "--help") {
@@ -351,6 +356,7 @@ fn parse_args() -> Result<Invocation, String> {
     let mut dial = dorc_core::EscalationDial::VouchedOnly;
     let mut capability = dorc_core::Capability::Root;
     let mut whylog_dir: Option<String> = None;
+    let mut whylog: Option<String> = None;
     let mut last = false;
     let mut shim_dir: Option<String> = None;
     let mut it = raw.into_iter().peekable();
@@ -436,6 +442,8 @@ fn parse_args() -> Result<Invocation, String> {
             whylog_dir = Some(p.to_string());
         } else if arg == "--whylog-dir" {
             whylog_dir = Some(it.next().ok_or("--whylog-dir needs a directory")?);
+        } else if let Some(path) = arg.strip_prefix("--whylog=") {
+            whylog = Some(path.to_owned());
         } else if arg == "--last" {
             last = true;
         } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
@@ -457,6 +465,7 @@ fn parse_args() -> Result<Invocation, String> {
                 "--escalate-any-probe",
                 "--probe-capability",
                 "--whylog-dir",
+                "--whylog",
                 "--last",
                 "--shim-dir",
                 "--help",
@@ -479,6 +488,12 @@ fn parse_args() -> Result<Invocation, String> {
             "no book given (a positional path or --book=PATH); {USAGE}"
         ));
     }
+    if whylog.is_some() && whylog_dir.is_some() {
+        return Err("--whylog and --whylog-dir are mutually exclusive".to_owned());
+    }
+    if whylog.is_some() && (mode != Mode::Why || !last) {
+        return Err("--whylog is only valid with dorc why --last".to_owned());
+    }
     Ok(Invocation::Analyze(Args {
         mode,
         books,
@@ -491,6 +506,7 @@ fn parse_args() -> Result<Invocation, String> {
         dial,
         capability,
         whylog_dir,
+        whylog,
         last,
         shim_dir,
     }))
@@ -1031,18 +1047,24 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
     emit_unloaded_sibling_oracles(advisory, books, &oracle_paths);
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
-    if let Some(r) = &replay
-        && let Some(which) = whylog_input_desync(r, &book_src, &oracle_paths, &oracle_srcs)
-    {
-        report_at(
-            advisory,
-            "whylog",
-            None,
-            &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
-                dorc_core::diag::WhylogBookDesync { which },
-            ))],
+    if let Some(r) = &replay {
+        let oracle_inputs: Vec<_> = oracle_paths
+            .iter()
+            .zip(&oracle_srcs)
+            .map(|(path, source)| (path.as_str(), source.as_str()))
+            .collect();
+        let inspection = dorc_plan::whylog::inspect(
+            Some(&r.raw),
+            &r.identity,
+            Some(dorc_plan::whylog::WhylogCurrent {
+                book: Some(&book_src),
+                oracles: &oracle_inputs,
+            }),
         );
-        return Ok(RunOutcome::Complete);
+        if !inspection.diagnostics.is_empty() {
+            report_at(advisory, "whylog", None, &inspection.diagnostics);
+            return Ok(RunOutcome::Complete);
+        }
     }
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
@@ -1670,6 +1692,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
 /// from disk (only digests are stored) and verified against the recorded digests before replay.
 struct Replay {
     doc: dorc_plan::whylog::WhylogDoc,
+    raw: String,
+    identity: String,
 }
 
 /// Whylog retention (ruling tc-whylog-retention-params, builder latitude): keep the newest
@@ -1682,28 +1706,33 @@ const WHYLOG_CAP: usize = 1_000_000;
 /// or `None` when a refusal was surfaced (absent / version / corrupt — pull-surface Warnings, the
 /// user asked and must learn WHY the answer is no). Desync is checked later (after the re-read).
 fn load_whylog_replay(args: &Args, advisory: bool) -> Result<Option<Replay>, String> {
-    let dir = args.whylog_dir.as_deref().ok_or(
+    let (identity, raw) = if let Some(path) = &args.whylog {
+        let raw = match std::fs::read_to_string(path) {
+            Ok(raw) => Some(raw),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(humane_read_error("whylog", path, &error)),
+        };
+        (path.as_str(), raw)
+    } else {
+        let dir = args.whylog_dir.as_deref().ok_or(
         "dorc why --last needs --whylog-dir=DIR (the spike opt-in siting; the product writes the \
          durable quietly beside its work — tc-whylog-default-off)",
-    )?;
-    let Some(path) = newest_whylog(dir) else {
-        report_at(
-            advisory,
-            "whylog",
-            None,
-            &[Diag::new_spanless_site(DiagCode::WhylogAbsent(
-                dorc_core::diag::WhylogAbsent {
-                    dir: dir.to_owned(),
-                },
-            ))],
-        );
-        return Ok(None);
+        )?;
+        let raw = newest_whylog(dir)
+            .map(|path| {
+                std::fs::read_to_string(&path)
+                    .map_err(|e| humane_read_error("whylog", &path.to_string_lossy(), &e))
+            })
+            .transpose()?;
+        (dir, raw)
     };
-    let raw = std::fs::read_to_string(&path)
-        .map_err(|e| humane_read_error("whylog", &path.to_string_lossy(), &e))?;
-    let parsed = dorc_plan::whylog::parse(&raw);
-    report_at(advisory, "whylog", None, &parsed.diagnostics);
-    Ok(parsed.doc.map(|doc| Replay { doc }))
+    let inspected = dorc_plan::whylog::inspect(raw.as_deref(), identity, None);
+    report_at(advisory, "whylog", None, &inspected.diagnostics);
+    Ok(inspected.doc.map(|doc| Replay {
+        doc,
+        raw: raw.unwrap_or_default(),
+        identity: identity.to_owned(),
+    }))
 }
 
 /// The `whylog-<NNNN>.txt` durables in `dir`, ascending by run-index (deterministic).
@@ -1765,26 +1794,6 @@ fn write_whylog(dir: &str, doc: &dorc_plan::whylog::WhylogDoc) {
             let _ = std::fs::remove_file(p);
         }
     }
-}
-
-/// The `--last` desync guard (`27V` Lane B; the `22F` book-identity guard): the re-read book/oracle
-/// digests MUST match what the durable recorded, or a deterministic replay would reconstruct a
-/// DIFFERENT run. Returns the diverged input's description (`{which}`), or `None` when all match.
-fn whylog_input_desync(
-    r: &Replay,
-    book_src: &str,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
-) -> Option<String> {
-    if book_digest(book_src) != r.doc.book.1 {
-        return Some("book".to_owned());
-    }
-    for ((path, src), recorded) in oracle_paths.iter().zip(oracle_srcs).zip(&r.doc.oracles) {
-        if book_digest(src) != recorded.1 {
-            return Some(format!("oracle {path}"));
-        }
-    }
-    None
 }
 
 /// Assemble the thin durable from a completed run (`27V` §2). The apply report records the PREDICTED
@@ -6094,34 +6103,81 @@ mod tests {
     }
 
     #[test]
-    fn whylog_input_desync_flags_a_changed_book_or_oracle() {
+    fn whylog_inspection_flags_a_changed_book_or_oracle() {
         let doc = dorc_plan::whylog::WhylogDoc {
             book: ("b.sh".to_owned(), book_digest("orig book bytes")),
             oracles: vec![("o.sh".to_owned(), book_digest("orig oracle"))],
             ..Default::default()
         };
-        let r = Replay { doc };
-        let opaths = ["o.sh".to_owned()];
-        let osrcs = ["orig oracle".to_owned()];
+        let raw = dorc_plan::whylog::serialize(&doc);
+        let inputs = [("o.sh", "orig oracle")];
         assert_eq!(
-            whylog_input_desync(&r, "orig book bytes", &opaths, &osrcs),
-            None,
+            dorc_plan::whylog::inspect(
+                Some(&raw),
+                ".whylog",
+                Some(dorc_plan::whylog::WhylogCurrent {
+                    book: Some("orig book bytes"),
+                    oracles: &inputs
+                }),
+            )
+            .diagnostics
+            .len(),
+            0,
             "unchanged inputs ⇒ no desync ⇒ replay proceeds"
         );
         assert_eq!(
-            whylog_input_desync(&r, "CHANGED book", &opaths, &osrcs),
-            Some("book".to_owned()),
+            dorc_plan::whylog::inspect(
+                Some(&raw),
+                ".whylog",
+                Some(dorc_plan::whylog::WhylogCurrent {
+                    book: Some("CHANGED book"),
+                    oracles: &inputs
+                }),
+            )
+            .diagnostics[0]
+                .code
+                .slug(),
+            "whylog-book-desync",
             "a changed book ⇒ desync (which=book)"
         );
         assert_eq!(
-            whylog_input_desync(
-                &r,
-                "orig book bytes",
-                &opaths,
-                &["CHANGED oracle".to_owned()]
-            ),
-            Some("oracle o.sh".to_owned()),
+            dorc_plan::whylog::inspect(
+                Some(&raw),
+                ".whylog",
+                Some(dorc_plan::whylog::WhylogCurrent {
+                    book: Some("orig book bytes"),
+                    oracles: &[("o.sh", "CHANGED oracle")],
+                }),
+            )
+            .diagnostics[0]
+                .code
+                .slug(),
+            "whylog-book-desync",
             "a changed oracle ⇒ desync (which names the oracle path)"
+        );
+    }
+
+    #[test]
+    fn whylog_exact_file_is_parsed_and_excludes_directory_selection() {
+        let parsed = parse_args_from(vec![
+            "why".to_owned(),
+            "--last".to_owned(),
+            "--whylog=.whylog".to_owned(),
+        ])
+        .expect("exact whylog input parses");
+        let Invocation::Analyze(args) = parsed else {
+            panic!("expected analysis invocation");
+        };
+        assert_eq!(args.whylog.as_deref(), Some(".whylog"));
+        assert!(args.whylog_dir.is_none());
+        assert!(
+            parse_args_from(vec![
+                "why".to_owned(),
+                "--last".to_owned(),
+                "--whylog=.whylog".to_owned(),
+                "--whylog-dir=durables".to_owned(),
+            ])
+            .is_err()
         );
     }
 
