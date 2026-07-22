@@ -4755,12 +4755,7 @@ fn emit_static_decline_notes(
 /// adversary-forged-book in the spike model. The real tool substitutes sha256 here, unchanged
 /// callers. Computed at the I/O edge (`io-at-edges-only`), never in the kernel.
 fn book_digest(book_src: &str) -> String {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325; // FNV-1a offset basis
-    for b in book_src.as_bytes() {
-        h ^= u64::from(*b);
-        h = h.wrapping_mul(0x0000_0100_0000_01b3); // FNV prime
-    }
-    format!("{h:016x}")
+    dorc_plan::invocation::book_digest(book_src)
 }
 
 /// Parse stdin probe-results into the site-keyed [`SiteResults`]

@@ -58,6 +58,9 @@ pub mod records;
 
 pub mod whylog;
 
+/// The pure, adapter-facing plan invocation boundary (`io-at-edges-only`).
+pub mod invocation;
+
 pub mod render;
 
 /// The per-run PATH shim for `dorc-sh` (`274` §5): the pure model — host-independent shipped text
