@@ -35,13 +35,17 @@ fn run() -> Result<ExitCode, String> {
     {
         return run_shell(command);
     }
-    run_directives(&args, Vec::new())
+    run_directives(&args, Vec::new(), false)
 }
 
 fn run_shell(command: &str) -> Result<ExitCode, String> {
+    let command = command.strip_prefix("exec 2>&1\n").unwrap_or(command);
     let mut words = command.split_ascii_whitespace().collect::<Vec<_>>();
     if words.first() != Some(&"loom-mock-tool") {
-        return Err(format!("unsupported shell command {command:?}"));
+        let stdout = io::stdout();
+        writeln!(stdout.lock(), "unsupported shell command {command:?}")
+            .map_err(|e| e.to_string())?;
+        return Ok(ExitCode::from(2));
     }
     words.remove(0);
     let stdin = if let Some(position) = words.iter().position(|word| *word == "<") {
@@ -57,10 +61,15 @@ fn run_shell(command: &str) -> Result<ExitCode, String> {
     run_directives(
         &words.into_iter().map(String::from).collect::<Vec<_>>(),
         stdin,
+        true,
     )
 }
 
-fn run_directives(args: &[String], stdin_bytes: Vec<u8>) -> Result<ExitCode, String> {
+fn run_directives(
+    args: &[String],
+    stdin_bytes: Vec<u8>,
+    stderr_to_stdout: bool,
+) -> Result<ExitCode, String> {
     let needs_stdin = args.iter().any(|a| a == "cat" || a.starts_with("write:"));
     let stdin_bytes = if needs_stdin && stdin_bytes.is_empty() {
         let mut buf = Vec::new();
@@ -82,7 +91,16 @@ fn run_directives(args: &[String], stdin_bytes: Vec<u8>) -> Result<ExitCode, Str
         if let Some(text) = arg.strip_prefix("out:") {
             writeln!(out, "{text}").map_err(|e| e.to_string())?;
         } else if let Some(text) = arg.strip_prefix("err:") {
-            writeln!(err, "{text}").map_err(|e| e.to_string())?;
+            if stderr_to_stdout {
+                writeln!(out, "{text}").map_err(|e| e.to_string())?;
+            } else {
+                writeln!(err, "{text}").map_err(|e| e.to_string())?;
+            }
+        } else if let Some(count) = arg.strip_prefix("repeat:") {
+            let count = count.parse::<usize>().map_err(|e| e.to_string())?;
+            for _ in 0..count {
+                out.write_all(b"x").map_err(|e| e.to_string())?;
+            }
         } else if let Some(name) = arg.strip_prefix("env:") {
             let value = env::var(name).unwrap_or_default();
             writeln!(out, "{value}").map_err(|e| e.to_string())?;

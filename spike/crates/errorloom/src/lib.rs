@@ -51,8 +51,10 @@ pub use crate::bless::{
     structure_bless,
 };
 pub use crate::container::{
-    Case, CaseError, Frontmatter, FrontmatterValue, REPLAY_SECTION, ReplayBlock, ReplaySection,
-    Section,
+    Case, CaseError, CaseReadError, Frontmatter, FrontmatterValue, MAX_CASE_BYTES,
+    MAX_REPLAY_BLOCKS, MAX_REPLAY_COMMAND_BYTES, MAX_REPLAY_OUTPUT_BYTES, MAX_SECTION_BYTES,
+    MAX_SECTION_COUNT, REPLAY_SECTION, ReplayBlock, ReplaySection, Section, read_case,
+    read_case_text,
 };
 pub use crate::editable::{
     AlignmentLimitMetadata, EditRefusal, EditRefusalClass, EditTransport, EditableFragment,
@@ -60,8 +62,8 @@ pub use crate::editable::{
     transport_edit_allow_removal,
 };
 pub use crate::runner::{
-    Drift, ReplayCapture, ReplayContext, ReplayDriver, ReplayResult, RunEnv, RunError, RunReport,
-    bless_structure, check_run, drive_case, execute_generic, run_case,
+    Drift, MAX_CAPTURE_BYTES, ReplayCapture, ReplayContext, ReplayDriver, ReplayResult, RunEnv,
+    RunError, RunReport, bless_structure, check_run, drive_case, execute_generic, run_case,
 };
 
 /// What a consumer's opaque field key must satisfy. errorloom groups, sorts, and

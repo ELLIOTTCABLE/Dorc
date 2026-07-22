@@ -1,7 +1,13 @@
 //! Container tests (`282` §2): txtar + flat-frontmatter parse, byte-exact
 //! round-trip, and the case-hygiene refusals (`28A` §1). Tests may unwrap freely.
 
-use crate::{Case, CaseError, FrontmatterValue};
+use std::fmt::Write as _;
+
+use crate::{
+    Case, CaseError, CaseReadError, FrontmatterValue, MAX_CASE_BYTES, MAX_REPLAY_BLOCKS,
+    MAX_REPLAY_COMMAND_BYTES, MAX_REPLAY_OUTPUT_BYTES, MAX_SECTION_BYTES, MAX_SECTION_COUNT,
+    read_case,
+};
 
 const SAMPLE: &str = "---\ncode: render-heredoc-refused\nwhen-fires: the leaf-exact render would elide\nviews:\n  - verbose\n  - terse\n---\n-- book.sh --\n#!/bin/sh\ncat /etc/motd\n\n-- replay --\n$ tool plan --book=book.sh\nrender: error[render-heredoc-refused]: refused\n\n$ tool plan --format=jsonl\n{\"code\":\"render-heredoc-refused\"}\n";
 
@@ -142,4 +148,95 @@ fn set_replay_outputs_rewrites_only_output() {
         case.replay().blocks()[1].command(),
         "tool plan --format=jsonl"
     );
+}
+
+#[test]
+fn parser_limits_admit_the_boundary_and_refuse_the_next_item_before_storage() {
+    let section = format!("{}\n", "s".repeat(MAX_SECTION_BYTES.saturating_sub(1)));
+    let at_section = format!("---\n---\n-- book --\n{section}-- replay --\n$ go\nok\n");
+    assert!(Case::parse(&at_section).is_ok());
+    let over_section = format!(
+        "---\n---\n-- book --\n{}\n-- replay --\n$ go\nok\n",
+        "s".repeat(MAX_SECTION_BYTES)
+    );
+    assert!(matches!(
+        Case::parse(&over_section),
+        Err(CaseError::LimitExceeded {
+            component: "section bytes",
+            ..
+        })
+    ));
+
+    let commands = (0..MAX_REPLAY_BLOCKS)
+        .map(|_| "$ go\nok\n")
+        .collect::<String>();
+    assert!(Case::parse(&format!("---\n---\n-- replay --\n{commands}")).is_ok());
+    assert!(matches!(
+        Case::parse(&format!("---\n---\n-- replay --\n{commands}$ go\nok\n")),
+        Err(CaseError::LimitExceeded {
+            component: "replay block count",
+            ..
+        })
+    ));
+
+    let command = "c".repeat(MAX_REPLAY_COMMAND_BYTES);
+    assert!(Case::parse(&format!("---\n---\n-- replay --\n$ {command}\nok\n")).is_ok());
+    assert!(matches!(
+        Case::parse(&format!(
+            "---\n---\n-- replay --\n$ {}\nok\n",
+            "c".repeat(MAX_REPLAY_COMMAND_BYTES.saturating_add(1))
+        )),
+        Err(CaseError::LimitExceeded {
+            component: "replay command bytes",
+            ..
+        })
+    ));
+
+    let output = "o".repeat(MAX_REPLAY_OUTPUT_BYTES);
+    assert!(Case::parse(&format!("---\n---\n-- replay --\n$ go\n{output}")).is_ok());
+    assert!(matches!(
+        Case::parse(&format!(
+            "---\n---\n-- replay --\n$ go\n{}",
+            "o".repeat(MAX_REPLAY_OUTPUT_BYTES.saturating_add(1))
+        )),
+        Err(CaseError::LimitExceeded {
+            component: "committed replay output bytes",
+            ..
+        })
+    ));
+
+    let mut sections = String::new();
+    for index in 0..MAX_SECTION_COUNT.saturating_sub(1) {
+        writeln!(sections, "-- {index} --\nx").expect("string write");
+    }
+    assert!(Case::parse(&format!("---\n---\n{sections}-- replay --\n$ go\nok\n")).is_ok());
+    assert!(matches!(
+        Case::parse(&format!(
+            "---\n---\n{sections}-- extra --\nx\n-- replay --\n$ go\nok\n"
+        )),
+        Err(CaseError::LimitExceeded {
+            component: "section count",
+            ..
+        })
+    ));
+}
+
+#[test]
+fn bounded_file_admission_refuses_over_limit_and_non_utf8_before_parse() {
+    let dir = std::env::temp_dir().join(format!("errorloom-limit-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("test directory");
+    let oversized = dir.join("oversized.txt");
+    std::fs::write(&oversized, vec![b'x'; MAX_CASE_BYTES.saturating_add(1)]).expect("test case");
+    assert!(matches!(
+        read_case(&oversized),
+        Err(CaseReadError::TooLarge)
+    ));
+    let malformed = dir.join("malformed.txt");
+    std::fs::write(&malformed, b"---\n---\n-- replay --\n$ go\n\xff").expect("test case");
+    assert!(matches!(
+        read_case(&malformed),
+        Err(CaseReadError::NonUtf8(_))
+    ));
+    let _ = std::fs::remove_dir_all(&dir);
 }

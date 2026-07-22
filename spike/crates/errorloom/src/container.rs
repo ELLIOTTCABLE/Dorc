@@ -11,7 +11,25 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use std::path::PathBuf;
+
+/// Limits owned by the case/replay boundary (`282` §2 / §7). The file reader
+/// admits at most [`MAX_CASE_BYTES`] before UTF-8 decoding; parser limits keep
+/// individual stored values bounded for callers of [`Case::parse`].
+pub const MAX_CASE_BYTES: usize = 256 * 1024;
+/// Maximum txtar sections, including the final replay section.
+pub const MAX_SECTION_COUNT: usize = 64;
+/// Maximum bytes in one txtar section, including replay before it is parsed.
+pub const MAX_SECTION_BYTES: usize = 128 * 1024;
+/// Maximum replay blocks in one case.
+pub const MAX_REPLAY_BLOCKS: usize = 32;
+/// Maximum bytes in a replay command line.
+pub const MAX_REPLAY_COMMAND_BYTES: usize = 8 * 1024;
+/// Maximum committed output bytes in one replay block.
+pub const MAX_REPLAY_OUTPUT_BYTES: usize = 64 * 1024;
 
 /// A parsed case file: opaque frontmatter, verbatim file sections, and the final
 /// replay section (`282` §2). Round-trips byte-identically modulo the LF pin: the
@@ -123,6 +141,13 @@ impl ReplayBlock {
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[non_exhaustive]
 pub enum CaseError {
+    /// A parsed component exceeded its owning case boundary.
+    LimitExceeded {
+        /// The bounded component.
+        component: &'static str,
+        /// The maximum accepted byte or item count.
+        limit: usize,
+    },
     /// The file did not open with a `---` frontmatter fence.
     MissingFrontmatter,
     /// The frontmatter fence was never closed.
@@ -179,6 +204,9 @@ pub enum CaseError {
 impl fmt::Display for CaseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            CaseError::LimitExceeded { component, limit } => {
+                write!(f, "case: {component} exceeds limit {limit}")
+            }
             CaseError::MissingFrontmatter => f.write_str("case: missing `---` frontmatter fence"),
             CaseError::UnterminatedFrontmatter => {
                 f.write_str("case: unterminated frontmatter (no closing `---`)")
@@ -229,11 +257,67 @@ impl fmt::Display for CaseError {
 
 impl std::error::Error for CaseError {}
 
+/// Why bounded case-file admission failed before [`Case::parse`] can receive a
+/// full text buffer (`282` §2).
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum CaseReadError {
+    /// The file could not be opened or read.
+    Io(std::io::Error),
+    /// The file exceeded [`MAX_CASE_BYTES`] during the bounded read.
+    TooLarge,
+    /// The admitted bytes were not UTF-8, while case files remain text-only.
+    NonUtf8(std::string::FromUtf8Error),
+    /// The admitted text failed case parsing.
+    Parse(CaseError),
+}
+
+impl fmt::Display for CaseReadError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CaseReadError::Io(error) => write!(f, "case read: {error}"),
+            CaseReadError::TooLarge => write!(f, "case read: file exceeds limit {MAX_CASE_BYTES}"),
+            CaseReadError::NonUtf8(error) => write!(f, "case read: non-UTF-8 input: {error}"),
+            CaseReadError::Parse(error) => error.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for CaseReadError {}
+
+/// Read and parse a case without allocating or UTF-8-decoding beyond the
+/// file-admission ceiling.
+///
+/// # Errors
+/// Returns [`CaseReadError`] for I/O, file-size, UTF-8, or parse failures.
+pub fn read_case(path: impl AsRef<Path>) -> Result<Case, CaseReadError> {
+    let text = read_case_text(path)?;
+    Case::parse(&text).map_err(CaseReadError::Parse)
+}
+
+/// Read text admitted under [`MAX_CASE_BYTES`] without parsing it.
+///
+/// # Errors
+/// Returns [`CaseReadError`] for I/O, file-size, or UTF-8 failures.
+pub fn read_case_text(path: impl AsRef<Path>) -> Result<String, CaseReadError> {
+    let mut bytes = Vec::with_capacity(MAX_CASE_BYTES.saturating_add(1));
+    File::open(path)
+        .map_err(CaseReadError::Io)?
+        .take(u64::try_from(MAX_CASE_BYTES.saturating_add(1)).unwrap_or(u64::MAX))
+        .read_to_end(&mut bytes)
+        .map_err(CaseReadError::Io)?;
+    if bytes.len() > MAX_CASE_BYTES {
+        return Err(CaseReadError::TooLarge);
+    }
+    String::from_utf8(bytes).map_err(CaseReadError::NonUtf8)
+}
+
 /// The name every case's final section must carry to be recognized as replay.
 pub const REPLAY_SECTION: &str = "replay";
 
 impl Case {
-    /// Parse a case file from its text.
+    /// Parse a case file from its text. The caller owns the total-buffer bound;
+    /// [`read_case`] is the bounded file-admission edge.
     ///
     /// # Errors
     /// Returns [`CaseError`] for a malformed frontmatter block, nested
@@ -244,28 +328,29 @@ impl Case {
             return Err(CaseError::ContainsCrlf);
         }
         let (frontmatter, body) = split_frontmatter(text)?;
-        let (preamble, raw_sections) = parse_txtar(body);
+        let (preamble, raw_sections) = parse_txtar(body)?;
 
         let mut sections: Vec<Section> = Vec::new();
-        let mut seen: BTreeSet<&str> = BTreeSet::new();
+        let mut seen: BTreeSet<String> = BTreeSet::new();
         let mut replay_raw: Option<String> = None;
-        for (index, (name, content)) in raw_sections.iter().enumerate() {
+        let section_count = raw_sections.len();
+        for (index, (name, content)) in raw_sections.into_iter().enumerate() {
             if name == REPLAY_SECTION {
-                if index != raw_sections.len().saturating_sub(1) {
+                if index != section_count.saturating_sub(1) {
                     return Err(CaseError::ReplayNotLast);
                 }
-                replay_raw = Some(content.clone());
+                replay_raw = Some(content);
                 continue;
             }
-            if safe_relative(name).is_none() {
+            if safe_relative(&name).is_none() {
                 return Err(CaseError::UnsafeSectionName { name: name.clone() });
             }
-            if !seen.insert(name.as_str()) {
+            if !seen.insert(name.clone()) {
                 return Err(CaseError::DuplicateSection { name: name.clone() });
             }
             sections.push(Section {
-                name: name.clone(),
-                content: strip_trailing_separator(content),
+                name,
+                content: strip_trailing_separator(&content),
             });
         }
 
@@ -506,7 +591,7 @@ fn parse_list_items(lines: &[&str], start: usize) -> Result<(Vec<String>, usize)
 }
 
 /// Parse a txtar body into an optional comment/preamble and its named sections.
-fn parse_txtar(body: &str) -> (String, Vec<(String, String)>) {
+fn parse_txtar(body: &str) -> Result<(String, Vec<(String, String)>), CaseError> {
     let mut sections: Vec<(String, String)> = Vec::new();
     let mut preamble = String::new();
     let mut current: Option<(String, String)> = None;
@@ -516,8 +601,20 @@ fn parse_txtar(body: &str) -> (String, Vec<(String, String)>) {
             if let Some(section) = current.take() {
                 sections.push(section);
             }
+            if sections.len() >= MAX_SECTION_COUNT {
+                return Err(CaseError::LimitExceeded {
+                    component: "section count",
+                    limit: MAX_SECTION_COUNT,
+                });
+            }
             current = Some((name, String::new()));
         } else if let Some((_, content)) = current.as_mut() {
+            if content.len().saturating_add(line.len()) > MAX_SECTION_BYTES {
+                return Err(CaseError::LimitExceeded {
+                    component: "section bytes",
+                    limit: MAX_SECTION_BYTES,
+                });
+            }
             content.push_str(line);
         } else {
             preamble.push_str(line);
@@ -526,7 +623,7 @@ fn parse_txtar(body: &str) -> (String, Vec<(String, String)>) {
     if let Some(section) = current.take() {
         sections.push(section);
     }
-    (preamble, sections)
+    Ok((preamble, sections))
 }
 
 /// The txtar marker name for a line, or `None` if it is not a `-- name --` marker.
@@ -561,11 +658,29 @@ fn parse_replay(content: &str) -> Result<ReplaySection, CaseError> {
                 block.output = strip_trailing_separator(&block.output);
                 blocks.push(block);
             }
+            if blocks.len() >= MAX_REPLAY_BLOCKS {
+                return Err(CaseError::LimitExceeded {
+                    component: "replay block count",
+                    limit: MAX_REPLAY_BLOCKS,
+                });
+            }
+            if command.len() > MAX_REPLAY_COMMAND_BYTES {
+                return Err(CaseError::LimitExceeded {
+                    component: "replay command bytes",
+                    limit: MAX_REPLAY_COMMAND_BYTES,
+                });
+            }
             current = Some(ReplayBlock {
                 command: command.to_owned(),
                 output: String::new(),
             });
         } else if let Some(block) = current.as_mut() {
+            if block.output.len().saturating_add(line.len()) > MAX_REPLAY_OUTPUT_BYTES {
+                return Err(CaseError::LimitExceeded {
+                    component: "committed replay output bytes",
+                    limit: MAX_REPLAY_OUTPUT_BYTES,
+                });
+            }
             block.output.push_str(line);
         } else if !bare.trim().is_empty() {
             return Err(CaseError::ReplayPreamble);

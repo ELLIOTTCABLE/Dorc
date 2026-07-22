@@ -9,13 +9,18 @@
 //! (`28A` §1). This is the crate's I/O edge; the transport kernel stays pure.
 
 use std::collections::BTreeMap;
-use std::fs::{self, File};
+use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::container::{Case, CaseError};
 use crate::{ConsumerKey, EditableRender};
+
+/// Maximum combined bytes captured while one generic replay process runs.
+/// Read one additional byte so overflow is refused before result accumulation.
+pub const MAX_CAPTURE_BYTES: usize = 64 * 1024;
 
 /// The materialized state shared by every replay of one case.
 ///
@@ -116,13 +121,7 @@ where
 /// # Errors
 /// Returns a controlled-executor failure.
 pub fn execute_generic(command: &str, context: &ReplayContext<'_>) -> Result<String, RunError> {
-    run_block(
-        0,
-        command,
-        context.env,
-        context.cwd.parent().unwrap_or(context.cwd),
-        context.cwd,
-    )
+    run_block(0, command, context.env, context.cwd)
 }
 
 /// A caller-injected execution environment: the exact env table plus a `PATH`
@@ -285,6 +284,14 @@ pub enum RunError {
         /// A lossy (`U+FFFD`-substituted) preview of the captured bytes.
         preview: String,
     },
+    /// A child exceeded the live combined-output capture ceiling and was reaped
+    /// before an unbounded capture can accumulate.
+    OutputTooLarge {
+        /// Zero-based block index.
+        block: usize,
+        /// The maximum accepted captured bytes.
+        limit: usize,
+    },
     /// Captured output leaked the sandbox's absolute path (`282` §7).
     SandboxPathLeak {
         /// Zero-based block index.
@@ -312,6 +319,12 @@ impl std::fmt::Display for RunError {
                 write!(
                     f,
                     "run: block {block} produced non-UTF-8 output: {preview:?}"
+                )
+            }
+            RunError::OutputTooLarge { block, limit } => {
+                write!(
+                    f,
+                    "run: block {block} exceeded captured-output limit {limit}"
                 )
             }
             RunError::SandboxPathLeak { block, line } => {
@@ -364,7 +377,7 @@ fn run_in(case: &Case, env: &RunEnv, base: &Path) -> Result<ReplayCapture, RunEr
 
     let mut outputs: Vec<String> = Vec::new();
     for (index, block) in case.replay().blocks().iter().enumerate() {
-        let output = run_block(index, block.command(), env, base, &work)?;
+        let output = run_block(index, block.command(), env, &work)?;
         outputs.push(output);
     }
 
@@ -413,7 +426,6 @@ fn run_block(
     index: usize,
     command_line: &str,
     env: &RunEnv,
-    base: &Path,
     work: &Path,
 ) -> Result<String, RunError> {
     if command_line.trim().is_empty() {
@@ -421,12 +433,9 @@ fn run_block(
     }
     let shell = env.shell.as_ref().ok_or(RunError::ShellNotConfigured)?;
 
-    let capture_path = base.join(format!("cap-{index}"));
-    let file = File::create(&capture_path)?;
-    let file_err = file.try_clone()?;
-
     let mut command = Command::new(shell);
-    command.args(["-c", command_line]);
+    // One pipe preserves v1's combined stream while it is bounded in memory.
+    command.args(["-c", &format!("exec 2>&1\n{command_line}")]);
     command.current_dir(work);
     command.env_clear();
     for (name, value) in &env.vars {
@@ -438,12 +447,29 @@ fn run_block(
     if let Ok(joined) = std::env::join_paths(&env.path) {
         command.env("PATH", joined);
     }
-    command.stdout(Stdio::from(file));
-    command.stderr(Stdio::from(file_err));
+    command.stdout(Stdio::piped());
+    command.stderr(Stdio::null());
     command.stdin(Stdio::null());
 
-    let _status = command.status()?;
-    let bytes = fs::read(&capture_path)?;
+    let mut child = command.spawn()?;
+    let mut stdout = child.stdout.take().ok_or_else(|| RunError::Io {
+        kind: std::io::ErrorKind::BrokenPipe,
+        message: "child stdout pipe unavailable".to_owned(),
+    })?;
+    let mut bytes = Vec::with_capacity(MAX_CAPTURE_BYTES.saturating_add(1));
+    stdout
+        .by_ref()
+        .take(u64::try_from(MAX_CAPTURE_BYTES.saturating_add(1)).unwrap_or(u64::MAX))
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > MAX_CAPTURE_BYTES {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(RunError::OutputTooLarge {
+            block: index,
+            limit: MAX_CAPTURE_BYTES,
+        });
+    }
+    let _status = child.wait()?;
     String::from_utf8(bytes).map_err(|error| RunError::NonUtf8Output {
         block: index,
         preview: String::from_utf8_lossy(&error.into_bytes()).into_owned(),

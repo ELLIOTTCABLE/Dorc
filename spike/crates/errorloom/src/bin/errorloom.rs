@@ -7,12 +7,11 @@
 //! through `writeln!` on locked handles so the crate's `print_stdout`/
 //! `print_stderr` lints hold without a crate-root `#[expect]`.
 
-use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use errorloom::{Case, RunEnv, bless_structure, check_run};
+use errorloom::{Case, RunEnv, bless_structure, check_run, read_case, read_case_text};
 
 fn main() -> ExitCode {
     match run() {
@@ -76,15 +75,17 @@ fn run_cases(args: &Args, out: &mut impl Write) -> Result<ExitCode, String> {
 
 fn bless_cases(args: &Args, out: &mut impl Write) -> Result<ExitCode, String> {
     for path in &args.cases {
-        let source = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
-        let mut case = Case::parse(&source).map_err(|e| format!("{}: {e}", path.display()))?;
+        let source =
+            read_case_text(path).map_err(|error| format!("{}: {error}", path.display()))?;
+        let mut case =
+            Case::parse(&source).map_err(|error| format!("{}: {error}", path.display()))?;
         bless_structure(&mut case, &args.env, args.require_token.as_deref())
             .map_err(|e| e.to_string())?;
         let updated = case.to_text();
         if updated == source {
             writeln!(out, "clean    {}", path.display()).map_err(|e| e.to_string())?;
         } else {
-            fs::write(path, &updated).map_err(|e| format!("{}: {e}", path.display()))?;
+            std::fs::write(path, &updated).map_err(|e| format!("{}: {e}", path.display()))?;
             writeln!(out, "blessed  {}", path.display()).map_err(|e| e.to_string())?;
         }
     }
@@ -92,8 +93,7 @@ fn bless_cases(args: &Args, out: &mut impl Write) -> Result<ExitCode, String> {
 }
 
 fn load(path: &PathBuf) -> Result<Case, String> {
-    let source = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
-    Case::parse(&source).map_err(|e| format!("{}: {e}", path.display()))
+    read_case(path).map_err(|error| format!("{}: {error}", path.display()))
 }
 
 fn parse_args() -> Result<Args, String> {

@@ -6,6 +6,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+use errorloom::MAX_CASE_BYTES;
+
 /// The directory holding both built bins (they share a target dir).
 fn bin_dir() -> PathBuf {
     let exe = PathBuf::from(env!("CARGO_BIN_EXE_errorloom"));
@@ -65,5 +67,26 @@ fn bless_inlines_then_run_detects_drift() {
         .expect("spawn run");
     assert_eq!(drift.status.code(), Some(1), "drift exits 1");
 
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn run_refuses_an_oversized_case_before_text_decoding() {
+    let dir = std::env::temp_dir().join(format!("errorloom-cli-limit-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("temp dir");
+    let case_path = dir.join("oversized.txt");
+    fs::write(&case_path, vec![b'x'; MAX_CASE_BYTES.saturating_add(1)]).expect("write case");
+
+    let run = Command::new(env!("CARGO_BIN_EXE_errorloom"))
+        .args([
+            "run",
+            "--shell=unused",
+            case_path.to_str().unwrap_or("test path is UTF-8"),
+        ])
+        .output()
+        .expect("spawn run");
+    assert_eq!(run.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&run.stderr).contains("file exceeds limit"));
     let _ = fs::remove_dir_all(&dir);
 }

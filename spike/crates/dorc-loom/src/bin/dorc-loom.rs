@@ -1,6 +1,5 @@
 //! `dorc-loom` is the read-only transcript-template inspection command.
 
-use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -8,7 +7,7 @@ use std::process::ExitCode;
 use dorc_loom::{
     DorcConsumer, DorcReplayDriver, DorcSectionEditRefusal, compile_preview, render_compile_preview,
 };
-use errorloom::{Case, ReplayDriver, ReplayResult, RunEnv, drive_case, execute_generic};
+use errorloom::{Case, ReplayDriver, ReplayResult, RunEnv, drive_case, execute_generic, read_case};
 
 const USAGE: &str = "usage: dorc-loom <compile CASE...|vars <--used|--all> CASE...>";
 
@@ -171,9 +170,7 @@ fn print_variables(
 }
 
 fn load(path: &PathBuf) -> Result<Case, String> {
-    let source =
-        fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    Case::parse(&source).map_err(|error| format!("{}: {error}", path.display()))
+    read_case(path).map_err(|error| format!("{}: {error}", path.display()))
 }
 
 // case files wrap prose; core tags do not

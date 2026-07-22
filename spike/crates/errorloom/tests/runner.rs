@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use errorloom::{Case, RunEnv, RunError, bless_structure, check_run, run_case};
+use errorloom::{Case, MAX_CAPTURE_BYTES, RunEnv, RunError, bless_structure, check_run, run_case};
 
 /// The directory holding the built `loom-mock-tool`, so it resolves on the
 /// injected PATH by name (exercising `resolve_program`). A plain helper (not a
@@ -127,4 +127,32 @@ fn bless_then_required_token_gate() {
     .expect("valid");
     let err = bless_structure(&mut missing, &env(), Some("code")).unwrap_err();
     assert!(matches!(err, RunError::Hygiene(_)));
+}
+
+#[test]
+fn capture_limit_is_enforced_while_the_child_runs() {
+    let at_limit = Case::parse(&format!(
+        "---\n---\n-- replay --\n$ loom-mock-tool repeat:{MAX_CAPTURE_BYTES}\nplaceholder\n"
+    ))
+    .expect("valid");
+    assert_eq!(
+        run_case(&at_limit, &env())
+            .expect("boundary capture")
+            .outputs()[0]
+            .len(),
+        MAX_CAPTURE_BYTES
+    );
+
+    let over_limit = Case::parse(&format!(
+        "---\n---\n-- replay --\n$ loom-mock-tool repeat:{}\nplaceholder\n",
+        MAX_CAPTURE_BYTES.saturating_add(1)
+    ))
+    .expect("valid");
+    assert!(matches!(
+        run_case(&over_limit, &env()),
+        Err(RunError::OutputTooLarge {
+            block: 0,
+            limit: MAX_CAPTURE_BYTES
+        })
+    ));
 }

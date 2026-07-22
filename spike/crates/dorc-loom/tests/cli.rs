@@ -8,6 +8,8 @@
 use std::path::PathBuf;
 use std::process::Command;
 
+use errorloom::{MAX_CASE_BYTES, MAX_REPLAY_OUTPUT_BYTES};
+
 fn case(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")
@@ -141,4 +143,39 @@ fn compile_refuses_unknown_markers_and_bad_invocations() {
 
     let unreadable = run(&["compile", "missing-case.txt"]);
     assert_eq!(unreadable.status.code(), Some(2));
+}
+
+#[test]
+fn compile_refuses_bounded_case_input_before_edit_compilation() {
+    let dir = std::env::temp_dir().join(format!("dorc-loom-limit-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let output_limit = dir.join("output-limit.txt");
+    std::fs::write(
+        &output_limit,
+        format!(
+            "---\ncode: cmdsub-operand-top\n---\n-- replay --\n$ dorc plan --book=book.sh\n{}",
+            "x".repeat(MAX_REPLAY_OUTPUT_BYTES.saturating_add(1))
+        ),
+    )
+    .expect("write output limit case");
+    let output_refusal = run(&[
+        "compile",
+        output_limit.to_str().unwrap_or("test path is UTF-8"),
+    ]);
+    assert_eq!(output_refusal.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output_refusal.stderr).contains("committed replay output bytes")
+    );
+
+    let file_limit = dir.join("file-limit.txt");
+    std::fs::write(&file_limit, vec![b'x'; MAX_CASE_BYTES.saturating_add(1)])
+        .expect("write file limit");
+    let file_refusal = run(&[
+        "compile",
+        file_limit.to_str().unwrap_or("test path is UTF-8"),
+    ]);
+    assert_eq!(file_refusal.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&file_refusal.stderr).contains("file exceeds limit"));
+    let _ = std::fs::remove_dir_all(&dir);
 }

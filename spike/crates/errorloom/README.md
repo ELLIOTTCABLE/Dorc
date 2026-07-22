@@ -142,6 +142,12 @@ $ mytool plan --book=book.sh --format=jsonl < probe-results.txt
     handle an exact invocation shape in-process; everything else may be routed
     explicitly to the generic executor.
 
+Case/replay admission is deliberately bounded: 256 KiB per case file, 64
+sections, 128 KiB per section, 32 replay blocks, 8 KiB per command, and 64 KiB
+per committed replay output or live generic capture. `read_case` reads only one
+byte beyond the case ceiling before decoding; parser and runner limits are typed
+refusals rather than truncation.
+
 
 ### Case-hygiene gates
 
