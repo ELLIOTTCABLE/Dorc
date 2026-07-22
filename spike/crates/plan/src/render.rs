@@ -209,41 +209,6 @@ pub mod probe {
         )
     }
 
-    /// The TIER-3 report-DRAIN scaffold (`27W` §3 C4 · `decline-class-emission`): the same effect
-    /// record as [`record_scaffold`], but the check runs with `DREP_V1` bound to a deterministic
-    /// per-site scratch file, and after the check its emissions are re-framed as `report site=<key>
-    /// …` records — the runtime tier the static inventory (`report.rs`) cannot reach when the format
-    /// string is dynamic. Emitted ONLY for an [`emits_report`](crate::ProbePredict::emits_report)
-    /// check (the auto-cell verdict path), so an ordinary run is byte-identical (`empty-world-byte-
-    /// identical`; the HARD full-corpus byte-stability gate).
-    ///
-    /// The scratch is `"${{TMPDIR:-/tmp}}/dorc-drep.<nonce>.<key>"` (the nonce keys per-attempt, the
-    /// key per-site — no two live probes collide); TRUNCATED before (a stale scratch never leaks a
-    /// prior run's lines) AND after (the file is left empty, not a growing turd). `DREP_V1` is a plain
-    /// shell var visible to the check FUNCTION (same shell), so the body's `>>"${{DREP_V1:-/dev/null}}"`
-    /// lands in the scratch. Each drained line is ONE `printf` (< `PIPE_BUF` ⇒ atomic on the return
-    /// pipe), value-passed as a `%s` arg (a `%` or space in the emission cannot corrupt the frame).
-    ///
-    /// GUARANTEE: dash-n-clean — assignments, an `if`, and a `while IFS= read` loop, all valid at
-    /// script top level. A body that emits NOTHING drains zero lines (an empty scratch), so the
-    /// effect record is unchanged and no report record ships (the safe floor).
-    #[must_use]
-    pub fn record_scaffold_draining(invocation: &str, key: &str, nonce: &Nonce) -> String {
-        let effect = records::frame(nonce, &format!("site {key} effect=%s rc=%s"));
-        let report = records::frame(nonce, &format!("report site={key} %s"));
-        format!(
-            "_drep=\"${{TMPDIR:-/tmp}}/dorc-drep.{n}.{key}\"; : >\"$_drep\"; DREP_V1=\"$_drep\"; \
-             {invocation}; _rc=$?; \
-             if [ \"$_rc\" -eq 0 ]; then _e=holds; \
-             elif [ \"$_rc\" -eq 1 ]; then _e=absent; \
-             else _e=cant-tell; fi; \
-             printf '{effect}\\n' \"$_e\" \"$_rc\"; \
-             while IFS= read -r _dl; do printf '{report}\\n' \"$_dl\"; done <\"$_drep\"; \
-             : >\"$_drep\"\n",
-            n = nonce.0,
-        )
-    }
-
     /// The comment recording an **un-resolvable** site (never invoked): a kill, opaque,
     /// written establish, `MustRun`, or a resolvable class whose kind has no declared
     /// probe (`can't-probe ⇒ can't-elide`, `kFAIL-perform`).

@@ -1402,12 +1402,7 @@ pub struct ProbePredict {
     /// composition). `fact` carries the composed [`Context`], so the record re-keys the context-
     /// qualified verdict exactly. `None` ⇒ the ordinary (ambient) shape.
     pub entry: Option<EntryComposed>,
-    /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
-    /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
-    /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
-    /// [`ProbePlan::render_sh`] ships the DRAIN scaffold: the check runs with `DREP_V1` bound to a
-    /// per-site scratch, and its emissions are re-framed as `report site=<key> …` records. `false` ⇒
-    /// the ordinary scaffold, byte-identical (`empty-world-byte-identical`).
+    /// Static report classification; runtime capture awaits an inherited owned channel.
     pub emits_report: bool,
 }
 
@@ -1631,16 +1626,7 @@ impl ProbePlan {
                 }
                 render::probe::invocation(&fn_name, &check.argv, interner)
             };
-            // `27W` §3 C4: an emission-bearing auto-cell body drains; every other stays byte-identical.
-            if check.emits_report {
-                out.push_str(&render::probe::record_scaffold_draining(
-                    &invocation,
-                    &key,
-                    nonce,
-                ));
-            } else {
-                out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
-            }
+            out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
@@ -6797,40 +6783,53 @@ apt_get__predict() {
         }
     }
 
-    /// `27W` §3 C4: an emitting auto-cell body ships the TIER-3 DRAIN scaffold — the check runs with
-    /// `DREP_V1` bound to a deterministic per-site scratch, and its emissions are re-framed as
-    /// `report site=<key> …` records — while the EFFECT record stays byte-identical to the ordinary
-    /// scaffold. This is the runtime tier the static inventory cannot reach (a dynamic format).
     #[test]
-    fn emitting_auto_cell_ships_the_tier3_drain_scaffold() {
+    fn emitting_auto_cell_never_constructs_a_report_path() {
         let mut i = Interner::default();
         let plan = ProbePlan {
             checks: vec![auto_cell_check(&mut i, true)],
             unresolvable: Vec::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
-        assert!(
-            rendered.contains("\"${TMPDIR:-/tmp}/dorc-drep.dorc.0\""),
-            "the per-site scratch is keyed by nonce+site (no two live probes collide): {rendered}"
-        );
-        assert!(
-            rendered.contains("DREP_V1=\"$_drep\""),
-            "DREP_V1 is bound to the scratch for the check: {rendered}"
-        );
-        assert!(
-            rendered
-                .contains("while IFS= read -r _dl; do printf 'dorc report site=0 %s @@dorc@@\\n'"),
-            "the drain loop re-frames each emission as a report record: {rendered}"
-        );
+        for forbidden in [
+            "TMPDIR",
+            "dorc-drep",
+            "DREP_V1=",
+            "$_drep",
+            ": >",
+            "while IFS= read",
+            "report site=",
+        ] {
+            assert!(
+                !rendered.contains(forbidden),
+                "runtime capture must not create, reopen, drain, or clean a report path ({forbidden}): {rendered}"
+            );
+        }
         assert!(
             rendered.contains("printf 'dorc site 0 effect=%s rc=%s @@dorc@@\\n' \"$_e\" \"$_rc\""),
-            "the effect record is unchanged (the drain is additive): {rendered}"
+            "the effect record still ships: {rendered}"
         );
     }
 
-    /// The HARD byte-stability floor (`empty-world-byte-identical`): a NON-emitting auto-cell body
-    /// (`emits_report: false`) ships the ORDINARY scaffold — no `DREP_V1`, no drain loop, no `report`
-    /// record — so an ordinary run is byte-identical to before the tier-3 lane existed.
+    #[test]
+    fn report_classification_does_not_change_probe_bytes() {
+        let mut i = Interner::default();
+        let with_report = ProbePlan {
+            checks: vec![auto_cell_check(&mut i, true)],
+            unresolvable: Vec::new(),
+        };
+        let without_report = ProbePlan {
+            checks: vec![auto_cell_check(&mut i, false)],
+            unresolvable: Vec::new(),
+        };
+
+        assert_eq!(
+            with_report.render_sh(&records::Framing::spike(String::new()), &i),
+            without_report.render_sh(&records::Framing::spike(String::new()), &i),
+            "static report classification must not select an unsafe runtime channel"
+        );
+    }
+
     #[test]
     fn nonemitting_auto_cell_ships_the_ordinary_scaffold() {
         let mut i = Interner::default();
