@@ -333,7 +333,7 @@ there is no hash dependency. `identity-mode: exact` is the only reserved future 
 
 ### Generated-lock checkpoint
 
-Status: `[ ] next - conductor review required before Unit 3`
+Status: `[x] ruled before Unit 3`
 
 Before implementation, map the exact split between:
 
@@ -344,6 +344,38 @@ Before implementation, map the exact split between:
 The checkpoint output is a mechanical file/field ownership map and proposed
 preflight/publication set. The conductor rules it before any source migration. No handwritten prose or
 metadata may share the generated target after cutover.
+
+Checkpoint ruling:
+
+- `core/src/catalog.rs` remains handwritten machinery: `CatalogEntry`, lookup/mirror
+  types, template parsing/filling, and pure serialization helpers. It includes one
+  wholly generated `core/src/catalog_lock.rs`; that file owns every byte of the
+  complete `CATALOG` table and is always overwritten whole.
+- For case-owned codes, `code`, `when_fires`, and `why` come from defining-case
+  frontmatter; `message`/`help` come from compiled typed transcript sections; `params`
+  derive from first-use holes; `example` is the compiled message rendered with the
+  defining replay's typed payload. Severity, floor, remediation, payload types, and
+  the `DiagCode` enum remain handwritten outside the lock.
+- The initial bootstrap copies current `when_fires`/`why` verbatim into all 22 case
+  frontmatters exactly once. This transports existing metadata; it authors no new
+  prose. After bootstrap, case-owned entries may never read old lock prose or metadata.
+  The 35 ratcheted entries carry their complete current generated rows until each gains
+  a defining case.
+- The 12 lint/why cases currently lack exact editable provenance. Unit 3 must retain
+  their actual `$ dorc lint ...` / `$ dorc why --last` spellings, add concrete bounded
+  fixture state that really triggers each code, and drive the production render seats
+  in-process. Generic bytes, case slug selection, and catalog-text inference cannot
+  bootstrap editable authority.
+- Initial cutover adds the lock, updates handwritten imports/tests, seeds all case
+  metadata and generated `vars --used` replays, and removes the old writer. Steady
+  promotion writes only the complete lock and canonical cases whose bytes differ.
+- Promotion starts only from Unit 2's private validated witness, computes every lock
+  and case candidate plus both fixpoints before I/O, then publishes the lock followed
+  by cases in lexical order with same-directory replacements. Interruption may leave a
+  loud Git-visible partial generation; rerun repairs it. There is no journal, rollback,
+  staging, or index mutation.
+- Unit 3 builds and proves the workflow but does not perform the intentional flagship
+  `{{command}}` prose edit. That remains `282:phase-command-embed-dogfood`.
 
 ### Unit 3 - preflighted promotion and generated lock
 
