@@ -14,8 +14,16 @@ const TEMP_ATTEMPTS: u8 = 16;
 /// The filesystem boundary used by compile and promote.
 pub trait ReceiptStore {
     /// Publish an already encoded and validated receipt.
+    ///
+    /// # Errors
+    ///
+    /// Returns an I/O or receipt-validation refusal without publishing partial bytes.
     fn publish(&self, packet: &[u8]) -> Result<(), String>;
     /// Read one bounded, grammar-validated current receipt.
+    ///
+    /// # Errors
+    ///
+    /// Returns an I/O, unsafe-path, size, or receipt-validation refusal.
     fn read(&self) -> Result<Vec<u8>, String>;
 }
 
@@ -166,7 +174,7 @@ fn unsafe_metadata(metadata: &fs::Metadata) -> bool {
     #[cfg(windows)]
     {
         use std::os::windows::fs::MetadataExt;
-        return metadata.file_attributes() & 0x400 != 0;
+        metadata.file_attributes() & 0x400 != 0
     }
     #[cfg(not(windows))]
     false
