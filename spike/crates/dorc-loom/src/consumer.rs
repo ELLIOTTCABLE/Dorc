@@ -23,7 +23,7 @@ use dorc_core::diag::{
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
     Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
-    ReplayDriver, ReplayResult, RunEnv, RunError, drive_case,
+    ReplayDriver, ReplayInput, ReplayResult, RunEnv, RunError, drive_case, drive_case_with_inputs,
 };
 
 use crate::{
@@ -232,9 +232,10 @@ impl DorcConsumer {
         let tokens = exact_words(command)?;
         if let ["dorc-loom", "vars", mode, path] = tokens.as_slice()
             && matches!(*mode, "--used" | "--all")
-            && !path.contains('/')
+            && case_relative_path(path)
         {
-            let baseline = self.editable_baseline(case).ok()?;
+            let target = Case::parse(context.materialized_input(path)?).ok()?;
+            let baseline = self.editable_baseline(&target).ok()?;
             let mut output = String::new();
             output.push_str("case: ");
             output.push_str(path);
@@ -478,6 +479,33 @@ where
 {
     let driver = DorcReplayDriver::new(consumer, case);
     drive_case(case, env, |command, context| {
+        match driver.drive(command, context) {
+            Some(result) => Ok(result),
+            None => fallback(command, context),
+        }
+    })
+}
+
+/// Drive a case with explicit bounded files available to both the adapter and any
+/// configured generic fallback.
+///
+/// # Errors
+/// Returns materialization or caller-supplied fallback failures.
+pub fn replay_case_with_inputs<F>(
+    case: &Case,
+    consumer: &DorcConsumer,
+    env: &RunEnv,
+    inputs: &[ReplayInput],
+    mut fallback: F,
+) -> Result<Vec<ReplayResult<SectionKey, SectionVariableId>>, RunError>
+where
+    F: FnMut(
+        &str,
+        &ReplayContext<'_>,
+    ) -> Result<ReplayResult<SectionKey, SectionVariableId>, RunError>,
+{
+    let driver = DorcReplayDriver::new(consumer, case);
+    drive_case_with_inputs(case, env, inputs, |command, context| {
         match driver.drive(command, context) {
             Some(result) => Ok(result),
             None => fallback(command, context),

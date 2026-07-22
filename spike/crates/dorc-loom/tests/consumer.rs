@@ -10,9 +10,10 @@ use std::path::{Path, PathBuf};
 
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
+    replay_case_with_inputs,
 };
 use errorloom::{
-    BlessError, Case, CaseFile, CaseRenderer, FakeGit, ReplayResult, RunEnv, RunError,
+    BlessError, Case, CaseFile, CaseRenderer, FakeGit, ReplayInput, ReplayResult, RunEnv, RunError,
     fixpoint_check, structure_bless,
 };
 
@@ -395,4 +396,57 @@ fn replay_with_a_fake_fallback_leaves_case_catalog_and_source_bytes_unchanged() 
     assert_eq!(results.len(), 1);
     assert_eq!(std::fs::read(&case_path).ok(), Some(case_before));
     assert_eq!(std::fs::read(&catalog_path).ok(), Some(catalog_before));
+}
+
+#[test]
+fn vars_replay_reads_only_the_named_materialized_case() {
+    let outer = Case::parse(
+        "---\ncode: cmdsub-operand-top\n---\n-- replay --\n\
+         $ dorc-loom vars --all self.txt\nold\n\
+         $ dorc-loom vars --used other.txt\nold\n\
+         $ dorc-loom vars --all missing.txt\nold\n\
+         $ dorc-loom vars --all ../self.txt\nold\n\
+         $ dorc-loom vars --all /self.txt\nold\n\
+         $ dorc-loom vars --all self.txt extra\nold\n\
+         $ dorc-loom vars --all 'self.txt'\nold\n",
+    )
+    .expect("outer case parses");
+    let other = Case::parse(
+        "---\ncode: render-heredoc-refused\n---\n-- replay --\n$ dorc plan --book=book.sh\nold\n",
+    )
+    .expect("other case parses");
+    let inputs = [
+        ReplayInput::new("self.txt", outer.to_text()).expect("self input"),
+        ReplayInput::new("other.txt", other.to_text()).expect("other input"),
+    ];
+    let calls = RefCell::new(Vec::new());
+    let results = replay_case_with_inputs(
+        &outer,
+        &DorcConsumer::new(),
+        &RunEnv::new(),
+        &inputs,
+        |command, _context| {
+            calls.borrow_mut().push(command.to_owned());
+            Ok(ReplayResult::bytes(format!("fallback: {command}\n")))
+        },
+    )
+    .expect("replays route");
+
+    assert!(results[0].output().contains("{{command}} = \"apt-get\""));
+    assert!(results[1].output().contains("{{verb}} = \"elide\""));
+    assert!(!results[1].output().contains("{{command}} = \"apt-get\""));
+    for result in &results[2..] {
+        assert!(result.editable_render().is_none());
+        assert!(result.output().starts_with("fallback: dorc-loom vars"));
+    }
+    assert_eq!(
+        calls.into_inner(),
+        [
+            "dorc-loom vars --all missing.txt",
+            "dorc-loom vars --all ../self.txt",
+            "dorc-loom vars --all /self.txt",
+            "dorc-loom vars --all self.txt extra",
+            "dorc-loom vars --all 'self.txt'",
+        ]
+    );
 }

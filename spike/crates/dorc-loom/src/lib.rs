@@ -8,7 +8,7 @@ use errorloom::{EditableFragment, EditableRender, EditableSection, RenderCompone
 mod consumer;
 pub use consumer::{
     DorcApplyRefusal, DorcConsumer, DorcEditableBaseline, DorcReplayDriver, SectionVariables,
-    replay_case,
+    replay_case, replay_case_with_inputs,
 };
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};

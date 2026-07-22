@@ -1,13 +1,14 @@
 //! `dorc-loom` is the read-only transcript-template inspection command.
 
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use dorc_loom::{
-    DorcConsumer, DorcSectionEditRefusal, compile_preview, render_compile_preview, replay_case,
+    DorcConsumer, DorcSectionEditRefusal, compile_preview, render_compile_preview,
+    replay_case_with_inputs,
 };
-use errorloom::{Case, ReplayResult, RunEnv, execute_generic, read_case};
+use errorloom::{Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case};
 
 const USAGE: &str =
     "usage: dorc-loom <compile [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...>";
@@ -127,10 +128,13 @@ fn compile_cases(
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
         let mut previews = Vec::new();
         let mut case_refusal = None;
-        let results = replay_case(&case, &consumer, env, |command, context| {
-            execute_generic(command, context).map(ReplayResult::bytes)
-        })
-        .map_err(|error| format!("{}: {error}", path.display()))?;
+        let input = ReplayInput::new(case_name(path)?, case.to_text())
+            .map_err(|error| format!("{}: {error}", path.display()))?;
+        let results =
+            replay_case_with_inputs(&case, &consumer, env, &[input], |command, context| {
+                execute_generic(command, context).map(ReplayResult::bytes)
+            })
+            .map_err(|error| format!("{}: {error}", path.display()))?;
         for (index, (block, routed)) in case.replay().blocks().iter().zip(results).enumerate() {
             let dirty = unreflow(block.output());
             if let Some(render) = routed.editable_render().cloned() {
@@ -211,6 +215,14 @@ fn print_variables(
 
 fn load(path: &PathBuf) -> Result<Case, String> {
     read_case(path).map_err(|error| format!("{}: {error}", path.display()))
+}
+
+fn case_name(path: &Path) -> Result<String, String> {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| !name.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| format!("{}: case file has no UTF-8 filename", path.display()))
 }
 
 // case files wrap prose; core tags do not

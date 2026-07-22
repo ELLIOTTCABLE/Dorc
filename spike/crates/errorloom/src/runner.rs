@@ -8,14 +8,14 @@
 //! never invents an environment; policy such as inert mocks is the consumer's
 //! (`28A` §1). This is the crate's I/O edge; the transport kernel stays pure.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::container::{Case, CaseError};
+use crate::container::{Case, CaseError, MAX_CASE_BYTES, MAX_SECTION_COUNT};
 use crate::{ConsumerKey, EditableRender};
 
 /// Maximum combined bytes captured while one generic replay process runs.
@@ -31,6 +31,7 @@ pub struct ReplayContext<'a> {
     cwd: &'a Path,
     scratch: &'a Path,
     env: &'a RunEnv,
+    inputs: &'a BTreeMap<String, String>,
 }
 
 impl ReplayContext<'_> {
@@ -50,6 +51,44 @@ impl ReplayContext<'_> {
     #[must_use]
     pub fn env(&self) -> &RunEnv {
         self.env
+    }
+
+    /// Return the exact bounded contents of a file materialized for this case.
+    #[must_use]
+    pub fn materialized_input(&self, path: &str) -> Option<&str> {
+        self.inputs.get(path).map(String::as_str)
+    }
+}
+
+/// One extra bounded, case-relative file supplied by an embedding consumer.
+///
+/// This is deliberately consumer-neutral: it lets a replay refer to an explicit
+/// input that is not itself a txtar section without teaching errorloom its meaning.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ReplayInput {
+    path: String,
+    content: String,
+}
+
+impl ReplayInput {
+    /// Construct a bounded materialized input.
+    ///
+    /// # Errors
+    /// Returns a refusal when the path is unsafe or the contents exceed the case
+    /// admission limit.
+    pub fn new(path: impl Into<String>, content: impl Into<String>) -> Result<Self, RunError> {
+        let path = path.into();
+        let content = content.into();
+        if !safe_relative_path(&path) {
+            return Err(RunError::UnsafeReplayInput { path });
+        }
+        if content.len() > MAX_CASE_BYTES {
+            return Err(RunError::ReplayInputTooLarge {
+                path,
+                limit: MAX_CASE_BYTES,
+            });
+        }
+        Ok(Self { path, content })
     }
 }
 
@@ -108,6 +147,24 @@ pub trait ReplayDriver<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
 pub fn drive_case<S, V>(
     case: &Case,
     env: &RunEnv,
+    drive: impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
+) -> Result<Vec<ReplayResult<S, V>>, RunError>
+where
+    S: ConsumerKey,
+    V: Clone + Ord + std::fmt::Debug,
+{
+    drive_case_with_inputs(case, env, &[], drive)
+}
+
+/// Drive every replay after materializing caller-supplied bounded inputs beside
+/// the case sections.
+///
+/// # Errors
+/// Returns a materialization, execution, or caller-supplied replay error.
+pub fn drive_case_with_inputs<S, V>(
+    case: &Case,
+    env: &RunEnv,
+    inputs: &[ReplayInput],
     mut drive: impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
 ) -> Result<Vec<ReplayResult<S, V>>, RunError>
 where
@@ -115,7 +172,7 @@ where
     V: Clone + Ord + std::fmt::Debug,
 {
     let base = unique_base()?;
-    let result = drive_in(case, env, &base, &mut drive);
+    let result = drive_in(case, env, inputs, &base, &mut drive);
     let _ = fs::remove_dir_all(&base);
     result
 }
@@ -307,6 +364,28 @@ pub enum RunError {
     },
     /// The inlined output failed a case-hygiene gate.
     Hygiene(CaseError),
+    /// An embedding-supplied input path was not a safe case-relative path.
+    UnsafeReplayInput {
+        /// The rejected path.
+        path: String,
+    },
+    /// An embedding-supplied input exceeded the bounded case-input limit.
+    ReplayInputTooLarge {
+        /// The rejected path.
+        path: String,
+        /// The maximum accepted byte count.
+        limit: usize,
+    },
+    /// An embedding-supplied input would overwrite a case section or another input.
+    DuplicateReplayInput {
+        /// The duplicate path.
+        path: String,
+    },
+    /// Embedding-supplied inputs exceeded the case section-count ceiling.
+    ReplayInputCountExceeded {
+        /// The maximum number of extra inputs for this case.
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for RunError {
@@ -337,6 +416,18 @@ impl std::fmt::Display for RunError {
                 write!(f, "run: block {block} leaked the sandbox path: {line:?}")
             }
             RunError::Hygiene(inner) => write!(f, "run: {inner}"),
+            RunError::UnsafeReplayInput { path } => {
+                write!(f, "run: unsafe replay input path {path:?}")
+            }
+            RunError::ReplayInputTooLarge { path, limit } => {
+                write!(f, "run: replay input {path:?} exceeds limit {limit}")
+            }
+            RunError::DuplicateReplayInput { path } => {
+                write!(f, "run: duplicate replay input {path:?}")
+            }
+            RunError::ReplayInputCountExceeded { limit } => {
+                write!(f, "run: replay input count exceeds limit {limit}")
+            }
         }
     }
 }
@@ -404,6 +495,7 @@ fn run_in(case: &Case, env: &RunEnv, base: &Path) -> Result<ReplayCapture, RunEr
 fn drive_in<S, V>(
     case: &Case,
     env: &RunEnv,
+    inputs: &[ReplayInput],
     base: &Path,
     drive: &mut impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
 ) -> Result<Vec<ReplayResult<S, V>>, RunError>
@@ -413,25 +505,57 @@ where
 {
     let work = base.join("work");
     let scratch = base.join("scratch");
+    let input_limit = MAX_SECTION_COUNT.saturating_sub(case.sections().len().saturating_add(1));
+    if inputs.len() > input_limit {
+        return Err(RunError::ReplayInputCountExceeded { limit: input_limit });
+    }
     fs::create_dir(&work)?;
     fs::create_dir(&scratch)?;
+    let mut materialized = BTreeMap::new();
+    let mut paths = BTreeSet::new();
     for (rel, content) in case.materialized_files() {
+        let name = rel.to_string_lossy().into_owned();
+        paths.insert(name.clone());
         let target = work.join(&rel);
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent)?;
         }
         fs::write(target, content)?;
+        materialized.insert(name, content.to_owned());
+    }
+    for input in inputs {
+        if !paths.insert(input.path.clone()) {
+            return Err(RunError::DuplicateReplayInput {
+                path: input.path.clone(),
+            });
+        }
+        let target = work.join(&input.path);
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(target, &input.content)?;
+        materialized.insert(input.path.clone(), input.content.clone());
     }
     let context = ReplayContext {
         cwd: &work,
         scratch: &scratch,
         env,
+        inputs: &materialized,
     };
     case.replay()
         .blocks()
         .iter()
         .map(|block| drive(block.command(), &context))
         .collect()
+}
+
+fn safe_relative_path(path: &str) -> bool {
+    !path.is_empty()
+        && !path.starts_with('/')
+        && !path.contains(['\\', ':'])
+        && path
+            .split('/')
+            .all(|component| !matches!(component, "" | "." | ".."))
 }
 
 fn run_block(
