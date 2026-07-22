@@ -44,7 +44,9 @@ $ dorc plan --book=book.sh --format=jsonl
 
 (Note that none of this rendering is errorloom's; your renderer owns the
 rendering and formatting, errorloom doesn't care. It only cares about the
-distinct *difference* between strutcture, and prose.)
+distinct *difference* between structure and prose. The human diagnostic above
+can carry typed editable provenance; the JSONL bytes are still tested but are
+not editable unless that exact renderer also supplies provenance for them.)
 
 That's the elevator pitch: no separate file to edit. You open your CLI's
 shell-output E2E test-case, and modify the prose right there, looking at exactly
@@ -82,11 +84,13 @@ errorloom inverts the direction: the authoring surface is the *executable
 transcript case*, a recorded run of the tool (input state + the exact bytes the
 command printed). Authors edit the *rendered transcript*, seeing exactly what a
 user sees - effectively an end-to-end test-case. The renderer supplies an
-editable tree beside those bytes: immutable structure, immutable data, and
-editable prose containing opaque variable identities. errorloom transports an
-edit through that tree; the consumer compiles the result into its own catalog.
-The catalog becomes a derived artifact; the committed transcript is the source
-of truth.
+editable tree beside the exact replay bytes it produced: immutable structure,
+immutable data, and editable prose containing opaque variable identities.
+errorloom transports an edit through that tree; the consumer compiles the
+result into its own catalog. Output bytes without such a tree remain ordinary,
+fully-tested transcript output and never become editable merely because they
+look like prose. The catalog becomes a derived artifact; the committed
+transcript is the source of truth.
 
 Lineage (steal-instead-of-invent is The Way): cram / Mercurial t-tests, Go
 `txtar` + `testscript`, `rustc tests/ui --bless`, insta, terraform-plugin-docs.
@@ -132,8 +136,11 @@ $ mytool plan --book=book.sh --format=jsonl < probe-results.txt
  - **File sections** are materialized verbatim to a temp dir before the replay
    runs. Names may be `/`-joined paths; absolute or `..`-climbing names refuse.
  - **The replay section** (always last) is a sequence of `$ `-prefixed command
-   blocks, each followed by exactly what the command printed. Commands run
-   sequentially in one shared temp cwd, so state flows between them by design.
+    blocks, each followed by exactly what the command printed. Commands run
+    sequentially in one shared temp cwd, so state flows between them by design.
+    A replay command is opaque to generic errorloom. An embedding consumer may
+    handle an exact invocation shape in-process; everything else may be routed
+    explicitly to the generic executor.
 
 
 ### Case-hygiene gates
@@ -153,7 +160,9 @@ Blunt refusals, all generic, either NYI or out-of-scope:
 
 ## CLI: the generic cram mode
 
-The `errorloom` binary is the fully-generic cram tool. The environment is
+The `errorloom` binary is the fully-generic cram tool. It deliberately selects
+errorloom's generic replay executor; it has no consumer-specific
+in-process driver and grants no catalog-edit authority. The environment is
 entirely caller-injected (`env -i`-style): nothing ambient leaks in.
 
 ```sh
@@ -191,14 +200,45 @@ fn transcripts_are_byte_stable() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 The generic CLI deliberately stops at transcript execution and structure-bless.
-Template syntax, payload lookup, and catalog generation are consumer policy;
-errorloom provides the identity-preserving transport those tools build on.
+Template syntax, payload lookup, command dispatch, provenance production, and
+catalog generation are consumer policy. Current errorloom provides the generic
+executor and identity-preserving transport those tools build on; the target API below
+adds the consumer-neutral driver/result boundary between them.
+
+
+## Target library API: replay driving
+
+This is the next pre-1.0 API step. The generic executor and editable transport below
+exist; consumer-driven exact-result provenance is being added before durable
+compile/promote. Current consumer code that locates editable output by matching
+rendered contents is not an accepted compatibility surface.
+
+Every replay produces exact bytes. An embedding consumer may first try to drive
+the original command text itself, returning either `Decline` or a handled result
+containing those exact bytes plus an optional typed `EditableRender`. Driving a
+command and exposing editable prose are separate capabilities: an in-process
+machine renderer may return bytes only, while a future external driver could
+return provenance if it preserves the mapping explicitly.
+
+The reusable generic executor is a mechanism, not an implicit fallback. The
+embedding application decides whether a decline is fatal or routes it to that
+executor. Thus the standalone `errorloom` CLI chooses generic execution, while a
+consumer-specific tool can compose its in-process driver with a controlled
+fallback. Errorloom itself knows no consumer command names, flags, output formats,
+or template syntax.
+
+For example, a consumer may handle `mytool plan FILE` directly and return editable
+message regions. It may decline `mytool plan FILE | jq --pretty`; the configured
+generic executor still tests the final transformed bytes, but arbitrary
+transformation destroys edit authority unless a future transformation-aware
+driver explicitly preserves it.
 
 
 ## Library API: editable transport
 
-Your renderer hands errorloom an `EditableRender`: the rendered bytes expressed
-as an ordered tree of three component classes.
+For one exact replay result, your renderer may hand errorloom an
+`EditableRender`: those exact rendered bytes expressed as an ordered tree of
+three component classes.
 
  - `Structure` is immutable layout: frames, labels, carets, and whitespace.
  - `FixedVariable` is immutable rendered data outside editable prose.
@@ -210,6 +250,13 @@ preserving every untouched variable by identity before tokenization.
 `transport_edit_allow_removal` additionally accepts a uniquely-attributable
 variable omission. Both are bounded and refuse structure edits, fixed-data
 edits, cross-section changes, ambiguous attribution, and excessive work.
+
+Changing surrounding text may move an untouched variable to a different byte
+offset without requiring an explicit template marker. Existing rendered values
+may also be relocated within the same editable section when one unique
+identity-preserving interpretation exists. Consumer markers are the fail-clear
+fallback for destroyed anchors, equal-value ambiguity, duplication/new
+occurrences, or cross-section movement, not routine editing ceremony.
 
 The returned `SectionEdit` is deliberately not a catalog template. A consumer
 compiles its text using its own strict syntax, resolves names against its typed

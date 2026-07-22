@@ -21,7 +21,7 @@ enumerated here — they are banked at `TODO-ADDTL.md`'s tail (human-directed,
 
 ## §1 — `lane-errorloom-crate` (parallel)
 
-`282` phases 1+3: the transport engine (tokenizer · word-diff aligner · provenance
+The `282` standalone foundation: the transport engine (tokenizer · word-diff aligner · provenance
 attribution · re-holer · refusal classes · the round-trip property test) and the
 container/runner (txtar+frontmatter parse/materialize · the sequential replay
 runner on the e2e safety rails · inline-on-bless · coherence gates), as the
@@ -62,6 +62,16 @@ covering both changes (the `spike/docs` quoted-footer grep-sweep · the
 `spike/CLAUDE.md` authored-surface rewrite · `AID-NEEDS.md` law wording ·
 `spike/skills/author-oracle`). Branch: `ai/r28-errorloom-unify`.
 
+Post-foundation continuation (human-ruled 2026-07-21): `282` now interposes
+`282:phase-replay-driver-provenance` before the compile-receipt/promotion work.
+Generic errorloom owns a consumer-neutral driver/result API and reusable controlled
+shell/process executor. Dorc owns exact-shape in-process dispatch and explicitly
+routes declines to that executor. An exact replay result is prose-editable only when
+its driver returns typed renderer provenance; command names, formats, output
+skeletons, and prose-looking bytes grant nothing. The accepted editable transport
+and Dorc template compiler survive unchanged; the read-only Unit-1 CLI must be rebuilt
+on this seam before receipts.
+
 ## §4 — Shared surfaces and the bless discipline
 
 The three genuinely-shared surfaces, and how the cut dodges each: the
@@ -76,6 +86,10 @@ relaxation) and conductor-verified own-hand (never-vouch); fold order
 `lane-errorloom-crate` first (near-conflict-free), then
 `lane-syntax-unification-respell`, then branch §3.
 
+The follow-on replay-driver seam crosses errorloom's public runner API and
+dorc-loom's integration surface, so it is serial map-then-execute work. It does not
+reopen the completed generic edit transport or syntax lane.
+
 ## §5 — Sequencing and wallclock
 
 §1 ∥ §2 from the `ai/r27-aid` tip; §2 is the long pole of the parallel front; §3
@@ -84,6 +98,10 @@ re-synthesis as a parallel lane beside §3; §3's case-authoring fans out across
 codes once the generation flip lands. The `records-*` corruption case tail and
 the prose-quality sprint stay OUT (`282` §9 phase-7 / §10 — lazy burn-down;
 sprint at a surface-stability moment).
+
+Post-round ordering: replay-driver provenance → read-only compile/vars inspection →
+receipt/touched-set gate → generated-lock checkpoint/publication → command-variable
+dogfood. Content-aware replay selection may not be used as a shortcut.
 
 ## §6 — The horizon (the `270` §5 chain, resumed with one re-sequencing)
 

@@ -66,6 +66,23 @@ Human-typed, 2026-07-18/19 sitting:
 - **`282:rul-git-repo-dependence-accepted`** — the tool may depend on running
   inside a git repository; the access mechanism is conductor latitude (taken:
   subprocess `git` behind a trait — §6).
+- **`282:rul-replay-editability-is-provenance`** — a replay is an arbitrary command
+  plus exact output bytes. Those bytes are editable ONLY when the embedding
+  consumer's driver returns typed `EditableRender` provenance for that exact
+  invocation and exact result. Command category, output format, prose-looking bytes,
+  template-looking bytes, and content similarity grant no edit authority. Errorloom
+  never rediscovers provenance from text.
+- **`282:rul-driving-and-editing-are-separate`** — driving an invocation and exposing
+  editable prose are independent capabilities. A consumer may handle an invocation
+  in-process and return bytes with no editable regions; generic execution normally
+  returns bytes only. A future external or transformation-aware driver may return
+  provenance only when it preserves the exact mapping explicitly.
+- **`282:rul-generic-executor-consumer-dispatch`** — generic errorloom owns the
+  consumer-neutral replay-driver/executor API and a reusable controlled shell/process
+  executor. The embedding consumer owns dispatch and fallback policy: it may claim
+  only exact invocation shapes it understands, then explicitly route declines to the
+  generic executor. Errorloom knows no Dorc command names, flags, JSONL semantics, or
+  template syntax; decline never silently means shell execution in the library API.
 
 Conductor leans, standing unvetoed:
 
@@ -87,17 +104,26 @@ Conductor leans, standing unvetoed:
 
 A case file is one txtar archive: frontmatter metadata, embedded source files
 (book, oracles), embedded world (probe results; later per-host), and one final
-replay section holding one or more `$ dorc …` command lines each followed by
-EXACTLY what that command prints. At regeneration time the commands are literally
-executed in a materialized temp dir and the output is re-inlined.
+replay section holding arbitrary `$ command …` lines, each followed by EXACTLY what
+that command prints. At regeneration time each replay is passed to the embedding
+consumer's driver. A handled invocation returns exact bytes plus optional typed
+editable provenance; a declined invocation may be routed, by explicit consumer
+policy, to errorloom's controlled generic executor and returns bytes only. Commands
+run in a materialized temp dir and their output is re-inlined.
+
+Origin is not authority. A direct supported `$ dorc plan …` may be driven in-process
+and return editable message/help regions. `$ dorc plan --format=jsonl | jq --pretty`
+is an arbitrary transformed result: the Dorc driver declines the whole pipeline, the
+generic executor captures its final bytes, and no prose edit authority survives
+unless a future transformation-aware driver explicitly preserves it.
 
 Three actions stay mechanically distinct:
 
 - **compile**: read dirty transcript prose, attribute it through renderer tags, and
   show the editor the exact template interpretation and concrete re-render. It writes
   only an ignored, content-bound receipt.
-- **promote**: accept only that fresh compiled interpretation, atomically regenerate
-  the catalog lock and every affected case, then prove the fixpoint.
+- **promote**: accept only that fresh compiled interpretation, precompute the catalog
+  lock and every affected case, prove the fixpoint, then publish the generated set.
 - **structure-bless**: with transcript prose clean, regenerate cases after arrangement
   or engine changes. A touched-set spanning prose and structure refuses.
 
@@ -150,11 +176,14 @@ $ dorc plan --book=book.sh --format=jsonl < probe-results.txt
   code/field and lists only variables used by editable prose, in first-use order,
   beside their exact rendered values. It is editor aid, derived data, and never an
   authority.
-- **Machine-format replays**: a replay whose render carries no human prose regions
-  (e.g. `--format=jsonl`) is whole-block structural — never prose-editable, always
-  regenerated. This is how machine-envelope coverage lives in the same case as the
-  human views (`282:rul-multi-replay-per-case`), replacing the retired fragment
-  goldens (§8).
+- **Bytes-only replays**: a replay result carrying no typed editable provenance is
+  whole-result structural — never prose-editable, always regenerated. This commonly
+  includes machine formats, generic subprocesses, and pipelines, but their category
+  is not the reason: the exact result simply has no provenance. If a future machine
+  renderer returns typed prose regions, those regions are editable under the same
+  law as any human view. This is how machine-envelope and transformed-output coverage
+  lives beside editable views (`282:rul-multi-replay-per-case`) without teaching
+  errorloom their formats.
 - **Coherence gates**: a defining case's every replay must surface its `code` slug
   at least once; a case whose replay output contains a line that parses as a txtar
   marker refuses at bless (no escaping exists — sharp edge, acceptable).
@@ -179,8 +208,8 @@ $ dorc plan --book=book.sh --format=jsonl < probe-results.txt
 
 ## §4 — The tagged render
 
-The renderer fills templates at one seat. Alongside the bytes it emits a generic,
-consumer-neutral tree:
+The renderer fills templates at one seat. For one exact replay invocation and result,
+alongside the exact bytes it may emit a generic, consumer-neutral tree:
 
 - **Structure** — numbering, connectives, carets, gutters, excerpts, and layout;
   immutable under prose editing.
@@ -189,11 +218,26 @@ consumer-neutral tree:
 - **EditableSection(section-id)** — one renderer-stamped prose instance containing
   an ordered series of **Text** and **Variable(variable-id, rendered-value)**.
 
-Section and variable IDs are opaque to errorloom. The map, not a diff heuristic, is
-the attribution authority; word diffing only aligns edits within one section.
-Nothing here leaks into product renders: tags ride beside identical bytes.
+Section and variable IDs are opaque to errorloom. The map must itself render to the
+exact replay bytes it accompanies. That map, not command spelling, output contents,
+or a diff heuristic, is the attribution authority; word diffing only aligns edits
+within one section. Nothing here leaks into product renders: tags ride beside
+identical bytes.
 
-## §5 — The transport engine and consumer boundary
+## §5 — Replay driving, transport, and the consumer boundary
+
+Before edit transport, errorloom asks the embedding consumer to drive each replay.
+The consumer receives the original command text and materialized case context, and
+returns either a decline or one exact result: output bytes plus optional typed
+editable provenance. The consumer claims only exact invocation shapes it can
+faithfully reproduce. Shell operators, wrappers, redirects, environment prefixes,
+and pipelines decline unless explicitly modeled as a whole.
+
+Errorloom provides the reusable controlled shell/process executor but never invokes
+it merely because a driver declined. The embedding application composes policy. The
+standalone `errorloom` CLI deliberately chooses generic execution; `dorc-loom`
+chooses a Dorc in-process driver followed by a tightly configured generic fallback.
+Generic fallback outputs remain exact, testable case bytes with no edit authority.
 
 Layer 1, zero Dorc types: errorloom transports edits over the §4 tree. It preserves
 untouched variables by identity before tokenization, confines edits to one editable
@@ -247,12 +291,19 @@ enforces defining-case ownership and applies edits to the catalog lock.
 - **Mode inference**: case-prose edits plus a byte-clean catalog lock may compile;
   structure edits plus clean case prose may structure-bless. Mixed classes or a
   hand-edited generated lock refuse.
-- **`dorc-loom compile CASE...`**: produce the exact interpreted template series,
-  variable bindings, refusals, and concrete re-render; write only an ignored receipt
-  bound to case bytes, catalog input, consumer/tool semantics, and touched set.
+- **`dorc-loom compile CASE...`**: drive every replay, produce the exact interpreted
+  template series for only those results carrying editable provenance, and show
+  variable bindings, refusals, bytes-only results, and concrete re-renders. Write only
+  an ignored receipt bound to case bytes, catalog input, consumer/tool semantics,
+  exact replay results/provenance, and touched set.
 - **`dorc-loom promote CASE...`**: require that fresh receipt, recompute and compare,
-  then atomically overwrite the generated catalog lock and all affected cases. Any
-  failure leaves committed files byte-identical. The review surface is the git diff.
+  precompute the entire generated catalog/case candidate set, and run both fixpoint
+  gates before publishing any source change. Validation or compilation failure leaves
+  committed files byte-identical. Publication uses per-target temp-file replacement;
+  interruption during the final multi-file publication may leave a loud, git-visible
+  partial generation repaired by rerun or git. "One atomic act" means one preflighted
+  user operation, not a crash-atomic filesystem transaction. The review surface is
+  the git diff.
 - **Structure-bless**: regenerate cases from a clean catalog lock after renderer or
   arrangement changes; it never consumes transcript prose edits.
 - **CI fixpoint**: compilation/promotion over the committed corpus reproduces the
@@ -260,14 +311,17 @@ enforces defining-case ownership and applies edits to the catalog lock.
 
 ## §7 — The execution harness
 
-- Materialize sections to a temp dir (LF pinned); run replay commands in order
-  with a controlled environment (`env -i`-style, PATH pinned to the built `dorc` +
-  the case's inert mocks; cwd = the temp dir so paths render RELATIVE — absolute
-  host paths in a transcript are a regeneration-time refusal); capture combined output
-  (`2>&1`) v1 — a command wanting stream separation spells its own redirection in
-  the command line. Flag: combined-capture interleaving is deterministic only
-  because dorc's surfaces are effectively single-stream per invocation; if that
-  ever breaks, split-capture is the escape hatch.
+- Materialize sections to a temp dir (LF pinned); pass replay commands in order to
+  the consumer-supplied driver/router with one shared per-case context. A handled
+  in-process invocation and a generic fallback must observe the same materialized
+  files, cwd, explicit environment, and sequential scratch state.
+- The reusable generic executor runs with a controlled environment (`env -i`-style,
+  PATH pinned by the embedding consumer to the built tool + inert mocks; cwd = the
+  temp dir so paths render RELATIVE — absolute host paths in a transcript are a
+  regeneration-time refusal). It captures combined output (`2>&1`) v1; a command
+  wanting stream separation spells its own redirection. Combined-capture interleaving
+  is deterministic only while the tested surfaces remain effectively single-stream;
+  split-capture is the escape hatch.
 - Safety: identical rails to the e2e harness (inert mocks only, no real mutators,
   worktree-local, no network). Case execution is git-free.
 - Determinism: same DST discipline as e2e; committed transcripts are byte-stable
@@ -277,6 +331,13 @@ enforces defining-case ownership and applies edits to the catalog lock.
 
 ## §8 — Dorc integration (the adapter, and what changes at home)
 
+- **Replay dispatch is Dorc-owned**: `dorc-loom` recognizes only a small, explicit
+  set of direct Dorc invocation shapes and drives those through the same production
+  render seats. Each handled result carries exact bytes and, where that renderer has
+  user-facing catalog prose, its exact `EditableRender`. Handling a command never
+  manufactures editability. Unknown shell forms and arbitrary commands decline to
+  the configured generic executor and remain bytes-only. No replay block is selected
+  by matching output skeletons, prefixes, JSON shapes, or `{{...}}` text.
 - **The catalog table is fully generated**: prose fields, metadata (frontmatter),
   and params/example (typed payload machinery) live in one wholly generator-owned,
   committed Rust target (`catalog_lock.rs`, spelling latitude). Promotion overwrites
@@ -317,7 +378,7 @@ enforces defining-case ownership and applies edits to the catalog lock.
   emit-site gate (the fires-half backstop) — though defining cases now REALLY
   fire, closing `27U:finding-corpus-blind-edge-codes`; the e2e corpus and its
   plan-render goldens (different product surface); machine-envelope shape
-  assertions (move to a machine-format replay block or stay unit-tier; latitude).
+  assertions (move to a bytes-only replay block or stay unit-tier; latitude).
 - Registry/law sync (root `AID-NEEDS.md` law wording, `spike/CLAUDE.md` aid block)
   rides the INTEGRATION landing, not this plan-mint — one sync commit when the
   direction is built truth, not paper truth.
@@ -338,12 +399,16 @@ enforces defining-case ownership and applies edits to the catalog lock.
    tagged-promotion/re-holing stacks are removed. The command-shaped presentation of
    used/all inventories moves with phase 3's CLI rather than creating an interim
    invocation surface.
-3. **`282:phase-compile-promote-loop`** — interpretation render + bound receipt;
-   direct atomic catalog-lock/case generation; legacy promote paths absent.
-4. **`282:phase-command-embed-dogfood`** — perform the motivating command-variable
+3. **`282:phase-replay-driver-provenance`** — consumer-neutral driver/result API +
+   reusable generic executor; Dorc exact-shape in-process dispatch + explicit
+   fallback; read-only compile/vars inspection over exact replay-result provenance.
+   Content-skeleton or command-category edit inference is rejected.
+4. **`282:phase-compile-promote-loop`** — interpretation render + bound receipt;
+   preflighted generated catalog-lock/case publication; legacy promote paths absent.
+5. **`282:phase-command-embed-dogfood`** — perform the motivating command-variable
    reorder through the case alone; pin compile output, used inventory, canonical
    transcript, stale-receipt refusal, and whole-file lock overwrite.
-5. **`282:phase-adjacent-fragment-followup`** — punctuation/backtick adjacency for
+6. **`282:phase-adjacent-fragment-followup`** — punctuation/backtick adjacency for
    newly-positioned markers and the broader glued-variable seam; explicitly after
    the whole-token loop, never silently approximated in it.
 
@@ -483,6 +548,15 @@ Spellings below are ruled unless marked latitude.
   remains the next phase; unsupported adjacency refuses rather than emitting
   spacing-corrupted output. Boundary attribution is inclusive after equal-edge
   trimming: abutting insertion/deletion/replacement counts as touching the variable.
+- **`282:rul-rendered-variable-offsets-may-move`** — changing surrounding prose may
+  move an untouched variable to a new byte offset without requiring `{{name}}`. For
+  example, `You called the command \`apt-get\` first` may become `You called
+  \`apt-get\` first` with `apt-get` retaining its variable identity because its
+  immediate backtick anchors and fragment ordering survived. Existing rendered values
+  may also be relocated within the same editable section without markers when the
+  identity-preserving interpretation is unique. Explicit `{{name}}` is the fail-clear
+  fallback for destroyed anchors, equal-value ambiguity, duplication/new occurrence,
+  or cross-section movement, not routine prose-edit ceremony.
 - **`282:rul-rehole-deliberately-stupid`** — heuristic re-holing is only an aid for a
   rendered value already present in the SAME editable series. It is exact, anchored by
   surviving text, minimum-length/charset-gated, and never fuzzy, substring,
@@ -508,21 +582,26 @@ Spellings below are ruled unless marked latitude.
 ### Compile, inspect, promote
 
 - **`282:rul-compile-before-promote`** — editing is compiler-shaped, not direct bless.
-  `dorc-loom compile CASE...` reads dirty transcripts and prints exactly how every
-  touched editable section was interpreted: the resulting `Text | Variable` series,
-  variable bindings, refusals, and the concrete re-rendered user view. It writes no
-  committed source. Complex interpretation is never silently accepted.
+  `dorc-loom compile CASE...` drives each replay through the consumer router and reads
+  dirty transcripts only against typed provenance returned for that exact result. It
+  prints exactly how every touched editable section was interpreted: the resulting
+  `Text | Variable` series, variable bindings, refusals, bytes-only replays, and the
+  concrete re-rendered user view. It writes no committed source. Complex
+  interpretation is never silently accepted.
 - **`282:rul-promote-requires-fresh-compilation`** — `dorc-loom promote CASE...`
   accepts only a prior successful compile receipt bound to the exact case bytes,
   catalog input, consumer/tool semantics, and touched set. A stale or absent receipt
   refuses; promote may recompute and equality-check but never substitute an unseen
   interpretation. The receipt is an ignored cache under `target/`, distinct from the
   committed catalog lock.
-- **`282:rul-promote-is-one-atomic-act`** — promotion atomically writes the generated
-  catalog and all affected canonical cases, then runs the render/promote fixpoint.
-  Failure leaves committed files byte-identical. No env-gated Cargo-test entry,
-  `target/catalog-promoted.rs`, or manual Rust splice remains. Default leaves a
-  reviewable git diff; explicit staging is optional follow-up latitude, never implicit.
+- **`282:rul-promote-is-one-atomic-act`** — promotion writes the generated catalog and
+  all affected canonical cases as one preflighted user operation: all candidate bytes
+  and both fixpoints are computed before publication, so validation failure leaves
+  committed files byte-identical. Final per-target temp-file replacements are not a
+  promised crash transaction; interruption is loud in git and recoverable by rerun or
+  git. No env-gated Cargo-test entry, `target/catalog-promoted.rs`, transaction
+  journal, or manual Rust splice remains. Default leaves a reviewable git diff;
+  explicit staging is optional follow-up latitude, never implicit.
 - **`282:rul-catalog-lock-is-generated-whole`** — the catalog table moves into one
   wholly generator-owned Rust compilation target (spelling latitude:
   `catalog_lock.rs`). Promotion ignores and overwrites its entire contents; user edits

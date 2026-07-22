@@ -513,9 +513,24 @@ prompt you write:
 - **one-catalog-no-legacy** (`27V:rul-kill-legacy-diagnostic`) — the structured
   `DiagCode` catalog is the ONLY diagnostics mechanism; the legacy string-slug
   `Diagnostic` is being removed. Never add new emissions to it.
+- **replay-editability-is-provenance** (`282:rul-replay-editability-is-provenance`)
+  — every errorloom replay is an arbitrary command plus exact result bytes. Prose is
+  editable ONLY when the embedding consumer's driver returns typed `EditableRender`
+  provenance for that exact invocation and result. Command names, flags, output
+  formats, JSON/prose shape, prefixes, skeleton similarity, and `{{...}}` bytes grant
+  no edit authority. Driving an invocation and exposing editable prose are separate
+  capabilities.
+- **replay-executor-ownership** (`282:rul-generic-executor-consumer-dispatch`) —
+  generic errorloom owns the consumer-neutral driver/result API and reusable
+  controlled shell/process executor; it knows no Dorc names, formats, or template
+  policy. The embedding consumer owns exact-shape in-process dispatch and explicitly
+  chooses whether a decline reaches generic execution. Generic fallback returns
+  testable bytes only unless an explicit transformation-aware driver preserves
+  provenance. A pipeline such as `dorc plan --format=jsonl | jq --pretty` therefore
+  carries no edit authority by default.
 - **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining
   case; the **committed transcript CASE is the authoring surface** and the compiled
-  `core::catalog.rs` const-table is DERIVED from it (`282:rul-transcript-is-the-
+  generated catalog lock/table is DERIVED from it (`282:rul-transcript-is-the-
   authoring-surface`). Cases live at `crates/dorc-loom/cases/<slug>.txt` (txtar +
   flat-YAML frontmatter). The phase-two compiler is split by ownership: errorloom
   transports renderer-stamped editable sections and opaque variable identities;
@@ -523,7 +538,9 @@ prompt you write:
   current typed payload, and compiles catalog fields. The old tagged-region/
   param-table/re-holing/prose-bless path is dead; never restore it. Durable promotion
   is deliberately absent until phase three lands `dorc-loom compile/promote`, a
-  content-bound receipt, and atomic generated catalog+case writes. The build parses
+  content-bound receipt, and preflighted generated catalog+case publication. All
+  candidate bytes and fixpoints precede publication; final per-target temp-file
+  replacements are not a promised crash transaction. The build parses
   the catalog and never auto-tracks case files (the lag IS the assertion).
   `message`/`help` are
   `Option<&'static str>` (`None` renders the `[unwritten:]` placeholder at render
@@ -581,7 +598,7 @@ prompt you write:
   attribution lines. Push stays ruthlessly selected even under the spike's
   kWARN tune-high.
 
-## Where the build stands (dated 2026-07-17 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
+## Where the build stands (dated 2026-07-21 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 
 - LANDED: the round-24 ladder Stages 1–5 + `270:block-rebuild` COMPLETE (eight
   dispatches, both bless checkpoints stamped; ledger `notes/27D`, landing notes
@@ -611,8 +628,15 @@ prompt you write:
   FLAGSHIP GREEN (the naked-trust chain, live and replayed) · lint absorbed
   (one severity vocabulary; `dorc_oracle::validate` book-free;
   rung-oracle-solo) · caret plumbing + multi-line frames · `conduct-bless.sh`.
-- NEXT: `270:block-stdlib` under the human-led conductor (`27Q` on-ramp; the
-  minting-line precondition is now DISCHARGED), then the field-trial revival.
+- ERRORLOOM FOLLOW-ON: phase-two editable transport + strict Dorc template compiler
+  are accepted on `ai/r28-errorloom-phase2`. Phase-three Unit 1 is in REWORK on
+  `ai/r28-phase3-unit1-cli`: its command surface/inventories remain useful, but
+  content-skeleton replay selection is rejected. NEXT is the consumer-neutral
+  replay-driver/result seam + Dorc exact-shape dispatch, then receipts/promotion;
+  durable handoff `28A`, design authority `282`.
+- HORIZON AFTER the errorloom follow-on: `270:block-stdlib` under the human-led
+  conductor (`27Q` on-ramp; the minting-line precondition is now DISCHARGED), then
+  the field-trial revival.
 
 ## Build / test / run
 

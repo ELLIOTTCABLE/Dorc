@@ -63,12 +63,19 @@ research synthesis.
   (typing the shown command yields the shown text). Functionally the block is an
   INTERNAL LINK: fixed-format, validated, FAIL-FAST at authorship (an embed naming a
   nonexistent slug refuses at bless). The supported invocation set starts small and
-  closed and extends deliberately; it only APPEARS free-form to the end-user.
+  closed and extends deliberately; it only APPEARS free-form to the end-user. In
+  `282` terms this is an exact invocation shape claimed by the Dorc consumer driver,
+  never a command-string or output-content inference. Its exact result carries typed
+  provenance only for the editable register it renders.
 - **`286:rul-case-replay-embeds`** — the second embed species: actually-EXECUTED CLI
   teaching examples, spelled approximately "embed <other case's replay block> as
   rendered here" — borrowing the errorloom case corpus as the example library, so
   input/output teaching examples carry the rustc-doctest honesty property (they
-  re-execute at bless; they cannot go stale).
+  re-execute at bless; they cannot go stale). Replay execution follows
+  `282:rul-generic-executor-consumer-dispatch`: direct supported invocations may be
+  driven in-process; pipelines and arbitrary commands may fall back to exact
+  bytes-only execution. The embedded copy is generated output and never an edit-home;
+  edit authority, if any, remains at the source replay's own typed face.
 - **`286:rul-command-in-output-out-ceiling`** — the complexity ceiling, stated as a
   DATA-MODEL law: content enters a page only as {local paragraph | validated
   dorc-embed | case-replay embed | exhibit}; anything not expressible as
@@ -106,9 +113,12 @@ research synthesis.
 ## §1 — Architecture (mechanism digest)
 
 - **registers-as-replays** — a concept's case file carries one replay block per
-  register (`$ dorc explain wall`, `$ dorc explain --terse wall`, …); prose-bless on
-  a block edits that register; `282:rul-multi-replay-per-case` is the carrier
-  unchanged. A register IS a view; no new storage or authoring flow exists.
+  register (`$ dorc explain wall`, `$ dorc explain --terse wall`, …). Those exact
+  invocation shapes are handled by the Dorc driver and return the register's typed
+  editable provenance; transcript compilation edits that register.
+  `282:rul-multi-replay-per-case` is the carrier unchanged. A transformed or
+  generic-executed copy remains testable bytes but cannot become an edit-home. A
+  register IS a view; no new storage or authoring flow exists.
 - **`286:inv-every-expression-has-a-face`** — every editable prose unit has exactly
   ONE edit-home, and every edit-home is a rendered, user-facing surface (a
   register's replay block in its concept's case). Fragment-files-in-a-vacuum — the
@@ -187,6 +197,11 @@ before any machinery: paper-prototype — hand-write ONE real concept page (`wal
 in the target shape (prose + command-blocks + an exhibit) and read it; the
 composed-view authoring experience of writing flowing prose AROUND blocks you
 cannot edit in place is the single untested interaction in this design.
+
+Prerequisite at unpark: `282:phase-replay-driver-provenance` must be built. Explain
+register replays and validated command-block links use its exact-shape Dorc driver;
+case-replay examples use the same driver/fallback routing. No explain implementation
+may classify editable output from command names or rendered content.
 (EXECUTED early, 2026-07-20, human-directed: strawman case files `286a`–`286d`
 (`.loom`, ruled) + findings `286e` — the composed-authoring premise held at n=1;
 new bites banked there: terse-gloss drift, fallback rulings owed, exhibit

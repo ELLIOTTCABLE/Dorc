@@ -16,7 +16,8 @@
 
 ## ERRORLOOM TEMPLATE COMPILER (post-round-28, 2026-07-21)
 
-**PHASE TWO COMPLETE on `ai/r28-errorloom-phase2` @ `01523f2c`; not yet folded.**
+**PHASE TWO COMPLETE on `ai/r28-errorloom-phase2`; PHASE THREE UNIT 1 IN REWORK on
+`ai/r28-phase3-unit1-cli` @ `c4957366`; neither folded.**
 `282:phase-generic-editable-sections` + `282:phase-dorc-template-compiler` now form
 one authority: errorloom transports renderer-stamped editable sections and preserves
 opaque variable identity; dorc-loom compiles strict whole-token `{{name}}` markers.
@@ -29,11 +30,25 @@ transport properties) are repaired. Fresh WSL build + workspace tests + foregrou
 e2e 97/97 + fmt/clippy/deny/typos are green. Durable ledger: `28A` §6/§6b; plan:
 `282` §§4-6/§9/§13.
 
-**NEXT:** phase three, split into bounded builder units: compile/inspection CLI;
-content-bound receipt + touched-set gate; atomic generated catalog/case promotion +
-committed used inventory / full-inventory query; then the command-variable dogfood.
-The generated-lock ownership change retains its proposal/go checkpoint. Adjacent or
-glued newly-positioned markers stay phase 5.
+**DIRECTION CHANGE (human-ruled 2026-07-21):** every replay is an arbitrary command
+plus exact bytes; edit authority comes ONLY from typed provenance returned by the
+embedding consumer's driver for that exact invocation/result. Errorloom owns the
+consumer-neutral driver/result API and reusable generic executor; Dorc owns
+exact-shape in-process dispatch and explicit fallback policy. Driving and editability
+are independent. Command names/formats, output skeletons/prefixes, prose-looking
+bytes, and `{{...}}` text grant nothing. Direct supported Dorc output may be editable;
+`dorc plan --format=jsonl | jq --pretty` is generic-executed/tested bytes only absent
+a future transformation-aware driver. The Unit-1 CLI's argument handling,
+multi-section preview, and vars queries survive; its content-skeleton selection is
+rejected. Phase-two transport remains accepted.
+
+**NEXT:** build `282:phase-replay-driver-provenance` and re-seat Unit 1 on exact
+driver results; then content-bound receipt + touched-set gate; generated-lock
+checkpoint + fully-preflighted/per-target catalog/case publication; then the
+command-variable dogfood. Preserve no-braces offset movement: surrounding prose may
+move an untouched rendered variable when anchors/identity survive, with `{{name}}`
+only the fail-clear ambiguity fallback. Adjacent/glued newly-positioned markers stay
+the final deferred phase.
 
 ## ROUND 28 (seeded 2026-07-19 — the current view)
 
@@ -127,7 +142,10 @@ entry naming who ran it (`27Xf` §4) · naming discipline (`270` §1, HIGH): hyp
 full-word slugs; `docID:slug` cross-refs; subscript old labels once ("nee P5") ·
 the deferred-work ledger lives in `23O` §5; residue in `24C`.
 
-**Branch map:** **`ai/r27-aid`** = the live conduct stack — the whole aid phase +
+**Branch map:** **`ai/r28-phase3-unit1-cli`** = live errorloom follow-on (Unit-1 CLI
+plus the current plan/steering refresh; content-matching implementation not accepted) ·
+`ai/r28-errorloom-phase2` = accepted transport/template-compiler base ·
+**`ai/r27-aid`** = the older conduct stack — the whole aid phase +
 the round-28 seed (`281`/`282`/this trim); awaiting the human's single fold ·
 `ai/main` = the human's integration playground; carries everything through
 `a651fe8` (2026-07-18) plus their interleaved commits; residual `main`-vs-`ai/main`
