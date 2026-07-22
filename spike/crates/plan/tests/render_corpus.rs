@@ -72,14 +72,17 @@ fn classify_with(
     idx: &KindIndex,
     predict_srcs: &[&str],
     i: &mut Interner,
-) -> Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)> {
+) -> (
+    Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)>,
+    dorc_analysis::value::ValueFlow,
+) {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
     let checks: Vec<_> = predict_srcs
         .iter()
         .map(|s| dorc_oracle::predict::lift_predicts(i, s).value)
         .collect();
     let mut arena = dorc_core::ProvArena::new();
-    dorc_analysis::effect::classify(
+    let classes = dorc_analysis::effect::classify(
         cfg,
         &value,
         ast,
@@ -89,92 +92,39 @@ fn classify_with(
         i,
         &mut arena,
     )
-    .value
+    .value;
+    (classes, value)
 }
 
-/// How much of the establish population the test harness vouches (the vouch GATE is pinned elsewhere;
-/// these twins exercise elision/guard MECHANICS): `None` — nothing (the no-vouch floor, `guard23-no-
-/// vouch-runs`); `Ambient` — `EstablishAmbient` only (the elision harness); `Written` — also
-/// `EstablishWritten` (past-a-poison-wall), which is what fires the GUARD tier (`render_guard_for`).
+const CORPUS_VERDICT_SRC: &str = r"
+apt_get__is_converged() { return 0; }
+";
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum VouchMode {
     None,
-    Ambient,
-    Written,
+    Reached,
 }
 
-/// Vouch establish-bearing sites per [`VouchMode`]. `Ambient`/`Written` both vouch `EstablishAmbient`
-/// (a converged one elides); `Written` also vouches `EstablishWritten` (a converged past-wall one
-/// guards). `None` vouches nothing — a converged install then RUNS (no-vouch-no-license).
 fn vouch_all(
     classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)],
+    value: &dorc_analysis::value::ValueFlow,
     mode: VouchMode,
+    i: &mut Interner,
 ) -> dorc_plan::Vouches {
-    let mut vouches = dorc_plan::Vouches::new();
-    for (node, class) in classes {
-        let mut insert = |site, fact| {
-            let vouch = dorc_plan::VerdictVouch::new(
-                "apt_get__is_converged".to_string(),
-                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
-                "apt_get__is_converged".to_string(),
-                "package".to_string(),
-                vec!["dpkg-query".to_string()],
-            );
-            vouches.insert(
-                site,
-                fact,
-                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
-            );
-        };
-        if matches!(mode, VouchMode::Ambient | VouchMode::Written) {
-            match class {
-                SkipClass::EstablishMembers { members, .. } => {
-                    for fact in members {
-                        insert(*node, *fact);
-                    }
-                }
-                SkipClass::InlineCall { sites } => {
-                    for site in sites {
-                        if let SkipClass::EstablishAmbient(fact) = site.class {
-                            insert(site.node, fact);
-                        }
-                    }
-                }
-                SkipClass::EstablishAmbient(_)
-                | SkipClass::EstablishWritten(_)
-                | SkipClass::QueryResolvable { .. }
-                | SkipClass::MustRun => {}
-            }
-        }
-        let vouchable = match mode {
-            VouchMode::None => false,
-            VouchMode::Ambient => matches!(class, SkipClass::EstablishAmbient(_)),
-            VouchMode::Written => matches!(
-                class,
-                SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
-            ),
-        };
-        if let Some(fact) = match class {
-            SkipClass::EstablishAmbient(fact) | SkipClass::EstablishWritten(fact) if vouchable => {
-                Some(*fact)
-            }
-            _ => None,
-        } {
-            let vouch = dorc_plan::VerdictVouch::new(
-                "apt_get__is_converged".to_string(),
-                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
-                "apt_get__is_converged".to_string(),
-                "package".to_string(),
-                vec!["dpkg-query".to_string()],
-            );
-            vouches.insert(
-                *node,
-                fact,
-                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
-            );
+    match mode {
+        VouchMode::None => dorc_plan::Vouches::new(),
+        VouchMode::Reached => {
+            dorc_plan::build_vouches(
+                &[CORPUS_VERDICT_SRC, SERVICE_VERDICT_SRC, YUM_VERDICT_SRC],
+                classes,
+                value,
+                i,
+            )
+            .0
+            .value
         }
     }
-    vouches
 }
 
 /// Parse → classify → build_plan → `render_apply` a book, with `holds` the injected host state (a
@@ -183,12 +133,12 @@ fn vouch_all(
 /// disposition asserts). THE dash -n net fires here, on every rendered artifact, so no twin can skip
 /// it.
 fn render_for(src: &str, holds: &[(&str, &str)]) -> (String, Plan) {
-    render_for_mode(src, holds, VouchMode::Ambient)
+    render_for_mode(src, holds, VouchMode::Reached)
 }
 
 /// [`render_for`] with an explicit [`VouchMode`] (the package-oracle world). `VouchMode::None` models
 /// an oracle that authored no verdict body — a converged install then RUNS (the `guard23-no-vouch-runs`
-/// no-vouch floor); `Written` makes the guard tier reachable for a past-wall install.
+/// no-vouch floor).
 fn render_for_mode(src: &str, holds: &[(&str, &str)], mode: VouchMode) -> (String, Plan) {
     let mut i = Interner::default();
     let idx = package_index(&mut i);
@@ -220,7 +170,7 @@ fn render_core(
 ) -> (String, Plan) {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_with(&cfg, &parsed.value, idx, predict_srcs, i);
+    let (classes, value) = classify_with(&cfg, &parsed.value, idx, predict_srcs, i);
     let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
@@ -233,7 +183,7 @@ fn render_core(
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes, mode),
+        &vouch_all(&classes, &value, mode, i),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -293,6 +243,10 @@ systemctl__predict() {
 }
 "#;
 
+const SERVICE_VERDICT_SRC: &str = r"
+systemctl__is_converged() { return 0; }
+";
+
 /// `package_index` + the service oracle: `enable ⇒ service@enabled`, `start ⇒ service@active` — two
 /// DISTINCT selectors of one Service entity (enabling ≠ activating; that distinctness is the point of
 /// the exec-distinct-selectors / exec-enabled-not-active twins).
@@ -329,7 +283,7 @@ fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan)
         &[CORPUS_PREDICT_SRC, SERVICE_PREDICT_SRC],
         &idx,
         held,
-        VouchMode::Ambient,
+        VouchMode::Reached,
         &mut i,
     )
 }
@@ -345,6 +299,10 @@ yum__predict() {
    if [ "$2" = "" ]; then probe-pkg "$pkg"; fi
 }
 "#;
+
+const YUM_VERDICT_SRC: &str = r"
+yum__is_converged() { return 0; }
+";
 
 /// `package_index` + the `yum` provider on the SAME `package` kind (two providers, one kind).
 fn seam_index(i: &mut Interner) -> KindIndex {
@@ -378,7 +336,7 @@ fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
         &[CORPUS_PREDICT_SRC, YUM_PREDICT_SRC],
         &idx,
         held,
-        VouchMode::Ambient,
+        VouchMode::Reached,
         &mut i,
     )
 }
@@ -418,7 +376,7 @@ fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
         &[PKGINDEX_PREDICT_SRC],
         &idx,
         held,
-        VouchMode::Ambient,
+        VouchMode::Reached,
         &mut i,
     )
 }
@@ -482,7 +440,7 @@ fn render_query_for(
 
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_with(
+    let (classes, value) = classify_with(
         &cfg,
         &parsed.value,
         &idx,
@@ -522,7 +480,7 @@ fn render_query_for(
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes, VouchMode::Ambient),
+        &vouch_all(&classes, &value, VouchMode::Reached, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -553,7 +511,7 @@ fn render_guard_for(src: &str, holds: &[&str]) -> (String, Plan) {
         &[CORPUS_PREDICT_SRC],
         &idx,
         held,
-        VouchMode::Written,
+        VouchMode::Reached,
         &mut i,
     )
 }
@@ -584,34 +542,23 @@ fn render_scoped(
 
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_with(
+    let (classes, value) = classify_with(
         &cfg,
         &parsed.value,
         &idx,
         &[CORPUS_PREDICT_SRC, SERVICE_PREDICT_SRC],
         &mut i,
     );
-    let mut vouches = dorc_plan::Vouches::new();
-    for (node, class) in &classes {
-        let fact = match class {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
-            _ => None,
-        };
-        if fact.is_some_and(|f| vkinds.contains(&f.kind)) {
-            let vouch = dorc_plan::VerdictVouch::new(
-                "apt_get__is_converged".to_string(),
-                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
-                "apt_get__is_converged".to_string(),
-                "package".to_string(),
-                vec!["dpkg-query".to_string()],
-            );
-            vouches.insert(
-                *node,
-                fact.expect("vouched establish has a fact"),
-                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
-            );
-        }
+    let mut verdict_srcs = Vec::new();
+    if vkinds.contains(&KindId(i.intern("package"))) {
+        verdict_srcs.push(CORPUS_VERDICT_SRC);
     }
+    if vkinds.contains(&KindId(i.intern("service"))) {
+        verdict_srcs.push(SERVICE_VERDICT_SRC);
+    }
+    let vouches = dorc_plan::build_vouches(&verdict_srcs, &classes, &value, &mut i)
+        .0
+        .value;
     let observe = move |f: FactKey| {
         if conv.contains(&f) {
             Observable::verdict_only(Verdict::Converged)

@@ -310,6 +310,12 @@ impl ReadSubstitutionProof {
 
 impl AllEstablishesVouched {
     fn mint(expected: &[(CfgNodeId, FactKey)], vouches: &Vouches) -> Option<Self> {
+        if expected
+            .iter()
+            .any(|(site, fact)| vouches.is_duplicate(*site, *fact))
+        {
+            return None;
+        }
         let involved: BTreeSet<CfgNodeId> = expected.iter().map(|(site, _)| *site).collect();
         let supplied: Vec<_> = vouches
             .ordered_keys()
@@ -1058,12 +1064,13 @@ impl GuardLicense {
 /// `--trust-footprints`-gated, which governs only the survival tier).
 /// Reached verdict vouches indexed by their exact establish identity.
 ///
-/// Construction stays inside [`build_vouches`], so no caller can promote an observation,
-/// narration receipt, or unrelated site into mutation-erasure authority.
+/// Production lifting happens in [`build_vouches`]; public construction remains test/harness
+/// surface pending the phase-five production fence.
 #[derive(Debug, Clone, Default)]
 pub struct Vouches {
     by_establish: BTreeMap<(CfgNodeId, FactKey), ByVouch<VerdictVouch>>,
     order: Vec<(CfgNodeId, FactKey)>,
+    duplicates: BTreeSet<(CfgNodeId, FactKey)>,
 }
 
 impl Vouches {
@@ -1074,8 +1081,11 @@ impl Vouches {
 
     pub fn insert(&mut self, site: CfgNodeId, fact: FactKey, vouch: ByVouch<VerdictVouch>) {
         let key = (site, fact);
-        if self.by_establish.insert(key, vouch).is_none() {
+        if let std::collections::btree_map::Entry::Vacant(entry) = self.by_establish.entry(key) {
+            entry.insert(vouch);
             self.order.push(key);
+        } else {
+            self.duplicates.insert(key);
         }
     }
 
@@ -1092,6 +1102,7 @@ impl Vouches {
     }
 
     pub fn extend(&mut self, other: Self) {
+        self.duplicates.extend(other.duplicates.iter().copied());
         for (site, fact) in other.order {
             if let Some(vouch) = other.by_establish.get(&(site, fact)) {
                 self.insert(site, fact, vouch.clone());
@@ -1101,6 +1112,10 @@ impl Vouches {
 
     fn ordered_keys(&self) -> Vec<(CfgNodeId, FactKey)> {
         self.order.clone()
+    }
+
+    fn is_duplicate(&self, site: CfgNodeId, fact: FactKey) -> bool {
+        self.duplicates.contains(&(site, fact))
     }
 }
 
@@ -4474,6 +4489,10 @@ apt_get__predict() {
 }
 "#;
 
+    const CORPUS_VERDICT_SRC: &str = r"
+apt_get__is_converged() { return 0; }
+";
+
     /// R3 test seam: resolve+strip the corpus `apt_get__predict` for a site's (provider, argv),
     /// the same resolution the cli's `ship_predict_body` runs — the FIRST check whose provider
     /// matches and whose argparse resolves this argv, stripped to its runnable funcdef. Returns
@@ -5516,6 +5535,54 @@ apt_get__predict() {
         (plan, i)
     }
 
+    fn plan_with_duplicate_aggregate_vouch(src: &str) -> Plan {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &BTreeSet::new(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        let mut vouches = build_vouches(&[CORPUS_VERDICT_SRC], &classes, &value, &mut i)
+            .0
+            .value;
+        let supplied = classes.iter().find_map(|(node, class)| match class {
+            SkipClass::EstablishMembers { members, .. } => {
+                members.first().map(|fact| (*node, *fact))
+            }
+            SkipClass::InlineCall { sites } => sites.iter().find_map(|site| match site.class {
+                SkipClass::EstablishAmbient(fact) => Some((site.node, fact)),
+                _ => None,
+            }),
+            _ => None,
+        });
+        let (site, fact) = supplied.expect("the fixture has an aggregate establish");
+        let duplicate = vouches
+            .get(site, fact)
+            .expect("build_vouches supplied the reached identity")
+            .clone();
+        vouches.insert(site, fact, duplicate);
+        build_plan(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            &vouches,
+            |_| Observable::verdict_only(Verdict::Converged),
+            &mut dorc_core::ProvArena::new(),
+        )
+    }
+
     /// Run the pipeline answering EVERY fact `Converged` — for the plan-level keystone tests
     /// where the upstream modeled mutator (`apt-get update`) must itself ELIDE (cast no shadow,
     /// silence=wall) for a downstream converged establish to elide *past* it. `plan_for` gives
@@ -6436,6 +6503,28 @@ apt_get__predict() {
     }
 
     #[test]
+    fn members_duplicate_supplied_vouch_runs_atomically() {
+        let plan = plan_with_duplicate_aggregate_vouch(
+            "for pkg in nginx curl; do apt-get install -y \"$pkg\"; done\n",
+        );
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "a duplicate supplied member identity refuses the entire loop replacement"
+        );
+    }
+
+    #[test]
+    fn inline_duplicate_supplied_vouch_runs_atomically() {
+        let plan = plan_with_duplicate_aggregate_vouch(
+            "install() { apt-get install -y \"$1\"; }\ninstall nginx\n",
+        );
+        assert!(
+            matches!(find(&plan, "install nginx").disposition, Disposition::Run),
+            "a duplicate supplied inline identity refuses the whole call replacement"
+        );
+    }
+
+    #[test]
     fn aggregate_vouches_require_exact_ordered_site_fact_pairs() {
         let mut i = Interner::default();
         let kind = KindId(i.intern("package"));
@@ -6477,6 +6566,10 @@ apt_get__predict() {
         wrong_site.insert(first, nginx, test_vouch());
         wrong_site.insert(CfgNodeId(43), curl, test_vouch());
         assert!(AllEstablishesVouched::mint(&expected, &wrong_site).is_none());
+
+        let mut duplicate = exact();
+        duplicate.insert(first, nginx, test_vouch());
+        assert!(AllEstablishesVouched::mint(&expected, &duplicate).is_none());
 
         assert!(AllEstablishesVouched::mint(&[(first, nginx), (first, nginx)], &exact()).is_none());
     }
