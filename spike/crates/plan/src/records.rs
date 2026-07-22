@@ -695,6 +695,10 @@ fn admit_records(
                 None => return Admission::Refused(AdmissionRefusal::ArithmeticOverflow),
             };
         }
+        retained = match charge_retained(retained, &parsed, limits) {
+            Ok(total) => total,
+            Err(refusal) => return Admission::Refused(refusal),
+        };
         let identity = parsed.identity();
         if let Some(existing) = identities.get(&identity) {
             if *existing != parsed {
@@ -702,10 +706,6 @@ fn admit_records(
             }
             continue;
         }
-        retained = match charge_retained(retained, &parsed, limits) {
-            Ok(total) => total,
-            Err(refusal) => return Admission::Refused(refusal),
-        };
         if !collections.can_insert(parsed.collection(), limits.collection_entries) {
             return Admission::Refused(AdmissionRefusal::CollectionLimit);
         }
@@ -1164,6 +1164,9 @@ fn checked_field(value: &str, limits: HostEvidenceLimits) -> Result<(), Admissio
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    type RecordFactory = fn(usize) -> String;
+    type FieldFactory = fn(&str) -> String;
 
     /// The default expectation the emitter's spike framing produces (nonce `dorc`, host
     /// `localhost`, attempt 1, book `bk`).
@@ -1791,7 +1794,7 @@ mod tests {
             );
         }
         let additive = strict_stream(&[
-            "site 0 future=one extra=two effect=holds rc=0 stdout=final free value",
+            "site 0.1 future=one extra=two effect=holds rc=0 stdout=final free value",
         ]);
         let Admission::Admitted(records) = admitted(&additive, strict_limits()) else {
             panic!("additive structured fields before the final free field must admit")
@@ -1831,5 +1834,290 @@ mod tests {
             panic!("exact duplicates retain one owned record")
         };
         assert_eq!(records.records.len(), 1);
+        assert!(matches!(
+            admitted(
+                &exact_duplicates,
+                HostEvidenceLimits::new(4096, 512, 8, 64, 11, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::RetainedLimit)
+        ));
+    }
+
+    #[test]
+    fn stream_and_line_limits_cover_exact_plus_one_and_overflow() {
+        let defaults = HostEvidenceLimits::spike_default();
+        assert!(matches!(
+            read_host_evidence(vec![b'x'; 8 * 1024 * 1024].as_slice(), defaults),
+            Admission::Admitted(_)
+        ));
+        assert!(matches!(
+            read_host_evidence(vec![b'x'; 8 * 1024 * 1024 + 1].as_slice(), defaults),
+            Admission::Refused(AdmissionRefusal::StreamLimit)
+        ));
+        assert!(matches!(
+            read_host_evidence(
+                &b"x"[..],
+                HostEvidenceLimits::new(usize::MAX, 1, 1, 1, 1, 1, 1)
+            ),
+            Admission::Refused(AdmissionRefusal::ArithmeticOverflow)
+        ));
+
+        for (bytes, expected) in [(65_536, true), (65_537, false)] {
+            let comment = format!("#{}\r\n{}", "x".repeat(bytes - 2), strict_stream(&[]));
+            assert_eq!(
+                matches!(
+                    admitted(
+                        &comment,
+                        HostEvidenceLimits::new(128 * 1024, 65_536, 8, 64, 512, 8, 4)
+                    ),
+                    Admission::NoObservation
+                ),
+                expected,
+                "CRLF physical line bytes={bytes}"
+            );
+        }
+    }
+
+    #[test]
+    fn record_and_collection_boundaries_are_independent() {
+        let limit = 32_768;
+        let mut records = Vec::with_capacity(limit * 2 + 1);
+        for index in 0..limit {
+            records.push(format!("site {index} effect=holds rc=0"));
+        }
+        for index in 0..limit {
+            records.push(format!("deriv {index} coord=d{index}"));
+        }
+        let borrowed = records.iter().map(String::as_str).collect::<Vec<_>>();
+        let exact = stream(limit, &borrowed);
+        let limits = HostEvidenceLimits::new(
+            8 * 1024 * 1024,
+            64 * 1024,
+            65_536,
+            16 * 1024,
+            4 * 1024 * 1024,
+            limit,
+            16,
+        );
+        assert!(matches!(admitted(&exact, limits), Admission::Admitted(_)));
+        records.push("report extra".to_owned());
+        let borrowed = records.iter().map(String::as_str).collect::<Vec<_>>();
+        assert!(matches!(
+            admitted(&stream(limit, &borrowed), limits),
+            Admission::Refused(AdmissionRefusal::RecordLimit)
+        ));
+
+        let cases: [(&str, RecordFactory); 6] = [
+            ("site", |index| format!("site {index} effect=holds rc=0")),
+            ("deriv", |index| format!("deriv {index} coord=d{index}")),
+            ("deriv-end", |index| format!("deriv-end {index} n=0")),
+            ("resolv", |index| format!("resolv c{index} dangling")),
+            ("reach", |index| {
+                format!("reach c{index} arm=0 entity=e{index}")
+            }),
+            ("report", |index| format!("report r{index}")),
+        ];
+        for (name, make) in cases {
+            let records = (0..=limit).map(make).collect::<Vec<_>>();
+            let borrowed = records.iter().map(String::as_str).collect::<Vec<_>>();
+            let exact = stream(if name == "site" { limit } else { 0 }, &borrowed[..limit]);
+            let plus = stream(if name == "site" { limit + 1 } else { 0 }, &borrowed);
+            assert!(
+                matches!(
+                    admitted(&exact, limits),
+                    Admission::Admitted(_) | Admission::NoObservation
+                ),
+                "{name} exact"
+            );
+            assert!(
+                matches!(
+                    admitted(&plus, limits),
+                    Admission::Refused(AdmissionRefusal::CollectionLimit)
+                ),
+                "{name} plus"
+            );
+        }
+    }
+
+    #[test]
+    fn free_field_boundaries_cover_every_retained_lane() {
+        let exact = "x".repeat(16 * 1024);
+        let plus = "x".repeat(16 * 1024 + 1);
+        let cases: [(&str, FieldFactory); 10] = [
+            ("stdout", |value| {
+                format!("site 0 effect=holds rc=0 stdout={value}")
+            }),
+            ("stderr", |value| {
+                format!("site 0 effect=holds rc=0 stderr={value}")
+            }),
+            ("inert-name", |value| {
+                format!("site 0 {value}=x effect=holds rc=0")
+            }),
+            ("inert-value", |value| {
+                format!("site 0 field={value} effect=holds rc=0")
+            }),
+            ("deriv", |value| format!("deriv 0 coord={value}")),
+            ("resolv-coord", |value| format!("resolv {value} dangling")),
+            ("resolv-canonical", |value| {
+                format!("resolv c canon={value}")
+            }),
+            ("reach-coord", |value| {
+                format!("reach {value} arm=0 entity=e")
+            }),
+            ("reach-entity", |value| {
+                format!("reach c arm=0 entity={value}")
+            }),
+            ("report", |value| format!("report {value}")),
+        ];
+        let limits = HostEvidenceLimits::new(
+            8 * 1024 * 1024,
+            64 * 1024,
+            65_536,
+            16 * 1024,
+            4 * 1024 * 1024,
+            32_768,
+            16,
+        );
+        for (name, make) in cases {
+            let exact_record = make(&exact);
+            let plus_record = make(&plus);
+            let sites = usize::from(exact_record.starts_with("site "));
+            assert!(
+                matches!(
+                    admitted(&stream(sites, &[&exact_record]), limits),
+                    Admission::Admitted(_) | Admission::NoObservation
+                ),
+                "{name} exact"
+            );
+            assert!(
+                matches!(
+                    admitted(&stream(sites, &[&plus_record]), limits),
+                    Admission::Refused(AdmissionRefusal::FieldLimit)
+                ),
+                "{name} plus"
+            );
+        }
+    }
+
+    #[test]
+    fn retained_and_numeric_boundaries_are_checked_before_ownership() {
+        let report = format!("report {}", "x".repeat(16 * 1024));
+        let records = vec![report.as_str(); 256];
+        let limits = HostEvidenceLimits::new(
+            8 * 1024 * 1024,
+            64 * 1024,
+            65_536,
+            16 * 1024,
+            4 * 1024 * 1024,
+            32_768,
+            16,
+        );
+        assert!(matches!(
+            admitted(&stream(0, &records), limits),
+            Admission::NoObservation
+        ));
+        let plus = vec![report.as_str(); 257];
+        assert!(matches!(
+            admitted(&stream(0, &plus), limits),
+            Admission::Refused(AdmissionRefusal::RetainedLimit)
+        ));
+
+        let digits16 = "9".repeat(16);
+        let digits17 = "9".repeat(17);
+        let numeric_limits = HostEvidenceLimits::new(4096, 512, 8, 64, 512, 8, 16);
+        assert!(number(&digits16, numeric_limits).is_ok());
+        assert_eq!(
+            number(&digits17, numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            number(
+                &digits16,
+                HostEvidenceLimits::new(4096, 512, 8, 64, 512, 8, 15)
+            ),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            number_u32("4294967296", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            parse_i32("2147483648", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            parse_i32("-2147483649", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+    }
+
+    #[test]
+    fn identity_and_framing_matrix_refuse_ambiguity() {
+        let exact = [
+            "site 0 effect=holds rc=0",
+            "deriv 0 coord=one",
+            "deriv-end 0 n=1",
+            "resolv one dangling",
+            "reach one arm=0 entity=e",
+            "report note",
+        ];
+        for record in exact {
+            let sites = usize::from(record.starts_with("site "));
+            let duplicate = stream(sites * 2, &[record, record]);
+            assert!(
+                matches!(
+                    admitted(&duplicate, strict_limits()),
+                    Admission::Admitted(_) | Admission::NoObservation
+                ),
+                "exact {record}"
+            );
+        }
+        for (left, right) in [
+            ("site 0 effect=holds rc=0", "site 0 effect=absent rc=1"),
+            ("deriv-end 0 n=0", "deriv-end 0 n=1"),
+            ("resolv one dangling", "resolv one canon=two"),
+            ("reach one arm=0 entity=e", "reach one arm=0 entity=f"),
+        ] {
+            assert!(matches!(
+                admitted(&stream(0, &[left, right]), strict_limits()),
+                Admission::Refused(AdmissionRefusal::Duplicate)
+            ));
+        }
+        assert!(matches!(
+            admitted(
+                &stream(0, &["deriv 0 coord=one", "deriv 0 coord=two"]),
+                strict_limits()
+            ),
+            Admission::NoObservation
+        ));
+
+        for raw in [
+            format!("{}\n{}", header(0), header(0)),
+            format!("{}\n{}{}", header(0), sentinel(), sentinel()),
+            format!(
+                "{}\n{}\n{}",
+                header(0),
+                sentinel().trim_end(),
+                rec("report late")
+            ),
+            "site 0 effect=holds rc=0\n".to_owned(),
+            strict_stream(&["site 0 effect=unknown rc=0"]),
+            strict_stream(&["site 0 effect=holds rc=0 bad"]),
+            strict_stream(&["unknown x"]),
+        ] {
+            assert!(
+                matches!(admitted(&raw, strict_limits()), Admission::Refused(_)),
+                "{raw:?}"
+            );
+        }
+        let valid = format!(
+            "\r\n# before\r\n{}\r\n\r\n{}\r\n# after\r\n",
+            header(0),
+            sentinel()
+        );
+        assert!(matches!(
+            admitted(&valid, strict_limits()),
+            Admission::NoObservation
+        ));
     }
 }
