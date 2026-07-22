@@ -4,7 +4,10 @@
 
 use std::path::PathBuf;
 
-use errorloom::{Case, MAX_CAPTURE_BYTES, RunEnv, RunError, bless_structure, check_run, run_case};
+use errorloom::{
+    Case, MAX_CAPTURE_BYTES, MAX_CASE_BYTES, ReplayInput, RunEnv, RunError, bless_structure,
+    check_run, drive_case_with_inputs, run_case,
+};
 
 /// The directory holding the built `loom-mock-tool`, so it resolves on the
 /// injected PATH by name (exercising `resolve_program`). A plain helper (not a
@@ -155,4 +158,70 @@ fn capture_limit_is_enforced_while_the_child_runs() {
             limit: MAX_CAPTURE_BYTES
         })
     ));
+}
+
+#[test]
+fn replay_input_rejects_every_unsafe_path_class() {
+    for path in [
+        "/absolute.txt",
+        "../parent.txt",
+        "nested/../parent.txt",
+        "./current.txt",
+        "nested//empty.txt",
+        "C:/drive.txt",
+        "C:\\drive.txt",
+        "\\\\server\\share.txt",
+    ] {
+        assert_eq!(
+            ReplayInput::new(path, "input"),
+            Err(RunError::UnsafeReplayInput {
+                path: path.to_owned(),
+            })
+        );
+    }
+}
+
+#[test]
+fn replay_input_content_limit_is_exact() {
+    assert!(ReplayInput::new("at-limit.txt", "x".repeat(MAX_CASE_BYTES)).is_ok());
+    assert_eq!(
+        ReplayInput::new(
+            "over-limit.txt",
+            "x".repeat(MAX_CASE_BYTES.saturating_add(1))
+        ),
+        Err(RunError::ReplayInputTooLarge {
+            path: "over-limit.txt".to_owned(),
+            limit: MAX_CASE_BYTES,
+        })
+    );
+}
+
+#[test]
+fn replay_input_refusals_precede_driver_execution() {
+    let case = Case::parse("---\n---\n-- existing.txt --\ncase bytes\n-- replay --\n$ ignored\n")
+        .expect("valid case");
+    let inputs = [
+        ReplayInput::new("first.txt", "first bytes").expect("safe input"),
+        ReplayInput::new("existing.txt", "conflicting bytes").expect("safe input"),
+    ];
+    let mut drove = false;
+
+    let error = drive_case_with_inputs(
+        &case,
+        &RunEnv::new(),
+        &inputs,
+        |_, _| -> Result<errorloom::ReplayResult<String, String>, RunError> {
+            drove = true;
+            Err(RunError::EmptyCommand { block: usize::MAX })
+        },
+    )
+    .unwrap_err();
+
+    assert!(!drove);
+    assert_eq!(
+        error,
+        RunError::DuplicateReplayInput {
+            path: "existing.txt".to_owned(),
+        }
+    );
 }

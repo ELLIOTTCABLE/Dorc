@@ -683,3 +683,138 @@ fn unique_base() -> std::io::Result<PathBuf> {
         format!("errorloom: no free session dir after {MAX_BASE_ATTEMPTS} attempts"),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fmt::Write;
+
+    use super::*;
+
+    fn case_with_sections(section_count: usize) -> Case {
+        let mut text = String::from("---\n---\n");
+        for index in 0..section_count {
+            writeln!(text, "-- section-{index}.txt --\ncase {index}")
+                .expect("writing to a String cannot fail");
+        }
+        text.push_str("-- replay --\n$ ignored\n");
+        Case::parse(&text).expect("case within section limit")
+    }
+
+    fn unexpected_driver(
+        _: &str,
+        _: &ReplayContext<'_>,
+    ) -> Result<ReplayResult<String, String>, RunError> {
+        Err(RunError::EmptyCommand { block: usize::MAX })
+    }
+
+    fn test_base(name: &str) -> PathBuf {
+        let base =
+            std::env::temp_dir().join(format!("errorloom-runner-{name}-{}", std::process::id()));
+        fs::create_dir(&base).expect("fresh test base");
+        base
+    }
+
+    #[test]
+    fn case_section_collision_preserves_case_bytes() {
+        let base = test_base("case-collision");
+        let case =
+            Case::parse("---\n---\n-- existing.txt --\ncase bytes\n-- replay --\n$ ignored\n")
+                .expect("valid case");
+        let inputs = [ReplayInput::new("existing.txt", "conflicting bytes").expect("safe input")];
+
+        let error = drive_in(
+            &case,
+            &RunEnv::new(),
+            &inputs,
+            &base,
+            &mut unexpected_driver,
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            error,
+            RunError::DuplicateReplayInput {
+                path: "existing.txt".to_owned(),
+            }
+        );
+        assert_eq!(
+            fs::read_to_string(base.join("work/existing.txt")).expect("case file"),
+            "case bytes\n"
+        );
+        fs::remove_dir_all(base).expect("remove test base");
+    }
+
+    #[test]
+    fn duplicate_explicit_input_preserves_first_input_bytes() {
+        let base = test_base("input-collision");
+        let case = case_with_sections(0);
+        let inputs = [
+            ReplayInput::new("duplicate.txt", "first bytes").expect("safe input"),
+            ReplayInput::new("duplicate.txt", "conflicting bytes").expect("safe input"),
+        ];
+
+        let error = drive_in(
+            &case,
+            &RunEnv::new(),
+            &inputs,
+            &base,
+            &mut unexpected_driver,
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            error,
+            RunError::DuplicateReplayInput {
+                path: "duplicate.txt".to_owned(),
+            }
+        );
+        assert_eq!(
+            fs::read_to_string(base.join("work/duplicate.txt")).expect("first input"),
+            "first bytes"
+        );
+        fs::remove_dir_all(base).expect("remove test base");
+    }
+
+    #[test]
+    fn replay_input_count_accepts_remaining_capacity_and_refuses_one_over() {
+        let case = case_with_sections(MAX_SECTION_COUNT.saturating_sub(2));
+        let at_capacity = [ReplayInput::new("remaining.txt", "input").expect("safe input")];
+        let base = test_base("count-at-capacity");
+        let mut observed = None;
+
+        let result = drive_in(
+            &case,
+            &RunEnv::new(),
+            &at_capacity,
+            &base,
+            &mut |_, context| {
+                observed = context
+                    .materialized_input("remaining.txt")
+                    .map(str::to_owned);
+                Ok(ReplayResult::<String, String>::bytes(String::new()))
+            },
+        );
+
+        assert!(result.is_ok());
+        assert_eq!(observed.as_deref(), Some("input"));
+        fs::remove_dir_all(base).expect("remove test base");
+
+        let over_capacity = [
+            ReplayInput::new("first.txt", "first").expect("safe input"),
+            ReplayInput::new("second.txt", "second").expect("safe input"),
+        ];
+        let base = test_base("count-over-capacity");
+        let error = drive_in(
+            &case,
+            &RunEnv::new(),
+            &over_capacity,
+            &base,
+            &mut unexpected_driver,
+        )
+        .unwrap_err();
+
+        assert_eq!(error, RunError::ReplayInputCountExceeded { limit: 1 });
+        assert!(!base.join("work").exists());
+        fs::remove_dir_all(base).expect("remove test base");
+    }
+}
