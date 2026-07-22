@@ -23,7 +23,7 @@ use dorc_core::diag::{
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
     Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
-    ReplayDriver, ReplayResult,
+    ReplayDriver, ReplayResult, RunEnv, RunError, drive_case,
 };
 
 use crate::{
@@ -221,8 +221,7 @@ impl DorcConsumer {
         })
     }
 
-    /// Drive only direct, fully-modelled Dorc plan invocations. Other shell text
-    /// deliberately declines; fallback ownership stays with the embedding command.
+    /// Drive only direct invocations whose replay inputs and rendering are exact.
     #[must_use]
     pub fn replay(
         &self,
@@ -254,51 +253,19 @@ impl DorcConsumer {
             }
             return Some(ReplayResult::bytes(output));
         }
-        let (diag, source, filename, machine, editable) = match tokens.as_slice() {
-            ["dorc", "plan", book] | ["dorc", "plan", book, "--verbose"]
-                if book.starts_with("--book=") =>
-            {
-                let path = &book[7..];
-                let source = materialized_source(case, context, path)?;
-                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
-                (diag, source, filename, false, true)
-            }
-            ["dorc", "plan", book, "--format=jsonl"] if book.starts_with("--book=") => {
-                let path = &book[7..];
-                let source = materialized_source(case, context, path)?;
-                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
-                (diag, source, filename, true, false)
-            }
-            ["dorc", "plan", book, "<", input]
-                if book.starts_with("--book=") && materialized_file(case, context, input) =>
-            {
-                let path = &book[7..];
-                let source = materialized_source(case, context, path)?;
-                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
-                (diag, source, filename, false, true)
-            }
-            ["dorc", "lint", path] if materialized_file(case, context, path) => {
-                let source = materialized_source(case, context, path)?;
-                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
-                (diag, source, filename, false, false)
-            }
-            ["dorc", "why", "--last"] => {
-                let (diag, source, filename) = Self::world_of(case).ok()?;
-                (diag, source, filename, false, false)
-            }
-            _ => return None,
-        };
+        let plan = parse_direct_plan(&tokens)?;
+        let source = materialized_source(case, context, plan.book)?;
+        if let Some(input) = plan.input {
+            let _ = materialized_input(case, context, input)?;
+        }
+        let (diag, _, filename) = Self::world_of_source(case, plan.book, &source).ok()?;
         let interner = Interner::default();
-        if machine {
+        if plan.machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }
         let parts = render_cli_parts(&self.mirror, &diag, &source, &filename, &interner);
         let render = to_editable_render(&parts);
-        Some(if editable {
-            ReplayResult::editable(render)
-        } else {
-            ReplayResult::bytes(render.text())
-        })
+        Some(ReplayResult::editable(render))
     }
 
     /// Reattach the payload inventory to renderer-stamped exact provenance.
@@ -374,16 +341,6 @@ impl DorcConsumer {
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
         Ok((diag, String::new(), String::new()))
     }
-
-    /// The human transcript (the diagnostic's CLI render) for a case from CURRENT mirror state,
-    /// plus the diag itself so a sibling `--format=jsonl` replay can render the machine view of the
-    /// SAME world (`282:rul-multi-replay-per-case`).
-    fn render_world(&self, case: &Case) -> Result<(Diag, String), String> {
-        let (diag, src, filename) = Self::world_of(case)?;
-        let interner = Interner::default();
-        let human = render_cli_with(&self.mirror, &diag, &src, &filename, &interner);
-        Ok((diag, human))
-    }
 }
 
 fn exact_words(command: &str) -> Option<Vec<&str>> {
@@ -395,22 +352,83 @@ fn exact_words(command: &str) -> Option<Vec<&str>> {
         return None;
     }
     let words: Vec<_> = command.split_ascii_whitespace().collect();
-    if words.is_empty()
-        || words
-            .iter()
-            .any(|word| word.contains('=') && !word.starts_with("--book="))
-    {
+    if words.is_empty() {
         return None;
     }
     Some(words)
 }
 
+struct DirectPlan<'a> {
+    book: &'a str,
+    input: Option<&'a str>,
+    machine: bool,
+}
+
+fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
+    if words.get(..2) != Some(["dorc", "plan"].as_slice()) {
+        return None;
+    }
+    let mut book = None;
+    let mut input = None;
+    let mut verbose = false;
+    let mut machine = false;
+    let mut index = 2;
+    while let Some(word) = words.get(index) {
+        if let Some(path) = word.strip_prefix("--book=") {
+            if book.replace(path).is_some() || !case_relative_path(path) {
+                return None;
+            }
+        } else if *word == "--verbose" {
+            if verbose {
+                return None;
+            }
+            verbose = true;
+        } else if *word == "--format=jsonl" {
+            if machine {
+                return None;
+            }
+            machine = true;
+        } else if *word == "<" {
+            let path = *words.get(index.saturating_add(1))?;
+            if input.replace(path).is_some() || !case_relative_path(path) {
+                return None;
+            }
+            index = index.saturating_add(1);
+        } else {
+            return None;
+        }
+        index = index.saturating_add(1);
+    }
+    (!verbose || !machine).then_some(DirectPlan {
+        book: book?,
+        input,
+        machine,
+    })
+}
+
+fn case_relative_path(path: &str) -> bool {
+    !path.is_empty()
+        && !path.starts_with('/')
+        && !path.contains(['\\', ':'])
+        && path
+            .split('/')
+            .all(|component| !matches!(component, "" | "." | ".."))
+}
+
 fn materialized_file(case: &Case, context: &ReplayContext<'_>, path: &str) -> bool {
-    case.sections().iter().any(|section| section.name() == path)
+    case_relative_path(path)
+        && case.sections().iter().any(|section| section.name() == path)
         && context.cwd().join(path).is_file()
 }
 
 fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> Option<String> {
+    if !materialized_file(case, context, path) {
+        return None;
+    }
+    fs::read_to_string(context.cwd().join(path)).ok()
+}
+
+fn materialized_input(case: &Case, context: &ReplayContext<'_>, path: &str) -> Option<String> {
     if !materialized_file(case, context, path) {
         return None;
     }
@@ -442,26 +460,82 @@ impl ReplayDriver<SectionKey, SectionVariableId> for DorcReplayDriver<'_> {
     }
 }
 
+/// Drive a case through the exact Dorc adapter, leaving decline policy to the caller.
+///
+/// # Errors
+/// Returns materialization or caller-supplied fallback failures.
+pub fn replay_case<F>(
+    case: &Case,
+    consumer: &DorcConsumer,
+    env: &RunEnv,
+    mut fallback: F,
+) -> Result<Vec<ReplayResult<SectionKey, SectionVariableId>>, RunError>
+where
+    F: FnMut(
+        &str,
+        &ReplayContext<'_>,
+    ) -> Result<ReplayResult<SectionKey, SectionVariableId>, RunError>,
+{
+    let driver = DorcReplayDriver::new(consumer, case);
+    drive_case(case, env, |command, context| {
+        match driver.drive(command, context) {
+            Some(result) => Ok(result),
+            None => fallback(command, context),
+        }
+    })
+}
+
 impl CaseRenderer for DorcConsumer {
     type Error = String;
 
     fn render_case(&self, case: &Case) -> Result<String, String> {
-        let (diag, human) = self.render_world(case)?;
         let outputs = case
             .replay()
             .blocks()
             .iter()
-            .map(|block| {
-                if block.command().contains("--format=jsonl") {
-                    render_diag_jsonl(&diag)
-                } else {
-                    reflow_to_canonical(&human)
-                }
-            })
-            .collect();
+            .map(|block| self.render_direct_replay(case, block.command()))
+            .collect::<Result<Vec<_>, _>>()?;
         let mut regenerated = case.clone();
         regenerated.set_replay_outputs(outputs);
         Ok(regenerated.to_text())
+    }
+}
+
+impl DorcConsumer {
+    fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
+        let words =
+            exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        let plan =
+            parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        let source = case
+            .sections()
+            .iter()
+            .find(|section| section.name() == plan.book)
+            .filter(|_| case_relative_path(plan.book))
+            .map(errorloom::Section::content)
+            .ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        if let Some(input) = plan.input {
+            let has_input = case_relative_path(input)
+                && case
+                    .sections()
+                    .iter()
+                    .any(|section| section.name() == input);
+            if !has_input {
+                return Err(format!("unsupported replay {command:?}"));
+            }
+        }
+        let (diag, _, filename) = Self::world_of_source(case, plan.book, source)?;
+        if plan.machine {
+            return Ok(render_diag_jsonl(&diag));
+        }
+        let interner = Interner::default();
+        Ok(reflow_to_canonical(&render_cli_with(
+            &self.mirror,
+            &diag,
+            source,
+            &filename,
+            &interner,
+        )))
     }
 }
 

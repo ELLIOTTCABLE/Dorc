@@ -5,11 +5,15 @@
     reason = "committed-case helpers over the known-good test tree; the no-panic lints guard untrusted input"
 )]
 
-use std::path::Path;
+use std::cell::RefCell;
+use std::path::{Path, PathBuf};
 
-use dorc_loom::{DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit};
+use dorc_loom::{
+    DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
+};
 use errorloom::{
-    BlessError, Case, CaseFile, CaseRenderer, FakeGit, fixpoint_check, structure_bless,
+    BlessError, Case, CaseFile, CaseRenderer, FakeGit, ReplayResult, RunEnv, RunError,
+    fixpoint_check, structure_bless,
 };
 
 const CASE_PATH: &str = "cases/dangling-reference.txt";
@@ -19,7 +23,8 @@ const CODE_PATH: &str = "crates/core/src/diag.rs";
 /// The committed transcript for `slug`: render a skeleton case through a fresh consumer, so the
 /// committed bytes ARE a fixpoint by construction (the render is deterministic).
 fn committed(slug: &str, command: &str) -> String {
-    let skeleton = format!("---\ncode: {slug}\n---\n-- replay --\n$ {command}\n");
+    let skeleton =
+        format!("---\ncode: {slug}\n---\n-- book.sh --\n#!/bin/sh\n-- replay --\n$ {command}\n");
     let case = Case::parse(&skeleton).expect("skeleton parses");
     DorcConsumer::new()
         .render_case(&case)
@@ -43,7 +48,7 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
     let case_text = "---\ncode: marker-version-unrecognized\n---\n\
                      -- oracle.sh --\n# dorc-lang/v0.1\n\
                      apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }\n\
-                     -- replay --\n$ dorc lint oracle.sh\n";
+                     -- replay --\n$ dorc plan --book=oracle.sh\n";
     let case = Case::parse(case_text).expect("case parses");
     let rendered = DorcConsumer::new()
         .render_case(&case)
@@ -96,7 +101,7 @@ fn editable_baseline_renders_a_defining_case_with_help() {
 
 #[test]
 fn fixpoint_gate_catches_a_catalog_hand_edit() {
-    let committed = committed("whylog-absent", "dorc why --last");
+    let committed = committed("whylog-absent", "dorc plan --book=book.sh");
     let mut consumer = DorcConsumer::new();
     consumer.set_message("whylog-absent", Some("sm tampered message".to_owned()));
     let corpus = vec![CaseFile::new(CASE_PATH, committed)];
@@ -106,7 +111,7 @@ fn fixpoint_gate_catches_a_catalog_hand_edit() {
 
 #[test]
 fn structure_bless_regenerates_a_dorc_case() {
-    let committed = committed("whylog-absent", "dorc why --last");
+    let committed = committed("whylog-absent", "dorc plan --book=book.sh");
     let corpus = vec![CaseFile::new(CASE_PATH, committed.clone())];
     let git = FakeGit::new().mark_dirty(CODE_PATH);
     let result = structure_bless(&DorcConsumer::new(), &git, &corpus, CATALOG_PATH.as_ref())
@@ -162,7 +167,7 @@ fn applied_template_regenerates_complete_multi_replay_case() {
 
 #[test]
 fn explicit_marker_can_introduce_an_unused_typed_payload_value() {
-    let case = Case::parse("---\ncode: cmdsub-operand-top\n---\n-- replay --\n$ dorc plan\n")
+    let case = Case::parse("---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n#!/bin/sh\n-- replay --\n$ dorc plan --book=book.sh\n")
         .expect("case parses");
     let mut consumer = DorcConsumer::new();
     let baseline = consumer.editable_baseline(&case).expect("baseline renders");
@@ -294,4 +299,100 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
         .editable_baseline(&foreign)
         .expect("foreign baseline");
     assert!(baseline.all_variables().is_empty());
+}
+
+#[test]
+fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_injected_fallback()
+{
+    let source = "#!/bin/sh\napt-get install -y \"$(cat /etc/webhost/pkgset)\"\n";
+    let case = Case::parse(&format!(
+        "---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n{source}-- probe.txt --\nprobe bytes\n-- replay --\n$ dorc plan --book=book.sh < probe.txt\nold\n$ dorc plan --book=book.sh --format=jsonl < probe.txt\nold\n$ dorc lint book.sh\nold\n$ dorc why --last\nold\n$ dorc plan --book=book.sh | jq --pretty\nold\n$ dorc plan --book=missing.sh\nold\n$ dorc plan --book=book.sh --book=book.sh\nold\n$ dorc plan --book=book.sh --unknown\nold\n$ dorc plan --book=../book.sh\nold\n$ dorc plan --book=./book.sh\nold\n"
+    ))
+    .expect("case parses");
+    let env = RunEnv::new()
+        .path_dir("built-tools")
+        .path_dir("mocks-only")
+        .var("DORC_TEST_MODE", "controlled")
+        .shell("configured-shell");
+    let calls = RefCell::new(Vec::new());
+    let cwd = RefCell::new(None::<PathBuf>);
+    let scratch = RefCell::new(None::<PathBuf>);
+    let results = replay_case(&case, &DorcConsumer::new(), &env, |command, context| {
+        assert_eq!(context.env(), &env);
+        let prior_cwd = cwd.replace(Some(context.cwd().to_path_buf()));
+        let prior_scratch = scratch.replace(Some(context.scratch().to_path_buf()));
+        if let Some(prior) = prior_cwd {
+            assert_eq!(prior, context.cwd());
+        }
+        if let Some(prior) = prior_scratch {
+            assert_eq!(prior, context.scratch());
+        }
+        let marker = context.scratch().join("fallback-order");
+        let order = calls.borrow().len();
+        if order == 0 {
+            std::fs::write(&marker, "first fallback").map_err(RunError::from)?;
+        } else {
+            assert_eq!(
+                std::fs::read_to_string(&marker).ok().as_deref(),
+                Some("first fallback")
+            );
+        }
+        calls.borrow_mut().push(command.to_owned());
+        Ok(ReplayResult::bytes(format!(
+            "note[cmdsub-operand-top]: {{{{command}}}} fallback {order}\n"
+        )))
+    })
+    .expect("replays route");
+
+    assert!(results[0].editable_render().is_some());
+    assert_eq!(
+        results[0]
+            .editable_render()
+            .map(errorloom::EditableRender::text),
+        Some(results[0].output().to_owned())
+    );
+    assert!(results[1].editable_render().is_none());
+    assert_eq!(
+        results[1].output(),
+        "{\"code\":\"cmdsub-operand-top\",\"severity\":\"note\"}\n"
+    );
+    for result in &results[2..] {
+        assert!(result.editable_render().is_none());
+        assert!(result.output().contains("{{command}}"));
+    }
+    assert_eq!(
+        calls.into_inner(),
+        [
+            "dorc lint book.sh",
+            "dorc why --last",
+            "dorc plan --book=book.sh | jq --pretty",
+            "dorc plan --book=missing.sh",
+            "dorc plan --book=book.sh --book=book.sh",
+            "dorc plan --book=book.sh --unknown",
+            "dorc plan --book=../book.sh",
+            "dorc plan --book=./book.sh",
+        ]
+    );
+}
+
+#[test]
+fn replay_with_a_fake_fallback_leaves_case_catalog_and_source_bytes_unchanged() {
+    let case_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.txt");
+    let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog.rs");
+    let case_before = std::fs::read(&case_path).expect("case reads");
+    let catalog_before = std::fs::read(&catalog_path).expect("catalog reads");
+    let case = Case::parse(std::str::from_utf8(&case_before).expect("case is UTF-8"))
+        .expect("case parses");
+
+    let results = replay_case(
+        &case,
+        &DorcConsumer::new(),
+        &RunEnv::new(),
+        |_command, _context| Ok(ReplayResult::bytes(String::from("fake bytes\n"))),
+    )
+    .expect("direct replay needs no fallback");
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(std::fs::read(&case_path).ok(), Some(case_before));
+    assert_eq!(std::fs::read(&catalog_path).ok(), Some(catalog_before));
 }

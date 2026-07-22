@@ -37,15 +37,18 @@ fn load_corpus() -> Vec<CaseFile> {
     cases
 }
 
-/// GATE 1 — the errorloom RENDER-LEVEL fixpoint (`283` §4a): every committed case re-renders from the
-/// current catalog to its own committed bytes. Catches a prose hand-edit to `catalog.rs` (a message
-/// change moves the transcript away from the committed one).
+/// The exact direct-plan corpus specimen re-renders from the current catalog.
+/// Other committed commands now require the configured generic executor and are
+/// intentionally outside this in-process renderer's authority.
 #[test]
-fn render_level_fixpoint_over_the_corpus() {
+fn direct_plan_render_fixpoint() {
     let consumer = DorcConsumer::new();
-    let corpus = load_corpus();
-    fixpoint_check(&consumer, &corpus)
-        .expect("committed corpus reproduces from the catalog (render-level fixpoint)");
+    let corpus: Vec<_> = load_corpus()
+        .into_iter()
+        .filter(|case| case.path() == Path::new("cmdsub-operand-top.txt"))
+        .collect();
+    assert_eq!(corpus.len(), 1, "the direct-plan specimen is committed");
+    fixpoint_check(&consumer, &corpus).expect("direct-plan case reproduces from the catalog");
 }
 
 /// Every committed case is txtar/hygiene-clean and surfaces its own `code` slug in each replay block

@@ -29,6 +29,7 @@ pub const MAX_CAPTURE_BYTES: usize = 64 * 1024;
 #[derive(Debug)]
 pub struct ReplayContext<'a> {
     cwd: &'a Path,
+    scratch: &'a Path,
     env: &'a RunEnv,
 }
 
@@ -37,6 +38,12 @@ impl ReplayContext<'_> {
     #[must_use]
     pub fn cwd(&self) -> &Path {
         self.cwd
+    }
+
+    /// The per-case scratch directory shared by all replay handlers.
+    #[must_use]
+    pub fn scratch(&self) -> &Path {
+        self.scratch
     }
 
     /// The exact injected environment for this case.
@@ -124,9 +131,8 @@ pub fn execute_generic(command: &str, context: &ReplayContext<'_>) -> Result<Str
     run_block(0, command, context.env, context.cwd)
 }
 
-/// A caller-injected execution environment: the exact env table plus a `PATH`
-/// search list. Nothing ambient leaks in (`env -i`-style) so runs are
-/// deterministic; consumers inject only what their commands need.
+/// A caller-injected execution environment: an explicit shell, exact env table,
+/// and `PATH` search list. Nothing ambient leaks in (`env -i`-style).
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct RunEnv {
     path: Vec<PathBuf>,
@@ -406,7 +412,9 @@ where
     V: Clone + Ord + std::fmt::Debug,
 {
     let work = base.join("work");
+    let scratch = base.join("scratch");
     fs::create_dir(&work)?;
+    fs::create_dir(&scratch)?;
     for (rel, content) in case.materialized_files() {
         let target = work.join(&rel);
         if let Some(parent) = target.parent() {
@@ -414,7 +422,11 @@ where
         }
         fs::write(target, content)?;
     }
-    let context = ReplayContext { cwd: &work, env };
+    let context = ReplayContext {
+        cwd: &work,
+        scratch: &scratch,
+        env,
+    };
     case.replay()
         .blocks()
         .iter()

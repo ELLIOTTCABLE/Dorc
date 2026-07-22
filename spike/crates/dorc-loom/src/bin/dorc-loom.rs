@@ -5,11 +5,12 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use dorc_loom::{
-    DorcConsumer, DorcReplayDriver, DorcSectionEditRefusal, compile_preview, render_compile_preview,
+    DorcConsumer, DorcSectionEditRefusal, compile_preview, render_compile_preview, replay_case,
 };
-use errorloom::{Case, ReplayDriver, ReplayResult, RunEnv, drive_case, execute_generic, read_case};
+use errorloom::{Case, ReplayResult, RunEnv, execute_generic, read_case};
 
-const USAGE: &str = "usage: dorc-loom <compile CASE...|vars <--used|--all> CASE...>";
+const USAGE: &str =
+    "usage: dorc-loom <compile [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...>";
 
 fn main() -> ExitCode {
     match run() {
@@ -22,7 +23,7 @@ fn main() -> ExitCode {
 }
 
 enum Command {
-    Compile(Vec<PathBuf>),
+    Compile { cases: Vec<PathBuf>, env: RunEnv },
     Vars { used: bool, cases: Vec<PathBuf> },
 }
 
@@ -31,7 +32,7 @@ fn run() -> Result<ExitCode, String> {
     let stdout = io::stdout();
     let mut out = stdout.lock();
     match command {
-        Command::Compile(cases) => compile_cases(&cases, &mut out),
+        Command::Compile { cases, env } => compile_cases(&cases, &env, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
     }
 }
@@ -40,8 +41,8 @@ fn parse_args() -> Result<Command, String> {
     let mut argv = std::env::args().skip(1);
     match argv.next().as_deref() {
         Some("compile") => {
-            let cases = collect_cases(argv)?;
-            Ok(Command::Compile(cases))
+            let (cases, env) = collect_compile_args(argv)?;
+            Ok(Command::Compile { cases, env })
         }
         Some("vars") => {
             let mode = argv
@@ -61,6 +62,45 @@ fn parse_args() -> Result<Command, String> {
     }
 }
 
+fn collect_compile_args(
+    mut argv: impl Iterator<Item = String>,
+) -> Result<(Vec<PathBuf>, RunEnv), String> {
+    let mut env = RunEnv::new().path_dir(binary_dir()?);
+    let mut cases = Vec::new();
+    while let Some(arg) = argv.next() {
+        if let Some(shell) = arg.strip_prefix("--shell=") {
+            env = env.shell(shell);
+        } else if let Some(path) = arg.strip_prefix("--path=") {
+            env = env.path_dir(path);
+        } else if arg == "--shell" {
+            env = env.shell(next_value(&mut argv, "--shell")?);
+        } else if arg == "--path" {
+            env = env.path_dir(next_value(&mut argv, "--path")?);
+        } else if arg.starts_with('-') {
+            return Err(format!("unknown option {arg:?}\n{USAGE}"));
+        } else {
+            cases.push(PathBuf::from(arg));
+        }
+    }
+    if cases.is_empty() {
+        return Err(format!("no case files given\n{USAGE}"));
+    }
+    Ok((cases, env))
+}
+
+fn next_value(argv: &mut impl Iterator<Item = String>, option: &str) -> Result<String, String> {
+    argv.next()
+        .ok_or_else(|| format!("{option} needs a value\n{USAGE}"))
+}
+
+fn binary_dir() -> Result<PathBuf, String> {
+    std::env::current_exe()
+        .map_err(|error| format!("locate built tools: {error}"))?
+        .parent()
+        .map(PathBuf::from)
+        .ok_or_else(|| "locate built tools: executable has no parent".to_owned())
+}
+
 fn collect_cases(argv: impl Iterator<Item = String>) -> Result<Vec<PathBuf>, String> {
     let mut cases = Vec::new();
     for arg in argv {
@@ -75,7 +115,11 @@ fn collect_cases(argv: impl Iterator<Item = String>) -> Result<Vec<PathBuf>, Str
     Ok(cases)
 }
 
-fn compile_cases(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, String> {
+fn compile_cases(
+    cases: &[PathBuf],
+    env: &RunEnv,
+    out: &mut impl Write,
+) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
     let mut refused = false;
     for path in cases {
@@ -83,12 +127,8 @@ fn compile_cases(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, St
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
         let mut previews = Vec::new();
         let mut case_refusal = None;
-        let driver = DorcReplayDriver::new(&consumer, &case);
-        let results = drive_case(&case, &RunEnv::new(), |command, context| {
-            match driver.drive(command, context) {
-                Some(result) => Ok(result),
-                None => execute_generic(command, context).map(ReplayResult::bytes),
-            }
+        let results = replay_case(&case, &consumer, env, |command, context| {
+            execute_generic(command, context).map(ReplayResult::bytes)
         })
         .map_err(|error| format!("{}: {error}", path.display()))?;
         for (index, (block, routed)) in case.replay().blocks().iter().zip(results).enumerate() {

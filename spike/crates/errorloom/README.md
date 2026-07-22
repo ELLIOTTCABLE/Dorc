@@ -172,8 +172,8 @@ in-process driver and grants no catalog-edit authority. The environment is
 entirely caller-injected (`env -i`-style): nothing ambient leaks in.
 
 ```sh
-errorloom run   [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...
-errorloom bless [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...
+errorloom run   --shell=PATH [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...
+errorloom bless --shell=PATH [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...
 ```
 
  - `run` materializes each case, executes its blocks, and compares each block's
@@ -182,9 +182,10 @@ errorloom bless [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...
  - `bless` re-runs and re-inlines each block's actual output (structure-bless),
    then applies the hygiene gates and writes the case back.
 
-`--path` dirs are searched for each command's program and become the child
-`PATH`; `--env K=V` sets exact variables. Policy such as inert mocks is yours; a
-`--path` pointing at a mocks dir keeps real tools out.
+`--shell` selects the executor; it is required because errorloom never discovers an
+ambient shell. `--path` dirs become the child `PATH`; `--env K=V` sets exact
+variables. Policy such as inert mocks is yours; a `--path` pointing at a mocks dir
+keeps real tools out.
 
 Both gates are one call deep in-process, if you'd rather drive them from your
 own test-suite (`bless_structure` is `bless`; `run_case` yields the raw
