@@ -31,6 +31,14 @@ enum Command {
     Vars { used: bool, cases: Vec<PathBuf> },
 }
 
+type SelectedCase = (String, PathBuf);
+
+struct GatedCases {
+    repository: GitRepository,
+    paths: Vec<SelectedCase>,
+    touched: std::collections::BTreeSet<String>,
+}
+
 fn run() -> Result<ExitCode, String> {
     let command = parse_args()?;
     let stdout = io::stdout();
@@ -130,8 +138,8 @@ fn compile_cases(
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
-    let (repository, paths, touched) = gate_touched_set(cases)?;
-    let inspection = inspect_cases(&repository, &paths, &touched, env, out)?;
+    let gated = gate_touched_set(cases)?;
+    let inspection = inspect_cases(&gated.repository, &gated.paths, &gated.touched, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
@@ -149,8 +157,8 @@ fn promote_cases(
         .read()
         .map_err(|error| format!("promote receipt: {error}"))?;
     validate_case_inputs(cases)?;
-    let (repository, paths, touched) = gate_touched_set(cases)?;
-    let inspection = inspect_cases(&repository, &paths, &touched, env, out)?;
+    let gated = gate_touched_set(cases)?;
+    let inspection = inspect_cases(&gated.repository, &gated.paths, &gated.touched, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
@@ -165,14 +173,12 @@ fn promote_cases(
 
 fn inspect_cases(
     repository: &GitRepository,
-    paths: &[(String, PathBuf)],
+    paths: &[SelectedCase],
     touched: &std::collections::BTreeSet<String>,
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<Option<InspectedCompilation>, String> {
-    let consumer = DorcConsumer::new();
-    let mut refused = false;
-    let mut selected = Vec::new();
+    let (consumer, mut refused, mut selected) = (DorcConsumer::new(), false, Vec::new());
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in paths {
         let relative_path = relative_path.clone();
@@ -286,16 +292,7 @@ fn catalog_path() -> PathBuf {
 
 /// The receipt may bind only transcript-prose edits. Repository reads are isolated
 /// in `GitRepository`; this command owns only selection and inspection orchestration.
-fn gate_touched_set(
-    cases: &[PathBuf],
-) -> Result<
-    (
-        GitRepository,
-        Vec<(String, PathBuf)>,
-        std::collections::BTreeSet<String>,
-    ),
-    String,
-> {
+fn gate_touched_set(cases: &[PathBuf]) -> Result<GatedCases, String> {
     let repository = GitRepository::open()?;
     let mut paths: Vec<_> = cases
         .iter()
@@ -309,7 +306,11 @@ fn gate_touched_set(
     let selected = paths.iter().map(|(path, _)| path.clone()).collect();
     let catalog = repository.repository_path(&catalog_path())?;
     let classification = classify_prose_changes(&repository, selected, &catalog)?;
-    Ok((repository, paths, classification.touched().clone()))
+    Ok(GatedCases {
+        repository,
+        paths,
+        touched: classification.touched().clone(),
+    })
 }
 
 const MAX_REFUSAL_EVIDENCE: usize = 4096;

@@ -10,10 +10,22 @@ use errorloom::Case;
 /// The narrow I/O edge required to classify one repository snapshot.
 pub trait Repository {
     /// NUL-delimited `git status --porcelain=v1` records.
+    ///
+    /// # Errors
+    ///
+    /// Returns an edge-specific read refusal.
     fn status_porcelain(&self) -> Result<Vec<u8>, String>;
     /// Exact current worktree bytes for one repository-relative path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an edge-specific read refusal.
     fn current_bytes(&self, path: &str) -> Result<Vec<u8>, String>;
     /// Exact `HEAD` blob bytes for one repository-relative path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an edge-specific read refusal.
     fn head_bytes(&self, path: &str) -> Result<Vec<u8>, String>;
 }
 
@@ -46,6 +58,10 @@ pub struct GitRepository {
 
 impl GitRepository {
     /// Locate the repository root through Git rather than guessing from cwd.
+    ///
+    /// # Errors
+    ///
+    /// Returns a refusal when Git cannot identify the enclosing repository.
     pub fn open() -> Result<Self, String> {
         let output = Command::new("git")
             .args(["rev-parse", "--show-toplevel"])
@@ -67,6 +83,10 @@ impl GitRepository {
     }
 
     /// Canonicalize one selected path to a safe slash-normalized repository path.
+    ///
+    /// # Errors
+    ///
+    /// Returns a refusal for unreadable, outside-root, or unsafe paths.
     pub fn repository_path(&self, path: &Path) -> Result<String, String> {
         let path = fs::canonicalize(path).map_err(|error| format!("canonicalize case: {error}"))?;
         let root = fs::canonicalize(&self.root)
@@ -120,6 +140,11 @@ impl Repository for GitRepository {
 /// Only selected, worktree-only modified cases may differ, and only within raw
 /// replay-output islands. Replay provenance decides whether those islands are
 /// editable in the subsequent inspection pass.
+///
+/// # Errors
+///
+/// Returns a refusal for malformed Git state, dirty unrelated paths, or any
+/// non-output transcript difference.
 pub fn classify_prose_changes(
     repository: &impl Repository,
     selected: Vec<String>,
@@ -140,7 +165,7 @@ pub fn classify_prose_changes(
         if path == catalog {
             return Err("catalog is not clean against HEAD".to_owned());
         }
-        if !selected.binary_search(path).is_ok() || !status.is_worktree_modified_only() {
+        if selected.binary_search(path).is_err() || !status.is_worktree_modified_only() {
             return Err(format!("dirty path outside selected prose edits: {path}"));
         }
     }
@@ -228,13 +253,14 @@ fn parse_porcelain(bytes: &[u8]) -> Result<Vec<StatusEntry>, String> {
     let mut index = 0usize;
     let mut entries = Vec::new();
     while let Some(record) = records.get(index) {
-        if record.len() < 3 || record[2] != b' ' {
+        let [x, y, separator, path @ ..] = *record else {
+            return Err("malformed git porcelain status".to_owned());
+        };
+        if *separator != b' ' {
             return Err("malformed git porcelain status".to_owned());
         }
-        let x = record[0];
-        let y = record[1];
-        let path = status_path(&record[3..])?;
-        let (index_status, worktree_status) = status_classes(x, y)?;
+        let path = status_path(path)?;
+        let (index_status, worktree_status) = status_classes(*x, *y)?;
         let renamed_or_copied = matches!(index_status, IndexStatus::Renamed | IndexStatus::Copied)
             || matches!(
                 worktree_status,
@@ -305,8 +331,11 @@ fn validate_selected(selected: &[String]) -> Result<(), String> {
     if selected.is_empty() {
         return Err("no selected cases".to_owned());
     }
-    if selected.windows(2).any(|pair| pair[0] >= pair[1])
-        || selected.iter().any(|path| !safe_path(path))
+    if selected.windows(2).any(|pair| {
+        pair.first()
+            .zip(pair.get(1))
+            .is_some_and(|(left, right)| left >= right)
+    }) || selected.iter().any(|path| !safe_path(path))
     {
         return Err("selected paths are not canonical".to_owned());
     }
