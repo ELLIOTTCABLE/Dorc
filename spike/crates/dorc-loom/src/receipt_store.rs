@@ -199,9 +199,14 @@ impl ReceiptStore for FsReceiptStore {
                         if let Err(cleanup) =
                             remove_validated_backup(&*self.operations, &backup_path, &old_packet)
                         {
-                            return Err(format!(
-                                "published receipt; backup cleanup failed: {cleanup}"
-                            ));
+                            return restore_prior_after_cleanup_failure(
+                                &*self.operations,
+                                &final_path,
+                                &backup_path,
+                                packet,
+                                &old_packet,
+                                &cleanup,
+                            );
                         }
                         return Ok(());
                     }
@@ -280,6 +285,76 @@ fn remove_validated_backup(
             .map_err(|error| format!("remove receipt backup: {error}")),
         Some(_) => Err("receipt backup does not match prior receipt".to_owned()),
         None => Err("receipt backup disappeared before cleanup".to_owned()),
+    }
+}
+
+fn restore_prior_after_cleanup_failure(
+    operations: &dyn ReceiptFileOperations,
+    final_path: &Path,
+    backup_path: &Path,
+    published_packet: &[u8],
+    prior_packet: &[u8],
+    cleanup: &str,
+) -> Result<(), String> {
+    match read_valid_receipt(final_path, "receipt final target") {
+        Ok(Some(packet)) if packet == published_packet => {}
+        Ok(Some(_)) => {
+            return Err(format!(
+                "backup cleanup failed: {cleanup}; rollback refused because final no longer matches the newly published receipt; validated backup retained"
+            ));
+        }
+        Ok(None) => {
+            return Err(format!(
+                "backup cleanup failed: {cleanup}; rollback refused because the newly published receipt disappeared; validated backup retained"
+            ));
+        }
+        Err(validation) => {
+            return Err(format!(
+                "backup cleanup failed: {cleanup}; rollback refused because final validation failed: {validation}; validated backup retained"
+            ));
+        }
+    }
+    match read_valid_receipt(backup_path, "receipt backup target") {
+        Ok(Some(packet)) if packet == prior_packet => {}
+        Ok(Some(_)) => {
+            return Err(format!(
+                "backup cleanup failed: {cleanup}; rollback refused because backup no longer matches the prior receipt"
+            ));
+        }
+        Ok(None) => {
+            return Err(format!(
+                "backup cleanup failed: {cleanup}; rollback refused because the validated backup disappeared"
+            ));
+        }
+        Err(validation) => {
+            return Err(format!(
+                "backup cleanup failed: {cleanup}; rollback refused because backup validation failed: {validation}"
+            ));
+        }
+    }
+    if let Err(remove) = operations.remove_file(final_path) {
+        return Err(format!(
+            "backup cleanup failed: {cleanup}; rollback remove newly published receipt failed: {remove}; validated backup retained"
+        ));
+    }
+    if let Err(restore) = operations.rename(backup_path, final_path) {
+        return Err(format!(
+            "backup cleanup failed: {cleanup}; rollback restore prior receipt failed: {restore}; validated backup retained"
+        ));
+    }
+    match read_valid_receipt(final_path, "restored receipt final target") {
+        Ok(Some(packet)) if packet == prior_packet => Err(format!(
+            "backup cleanup failed: {cleanup}; restored prior receipt"
+        )),
+        Ok(Some(_)) => Err(format!(
+            "backup cleanup failed: {cleanup}; rollback restored a different receipt"
+        )),
+        Ok(None) => Err(format!(
+            "backup cleanup failed: {cleanup}; rollback restoration disappeared"
+        )),
+        Err(validation) => Err(format!(
+            "backup cleanup failed: {cleanup}; rollback restoration validation failed: {validation}"
+        )),
     }
 }
 
@@ -632,26 +707,57 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn windows_backup_cleanup_failure_keeps_the_new_final() {
-        let root = TestRoot::new("windows-backup-cleanup-failure-keeps-new-final");
+    fn windows_backup_cleanup_failure_restores_prior_final_and_allows_next_publication() {
+        let root = TestRoot::new(
+            "windows-backup-cleanup-failure-restores-prior-final-and-allows-next-publication",
+        );
         FsReceiptStore::new(&root.0)
             .expect("trusted root")
             .publish(&packet("first"))
             .expect("first receipt");
 
-        assert!(
-            windows_store(&root, vec![1], true)
-                .publish(&packet("second"))
-                .is_err()
+        let error = windows_store(&root, vec![1], true)
+            .publish(&packet("second"))
+            .expect_err("backup cleanup must roll back publication");
+        assert!(error.contains("backup cleanup failed"));
+        assert_eq!(
+            fs::read(root.final_path()).expect("restored final"),
+            packet("first")
         );
+        assert!(!root.backup_path().exists());
+
+        FsReceiptStore::new(&root.0)
+            .expect("trusted root")
+            .publish(&packet("third"))
+            .expect("ordinary publication recovers");
         assert_eq!(
             fs::read(root.final_path()).expect("new final"),
-            packet("second")
+            packet("third")
         );
+        assert!(!root.backup_path().exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_backup_cleanup_and_rollback_failure_retain_validated_backup() {
+        let root = TestRoot::new("windows-backup-cleanup-and-rollback-failure-retain-backup");
+        FsReceiptStore::new(&root.0)
+            .expect("trusted root")
+            .publish(&packet("first"))
+            .expect("first receipt");
+
+        let store = windows_store(&root, vec![1, 4], true);
+        let error = store
+            .publish(&packet("second"))
+            .expect_err("cleanup and restoration failure must be reported");
+        assert!(error.contains("backup cleanup failed"));
+        assert!(error.contains("rollback restore prior receipt failed"));
+        assert!(!root.final_path().exists());
         assert_eq!(
             fs::read(root.backup_path()).expect("retained backup"),
             packet("first")
         );
+        assert_eq!(store.read().expect("backup recovery read"), packet("first"));
     }
 
     #[cfg(windows)]
