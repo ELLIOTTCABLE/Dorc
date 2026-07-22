@@ -1,0 +1,28 @@
+---
+code: cmdsub-operand-top
+---
+-- book.sh --
+#!/bin/sh
+# pi-webhost provisioning (curated package set from the fleet inventory)
+set -e
+
+apt-get update
+apt-get install -y "$(cat /etc/webhost/pkgset)"
+systemctl enable nginx
+
+-- replay --
+$ dorc plan --book=book.sh
+note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` / arithmetic
+   / operator-form expansion, so Dorc cannot know its value until the command runs
+   on the host using {{command}} — there is nothing to resolve and no read-only probe
+   to check. Dorc elides a command only when it can prove the command's effect is
+   already in place, so this one is left to run on every apply.
+   --> book.sh:6:20
+   |
+  6 | apt-get install -y "$(cat /etc/webhost/pkgset)"
+   |                    \__________________________/
+   = repair: Give the operand a value Dorc can resolve statically — a literal, or a
+      variable assigned from one — so Dorc can probe it and elide the command once it
+      has converged. If the value must stay dynamic, load an oracle that vouches for
+      this command's convergence, and Dorc will guard the command instead of running
+      it every time.

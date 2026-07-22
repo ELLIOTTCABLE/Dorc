@@ -1,0 +1,6 @@
+---
+code: site-unresolvable
+---
+-- replay --
+$ dorc plan --book=book.sh
+note[site-unresolvable]: {{detail}}
