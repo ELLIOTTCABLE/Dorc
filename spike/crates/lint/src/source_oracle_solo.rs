@@ -245,4 +245,81 @@ sysctl__is_converged() {
             report.findings
         );
     }
+
+    #[test]
+    fn oracle_validate_only_diagnoses_marks_at_parsed_carriers() {
+        let ordinary_shell = r#"# dorc-lang/v0.2
+while_probe__predict() {
+   while :; do wombat; done
+}
+null_probe__predict() {
+   :
+}
+case_probe__predict() {
+   case "$1" in
+   http:*) printf '%s\n' "${x:-default}" "${x:=value}" ":" escaped\:colon https://host/path /tmp:state ;;
+   esac
+}
+bind_probe__predict() {
+   item : sm.dorc.Item = "$1"
+   hork --check "$item"
+}
+systemctl__is_converged() {
+   case "${1-}" in
+   enable) systemctl is-enabled --quiet -- "${2-}" : sm.dorc.Service:"$2"@enabled ;;
+   *) return 2 ;;
+   esac
+}
+"#;
+        let report = lint(
+            &[],
+            &[oracle("ordinary-shell.oracle.sh", ordinary_shell)],
+            LintOptions::default(),
+            &NoToolsRunner,
+            Some(&["oracle-validate".to_owned()]),
+        );
+        let mark_codes: Vec<&str> = report
+            .findings
+            .iter()
+            .map(|finding| finding.code.as_str())
+            .filter(|code| code.starts_with("mark-"))
+            .collect();
+        assert!(
+            mark_codes.is_empty(),
+            "ordinary shell syntax is never a mark candidate: {mark_codes:?}"
+        );
+    }
+
+    #[test]
+    fn oracle_validate_preserves_the_four_production_mark_diagnostics() {
+        let malformed = r"# dorc-lang/v0.2
+unknown__predict() { hork --check : frobnicate sm.dorc.X; }
+arity__predict() { hork --check : sm.dorc.X@first; : sm.dorc.X@second; }
+standalone__predict() { :? sm.dorc.X@seen; }
+hash__predict() { #: frobnicate; }
+";
+        let report = lint(
+            &[],
+            &[oracle("malformed-marks.oracle.sh", malformed)],
+            LintOptions::default(),
+            &NoToolsRunner,
+            Some(&["oracle-validate".to_owned()]),
+        );
+        let mut mark_codes: Vec<&str> = report
+            .findings
+            .iter()
+            .map(|finding| finding.code.as_str())
+            .filter(|code| code.starts_with("mark-"))
+            .collect();
+        mark_codes.sort_unstable();
+        assert_eq!(
+            mark_codes,
+            [
+                "mark-hashcolon-malformed",
+                "mark-rc-arity-exceeded",
+                "mark-standalone-rc-consumer",
+                "mark-unknown-verb",
+            ]
+        );
+    }
 }

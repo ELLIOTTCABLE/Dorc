@@ -322,6 +322,21 @@ impl Parser<'_> {
         }
     }
 
+    fn parse_mark_validation_body(&mut self) -> Vec<Stmt> {
+        let mut stmts = Vec::new();
+        while self.pos < self.toks.len() {
+            self.skip_separators();
+            if self.pos >= self.toks.len() {
+                break;
+            }
+            match self.parse_stmt() {
+                Ok(stmt) => stmts.push(stmt),
+                Err(_) => break,
+            }
+        }
+        stmts
+    }
+
     /// If the cursor is at a role-funcdef header `<base>__<role> (`, return the keyed symbol
     /// plus the name span. Does not consume. Only the bare munged form is recognized (the period
     /// `X.role()` form is dead — rul24-totalistic-munge). For a COMMAND-keyed role the base
@@ -401,6 +416,9 @@ impl Parser<'_> {
                     verb_sym,
                     body,
                 };
+                self.out
+                    .diags
+                    .extend(validate_mark_subset(&check.body, self.toks));
                 self.out.value.checks.insert(header.provider, check);
             }
             Err(diag_emitted) => {
@@ -643,13 +661,15 @@ impl Parser<'_> {
 
         // Identity annotation `name : kind [= value]`: first word is a plain ident, next
         // is the standalone word `:`, AND the kind word after it is a BARE kind (no inner
-        // `:`). A `kind:entity.prop` after the `:` means this is a trailing ESTABLISH on
-        // the single-word command `name` (not an identity annotation) — fall through to
+        // `:`), AND its tail is an annotation tail. A Singleton annotation ends at its kind.
+        // A `kind:entity.prop` after the `:` means this is a trailing ESTABLISH on the
+        // single-word command `name` (not an identity annotation) — fall through to
         // `parse_command`, which re-sees the `:` marker and parses the trailing mark.
         if !first_sq
             && sem::is_name(&first)
             && self.next_word_is(":")
             && self.kind_after_colon_is_bare()
+            && self.annotation_tail_is_valid()
         {
             return self.parse_annotation(&first, start_span);
         }
@@ -675,6 +695,15 @@ impl Parser<'_> {
             self.toks.get(self.pos.saturating_add(2)).map(|t| &t.kind),
             Some(Tok::Word { lexeme, single_quoted: false, .. }) if !lexeme.contains(':')
         )
+    }
+
+    /// A value-less Singleton annotation ends after its kind.
+    fn annotation_tail_is_valid(&self) -> bool {
+        let tail = self.toks.get(self.pos.saturating_add(3)).map(|t| &t.kind);
+        matches!(
+            tail,
+            None | Some(Tok::Newline | Tok::Semi | Tok::DSemi | Tok::RBrace)
+        ) || matches!(tail, Some(Tok::Word { lexeme, single_quoted: false, .. }) if lexeme == "=")
     }
 
     /// Parse the inline annotation `name : kind = value` (the operand form) or
@@ -913,6 +942,7 @@ impl Parser<'_> {
                 ));
             }
             None => {
+                let head_span = self.peek_span().unwrap_or(marker_span);
                 let head = match self.peek() {
                     Some(Tok::Word { lexeme, .. }) => lexeme.clone(),
                     _ => {
@@ -950,7 +980,7 @@ impl Parser<'_> {
                                 token: head,
                                 expected: expected_verbs().to_owned(),
                             }),
-                            self.peek_span().unwrap_or(marker_span),
+                            head_span,
                         ));
                         return Err(true);
                     }
@@ -1440,104 +1470,86 @@ fn expected_verbs() -> &'static str {
      undivided-by-transit-across"
 }
 
-/// Validate the production parser's one-mark lexical subset across every physical line. This is
-/// deliberately not the reference block parser: it recognizes only one carrier per line and emits
-/// diagnostics without constructing multi-mark AST state.
-#[must_use]
-pub(crate) fn lint_mark_subset(src: &str) -> Vec<Diag> {
+/// Validate production AST marks, never raw physical lines.
+fn validate_mark_subset(stmts: &[Stmt], toks: &[Token]) -> Vec<Diag> {
     let mut diags = Vec::new();
-    let mut prior_trailing_rc = false;
-    for line in lex(src).split(|token| matches!(token.kind, Tok::Newline)) {
-        let words: Vec<_> = line
-            .iter()
-            .filter_map(|token| match &token.kind {
-                Tok::Word { lexeme, .. } => Some((lexeme.as_str(), token.span)),
-                _ => None,
-            })
-            .collect();
-        let Some((intro_index, intro)) = words
-            .iter()
-            .enumerate()
-            .find_map(|(index, (word, _))| mark_marker(word).map(|intro| (index, intro)))
-        else {
-            prior_trailing_rc = false;
-            continue;
-        };
-        if is_inline_bind(&words, intro_index, intro) {
-            prior_trailing_rc = false;
-            continue;
-        }
-        let intro_span = words[intro_index].1;
-        let payload = &words[intro_index.saturating_add(1)..];
-        let Some((kind, payload_span)) = decode_subset_head(intro, payload, &mut diags, intro_span)
-        else {
-            prior_trailing_rc = false;
-            continue;
-        };
-        let rc_consumer = matches!(kind, MarkKind::Asserts | MarkKind::Refutes);
-        let standalone_consumer = rc_consumer || kind == MarkKind::Reads;
-        if intro_index == 0 && standalone_consumer {
-            let code = if prior_trailing_rc && rc_consumer {
-                DiagCode::MarkRcArityExceeded(MarkRcArityExceeded)
-            } else {
-                DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer)
-            };
-            diags.push(Diag::new(code, payload_span));
-        }
-        prior_trailing_rc = intro_index != 0 && rc_consumer;
-    }
+    validate_mark_block(stmts, toks, &mut diags);
     diags
 }
 
-fn is_inline_bind(words: &[(&str, Span)], intro_index: usize, intro: MarkIntro) -> bool {
-    intro_index == 1
-        && intro.carrier == MarkCarrier::Colon
-        && intro.sugar.is_none()
-        && words.first().is_some_and(|(word, _)| sem::is_name(word))
-        && words.get(3).is_some_and(|(word, _)| *word == "=")
-        && words.get(4).is_some_and(|(word, _)| !word.is_empty())
+/// Validate top-level fragments through the production parser.
+#[must_use]
+pub(crate) fn lint_mark_subset(src: &str) -> Vec<Diag> {
+    let tokens = lex(src);
+    let mut interner = Interner::default();
+    let mut parser = Parser {
+        toks: &tokens,
+        pos: 0,
+        interner: &mut interner,
+        out: Carrier::pure(PredictSet::default()),
+        last_term: None,
+        role: FnRole::Predict,
+    };
+    let body = parser.parse_mark_validation_body();
+    parser
+        .out
+        .diags
+        .extend(validate_mark_subset(&body, parser.toks));
+    parser.out.diags
 }
 
-fn decode_subset_head(
-    intro: MarkIntro,
-    payload: &[(&str, Span)],
-    diags: &mut Vec<Diag>,
-    intro_span: Span,
-) -> Option<(MarkKind, Span)> {
-    let (kind, payload_index) = match intro.sugar {
-        Some(Sugar::Bang) => (MarkKind::Refutes, 0),
-        Some(Sugar::Question) => (MarkKind::Reads, 0),
-        Some(Sugar::Equals) => return None,
-        None => {
-            let (head, span) = *payload.first()?;
-            if head.contains('.') {
-                (MarkKind::Asserts, 0)
-            } else {
-                let Some(kind) = mark_verb(head) else {
-                    let code = if intro.carrier == MarkCarrier::Hash {
-                        DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed)
-                    } else {
-                        DiagCode::MarkUnknownVerb(MarkUnknownVerb {
-                            token: head.to_owned(),
-                            expected: expected_verbs().to_owned(),
-                        })
-                    };
-                    diags.push(Diag::new(
-                        code,
-                        if intro.carrier == MarkCarrier::Hash {
-                            intro_span
-                        } else {
-                            span
-                        },
-                    ));
-                    return None;
+fn validate_mark_block(stmts: &[Stmt], toks: &[Token], diags: &mut Vec<Diag>) {
+    let mut prior_trailing_rc = false;
+    for stmt in stmts {
+        match stmt {
+            Stmt::Command(command) => {
+                let Some(mark) = &command.mark else {
+                    prior_trailing_rc = false;
+                    continue;
                 };
-                (kind, 1)
+                let rc_consumer = matches!(mark.kind, MarkKind::Asserts | MarkKind::Refutes);
+                let standalone_consumer = rc_consumer || mark.kind == MarkKind::Reads;
+                let standalone = command.words.len() == 1
+                    && matches!(command.words.first(), Some(Word::Literal(word)) if word == ":");
+                if standalone && standalone_consumer {
+                    let code = if prior_trailing_rc && rc_consumer {
+                        DiagCode::MarkRcArityExceeded(MarkRcArityExceeded)
+                    } else {
+                        DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer)
+                    };
+                    diags.push(Diag::new(code, mark_target_span(mark, toks)));
+                }
+                prior_trailing_rc = !standalone && rc_consumer;
             }
+            Stmt::Case { arms, .. } => {
+                for arm in arms {
+                    validate_mark_block(&arm.body, toks, diags);
+                }
+                prior_trailing_rc = false;
+            }
+            Stmt::If {
+                then_body,
+                else_body,
+                ..
+            } => {
+                validate_mark_block(then_body, toks, diags);
+                validate_mark_block(else_body, toks, diags);
+                prior_trailing_rc = false;
+            }
+            Stmt::While { body, .. } => {
+                validate_mark_block(body, toks, diags);
+                prior_trailing_rc = false;
+            }
+            _ => prior_trailing_rc = false,
         }
-    };
-    let (_, span) = *payload.get(payload_index)?;
-    Some((kind, span))
+    }
+}
+
+/// Strip needs the carrier span; diagnostics point at the payload.
+fn mark_target_span(mark: &Mark, toks: &[Token]) -> Span {
+    toks.iter()
+        .find(|token| matches!(token.kind, Tok::Word { .. }) && token.span.hi == mark.span.hi)
+        .map_or(mark.span, |token| token.span)
 }
 
 /// A syntactically-split mark target — every fragment OPAQUE (`inv-referent-agnostic`,

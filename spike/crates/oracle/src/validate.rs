@@ -59,7 +59,9 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
     // check dialect is a lift failure that frames into THIS oracle's source.
     for (i, src) in oracles.iter().enumerate() {
         let mut diags = crate::predict::lift_predicts(interner, src).diags;
-        diags.extend(crate::predict::lint_mark_subset(src));
+        if !src.contains("__") {
+            diags.extend(crate::predict::lint_mark_subset(src));
+        }
         if !diags.is_empty() {
             stages.push(StageDiags {
                 stage: "check",
