@@ -1,13 +1,18 @@
 //! Compile/promote receipt boundary; the binary supplies repository and filesystem edges.
 
-use crate::{InspectedCompilation, ReceiptStore, encode_receipt, validate_receipt};
+use crate::{
+    InspectedCompilation, ReceiptStore, ReceiptWriteOutcome, encode_receipt, validate_receipt,
+};
 
 /// Persist one inspected compilation only after the caller completed every read-only check.
 ///
 /// # Errors
 ///
 /// Returns encoding or storage failures without changing source inputs.
-pub fn compile(store: &impl ReceiptStore, inspection: &InspectedCompilation) -> Result<(), String> {
+pub fn compile(
+    store: &impl ReceiptStore,
+    inspection: &InspectedCompilation,
+) -> Result<ReceiptWriteOutcome, String> {
     let packet = encode_receipt(inspection).map_err(|error| error.to_string())?;
     store.publish(&packet)
 }
@@ -36,9 +41,9 @@ mod tests {
     struct MemoryStore(RefCell<Option<Vec<u8>>>);
 
     impl ReceiptStore for MemoryStore {
-        fn publish(&self, packet: &[u8]) -> Result<(), String> {
+        fn publish(&self, packet: &[u8]) -> Result<ReceiptWriteOutcome, String> {
             *self.0.borrow_mut() = Some(packet.to_vec());
-            Ok(())
+            Ok(ReceiptWriteOutcome::Published)
         }
 
         fn read(&self) -> Result<Vec<u8>, String> {
@@ -58,7 +63,7 @@ mod tests {
     }
 
     impl ReceiptStore for FailingStore {
-        fn publish(&self, packet: &[u8]) -> Result<(), String> {
+        fn publish(&self, packet: &[u8]) -> Result<ReceiptWriteOutcome, String> {
             let next = (*self.publishes.borrow())
                 .checked_add(1)
                 .expect("test store publish counter overflow");
@@ -67,7 +72,7 @@ mod tests {
                 return Err("publish failed".to_owned());
             }
             *self.packet.borrow_mut() = Some(packet.to_vec());
-            Ok(())
+            Ok(ReceiptWriteOutcome::Published)
         }
 
         fn read(&self) -> Result<Vec<u8>, String> {
@@ -85,7 +90,10 @@ mod tests {
     fn compile_then_promote_requires_the_same_inspection() {
         let store = MemoryStore::default();
         let current = inspection("current");
-        compile(&store, &current).expect("compile stores receipt");
+        assert_eq!(
+            compile(&store, &current),
+            Ok(ReceiptWriteOutcome::Published)
+        );
         assert!(promote(&store, &current).is_ok());
         assert!(promote(&store, &inspection("stale")).is_err());
     }

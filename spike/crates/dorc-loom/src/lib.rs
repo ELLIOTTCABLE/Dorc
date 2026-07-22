@@ -26,7 +26,7 @@ pub use receipt::{
     encode as encode_receipt, validate_current as validate_receipt,
 };
 mod receipt_store;
-pub use receipt_store::{FsReceiptStore, ReceiptStore};
+pub use receipt_store::{FsReceiptStore, ReceiptStore, ReceiptWriteOutcome};
 mod repository;
 pub use repository::{GitRepository, ProseClassification, Repository, classify_prose_changes};
 mod workflow;

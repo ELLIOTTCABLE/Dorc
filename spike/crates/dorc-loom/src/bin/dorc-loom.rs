@@ -143,7 +143,14 @@ fn compile_cases(
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
-    compile_receipt(&receipt_store()?, &inspection)?;
+    let outcome = compile_receipt(&receipt_store()?, &inspection)?;
+    if matches!(outcome, dorc_loom::ReceiptWriteOutcome::CleanupPending) {
+        writeln!(
+            out,
+            "compile: receipt published; stale backup cleanup will retry next time"
+        )
+        .map_err(|error| error.to_string())?;
+    }
     Ok(ExitCode::SUCCESS)
 }
 

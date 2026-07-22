@@ -13,6 +13,15 @@ const RECEIPT_FILE: &str = "compile.receipt";
 const RECEIPT_BACKUP_FILE: &str = ".compile.receipt.backup";
 const TEMP_ATTEMPTS: u8 = 16;
 
+/// Reports whether a published receipt still has cleanup work to retry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ReceiptWriteOutcome {
+    /// The receipt was published and no stale backup remains.
+    Published,
+    /// The receipt was published, but a validated stale backup could not be removed.
+    CleanupPending,
+}
+
 trait ReceiptFileOperations: Send + Sync {
     fn rename(&self, from: &Path, to: &Path) -> std::io::Result<()>;
     fn remove_file(&self, path: &Path) -> std::io::Result<()>;
@@ -37,7 +46,7 @@ pub trait ReceiptStore {
     /// # Errors
     ///
     /// Returns an I/O or receipt-validation refusal without publishing partial bytes.
-    fn publish(&self, packet: &[u8]) -> Result<(), String>;
+    fn publish(&self, packet: &[u8]) -> Result<ReceiptWriteOutcome, String>;
     /// Read one bounded, grammar-validated current receipt.
     ///
     /// # Errors
@@ -121,11 +130,13 @@ impl FsReceiptStore {
 }
 
 impl ReceiptStore for FsReceiptStore {
-    fn publish(&self, packet: &[u8]) -> Result<(), String> {
+    fn publish(&self, packet: &[u8]) -> Result<ReceiptWriteOutcome, String> {
         parse_receipt(packet).map_err(|error| error.to_string())?;
         let directory = self.receipt_directory(true)?;
         let final_path = Self::final_path(&directory);
         let backup_path = Self::backup_path(&directory);
+
+        clear_stale_backup_before_publish(&*self.operations, &final_path, &backup_path)?;
 
         for attempt in 0..TEMP_ATTEMPTS {
             let temp_path = directory.join(format!(".compile.receipt.{attempt}.tmp"));
@@ -147,7 +158,7 @@ impl ReceiptStore for FsReceiptStore {
                 return cleanup_owned_temp(&temp_path, error);
             }
             match self.operations.rename(&temp_path, &final_path) {
-                Ok(()) => return Ok(()),
+                Ok(()) => return Ok(ReceiptWriteOutcome::Published),
                 Err(error) => {
                     #[cfg(windows)]
                     if final_path.exists() {
@@ -167,10 +178,8 @@ impl ReceiptStore for FsReceiptStore {
                         if let Err(validation) = validate_backup(&backup_path, &old_packet) {
                             return cleanup_owned_temp(&temp_path, validation);
                         }
-                        if let Err(clear) =
-                            clear_expected_backup(&*self.operations, &backup_path, &old_packet)
-                        {
-                            return cleanup_owned_temp(&temp_path, clear);
+                        if let Err(validation) = ensure_absent_backup(&backup_path) {
+                            return cleanup_owned_temp(&temp_path, validation);
                         }
                         if let Err(move_old) = self.operations.rename(&final_path, &backup_path) {
                             return cleanup_owned_temp(
@@ -196,19 +205,12 @@ impl ReceiptStore for FsReceiptStore {
                                 )),
                             };
                         }
-                        if let Err(cleanup) =
-                            remove_validated_backup(&*self.operations, &backup_path, &old_packet)
+                        if remove_validated_backup(&*self.operations, &backup_path, &old_packet)
+                            .is_err()
                         {
-                            return restore_prior_after_cleanup_failure(
-                                &*self.operations,
-                                &final_path,
-                                &backup_path,
-                                packet,
-                                &old_packet,
-                                &cleanup,
-                            );
+                            return Ok(ReceiptWriteOutcome::CleanupPending);
                         }
-                        return Ok(());
+                        return Ok(ReceiptWriteOutcome::Published);
                     }
                     return cleanup_owned_temp(&temp_path, format!("publish receipt: {error}"));
                 }
@@ -288,86 +290,24 @@ fn remove_validated_backup(
     }
 }
 
-fn restore_prior_after_cleanup_failure(
+fn clear_stale_backup_before_publish(
     operations: &dyn ReceiptFileOperations,
     final_path: &Path,
     backup_path: &Path,
-    published_packet: &[u8],
-    prior_packet: &[u8],
-    cleanup: &str,
 ) -> Result<(), String> {
-    match read_valid_receipt(final_path, "receipt final target") {
-        Ok(Some(packet)) if packet == published_packet => {}
-        Ok(Some(_)) => {
-            return Err(format!(
-                "backup cleanup failed: {cleanup}; rollback refused because final no longer matches the newly published receipt; validated backup retained"
-            ));
-        }
-        Ok(None) => {
-            return Err(format!(
-                "backup cleanup failed: {cleanup}; rollback refused because the newly published receipt disappeared; validated backup retained"
-            ));
-        }
-        Err(validation) => {
-            return Err(format!(
-                "backup cleanup failed: {cleanup}; rollback refused because final validation failed: {validation}; validated backup retained"
-            ));
-        }
+    let final_exists = read_valid_receipt(final_path, "receipt final target")?.is_some();
+    let backup_exists = read_valid_receipt(backup_path, "receipt backup target")?.is_some();
+    if final_exists && backup_exists {
+        operations
+            .remove_file(backup_path)
+            .map_err(|error| format!("clear validated stale receipt backup: {error}"))?;
     }
-    match read_valid_receipt(backup_path, "receipt backup target") {
-        Ok(Some(packet)) if packet == prior_packet => {}
-        Ok(Some(_)) => {
-            return Err(format!(
-                "backup cleanup failed: {cleanup}; rollback refused because backup no longer matches the prior receipt"
-            ));
-        }
-        Ok(None) => {
-            return Err(format!(
-                "backup cleanup failed: {cleanup}; rollback refused because the validated backup disappeared"
-            ));
-        }
-        Err(validation) => {
-            return Err(format!(
-                "backup cleanup failed: {cleanup}; rollback refused because backup validation failed: {validation}"
-            ));
-        }
-    }
-    if let Err(remove) = operations.remove_file(final_path) {
-        return Err(format!(
-            "backup cleanup failed: {cleanup}; rollback remove newly published receipt failed: {remove}; validated backup retained"
-        ));
-    }
-    if let Err(restore) = operations.rename(backup_path, final_path) {
-        return Err(format!(
-            "backup cleanup failed: {cleanup}; rollback restore prior receipt failed: {restore}; validated backup retained"
-        ));
-    }
-    match read_valid_receipt(final_path, "restored receipt final target") {
-        Ok(Some(packet)) if packet == prior_packet => Err(format!(
-            "backup cleanup failed: {cleanup}; restored prior receipt"
-        )),
-        Ok(Some(_)) => Err(format!(
-            "backup cleanup failed: {cleanup}; rollback restored a different receipt"
-        )),
-        Ok(None) => Err(format!(
-            "backup cleanup failed: {cleanup}; rollback restoration disappeared"
-        )),
-        Err(validation) => Err(format!(
-            "backup cleanup failed: {cleanup}; rollback restoration validation failed: {validation}"
-        )),
-    }
+    Ok(())
 }
 
-fn clear_expected_backup(
-    operations: &dyn ReceiptFileOperations,
-    path: &Path,
-    expected: &[u8],
-) -> Result<(), String> {
+fn ensure_absent_backup(path: &Path) -> Result<(), String> {
     match read_valid_receipt(path, "receipt backup target")? {
-        Some(packet) if packet == expected => operations
-            .remove_file(path)
-            .map_err(|error| format!("clear validated receipt backup: {error}")),
-        Some(_) => Err("receipt backup does not match prior receipt".to_owned()),
+        Some(_) => Err("receipt backup appeared before publication".to_owned()),
         None => Ok(()),
     }
 }
@@ -426,7 +366,7 @@ fn write_and_sync(file: &mut File, packet: &[u8]) -> Result<(), String> {
         .map_err(|error| format!("sync receipt: {error}"))
 }
 
-fn cleanup_owned_temp(temp_path: &Path, error: String) -> Result<(), String> {
+fn cleanup_owned_temp<T>(temp_path: &Path, error: String) -> Result<T, String> {
     fs::remove_file(temp_path)
         .map_err(|cleanup| format!("{error}; cleanup receipt temporary: {cleanup}"))?;
     Err(error)
@@ -533,6 +473,22 @@ mod tests {
     }
 
     #[test]
+    fn malformed_backup_without_a_final_refuses_without_touching_hostile_bytes() {
+        let root = TestRoot::new("malformed-backup-without-a-final-refuses");
+        fs::create_dir(root.receipt_directory()).expect("receipt directory");
+        let hostile = b"not a receipt";
+        fs::write(root.backup_path(), hostile).expect("hostile backup");
+
+        let store = FsReceiptStore::new(&root.0).expect("trusted root");
+        assert!(store.publish(&packet("next")).is_err());
+        assert!(!root.final_path().exists());
+        assert_eq!(
+            fs::read(root.backup_path()).expect("hostile backup"),
+            hostile
+        );
+    }
+
+    #[test]
     fn directory_final_and_non_directory_parent_refuse() {
         let root = TestRoot::new("directory-final-refuses");
         fs::create_dir(root.receipt_directory()).expect("receipt directory");
@@ -585,7 +541,7 @@ mod tests {
         let hostile = root.0.join("hostile.tmp");
         fs::write(&owned, b"owned").expect("owned temp");
         fs::write(&hostile, b"hostile").expect("hostile temp");
-        assert!(cleanup_owned_temp(&owned, "failure".to_owned()).is_err());
+        assert!(cleanup_owned_temp::<()>(&owned, "failure".to_owned()).is_err());
         assert!(!owned.exists());
         assert_eq!(fs::read(hostile).expect("hostile temp bytes"), b"hostile");
     }
@@ -595,6 +551,7 @@ mod tests {
         rename_calls: std::sync::Mutex<usize>,
         fail_renames: Vec<usize>,
         fail_backup_cleanup: bool,
+        fail_final_removal: bool,
     }
 
     #[cfg(windows)]
@@ -623,6 +580,10 @@ mod tests {
             {
                 return Err(std::io::Error::other("injected backup cleanup failure"));
             }
+            if self.fail_final_removal && path.file_name().is_some_and(|name| name == RECEIPT_FILE)
+            {
+                return Err(std::io::Error::other("injected final removal failure"));
+            }
             fs::remove_file(path)
         }
     }
@@ -632,6 +593,7 @@ mod tests {
         root: &TestRoot,
         fail_renames: Vec<usize>,
         fail_backup_cleanup: bool,
+        fail_final_removal: bool,
     ) -> FsReceiptStore {
         FsReceiptStore::with_operations(
             &root.0,
@@ -639,6 +601,7 @@ mod tests {
                 rename_calls: std::sync::Mutex::new(0),
                 fail_renames,
                 fail_backup_cleanup,
+                fail_final_removal,
             }),
         )
         .expect("trusted root")
@@ -653,7 +616,7 @@ mod tests {
             .publish(&packet("first"))
             .expect("first receipt");
 
-        windows_store(&root, vec![1], false)
+        windows_store(&root, vec![1], false, false)
             .publish(&packet("second"))
             .expect("replacement receipt");
 
@@ -674,7 +637,7 @@ mod tests {
             .expect("first receipt");
 
         assert!(
-            windows_store(&root, vec![1, 3], false)
+            windows_store(&root, vec![1, 3], false, false)
                 .publish(&packet("second"))
                 .is_err()
         );
@@ -694,7 +657,7 @@ mod tests {
             .expect("trusted root")
             .publish(&packet("first"))
             .expect("first receipt");
-        let store = windows_store(&root, vec![1, 3, 4], false);
+        let store = windows_store(&root, vec![1, 3, 4], false, false);
 
         assert!(store.publish(&packet("second")).is_err());
         assert!(!root.final_path().exists());
@@ -707,57 +670,61 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn windows_backup_cleanup_failure_restores_prior_final_and_allows_next_publication() {
+    fn windows_cleanup_failure_does_not_attempt_failed_rollback_removal_and_retries_before_next_write()
+     {
         let root = TestRoot::new(
-            "windows-backup-cleanup-failure-restores-prior-final-and-allows-next-publication",
+            "windows-cleanup-failure-keeps-the-published-receipt-and-retries-before-next-write",
         );
         FsReceiptStore::new(&root.0)
             .expect("trusted root")
             .publish(&packet("first"))
             .expect("first receipt");
 
-        let error = windows_store(&root, vec![1], true)
-            .publish(&packet("second"))
-            .expect_err("backup cleanup must roll back publication");
-        assert!(error.contains("backup cleanup failed"));
+        let store = windows_store(&root, vec![1], true, true);
         assert_eq!(
-            fs::read(root.final_path()).expect("restored final"),
+            store.publish(&packet("second")),
+            Ok(ReceiptWriteOutcome::CleanupPending)
+        );
+        assert_eq!(
+            fs::read(root.final_path()).expect("published final"),
+            packet("second")
+        );
+        assert_eq!(
+            fs::read(root.backup_path()).expect("retained stale backup"),
             packet("first")
         );
-        assert!(!root.backup_path().exists());
+        assert_eq!(
+            store.read().expect("reader prefers final"),
+            packet("second")
+        );
+
+        assert!(store.publish(&packet("third")).is_err());
+        assert_eq!(
+            fs::read(root.final_path()).expect("unmodified final"),
+            packet("second")
+        );
+        assert_eq!(
+            fs::read(root.backup_path()).expect("unmodified stale backup"),
+            packet("first")
+        );
+        for attempt in 0..TEMP_ATTEMPTS {
+            assert!(
+                !root
+                    .receipt_directory()
+                    .join(format!(".compile.receipt.{attempt}.tmp"))
+                    .exists()
+            );
+        }
 
         FsReceiptStore::new(&root.0)
             .expect("trusted root")
             .publish(&packet("third"))
-            .expect("ordinary publication recovers");
+            .expect("cleanup recovery and publication succeed");
         assert_eq!(
             fs::read(root.final_path()).expect("new final"),
             packet("third")
         );
         assert!(!root.backup_path().exists());
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn windows_backup_cleanup_and_rollback_failure_retain_validated_backup() {
-        let root = TestRoot::new("windows-backup-cleanup-and-rollback-failure-retain-backup");
-        FsReceiptStore::new(&root.0)
-            .expect("trusted root")
-            .publish(&packet("first"))
-            .expect("first receipt");
-
-        let store = windows_store(&root, vec![1, 4], true);
-        let error = store
-            .publish(&packet("second"))
-            .expect_err("cleanup and restoration failure must be reported");
-        assert!(error.contains("backup cleanup failed"));
-        assert!(error.contains("rollback restore prior receipt failed"));
-        assert!(!root.final_path().exists());
-        assert_eq!(
-            fs::read(root.backup_path()).expect("retained backup"),
-            packet("first")
-        );
-        assert_eq!(store.read().expect("backup recovery read"), packet("first"));
     }
 
     #[cfg(windows)]
@@ -771,7 +738,7 @@ mod tests {
         fs::write(root.backup_path(), b"hostile backup").expect("hostile backup");
 
         assert!(
-            windows_store(&root, vec![1], false)
+            windows_store(&root, vec![1], false, false)
                 .publish(&packet("second"))
                 .is_err()
         );
