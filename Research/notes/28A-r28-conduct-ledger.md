@@ -362,9 +362,11 @@ Checkpoint ruling:
   The 35 ratcheted entries carry their complete current generated rows until each gains
   a defining case.
 - The 12 lint/why cases currently lack exact editable provenance. Unit 3 must retain
-  their actual `$ dorc lint ...` / `$ dorc why --last` spellings, add concrete bounded
-  fixture state that really triggers each code, and drive the production render seats
-  in-process. Generic bytes, case slug selection, and catalog-text inference cannot
+  the actual lint spellings and add a single-file whylog input flag. The four whylog
+  cases use `$ dorc why --last --whylog=.whylog`; exact-file selection replaces
+  directory scanning so timestamp/date/host filenames cannot make the corpus
+  nondeterministic. All 12 gain concrete bounded fixture state and production render
+  seats. Generic bytes, case slug selection, and catalog-text inference cannot
   bootstrap editable authority.
 - Initial cutover adds the lock, updates handwritten imports/tests, seeds all case
   metadata and generated `vars --used` replays, and removes the old writer. Steady
