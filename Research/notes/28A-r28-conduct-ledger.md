@@ -28,21 +28,25 @@ Current position:
 | Round-28 foundation | COMPLETE | standalone errorloom, syntax v0.2, defining-case corpus, generation-flip/fixpoint foundations |
 | `282:phase-generic-editable-sections` | COMPLETE | bounded identity-preserving generic edit transport |
 | `282:phase-dorc-template-compiler` | COMPLETE | strict `{{name}}` compiler over the current typed payload; in-memory apply and preview |
-| `282:phase-replay-driver-provenance` | NEXT | consumer-neutral driver/result API; Dorc exact-shape dispatch; generic bytes-only fallback; Unit-1 CLI rework |
-| `282:phase-compile-promote-loop` | PENDING | receipt, touched-set gate, preflighted generated catalog/case publication |
+| `282:phase-replay-driver-provenance` | COMPLETE | exact replay-result provenance, explicit bytes-only fallback, bounded controlled execution |
+| `282:phase-compile-promote-loop` | NEXT | receipt, touched-set gate, preflighted generated catalog/case publication |
 | `282:phase-command-embed-dogfood` | PENDING | add `{{command}}` through the flagship transcript and prove the complete workflow |
 | `282:phase-adjacent-fragment-followup` | DEFERRED | newly-positioned attached/glued markers and broader punctuation support |
 
-Current phase-two closeout base: `ai/r28-errorloom-phase2` at `4b95a9b4`.
+Current phase-three Unit 1 closeout: `ai/r28-phase3-unit1-cli` at `3e980b86`.
 
 Phase-two lineage starts from the phase-one fold at `0c259317`; accepted code closed
 at `01523f2c`; current plan/README/steering synchronization closed at `4b95a9b4`.
 Preserve the granular history. Do not squash or re-derive it.
 
-Phase-three Unit 1 is in rework on `ai/r28-phase3-unit1-cli` at `c4957366`. Its
-argument parsing, inventory queries, and multi-section preview work remain useful;
-its replay selection by output skeleton/prefix/template-looking bytes is REJECTED.
-No receipt work begins until the replay-driver provenance seam replaces that logic.
+Phase-three Unit 1 is independently accepted. Every replay is driven from one bounded
+materialized context; exact supported Dorc forms may carry paired editable provenance;
+transformed and unsupported forms reach only the explicitly selected generic executor
+and remain bytes-only. Case, command, materialization, and capture limits apply before
+unbounded work. The final repair bound `vars` inventory to its exact materialized case
+operand and pinned the generic replay-input boundary.
+Unit 2 starts from this accepted replay-result boundary; it must not rediscover or
+reconstruct provenance while binding the compile receipt.
 
 
 ## 1. Settled architecture
@@ -245,7 +249,7 @@ adjudication, generated-output review, and the final integrated gate.
 
 ### Unit 1 - read-only command and inspection surfaces
 
-Status: `[~] rework required on ai/r28-phase3-unit1-cli`
+Status: `[x] complete at 3e980b86`
 
 Build:
 
@@ -295,7 +299,7 @@ Do not finalize receipt or generated-lock formats in this unit.
 
 ### Unit 2 - content-bound receipt and touched-set gate
 
-Status: `[ ] pending`
+Status: `[ ] next`
 
 Build:
 
