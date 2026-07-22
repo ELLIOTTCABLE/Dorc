@@ -1199,7 +1199,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &connected,
         ship,
         ship_auto,
-        |node| vouches.contains_key(&node),
+        |node| vouches.contains_site(node),
     );
 
     // Shim-materialization edge (`274` §5 / `27L` task-14): `--shim-dir` writes the entry-composed
@@ -3299,10 +3299,28 @@ fn emit_survival_attribution(
                 )
             })
             .collect();
-        // C7: the licensing vouch's oracle `file:line` (elide-weld path; omitted for vouchless survival).
-        let locus = oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs)
-            .map(|l| format!("; vouched at {l}"))
-            .unwrap_or_default();
+        let aggregate_loci: Vec<String> = license
+            .derivation()
+            .establish_vouches
+            .iter()
+            .map(|receipt| {
+                let locus = oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs)
+                    .map(|value| format!(" at {value}"))
+                    .unwrap_or_default();
+                format!(
+                    "site {} {} vouched{locus}",
+                    receipt.site.0,
+                    dorc_plan::fact_label(interner, receipt.fact)
+                )
+            })
+            .collect();
+        let locus = if aggregate_loci.is_empty() {
+            oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs)
+                .map(|value| format!("; vouched at {value}"))
+                .unwrap_or_default()
+        } else {
+            format!("; {}", aggregate_loci.join(", "))
+        };
         eprintln!(
             "why: site {} survives+elides past {} — backing {} disjoint (trusted footprint){locus}",
             step.leaf.0,
@@ -3690,21 +3708,37 @@ fn survival_chain(
 ) -> Option<ChainRender> {
     let witness = license.derivation().survival.as_ref()?;
     let backing = render_coord(witness.backing(), interner);
-    let mut links = vec![
-        ChainLink {
-            tier: TrustTier::Measured,
-            body: format!("{backing} was measured converged on the host at plan time"),
-            locus: None,
-        },
-        ChainLink {
+    let mut links = vec![ChainLink {
+        tier: TrustTier::Measured,
+        body: format!("{backing} was measured converged on the host at plan time"),
+        locus: None,
+    }];
+    if license.derivation().establish_vouches.is_empty() {
+        links.push(ChainLink {
             tier: TrustTier::Vouched,
             body:
                 "the site's own oracle accepts that measured state as reason enough not to re-run \
                    this line"
                     .to_owned(),
             locus: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
-        },
-    ];
+        });
+    } else {
+        links.extend(
+            license
+                .derivation()
+                .establish_vouches
+                .iter()
+                .map(|receipt| ChainLink {
+                    tier: TrustTier::Vouched,
+                    body: format!(
+                        "site {}'s oracle accepts {} as reason enough not to re-run its establish",
+                        receipt.site.0,
+                        dorc_plan::fact_label(interner, receipt.fact)
+                    ),
+                    locus: oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs),
+                }),
+        );
+    }
     let mut claimed_link: Option<u32> = None;
     for c in witness.crossings() {
         links.push(ChainLink {

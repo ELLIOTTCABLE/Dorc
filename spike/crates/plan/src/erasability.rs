@@ -227,7 +227,8 @@ fn canon_derivation(d: &Derivation) -> String {
         // Run) is identity, and that is already hashed. So the attribution detail
         // is output-only, like `witness`.
         vouch_span: _, // EXEMPT (C7): the vouch's `file:line` is why-lens attribution only (a
-                       // vouch informs, never becomes a fact — TC-tier-3), like `witness`/`survival`.
+        // vouch informs, never becomes a fact — TC-tier-3), like `witness`/`survival`.
+        establish_vouches: _, // EXEMPT: aggregate vouch receipts are narration-only.
     } = d;
     format!(
         "deriv(fact={} via={} ambient={ambient} grade={grade:?} verdict={verdict:?})",

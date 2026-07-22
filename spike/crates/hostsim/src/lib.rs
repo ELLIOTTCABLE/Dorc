@@ -700,7 +700,7 @@ apt_get__predict() {
         for (node, class) in classes {
             // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, which these
             // elision DSTs do not exercise (elide-weld's concern is EstablishAmbient — 24D §3).
-            if matches!(class, SkipClass::EstablishAmbient(_)) {
+            if let SkipClass::EstablishAmbient(fact) = class {
                 let vouch = dorc_plan::VerdictVouch::new(
                     "apt_get__is_converged".to_string(),
                     "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
@@ -710,6 +710,7 @@ apt_get__predict() {
                 );
                 vouches.insert(
                     *node,
+                    *fact,
                     dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
                 );
             }

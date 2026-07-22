@@ -112,6 +112,40 @@ fn vouch_all(
 ) -> dorc_plan::Vouches {
     let mut vouches = dorc_plan::Vouches::new();
     for (node, class) in classes {
+        let mut insert = |site, fact| {
+            let vouch = dorc_plan::VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                "apt_get__is_converged".to_string(),
+                "package".to_string(),
+                vec!["dpkg-query".to_string()],
+            );
+            vouches.insert(
+                site,
+                fact,
+                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
+            );
+        };
+        if matches!(mode, VouchMode::Ambient | VouchMode::Written) {
+            match class {
+                SkipClass::EstablishMembers { members, .. } => {
+                    for fact in members {
+                        insert(*node, *fact);
+                    }
+                }
+                SkipClass::InlineCall { sites } => {
+                    for site in sites {
+                        if let SkipClass::EstablishAmbient(fact) = site.class {
+                            insert(site.node, fact);
+                        }
+                    }
+                }
+                SkipClass::EstablishAmbient(_)
+                | SkipClass::EstablishWritten(_)
+                | SkipClass::QueryResolvable { .. }
+                | SkipClass::MustRun => {}
+            }
+        }
         let vouchable = match mode {
             VouchMode::None => false,
             VouchMode::Ambient => matches!(class, SkipClass::EstablishAmbient(_)),
@@ -120,7 +154,12 @@ fn vouch_all(
                 SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
             ),
         };
-        if vouchable {
+        if let Some(fact) = match class {
+            SkipClass::EstablishAmbient(fact) | SkipClass::EstablishWritten(fact) if vouchable => {
+                Some(*fact)
+            }
+            _ => None,
+        } {
             let vouch = dorc_plan::VerdictVouch::new(
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
@@ -130,6 +169,7 @@ fn vouch_all(
             );
             vouches.insert(
                 *node,
+                fact,
                 dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
             );
         }
@@ -567,6 +607,7 @@ fn render_scoped(
             );
             vouches.insert(
                 *node,
+                fact.expect("vouched establish has a fact"),
                 dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
             );
         }
