@@ -129,6 +129,7 @@ fn compile_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
+    validate_case_inputs(cases)?;
     let touched = gate_touched_set(cases)?;
     let inspection = inspect_cases(cases, &touched, env, out)?;
     let Some(inspection) = inspection else {
@@ -147,6 +148,7 @@ fn promote_cases(
     let packet = receipt_store()
         .read()
         .map_err(|error| format!("promote receipt: {error}"))?;
+    validate_case_inputs(cases)?;
     let touched = gate_touched_set(cases)?;
     let inspection = inspect_cases(cases, &touched, env, out)?;
     let Some(inspection) = inspection else {
@@ -462,6 +464,13 @@ fn load_with_text(path: &Path) -> Result<(Case, String), String> {
     let source = read_case_text(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let case = Case::parse(&source).map_err(|error| format!("{}: {error}", path.display()))?;
     Ok((case, source))
+}
+
+fn validate_case_inputs(cases: &[PathBuf]) -> Result<(), String> {
+    for path in cases {
+        let _ = load_with_text(path)?;
+    }
+    Ok(())
 }
 
 fn case_name(path: &Path) -> Result<String, String> {
