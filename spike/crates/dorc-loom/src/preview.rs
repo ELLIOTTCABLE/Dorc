@@ -10,9 +10,9 @@ use crate::{
 /// One interpreted editable section.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SectionPreview {
-    section: SectionKey,
-    compiled: CompiledSection,
-    used_bindings: Vec<(TemplateVariableName, String)>,
+    pub(crate) section: SectionKey,
+    pub(crate) compiled: CompiledSection,
+    pub(crate) used_bindings: Vec<(TemplateVariableName, String)>,
 }
 
 impl SectionPreview {
@@ -38,8 +38,8 @@ impl SectionPreview {
 /// The complete in-memory result of compiling dirty transcript sections.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct CompilePreview {
-    sections: Vec<SectionPreview>,
-    concrete: String,
+    pub(crate) sections: Vec<SectionPreview>,
+    pub(crate) concrete: String,
 }
 
 impl CompilePreview {

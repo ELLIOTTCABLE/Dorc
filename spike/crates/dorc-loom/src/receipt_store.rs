@@ -4,7 +4,8 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use crate::{MAX_RECEIPT_BYTES, ReceiptError, parse_receipt};
+use crate::receipt::parse as parse_receipt;
+use crate::{MAX_RECEIPT_BYTES, ReceiptError};
 
 /// The filesystem boundary used by compile and promote.
 pub trait ReceiptStore {

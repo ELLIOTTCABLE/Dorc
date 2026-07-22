@@ -129,11 +129,11 @@ fn compile_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
-    let inspection = inspect_cases(cases, env, out)?;
+    let touched = gate_touched_set(cases)?;
+    let inspection = inspect_cases(cases, &touched, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
-    gate_touched_set(cases)?;
     let packet = encode_receipt(&inspection).map_err(|error| error.to_string())?;
     receipt_store().publish(&packet)?;
     Ok(ExitCode::SUCCESS)
@@ -147,11 +147,11 @@ fn promote_cases(
     let packet = receipt_store()
         .read()
         .map_err(|error| format!("promote receipt: {error}"))?;
-    let inspection = inspect_cases(cases, env, out)?;
+    let touched = gate_touched_set(cases)?;
+    let inspection = inspect_cases(cases, &touched, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
-    gate_touched_set(cases)?;
     validate_receipt(&packet, &inspection).map_err(|error| format!("promote refused: {error}"))?;
     writeln!(
         out,
@@ -163,26 +163,40 @@ fn promote_cases(
 
 fn inspect_cases(
     cases: &[PathBuf],
+    touched: &std::collections::BTreeSet<String>,
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<Option<InspectedCompilation>, String> {
     let consumer = DorcConsumer::new();
     let mut refused = false;
+    let mut paths: Vec<_> = cases
+        .iter()
+        .map(|path| Ok((canonical_case_path(path)?, path)))
+        .collect::<Result<_, String>>()?;
+    paths.sort_by(|left, right| left.0.cmp(&right.0));
+    if paths.windows(2).any(|pair| {
+        pair.first()
+            .zip(pair.get(1))
+            .is_some_and(|(left, right)| left.0 == right.0)
+    }) {
+        return Err("duplicate selected case".to_owned());
+    }
     let mut selected = Vec::new();
-    let mut replays = Vec::new();
-    for path in cases {
+    let mut inspected_cases = Vec::new();
+    for (relative_path, path) in paths {
         let (case, source) = load_with_text(path)?;
-        selected.push((canonical_case_path(path)?, source.clone()));
+        selected.push(relative_path.clone());
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
         let mut previews = Vec::new();
         let mut case_refusal = None;
-        let input = ReplayInput::new(case_name(path)?, source)
+        let input = ReplayInput::new(case_name(path)?, source.clone())
             .map_err(|error| format!("{}: {error}", path.display()))?;
         let results =
             replay_case_with_inputs(&case, &consumer, env, &[input], |command, context| {
                 execute_generic(command, context).map(ReplayResult::bytes)
             })
             .map_err(|error| format!("{}: {error}", path.display()))?;
+        let mut inspected_replays = Vec::new();
         for (index, (block, routed)) in case.replay().blocks().iter().zip(results).enumerate() {
             let dirty = unreflow(block.output());
             if let Some(render) = routed.editable_render().cloned() {
@@ -197,11 +211,7 @@ fn inspect_cases(
             } else {
                 writeln!(out, "replay: {index} bytes-only").map_err(|error| error.to_string())?;
             }
-            replays.push(InspectedReplay {
-                command: block.command().to_owned(),
-                output: routed.output().to_owned(),
-                interpretation: String::new(),
-            });
+            inspected_replays.push((index, block.command().to_owned(), routed));
         }
         if let Some((index, error, dirty)) = case_refusal {
             refused = true;
@@ -213,27 +223,42 @@ fn inspect_cases(
                 .map_err(|write| write.to_string())?;
             continue;
         }
-        let replay_offset = replays.len().saturating_sub(case.replay().blocks().len());
+        let mut compiled = std::collections::BTreeMap::new();
         for (index, preview) in previews {
             writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
             let rendered = render_compile_preview(&preview);
-            if let Some(replay) = replays.get_mut(replay_offset.saturating_add(index)) {
-                replay.interpretation.clone_from(&rendered);
-            }
+            compiled.insert(index, preview);
             writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
         }
+        let replays = inspected_replays
+            .into_iter()
+            .map(|(index, command, routed)| match routed.editable_render() {
+                Some(render) => InspectedReplay::editable(
+                    index,
+                    command,
+                    routed.output().to_owned(),
+                    render,
+                    &compiled.remove(&index).into_iter().collect::<Vec<_>>(),
+                ),
+                None => InspectedReplay::bytes(index, command, routed.output().to_owned()),
+            })
+            .collect();
+        let is_touched = touched.contains(&relative_path);
+        inspected_cases.push((relative_path, source, is_touched, replays));
     }
     if refused {
         return Ok(None);
     }
-    selected.sort_by(|left, right| left.0.cmp(&right.0));
     let catalog = std::fs::read_to_string(catalog_path())
         .map_err(|error| format!("read catalog input: {error}"))?;
-    Ok(Some(InspectedCompilation {
-        cases: selected,
-        catalog,
-        replays,
-    }))
+    let touched_cases = inspected_cases
+        .iter()
+        .filter(|(_, _, touched, _)| *touched)
+        .map(|(path, _, _, _)| path.clone())
+        .collect();
+    InspectedCompilation::new(catalog, selected, touched_cases, inspected_cases)
+        .map(Some)
+        .map_err(|error| error.to_string())
 }
 
 fn receipt_store() -> FsReceiptStore {
@@ -264,13 +289,14 @@ fn canonical_case_path(path: &Path) -> Result<String, String> {
 
 /// The receipt may bind only transcript-prose edits. Git is deliberately queried
 /// at this CLI edge; the classification itself is a closed, deterministic policy.
-fn gate_touched_set(cases: &[PathBuf]) -> Result<(), String> {
+fn gate_touched_set(cases: &[PathBuf]) -> Result<std::collections::BTreeSet<String>, String> {
     let root = git_root()?;
     let selected: std::collections::BTreeSet<_> = cases
         .iter()
         .map(|path| repo_path(&root, path))
         .collect::<Result<_, _>>()?;
     let catalog = repo_path(&root, &catalog_path())?;
+    let mut touched = std::collections::BTreeSet::new();
     for (index, worktree, path) in git_status(&root)? {
         if path == catalog {
             return Err("catalog is not clean against HEAD".to_owned());
@@ -280,9 +306,10 @@ fn gate_touched_set(cases: &[PathBuf]) -> Result<(), String> {
         }
         if worktree == 'M' {
             validate_prose_only(&root, &path)?;
+            touched.insert(path);
         }
     }
-    Ok(())
+    Ok(touched)
 }
 
 fn git_root() -> Result<PathBuf, String> {
