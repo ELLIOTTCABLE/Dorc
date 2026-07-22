@@ -394,36 +394,6 @@ struct Parsed {
     block_diags: Vec<Diag>,
 }
 
-/// Return the diagnostics from the full `281` mark-block grammar. Lexes with the hash-colon-aware [`lex_marks`], splits into statements
-/// (on `;`/`;;`/newline), classifies each, assembles continuation blocks
-/// (`28A:rul-continuation-attachment`), and runs the block-level rc-arity + standalone diagnostics
-/// over each assembled block. Production parses only the single-mark subset in `super::parser`
-#[must_use]
-pub fn lint_mark_blocks(src: &str) -> Vec<Diag> {
-    let parsed = parse_marks(src);
-    let _ = strip_marks(src);
-    for stmt in &parsed.stmts {
-        match &stmt.kind {
-            StmtKind::Standalone { intro, .. } => {
-                let _ = intro;
-            }
-            StmtKind::InlineBind { name, kind, span } => {
-                let _ = (name, kind, span);
-            }
-            StmtKind::TrailingBind { bind, intro } => {
-                let _ = (bind, intro);
-            }
-            StmtKind::Command { .. } | StmtKind::NullColon | StmtKind::Plain => {}
-        }
-    }
-    parsed
-        .stmts
-        .into_iter()
-        .flat_map(|stmt| stmt.diags)
-        .chain(parsed.block_diags)
-        .collect()
-}
-
 fn parse_marks(src: &str) -> Parsed {
     let tokens = lex_marks(src);
     let mut out = Parsed::default();

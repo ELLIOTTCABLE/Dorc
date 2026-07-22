@@ -935,25 +935,24 @@ impl Parser<'_> {
                               (`28A:rul-single-mark-production-subset`)",
                         ));
                     }
-                    match mark_verb(&head) {
-                        Some(k) => k,
-                        None => {
-                            if intro.carrier == MarkCarrier::Hash {
-                                return Err(self.fail_mark(
-                                    intro,
-                                    marker_span,
-                                    "malformed hash-colon mark",
-                                ));
-                            }
-                            self.out.push(Diag::new(
-                                DiagCode::MarkUnknownVerb(MarkUnknownVerb {
-                                    token: head,
-                                    expected: expected_verbs().to_owned(),
-                                }),
-                                self.peek_span().unwrap_or(marker_span),
+                    if let Some(kind) = mark_verb(&head) {
+                        kind
+                    } else {
+                        if intro.carrier == MarkCarrier::Hash {
+                            return Err(self.fail_mark(
+                                intro,
+                                marker_span,
+                                "malformed hash-colon mark",
                             ));
-                            return Err(true);
                         }
+                        self.out.push(Diag::new(
+                            DiagCode::MarkUnknownVerb(MarkUnknownVerb {
+                                token: head,
+                                expected: expected_verbs().to_owned(),
+                            }),
+                            self.peek_span().unwrap_or(marker_span),
+                        ));
+                        return Err(true);
                     }
                 }
             }
