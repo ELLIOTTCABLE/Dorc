@@ -89,9 +89,7 @@ impl ReceiptStore for FsReceiptStore {
             match fs::rename(&temp_path, &final_path) {
                 Ok(()) => return Ok(()),
                 Err(error) => {
-                    // Windows cannot replace an existing destination with rename. Do not
-                    // remove an unsafe destination; a valid prior receipt may be absent
-                    // after this platform-specific replacement attempt fails.
+                    // Windows may require remove-then-rename replacement.
                     #[cfg(windows)]
                     if final_path.exists() {
                         validate_final(&final_path)?;
