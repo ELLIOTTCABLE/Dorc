@@ -15,6 +15,11 @@ pub const MAX_RECEIPT_BYTES: usize = 2 * 1024 * 1024;
 const MAX_RECEIPT_CASES: usize = 64;
 const MAX_RECEIPT_REPLAYS: usize = 512;
 const MAX_RECEIPT_FIELD_BYTES: usize = 256 * 1024;
+const MAX_RENDER_COMPONENTS: usize = 4_096;
+const MAX_EDITABLE_FRAGMENTS: usize = 4_096;
+const MAX_COMPILED_SECTIONS: usize = 1_024;
+const MAX_COMPILED_FRAGMENTS: usize = 4_096;
+const MAX_BINDINGS: usize = 1_024;
 
 /// The complete private inspection that promotion must recompute byte-for-byte.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -139,11 +144,11 @@ impl InspectedCompilation {
     /// Returns a refusal when the supplied canonical record is incomplete or invalid.
     pub fn new(
         catalog: String,
-        selected_cases: Vec<String>,
-        touched_cases: Vec<String>,
+        mut selected_cases: Vec<String>,
+        mut touched_cases: Vec<String>,
         cases: Vec<(String, String, bool, Vec<InspectedReplay>)>,
     ) -> Result<Self, ReceiptError> {
-        let cases = cases
+        let mut cases: Vec<_> = cases
             .into_iter()
             .map(|(path, text, touched, replays)| CaseInspection {
                 path,
@@ -155,6 +160,9 @@ impl InspectedCompilation {
                     .collect(),
             })
             .collect();
+        selected_cases.sort();
+        touched_cases.sort();
+        cases.sort_by(|left, right| left.path.cmp(&right.path));
         let inspection = Self {
             catalog,
             selected_cases,
@@ -460,6 +468,13 @@ fn validate_species(species: &ReplaySpecies) -> Result<(), ReceiptError> {
     let ReplaySpecies::Editable { render, sections } = species else {
         return Ok(());
     };
+    if render.components.len() > MAX_RENDER_COMPONENTS {
+        return Err(ReceiptError::Limit("render components"));
+    }
+    if sections.len() > MAX_COMPILED_SECTIONS {
+        return Err(ReceiptError::Limit("compiled sections"));
+    }
+    let mut render_sections = std::collections::BTreeSet::new();
     for component in &render.components {
         match component {
             ReceiptComponent::Structure(text) => {
@@ -471,14 +486,36 @@ fn validate_species(species: &ReplaySpecies) -> Result<(), ReceiptError> {
             }
             ReceiptComponent::EditableSection { id, fragments } => {
                 validate_section_id(id)?;
+                if !render_sections.insert(section_identity(id)) {
+                    return Err(ReceiptError::Malformed("duplicate editable section"));
+                }
+                if fragments.len() > MAX_EDITABLE_FRAGMENTS {
+                    return Err(ReceiptError::Limit("editable fragments"));
+                }
                 for fragment in fragments {
                     validate_fragment(fragment)?;
                 }
             }
         }
     }
+    let mut compiled_sections = std::collections::BTreeSet::new();
     for section in sections {
         validate_section_id(&section.id)?;
+        let identity = section_identity(&section.id);
+        if !render_sections.contains(&identity) {
+            return Err(ReceiptError::Malformed(
+                "compiled section has no render section",
+            ));
+        }
+        if !compiled_sections.insert(identity) {
+            return Err(ReceiptError::Malformed("duplicate compiled section"));
+        }
+        if section.fragments.len() > MAX_COMPILED_FRAGMENTS {
+            return Err(ReceiptError::Limit("compiled fragments"));
+        }
+        if section.bindings.len() > MAX_BINDINGS {
+            return Err(ReceiptError::Limit("bindings"));
+        }
         check(&section.concrete)?;
         for fragment in &section.fragments {
             match fragment {
@@ -487,8 +524,12 @@ fn validate_species(species: &ReplaySpecies) -> Result<(), ReceiptError> {
                 }
             }
         }
+        let mut names = std::collections::BTreeSet::new();
         for (name, value) in &section.bindings {
-            check(name)?;
+            check_nonempty(name, "binding name")?;
+            if !names.insert(name) {
+                return Err(ReceiptError::Malformed("duplicate binding"));
+            }
             check(value)?;
         }
     }
@@ -507,11 +548,11 @@ fn ordered_paths(paths: &[String], what: &'static str) -> Result<(), ReceiptErro
     Ok(())
 }
 fn validate_section_id(id: &ReceiptSectionId) -> Result<(), ReceiptError> {
-    check(&id.code)?;
-    check(&id.field)
+    check_nonempty(&id.code, "section code")?;
+    check_nonempty(&id.field, "section field")
 }
 fn validate_variable_id(id: &ReceiptVariableId) -> Result<(), ReceiptError> {
-    check(&id.name)
+    check_nonempty(&id.name, "variable name")
 }
 fn validate_fragment(fragment: &ReceiptFragment) -> Result<(), ReceiptError> {
     match fragment {
@@ -528,6 +569,16 @@ fn check(value: &str) -> Result<(), ReceiptError> {
     } else {
         Ok(())
     }
+}
+fn check_nonempty(value: &str, what: &'static str) -> Result<(), ReceiptError> {
+    if value.is_empty() {
+        Err(ReceiptError::Malformed(what))
+    } else {
+        check(value)
+    }
+}
+fn section_identity(id: &ReceiptSectionId) -> (&str, &str, usize, usize) {
+    (&id.code, &id.field, id.instance, id.segment)
 }
 fn safe_path(path: &str) -> bool {
     !path.is_empty()
@@ -901,6 +952,83 @@ pub(crate) mod tests {
         )
         .expect("valid")
     }
+
+    pub(crate) fn inspection_mutations() -> (InspectedCompilation, Vec<InspectedCompilation>) {
+        let mut original = inspection("same");
+        let (_, sections) = editable_species(&mut original);
+        sections.push(ReceiptSection {
+            id: ReceiptSectionId {
+                code: "code".to_owned(),
+                field: "message".to_owned(),
+                instance: 0,
+                segment: 0,
+            },
+            fragments: vec![
+                ReceiptCompiledFragment::Text("compiled ".to_owned()),
+                ReceiptCompiledFragment::Variable("name".to_owned()),
+            ],
+            bindings: vec![("name".to_owned(), "same".to_owned())],
+            concrete: "compiled same".to_owned(),
+        });
+        let mut variants = Vec::new();
+
+        let mut selected = original.clone();
+        selected.selected_cases[0] = "cases/b.txt".to_owned();
+        selected.cases[0].path = "cases/b.txt".to_owned();
+        selected.touched_cases[0] = "cases/b.txt".to_owned();
+        variants.push(selected);
+        let mut touched = original.clone();
+        touched.touched_cases.clear();
+        touched.cases[0].touched = false;
+        variants.push(touched);
+        let mut text = original.clone();
+        text.cases[0].text.push('!');
+        variants.push(text);
+        let mut catalog = original.clone();
+        catalog.catalog.push('!');
+        variants.push(catalog);
+        let mut command = original.clone();
+        command.cases[0].replays[0].command.push('!');
+        variants.push(command);
+        let mut result = original.clone();
+        result.cases[0].replays[0].result.push('!');
+        variants.push(result);
+        let mut bytes = original.clone();
+        bytes.cases[0].replays[0].species = ReplaySpecies::BytesOnly;
+        variants.push(bytes);
+        let mut structure = original.clone();
+        let (render, _) = editable_species(&mut structure);
+        render.components[0] = ReceiptComponent::Structure("changed".to_owned());
+        variants.push(structure);
+        let mut fixed = original.clone();
+        let (render, _) = editable_species(&mut fixed);
+        let ReceiptComponent::FixedVariable { id, rendered } = &mut render.components[1] else {
+            panic!("fixed variable");
+        };
+        id.occurrence = 1;
+        rendered.push('!');
+        variants.push(fixed);
+        let mut fragment = original.clone();
+        let (render, _) = editable_species(&mut fragment);
+        let ReceiptComponent::EditableSection { fragments, .. } = &mut render.components[2] else {
+            panic!("editable section");
+        };
+        fragments[0] = ReceiptFragment::Text("changed".to_owned());
+        variants.push(fragment);
+        let mut compiled = original.clone();
+        let (_, sections) = editable_species(&mut compiled);
+        sections[0].fragments[0] = ReceiptCompiledFragment::Text("changed".to_owned());
+        variants.push(compiled);
+        let mut binding = original.clone();
+        let (_, sections) = editable_species(&mut binding);
+        sections[0].bindings[0].1.push('!');
+        variants.push(binding);
+        let mut concrete = original.clone();
+        let (_, sections) = editable_species(&mut concrete);
+        sections[0].concrete.push('!');
+        variants.push(concrete);
+        (original, variants)
+    }
     #[test]
     fn typed_packet_round_trips_and_distinguishes_lossy_dimensions() {
         let original = inspection("\0 equal = unicode \u{2603}");
@@ -909,6 +1037,17 @@ pub(crate) mod tests {
         assert!(validate_current(&packet, &original).is_ok());
         for changed in [inspection(""), inspection("\0 equal = unicode \u{2604}")] {
             assert_ne!(packet, encode(&changed).expect("encode"));
+        }
+    }
+
+    #[test]
+    fn exact_model_encoding_is_injective_across_every_bound_dimension() {
+        let (original, variants) = inspection_mutations();
+        let packet = encode(&original).expect("original packet");
+        for variant in variants {
+            let changed = encode(&variant).expect("valid changed inspection");
+            assert_ne!(packet, changed);
+            assert!(validate_current(&packet, &variant).is_err());
         }
     }
     #[test]
@@ -949,6 +1088,15 @@ pub(crate) mod tests {
             panic!("fixed");
         };
         id.occurrence = 1;
+        render.components.push(ReceiptComponent::EditableSection {
+            id: ReceiptSectionId {
+                code: "code".to_owned(),
+                field: "help".to_owned(),
+                instance: 0,
+                segment: 1,
+            },
+            fragments: Vec::new(),
+        });
         sections.push(ReceiptSection {
             id: ReceiptSectionId {
                 code: "code".to_owned(),
@@ -983,5 +1131,380 @@ pub(crate) mod tests {
         let mut inspection = inspection("x");
         inspection.selected_cases = vec!["cases/b.txt".to_owned(), "cases/a.txt".to_owned()];
         assert!(encode(&inspection).is_err());
+    }
+
+    #[test]
+    fn construction_canonicalizes_shuffled_case_selection_to_one_packet() {
+        let ordered = InspectedCompilation::new(
+            "catalog".to_owned(),
+            vec!["cases/a.txt".to_owned(), "cases/b.txt".to_owned()],
+            vec!["cases/a.txt".to_owned(), "cases/b.txt".to_owned()],
+            vec![
+                ("cases/a.txt".to_owned(), "a".to_owned(), true, Vec::new()),
+                ("cases/b.txt".to_owned(), "b".to_owned(), true, Vec::new()),
+            ],
+        )
+        .expect("ordered inspection");
+        let shuffled = InspectedCompilation::new(
+            "catalog".to_owned(),
+            vec!["cases/b.txt".to_owned(), "cases/a.txt".to_owned()],
+            vec!["cases/b.txt".to_owned(), "cases/a.txt".to_owned()],
+            vec![
+                ("cases/b.txt".to_owned(), "b".to_owned(), true, Vec::new()),
+                ("cases/a.txt".to_owned(), "a".to_owned(), true, Vec::new()),
+            ],
+        )
+        .expect("shuffled inspection");
+        assert_eq!(encode(&ordered), encode(&shuffled));
+    }
+
+    fn bytes_replays(count: usize) -> InspectedCompilation {
+        InspectedCompilation::new(
+            "catalog".to_owned(),
+            vec!["cases/a.txt".to_owned()],
+            vec!["cases/a.txt".to_owned()],
+            vec![(
+                "cases/a.txt".to_owned(),
+                "case".to_owned(),
+                true,
+                (0..count)
+                    .map(|ordinal| InspectedReplay::bytes(ordinal, "cmd".to_owned(), String::new()))
+                    .collect(),
+            )],
+        )
+        .expect("bounded inspection")
+    }
+
+    fn cases(count: usize) -> InspectedCompilation {
+        let paths: Vec<_> = (0..count)
+            .map(|index| format!("cases/{index:03}.txt"))
+            .collect();
+        InspectedCompilation::new(
+            "catalog".to_owned(),
+            paths.clone(),
+            paths.clone(),
+            paths
+                .iter()
+                .map(|path| (path.clone(), String::new(), true, Vec::new()))
+                .collect(),
+        )
+        .expect("bounded inspection")
+    }
+
+    fn editable_species(
+        inspection: &mut InspectedCompilation,
+    ) -> (&mut ReceiptRender, &mut Vec<ReceiptSection>) {
+        let ReplaySpecies::Editable { render, sections } =
+            &mut inspection.cases[0].replays[0].species
+        else {
+            panic!("editable");
+        };
+        (render, sections)
+    }
+
+    #[test]
+    fn bounded_collections_accept_the_limit_and_refuse_one_more() {
+        assert!(encode(&cases(MAX_RECEIPT_CASES)).is_ok());
+        assert!(
+            InspectedCompilation::new(
+                "catalog".to_owned(),
+                (0..=MAX_RECEIPT_CASES)
+                    .map(|index| format!("cases/{index:03}.txt"))
+                    .collect(),
+                (0..=MAX_RECEIPT_CASES)
+                    .map(|index| format!("cases/{index:03}.txt"))
+                    .collect(),
+                (0..=MAX_RECEIPT_CASES)
+                    .map(|index| (
+                        format!("cases/{index:03}.txt"),
+                        String::new(),
+                        true,
+                        Vec::new()
+                    ))
+                    .collect(),
+            )
+            .is_err()
+        );
+        assert!(encode(&bytes_replays(MAX_RECEIPT_REPLAYS)).is_ok());
+        assert!(
+            InspectedCompilation::new(
+                "catalog".to_owned(),
+                vec!["cases/a.txt".to_owned()],
+                vec!["cases/a.txt".to_owned()],
+                vec![(
+                    "cases/a.txt".to_owned(),
+                    String::new(),
+                    true,
+                    (0..=MAX_RECEIPT_REPLAYS)
+                        .map(|ordinal| InspectedReplay::bytes(
+                            ordinal,
+                            "cmd".to_owned(),
+                            String::new()
+                        ))
+                        .collect()
+                )],
+            )
+            .is_err()
+        );
+
+        let mut field = inspection("x");
+        field.catalog = "x".repeat(MAX_RECEIPT_FIELD_BYTES);
+        assert!(encode(&field).is_ok());
+        field.catalog.push('x');
+        assert!(encode(&field).is_err());
+
+        let mut components = inspection("x");
+        editable_species(&mut components).0.components =
+            vec![ReceiptComponent::Structure(String::new()); MAX_RENDER_COMPONENTS];
+        assert!(encode(&components).is_ok());
+        editable_species(&mut components)
+            .0
+            .components
+            .push(ReceiptComponent::Structure(String::new()));
+        assert!(encode(&components).is_err());
+    }
+
+    #[test]
+    fn nested_collections_accept_the_limit_and_refuse_one_more() {
+        let mut editable_fragments = inspection("x");
+        {
+            let (render, _) = editable_species(&mut editable_fragments);
+            let ReceiptComponent::EditableSection { fragments, .. } = &mut render.components[2]
+            else {
+                panic!("editable section");
+            };
+            *fragments = vec![ReceiptFragment::Text(String::new()); MAX_EDITABLE_FRAGMENTS];
+        }
+        assert!(encode(&editable_fragments).is_ok());
+        let ReceiptComponent::EditableSection { fragments, .. } =
+            &mut editable_species(&mut editable_fragments).0.components[2]
+        else {
+            panic!("editable section");
+        };
+        fragments.push(ReceiptFragment::Text(String::new()));
+        assert!(encode(&editable_fragments).is_err());
+
+        let mut compiled_fragments = inspection("x");
+        editable_species(&mut compiled_fragments)
+            .1
+            .push(ReceiptSection {
+                id: ReceiptSectionId {
+                    code: "code".to_owned(),
+                    field: "message".to_owned(),
+                    instance: 0,
+                    segment: 0,
+                },
+                fragments: vec![
+                    ReceiptCompiledFragment::Text(String::new());
+                    MAX_COMPILED_FRAGMENTS
+                ],
+                bindings: Vec::new(),
+                concrete: String::new(),
+            });
+        assert!(encode(&compiled_fragments).is_ok());
+        editable_species(&mut compiled_fragments).1[0]
+            .fragments
+            .push(ReceiptCompiledFragment::Text(String::new()));
+        assert!(encode(&compiled_fragments).is_err());
+
+        let mut bindings = inspection("x");
+        editable_species(&mut bindings).1.push(ReceiptSection {
+            id: ReceiptSectionId {
+                code: "code".to_owned(),
+                field: "message".to_owned(),
+                instance: 0,
+                segment: 0,
+            },
+            fragments: Vec::new(),
+            bindings: (0..MAX_BINDINGS)
+                .map(|index| (format!("name{index}"), String::new()))
+                .collect(),
+            concrete: String::new(),
+        });
+        assert!(encode(&bindings).is_ok());
+        editable_species(&mut bindings).1[0]
+            .bindings
+            .push(("one-over".to_owned(), String::new()));
+        assert!(encode(&bindings).is_err());
+
+        let mut sections = inspection("x");
+        editable_species(&mut sections).0.components = (0..MAX_COMPILED_SECTIONS)
+            .map(|segment| ReceiptComponent::EditableSection {
+                id: ReceiptSectionId {
+                    code: "code".to_owned(),
+                    field: "message".to_owned(),
+                    instance: 0,
+                    segment,
+                },
+                fragments: Vec::new(),
+            })
+            .collect();
+        *editable_species(&mut sections).1 = (0..MAX_COMPILED_SECTIONS)
+            .map(|segment| ReceiptSection {
+                id: ReceiptSectionId {
+                    code: "code".to_owned(),
+                    field: "message".to_owned(),
+                    instance: 0,
+                    segment,
+                },
+                fragments: Vec::new(),
+                bindings: Vec::new(),
+                concrete: String::new(),
+            })
+            .collect();
+        assert!(encode(&sections).is_ok());
+        editable_species(&mut sections).1.push(ReceiptSection {
+            id: ReceiptSectionId {
+                code: "code".to_owned(),
+                field: "message".to_owned(),
+                instance: 0,
+                segment: MAX_COMPILED_SECTIONS,
+            },
+            fragments: Vec::new(),
+            bindings: Vec::new(),
+            concrete: String::new(),
+        });
+        assert!(encode(&sections).is_err());
+    }
+
+    #[test]
+    fn packet_limit_and_decimal_length_arithmetic_are_checked() {
+        let mut source = bytes_replays(7);
+        source.catalog = "x".repeat(MAX_RECEIPT_FIELD_BYTES);
+        for replay in &mut source.cases[0].replays[..6] {
+            replay.result = "x".repeat(MAX_RECEIPT_FIELD_BYTES);
+        }
+        let mut low = 0usize;
+        let mut high = MAX_RECEIPT_FIELD_BYTES;
+        while low < high {
+            let middle = low.saturating_add(high).saturating_add(1) / 2;
+            source.cases[0].replays[6].result = "x".repeat(middle);
+            if encode(&source).is_ok() {
+                low = middle;
+            } else {
+                high = middle.saturating_sub(1);
+            }
+        }
+        source.cases[0].replays[6].result = "x".repeat(low);
+        let packet = encode(&source).expect("exact boundary packet");
+        assert_eq!(packet.len(), MAX_RECEIPT_BYTES);
+        source.cases[0].replays[6].result.push('x');
+        assert!(matches!(
+            encode(&source),
+            Err(ReceiptError::Limit("total bytes"))
+        ));
+
+        let mut malformed = packet.clone();
+        let header = b"result ";
+        let offset = malformed
+            .windows(header.len())
+            .position(|window| window == header)
+            .expect("catalog header")
+            + header.len();
+        malformed.splice(
+            offset..offset + 6,
+            b"999999999999999999999999999999".iter().copied(),
+        );
+        assert!(parse(&malformed).is_err());
+    }
+
+    #[test]
+    fn parser_refuses_every_structural_frame_class() {
+        let packet = encode(&inspection("unicode \u{2603}\n\0")).expect("packet");
+        for prefix in [
+            b"wrong\n".as_slice(),
+            b"dorc-loom-receipt\nschema: 9\nsemantics: 1\nidentity-mode: exact\n",
+            b"dorc-loom-receipt\nschema: 1\nsemantics: 9\nidentity-mode: exact\n",
+            b"dorc-loom-receipt\nschema: 1\nsemantics: 1\nidentity-mode: loose\n",
+        ] {
+            let mut changed = prefix.to_vec();
+            changed.extend_from_slice(b"catalog 0\n\n");
+            assert!(parse(&changed).is_err());
+        }
+        for suffix in [b"wat 0\n\n".as_slice(), b"case 0\n\n", b"catalog nope\n"] {
+            let mut changed = packet.clone();
+            changed.extend_from_slice(suffix);
+            assert!(parse(&changed).is_err());
+        }
+        for end in packet
+            .iter()
+            .enumerate()
+            .filter_map(|(index, byte)| (*byte == b'\n').then_some(index + 1))
+            .filter(|end| *end < packet.len())
+        {
+            assert!(
+                parse(&packet[..end]).is_err(),
+                "accepted truncation at {end}"
+            );
+        }
+        let mut bad_header_utf8 = packet.clone();
+        bad_header_utf8[0] = 0xff;
+        assert!(parse(&bad_header_utf8).is_err());
+        let mut bad_value_utf8 = packet.clone();
+        let value = bad_value_utf8
+            .windows(b"catalog 7\n".len())
+            .position(|window| window == b"catalog 7\n")
+            .expect("catalog field")
+            + b"catalog 7\n".len();
+        bad_value_utf8[value] = 0xff;
+        assert!(parse(&bad_value_utf8).is_err());
+    }
+
+    #[test]
+    fn typed_model_rejects_impossible_nesting_and_identity() {
+        let mut invalid = inspection("x");
+        let (render, _) = editable_species(&mut invalid);
+        let ReceiptComponent::EditableSection { id, .. } = &mut render.components[2] else {
+            panic!("editable section");
+        };
+        id.code.clear();
+        assert!(encode(&invalid).is_err());
+
+        let mut invalid = inspection("x");
+        let (_, sections) = editable_species(&mut invalid);
+        sections.push(ReceiptSection {
+            id: ReceiptSectionId {
+                code: "other".to_owned(),
+                field: "message".to_owned(),
+                instance: 0,
+                segment: 0,
+            },
+            fragments: Vec::new(),
+            bindings: Vec::new(),
+            concrete: String::new(),
+        });
+        assert!(encode(&invalid).is_err());
+
+        let mut invalid = inspection("x");
+        let (render, _) = editable_species(&mut invalid);
+        let ReceiptComponent::EditableSection { fragments, .. } = &mut render.components[2] else {
+            panic!("editable section");
+        };
+        fragments.push(ReceiptFragment::Variable {
+            id: ReceiptVariableId {
+                name: String::new(),
+                occurrence: 0,
+            },
+            rendered: String::new(),
+        });
+        assert!(encode(&invalid).is_err());
+
+        let mut invalid = inspection("x");
+        let (_, sections) = editable_species(&mut invalid);
+        sections.push(ReceiptSection {
+            id: ReceiptSectionId {
+                code: "code".to_owned(),
+                field: "message".to_owned(),
+                instance: 0,
+                segment: 0,
+            },
+            fragments: Vec::new(),
+            bindings: vec![
+                ("name".to_owned(), "one".to_owned()),
+                ("name".to_owned(), "two".to_owned()),
+            ],
+            concrete: String::new(),
+        });
+        assert!(encode(&invalid).is_err());
     }
 }
