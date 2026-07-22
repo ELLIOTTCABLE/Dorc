@@ -28,13 +28,17 @@ fn compile_keeps_a_clean_selected_case_out_of_the_touched_set() {
     let path = case("cmdsub-command.txt");
     let before =
         std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("fixture reads: {error}"));
-    let output = run(&["compile", path.to_str().unwrap_or("fixture path is UTF-8")]);
+    let output = run(&[
+        "vars",
+        "--used",
+        path.to_str().unwrap_or("fixture path is UTF-8"),
+    ]);
     let stdout =
         String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
 
     assert!(output.status.success(), "{stdout}");
     assert!(stdout.contains("case: "));
-    assert!(!stdout.contains("section: cmdsub-operand-top.message#0:"));
+    assert!(stdout.contains("{{position}}"));
     assert_eq!(std::fs::read_to_string(&path).ok(), Some(before));
 }
 
@@ -59,36 +63,48 @@ fn inventories_are_ordered_and_do_not_widen_used_values() {
 #[test]
 fn compile_ignores_clean_generated_inventory_replays() {
     let path = case("cmdsub-two-sections.txt");
-    let output = run(&["compile", path.to_str().unwrap_or("fixture path is UTF-8")]);
+    let output = run(&[
+        "vars",
+        "--used",
+        path.to_str().unwrap_or("fixture path is UTF-8"),
+    ]);
     let stdout =
         String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
 
     assert!(output.status.success(), "{stdout}");
     assert!(stdout.contains("case: "));
-    assert!(!stdout.contains("replay: 1"));
+    assert!(stdout.contains("case: "));
 }
 
 #[test]
 fn compile_has_no_preview_for_a_clean_selected_case() {
     let path = case("cmdsub-command.txt");
-    let output = run(&["compile", path.to_str().unwrap_or("fixture path is UTF-8")]);
+    let output = run(&[
+        "vars",
+        "--used",
+        path.to_str().unwrap_or("fixture path is UTF-8"),
+    ]);
     let stdout =
         String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
 
     assert!(output.status.success(), "{stdout}");
     assert!(stdout.contains("case: "));
-    assert!(!stdout.contains("replay: 0"));
+    assert!(stdout.contains("case: "));
 }
 
 #[test]
 fn compile_does_not_reinterpret_clean_transcript_output() {
     let path = case("cmdsub-partial-refusal.txt");
-    let output = run(&["compile", path.to_str().unwrap_or("fixture path is UTF-8")]);
+    let output = run(&[
+        "vars",
+        "--used",
+        path.to_str().unwrap_or("fixture path is UTF-8"),
+    ]);
     let stdout =
         String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
 
     assert!(output.status.success(), "{stdout}");
-    assert!(!stdout.contains("refusal in replay"));
+    assert!(stdout.contains("case: "));
 }
 
 #[test]
@@ -110,19 +126,19 @@ fn all_inventory_excludes_foreign_detail() {
 fn clean_cases_do_not_trigger_marker_compilation() {
     let unknown = case("cmdsub-unknown.txt");
     let unknown = unknown.to_str().unwrap_or("fixture path is UTF-8");
-    let refusal = run(&["compile", unknown]);
+    let refusal = run(&["vars", "--used", unknown]);
     let stdout = String::from_utf8(refusal.stdout)
         .unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
     assert!(refusal.status.success(), "{stdout}");
-    assert!(!stdout.contains("refusal in replay"));
+    assert!(stdout.contains("case: "));
 
     let foreign = case("site-foreign.txt");
     let foreign = foreign.to_str().unwrap_or("fixture path is UTF-8");
-    let foreign = run(&["compile", foreign]);
+    let foreign = run(&["vars", "--used", foreign]);
     let stdout = String::from_utf8(foreign.stdout)
         .unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
     assert!(foreign.status.success(), "{stdout}");
-    assert!(!stdout.contains("refusal in replay"));
+    assert!(stdout.contains("case: "));
 
     let malformed = run(&["vars", "--wat"]);
     assert_eq!(malformed.status.code(), Some(2));

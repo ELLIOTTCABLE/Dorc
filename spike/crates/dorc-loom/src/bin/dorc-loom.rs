@@ -6,8 +6,8 @@ use std::process::ExitCode;
 
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
-    InspectedReplay, ReceiptStore, Repository, classify_prose_changes, compile_preview,
-    encode_receipt, render_compile_preview, replay_case_with_inputs, validate_receipt,
+    InspectedReplay, Repository, classify_prose_changes, compile_preview, compile_receipt,
+    promote_receipt, render_compile_preview, replay_case_with_inputs,
 };
 use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
@@ -143,8 +143,7 @@ fn compile_cases(
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
-    let packet = encode_receipt(&inspection).map_err(|error| error.to_string())?;
-    receipt_store()?.publish(&packet)?;
+    compile_receipt(&receipt_store()?, &inspection)?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -153,16 +152,13 @@ fn promote_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
-    let packet = receipt_store()?
-        .read()
-        .map_err(|error| format!("promote receipt: {error}"))?;
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
     let inspection = inspect_cases(&gated.repository, &gated.paths, &gated.touched, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
     };
-    validate_receipt(&packet, &inspection).map_err(|error| format!("promote refused: {error}"))?;
+    promote_receipt(&receipt_store()?, &inspection)?;
     writeln!(
         out,
         "promote: receipt matches current inspected compilation; ready"

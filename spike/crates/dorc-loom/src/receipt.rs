@@ -818,7 +818,7 @@ fn read_strings(frames: &mut Frames<'_>, tag: &str) -> Result<Vec<String>, Recei
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use errorloom::EditableSection;
 
@@ -880,7 +880,7 @@ mod tests {
                 .collect(),
         }
     }
-    fn inspection(value: &str) -> InspectedCompilation {
+    pub(crate) fn inspection(value: &str) -> InspectedCompilation {
         let render = render("name", 0, value);
         InspectedCompilation::new(
             "catalog".to_owned(),
