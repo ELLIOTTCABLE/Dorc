@@ -288,7 +288,7 @@ fn receipt_store() -> Result<FsReceiptStore, String> {
 }
 
 fn catalog_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog.rs")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs")
 }
 
 /// The receipt may bind only transcript-prose edits. Repository reads are isolated

@@ -18,7 +18,7 @@ use errorloom::{
 };
 
 const CASE_PATH: &str = "cases/dangling-reference.txt";
-const CATALOG_PATH: &str = "crates/core/src/catalog.rs";
+const CATALOG_PATH: &str = "crates/core/src/catalog_lock.rs";
 const CODE_PATH: &str = "crates/core/src/diag.rs";
 
 /// The committed transcript for `slug`: render a skeleton case through a fresh consumer, so the
@@ -379,7 +379,7 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
 #[test]
 fn replay_with_a_fake_fallback_leaves_case_catalog_and_source_bytes_unchanged() {
     let case_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.txt");
-    let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog.rs");
+    let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs");
     let case_before = std::fs::read(&case_path).expect("case reads");
     let catalog_before = std::fs::read(&catalog_path).expect("catalog reads");
     let case = Case::parse(std::str::from_utf8(&case_before).expect("case is UTF-8"))
