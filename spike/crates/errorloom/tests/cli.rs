@@ -28,10 +28,17 @@ fn bless_inlines_then_run_detects_drift() {
 
     let errorloom = env!("CARGO_BIN_EXE_errorloom");
     let path_flag = format!("--path={}", bin_dir().display());
+    let shell_flag = format!("--shell={}", env!("CARGO_BIN_EXE_loom-mock-tool"));
     let case_arg = case_path.display().to_string();
 
     let blessed_run = Command::new(errorloom)
-        .args(["bless", &path_flag, "--require-token=code", &case_arg])
+        .args([
+            "bless",
+            &path_flag,
+            &shell_flag,
+            "--require-token=code",
+            &case_arg,
+        ])
         .output()
         .expect("spawn bless");
     assert!(blessed_run.status.success(), "bless should succeed");
@@ -43,7 +50,7 @@ fn bless_inlines_then_run_detects_drift() {
     );
 
     let clean = Command::new(errorloom)
-        .args(["run", &path_flag, &case_arg])
+        .args(["run", &path_flag, &shell_flag, &case_arg])
         .output()
         .expect("spawn run");
     assert!(clean.status.success(), "a just-blessed case runs clean");
@@ -53,7 +60,7 @@ fn bless_inlines_then_run_detects_drift() {
     let tampered = blessed.replace("out:the-slug\nthe-slug\n", "out:the-slug\ntampered\n");
     fs::write(&case_path, tampered).expect("tamper");
     let drift = Command::new(errorloom)
-        .args(["run", &path_flag, &case_arg])
+        .args(["run", &path_flag, &shell_flag, &case_arg])
         .output()
         .expect("spawn run");
     assert_eq!(drift.status.code(), Some(1), "drift exits 1");

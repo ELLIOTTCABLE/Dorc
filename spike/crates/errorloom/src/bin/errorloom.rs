@@ -36,8 +36,7 @@ struct Args {
     cases: Vec<PathBuf>,
 }
 
-const USAGE: &str =
-    "usage: errorloom <run|bless> [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...";
+const USAGE: &str = "usage: errorloom <run|bless> --shell=PATH [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...";
 
 fn run() -> Result<ExitCode, String> {
     let args = parse_args()?;
@@ -112,6 +111,10 @@ fn parse_args() -> Result<Args, String> {
             env = env.path_dir(dir);
         } else if arg == "--path" {
             env = env.path_dir(next_value(&mut argv, "--path")?);
+        } else if let Some(shell) = arg.strip_prefix("--shell=") {
+            env = env.shell(shell);
+        } else if arg == "--shell" {
+            env = env.shell(next_value(&mut argv, "--shell")?);
         } else if let Some(pair) = arg.strip_prefix("--env=") {
             let (name, value) = split_env(pair)?;
             env = env.var(name, value);

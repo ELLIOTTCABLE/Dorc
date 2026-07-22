@@ -30,15 +30,46 @@ fn main() -> ExitCode {
 
 fn run() -> Result<ExitCode, String> {
     let args: Vec<String> = env::args().skip(1).collect();
+    if let [flag, command] = args.as_slice()
+        && flag == "-c"
+    {
+        return run_shell(command);
+    }
+    run_directives(&args, Vec::new())
+}
+
+fn run_shell(command: &str) -> Result<ExitCode, String> {
+    let mut words = command.split_ascii_whitespace().collect::<Vec<_>>();
+    if words.first() != Some(&"loom-mock-tool") {
+        return Err(format!("unsupported shell command {command:?}"));
+    }
+    words.remove(0);
+    let stdin = if let Some(position) = words.iter().position(|word| *word == "<") {
+        let path = words
+            .get(position.saturating_add(1))
+            .ok_or_else(|| format!("missing stdin path in {command:?}"))?
+            .to_string();
+        words.truncate(position);
+        fs::read(path).map_err(|error| error.to_string())?
+    } else {
+        Vec::new()
+    };
+    run_directives(
+        &words.into_iter().map(String::from).collect::<Vec<_>>(),
+        stdin,
+    )
+}
+
+fn run_directives(args: &[String], stdin_bytes: Vec<u8>) -> Result<ExitCode, String> {
     let needs_stdin = args.iter().any(|a| a == "cat" || a.starts_with("write:"));
-    let stdin_bytes = if needs_stdin {
+    let stdin_bytes = if needs_stdin && stdin_bytes.is_empty() {
         let mut buf = Vec::new();
         io::stdin()
             .read_to_end(&mut buf)
             .map_err(|e| e.to_string())?;
         buf
     } else {
-        Vec::new()
+        stdin_bytes
     };
 
     let stdout = io::stdout();
@@ -47,7 +78,7 @@ fn run() -> Result<ExitCode, String> {
     let mut err = stderr.lock();
     let mut exit: u8 = 0;
 
-    for arg in &args {
+    for arg in args {
         if let Some(text) = arg.strip_prefix("out:") {
             writeln!(out, "{text}").map_err(|e| e.to_string())?;
         } else if let Some(text) = arg.strip_prefix("err:") {

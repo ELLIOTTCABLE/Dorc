@@ -9,6 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
+use std::fs;
 
 use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_core::diag::{
@@ -227,37 +228,77 @@ impl DorcConsumer {
         &self,
         case: &Case,
         command: &str,
+        context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        let tokens: Vec<_> = command.split_ascii_whitespace().collect();
-        if tokens.first() == Some(&"dorc-loom") && tokens.get(1) == Some(&"vars") {
+        let tokens = exact_words(command)?;
+        if let ["dorc-loom", "vars", mode, path] = tokens.as_slice()
+            && matches!(*mode, "--used" | "--all")
+            && !path.contains('/')
+        {
             let baseline = self.editable_baseline(case).ok()?;
             let mut output = String::new();
             output.push_str("case: ");
-            output.push_str(tokens.last()?);
+            output.push_str(path);
             output.push('\n');
-            for (name, value) in baseline.used_variables() {
+            let values = if *mode == "--used" {
+                baseline.used_variables()
+            } else {
+                baseline
+                    .all_variables()
+                    .iter()
+                    .map(|(name, value)| (name.clone(), value.clone()))
+                    .collect()
+            };
+            for (name, value) in values {
                 let _ = writeln!(output, "{{{{{}}}}} = {value:?}", name.0);
             }
             return Some(ReplayResult::bytes(output));
         }
-        if tokens.first() != Some(&"dorc") || tokens.get(1) != Some(&"plan") {
-            return None;
-        }
-        if command.contains(['|', ';', '&', '>', '<', '$', '`'])
-            || tokens.iter().skip(2).any(|token| {
-                !token.starts_with("--book=") && !matches!(*token, "--format=jsonl" | "--verbose")
-            })
-        {
-            return None;
-        }
-        let (diag, source, filename) = Self::world_of(case).ok()?;
+        let (diag, source, filename, machine, editable) = match tokens.as_slice() {
+            ["dorc", "plan", book] | ["dorc", "plan", book, "--verbose"]
+                if book.starts_with("--book=") =>
+            {
+                let path = &book[7..];
+                let source = materialized_source(case, context, path)?;
+                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
+                (diag, source, filename, false, true)
+            }
+            ["dorc", "plan", book, "--format=jsonl"] if book.starts_with("--book=") => {
+                let path = &book[7..];
+                let source = materialized_source(case, context, path)?;
+                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
+                (diag, source, filename, true, false)
+            }
+            ["dorc", "plan", book, "<", input]
+                if book.starts_with("--book=") && materialized_file(case, context, input) =>
+            {
+                let path = &book[7..];
+                let source = materialized_source(case, context, path)?;
+                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
+                (diag, source, filename, false, true)
+            }
+            ["dorc", "lint", path] if materialized_file(case, context, path) => {
+                let source = materialized_source(case, context, path)?;
+                let (diag, _, filename) = Self::world_of_source(case, path, &source).ok()?;
+                (diag, source, filename, false, false)
+            }
+            ["dorc", "why", "--last"] => {
+                let (diag, source, filename) = Self::world_of(case).ok()?;
+                (diag, source, filename, false, false)
+            }
+            _ => return None,
+        };
         let interner = Interner::default();
-        if tokens.contains(&"--format=jsonl") {
+        if machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }
         let parts = render_cli_parts(&self.mirror, &diag, &source, &filename, &interner);
         let render = to_editable_render(&parts);
-        Some(ReplayResult::editable(render.text(), render))
+        Some(if editable {
+            ReplayResult::editable(render)
+        } else {
+            ReplayResult::bytes(render.text())
+        })
     }
 
     /// Reattach the payload inventory to renderer-stamped exact provenance.
@@ -301,8 +342,33 @@ impl DorcConsumer {
         {
             return fire_marker_gate(slug, section.name(), section.content());
         }
-        if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh") {
-            return fire_book_analysis(slug, section.name(), section.content());
+        if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh")
+            && let Ok(world) = fire_book_analysis(slug, section.name(), section.content())
+        {
+            return Ok(world);
+        }
+        let diag = canonical_payload(slug)
+            .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
+        Ok((diag, String::new(), String::new()))
+    }
+
+    fn world_of_source(
+        case: &Case,
+        path: &str,
+        source: &str,
+    ) -> Result<(Diag, String, String), String> {
+        let slug = case
+            .frontmatter()
+            .scalar("code")
+            .ok_or_else(|| "case has no `code`".to_owned())?;
+        if path.ends_with("oracle.sh") {
+            let (diag, _, filename) = fire_marker_gate(slug, path, source)?;
+            return Ok((diag, source.to_owned(), filename));
+        }
+        if path == "book.sh"
+            && let Ok((diag, _, filename)) = fire_book_analysis(slug, path, source)
+        {
+            return Ok((diag, source.to_owned(), filename));
         }
         let diag = canonical_payload(slug)
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
@@ -318,6 +384,37 @@ impl DorcConsumer {
         let human = render_cli_with(&self.mirror, &diag, &src, &filename, &interner);
         Ok((diag, human))
     }
+}
+
+fn exact_words(command: &str) -> Option<Vec<&str>> {
+    if command.is_empty()
+        || command.contains([
+            '\'', '"', '`', '$', '|', ';', '&', '>', '(', ')', '\\', '\n', '\r',
+        ])
+    {
+        return None;
+    }
+    let words: Vec<_> = command.split_ascii_whitespace().collect();
+    if words.is_empty()
+        || words
+            .iter()
+            .any(|word| word.contains('=') && !word.starts_with("--book="))
+    {
+        return None;
+    }
+    Some(words)
+}
+
+fn materialized_file(case: &Case, context: &ReplayContext<'_>, path: &str) -> bool {
+    case.sections().iter().any(|section| section.name() == path)
+        && context.cwd().join(path).is_file()
+}
+
+fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> Option<String> {
+    if !materialized_file(case, context, path) {
+        return None;
+    }
+    fs::read_to_string(context.cwd().join(path)).ok()
 }
 
 /// Consumer-neutral replay dispatch is implemented by this exact-shape Dorc adapter.
@@ -339,9 +436,9 @@ impl ReplayDriver<SectionKey, SectionVariableId> for DorcReplayDriver<'_> {
     fn drive(
         &self,
         command: &str,
-        _context: &ReplayContext<'_>,
+        context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.consumer.replay(self.case, command)
+        self.consumer.replay(self.case, command, context)
     }
 }
 

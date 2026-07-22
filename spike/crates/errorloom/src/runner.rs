@@ -60,7 +60,8 @@ impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> ReplayResult<S, V> {
 
     /// Construct a result whose renderer supplied exact editable provenance.
     #[must_use]
-    pub fn editable(output: String, editable: EditableRender<S, V>) -> Self {
+    pub fn editable(editable: EditableRender<S, V>) -> Self {
+        let output = editable.text();
         Self {
             output,
             editable: Some(editable),
@@ -131,6 +132,7 @@ pub fn execute_generic(command: &str, context: &ReplayContext<'_>) -> Result<Str
 pub struct RunEnv {
     path: Vec<PathBuf>,
     vars: BTreeMap<String, String>,
+    shell: Option<PathBuf>,
 }
 
 impl RunEnv {
@@ -152,6 +154,14 @@ impl RunEnv {
     #[must_use]
     pub fn var(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         self.vars.insert(name.into(), value.into());
+        self
+    }
+
+    /// Select the shell used for replay execution. The caller owns this policy;
+    /// errorloom never discovers a shell from the ambient environment.
+    #[must_use]
+    pub fn shell(mut self, shell: impl Into<PathBuf>) -> Self {
+        self.shell = Some(shell.into());
         self
     }
 }
@@ -265,6 +275,8 @@ pub enum RunError {
         /// The unresolved program name.
         program: String,
     },
+    /// No shell was injected for an arbitrary replay command.
+    ShellNotConfigured,
     /// A command produced non-UTF-8 output; transcripts are text-only. Keeps a
     /// lossy preview of the offending bytes (`taste-F3`) for diagnosis.
     NonUtf8Output {
@@ -295,6 +307,7 @@ impl std::fmt::Display for RunError {
             RunError::CommandNotFound { block, program } => {
                 write!(f, "run: block {block} program {program:?} not on PATH")
             }
+            RunError::ShellNotConfigured => f.write_str("run: no controlled shell configured"),
             RunError::NonUtf8Output { block, preview } => {
                 write!(
                     f,
@@ -403,23 +416,17 @@ fn run_block(
     base: &Path,
     work: &Path,
 ) -> Result<String, RunError> {
-    let parsed =
-        parse_command(command_line).map_err(|_| RunError::UnterminatedQuote { block: index })?;
-    let Some(program_name) = parsed.argv.first() else {
+    if command_line.trim().is_empty() {
         return Err(RunError::EmptyCommand { block: index });
-    };
-    let program =
-        resolve_program(program_name, &env.path).ok_or_else(|| RunError::CommandNotFound {
-            block: index,
-            program: program_name.clone(),
-        })?;
+    }
+    let shell = env.shell.as_ref().ok_or(RunError::ShellNotConfigured)?;
 
     let capture_path = base.join(format!("cap-{index}"));
     let file = File::create(&capture_path)?;
     let file_err = file.try_clone()?;
 
-    let mut command = Command::new(&program);
-    command.args(parsed.argv.iter().skip(1));
+    let mut command = Command::new(shell);
+    command.args(["-c", command_line]);
     command.current_dir(work);
     command.env_clear();
     for (name, value) in &env.vars {
@@ -433,15 +440,7 @@ fn run_block(
     }
     command.stdout(Stdio::from(file));
     command.stderr(Stdio::from(file_err));
-    match &parsed.stdin_file {
-        Some(name) => {
-            let input = File::open(work.join(name))?;
-            command.stdin(Stdio::from(input));
-        }
-        None => {
-            command.stdin(Stdio::null());
-        }
-    }
+    command.stdin(Stdio::null());
 
     let _status = command.status()?;
     let bytes = fs::read(&capture_path)?;
@@ -449,97 +448,6 @@ fn run_block(
         block: index,
         preview: String::from_utf8_lossy(&error.into_bytes()).into_owned(),
     })
-}
-
-/// A parsed replay command: argv plus an optional `< file` stdin redirect (`282`
-/// §7 — combined `2>&1` capture is automatic; a `>`/split-capture redirect is the
-/// deferred escape hatch and is NOT parsed here).
-struct ParsedCommand {
-    argv: Vec<String>,
-    stdin_file: Option<String>,
-}
-
-/// An unterminated quote in a replay command line (`swe-F3`): a marker the runner
-/// maps to [`RunError::UnterminatedQuote`] with the block index in scope.
-struct UnterminatedQuote;
-
-fn parse_command(line: &str) -> Result<ParsedCommand, UnterminatedQuote> {
-    let mut argv: Vec<String> = Vec::new();
-    let mut stdin_file: Option<String> = None;
-    let mut want_stdin = false;
-    for token in tokenize_command(line)? {
-        if want_stdin {
-            stdin_file = Some(token);
-            want_stdin = false;
-        } else if token == "<" {
-            want_stdin = true;
-        } else {
-            argv.push(token);
-        }
-    }
-    Ok(ParsedCommand { argv, stdin_file })
-}
-
-/// Split a command line into tokens, honoring single/double quotes (no escapes at
-/// v1 — internal tooling, sharp edges fine). An unterminated quote is an error
-/// (`swe-F3`), never a silently-accumulated token.
-fn tokenize_command(line: &str) -> Result<Vec<String>, UnterminatedQuote> {
-    let mut tokens: Vec<String> = Vec::new();
-    let mut current = String::new();
-    let mut open = false;
-    let mut quote: Option<char> = None;
-    for ch in line.chars() {
-        match quote {
-            Some(q) => {
-                if ch == q {
-                    quote = None;
-                } else {
-                    current.push(ch);
-                }
-            }
-            None => {
-                if ch == '\'' || ch == '"' {
-                    quote = Some(ch);
-                    open = true;
-                } else if ch.is_whitespace() {
-                    if open {
-                        tokens.push(std::mem::take(&mut current));
-                        open = false;
-                    }
-                } else {
-                    current.push(ch);
-                    open = true;
-                }
-            }
-        }
-    }
-    if quote.is_some() {
-        return Err(UnterminatedQuote);
-    }
-    if open {
-        tokens.push(current);
-    }
-    Ok(tokens)
-}
-
-/// Resolve a program name against the injected PATH (absolute path used as-is;
-/// `.exe` tried for the Windows lane), returning an absolute path to invoke.
-fn resolve_program(name: &str, path: &[PathBuf]) -> Option<PathBuf> {
-    let candidate = Path::new(name);
-    if candidate.is_absolute() {
-        return candidate.is_file().then(|| candidate.to_path_buf());
-    }
-    for dir in path {
-        let direct = dir.join(name);
-        if direct.is_file() {
-            return Some(direct);
-        }
-        let exe = dir.join(format!("{name}.exe"));
-        if exe.is_file() {
-            return Some(exe);
-        }
-    }
-    None
 }
 
 /// Run the case and report which blocks diverged from their committed output

@@ -19,7 +19,9 @@ fn mock_dir() -> PathBuf {
 }
 
 fn env() -> RunEnv {
-    RunEnv::new().path_dir(mock_dir())
+    RunEnv::new()
+        .path_dir(mock_dir())
+        .shell(env!("CARGO_BIN_EXE_loom-mock-tool"))
 }
 
 #[test]
@@ -85,20 +87,19 @@ fn sandbox_path_leak_refuses() {
 }
 
 #[test]
-fn unterminated_quote_refuses() {
-    // An unterminated quote is a parse error, not a silently-accumulated token
-    // (swe-F3) — caught before any command is spawned.
-    let case = Case::parse("---\n---\n-- replay --\n$ loom-mock-tool 'oops\nx\n").expect("valid");
-    let err = run_case(&case, &env()).unwrap_err();
-    assert!(matches!(err, RunError::UnterminatedQuote { block: 0 }));
+fn no_shell_refuses_before_execution() {
+    let case =
+        Case::parse("---\n---\n-- replay --\n$ loom-mock-tool out:unused\nx\n").expect("valid");
+    let err = run_case(&case, &RunEnv::new().path_dir(mock_dir())).unwrap_err();
+    assert!(matches!(err, RunError::ShellNotConfigured));
 }
 
 #[test]
-fn unresolved_command_refuses() {
+fn shell_reports_an_unknown_command_as_captured_output() {
     let case =
         Case::parse("---\n---\n-- replay --\n$ no-such-tool out:x\nplaceholder\n").expect("valid");
-    let err = run_case(&case, &env()).unwrap_err();
-    assert!(matches!(err, RunError::CommandNotFound { block: 0, .. }));
+    let capture = run_case(&case, &env()).expect("shell runs");
+    assert!(capture.outputs()[0].contains("unsupported shell command"));
 }
 
 #[test]
