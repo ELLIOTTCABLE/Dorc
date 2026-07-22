@@ -147,7 +147,7 @@ fn compile_cases(
     if matches!(outcome, dorc_loom::ReceiptWriteOutcome::CleanupPending) {
         writeln!(
             out,
-            "compile: receipt published; stale backup cleanup will retry next time"
+            "compile: receipt published; retained backup requires deliberate resolution; subsequent writes refuse"
         )
         .map_err(|error| error.to_string())?;
     }

@@ -136,7 +136,7 @@ impl ReceiptStore for FsReceiptStore {
         let final_path = Self::final_path(&directory);
         let backup_path = Self::backup_path(&directory);
 
-        clear_stale_backup_before_publish(&*self.operations, &final_path, &backup_path)?;
+        refuse_retained_backup_before_publish(&final_path, &backup_path)?;
 
         for attempt in 0..TEMP_ATTEMPTS {
             let temp_path = directory.join(format!(".compile.receipt.{attempt}.tmp"));
@@ -290,19 +290,28 @@ fn remove_validated_backup(
     }
 }
 
-fn clear_stale_backup_before_publish(
-    operations: &dyn ReceiptFileOperations,
+fn refuse_retained_backup_before_publish(
     final_path: &Path,
     backup_path: &Path,
 ) -> Result<(), String> {
-    let final_exists = read_valid_receipt(final_path, "receipt final target")?.is_some();
-    let backup_exists = read_valid_receipt(backup_path, "receipt backup target")?.is_some();
-    if final_exists && backup_exists {
-        operations
-            .remove_file(backup_path)
-            .map_err(|error| format!("clear validated stale receipt backup: {error}"))?;
+    if read_valid_receipt(final_path, "receipt final target")?.is_some() {
+        if receipt_path_exists(backup_path, "receipt backup target")? {
+            return Err(
+                "receipt write refused: retained backup requires deliberate resolution".to_owned(),
+            );
+        }
+    } else {
+        let _ = read_valid_receipt(backup_path, "receipt backup target")?;
     }
     Ok(())
+}
+
+fn receipt_path_exists(path: &Path, label: &str) -> Result<bool, String> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(format!("read {label}: {error}")),
+    }
 }
 
 fn ensure_absent_backup(path: &Path) -> Result<(), String> {
@@ -489,6 +498,66 @@ mod tests {
     }
 
     #[test]
+    fn identical_valid_backup_with_a_final_refuses_without_mutation() {
+        let root = TestRoot::new("identical-valid-backup-with-a-final-refuses");
+        let retained = packet("retained");
+        fs::create_dir(root.receipt_directory()).expect("receipt directory");
+        fs::write(root.final_path(), &retained).expect("final receipt");
+        fs::write(root.backup_path(), &retained).expect("backup receipt");
+
+        let store = FsReceiptStore::new(&root.0).expect("trusted root");
+        let error = store
+            .publish(&packet("next"))
+            .expect_err("retained backup refuses");
+        assert!(error.contains("retained backup requires deliberate resolution"));
+        assert_eq!(fs::read(root.final_path()).expect("final bytes"), retained);
+        assert_eq!(
+            fs::read(root.backup_path()).expect("backup bytes"),
+            retained
+        );
+        for attempt in 0..TEMP_ATTEMPTS {
+            assert!(
+                !root
+                    .receipt_directory()
+                    .join(format!(".compile.receipt.{attempt}.tmp"))
+                    .exists()
+            );
+        }
+    }
+
+    #[test]
+    fn distinct_valid_backup_with_a_final_refuses_without_mutation() {
+        let root = TestRoot::new("distinct-valid-backup-with-a-final-refuses");
+        let final_packet = packet("final");
+        let backup_packet = packet("hostile backup");
+        fs::create_dir(root.receipt_directory()).expect("receipt directory");
+        fs::write(root.final_path(), &final_packet).expect("final receipt");
+        fs::write(root.backup_path(), &backup_packet).expect("backup receipt");
+
+        let store = FsReceiptStore::new(&root.0).expect("trusted root");
+        let error = store
+            .publish(&packet("next"))
+            .expect_err("retained backup refuses");
+        assert!(error.contains("retained backup requires deliberate resolution"));
+        assert_eq!(
+            fs::read(root.final_path()).expect("final bytes"),
+            final_packet
+        );
+        assert_eq!(
+            fs::read(root.backup_path()).expect("backup bytes"),
+            backup_packet
+        );
+        for attempt in 0..TEMP_ATTEMPTS {
+            assert!(
+                !root
+                    .receipt_directory()
+                    .join(format!(".compile.receipt.{attempt}.tmp"))
+                    .exists()
+            );
+        }
+    }
+
+    #[test]
     fn directory_final_and_non_directory_parent_refuse() {
         let root = TestRoot::new("directory-final-refuses");
         fs::create_dir(root.receipt_directory()).expect("receipt directory");
@@ -670,10 +739,9 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn windows_cleanup_failure_does_not_attempt_failed_rollback_removal_and_retries_before_next_write()
-     {
+    fn windows_cleanup_failure_retains_backup_and_refuses_later_writes() {
         let root = TestRoot::new(
-            "windows-cleanup-failure-keeps-the-published-receipt-and-retries-before-next-write",
+            "windows-cleanup-failure-keeps-the-published-receipt-and-refuses-later-writes",
         );
         FsReceiptStore::new(&root.0)
             .expect("trusted root")
@@ -715,16 +783,6 @@ mod tests {
                     .exists()
             );
         }
-
-        FsReceiptStore::new(&root.0)
-            .expect("trusted root")
-            .publish(&packet("third"))
-            .expect("cleanup recovery and publication succeed");
-        assert_eq!(
-            fs::read(root.final_path()).expect("new final"),
-            packet("third")
-        );
-        assert!(!root.backup_path().exists());
     }
 
     #[cfg(windows)]
