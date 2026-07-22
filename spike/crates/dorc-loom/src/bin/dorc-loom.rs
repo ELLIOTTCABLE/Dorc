@@ -144,7 +144,7 @@ fn compile_cases(
         return Ok(ExitCode::from(1));
     };
     let packet = encode_receipt(&inspection).map_err(|error| error.to_string())?;
-    receipt_store().publish(&packet)?;
+    receipt_store()?.publish(&packet)?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -153,7 +153,7 @@ fn promote_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
-    let packet = receipt_store()
+    let packet = receipt_store()?
         .read()
         .map_err(|error| format!("promote receipt: {error}"))?;
     validate_case_inputs(cases)?;
@@ -280,10 +280,8 @@ fn inspect_cases(
         .map_err(|error| error.to_string())
 }
 
-fn receipt_store() -> FsReceiptStore {
-    FsReceiptStore::new(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/dorc-loom/compile.receipt"),
-    )
+fn receipt_store() -> Result<FsReceiptStore, String> {
+    FsReceiptStore::new(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target"))
 }
 
 fn catalog_path() -> PathBuf {

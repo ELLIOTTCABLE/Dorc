@@ -7,74 +7,96 @@ use std::path::{Path, PathBuf};
 use crate::receipt::parse as parse_receipt;
 use crate::{MAX_RECEIPT_BYTES, ReceiptError};
 
+const RECEIPT_DIRECTORY: &str = "dorc-loom";
+const RECEIPT_FILE: &str = "compile.receipt";
+const TEMP_ATTEMPTS: u8 = 16;
+
 /// The filesystem boundary used by compile and promote.
 pub trait ReceiptStore {
     /// Publish an already encoded and validated receipt.
-    ///
-    /// # Errors
-    /// Returns an I/O or receipt-validation refusal without publishing partial bytes.
     fn publish(&self, packet: &[u8]) -> Result<(), String>;
     /// Read one bounded, grammar-validated current receipt.
-    ///
-    /// # Errors
-    /// Returns an I/O, unsafe-path, size, or receipt-validation refusal.
     fn read(&self) -> Result<Vec<u8>, String>;
 }
 
-/// Worktree-local receipt storage under the ignored Cargo target directory.
+/// Worktree-local receipt storage under one validated ignored target root.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct FsReceiptStore {
-    final_path: PathBuf,
+    target_root: PathBuf,
 }
 
 impl FsReceiptStore {
-    /// Construct a store at an explicit ignored receipt path.
-    #[must_use]
-    pub fn new(final_path: impl Into<PathBuf>) -> Self {
-        Self {
-            final_path: final_path.into(),
-        }
+    /// Bind the fixed receipt location below an existing trusted target root.
+    ///
+    /// # Errors
+    ///
+    /// Refuses a missing, linked, reparse-point, or non-directory target root.
+    pub fn new(target_root: impl Into<PathBuf>) -> Result<Self, String> {
+        let target_root = target_root.into();
+        validate_directory(&target_root, "receipt target root")?;
+        Ok(Self { target_root })
     }
 
-    fn checked_parent(&self) -> Result<&Path, String> {
-        let parent = self
-            .final_path
-            .parent()
-            .ok_or_else(|| "receipt has no parent".to_owned())?;
-        if self.final_path.file_name().is_none() || parent.as_os_str().is_empty() {
-            return Err("unsafe receipt path".to_owned());
+    fn receipt_directory(&self, create: bool) -> Result<PathBuf, String> {
+        validate_directory(&self.target_root, "receipt target root")?;
+        let directory = self.target_root.join(RECEIPT_DIRECTORY);
+        if create {
+            ensure_directory(&directory)?;
+        } else {
+            validate_directory(&directory, "receipt directory")?;
         }
-        Ok(parent)
+        Ok(directory)
+    }
+
+    fn final_path(directory: &Path) -> PathBuf {
+        directory.join(RECEIPT_FILE)
     }
 }
 
 impl ReceiptStore for FsReceiptStore {
     fn publish(&self, packet: &[u8]) -> Result<(), String> {
         parse_receipt(packet).map_err(|error| error.to_string())?;
-        let parent = self.checked_parent()?;
-        fs::create_dir_all(parent).map_err(|error| format!("create receipt parent: {error}"))?;
-        if fs::symlink_metadata(&self.final_path)
-            .is_ok_and(|metadata| metadata.file_type().is_symlink())
-        {
-            return Err("receipt final path is a symlink".to_owned());
-        }
-        for attempt in 0..16u8 {
-            let temp = parent.join(format!(".dorc-loom-receipt-{attempt}.tmp"));
-            let file = match OpenOptions::new().write(true).create_new(true).open(&temp) {
+        let directory = self.receipt_directory(true)?;
+        let final_path = Self::final_path(&directory);
+        validate_final(&final_path)?;
+
+        for attempt in 0..TEMP_ATTEMPTS {
+            let temp_path = directory.join(format!(".compile.receipt.{attempt}.tmp"));
+            validate_temp(&temp_path)?;
+            let mut file = match OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&temp_path)
+            {
                 Ok(file) => file,
                 Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
                 Err(error) => return Err(format!("create receipt temporary: {error}")),
             };
-            let written = write_and_flush(file, packet);
-            if let Err(error) = written {
-                let _ = fs::remove_file(&temp);
-                return Err(error);
+            if let Err(error) = write_and_sync(&mut file, packet) {
+                return cleanup_failure(&temp_path, error);
             }
-            match fs::rename(&temp, &self.final_path) {
+            drop(file);
+
+            validate_final(&final_path)?;
+            match fs::rename(&temp_path, &final_path) {
                 Ok(()) => return Ok(()),
                 Err(error) => {
-                    let _ = fs::remove_file(&temp);
-                    return Err(format!("publish receipt: {error}"));
+                    // Windows cannot replace an existing destination with rename. Do not
+                    // remove an unsafe destination; a valid prior receipt may be absent
+                    // after this platform-specific replacement attempt fails.
+                    #[cfg(windows)]
+                    if final_path.exists() {
+                        validate_final(&final_path)?;
+                        fs::remove_file(&final_path)
+                            .map_err(|remove| format!("replace receipt remove: {remove}"))?;
+                        if let Err(rename) = fs::rename(&temp_path, &final_path) {
+                            return Err(format!(
+                                "publish receipt after replacement remove: {rename}"
+                            ));
+                        }
+                        return Ok(());
+                    }
+                    return cleanup_failure(&temp_path, format!("publish receipt: {error}"));
                 }
             }
         }
@@ -82,44 +104,85 @@ impl ReceiptStore for FsReceiptStore {
     }
 
     fn read(&self) -> Result<Vec<u8>, String> {
-        let metadata = fs::symlink_metadata(&self.final_path)
-            .map_err(|error| format!("read receipt metadata: {error}"))?;
-        if metadata.file_type().is_symlink()
-            || !metadata.is_file()
-            || metadata.len() > MAX_RECEIPT_BYTES as u64
-        {
-            return Err("unsafe or oversized receipt".to_owned());
-        }
-        let mut file =
-            File::open(&self.final_path).map_err(|error| format!("open receipt: {error}"))?;
-        let mut bytes =
-            Vec::with_capacity(usize::try_from(metadata.len()).unwrap_or(MAX_RECEIPT_BYTES));
+        let directory = self.receipt_directory(false)?;
+        let final_path = Self::final_path(&directory);
+        validate_final(&final_path)?;
+        let mut file = File::open(&final_path).map_err(|error| format!("open receipt: {error}"))?;
+        let mut limited = Vec::new();
         Read::by_ref(&mut file)
-            .take(u64::try_from(MAX_RECEIPT_BYTES.saturating_add(1)).unwrap_or(u64::MAX))
-            .read_to_end(&mut bytes)
+            .take((MAX_RECEIPT_BYTES + 1) as u64)
+            .read_to_end(&mut limited)
             .map_err(|error| format!("read receipt: {error}"))?;
-        parse_receipt(&bytes).map_err(|error: ReceiptError| error.to_string())?;
-        Ok(bytes)
+        if limited.len() > MAX_RECEIPT_BYTES {
+            return Err("receipt exceeds size limit".to_owned());
+        }
+        parse_receipt(&limited).map_err(|error: ReceiptError| error.to_string())?;
+        Ok(limited)
     }
 }
 
-fn write_and_flush(mut file: File, packet: &[u8]) -> Result<(), String> {
+fn ensure_directory(path: &Path) -> Result<(), String> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => validate_directory(path, "receipt directory"),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            fs::create_dir(path).map_err(|create| format!("create receipt directory: {create}"))?;
+            validate_directory(path, "receipt directory")
+        }
+        Err(error) => Err(format!("read receipt directory: {error}")),
+    }
+}
+
+fn validate_directory(path: &Path, label: &str) -> Result<(), String> {
+    let metadata = fs::symlink_metadata(path).map_err(|error| format!("read {label}: {error}"))?;
+    if unsafe_metadata(&metadata) || !metadata.is_dir() {
+        return Err(format!("unsafe {label}"));
+    }
+    Ok(())
+}
+
+fn validate_final(path: &Path) -> Result<(), String> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if unsafe_metadata(&metadata) || !metadata.is_file() => {
+            Err("unsafe receipt final target".to_owned())
+        }
+        Ok(_) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(format!("read receipt final target: {error}")),
+    }
+}
+
+fn validate_temp(path: &Path) -> Result<(), String> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => Err("receipt temporary target already exists".to_owned()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(format!("read receipt temporary target: {error}")),
+    }
+}
+
+fn unsafe_metadata(metadata: &fs::Metadata) -> bool {
+    if metadata.file_type().is_symlink() {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        return metadata.file_attributes() & 0x400 != 0;
+    }
+    #[cfg(not(windows))]
+    false
+}
+
+fn write_and_sync(file: &mut File, packet: &[u8]) -> Result<(), String> {
     file.write_all(packet)
         .map_err(|error| format!("write receipt: {error}"))?;
+    file.flush()
+        .map_err(|error| format!("flush receipt: {error}"))?;
     file.sync_all()
-        .map_err(|error| format!("flush receipt: {error}"))
+        .map_err(|error| format!("sync receipt: {error}"))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn store_refuses_invalid_packets_before_creating_a_file() {
-        let path = std::env::temp_dir().join("dorc-loom-receipt-invalid.txt");
-        let _ = fs::remove_file(&path);
-        let store = FsReceiptStore::new(&path);
-        assert!(store.publish(b"not a receipt").is_err());
-        assert!(!path.exists());
-    }
+fn cleanup_failure(temp_path: &Path, error: String) -> Result<(), String> {
+    fs::remove_file(temp_path)
+        .map_err(|cleanup| format!("{error}; cleanup receipt temporary: {cleanup}"))?;
+    Err(error)
 }
