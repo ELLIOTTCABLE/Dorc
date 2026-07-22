@@ -55,6 +55,21 @@ impl DorcEditableBaseline {
         &self.all_variables
     }
 
+    pub(crate) fn section_baseline(&self, section: &SectionKey) -> Option<Self> {
+        let component = self.render.components().iter().find(|component| {
+            matches!(component, RenderComponent::EditableSection(candidate) if candidate.id() == section)
+        })?;
+        Some(DorcEditableBaseline {
+            render: EditableRender::new(vec![component.clone()]),
+            variables: self
+                .variables
+                .get(section)
+                .map(|values| BTreeMap::from([(section.clone(), values.clone())]))
+                .unwrap_or_default(),
+            all_variables: self.all_variables.clone(),
+        })
+    }
+
     /// Rendered editable variables in deterministic first-use order.
     #[must_use]
     pub fn used_variables(&self) -> Vec<(TemplateVariableName, String)> {
@@ -864,7 +879,7 @@ mod tests {
     }
 
     #[test]
-    fn preview_replaces_one_message_section_in_the_full_transcript() {
+    fn preview_replaces_each_changed_section_in_renderer_order() {
         let message = key(0);
         let baseline = baseline(vec![
             RenderComponent::Structure(String::from("message: ")),
@@ -884,7 +899,7 @@ mod tests {
                     segment: 1,
                     ..message.clone()
                 },
-                vec![EditableFragment::Text(String::from("unchanged"))],
+                vec![EditableFragment::Text(String::from("unchanged help"))],
             )),
             RenderComponent::FixedVariable {
                 id: SectionVariableId {
@@ -897,17 +912,19 @@ mod tests {
 
         let preview = compile_preview(
             &baseline,
-            "message: run {{command}} using {{path}}\nhelp: unchanged [foreign]",
+            "message: run {{command}} using {{path}}\nhelp: changed help [foreign]",
         )
         .unwrap_or_else(|error| panic!("{error:?}"));
-        assert_eq!(preview.section(), &message);
+        assert_eq!(preview.sections().len(), 2);
+        assert_eq!(preview.sections()[0].section(), &message);
+        assert_eq!(preview.sections()[1].section().field, "help");
         assert_eq!(
             preview.concrete(),
-            "message: run apt-get using /x\nhelp: unchanged [foreign]"
+            "message: run apt-get using /x\nhelp: changed help [foreign]"
         );
         assert!(!preview.concrete().contains("{{"));
         assert_eq!(
-            preview.used_bindings(),
+            preview.sections()[0].used_bindings(),
             &[
                 (
                     TemplateVariableName(String::from("command")),
@@ -919,6 +936,31 @@ mod tests {
                 ),
             ]
         );
+    }
+
+    #[test]
+    fn preview_refuses_the_whole_render_when_later_section_compilation_fails() {
+        let message = key(0);
+        let baseline = baseline(vec![
+            RenderComponent::EditableSection(EditableSection::new(
+                message.clone(),
+                vec![variable("command", 0, "apt-get")],
+            )),
+            RenderComponent::Structure(String::from("\nhelp: ")),
+            RenderComponent::EditableSection(EditableSection::new(
+                SectionKey {
+                    field: "help",
+                    segment: 1,
+                    ..message
+                },
+                vec![EditableFragment::Text(String::from("original"))],
+            )),
+        ]);
+
+        assert!(matches!(
+            compile_preview(&baseline, "{{command}}\nhelp: {{unknown}}"),
+            Err(DorcSectionEditRefusal::UnknownVariable(_))
+        ));
     }
 
     #[test]
@@ -956,7 +998,7 @@ mod tests {
             compile_preview(&omitted, "run using /x").unwrap_or_else(|error| panic!("{error:?}"));
         assert_eq!(omitted.concrete(), "run using /x");
         assert_eq!(
-            omitted.used_bindings(),
+            omitted.sections()[0].used_bindings(),
             &[(
                 TemplateVariableName(String::from("path")),
                 String::from("/x")
@@ -978,7 +1020,7 @@ mod tests {
             .unwrap_or_else(|error| panic!("{error:?}"));
         assert_eq!(exact.concrete(), "values  \0");
         assert_eq!(
-            exact.used_bindings(),
+            exact.sections()[0].used_bindings(),
             &[
                 (TemplateVariableName(String::from("empty")), String::new()),
                 (
@@ -1032,7 +1074,7 @@ mod tests {
             .unwrap_or_else(|| panic!("missing concrete view: {inspection:?}"));
         assert_eq!(
             interpretation,
-            "interpreted: Text(\"run \") | Variable({{command}}) | Text(\" using \") | Variable({{path}})\nbindings:\n{{command}} = \"apt-get\"\n{{path}} = \"/x\""
+            "section: code.message#0:0\ninterpreted: Text(\"run \") | Variable({{command}}) | Text(\" using \") | Variable({{path}})\nbindings:\n{{command}} = \"apt-get\"\n{{path}} = \"/x\""
         );
         assert_eq!(
             concrete,

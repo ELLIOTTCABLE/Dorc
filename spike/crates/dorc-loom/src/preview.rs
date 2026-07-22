@@ -4,20 +4,19 @@ use errorloom::{EditableFragment, RenderComponent};
 
 use crate::{
     CompiledFragment, CompiledSection, DorcEditableBaseline, DorcSectionEditRefusal, SectionKey,
-    SectionVariableId, TemplateVariableName, compile_section_edit,
+    SectionVariableId, TemplateVariableName, compile_section_edits,
 };
 
-/// The complete in-memory result of compiling one dirty transcript edit.
+/// One interpreted editable section.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct CompilePreview {
+pub struct SectionPreview {
     section: SectionKey,
     compiled: CompiledSection,
     used_bindings: Vec<(TemplateVariableName, String)>,
-    concrete: String,
 }
 
-impl CompilePreview {
-    /// The editable section selected by compilation.
+impl SectionPreview {
+    /// The renderer-stamped section selected by compilation.
     #[must_use]
     pub fn section(&self) -> &SectionKey {
         &self.section
@@ -34,6 +33,21 @@ impl CompilePreview {
     pub fn used_bindings(&self) -> &[(TemplateVariableName, String)] {
         &self.used_bindings
     }
+}
+
+/// The complete in-memory result of compiling dirty transcript sections.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct CompilePreview {
+    sections: Vec<SectionPreview>,
+    concrete: String,
+}
+
+impl CompilePreview {
+    /// Interpreted sections in renderer order.
+    #[must_use]
+    pub fn sections(&self) -> &[SectionPreview] {
+        &self.sections
+    }
 
     /// The full concrete transcript with the selected section substituted.
     #[must_use]
@@ -44,8 +58,7 @@ impl CompilePreview {
 
 /// Compile a dirty transcript and reconstruct its full concrete render.
 ///
-/// The preview derives its inventory solely from the compiled section, and copies all
-/// nonselected baseline components byte-for-byte (`282:rul-compile-before-promote`).
+/// The preview replaces all compiled sections and copies every other baseline component byte-for-byte.
 ///
 /// # Errors
 /// Returns the edit-attribution or section-compilation refusal.
@@ -53,44 +66,53 @@ pub fn compile_preview(
     baseline: &DorcEditableBaseline,
     dirty: &str,
 ) -> Result<CompilePreview, DorcSectionEditRefusal> {
-    let edit = compile_section_edit(baseline, dirty)?;
-    let section = edit.section().clone();
-    let compiled = edit.compiled().clone();
-    let used_bindings = compiled
-        .used()
-        .iter()
-        .map(|name| (name.clone(), compiled.bindings()[name].clone()))
+    let sections: Vec<_> = compile_section_edits(baseline, dirty)?
+        .into_iter()
+        .map(|edit| {
+            let compiled = edit.compiled().clone();
+            let used_bindings = compiled
+                .used()
+                .iter()
+                .map(|name| (name.clone(), compiled.bindings()[name].clone()))
+                .collect();
+            SectionPreview {
+                section: edit.section().clone(),
+                compiled,
+                used_bindings,
+            }
+        })
         .collect();
     let concrete = baseline
         .render()
         .components()
         .iter()
-        .map(|component| component_text(component, &section, &compiled))
+        .map(|component| component_text(component, &sections))
         .collect();
-    Ok(CompilePreview {
-        section,
-        compiled,
-        used_bindings,
-        concrete,
-    })
+    Ok(CompilePreview { sections, concrete })
 }
 
 fn component_text(
     component: &RenderComponent<SectionKey, SectionVariableId>,
-    selected: &SectionKey,
-    compiled: &CompiledSection,
+    previews: &[SectionPreview],
 ) -> String {
     match component {
         RenderComponent::Structure(text)
         | RenderComponent::FixedVariable { rendered: text, .. } => text.clone(),
-        RenderComponent::EditableSection(section) if section.id() == selected => compiled.text(),
-        RenderComponent::EditableSection(section) => section
-            .fragments()
+        RenderComponent::EditableSection(section) => previews
             .iter()
-            .map(|fragment| match fragment {
-                EditableFragment::Text(text)
-                | EditableFragment::Variable { rendered: text, .. } => text.clone(),
-            })
-            .collect(),
+            .find(|preview| preview.section == *section.id())
+            .map_or_else(|| section_text(section), |preview| preview.compiled.text()),
     }
+}
+
+fn section_text(section: &errorloom::EditableSection<SectionKey, SectionVariableId>) -> String {
+    section
+        .fragments()
+        .iter()
+        .map(|fragment| match fragment {
+            EditableFragment::Text(text) | EditableFragment::Variable { rendered: text, .. } => {
+                text.clone()
+            }
+        })
+        .collect()
 }

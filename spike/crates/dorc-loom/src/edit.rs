@@ -136,6 +136,64 @@ pub fn compile_section_edit(
         .unwrap_or(DorcSectionEditRefusal::CandidateMismatch))
 }
 
+/// Compile every changed renderer-stamped section in one dirty render.
+///
+/// # Errors
+/// Returns a refusal when immutable renderer output does not delimit one exact section edit.
+pub fn compile_section_edits(
+    baseline: &DorcEditableBaseline,
+    dirty: &str,
+) -> Result<Vec<DorcSectionEdit>, DorcSectionEditRefusal> {
+    let mut rest = dirty;
+    let mut edits = Vec::new();
+    let components = baseline.render().components();
+    for (index, component) in components.iter().enumerate() {
+        let RenderComponent::EditableSection(section) = component else {
+            let text = component_text(component);
+            rest = rest
+                .strip_prefix(&text)
+                .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
+            continue;
+        };
+        let anchor: String = components
+            .get(index.saturating_add(1)..)
+            .unwrap_or_default()
+            .iter()
+            .take_while(|component| !matches!(component, RenderComponent::EditableSection(_)))
+            .map(component_text)
+            .collect();
+        let interior = if anchor.is_empty() {
+            let interior = rest;
+            rest = "";
+            interior
+        } else {
+            let first = rest
+                .find(&anchor)
+                .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
+            if rest[first.saturating_add(anchor.len())..].contains(&anchor) {
+                return Err(DorcSectionEditRefusal::AmbiguousCandidate);
+            }
+            let (interior, remaining) = rest.split_at(first);
+            rest = remaining;
+            interior
+        };
+        if interior == component_text(component) {
+            continue;
+        }
+        let section_baseline = baseline
+            .section_baseline(section.id())
+            .ok_or(DorcSectionEditRefusal::CandidateMismatch)?;
+        edits.push(compile_section_edit(&section_baseline, interior)?);
+    }
+    if !rest.is_empty() {
+        return Err(DorcSectionEditRefusal::MarkerOutsideEditableSection);
+    }
+    if edits.is_empty() {
+        return Err(DorcSectionEditRefusal::Unchanged);
+    }
+    Ok(edits)
+}
+
 fn compile_transport(
     baseline: &DorcEditableBaseline,
     transport: Result<EditTransport<SectionKey, SectionVariableId>, EditRefusal>,

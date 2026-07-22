@@ -5,8 +5,8 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use dorc_loom::{DorcConsumer, compile_preview, render_compile_preview};
-use errorloom::Case;
+use dorc_loom::{DorcConsumer, DorcSectionEditRefusal, compile_preview, render_compile_preview};
+use errorloom::{Case, EditableFragment, RenderComponent};
 
 const USAGE: &str = "usage: dorc-loom <compile CASE...|vars <--used|--all> CASE...>";
 
@@ -82,34 +82,40 @@ fn compile_cases(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, St
         let baseline = consumer
             .editable_baseline(&case)
             .map_err(|error| format!("{}: {error}", path.display()))?;
-        let dirty = human_replay(&case).ok_or_else(|| {
-            format!(
-                "{}: no human replay block (a non-jsonl replay is required)",
-                path.display()
-            )
-        })?;
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
-        match compile_preview(&baseline, &unreflow(&dirty)) {
-            Ok(preview) => {
-                writeln!(
-                    out,
-                    "section: {}.{}#{}:{}",
-                    preview.section().code,
-                    preview.section().field,
-                    preview.section().instance,
-                    preview.section().segment
-                )
+        let mut previews = Vec::new();
+        let mut case_refusal = None;
+        for (index, block) in case.replay().blocks().iter().enumerate() {
+            let dirty = unreflow(block.output());
+            if matches_editable_skeleton(&baseline, &dirty) {
+                match compile_preview(&baseline, &dirty) {
+                    Ok(preview) => previews.push((index, preview)),
+                    Err(DorcSectionEditRefusal::Unchanged) => {}
+                    Err(error) => case_refusal = Some((index, error, dirty)),
+                }
+            } else if resembles_diagnostic(&baseline, &dirty)
+                && (dirty.contains("{{") || dirty.contains("}}"))
+            {
+                case_refusal = Some((
+                    index,
+                    DorcSectionEditRefusal::MarkerOutsideEditableSection,
+                    dirty,
+                ));
+            }
+        }
+        if let Some((index, error, dirty)) = case_refusal {
+            refused = true;
+            writeln!(out, "refusal in replay {index}: {error:?}")
+                .map_err(|write| write.to_string())?;
+            writeln!(out, "baseline:\n{}", baseline.render().text())
+                .map_err(|write| write.to_string())?;
+            writeln!(out, "edited:\n{dirty}").map_err(|write| write.to_string())?;
+            continue;
+        }
+        for (index, preview) in previews {
+            writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
+            writeln!(out, "{}", render_compile_preview(&preview))
                 .map_err(|error| error.to_string())?;
-                writeln!(out, "{}", render_compile_preview(&preview))
-                    .map_err(|error| error.to_string())?;
-            }
-            Err(error) => {
-                refused = true;
-                writeln!(out, "refusal: {error:?}").map_err(|write| write.to_string())?;
-                writeln!(out, "baseline:\n{}", baseline.render().text())
-                    .map_err(|write| write.to_string())?;
-                writeln!(out, "edited:\n{dirty}").map_err(|write| write.to_string())?;
-            }
         }
     }
     Ok(if refused {
@@ -117,6 +123,18 @@ fn compile_cases(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, St
     } else {
         ExitCode::SUCCESS
     })
+}
+
+fn resembles_diagnostic(baseline: &dorc_loom::DorcEditableBaseline, dirty: &str) -> bool {
+    baseline
+        .render()
+        .components()
+        .iter()
+        .find_map(|component| match component {
+            RenderComponent::Structure(text) => Some(dirty.starts_with(text)),
+            RenderComponent::FixedVariable { .. } | RenderComponent::EditableSection(_) => None,
+        })
+        .unwrap_or(false)
 }
 
 fn print_variables(
@@ -152,14 +170,6 @@ fn load(path: &PathBuf) -> Result<Case, String> {
     Case::parse(&source).map_err(|error| format!("{}: {error}", path.display()))
 }
 
-fn human_replay(case: &Case) -> Option<String> {
-    case.replay()
-        .blocks()
-        .iter()
-        .find(|block| !block.command().contains("--format=jsonl"))
-        .map(|block| block.output().to_owned())
-}
-
 // case files wrap prose; core tags do not
 fn unreflow(render: &str) -> String {
     let mut lines = render.lines().peekable();
@@ -177,6 +187,59 @@ fn unreflow(render: &str) -> String {
         }
     }
     out.join("\n")
+}
+
+fn matches_editable_skeleton(baseline: &dorc_loom::DorcEditableBaseline, dirty: &str) -> bool {
+    let mut rest = dirty;
+    for (index, component) in baseline.render().components().iter().enumerate() {
+        match component {
+            RenderComponent::Structure(text)
+            | RenderComponent::FixedVariable { rendered: text, .. } => {
+                let Some(remaining) = rest.strip_prefix(text) else {
+                    return false;
+                };
+                rest = remaining;
+            }
+            RenderComponent::EditableSection(_) => {
+                let anchor: String = baseline
+                    .render()
+                    .components()
+                    .get(index.saturating_add(1)..)
+                    .unwrap_or_default()
+                    .iter()
+                    .take_while(|component| {
+                        !matches!(component, RenderComponent::EditableSection(_))
+                    })
+                    .map(component_text)
+                    .collect();
+                if anchor.is_empty() {
+                    return true;
+                }
+                let Some(offset) = rest.find(&anchor) else {
+                    return false;
+                };
+                rest = &rest[offset..];
+            }
+        }
+    }
+    rest.is_empty()
+}
+
+fn component_text(
+    component: &RenderComponent<dorc_loom::SectionKey, dorc_loom::SectionVariableId>,
+) -> String {
+    match component {
+        RenderComponent::Structure(text)
+        | RenderComponent::FixedVariable { rendered: text, .. } => text.clone(),
+        RenderComponent::EditableSection(section) => section
+            .fragments()
+            .iter()
+            .map(|fragment| match fragment {
+                EditableFragment::Text(text)
+                | EditableFragment::Variable { rendered: text, .. } => text.clone(),
+            })
+            .collect(),
+    }
 }
 
 fn normalize_layout(line: &str) -> String {

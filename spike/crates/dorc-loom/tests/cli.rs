@@ -57,6 +57,64 @@ fn inventories_are_ordered_and_do_not_widen_used_values() {
 }
 
 #[test]
+fn compile_ignores_generated_inventory_and_reports_each_changed_section() {
+    let path = case("cmdsub-two-sections.txt");
+    let output = run(&["compile", path.to_str().unwrap_or("fixture path is UTF-8")]);
+    let stdout =
+        String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
+
+    assert!(output.status.success(), "{stdout}");
+    assert!(stdout.contains("replay: 1"));
+    let message = stdout.find("section: cmdsub-operand-top.message#0:");
+    let help = stdout.find("section: cmdsub-operand-top.help#0:");
+    assert!(message < help, "sections retain renderer order: {stdout}");
+    assert_eq!(stdout.matches("{{command}} = \"apt-get\"").count(), 2);
+}
+
+#[test]
+fn compile_reports_changed_sections_in_renderer_order() {
+    let path = case("cmdsub-command.txt");
+    let output = run(&["compile", path.to_str().unwrap_or("fixture path is UTF-8")]);
+    let stdout =
+        String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
+
+    assert!(output.status.success(), "{stdout}");
+    assert!(stdout.contains("replay: 0"));
+    let message = stdout.find("section: cmdsub-operand-top.message#0:");
+    assert!(message.is_some());
+}
+
+#[test]
+fn compile_withholds_earlier_previews_when_a_later_replay_refuses() {
+    let path = case("cmdsub-partial-refusal.txt");
+    let output = run(&["compile", path.to_str().unwrap_or("fixture path is UTF-8")]);
+    let stdout =
+        String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
+
+    assert_eq!(output.status.code(), Some(1), "{stdout}");
+    assert!(stdout.contains("refusal in replay 1"));
+    assert!(
+        !stdout.contains("replay: 0"),
+        "partial previews are withheld: {stdout}"
+    );
+}
+
+#[test]
+fn all_inventory_excludes_foreign_detail() {
+    let path = case("site-foreign.txt");
+    let output = run(&[
+        "vars",
+        "--all",
+        path.to_str().unwrap_or("fixture path is UTF-8"),
+    ]);
+    let stdout =
+        String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
+
+    assert!(output.status.success(), "{stdout}");
+    assert!(!stdout.contains("{{detail}}"));
+}
+
+#[test]
 fn compile_refuses_unknown_markers_and_bad_invocations() {
     let unknown = case("cmdsub-unknown.txt");
     let unknown = unknown.to_str().unwrap_or("fixture path is UTF-8");
@@ -64,7 +122,7 @@ fn compile_refuses_unknown_markers_and_bad_invocations() {
     let stdout = String::from_utf8(refusal.stdout)
         .unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
     assert_eq!(refusal.status.code(), Some(1));
-    assert!(stdout.contains("refusal: UnknownVariable"));
+    assert!(stdout.contains("refusal in replay 0: UnknownVariable"));
     assert!(stdout.contains("baseline:"));
 
     let foreign = case("site-foreign.txt");
@@ -73,7 +131,7 @@ fn compile_refuses_unknown_markers_and_bad_invocations() {
     let stdout = String::from_utf8(foreign.stdout)
         .unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
     assert_eq!(foreign.status.code(), Some(1));
-    assert!(stdout.contains("refusal: MarkerOutsideEditableSection"));
+    assert!(stdout.contains("refusal in replay 0: MarkerOutsideEditableSection"));
 
     let malformed = run(&["vars", "--wat"]);
     assert_eq!(malformed.status.code(), Some(2));

@@ -1,10 +1,20 @@
 //! Internal compile-preview inspection (`282:rul-compile-before-promote`).
 
-use crate::{CompilePreview, CompiledFragment};
+use crate::{CompilePreview, CompiledFragment, SectionPreview};
 
 /// Render a deterministic, deliberately blunt compilation inspection.
 #[must_use]
 pub fn render_compile_preview(preview: &CompilePreview) -> String {
+    let sections = preview
+        .sections()
+        .iter()
+        .map(section_text)
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!("{sections}\nconcrete:\n{}", preview.concrete())
+}
+
+fn section_text(preview: &SectionPreview) -> String {
     let fragments = preview
         .fragments()
         .iter()
@@ -18,8 +28,11 @@ pub fn render_compile_preview(preview: &CompilePreview) -> String {
         .collect::<Vec<_>>()
         .join("\n");
     format!(
-        "interpreted: {fragments}\nbindings:\n{bindings}\nconcrete:\n{}",
-        preview.concrete()
+        "section: {}.{}#{}:{}\ninterpreted: {fragments}\nbindings:\n{bindings}",
+        preview.section().code,
+        preview.section().field,
+        preview.section().instance,
+        preview.section().segment
     )
 }
 
