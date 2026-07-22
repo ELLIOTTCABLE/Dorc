@@ -2,7 +2,7 @@
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::process::ExitCode;
+use std::process::{Command as ProcessCommand, ExitCode};
 
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, InspectedCompilation, InspectedReplay,
@@ -129,6 +129,7 @@ fn compile_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
+    gate_touched_set(cases)?;
     let inspection = inspect_cases(cases, env, out)?;
     let Some(inspection) = inspection else {
         return Ok(ExitCode::from(1));
@@ -143,6 +144,7 @@ fn promote_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
+    gate_touched_set(cases)?;
     let packet = receipt_store()
         .read()
         .map_err(|error| format!("promote receipt: {error}"))?;
@@ -258,6 +260,131 @@ fn canonical_case_path(path: &Path) -> Result<String, String> {
         return Err("unsafe case path".to_owned());
     }
     Ok(path)
+}
+
+/// The receipt may bind only transcript-prose edits. Git is deliberately queried
+/// at this CLI edge; the classification itself is a closed, deterministic policy.
+fn gate_touched_set(cases: &[PathBuf]) -> Result<(), String> {
+    let root = git_root()?;
+    let selected: std::collections::BTreeSet<_> = cases
+        .iter()
+        .map(|path| repo_path(&root, path))
+        .collect::<Result<_, _>>()?;
+    let catalog = repo_path(&root, &catalog_path())?;
+    for (index, worktree, path) in git_status(&root)? {
+        if path == catalog {
+            return Err("catalog is not clean against HEAD".to_owned());
+        }
+        if !selected.contains(&path) || index != ' ' || !matches!(worktree, ' ' | 'M') {
+            return Err(format!("dirty path outside selected prose edits: {path}"));
+        }
+        if worktree == 'M' {
+            validate_prose_only(&root, &path)?;
+        }
+    }
+    Ok(())
+}
+
+fn git_root() -> Result<PathBuf, String> {
+    let output = ProcessCommand::new("git")
+        .args(["rev-parse", "--show-toplevel"])
+        .output()
+        .map_err(|error| format!("locate git repository: {error}"))?;
+    if !output.status.success() {
+        return Err("dorc-loom requires a git repository".to_owned());
+    }
+    let text = String::from_utf8(output.stdout).map_err(|_| "git root is not UTF-8".to_owned())?;
+    Ok(PathBuf::from(text.trim()))
+}
+
+fn repo_path(root: &Path, path: &Path) -> Result<String, String> {
+    let path =
+        std::fs::canonicalize(path).map_err(|error| format!("canonicalize path: {error}"))?;
+    let root =
+        std::fs::canonicalize(root).map_err(|error| format!("canonicalize git root: {error}"))?;
+    let relative = path
+        .strip_prefix(root)
+        .map_err(|_| "path is outside git repository".to_owned())?;
+    Ok(relative.to_string_lossy().replace('\\', "/"))
+}
+
+fn git_status(root: &Path) -> Result<Vec<(char, char, String)>, String> {
+    let output = ProcessCommand::new("git")
+        .args(["status", "--porcelain=v1", "-z"])
+        .current_dir(root)
+        .output()
+        .map_err(|error| format!("read git status: {error}"))?;
+    if !output.status.success() {
+        return Err("read git status failed".to_owned());
+    }
+    let mut entries = Vec::new();
+    for record in output
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|record| !record.is_empty())
+    {
+        let Some((&index_byte, rest)) = record.split_first() else {
+            return Err("malformed git porcelain status".to_owned());
+        };
+        let Some((&worktree_byte, rest)) = rest.split_first() else {
+            return Err("malformed git porcelain status".to_owned());
+        };
+        let Some((&separator, path)) = rest.split_first() else {
+            return Err("malformed git porcelain status".to_owned());
+        };
+        if separator != b' ' {
+            return Err("malformed git porcelain status".to_owned());
+        }
+        let index = char::from(index_byte);
+        let worktree = char::from(worktree_byte);
+        let path = std::str::from_utf8(path)
+            .map_err(|_| "git status path is not UTF-8".to_owned())?
+            .to_owned();
+        // Rename/copy records have a second NUL-delimited source path. They are rejected
+        // by their XY class before it can be mistaken for an ordinary prose modification.
+        entries.push((index, worktree, path));
+    }
+    Ok(entries)
+}
+
+fn validate_prose_only(root: &Path, path: &str) -> Result<(), String> {
+    let current = std::fs::read_to_string(root.join(path))
+        .map_err(|error| format!("read selected case: {error}"))?;
+    let output = ProcessCommand::new("git")
+        .args(["show", &format!("HEAD:{path}")])
+        .current_dir(root)
+        .output()
+        .map_err(|error| format!("read HEAD case: {error}"))?;
+    if !output.status.success() {
+        return Err("selected case is not present in HEAD".to_owned());
+    }
+    let head = String::from_utf8(output.stdout).map_err(|_| "HEAD case is not UTF-8".to_owned())?;
+    let current_case =
+        Case::parse(&current).map_err(|error| format!("parse selected case: {error}"))?;
+    let head_case = Case::parse(&head).map_err(|error| format!("parse HEAD case: {error}"))?;
+    if current_case
+        .sections()
+        .iter()
+        .map(|section| (section.name(), section.content()))
+        .ne(head_case
+            .sections()
+            .iter()
+            .map(|section| (section.name(), section.content())))
+        || current_case
+            .replay()
+            .blocks()
+            .iter()
+            .map(errorloom::ReplayBlock::command)
+            .ne(head_case
+                .replay()
+                .blocks()
+                .iter()
+                .map(errorloom::ReplayBlock::command))
+        || current_case.frontmatter().scalar("code") != head_case.frontmatter().scalar("code")
+    {
+        return Err(format!("selected case has non-prose changes: {path}"));
+    }
+    Ok(())
 }
 
 const MAX_REFUSAL_EVIDENCE: usize = 4096;
