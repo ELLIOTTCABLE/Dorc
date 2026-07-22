@@ -5647,22 +5647,21 @@ fn report(stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
     let mut w = anstream::stderr();
     for d in diags {
         let (word, style) = severity_style(d.severity());
-        // Split the catalog message so the region frame lands after the TITLE, before the tail.
-        let body = dorc_core::diag::render_body(d, &interner);
-        let (title, folded) = match body.split_once('\n') {
-            Some((t, rest)) => (t.to_owned(), Some(rest.to_owned())),
-            None => (body.clone(), None),
-        };
-        // The severity word carries the ANSI (stripped when piped); the rest is plain.
-        let _ = write!(
-            w,
-            "{stage}: {style}{word}{style:#}[{}]: {title}",
-            d.code.slug()
-        );
-        let _ = write!(w, "{}", dorc_core::diag::render_region(d, source));
-        let _ = match folded {
-            Some(rest) => writeln!(w, "\n{rest}"),
-            None => writeln!(w),
+        let (filename, src) = source.unwrap_or(("", ""));
+        let rendered = dorc_core::diag::render_staged_cli_parts(
+            stage,
+            &dorc_core::catalog::CONST_CATALOG,
+            d,
+            src,
+            filename,
+            &interner,
+        )
+        .text();
+        let prefix = format!("{stage}: {word}");
+        // ANSI decoration stays outside the typed render bytes.
+        let _ = match rendered.strip_prefix(&prefix) {
+            Some(rest) => write!(w, "{stage}: {style}{word}{style:#}{rest}"),
+            None => write!(w, "{rendered}"),
         };
     }
     let _ = w.flush();

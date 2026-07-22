@@ -8,6 +8,7 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
+use dorc_core::diag::render_staged_cli_parts;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
     replay_case_with_inputs,
@@ -122,11 +123,66 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
         .expect("case replays")
         .pop()
         .expect("one replay");
+        let raw = case
+            .sections()
+            .iter()
+            .find(|section| section.name() == ".whylog")
+            .map(errorloom::Section::content);
+        let book = case
+            .sections()
+            .iter()
+            .find(|section| section.name() == "book.sh")
+            .map(errorloom::Section::content);
+        let diag = dorc_plan::whylog::inspect(
+            raw,
+            ".whylog",
+            book.map(|book| dorc_plan::whylog::WhylogCurrent {
+                book: Some(book),
+                oracles: &[],
+            }),
+        )
+        .diagnostics
+        .into_iter()
+        .next()
+        .expect("fixture produces one whylog diagnostic");
+        let interner = dorc_core::Interner::default();
+        assert_eq!(
+            replay.output(),
+            render_staged_cli_parts(
+                "whylog",
+                &dorc_core::catalog::CONST_CATALOG,
+                &diag,
+                "",
+                "",
+                &interner,
+            )
+            .text()
+        );
         assert_eq!(
             replay
                 .editable_render()
                 .map(errorloom::EditableRender::text),
             Some(replay.output().to_owned())
+        );
+        let prefix = replay
+            .editable_render()
+            .and_then(|render| render.components().first());
+        assert!(
+            matches!(prefix, Some(errorloom::RenderComponent::Structure(text)) if text == "whylog: ")
+        );
+        let baseline = consumer
+            .baseline_from_render(
+                &case,
+                replay
+                    .editable_render()
+                    .cloned()
+                    .expect("editable provenance"),
+            )
+            .expect("editable baseline");
+        let rejected_prefix_edit = replay.output().replacen("whylog: ", "rewrite: ", 1);
+        assert!(
+            compile_section_edit(&baseline, &rejected_prefix_edit).is_err(),
+            "the source-stage prefix is immutable structure, not editable prose"
         );
         assert_eq!(
             consumer.render_case(&case).expect("case regenerates"),

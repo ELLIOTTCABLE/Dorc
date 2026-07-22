@@ -1876,6 +1876,23 @@ pub fn render_cli_parts(
     parts
 }
 
+/// Render a source-staged diagnostic (`282` §4); its prefix and terminal newline stay immutable structure.
+#[must_use]
+pub fn render_staged_cli_parts(
+    stage: &str,
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &crate::Interner,
+) -> crate::tagged::RenderParts {
+    let mut parts = crate::tagged::RenderParts::new();
+    push_arrangement_part(&mut parts, format!("{stage}: "), "cli-stage-prefix");
+    parts.append(render_cli_parts(lookup, diag, src, filename, interner));
+    push_arrangement_part(&mut parts, String::from("\n"), "cli-terminal-newline");
+    parts
+}
+
 fn push_arrangement_part(parts: &mut crate::tagged::RenderParts, text: String, slug: &'static str) {
     if !text.is_empty() {
         parts.push(crate::tagged::RenderPart::Arrangement { text, slug });

@@ -3,7 +3,7 @@
 use dorc_core::catalog::{CATALOG, fill_template, fill_template_parts};
 use dorc_core::diag::{
     Diag, DiagCode, MissingDialectMarker, RenderHeredocRefused, SiteId, SiteUnresolvable,
-    render_body, render_body_parts, render_cli, render_cli_parts,
+    render_body, render_body_parts, render_cli, render_cli_parts, render_staged_cli_parts,
 };
 use dorc_core::tagged::{Field, RenderPart};
 use dorc_core::{BytePos, Interner, LeafId, Span as SourceSpan};
@@ -67,6 +67,18 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
         );
         assert_eq!(body.text(), render_body(diag, &interner));
         assert_eq!(cli.text(), render_cli(diag, src, "book.sh", &interner));
+        assert_eq!(
+            render_staged_cli_parts(
+                "whylog",
+                &dorc_core::catalog::CONST_CATALOG,
+                diag,
+                src,
+                "book.sh",
+                &interner,
+            )
+            .text(),
+            format!("whylog: {}\n", render_cli(diag, src, "book.sh", &interner))
+        );
         assert_eq!(to_editable_render(&body).text(), body.text());
         assert_eq!(to_editable_render(&cli).text(), cli.text());
     }

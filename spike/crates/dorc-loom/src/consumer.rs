@@ -18,7 +18,7 @@ use dorc_core::diag::{
     MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WrapperPeelIncoherent,
-    render_cli_parts, render_cli_with,
+    render_cli_parts, render_cli_with, render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
@@ -268,7 +268,7 @@ impl DorcConsumer {
             );
             let diag = inspected.diagnostics.into_iter().next()?;
             let interner = Interner::default();
-            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         let plan = parse_direct_plan(&tokens)?;
@@ -619,10 +619,8 @@ impl DorcConsumer {
                 .next()
                 .ok_or_else(|| format!("unsupported replay {command:?}"))?;
             let interner = Interner::default();
-            return Ok(format!(
-                "{}\n",
-                reflow_to_canonical(&render_cli_with(&self.mirror, &diag, "", "", &interner,))
-            ));
+            let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
+            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
         }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
