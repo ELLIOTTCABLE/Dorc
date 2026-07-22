@@ -1,10 +1,23 @@
 ---
 code: missing-dialect-marker
 ---
+-- oracle.sh --
+foo__predict() { pkg : sm.dorc.Package = "$1"; foo l -- "$pkg"; }
+
 -- replay --
-$ dorc lint oracle.sh
-error[missing-dialect-marker]: sm this file uses a dorc-lang dialect construct
-   (a bind `name : kind = …` or a trailing `:`/`:!`/`:?` mark) but lacks the `#
-   dorc-lang/v0.2` version marker (marker-gates-syntax-only): add `#
-   dorc-lang/v0.2` as a standalone comment in the first 10 lines, or drop the
-   dialect (the bare `__role` floor works markerless)
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[mark-unknown-verb]: [unwritten: mark-unknown-verb]
+   --> oracle.sh:1:40
+   |
+ 1 | foo__predict() { pkg : sm.dorc.Package = "$1"; foo l -- "$pkg"; }
+   |                                        ^
+  error[missing-dialect-marker]: sm this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.2` version marker (marker-gates-syntax-only): add `# dorc-lang/v0.2` as a standalone comment in the first 10 lines, or drop the dialect (the bare `__role` floor works markerless)
+   --> oracle.sh:1:18
+   |
+ 1 | foo__predict() { pkg : sm.dorc.Package = "$1"; foo l -- "$pkg"; }
+   |                  \__________________________/
+
+dorc lint: 2 error(s), 0 warning(s), 0 info(s) across 1 file(s).

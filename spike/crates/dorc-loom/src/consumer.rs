@@ -14,10 +14,8 @@ use std::fs;
 use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_core::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
-    MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WrapperPeelIncoherent,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, OperandPosition, RecordsFactTruncated,
+    RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent,
     render_cli_parts, render_cli_with, render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
@@ -271,6 +269,17 @@ impl DorcConsumer {
             let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
+        if let Some(path) = parse_direct_lint(&tokens) {
+            let source = materialized_source(case, context, path)?;
+            let result = dorc_lint::lint_materialized_source(
+                path.to_owned(),
+                source,
+                dorc_lint::SourcePolicy {
+                    tools_enabled: false,
+                },
+            );
+            return Some(ReplayResult::editable(to_editable_render(result.human())));
+        }
         let plan = parse_direct_plan(&tokens)?;
         let source = materialized_source(case, context, plan.book)?;
         if let Some(input) = plan.input {
@@ -327,7 +336,7 @@ impl DorcConsumer {
             .iter()
             .find(|s| s.name().ends_with("oracle.sh"))
         {
-            return fire_marker_gate(slug, section.name(), section.content());
+            return fire_lint_case(slug, section.name(), section.content());
         }
         if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh")
             && let Ok(world) = fire_book_analysis(slug, section.name(), section.content())
@@ -349,7 +358,7 @@ impl DorcConsumer {
             .scalar("code")
             .ok_or_else(|| "case has no `code`".to_owned())?;
         if path.ends_with("oracle.sh") {
-            let (diag, _, filename) = fire_marker_gate(slug, path, source)?;
+            let (diag, _, filename) = fire_lint_case(slug, path, source)?;
             return Ok((diag, source.to_owned(), filename));
         }
         if path == "book.sh"
@@ -402,6 +411,13 @@ fn parse_direct_why<'a>(words: &[&'a str]) -> Option<&'a str> {
         return None;
     };
     let path = whylog.strip_prefix("--whylog=")?;
+    case_relative_path(path).then_some(path)
+}
+
+fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<&'a str> {
+    let ["dorc", "lint", path, "--no-tools"] = words else {
+        return None;
+    };
     case_relative_path(path).then_some(path)
 }
 
@@ -622,6 +638,24 @@ impl DorcConsumer {
             let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
             return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
         }
+        if let Some(path) = parse_direct_lint(&words) {
+            let source = case
+                .sections()
+                .iter()
+                .find(|section| section.name() == path)
+                .filter(|_| case_relative_path(path))
+                .map(errorloom::Section::content)
+                .ok_or_else(|| format!("unsupported replay {command:?}"))?;
+            return Ok(dorc_lint::lint_materialized_source(
+                path.to_owned(),
+                source.to_owned(),
+                dorc_lint::SourcePolicy {
+                    tools_enabled: false,
+                },
+            )
+            .human()
+            .text());
+        }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
         let source = case
@@ -763,18 +797,6 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         "syntax-unsupported" => DiagCode::SyntaxUnsupported(SyntaxUnsupported {
             detail: "process substitution `<(…)` is not modeled".to_owned(),
         }),
-        "missing-dialect-marker" => DiagCode::MissingDialectMarker(MissingDialectMarker),
-        "munge-name-invalid" => DiagCode::MungeNameInvalid(MungeNameInvalid {
-            source: "9pkg".to_owned(),
-            funcname: "9pkg".to_owned(),
-            problem: "starts with a digit".to_owned(),
-        }),
-        "tolerates-unknown-dimension" => {
-            DiagCode::ToleratesUnknownDimension(ToleratesUnknownDimension {
-                token: "netns2".to_owned(),
-                expected: "user, netns, fs-view".to_owned(),
-            })
-        }
         "records-fact-truncated" => DiagCode::RecordsFactTruncated(RecordsFactTruncated {
             received: 3,
             declared: 5,
@@ -797,17 +819,6 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
                      position (predict reaches \"$@\" after 1 argv token(s), lend_map after 0)"
                 .to_owned(),
         }),
-        "mark-unknown-verb" => DiagCode::MarkUnknownVerb(MarkUnknownVerb {
-            token: "frobnicate".to_owned(),
-            expected: "asserts, refutes, reads, bind, safe-across, disturbs, lends, \
-                       stored-in, undivided-by-transit-across"
-                .to_owned(),
-        }),
-        "mark-rc-arity-exceeded" => DiagCode::MarkRcArityExceeded(MarkRcArityExceeded),
-        "mark-standalone-rc-consumer" => {
-            DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer)
-        }
-        "mark-hashcolon-malformed" => DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
         "aid-unloaded-sibling-oracle" => {
             DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
                 detail: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh`"
@@ -826,23 +837,33 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
 /// materialized oracle `source`, returning its (spanned) diagnostic + the source the caret frame
 /// resolves against. Refuses if the gate fired nothing or a different code than the case declares
 /// (the honest-trigger coherence the world-as-pipeline form buys).
-fn fire_marker_gate(
+fn fire_lint_case(
     slug: &str,
     filename: &str,
     source: &str,
 ) -> Result<(Diag, String, String), String> {
-    let mut interner = Interner::default();
-    let diag = dorc_oracle::marker::check_dialect_marker(&mut interner, source)
-        .into_iter()
-        .next()
+    let result = dorc_lint::lint_materialized_source(
+        filename.to_owned(),
+        source.to_owned(),
+        dorc_lint::SourcePolicy {
+            tools_enabled: false,
+        },
+    );
+    let finding = result
+        .report()
+        .findings
+        .iter()
+        .find(|finding| finding.code == slug)
         .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no diagnostic"))?;
-    if diag.code.slug() != slug {
-        return Err(format!(
-            "world-as-pipeline `{slug}` fired `{}` — the case's `code` must match the fired diagnostic",
-            diag.code.slug()
-        ));
-    }
-    Ok((diag, source.to_owned(), filename.to_owned()))
+    let provenance = finding
+        .provenance
+        .as_ref()
+        .ok_or_else(|| format!("world-as-pipeline `{slug}` lost typed provenance"))?;
+    Ok((
+        provenance.diag.clone(),
+        provenance.source.clone(),
+        filename.to_owned(),
+    ))
 }
 
 /// World-as-pipeline for the cmdsub flagship (`28A` §2n, extended to the analysis kernel): fire the

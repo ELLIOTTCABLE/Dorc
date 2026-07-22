@@ -91,7 +91,6 @@ pub(super) fn lex(src: &str) -> Vec<Token> {
 /// The `281` new-grammar lexer entry (the reference `mark_grammar` module): identical to
 /// [`lex`] now that the `#:` carrier is folded into production (CP-D). Kept as a named alias so
 /// the reference parser's imports read against its own vocabulary.
-#[cfg(test)]
 pub(super) fn lex_marks(src: &str) -> Vec<Token> {
     lex(src)
 }

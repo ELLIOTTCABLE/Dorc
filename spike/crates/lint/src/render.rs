@@ -8,6 +8,7 @@ use std::fmt::Write as _;
 
 use crate::finding::{Coverage, Finding, LintReport, RemapFidelity, severity_token};
 use crate::json::escape_into;
+use dorc_core::tagged::{RenderPart, RenderParts};
 
 /// The versioned machine-format name (`27R` §5 dir-stability-split): the ENVELOPE/field schema is
 /// stable and additive-only (`27R` §8 delta-additive-only-format-policy); a breaking change mints a
@@ -20,18 +21,24 @@ pub const JSONL_FORMAT: &str = "dorc-lint-format/1";
 /// summary line. Unstable by declaration; never parse this.
 #[must_use]
 pub fn render_human(report: &LintReport) -> String {
+    render_human_parts(report).text()
+}
+
+/// The authoritative human render retains core diagnostic parts rather than
+/// attempting to recover editable prose from the completed text.
+#[must_use]
+pub fn render_human_parts(report: &LintReport) -> RenderParts {
     let (errors, warns, infos) = report.severity_counts();
     let file_count = report.coverage.files.len();
     let source_count = report.coverage.sources.len();
     if report.findings.is_empty() {
-        return format!(
+        return structure(format!(
             "dorc lint: clean — nothing found across {file_count} file(s), {source_count} source(s).\n"
-        );
+        ));
     }
-    let mut out = String::new();
-    out.push_str(
+    let mut out = structure(String::from(
         "dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):\n",
-    );
+    ));
     let mut current_group: Option<&str> = None;
     for f in &report.findings {
         let group = if f.path.is_empty() {
@@ -40,16 +47,50 @@ pub fn render_human(report: &LintReport) -> String {
             f.path.as_str()
         };
         if current_group != Some(group) {
-            let _ = write!(out, "\n{group}:\n");
+            out.push(RenderPart::Arrangement {
+                text: format!("\n{group}:\n"),
+                slug: "lint-group",
+            });
             current_group = Some(group);
         }
-        out.push_str(&render_finding_line(f));
+        append_finding_parts(&mut out, f);
     }
-    let _ = write!(
-        out,
-        "\ndorc lint: {errors} error(s), {warns} warning(s), {infos} info(s) across {file_count} file(s).\n"
-    );
+    out.push(RenderPart::Arrangement { text: format!("\ndorc lint: {errors} error(s), {warns} warning(s), {infos} info(s) across {file_count} file(s).\n"), slug: "lint-summary" });
     out
+}
+
+fn structure(text: String) -> RenderParts {
+    let mut parts = RenderParts::new();
+    parts.push(RenderPart::Arrangement {
+        text,
+        slug: "lint-structure",
+    });
+    parts
+}
+
+fn append_finding_parts(out: &mut RenderParts, finding: &Finding) {
+    if let Some(provenance) = &finding.provenance {
+        out.push(RenderPart::Arrangement {
+            text: String::from("  "),
+            slug: "lint-indent",
+        });
+        out.append(dorc_core::diag::render_cli_parts(
+            &dorc_core::catalog::CONST_CATALOG,
+            &provenance.diag,
+            &provenance.source,
+            &finding.path,
+            &dorc_core::Interner::default(),
+        ));
+        out.push(RenderPart::Arrangement {
+            text: String::from("\n"),
+            slug: "lint-terminal-newline",
+        });
+    } else {
+        out.push(RenderPart::Arrangement {
+            text: render_finding_line(finding),
+            slug: "lint-fixed-finding",
+        });
+    }
 }
 
 /// One human finding line: `  <line>:<col> <severity> [<source>:<code>] <message>` plus a

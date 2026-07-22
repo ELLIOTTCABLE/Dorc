@@ -59,6 +59,7 @@ impl LintSource for VerdictBodyFlattening {
                                   the modeled tool produces the status directly."
                             .to_owned(),
                         remap: RemapFidelity::Exact,
+                        provenance: None,
                     });
                 }
             }

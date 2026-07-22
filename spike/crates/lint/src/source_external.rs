@@ -93,6 +93,7 @@ fn run_external(
                  --no-tools to silence this, or --require-tools to make it a hard CI error."
             ),
             remap: RemapFidelity::None,
+            provenance: None,
         });
         return SourceStatus::Absent;
     }
@@ -139,6 +140,7 @@ fn lint_one_file(
                     one_line_truncated(&raw)
                 ),
                 remap: RemapFidelity::None,
+                provenance: None,
             });
         }
     }
@@ -316,6 +318,7 @@ fn remap_finding(path: &str, line_map: &[u32], tool: &'static str, raw: RawFindi
         code: raw.code,
         message: raw.message,
         remap,
+        provenance: None,
     }
 }
 
@@ -331,6 +334,7 @@ fn operational_finding(path: &str, tool: &'static str, rc: i32) -> Finding {
         code: "external-operational".to_owned(),
         message: format!("`{tool}` exited with status {rc} but produced no parseable findings"),
         remap: RemapFidelity::None,
+        provenance: None,
     }
 }
 

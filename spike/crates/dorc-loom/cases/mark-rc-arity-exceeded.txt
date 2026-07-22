@@ -1,6 +1,20 @@
 ---
 code: mark-rc-arity-exceeded
 ---
+-- oracle.sh --
+# dorc-lang/v0.2
+dpkg -s nginx : sm.a.B@x
+: refutes sm.a.C@y
+
 -- replay --
-$ dorc lint oracle.sh
-error[mark-rc-arity-exceeded]: [unwritten: mark-rc-arity-exceeded]
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[mark-rc-arity-exceeded]: [unwritten: mark-rc-arity-exceeded]
+   --> oracle.sh:3:11
+   |
+ 3 | : refutes sm.a.C@y
+   |           \______/
+
+dorc lint: 1 error(s), 0 warning(s), 0 info(s) across 1 file(s).

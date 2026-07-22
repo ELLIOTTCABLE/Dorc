@@ -1,6 +1,19 @@
 ---
 code: mark-standalone-rc-consumer
 ---
+-- oracle.sh --
+# dorc-lang/v0.2
+: sm.a.B@x
+
 -- replay --
-$ dorc lint oracle.sh
-error[mark-standalone-rc-consumer]: [unwritten: mark-standalone-rc-consumer]
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[mark-standalone-rc-consumer]: [unwritten: mark-standalone-rc-consumer]
+   --> oracle.sh:2:3
+   |
+ 2 | : sm.a.B@x
+   |   \______/
+
+dorc lint: 1 error(s), 0 warning(s), 0 info(s) across 1 file(s).

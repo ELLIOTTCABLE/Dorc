@@ -1,6 +1,19 @@
 ---
 code: mark-unknown-verb
 ---
+-- oracle.sh --
+# dorc-lang/v0.2
+foo__predict() { foo : frobnicate sm.dorc.X; }
+
 -- replay --
-$ dorc lint oracle.sh
-error[mark-unknown-verb]: [unwritten: mark-unknown-verb]
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[mark-unknown-verb]: [unwritten: mark-unknown-verb]
+   --> oracle.sh:2:24
+   |
+ 2 | foo__predict() { foo : frobnicate sm.dorc.X; }
+   |                        \________/
+
+dorc lint: 1 error(s), 0 warning(s), 0 info(s) across 1 file(s).

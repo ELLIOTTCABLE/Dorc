@@ -71,6 +71,7 @@ impl LintSource for UnmodeledInventory {
                 code: "unmodeled-wall-inventory".to_owned(),
                 message,
                 remap: RemapFidelity::Exact,
+                provenance: None,
             });
         }
         SourceStatus::Ran

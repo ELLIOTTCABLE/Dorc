@@ -16,7 +16,7 @@ use dorc_core::Interner;
 use dorc_core::evidence::DeclineClass;
 use dorc_oracle::verdict::VerdictSet;
 
-use crate::finding::{Finding, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, NativeDiag, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The book-free oracle-validation source: lowers `dorc_oracle::validate`'s stage-diags to findings.
@@ -52,6 +52,30 @@ impl LintSource for OracleValidate {
                 out.push(diag_to_finding(&o.path, &o.src, diag, self.name()));
             }
         }
+        for oracle in ctx.oracles {
+            for diag in dorc_oracle::predict::lint_mark_blocks(&oracle.src) {
+                out.push(diag_to_finding(
+                    &oracle.path,
+                    &oracle.src,
+                    &diag,
+                    self.name(),
+                ));
+            }
+            let verdicts = VerdictSet::lift(&mut interner, &oracle.src).value;
+            for provider in verdicts.providers() {
+                if let Some(verdict) = verdicts.get(provider) {
+                    let (_, diags) = dorc_oracle::entry::lift_tolerance(verdict);
+                    for diag in diags {
+                        out.push(diag_to_finding(
+                            &oracle.path,
+                            &oracle.src,
+                            &diag,
+                            self.name(),
+                        ));
+                    }
+                }
+            }
+        }
         SourceStatus::Ran
     }
 }
@@ -79,6 +103,10 @@ fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'stat
         code: diag.code.slug().to_owned(),
         message: dorc_core::diag::render_body(diag, &Interner::default()),
         remap: RemapFidelity::Exact,
+        provenance: Some(NativeDiag {
+            diag: diag.clone(),
+            source: src.to_owned(),
+        }),
     }
 }
 
@@ -120,6 +148,7 @@ impl LintSource for OracleDeclinedInventory {
                         code: "authored-decline-class".to_owned(),
                         message: decline_message(arm.class),
                         remap: RemapFidelity::Exact,
+                        provenance: None,
                     });
                 }
             }

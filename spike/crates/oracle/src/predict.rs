@@ -40,9 +40,6 @@ mod eval;
 mod lexer;
 mod parser;
 
-// The `281` full-block mark parser is the REFERENCE spec-in-code, `#[cfg(test)]`-gated: production
-// parses the single-mark subset in `parser` (`28A:rul-single-mark-production-subset`), not this.
-#[cfg(test)]
 mod mark_grammar;
 
 pub use ast::{Mark, MarkKind, MarkTarget, Predict, PredictSet, Stmt};
@@ -50,6 +47,7 @@ pub use derive::{DerivedEffect, ValueClaim, derive_predict};
 pub use eval::{
     Resolution, Resolved, ResolvedEntity, StageStdout, TopReason, evaluate, predict_stage_stdout,
 };
+pub use mark_grammar::lint_mark_blocks;
 pub use parser::lift_predicts;
 
 // The touches-footprint lift (`crate::touches`, 24A §1b) reuses the predict dialect: the

@@ -17,6 +17,7 @@
 
 pub mod finding;
 pub mod json;
+pub mod production;
 pub mod render;
 pub mod runner;
 pub mod source;
@@ -30,6 +31,7 @@ mod source_verdict;
 pub use finding::{
     Coverage, Finding, LintReport, RemapFidelity, SourceCoverage, SourceStatus, severity_token,
 };
+pub use production::{ProductionLintResult, SourcePolicy, lint_materialized_source};
 pub use runner::{ExternalToolRunner, NoToolsRunner, ToolRun};
 pub use source::{LintContext, LintInput, LintOptions, LintSource, Rung, registry};
 

@@ -1,6 +1,19 @@
 ---
 code: mark-hashcolon-malformed
 ---
+-- oracle.sh --
+# dorc-lang/v0.2
+#: frobnicate
+
 -- replay --
-$ dorc lint oracle.sh
-warning[mark-hashcolon-malformed]: [unwritten: mark-hashcolon-malformed]
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  warning[mark-hashcolon-malformed]: [unwritten: mark-hashcolon-malformed]
+   --> oracle.sh:2:1
+   |
+ 2 | #: frobnicate
+   | \/
+
+dorc lint: 0 error(s), 1 warning(s), 0 info(s) across 1 file(s).

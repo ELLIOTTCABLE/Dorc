@@ -10,6 +10,24 @@
 
 use dorc_core::Severity;
 
+/// The exact diagnostic and source bytes behind a native finding.  This keeps the
+/// authoring render attached to the diagnostic instead of recovering it from text.
+#[derive(Debug, Clone)]
+pub struct NativeDiag {
+    /// The originating core diagnostic.
+    pub diag: dorc_core::Diag,
+    /// The exact source text used to compute its span.
+    pub source: String,
+}
+
+impl PartialEq for NativeDiag {
+    fn eq(&self, other: &Self) -> bool {
+        self.diag.code.slug() == other.diag.code.slug() && self.source == other.source
+    }
+}
+
+impl Eq for NativeDiag {}
+
 /// The stable machine token for a finding's severity (the JSONL `severity` field + the human render
 /// word; `27R` §5 dir-stability-split). The render-edge map from the unified `core::Severity` to the
 /// kept lowercase wire tokens (`tc-lint-severity-wire-tokens`): `Warning`→`warn`, `Note`→`info`.
@@ -89,6 +107,9 @@ pub struct Finding {
     /// Location-mapping fidelity (`27R` §4). Location-only; there is no fix/range remap in v0
     /// (`27R` §8 delta-eslint-processor-precedent).
     pub remap: RemapFidelity,
+    /// Typed provenance for a Dorc-native diagnostic; external findings have no
+    /// editable catalog prose.
+    pub provenance: Option<NativeDiag>,
 }
 
 impl Finding {
