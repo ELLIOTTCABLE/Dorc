@@ -996,8 +996,6 @@ impl Parser<'_> {
         })
     }
 
-    /// A malformed `#:` carrier remains a comment and reports its dedicated warning; ordinary
-    /// colon carriers retain the parser's existing out-of-dialect refusal.
     fn fail_mark(&mut self, intro: MarkIntro, marker_span: Span, message: &str) -> bool {
         if intro.carrier == MarkCarrier::Hash {
             self.out.push(Diag::new(

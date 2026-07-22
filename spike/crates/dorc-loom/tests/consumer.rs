@@ -230,6 +230,47 @@ fn whylog_driver_claims_only_the_exact_single_file_shape() {
 }
 
 #[test]
+fn lint_driver_claims_only_the_exact_no_tools_shape() {
+    let case = Case::parse(
+        "---\ncode: marker-version-unrecognized\n---\n\
+         -- oracle.sh --\n# dorc-lang/v0.1\n\
+         foo__predict() { pkg : sm.dorc.Package = \"$1\"; }\n\
+         -- replay --\n\
+         $ dorc lint oracle.sh --no-tools\nold\n\
+         $ dorc lint oracle.sh\nold\n\
+         $ dorc lint --no-tools oracle.sh\nold\n\
+         $ dorc lint oracle.sh --no-tools --no-tools\nold\n\
+         $ dorc lint ../oracle.sh --no-tools\nold\n",
+    )
+    .expect("case parses");
+    let calls = RefCell::new(Vec::new());
+    let results = replay_case(
+        &case,
+        &DorcConsumer::new(),
+        &RunEnv::new(),
+        |command, _context| {
+            calls.borrow_mut().push(command.to_owned());
+            Ok(ReplayResult::bytes(format!("fallback: {command}\n")))
+        },
+    )
+    .expect("replays route");
+    assert!(results[0].editable_render().is_some());
+    for result in &results[1..] {
+        assert!(result.editable_render().is_none());
+        assert!(result.output().starts_with("fallback:"));
+    }
+    assert_eq!(
+        calls.into_inner(),
+        [
+            "dorc lint oracle.sh",
+            "dorc lint --no-tools oracle.sh",
+            "dorc lint oracle.sh --no-tools --no-tools",
+            "dorc lint ../oracle.sh --no-tools",
+        ]
+    );
+}
+
+#[test]
 fn fixpoint_gate_catches_a_catalog_hand_edit() {
     let case = whylog_absent_case();
     let committed = DorcConsumer::new()
