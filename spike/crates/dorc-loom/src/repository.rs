@@ -466,4 +466,56 @@ mod tests {
         repository.status = b"?? unrelated.txt\0".to_vec();
         assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
     }
+
+    #[test]
+    fn rejection_does_not_mutate_the_injected_repository_snapshot() {
+        let head = case(
+            "code: one\n",
+            "",
+            "book",
+            "dorc plan --book=book.sh",
+            "prose\n",
+        );
+        let repository = repository(
+            head.clone(),
+            head.replace("-- book.sh --", "-- renamed.sh --"),
+            format!(" M {CASE}\0").as_bytes(),
+        );
+        let before = repository.clone();
+        assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
+        assert_eq!(repository.status, before.status);
+        assert_eq!(repository.current, before.current);
+        assert_eq!(repository.head, before.head);
+    }
+
+    #[test]
+    fn porcelain_parser_consumes_rename_copy_sources_and_models_all_classes() {
+        let records =
+            parse_porcelain(b"R  new.txt\0old.txt\0C  copy.txt\0source.txt\0 M modified.txt\0")
+                .expect("records");
+        assert_eq!(records.len(), 3);
+        assert_eq!(records[0].source.as_deref(), Some("old.txt"));
+        assert_eq!(records[1].source.as_deref(), Some("source.txt"));
+        for (x, y) in [
+            (b' ', b' '),
+            (b'M', b' '),
+            (b'A', b' '),
+            (b'D', b' '),
+            (b'R', b' '),
+            (b'C', b' '),
+            (b'T', b' '),
+            (b'U', b' '),
+            (b' ', b'M'),
+            (b' ', b'D'),
+            (b' ', b'T'),
+            (b' ', b'U'),
+            (b'?', b'?'),
+            (b'!', b'!'),
+        ] {
+            assert!(status_classes(x, y).is_ok(), "{x:?}{y:?}");
+        }
+        assert!(parse_porcelain(b"R  new.txt\0").is_err());
+        assert!(parse_porcelain(b" M ../escape\0").is_err());
+        assert!(status_classes(b'?', b' ').is_err());
+    }
 }
