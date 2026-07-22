@@ -397,6 +397,10 @@ impl Case {
     ///
     /// This intentionally exposes raw container layout without assigning any
     /// consumer-specific meaning to the output bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same malformed-container refusal as [`Case::parse`].
     pub fn raw_layout(text: &str) -> Result<CaseLayout, CaseError> {
         let case = Self::parse(text)?;
         let replay_header = format!("-- {REPLAY_SECTION} --\n");
@@ -422,7 +426,7 @@ impl Case {
                 .get(command_start..)
                 .and_then(|rest| {
                     rest.find('\n')
-                        .map(|end| command_start.saturating_add(end + 1))
+                        .map(|end| command_start.saturating_add(end.saturating_add(1)))
                 })
                 .ok_or(CaseError::EmptyReplay)?;
             let raw_end = commands
