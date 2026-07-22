@@ -8,6 +8,7 @@
 //! marker-version-unrecognized pilot.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write;
 
 use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_core::diag::{
@@ -19,7 +20,10 @@ use dorc_core::diag::{
     WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
-use errorloom::{Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent};
+use errorloom::{
+    Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
+    ReplayDriver, ReplayResult,
+};
 
 use crate::{
     DorcSectionEdit, SectionKey, SectionVariableId, TemplateVariableName, to_editable_render,
@@ -216,6 +220,70 @@ impl DorcConsumer {
         })
     }
 
+    /// Drive only direct, fully-modelled Dorc plan invocations. Other shell text
+    /// deliberately declines; fallback ownership stays with the embedding command.
+    #[must_use]
+    pub fn replay(
+        &self,
+        case: &Case,
+        command: &str,
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        let tokens: Vec<_> = command.split_ascii_whitespace().collect();
+        if tokens.first() == Some(&"dorc-loom") && tokens.get(1) == Some(&"vars") {
+            let baseline = self.editable_baseline(case).ok()?;
+            let mut output = String::new();
+            output.push_str("case: ");
+            output.push_str(tokens.last()?);
+            output.push('\n');
+            for (name, value) in baseline.used_variables() {
+                let _ = writeln!(output, "{{{{{}}}}} = {value:?}", name.0);
+            }
+            return Some(ReplayResult::bytes(output));
+        }
+        if tokens.first() != Some(&"dorc") || tokens.get(1) != Some(&"plan") {
+            return None;
+        }
+        if command.contains(['|', ';', '&', '>', '<', '$', '`'])
+            || tokens.iter().skip(2).any(|token| {
+                !token.starts_with("--book=") && !matches!(*token, "--format=jsonl" | "--verbose")
+            })
+        {
+            return None;
+        }
+        let (diag, source, filename) = Self::world_of(case).ok()?;
+        let interner = Interner::default();
+        if tokens.contains(&"--format=jsonl") {
+            return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
+        }
+        let parts = render_cli_parts(&self.mirror, &diag, &source, &filename, &interner);
+        let render = to_editable_render(&parts);
+        Some(ReplayResult::editable(render.text(), render))
+    }
+
+    /// Reattach the payload inventory to renderer-stamped exact provenance.
+    ///
+    /// # Errors
+    /// Returns a case-world or renderer-provenance refusal.
+    pub fn baseline_from_render(
+        &self,
+        case: &Case,
+        render: EditableRender<SectionKey, SectionVariableId>,
+    ) -> Result<DorcEditableBaseline, String> {
+        let variables = editable_variables(&render)?;
+        let (diag, _, _) = Self::world_of(case)?;
+        let interner = Interner::default();
+        let all_variables = dorc_core::diag::params_of(&diag.code, &interner)
+            .into_iter()
+            .filter(|(name, _)| !is_foreign_param(name))
+            .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
+            .collect();
+        Ok(DorcEditableBaseline {
+            render,
+            variables,
+            all_variables,
+        })
+    }
+
     /// The (diag, source, filename) a case materializes into (`283:dec-world-two-forms`). A case
     /// carrying a materialized `*.oracle.sh` section is WORLD-AS-PIPELINE: the REAL in-process marker
     /// gate fires the diagnostic over that source (the one real-fired proof, `28A` §2n) — a spanned
@@ -249,6 +317,31 @@ impl DorcConsumer {
         let interner = Interner::default();
         let human = render_cli_with(&self.mirror, &diag, &src, &filename, &interner);
         Ok((diag, human))
+    }
+}
+
+/// Consumer-neutral replay dispatch is implemented by this exact-shape Dorc adapter.
+#[derive(Debug)]
+pub struct DorcReplayDriver<'a> {
+    consumer: &'a DorcConsumer,
+    case: &'a Case,
+}
+
+impl<'a> DorcReplayDriver<'a> {
+    /// Bind one case to its production-render consumer.
+    #[must_use]
+    pub fn new(consumer: &'a DorcConsumer, case: &'a Case) -> Self {
+        Self { consumer, case }
+    }
+}
+
+impl ReplayDriver<SectionKey, SectionVariableId> for DorcReplayDriver<'_> {
+    fn drive(
+        &self,
+        command: &str,
+        _context: &ReplayContext<'_>,
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        self.consumer.replay(self.case, command)
     }
 }
 

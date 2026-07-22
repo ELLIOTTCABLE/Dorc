@@ -6,7 +6,9 @@ use dorc_core::tagged::{self, RenderPart, RenderParts};
 use errorloom::{EditableFragment, EditableRender, EditableSection, RenderComponent};
 
 mod consumer;
-pub use consumer::{DorcApplyRefusal, DorcConsumer, DorcEditableBaseline, SectionVariables};
+pub use consumer::{
+    DorcApplyRefusal, DorcConsumer, DorcEditableBaseline, DorcReplayDriver, SectionVariables,
+};
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod edit;

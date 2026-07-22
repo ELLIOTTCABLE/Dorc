@@ -15,6 +15,114 @@ use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::container::{Case, CaseError};
+use crate::{ConsumerKey, EditableRender};
+
+/// The materialized state shared by every replay of one case.
+///
+/// Consumers receive this only while errorloom owns the materialization, so a
+/// handled replay and the configured executor observe the same working tree.
+#[derive(Debug)]
+pub struct ReplayContext<'a> {
+    cwd: &'a Path,
+    env: &'a RunEnv,
+}
+
+impl ReplayContext<'_> {
+    /// The shared case working directory.
+    #[must_use]
+    pub fn cwd(&self) -> &Path {
+        self.cwd
+    }
+
+    /// The exact injected environment for this case.
+    #[must_use]
+    pub fn env(&self) -> &RunEnv {
+        self.env
+    }
+}
+
+/// The exact result of one consumer-driven replay.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ReplayResult<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
+    output: String,
+    editable: Option<EditableRender<S, V>>,
+}
+
+impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> ReplayResult<S, V> {
+    /// Construct a bytes-only result.
+    #[must_use]
+    pub fn bytes(output: String) -> Self {
+        Self {
+            output,
+            editable: None,
+        }
+    }
+
+    /// Construct a result whose renderer supplied exact editable provenance.
+    #[must_use]
+    pub fn editable(output: String, editable: EditableRender<S, V>) -> Self {
+        Self {
+            output,
+            editable: Some(editable),
+        }
+    }
+
+    /// Exact output bytes represented as transcript text.
+    #[must_use]
+    pub fn output(&self) -> &str {
+        &self.output
+    }
+
+    /// Renderer-stamped edit authority for this exact result, if any.
+    #[must_use]
+    pub fn editable_render(&self) -> Option<&EditableRender<S, V>> {
+        self.editable.as_ref()
+    }
+}
+
+/// A consumer's exact-shape replay driver.
+pub trait ReplayDriver<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
+    /// Declining is explicit: the embedding application decides whether to run a
+    /// generic fallback.
+    fn drive(&self, command: &str, context: &ReplayContext<'_>) -> Option<ReplayResult<S, V>>;
+}
+
+/// Drive every replay against one materialized context. The caller owns the
+/// decline policy by supplying `fallback`; errorloom never selects it itself.
+///
+/// # Errors
+/// Returns a materialization, execution, or caller-supplied replay error.
+pub fn drive_case<S, V>(
+    case: &Case,
+    env: &RunEnv,
+    mut drive: impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
+) -> Result<Vec<ReplayResult<S, V>>, RunError>
+where
+    S: ConsumerKey,
+    V: Clone + Ord + std::fmt::Debug,
+{
+    let base = unique_base()?;
+    let result = drive_in(case, env, &base, &mut drive);
+    let _ = fs::remove_dir_all(&base);
+    result
+}
+
+/// Execute a declined replay with the controlled generic executor.
+///
+/// This is deliberately separate from [`ReplayDriver`]: consumers must choose
+/// this fallback explicitly and its bytes never carry editable provenance.
+///
+/// # Errors
+/// Returns a controlled-executor failure.
+pub fn execute_generic(command: &str, context: &ReplayContext<'_>) -> Result<String, RunError> {
+    run_block(
+        0,
+        command,
+        context.env,
+        context.cwd.parent().unwrap_or(context.cwd),
+        context.cwd,
+    )
+}
 
 /// A caller-injected execution environment: the exact env table plus a `PATH`
 /// search list. Nothing ambient leaks in (`env -i`-style) so runs are
@@ -259,6 +367,33 @@ fn run_in(case: &Case, env: &RunEnv, base: &Path) -> Result<ReplayCapture, RunEr
         }
     }
     Ok(ReplayCapture { outputs })
+}
+
+fn drive_in<S, V>(
+    case: &Case,
+    env: &RunEnv,
+    base: &Path,
+    drive: &mut impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
+) -> Result<Vec<ReplayResult<S, V>>, RunError>
+where
+    S: ConsumerKey,
+    V: Clone + Ord + std::fmt::Debug,
+{
+    let work = base.join("work");
+    fs::create_dir(&work)?;
+    for (rel, content) in case.materialized_files() {
+        let target = work.join(&rel);
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(target, content)?;
+    }
+    let context = ReplayContext { cwd: &work, env };
+    case.replay()
+        .blocks()
+        .iter()
+        .map(|block| drive(block.command(), &context))
+        .collect()
 }
 
 fn run_block(

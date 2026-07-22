@@ -60,7 +60,8 @@ pub use crate::editable::{
     transport_edit_allow_removal,
 };
 pub use crate::runner::{
-    Drift, ReplayCapture, RunEnv, RunError, RunReport, bless_structure, check_run, run_case,
+    Drift, ReplayCapture, ReplayContext, ReplayDriver, ReplayResult, RunEnv, RunError, RunReport,
+    bless_structure, check_run, drive_case, execute_generic, run_case,
 };
 
 /// What a consumer's opaque field key must satisfy. errorloom groups, sorts, and
