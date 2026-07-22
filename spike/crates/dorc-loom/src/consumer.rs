@@ -17,8 +17,8 @@ use dorc_core::diag::{
     DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
     MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
+    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WrapperPeelIncoherent,
+    render_cli_parts, render_cli_with,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
@@ -254,6 +254,23 @@ impl DorcConsumer {
             }
             return Some(ReplayResult::bytes(output));
         }
+        if let Some(path) = parse_direct_why(&tokens) {
+            let raw = context.materialized_input(path);
+            let book = materialized_source(case, context, "book.sh");
+            let inspected = dorc_plan::whylog::inspect(
+                raw,
+                path,
+                book.as_deref()
+                    .map(|book| dorc_plan::whylog::WhylogCurrent {
+                        book: Some(book),
+                        oracles: &[],
+                    }),
+            );
+            let diag = inspected.diagnostics.into_iter().next()?;
+            let interner = Interner::default();
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         let plan = parse_direct_plan(&tokens)?;
         let source = materialized_source(case, context, plan.book)?;
         if let Some(input) = plan.input {
@@ -279,7 +296,9 @@ impl DorcConsumer {
         render: EditableRender<SectionKey, SectionVariableId>,
     ) -> Result<DorcEditableBaseline, String> {
         let variables = editable_variables(&render)?;
-        let (diag, _, _) = Self::world_of(case)?;
+        let diag = Self::world_of(case)
+            .map(|(diag, _, _)| diag)
+            .or_else(|_| Self::whylog_diagnostic(case))?;
         let interner = Interner::default();
         let all_variables = dorc_core::diag::params_of(&diag.code, &interner)
             .into_iter()
@@ -342,6 +361,48 @@ impl DorcConsumer {
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
         Ok((diag, String::new(), String::new()))
     }
+
+    fn whylog_diagnostic(case: &Case) -> Result<Diag, String> {
+        let command = case
+            .replay()
+            .blocks()
+            .first()
+            .map(errorloom::ReplayBlock::command)
+            .ok_or_else(|| "case has no replay".to_owned())?;
+        let words = exact_words(command).ok_or_else(|| "unsupported whylog replay".to_owned())?;
+        let path =
+            parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
+        let raw = case
+            .sections()
+            .iter()
+            .find(|section| section.name() == path)
+            .map(errorloom::Section::content);
+        let book = case
+            .sections()
+            .iter()
+            .find(|section| section.name() == "book.sh")
+            .map(errorloom::Section::content);
+        dorc_plan::whylog::inspect(
+            raw,
+            path,
+            book.map(|book| dorc_plan::whylog::WhylogCurrent {
+                book: Some(book),
+                oracles: &[],
+            }),
+        )
+        .diagnostics
+        .into_iter()
+        .next()
+        .ok_or_else(|| "whylog replay produced no diagnostic".to_owned())
+    }
+}
+
+fn parse_direct_why<'a>(words: &[&'a str]) -> Option<&'a str> {
+    let ["dorc", "why", "--last", whylog] = words else {
+        return None;
+    };
+    let path = whylog.strip_prefix("--whylog=")?;
+    case_relative_path(path).then_some(path)
 }
 
 fn exact_words(command: &str) -> Option<Vec<&str>> {
@@ -533,6 +594,36 @@ impl DorcConsumer {
     fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
         let words =
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        if let Some(path) = parse_direct_why(&words) {
+            let raw = case
+                .sections()
+                .iter()
+                .find(|section| section.name() == path)
+                .map(errorloom::Section::content);
+            let book = case
+                .sections()
+                .iter()
+                .find(|section| section.name() == "book.sh")
+                .map(errorloom::Section::content);
+            let inspected = dorc_plan::whylog::inspect(
+                raw,
+                path,
+                book.map(|book| dorc_plan::whylog::WhylogCurrent {
+                    book: Some(book),
+                    oracles: &[],
+                }),
+            );
+            let diag = inspected
+                .diagnostics
+                .into_iter()
+                .next()
+                .ok_or_else(|| format!("unsupported replay {command:?}"))?;
+            let interner = Interner::default();
+            return Ok(format!(
+                "{}\n",
+                reflow_to_canonical(&render_cli_with(&self.mirror, &diag, "", "", &interner,))
+            ));
+        }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
         let source = case
@@ -719,18 +810,6 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
             DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer)
         }
         "mark-hashcolon-malformed" => DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
-        "whylog-version-refused" => DiagCode::WhylogVersionRefused(WhylogVersionRefused {
-            found: "dorc-whylog/2".to_owned(),
-        }),
-        "whylog-book-desync" => DiagCode::WhylogBookDesync(WhylogBookDesync {
-            which: "book".to_owned(),
-        }),
-        "whylog-absent" => DiagCode::WhylogAbsent(WhylogAbsent {
-            dir: "./.dorc/whylog".to_owned(),
-        }),
-        "whylog-corrupt" => DiagCode::WhylogCorrupt(WhylogCorrupt {
-            detail: "no end-sentinel — a partial write?".to_owned(),
-        }),
         "aid-unloaded-sibling-oracle" => {
             DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
                 detail: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh`"

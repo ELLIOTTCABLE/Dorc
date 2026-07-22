@@ -124,6 +124,7 @@ dependencies = [
  "dorc-analysis",
  "dorc-core",
  "dorc-oracle",
+ "dorc-plan",
  "dorc-syntax",
  "errorloom",
 ]

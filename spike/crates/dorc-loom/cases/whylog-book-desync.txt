@@ -1,8 +1,18 @@
 ---
 code: whylog-book-desync
 ---
+-- book.sh --
+#!/bin/sh
+printf '%s\n' current
+-- .whylog --
+dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@
+invoc mode=plan @@dorc@@
+book digest=0000000000000000 path=book.sh @@dorc@@
+digest decision= @@dorc@@
+results bytes=0 @@dorc@@
+dorc-whylog-end/1 @@dorc@@
 -- replay --
-$ dorc why --last
+$ dorc why --last --whylog=.whylog
 warning[whylog-book-desync]: the saved why-log no longer matches what is on
    disk: `book` has changed since it was written
    = help: replaying old decisions against changed files would mislead; re-run

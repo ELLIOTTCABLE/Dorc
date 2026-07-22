@@ -21,17 +21,6 @@ const CASE_PATH: &str = "cases/dangling-reference.txt";
 const CATALOG_PATH: &str = "crates/core/src/catalog_lock.rs";
 const CODE_PATH: &str = "crates/core/src/diag.rs";
 
-/// The committed transcript for `slug`: render a skeleton case through a fresh consumer, so the
-/// committed bytes ARE a fixpoint by construction (the render is deterministic).
-fn committed(slug: &str, command: &str) -> String {
-    let skeleton =
-        format!("---\ncode: {slug}\n---\n-- book.sh --\n#!/bin/sh\n-- replay --\n$ {command}\n");
-    let case = Case::parse(&skeleton).expect("skeleton parses");
-    DorcConsumer::new()
-        .render_case(&case)
-        .expect("skeleton renders")
-}
-
 fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
     consumer
         .mirror()
@@ -39,6 +28,10 @@ fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
         .find(|e| e.slug == slug)
         .and_then(|e| e.message.clone())
         .expect("mirror has the code's message")
+}
+
+fn whylog_absent_case() -> Case {
+    Case::parse(include_str!("../cases/whylog-absent.txt")).expect("case parses")
 }
 
 #[test]
@@ -69,8 +62,21 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
 #[test]
 fn editable_baseline_renders_a_defining_case_with_help() {
     let case = Case::parse(include_str!("../cases/whylog-book-desync.txt")).expect("case parses");
-    let baseline = DorcConsumer::new()
-        .editable_baseline(&case)
+    let consumer = DorcConsumer::new();
+    let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
+        panic!("exact whylog replay must not fall back")
+    })
+    .expect("exact replay")
+    .pop()
+    .expect("one replay");
+    let baseline = consumer
+        .baseline_from_render(
+            &case,
+            replay
+                .editable_render()
+                .cloned()
+                .expect("editable provenance"),
+        )
         .expect("editable baseline");
     assert!(baseline.render().text().contains("= help:"));
     assert!(
@@ -101,8 +107,78 @@ fn editable_baseline_renders_a_defining_case_with_help() {
 }
 
 #[test]
+fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
+    for text in [
+        include_str!("../cases/whylog-absent.txt"),
+        include_str!("../cases/whylog-corrupt.txt"),
+        include_str!("../cases/whylog-version-refused.txt"),
+        include_str!("../cases/whylog-book-desync.txt"),
+    ] {
+        let case = Case::parse(text).expect("case parses");
+        let consumer = DorcConsumer::new();
+        let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
+            panic!("exact whylog replay must not fall back")
+        })
+        .expect("case replays")
+        .pop()
+        .expect("one replay");
+        assert_eq!(
+            replay
+                .editable_render()
+                .map(errorloom::EditableRender::text),
+            Some(replay.output().to_owned())
+        );
+        assert_eq!(
+            consumer.render_case(&case).expect("case regenerates"),
+            case.to_text()
+        );
+    }
+}
+
+#[test]
+fn whylog_driver_claims_only_the_exact_single_file_shape() {
+    let case = Case::parse(
+        "---\ncode: whylog-absent\n---\n-- replay --\n\
+         $ dorc why --last --whylog=.whylog\nold\n\
+         $ dorc why --last --whylog=.whylog --whylog=.other\nold\n\
+         $ dorc why --last --whylog=.whylog --unknown\nold\n\
+         $ dorc why --last --whylog=../whylog\nold\n\
+         $ dorc why --last --whylog=.whylog | wombat\nold\n",
+    )
+    .expect("case parses");
+    let calls = RefCell::new(Vec::new());
+    let results = replay_case(
+        &case,
+        &DorcConsumer::new(),
+        &RunEnv::new(),
+        |command, _context| {
+            calls.borrow_mut().push(command.to_owned());
+            Ok(ReplayResult::bytes(format!("fallback: {command}\n")))
+        },
+    )
+    .expect("replays route");
+    assert!(results[0].editable_render().is_some());
+    for result in &results[1..] {
+        assert!(result.editable_render().is_none());
+        assert!(result.output().starts_with("fallback:"));
+    }
+    assert_eq!(
+        calls.into_inner(),
+        [
+            "dorc why --last --whylog=.whylog --whylog=.other",
+            "dorc why --last --whylog=.whylog --unknown",
+            "dorc why --last --whylog=../whylog",
+            "dorc why --last --whylog=.whylog | wombat",
+        ]
+    );
+}
+
+#[test]
 fn fixpoint_gate_catches_a_catalog_hand_edit() {
-    let committed = committed("whylog-absent", "dorc plan --book=book.sh");
+    let case = whylog_absent_case();
+    let committed = DorcConsumer::new()
+        .render_case(&case)
+        .expect("case renders");
     let mut consumer = DorcConsumer::new();
     consumer.set_message("whylog-absent", Some("sm tampered message".to_owned()));
     let corpus = vec![CaseFile::new(CASE_PATH, committed)];
@@ -112,7 +188,10 @@ fn fixpoint_gate_catches_a_catalog_hand_edit() {
 
 #[test]
 fn structure_bless_regenerates_a_dorc_case() {
-    let committed = committed("whylog-absent", "dorc plan --book=book.sh");
+    let case = whylog_absent_case();
+    let committed = DorcConsumer::new()
+        .render_case(&case)
+        .expect("case renders");
     let corpus = vec![CaseFile::new(CASE_PATH, committed.clone())];
     let git = FakeGit::new().mark_dirty(CODE_PATH);
     let result = structure_bless(&DorcConsumer::new(), &git, &corpus, CATALOG_PATH.as_ref())

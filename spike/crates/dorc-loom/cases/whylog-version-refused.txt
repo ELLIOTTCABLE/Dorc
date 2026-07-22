@@ -1,8 +1,11 @@
 ---
 code: whylog-version-refused
 ---
+-- .whylog --
+dorc-whylog/2 nonce=dorc attempt=0 host=fixture @@dorc@@
+dorc-whylog-end/1 @@dorc@@
 -- replay --
-$ dorc why --last
+$ dorc why --last --whylog=.whylog
 warning[whylog-version-refused]: the saved why-log uses format `dorc-whylog/2`,
    which this version of dorc cannot read back
    = help: ask the question live instead: `dorc why` (without `--last`)
