@@ -608,19 +608,25 @@ fn admit_records(
     if bytes.is_empty() || std::str::from_utf8(bytes).is_err() {
         return Admission::Refused(AdmissionRefusal::InvalidUtf8);
     }
-    let mut lines = bytes.split_inclusive(|byte| *byte == b'\n').peekable();
+    if !bytes.ends_with(b"\n") {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    }
+    let lines = bytes.split_inclusive(|byte| *byte == b'\n');
     let mut header = false;
     let mut sentinel = false;
     let mut declared_sites = None;
     let mut received_sites = 0usize;
     let mut retained = 0usize;
     let mut records = Vec::new();
-    let mut identities = BTreeMap::<String, usize>::new();
-    while let Some(raw) = lines.next() {
+    let mut identities = BTreeMap::new();
+    let mut collections = CollectionCounts::default();
+    let mut physical_records = 0usize;
+    for raw in lines {
         let line = raw.strip_suffix(b"\n").unwrap_or(raw);
         if line.len() > limits.line_bytes {
             return Admission::Refused(AdmissionRefusal::LineLimit);
         }
+        let line = line.strip_suffix(b"\r").unwrap_or(line);
         if line
             .iter()
             .any(|byte| *byte == 0 || (*byte < 0x20 && *byte != b'\r'))
@@ -630,7 +636,10 @@ fn admit_records(
         let Ok(line) = std::str::from_utf8(line) else {
             return Admission::Refused(AdmissionRefusal::InvalidUtf8);
         };
-        if line.is_empty() || line.ends_with('\r') || !line.ends_with(TERMINAL_TOKEN) {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if !line.ends_with(TERMINAL_TOKEN) {
             return Admission::Refused(AdmissionRefusal::Framing);
         }
         let Some(body) = line
@@ -658,10 +667,7 @@ fn admit_records(
                 return Admission::Refused(AdmissionRefusal::Framing);
             }
             sentinel = true;
-            if lines.next().is_some() {
-                return Admission::Refused(AdmissionRefusal::Framing);
-            }
-            break;
+            continue;
         }
         if !header || sentinel {
             return Admission::Refused(AdmissionRefusal::Framing);
@@ -672,47 +678,41 @@ fn admit_records(
         else {
             return Admission::Refused(AdmissionRefusal::Framing);
         };
-        if records.len() >= limits.records {
-            return Admission::Refused(AdmissionRefusal::RecordLimit);
-        }
-        // Charge wire bytes before retaining any field.
-        retained = match retained.checked_add(record.len()) {
+        physical_records = match physical_records.checked_add(1) {
             Some(total) => total,
             None => return Admission::Refused(AdmissionRefusal::ArithmeticOverflow),
         };
-        if retained > limits.retained_bytes {
-            return Admission::Refused(AdmissionRefusal::RetainedLimit);
+        if physical_records > limits.records {
+            return Admission::Refused(AdmissionRefusal::RecordLimit);
         }
         let parsed = match parse_record(record, limits) {
             Ok(record) => record,
             Err(refusal) => return Admission::Refused(refusal),
         };
-        if matches!(parsed, TypedHostRecord::Site { .. }) {
+        if matches!(parsed, ParsedRecord::Site(_)) {
             received_sites = match received_sites.checked_add(1) {
                 Some(total) => total,
                 None => return Admission::Refused(AdmissionRefusal::ArithmeticOverflow),
             };
         }
-        let identity = lane_identity(&parsed);
+        let identity = parsed.identity();
         if let Some(existing) = identities.get(&identity) {
-            let Some(existing) = records.get(*existing) else {
-                return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
-            };
             if *existing != parsed {
                 return Admission::Refused(AdmissionRefusal::Duplicate);
             }
             continue;
         }
-        if records
-            .iter()
-            .filter(|candidate| same_lane(candidate, &parsed))
-            .count()
-            >= limits.collection_entries
-        {
+        retained = match charge_retained(retained, &parsed, limits) {
+            Ok(total) => total,
+            Err(refusal) => return Admission::Refused(refusal),
+        };
+        if !collections.can_insert(parsed.collection(), limits.collection_entries) {
             return Admission::Refused(AdmissionRefusal::CollectionLimit);
         }
-        identities.insert(identity, records.len());
-        records.push(parsed);
+        collections.insert(parsed.collection());
+        let owned = parsed.to_owned();
+        identities.insert(identity, parsed);
+        records.push(owned);
     }
     if !header || !sentinel {
         return Admission::Refused(AdmissionRefusal::Framing);
@@ -778,82 +778,42 @@ fn number_u32(token: &str, limits: HostEvidenceLimits) -> Result<u32, AdmissionR
 fn parse_record(
     record: &str,
     limits: HostEvidenceLimits,
-) -> Result<TypedHostRecord, AdmissionRefusal> {
+) -> Result<ParsedRecord<'_>, AdmissionRefusal> {
     let Some((tag, rest)) = record.split_once(' ') else {
         return Err(AdmissionRefusal::Grammar);
     };
     match tag {
-        "site" => {
-            let (head, stdout, mut stderr) =
-                if let Some((head, value)) = rest.split_once(" stdout=") {
-                    (head, Some(owned(value, limits)?), None)
-                } else if let Some((head, value)) = rest.split_once(" stderr=") {
-                    (head, None, Some(owned(value, limits)?))
-                } else {
-                    (rest, None, None)
-                };
-            let mut words = head.split_whitespace();
-            let key = words.next().ok_or(AdmissionRefusal::Grammar)?;
-            if !site_key(key, limits) {
-                return Err(AdmissionRefusal::Grammar);
-            }
-            let mut effect = None;
-            let mut rc = None;
-            let mut inert = Vec::new();
-            for word in words {
-                let Some((name, value)) = word.split_once('=') else {
-                    return Err(AdmissionRefusal::Grammar);
-                };
-                match name {
-                    "effect" if effect.replace(value).is_none() => {
-                        if !matches!(value, "holds" | "absent" | "cant-tell") {
-                            return Err(AdmissionRefusal::Grammar);
-                        }
-                    }
-                    "rc" if rc.replace(parse_i32(value, limits)?).is_none() => {}
-                    "stderr" if stderr.replace(owned(value, limits)?).is_none() => {}
-                    _ if !name.is_empty() && !value.is_empty() => {
-                        inert.push((owned(name, limits)?, owned(value, limits)?));
-                    }
-                    _ => return Err(AdmissionRefusal::Grammar),
-                }
-            }
-            Ok(TypedHostRecord::Site {
-                key: owned(key, limits)?,
-                effect: owned(effect.ok_or(AdmissionRefusal::Grammar)?, limits)?,
-                rc: rc.ok_or(AdmissionRefusal::Grammar)?,
-                stdout,
-                stderr,
-                inert,
-            })
-        }
+        "site" => parse_site(rest, limits).map(ParsedRecord::Site),
         "deriv" => {
             let (site, coord) = rest
                 .split_once(" coord=")
                 .ok_or(AdmissionRefusal::Grammar)?;
-            Ok(TypedHostRecord::Derivation {
+            checked_field(coord, limits)?;
+            Ok(ParsedRecord::Derivation {
                 site: number_u32(site, limits)?,
-                coord: owned(coord, limits)?,
+                coord,
             })
         }
         "deriv-end" => {
             let (site, count) = rest.split_once(" n=").ok_or(AdmissionRefusal::Grammar)?;
-            Ok(TypedHostRecord::DerivationEnd {
+            Ok(ParsedRecord::DerivationEnd {
                 site: number_u32(site, limits)?,
                 count: number_u32(count, limits)?,
             })
         }
         "resolv" => {
             let (coord, outcome) = rest.split_once(' ').ok_or(AdmissionRefusal::Grammar)?;
+            checked_field(coord, limits)?;
             let canonical = match outcome {
                 "dangling" => None,
-                value if value.starts_with("canon=") => Some(owned(&value[6..], limits)?),
+                value if value.starts_with("canon=") => {
+                    let value = &value[6..];
+                    checked_field(value, limits)?;
+                    Some(value)
+                }
                 _ => return Err(AdmissionRefusal::Grammar),
             };
-            Ok(TypedHostRecord::Resolution {
-                coord: owned(coord, limits)?,
-                canonical,
-            })
+            Ok(ParsedRecord::Resolution { coord, canonical })
         }
         "reach" => {
             let (head, entity) = rest
@@ -868,15 +828,18 @@ fn parse_record(
             if words.next().is_some() {
                 return Err(AdmissionRefusal::Grammar);
             }
-            Ok(TypedHostRecord::Reach {
-                coord: owned(coord, limits)?,
+            checked_field(coord, limits)?;
+            checked_field(entity, limits)?;
+            Ok(ParsedRecord::Reach {
+                coord,
                 arm: number(arm, limits)?,
-                entity: owned(entity, limits)?,
+                entity,
             })
         }
-        "report" => Ok(TypedHostRecord::Report {
-            body: owned(rest, limits)?,
-        }),
+        "report" => {
+            checked_field(rest, limits)?;
+            Ok(ParsedRecord::Report { body: rest })
+        }
         _ => Err(AdmissionRefusal::Grammar),
     }
 }
@@ -903,29 +866,299 @@ fn parse_i32(token: &str, limits: HostEvidenceLimits) -> Result<i32, AdmissionRe
     token.parse().map_err(|_| AdmissionRefusal::Numeric)
 }
 
-fn owned(value: &str, limits: HostEvidenceLimits) -> Result<String, AdmissionRefusal> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SiteBorrowed<'a> {
+    key: &'a str,
+    effect: &'a str,
+    rc: i32,
+    stdout: Option<&'a str>,
+    stderr: Option<&'a str>,
+    inert: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ParsedRecord<'a> {
+    Site(SiteBorrowed<'a>),
+    Derivation {
+        site: u32,
+        coord: &'a str,
+    },
+    DerivationEnd {
+        site: u32,
+        count: u32,
+    },
+    Resolution {
+        coord: &'a str,
+        canonical: Option<&'a str>,
+    },
+    Reach {
+        coord: &'a str,
+        arm: usize,
+        entity: &'a str,
+    },
+    Report {
+        body: &'a str,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum RecordIdentity<'a> {
+    Site(&'a str),
+    Derivation(u32, &'a str),
+    DerivationEnd(u32),
+    Resolution(&'a str),
+    Reach(&'a str, usize),
+    Report(&'a str),
+}
+
+#[derive(Clone, Copy)]
+enum Collection {
+    Site,
+    Derivation,
+    DerivationEnd,
+    Resolution,
+    Reach,
+    Report,
+}
+
+#[derive(Default)]
+struct CollectionCounts {
+    site: usize,
+    derivation: usize,
+    derivation_end: usize,
+    resolution: usize,
+    reach: usize,
+    report: usize,
+}
+
+impl CollectionCounts {
+    fn can_insert(&self, collection: Collection, limit: usize) -> bool {
+        match collection {
+            Collection::Site => self.site < limit,
+            Collection::Derivation => self.derivation < limit,
+            Collection::DerivationEnd => self.derivation_end < limit,
+            Collection::Resolution => self.resolution < limit,
+            Collection::Reach => self.reach < limit,
+            Collection::Report => self.report < limit,
+        }
+    }
+
+    fn insert(&mut self, collection: Collection) {
+        match collection {
+            Collection::Site => self.site += 1,
+            Collection::Derivation => self.derivation += 1,
+            Collection::DerivationEnd => self.derivation_end += 1,
+            Collection::Resolution => self.resolution += 1,
+            Collection::Reach => self.reach += 1,
+            Collection::Report => self.report += 1,
+        }
+    }
+}
+
+impl<'a> ParsedRecord<'a> {
+    fn identity(self) -> RecordIdentity<'a> {
+        match self {
+            Self::Site(site) => RecordIdentity::Site(site.key),
+            Self::Derivation { site, coord } => RecordIdentity::Derivation(site, coord),
+            Self::DerivationEnd { site, .. } => RecordIdentity::DerivationEnd(site),
+            Self::Resolution { coord, .. } => RecordIdentity::Resolution(coord),
+            Self::Reach { coord, arm, .. } => RecordIdentity::Reach(coord, arm),
+            Self::Report { body } => RecordIdentity::Report(body),
+        }
+    }
+
+    fn collection(self) -> Collection {
+        match self {
+            Self::Site(_) => Collection::Site,
+            Self::Derivation { .. } => Collection::Derivation,
+            Self::DerivationEnd { .. } => Collection::DerivationEnd,
+            Self::Resolution { .. } => Collection::Resolution,
+            Self::Reach { .. } => Collection::Reach,
+            Self::Report { .. } => Collection::Report,
+        }
+    }
+
+    fn to_owned(self) -> TypedHostRecord {
+        match self {
+            Self::Site(site) => TypedHostRecord::Site {
+                key: site.key.to_owned(),
+                effect: site.effect.to_owned(),
+                rc: site.rc,
+                stdout: site.stdout.map(str::to_owned),
+                stderr: site.stderr.map(str::to_owned),
+                inert: inert_fields(site.inert)
+                    .map(|(name, value)| (name.to_owned(), value.to_owned()))
+                    .collect(),
+            },
+            Self::Derivation { site, coord } => TypedHostRecord::Derivation {
+                site,
+                coord: coord.to_owned(),
+            },
+            Self::DerivationEnd { site, count } => TypedHostRecord::DerivationEnd { site, count },
+            Self::Resolution { coord, canonical } => TypedHostRecord::Resolution {
+                coord: coord.to_owned(),
+                canonical: canonical.map(str::to_owned),
+            },
+            Self::Reach { coord, arm, entity } => TypedHostRecord::Reach {
+                coord: coord.to_owned(),
+                arm,
+                entity: entity.to_owned(),
+            },
+            Self::Report { body } => TypedHostRecord::Report {
+                body: body.to_owned(),
+            },
+        }
+    }
+}
+
+fn parse_site(
+    rest: &str,
+    limits: HostEvidenceLimits,
+) -> Result<SiteBorrowed<'_>, AdmissionRefusal> {
+    let Some((key, fields)) = rest.split_once(' ') else {
+        return Err(AdmissionRefusal::Grammar);
+    };
+    if !site_key(key, limits) {
+        return Err(AdmissionRefusal::Grammar);
+    }
+    checked_field(key, limits)?;
+    let mut effect = None;
+    let mut rc = None;
+    let mut stdout = None;
+    let mut stderr = None;
+    let mut offset = 0;
+    let mut inert_end = fields.len();
+    while offset < fields.len() {
+        let remaining = &fields[offset..];
+        let trimmed = remaining.trim_start_matches(char::is_whitespace);
+        offset += remaining.len() - trimmed.len();
+        if trimmed.is_empty() {
+            break;
+        }
+        let word_end = trimmed.find(char::is_whitespace).unwrap_or(trimmed.len());
+        let word = &trimmed[..word_end];
+        let Some((name, value)) = word.split_once('=') else {
+            return Err(AdmissionRefusal::Grammar);
+        };
+        match name {
+            "effect" => {
+                if effect.is_some() || !matches!(value, "holds" | "absent" | "cant-tell") {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                effect = Some(value);
+                checked_field(value, limits)?;
+            }
+            "rc" => {
+                if rc.is_some() {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                rc = Some(parse_i32(value, limits)?);
+            }
+            "stdout" | "stderr" => {
+                if (name == "stdout" && stdout.is_some()) || (name == "stderr" && stderr.is_some())
+                {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                let free = &trimmed[name.len() + 1..];
+                if free.is_empty()
+                    || free.split_whitespace().skip(1).any(|later| {
+                        matches!(
+                            later.split_once('=').map(|(key, _)| key),
+                            Some("effect" | "rc" | "stdout" | "stderr")
+                        )
+                    })
+                {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                checked_field(free, limits)?;
+                if name == "stdout" {
+                    stdout = Some(free);
+                } else {
+                    stderr = Some(free);
+                }
+                inert_end = offset;
+                break;
+            }
+            _ if !name.is_empty() && !value.is_empty() => {
+                checked_field(name, limits)?;
+                checked_field(value, limits)?;
+            }
+            _ => return Err(AdmissionRefusal::Grammar),
+        }
+        offset += word_end;
+    }
+    Ok(SiteBorrowed {
+        key,
+        effect: effect.ok_or(AdmissionRefusal::Grammar)?,
+        rc: rc.ok_or(AdmissionRefusal::Grammar)?,
+        stdout,
+        stderr,
+        inert: &fields[..inert_end],
+    })
+}
+
+fn inert_fields(fields: &str) -> impl Iterator<Item = (&str, &str)> {
+    fields.split_whitespace().filter_map(|word| {
+        let (name, value) = word.split_once('=')?;
+        (!matches!(name, "effect" | "rc" | "stdout" | "stderr")).then_some((name, value))
+    })
+}
+
+fn charge_retained(
+    retained: usize,
+    record: &ParsedRecord<'_>,
+    limits: HostEvidenceLimits,
+) -> Result<usize, AdmissionRefusal> {
+    let mut total = retained;
+    let mut charge = |field: &str| {
+        checked_field(field, limits)?;
+        total = total
+            .checked_add(field.len())
+            .ok_or(AdmissionRefusal::ArithmeticOverflow)?;
+        (total <= limits.retained_bytes)
+            .then_some(())
+            .ok_or(AdmissionRefusal::RetainedLimit)
+    };
+    match record {
+        ParsedRecord::Site(site) => {
+            charge(site.key)?;
+            charge(site.effect)?;
+            if let Some(stdout) = site.stdout {
+                charge(stdout)?;
+            }
+            if let Some(stderr) = site.stderr {
+                charge(stderr)?;
+            }
+            for (name, value) in inert_fields(site.inert) {
+                charge(name)?;
+                charge(value)?;
+            }
+        }
+        ParsedRecord::Derivation { coord, .. } => charge(coord)?,
+        ParsedRecord::DerivationEnd { .. } => {}
+        ParsedRecord::Resolution { coord, canonical } => {
+            charge(coord)?;
+            if let Some(canonical) = canonical {
+                charge(canonical)?;
+            }
+        }
+        ParsedRecord::Reach { coord, entity, .. } => {
+            charge(coord)?;
+            charge(entity)?;
+        }
+        ParsedRecord::Report { body } => charge(body)?,
+    }
+    Ok(total)
+}
+
+fn checked_field(value: &str, limits: HostEvidenceLimits) -> Result<(), AdmissionRefusal> {
     if value.len() > limits.field_bytes {
         return Err(AdmissionRefusal::FieldLimit);
     }
     if value.is_empty() {
         return Err(AdmissionRefusal::Grammar);
     }
-    Ok(value.to_owned())
-}
-
-fn lane_identity(record: &TypedHostRecord) -> String {
-    match record {
-        TypedHostRecord::Site { key, .. } => format!("site:{key}"),
-        TypedHostRecord::Derivation { site, coord } => format!("deriv:{site}:{coord}"),
-        TypedHostRecord::DerivationEnd { site, .. } => format!("deriv-end:{site}"),
-        TypedHostRecord::Resolution { coord, .. } => format!("resolv:{coord}"),
-        TypedHostRecord::Reach { coord, arm, .. } => format!("reach:{coord}:{arm}"),
-        TypedHostRecord::Report { body } => format!("report:{body}"),
-    }
-}
-
-fn same_lane(left: &TypedHostRecord, right: &TypedHostRecord) -> bool {
-    std::mem::discriminant(left) == std::mem::discriminant(right)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1438,5 +1671,165 @@ mod tests {
                 "forbidden authority API: {forbidden}"
             );
         }
+    }
+
+    #[test]
+    fn physical_record_limit_counts_before_grammar_and_deduplication() {
+        for (count, expected) in [(1, true), (2, true), (3, false)] {
+            let records = vec!["site 0 effect=holds rc=0"; count];
+            let raw = strict_stream(&records);
+            assert_eq!(
+                matches!(
+                    admitted(&raw, HostEvidenceLimits::new(4096, 512, 2, 64, 512, 8, 4)),
+                    Admission::Admitted(_)
+                ),
+                expected,
+                "physical record count {count}"
+            );
+        }
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["site 0 effect=holds rc=0"]),
+                HostEvidenceLimits::new(4096, 512, 0, 64, 512, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::RecordLimit)
+        ));
+        let duplicate_storm = strict_stream(&[
+            "site 0 effect=holds rc=0",
+            "site 0 effect=holds rc=0",
+            "site 0 effect=holds rc=0",
+        ]);
+        assert!(matches!(
+            admitted(
+                &duplicate_storm,
+                HostEvidenceLimits::new(4096, 512, 2, 64, 512, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::RecordLimit)
+        ));
+    }
+
+    #[test]
+    fn physical_lines_are_accounted_before_crlf_and_ignored_framing() {
+        let mixed = format!(
+            "# before header\r\n\r\n{}\r\n# before record\n{}\r\n\r\n{}# after sentinel\r\n",
+            header(1),
+            rec("site 0 effect=holds rc=0"),
+            sentinel(),
+        );
+        assert!(matches!(
+            admitted(&mixed, strict_limits()),
+            Admission::Admitted(_)
+        ));
+
+        let oversized_comment = format!("# {}\n{}", "x".repeat(65), strict_stream(&[]));
+        assert!(matches!(
+            admitted(
+                &oversized_comment,
+                HostEvidenceLimits::new(4096, 64, 8, 64, 512, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::LineLimit)
+        ));
+        assert!(matches!(
+            admitted(strict_stream(&[]).trim_end_matches('\n'), strict_limits()),
+            Admission::Refused(AdmissionRefusal::Framing)
+        ));
+    }
+
+    #[test]
+    fn retained_budget_charges_only_owned_fields_before_materialization() {
+        let structural = strict_stream(&["site 0 effect=holds rc=0", "report abc"]);
+        assert!(matches!(
+            admitted(
+                &structural,
+                HostEvidenceLimits::new(4096, 512, 8, 64, 9, 8, 4)
+            ),
+            Admission::Admitted(_)
+        ));
+        for limit in [8, 9, 10] {
+            let result = admitted(
+                &structural,
+                HostEvidenceLimits::new(4096, 512, 8, 64, limit, 8, 4),
+            );
+            if limit == 8 {
+                assert!(matches!(
+                    result,
+                    Admission::Refused(AdmissionRefusal::RetainedLimit)
+                ));
+            } else {
+                assert!(
+                    matches!(result, Admission::Admitted(_)),
+                    "retained exact/plus {limit}: {result:?}"
+                );
+            }
+        }
+        assert_eq!(
+            charge_retained(
+                usize::MAX,
+                &ParsedRecord::Report { body: "x" },
+                strict_limits()
+            ),
+            Err(AdmissionRefusal::ArithmeticOverflow)
+        );
+    }
+
+    #[test]
+    fn site_fields_are_closed_and_only_one_final_free_field_is_allowed() {
+        for record in [
+            "site 0 effect=holds rc=0 stdout=x stderr=y",
+            "site 0 effect=holds rc=0 stderr=y stdout=x",
+            "site 0 effect=holds effect=absent rc=0",
+            "site 0 effect=holds rc=0 rc=1",
+            "site 0 effect=holds rc=0 stdout=x stdout=y",
+            "site 0 effect=holds rc=0 stderr=x stderr=y",
+        ] {
+            assert!(
+                matches!(
+                    admitted(&strict_stream(&[record]), strict_limits()),
+                    Admission::Refused(AdmissionRefusal::Grammar)
+                ),
+                "recognized site key duplication/coexistence: {record}"
+            );
+        }
+        let additive = strict_stream(&[
+            "site 0 future=one extra=two effect=holds rc=0 stdout=final free value",
+        ]);
+        let Admission::Admitted(records) = admitted(&additive, strict_limits()) else {
+            panic!("additive structured fields before the final free field must admit")
+        };
+        let TypedHostRecord::Site { inert, stdout, .. } = &records.records[0] else {
+            panic!("expected site")
+        };
+        assert_eq!(
+            inert,
+            &vec![
+                ("future".to_owned(), "one".to_owned()),
+                ("extra".to_owned(), "two".to_owned())
+            ]
+        );
+        assert_eq!(stdout.as_deref(), Some("final free value"));
+    }
+
+    #[test]
+    fn typed_collection_caps_are_independent_and_dedup_does_not_retain() {
+        let limits = HostEvidenceLimits::new(4096, 512, 8, 64, 512, 1, 4);
+        for records in [
+            strict_stream(&["site 0 effect=holds rc=0", "site 1 effect=holds rc=0"]),
+            strict_stream(&["deriv 0 coord=one", "deriv 1 coord=two"]),
+            strict_stream(&["deriv-end 0 n=0", "deriv-end 1 n=0"]),
+            strict_stream(&["resolv one dangling", "resolv two dangling"]),
+            strict_stream(&["reach one arm=0 entity=x", "reach two arm=0 entity=x"]),
+            strict_stream(&["report one", "report two"]),
+        ] {
+            assert!(matches!(
+                admitted(&records, limits),
+                Admission::Refused(AdmissionRefusal::CollectionLimit)
+            ));
+        }
+        let exact_duplicates =
+            strict_stream(&["site 0 effect=holds rc=0", "site 0 effect=holds rc=0"]);
+        let Admission::Admitted(records) = admitted(&exact_duplicates, strict_limits()) else {
+            panic!("exact duplicates retain one owned record")
+        };
+        assert_eq!(records.records.len(), 1);
     }
 }
