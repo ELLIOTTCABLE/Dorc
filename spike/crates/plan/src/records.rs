@@ -2049,6 +2049,32 @@ mod tests {
             parse_i32("-2147483649", numeric_limits),
             Err(AdmissionRefusal::Numeric)
         );
+        assert!(number_u32("0000004294967295", numeric_limits).is_ok());
+        assert_eq!(
+            number_u32("00000004294967295", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert!(parse_i32("0000002147483647", numeric_limits).is_ok());
+        assert_eq!(
+            parse_i32("00000002147483647", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+    }
+
+    #[test]
+    fn spike_default_limits_pin_the_frozen_policy() {
+        assert_eq!(
+            HostEvidenceLimits::spike_default(),
+            HostEvidenceLimits::new(
+                8 * 1024 * 1024,
+                64 * 1024,
+                65_536,
+                16 * 1024,
+                4 * 1024 * 1024,
+                32_768,
+                16,
+            )
+        );
     }
 
     #[test]
