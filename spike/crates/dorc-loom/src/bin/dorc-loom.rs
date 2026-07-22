@@ -5,15 +5,15 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use dorc_loom::{
-    DorcConsumer, DorcSectionEditRefusal, compile_preview, render_compile_preview,
-    replay_case_with_inputs,
+    DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, InspectedCompilation, InspectedReplay,
+    ReceiptStore, compile_preview, encode_receipt, render_compile_preview, replay_case_with_inputs,
+    validate_receipt,
 };
 use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str =
-    "usage: dorc-loom <compile [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...>";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...>";
 
 fn main() -> ExitCode {
     match run() {
@@ -27,6 +27,7 @@ fn main() -> ExitCode {
 
 enum Command {
     Compile { cases: Vec<PathBuf>, env: RunEnv },
+    Promote { cases: Vec<PathBuf>, env: RunEnv },
     Vars { used: bool, cases: Vec<PathBuf> },
 }
 
@@ -36,6 +37,7 @@ fn run() -> Result<ExitCode, String> {
     let mut out = stdout.lock();
     match command {
         Command::Compile { cases, env } => compile_cases(&cases, &env, &mut out),
+        Command::Promote { cases, env } => promote_cases(&cases, &env, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
     }
 }
@@ -46,6 +48,10 @@ fn parse_args() -> Result<Command, String> {
         Some("compile") => {
             let (cases, env) = collect_compile_args(argv)?;
             Ok(Command::Compile { cases, env })
+        }
+        Some("promote") => {
+            let (cases, env) = collect_compile_args(argv)?;
+            Ok(Command::Promote { cases, env })
         }
         Some("vars") => {
             let mode = argv
@@ -123,10 +129,48 @@ fn compile_cases(
     env: &RunEnv,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
+    let inspection = inspect_cases(cases, env, out)?;
+    let Some(inspection) = inspection else {
+        return Ok(ExitCode::from(1));
+    };
+    let packet = encode_receipt(&inspection).map_err(|error| error.to_string())?;
+    receipt_store().publish(&packet)?;
+    Ok(ExitCode::SUCCESS)
+}
+
+fn promote_cases(
+    cases: &[PathBuf],
+    env: &RunEnv,
+    out: &mut impl Write,
+) -> Result<ExitCode, String> {
+    let packet = receipt_store()
+        .read()
+        .map_err(|error| format!("promote receipt: {error}"))?;
+    let inspection = inspect_cases(cases, env, out)?;
+    let Some(inspection) = inspection else {
+        return Ok(ExitCode::from(1));
+    };
+    validate_receipt(&packet, &inspection).map_err(|error| format!("promote refused: {error}"))?;
+    writeln!(
+        out,
+        "promote: receipt matches current inspected compilation; ready"
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(ExitCode::SUCCESS)
+}
+
+fn inspect_cases(
+    cases: &[PathBuf],
+    env: &RunEnv,
+    out: &mut impl Write,
+) -> Result<Option<InspectedCompilation>, String> {
     let consumer = DorcConsumer::new();
     let mut refused = false;
+    let mut selected = Vec::new();
+    let mut replays = Vec::new();
     for path in cases {
         let (case, source) = load_with_text(path)?;
+        selected.push((canonical_case_path(path)?, source.clone()));
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
         let mut previews = Vec::new();
         let mut case_refusal = None;
@@ -151,6 +195,11 @@ fn compile_cases(
             } else {
                 writeln!(out, "replay: {index} bytes-only").map_err(|error| error.to_string())?;
             }
+            replays.push(InspectedReplay {
+                command: block.command().to_owned(),
+                output: routed.output().to_owned(),
+                interpretation: String::new(),
+            });
         }
         if let Some((index, error, dirty)) = case_refusal {
             refused = true;
@@ -162,17 +211,53 @@ fn compile_cases(
                 .map_err(|write| write.to_string())?;
             continue;
         }
+        let replay_offset = replays.len().saturating_sub(case.replay().blocks().len());
         for (index, preview) in previews {
             writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
-            writeln!(out, "{}", render_compile_preview(&preview))
-                .map_err(|error| error.to_string())?;
+            let rendered = render_compile_preview(&preview);
+            if let Some(replay) = replays.get_mut(replay_offset.saturating_add(index)) {
+                replay.interpretation.clone_from(&rendered);
+            }
+            writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
         }
     }
-    Ok(if refused {
-        ExitCode::from(1)
-    } else {
-        ExitCode::SUCCESS
-    })
+    if refused {
+        return Ok(None);
+    }
+    selected.sort_by(|left, right| left.0.cmp(&right.0));
+    let catalog = std::fs::read_to_string(catalog_path())
+        .map_err(|error| format!("read catalog input: {error}"))?;
+    Ok(Some(InspectedCompilation {
+        cases: selected,
+        catalog,
+        replays,
+    }))
+}
+
+fn receipt_store() -> FsReceiptStore {
+    FsReceiptStore::new(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/dorc-loom/compile.receipt"),
+    )
+}
+
+fn catalog_path() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog.rs")
+}
+
+fn canonical_case_path(path: &Path) -> Result<String, String> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let absolute =
+        std::fs::canonicalize(path).map_err(|error| format!("canonicalize case: {error}"))?;
+    let root =
+        std::fs::canonicalize(root).map_err(|error| format!("canonicalize repository: {error}"))?;
+    let relative = absolute
+        .strip_prefix(root)
+        .map_err(|_| "case is outside spike worktree".to_owned())?;
+    let path = relative.to_string_lossy().replace('\\', "/");
+    if path.is_empty() || path.contains("../") {
+        return Err("unsafe case path".to_owned());
+    }
+    Ok(path)
 }
 
 const MAX_REFUSAL_EVIDENCE: usize = 4096;

@@ -20,6 +20,15 @@ mod inspect;
 pub use inspect::render_compile_preview;
 mod preview;
 pub use preview::{CompilePreview, SectionPreview, compile_preview};
+mod receipt;
+pub use receipt::{
+    InspectedCompilation, InspectedReplay, MAX_RECEIPT_BYTES, MAX_RECEIPT_CASES,
+    MAX_RECEIPT_FIELD_BYTES, MAX_RECEIPT_REPLAYS, RECEIPT_SCHEMA, RECEIPT_SEMANTICS_EPOCH,
+    ReceiptError, ValidatedCompilation, encode as encode_receipt, parse as parse_receipt,
+    validate_current as validate_receipt,
+};
+mod receipt_store;
+pub use receipt_store::{FsReceiptStore, ReceiptStore};
 
 /// A semantic template variable name.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
