@@ -554,12 +554,6 @@ pub enum AdmissionRefusal {
 }
 
 impl AdmissionRefusal {
-    /// Preserves the closed refusal category without host evidence bytes.
-    #[must_use]
-    pub fn diagnostic(self) -> DiagCode {
-        DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused { kind: self.kind() })
-    }
-
     /// Keeps malformed ingress outside source spans.
     #[must_use]
     pub fn spanless_diagnostic(self) -> Diag {
@@ -1578,7 +1572,7 @@ mod tests {
             ),
         ] {
             assert_eq!(
-                refusal.diagnostic(),
+                refusal.spanless_diagnostic().code,
                 DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused { kind })
             );
             assert_eq!(refusal.spanless_diagnostic().primary.span(), None);
