@@ -615,6 +615,79 @@ pub struct AdmittedUnscopedHostRecords {
     records: Vec<TypedHostRecord>,
 }
 
+/// A borrowed, grammar-checked record. It remains unscoped until the controller binds it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdmittedHostRecord<'a> {
+    Site {
+        key: &'a str,
+        effect: &'a str,
+        rc: i32,
+        stdout: Option<&'a str>,
+        stderr: Option<&'a str>,
+        inert: &'a [(String, String)],
+    },
+    Derivation {
+        site: u32,
+        coord: &'a str,
+    },
+    DerivationEnd {
+        site: u32,
+        count: u32,
+    },
+    Resolution {
+        coord: &'a str,
+        canonical: Option<&'a str>,
+    },
+    Reach {
+        coord: &'a str,
+        arm: usize,
+        entity: &'a str,
+    },
+    Report {
+        body: &'a str,
+    },
+}
+
+impl AdmittedUnscopedHostRecords {
+    /// Borrows validated records without exposing their owning representation or a raw byte route.
+    pub fn iter(&self) -> impl Iterator<Item = AdmittedHostRecord<'_>> {
+        self.records.iter().map(|record| match record {
+            TypedHostRecord::Site {
+                key,
+                effect,
+                rc,
+                stdout,
+                stderr,
+                inert,
+            } => AdmittedHostRecord::Site {
+                key,
+                effect,
+                rc: *rc,
+                stdout: stdout.as_deref(),
+                stderr: stderr.as_deref(),
+                inert,
+            },
+            TypedHostRecord::Derivation { site, coord } => {
+                AdmittedHostRecord::Derivation { site: *site, coord }
+            }
+            TypedHostRecord::DerivationEnd { site, count } => AdmittedHostRecord::DerivationEnd {
+                site: *site,
+                count: *count,
+            },
+            TypedHostRecord::Resolution { coord, canonical } => AdmittedHostRecord::Resolution {
+                coord,
+                canonical: canonical.as_deref(),
+            },
+            TypedHostRecord::Reach { coord, arm, entity } => AdmittedHostRecord::Reach {
+                coord,
+                arm: *arm,
+                entity,
+            },
+            TypedHostRecord::Report { body } => AdmittedHostRecord::Report { body },
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TypedHostRecord {
     Site {

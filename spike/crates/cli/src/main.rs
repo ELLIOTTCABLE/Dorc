@@ -57,7 +57,7 @@
 )]
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::process::ExitCode;
 
 use dorc_core::diag::{
@@ -182,6 +182,8 @@ enum RunOutcome {
     /// A wrapper oracle's `__predict`/`__lend_map` peels are dual-peel incoherent (`273` §5) ⇒ the
     /// artifact shipped, but exit [`EXIT_WRAPPER_INCOHERENT`] (fail-fast).
     WrapperIncoherent,
+    /// Host evidence failed admission before any decision artifact could be built.
+    IngressRefused,
 }
 
 fn main() -> ExitCode {
@@ -207,6 +209,7 @@ fn main() -> ExitCode {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
+            Ok(RunOutcome::IngressRefused) => ExitCode::from(12),
             Err(msg) => {
                 eprintln!("dorc: {msg}");
                 ExitCode::from(EXIT_USAGE)
@@ -1339,16 +1342,77 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // read the (simulated) probe results — the site-keyed records the rendered probe would emit
     // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
     // the default stdin (the harness pipes them in).
-    let results_buf = if let Some(r) = &replay {
-        r.doc.raw_results.clone()
-    } else if let Some(path) = &args.results {
-        std::fs::read_to_string(path).map_err(|e| humane_read_error("results", path, &e))?
+    let scope =
+        WidthOneAttemptScope::new(&framing, book_name, &book_src, &oracle_paths, &oracle_srcs);
+    let (results_buf, scoped_results, whylog_eligible) = if let Some(r) = &replay {
+        // Temporary 3C2 replay route: its durable conversion remains raw until replay scope binding lands.
+        let raw = r.doc.raw_results.clone();
+        let legacy = if std::env::var_os("DORC_ALLOW_LEGACY_RESULTS").is_some() {
+            dorc_plan::records::LegacyPolicy::Tolerate
+        } else {
+            dorc_plan::records::LegacyPolicy::Refuse
+        };
+        let deframed = dorc_plan::records::deframe(&raw, &framing.expect(), legacy);
+        report_at(advisory, "records", None, &deframed.diagnostics);
+        (
+            Some(raw),
+            ScopedHostEvidence::new(
+                scope,
+                parse_results(&deframed.records, deframed.framed, &mut interner),
+            ),
+            true,
+        )
     } else {
-        let mut buf = String::new();
-        std::io::stdin()
-            .read_to_string(&mut buf)
-            .map_err(|e| format!("reading probe results from stdin: {e}"))?;
-        buf
+        let evidence = if let Some(path) = &args.results {
+            let file =
+                std::fs::File::open(path).map_err(|e| humane_read_error("results", path, &e))?;
+            dorc_plan::records::read_host_evidence(
+                file,
+                dorc_plan::records::HostEvidenceLimits::spike_default(),
+            )
+        } else {
+            dorc_plan::records::read_host_evidence(
+                std::io::stdin(),
+                dorc_plan::records::HostEvidenceLimits::spike_default(),
+            )
+        };
+        let admitted = match evidence {
+            dorc_plan::records::Admission::Admitted(bytes) => {
+                dorc_plan::records::admit_unscoped_host_records(
+                    &bytes,
+                    &framing,
+                    dorc_plan::records::HostEvidenceLimits::spike_default(),
+                )
+            }
+            dorc_plan::records::Admission::NoObservation => {
+                dorc_plan::records::Admission::NoObservation
+            }
+            dorc_plan::records::Admission::Refused(reason) => {
+                dorc_plan::records::Admission::Refused(reason)
+            }
+        };
+        match admitted {
+            dorc_plan::records::Admission::Admitted(records) => (
+                None,
+                ScopedHostEvidence::new(scope, parse_admitted_results(&records, &mut interner)),
+                true,
+            ),
+            dorc_plan::records::Admission::NoObservation => (
+                None,
+                ScopedHostEvidence::new(
+                    scope,
+                    SiteResults {
+                        framed: true,
+                        ..SiteResults::default()
+                    },
+                ),
+                false,
+            ),
+            dorc_plan::records::Admission::Refused(reason) => {
+                report_at(advisory, "records", None, &[reason.spanless_diagnostic()]);
+                return Ok(RunOutcome::IngressRefused);
+            }
+        }
     };
     // `262` §2: deframe FIRST (the production deframer — integrity keys, torn/glued/alien/late,
     // terminal-token strip), then inner-parse the clean records. A refused read unit (book/host/
@@ -1359,14 +1423,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // lenient legacy passthrough is a harness/test-only escape read HERE at the edge
     // (`io-at-edges-only`; the kernel stays pure — `inv-determinism`): run.sh exports
     // `DORC_ALLOW_LEGACY_RESULTS` for the ~128 unframed authored fixtures.
-    let legacy = if std::env::var_os("DORC_ALLOW_LEGACY_RESULTS").is_some() {
-        dorc_plan::records::LegacyPolicy::Tolerate
-    } else {
-        dorc_plan::records::LegacyPolicy::Refuse
-    };
-    let deframed = dorc_plan::records::deframe(&results_buf, &framing.expect(), legacy);
-    report_at(advisory, "records", None, &deframed.diagnostics);
-    let results = parse_results(&deframed.records, deframed.framed, &mut interner);
+    let _scope = scoped_results.scope();
+    let results = scoped_results.borrow();
 
     // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
@@ -1376,8 +1434,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let (by_fact, merge_evidence) = facts_from_sites(&probe, &results);
-    let probe_origins = probe_origins(&probe, &results, &mut arena);
+    let (by_fact, merge_evidence) = facts_from_sites(&probe, results);
+    let probe_origins = probe_origins(&probe, results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
@@ -1407,7 +1465,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         merge_derived_footprints(
             &mut fps,
             &derivations,
-            &results,
+            results,
             &classes,
             &kill_coords,
             &derived_node_spans,
@@ -1423,7 +1481,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &mut fps,
             &kind_reaches,
             &reach_kinds,
-            &results,
+            results,
             &mut interner,
         );
         fps
@@ -1432,7 +1490,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // backing coords canonicalized in the survival walk). Flag-off / no-resolver ⇒ empty ⇒ the
     // token-equality floor (identical to today). §4: each DANGLING coordinate is a loud diagnostic.
     let mut resolutions =
-        build_resolutions(&resolver_coords, &resolver_kinds, &results, &mut interner);
+        build_resolutions(&resolver_coords, &resolver_kinds, results, &mut interner);
     // fence-no-disjoint (`24L` §7): register every verdict-provider's auto-cell kind so the survival
     // tier reads an auto coordinate as may-touch (`survival::disjoint`). The plan is interner-free,
     // so this resolution happens here (the edge holds the interner) and rides the Resolutions the
@@ -1528,8 +1586,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // (cant-tell ⇒ Unknown ⇒ run) and never flaps the verdict, so this is an advisory nudge,
         // not an error. (A `--exit-code`-like surface must source from divergence-of-world, never
         // this raw rc — see `dorc_plan::render::probe::record_scaffold`.)
-        emit_sigpipe_race_notes(&results);
-        emit_report_lane_notes(&results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
+        emit_sigpipe_race_notes(results);
+        emit_report_lane_notes(results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
         // `27W` §3 tier-2 STATIC decline classes at plan time, with the emitting arm's file:line.
         emit_static_decline_notes(&collapse_evidence, &oracle_paths, &oracle_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
@@ -1657,10 +1715,12 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &oracle_paths,
             &oracle_srcs,
             &decision_digest,
-            &results_buf,
+            results_buf.as_deref().unwrap_or(""),
             &plan,
         );
-        write_whylog(dir, &doc);
+        if whylog_eligible {
+            write_whylog(dir, &doc);
+        }
     }
     Ok(book_outcome)
 }
@@ -4504,6 +4564,81 @@ struct RecordKey {
     member: Option<u32>,
 }
 
+/// Controller-owned width-one identity. Payload records never construct or refresh this scope.
+#[derive(Debug)]
+struct WidthOneAttemptScope {
+    host: String,
+    target: WidthOneLocalTargetId,
+    nonce: String,
+    attempt: u32,
+    sources: Vec<(String, String)>,
+    generation: InitialWidthOneGeneration,
+    book: (String, String),
+}
+
+#[derive(Debug)]
+struct WidthOneLocalTargetId;
+
+#[derive(Debug)]
+struct InitialWidthOneGeneration;
+
+impl WidthOneAttemptScope {
+    fn new(
+        framing: &dorc_plan::records::Framing,
+        book_name: &str,
+        book: &str,
+        paths: &[String],
+        sources: &[String],
+    ) -> Self {
+        Self {
+            host: framing.host.clone(),
+            target: WidthOneLocalTargetId,
+            nonce: framing.nonce.0.clone(),
+            attempt: framing.attempt,
+            sources: paths
+                .iter()
+                .zip(sources)
+                .map(|(path, source)| (path.clone(), book_digest(source)))
+                .collect(),
+            generation: InitialWidthOneGeneration,
+            book: (book_name.to_owned(), book_digest(book)),
+        }
+    }
+
+    fn retain(&self) {
+        let _ = (
+            &self.host,
+            &self.target,
+            &self.nonce,
+            self.attempt,
+            &self.sources,
+            &self.generation,
+            &self.book,
+        );
+    }
+}
+
+/// Keeps controller attribution attached while live evidence participates in planning.
+struct ScopedHostEvidence<T> {
+    scope: WidthOneAttemptScope,
+    value: T,
+}
+
+impl<T> ScopedHostEvidence<T> {
+    fn new(scope: WidthOneAttemptScope, value: T) -> Self {
+        Self { scope, value }
+    }
+
+    fn borrow(&self) -> &T {
+        &self.value
+    }
+
+    fn scope(&self) -> &WidthOneAttemptScope {
+        self.scope.retain();
+        &self.scope
+    }
+}
+
 /// The probe results parsed from stdin, keyed by [`RecordKey`] (site, optional member —
 /// `inv-site-keyed-results` + task-L2 item-4). One record per (site, member): the reported
 /// Effect [`Verdict`] plus the raw probe-command rc carried alongside it. Whether that rc
@@ -4880,6 +5015,76 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
             "site" => parse_site_record(rest, ordinal, &mut out, interner),
             "report" => parse_report_record(rest, &mut out), // `27W` §2 tier-3 (decision-inert lane)
             _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
+        }
+    }
+    out
+}
+
+/// Converts only grammar-admitted records. The legacy string parser above is replay-only until 3C2.
+fn parse_admitted_results(
+    records: &dorc_plan::records::AdmittedUnscopedHostRecords,
+    interner: &mut Interner,
+) -> SiteResults {
+    let mut out = SiteResults {
+        framed: true,
+        ..SiteResults::default()
+    };
+    for (ordinal, record) in records.iter().enumerate() {
+        match record {
+            dorc_plan::records::AdmittedHostRecord::Site {
+                key,
+                effect,
+                rc,
+                stdout,
+                stderr,
+                ..
+            } => {
+                let Some(key) = parse_site_key(key) else {
+                    continue;
+                };
+                let rec = SiteRecord {
+                    verdict: effect_word_to_verdict(effect),
+                    rc: Rc(rc),
+                    stdout: stdout.map_or(Predicted::Top, |value| {
+                        Predicted::Value(OutBytes(interner.intern(value)))
+                    }),
+                    stderr: stderr.map_or(Predicted::Top, |value| {
+                        Predicted::Value(OutBytes(interner.intern(value)))
+                    }),
+                    conflicted: false,
+                    ordinal: ordinal as u64,
+                };
+                out.records
+                    .entry(key)
+                    .and_modify(|prior| *prior = meet_record(*prior, rec))
+                    .or_insert(rec);
+            }
+            dorc_plan::records::AdmittedHostRecord::Derivation { site, coord } => {
+                out.derivations
+                    .entry(dorc_plan::LeafId(site))
+                    .or_default()
+                    .push(coord.to_owned());
+            }
+            dorc_plan::records::AdmittedHostRecord::DerivationEnd { site, count } => {
+                out.derivation_ends.insert(dorc_plan::LeafId(site), count);
+            }
+            dorc_plan::records::AdmittedHostRecord::Resolution { coord, canonical } => {
+                out.resolutions.insert(
+                    coord.to_owned(),
+                    canonical.map_or(ResolvOutcome::Dangling, |value| {
+                        ResolvOutcome::Canonical(value.to_owned())
+                    }),
+                );
+            }
+            dorc_plan::records::AdmittedHostRecord::Reach { coord, arm, entity } => {
+                out.reaches
+                    .entry((coord.to_owned(), arm))
+                    .or_default()
+                    .push(entity.to_owned());
+            }
+            dorc_plan::records::AdmittedHostRecord::Report { body } => {
+                parse_report_record(body, &mut out);
+            }
         }
     }
     out
