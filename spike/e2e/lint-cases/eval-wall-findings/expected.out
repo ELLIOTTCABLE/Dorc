@@ -1,8 +1,16 @@
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 book.sh:
-  1:1 error [analysis-diagnostics:cfg-top-node] sm unsupported construct (⊤): un-probeable and un-skippable
-  1:1 error [analysis-diagnostics:syntax-unsupported] sm `eval` executes constructed code (un-analyzable)
+  error[cfg-top-node]: sm unsupported construct (⊤): un-probeable and un-skippable
+   --> book.sh:1:1
+   |
+ 1 | eval "apt-get install -y nginx"
+   | \__/
+  error[syntax-unsupported]: sm `eval` executes constructed code (un-analyzable)
+   --> book.sh:1:1
+   |
+ 1 | eval "apt-get install -y nginx"
+   | \__/
   1:1 info [unmodeled-inventory:unmodeled-wall-inventory] 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~1 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
 
 dorc lint: 2 error(s), 0 warning(s), 1 info(s) across 1 file(s).
