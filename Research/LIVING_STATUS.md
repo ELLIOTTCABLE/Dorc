@@ -14,41 +14,42 @@
 
 ---
 
-## ERRORLOOM TEMPLATE COMPILER (post-round-28, 2026-07-21)
+## ERRORLOOM TEMPLATE COMPILER (post-round-28; phase-three CLOSED 2026-07-23)
 
-**PHASE TWO COMPLETE on `ai/r28-errorloom-phase2`; PHASE THREE UNIT 1 IN REWORK on
-`ai/r28-phase3-unit1-cli` @ `c4957366`; neither folded.**
-`282:phase-generic-editable-sections` + `282:phase-dorc-template-compiler` now form
-one authority: errorloom transports renderer-stamped editable sections and preserves
-opaque variable identity; dorc-loom compiles strict whole-token `{{name}}` markers.
-Authors can preserve, remove, move, duplicate, or introduce an ordinary value already
-present in the current typed diagnostic payload without editing catalog Rust. Used/all
-inventories are distinct; foreign values remain unavailable; catalog params derive
-from compiled holes. The old tagged-region/param-table/re-holing/prose-bless stack is
-gone. Two closeout review defects (dirty-catalog structure bless; deleted generic
-transport properties) are repaired. Fresh WSL build + workspace tests + foreground
-e2e 97/97 + fmt/clippy/deny/typos are green. Durable ledger: `28A` §6/§6b; plan:
-`282` §§4-6/§9/§13.
+**PHASE THREE UNITS 1–3 COMPLETE on `ai/r28-phase3-close` (unfolded).** The durable
+transcript-case prose pipeline is built end-to-end: the committed transcript CASE is
+the authoring surface and the generated `catalog_lock.rs` is DERIVED from it. As-built
+ledger: **`notes/287`** (re-homed from the `28A` rewrite; the historical `28A` conduct
+ledger is restored in place). Design authority: `plans/282`.
 
-**DIRECTION CHANGE (human-ruled 2026-07-21):** every replay is an arbitrary command
-plus exact bytes; edit authority comes ONLY from typed provenance returned by the
-embedding consumer's driver for that exact invocation/result. Errorloom owns the
-consumer-neutral driver/result API and reusable generic executor; Dorc owns
-exact-shape in-process dispatch and explicit fallback policy. Driving and editability
-are independent. Command names/formats, output skeletons/prefixes, prose-looking
-bytes, and `{{...}}` text grant nothing. Direct supported Dorc output may be editable;
-`dorc plan --format=jsonl | jq --pretty` is generic-executed/tested bytes only absent
-a future transformation-aware driver. The Unit-1 CLI's argument handling,
-multi-section preview, and vars queries survive; its content-skeleton selection is
-rejected. Phase-two transport remains accepted.
+- **Unit 1** (inherited, `3e980b86`): consumer-neutral replay-driver/result seam +
+  reusable generic executor; Dorc exact-shape in-process dispatch + explicit generic
+  fallback; read-only `compile`/`vars` inspection over exact replay-result provenance.
+- **Unit 2** (inherited, `a3dcc3d0`): content-bound plain-text receipt (exact case +
+  catalog bytes + typed inspection); promote re-runs the inspection and requires exact
+  packet equality; git touched-set gate (prose-only; dirty generated catalog refuses).
+- **Unit 3** (`ai/r28-phase3-close`): the case-first lock generator (`dorc_loom::generate`
+  `generate_catalog_lock`) + `core::catalog` `LockRow`/`serialize_lock` (the old
+  catalog-first `serialize`/`promote_catalog_source`/`schematic_example` retired). Case
+  frontmatter bootstrapped with `when-fires`/`why` (22 case-owned + 35 ratcheted = 57).
+  `catalog_lock.rs` regenerated WHOLE (`#[rustfmt::skip]`, single-line, no dividers;
+  case-owned `example` = concrete payload render). `promote` computes the whole candidate
+  set (lock + touched cases) + BOTH fixpoints before any write, then publishes lock-first
+  + affected cases in lexical order by per-target temp-file-and-rename. `DORC_CATALOG_PROMOTE`
+  and every env-gated/splicing promote path are gone. Second fixpoint gate
+  (`generated_lock_reproduces_the_committed_bytes`) added.
 
-**NEXT:** build `282:phase-replay-driver-provenance` and re-seat Unit 1 on exact
-driver results; then content-bound receipt + touched-set gate; generated-lock
-checkpoint + fully-preflighted/per-target catalog/case publication; then the
-command-variable dogfood. Preserve no-braces offset movement: surrounding prose may
-move an untouched rendered variable when anchors/identity survive, with `{{name}}`
-only the fail-clear ambiguity fallback. Adjacent/glued newly-positioned markers stay
-the final deferred phase.
+**DOGFOOD PROVEN + REVERTED:** `{{command}}` inserted through the flagship
+`cmdsub-operand-top` transcript alone regenerated the lock (params/message/example) and
+re-rendered the case, both fixpoints green (proof `25e1bee7`, reverted `b2d9261a`).
+
+**DEFERRED (documented, `287` §11):** the committed `dorc-loom vars --used CASE` blocks in
+case files (additive editor-aid; needs `render_direct_replay` + whylog `editable_baseline`
+generalization) · adjacent/glued markers (`282:phase-adjacent-fragment-followup`; the
+dogfood used a standalone marker).
+
+**NEXT (human):** fold `ai/r28-phase3-close`; the prose-quality pass over `[unwritten:]`/`sm `
+text; the deferred `vars --used` blocks + adjacent-marker phase.
 
 ## ROUND 28 (seeded 2026-07-19 — the current view)
 
@@ -142,9 +143,11 @@ entry naming who ran it (`27Xf` §4) · naming discipline (`270` §1, HIGH): hyp
 full-word slugs; `docID:slug` cross-refs; subscript old labels once ("nee P5") ·
 the deferred-work ledger lives in `23O` §5; residue in `24C`.
 
-**Branch map:** **`ai/r28-phase3-unit1-cli`** = live errorloom follow-on (Unit-1 CLI
-plus the current plan/steering refresh; content-matching implementation not accepted) ·
-`ai/r28-errorloom-phase2` = accepted transport/template-compiler base ·
+**Branch map:** **`ai/r28-phase3-close`** = phase-three CLOSE (units 1–3; the durable
+promote loop + generated-lock cutover; unfolded, awaiting the human's fold) · based on
+`ai/r28-phase3-unit3-lock` @ `2cdfdfbc` · `ai/r28-phase3-unit1-cli` / `-unit2-receipt` /
+`-unit3-lock` = the superseded per-unit lanes, folded into the close · `ai/r28-errorloom-phase2`
+= accepted transport/template-compiler base ·
 **`ai/r27-aid`** = the older conduct stack — the whole aid phase +
 the round-28 seed (`281`/`282`/this trim); awaiting the human's single fold ·
 `ai/main` = the human's integration playground; carries everything through

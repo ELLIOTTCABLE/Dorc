@@ -1,0 +1,666 @@
+# 287 — errorloom completion ledger (as-built)
+
+Re-homed from the `28A` rewrite (append-only law; the historical `28A` round-28 conduct
+ledger is restored in place, its rewrite history preserved under `28A` in git). As-built
+at the `ai/r28-phase3-close` close, 2026-07-23: phase-three units 1–3 are complete and the
+command-variable dogfood is proven (and reverted). See §11 for the as-built closeout.
+
+Implementation plan plus as-built truth. Git preserves the build history; `plans/281`,
+`plans/282`, and the root documents preserve the design argument.
+
+Authority order: human-authored root docs and human-typed rulings -> `spike/CLAUDE.md`
+-> `plans/281` / `plans/282` -> this ledger. `Research/LIVING_STATUS.md` is the current
+branch map, not design authority.
+
+
+## 0. Goal and present position
+
+The product goal is `282:rul-transcript-is-the-authoring-surface`: user-facing prose
+is authored while looking at the complete executable transcript a user sees. The
+catalog is generated, committed build output, never the prose-editing surface.
+
+The immediate hot-loop goal is stronger: an author can add, move, duplicate, or
+remove an already-available typed diagnostic variable directly in a transcript,
+inspect the compiler's interpretation, and promote it without editing a Rust catalog
+file.
+
+Current position:
+
+| phase | state | result |
+|---|---|---|
+| Round-28 foundation | COMPLETE | standalone errorloom, syntax v0.2, defining-case corpus, generation-flip/fixpoint foundations |
+| `282:phase-generic-editable-sections` | COMPLETE | bounded identity-preserving generic edit transport |
+| `282:phase-dorc-template-compiler` | COMPLETE | strict `{{name}}` compiler over the current typed payload; in-memory apply and preview |
+| `282:phase-replay-driver-provenance` | COMPLETE | exact replay-result provenance, explicit bytes-only fallback, bounded controlled execution |
+| `282:phase-compile-promote-loop` | COMPLETE | case-first generator + `LockRow`/`serialize_lock`; preflighted lock+case publication; both fixpoints; legacy promote paths retired |
+| `282:phase-command-embed-dogfood` | PROVEN (reverted) | `{{command}}` added through the flagship transcript and the complete workflow proven, then reverted (§11) |
+| `282:phase-adjacent-fragment-followup` | DEFERRED | newly-positioned attached/glued markers and broader punctuation support (the dogfood used a standalone marker; backtick-adjacency refuses `AttachedMarker`) |
+
+Current phase-three close: `ai/r28-phase3-close` (§11). Unit 2 closeout was
+`ai/r28-phase3-unit2-receipt` at `a3dcc3d0`.
+
+Phase-two lineage starts from the phase-one fold at `0c259317`; accepted code closed
+at `01523f2c`; current plan/README/steering synchronization closed at `4b95a9b4`.
+Preserve the granular history. Do not squash or re-derive it.
+
+Phase-three Unit 1 is independently accepted. Every replay is driven from one bounded
+materialized context; exact supported Dorc forms may carry paired editable provenance;
+transformed and unsupported forms reach only the explicitly selected generic executor
+and remain bytes-only. Case, command, materialization, and capture limits apply before
+unbounded work. The final repair bound `vars` inventory to its exact materialized case
+operand and pinned the generic replay-input boundary.
+Unit 2 starts from this accepted replay-result boundary; it must not rediscover or
+reconstruct provenance while binding the compile receipt.
+Unit 2 is independently accepted. The bounded plain-text receipt stores exact case
+and catalog text plus the complete typed inspection; promote re-runs the inspection
+and requires exact packet equality before minting its private witness. The Git gate
+accepts only exact provenance-attributed transcript prose edits. The receipt store
+publishes valid-or-absent under a fixed worktree-local target; ambiguous retained
+backups refuse rather than being deleted automatically.
+
+
+## 1. Settled architecture
+
+### `28A:rul-generic-transport-ownership`
+
+errorloom owns only consumer-neutral machinery:
+
+- txtar/frontmatter case parsing, replay execution, hygiene checks, and the generic
+  `errorloom run` / structure-bless surface;
+- a replay-driver/result API whose handled result carries exact output bytes plus
+  optional typed editable provenance, and a reusable controlled shell/process
+  executor; decline never silently selects that executor in the library API;
+- `EditableRender<SectionId, VariableId>`, containing ordered `Structure`,
+  `FixedVariable`, and `EditableSection(Text | Variable)` components;
+- bounded edit attribution, untouched-variable identity preservation, unique
+  minimum-removal inference, refusal evidence, structure regeneration, and the
+  render-level fixpoint gate;
+- a small injectable repository-state trait sufficient to reject dirty generated
+  catalogs and dirty transcript cases during structure-bless.
+
+errorloom does not own Dorc template syntax, payload discovery, catalog policy,
+catalog serialization, command names/flags, JSONL semantics, consumer dispatch
+policy, or durable promotion. It never infers editability from command category or
+output contents. The deleted tagged-region/
+parameter-table/re-holing/prose-bless stack must not return. The nested editable
+transport is its replacement, not a compatibility sibling.
+
+### `28A:rul-dorc-template-policy-ownership`
+
+dorc-loom owns all Dorc-specific authoring policy:
+
+- exact-shape recognition and in-process driving of supported Dorc replay
+  invocations, plus explicit routing of declines to a tightly configured generic
+  executor;
+- association of each exact replay result with renderer-produced editable
+  provenance where available; handling an invocation and exposing prose are separate
+  capabilities;
+- conversion from core-owned `RenderParts` into errorloom editable sections;
+- strict whole-token `{{name}}` parsing;
+- resolution against the current diagnostic's ordinary typed payload;
+- separate used-variable and full-payload inventories;
+- section compilation, inspectable previews, catalog field application, case/corpus
+  regeneration, and the phase-three command workflow.
+
+core owns the typed diagnostic payload, the single production render seat,
+`RenderParts`, catalog data structures, and catalog serialization. core does not
+depend on errorloom.
+
+### `28A:rul-template-marker-grammar`
+
+The visible/stored template spelling is exactly `{{name}}`, where `name` matches
+`[A-Za-z_][A-Za-z0-9_]*`.
+
+- The marker is one whitespace-delimited token.
+- Whitespace, paths, filters, expressions, nesting, and attached punctuation are not
+  accepted.
+- Single braces are literal text; there is no compatibility parse for old catalog
+  `{name}` holes in the final generated surface.
+- Unknown, malformed, attached, cross-section, or contradictory interpretations
+  refuse visibly.
+- A marker may name any ordinary value already present in the current typed payload,
+  even when the current catalog template does not use it.
+- Foreign/passthrough values are not available to template compilation.
+
+The marker name is the authority for a newly introduced occurrence. Rendered bytes
+are never sufficient to infer a new typed variable.
+
+### `28A:rul-variable-edit-semantics`
+
+- Unrelated prose edits preserve every untouched variable by renderer identity before
+  tokenization, regardless of empty, NUL-containing, Unicode, punctuation-heavy,
+  repeated, or glued rendered bytes.
+- An occurrence may be removed by omission, or moved/duplicated with an explicit
+  marker, only inside its renderer-stamped editable section.
+- Multiple equal rendered values with different IDs remain distinct. Ambiguous
+  minimum interpretations refuse instead of choosing iteration order.
+- Surrounding prose may change the byte offset of an untouched rendered variable
+  without requiring `{{name}}`; unchanged immediate anchors and fragment ordering
+  preserve its identity. A rendered value may relocate without a marker when the
+  same-section interpretation is unique. Markers are the fail-clear fallback for
+  destroyed anchors, ambiguity, duplication/new occurrence, or cross-section moves.
+- Successful compilation produces an ordered `Text | Variable` series, first-use
+  used-variable inventory, exact bindings, and a concrete re-render.
+- Applying a compiled field derives catalog params from compiled message/help holes;
+  authors do not update a hand-maintained params allowlist.
+
+Current conservative limits are intentional:
+
+- fields split by immutable arrangement/fixed components refuse as
+  `SplitEditableField` until whole-field reconstruction is designed;
+- new attached/glued marker positions wait for phase 5;
+- paragraph addition/removal remains outside the v1 words-and-paragraphs model;
+- there is no global, cross-section, fuzzy, or value-substring re-holer.
+
+### `28A:rul-case-and-catalog-authority`
+
+- Every user-facing diagnostic code has one defining case or remains on the shrinking
+  case-ownership ratchet.
+- Builders mint codes and structured cases with empty prose. They do not author
+  user-facing error text.
+- `[unwritten: <slug>]` is synthesized from `None` at render time; it is not stored
+  prose.
+- `sm ` prose remains legal migration residue until the dedicated prose pass.
+- Every replay in a defining case surfaces its own code slug. Any replay result
+  without typed editable provenance is structural and never prose-editable, whatever
+  its command or format. A machine renderer may expose editable regions only by
+  returning provenance for that exact result.
+- The committed catalog lock is generated output. Hand-editing it is always refused
+  by the workflow or caught by a fixpoint gate.
+
+
+## 2. Completed phase-two contract
+
+Phase two is accepted and has one complete green verification run.
+
+Implemented:
+
+- bounded disjoint-hunk alignment and attributed refusals in errorloom;
+- inclusive variable-boundary treatment and unique minimum-removal search;
+- seeded owning-layer properties covering mixed/glued/empty/Unicode/repeated values,
+  equal-cost ambiguity, every refusal class, and resource ceilings;
+- core `RenderParts` as the sole provenance stream;
+- Dorc editable baseline with exact section/occurrence identities;
+- strict marker compilation, current-payload insertion, used/all inventories,
+  deterministic preview, in-memory catalog apply, and concrete re-render;
+- structure-bless refusal for dirty generated catalogs or dirty transcript cases;
+- removal of both Dorc and generic legacy tagged-promotion interpreters.
+
+The accepted phase-two contract ends at the exact `EditableRender` and its transport.
+It does not license locating that render inside replay output by matching skeletons,
+prefixes, JSON shapes, command names, or `{{...}}` bytes. The replay-driver seam is
+phase three's new prerequisite and leaves the phase-two transport intact.
+
+Important repair commits:
+
+- `dcbb1555` - current typed payload insertion and derived params;
+- `53ea1591` - legacy promotion stack removal;
+- `9d2fb9e` - dirty catalog structure-bless refusal;
+- `f1c2b37c` / `ae302cda` - generic transport property restoration and lint repair.
+
+Verification at phase-two close:
+
+- fresh WSL workspace build: PASS;
+- workspace tests: PASS;
+- foreground e2e: 97/97 PASS;
+- fmt: PASS;
+- cold clippy with warnings denied: PASS;
+- cargo-deny licenses/bans/sources: PASS;
+- typos: PASS, apart from the known historical-hash false positive when scanning this
+  planning corpus directly.
+
+Environment lesson: build the WSL-native `target/debug/dorc` immediately before WSL
+e2e. If only the Windows `.exe` exists after package-clean, WSL environment propagation
+differs and the flag self-test can conservatively report identical plans. The harness
+already prefers the native binary; do not weaken the semantic assertion.
+
+
+## 3. Phase-three target behavior
+
+Three user actions remain mechanically distinct.
+
+### Compile
+
+`dorc-loom compile CASE...` passes every replay through the Dorc consumer router.
+Direct supported invocations are driven in-process; declined shell forms use the
+explicitly configured generic executor and return bytes only. Compile compares dirty
+transcript prose only against typed provenance attached to that exact replay result,
+transports and compiles each touched editable section, and prints:
+
+- the interpreted `Text | Variable` series;
+- exact variable bindings and used-variable order;
+- every refusal with bounded attribution evidence;
+- every bytes-only replay as tested but non-editable;
+- the complete concrete user view that the interpretation would regenerate.
+
+Compile changes no committed source. After unit 2 it writes only an ignored,
+content-bound receipt under `target/`.
+
+### Promote
+
+`dorc-loom promote CASE...` accepts only a successful, fresh compile receipt. It
+recomputes the interpretation, requires exact equality with the receipt, precomputes
+the wholly generated catalog lock and affected canonical cases, and runs both
+fixpoint gates before publishing. Validation failure leaves committed files
+byte-identical. Final per-target temp-file replacement is not a crash transaction;
+interruption is loud in git and recoverable by rerun or git.
+
+### Structure-bless
+
+Structure-bless regenerates cases after renderer/arrangement/code changes. It requires
+clean case prose and a clean generated catalog. It never consumes prose edits.
+
+
+## 4. Phase-three implementation units
+
+Use three fresh builders. Each builder owns code, focused compilation/tests, granular
+commits, and its final foreground verification. The conductor owns rulings, checkpoint
+adjudication, generated-output review, and the final integrated gate.
+
+### Unit 1 - read-only command and inspection surfaces
+
+Status: `[x] complete at 3e980b86`
+
+Build:
+
+- a consumer-neutral replay-driver/result seam in errorloom: original command text +
+  materialized context -> decline OR exact bytes plus optional typed
+  `EditableRender` provenance;
+- a reusable controlled generic shell/process executor in errorloom, selected only
+  by explicit embedding policy;
+- a Dorc router that claims only exact supported direct invocations, drives them
+  through production render seats, and routes declines to a configured generic
+  fallback; pipelines such as `dorc plan --format=jsonl | jq --pretty` are bytes-only
+  unless a future transformation-aware driver preserves provenance;
+- a thin `dorc-loom` binary or equivalent crate-local command entry;
+- `compile CASE...` over driver-returned provenance and the existing pure compiler,
+  initially preview-only;
+- `vars --used CASE` and `vars --all CASE` queries over the existing deterministic
+  inventories;
+- deterministic, blunt output showing sections, fragments, bindings, concrete render,
+  and refusal evidence;
+- case selection and corpus-loading boundaries without writing source files.
+
+Delete/reject the current `matches_editable_skeleton`, `resembles_diagnostic`,
+first-human-replay, command-category, output-prefix, and template-looking-byte
+selection strategies. Exact driver provenance is the only edit-authority input.
+
+Acceptance:
+
+- the flagship-shaped case can preview insertion of `{{command}}` without a Rust
+  catalog edit;
+- `You called the command \`apt-get\` first` -> `You called \`apt-get\` first`
+  preserves the existing `command` variable without braces because its immediate
+  anchors and identity survive despite the changed byte offset;
+- one case may carry a direct editable Dorc replay, an in-process bytes-only machine
+  replay, and a generic-executed pipeline; all are tested, only the exact
+  provenance-carrying result is prose-editable;
+- no command or output-content inspection grants edit authority;
+- used inventory is first-use ordered and contains only variables used by editable
+  prose;
+- full inventory contains only ordinary values present in that case's current typed
+  payload;
+- foreign values and unknown names remain unavailable;
+- the command has no hidden write, git mutation, network, clock, or randomness;
+- all command output is deterministic and tested structurally, not by unstable prose
+  accidents.
+
+Do not finalize receipt or generated-lock formats in this unit.
+
+### Unit 2 - content-bound receipt and touched-set gate
+
+Status: `[x] complete at a3dcc3d0`
+
+Build:
+
+- the ignored receipt written by successful compile;
+- binding to exact case bytes, catalog input bytes, compiler/consumer semantics,
+  touched case set, each exact replay result/provenance, and each interpreted
+  section/result;
+- exact full-text packet identity suitable for real files. Fixed IDs, FNV, width-one
+  spike identities, path-only keys, and hashes are absent;
+- git/touched-set classification enforcing prose-only compile/promote and rejecting a
+  dirty generated catalog or mixed prose/structure changes;
+- promote-side recomputation and exact receipt equality checks;
+- stale, absent, cross-case, cross-catalog, or semantics-mismatched receipt refusals.
+
+Acceptance:
+
+- changing any bound input after compile makes promote refuse;
+- unrelated dirty structure/code cannot be silently combined with transcript prose;
+- receipt parsing is bounded and typed; malformed or oversized input refuses;
+- compile receipt creation is atomic and worktree-local;
+- no promote path can proceed from an interpretation the editor did not inspect.
+
+Human ruling: the private receipt stays plain text and stores complete exact inputs;
+there is no hash dependency. `identity-mode: exact` is the only reserved future seam.
+
+### Generated-lock checkpoint
+
+Status: `[x] ruled before Unit 3`
+
+Before implementation, map the exact split between:
+
+- handwritten catalog types, lookups, formatters, and serializer machinery; and
+- the wholly generated table containing code linkage, case-derived metadata, params,
+  examples, message, and help.
+
+The checkpoint output is a mechanical file/field ownership map and proposed
+preflight/publication set. The conductor rules it before any source migration. No handwritten prose or
+metadata may share the generated target after cutover.
+
+Checkpoint ruling:
+
+- `core/src/catalog.rs` remains handwritten machinery: `CatalogEntry`, lookup/mirror
+  types, template parsing/filling, and pure serialization helpers. It includes one
+  wholly generated `core/src/catalog_lock.rs`; that file owns every byte of the
+  complete `CATALOG` table and is always overwritten whole.
+- For case-owned codes, `code`, `when_fires`, and `why` come from defining-case
+  frontmatter; `message`/`help` come from compiled typed transcript sections; `params`
+  derive from first-use holes; `example` is the compiled message rendered with the
+  defining replay's typed payload. Severity, floor, remediation, payload types, and
+  the `DiagCode` enum remain handwritten outside the lock.
+- The initial bootstrap copies current `when_fires`/`why` verbatim into all 22 case
+  frontmatters exactly once. This transports existing metadata; it authors no new
+  prose. After bootstrap, case-owned entries may never read old lock prose or metadata.
+  The 35 ratcheted entries carry their complete current generated rows until each gains
+  a defining case.
+- The 12 lint/why cases currently lack exact editable provenance. Unit 3 must retain
+  the actual lint spellings and add a single-file whylog input flag. The four whylog
+  cases use `$ dorc why --last --whylog=.whylog`; exact-file selection replaces
+  directory scanning so timestamp/date/host filenames cannot make the corpus
+  nondeterministic. All 12 gain concrete bounded fixture state and production render
+  seats. Generic bytes, case slug selection, and catalog-text inference cannot
+  bootstrap editable authority.
+- Initial cutover adds the lock, updates handwritten imports/tests, seeds all case
+  metadata and generated `vars --used` replays, and removes the old writer. Steady
+  promotion writes only the complete lock and canonical cases whose bytes differ.
+- Promotion starts only from Unit 2's private validated witness, computes every lock
+  and case candidate plus both fixpoints before I/O, then publishes the lock followed
+  by cases in lexical order with same-directory replacements. Interruption may leave a
+  loud Git-visible partial generation; rerun repairs it. There is no journal, rollback,
+  staging, or index mutation.
+- Unit 3 builds and proves the workflow but does not perform the intentional flagship
+  `{{command}}` prose edit. That remains `282:phase-command-embed-dogfood`.
+
+### Unit 3 - preflighted promotion and generated lock
+
+Status: `[x] complete on ai/r28-phase3-close` (see §11)
+
+Build:
+
+- the wholly generated catalog compilation target (`catalog_lock.rs` spelling is
+  latitude); handwritten machinery remains elsewhere;
+- complete candidate generation and both fixpoints before publication, then
+  per-target temp-file replacement of the generated catalog and every affected case;
+- committed `dorc-loom vars --used CASE` replay output before each defining
+  diagnostic replay;
+- canonical case regeneration and both fixpoint gates;
+- retirement of manual splicing, `target/catalog-promoted.rs`, env-gated writers, and
+  every old durable-promotion entry;
+
+Acceptance:
+
+- every validation or verification failure before publication leaves all committed
+  targets unchanged; publication interruption is loud and git-recoverable, not hidden
+  behind transaction machinery;
+- the used-variable replay is generated, non-authoritative, first-use ordered, and
+  byte-stable;
+- promotion overwrites the entire generated lock, never patches handwritten regions;
+- committed corpus plus generated catalog reproduce byte-identically;
+- the git diff is the complete human review surface.
+
+
+## 5. Verification and review law
+
+Per builder commit:
+
+- inspect status and diff; stage only intended files;
+- run focused tests for the changed layer;
+- use the commit skill and granular `(AI ...)` commits; preserve discovered bugs and
+  their repairs as separate history;
+- never push.
+
+At every unit close:
+
+- run review-pass for substantive code;
+- run package-clean or cold clippy so stale incremental state cannot serve a false
+  clean result;
+- run the unit's focused tests and relevant integration tests foreground;
+- record any `tc-*` decision rather than silently choosing it.
+
+At phase-three close:
+
+1. Fresh WSL workspace build.
+2. Workspace tests.
+3. Foreground `sh e2e/run.sh` (currently 97 cases; count may grow).
+4. `cargo fmt --check`.
+5. Cold `cargo clippy --workspace --all-targets -- -D warnings`.
+6. `cargo deny check licenses bans sources`.
+7. `typos spike`.
+8. Inspect every generated catalog/case diff; generation cannot prove semantic prose
+   correctness.
+9. Synchronize `plans/282`, this plan, `LIVING_STATUS`, errorloom README, and
+   `spike/CLAUDE.md`; run prompt-review if steering changes substantively.
+10. Run the required opaque-review gate and obtain explicit ACK before final
+    integration.
+
+No BLESS/generation mode is a routine builder action. The conductor runs the final
+promotion/generation on a fresh verified binary and inspects the complete diff.
+
+
+## 6. Worktree and dispatch state
+
+- Create a new phase-three worktree and `ai/*` branch from
+  `ai/r28-errorloom-phase2` at or after `4b95a9b4`.
+- Do not reuse the compacted phase-two builder. Use one fresh builder per Unit 1, Unit
+  2, and Unit 3.
+- Builders do the work themselves and do not spawn subagents.
+- Every builder reads root `README.md` / `DESIGN.md` / `IMPLEMENTATION.md`, current
+  `LIVING_STATUS`, all of `spike/CLAUDE.md`, this file, all of `plans/282`, relevant
+  crate steering, and the specifically named code/tests before editing.
+- Builders apply the required builder-only steering silently.
+- Every read/edit/citation after worktree selection stays inside that builder's own
+  worktree.
+- The primary `ai/main` checkout is human-dirty in
+  `spike/crates/errorloom/README.md` and the flagship case. Builders never access or
+  modify it. The human resolves those concurrent edits during fold/rebase.
+- Phase two is not pushed. Final fold/rebase remains human-managed.
+
+
+## 7. Settled baseline outside phase three
+
+Do not reopen these while implementing the durable workflow:
+
+- Dorc language v0.2 and its `@` selector/word-verb/`#:` grammar are complete;
+  `plans/281` is the authoritative grammar.
+- Production currently accepts one mark per physical line. The full multi-mark block
+  model is reference-tested and additive later; adopting it requires no respell.
+- Value-less singleton binds and verdict-position value tails are absent in v0.2.
+- Bare `sh -c` remains descend-for-hints/no-license; `dorc:sh` is the licensed
+  invitation.
+- Book order is sacred; none of this work changes execution or licensing behavior.
+- Render form remains unstable-and-improving; transcript/case byte stability is a
+  test contract, not a promise that diagnostic wording or layout is a product API.
+- The report/evidence plane remains decision-inert. Errorloom changes prose/catalog
+  authorship only, never command licensing.
+
+
+## 8. Live deferrals and human decisions
+
+Not phase-three work:
+
+- `282:phase-adjacent-fragment-followup`: attached/glued newly-positioned markers,
+  including backtick-adjacent cases;
+- paragraph add/remove support beyond words-and-paragraphs v1;
+- type-gated foreign/passthrough migration owned by the separate opaque lane;
+- arrangement prose promotion and following-dependent `:` / `.` punctuation;
+- full multi-mark production model;
+- invocation-global gutter width across multiple frames;
+- analysis population of `CommandName::Resolved`;
+- broad prose-quality pass over `[unwritten:]` and `sm ` text;
+- `touches` -> `disturbs` shell-function fixture/doc residue;
+- the one-test `covered() subset-of case-owned` drift guard;
+- lax-order `.ran` bless rewrite noise;
+- the standing `TODO-ADDTL.md` rider queue.
+
+Human-owned publication choices:
+
+- errorloom LICENSE and `publish = false` flip;
+- Cargo publication metadata;
+- whether public growable error enums remain `#[non_exhaustive]` at publication;
+- final prose voice and catalog canonicalization diff acceptance.
+
+Catalog canonicalization waits for the new phase-three generated-lock workflow. Do not
+use the still-present legacy `DORC_CATALOG_PROMOTE` writer for it.
+
+
+## 9. Source map
+
+Generic errorloom:
+
+- `spike/crates/errorloom/src/editable.rs` - nested transport and bounds;
+- `spike/crates/errorloom/src/bless.rs` - structure regeneration and fixpoint;
+- `spike/crates/errorloom/src/container.rs` - case/frontmatter/txtar model;
+- `spike/crates/errorloom/src/runner.rs` - current controlled replay execution; Unit 1
+  introduces the consumer-neutral driver/result + reusable executor boundary here or
+  in a focused sibling module;
+- `spike/crates/errorloom/README.md` - public product/API boundary.
+
+Dorc integration:
+
+- `spike/crates/core/src/tagged.rs` - core-owned `RenderParts`;
+- `spike/crates/core/src/catalog.rs` - handwritten catalog machinery: types, lookups,
+  template parse/fill, `refreshed_params`, and the `LockRow`/`serialize_lock` serializer
+  (the table itself is generated into `catalog_lock.rs`);
+- `spike/crates/core/src/catalog_lock.rs` - the wholly generated `#[rustfmt::skip]` CATALOG
+  table (overwritten whole by promotion);
+- `spike/crates/core/src/diag.rs` - typed payload and production render seat;
+- `spike/crates/dorc-loom/src/lib.rs` - editable adapter and identities;
+- `spike/crates/dorc-loom/src/consumer.rs` - worlds, inventories, apply/regeneration,
+  `case_diag`, `apply_preview` (the promote edited-mirror seam);
+- `spike/crates/dorc-loom/src/generate.rs` - the case-first `generate_catalog_lock` +
+  `build_publication` (preflighted candidate set + both fixpoints) + `load_corpus_by_slug`;
+- `spike/crates/dorc-loom/src/bin/dorc-loom.rs` - the `compile`/`promote`/`vars` command
+  surface; promote validates the receipt then publishes lock+cases by temp-file-and-rename;
+- `spike/crates/dorc-loom/src/compile.rs` - strict marker compiler;
+- `spike/crates/dorc-loom/src/edit.rs` - edit transport to compiled section;
+- `spike/crates/dorc-loom/src/preview.rs` / `inspect.rs` - concrete preview;
+- `spike/crates/dorc-loom/tests/` - compiler, adapter, coverage, consumer, fixpoint
+  (incl. `generated_lock_reproduces_the_committed_bytes`).
+
+Design and steering:
+
+- `Research/plans/282-transcript-case-prose-pipeline.md` - complete product/design
+  contract;
+- `Research/plans/281-annotation-mark-grammar.md` - Dorc language v0.2 grammar;
+- `spike/CLAUDE.md` - current implementation law;
+- `Research/LIVING_STATUS.md` - live branch/round state.
+
+
+## 10. Phase-three completion definition
+
+Phase three is complete only when all are true:
+
+- the transcript is the only prose/template edit surface;
+- every replay is tested as exact bytes, while edit authority comes only from typed
+  provenance attached to that exact replay result;
+- generic errorloom knows no Dorc command names or output formats; Dorc owns exact
+  invocation dispatch and explicit generic fallback policy;
+- compile exposes the exact interpretation before any source write;
+- promote requires the exact fresh receipt the editor inspected;
+- catalog and cases are wholly generated artifacts, fully preflighted before
+  per-target publication;
+- used/all inventories are available through the command surface and committed used
+  inventory is regenerated with the case;
+- old promote/splice/env-gated paths are absent;
+- both fixpoint gates and the full green suite pass;
+- live docs describe only the new workflow;
+- opaque review returns explicit ACK;
+- the branch is clean, unpushed, and ready for the human's fold/rebase.
+
+
+## 11. As-built closeout (`ai/r28-phase3-close`, 2026-07-23)
+
+Unit 3 (durable promotion + generated lock) landed on `ai/r28-phase3-close` (based on
+`ai/r28-phase3-unit3-lock` @ `2cdfdfbc`). Units 1 and 2 were inherited complete.
+
+### Landed
+
+- **Bootstrap** (own commit `d26186e5`): current-lock `when_fires`/`why` transported
+  verbatim into all 22 case-owned frontmatters (`when-fires:`/`why:` flat-YAML scalars).
+  The inventory is the actual filesystem set — 22 case-owned + 35 ratcheted = 57 catalog
+  codes.
+- **Serializer** (`core::catalog`): the old catalog-first `serialize` /
+  `promote_catalog_source` / `schematic_example` are replaced by `LockRow` +
+  `serialize_lock` — the handwritten serializer stays in `catalog.rs`; case-first field
+  sourcing is the dorc-loom generator's. The generated const carries `#[rustfmt::skip]`, so
+  single-line `{:?}` string emission is `cargo fmt`-stable and the generator output IS the
+  committed bytes.
+- **Generator** (`dorc_loom::generate`): `generate_catalog_lock` derives the whole lock —
+  case-owned rows source `when_fires`/`why` from frontmatter, `message`/`help` from the
+  mirror, `params` from first-use holes, and `example` from the compiled message rendered
+  with the defining payload (via `DorcConsumer::case_diag`); ratcheted rows carry their
+  current generated row verbatim. `load_corpus_by_slug` is the shared edge I/O.
+- **Cutover** (commit `c5e44442`): `catalog_lock.rs` regenerated whole (900→521 lines:
+  dividers dropped, strings single-line, case-owned `example` fields became concrete payload
+  renders). No handwritten prose/metadata survives in the lock.
+- **Promote publication** (`dorc-loom` bin + `build_publication`): from Unit 2's validated
+  receipt, the edited mirror is threaded out of `inspect_cases` (via `apply_preview`); the
+  entire candidate set (whole lock + touched cases' canonical renders) and both fixpoints
+  are computed before any write; publication is lock-first then affected cases in lexical
+  order, per-target temp-file-and-rename. No journal/rollback/staging/index mutation.
+- **Both fixpoint gates**: render-level (`fixpoint.rs::direct_plan_render_fixpoint`,
+  `lint_cases_replay_the_complete_production_report`) + generated-lock byte-identity
+  (`fixpoint.rs::generated_lock_reproduces_the_committed_bytes`, added this unit).
+- **Retired**: `DORC_CATALOG_PROMOTE`, the `promote_writer_gated` / `promote_catalog_source`
+  / `serialize` / `schematic_example` path, and the `promote_is_a_prose_fixpoint` /
+  `promote_refreshes_params_and_example` tests. `target/catalog-promoted.rs` was already
+  absent. No env-gated or splicing durable-promotion path remains.
+- **Bug fixed**: the binary's `receipt_store()` built `../../target` (with `..`
+  components), which the store's directory-tree check rejects — a latent Unit-2 wiring bug
+  (compile→receipt was only unit-tested with temp stores, never run via the binary). Now
+  built `..`-free as `spike/target`.
+
+### Dogfood proof (`phase-command-embed-dogfood`)
+
+Proven on the flagship `cmdsub-operand-top`: the message prose was edited to insert a
+standalone `{{command}}` marker; compile interpreted it (bindings position/cause/command);
+promote regenerated the lock (cmdsub `params` gained `"command"`, `message` gained
+`{{command}}`, `example` became the `apt-get` render) and re-rendered the case; both
+fixpoints green; full suite green (two flagship-shaped fixture tests — `cli.rs`
+`inventories_are_ordered_and_do_not_widen_used_values` and `consumer.rs`
+`payload_inventory_excludes_unknown_and_foreign_values` — flip with the shared cmdsub
+template and were updated in the proof). Proof commit `25e1bee7`, reverted immediately as
+`b2d9261a` (the permanent landing belongs to the human's prose pass).
+
+### Deviations / deferrals carried forward
+
+- **DEFERRED — committed `dorc-loom vars --used CASE` blocks** (Task-3 item; acceptance
+  "used-variable replay committed"): the `vars --used CASE` command works (Unit 1), but
+  committing the self-referential block into every case needs `render_direct_replay` support
+  for the vars command AND generalizing `editable_baseline` to whylog cases (there `world_of`
+  fails — it needs the `case_diag`/whylog fallback + `render_staged_cli_parts`), then
+  regenerating all 22 cases and re-validating both fixpoints + e2e. It is an additive,
+  non-authoritative editor-aid (`282:rul-used-inventory-is-committed`), not load-bearing for
+  promotion correctness or the dogfood; deferred to keep the corpus green. Clean additive
+  follow-up.
+- **Dogfood marker form**: the brief suggested a backtick-wrapped `{{command}}`; that is an
+  `AttachedMarker` refusal (the deferred `282:phase-adjacent-fragment-followup`), so the
+  proof used a standalone marker (`the command {{command}} runs`).
+- **Tip commit `2cdfdfbc`** (`plan/src/invocation.rs`, "Establish invocation result
+  boundary"): surveyed — `book_digest` is wired into `cli`; the transcript/result types
+  (`InvocationInput`/`InvocationResult`/`OutputEvent`/…) are a deliberate unwired forward
+  `(new API)` scaffold, not interrupted work. Left as-is (wiring = scope expansion; trimming
+  = reverting deliberate intent).
+
+### Standing deferrals (from §8, carried forward)
+
+`282:phase-adjacent-fragment-followup` · paragraph add/remove beyond words-and-paragraphs
+v1 · type-gated foreign/passthrough migration (opaque lane) · arrangement-prose promotion +
+following-ness punctuation · full multi-mark production model · invocation-global gutter
+width across frames · `CommandName::Resolved` analysis population · broad `[unwritten:]` /
+`sm ` prose-quality pass · `touches`→`disturbs` fixture/doc residue · `covered()⊆case-owned`
+drift guard · `.ran` bless-order noise · the `TODO-ADDTL.md` rider queue. Human-owned
+publication choices (errorloom LICENSE/`publish=false`, Cargo metadata, `#[non_exhaustive]`
+fork, final prose voice + canonicalization) unchanged.

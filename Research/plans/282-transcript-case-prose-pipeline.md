@@ -66,6 +66,9 @@ Human-typed, 2026-07-18/19 sitting:
 - **`282:rul-git-repo-dependence-accepted`** — the tool may depend on running
   inside a git repository; the access mechanism is conductor latitude (taken:
   subprocess `git` behind a trait — §6).
+
+Human-ruled 2026-07-21 (the replay-provenance direction change):
+
 - **`282:rul-replay-editability-is-provenance`** — a replay is an arbitrary command
   plus exact output bytes. Those bytes are editable ONLY when the embedding
   consumer's driver returns typed `EditableRender` provenance for that exact
