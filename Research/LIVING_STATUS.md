@@ -16,6 +16,12 @@
 
 ## ERRORLOOM TEMPLATE COMPILER (post-round-28; phase-three CLOSED 2026-07-23)
 
+**MERGE:** the round-29 ingress `ai/main`@`b6fde355` is folded into `ai/r28-phase3-close`
+(merge `5d74bfcc`), awaiting human review; `ai/main` was live-advancing at merge time —
+re-verify before fold. Host-evidence catalog surface was bootstrapped into the case-owned
+lock (case frontmatter + generated entry); r29's whylog bounded-admission flow was taken
+whole and the `--whylog=` single-file selection woven in front of it.
+
 **PHASE THREE UNITS 1–3 COMPLETE on `ai/r28-phase3-close` (unfolded).** The durable
 transcript-case prose pipeline is built end-to-end: the committed transcript CASE is
 the authoring surface and the generated `catalog_lock.rs` is DERIVED from it. As-built
