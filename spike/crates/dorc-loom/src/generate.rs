@@ -92,7 +92,9 @@ pub fn generate_catalog_lock(
             let carried = CATALOG
                 .iter()
                 .find(|c| c.slug == entry.slug)
-                .ok_or_else(|| format!("ratcheted `{}` absent from the current lock", entry.slug))?;
+                .ok_or_else(|| {
+                    format!("ratcheted `{}` absent from the current lock", entry.slug)
+                })?;
             (
                 carried.when_fires.to_owned(),
                 carried.why.to_owned(),
