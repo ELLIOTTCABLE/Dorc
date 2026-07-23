@@ -89,9 +89,12 @@ pub fn generate_catalog_lock(
                 case_example(consumer, case, message.as_deref(), &entry.slug)?,
             ),
             None => {
-                let carried = CATALOG.iter().find(|c| c.slug == entry.slug).ok_or_else(|| {
-                    format!("ratcheted `{}` absent from the current lock", entry.slug)
-                })?;
+                let carried = CATALOG
+                    .iter()
+                    .find(|c| c.slug == entry.slug)
+                    .ok_or_else(|| {
+                        format!("ratcheted `{}` absent from the current lock", entry.slug)
+                    })?;
                 (
                     carried.when_fires.to_owned(),
                     carried.why.to_owned(),
@@ -121,14 +124,16 @@ pub fn load_corpus_by_slug(dir: &Path) -> Result<BTreeMap<String, Case>, String>
     let mut cases = BTreeMap::new();
     let entries = std::fs::read_dir(dir).map_err(|error| format!("read corpus dir: {error}"))?;
     for entry in entries {
-        let path = entry.map_err(|error| format!("read corpus entry: {error}"))?.path();
+        let path = entry
+            .map_err(|error| format!("read corpus entry: {error}"))?
+            .path();
         if path.extension().is_none_or(|extension| extension != "txt") {
             continue;
         }
         let text = std::fs::read_to_string(&path)
             .map_err(|error| format!("read case {}: {error}", path.display()))?;
-        let case =
-            Case::parse(&text).map_err(|error| format!("parse case {}: {error}", path.display()))?;
+        let case = Case::parse(&text)
+            .map_err(|error| format!("parse case {}: {error}", path.display()))?;
         let slug = case
             .frontmatter()
             .scalar("code")
@@ -155,7 +160,10 @@ fn case_example(
     let diag = consumer.case_diag(case)?;
     let interner = Interner::default();
     let payload = params_of(&diag.code, &interner);
-    let refs: Vec<(&str, &str)> = payload.iter().map(|(key, value)| (*key, value.as_str())).collect();
+    let refs: Vec<(&str, &str)> = payload
+        .iter()
+        .map(|(key, value)| (*key, value.as_str()))
+        .collect();
     fill_template(template, &refs).map_err(|error| format!("`{slug}` example: {error:?}"))
 }
 

@@ -329,9 +329,9 @@ fn inspect_cases(
         for (index, preview) in previews {
             writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
             let rendered = render_compile_preview(&preview);
-            consumer
-                .apply_preview(&preview)
-                .map_err(|error| format!("{}: apply compiled section: {error:?}", path.display()))?;
+            consumer.apply_preview(&preview).map_err(|error| {
+                format!("{}: apply compiled section: {error:?}", path.display())
+            })?;
             compiled.insert(index, preview);
             writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
         }
