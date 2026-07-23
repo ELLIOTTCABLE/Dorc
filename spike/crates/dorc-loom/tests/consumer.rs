@@ -61,6 +61,19 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
 }
 
 #[test]
+fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
+    let case = Case::parse(include_str!("../cases/host-evidence-admission-refused.txt"))
+        .expect("case parses");
+    let rendered = DorcConsumer::new()
+        .render_case(&case)
+        .expect("canonical payload renders");
+    assert_eq!(
+        rendered,
+        include_str!("../cases/host-evidence-admission-refused.txt")
+    );
+}
+
+#[test]
 fn editable_baseline_renders_a_defining_case_with_help() {
     let case = Case::parse(include_str!("../cases/whylog-book-desync.txt")).expect("case parses");
     let baseline = DorcConsumer::new()

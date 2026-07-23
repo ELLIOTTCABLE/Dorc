@@ -1,0 +1,7 @@
+---
+code: host-evidence-admission-refused
+---
+-- replay --
+$ dorc plan --book=book.sh
+error[host-evidence-admission-refused]: [unwritten:
+   host-evidence-admission-refused]

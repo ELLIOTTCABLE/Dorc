@@ -28,9 +28,9 @@
 //! exercised end-to-end by the `sweep` byte-tier DST and the plan/cli unit pins.
 
 use dorc_core::diag::{
-    Diag, DiagCode, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing,
-    RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
-    RecordsTornLine,
+    Diag, DiagCode, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, RecordsAlienLine,
+    RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing, RecordsHeaderlessRefused,
+    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
 };
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -551,6 +551,41 @@ pub enum AdmissionRefusal {
     CollectionLimit,
     Duplicate,
     ArithmeticOverflow,
+}
+
+impl AdmissionRefusal {
+    /// Preserves the closed refusal category without host evidence bytes.
+    #[must_use]
+    pub fn diagnostic(self) -> DiagCode {
+        DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused { kind: self.kind() })
+    }
+
+    /// Keeps malformed ingress outside source spans.
+    #[must_use]
+    pub fn spanless_diagnostic(self) -> Diag {
+        Diag::new_spanless_site(DiagCode::HostEvidenceAdmissionRefused(
+            HostEvidenceAdmissionRefused { kind: self.kind() },
+        ))
+    }
+
+    fn kind(self) -> HostEvidenceRefusalKind {
+        match self {
+            Self::IncompatibleVersion => HostEvidenceRefusalKind::IncompatibleVersion,
+            Self::StreamLimit => HostEvidenceRefusalKind::StreamLimit,
+            Self::LineLimit => HostEvidenceRefusalKind::LineLimit,
+            Self::InvalidUtf8 => HostEvidenceRefusalKind::InvalidUtf8,
+            Self::ControlByte => HostEvidenceRefusalKind::ControlByte,
+            Self::Framing => HostEvidenceRefusalKind::Framing,
+            Self::Grammar => HostEvidenceRefusalKind::Grammar,
+            Self::Numeric => HostEvidenceRefusalKind::Numeric,
+            Self::RecordLimit => HostEvidenceRefusalKind::RecordLimit,
+            Self::FieldLimit => HostEvidenceRefusalKind::FieldLimit,
+            Self::RetainedLimit => HostEvidenceRefusalKind::RetainedLimit,
+            Self::CollectionLimit => HostEvidenceRefusalKind::CollectionLimit,
+            Self::Duplicate => HostEvidenceRefusalKind::Duplicate,
+            Self::ArithmeticOverflow => HostEvidenceRefusalKind::ArithmeticOverflow,
+        }
+    }
 }
 
 /// The only three outcomes for host evidence admission.
@@ -1489,6 +1524,65 @@ mod tests {
                 .count(),
             inners,
         )
+    }
+
+    #[test]
+    fn admission_refusal_diagnostic_mapping_is_exhaustive_and_closed() {
+        for (refusal, kind) in [
+            (
+                AdmissionRefusal::IncompatibleVersion,
+                HostEvidenceRefusalKind::IncompatibleVersion,
+            ),
+            (
+                AdmissionRefusal::StreamLimit,
+                HostEvidenceRefusalKind::StreamLimit,
+            ),
+            (
+                AdmissionRefusal::LineLimit,
+                HostEvidenceRefusalKind::LineLimit,
+            ),
+            (
+                AdmissionRefusal::InvalidUtf8,
+                HostEvidenceRefusalKind::InvalidUtf8,
+            ),
+            (
+                AdmissionRefusal::ControlByte,
+                HostEvidenceRefusalKind::ControlByte,
+            ),
+            (AdmissionRefusal::Framing, HostEvidenceRefusalKind::Framing),
+            (AdmissionRefusal::Grammar, HostEvidenceRefusalKind::Grammar),
+            (AdmissionRefusal::Numeric, HostEvidenceRefusalKind::Numeric),
+            (
+                AdmissionRefusal::RecordLimit,
+                HostEvidenceRefusalKind::RecordLimit,
+            ),
+            (
+                AdmissionRefusal::FieldLimit,
+                HostEvidenceRefusalKind::FieldLimit,
+            ),
+            (
+                AdmissionRefusal::RetainedLimit,
+                HostEvidenceRefusalKind::RetainedLimit,
+            ),
+            (
+                AdmissionRefusal::CollectionLimit,
+                HostEvidenceRefusalKind::CollectionLimit,
+            ),
+            (
+                AdmissionRefusal::Duplicate,
+                HostEvidenceRefusalKind::Duplicate,
+            ),
+            (
+                AdmissionRefusal::ArithmeticOverflow,
+                HostEvidenceRefusalKind::ArithmeticOverflow,
+            ),
+        ] {
+            assert_eq!(
+                refusal.diagnostic(),
+                DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused { kind })
+            );
+            assert_eq!(refusal.spanless_diagnostic().primary.span(), None);
+        }
     }
 
     #[test]
