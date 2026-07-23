@@ -321,6 +321,18 @@ impl DorcConsumer {
         })
     }
 
+    /// The defining replay's typed diagnostic for a case — the payload the generated `example` field
+    /// and the full inventory read (`28A` §4). World-as-payload/pipeline, with the whylog durable
+    /// fallback for `dorc why --last` cases.
+    ///
+    /// # Errors
+    /// Returns the case-world or whylog-provenance refusal.
+    pub fn case_diag(&self, case: &Case) -> Result<Diag, String> {
+        Self::world_of(case)
+            .map(|(diag, _, _)| diag)
+            .or_else(|_| Self::whylog_diagnostic(case))
+    }
+
     /// The (diag, source, filename) a case materializes into (`283:dec-world-two-forms`). A case
     /// carrying a materialized `*.oracle.sh` section is WORLD-AS-PIPELINE: the REAL in-process marker
     /// gate fires the diagnostic over that source (the one real-fired proof, `28A` §2n) — a spanned
