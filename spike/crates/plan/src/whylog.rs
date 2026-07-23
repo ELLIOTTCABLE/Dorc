@@ -22,7 +22,12 @@
 
 use dorc_core::diag::{Diag, DiagCode, WhylogCorrupt, WhylogVersionRefused};
 
-use crate::records::TERMINAL_TOKEN;
+use std::io::Read;
+
+use crate::records::{
+    Admission, AdmissionRefusal, AdmittedUnscopedHostRecords, BoundedHostBytes, Framing,
+    HostEvidenceLimits, TERMINAL_TOKEN, admit_unscoped_host_records,
+};
 
 /// The durable's version tag — the format's identity (`27V` §2; the `report-lane-versioned-entry`
 /// posture). Recognized once published; a new grammar mints a new tag. NO byte-stability within a
@@ -31,6 +36,11 @@ pub const WHYLOG_TAG: &str = "dorc-whylog/1";
 /// The end sentinel (a truncated write is detected by its absence — `inv-no-throw` ⇒
 /// [`DiagCode::WhylogCorrupt`]).
 pub const WHYLOG_END: &str = "dorc-whylog-end/1";
+
+/// The bounded v2 durable tag. V1 remains temporarily available only for current CLI callers.
+pub const WHYLOG_V2_TAG: &str = "dorc-whylog/2";
+/// The v2 sentinel is exact and must be followed immediately by EOF.
+pub const WHYLOG_V2_END: &str = "dorc-whylog-end/2";
 
 /// One apply-report line (`27V` §2). SPIKE (`tc-apply-report-is-prediction`,
 /// `churn-avoidance-disclosure`): there is NO apply executor (`cli/CLAUDE.md` scope-boundary), so
@@ -295,6 +305,699 @@ fn strip_token(line: &str) -> &str {
         .map_or(line, |b| b.strip_suffix(' ').unwrap_or(b))
 }
 
+/// Explicit controller-edge ceilings for the decision-inert v2 durable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WhylogLimits {
+    outer_bytes: usize,
+    outer_line_bytes: usize,
+    outer_field_bytes: usize,
+    outer_retained_bytes: usize,
+    numeric_digits: usize,
+    argv_entries: usize,
+    oracle_entries: usize,
+    apply_entries: usize,
+    digest_hex_min: usize,
+    digest_hex_max: usize,
+}
+
+impl WhylogLimits {
+    /// The injectable spike policy mirrors ingress while reserving an independent inner budget.
+    #[must_use]
+    pub const fn spike_default() -> Self {
+        Self {
+            outer_bytes: 16 * 1024 * 1024,
+            outer_line_bytes: 64 * 1024,
+            outer_field_bytes: 16 * 1024,
+            outer_retained_bytes: 4 * 1024 * 1024,
+            numeric_digits: 16,
+            argv_entries: 32_768,
+            oracle_entries: 32_768,
+            apply_entries: 32_768,
+            digest_hex_min: 16,
+            digest_hex_max: 128,
+        }
+    }
+
+    /// Constructs an explicit test or embedding policy without public mutable fields.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "each frozen ingress ceiling remains independently injectable"
+    )]
+    #[must_use]
+    pub const fn new(
+        outer_bytes: usize,
+        outer_line_bytes: usize,
+        outer_field_bytes: usize,
+        outer_retained_bytes: usize,
+        numeric_digits: usize,
+        argv_entries: usize,
+        oracle_entries: usize,
+        apply_entries: usize,
+        digest_hex_min: usize,
+        digest_hex_max: usize,
+    ) -> Self {
+        Self {
+            outer_bytes,
+            outer_line_bytes,
+            outer_field_bytes,
+            outer_retained_bytes,
+            numeric_digits,
+            argv_entries,
+            oracle_entries,
+            apply_entries,
+            digest_hex_min,
+            digest_hex_max,
+        }
+    }
+}
+
+/// A recorded, untrusted source path hint. It is never a source-loading capability.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordedSourcePathHint(String);
+
+impl RecordedSourcePathHint {
+    /// Exposes the recorded untrusted hint for checkpoint 3C comparison only.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// One ordered recorded oracle identity claim. It is not an authority to load a source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordedOracleSource {
+    ordinal: usize,
+    digest: String,
+    path: RecordedSourcePathHint,
+}
+
+impl RecordedOracleSource {
+    /// The durable ordering claim, retained for later exact source-set comparison.
+    #[must_use]
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    /// The recorded untrusted content digest claim.
+    #[must_use]
+    pub fn digest(&self) -> &str {
+        &self.digest
+    }
+
+    /// The recorded untrusted source path hint.
+    #[must_use]
+    pub fn path(&self) -> &RecordedSourcePathHint {
+        &self.path
+    }
+}
+
+/// Wire claims retained only for later controller comparison; none constructs a scope.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordedReplayClaims {
+    nonce: String,
+    attempt: u32,
+    host: String,
+    target: String,
+    generation: String,
+    book_digest: String,
+    decision_digest: String,
+}
+
+/// A grammar-valid v2 durable before a controller compares it with its expected framing.
+#[derive(Debug)]
+pub struct UnscopedWhylogEnvelope {
+    backing: BoundedHostBytes,
+    inner_range: std::ops::Range<usize>,
+    claims: RecordedReplayClaims,
+    mode: String,
+    book_path: RecordedSourcePathHint,
+    oracle_sources: Vec<RecordedOracleSource>,
+    argv: Vec<String>,
+    apply: Vec<ApplyLine>,
+}
+
+/// Unscoped records accepted through a matching controller framing. Checkpoint 3C owns scope minting.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdmittedUnscopedWhylogReplay {
+    claims: RecordedReplayClaims,
+    mode: String,
+    book_path: RecordedSourcePathHint,
+    oracle_sources: Vec<RecordedOracleSource>,
+    argv: Vec<String>,
+    apply: Vec<ApplyLine>,
+    records: AdmittedUnscopedHostRecords,
+}
+
+/// A whole-document v2 writer refusal. It never yields partial durable text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhylogWriteRefusal {
+    Limit,
+    Grammar,
+    Numeric,
+    Digest,
+    ArithmeticOverflow,
+}
+
+impl UnscopedWhylogEnvelope {
+    /// Retains exact ordered wire identity claims without minting source or controller authority.
+    #[must_use]
+    pub fn recorded_oracles(&self) -> &[RecordedOracleSource] {
+        &self.oracle_sources
+    }
+}
+
+impl AdmittedUnscopedWhylogReplay {
+    /// Preserves exact ordered wire identity claims for checkpoint 3C's source comparison.
+    #[must_use]
+    pub fn recorded_oracles(&self) -> &[RecordedOracleSource] {
+        &self.oracle_sources
+    }
+}
+
+/// Reads a bounded v2 durable into untrusted metadata plus one borrowed inner-record range.
+pub fn admit_unscoped_whylog<R: Read>(
+    reader: R,
+    limits: WhylogLimits,
+) -> Admission<UnscopedWhylogEnvelope> {
+    let Some(read_limit) = limits.outer_bytes.checked_add(1) else {
+        return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
+    };
+    let mut backing = Vec::new();
+    if reader
+        .take(read_limit as u64)
+        .read_to_end(&mut backing)
+        .is_err()
+    {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    }
+    if backing.len() > limits.outer_bytes {
+        return Admission::Refused(AdmissionRefusal::StreamLimit);
+    }
+    parse_v2(backing, limits)
+}
+
+/// Compares only durable wire claims with controller framing, then applies the independent records budget.
+#[must_use]
+pub fn admit_unscoped_whylog_replay(
+    envelope: UnscopedWhylogEnvelope,
+    expected: &Framing,
+    limits: HostEvidenceLimits,
+) -> Admission<AdmittedUnscopedWhylogReplay> {
+    if envelope.claims.nonce != expected.nonce.0
+        || envelope.claims.attempt != expected.attempt
+        || envelope.claims.host != expected.host
+        || envelope.claims.book_digest != expected.book_digest
+    {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    }
+    let Some(inner) = envelope.backing.with_admitted_range(envelope.inner_range) else {
+        return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
+    };
+    match admit_unscoped_host_records(&inner, expected, limits) {
+        Admission::Admitted(records) => Admission::Admitted(AdmittedUnscopedWhylogReplay {
+            claims: envelope.claims,
+            mode: envelope.mode,
+            book_path: envelope.book_path,
+            oracle_sources: envelope.oracle_sources,
+            argv: envelope.argv,
+            apply: envelope.apply,
+            records,
+        }),
+        Admission::NoObservation => Admission::NoObservation,
+        Admission::Refused(reason) => Admission::Refused(reason),
+    }
+}
+
+/// Writes a complete v2 durable or refuses before returning any bytes. V1 remains the temporary CLI path.
+///
+/// # Errors
+///
+/// Returns a closed refusal when a frozen grammar or resource ceiling is not met.
+pub fn try_serialize_v2(
+    doc: &WhylogDoc,
+    limits: WhylogLimits,
+) -> Result<Vec<u8>, WhylogWriteRefusal> {
+    if !mode_valid(&doc.mode) || !atom_valid(&doc.nonce, limits) || !atom_valid(&doc.host, limits) {
+        return Err(WhylogWriteRefusal::Grammar);
+    }
+    if digits_valid(doc.attempt.to_string().as_str(), limits).is_err() {
+        return Err(WhylogWriteRefusal::Numeric);
+    }
+    if !digest_valid(&doc.book.1, limits) || !digest_valid(&doc.decision_digest, limits) {
+        return Err(WhylogWriteRefusal::Digest);
+    }
+    if !free_valid(&doc.book.0, limits) || doc.argv.len() > limits.argv_entries {
+        return Err(WhylogWriteRefusal::Limit);
+    }
+    if doc.oracles.len() > limits.oracle_entries || doc.apply.len() > limits.apply_entries {
+        return Err(WhylogWriteRefusal::Limit);
+    }
+    if doc.raw_results.len() > HostEvidenceLimits::spike_default().stream_bytes() {
+        return Err(WhylogWriteRefusal::Limit);
+    }
+
+    let mut out = Vec::new();
+    let mut retained = 0usize;
+    retain_metadata(&mut retained, &doc.nonce, limits)?;
+    retain_metadata(&mut retained, &doc.host, limits)?;
+    retain_metadata(&mut retained, &doc.mode, limits)?;
+    retain_metadata(&mut retained, &doc.book.0, limits)?;
+    retain_metadata(&mut retained, &doc.book.1, limits)?;
+    write_v2_line(
+        &mut out,
+        format!(
+            "{WHYLOG_V2_TAG} nonce={} attempt={} host={} target=width-one generation=width-one mode={} {TERMINAL_TOKEN}",
+            doc.nonce, doc.attempt, doc.host, doc.mode
+        ),
+        limits,
+    )?;
+    write_v2_line(
+        &mut out,
+        format!(
+            "book digest={} path={} {TERMINAL_TOKEN}",
+            doc.book.1, doc.book.0
+        ),
+        limits,
+    )?;
+    for (ordinal, (path, digest)) in doc.oracles.iter().enumerate() {
+        if !digest_valid(digest, limits) || !free_valid(path, limits) {
+            return Err(WhylogWriteRefusal::Grammar);
+        }
+        retain_metadata(&mut retained, digest, limits)?;
+        retain_metadata(&mut retained, path, limits)?;
+        write_v2_line(
+            &mut out,
+            format!("oracle ordinal={ordinal} digest={digest} path={path} {TERMINAL_TOKEN}"),
+            limits,
+        )?;
+    }
+    for argument in &doc.argv {
+        if !free_valid(argument, limits) {
+            return Err(WhylogWriteRefusal::Grammar);
+        }
+        retain_metadata(&mut retained, argument, limits)?;
+        write_v2_line(
+            &mut out,
+            format!("argv value={argument} {TERMINAL_TOKEN}"),
+            limits,
+        )?;
+    }
+    write_v2_line(
+        &mut out,
+        format!("digest decision={} {TERMINAL_TOKEN}", doc.decision_digest),
+        limits,
+    )?;
+    retain_metadata(&mut retained, &doc.decision_digest, limits)?;
+    for apply in &doc.apply {
+        if !disposition_valid(&apply.disposition)
+            || digits_valid(apply.leaf.to_string().as_str(), limits).is_err()
+        {
+            return Err(WhylogWriteRefusal::Grammar);
+        }
+        retain_metadata(&mut retained, &apply.disposition, limits)?;
+        write_v2_line(
+            &mut out,
+            format!(
+                "apply leaf={} disposition={} predicted={} {TERMINAL_TOKEN}",
+                apply.leaf,
+                apply.disposition,
+                u8::from(apply.predicted)
+            ),
+            limits,
+        )?;
+    }
+    write_v2_line(
+        &mut out,
+        format!("results bytes={} {TERMINAL_TOKEN}", doc.raw_results.len()),
+        limits,
+    )?;
+    checked_append(&mut out, doc.raw_results.as_bytes(), limits)?;
+    checked_append(
+        &mut out,
+        format!("{WHYLOG_V2_END} {TERMINAL_TOKEN}\n").as_bytes(),
+        limits,
+    )?;
+    Ok(out)
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "the ordered outer framing state machine keeps every refusal before ownership"
+)]
+fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogEnvelope> {
+    let mut cursor = 0usize;
+    let header = match v2_line(&backing, &mut cursor, limits) {
+        Ok(line) => line,
+        Err(reason) => return Admission::Refused(reason),
+    };
+    if header.starts_with("dorc-whylog/1") {
+        return Admission::Refused(AdmissionRefusal::IncompatibleVersion);
+    }
+    let Some(header) = token_body(header) else {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    };
+    let Some(header) = header.strip_prefix(&format!("{WHYLOG_V2_TAG} ")) else {
+        return Admission::Refused(AdmissionRefusal::Grammar);
+    };
+    let Some((nonce, attempt, host, target, generation, mode)) = parse_v2_header(header, limits)
+    else {
+        return Admission::Refused(AdmissionRefusal::Grammar);
+    };
+    let Some(book) = v2_line(&backing, &mut cursor, limits)
+        .ok()
+        .and_then(token_body)
+        .and_then(|line| parse_book(line, limits))
+    else {
+        return Admission::Refused(AdmissionRefusal::Grammar);
+    };
+    let mut oracle_sources = Vec::new();
+    let mut argv = Vec::new();
+    let mut apply = Vec::new();
+    let mut argv_started = false;
+    let mut retained = 0usize;
+    for value in [nonce, host, target, generation, mode, book.0, book.1] {
+        if retain(&mut retained, value.len(), limits).is_err() {
+            return Admission::Refused(AdmissionRefusal::RetainedLimit);
+        }
+    }
+    let mut expected_ordinal = 0usize;
+    loop {
+        let line = match v2_line(&backing, &mut cursor, limits) {
+            Ok(line) => line,
+            Err(reason) => return Admission::Refused(reason),
+        };
+        let Some(line) = token_body(line) else {
+            return Admission::Refused(AdmissionRefusal::Framing);
+        };
+        if line.starts_with("oracle ") {
+            if argv_started {
+                return Admission::Refused(AdmissionRefusal::Grammar);
+            }
+            let Some((ordinal, digest, path)) = parse_oracle(line, limits) else {
+                return Admission::Refused(AdmissionRefusal::Grammar);
+            };
+            if ordinal != expected_ordinal || oracle_sources.len() >= limits.oracle_entries {
+                return Admission::Refused(AdmissionRefusal::Grammar);
+            }
+            expected_ordinal = match expected_ordinal.checked_add(1) {
+                Some(value) => value,
+                None => return Admission::Refused(AdmissionRefusal::ArithmeticOverflow),
+            };
+            if retain(&mut retained, digest.len(), limits).is_err()
+                || retain(&mut retained, path.len(), limits).is_err()
+            {
+                return Admission::Refused(AdmissionRefusal::RetainedLimit);
+            }
+            oracle_sources.push(RecordedOracleSource {
+                ordinal,
+                digest: digest.to_owned(),
+                path: RecordedSourcePathHint(path.to_owned()),
+            });
+            continue;
+        }
+        if let Some(value) = line.strip_prefix("argv value=") {
+            argv_started = true;
+            if argv.len() >= limits.argv_entries || !free_valid(value, limits) {
+                return Admission::Refused(AdmissionRefusal::Grammar);
+            }
+            if retain(&mut retained, value.len(), limits).is_err() {
+                return Admission::Refused(AdmissionRefusal::RetainedLimit);
+            }
+            argv.push(value.to_owned());
+            continue;
+        }
+        let Some(decision_digest) = line.strip_prefix("digest decision=") else {
+            return Admission::Refused(AdmissionRefusal::Grammar);
+        };
+        if !digest_valid(decision_digest, limits) {
+            return Admission::Refused(AdmissionRefusal::Grammar);
+        }
+        if retain(&mut retained, decision_digest.len(), limits).is_err() {
+            return Admission::Refused(AdmissionRefusal::RetainedLimit);
+        }
+        let decision_digest = decision_digest.to_owned();
+        let results_range = loop {
+            let line = match v2_line(&backing, &mut cursor, limits) {
+                Ok(line) => line,
+                Err(reason) => return Admission::Refused(reason),
+            };
+            let Some(line) = token_body(line) else {
+                return Admission::Refused(AdmissionRefusal::Framing);
+            };
+            if line.starts_with("apply ") {
+                let Some((leaf, disposition, predicted)) = parse_v2_apply(line, limits) else {
+                    return Admission::Refused(AdmissionRefusal::Grammar);
+                };
+                if apply.len() >= limits.apply_entries {
+                    return Admission::Refused(AdmissionRefusal::CollectionLimit);
+                }
+                if retain(&mut retained, disposition.len(), limits).is_err() {
+                    return Admission::Refused(AdmissionRefusal::RetainedLimit);
+                }
+                apply.push(ApplyLine {
+                    leaf,
+                    disposition: disposition.to_owned(),
+                    predicted,
+                });
+                continue;
+            }
+            let Some(size) = line.strip_prefix("results bytes=") else {
+                return Admission::Refused(AdmissionRefusal::Grammar);
+            };
+            let Ok(size) = bounded_number(size, limits) else {
+                return Admission::Refused(AdmissionRefusal::Numeric);
+            };
+            if size > HostEvidenceLimits::spike_default().stream_bytes() {
+                return Admission::Refused(AdmissionRefusal::StreamLimit);
+            }
+            let start = cursor;
+            let Some(end) = start.checked_add(size) else {
+                return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
+            };
+            if end > backing.len() {
+                return Admission::Refused(AdmissionRefusal::Framing);
+            }
+            cursor = end;
+            break start..end;
+        };
+        let end = match v2_line(&backing, &mut cursor, limits) {
+            Ok(line) => line,
+            Err(reason) => return Admission::Refused(reason),
+        };
+        if token_body(end) != Some(WHYLOG_V2_END) || cursor != backing.len() {
+            return Admission::Refused(AdmissionRefusal::Framing);
+        }
+        let claims = RecordedReplayClaims {
+            nonce: nonce.to_owned(),
+            attempt,
+            host: host.to_owned(),
+            target: target.to_owned(),
+            generation: generation.to_owned(),
+            book_digest: book.1.to_owned(),
+            decision_digest,
+        };
+        let mode = mode.to_owned();
+        let book_path = RecordedSourcePathHint(book.0.to_owned());
+        return Admission::Admitted(UnscopedWhylogEnvelope {
+            backing: BoundedHostBytes::from_owned_backing(backing),
+            inner_range: results_range,
+            claims,
+            mode,
+            book_path,
+            oracle_sources,
+            argv,
+            apply,
+        });
+    }
+}
+
+fn v2_line<'a>(
+    bytes: &'a [u8],
+    cursor: &mut usize,
+    limits: WhylogLimits,
+) -> Result<&'a str, AdmissionRefusal> {
+    let rest = bytes
+        .get(*cursor..)
+        .ok_or(AdmissionRefusal::ArithmeticOverflow)?;
+    let newline = rest
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .ok_or(AdmissionRefusal::Framing)?;
+    let end = cursor
+        .checked_add(newline)
+        .ok_or(AdmissionRefusal::ArithmeticOverflow)?;
+    let line = bytes
+        .get(*cursor..end)
+        .ok_or(AdmissionRefusal::ArithmeticOverflow)?;
+    *cursor = end
+        .checked_add(1)
+        .ok_or(AdmissionRefusal::ArithmeticOverflow)?;
+    if line.len() > limits.outer_line_bytes {
+        return Err(AdmissionRefusal::LineLimit);
+    }
+    if line.iter().any(|byte| *byte < 0x20 || *byte == 0x7f) {
+        return Err(AdmissionRefusal::ControlByte);
+    }
+    std::str::from_utf8(line).map_err(|_| AdmissionRefusal::InvalidUtf8)
+}
+
+fn token_body(line: &str) -> Option<&str> {
+    line.strip_suffix(TERMINAL_TOKEN)?.strip_suffix(' ')
+}
+
+fn parse_v2_header(
+    line: &str,
+    limits: WhylogLimits,
+) -> Option<(&str, u32, &str, &str, &str, &str)> {
+    let mut fields = line.split(' ');
+    let nonce = fields.next()?.strip_prefix("nonce=")?;
+    let attempt = fields.next()?.strip_prefix("attempt=")?;
+    let host = fields.next()?.strip_prefix("host=")?;
+    let target = fields.next()?.strip_prefix("target=")?;
+    let generation = fields.next()?.strip_prefix("generation=")?;
+    let mode = fields.next()?.strip_prefix("mode=")?;
+    if fields.next().is_some()
+        || !atom_valid(nonce, limits)
+        || !atom_valid(host, limits)
+        || target != "width-one"
+        || generation != "width-one"
+        || !mode_valid(mode)
+    {
+        return None;
+    }
+    Some((
+        nonce,
+        bounded_u32(attempt, limits).ok()?,
+        host,
+        target,
+        generation,
+        mode,
+    ))
+}
+
+fn parse_book(line: &str, limits: WhylogLimits) -> Option<(&str, &str)> {
+    let body = line.strip_prefix("book ")?;
+    let (digest, path) = body.split_once(" path=")?;
+    let digest = digest.strip_prefix("digest=")?;
+    (digest_valid(digest, limits) && free_valid(path, limits)).then_some((path, digest))
+}
+
+fn parse_oracle(line: &str, limits: WhylogLimits) -> Option<(usize, &str, &str)> {
+    let body = line.strip_prefix("oracle ordinal=")?;
+    let (ordinal, rest) = body.split_once(" digest=")?;
+    let (digest, path) = rest.split_once(" path=")?;
+    let ordinal = bounded_number(ordinal, limits).ok()?;
+    (digest_valid(digest, limits) && free_valid(path, limits)).then_some((ordinal, digest, path))
+}
+
+fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool)> {
+    let body = line.strip_prefix("apply leaf=")?;
+    let (leaf, rest) = body.split_once(" disposition=")?;
+    let (disposition, predicted) = rest.split_once(" predicted=")?;
+    let predicted = match predicted {
+        "0" => false,
+        "1" => true,
+        _ => return None,
+    };
+    Some((
+        u32::try_from(bounded_number(leaf, limits).ok()?).ok()?,
+        disposition_valid(disposition).then_some(disposition)?,
+        predicted,
+    ))
+}
+
+fn bounded_number(value: &str, limits: WhylogLimits) -> Result<usize, AdmissionRefusal> {
+    digits_valid(value, limits)?;
+    value.parse().map_err(|_| AdmissionRefusal::Numeric)
+}
+
+fn bounded_u32(value: &str, limits: WhylogLimits) -> Result<u32, AdmissionRefusal> {
+    u32::try_from(bounded_number(value, limits)?).map_err(|_| AdmissionRefusal::Numeric)
+}
+
+fn digits_valid(value: &str, limits: WhylogLimits) -> Result<(), AdmissionRefusal> {
+    if value.is_empty()
+        || value.len() > limits.numeric_digits
+        || !value.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err(AdmissionRefusal::Numeric);
+    }
+    Ok(())
+}
+
+fn digest_valid(value: &str, limits: WhylogLimits) -> bool {
+    (limits.digest_hex_min..=limits.digest_hex_max).contains(&value.len())
+        && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn free_valid(value: &str, limits: WhylogLimits) -> bool {
+    !value.is_empty()
+        && value.len() <= limits.outer_field_bytes
+        && !value.contains(TERMINAL_TOKEN)
+        && value.bytes().all(|byte| byte >= 0x20 && byte != 0x7f)
+}
+
+fn atom_valid(value: &str, limits: WhylogLimits) -> bool {
+    free_valid(value, limits) && !value.bytes().any(|byte| byte.is_ascii_whitespace())
+}
+
+fn mode_valid(value: &str) -> bool {
+    matches!(value, "plan" | "apply" | "roundtrip")
+}
+
+fn disposition_valid(value: &str) -> bool {
+    matches!(value, "run" | "replace" | "guard" | "omit")
+}
+
+fn retain(total: &mut usize, amount: usize, limits: WhylogLimits) -> Result<(), AdmissionRefusal> {
+    *total = total
+        .checked_add(amount)
+        .ok_or(AdmissionRefusal::ArithmeticOverflow)?;
+    (*total <= limits.outer_retained_bytes)
+        .then_some(())
+        .ok_or(AdmissionRefusal::RetainedLimit)
+}
+
+fn retain_metadata(
+    total: &mut usize,
+    value: &str,
+    limits: WhylogLimits,
+) -> Result<(), WhylogWriteRefusal> {
+    retain(total, value.len(), limits).map_err(|reason| match reason {
+        AdmissionRefusal::ArithmeticOverflow => WhylogWriteRefusal::ArithmeticOverflow,
+        _ => WhylogWriteRefusal::Limit,
+    })
+}
+
+fn checked_append(
+    out: &mut Vec<u8>,
+    value: &[u8],
+    limits: WhylogLimits,
+) -> Result<(), WhylogWriteRefusal> {
+    let total = out
+        .len()
+        .checked_add(value.len())
+        .ok_or(WhylogWriteRefusal::ArithmeticOverflow)?;
+    if total > limits.outer_bytes {
+        return Err(WhylogWriteRefusal::Limit);
+    }
+    out.extend_from_slice(value);
+    Ok(())
+}
+
+fn write_v2_line(
+    out: &mut Vec<u8>,
+    line: impl AsRef<str>,
+    limits: WhylogLimits,
+) -> Result<(), WhylogWriteRefusal> {
+    let line = line.as_ref();
+    if line.len() > limits.outer_line_bytes {
+        return Err(WhylogWriteRefusal::Limit);
+    }
+    checked_append(out, line.as_bytes(), limits)?;
+    checked_append(out, b"\n", limits)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -365,5 +1068,344 @@ mod tests {
                 .iter()
                 .any(|d| d.code.slug() == "whylog-corrupt")
         );
+    }
+
+    fn v2_doc() -> WhylogDoc {
+        WhylogDoc {
+            mode: "plan".to_owned(),
+            argv: vec!["dorc".to_owned(), "plan".to_owned()],
+            book: ("book.sh".to_owned(), "0123456789abcdef".to_owned()),
+            oracles: vec![("oracle.sh".to_owned(), "fedcba9876543210".to_owned())],
+            nonce: "dorc".to_owned(),
+            attempt: 1,
+            host: "localhost".to_owned(),
+            decision_digest: "0011223344556677".to_owned(),
+            raw_results: format!(
+                "dorc-records/1 nonce=dorc attempt=1 host=localhost book=0123456789abcdef sites=1 {TERMINAL_TOKEN}\n\
+                 dorc site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n\
+                 dorc-records-end/1 nonce=dorc {TERMINAL_TOKEN}\n"
+            ),
+            apply: vec![ApplyLine {
+                leaf: 0,
+                disposition: "replace".to_owned(),
+                predicted: true,
+            }],
+        }
+    }
+
+    #[test]
+    fn v2_round_trips_to_the_same_unscoped_records_as_direct_ingress() {
+        let doc = v2_doc();
+        let limits = WhylogLimits::spike_default();
+        let serialized = try_serialize_v2(&doc, limits).expect("complete v2 durable");
+        let Admission::Admitted(envelope) = admit_unscoped_whylog(&serialized[..], limits) else {
+            panic!("clean v2 durable must admit")
+        };
+        let framing = Framing::spike(doc.book.1.clone());
+        let Admission::Admitted(replay) =
+            admit_unscoped_whylog_replay(envelope, &framing, HostEvidenceLimits::spike_default())
+        else {
+            panic!("matching controller framing must admit the nested records")
+        };
+        let Admission::Admitted(direct_bytes) = crate::records::read_host_evidence(
+            doc.raw_results.as_bytes(),
+            HostEvidenceLimits::spike_default(),
+        ) else {
+            panic!("direct bounded input")
+        };
+        let Admission::Admitted(direct) = admit_unscoped_host_records(
+            &direct_bytes,
+            &framing,
+            HostEvidenceLimits::spike_default(),
+        ) else {
+            panic!("direct nested records")
+        };
+        assert_eq!(replay.records, direct);
+    }
+
+    #[test]
+    fn v2_refuses_v1_and_any_trailing_or_reordered_terminal_bytes() {
+        let doc = v2_doc();
+        assert!(matches!(
+            admit_unscoped_whylog(serialize(&doc).as_bytes(), WhylogLimits::spike_default()),
+            Admission::Refused(AdmissionRefusal::IncompatibleVersion)
+        ));
+        let raw = String::from_utf8(
+            try_serialize_v2(&doc, WhylogLimits::spike_default()).expect("v2 write"),
+        )
+        .expect("fixture v2 is text outside the opaque block");
+        for malformed in [
+            format!("{raw}trailing"),
+            raw.replacen(WHYLOG_V2_END, "wrong-end", 1),
+            raw.replacen("oracle ordinal=0", "oracle ordinal=1", 1),
+            raw.replacen("results bytes=", "results bytes=99999999999999999", 1),
+        ] {
+            assert!(matches!(
+                admit_unscoped_whylog(malformed.as_bytes(), WhylogLimits::spike_default()),
+                Admission::Refused(_)
+            ));
+        }
+    }
+
+    #[test]
+    fn v2_defaults_are_exact_and_the_writer_refuses_instead_of_truncating() {
+        assert_eq!(
+            WhylogLimits::spike_default(),
+            WhylogLimits::new(
+                16 * 1024 * 1024,
+                64 * 1024,
+                16 * 1024,
+                4 * 1024 * 1024,
+                16,
+                32_768,
+                32_768,
+                32_768,
+                16,
+                128,
+            )
+        );
+        let doc = v2_doc();
+        let refusal = try_serialize_v2(
+            &doc,
+            WhylogLimits::new(
+                1,
+                64 * 1024,
+                16 * 1024,
+                4 * 1024 * 1024,
+                16,
+                32_768,
+                32_768,
+                32_768,
+                16,
+                128,
+            ),
+        );
+        assert_eq!(refusal, Err(WhylogWriteRefusal::Limit));
+    }
+
+    #[test]
+    fn v2_enforces_order_singletons_and_closed_values() {
+        let raw = String::from_utf8(
+            try_serialize_v2(&v2_doc(), WhylogLimits::spike_default()).expect("v2 write"),
+        )
+        .expect("fixture is text outside results");
+        for malformed in [
+            raw.replacen("book digest=", "argv value=x ", 1),
+            raw.replacen(
+                "digest decision=",
+                "digest decision=0011223344556677\ndigest decision=",
+                1,
+            ),
+            raw.replacen("results bytes=", "results bytes=0\nresults bytes=", 1),
+            raw.replacen(
+                "oracle ordinal=0",
+                "argv value=before @@dorc@@\noracle ordinal=0",
+                1,
+            ),
+            raw.replacen("mode=plan", "mode=unknown", 1),
+            raw.replacen("target=width-one", "target=wide", 1),
+            raw.replacen("nonce=dorc", "nonce=dorc nonce=again", 1),
+            raw.replacen("apply leaf=0", "apply leaf=-1", 1),
+        ] {
+            assert!(matches!(
+                admit_unscoped_whylog(malformed.as_bytes(), WhylogLimits::spike_default()),
+                Admission::Refused(_)
+            ));
+        }
+    }
+
+    #[test]
+    fn v2_limits_apply_to_every_outer_owned_metadata_class() {
+        let mut doc = v2_doc();
+        let exact = WhylogLimits::new(
+            16 * 1024 * 1024,
+            64 * 1024,
+            16 * 1024,
+            4096,
+            16,
+            2,
+            1,
+            1,
+            16,
+            128,
+        );
+        assert_eq!(try_serialize_v2(&doc, exact).map(|_| ()), Ok(()));
+
+        doc.argv.push("third".to_owned());
+        assert_eq!(
+            try_serialize_v2(&doc, exact),
+            Err(WhylogWriteRefusal::Limit)
+        );
+        doc.argv.pop();
+        doc.oracles
+            .push(("second.sh".to_owned(), "0123456789abcdef".to_owned()));
+        assert_eq!(
+            try_serialize_v2(&doc, exact),
+            Err(WhylogWriteRefusal::Limit)
+        );
+        doc.oracles.pop();
+        doc.apply.push(ApplyLine {
+            leaf: 1,
+            disposition: "run".to_owned(),
+            predicted: true,
+        });
+        assert_eq!(
+            try_serialize_v2(&doc, exact),
+            Err(WhylogWriteRefusal::Limit)
+        );
+
+        let field_limited =
+            WhylogLimits::new(16 * 1024 * 1024, 64 * 1024, 3, 128, 16, 8, 8, 8, 16, 128);
+        assert_eq!(
+            try_serialize_v2(&v2_doc(), field_limited),
+            Err(WhylogWriteRefusal::Grammar)
+        );
+        let retained_limited = WhylogLimits::new(
+            16 * 1024 * 1024,
+            64 * 1024,
+            16 * 1024,
+            1,
+            16,
+            8,
+            8,
+            8,
+            16,
+            128,
+        );
+        assert_eq!(
+            try_serialize_v2(&v2_doc(), retained_limited),
+            Err(WhylogWriteRefusal::Limit)
+        );
+    }
+
+    #[test]
+    fn v2_preserves_ordered_oracle_digest_and_path_claims() {
+        let mut doc = v2_doc();
+        doc.oracles = vec![
+            ("same.oracle".to_owned(), "0123456789abcdef".to_owned()),
+            ("same.oracle".to_owned(), "fedcba9876543210".to_owned()),
+        ];
+        let wire = try_serialize_v2(&doc, WhylogLimits::spike_default()).expect("v2 write");
+        let Admission::Admitted(envelope) =
+            admit_unscoped_whylog(&wire[..], WhylogLimits::spike_default())
+        else {
+            panic!("ordered identities must be retained")
+        };
+        let identities = envelope.recorded_oracles();
+        assert_eq!(identities.len(), 2);
+        assert_eq!(identities[0].ordinal(), 0);
+        assert_eq!(identities[0].digest(), "0123456789abcdef");
+        assert_eq!(identities[1].ordinal(), 1);
+        assert_eq!(identities[1].digest(), "fedcba9876543210");
+        assert_eq!(identities[0].path().as_str(), identities[1].path().as_str());
+    }
+
+    #[test]
+    fn v2_inner_and_outer_budgets_exhaust_independently() {
+        let mut doc = v2_doc();
+        doc.raw_results = inner_at_exact_size(8 * 1024 * 1024);
+        let limits = WhylogLimits::spike_default();
+        let wire = try_serialize_v2(&doc, limits).expect("eight MiB inner is writable");
+        let Admission::Admitted(envelope) = admit_unscoped_whylog(&wire[..], limits) else {
+            panic!("outer budget permits a valid eight MiB inner")
+        };
+        assert!(matches!(
+            admit_unscoped_whylog_replay(
+                envelope,
+                &Framing::spike(doc.book.1.clone()),
+                HostEvidenceLimits::spike_default()
+            ),
+            Admission::NoObservation
+        ));
+
+        let mut inner_only = String::from_utf8(wire.clone()).expect("comment-only fixture is text");
+        inner_only = inner_only.replacen("results bytes=8388608", "results bytes=8388609", 1);
+        let sentinel = inner_only.find(WHYLOG_V2_END).expect("outer sentinel");
+        inner_only.insert(sentinel, 'x');
+        assert!(matches!(
+            admit_unscoped_whylog(inner_only.as_bytes(), limits),
+            Admission::Refused(AdmissionRefusal::StreamLimit)
+        ));
+
+        let outer_only = WhylogLimits::new(
+            1,
+            64 * 1024,
+            16 * 1024,
+            4 * 1024 * 1024,
+            16,
+            32_768,
+            32_768,
+            32_768,
+            16,
+            128,
+        );
+        assert_eq!(
+            try_serialize_v2(&v2_doc(), outer_only),
+            Err(WhylogWriteRefusal::Limit)
+        );
+        assert!(matches!(
+            admit_unscoped_whylog(inner_only.as_bytes(), outer_only),
+            Admission::Refused(AdmissionRefusal::StreamLimit)
+        ));
+    }
+
+    #[test]
+    fn v2_inner_range_stays_internal_to_bounded_host_bytes() {
+        let source = include_str!("whylog.rs");
+        let records = include_str!("records.rs");
+        assert!(source.contains("with_admitted_range(envelope.inner_range)"));
+        assert!(!source.contains(&["backing.", "clone()"].concat()));
+        assert!(!records.contains("pub fn from_owned_backing"));
+        assert!(!records.contains("pub fn admitted_bytes"));
+    }
+
+    #[test]
+    fn v2_treats_results_as_opaque_until_inner_admission() {
+        let mut doc = v2_doc();
+        doc.raw_results = "x".to_owned();
+        let mut wire = try_serialize_v2(&doc, WhylogLimits::spike_default()).expect("v2 write");
+        let start = wire
+            .windows(b"results bytes=1 @@dorc@@\n".len())
+            .position(|window| window == b"results bytes=1 @@dorc@@\n")
+            .expect("results line")
+            + b"results bytes=1 @@dorc@@\n".len();
+        wire[start] = 0xff;
+        let Admission::Admitted(envelope) =
+            admit_unscoped_whylog(&wire[..], WhylogLimits::spike_default())
+        else {
+            panic!("outer grammar must not decode opaque result bytes")
+        };
+        assert!(matches!(
+            admit_unscoped_whylog_replay(
+                envelope,
+                &Framing::spike(doc.book.1),
+                HostEvidenceLimits::spike_default()
+            ),
+            Admission::Refused(AdmissionRefusal::InvalidUtf8)
+        ));
+    }
+
+    fn inner_at_exact_size(size: usize) -> String {
+        let framing = Framing::spike("0123456789abcdef".to_owned());
+        let header = crate::records::header_line(&framing, 0)
+            .trim_start_matches("printf '")
+            .trim_end_matches("\\n'\n")
+            .to_owned();
+        let sentinel = format!("dorc-records-end/1 nonce=dorc {TERMINAL_TOKEN}\n");
+        let mut inner = format!("{header}\n{sentinel}");
+        while size.saturating_sub(inner.len()) > 64 * 1024 {
+            inner.push('#');
+            inner.push_str(&"x".repeat(64 * 1024 - 2));
+            inner.push('\n');
+        }
+        let remaining = size
+            .checked_sub(inner.len())
+            .expect("eight MiB exceeds framing");
+        assert!(remaining >= 2);
+        inner.push('#');
+        inner.push_str(&"x".repeat(remaining - 2));
+        inner.push('\n');
+        assert_eq!(inner.len(), size);
+        inner
     }
 }

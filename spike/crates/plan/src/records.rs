@@ -34,6 +34,7 @@ use dorc_core::diag::{
 };
 use std::collections::BTreeMap;
 use std::io::Read;
+use std::ops::Range;
 
 /// The per-record terminal token (`262` §2 / `26A` stop-1). Requirements: fixed, never
 /// produced by the inner grammar, cheap to append in one `printf`. `@@dorc@@` is printable
@@ -496,15 +497,47 @@ impl HostEvidenceLimits {
             numeric_digits,
         }
     }
+
+    pub(crate) const fn stream_bytes(self) -> usize {
+        self.stream_bytes
+    }
 }
 
 /// Bytes admitted under the stream ceiling, before text or record ownership exists.
 #[derive(Debug)]
-pub struct BoundedHostBytes(Vec<u8>);
+pub struct BoundedHostBytes {
+    backing: Vec<u8>,
+    admitted: Range<usize>,
+}
+
+impl BoundedHostBytes {
+    /// Keep a single checked range over controller-owned backing for a nested durable.
+    pub(crate) fn from_owned_backing(backing: Vec<u8>) -> Self {
+        let end = backing.len();
+        Self {
+            backing,
+            admitted: 0..end,
+        }
+    }
+
+    /// Narrows the admitted view without reconstructing or copying the backing bytes.
+    pub(crate) fn with_admitted_range(mut self, admitted: Range<usize>) -> Option<Self> {
+        if admitted.start > admitted.end || admitted.end > self.backing.len() {
+            return None;
+        }
+        self.admitted = admitted;
+        Some(self)
+    }
+
+    fn admitted_bytes(&self) -> Option<&[u8]> {
+        self.backing.get(self.admitted.clone())
+    }
+}
 
 /// A closed reason why evidence cannot enter the decision plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AdmissionRefusal {
+    IncompatibleVersion,
     StreamLimit,
     LineLimit,
     InvalidUtf8,
@@ -544,7 +577,7 @@ pub fn read_host_evidence<R: Read>(
     if bytes.len() > limits.stream_bytes {
         return Admission::Refused(AdmissionRefusal::StreamLimit);
     }
-    Admission::Admitted(BoundedHostBytes(bytes))
+    Admission::Admitted(BoundedHostBytes::from_owned_backing(bytes))
 }
 
 /// Bounded wire records, unscoped and decision-inert until checkpoint 3C.
@@ -588,12 +621,14 @@ enum TypedHostRecord {
 /// Compare bounded bytes with expected framing; a match grants no attribution.
 #[must_use]
 pub fn admit_unscoped_host_records(
-    bytes: BoundedHostBytes,
+    bytes: &BoundedHostBytes,
     expected: &Framing,
     limits: HostEvidenceLimits,
 ) -> Admission<AdmittedUnscopedHostRecords> {
-    let BoundedHostBytes(bytes) = bytes;
-    admit_records(&bytes, expected, limits)
+    let Some(bytes) = bytes.admitted_bytes() else {
+        return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
+    };
+    admit_records(bytes, expected, limits)
 }
 
 #[expect(
@@ -1439,7 +1474,7 @@ mod tests {
             Admission::Admitted(bytes) => bytes,
             other => panic!("test input must pass the byte reader: {other:?}"),
         };
-        admit_unscoped_host_records(bytes, &framing, limits)
+        admit_unscoped_host_records(&bytes, &framing, limits)
     }
 
     fn strict_limits() -> HostEvidenceLimits {
@@ -1483,7 +1518,7 @@ mod tests {
             panic!("the bounded reader must accept the short test input");
         };
         assert!(matches!(
-            admit_unscoped_host_records(bytes, &framing, strict_limits()),
+            admit_unscoped_host_records(&bytes, &framing, strict_limits()),
             Admission::Refused(AdmissionRefusal::Framing)
         ));
     }
@@ -1500,7 +1535,7 @@ mod tests {
             panic!("the bounded reader must retain invalid UTF-8 for admission");
         };
         assert!(matches!(
-            admit_unscoped_host_records(bytes, &framing, strict_limits()),
+            admit_unscoped_host_records(&bytes, &framing, strict_limits()),
             Admission::Refused(AdmissionRefusal::InvalidUtf8)
         ));
         let control = strict_stream(&["report bad\u{0000}"]);
