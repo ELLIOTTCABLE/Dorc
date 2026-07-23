@@ -13,7 +13,7 @@ pub use consumer::{
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod generate;
-pub use generate::{generate_catalog_lock, load_corpus_by_slug};
+pub use generate::{Publication, build_publication, generate_catalog_lock, load_corpus_by_slug};
 mod edit;
 pub use edit::{
     DorcSectionEdit, DorcSectionEditRefusal, compile_section_edit, compile_section_edits,

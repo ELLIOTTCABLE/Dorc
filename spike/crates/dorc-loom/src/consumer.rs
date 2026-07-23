@@ -145,6 +145,21 @@ impl DorcConsumer {
         self.apply_compiled_section(edit.section(), edit.compiled())
     }
 
+    /// Apply every compiled section of a preview to the mirror (the promote-publish edited mirror,
+    /// `28A` §4): the edited templates the regenerated lock and affected cases are computed from.
+    ///
+    /// # Errors
+    /// Returns [`DorcApplyRefusal`] for an absent code or non-prose field.
+    pub fn apply_preview(
+        &mut self,
+        preview: &crate::CompilePreview,
+    ) -> Result<(), DorcApplyRefusal> {
+        for section in preview.sections() {
+            self.apply_compiled_section(&section.section, &section.compiled)?;
+        }
+        Ok(())
+    }
+
     fn apply_compiled_section(
         &mut self,
         key: &SectionKey,

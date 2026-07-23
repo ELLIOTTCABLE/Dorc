@@ -6,8 +6,9 @@ use std::process::ExitCode;
 
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
-    InspectedReplay, Repository, classify_prose_changes, compile_preview, compile_receipt,
-    promote_receipt, render_compile_preview, replay_case_with_inputs,
+    InspectedReplay, Repository, build_publication, classify_prose_changes, compile_preview,
+    compile_receipt, load_corpus_by_slug, promote_receipt, render_compile_preview,
+    replay_case_with_inputs,
 };
 use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
@@ -140,7 +141,7 @@ fn compile_cases(
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
     let inspection = inspect_cases(&gated.repository, &gated.paths, &gated.touched, env, out)?;
-    let Some(inspection) = inspection else {
+    let Some((inspection, _consumer)) = inspection else {
         return Ok(ExitCode::from(1));
     };
     let outcome = compile_receipt(&receipt_store()?, &inspection)?;
@@ -162,16 +163,75 @@ fn promote_cases(
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
     let inspection = inspect_cases(&gated.repository, &gated.paths, &gated.touched, env, out)?;
-    let Some(inspection) = inspection else {
+    let Some((inspection, consumer)) = inspection else {
         return Ok(ExitCode::from(1));
     };
     promote_receipt(&receipt_store()?, &inspection)?;
-    writeln!(
-        out,
-        "promote: receipt matches current inspected compilation; ready"
-    )
-    .map_err(|error| error.to_string())?;
+    publish(&consumer, out)?;
     Ok(ExitCode::SUCCESS)
+}
+
+/// Compute the entire preflighted candidate set from the edited mirror, then publish the changed
+/// files — the lock first, then affected cases in lexical order — by per-target temp-file-and-rename
+/// (`282:rul-promote-is-one-atomic-act`). All bytes and both fixpoints precede every write, so a
+/// validation failure leaves committed files byte-identical; a mid-publication interruption is loud
+/// in git and repaired by rerun. No journal, staging, rollback, or index mutation.
+fn publish(consumer: &DorcConsumer, out: &mut impl Write) -> Result<(), String> {
+    let cases_dir = cases_dir();
+    let corpus = load_corpus_by_slug(&cases_dir)?;
+    let publication = build_publication(consumer, &corpus)?;
+
+    let lock_path = catalog_path();
+    let lock_changed = std::fs::read_to_string(&lock_path)
+        .map(|current| current != publication.lock)
+        .unwrap_or(true);
+    if lock_changed {
+        publish_file(&lock_path, &publication.lock)?;
+        writeln!(out, "promote: wrote {}", lock_path.display()).map_err(|e| e.to_string())?;
+    }
+
+    for (slug, bytes) in &publication.cases {
+        let path = cases_dir.join(format!("{slug}.txt"));
+        if !path.is_file() {
+            return Err(format!("defining case `{slug}` is not `{slug}.txt`"));
+        }
+        let changed = std::fs::read_to_string(&path)
+            .map(|current| &current != bytes)
+            .unwrap_or(true);
+        if changed {
+            publish_file(&path, bytes)?;
+            writeln!(out, "promote: wrote {}", path.display()).map_err(|e| e.to_string())?;
+        }
+    }
+
+    if !lock_changed && publication.cases.iter().all(|(slug, bytes)| {
+        std::fs::read_to_string(cases_dir.join(format!("{slug}.txt")))
+            .map(|current| &current == bytes)
+            .unwrap_or(false)
+    }) {
+        writeln!(out, "promote: corpus already at the generated fixpoint").map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Replace one target by writing a sibling temp file and renaming over it (same directory, so the
+/// rename does not cross a mount point). Not a crash-atomic transaction; the preflight above is where
+/// atomicity lives.
+fn publish_file(path: &Path, bytes: &str) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| format!("no parent dir for {}", path.display()))?;
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| format!("no filename for {}", path.display()))?;
+    let tmp = parent.join(format!(".{name}.dorc-loom-tmp"));
+    std::fs::write(&tmp, bytes).map_err(|e| format!("write {}: {e}", tmp.display()))?;
+    std::fs::rename(&tmp, path).map_err(|e| format!("rename into {}: {e}", path.display()))
+}
+
+fn cases_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("cases")
 }
 
 fn inspect_cases(
@@ -180,8 +240,8 @@ fn inspect_cases(
     touched: &std::collections::BTreeSet<String>,
     env: &RunEnv,
     out: &mut impl Write,
-) -> Result<Option<InspectedCompilation>, String> {
-    let (consumer, mut refused, mut selected) = (DorcConsumer::new(), false, Vec::new());
+) -> Result<Option<(InspectedCompilation, DorcConsumer)>, String> {
+    let (mut consumer, mut refused, mut selected) = (DorcConsumer::new(), false, Vec::new());
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in paths {
         let relative_path = relative_path.clone();
@@ -249,6 +309,9 @@ fn inspect_cases(
         for (index, preview) in previews {
             writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
             let rendered = render_compile_preview(&preview);
+            consumer
+                .apply_preview(&preview)
+                .map_err(|error| format!("{}: apply compiled section: {error:?}", path.display()))?;
             compiled.insert(index, preview);
             writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
         }
@@ -279,7 +342,7 @@ fn inspect_cases(
         .map(|(path, _, _, _)| path.clone())
         .collect();
     InspectedCompilation::new(catalog, selected, touched_cases, inspected_cases)
-        .map(Some)
+        .map(|inspection| Some((inspection, consumer)))
         .map_err(|error| error.to_string())
 }
 
