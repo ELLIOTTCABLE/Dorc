@@ -501,7 +501,7 @@ pub fn admit_unscoped_whylog<R: Read>(
 pub fn admit_unscoped_whylog_replay(
     envelope: UnscopedWhylogEnvelope,
     expected: &Framing,
-    limits: HostEvidenceLimits,
+    inner_limits: HostEvidenceLimits,
 ) -> Admission<AdmittedUnscopedWhylogReplay> {
     if envelope.claims.nonce != expected.nonce.0
         || envelope.claims.attempt != expected.attempt
@@ -510,10 +510,13 @@ pub fn admit_unscoped_whylog_replay(
     {
         return Admission::Refused(AdmissionRefusal::Framing);
     }
+    if envelope.inner_range.len() > inner_limits.stream_bytes() {
+        return Admission::Refused(AdmissionRefusal::StreamLimit);
+    }
     let Some(inner) = envelope.backing.with_admitted_range(envelope.inner_range) else {
         return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
     };
-    match admit_unscoped_host_records(&inner, expected, limits) {
+    match admit_unscoped_host_records(&inner, expected, inner_limits) {
         Admission::Admitted(records) => Admission::Admitted(AdmittedUnscopedWhylogReplay {
             claims: envelope.claims,
             mode: envelope.mode,
@@ -536,6 +539,7 @@ pub fn admit_unscoped_whylog_replay(
 pub fn try_serialize_v2(
     doc: &WhylogDoc,
     limits: WhylogLimits,
+    inner_limits: HostEvidenceLimits,
 ) -> Result<Vec<u8>, WhylogWriteRefusal> {
     if !mode_valid(&doc.mode) || !atom_valid(&doc.nonce, limits) || !atom_valid(&doc.host, limits) {
         return Err(WhylogWriteRefusal::Grammar);
@@ -552,7 +556,7 @@ pub fn try_serialize_v2(
     if doc.oracles.len() > limits.oracle_entries || doc.apply.len() > limits.apply_entries {
         return Err(WhylogWriteRefusal::Limit);
     }
-    if doc.raw_results.len() > HostEvidenceLimits::spike_default().stream_bytes() {
+    if doc.raw_results.len() > inner_limits.stream_bytes() {
         return Err(WhylogWriteRefusal::Limit);
     }
 
@@ -681,6 +685,7 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
         }
     }
     let mut expected_ordinal = 0usize;
+    let mut last_apply_leaf = None;
     loop {
         let line = match v2_line(&backing, &mut cursor, limits) {
             Ok(line) => line,
@@ -748,7 +753,9 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
                 let Some((leaf, disposition, predicted)) = parse_v2_apply(line, limits) else {
                     return Admission::Refused(AdmissionRefusal::Grammar);
                 };
-                if apply.len() >= limits.apply_entries {
+                if apply.len() >= limits.apply_entries
+                    || last_apply_leaf.is_some_and(|previous| leaf <= previous)
+                {
                     return Admission::Refused(AdmissionRefusal::CollectionLimit);
                 }
                 if retain(&mut retained, disposition.len(), limits).is_err() {
@@ -759,6 +766,7 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
                     disposition: disposition.to_owned(),
                     predicted,
                 });
+                last_apply_leaf = Some(leaf);
                 continue;
             }
             let Some(size) = line.strip_prefix("results bytes=") else {
@@ -767,9 +775,6 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
             let Ok(size) = bounded_number(size, limits) else {
                 return Admission::Refused(AdmissionRefusal::Numeric);
             };
-            if size > HostEvidenceLimits::spike_default().stream_bytes() {
-                return Admission::Refused(AdmissionRefusal::StreamLimit);
-            }
             let start = cursor;
             let Some(end) = start.checked_add(size) else {
                 return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
@@ -1093,11 +1098,56 @@ mod tests {
         }
     }
 
+    fn inner_limits(stream_bytes: usize) -> HostEvidenceLimits {
+        HostEvidenceLimits::new(
+            stream_bytes,
+            64 * 1024,
+            65_536,
+            16 * 1024,
+            4 * 1024 * 1024,
+            32_768,
+            16,
+        )
+    }
+
+    fn parser_limits(
+        outer_line_bytes: usize,
+        outer_field_bytes: usize,
+        outer_retained_bytes: usize,
+        numeric_digits: usize,
+        argv_entries: usize,
+        oracle_entries: usize,
+        apply_entries: usize,
+    ) -> WhylogLimits {
+        WhylogLimits::new(
+            16 * 1024 * 1024,
+            outer_line_bytes,
+            outer_field_bytes,
+            outer_retained_bytes,
+            numeric_digits,
+            argv_entries,
+            oracle_entries,
+            apply_entries,
+            16,
+            128,
+        )
+    }
+
+    fn v2_wire(doc: &WhylogDoc) -> Vec<u8> {
+        try_serialize_v2(
+            doc,
+            WhylogLimits::spike_default(),
+            inner_limits(8 * 1024 * 1024),
+        )
+        .expect("the bounded fixture is v2 grammar-valid")
+    }
+
     #[test]
     fn v2_round_trips_to_the_same_unscoped_records_as_direct_ingress() {
         let doc = v2_doc();
         let limits = WhylogLimits::spike_default();
-        let serialized = try_serialize_v2(&doc, limits).expect("complete v2 durable");
+        let serialized = try_serialize_v2(&doc, limits, inner_limits(8 * 1024 * 1024))
+            .expect("complete v2 durable");
         let Admission::Admitted(envelope) = admit_unscoped_whylog(&serialized[..], limits) else {
             panic!("clean v2 durable must admit")
         };
@@ -1131,7 +1181,12 @@ mod tests {
             Admission::Refused(AdmissionRefusal::IncompatibleVersion)
         ));
         let raw = String::from_utf8(
-            try_serialize_v2(&doc, WhylogLimits::spike_default()).expect("v2 write"),
+            try_serialize_v2(
+                &doc,
+                WhylogLimits::spike_default(),
+                inner_limits(8 * 1024 * 1024),
+            )
+            .expect("v2 write"),
         )
         .expect("fixture v2 is text outside the opaque block");
         for malformed in [
@@ -1179,6 +1234,7 @@ mod tests {
                 16,
                 128,
             ),
+            inner_limits(8 * 1024 * 1024),
         );
         assert_eq!(refusal, Err(WhylogWriteRefusal::Limit));
     }
@@ -1186,7 +1242,12 @@ mod tests {
     #[test]
     fn v2_enforces_order_singletons_and_closed_values() {
         let raw = String::from_utf8(
-            try_serialize_v2(&v2_doc(), WhylogLimits::spike_default()).expect("v2 write"),
+            try_serialize_v2(
+                &v2_doc(),
+                WhylogLimits::spike_default(),
+                inner_limits(8 * 1024 * 1024),
+            )
+            .expect("v2 write"),
         )
         .expect("fixture is text outside results");
         for malformed in [
@@ -1229,18 +1290,21 @@ mod tests {
             16,
             128,
         );
-        assert_eq!(try_serialize_v2(&doc, exact).map(|_| ()), Ok(()));
+        assert_eq!(
+            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)).map(|_| ()),
+            Ok(())
+        );
 
         doc.argv.push("third".to_owned());
         assert_eq!(
-            try_serialize_v2(&doc, exact),
+            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
         doc.argv.pop();
         doc.oracles
             .push(("second.sh".to_owned(), "0123456789abcdef".to_owned()));
         assert_eq!(
-            try_serialize_v2(&doc, exact),
+            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
         doc.oracles.pop();
@@ -1250,14 +1314,14 @@ mod tests {
             predicted: true,
         });
         assert_eq!(
-            try_serialize_v2(&doc, exact),
+            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
 
         let field_limited =
             WhylogLimits::new(16 * 1024 * 1024, 64 * 1024, 3, 128, 16, 8, 8, 8, 16, 128);
         assert_eq!(
-            try_serialize_v2(&v2_doc(), field_limited),
+            try_serialize_v2(&v2_doc(), field_limited, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Grammar)
         );
         let retained_limited = WhylogLimits::new(
@@ -1273,7 +1337,7 @@ mod tests {
             128,
         );
         assert_eq!(
-            try_serialize_v2(&v2_doc(), retained_limited),
+            try_serialize_v2(&v2_doc(), retained_limited, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
     }
@@ -1285,7 +1349,12 @@ mod tests {
             ("same.oracle".to_owned(), "0123456789abcdef".to_owned()),
             ("same.oracle".to_owned(), "fedcba9876543210".to_owned()),
         ];
-        let wire = try_serialize_v2(&doc, WhylogLimits::spike_default()).expect("v2 write");
+        let wire = try_serialize_v2(
+            &doc,
+            WhylogLimits::spike_default(),
+            inner_limits(8 * 1024 * 1024),
+        )
+        .expect("v2 write");
         let Admission::Admitted(envelope) =
             admit_unscoped_whylog(&wire[..], WhylogLimits::spike_default())
         else {
@@ -1301,52 +1370,201 @@ mod tests {
     }
 
     #[test]
-    fn v2_inner_and_outer_budgets_exhaust_independently() {
+    fn v2_direct_and_replay_admission_share_the_injected_inner_ceiling() {
         let mut doc = v2_doc();
-        doc.raw_results = inner_at_exact_size(8 * 1024 * 1024);
-        let limits = WhylogLimits::spike_default();
-        let wire = try_serialize_v2(&doc, limits).expect("eight MiB inner is writable");
-        let Admission::Admitted(envelope) = admit_unscoped_whylog(&wire[..], limits) else {
-            panic!("outer budget permits a valid eight MiB inner")
+        let nine_mebibytes = 9 * 1024 * 1024;
+        let smaller_inner = inner_limits(8 * 1024 * 1024);
+        let larger_inner = inner_limits(nine_mebibytes);
+        doc.raw_results = inner_at_exact_size(nine_mebibytes);
+        let outer_limits = WhylogLimits::spike_default();
+        let wire = try_serialize_v2(&doc, outer_limits, larger_inner)
+            .expect("the explicit nine MiB policy writes the complete durable");
+
+        let Admission::Admitted(direct_bytes) =
+            crate::records::read_host_evidence(doc.raw_results.as_bytes(), larger_inner)
+        else {
+            panic!("direct admission honors the injected nine MiB ceiling")
+        };
+        assert!(matches!(
+            admit_unscoped_host_records(
+                &direct_bytes,
+                &Framing::spike(doc.book.1.clone()),
+                larger_inner
+            ),
+            Admission::NoObservation
+        ));
+
+        let Admission::Admitted(envelope) = admit_unscoped_whylog(&wire[..], outer_limits) else {
+            panic!("outer admission does not impose an inner policy")
         };
         assert!(matches!(
             admit_unscoped_whylog_replay(
                 envelope,
                 &Framing::spike(doc.book.1.clone()),
-                HostEvidenceLimits::spike_default()
+                larger_inner
             ),
             Admission::NoObservation
         ));
 
-        let mut inner_only = String::from_utf8(wire.clone()).expect("comment-only fixture is text");
-        inner_only = inner_only.replacen("results bytes=8388608", "results bytes=8388609", 1);
-        let sentinel = inner_only.find(WHYLOG_V2_END).expect("outer sentinel");
-        inner_only.insert(sentinel, 'x');
         assert!(matches!(
-            admit_unscoped_whylog(inner_only.as_bytes(), limits),
+            crate::records::read_host_evidence(doc.raw_results.as_bytes(), smaller_inner),
+            Admission::Refused(AdmissionRefusal::StreamLimit)
+        ));
+        assert_eq!(
+            try_serialize_v2(&doc, outer_limits, smaller_inner),
+            Err(WhylogWriteRefusal::Limit)
+        );
+        let Admission::Admitted(envelope) = admit_unscoped_whylog(&wire[..], outer_limits) else {
+            panic!("outer admission remains independent of the smaller inner policy")
+        };
+        assert!(matches!(
+            admit_unscoped_whylog_replay(
+                envelope,
+                &Framing::spike(doc.book.1.clone()),
+                smaller_inner
+            ),
             Admission::Refused(AdmissionRefusal::StreamLimit)
         ));
 
-        let outer_only = WhylogLimits::new(
-            1,
-            64 * 1024,
-            16 * 1024,
-            4 * 1024 * 1024,
-            16,
-            32_768,
-            32_768,
-            32_768,
-            16,
-            128,
-        );
-        assert_eq!(
-            try_serialize_v2(&v2_doc(), outer_only),
-            Err(WhylogWriteRefusal::Limit)
-        );
         assert!(matches!(
-            admit_unscoped_whylog(inner_only.as_bytes(), outer_only),
+            admit_unscoped_whylog(vec![b'x'; 16 * 1024 * 1024 + 1].as_slice(), outer_limits),
             Admission::Refused(AdmissionRefusal::StreamLimit)
         ));
+    }
+
+    #[test]
+    fn v2_parser_outer_boundaries_are_exact_and_one_over() {
+        let doc = v2_doc();
+        let wire = v2_wire(&doc);
+        let text = String::from_utf8(wire.clone()).expect("outer fixture is text");
+        let header_len = text.find('\n').expect("header newline");
+        let line_limits = parser_limits(header_len, 16 * 1024, 4 * 1024 * 1024, 16, 2, 1, 1);
+        assert!(matches!(
+            admit_unscoped_whylog(&wire[..], line_limits),
+            Admission::Admitted(_)
+        ));
+        let one_longer_header = text.replacen("host=localhost", "host=localhostx", 1);
+        assert!(matches!(
+            admit_unscoped_whylog(one_longer_header.as_bytes(), line_limits),
+            Admission::Refused(AdmissionRefusal::LineLimit)
+        ));
+
+        let field_limits = parser_limits(64 * 1024, 9, 4 * 1024 * 1024, 16, 2, 1, 1);
+        let field_exact = text.replacen("argv value=dorc", "argv value=123456789", 1);
+        let field_one_over =
+            field_exact.replacen("argv value=123456789", "argv value=1234567890", 1);
+        assert!(matches!(
+            admit_unscoped_whylog(field_exact.as_bytes(), field_limits),
+            Admission::Admitted(_)
+        ));
+        assert!(matches!(
+            admit_unscoped_whylog(field_one_over.as_bytes(), field_limits),
+            Admission::Refused(AdmissionRefusal::Grammar)
+        ));
+
+        let digits_exact = text.replacen("attempt=1", "attempt=4294967295", 1);
+        let digits_one_over = digits_exact.replacen("attempt=4294967295", "attempt=42949672950", 1);
+        let digit_limits = parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 10, 2, 1, 1);
+        assert!(matches!(
+            admit_unscoped_whylog(digits_exact.as_bytes(), digit_limits),
+            Admission::Admitted(_)
+        ));
+        assert!(matches!(
+            admit_unscoped_whylog(digits_one_over.as_bytes(), digit_limits),
+            Admission::Refused(_)
+        ));
+
+        let retained_exact = parser_limits(64 * 1024, 16 * 1024, 114, 16, 2, 1, 1);
+        let retained_one_over = parser_limits(64 * 1024, 16 * 1024, 113, 16, 2, 1, 1);
+        assert!(matches!(
+            admit_unscoped_whylog(&wire[..], retained_exact),
+            Admission::Admitted(_)
+        ));
+        assert!(matches!(
+            admit_unscoped_whylog(&wire[..], retained_one_over),
+            Admission::Refused(AdmissionRefusal::RetainedLimit)
+        ));
+    }
+
+    #[test]
+    fn v2_parser_cardinality_and_control_boundaries_refuse() {
+        let doc = v2_doc();
+        let text = String::from_utf8(v2_wire(&doc)).expect("outer fixture is text");
+        let mut argv_one_over = doc.clone();
+        argv_one_over.argv.push("third".to_owned());
+        let mut oracle_one_over = doc.clone();
+        oracle_one_over
+            .oracles
+            .push(("second.sh".to_owned(), "0123456789abcdef".to_owned()));
+        let mut apply_exact = doc.clone();
+        apply_exact.apply.push(ApplyLine {
+            leaf: 1,
+            disposition: "run".to_owned(),
+            predicted: true,
+        });
+        let cardinality_cases = [
+            (
+                v2_wire(&doc),
+                parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 16, 2, 1, 1),
+                true,
+            ),
+            (
+                v2_wire(&argv_one_over),
+                parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 16, 2, 1, 1),
+                false,
+            ),
+            (
+                v2_wire(&oracle_one_over),
+                parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 16, 2, 1, 1),
+                false,
+            ),
+            (
+                v2_wire(&apply_exact),
+                parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 16, 2, 1, 2),
+                true,
+            ),
+            (
+                v2_wire(&apply_exact),
+                parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 16, 2, 1, 1),
+                false,
+            ),
+        ];
+        for (wire, limits, admitted) in cardinality_cases {
+            assert_eq!(
+                matches!(
+                    admit_unscoped_whylog(&wire[..], limits),
+                    Admission::Admitted(_)
+                ),
+                admitted
+            );
+        }
+
+        let duplicate_apply = String::from_utf8(v2_wire(&apply_exact))
+            .expect("outer fixture is text")
+            .replacen("apply leaf=1", "apply leaf=0", 1);
+        let non_increasing_apply = String::from_utf8(v2_wire(&apply_exact))
+            .expect("outer fixture is text")
+            .replacen(
+                "apply leaf=0 disposition=replace",
+                "apply leaf=1 disposition=replace",
+                1,
+            )
+            .replacen(
+                "apply leaf=1 disposition=run",
+                "apply leaf=0 disposition=run",
+                1,
+            );
+        for malformed in [
+            duplicate_apply,
+            non_increasing_apply,
+            text.replace('\n', "\r\n"),
+            text.replacen("mode=plan", "mode=pl\u{0001}an", 1),
+        ] {
+            assert!(matches!(
+                admit_unscoped_whylog(malformed.as_bytes(), WhylogLimits::spike_default()),
+                Admission::Refused(_)
+            ));
+        }
     }
 
     #[test]
@@ -1363,7 +1581,12 @@ mod tests {
     fn v2_treats_results_as_opaque_until_inner_admission() {
         let mut doc = v2_doc();
         doc.raw_results = "x".to_owned();
-        let mut wire = try_serialize_v2(&doc, WhylogLimits::spike_default()).expect("v2 write");
+        let mut wire = try_serialize_v2(
+            &doc,
+            WhylogLimits::spike_default(),
+            inner_limits(8 * 1024 * 1024),
+        )
+        .expect("v2 write");
         let start = wire
             .windows(b"results bytes=1 @@dorc@@\n".len())
             .position(|window| window == b"results bytes=1 @@dorc@@\n")
