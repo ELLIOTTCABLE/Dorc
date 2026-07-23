@@ -164,7 +164,7 @@ impl Polarity {
 /// is cleanest when argvs are distinct).
 const KINDS: &[KindSpec] = &[
     KindSpec {
-        kind: "package",
+        kind: "sm.dorc.Package",
         provider: "instpkg",
         verb: "install",
         selector: "installed",
@@ -489,7 +489,11 @@ fn mutator_argv(k: &KindSpec, entity: &str) -> String {
 /// simple command per kind (vs. `package.oracle.sh`'s real `dpkg-query` pipeline) makes
 /// the probe trivially mockable: the shim exits per host-state.
 fn probe_cmd_name(k: &KindSpec) -> String {
-    format!("dorcprobe_{}", k.kind)
+    if k.kind == "sm.dorc.Package" {
+        String::from("dorcprobe_package")
+    } else {
+        format!("dorcprobe_{}", k.kind)
+    }
 }
 
 fn push_unique(v: &mut Vec<String>, s: String) {
@@ -530,6 +534,7 @@ fn oracle_text(k: &KindSpec) -> String {
     let probe = probe_cmd_name(k);
     let mut s = String::new();
     let _ = writeln!(s, "#!/bin/sh");
+    let _ = writeln!(s, "# dorc-lang/v0.2");
     if k.has_verb {
         let _ = writeln!(s, "{}() {{", predict_fn_name(k.provider));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
@@ -741,7 +746,7 @@ pub fn run_trial(tools: &Tools, trial: &Trial) -> Result<RunOutcome, RunError> {
         .collect();
 
     // PASS A — capture the probe artifact (empty stdin; we only want the probe block).
-    let pass_a = run_dorc(tools, dir, &oracle_args, "", false)?;
+    let pass_a = run_dorc(tools, dir, &oracle_args, "", false, true)?;
     let probe_art = first_shebang_block(&pass_a.stdout);
     if probe_art.trim().is_empty() {
         return Err(RunError::EmptyArtifact("probe (pass A)".into()));
@@ -751,7 +756,7 @@ pub fn run_trial(tools: &Tools, trial: &Trial) -> Result<RunOutcome, RunError> {
     let probe_results = exec_probe(tools, dir, &probe_art);
 
     // PASS B — the real round-trip with the derived probe-results + the ledger.
-    let pass_b = run_dorc(tools, dir, &oracle_args, &probe_results, true)?;
+    let pass_b = run_dorc(tools, dir, &oracle_args, &probe_results, true, false)?;
     let (probe_b, apply_art) = split_shebang_blocks(&pass_b.stdout);
     let _ = probe_b;
     if apply_art.trim().is_empty() {
@@ -809,11 +814,15 @@ fn run_dorc(
     oracle_args: &[String],
     stdin: &str,
     debug_argv: bool,
+    probe_only: bool,
 ) -> Result<DorcRun, RunError> {
     use std::io::Write as _;
     use std::process::Stdio;
     let mut cmd = Command::new(&tools.dorc);
     cmd.current_dir(dir);
+    if probe_only {
+        cmd.arg("probe");
+    }
     cmd.arg(format!("--book={}", dir.join("book.sh").display()));
     if debug_argv {
         cmd.arg("--debug-argv");
@@ -923,16 +932,7 @@ fn exec_probe(tools: &Tools, dir: &Path, probe_art: &str) -> String {
     }
     let _ = std::fs::remove_dir_all(&sand);
     let _ = std::fs::remove_file(&log);
-    // `262` §2 framing: pass the FULL framed record stream through (header + nonce-prefixed
-    // records + end-sentinel) — dorc's production deframer consumes it. The executed probe
-    // emits only printf'd protocol lines (its `# site …` comments live in the artifact TEXT,
-    // never in stdout), so keeping every non-blank line is exactly the framed stream.
     records
-        .lines()
-        .filter(|l| !l.trim().is_empty())
-        .map(|l| l.trim_end_matches('\r').to_string())
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 /// `dash -n` a rendered artifact (the parse gate). Returns the shell's diagnostic on

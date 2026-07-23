@@ -651,8 +651,17 @@ pub const CATALOG: &[CatalogEntry] = &[
                   folded)",
         message: Some(
             "sm {{count}} late (after the end-sentinel) record line(s) discarded (counted, \
-                  never folded)",
+                   never folded)",
         ),
+        help: None,
+    },
+    CatalogEntry {
+        slug: "host-evidence-admission-refused",
+        when_fires: "bounded host evidence failed closed admission before entering the decision plane.",
+        why: "host evidence remains controller-owned and decision-inert until admission succeeds.",
+        params: &[],
+        example: "[unwritten: host-evidence-admission-refused]",
+        message: None,
         help: None,
     },
     // ── cli/main.rs (footprint / escalation / carry) ────────────────────────

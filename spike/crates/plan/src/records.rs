@@ -28,9 +28,9 @@
 //! exercised end-to-end by the `sweep` byte-tier DST and the plan/cli unit pins.
 
 use dorc_core::diag::{
-    Diag, DiagCode, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing,
-    RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
-    RecordsTornLine,
+    Diag, DiagCode, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, RecordsAlienLine,
+    RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing, RecordsHeaderlessRefused,
+    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
 };
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -553,6 +553,35 @@ pub enum AdmissionRefusal {
     ArithmeticOverflow,
 }
 
+impl AdmissionRefusal {
+    /// Keeps malformed ingress outside source spans.
+    #[must_use]
+    pub fn spanless_diagnostic(self) -> Diag {
+        Diag::new_spanless_site(DiagCode::HostEvidenceAdmissionRefused(
+            HostEvidenceAdmissionRefused { kind: self.kind() },
+        ))
+    }
+
+    fn kind(self) -> HostEvidenceRefusalKind {
+        match self {
+            Self::IncompatibleVersion => HostEvidenceRefusalKind::IncompatibleVersion,
+            Self::StreamLimit => HostEvidenceRefusalKind::StreamLimit,
+            Self::LineLimit => HostEvidenceRefusalKind::LineLimit,
+            Self::InvalidUtf8 => HostEvidenceRefusalKind::InvalidUtf8,
+            Self::ControlByte => HostEvidenceRefusalKind::ControlByte,
+            Self::Framing => HostEvidenceRefusalKind::Framing,
+            Self::Grammar => HostEvidenceRefusalKind::Grammar,
+            Self::Numeric => HostEvidenceRefusalKind::Numeric,
+            Self::RecordLimit => HostEvidenceRefusalKind::RecordLimit,
+            Self::FieldLimit => HostEvidenceRefusalKind::FieldLimit,
+            Self::RetainedLimit => HostEvidenceRefusalKind::RetainedLimit,
+            Self::CollectionLimit => HostEvidenceRefusalKind::CollectionLimit,
+            Self::Duplicate => HostEvidenceRefusalKind::Duplicate,
+            Self::ArithmeticOverflow => HostEvidenceRefusalKind::ArithmeticOverflow,
+        }
+    }
+}
+
 /// The only three outcomes for host evidence admission.
 #[derive(Debug)]
 pub enum Admission<T> {
@@ -584,6 +613,84 @@ pub fn read_host_evidence<R: Read>(
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedUnscopedHostRecords {
     records: Vec<TypedHostRecord>,
+    wire: Vec<u8>,
+}
+
+/// A borrowed, grammar-checked record. It remains unscoped until the controller binds it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdmittedHostRecord<'a> {
+    Site {
+        key: &'a str,
+        effect: &'a str,
+        rc: i32,
+        stdout: Option<&'a str>,
+        stderr: Option<&'a str>,
+        inert: &'a [(String, String)],
+    },
+    Derivation {
+        site: u32,
+        coord: &'a str,
+    },
+    DerivationEnd {
+        site: u32,
+        count: u32,
+    },
+    Resolution {
+        coord: &'a str,
+        canonical: Option<&'a str>,
+    },
+    Reach {
+        coord: &'a str,
+        arm: usize,
+        entity: &'a str,
+    },
+    Report {
+        body: &'a str,
+    },
+}
+
+impl AdmittedUnscopedHostRecords {
+    /// The exact bounded wire range, retained only for sibling durable serialization.
+    pub(crate) fn admitted_wire_bytes(&self) -> &[u8] {
+        &self.wire
+    }
+    /// Borrows validated records without exposing their owning representation or a raw byte route.
+    pub fn iter(&self) -> impl Iterator<Item = AdmittedHostRecord<'_>> {
+        self.records.iter().map(|record| match record {
+            TypedHostRecord::Site {
+                key,
+                effect,
+                rc,
+                stdout,
+                stderr,
+                inert,
+            } => AdmittedHostRecord::Site {
+                key,
+                effect,
+                rc: *rc,
+                stdout: stdout.as_deref(),
+                stderr: stderr.as_deref(),
+                inert,
+            },
+            TypedHostRecord::Derivation { site, coord } => {
+                AdmittedHostRecord::Derivation { site: *site, coord }
+            }
+            TypedHostRecord::DerivationEnd { site, count } => AdmittedHostRecord::DerivationEnd {
+                site: *site,
+                count: *count,
+            },
+            TypedHostRecord::Resolution { coord, canonical } => AdmittedHostRecord::Resolution {
+                coord,
+                canonical: canonical.as_deref(),
+            },
+            TypedHostRecord::Reach { coord, arm, entity } => AdmittedHostRecord::Reach {
+                coord,
+                arm: *arm,
+                entity,
+            },
+            TypedHostRecord::Report { body } => AdmittedHostRecord::Report { body },
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -755,10 +862,13 @@ fn admit_records(
     if declared_sites != Some(received_sites) {
         return Admission::Refused(AdmissionRefusal::Framing);
     }
-    if declared_sites == Some(0) {
+    if records.is_empty() {
         return Admission::NoObservation;
     }
-    Admission::Admitted(AdmittedUnscopedHostRecords { records })
+    Admission::Admitted(AdmittedUnscopedHostRecords {
+        records,
+        wire: bytes.to_vec(),
+    })
 }
 
 fn parse_header(
@@ -1492,6 +1602,65 @@ mod tests {
     }
 
     #[test]
+    fn admission_refusal_diagnostic_mapping_is_exhaustive_and_closed() {
+        for (refusal, kind) in [
+            (
+                AdmissionRefusal::IncompatibleVersion,
+                HostEvidenceRefusalKind::IncompatibleVersion,
+            ),
+            (
+                AdmissionRefusal::StreamLimit,
+                HostEvidenceRefusalKind::StreamLimit,
+            ),
+            (
+                AdmissionRefusal::LineLimit,
+                HostEvidenceRefusalKind::LineLimit,
+            ),
+            (
+                AdmissionRefusal::InvalidUtf8,
+                HostEvidenceRefusalKind::InvalidUtf8,
+            ),
+            (
+                AdmissionRefusal::ControlByte,
+                HostEvidenceRefusalKind::ControlByte,
+            ),
+            (AdmissionRefusal::Framing, HostEvidenceRefusalKind::Framing),
+            (AdmissionRefusal::Grammar, HostEvidenceRefusalKind::Grammar),
+            (AdmissionRefusal::Numeric, HostEvidenceRefusalKind::Numeric),
+            (
+                AdmissionRefusal::RecordLimit,
+                HostEvidenceRefusalKind::RecordLimit,
+            ),
+            (
+                AdmissionRefusal::FieldLimit,
+                HostEvidenceRefusalKind::FieldLimit,
+            ),
+            (
+                AdmissionRefusal::RetainedLimit,
+                HostEvidenceRefusalKind::RetainedLimit,
+            ),
+            (
+                AdmissionRefusal::CollectionLimit,
+                HostEvidenceRefusalKind::CollectionLimit,
+            ),
+            (
+                AdmissionRefusal::Duplicate,
+                HostEvidenceRefusalKind::Duplicate,
+            ),
+            (
+                AdmissionRefusal::ArithmeticOverflow,
+                HostEvidenceRefusalKind::ArithmeticOverflow,
+            ),
+        ] {
+            assert_eq!(
+                refusal.spanless_diagnostic().code,
+                DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused { kind })
+            );
+            assert_eq!(refusal.spanless_diagnostic().primary.span(), None);
+        }
+    }
+
+    #[test]
     fn bounded_reader_refuses_only_the_stream_plus_one_byte() {
         let exact = HostEvidenceLimits::new(3, 32, 8, 32, 32, 8, 4);
         assert!(matches!(
@@ -1520,6 +1689,18 @@ mod tests {
         assert!(matches!(
             admit_unscoped_host_records(&bytes, &framing, strict_limits()),
             Admission::Refused(AdmissionRefusal::Framing)
+        ));
+    }
+
+    #[test]
+    fn report_only_zero_site_frame_remains_admitted() {
+        let report = strict_stream(&["report site=0 decline unsound host detail"]);
+        let Admission::Admitted(records) = admitted(&report, strict_limits()) else {
+            panic!("a valid report-only frame must preserve its decision-inert record");
+        };
+        assert!(matches!(
+            records.iter().next(),
+            Some(AdmittedHostRecord::Report { body }) if body == "site=0 decline unsound host detail"
         ));
     }
 
@@ -2049,7 +2230,7 @@ mod tests {
         );
         assert!(matches!(
             admitted(&stream(0, &records), limits),
-            Admission::NoObservation
+            Admission::Admitted(_)
         ));
         let plus = vec![report.as_str(); 257];
         assert!(matches!(
@@ -2149,7 +2330,7 @@ mod tests {
                 &stream(0, &["deriv 0 coord=one", "deriv 0 coord=two"]),
                 strict_limits()
             ),
-            Admission::NoObservation
+            Admission::Admitted(_)
         ));
 
         for raw in [

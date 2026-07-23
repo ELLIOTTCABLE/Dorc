@@ -12,11 +12,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_core::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
-    MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
+    HostEvidenceRefusalKind, MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer,
+    MarkUnknownVerb, MissingDialectMarker, MungeNameInvalid, OperandPosition, RecordsFactTruncated,
+    RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension,
+    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent,
+    render_cli_parts, render_cli_with,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent};
@@ -384,6 +385,11 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
             declared: 5,
             unseen: 2,
         }),
+        "host-evidence-admission-refused" => {
+            DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
+                kind: HostEvidenceRefusalKind::Framing,
+            })
+        }
         "escalation-policy" => DiagCode::EscalationPolicy(EscalationPolicy {
             detail: "escalation policy: probe re-uses connection authority for \
                      `tolerates:`-vouched functions only (default)"
