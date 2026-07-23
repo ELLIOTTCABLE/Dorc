@@ -295,9 +295,8 @@ pub fn parse_template(template: &str) -> Result<Vec<TemplatePart>, TemplateRefus
 }
 
 /// Collect a template's `{{name}}` holes — the gate-test primitive
-/// (`holes ⊆ declared params`) AND the [`promote_catalog_source`] param-refresh source. Order-
-/// preserving, NOT deduped (a hole used twice appears twice); callers that need a param SET dedup.
-/// Pure.
+/// (`holes ⊆ declared params`) AND the [`refreshed_params`] source. Order-preserving, NOT deduped
+/// (a hole used twice appears twice); callers that need a param SET dedup. Pure.
 fn template_holes(template: &str) -> Result<Vec<String>, TemplateRefusal> {
     Ok(parse_template(template)?
         .into_iter()
@@ -309,14 +308,15 @@ fn template_holes(template: &str) -> Result<Vec<String>, TemplateRefusal> {
 }
 
 // ===========================================================================
-// The promote pipeline (`27V` §3 · `AID-NEEDS:law-one-defining-case-per-code`)
+// The catalog-lock serializer (`28A` §4 checkpoint — the handwritten serializer
+// stays here; case-first field sourcing is the dorc-loom generator's, `282` §8)
 // ===========================================================================
 
 /// The refreshed param SET for a prose pair — the first-occurrence-ordered, deduped union of the
-/// holes in the `message` and `help` templates. Promote sets `params` to EXACTLY the holes the prose
-/// uses (tightening the gate's `holes ⊆ params` to `holes == params`). An unwritten (`None`) message
-/// contributes no holes.
-fn refreshed_params(message: Option<&str>, help: Option<&str>) -> Vec<String> {
+/// holes in the `message` and `help` templates: `params` is EXACTLY the holes the prose uses. An
+/// unwritten (`None`) message contributes no holes.
+#[must_use]
+pub fn refreshed_params(message: Option<&str>, help: Option<&str>) -> Vec<String> {
     let mut params: Vec<String> = Vec::new();
     for template in message.into_iter().chain(help) {
         if let Ok(holes) = template_holes(template) {
@@ -330,76 +330,64 @@ fn refreshed_params(message: Option<&str>, help: Option<&str>) -> Vec<String> {
     params
 }
 
-/// The refreshed `example` — the measured render of the current prose (ru-27 / conductor ruling): the
-/// `message` template filled with `<param>` placeholders. Drift-proof by construction (it changes iff
-/// the prose does), and payload-free (no canonical `DiagCode` needed), so promote stays a pure
-/// function of the committed catalog. An unwritten (`None`) message renders its `[unwritten: <slug>]`
-/// placeholder (the same synthesis the render seat performs). The particulars ride
-/// `27V:rul-output-form-unwelded`.
-fn schematic_example(slug: &str, message: Option<&str>, params: &[String]) -> String {
-    let placeholders: Vec<(&str, String)> = params
-        .iter()
-        .map(|p| (p.as_str(), format!("<{p}>")))
-        .collect();
-    let refs: Vec<(&str, &str)> = placeholders.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    match message {
-        Some(template) => fill_template(template, &refs).unwrap_or_default(),
-        None => format!("[unwritten: {slug}]"),
-    }
+/// One fully-sourced generated catalog row (`28A` §4 checkpoint). The case-first fields —
+/// `when_fires`/`why` from the defining-case frontmatter, `example` from the compiled message
+/// rendered with the defining payload — are computed by the dorc-loom generator; core owns only the
+/// serializer.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct LockRow {
+    /// The stable slug.
+    pub slug: String,
+    /// When the diagnostic fires.
+    pub when_fires: String,
+    /// Why the code exists.
+    pub why: String,
+    /// Template holes in first-use order across message then help.
+    pub params: Vec<String>,
+    /// One concrete example render.
+    pub example: String,
+    /// The primary message template, or `None` when unwritten.
+    pub message: Option<String>,
+    /// The help register template, or `None` when the code carries no help.
+    pub help: Option<String>,
 }
 
-/// The d4b PROMOTE pipeline (`27V` §3; BLESS-law — orchestrator-only, fresh binary, diff inspected;
-/// the builder builds this, NEVER runs it): codegen the committed `CATALOG` const from the current
-/// catalog, DIFFABLE and committed. It refreshes the machine-facing fields and CARRIES the prose:
-/// * `params` ⇐ [`refreshed_params`] (exactly the holes the prose uses);
-/// * `example` ⇐ [`schematic_example`] (the measured render of the current prose — drift-proof);
-/// * `message` / `help` / `when_fires` / `why` ⇐ carried VERBATIM from the current entry.
-///
-/// PROSE PROVABLY UNTOUCHED (`tc-promote-refresh-boundary`, conductor-confirmed): promote has no code
-/// path that writes a `message`/`help` string other than copying the current entry's — the
-/// `promote_is_a_prose_fixpoint` gate pins that structurally. Strings are emitted via `{:?}` (valid
-/// Rust escaping); a `cargo fmt` pass over the spliced source is the orchestrator's final step. The
-/// `inv-no-unsafe` family stands: this is codegen-to-committed-source, never a macro.
+/// Serialize the wholly-generated `catalog_lock.rs` from ordered [`LockRow`]s
+/// (`282:rul-catalog-lock-is-generated-whole`). The whole file is generator-owned and overwritten by
+/// promotion. `#[rustfmt::skip]` keeps the single-line string emission byte-stable under `cargo fmt`,
+/// so the generator output IS the committed bytes (the byte-identity fixpoint gate). Strings emit via
+/// `{:?}` (valid Rust escaping); `inv-no-unsafe` stands (codegen-to-source, never a macro).
 #[must_use]
-pub fn promote_catalog_source() -> String {
-    serialize(&owned_catalog())
-}
-
-/// Codegen the committed `CATALOG` const from an OWNED mirror (`283:dec-catalog-stays-generated-
-/// const`) — the promote-v2 serializer, generalized from [`promote_catalog_source`] to owned input so
-/// an author's edited prose (carried on the mirror) becomes committed source. Same shape as the const
-/// codegen: `message`/`help`/`when_fires`/`why` carried verbatim; `params` ⇐ [`refreshed_params`];
-/// `example` ⇐ [`schematic_example`]. Strings emit via `{:?}` (valid Rust escaping); the orchestrator
-/// splices + `cargo fmt`s. `inv-no-unsafe` stands (codegen-to-source, not a macro).
-#[must_use]
-pub fn serialize(entries: &[OwnedEntry]) -> String {
+pub fn serialize_lock(rows: &[LockRow]) -> String {
     use std::fmt::Write as _;
-    let mut out = String::from("pub const CATALOG: &[CatalogEntry] = &[\n");
-    for e in entries {
-        let message = e.message.as_deref();
-        let help = e.help.as_deref();
-        let params = refreshed_params(message, help);
-        let example = schematic_example(&e.slug, message, &params);
+    let mut out = String::from(
+        "// @generated by dorc-loom; DO NOT EDIT.\n\
+         // This whole file is overwritten by catalog promotion.\n\n\
+         use super::CatalogEntry;\n\n\
+         #[rustfmt::skip]\n\
+         pub const CATALOG: &[CatalogEntry] = &[\n",
+    );
+    for r in rows {
         out.push_str("    CatalogEntry {\n");
-        let _ = writeln!(out, "        slug: {:?},", e.slug);
-        let _ = writeln!(out, "        when_fires: {:?},", e.when_fires);
-        let _ = writeln!(out, "        why: {:?},", e.why);
+        let _ = writeln!(out, "        slug: {:?},", r.slug);
+        let _ = writeln!(out, "        when_fires: {:?},", r.when_fires);
+        let _ = writeln!(out, "        why: {:?},", r.why);
         out.push_str("        params: &[");
-        for (i, p) in params.iter().enumerate() {
+        for (i, p) in r.params.iter().enumerate() {
             if i > 0 {
                 out.push_str(", ");
             }
             let _ = write!(out, "{p:?}");
         }
         out.push_str("],\n");
-        let _ = writeln!(out, "        example: {example:?},");
-        match message {
+        let _ = writeln!(out, "        example: {:?},", r.example);
+        match &r.message {
             Some(m) => {
                 let _ = writeln!(out, "        message: Some({m:?}),");
             }
             None => out.push_str("        message: None,\n"),
         }
-        match help {
+        match &r.help {
             Some(h) => {
                 let _ = writeln!(out, "        help: Some({h:?}),");
             }
@@ -558,54 +546,9 @@ mod tests {
         );
     }
 
-    /// PROMOTE is a PROSE FIXPOINT (`tc-promote-refresh-boundary`, conductor-confirmed — "that gate
-    /// is the mechanism I wanted"): the generated source carries every entry's `message`/`help`
-    /// VERBATIM (promote never regenerates prose), and it is deterministic (idempotent). Together
-    /// these make "prose provably untouched" structural, not disciplinary.
-    #[test]
-    fn promote_is_a_prose_fixpoint() {
-        let src = promote_catalog_source();
-        for e in CATALOG {
-            let message_line = match e.message {
-                Some(m) => format!("message: Some({m:?}),"),
-                None => "message: None,".to_owned(),
-            };
-            assert!(
-                src.contains(&message_line),
-                "promote must carry `{}`'s message VERBATIM (prose never regenerated)",
-                e.slug
-            );
-            if let Some(h) = e.help {
-                assert!(
-                    src.contains(&format!("help: Some({h:?}),")),
-                    "promote must carry `{}`'s help VERBATIM",
-                    e.slug
-                );
-            }
-            // when_fires / why are carried too (machine-facing, hand-authored — never regenerated).
-            assert!(
-                src.contains(&format!("when_fires: {:?},", e.when_fires)),
-                "promote must carry `{}`'s when_fires VERBATIM",
-                e.slug
-            );
-        }
-        assert_eq!(
-            src,
-            promote_catalog_source(),
-            "promote is deterministic (idempotent)"
-        );
-    }
-
-    /// The DORC-SIDE metadata gate (`283:dec-promote-v2` · `28A` §2g — the catch the render-level
-    /// fixpoint misses): serialize regenerates `params` from the prose's holes, so a hand-edit to any
-    /// entry's `params` diverges from the regeneration and trips loudly here. This is the whole-catalog
-    /// form of `promote_refreshes_params_and_example`'s spot-checks — the `params` half of the
-    /// promote→catalog byte-identity, achievable under carry-forward (params ALREADY match the holes).
-    ///
-    /// FLAGGED, not enforced here: the `example` half needs the committed examples canonicalized to
-    /// their schematic form (47/56 are pre-promote hand-authored strawmen), and a WHOLE-BLOCK byte
-    /// gate additionally needs the hand-wrapped literals collapsed to a canonical form. The retired
-    /// `DORC_CATALOG_PROMOTE` writer must not be used for that work; phase three owns its replacement.
+    /// Every committed `params` list equals the deduped first-use holes of its prose
+    /// (`refreshed_params`): a `params` hand-edit diverges from the regeneration and trips here. This
+    /// is the `params` half of the generated-lock byte-identity gate the dorc-loom generator owns.
     #[test]
     fn promote_regenerates_params_byte_identical() {
         for e in CATALOG {
@@ -620,24 +563,9 @@ mod tests {
         }
     }
 
-    /// PROMOTE refreshes the machine-facing fields: `params` becomes EXACTLY the prose's holes, and
-    /// `example` becomes the schematic measured render (holes → `<param>`), drift-proof.
+    /// A param used twice (`{count}` in `munge-name-collision`) appears once in the refreshed set.
     #[test]
-    fn promote_refreshes_params_and_example() {
-        // A PASSTHROUGH code (`sm {detail}`): params ⇒ [detail]; example ⇒ the prose with `<detail>`.
-        let e = entry("site-unresolvable").expect("passthrough entry");
-        let params = refreshed_params(e.message, e.help);
-        assert_eq!(
-            params,
-            vec!["detail".to_owned()],
-            "params = the prose's holes"
-        );
-        assert_eq!(
-            schematic_example(e.slug, e.message, &params),
-            "sm <detail>",
-            "example = the measured render of the current prose (drift-proof)"
-        );
-        // A code whose template uses a hole TWICE (`{count}` in munge-name-collision) dedups in params.
+    fn refreshed_params_dedups_repeated_holes() {
         let coll = entry("munge-name-collision").expect("collision entry");
         let cp = refreshed_params(coll.message, coll.help);
         assert_eq!(
@@ -645,22 +573,25 @@ mod tests {
             1,
             "a param used twice appears once in the refreshed set: {cp:?}"
         );
-        // The generated source is valid-shaped: the const opener + a closing `];`.
-        let src = promote_catalog_source();
-        assert!(src.starts_with("pub const CATALOG: &[CatalogEntry] = &[\n"));
-        assert!(src.trim_end().ends_with("];"));
     }
 
-    /// Legacy, retired promotion writer. Phase two has no durable promotion entry point; phase three
-    /// replaces this with the content-bound, atomic compile/promote workflow.
+    /// The serializer emits a `#[rustfmt::skip]` generated const with the pinned header, so
+    /// single-line string emission is `cargo fmt`-stable (the byte-identity fixpoint precondition).
     #[test]
-    fn promote_writer_gated() {
-        if std::env::var("DORC_CATALOG_PROMOTE").as_deref() != Ok("1") {
-            return;
-        }
-        let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../target/catalog-promoted.rs");
-        std::fs::write(&out, promote_catalog_source()).expect("write promoted catalog");
-        eprintln!("promote: wrote {} (diff, splice, cargo fmt)", out.display());
+    fn serialize_lock_emits_the_pinned_generated_header() {
+        let src = serialize_lock(&[LockRow {
+            slug: "x".to_owned(),
+            when_fires: "w".to_owned(),
+            why: "y".to_owned(),
+            params: vec!["a".to_owned()],
+            example: "e".to_owned(),
+            message: Some("m {{a}}".to_owned()),
+            help: None,
+        }]);
+        assert!(src.starts_with("// @generated by dorc-loom; DO NOT EDIT.\n"));
+        assert!(src.contains("#[rustfmt::skip]\npub const CATALOG: &[CatalogEntry] = &[\n"));
+        assert!(src.contains("        message: Some(\"m {{a}}\"),\n"));
+        assert!(src.contains("        help: None,\n"));
+        assert!(src.trim_end().ends_with("];"));
     }
 }
