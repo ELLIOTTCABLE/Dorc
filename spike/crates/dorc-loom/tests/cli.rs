@@ -55,7 +55,7 @@ fn inventories_are_ordered_and_do_not_widen_used_values() {
 
     assert!(used.contains("{{position}} = \"operand 3\""));
     assert!(used.contains("{{cause}} = "));
-    assert!(!used.contains("{{command}}"));
+    assert!(used.contains("{{command}} = \"apt-get\""));
     assert!(all.contains("{{command}} = \"apt-get\""));
     assert!(!all.contains("{{detail}}"));
 }

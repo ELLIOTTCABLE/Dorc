@@ -9,9 +9,9 @@ pub const CATALOG: &[CatalogEntry] = &[
         slug: "cmdsub-operand-top",
         when_fires: "a `$(…)`/runtime-dynamic operand (or the command word) forced a command to ⊤, so it runs (never elided). effect.rs finalize_cmdsub_tops.",
         why: "no-silent-phantoms disclosure (find-3); the template fills `{position}` from `OperandPosition::describe()` and `{cause}` from `TopCause::describe()`. Case-owned (the cmdsub flagship, `crates/dorc-loom/cases/cmdsub-operand-top.txt`): prose authored at the transcript surface, awaiting the human rewrite pass.",
-        params: &["position", "cause"],
-        example: "operand 3 is a command-substitution `$(…)` / arithmetic / operator-form expansion, so Dorc cannot know its value until the command runs on the host — there is nothing to resolve and no read-only probe to check. Dorc elides a command only when it can prove the command's effect is already in place, so this one is left to run on every apply.",
-        message: Some("{{position}} is {{cause}}, so Dorc cannot know its value until the command runs on the host — there is nothing to resolve and no read-only probe to check. Dorc elides a command only when it can prove the command's effect is already in place, so this one is left to run on every apply."),
+        params: &["position", "cause", "command"],
+        example: "operand 3 is a command-substitution `$(…)` / arithmetic / operator-form expansion, so Dorc cannot know its value until the command apt-get runs on the host — there is nothing to resolve and no read-only probe to check. Dorc elides a command only when it can prove the command's effect is already in place, so this one is left to run on every apply.",
+        message: Some("{{position}} is {{cause}}, so Dorc cannot know its value until the command {{command}} runs on the host — there is nothing to resolve and no read-only probe to check. Dorc elides a command only when it can prove the command's effect is already in place, so this one is left to run on every apply."),
         help: Some("Give the operand a value Dorc can resolve statically — a literal, or a variable assigned from one — so Dorc can probe it and elide the command once it has converged. If the value must stay dynamic, load an oracle that vouches for this command's convergence, and Dorc will guard the command instead of running it every time."),
     },
     CatalogEntry {

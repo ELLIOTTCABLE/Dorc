@@ -16,9 +16,10 @@ systemctl enable nginx
 $ dorc plan --book=book.sh
 note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` /
    arithmetic / operator-form expansion, so Dorc cannot know its value until the
-   command runs on the host — there is nothing to resolve and no read-only probe
-   to check. Dorc elides a command only when it can prove the command's effect
-   is already in place, so this one is left to run on every apply.
+   command apt-get runs on the host — there is nothing to resolve and no
+   read-only probe to check. Dorc elides a command only when it can prove the
+   command's effect is already in place, so this one is left to run on every
+   apply.
    --> book.sh:6:20
    |
  6 | apt-get install -y "$(cat /etc/webhost/pkgset)"
