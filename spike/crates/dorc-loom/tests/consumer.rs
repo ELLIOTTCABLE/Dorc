@@ -418,11 +418,13 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
                     "a command-substitution `$(…)` / arithmetic / operator-form expansion"
                 ),
             ),
-            (
-                TemplateVariableName(String::from("command")),
-                String::from("apt-get")
-            ),
         ]
+    );
+    assert!(
+        !baseline
+            .used_variables()
+            .iter()
+            .any(|(name, _)| name.0 == "command")
     );
     assert_eq!(
         baseline
