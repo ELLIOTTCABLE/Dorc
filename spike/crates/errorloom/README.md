@@ -213,12 +213,12 @@ executor and identity-preserving transport those tools build on; the target API 
 adds the consumer-neutral driver/result boundary between them.
 
 
-## Target library API: replay driving
+## Library API: replay driving
 
-This is the next pre-1.0 API step. The generic executor and editable transport below
-exist; consumer-driven exact-result provenance is being added before durable
-compile/promote. Current consumer code that locates editable output by matching
-rendered contents is not an accepted compatibility surface.
+The generic executor, editable transport, and the consumer-neutral driver/result
+boundary all exist; the embedding Dorc consumer drives exact-result provenance and owns
+the durable compile/promote loop built on top. Locating editable output by matching
+rendered contents was rejected and is not a compatibility surface.
 
 Every replay produces exact bytes. An embedding consumer may first try to drive
 the original command text itself, returning either `Decline` or a handled result
