@@ -24,44 +24,41 @@ pub struct Publication {
     pub cases: BTreeMap<String, String>,
 }
 
-/// Compute the entire promote candidate set from the edited mirror and the defining cases, and prove
-/// BOTH fixpoints before returning — pure, so a validation failure writes nothing
-/// (`282:rul-promote-is-one-atomic-act`). The render-level fixpoint: re-rendering each candidate case
-/// reproduces it. The generated-lock fixpoint: regenerating the lock from the candidate cases
-/// reproduces it.
+/// Compute the entire promote candidate set from the edited mirror, and prove BOTH fixpoints before
+/// returning — pure, so a validation failure writes nothing (`282:rul-promote-is-one-atomic-act`).
+/// The lock is generated from the whole `corpus` (frontmatter/payload only, unaffected by prose
+/// edits). Only the `affected` cases are re-rendered and republished — unaffected cases are
+/// byte-identical fixpoints and never touched. The render-level fixpoint: each affected candidate
+/// re-renders to itself. The generated-lock fixpoint: regeneration is deterministic (the committed
+/// byte-identity gate is the test-suite half, checked after the human rebuilds).
 ///
 /// # Errors
 /// Returns a refusal for a render/generation failure or either fixpoint mismatch; the caller then
 /// leaves every committed file byte-identical.
 pub fn build_publication(
     consumer: &DorcConsumer,
-    cases: &BTreeMap<String, Case>,
+    corpus: &BTreeMap<String, Case>,
+    affected: &BTreeMap<String, Case>,
 ) -> Result<Publication, String> {
-    let mut candidate_cases: BTreeMap<String, Case> = BTreeMap::new();
+    let lock = generate_catalog_lock(consumer, corpus)?;
     let mut rendered: BTreeMap<String, String> = BTreeMap::new();
-    for (slug, case) in cases {
+    for (slug, case) in affected {
         let bytes = consumer
             .render_case(case)
             .map_err(|error| format!("render case `{slug}`: {error}"))?;
         let parsed = Case::parse(&bytes)
             .map_err(|error| format!("regenerated case `{slug}` does not re-parse: {error}"))?;
-        candidate_cases.insert(slug.clone(), parsed);
-        rendered.insert(slug.clone(), bytes);
-    }
-    let lock = generate_catalog_lock(consumer, cases)?;
-
-    for (slug, case) in &candidate_cases {
         let again = consumer
-            .render_case(case)
+            .render_case(&parsed)
             .map_err(|error| format!("re-render case `{slug}`: {error}"))?;
-        if again != rendered[slug] {
+        if again != bytes {
             return Err(format!("render-level fixpoint failed for `{slug}`"));
         }
+        rendered.insert(slug.clone(), bytes);
     }
-    if generate_catalog_lock(consumer, &candidate_cases)? != lock {
-        return Err("generated-lock fixpoint failed over the candidate cases".to_owned());
+    if generate_catalog_lock(consumer, corpus)? != lock {
+        return Err("generated-lock fixpoint (determinism) failed".to_owned());
     }
-
     Ok(Publication {
         lock,
         cases: rendered,

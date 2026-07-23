@@ -167,8 +167,28 @@ fn promote_cases(
         return Ok(ExitCode::from(1));
     };
     promote_receipt(&receipt_store()?, &inspection)?;
-    publish(&consumer, out)?;
+    let affected = touched_cases(&gated)?;
+    publish(&consumer, &affected, out)?;
     Ok(ExitCode::SUCCESS)
+}
+
+/// The touched defining cases (dirty on-disk bytes) keyed by their `code` slug — the only cases a
+/// prose edit re-renders and republishes.
+fn touched_cases(gated: &GatedCases) -> Result<std::collections::BTreeMap<String, Case>, String> {
+    let mut cases = std::collections::BTreeMap::new();
+    for (relative_path, path) in &gated.paths {
+        if !gated.touched.contains(relative_path) {
+            continue;
+        }
+        let case = load(path)?;
+        let slug = case
+            .frontmatter()
+            .scalar("code")
+            .ok_or_else(|| format!("touched case {} has no `code`", path.display()))?
+            .to_owned();
+        cases.insert(slug, case);
+    }
+    Ok(cases)
 }
 
 /// Compute the entire preflighted candidate set from the edited mirror, then publish the changed
@@ -176,42 +196,42 @@ fn promote_cases(
 /// (`282:rul-promote-is-one-atomic-act`). All bytes and both fixpoints precede every write, so a
 /// validation failure leaves committed files byte-identical; a mid-publication interruption is loud
 /// in git and repaired by rerun. No journal, staging, rollback, or index mutation.
-fn publish(consumer: &DorcConsumer, out: &mut impl Write) -> Result<(), String> {
+fn publish(
+    consumer: &DorcConsumer,
+    affected: &std::collections::BTreeMap<String, Case>,
+    out: &mut impl Write,
+) -> Result<(), String> {
     let cases_dir = cases_dir();
     let corpus = load_corpus_by_slug(&cases_dir)?;
-    let publication = build_publication(consumer, &corpus)?;
+    let publication = build_publication(consumer, &corpus, affected)?;
 
+    let mut wrote = false;
     let lock_path = catalog_path();
-    let lock_changed = std::fs::read_to_string(&lock_path)
-        .map(|current| current != publication.lock)
-        .unwrap_or(true);
-    if lock_changed {
+    if file_differs(&lock_path, &publication.lock) {
         publish_file(&lock_path, &publication.lock)?;
         writeln!(out, "promote: wrote {}", lock_path.display()).map_err(|e| e.to_string())?;
+        wrote = true;
     }
-
     for (slug, bytes) in &publication.cases {
         let path = cases_dir.join(format!("{slug}.txt"));
         if !path.is_file() {
             return Err(format!("defining case `{slug}` is not `{slug}.txt`"));
         }
-        let changed = std::fs::read_to_string(&path)
-            .map(|current| &current != bytes)
-            .unwrap_or(true);
-        if changed {
+        if file_differs(&path, bytes) {
             publish_file(&path, bytes)?;
             writeln!(out, "promote: wrote {}", path.display()).map_err(|e| e.to_string())?;
+            wrote = true;
         }
     }
-
-    if !lock_changed && publication.cases.iter().all(|(slug, bytes)| {
-        std::fs::read_to_string(cases_dir.join(format!("{slug}.txt")))
-            .map(|current| &current == bytes)
-            .unwrap_or(false)
-    }) {
-        writeln!(out, "promote: corpus already at the generated fixpoint").map_err(|e| e.to_string())?;
+    if !wrote {
+        writeln!(out, "promote: corpus already at the generated fixpoint")
+            .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+fn file_differs(path: &Path, bytes: &str) -> bool {
+    std::fs::read_to_string(path).map_or(true, |current| current != bytes)
 }
 
 /// Replace one target by writing a sibling temp file and renaming over it (same directory, so the
