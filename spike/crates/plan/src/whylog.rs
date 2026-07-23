@@ -423,6 +423,38 @@ pub struct RecordedReplayClaims {
     decision_digest: String,
 }
 
+impl RecordedReplayClaims {
+    /// Wire values are untrusted replay claims, never controller identity constructors.
+    #[must_use]
+    pub fn nonce(&self) -> &str {
+        &self.nonce
+    }
+    #[must_use]
+    pub const fn attempt(&self) -> u32 {
+        self.attempt
+    }
+    #[must_use]
+    pub fn host(&self) -> &str {
+        &self.host
+    }
+    #[must_use]
+    pub fn target(&self) -> &str {
+        &self.target
+    }
+    #[must_use]
+    pub fn generation(&self) -> &str {
+        &self.generation
+    }
+    #[must_use]
+    pub fn book_digest(&self) -> &str {
+        &self.book_digest
+    }
+    #[must_use]
+    pub fn decision_digest(&self) -> &str {
+        &self.decision_digest
+    }
+}
+
 /// A grammar-valid v2 durable before a controller compares it with its expected framing.
 #[derive(Debug)]
 pub struct UnscopedWhylogEnvelope {
@@ -464,6 +496,27 @@ impl UnscopedWhylogEnvelope {
     pub fn recorded_oracles(&self) -> &[RecordedOracleSource] {
         &self.oracle_sources
     }
+
+    #[must_use]
+    pub fn claims(&self) -> &RecordedReplayClaims {
+        &self.claims
+    }
+    #[must_use]
+    pub fn mode(&self) -> &str {
+        &self.mode
+    }
+    #[must_use]
+    pub fn recorded_book_path(&self) -> &RecordedSourcePathHint {
+        &self.book_path
+    }
+    #[must_use]
+    pub fn argv(&self) -> &[String] {
+        &self.argv
+    }
+    #[must_use]
+    pub fn apply(&self) -> &[ApplyLine] {
+        &self.apply
+    }
 }
 
 impl AdmittedUnscopedWhylogReplay {
@@ -471,6 +524,31 @@ impl AdmittedUnscopedWhylogReplay {
     #[must_use]
     pub fn recorded_oracles(&self) -> &[RecordedOracleSource] {
         &self.oracle_sources
+    }
+
+    #[must_use]
+    pub fn claims(&self) -> &RecordedReplayClaims {
+        &self.claims
+    }
+    #[must_use]
+    pub fn mode(&self) -> &str {
+        &self.mode
+    }
+    #[must_use]
+    pub fn recorded_book_path(&self) -> &RecordedSourcePathHint {
+        &self.book_path
+    }
+    #[must_use]
+    pub fn argv(&self) -> &[String] {
+        &self.argv
+    }
+    #[must_use]
+    pub fn apply(&self) -> &[ApplyLine] {
+        &self.apply
+    }
+    #[must_use]
+    pub fn records(&self) -> &AdmittedUnscopedHostRecords {
+        &self.records
     }
 }
 
