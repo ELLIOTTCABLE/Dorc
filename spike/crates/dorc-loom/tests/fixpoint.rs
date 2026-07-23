@@ -7,11 +7,31 @@
 
 use std::path::{Path, PathBuf};
 
-use dorc_loom::{DorcConsumer, replay_case};
+use dorc_loom::{DorcConsumer, generate_catalog_lock, load_corpus_by_slug, replay_case};
 use errorloom::{Case, CaseFile, RunEnv, fixpoint_check};
 
 fn corpus_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("cases")
+}
+
+fn committed_lock() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs")
+}
+
+/// The generated-catalog byte-identity gate (`28A` §4 · `282:rul-catalog-lock-is-generated-whole`):
+/// regenerating the whole lock from the committed corpus reproduces the committed `catalog_lock.rs`
+/// byte-for-byte. This is the second fixpoint (the render-level case fixpoint is the first). A
+/// hand-edit to the generated lock, or drift between a case and its generated row, trips here.
+#[test]
+fn generated_lock_reproduces_the_committed_bytes() {
+    let consumer = DorcConsumer::new();
+    let cases = load_corpus_by_slug(&corpus_dir()).expect("load corpus");
+    let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
+    let committed = std::fs::read_to_string(committed_lock()).expect("read committed lock");
+    assert_eq!(
+        generated, committed,
+        "the committed catalog_lock.rs is not a fixpoint of the generator"
+    );
 }
 
 /// Every committed `cases/*.txt`, sorted for determinism (`inv-determinism`). A missing/empty dir
