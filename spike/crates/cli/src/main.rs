@@ -859,11 +859,14 @@ fn lint_command(args: &LintArgs) -> ExitCode {
         tools_enabled: args.tools_enabled,
     };
     let only = (!args.sources.is_empty()).then_some(args.sources.as_slice());
-    let report = if !args.tools_enabled && inputs.len() == 1 && oracles.is_empty() && only.is_none()
+    let report = if let [input] = inputs.as_slice()
+        && !args.tools_enabled
+        && oracles.is_empty()
+        && only.is_none()
     {
         dorc_lint::lint_materialized_source(
-            inputs[0].path.clone(),
-            inputs[0].src.clone(),
+            input.path.clone(),
+            input.src.clone(),
             dorc_lint::SourcePolicy {
                 tools_enabled: false,
             },

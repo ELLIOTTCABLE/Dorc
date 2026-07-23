@@ -325,16 +325,7 @@ fn inspect_cases(
                 .map_err(|write| write.to_string())?;
             continue;
         }
-        let mut compiled = std::collections::BTreeMap::new();
-        for (index, preview) in previews {
-            writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
-            let rendered = render_compile_preview(&preview);
-            consumer.apply_preview(&preview).map_err(|error| {
-                format!("{}: apply compiled section: {error:?}", path.display())
-            })?;
-            compiled.insert(index, preview);
-            writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
-        }
+        let mut compiled = emit_previews(&mut consumer, previews, path, out)?;
         let replays = inspected_replays
             .into_iter()
             .map(|(index, command, routed)| match routed.editable_render() {
@@ -364,6 +355,27 @@ fn inspect_cases(
     InspectedCompilation::new(catalog, selected, touched_cases, inspected_cases)
         .map(|inspection| Some((inspection, consumer)))
         .map_err(|error| error.to_string())
+}
+
+/// Emit each compiled preview, apply it to the mirror (the promote edited-mirror seam), and collect
+/// the previews keyed by replay index for receipt inspection.
+fn emit_previews(
+    consumer: &mut DorcConsumer,
+    previews: Vec<(usize, dorc_loom::CompilePreview)>,
+    path: &Path,
+    out: &mut impl Write,
+) -> Result<std::collections::BTreeMap<usize, dorc_loom::CompilePreview>, String> {
+    let mut compiled = std::collections::BTreeMap::new();
+    for (index, preview) in previews {
+        writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
+        let rendered = render_compile_preview(&preview);
+        consumer
+            .apply_preview(&preview)
+            .map_err(|error| format!("{}: apply compiled section: {error:?}", path.display()))?;
+        compiled.insert(index, preview);
+        writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
+    }
+    Ok(compiled)
 }
 
 fn receipt_store() -> Result<FsReceiptStore, String> {

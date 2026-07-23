@@ -82,25 +82,22 @@ pub fn generate_catalog_lock(
         let message = entry.message.clone();
         let help = entry.help.clone();
         let params = refreshed_params(message.as_deref(), help.as_deref());
-        let (when_fires, why, example) = match cases.get(&entry.slug) {
-            Some(case) => (
+        let (when_fires, why, example) = if let Some(case) = cases.get(&entry.slug) {
+            (
                 frontmatter_scalar(case, "when-fires", &entry.slug)?,
                 frontmatter_scalar(case, "why", &entry.slug)?,
                 case_example(consumer, case, message.as_deref(), &entry.slug)?,
-            ),
-            None => {
-                let carried = CATALOG
-                    .iter()
-                    .find(|c| c.slug == entry.slug)
-                    .ok_or_else(|| {
-                        format!("ratcheted `{}` absent from the current lock", entry.slug)
-                    })?;
-                (
-                    carried.when_fires.to_owned(),
-                    carried.why.to_owned(),
-                    carried.example.to_owned(),
-                )
-            }
+            )
+        } else {
+            let carried = CATALOG
+                .iter()
+                .find(|c| c.slug == entry.slug)
+                .ok_or_else(|| format!("ratcheted `{}` absent from the current lock", entry.slug))?;
+            (
+                carried.when_fires.to_owned(),
+                carried.why.to_owned(),
+                carried.example.to_owned(),
+            )
         };
         rows.push(LockRow {
             slug: entry.slug.clone(),
