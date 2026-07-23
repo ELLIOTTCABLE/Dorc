@@ -613,6 +613,7 @@ pub fn read_host_evidence<R: Read>(
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedUnscopedHostRecords {
     records: Vec<TypedHostRecord>,
+    wire: Vec<u8>,
 }
 
 /// A borrowed, grammar-checked record. It remains unscoped until the controller binds it.
@@ -649,6 +650,14 @@ pub enum AdmittedHostRecord<'a> {
 }
 
 impl AdmittedUnscopedHostRecords {
+    /// The exact bounded wire range, retained only for sibling durable serialization.
+    #[expect(
+        dead_code,
+        reason = "the v2 writer consumes this crate-private seam in the next checkpoint"
+    )]
+    pub(crate) fn admitted_wire_bytes(&self) -> &[u8] {
+        &self.wire
+    }
     /// Borrows validated records without exposing their owning representation or a raw byte route.
     pub fn iter(&self) -> impl Iterator<Item = AdmittedHostRecord<'_>> {
         self.records.iter().map(|record| match record {
@@ -860,7 +869,10 @@ fn admit_records(
     if declared_sites == Some(0) {
         return Admission::NoObservation;
     }
-    Admission::Admitted(AdmittedUnscopedHostRecords { records })
+    Admission::Admitted(AdmittedUnscopedHostRecords {
+        records,
+        wire: bytes.to_vec(),
+    })
 }
 
 fn parse_header(
