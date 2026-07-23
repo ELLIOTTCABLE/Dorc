@@ -559,6 +559,7 @@ pub fn try_serialize_v2(
     if doc.raw_results.len() > inner_limits.stream_bytes() {
         return Err(WhylogWriteRefusal::Limit);
     }
+    valid_apply_rows(&doc.apply, limits)?;
 
     let mut out = Vec::new();
     let mut retained = 0usize;
@@ -613,11 +614,6 @@ pub fn try_serialize_v2(
     )?;
     retain_metadata(&mut retained, &doc.decision_digest, limits)?;
     for apply in &doc.apply {
-        if !disposition_valid(&apply.disposition)
-            || digits_valid(apply.leaf.to_string().as_str(), limits).is_err()
-        {
-            return Err(WhylogWriteRefusal::Grammar);
-        }
         retain_metadata(&mut retained, &apply.disposition, limits)?;
         write_v2_line(
             &mut out,
@@ -954,6 +950,20 @@ fn disposition_valid(value: &str) -> bool {
     matches!(value, "run" | "replace" | "guard" | "omit")
 }
 
+fn valid_apply_rows(apply: &[ApplyLine], limits: WhylogLimits) -> Result<(), WhylogWriteRefusal> {
+    let mut previous_leaf = None;
+    for apply in apply {
+        if !disposition_valid(&apply.disposition)
+            || digits_valid(apply.leaf.to_string().as_str(), limits).is_err()
+            || previous_leaf.is_some_and(|previous| apply.leaf <= previous)
+        {
+            return Err(WhylogWriteRefusal::Grammar);
+        }
+        previous_leaf = Some(apply.leaf);
+    }
+    Ok(())
+}
+
 fn retain(total: &mut usize, amount: usize, limits: WhylogLimits) -> Result<(), AdmissionRefusal> {
     *total = total
         .checked_add(amount)
@@ -1276,6 +1286,39 @@ mod tests {
     }
 
     #[test]
+    fn v2_writer_refuses_duplicate_or_nonincreasing_apply_leaves() {
+        let mut duplicate = v2_doc();
+        duplicate.apply.push(ApplyLine {
+            leaf: 0,
+            disposition: "run".to_owned(),
+            predicted: true,
+        });
+        let mut non_increasing = v2_doc();
+        non_increasing.apply = vec![
+            ApplyLine {
+                leaf: 1,
+                disposition: "replace".to_owned(),
+                predicted: true,
+            },
+            ApplyLine {
+                leaf: 0,
+                disposition: "run".to_owned(),
+                predicted: true,
+            },
+        ];
+        for doc in [duplicate, non_increasing] {
+            assert_eq!(
+                try_serialize_v2(
+                    &doc,
+                    WhylogLimits::spike_default(),
+                    inner_limits(8 * 1024 * 1024),
+                ),
+                Err(WhylogWriteRefusal::Grammar)
+            );
+        }
+    }
+
+    #[test]
     fn v2_limits_apply_to_every_outer_owned_metadata_class() {
         let mut doc = v2_doc();
         let exact = WhylogLimits::new(
@@ -1385,26 +1428,25 @@ mod tests {
         else {
             panic!("direct admission honors the injected nine MiB ceiling")
         };
-        assert!(matches!(
-            admit_unscoped_host_records(
-                &direct_bytes,
-                &Framing::spike(doc.book.1.clone()),
-                larger_inner
-            ),
-            Admission::NoObservation
-        ));
+        let Admission::Admitted(direct) = admit_unscoped_host_records(
+            &direct_bytes,
+            &Framing::spike(doc.book.1.clone()),
+            larger_inner,
+        ) else {
+            panic!("the valid direct site record admits")
+        };
 
         let Admission::Admitted(envelope) = admit_unscoped_whylog(&wire[..], outer_limits) else {
             panic!("outer admission does not impose an inner policy")
         };
-        assert!(matches!(
-            admit_unscoped_whylog_replay(
-                envelope,
-                &Framing::spike(doc.book.1.clone()),
-                larger_inner
-            ),
-            Admission::NoObservation
-        ));
+        let Admission::Admitted(replay) = admit_unscoped_whylog_replay(
+            envelope,
+            &Framing::spike(doc.book.1.clone()),
+            larger_inner,
+        ) else {
+            panic!("the valid replay site record admits")
+        };
+        assert_eq!(replay.records, direct);
 
         assert!(matches!(
             crate::records::read_host_evidence(doc.raw_results.as_bytes(), smaller_inner),
@@ -1438,6 +1480,22 @@ mod tests {
         let wire = v2_wire(&doc);
         let text = String::from_utf8(wire.clone()).expect("outer fixture is text");
         let header_len = text.find('\n').expect("header newline");
+        let outer_exact = WhylogLimits::new(
+            wire.len(),
+            64 * 1024,
+            16 * 1024,
+            4 * 1024 * 1024,
+            16,
+            32_768,
+            32_768,
+            32_768,
+            16,
+            128,
+        );
+        assert!(matches!(
+            admit_unscoped_whylog(&wire[..], outer_exact),
+            Admission::Admitted(_)
+        ));
         let line_limits = parser_limits(header_len, 16 * 1024, 4 * 1024 * 1024, 16, 2, 1, 1);
         assert!(matches!(
             admit_unscoped_whylog(&wire[..], line_limits),
@@ -1610,12 +1668,13 @@ mod tests {
 
     fn inner_at_exact_size(size: usize) -> String {
         let framing = Framing::spike("0123456789abcdef".to_owned());
-        let header = crate::records::header_line(&framing, 0)
+        let header = crate::records::header_line(&framing, 1)
             .trim_start_matches("printf '")
             .trim_end_matches("\\n'\n")
             .to_owned();
+        let site_record = format!("dorc site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n");
         let sentinel = format!("dorc-records-end/1 nonce=dorc {TERMINAL_TOKEN}\n");
-        let mut inner = format!("{header}\n{sentinel}");
+        let mut inner = format!("{header}\n{site_record}{sentinel}");
         while size.saturating_sub(inner.len()) > 64 * 1024 {
             inner.push('#');
             inner.push_str(&"x".repeat(64 * 1024 - 2));
