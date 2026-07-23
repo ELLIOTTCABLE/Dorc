@@ -490,6 +490,45 @@ pub enum WhylogWriteRefusal {
     ArithmeticOverflow,
 }
 
+/// Controller-produced metadata for one v2 durable. The wire writer borrows this separately from
+/// admitted host evidence so untrusted result bytes have no raw serialization route.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhylogV2Metadata {
+    /// Controller-selected invocation mode.
+    pub mode: String,
+    /// Ordered invocation arguments.
+    pub argv: Vec<String>,
+    /// Controller-selected book path and content digest.
+    pub book: (String, String),
+    /// Ordered oracle path and digest claims.
+    pub oracles: Vec<(String, String)>,
+    /// Controller-minted run nonce.
+    pub nonce: String,
+    /// Controller-minted retry attempt.
+    pub attempt: u32,
+    /// Controller-selected host identity.
+    pub host: String,
+    /// Controller-computed decision digest.
+    pub decision_digest: String,
+    /// Ordered predicted apply dispositions.
+    pub apply: Vec<ApplyLine>,
+}
+
+/// The only v2 serialization input: controller metadata paired with already-admitted records.
+#[derive(Debug)]
+pub struct WhylogV2Write<'a> {
+    metadata: &'a WhylogV2Metadata,
+    records: &'a AdmittedUnscopedHostRecords,
+}
+
+impl<'a> WhylogV2Write<'a> {
+    /// Couples controller-produced metadata to the exact framed bytes admission retained.
+    #[must_use]
+    pub fn new(metadata: &'a WhylogV2Metadata, records: &'a AdmittedUnscopedHostRecords) -> Self {
+        Self { metadata, records }
+    }
+}
+
 impl UnscopedWhylogEnvelope {
     /// Retains exact ordered wire identity claims without minting source or controller authority.
     #[must_use]
@@ -615,10 +654,11 @@ pub fn admit_unscoped_whylog_replay(
 ///
 /// Returns a closed refusal when a frozen grammar or resource ceiling is not met.
 pub fn try_serialize_v2(
-    doc: &WhylogDoc,
+    write: &WhylogV2Write<'_>,
     limits: WhylogLimits,
-    inner_limits: HostEvidenceLimits,
 ) -> Result<Vec<u8>, WhylogWriteRefusal> {
+    let doc = write.metadata;
+    let results = write.records.admitted_wire_bytes();
     if !mode_valid(&doc.mode) || !atom_valid(&doc.nonce, limits) || !atom_valid(&doc.host, limits) {
         return Err(WhylogWriteRefusal::Grammar);
     }
@@ -632,9 +672,6 @@ pub fn try_serialize_v2(
         return Err(WhylogWriteRefusal::Limit);
     }
     if doc.oracles.len() > limits.oracle_entries || doc.apply.len() > limits.apply_entries {
-        return Err(WhylogWriteRefusal::Limit);
-    }
-    if doc.raw_results.len() > inner_limits.stream_bytes() {
         return Err(WhylogWriteRefusal::Limit);
     }
     valid_apply_rows(&doc.apply, limits)?;
@@ -706,10 +743,10 @@ pub fn try_serialize_v2(
     }
     write_v2_line(
         &mut out,
-        format!("results bytes={} {TERMINAL_TOKEN}", doc.raw_results.len()),
+        format!("results bytes={} {TERMINAL_TOKEN}", results.len()),
         limits,
     )?;
-    checked_append(&mut out, doc.raw_results.as_bytes(), limits)?;
+    checked_append(&mut out, results, limits)?;
     checked_append(
         &mut out,
         format!("{WHYLOG_V2_END} {TERMINAL_TOKEN}\n").as_bytes(),
@@ -1163,8 +1200,22 @@ mod tests {
         );
     }
 
-    fn v2_doc() -> WhylogDoc {
-        WhylogDoc {
+    #[derive(Clone)]
+    struct V2Fixture {
+        mode: String,
+        argv: Vec<String>,
+        book: (String, String),
+        oracles: Vec<(String, String)>,
+        nonce: String,
+        attempt: u32,
+        host: String,
+        decision_digest: String,
+        raw_results: String,
+        apply: Vec<ApplyLine>,
+    }
+
+    fn v2_doc() -> V2Fixture {
+        V2Fixture {
             mode: "plan".to_owned(),
             argv: vec!["dorc".to_owned(), "plan".to_owned()],
             book: ("book.sh".to_owned(), "0123456789abcdef".to_owned()),
@@ -1221,20 +1272,51 @@ mod tests {
         )
     }
 
-    fn v2_wire(doc: &WhylogDoc) -> Vec<u8> {
-        try_serialize_v2(
+    fn try_serialize_fixture_v2(
+        fixture: &V2Fixture,
+        limits: WhylogLimits,
+        inner_limits: HostEvidenceLimits,
+    ) -> Result<Vec<u8>, WhylogWriteRefusal> {
+        let metadata = WhylogV2Metadata {
+            mode: fixture.mode.clone(),
+            argv: fixture.argv.clone(),
+            book: fixture.book.clone(),
+            oracles: fixture.oracles.clone(),
+            nonce: fixture.nonce.clone(),
+            attempt: fixture.attempt,
+            host: fixture.host.clone(),
+            decision_digest: fixture.decision_digest.clone(),
+            apply: fixture.apply.clone(),
+        };
+        let Admission::Admitted(bytes) =
+            crate::records::read_host_evidence(fixture.raw_results.as_bytes(), inner_limits)
+        else {
+            return Err(WhylogWriteRefusal::Limit);
+        };
+        let framing = Framing::spike(fixture.book.1.clone());
+        let Admission::Admitted(records) =
+            admit_unscoped_host_records(&bytes, &framing, inner_limits)
+        else {
+            return Err(WhylogWriteRefusal::Grammar);
+        };
+        let write = WhylogV2Write::new(&metadata, &records);
+        try_serialize_v2(&write, limits)
+    }
+
+    fn v2_wire(doc: &V2Fixture) -> Vec<u8> {
+        try_serialize_fixture_v2(
             doc,
             WhylogLimits::spike_default(),
             inner_limits(8 * 1024 * 1024),
         )
-        .expect("the bounded fixture is v2 grammar-valid")
+        .expect("the admitted fixture is v2 grammar-valid")
     }
 
     #[test]
     fn v2_round_trips_to_the_same_unscoped_records_as_direct_ingress() {
         let doc = v2_doc();
         let limits = WhylogLimits::spike_default();
-        let serialized = try_serialize_v2(&doc, limits, inner_limits(8 * 1024 * 1024))
+        let serialized = try_serialize_fixture_v2(&doc, limits, inner_limits(8 * 1024 * 1024))
             .expect("complete v2 durable");
         let Admission::Admitted(envelope) = admit_unscoped_whylog(&serialized[..], limits) else {
             panic!("clean v2 durable must admit")
@@ -1265,11 +1347,14 @@ mod tests {
     fn v2_refuses_v1_and_any_trailing_or_reordered_terminal_bytes() {
         let doc = v2_doc();
         assert!(matches!(
-            admit_unscoped_whylog(serialize(&doc).as_bytes(), WhylogLimits::spike_default()),
+            admit_unscoped_whylog(
+                serialize(&WhylogDoc::default()).as_bytes(),
+                WhylogLimits::spike_default()
+            ),
             Admission::Refused(AdmissionRefusal::IncompatibleVersion)
         ));
         let raw = String::from_utf8(
-            try_serialize_v2(
+            try_serialize_fixture_v2(
                 &doc,
                 WhylogLimits::spike_default(),
                 inner_limits(8 * 1024 * 1024),
@@ -1308,7 +1393,7 @@ mod tests {
             )
         );
         let doc = v2_doc();
-        let refusal = try_serialize_v2(
+        let refusal = try_serialize_fixture_v2(
             &doc,
             WhylogLimits::new(
                 1,
@@ -1330,7 +1415,7 @@ mod tests {
     #[test]
     fn v2_enforces_order_singletons_and_closed_values() {
         let raw = String::from_utf8(
-            try_serialize_v2(
+            try_serialize_fixture_v2(
                 &v2_doc(),
                 WhylogLimits::spike_default(),
                 inner_limits(8 * 1024 * 1024),
@@ -1386,7 +1471,7 @@ mod tests {
         ];
         for doc in [duplicate, non_increasing] {
             assert_eq!(
-                try_serialize_v2(
+                try_serialize_fixture_v2(
                     &doc,
                     WhylogLimits::spike_default(),
                     inner_limits(8 * 1024 * 1024),
@@ -1412,20 +1497,20 @@ mod tests {
             128,
         );
         assert_eq!(
-            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)).map(|_| ()),
+            try_serialize_fixture_v2(&doc, exact, inner_limits(8 * 1024 * 1024)).map(|_| ()),
             Ok(())
         );
 
         doc.argv.push("third".to_owned());
         assert_eq!(
-            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
+            try_serialize_fixture_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
         doc.argv.pop();
         doc.oracles
             .push(("second.sh".to_owned(), "0123456789abcdef".to_owned()));
         assert_eq!(
-            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
+            try_serialize_fixture_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
         doc.oracles.pop();
@@ -1435,14 +1520,14 @@ mod tests {
             predicted: true,
         });
         assert_eq!(
-            try_serialize_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
+            try_serialize_fixture_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
 
         let field_limited =
             WhylogLimits::new(16 * 1024 * 1024, 64 * 1024, 3, 128, 16, 8, 8, 8, 16, 128);
         assert_eq!(
-            try_serialize_v2(&v2_doc(), field_limited, inner_limits(8 * 1024 * 1024)),
+            try_serialize_fixture_v2(&v2_doc(), field_limited, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Grammar)
         );
         let retained_limited = WhylogLimits::new(
@@ -1458,7 +1543,7 @@ mod tests {
             128,
         );
         assert_eq!(
-            try_serialize_v2(&v2_doc(), retained_limited, inner_limits(8 * 1024 * 1024)),
+            try_serialize_fixture_v2(&v2_doc(), retained_limited, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Limit)
         );
     }
@@ -1470,7 +1555,7 @@ mod tests {
             ("same.oracle".to_owned(), "0123456789abcdef".to_owned()),
             ("same.oracle".to_owned(), "fedcba9876543210".to_owned()),
         ];
-        let wire = try_serialize_v2(
+        let wire = try_serialize_fixture_v2(
             &doc,
             WhylogLimits::spike_default(),
             inner_limits(8 * 1024 * 1024),
@@ -1498,7 +1583,7 @@ mod tests {
         let larger_inner = inner_limits(nine_mebibytes);
         doc.raw_results = inner_at_exact_size(nine_mebibytes);
         let outer_limits = WhylogLimits::spike_default();
-        let wire = try_serialize_v2(&doc, outer_limits, larger_inner)
+        let wire = try_serialize_fixture_v2(&doc, outer_limits, larger_inner)
             .expect("the explicit nine MiB policy writes the complete durable");
 
         let Admission::Admitted(direct_bytes) =
@@ -1531,7 +1616,7 @@ mod tests {
             Admission::Refused(AdmissionRefusal::StreamLimit)
         ));
         assert_eq!(
-            try_serialize_v2(&doc, outer_limits, smaller_inner),
+            try_serialize_fixture_v2(&doc, outer_limits, smaller_inner),
             Err(WhylogWriteRefusal::Limit)
         );
         let Admission::Admitted(envelope) = admit_unscoped_whylog(&wire[..], outer_limits) else {
@@ -1714,20 +1799,41 @@ mod tests {
     }
 
     #[test]
+    fn v2_writer_has_no_legacy_or_raw_result_input_route() {
+        let source = include_str!("whylog.rs");
+        let Some(writer) = source
+            .split("pub fn try_serialize_v2")
+            .nth(1)
+            .and_then(|tail| tail.split("fn parse_v2").next())
+        else {
+            panic!("v2 writer source must remain identifiable");
+        };
+        assert!(source.contains("pub struct WhylogV2Write<'a> {\n    metadata:"));
+        assert!(source.contains("    records: &'a AdmittedUnscopedHostRecords,"));
+        assert!(writer.contains("&WhylogV2Write<'_>"));
+        assert!(!writer.contains("WhylogDoc"));
+        assert!(!writer.contains("raw_results"));
+    }
+
+    #[test]
     fn v2_treats_results_as_opaque_until_inner_admission() {
-        let mut doc = v2_doc();
-        doc.raw_results = "x".to_owned();
-        let mut wire = try_serialize_v2(
+        let doc = v2_doc();
+        let mut wire = try_serialize_fixture_v2(
             &doc,
             WhylogLimits::spike_default(),
             inner_limits(8 * 1024 * 1024),
         )
         .expect("v2 write");
         let start = wire
-            .windows(b"results bytes=1 @@dorc@@\n".len())
-            .position(|window| window == b"results bytes=1 @@dorc@@\n")
-            .expect("results line")
-            + b"results bytes=1 @@dorc@@\n".len();
+            .windows(b"results bytes=".len())
+            .position(|window| window == b"results bytes=")
+            .and_then(|offset| {
+                wire[offset..]
+                    .iter()
+                    .position(|byte| *byte == b'\n')
+                    .map(|n| offset + n + 1)
+            })
+            .expect("results line");
         wire[start] = 0xff;
         let Admission::Admitted(envelope) =
             admit_unscoped_whylog(&wire[..], WhylogLimits::spike_default())

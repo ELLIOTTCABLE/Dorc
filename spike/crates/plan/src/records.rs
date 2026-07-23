@@ -651,10 +651,6 @@ pub enum AdmittedHostRecord<'a> {
 
 impl AdmittedUnscopedHostRecords {
     /// The exact bounded wire range, retained only for sibling durable serialization.
-    #[expect(
-        dead_code,
-        reason = "the v2 writer consumes this crate-private seam in the next checkpoint"
-    )]
     pub(crate) fn admitted_wire_bytes(&self) -> &[u8] {
         &self.wire
     }
