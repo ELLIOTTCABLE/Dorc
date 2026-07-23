@@ -67,7 +67,6 @@ fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
     let rendered = DorcConsumer::new()
         .render_case(&case)
         .expect("canonical payload renders");
-    assert!(rendered.ends_with('\n'), "case render is LF-terminated");
     assert_eq!(
         rendered,
         include_str!("../cases/host-evidence-admission-refused.txt")

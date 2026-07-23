@@ -104,20 +104,47 @@
 # `helper.sh` no-op — neither emits a `ran:` line.)
 set -eu
 
-# E4 (27D disposition-legacy-deframe-tolerance): the ~128 authored probe-results.txt fixtures are
-# UNFRAMED (headerless) — they carry no dorc-records/1 header/token. Production reads are now STRICT
-# (a headerless stream refuses, kFAIL-withhold), so the harness opts into the lenient legacy
-# passthrough via this env var (read at the cli edge; the kernel deframer stays a pure function of
-# its policy parameter). Exported here so EVERY `$dorc` invocation below inherits it; the artifact
-# execs run under `env -i` (scrubbed) but those exec the rendered probe/apply via $checker, not dorc.
-export DORC_ALLOW_LEGACY_RESULTS=1
-
 # 262 §2 dorc-records/1 framing: the fixed spike nonce + terminal token the probe emits, used by
 # gate-1 to deframe the executed probe's record stream. These MIRROR the Rust constants
 # plan::records::DEFAULT_NONCE and TERMINAL_TOKEN — keep the two in sync (a spike two-source-of-
 # truth; the real tool mints a per-attempt nonce, but the e2e default is fixed for stable goldens).
 RECORDS_NONCE=dorc
 RECORDS_TOKEN='@@dorc@@'
+
+framed_results() {
+  _fr_dir=$1
+  shift
+  _fr_raw="${_fr_dir}probe-results.txt"
+  _fr_header=$("$dorc" probe --book="${_fr_dir}book.sh" "$@" 2>/dev/null \
+    | awk -F"'" '/dorc-records\/1/ {sub(/\\n$/, "", $2); print $2; exit}')
+  [ -n "$_fr_header" ] || return 1
+  _fr_out=$(mktemp)
+  printf '%s\n' "$_fr_header" > "$_fr_out"
+  awk '
+    /^dorc-records\/1 / || /^dorc-records-end\/1 / { next }
+    {
+      sub(/\r$/, "")
+      sub(/^dorc /, "")
+      sub(/ @@dorc@@$/, "")
+    }
+    /^[[:space:]]*$/ || /^[[:space:]]*#/ { next }
+    $1 == "deriv" {
+      counts[$2]++
+      if (!seen[$2]++) order[++n] = $2
+    }
+    $1 == "deriv-end" { closed[$2] = 1 }
+    { print }
+    END {
+      for (i = 1; i <= n; i++) {
+        site = order[i]
+        if (!closed[site]) print "deriv-end " site " n=" counts[site]
+      }
+    }
+  ' "$_fr_raw" \
+    | sed '/^[[:space:]]*site / {/ rc=/! s/$/ rc=0/;}; s/^/dorc /; s/$/ @@dorc@@/' >> "$_fr_out"
+  printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n' >> "$_fr_out"
+  printf '%s\n' "$_fr_out"
+}
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
@@ -574,7 +601,7 @@ argv_echo_check() {
   shift 3   # the remaining args ($@) are the `-o <oracle> …` flags
   # The engine's per-site argv (stderr, behind the flag). stdin is the probe-results (the
   # flag does not change the round-trip; we just read the extra stderr lines).
-  _eng=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null | grep '^argv ' || true)
+  _eng=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "$(framed_results "$_dir" "$@")" 2>&1 >/dev/null | grep '^argv ' || true)
   # Ground truth: run the BARE book under mocks + sandbox; collect the shims' logged argvs.
   # Shared via capture_run (slice-3) — file mode, the determinism rail (env -i + umask, slice-2)
   # lives in that helper now. dual_rail_check (rail-1) runs the identical bare-book capture.
@@ -729,14 +756,14 @@ dual_rail_check() {
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
   # RAW `--debug-argv` readout: the disposition ledger (`argv …`; the judge filters to
   # replace/omit/guard) PLUS the guard check-command allowlist (`guardcmd <argv0>`, 23A §5).
-  _dbg=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null)
+  _dbg=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "$(framed_results "$_dir" "$@")" 2>&1 >/dev/null)
   _disp=$(printf '%s\n' "$_dbg" | grep '^argv ' || true)
   _guardcmds=$(printf '%s\n' "$_dbg" | sed -nE 's/^guardcmd (.+)$/\1/p' || true)
   # rail-1: bare book (shared capture_run, file mode).
   _book=$(CDPATH= cd -- "$_dir" && pwd)/book.sh
   _bare=$(capture_run file "$_book" "$_mocks")
   # rail-2: the eliding-apply artifact (re-run; 2nd shebang block).
-  _apply_art=$("$dorc" --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>/dev/null \
+  _apply_art=$("$dorc" --book="${_dir}book.sh" "$@" < "$(framed_results "$_dir" "$@")" 2>/dev/null \
     | awk 'BEGIN{c=0} /^#!\/bin\/sh/{c++} c>=2{print}')
   _apply=$(capture_run stdin "$_apply_art" "$_mocks")
   _viol=$(dual_rail_judge "$_bare" "$_apply" "$_disp" "$_shims" "$_guardcmds")
@@ -911,9 +938,9 @@ dorc_flags_selftest() {
   _c="$here/cases/strawman24-survive-multiwall"
   [ -d "$_c" ] || return 0   # the flagship anchors the self-test; skip if the corpus lacks it
   _fl=$("$dorc" --book="$_c/book.sh" -o "$_c/package.oracle.sh" --trust-footprints \
-    < "$_c/probe-results.txt" 2>&1 >/dev/null | grep -oE 'elide=[0-9]+' || true)
+    < "$(framed_results "$_c/" -o "$_c/package.oracle.sh" --trust-footprints)" 2>&1 >/dev/null | grep -oE 'elide=[0-9]+' || true)
   _pl=$("$dorc" --book="$_c/book.sh" -o "$_c/package.oracle.sh" \
-    < "$_c/probe-results.txt" 2>&1 >/dev/null | grep -oE 'elide=[0-9]+' || true)
+    < "$(framed_results "$_c/" -o "$_c/package.oracle.sh")" 2>&1 >/dev/null | grep -oE 'elide=[0-9]+' || true)
   if [ "$_fl" = "$_pl" ]; then
     echo "FATAL  dorc_flags_selftest FAILED — --trust-footprints did not change the flagship's elision count ($_fl flagged vs $_pl plain); the flag is not reaching the engine, so a flagged survival case's gate-6 attribution would lie. aborting." >&2
     exit 3
@@ -1065,10 +1092,10 @@ scan_why_chain() {
     return 1
   fi
   # LIVE: the addressed pull answer (address FIRST — `dorc why` takes the address before flags).
-  _live=$("$dorc" why "$_addr" --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>/dev/null)
+  _live=$("$dorc" why "$_addr" --book="${_dir}book.sh" "$@" < "$(framed_results "$_dir" "$@")" 2>/dev/null)
   # REPLAY: write the durable, then re-derive `dorc why --last` through the same kernel.
   _wl=$(mktemp -d)
-  "$dorc" --book="${_dir}book.sh" "$@" --whylog-dir="$_wl" < "${_dir}probe-results.txt" >/dev/null 2>&1
+  "$dorc" --book="${_dir}book.sh" "$@" --whylog-dir="$_wl" < "$(framed_results "$_dir" "$@")" >/dev/null 2>&1
   _replay=$("$dorc" why "$_addr" --last --book="${_dir}book.sh" "$@" --whylog-dir="$_wl" < /dev/null 2>/dev/null)
   rm -rf "$_wl"
   _ml=$(printf '%s\n' "$_live" | needles_missing "$_decl")
@@ -1216,7 +1243,7 @@ for dir in "$here"/cases/*/; do
   # entry-composed probe's inner-check executables here (pure side effect; empty for a wrapper-free
   # case; probe_exec_check adds it to PATH; cleaned up at case end).
   _shimdir=$(mktemp -d)
-  raw=$("$dorc" --shim-dir="$_shimdir" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>"$err_file") || dorc_rc=$?
+  raw=$("$dorc" --shim-dir="$_shimdir" --book="${dir}book.sh" "$@" < "$(framed_results "$dir" "$@")" 2>"$err_file") || dorc_rc=$?
   got=$(printf '%s\n' "$raw" | sed 's/\r$//')
   if [ "$dorc_rc" -ne "$_dorc_exit" ] || [ -z "$got" ]; then
     echo "FAIL  $name  [dorc exited rc=$dorc_rc (expected $_dorc_exit) / produced no output — a dead engine, or a wrong exit-code contract, is never green]"

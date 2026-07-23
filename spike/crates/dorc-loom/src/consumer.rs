@@ -257,11 +257,7 @@ impl CaseRenderer for DorcConsumer {
             .collect();
         let mut regenerated = case.clone();
         regenerated.set_replay_outputs(outputs);
-        let mut rendered = regenerated.to_text();
-        if !rendered.ends_with('\n') {
-            rendered.push('\n');
-        }
-        Ok(rendered)
+        Ok(regenerated.to_text())
     }
 }
 
