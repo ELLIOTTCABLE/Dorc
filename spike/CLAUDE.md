@@ -537,18 +537,20 @@ prompt you write:
   dorc-loom alone parses strict whole-token `{{name}}`, resolves it against the
   current typed payload, and compiles catalog fields. The old tagged-region/
   param-table/re-holing/prose-bless path is dead; never restore it. Durable promotion
-  is deliberately absent until phase three lands `dorc-loom compile/promote`, a
-  content-bound receipt, and preflighted generated catalog+case publication. All
-  candidate bytes and fixpoints precede publication; final per-target temp-file
-  replacements are not a promised crash transaction. The build parses
+  is LANDED (phase three, `notes/287`): `dorc-loom compile/promote` over a
+  content-bound receipt, publishing the wholly generated `core/src/catalog_lock.rs`
+  plus affected cases. All candidate bytes and both fixpoints precede publication;
+  final per-target temp-file replacements are not a promised crash transaction
+  (interruption is loud in git, repaired by rerun). The legacy `DORC_CATALOG_PROMOTE`
+  writer is retired; hand-edits to the lock are refused or caught. The build parses
   the catalog and never auto-tracks case files (the lag IS the assertion).
   `message`/`help` are
   `Option<&'static str>` (`None` renders the `[unwritten:]` placeholder at render
   time, never a stored string); interpolated values use engine-owned canonical
   formatters; sibling codes come from world-state/license variants ONLY, never
-  grammar-fit (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Two fixpoint gates
-  remain the destination: errorloom render-level + Dorc's generated-catalog
-  byte-identity gate (phase three).
+  grammar-fit (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Both fixpoint gates
+  are live: errorloom render-level + Dorc's generated-lock byte-identity gate
+  (`dorc-loom --test fixpoint`).
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
   defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
   unwritten); prose is a conductor/human act issued from the builder's when/why/how
