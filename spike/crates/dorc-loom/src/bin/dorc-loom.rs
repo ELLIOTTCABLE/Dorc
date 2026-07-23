@@ -347,11 +347,21 @@ fn inspect_cases(
 }
 
 fn receipt_store() -> Result<FsReceiptStore, String> {
-    FsReceiptStore::new(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target"))
+    // No `..` components — the store's directory-tree check rejects them (`spike/target`).
+    let target = spike_dir()?.join("target");
+    FsReceiptStore::new(target)
 }
 
 fn catalog_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs")
+}
+
+fn spike_dir() -> Result<PathBuf, String> {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .map(Path::to_path_buf)
+        .ok_or_else(|| "locate spike dir".to_owned())
 }
 
 /// The receipt may bind only transcript-prose edits. Repository reads are isolated
