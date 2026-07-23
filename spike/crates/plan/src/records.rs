@@ -862,7 +862,7 @@ fn admit_records(
     if declared_sites != Some(received_sites) {
         return Admission::Refused(AdmissionRefusal::Framing);
     }
-    if declared_sites == Some(0) {
+    if records.is_empty() {
         return Admission::NoObservation;
     }
     Admission::Admitted(AdmittedUnscopedHostRecords {
@@ -1693,6 +1693,18 @@ mod tests {
     }
 
     #[test]
+    fn report_only_zero_site_frame_remains_admitted() {
+        let report = strict_stream(&["report site=0 decline unsound host detail"]);
+        let Admission::Admitted(records) = admitted(&report, strict_limits()) else {
+            panic!("a valid report-only frame must preserve its decision-inert record");
+        };
+        assert!(matches!(
+            records.iter().next(),
+            Some(AdmittedHostRecord::Report { body }) if body == "site=0 decline unsound host detail"
+        ));
+    }
+
+    #[test]
     fn admission_rejects_bad_text_controls_and_forged_framing_before_record_ownership() {
         let invalid = b"\xff";
         assert!(matches!(
@@ -2218,7 +2230,7 @@ mod tests {
         );
         assert!(matches!(
             admitted(&stream(0, &records), limits),
-            Admission::NoObservation
+            Admission::Admitted(_)
         ));
         let plus = vec![report.as_str(); 257];
         assert!(matches!(
@@ -2318,7 +2330,7 @@ mod tests {
                 &stream(0, &["deriv 0 coord=one", "deriv 0 coord=two"]),
                 strict_limits()
             ),
-            Admission::NoObservation
+            Admission::Admitted(_)
         ));
 
         for raw in [

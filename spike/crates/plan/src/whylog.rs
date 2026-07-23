@@ -1058,7 +1058,7 @@ fn atom_valid(value: &str, limits: WhylogLimits) -> bool {
 }
 
 fn mode_valid(value: &str) -> bool {
-    matches!(value, "plan" | "apply" | "roundtrip")
+    matches!(value, "plan" | "apply" | "roundtrip" | "whylog-replay")
 }
 
 fn disposition_valid(value: &str) -> bool {

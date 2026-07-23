@@ -115,12 +115,23 @@ framed_results() {
   _fr_dir=$1
   shift
   _fr_raw="${_fr_dir}probe-results.txt"
-  _fr_header=$("$dorc" probe --book="${_fr_dir}book.sh" "$@" 2>/dev/null \
+  _fr_probe=$("$dorc" probe --book="${_fr_dir}book.sh" "$@" 2>/dev/null || true)
+  _fr_header=$(printf '%s\n' "$_fr_probe" \
     | awk -F"'" '/dorc-records\/1/ {sub(/\\n$/, "", $2); print $2; exit}')
-  [ -n "$_fr_header" ] || return 1
+  _fr_sites=$(printf '%s\n' "$_fr_probe" \
+    | awk '{for (i = 1; i < NF; i++) if ($i == "site" && $(i + 1) ~ /^[0-9]+(\.[0-9]+)?$/ && !seen[$(i + 1)]++) print $(i + 1)}' \
+    | tr '\n' ' ')
   _fr_out=$(mktemp)
+  if [ -z "$_fr_header" ]; then
+    printf '%s\n' "$_fr_out"
+    return 0
+  fi
   printf '%s\n' "$_fr_header" > "$_fr_out"
-  awk '
+  awk -v expected="$_fr_sites" '
+    BEGIN {
+      expected_count = split(expected, sites, " ")
+      for (i = 1; i <= expected_count; i++) wanted[sites[i]] = 1
+    }
     /^dorc-records\/1 / || /^dorc-records-end\/1 / { next }
     {
       sub(/\r$/, "")
@@ -128,20 +139,26 @@ framed_results() {
       sub(/ @@dorc@@$/, "")
     }
     /^[[:space:]]*$/ || /^[[:space:]]*#/ { next }
+    $1 == "site" && !wanted[$2] { next }
     $1 == "deriv" {
       counts[$2]++
-      if (!seen[$2]++) order[++n] = $2
+      if (!seen[$2]++) order[++deriv_count] = $2
     }
     $1 == "deriv-end" { closed[$2] = 1 }
     { print }
     END {
-      for (i = 1; i <= n; i++) {
+      for (i = 1; i <= deriv_count; i++) {
         site = order[i]
         if (!closed[site]) print "deriv-end " site " n=" counts[site]
       }
     }
   ' "$_fr_raw" \
     | sed '/^[[:space:]]*site / {/ rc=/! s/$/ rc=0/;}; s/^/dorc /; s/$/ @@dorc@@/' >> "$_fr_out"
+  for _fr_site in $_fr_sites; do
+    if ! grep -q "^dorc site $_fr_site " "$_fr_out"; then
+      printf 'dorc site %s effect=cant-tell rc=0 @@dorc@@\n' "$_fr_site" >> "$_fr_out"
+    fi
+  done
   printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n' >> "$_fr_out"
   printf '%s\n' "$_fr_out"
 }

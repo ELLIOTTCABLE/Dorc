@@ -1552,19 +1552,16 @@ grep__predict() {
             Cursor::new(raw.as_bytes()),
             HostEvidenceLimits::spike_default(),
         ) {
-            Admission::Admitted(bytes) => admit_unscoped_host_records(
-                &bytes,
-                &framing,
-                HostEvidenceLimits::spike_default(),
-            ),
+            Admission::Admitted(bytes) => {
+                admit_unscoped_host_records(&bytes, &framing, HostEvidenceLimits::spike_default())
+            }
             Admission::NoObservation => Admission::NoObservation,
             Admission::Refused(refusal) => Admission::Refused(refusal),
         };
         let clean_records: BTreeSet<String> = match admit(&clean) {
-            Admission::Admitted(records) => records
-                .iter()
-                .map(|record| format!("{record:?}"))
-                .collect(),
+            Admission::Admitted(records) => {
+                records.iter().map(|record| format!("{record:?}")).collect()
+            }
             other => panic!("clean stream must admit: {other:?}"),
         };
         assert!(
