@@ -98,6 +98,7 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "RecordsTornLine",
     "RecordsAlienLine",
     "RecordsLateLine",
+    "HostEvidenceAdmissionRefused",
     // cli/main.rs
     "FootprintIncoherent",
     "TouchesEscalated",
@@ -164,6 +165,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "records-torn-line",
     "records-alien-line",
     "records-late-line",
+    "host-evidence-admission-refused",
     "footprint-incoherent",
     "touches-escalated",
     "deriv-family-incomplete",
@@ -220,6 +222,7 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "RecordsTornLine",
     "RecordsAlienLine",
     "RecordsLateLine",
+    "HostEvidenceAdmissionRefused",
     // cli/main.rs — whole-stream/whole-plan verdicts with no single source point.
     "DanglingReference", // the dangling coord's book-origin site is not in the emit scope (deferred, not synthesized)
     "EscalationPolicy",

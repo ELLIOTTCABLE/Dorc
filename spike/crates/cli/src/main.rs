@@ -57,7 +57,7 @@
 )]
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::process::ExitCode;
 
 use dorc_core::diag::{
@@ -182,6 +182,8 @@ enum RunOutcome {
     /// A wrapper oracle's `__predict`/`__lend_map` peels are dual-peel incoherent (`273` §5) ⇒ the
     /// artifact shipped, but exit [`EXIT_WRAPPER_INCOHERENT`] (fail-fast).
     WrapperIncoherent,
+    /// Host evidence failed admission before any decision artifact could be built.
+    IngressRefused,
 }
 
 fn main() -> ExitCode {
@@ -207,6 +209,7 @@ fn main() -> ExitCode {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
+            Ok(RunOutcome::IngressRefused) => ExitCode::from(12),
             Err(msg) => {
                 eprintln!("dorc: {msg}");
                 ExitCode::from(EXIT_USAGE)
@@ -981,8 +984,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // `--last` replay (`27V` Lane B): reconstruct inputs from the durable; a surfaced refusal returns.
     let replay = if args.last {
         match load_whylog_replay(args, advisory)? {
-            Some(r) => Some(r),
-            None => return Ok(RunOutcome::Complete),
+            ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
+            ReplayLoad::Refused => return Ok(RunOutcome::IngressRefused),
         }
     } else {
         None
@@ -992,7 +995,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // mandate: no mode branches the kernel; only the stdout/stderr ROUTING below differs) ----
 
     let oracle_paths = match &replay {
-        Some(r) => r.doc.oracles.iter().map(|(p, _)| p.clone()).collect(),
+        Some(r) => r.oracle_paths.clone(),
         None => resolve_oracle_paths(&args.oracles, &args.oracle_dirs)?,
     };
     let oracle_srcs: Vec<String> = oracle_paths
@@ -1053,7 +1056,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let replay_books: Vec<String>;
     let books: &[String] = match &replay {
         Some(r) => {
-            replay_books = vec![r.doc.book.0.clone()];
+            replay_books = vec![r.book_path.clone()];
             &replay_books
         }
         None => &args.books,
@@ -1063,25 +1066,6 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
     emit_unloaded_sibling_oracles(advisory, books, &oracle_paths);
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
-    if let Some(r) = &replay {
-        let oracle_inputs: Vec<_> = oracle_paths
-            .iter()
-            .zip(&oracle_srcs)
-            .map(|(path, source)| (path.as_str(), source.as_str()))
-            .collect();
-        let inspection = dorc_plan::whylog::inspect(
-            Some(&r.raw),
-            &r.identity,
-            Some(dorc_plan::whylog::WhylogCurrent {
-                book: Some(&book_src),
-                oracles: &oracle_inputs,
-            }),
-        );
-        if !inspection.diagnostics.is_empty() {
-            report_at(advisory, "whylog", None, &inspection.diagnostics);
-            return Ok(RunOutcome::Complete);
-        }
-    }
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
     let book_source = Some((book_name, book_src.as_str()));
@@ -1237,7 +1221,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &connected,
         ship,
         ship_auto,
-        |node| vouches.contains_key(&node),
+        |node| vouches.contains_site(node),
     );
 
     // Shim-materialization edge (`274` §5 / `27L` task-14): `--shim-dir` writes the entry-composed
@@ -1377,34 +1361,70 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // read the (simulated) probe results — the site-keyed records the rendered probe would emit
     // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
     // the default stdin (the harness pipes them in).
-    let results_buf = if let Some(r) = &replay {
-        r.doc.raw_results.clone()
-    } else if let Some(path) = &args.results {
-        std::fs::read_to_string(path).map_err(|e| humane_read_error("results", path, &e))?
+    let scope =
+        WidthOneAttemptScope::new(&framing, book_name, &book_src, &oracle_paths, &oracle_srcs);
+    let (admitted_records, scoped_results, whylog_eligible) = if let Some(r) = replay.as_ref() {
+        let results = r.records.as_ref().map_or_else(
+            || SiteResults {
+                framed: true,
+                ..SiteResults::default()
+            },
+            |records| parse_admitted_results(records, &mut interner),
+        );
+        (None, ScopedHostEvidence::new(scope, results), false)
     } else {
-        let mut buf = String::new();
-        std::io::stdin()
-            .read_to_string(&mut buf)
-            .map_err(|e| format!("reading probe results from stdin: {e}"))?;
-        buf
+        let evidence = if let Some(path) = &args.results {
+            let file =
+                std::fs::File::open(path).map_err(|e| humane_read_error("results", path, &e))?;
+            dorc_plan::records::read_host_evidence(
+                file,
+                dorc_plan::records::HostEvidenceLimits::spike_default(),
+            )
+        } else {
+            dorc_plan::records::read_host_evidence(
+                std::io::stdin(),
+                dorc_plan::records::HostEvidenceLimits::spike_default(),
+            )
+        };
+        let admitted = match evidence {
+            dorc_plan::records::Admission::Admitted(bytes) => {
+                dorc_plan::records::admit_unscoped_host_records(
+                    &bytes,
+                    &framing,
+                    dorc_plan::records::HostEvidenceLimits::spike_default(),
+                )
+            }
+            dorc_plan::records::Admission::NoObservation => {
+                dorc_plan::records::Admission::NoObservation
+            }
+            dorc_plan::records::Admission::Refused(reason) => {
+                dorc_plan::records::Admission::Refused(reason)
+            }
+        };
+        match admitted {
+            dorc_plan::records::Admission::Admitted(records) => {
+                let parsed = parse_admitted_results(&records, &mut interner);
+                (Some(records), ScopedHostEvidence::new(scope, parsed), true)
+            }
+            dorc_plan::records::Admission::NoObservation => (
+                None,
+                ScopedHostEvidence::new(
+                    scope,
+                    SiteResults {
+                        framed: true,
+                        ..SiteResults::default()
+                    },
+                ),
+                false,
+            ),
+            dorc_plan::records::Admission::Refused(reason) => {
+                report_at(advisory, "records", None, &[reason.spanless_diagnostic()]);
+                return Ok(RunOutcome::IngressRefused);
+            }
+        }
     };
-    // `262` §2: deframe FIRST (the production deframer — integrity keys, torn/glued/alien/late,
-    // terminal-token strip), then inner-parse the clean records. A refused read unit (book/host/
-    // attempt/nonce mismatch or a glued line) yields NO records ⇒ every site folds Unknown ⇒ run
-    // (kFAIL-perform). The deframer tolerates the authored (unframed) fixtures via its legacy path.
-    // E4 (`27D` disposition-legacy-deframe-tolerance): production reads are STRICT — a headerless
-    // stream refuses (kFAIL-withhold), closing the truncated-before-header integrity bypass. The
-    // lenient legacy passthrough is a harness/test-only escape read HERE at the edge
-    // (`io-at-edges-only`; the kernel stays pure — `inv-determinism`): run.sh exports
-    // `DORC_ALLOW_LEGACY_RESULTS` for the ~128 unframed authored fixtures.
-    let legacy = if std::env::var_os("DORC_ALLOW_LEGACY_RESULTS").is_some() {
-        dorc_plan::records::LegacyPolicy::Tolerate
-    } else {
-        dorc_plan::records::LegacyPolicy::Refuse
-    };
-    let deframed = dorc_plan::records::deframe(&results_buf, &framing.expect(), legacy);
-    report_at(advisory, "records", None, &deframed.diagnostics);
-    let results = parse_results(&deframed.records, deframed.framed, &mut interner);
+    let _scope = scoped_results.scope();
+    let results = scoped_results.borrow();
 
     // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
@@ -1414,8 +1434,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let (by_fact, merge_evidence) = facts_from_sites(&probe, &results);
-    let probe_origins = probe_origins(&probe, &results, &mut arena);
+    let (by_fact, merge_evidence) = facts_from_sites(&probe, results);
+    let probe_origins = probe_origins(&probe, results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
@@ -1445,7 +1465,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         merge_derived_footprints(
             &mut fps,
             &derivations,
-            &results,
+            results,
             &classes,
             &kill_coords,
             &derived_node_spans,
@@ -1461,7 +1481,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &mut fps,
             &kind_reaches,
             &reach_kinds,
-            &results,
+            results,
             &mut interner,
         );
         fps
@@ -1470,7 +1490,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // backing coords canonicalized in the survival walk). Flag-off / no-resolver ⇒ empty ⇒ the
     // token-equality floor (identical to today). §4: each DANGLING coordinate is a loud diagnostic.
     let mut resolutions =
-        build_resolutions(&resolver_coords, &resolver_kinds, &results, &mut interner);
+        build_resolutions(&resolver_coords, &resolver_kinds, results, &mut interner);
     // fence-no-disjoint (`24L` §7): register every verdict-provider's auto-cell kind so the survival
     // tier reads an auto coordinate as may-touch (`survival::disjoint`). The plan is interner-free,
     // so this resolution happens here (the edge holds the interner) and rides the Resolutions the
@@ -1566,8 +1586,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // (cant-tell ⇒ Unknown ⇒ run) and never flaps the verdict, so this is an advisory nudge,
         // not an error. (A `--exit-code`-like surface must source from divergence-of-world, never
         // this raw rc — see `dorc_plan::render::probe::record_scaffold`.)
-        emit_sigpipe_race_notes(&results);
-        emit_report_lane_notes(&results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
+        emit_sigpipe_race_notes(results);
+        emit_report_lane_notes(results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
         // `27W` §3 tier-2 STATIC decline classes at plan time, with the emitting arm's file:line.
         emit_static_decline_notes(&collapse_evidence, &oracle_paths, &oracle_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
@@ -1641,7 +1661,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     if mode == Mode::Why {
         // `--last` belt-and-suspenders: a diverged decision digest (same inputs) ⇒ refuse, not narrate.
         if let Some(r) = &replay
-            && decision_digest != r.doc.decision_digest
+            && decision_digest != r.decision_digest
         {
             report_at(
                 advisory,
@@ -1687,29 +1707,33 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
 
     // `27V` Lane B: write the thin durable (opt-in) so `dorc why --last` can replay it (best-effort).
     if let Some(dir) = &args.whylog_dir {
-        let doc = assemble_whylog_doc(
-            mode,
+        let metadata = assemble_whylog_metadata(
             &framing,
             book_name,
             &book_src,
             &oracle_paths,
             &oracle_srcs,
             &decision_digest,
-            &results_buf,
             &plan,
         );
-        write_whylog(dir, &doc);
+        if whylog_eligible && let Some(records) = admitted_records.as_ref() {
+            write_whylog(dir, &metadata, records);
+        }
     }
     Ok(book_outcome)
 }
 
-/// A `--last` replay context (`27V` Lane B · `whylog-write-only-replay`): the reconstructed durable
-/// whose recorded book/oracle PATHS + results the pipeline replays. Book/oracle CONTENT is re-read
-/// from disk (only digests are stored) and verified against the recorded digests before replay.
 struct Replay {
-    doc: dorc_plan::whylog::WhylogDoc,
-    raw: String,
-    identity: String,
+    book_path: String,
+    oracle_paths: Vec<String>,
+    decision_digest: String,
+    records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
+}
+
+enum ReplayLoad {
+    Admitted(Replay),
+    NoObservation(Replay),
+    Refused,
 }
 
 /// Whylog retention (ruling tc-whylog-retention-params, builder latitude): keep the newest
@@ -1718,37 +1742,134 @@ struct Replay {
 const WHYLOG_KEEP: usize = 5;
 const WHYLOG_CAP: usize = 1_000_000;
 
-/// Load + parse the durable for `dorc why --last` (`27V` Lane B). Returns `Some(Replay)` to replay,
-/// or `None` when a refusal was surfaced (absent / version / corrupt — pull-surface Warnings, the
-/// user asked and must learn WHY the answer is no). Desync is checked later (after the re-read).
-fn load_whylog_replay(args: &Args, advisory: bool) -> Result<Option<Replay>, String> {
-    let (identity, raw) = if let Some(path) = &args.whylog {
-        let raw = match std::fs::read_to_string(path) {
-            Ok(raw) => Some(raw),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
-            Err(error) => return Err(humane_read_error("whylog", path, &error)),
-        };
-        (path.as_str(), raw)
+fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, String> {
+    // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
+    // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.
+    let path = if let Some(exact) = args.whylog.as_deref() {
+        std::path::PathBuf::from(exact)
     } else {
         let dir = args.whylog_dir.as_deref().ok_or(
-        "dorc why --last needs --whylog-dir=DIR (the spike opt-in siting; the product writes the \
-         durable quietly beside its work — tc-whylog-default-off)",
+            "dorc why --last needs --whylog-dir=DIR (the spike opt-in siting; the product writes the \
+             durable quietly beside its work — tc-whylog-default-off)",
         )?;
-        let raw = newest_whylog(dir)
-            .map(|path| {
-                std::fs::read_to_string(&path)
-                    .map_err(|e| humane_read_error("whylog", &path.to_string_lossy(), &e))
-            })
-            .transpose()?;
-        (dir, raw)
+        let Some(path) = newest_whylog(dir) else {
+            report_at(
+                advisory,
+                "whylog",
+                None,
+                &[Diag::new_spanless_site(DiagCode::WhylogAbsent(
+                    dorc_core::diag::WhylogAbsent {
+                        dir: dir.to_owned(),
+                    },
+                ))],
+            );
+            return Ok(ReplayLoad::Refused);
+        };
+        path
     };
-    let inspected = dorc_plan::whylog::inspect(raw.as_deref(), identity, None);
-    report_at(advisory, "whylog", None, &inspected.diagnostics);
-    Ok(inspected.doc.map(|doc| Replay {
-        doc,
-        raw: raw.unwrap_or_default(),
-        identity: identity.to_owned(),
-    }))
+    let Ok(file) = std::fs::File::open(&path) else {
+        return Ok(refuse_replay(
+            advisory,
+            dorc_plan::records::AdmissionRefusal::Framing,
+        ));
+    };
+    let envelope = match dorc_plan::whylog::admit_unscoped_whylog(
+        file,
+        dorc_plan::whylog::WhylogLimits::spike_default(),
+    ) {
+        dorc_plan::records::Admission::Admitted(envelope) => envelope,
+        dorc_plan::records::Admission::NoObservation => {
+            return Ok(refuse_replay(
+                advisory,
+                dorc_plan::records::AdmissionRefusal::Framing,
+            ));
+        }
+        dorc_plan::records::Admission::Refused(reason) => {
+            return Ok(refuse_replay(advisory, reason));
+        }
+    };
+    let book_path = envelope.recorded_book_path().as_str().to_owned();
+    let oracle_paths: Vec<String> = envelope
+        .recorded_oracles()
+        .iter()
+        .map(|oracle| oracle.path().as_str().to_owned())
+        .collect();
+    let Ok(book) = std::fs::read_to_string(&book_path) else {
+        return Ok(refuse_replay(
+            advisory,
+            dorc_plan::records::AdmissionRefusal::Framing,
+        ));
+    };
+    let oracle_sources: Vec<String> =
+        match oracle_paths.iter().map(std::fs::read_to_string).collect() {
+            Ok(sources) => sources,
+            Err(_) => {
+                return Ok(refuse_replay(
+                    advisory,
+                    dorc_plan::records::AdmissionRefusal::Framing,
+                ));
+            }
+        };
+    let framing = dorc_plan::records::Framing::spike(book_digest(&book));
+    let scope =
+        WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
+    if !replay_claims_match(&envelope, &scope) {
+        return Ok(refuse_replay(
+            advisory,
+            dorc_plan::records::AdmissionRefusal::Framing,
+        ));
+    }
+    let decision_digest = envelope.claims().decision_digest().to_owned();
+    match dorc_plan::whylog::admit_unscoped_whylog_replay(
+        envelope,
+        &framing,
+        dorc_plan::records::HostEvidenceLimits::spike_default(),
+    ) {
+        dorc_plan::records::Admission::Admitted(replay) => Ok(ReplayLoad::Admitted(Replay {
+            book_path,
+            oracle_paths,
+            decision_digest,
+            records: Some(replay.records().clone()),
+        })),
+        dorc_plan::records::Admission::NoObservation => Ok(ReplayLoad::NoObservation(Replay {
+            book_path,
+            oracle_paths,
+            decision_digest,
+            records: None,
+        })),
+        dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(advisory, reason)),
+    }
+}
+
+fn refuse_replay(advisory: bool, reason: dorc_plan::records::AdmissionRefusal) -> ReplayLoad {
+    report_at(advisory, "whylog", None, &[reason.spanless_diagnostic()]);
+    ReplayLoad::Refused
+}
+
+fn replay_claims_match(
+    envelope: &dorc_plan::whylog::UnscopedWhylogEnvelope,
+    scope: &WidthOneAttemptScope,
+) -> bool {
+    let claims = envelope.claims();
+    claims.nonce() == scope.nonce
+        && claims.attempt() == scope.attempt
+        && claims.host() == scope.host
+        && claims.target() == "width-one"
+        && claims.generation() == "width-one"
+        && envelope.mode() == "whylog-replay"
+        && envelope.recorded_book_path().as_str() == scope.book.0
+        && claims.book_digest() == scope.book.1
+        && envelope.recorded_oracles().len() == scope.sources.len()
+        && envelope
+            .recorded_oracles()
+            .iter()
+            .zip(&scope.sources)
+            .enumerate()
+            .all(|(ordinal, (recorded, current))| {
+                recorded.ordinal() == ordinal
+                    && recorded.path().as_str() == current.0
+                    && recorded.digest() == current.1
+            })
 }
 
 /// The `whylog-<NNNN>.txt` durables in `dir`, ascending by run-index (deterministic).
@@ -1779,23 +1900,23 @@ fn newest_whylog(dir: &str) -> Option<std::path::PathBuf> {
 
 /// Write the durable for a completed run (`27V` Lane B), with retention. Best-effort: a write
 /// failure is swallowed (the durable is a postmortem aid, never load-bearing — stdout is untouched).
-fn write_whylog(dir: &str, doc: &dorc_plan::whylog::WhylogDoc) {
+fn write_whylog(
+    dir: &str,
+    metadata: &dorc_plan::whylog::WhylogV2Metadata,
+    records: &dorc_plan::records::AdmittedUnscopedHostRecords,
+) {
     if std::fs::create_dir_all(dir).is_err() {
         return;
     }
-    let mut bytes = dorc_plan::whylog::serialize(doc);
+    let write = dorc_plan::whylog::WhylogV2Write::new(metadata, records);
+    let Ok(bytes) = dorc_plan::whylog::try_serialize_v2(
+        &write,
+        dorc_plan::whylog::WhylogLimits::spike_default(),
+    ) else {
+        return;
+    };
     if bytes.len() > WHYLOG_CAP {
-        // Size-cap: truncate at the last newline ≤ the cap (byte-safe).
-        let window = bytes
-            .as_bytes()
-            .get(..WHYLOG_CAP.min(bytes.len()))
-            .unwrap_or(&[]);
-        let cut = window
-            .iter()
-            .rposition(|&b| b == b'\n')
-            .map_or(0, |i| i.saturating_add(1));
-        bytes.truncate(cut);
-        bytes.push_str("# whylog truncated at size cap\n");
+        return;
     }
     let next = whylog_entries(dir)
         .last()
@@ -1815,21 +1936,15 @@ fn write_whylog(dir: &str, doc: &dorc_plan::whylog::WhylogDoc) {
 /// Assemble the thin durable from a completed run (`27V` §2). The apply report records the PREDICTED
 /// per-leaf disposition (`predicted=true`) — the spike has no apply executor (`tc-apply-report-is-
 /// prediction`); the field shape is additive so a real executor fills genuine outcomes later.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "the durable assembles the whole run context (mode/framing/book/oracles/digest/results/plan); each is a distinct pipeline output, not a bundle"
-)]
-fn assemble_whylog_doc(
-    mode: Mode,
+fn assemble_whylog_metadata(
     framing: &dorc_plan::records::Framing,
     book_name: &str,
     book_src: &str,
     oracle_paths: &[String],
     oracle_srcs: &[String],
     decision_digest: &str,
-    results_buf: &str,
     plan: &dorc_plan::Plan,
-) -> dorc_plan::whylog::WhylogDoc {
+) -> dorc_plan::whylog::WhylogV2Metadata {
     let apply = plan
         .steps
         .iter()
@@ -1839,15 +1954,8 @@ fn assemble_whylog_doc(
             predicted: true,
         })
         .collect();
-    dorc_plan::whylog::WhylogDoc {
-        mode: match mode {
-            Mode::Plan => "plan",
-            Mode::Apply => "apply",
-            Mode::RoundTrip => "roundtrip",
-            Mode::Probe => "probe",
-            Mode::Why => "why",
-        }
-        .to_owned(),
+    dorc_plan::whylog::WhylogV2Metadata {
+        mode: "whylog-replay".to_owned(),
         argv: std::env::args().collect(),
         book: (book_name.to_owned(), book_digest(book_src)),
         oracles: oracle_paths
@@ -1859,7 +1967,6 @@ fn assemble_whylog_doc(
         attempt: framing.attempt,
         host: framing.host.clone(),
         decision_digest: decision_digest.to_owned(),
-        raw_results: results_buf.to_owned(),
         apply,
     }
 }
@@ -3324,10 +3431,28 @@ fn emit_survival_attribution(
                 )
             })
             .collect();
-        // C7: the licensing vouch's oracle `file:line` (elide-weld path; omitted for vouchless survival).
-        let locus = oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs)
-            .map(|l| format!("; vouched at {l}"))
-            .unwrap_or_default();
+        let aggregate_loci: Vec<String> = license
+            .derivation()
+            .establish_vouches
+            .iter()
+            .map(|receipt| {
+                let locus = oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs)
+                    .map(|value| format!(" at {value}"))
+                    .unwrap_or_default();
+                format!(
+                    "site {} {} vouched{locus}",
+                    receipt.site.0,
+                    dorc_plan::fact_label(interner, receipt.fact)
+                )
+            })
+            .collect();
+        let locus = if aggregate_loci.is_empty() {
+            oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs)
+                .map(|value| format!("; vouched at {value}"))
+                .unwrap_or_default()
+        } else {
+            format!("; {}", aggregate_loci.join(", "))
+        };
         eprintln!(
             "why: site {} survives+elides past {} — backing {} disjoint (trusted footprint){locus}",
             step.leaf.0,
@@ -3715,21 +3840,37 @@ fn survival_chain(
 ) -> Option<ChainRender> {
     let witness = license.derivation().survival.as_ref()?;
     let backing = render_coord(witness.backing(), interner);
-    let mut links = vec![
-        ChainLink {
-            tier: TrustTier::Measured,
-            body: format!("{backing} was measured converged on the host at plan time"),
-            locus: None,
-        },
-        ChainLink {
+    let mut links = vec![ChainLink {
+        tier: TrustTier::Measured,
+        body: format!("{backing} was measured converged on the host at plan time"),
+        locus: None,
+    }];
+    if license.derivation().establish_vouches.is_empty() {
+        links.push(ChainLink {
             tier: TrustTier::Vouched,
             body:
                 "the site's own oracle accepts that measured state as reason enough not to re-run \
                    this line"
                     .to_owned(),
             locus: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
-        },
-    ];
+        });
+    } else {
+        links.extend(
+            license
+                .derivation()
+                .establish_vouches
+                .iter()
+                .map(|receipt| ChainLink {
+                    tier: TrustTier::Vouched,
+                    body: format!(
+                        "site {}'s oracle accepts {} as reason enough not to re-run its establish",
+                        receipt.site.0,
+                        dorc_plan::fact_label(interner, receipt.fact)
+                    ),
+                    locus: oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs),
+                }),
+        );
+    }
     let mut claimed_link: Option<u32> = None;
     for c in witness.crossings() {
         links.push(ChainLink {
@@ -4495,6 +4636,81 @@ struct RecordKey {
     member: Option<u32>,
 }
 
+/// Controller-owned width-one identity. Payload records never construct or refresh this scope.
+#[derive(Debug)]
+struct WidthOneAttemptScope {
+    host: String,
+    target: WidthOneLocalTargetId,
+    nonce: String,
+    attempt: u32,
+    sources: Vec<(String, String)>,
+    generation: InitialWidthOneGeneration,
+    book: (String, String),
+}
+
+#[derive(Debug)]
+struct WidthOneLocalTargetId;
+
+#[derive(Debug)]
+struct InitialWidthOneGeneration;
+
+impl WidthOneAttemptScope {
+    fn new(
+        framing: &dorc_plan::records::Framing,
+        book_name: &str,
+        book: &str,
+        paths: &[String],
+        sources: &[String],
+    ) -> Self {
+        Self {
+            host: framing.host.clone(),
+            target: WidthOneLocalTargetId,
+            nonce: framing.nonce.0.clone(),
+            attempt: framing.attempt,
+            sources: paths
+                .iter()
+                .zip(sources)
+                .map(|(path, source)| (path.clone(), book_digest(source)))
+                .collect(),
+            generation: InitialWidthOneGeneration,
+            book: (book_name.to_owned(), book_digest(book)),
+        }
+    }
+
+    fn retain(&self) {
+        let _ = (
+            &self.host,
+            &self.target,
+            &self.nonce,
+            self.attempt,
+            &self.sources,
+            &self.generation,
+            &self.book,
+        );
+    }
+}
+
+/// Keeps controller attribution attached while live evidence participates in planning.
+struct ScopedHostEvidence<T> {
+    scope: WidthOneAttemptScope,
+    value: T,
+}
+
+impl<T> ScopedHostEvidence<T> {
+    fn new(scope: WidthOneAttemptScope, value: T) -> Self {
+        Self { scope, value }
+    }
+
+    fn borrow(&self) -> &T {
+        &self.value
+    }
+
+    fn scope(&self) -> &WidthOneAttemptScope {
+        self.scope.retain();
+        &self.scope
+    }
+}
+
 /// The probe results parsed from stdin, keyed by [`RecordKey`] (site, optional member —
 /// `inv-site-keyed-results` + task-L2 item-4). One record per (site, member): the reported
 /// Effect [`Verdict`] plus the raw probe-command rc carried alongside it. Whether that rc
@@ -4784,6 +5000,7 @@ fn book_digest(book_src: &str) -> String {
 ///
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
+#[cfg(test)]
 fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> SiteResults {
     let mut out = SiteResults {
         framed,
@@ -4871,6 +5088,76 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
     out
 }
 
+/// Converts only grammar-admitted records. The legacy string parser above is replay-only until 3C2.
+fn parse_admitted_results(
+    records: &dorc_plan::records::AdmittedUnscopedHostRecords,
+    interner: &mut Interner,
+) -> SiteResults {
+    let mut out = SiteResults {
+        framed: true,
+        ..SiteResults::default()
+    };
+    for (ordinal, record) in records.iter().enumerate() {
+        match record {
+            dorc_plan::records::AdmittedHostRecord::Site {
+                key,
+                effect,
+                rc,
+                stdout,
+                stderr,
+                ..
+            } => {
+                let Some(key) = parse_site_key(key) else {
+                    continue;
+                };
+                let rec = SiteRecord {
+                    verdict: effect_word_to_verdict(effect),
+                    rc: Rc(rc),
+                    stdout: stdout.map_or(Predicted::Top, |value| {
+                        Predicted::Value(OutBytes(interner.intern(value)))
+                    }),
+                    stderr: stderr.map_or(Predicted::Top, |value| {
+                        Predicted::Value(OutBytes(interner.intern(value)))
+                    }),
+                    conflicted: false,
+                    ordinal: ordinal as u64,
+                };
+                out.records
+                    .entry(key)
+                    .and_modify(|prior| *prior = meet_record(*prior, rec))
+                    .or_insert(rec);
+            }
+            dorc_plan::records::AdmittedHostRecord::Derivation { site, coord } => {
+                out.derivations
+                    .entry(dorc_plan::LeafId(site))
+                    .or_default()
+                    .push(coord.to_owned());
+            }
+            dorc_plan::records::AdmittedHostRecord::DerivationEnd { site, count } => {
+                out.derivation_ends.insert(dorc_plan::LeafId(site), count);
+            }
+            dorc_plan::records::AdmittedHostRecord::Resolution { coord, canonical } => {
+                out.resolutions.insert(
+                    coord.to_owned(),
+                    canonical.map_or(ResolvOutcome::Dangling, |value| {
+                        ResolvOutcome::Canonical(value.to_owned())
+                    }),
+                );
+            }
+            dorc_plan::records::AdmittedHostRecord::Reach { coord, arm, entity } => {
+                out.reaches
+                    .entry((coord.to_owned(), arm))
+                    .or_default()
+                    .push(entity.to_owned());
+            }
+            dorc_plan::records::AdmittedHostRecord::Report { body } => {
+                parse_report_record(body, &mut out);
+            }
+        }
+    }
+    out
+}
+
 /// Ingest one report-lane record (`27W` §2 tier-3): `report [site=<key>] <verb> <class> <tail…>`.
 /// Decision-inert. Noise-tolerant (`27W:rul-report-noise-tolerant`): the verb/class are recognized
 /// best-effort, but an unrecognized token or free-form line is RETAINED (`recognized=false`), never
@@ -4922,6 +5209,7 @@ fn sanitize_report_raw(s: &str) -> String {
 }
 
 /// Parse `u32` leaf-id.
+#[cfg(test)]
 fn parse_leaf(tok: &str) -> Option<dorc_plan::LeafId> {
     tok.parse::<u32>().ok().map(dorc_plan::LeafId)
 }
@@ -4929,6 +5217,7 @@ fn parse_leaf(tok: &str) -> Option<dorc_plan::LeafId> {
 /// Split a record body at a FREE-CONTENT `key=` into `(head, value)` where `value` runs to
 /// end-of-line (whitespace included — `262` §2 last-to-token). The key must be preceded by a
 /// space (or begin the body). Returns `None` when the key is absent.
+#[cfg(test)]
 fn split_key<'a>(body: &'a str, key: &str) -> Option<(&'a str, &'a str)> {
     if let Some(v) = body.strip_prefix(key) {
         return Some(("", v));
@@ -4944,6 +5233,7 @@ fn split_key<'a>(body: &'a str, key: &str) -> Option<(&'a str, &'a str)> {
 /// stays single-token (stderr handling is out of spike scope — churn-avoidance-disclosure).
 /// Unknown keys BEFORE the free-content field are ignored (additive-keys, `24Kc`). A duplicate
 /// (site, member) record MERGES BY MEET, never last-wins (`262` §1 tie-break law).
+#[cfg(test)]
 fn parse_site_record(rest: &str, ordinal: u64, out: &mut SiteResults, interner: &mut Interner) {
     // `stdout=` is the trailing free-content field; everything from it runs to EOL.
     let (head, stdout) = match split_key(rest, "stdout=") {
@@ -6109,61 +6399,6 @@ mod tests {
         assert!(
             !cleaned.contains('\u{7}') && !cleaned.contains('\t'),
             "control bytes are neutralized (a minimal terminal-safety floor)"
-        );
-    }
-
-    #[test]
-    fn whylog_inspection_flags_a_changed_book_or_oracle() {
-        let doc = dorc_plan::whylog::WhylogDoc {
-            book: ("b.sh".to_owned(), book_digest("orig book bytes")),
-            oracles: vec![("o.sh".to_owned(), book_digest("orig oracle"))],
-            ..Default::default()
-        };
-        let raw = dorc_plan::whylog::serialize(&doc);
-        let inputs = [("o.sh", "orig oracle")];
-        assert_eq!(
-            dorc_plan::whylog::inspect(
-                Some(&raw),
-                ".whylog",
-                Some(dorc_plan::whylog::WhylogCurrent {
-                    book: Some("orig book bytes"),
-                    oracles: &inputs
-                }),
-            )
-            .diagnostics
-            .len(),
-            0,
-            "unchanged inputs ⇒ no desync ⇒ replay proceeds"
-        );
-        assert_eq!(
-            dorc_plan::whylog::inspect(
-                Some(&raw),
-                ".whylog",
-                Some(dorc_plan::whylog::WhylogCurrent {
-                    book: Some("CHANGED book"),
-                    oracles: &inputs
-                }),
-            )
-            .diagnostics[0]
-                .code
-                .slug(),
-            "whylog-book-desync",
-            "a changed book ⇒ desync (which=book)"
-        );
-        assert_eq!(
-            dorc_plan::whylog::inspect(
-                Some(&raw),
-                ".whylog",
-                Some(dorc_plan::whylog::WhylogCurrent {
-                    book: Some("orig book bytes"),
-                    oracles: &[("o.sh", "CHANGED oracle")],
-                }),
-            )
-            .diagnostics[0]
-                .code
-                .slug(),
-            "whylog-book-desync",
-            "a changed oracle ⇒ desync (which names the oracle path)"
         );
     }
 

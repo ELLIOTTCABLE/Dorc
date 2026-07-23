@@ -2,8 +2,8 @@
 //! `notes/26A` stop-1; landed by `270:wire-records-v1-import`). The emission side lives in
 //! [`crate::render`]; this module owns the shared vocabulary (the terminal token + framing
 //! tags), the framing DATA the controller edge supplies ([`Framing`]/[`Nonce`]/[`Expect`]),
-//! the header/sentinel emitters, and the **production deframer** ([`deframe`]) both the cli
-//! round-trip and the `sweep` byte-tier DST feed raw bytes through.
+//! the header/sentinel emitters, and the temporary legacy deframer ([`deframe`]) used until
+//! checkpoint 3C migrates the current CLI to the bounded admission API.
 //!
 //! # Why a framing layer at all (`262` §2 / `26A` stop-1 — the safety inversion)
 //!
@@ -28,10 +28,13 @@
 //! exercised end-to-end by the `sweep` byte-tier DST and the plan/cli unit pins.
 
 use dorc_core::diag::{
-    Diag, DiagCode, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing,
-    RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
-    RecordsTornLine,
+    Diag, DiagCode, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, RecordsAlienLine,
+    RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing, RecordsHeaderlessRefused,
+    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
 };
+use std::collections::BTreeMap;
+use std::io::Read;
+use std::ops::Range;
 
 /// The per-record terminal token (`262` §2 / `26A` stop-1). Requirements: fixed, never
 /// produced by the inner grammar, cheap to append in one `printf`. `@@dorc@@` is printable
@@ -445,9 +448,870 @@ fn header_nonce_key(rest: &str) -> Option<&str> {
         .find_map(|t| t.strip_prefix("nonce="))
 }
 
+/// Resource ceilings for hostile host-result bytes. Construction keeps the policy explicit at
+/// the controller boundary while the parser remains deterministic and allocation-bounded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HostEvidenceLimits {
+    stream_bytes: usize,
+    line_bytes: usize,
+    records: usize,
+    field_bytes: usize,
+    retained_bytes: usize,
+    collection_entries: usize,
+    numeric_digits: usize,
+}
+
+impl HostEvidenceLimits {
+    /// The deliberately conservative width-one spike policy.
+    #[must_use]
+    pub const fn spike_default() -> Self {
+        Self {
+            stream_bytes: 8 * 1024 * 1024,
+            line_bytes: 64 * 1024,
+            records: 65_536,
+            field_bytes: 16 * 1024,
+            retained_bytes: 4 * 1024 * 1024,
+            collection_entries: 32_768,
+            numeric_digits: 16,
+        }
+    }
+
+    /// Supply a test or embedding policy without exposing mutable limit fields.
+    #[must_use]
+    pub const fn new(
+        stream_bytes: usize,
+        line_bytes: usize,
+        records: usize,
+        field_bytes: usize,
+        retained_bytes: usize,
+        collection_entries: usize,
+        numeric_digits: usize,
+    ) -> Self {
+        Self {
+            stream_bytes,
+            line_bytes,
+            records,
+            field_bytes,
+            retained_bytes,
+            collection_entries,
+            numeric_digits,
+        }
+    }
+
+    pub(crate) const fn stream_bytes(self) -> usize {
+        self.stream_bytes
+    }
+}
+
+/// Bytes admitted under the stream ceiling, before text or record ownership exists.
+#[derive(Debug)]
+pub struct BoundedHostBytes {
+    backing: Vec<u8>,
+    admitted: Range<usize>,
+}
+
+impl BoundedHostBytes {
+    /// Keep a single checked range over controller-owned backing for a nested durable.
+    pub(crate) fn from_owned_backing(backing: Vec<u8>) -> Self {
+        let end = backing.len();
+        Self {
+            backing,
+            admitted: 0..end,
+        }
+    }
+
+    /// Narrows the admitted view without reconstructing or copying the backing bytes.
+    pub(crate) fn with_admitted_range(mut self, admitted: Range<usize>) -> Option<Self> {
+        if admitted.start > admitted.end || admitted.end > self.backing.len() {
+            return None;
+        }
+        self.admitted = admitted;
+        Some(self)
+    }
+
+    fn admitted_bytes(&self) -> Option<&[u8]> {
+        self.backing.get(self.admitted.clone())
+    }
+}
+
+/// A closed reason why evidence cannot enter the decision plane.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdmissionRefusal {
+    IncompatibleVersion,
+    StreamLimit,
+    LineLimit,
+    InvalidUtf8,
+    ControlByte,
+    Framing,
+    Grammar,
+    Numeric,
+    RecordLimit,
+    FieldLimit,
+    RetainedLimit,
+    CollectionLimit,
+    Duplicate,
+    ArithmeticOverflow,
+}
+
+impl AdmissionRefusal {
+    /// Keeps malformed ingress outside source spans.
+    #[must_use]
+    pub fn spanless_diagnostic(self) -> Diag {
+        Diag::new_spanless_site(DiagCode::HostEvidenceAdmissionRefused(
+            HostEvidenceAdmissionRefused { kind: self.kind() },
+        ))
+    }
+
+    fn kind(self) -> HostEvidenceRefusalKind {
+        match self {
+            Self::IncompatibleVersion => HostEvidenceRefusalKind::IncompatibleVersion,
+            Self::StreamLimit => HostEvidenceRefusalKind::StreamLimit,
+            Self::LineLimit => HostEvidenceRefusalKind::LineLimit,
+            Self::InvalidUtf8 => HostEvidenceRefusalKind::InvalidUtf8,
+            Self::ControlByte => HostEvidenceRefusalKind::ControlByte,
+            Self::Framing => HostEvidenceRefusalKind::Framing,
+            Self::Grammar => HostEvidenceRefusalKind::Grammar,
+            Self::Numeric => HostEvidenceRefusalKind::Numeric,
+            Self::RecordLimit => HostEvidenceRefusalKind::RecordLimit,
+            Self::FieldLimit => HostEvidenceRefusalKind::FieldLimit,
+            Self::RetainedLimit => HostEvidenceRefusalKind::RetainedLimit,
+            Self::CollectionLimit => HostEvidenceRefusalKind::CollectionLimit,
+            Self::Duplicate => HostEvidenceRefusalKind::Duplicate,
+            Self::ArithmeticOverflow => HostEvidenceRefusalKind::ArithmeticOverflow,
+        }
+    }
+}
+
+/// The only three outcomes for host evidence admission.
+#[derive(Debug)]
+pub enum Admission<T> {
+    Admitted(T),
+    NoObservation,
+    Refused(AdmissionRefusal),
+}
+
+/// Read at most `limit + 1` bytes before decoding or allocating record text.
+pub fn read_host_evidence<R: Read>(
+    reader: R,
+    limits: HostEvidenceLimits,
+) -> Admission<BoundedHostBytes> {
+    let Some(read_limit) = limits.stream_bytes.checked_add(1) else {
+        return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
+    };
+    let mut bytes = Vec::new();
+    let mut limited = reader.take(read_limit as u64);
+    if limited.read_to_end(&mut bytes).is_err() {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    }
+    if bytes.len() > limits.stream_bytes {
+        return Admission::Refused(AdmissionRefusal::StreamLimit);
+    }
+    Admission::Admitted(BoundedHostBytes::from_owned_backing(bytes))
+}
+
+/// Bounded wire records, unscoped and decision-inert until checkpoint 3C.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdmittedUnscopedHostRecords {
+    records: Vec<TypedHostRecord>,
+    wire: Vec<u8>,
+}
+
+/// A borrowed, grammar-checked record. It remains unscoped until the controller binds it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdmittedHostRecord<'a> {
+    Site {
+        key: &'a str,
+        effect: &'a str,
+        rc: i32,
+        stdout: Option<&'a str>,
+        stderr: Option<&'a str>,
+        inert: &'a [(String, String)],
+    },
+    Derivation {
+        site: u32,
+        coord: &'a str,
+    },
+    DerivationEnd {
+        site: u32,
+        count: u32,
+    },
+    Resolution {
+        coord: &'a str,
+        canonical: Option<&'a str>,
+    },
+    Reach {
+        coord: &'a str,
+        arm: usize,
+        entity: &'a str,
+    },
+    Report {
+        body: &'a str,
+    },
+}
+
+impl AdmittedUnscopedHostRecords {
+    /// The exact bounded wire range, retained only for sibling durable serialization.
+    pub(crate) fn admitted_wire_bytes(&self) -> &[u8] {
+        &self.wire
+    }
+    /// Borrows validated records without exposing their owning representation or a raw byte route.
+    pub fn iter(&self) -> impl Iterator<Item = AdmittedHostRecord<'_>> {
+        self.records.iter().map(|record| match record {
+            TypedHostRecord::Site {
+                key,
+                effect,
+                rc,
+                stdout,
+                stderr,
+                inert,
+            } => AdmittedHostRecord::Site {
+                key,
+                effect,
+                rc: *rc,
+                stdout: stdout.as_deref(),
+                stderr: stderr.as_deref(),
+                inert,
+            },
+            TypedHostRecord::Derivation { site, coord } => {
+                AdmittedHostRecord::Derivation { site: *site, coord }
+            }
+            TypedHostRecord::DerivationEnd { site, count } => AdmittedHostRecord::DerivationEnd {
+                site: *site,
+                count: *count,
+            },
+            TypedHostRecord::Resolution { coord, canonical } => AdmittedHostRecord::Resolution {
+                coord,
+                canonical: canonical.as_deref(),
+            },
+            TypedHostRecord::Reach { coord, arm, entity } => AdmittedHostRecord::Reach {
+                coord,
+                arm: *arm,
+                entity,
+            },
+            TypedHostRecord::Report { body } => AdmittedHostRecord::Report { body },
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum TypedHostRecord {
+    Site {
+        key: String,
+        effect: String,
+        rc: i32,
+        stdout: Option<String>,
+        stderr: Option<String>,
+        inert: Vec<(String, String)>,
+    },
+    Derivation {
+        site: u32,
+        coord: String,
+    },
+    DerivationEnd {
+        site: u32,
+        count: u32,
+    },
+    Resolution {
+        coord: String,
+        canonical: Option<String>,
+    },
+    Reach {
+        coord: String,
+        arm: usize,
+        entity: String,
+    },
+    Report {
+        body: String,
+    },
+}
+
+/// Compare bounded bytes with expected framing; a match grants no attribution.
+#[must_use]
+pub fn admit_unscoped_host_records(
+    bytes: &BoundedHostBytes,
+    expected: &Framing,
+    limits: HostEvidenceLimits,
+) -> Admission<AdmittedUnscopedHostRecords> {
+    let Some(bytes) = bytes.admitted_bytes() else {
+        return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
+    };
+    admit_records(bytes, expected, limits)
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "the ordered framing state machine keeps every refusal before ownership in one auditable boundary"
+)]
+fn admit_records(
+    bytes: &[u8],
+    expected: &Framing,
+    limits: HostEvidenceLimits,
+) -> Admission<AdmittedUnscopedHostRecords> {
+    if bytes.is_empty() || std::str::from_utf8(bytes).is_err() {
+        return Admission::Refused(AdmissionRefusal::InvalidUtf8);
+    }
+    if !bytes.ends_with(b"\n") {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    }
+    let lines = bytes.split_inclusive(|byte| *byte == b'\n');
+    let mut header = false;
+    let mut sentinel = false;
+    let mut declared_sites = None;
+    let mut received_sites = 0usize;
+    let mut retained = 0usize;
+    let mut records = Vec::new();
+    let mut identities = BTreeMap::new();
+    let mut collections = CollectionCounts::default();
+    let mut physical_records = 0usize;
+    for raw in lines {
+        let line = raw.strip_suffix(b"\n").unwrap_or(raw);
+        if line.len() > limits.line_bytes {
+            return Admission::Refused(AdmissionRefusal::LineLimit);
+        }
+        let line = line.strip_suffix(b"\r").unwrap_or(line);
+        if line
+            .iter()
+            .any(|byte| *byte == 0 || (*byte < 0x20 && *byte != b'\r'))
+        {
+            return Admission::Refused(AdmissionRefusal::ControlByte);
+        }
+        let Ok(line) = std::str::from_utf8(line) else {
+            return Admission::Refused(AdmissionRefusal::InvalidUtf8);
+        };
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if !line.ends_with(TERMINAL_TOKEN) {
+            return Admission::Refused(AdmissionRefusal::Framing);
+        }
+        let Some(body) = line
+            .strip_suffix(TERMINAL_TOKEN)
+            .and_then(|s| s.strip_suffix(' '))
+        else {
+            return Admission::Refused(AdmissionRefusal::Framing);
+        };
+        if body.contains(TERMINAL_TOKEN) {
+            return Admission::Refused(AdmissionRefusal::Framing);
+        }
+        if let Some(rest) = body.strip_prefix(&format!("{HEADER_TAG} ")) {
+            if header || sentinel || !records.is_empty() {
+                return Admission::Refused(AdmissionRefusal::Framing);
+            }
+            declared_sites = match parse_header(rest, expected, limits) {
+                Ok(sites) => sites,
+                Err(refusal) => return Admission::Refused(refusal),
+            };
+            header = true;
+            continue;
+        }
+        if let Some(rest) = body.strip_prefix(&format!("{SENTINEL_TAG} ")) {
+            if !header || sentinel || rest != format!("nonce={}", expected.nonce.0) {
+                return Admission::Refused(AdmissionRefusal::Framing);
+            }
+            sentinel = true;
+            continue;
+        }
+        if !header || sentinel {
+            return Admission::Refused(AdmissionRefusal::Framing);
+        }
+        let Some(record) = body
+            .strip_prefix(&expected.nonce.0)
+            .and_then(|rest| rest.strip_prefix(' '))
+        else {
+            return Admission::Refused(AdmissionRefusal::Framing);
+        };
+        physical_records = match physical_records.checked_add(1) {
+            Some(total) => total,
+            None => return Admission::Refused(AdmissionRefusal::ArithmeticOverflow),
+        };
+        if physical_records > limits.records {
+            return Admission::Refused(AdmissionRefusal::RecordLimit);
+        }
+        let parsed = match parse_record(record, limits) {
+            Ok(record) => record,
+            Err(refusal) => return Admission::Refused(refusal),
+        };
+        if matches!(parsed, ParsedRecord::Site(_)) {
+            received_sites = match received_sites.checked_add(1) {
+                Some(total) => total,
+                None => return Admission::Refused(AdmissionRefusal::ArithmeticOverflow),
+            };
+        }
+        retained = match charge_retained(retained, &parsed, limits) {
+            Ok(total) => total,
+            Err(refusal) => return Admission::Refused(refusal),
+        };
+        let identity = parsed.identity();
+        if let Some(existing) = identities.get(&identity) {
+            if *existing != parsed {
+                return Admission::Refused(AdmissionRefusal::Duplicate);
+            }
+            continue;
+        }
+        if !collections.can_insert(parsed.collection(), limits.collection_entries) {
+            return Admission::Refused(AdmissionRefusal::CollectionLimit);
+        }
+        collections.insert(parsed.collection());
+        let owned = parsed.to_owned();
+        identities.insert(identity, parsed);
+        records.push(owned);
+    }
+    if !header || !sentinel {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    }
+    if declared_sites != Some(received_sites) {
+        return Admission::Refused(AdmissionRefusal::Framing);
+    }
+    if records.is_empty() {
+        return Admission::NoObservation;
+    }
+    Admission::Admitted(AdmittedUnscopedHostRecords {
+        records,
+        wire: bytes.to_vec(),
+    })
+}
+
+fn parse_header(
+    rest: &str,
+    expected: &Framing,
+    limits: HostEvidenceLimits,
+) -> Result<Option<usize>, AdmissionRefusal> {
+    let mut nonce = None;
+    let mut attempt = None;
+    let mut host = None;
+    let mut book = None;
+    let mut sites = None;
+    for token in rest.split_whitespace() {
+        let Some((key, value)) = token.split_once('=') else {
+            return Err(AdmissionRefusal::Grammar);
+        };
+        match key {
+            "nonce" if nonce.replace(value).is_none() => {}
+            "attempt" if attempt.replace(number_u32(value, limits)?).is_none() => {}
+            "host" if host.replace(value).is_none() => {}
+            "book" if book.replace(value).is_none() => {}
+            "sites" if sites.replace(number(value, limits)?).is_none() => {}
+            _ => return Err(AdmissionRefusal::Grammar),
+        }
+    }
+    if nonce != Some(expected.nonce.0.as_str())
+        || attempt != Some(expected.attempt)
+        || host != Some(expected.host.as_str())
+        || book != Some(expected.book_digest.as_str())
+    {
+        return Err(AdmissionRefusal::Framing);
+    }
+    sites.map(Some).ok_or(AdmissionRefusal::Grammar)
+}
+
+fn number(token: &str, limits: HostEvidenceLimits) -> Result<usize, AdmissionRefusal> {
+    if token.is_empty()
+        || token.len() > limits.numeric_digits
+        || !token.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err(AdmissionRefusal::Numeric);
+    }
+    token
+        .parse::<usize>()
+        .map_err(|_| AdmissionRefusal::Numeric)
+}
+
+fn number_u32(token: &str, limits: HostEvidenceLimits) -> Result<u32, AdmissionRefusal> {
+    u32::try_from(number(token, limits)?).map_err(|_| AdmissionRefusal::Numeric)
+}
+
+fn parse_record(
+    record: &str,
+    limits: HostEvidenceLimits,
+) -> Result<ParsedRecord<'_>, AdmissionRefusal> {
+    let Some((tag, rest)) = record.split_once(' ') else {
+        return Err(AdmissionRefusal::Grammar);
+    };
+    match tag {
+        "site" => parse_site(rest, limits).map(ParsedRecord::Site),
+        "deriv" => {
+            let (site, coord) = rest
+                .split_once(" coord=")
+                .ok_or(AdmissionRefusal::Grammar)?;
+            checked_field(coord, limits)?;
+            Ok(ParsedRecord::Derivation {
+                site: number_u32(site, limits)?,
+                coord,
+            })
+        }
+        "deriv-end" => {
+            let (site, count) = rest.split_once(" n=").ok_or(AdmissionRefusal::Grammar)?;
+            Ok(ParsedRecord::DerivationEnd {
+                site: number_u32(site, limits)?,
+                count: number_u32(count, limits)?,
+            })
+        }
+        "resolv" => {
+            let (coord, outcome) = rest.split_once(' ').ok_or(AdmissionRefusal::Grammar)?;
+            checked_field(coord, limits)?;
+            let canonical = match outcome {
+                "dangling" => None,
+                value if value.starts_with("canon=") => {
+                    let value = &value[6..];
+                    checked_field(value, limits)?;
+                    Some(value)
+                }
+                _ => return Err(AdmissionRefusal::Grammar),
+            };
+            Ok(ParsedRecord::Resolution { coord, canonical })
+        }
+        "reach" => {
+            let (head, entity) = rest
+                .split_once(" entity=")
+                .ok_or(AdmissionRefusal::Grammar)?;
+            let mut words = head.split_whitespace();
+            let coord = words.next().ok_or(AdmissionRefusal::Grammar)?;
+            let arm = words
+                .next()
+                .and_then(|word| word.strip_prefix("arm="))
+                .ok_or(AdmissionRefusal::Grammar)?;
+            if words.next().is_some() {
+                return Err(AdmissionRefusal::Grammar);
+            }
+            checked_field(coord, limits)?;
+            checked_field(entity, limits)?;
+            Ok(ParsedRecord::Reach {
+                coord,
+                arm: number(arm, limits)?,
+                entity,
+            })
+        }
+        "report" => {
+            checked_field(rest, limits)?;
+            Ok(ParsedRecord::Report { body: rest })
+        }
+        _ => Err(AdmissionRefusal::Grammar),
+    }
+}
+
+fn site_key(token: &str, limits: HostEvidenceLimits) -> bool {
+    let mut parts = token.split('.');
+    let Some(site) = parts.next() else {
+        return false;
+    };
+    let member = parts.next();
+    parts.next().is_none()
+        && number(site, limits).is_ok()
+        && member.is_none_or(|member| number(member, limits).is_ok())
+}
+
+fn parse_i32(token: &str, limits: HostEvidenceLimits) -> Result<i32, AdmissionRefusal> {
+    let digits = token.strip_prefix('-').unwrap_or(token);
+    if digits.len() > limits.numeric_digits
+        || digits.is_empty()
+        || !digits.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err(AdmissionRefusal::Numeric);
+    }
+    token.parse().map_err(|_| AdmissionRefusal::Numeric)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SiteBorrowed<'a> {
+    key: &'a str,
+    effect: &'a str,
+    rc: i32,
+    stdout: Option<&'a str>,
+    stderr: Option<&'a str>,
+    inert: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ParsedRecord<'a> {
+    Site(SiteBorrowed<'a>),
+    Derivation {
+        site: u32,
+        coord: &'a str,
+    },
+    DerivationEnd {
+        site: u32,
+        count: u32,
+    },
+    Resolution {
+        coord: &'a str,
+        canonical: Option<&'a str>,
+    },
+    Reach {
+        coord: &'a str,
+        arm: usize,
+        entity: &'a str,
+    },
+    Report {
+        body: &'a str,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum RecordIdentity<'a> {
+    Site(&'a str),
+    Derivation(u32, &'a str),
+    DerivationEnd(u32),
+    Resolution(&'a str),
+    Reach(&'a str, usize),
+    Report(&'a str),
+}
+
+#[derive(Clone, Copy)]
+enum Collection {
+    Site,
+    Derivation,
+    DerivationEnd,
+    Resolution,
+    Reach,
+    Report,
+}
+
+#[derive(Default)]
+struct CollectionCounts {
+    site: usize,
+    derivation: usize,
+    derivation_end: usize,
+    resolution: usize,
+    reach: usize,
+    report: usize,
+}
+
+impl CollectionCounts {
+    fn can_insert(&self, collection: Collection, limit: usize) -> bool {
+        match collection {
+            Collection::Site => self.site < limit,
+            Collection::Derivation => self.derivation < limit,
+            Collection::DerivationEnd => self.derivation_end < limit,
+            Collection::Resolution => self.resolution < limit,
+            Collection::Reach => self.reach < limit,
+            Collection::Report => self.report < limit,
+        }
+    }
+
+    fn insert(&mut self, collection: Collection) {
+        match collection {
+            Collection::Site => self.site += 1,
+            Collection::Derivation => self.derivation += 1,
+            Collection::DerivationEnd => self.derivation_end += 1,
+            Collection::Resolution => self.resolution += 1,
+            Collection::Reach => self.reach += 1,
+            Collection::Report => self.report += 1,
+        }
+    }
+}
+
+impl<'a> ParsedRecord<'a> {
+    fn identity(self) -> RecordIdentity<'a> {
+        match self {
+            Self::Site(site) => RecordIdentity::Site(site.key),
+            Self::Derivation { site, coord } => RecordIdentity::Derivation(site, coord),
+            Self::DerivationEnd { site, .. } => RecordIdentity::DerivationEnd(site),
+            Self::Resolution { coord, .. } => RecordIdentity::Resolution(coord),
+            Self::Reach { coord, arm, .. } => RecordIdentity::Reach(coord, arm),
+            Self::Report { body } => RecordIdentity::Report(body),
+        }
+    }
+
+    fn collection(self) -> Collection {
+        match self {
+            Self::Site(_) => Collection::Site,
+            Self::Derivation { .. } => Collection::Derivation,
+            Self::DerivationEnd { .. } => Collection::DerivationEnd,
+            Self::Resolution { .. } => Collection::Resolution,
+            Self::Reach { .. } => Collection::Reach,
+            Self::Report { .. } => Collection::Report,
+        }
+    }
+
+    fn to_owned(self) -> TypedHostRecord {
+        match self {
+            Self::Site(site) => TypedHostRecord::Site {
+                key: site.key.to_owned(),
+                effect: site.effect.to_owned(),
+                rc: site.rc,
+                stdout: site.stdout.map(str::to_owned),
+                stderr: site.stderr.map(str::to_owned),
+                inert: inert_fields(site.inert)
+                    .map(|(name, value)| (name.to_owned(), value.to_owned()))
+                    .collect(),
+            },
+            Self::Derivation { site, coord } => TypedHostRecord::Derivation {
+                site,
+                coord: coord.to_owned(),
+            },
+            Self::DerivationEnd { site, count } => TypedHostRecord::DerivationEnd { site, count },
+            Self::Resolution { coord, canonical } => TypedHostRecord::Resolution {
+                coord: coord.to_owned(),
+                canonical: canonical.map(str::to_owned),
+            },
+            Self::Reach { coord, arm, entity } => TypedHostRecord::Reach {
+                coord: coord.to_owned(),
+                arm,
+                entity: entity.to_owned(),
+            },
+            Self::Report { body } => TypedHostRecord::Report {
+                body: body.to_owned(),
+            },
+        }
+    }
+}
+
+fn parse_site(
+    rest: &str,
+    limits: HostEvidenceLimits,
+) -> Result<SiteBorrowed<'_>, AdmissionRefusal> {
+    let Some((key, fields)) = rest.split_once(' ') else {
+        return Err(AdmissionRefusal::Grammar);
+    };
+    if !site_key(key, limits) {
+        return Err(AdmissionRefusal::Grammar);
+    }
+    checked_field(key, limits)?;
+    let mut effect = None;
+    let mut rc = None;
+    let mut stdout = None;
+    let mut stderr = None;
+    let mut offset = 0;
+    let mut inert_end = fields.len();
+    while offset < fields.len() {
+        let remaining = &fields[offset..];
+        let trimmed = remaining.trim_start_matches(char::is_whitespace);
+        offset += remaining.len() - trimmed.len();
+        if trimmed.is_empty() {
+            break;
+        }
+        let word_end = trimmed.find(char::is_whitespace).unwrap_or(trimmed.len());
+        let word = &trimmed[..word_end];
+        let Some((name, value)) = word.split_once('=') else {
+            return Err(AdmissionRefusal::Grammar);
+        };
+        match name {
+            "effect" => {
+                if effect.is_some() || !matches!(value, "holds" | "absent" | "cant-tell") {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                effect = Some(value);
+                checked_field(value, limits)?;
+            }
+            "rc" => {
+                if rc.is_some() {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                rc = Some(parse_i32(value, limits)?);
+            }
+            "stdout" | "stderr" => {
+                if (name == "stdout" && stdout.is_some()) || (name == "stderr" && stderr.is_some())
+                {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                let free = &trimmed[name.len() + 1..];
+                if free.is_empty()
+                    || free.split_whitespace().skip(1).any(|later| {
+                        matches!(
+                            later.split_once('=').map(|(key, _)| key),
+                            Some("effect" | "rc" | "stdout" | "stderr")
+                        )
+                    })
+                {
+                    return Err(AdmissionRefusal::Grammar);
+                }
+                checked_field(free, limits)?;
+                if name == "stdout" {
+                    stdout = Some(free);
+                } else {
+                    stderr = Some(free);
+                }
+                inert_end = offset;
+                break;
+            }
+            _ if !name.is_empty() && !value.is_empty() => {
+                checked_field(name, limits)?;
+                checked_field(value, limits)?;
+            }
+            _ => return Err(AdmissionRefusal::Grammar),
+        }
+        offset += word_end;
+    }
+    Ok(SiteBorrowed {
+        key,
+        effect: effect.ok_or(AdmissionRefusal::Grammar)?,
+        rc: rc.ok_or(AdmissionRefusal::Grammar)?,
+        stdout,
+        stderr,
+        inert: &fields[..inert_end],
+    })
+}
+
+fn inert_fields(fields: &str) -> impl Iterator<Item = (&str, &str)> {
+    fields.split_whitespace().filter_map(|word| {
+        let (name, value) = word.split_once('=')?;
+        (!matches!(name, "effect" | "rc" | "stdout" | "stderr")).then_some((name, value))
+    })
+}
+
+fn charge_retained(
+    retained: usize,
+    record: &ParsedRecord<'_>,
+    limits: HostEvidenceLimits,
+) -> Result<usize, AdmissionRefusal> {
+    let mut total = retained;
+    let mut charge = |field: &str| {
+        checked_field(field, limits)?;
+        total = total
+            .checked_add(field.len())
+            .ok_or(AdmissionRefusal::ArithmeticOverflow)?;
+        (total <= limits.retained_bytes)
+            .then_some(())
+            .ok_or(AdmissionRefusal::RetainedLimit)
+    };
+    match record {
+        ParsedRecord::Site(site) => {
+            charge(site.key)?;
+            charge(site.effect)?;
+            if let Some(stdout) = site.stdout {
+                charge(stdout)?;
+            }
+            if let Some(stderr) = site.stderr {
+                charge(stderr)?;
+            }
+            for (name, value) in inert_fields(site.inert) {
+                charge(name)?;
+                charge(value)?;
+            }
+        }
+        ParsedRecord::Derivation { coord, .. } => charge(coord)?,
+        ParsedRecord::DerivationEnd { .. } => {}
+        ParsedRecord::Resolution { coord, canonical } => {
+            charge(coord)?;
+            if let Some(canonical) = canonical {
+                charge(canonical)?;
+            }
+        }
+        ParsedRecord::Reach { coord, entity, .. } => {
+            charge(coord)?;
+            charge(entity)?;
+        }
+        ParsedRecord::Report { body } => charge(body)?,
+    }
+    Ok(total)
+}
+
+fn checked_field(value: &str, limits: HostEvidenceLimits) -> Result<(), AdmissionRefusal> {
+    if value.len() > limits.field_bytes {
+        return Err(AdmissionRefusal::FieldLimit);
+    }
+    if value.is_empty() {
+        return Err(AdmissionRefusal::Grammar);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    type RecordFactory = fn(usize) -> String;
+    type FieldFactory = fn(&str) -> String;
 
     /// The default expectation the emitter's spike framing produces (nonce `dorc`, host
     /// `localhost`, attempt 1, book `bk`).
@@ -712,5 +1576,790 @@ mod tests {
                 .iter()
                 .any(|x| x.code.slug() == "records-alien-line")
         );
+    }
+
+    fn admitted(raw: &str, limits: HostEvidenceLimits) -> Admission<AdmittedUnscopedHostRecords> {
+        let framing = Framing::spike("bk".to_owned());
+        let bytes = match read_host_evidence(raw.as_bytes(), limits) {
+            Admission::Admitted(bytes) => bytes,
+            other => panic!("test input must pass the byte reader: {other:?}"),
+        };
+        admit_unscoped_host_records(&bytes, &framing, limits)
+    }
+
+    fn strict_limits() -> HostEvidenceLimits {
+        HostEvidenceLimits::new(4096, 512, 8, 64, 512, 8, 4)
+    }
+
+    fn strict_stream(inners: &[&str]) -> String {
+        stream(
+            inners
+                .iter()
+                .filter(|line| line.starts_with("site "))
+                .count(),
+            inners,
+        )
+    }
+
+    #[test]
+    fn admission_refusal_diagnostic_mapping_is_exhaustive_and_closed() {
+        for (refusal, kind) in [
+            (
+                AdmissionRefusal::IncompatibleVersion,
+                HostEvidenceRefusalKind::IncompatibleVersion,
+            ),
+            (
+                AdmissionRefusal::StreamLimit,
+                HostEvidenceRefusalKind::StreamLimit,
+            ),
+            (
+                AdmissionRefusal::LineLimit,
+                HostEvidenceRefusalKind::LineLimit,
+            ),
+            (
+                AdmissionRefusal::InvalidUtf8,
+                HostEvidenceRefusalKind::InvalidUtf8,
+            ),
+            (
+                AdmissionRefusal::ControlByte,
+                HostEvidenceRefusalKind::ControlByte,
+            ),
+            (AdmissionRefusal::Framing, HostEvidenceRefusalKind::Framing),
+            (AdmissionRefusal::Grammar, HostEvidenceRefusalKind::Grammar),
+            (AdmissionRefusal::Numeric, HostEvidenceRefusalKind::Numeric),
+            (
+                AdmissionRefusal::RecordLimit,
+                HostEvidenceRefusalKind::RecordLimit,
+            ),
+            (
+                AdmissionRefusal::FieldLimit,
+                HostEvidenceRefusalKind::FieldLimit,
+            ),
+            (
+                AdmissionRefusal::RetainedLimit,
+                HostEvidenceRefusalKind::RetainedLimit,
+            ),
+            (
+                AdmissionRefusal::CollectionLimit,
+                HostEvidenceRefusalKind::CollectionLimit,
+            ),
+            (
+                AdmissionRefusal::Duplicate,
+                HostEvidenceRefusalKind::Duplicate,
+            ),
+            (
+                AdmissionRefusal::ArithmeticOverflow,
+                HostEvidenceRefusalKind::ArithmeticOverflow,
+            ),
+        ] {
+            assert_eq!(
+                refusal.spanless_diagnostic().code,
+                DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused { kind })
+            );
+            assert_eq!(refusal.spanless_diagnostic().primary.span(), None);
+        }
+    }
+
+    #[test]
+    fn bounded_reader_refuses_only_the_stream_plus_one_byte() {
+        let exact = HostEvidenceLimits::new(3, 32, 8, 32, 32, 8, 4);
+        assert!(matches!(
+            read_host_evidence(&b"abc"[..], exact),
+            Admission::Admitted(_)
+        ));
+        assert!(matches!(
+            read_host_evidence(&b"abcd"[..], exact),
+            Admission::Refused(AdmissionRefusal::StreamLimit)
+        ));
+    }
+
+    #[test]
+    fn width_one_admission_distinguishes_empty_observation_from_headerless_bytes() {
+        let empty = strict_stream(&[]);
+        assert!(matches!(
+            admitted(&empty, strict_limits()),
+            Admission::NoObservation
+        ));
+        let framing = Framing::spike("bk".to_owned());
+        let Admission::Admitted(bytes) =
+            read_host_evidence(&b"site 0 effect=holds rc=0\n"[..], strict_limits())
+        else {
+            panic!("the bounded reader must accept the short test input");
+        };
+        assert!(matches!(
+            admit_unscoped_host_records(&bytes, &framing, strict_limits()),
+            Admission::Refused(AdmissionRefusal::Framing)
+        ));
+    }
+
+    #[test]
+    fn report_only_zero_site_frame_remains_admitted() {
+        let report = strict_stream(&["report site=0 decline unsound host detail"]);
+        let Admission::Admitted(records) = admitted(&report, strict_limits()) else {
+            panic!("a valid report-only frame must preserve its decision-inert record");
+        };
+        assert!(matches!(
+            records.iter().next(),
+            Some(AdmittedHostRecord::Report { body }) if body == "site=0 decline unsound host detail"
+        ));
+    }
+
+    #[test]
+    fn admission_rejects_bad_text_controls_and_forged_framing_before_record_ownership() {
+        let invalid = b"\xff";
+        assert!(matches!(
+            read_host_evidence(&invalid[..], strict_limits()),
+            Admission::Admitted(_)
+        ));
+        let framing = Framing::spike("bk".to_owned());
+        let Admission::Admitted(bytes) = read_host_evidence(&invalid[..], strict_limits()) else {
+            panic!("the bounded reader must retain invalid UTF-8 for admission");
+        };
+        assert!(matches!(
+            admit_unscoped_host_records(&bytes, &framing, strict_limits()),
+            Admission::Refused(AdmissionRefusal::InvalidUtf8)
+        ));
+        let control = strict_stream(&["report bad\u{0000}"]);
+        assert!(matches!(
+            admitted(&control, strict_limits()),
+            Admission::Refused(AdmissionRefusal::ControlByte)
+        ));
+        let forged =
+            strict_stream(&["site 0 effect=holds rc=0"]).replace("host=localhost", "host=forged");
+        assert!(matches!(
+            admitted(&forged, strict_limits()),
+            Admission::Refused(AdmissionRefusal::Framing)
+        ));
+    }
+
+    #[test]
+    fn admission_bounds_lines_records_fields_retention_and_collections() {
+        let long = strict_stream(&[
+            "report xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        ]);
+        let line_limited = HostEvidenceLimits::new(4096, 32, 8, 64, 512, 8, 4);
+        assert!(matches!(
+            admitted(&long, line_limited),
+            Admission::Refused(AdmissionRefusal::LineLimit)
+        ));
+        let field_limited = HostEvidenceLimits::new(4096, 512, 8, 4, 512, 8, 4);
+        assert!(matches!(
+            admitted(&strict_stream(&["report abcde"]), field_limited),
+            Admission::Refused(AdmissionRefusal::FieldLimit)
+        ));
+        let record_limited = HostEvidenceLimits::new(4096, 512, 1, 64, 512, 8, 4);
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["report one", "report two"]),
+                record_limited
+            ),
+            Admission::Refused(AdmissionRefusal::RecordLimit)
+        ));
+        let retained_limited = HostEvidenceLimits::new(4096, 512, 8, 64, 3, 8, 4);
+        assert!(matches!(
+            admitted(&strict_stream(&["report four"]), retained_limited),
+            Admission::Refused(AdmissionRefusal::RetainedLimit)
+        ));
+        let collection_limited = HostEvidenceLimits::new(4096, 512, 8, 64, 512, 1, 4);
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["report one", "report two"]),
+                collection_limited
+            ),
+            Admission::Refused(AdmissionRefusal::CollectionLimit)
+        ));
+    }
+
+    #[test]
+    fn admission_rejects_numeric_duplicate_and_framing_ambiguity() {
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["site 0 effect=holds rc=99999"]),
+                strict_limits()
+            ),
+            Admission::Refused(AdmissionRefusal::Numeric)
+        ));
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["site 0 effect=holds rc=0", "site 0 effect=holds rc=0"]),
+                strict_limits()
+            ),
+            Admission::Admitted(_)
+        ));
+        let repeated = format!("{}{}", strict_stream(&[]), sentinel());
+        assert!(matches!(
+            admitted(&repeated, strict_limits()),
+            Admission::Refused(AdmissionRefusal::Framing)
+        ));
+        let torn = strict_stream(&[]).replace(TERMINAL_TOKEN, "");
+        assert!(matches!(
+            admitted(&torn, strict_limits()),
+            Admission::Refused(AdmissionRefusal::Framing)
+        ));
+        assert!(matches!(
+            admitted(&strict_stream(&["unknown field"]), strict_limits()),
+            Admission::Refused(AdmissionRefusal::Grammar)
+        ));
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["site 0 effect=holds rc=-1"]),
+                strict_limits()
+            ),
+            Admission::Admitted(_)
+        ));
+        let overflow = HostEvidenceLimits::new(4096, 512, 8, 64, 512, 8, 16);
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["site 0 effect=holds rc=9999999999"]),
+                overflow
+            ),
+            Admission::Refused(AdmissionRefusal::Numeric)
+        ));
+    }
+
+    #[test]
+    fn admission_retains_each_recognized_free_text_lane_after_validation() {
+        let raw = strict_stream(&[
+            "site 0 effect=holds rc=0 stdout=out with spaces",
+            "deriv 0 coord=derived",
+            "resolv source canon=canonical",
+            "reach source arm=0 entity=reached",
+            "report a bounded report",
+        ]);
+        let Admission::Admitted(evidence) = admitted(&raw, strict_limits()) else {
+            panic!("all lanes must admit")
+        };
+        assert_eq!(evidence.records.len(), 5);
+        assert!(matches!(evidence.records[0], TypedHostRecord::Site { .. }));
+        assert!(matches!(
+            evidence.records[1],
+            TypedHostRecord::Derivation { .. }
+        ));
+        assert!(matches!(
+            evidence.records[2],
+            TypedHostRecord::Resolution { .. }
+        ));
+        assert!(matches!(evidence.records[3], TypedHostRecord::Reach { .. }));
+        assert!(matches!(
+            evidence.records[4],
+            TypedHostRecord::Report { .. }
+        ));
+        let stderr = strict_stream(&["site 0 effect=holds rc=0 stderr=err with spaces"]);
+        assert!(matches!(
+            admitted(&stderr, strict_limits()),
+            Admission::Admitted(_)
+        ));
+    }
+
+    #[test]
+    fn typed_lane_duplicates_deduplicate_only_when_equal_and_refuse_conflicts() {
+        let exact = strict_stream(&["site 0 effect=holds rc=0", "site 0 effect=holds rc=0"]);
+        let Admission::Admitted(records) = admitted(&exact, strict_limits()) else {
+            panic!("an exact duplicate is an idempotent record after charging")
+        };
+        assert_eq!(records.records.len(), 1);
+
+        for records in [
+            strict_stream(&["site 0 effect=holds rc=0", "site 0 effect=absent rc=1"]),
+            strict_stream(&["deriv-end 0 n=1", "deriv-end 0 n=2"]),
+            strict_stream(&["resolv source canon=one", "resolv source canon=two"]),
+            strict_stream(&[
+                "reach source arm=0 entity=one",
+                "reach source arm=0 entity=two",
+            ]),
+        ] {
+            assert!(matches!(
+                admitted(&records, strict_limits()),
+                Admission::Refused(AdmissionRefusal::Duplicate)
+            ));
+        }
+    }
+
+    #[test]
+    fn admission_is_unscoped_and_offers_no_record_extraction_api() {
+        let source = include_str!("records.rs");
+        for forbidden in [
+            ["Width", "OneAttemptScope"].concat(),
+            ["Scoped", "HostEvidence"].concat(),
+            ["Oracle", "SourceIdentity"].concat(),
+            ["admit_width_one", "_host_records"].concat(),
+            ["pub fn ", "records"].concat(),
+        ] {
+            assert!(
+                !source.contains(&forbidden),
+                "forbidden authority API: {forbidden}"
+            );
+        }
+    }
+
+    #[test]
+    fn physical_record_limit_counts_before_grammar_and_deduplication() {
+        for (count, expected) in [(1, true), (2, true), (3, false)] {
+            let records = vec!["site 0 effect=holds rc=0"; count];
+            let raw = strict_stream(&records);
+            assert_eq!(
+                matches!(
+                    admitted(&raw, HostEvidenceLimits::new(4096, 512, 2, 64, 512, 8, 4)),
+                    Admission::Admitted(_)
+                ),
+                expected,
+                "physical record count {count}"
+            );
+        }
+        assert!(matches!(
+            admitted(
+                &strict_stream(&["site 0 effect=holds rc=0"]),
+                HostEvidenceLimits::new(4096, 512, 0, 64, 512, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::RecordLimit)
+        ));
+        let duplicate_storm = strict_stream(&[
+            "site 0 effect=holds rc=0",
+            "site 0 effect=holds rc=0",
+            "site 0 effect=holds rc=0",
+        ]);
+        assert!(matches!(
+            admitted(
+                &duplicate_storm,
+                HostEvidenceLimits::new(4096, 512, 2, 64, 512, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::RecordLimit)
+        ));
+    }
+
+    #[test]
+    fn physical_lines_are_accounted_before_crlf_and_ignored_framing() {
+        let mixed = format!(
+            "# before header\r\n\r\n{}\r\n# before record\n{}\r\n\r\n{}# after sentinel\r\n",
+            header(1),
+            rec("site 0 effect=holds rc=0"),
+            sentinel(),
+        );
+        assert!(matches!(
+            admitted(&mixed, strict_limits()),
+            Admission::Admitted(_)
+        ));
+
+        let oversized_comment = format!("# {}\n{}", "x".repeat(65), strict_stream(&[]));
+        assert!(matches!(
+            admitted(
+                &oversized_comment,
+                HostEvidenceLimits::new(4096, 64, 8, 64, 512, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::LineLimit)
+        ));
+        assert!(matches!(
+            admitted(strict_stream(&[]).trim_end_matches('\n'), strict_limits()),
+            Admission::Refused(AdmissionRefusal::Framing)
+        ));
+    }
+
+    #[test]
+    fn retained_budget_charges_only_owned_fields_before_materialization() {
+        let structural = strict_stream(&["site 0 effect=holds rc=0", "report abc"]);
+        assert!(matches!(
+            admitted(
+                &structural,
+                HostEvidenceLimits::new(4096, 512, 8, 64, 9, 8, 4)
+            ),
+            Admission::Admitted(_)
+        ));
+        for limit in [8, 9, 10] {
+            let result = admitted(
+                &structural,
+                HostEvidenceLimits::new(4096, 512, 8, 64, limit, 8, 4),
+            );
+            if limit == 8 {
+                assert!(matches!(
+                    result,
+                    Admission::Refused(AdmissionRefusal::RetainedLimit)
+                ));
+            } else {
+                assert!(
+                    matches!(result, Admission::Admitted(_)),
+                    "retained exact/plus {limit}: {result:?}"
+                );
+            }
+        }
+        assert_eq!(
+            charge_retained(
+                usize::MAX,
+                &ParsedRecord::Report { body: "x" },
+                strict_limits()
+            ),
+            Err(AdmissionRefusal::ArithmeticOverflow)
+        );
+    }
+
+    #[test]
+    fn site_fields_are_closed_and_only_one_final_free_field_is_allowed() {
+        for record in [
+            "site 0 effect=holds rc=0 stdout=x stderr=y",
+            "site 0 effect=holds rc=0 stderr=y stdout=x",
+            "site 0 effect=holds effect=absent rc=0",
+            "site 0 effect=holds rc=0 rc=1",
+            "site 0 effect=holds rc=0 stdout=x stdout=y",
+            "site 0 effect=holds rc=0 stderr=x stderr=y",
+        ] {
+            assert!(
+                matches!(
+                    admitted(&strict_stream(&[record]), strict_limits()),
+                    Admission::Refused(AdmissionRefusal::Grammar)
+                ),
+                "recognized site key duplication/coexistence: {record}"
+            );
+        }
+        let additive = strict_stream(&[
+            "site 0.1 future=one extra=two effect=holds rc=0 stdout=final free value",
+        ]);
+        let Admission::Admitted(records) = admitted(&additive, strict_limits()) else {
+            panic!("additive structured fields before the final free field must admit")
+        };
+        let TypedHostRecord::Site { inert, stdout, .. } = &records.records[0] else {
+            panic!("expected site")
+        };
+        assert_eq!(
+            inert,
+            &vec![
+                ("future".to_owned(), "one".to_owned()),
+                ("extra".to_owned(), "two".to_owned())
+            ]
+        );
+        assert_eq!(stdout.as_deref(), Some("final free value"));
+    }
+
+    #[test]
+    fn typed_collection_caps_are_independent_and_dedup_does_not_retain() {
+        let limits = HostEvidenceLimits::new(4096, 512, 8, 64, 512, 1, 4);
+        for records in [
+            strict_stream(&["site 0 effect=holds rc=0", "site 1 effect=holds rc=0"]),
+            strict_stream(&["deriv 0 coord=one", "deriv 1 coord=two"]),
+            strict_stream(&["deriv-end 0 n=0", "deriv-end 1 n=0"]),
+            strict_stream(&["resolv one dangling", "resolv two dangling"]),
+            strict_stream(&["reach one arm=0 entity=x", "reach two arm=0 entity=x"]),
+            strict_stream(&["report one", "report two"]),
+        ] {
+            assert!(matches!(
+                admitted(&records, limits),
+                Admission::Refused(AdmissionRefusal::CollectionLimit)
+            ));
+        }
+        let exact_duplicates =
+            strict_stream(&["site 0 effect=holds rc=0", "site 0 effect=holds rc=0"]);
+        let Admission::Admitted(records) = admitted(&exact_duplicates, strict_limits()) else {
+            panic!("exact duplicates retain one owned record")
+        };
+        assert_eq!(records.records.len(), 1);
+        assert!(matches!(
+            admitted(
+                &exact_duplicates,
+                HostEvidenceLimits::new(4096, 512, 8, 64, 11, 8, 4)
+            ),
+            Admission::Refused(AdmissionRefusal::RetainedLimit)
+        ));
+    }
+
+    #[test]
+    fn stream_and_line_limits_cover_exact_plus_one_and_overflow() {
+        let defaults = HostEvidenceLimits::spike_default();
+        assert!(matches!(
+            read_host_evidence(vec![b'x'; 8 * 1024 * 1024].as_slice(), defaults),
+            Admission::Admitted(_)
+        ));
+        assert!(matches!(
+            read_host_evidence(vec![b'x'; 8 * 1024 * 1024 + 1].as_slice(), defaults),
+            Admission::Refused(AdmissionRefusal::StreamLimit)
+        ));
+        assert!(matches!(
+            read_host_evidence(
+                &b"x"[..],
+                HostEvidenceLimits::new(usize::MAX, 1, 1, 1, 1, 1, 1)
+            ),
+            Admission::Refused(AdmissionRefusal::ArithmeticOverflow)
+        ));
+
+        for (bytes, expected) in [(65_536, true), (65_537, false)] {
+            let comment = format!("#{}\r\n{}", "x".repeat(bytes - 2), strict_stream(&[]));
+            assert_eq!(
+                matches!(
+                    admitted(
+                        &comment,
+                        HostEvidenceLimits::new(128 * 1024, 65_536, 8, 64, 512, 8, 4)
+                    ),
+                    Admission::NoObservation
+                ),
+                expected,
+                "CRLF physical line bytes={bytes}"
+            );
+        }
+    }
+
+    #[test]
+    fn record_and_collection_boundaries_are_independent() {
+        let limit = 32_768;
+        let mut records = Vec::with_capacity(limit * 2 + 1);
+        for index in 0..limit {
+            records.push(format!("site {index} effect=holds rc=0"));
+        }
+        for index in 0..limit {
+            records.push(format!("deriv {index} coord=d{index}"));
+        }
+        let borrowed = records.iter().map(String::as_str).collect::<Vec<_>>();
+        let exact = stream(limit, &borrowed);
+        let limits = HostEvidenceLimits::new(
+            8 * 1024 * 1024,
+            64 * 1024,
+            65_536,
+            16 * 1024,
+            4 * 1024 * 1024,
+            limit,
+            16,
+        );
+        assert!(matches!(admitted(&exact, limits), Admission::Admitted(_)));
+        records.push("report extra".to_owned());
+        let borrowed = records.iter().map(String::as_str).collect::<Vec<_>>();
+        assert!(matches!(
+            admitted(&stream(limit, &borrowed), limits),
+            Admission::Refused(AdmissionRefusal::RecordLimit)
+        ));
+
+        let cases: [(&str, RecordFactory); 6] = [
+            ("site", |index| format!("site {index} effect=holds rc=0")),
+            ("deriv", |index| format!("deriv {index} coord=d{index}")),
+            ("deriv-end", |index| format!("deriv-end {index} n=0")),
+            ("resolv", |index| format!("resolv c{index} dangling")),
+            ("reach", |index| {
+                format!("reach c{index} arm=0 entity=e{index}")
+            }),
+            ("report", |index| format!("report r{index}")),
+        ];
+        for (name, make) in cases {
+            let records = (0..=limit).map(make).collect::<Vec<_>>();
+            let borrowed = records.iter().map(String::as_str).collect::<Vec<_>>();
+            let exact = stream(if name == "site" { limit } else { 0 }, &borrowed[..limit]);
+            let plus = stream(if name == "site" { limit + 1 } else { 0 }, &borrowed);
+            assert!(
+                matches!(
+                    admitted(&exact, limits),
+                    Admission::Admitted(_) | Admission::NoObservation
+                ),
+                "{name} exact"
+            );
+            assert!(
+                matches!(
+                    admitted(&plus, limits),
+                    Admission::Refused(AdmissionRefusal::CollectionLimit)
+                ),
+                "{name} plus"
+            );
+        }
+    }
+
+    #[test]
+    fn free_field_boundaries_cover_every_retained_lane() {
+        let exact = "x".repeat(16 * 1024);
+        let plus = "x".repeat(16 * 1024 + 1);
+        let cases: [(&str, FieldFactory); 10] = [
+            ("stdout", |value| {
+                format!("site 0 effect=holds rc=0 stdout={value}")
+            }),
+            ("stderr", |value| {
+                format!("site 0 effect=holds rc=0 stderr={value}")
+            }),
+            ("inert-name", |value| {
+                format!("site 0 {value}=x effect=holds rc=0")
+            }),
+            ("inert-value", |value| {
+                format!("site 0 field={value} effect=holds rc=0")
+            }),
+            ("deriv", |value| format!("deriv 0 coord={value}")),
+            ("resolv-coord", |value| format!("resolv {value} dangling")),
+            ("resolv-canonical", |value| {
+                format!("resolv c canon={value}")
+            }),
+            ("reach-coord", |value| {
+                format!("reach {value} arm=0 entity=e")
+            }),
+            ("reach-entity", |value| {
+                format!("reach c arm=0 entity={value}")
+            }),
+            ("report", |value| format!("report {value}")),
+        ];
+        let limits = HostEvidenceLimits::new(
+            8 * 1024 * 1024,
+            64 * 1024,
+            65_536,
+            16 * 1024,
+            4 * 1024 * 1024,
+            32_768,
+            16,
+        );
+        for (name, make) in cases {
+            let exact_record = make(&exact);
+            let plus_record = make(&plus);
+            let sites = usize::from(exact_record.starts_with("site "));
+            assert!(
+                matches!(
+                    admitted(&stream(sites, &[&exact_record]), limits),
+                    Admission::Admitted(_) | Admission::NoObservation
+                ),
+                "{name} exact"
+            );
+            assert!(
+                matches!(
+                    admitted(&stream(sites, &[&plus_record]), limits),
+                    Admission::Refused(AdmissionRefusal::FieldLimit)
+                ),
+                "{name} plus"
+            );
+        }
+    }
+
+    #[test]
+    fn retained_and_numeric_boundaries_are_checked_before_ownership() {
+        let report = format!("report {}", "x".repeat(16 * 1024));
+        let records = vec![report.as_str(); 256];
+        let limits = HostEvidenceLimits::new(
+            8 * 1024 * 1024,
+            64 * 1024,
+            65_536,
+            16 * 1024,
+            4 * 1024 * 1024,
+            32_768,
+            16,
+        );
+        assert!(matches!(
+            admitted(&stream(0, &records), limits),
+            Admission::Admitted(_)
+        ));
+        let plus = vec![report.as_str(); 257];
+        assert!(matches!(
+            admitted(&stream(0, &plus), limits),
+            Admission::Refused(AdmissionRefusal::RetainedLimit)
+        ));
+
+        let digits16 = "9".repeat(16);
+        let digits17 = "9".repeat(17);
+        let numeric_limits = HostEvidenceLimits::new(4096, 512, 8, 64, 512, 8, 16);
+        assert!(number(&digits16, numeric_limits).is_ok());
+        assert_eq!(
+            number(&digits17, numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            number(
+                &digits16,
+                HostEvidenceLimits::new(4096, 512, 8, 64, 512, 8, 15)
+            ),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            number_u32("4294967296", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            parse_i32("2147483648", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert_eq!(
+            parse_i32("-2147483649", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert!(number_u32("0000004294967295", numeric_limits).is_ok());
+        assert_eq!(
+            number_u32("00000004294967295", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+        assert!(parse_i32("0000002147483647", numeric_limits).is_ok());
+        assert_eq!(
+            parse_i32("00000002147483647", numeric_limits),
+            Err(AdmissionRefusal::Numeric)
+        );
+    }
+
+    #[test]
+    fn spike_default_limits_pin_the_frozen_policy() {
+        assert_eq!(
+            HostEvidenceLimits::spike_default(),
+            HostEvidenceLimits::new(
+                8 * 1024 * 1024,
+                64 * 1024,
+                65_536,
+                16 * 1024,
+                4 * 1024 * 1024,
+                32_768,
+                16,
+            )
+        );
+    }
+
+    #[test]
+    fn identity_and_framing_matrix_refuse_ambiguity() {
+        let exact = [
+            "site 0 effect=holds rc=0",
+            "deriv 0 coord=one",
+            "deriv-end 0 n=1",
+            "resolv one dangling",
+            "reach one arm=0 entity=e",
+            "report note",
+        ];
+        for record in exact {
+            let sites = usize::from(record.starts_with("site "));
+            let duplicate = stream(sites * 2, &[record, record]);
+            assert!(
+                matches!(
+                    admitted(&duplicate, strict_limits()),
+                    Admission::Admitted(_) | Admission::NoObservation
+                ),
+                "exact {record}"
+            );
+        }
+        for (left, right) in [
+            ("site 0 effect=holds rc=0", "site 0 effect=absent rc=1"),
+            ("deriv-end 0 n=0", "deriv-end 0 n=1"),
+            ("resolv one dangling", "resolv one canon=two"),
+            ("reach one arm=0 entity=e", "reach one arm=0 entity=f"),
+        ] {
+            assert!(matches!(
+                admitted(&stream(0, &[left, right]), strict_limits()),
+                Admission::Refused(AdmissionRefusal::Duplicate)
+            ));
+        }
+        assert!(matches!(
+            admitted(
+                &stream(0, &["deriv 0 coord=one", "deriv 0 coord=two"]),
+                strict_limits()
+            ),
+            Admission::Admitted(_)
+        ));
+
+        for raw in [
+            format!("{}\n{}", header(0), header(0)),
+            format!("{}\n{}{}", header(0), sentinel(), sentinel()),
+            format!(
+                "{}\n{}\n{}",
+                header(0),
+                sentinel().trim_end(),
+                rec("report late")
+            ),
+            "site 0 effect=holds rc=0\n".to_owned(),
+            strict_stream(&["site 0 effect=unknown rc=0"]),
+            strict_stream(&["site 0 effect=holds rc=0 bad"]),
+            strict_stream(&["unknown x"]),
+        ] {
+            assert!(
+                matches!(admitted(&raw, strict_limits()), Admission::Refused(_)),
+                "{raw:?}"
+            );
+        }
+        let valid = format!(
+            "\r\n# before\r\n{}\r\n\r\n{}\r\n# after\r\n",
+            header(0),
+            sentinel()
+        );
+        assert!(matches!(
+            admitted(&valid, strict_limits()),
+            Admission::NoObservation
+        ));
     }
 }

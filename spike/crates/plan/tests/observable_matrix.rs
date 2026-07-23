@@ -86,6 +86,10 @@ apt_get__predict() {
 }
 "#;
 
+const CORPUS_VERDICT_SRC: &str = r"
+apt_get__is_converged() { return 0; }
+";
+
 /// R3 test seam: resolve+strip the corpus check for a site's (provider, argv) — the same
 /// resolution the cli's `ship_predict_body` runs. `None` ⇒ un-shippable (un-oracled provider).
 fn ship_corpus(
@@ -121,11 +125,14 @@ fn classify_value(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     i: &mut Interner,
-) -> Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)> {
+) -> (
+    Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)>,
+    dorc_analysis::value::ValueFlow,
+) {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
     let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
     let mut arena = dorc_core::ProvArena::new();
-    dorc_analysis::effect::classify(
+    let classes = dorc_analysis::effect::classify(
         cfg,
         &value,
         ast,
@@ -135,7 +142,8 @@ fn classify_value(
         i,
         &mut arena,
     )
-    .value
+    .value;
+    (classes, value)
 }
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
@@ -181,7 +189,7 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
         .collect();
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted, 202 §5) — a
     // mutator's status is ⊤ (`inv-probe-sourced-values`); only the Effect channel arrives.
     let observe = move |f: FactKey| {
@@ -196,7 +204,7 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes),
+        &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
     )
@@ -205,26 +213,14 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
 /// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these matrix
 /// tests keep exercising elision MECHANICS. The vouch GATE is pinned elsewhere (plan's
 /// `no_license_for_ambient_without_vouch` + e2e + the FAITHFUL sweep/coverage verdict-lift).
-fn vouch_all(classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)]) -> dorc_plan::Vouches {
-    let mut vouches = dorc_plan::Vouches::new();
-    for (node, class) in classes {
-        // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, which the
-        // matrix does not exercise (elide-weld's concern is EstablishAmbient — 24D §3).
-        if matches!(class, SkipClass::EstablishAmbient(_)) {
-            let vouch = dorc_plan::VerdictVouch::new(
-                "apt_get__is_converged".to_string(),
-                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
-                "apt_get__is_converged".to_string(),
-                "package".to_string(),
-                vec!["dpkg-query".to_string()],
-            );
-            vouches.insert(
-                *node,
-                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
-            );
-        }
-    }
-    vouches
+fn vouch_all(
+    classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)],
+    value: &dorc_analysis::value::ValueFlow,
+    interner: &mut Interner,
+) -> dorc_plan::Vouches {
+    dorc_plan::build_vouches(&[CORPUS_VERDICT_SRC], classes, value, interner)
+        .0
+        .value
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a value-
@@ -425,7 +421,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     let src = "apt-get install -y nginx || systemctl start nginx\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // Converged, but NO rc declared (the real CLI/hostsim default after `19D` — an
     // un-injected rc is ⊤, never a fabricated 0).
     let observe = move |f: FactKey| {
@@ -440,7 +436,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes),
+        &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -713,7 +709,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
     let src = "set -e\napt-get install -y nginx\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // fs-4: the install is EstablishAmbient (set -e did not poison the effect analysis).
     let install_is_ambient = classes
         .iter()
@@ -735,7 +731,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes),
+        &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -882,7 +878,7 @@ fn plan_query_and_ast(
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes),
+        &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -1155,7 +1151,7 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
         .collect();
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
@@ -1168,7 +1164,7 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes),
+        &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
     );

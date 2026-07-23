@@ -20,11 +20,12 @@
 
 use dorc_core::diag::{
     self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
-    MissingDialectMarker, MungeNameInvalid, OperandPosition, RecordsFactTruncated,
-    RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension,
-    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
+    HostEvidenceRefusalKind, MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer,
+    MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid,
+    OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
+    SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
+    WhylogVersionRefused, WrapperPeelIncoherent,
 };
 use dorc_core::tagged::RenderPart;
 use dorc_core::{BytePos, Interner, LeafId, Span, TopCause};
@@ -118,6 +119,14 @@ fn covered() -> Vec<DefiningCase> {
                     received: 3,
                     declared: 5,
                     unseen: 2,
+                })
+            },
+        },
+        DefiningCase {
+            slug: "host-evidence-admission-refused",
+            build: || {
+                DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
+                    kind: HostEvidenceRefusalKind::Framing,
                 })
             },
         },

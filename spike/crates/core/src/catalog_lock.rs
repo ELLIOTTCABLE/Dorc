@@ -357,6 +357,15 @@ pub const CATALOG: &[CatalogEntry] = &[
         help: None,
     },
     CatalogEntry {
+        slug: "host-evidence-admission-refused",
+        when_fires: "bounded host evidence failed closed admission before entering the decision plane.",
+        why: "host evidence remains controller-owned and decision-inert until admission succeeds.",
+        params: &[],
+        example: "[unwritten: host-evidence-admission-refused]",
+        message: None,
+        help: None,
+    },
+    CatalogEntry {
         slug: "footprint-incoherent",
         when_fires: "a touches() footprint is incoherent. cli/main.rs — TWO emit paths: the SPANNED own-coordinate canary (footprint omits its own effect coordinate), and the SPANLESS malformed-derived-coordinate refusal (the SPANLESS_SITE_PAYLOADS one).",
         why: "24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. PASSTHROUGH — the per-path text rides `detail`.",

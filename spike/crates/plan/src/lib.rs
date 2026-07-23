@@ -269,6 +269,92 @@ pub struct Derivation {
     /// a vouch informs a license and never becomes a fact (TC-tier-3), and this reaches only the
     /// why-lens render, never the byte-floored artifact.
     pub vouch_span: Option<(dorc_core::Span, OracleFileId)>,
+    /// Ordered attribution for every establish erased by an aggregate replacement.
+    pub establish_vouches: Vec<EstablishVouchReceipt>,
+}
+
+/// Decision-inert attribution retained after an aggregate mutation-erasure mint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EstablishVouchReceipt {
+    pub site: CfgNodeId,
+    pub fact: FactKey,
+    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+}
+
+#[derive(Debug, Clone)]
+struct EstablishVouch {
+    site: CfgNodeId,
+    fact: FactKey,
+    vouch: ByVouch<VerdictVouch>,
+}
+
+#[derive(Debug, Clone)]
+struct AllEstablishesVouched {
+    head: EstablishVouch,
+    tail: Vec<EstablishVouch>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ReadSubstitutionProof {
+    fact: FactKey,
+    status: Predicted<Rc>,
+}
+
+impl ReadSubstitutionProof {
+    fn mint(sites: &[InlineSite], observe: &impl Fn(FactKey) -> Observable) -> Option<Self> {
+        let [site] = sites else { return None };
+        let SkipClass::QueryResolvable { fact, valid: true } = site.class else {
+            return None;
+        };
+        let status = observe(fact).status;
+        (!matches!(status, Predicted::Top)).then_some(Self { fact, status })
+    }
+}
+
+impl AllEstablishesVouched {
+    fn mint(expected: &[(CfgNodeId, FactKey)], vouches: &Vouches) -> Option<Self> {
+        if expected
+            .iter()
+            .any(|(site, fact)| vouches.is_duplicate(*site, *fact))
+        {
+            return None;
+        }
+        let involved: BTreeSet<CfgNodeId> = expected.iter().map(|(site, _)| *site).collect();
+        let supplied: Vec<_> = vouches
+            .ordered_keys()
+            .into_iter()
+            .filter(|(site, _)| involved.contains(site))
+            .collect();
+        if supplied.as_slice() != expected || expected.is_empty() {
+            return None;
+        }
+        let mut entries = expected.iter().map(|(site, fact)| {
+            Some(EstablishVouch {
+                site: *site,
+                fact: *fact,
+                vouch: vouches.get(*site, *fact)?.clone(),
+            })
+        });
+        Some(Self {
+            head: entries.next()??,
+            tail: entries.collect::<Option<Vec<_>>>()?,
+        })
+    }
+
+    fn representative(&self) -> FactKey {
+        self.head.fact
+    }
+
+    fn into_receipts(self) -> Vec<EstablishVouchReceipt> {
+        std::iter::once(self.head)
+            .chain(self.tail)
+            .map(|entry| EstablishVouchReceipt {
+                site: entry.site,
+                fact: entry.fact,
+                defining_span: entry.vouch.vouch().defining_span(),
+            })
+            .collect()
+    }
 }
 
 /// The witness authorising the one irreversible verb — *elide a command*. Its
@@ -386,6 +472,7 @@ impl ReplaceLicense {
                         witness: dorc_core::Witness::empty(),
                         survival: None,
                         vouch_span,
+                        establish_vouches: Vec::new(),
                     },
                 })
             }
@@ -445,6 +532,7 @@ impl ReplaceLicense {
                 witness: dorc_core::Witness::empty(),
                 survival: None,
                 vouch_span: None, // Query/loop/call elisions consume no vouch ⇒ no locus
+                establish_vouches: Vec::new(),
             },
         })
     }
@@ -474,13 +562,13 @@ impl ReplaceLicense {
     /// representative `fact` (the family is the establish; provenance names one cell).
     #[must_use]
     fn prove_members_replaceable(
-        members: &[FactKey],
+        all_vouched: AllEstablishesVouched,
         member_verdicts: &[Verdict],
         self_reached: bool,
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
     ) -> Option<ReplaceLicense> {
-        let representative = *members.first()?;
+        let representative = all_vouched.representative();
         if !self_reached {
             return None;
         }
@@ -490,7 +578,11 @@ impl ReplaceLicense {
         }
         // (c) the consumption gates (the in-loop leaf's status is ⊤ for a mutator —
         // fork-mutator-rc — so a consumed status blocks; stdout/stderr/render-floor block).
-        consumption_ok(consumed, status).then_some(ReplaceLicense {
+        if !consumption_ok(consumed, status) {
+            return None;
+        }
+        let establish_vouches = all_vouched.into_receipts();
+        Some(ReplaceLicense {
             fact: representative,
             derivation: Derivation {
                 fact: representative,
@@ -500,7 +592,8 @@ impl ReplaceLicense {
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
-                vouch_span: None, // Query/loop/call elisions consume no vouch ⇒ no locus
+                vouch_span: None,
+                establish_vouches,
             },
         })
     }
@@ -538,6 +631,7 @@ impl ReplaceLicense {
     #[must_use]
     fn prove_inline_replaceable(
         sites: &[InlineSite],
+        all_vouched: AllEstablishesVouched,
         observe: &impl Fn(FactKey) -> Observable,
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
@@ -567,11 +661,15 @@ impl ReplaceLicense {
         // mutation to be already-done, and eliding a pure-builtin wrapper would suppress its
         // observable (an `echo`'s stdout) for no gain.
         let fact = representative?;
+        if fact != all_vouched.representative() {
+            return None;
+        }
         // The CALL site's own consumed channels (the aggregate rc is ⊤ — a mutator-shaped
         // call, fork-mutator-rc — so a consumed status blocks; door-3 `|| true` does not).
         if !consumption_ok(consumed, status) {
             return None;
         }
+        let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
             fact,
             derivation: Derivation {
@@ -582,7 +680,28 @@ impl ReplaceLicense {
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
-                vouch_span: None, // Query/loop/call elisions consume no vouch ⇒ no locus
+                vouch_span: None,
+                establish_vouches,
+            },
+        })
+    }
+
+    fn prove_inline_query_replaceable(
+        proof: ReadSubstitutionProof,
+        consumed: &May<Powerset<Channel>>,
+    ) -> Option<ReplaceLicense> {
+        consumption_ok(consumed, proof.status).then_some(ReplaceLicense {
+            fact: proof.fact,
+            derivation: Derivation {
+                fact: proof.fact,
+                via: LicenseVia::InlineCall,
+                ambient: false,
+                grade: Grade::Must,
+                verdict: Verdict::Converged,
+                witness: dorc_core::Witness::empty(),
+                survival: None,
+                vouch_span: None,
+                establish_vouches: Vec::new(),
             },
         })
     }
@@ -946,7 +1065,85 @@ impl GuardLicense {
 /// [`GuardLicense::mint`] DEMANDS, TC-tier-2; a fact or silence claim cannot populate it). The cli
 /// edge builds it ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate; NOT
 /// `--trust-footprints`-gated, which governs only the survival tier).
-pub type Vouches = BTreeMap<CfgNodeId, ByVouch<VerdictVouch>>;
+/// Reached verdict vouches indexed by their exact establish identity.
+///
+/// Production lifting happens in [`build_vouches`]; public construction remains test/harness
+/// surface pending the phase-five production fence.
+#[derive(Debug, Clone, Default)]
+pub struct Vouches {
+    by_establish: BTreeMap<(CfgNodeId, FactKey), ByVouch<VerdictVouch>>,
+    order: Vec<(CfgNodeId, FactKey)>,
+    duplicates: BTreeSet<(CfgNodeId, FactKey)>,
+}
+
+impl Vouches {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn insert(&mut self, site: CfgNodeId, fact: FactKey, vouch: ByVouch<VerdictVouch>) {
+        let key = (site, fact);
+        if let std::collections::btree_map::Entry::Vacant(entry) = self.by_establish.entry(key) {
+            entry.insert(vouch);
+            self.order.push(key);
+        } else {
+            self.duplicates.insert(key);
+        }
+    }
+
+    #[must_use]
+    pub fn get(&self, site: CfgNodeId, fact: FactKey) -> Option<&ByVouch<VerdictVouch>> {
+        self.by_establish.get(&(site, fact))
+    }
+
+    #[must_use]
+    pub fn contains_site(&self, site: CfgNodeId) -> bool {
+        self.by_establish
+            .keys()
+            .any(|(candidate, _)| *candidate == site)
+    }
+
+    pub fn extend(&mut self, other: Self) {
+        self.duplicates.extend(other.duplicates.iter().copied());
+        for (site, fact) in other.order {
+            if let Some(vouch) = other.by_establish.get(&(site, fact)) {
+                self.insert(site, fact, vouch.clone());
+            }
+        }
+    }
+
+    fn ordered_keys(&self) -> Vec<(CfgNodeId, FactKey)> {
+        self.order.clone()
+    }
+
+    fn is_duplicate(&self, site: CfgNodeId, fact: FactKey) -> bool {
+        self.duplicates.contains(&(site, fact))
+    }
+}
+
+fn resolve_vouch_operands(
+    words: &[ValueOf],
+    fact: FactKey,
+    member_specialization: bool,
+    interner: &Interner,
+) -> Option<Vec<String>> {
+    let dynamic_count = words
+        .iter()
+        .filter(|word| matches!(word, ValueOf::Top(_)))
+        .count();
+    words
+        .iter()
+        .map(|word| match word {
+            ValueOf::Literal(symbol) => Some(interner.resolve(*symbol).to_owned()),
+            ValueOf::Top(_) if member_specialization && dynamic_count == 1 => match fact.entity {
+                EntityRef::Operand(token) => Some(interner.resolve(token.0).to_owned()),
+                EntityRef::Singleton => None,
+            },
+            ValueOf::Top(_) => None,
+        })
+        .collect()
+}
 
 /// Lift the per-site VOUCHES (24D §3 elide-weld / rul-guard-license / rul24-vouch-is-verdict-
 /// authoring) — the ONE home for the composition every driver shares (the cli, the sweep net, the
@@ -993,35 +1190,40 @@ pub fn build_vouches(
     let mut vouches = Vouches::new();
     // `leaf_idx` IS the site's `LeafId` — the SAME positional assignment `build_plan` makes, so a
     // `VerdictDecline` keys by the site a report-lane record re-keys to (pinned by the leaf-index test).
-    for (leaf_idx, (node, class)) in classes.iter().enumerate() {
-        // A vouch is consumed only at an establish-bearing site (elide: EstablishAmbient; guard:
-        // EstablishWritten). Computing both is future-proof and inert where unused.
-        let fact = match class {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
-            _ => continue,
-        };
+    let candidates: Vec<(usize, CfgNodeId, FactKey, bool)> = classes
+        .iter()
+        .enumerate()
+        .flat_map(|(leaf_idx, (node, class))| match class {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => {
+                vec![(leaf_idx, *node, *f, false)]
+            }
+            SkipClass::EstablishMembers { members, .. } => members
+                .iter()
+                .map(|fact| (leaf_idx, *node, *fact, true))
+                .collect(),
+            SkipClass::InlineCall { sites } => sites
+                .iter()
+                .filter_map(|site| match site.class {
+                    SkipClass::EstablishAmbient(fact) => Some((leaf_idx, site.node, fact, false)),
+                    _ => None,
+                })
+                .collect(),
+            SkipClass::QueryResolvable { .. } | SkipClass::MustRun => Vec::new(),
+        })
+        .collect();
+    for (leaf_idx, node, fact, member_specialization) in candidates {
         // Resolve the site's argv → (provider, operands), all literal — a ⊤ word ⇒ no vouch.
-        let argv = value.argv_values(*node);
+        let argv = value.argv_values(node);
         let Some((first, rest)) = argv.split_first() else {
             continue;
         };
         let ValueOf::Literal(provider) = first else {
             continue;
         };
-        let mut op_texts = Vec::with_capacity(rest.len());
-        let mut has_top = false;
-        for w in rest {
-            match w {
-                ValueOf::Literal(s) => op_texts.push(interner.resolve(*s).to_owned()),
-                ValueOf::Top(_) => {
-                    has_top = true;
-                    break;
-                }
-            }
-        }
-        if has_top {
+        let Some(op_texts) = resolve_vouch_operands(rest, fact, member_specialization, interner)
+        else {
             continue;
-        }
+        };
         let op_refs: Vec<&str> = op_texts.iter().map(String::as_str).collect();
 
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
@@ -1092,7 +1294,7 @@ pub fn build_vouches(
         let defining = vouch_site(verdict, &op_refs).unwrap_or(verdict.name_span);
         let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds)
             .with_defining_span(defining, arm_file);
-        vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
+        vouches.insert(node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
     (Carrier::new(vouches, diags), collapse_evidence)
 }
@@ -1173,7 +1375,7 @@ pub fn build_wrapped_vouches(
             interner.resolve(fact.kind.0).to_owned(),
             check_commands(verdict),
         );
-        vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
+        vouches.insert(*node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
     vouches
 }
@@ -1405,12 +1607,7 @@ pub struct ProbePredict {
     /// composition). `fact` carries the composed [`Context`], so the record re-keys the context-
     /// qualified verdict exactly. `None` ⇒ the ordinary (ambient) shape.
     pub entry: Option<EntryComposed>,
-    /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
-    /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
-    /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
-    /// [`ProbePlan::render_sh`] ships the DRAIN scaffold: the check runs with `DREP_V1` bound to a
-    /// per-site scratch, and its emissions are re-framed as `report site=<key> …` records. `false` ⇒
-    /// the ordinary scaffold, byte-identical (`empty-world-byte-identical`).
+    /// Static report classification; runtime capture awaits an inherited owned channel.
     pub emits_report: bool,
 }
 
@@ -1634,16 +1831,7 @@ impl ProbePlan {
                 }
                 render::probe::invocation(&fn_name, &check.argv, interner)
             };
-            // `27W` §3 C4: an emission-bearing auto-cell body drains; every other stays byte-identical.
-            if check.emits_report {
-                out.push_str(&render::probe::record_scaffold_draining(
-                    &invocation,
-                    &key,
-                    nonce,
-                ));
-            } else {
-                out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
-            }
+            out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
@@ -2865,9 +3053,11 @@ pub fn build_plan_walled(
                 SkipClass::EstablishMembers {
                     members,
                     self_reached,
-                } => members_disposition(cfg, *node, members, *self_reached, &observe),
+                } => members_disposition(cfg, *node, members, *self_reached, vouches, &observe),
                 // arch-2 (`i-3`): the CALL aggregates its body sites' observations.
-                SkipClass::InlineCall { sites } => inline_disposition(cfg, *node, sites, &observe),
+                SkipClass::InlineCall { sites } => {
+                    inline_disposition(cfg, *node, sites, vouches, &observe)
+                }
                 _ => {
                     let observed = match class {
                         SkipClass::EstablishAmbient(f)
@@ -2884,7 +3074,11 @@ pub fn build_plan_walled(
                         class,
                         ast_id,
                         observed,
-                        vouches.get(node),
+                        match class {
+                            SkipClass::EstablishAmbient(fact)
+                            | SkipClass::EstablishWritten(fact) => vouches.get(*node, *fact),
+                            _ => None,
+                        },
                     )
                 }
             }
@@ -3222,6 +3416,7 @@ fn members_disposition(
     node: CfgNodeId,
     members: &[FactKey],
     self_reached: bool,
+    vouches: &Vouches,
     observe: &impl Fn(FactKey) -> Observable,
 ) -> Disposition {
     if has_top_successor(cfg, node) {
@@ -3232,8 +3427,12 @@ fn members_disposition(
     // The in-loop body leaf's status: a mutator's rc is ⊤ (fork-mutator-rc), and a Members
     // site is a mutator (an establish), so ⊤. The consumption gate blocks a consumed ⊤.
     let status = Predicted::Top;
+    let expected: Vec<(CfgNodeId, FactKey)> = members.iter().map(|fact| (node, *fact)).collect();
+    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, vouches) else {
+        return Disposition::Run;
+    };
     match ReplaceLicense::prove_members_replaceable(
-        members,
+        all_vouched,
         &member_verdicts,
         self_reached,
         &consumed,
@@ -3261,6 +3460,7 @@ fn inline_disposition(
     cfg: &Cfg,
     node: CfgNodeId,
     sites: &[InlineSite],
+    vouches: &Vouches,
     observe: &impl Fn(FactKey) -> Observable,
 ) -> Disposition {
     // The in-loop render floor (task-L1, `209` brk-1): an inlined CALL inside a loop body is
@@ -3282,7 +3482,30 @@ fn inline_disposition(
     // fork-mutator-rc). A consumed ⊤ status blocks via the consumption gate (door-3 `|| true`
     // does not — `StatusInvariant`).
     let status = Predicted::Top;
-    match ReplaceLicense::prove_inline_replaceable(sites, observe, &consumed, status) {
+    let expected: Vec<(CfgNodeId, FactKey)> = sites
+        .iter()
+        .filter_map(|site| match site.class {
+            SkipClass::EstablishAmbient(fact) => Some((site.node, fact)),
+            _ => None,
+        })
+        .collect();
+    if expected.is_empty() {
+        let Some(proof) = ReadSubstitutionProof::mint(sites, observe) else {
+            return Disposition::Run;
+        };
+        let stand_in = match proof.status {
+            Predicted::Value(rc) => StandIn::from_rc(rc),
+            Predicted::Top => return Disposition::Run,
+        };
+        return match ReplaceLicense::prove_inline_query_replaceable(proof, &consumed) {
+            Some(license) => Disposition::Replace(license, stand_in),
+            None => Disposition::Run,
+        };
+    }
+    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, vouches) else {
+        return Disposition::Run;
+    };
+    match ReplaceLicense::prove_inline_replaceable(sites, all_vouched, observe, &consumed, status) {
         // The whole CALL span substitutes to `true` (the body is gone — observable-preserving
         // given every body establish is converged + the consumed-status gate).
         Some(license) => Disposition::Replace(license, StandIn::True),
@@ -4269,6 +4492,10 @@ apt_get__predict() {
 }
 "#;
 
+    const CORPUS_VERDICT_SRC: &str = r"
+apt_get__is_converged() { return 0; }
+";
+
     /// R3 test seam: resolve+strip the corpus `apt_get__predict` for a site's (provider, argv),
     /// the same resolution the cli's `ship_predict_body` runs — the FIRST check whose provider
     /// matches and whose argparse resolves this argv, stripped to its runnable funcdef. Returns
@@ -4344,8 +4571,23 @@ apt_get__predict() {
     fn vouch_all(classes: &[(CfgNodeId, SkipClass)]) -> Vouches {
         let mut vouches = Vouches::new();
         for (node, class) in classes {
-            if matches!(class, SkipClass::EstablishAmbient(_)) {
-                vouches.insert(*node, test_vouch());
+            match class {
+                SkipClass::EstablishAmbient(fact) => vouches.insert(*node, *fact, test_vouch()),
+                SkipClass::EstablishMembers { members, .. } => {
+                    for fact in members {
+                        vouches.insert(*node, *fact, test_vouch());
+                    }
+                }
+                SkipClass::InlineCall { sites } => {
+                    for site in sites {
+                        if let SkipClass::EstablishAmbient(fact) = site.class {
+                            vouches.insert(site.node, fact, test_vouch());
+                        }
+                    }
+                }
+                SkipClass::EstablishWritten(_)
+                | SkipClass::QueryResolvable { .. }
+                | SkipClass::MustRun => {}
             }
         }
         vouches
@@ -5296,6 +5538,54 @@ apt_get__predict() {
         (plan, i)
     }
 
+    fn plan_with_duplicate_aggregate_vouch(src: &str) -> Plan {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &BTreeSet::new(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        let mut vouches = build_vouches(&[CORPUS_VERDICT_SRC], &classes, &value, &mut i)
+            .0
+            .value;
+        let supplied = classes.iter().find_map(|(node, class)| match class {
+            SkipClass::EstablishMembers { members, .. } => {
+                members.first().map(|fact| (*node, *fact))
+            }
+            SkipClass::InlineCall { sites } => sites.iter().find_map(|site| match site.class {
+                SkipClass::EstablishAmbient(fact) => Some((site.node, fact)),
+                _ => None,
+            }),
+            _ => None,
+        });
+        let (site, fact) = supplied.expect("the fixture has an aggregate establish");
+        let duplicate = vouches
+            .get(site, fact)
+            .expect("build_vouches supplied the reached identity")
+            .clone();
+        vouches.insert(site, fact, duplicate);
+        build_plan(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            &vouches,
+            |_| Observable::verdict_only(Verdict::Converged),
+            &mut dorc_core::ProvArena::new(),
+        )
+    }
+
     /// Run the pipeline answering EVERY fact `Converged` — for the plan-level keystone tests
     /// where the upstream modeled mutator (`apt-get update`) must itself ELIDE (cast no shadow,
     /// silence=wall) for a downstream converged establish to elide *past* it. `plan_for` gives
@@ -6155,10 +6445,19 @@ apt_get__predict() {
         };
         let family = vec![cell("nginx"), cell("curl")];
         let both_converged = vec![Verdict::Converged, Verdict::Converged];
+        let vouched = || {
+            let site = CfgNodeId(17);
+            let mut vouches = Vouches::new();
+            for fact in &family {
+                vouches.insert(site, *fact, test_vouch());
+            }
+            let expected: Vec<_> = family.iter().map(|fact| (site, *fact)).collect();
+            AllEstablishesVouched::mint(&expected, &vouches).expect("exact member vouches")
+        };
         // All converged + self-reached + quiet ⇒ license.
         assert!(
             ReplaceLicense::prove_members_replaceable(
-                &family,
+                vouched(),
                 &both_converged,
                 true,
                 &quiet(),
@@ -6170,7 +6469,7 @@ apt_get__predict() {
         // One diverged ⇒ no license (all-or-nothing).
         assert!(
             ReplaceLicense::prove_members_replaceable(
-                &family,
+                vouched(),
                 &[Verdict::Converged, Verdict::Diverged],
                 true,
                 &quiet(),
@@ -6182,7 +6481,7 @@ apt_get__predict() {
         // self-reach false ⇒ no license (even all-converged).
         assert!(
             ReplaceLicense::prove_members_replaceable(
-                &family,
+                vouched(),
                 &both_converged,
                 false,
                 &quiet(),
@@ -6195,7 +6494,7 @@ apt_get__predict() {
         // errexit / post-loop-`$?` consumer with a ⊤ rc). This is why item-6a matters.
         assert!(
             ReplaceLicense::prove_members_replaceable(
-                &family,
+                vouched(),
                 &both_converged,
                 true,
                 &May(Powerset::singleton(Channel::StatusRelaxable)),
@@ -6204,6 +6503,78 @@ apt_get__predict() {
             .is_none(),
             "a consumed status with a ⊤ mutator rc ⇒ blocked (item-3(c))"
         );
+    }
+
+    #[test]
+    fn members_duplicate_supplied_vouch_runs_atomically() {
+        let plan = plan_with_duplicate_aggregate_vouch(
+            "for pkg in nginx curl; do apt-get install -y \"$pkg\"; done\n",
+        );
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "a duplicate supplied member identity refuses the entire loop replacement"
+        );
+    }
+
+    #[test]
+    fn inline_duplicate_supplied_vouch_runs_atomically() {
+        let plan = plan_with_duplicate_aggregate_vouch(
+            "install() { apt-get install -y \"$1\"; }\ninstall nginx\n",
+        );
+        assert!(
+            matches!(find(&plan, "install nginx").disposition, Disposition::Run),
+            "a duplicate supplied inline identity refuses the whole call replacement"
+        );
+    }
+
+    #[test]
+    fn aggregate_vouches_require_exact_ordered_site_fact_pairs() {
+        let mut i = Interner::default();
+        let kind = KindId(i.intern("package"));
+        let selector = SelectorId(i.intern("installed"));
+        let fact = |entity| FactKey {
+            kind,
+            entity: EntityRef::Operand(OpaqueToken(entity)),
+            selector,
+            context: dorc_core::Context::HostDefault,
+        };
+        let nginx = fact(i.intern("nginx"));
+        let curl = fact(i.intern("curl"));
+        let wombat = fact(i.intern("wombat"));
+        let first = CfgNodeId(41);
+        let second = CfgNodeId(42);
+        let expected = vec![(first, nginx), (second, curl)];
+        let exact = || {
+            let mut vouches = Vouches::new();
+            vouches.insert(first, nginx, test_vouch());
+            vouches.insert(second, curl, test_vouch());
+            vouches
+        };
+        assert!(AllEstablishesVouched::mint(&expected, &exact()).is_some());
+
+        let mut missing = Vouches::new();
+        missing.insert(first, nginx, test_vouch());
+        assert!(AllEstablishesVouched::mint(&expected, &missing).is_none());
+
+        let mut extra = exact();
+        extra.insert(first, wombat, test_vouch());
+        assert!(AllEstablishesVouched::mint(&expected, &extra).is_none());
+
+        let mut reordered = Vouches::new();
+        reordered.insert(second, curl, test_vouch());
+        reordered.insert(first, nginx, test_vouch());
+        assert!(AllEstablishesVouched::mint(&expected, &reordered).is_none());
+
+        let mut wrong_site = Vouches::new();
+        wrong_site.insert(first, nginx, test_vouch());
+        wrong_site.insert(CfgNodeId(43), curl, test_vouch());
+        assert!(AllEstablishesVouched::mint(&expected, &wrong_site).is_none());
+
+        let mut duplicate = exact();
+        duplicate.insert(first, nginx, test_vouch());
+        assert!(AllEstablishesVouched::mint(&expected, &duplicate).is_none());
+
+        assert!(AllEstablishesVouched::mint(&[(first, nginx), (first, nginx)], &exact()).is_none());
     }
 
     #[test]
@@ -6800,40 +7171,53 @@ apt_get__predict() {
         }
     }
 
-    /// `27W` §3 C4: an emitting auto-cell body ships the TIER-3 DRAIN scaffold — the check runs with
-    /// `DREP_V1` bound to a deterministic per-site scratch, and its emissions are re-framed as
-    /// `report site=<key> …` records — while the EFFECT record stays byte-identical to the ordinary
-    /// scaffold. This is the runtime tier the static inventory cannot reach (a dynamic format).
     #[test]
-    fn emitting_auto_cell_ships_the_tier3_drain_scaffold() {
+    fn emitting_auto_cell_never_constructs_a_report_path() {
         let mut i = Interner::default();
         let plan = ProbePlan {
             checks: vec![auto_cell_check(&mut i, true)],
             unresolvable: Vec::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
-        assert!(
-            rendered.contains("\"${TMPDIR:-/tmp}/dorc-drep.dorc.0\""),
-            "the per-site scratch is keyed by nonce+site (no two live probes collide): {rendered}"
-        );
-        assert!(
-            rendered.contains("DREP_V1=\"$_drep\""),
-            "DREP_V1 is bound to the scratch for the check: {rendered}"
-        );
-        assert!(
-            rendered
-                .contains("while IFS= read -r _dl; do printf 'dorc report site=0 %s @@dorc@@\\n'"),
-            "the drain loop re-frames each emission as a report record: {rendered}"
-        );
+        for forbidden in [
+            "TMPDIR",
+            "dorc-drep",
+            "DREP_V1=",
+            "$_drep",
+            ": >",
+            "while IFS= read",
+            "report site=",
+        ] {
+            assert!(
+                !rendered.contains(forbidden),
+                "runtime capture must not create, reopen, drain, or clean a report path ({forbidden}): {rendered}"
+            );
+        }
         assert!(
             rendered.contains("printf 'dorc site 0 effect=%s rc=%s @@dorc@@\\n' \"$_e\" \"$_rc\""),
-            "the effect record is unchanged (the drain is additive): {rendered}"
+            "the effect record still ships: {rendered}"
         );
     }
 
-    /// The HARD byte-stability floor (`empty-world-byte-identical`): a NON-emitting auto-cell body
-    /// (`emits_report: false`) ships the ORDINARY scaffold — no `DREP_V1`, no drain loop, no `report`
-    /// record — so an ordinary run is byte-identical to before the tier-3 lane existed.
+    #[test]
+    fn report_classification_does_not_change_probe_bytes() {
+        let mut i = Interner::default();
+        let with_report = ProbePlan {
+            checks: vec![auto_cell_check(&mut i, true)],
+            unresolvable: Vec::new(),
+        };
+        let without_report = ProbePlan {
+            checks: vec![auto_cell_check(&mut i, false)],
+            unresolvable: Vec::new(),
+        };
+
+        assert_eq!(
+            with_report.render_sh(&records::Framing::spike(String::new()), &i),
+            without_report.render_sh(&records::Framing::spike(String::new()), &i),
+            "static report classification must not select an unsafe runtime channel"
+        );
+    }
+
     #[test]
     fn nonemitting_auto_cell_ships_the_ordinary_scaffold() {
         let mut i = Interner::default();

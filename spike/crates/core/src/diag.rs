@@ -181,6 +181,8 @@ pub enum DiagCode {
     RecordsAlienLine(RecordsAlienLine),
     /// Late (after the end-sentinel) record lines discarded (counted, never folded).
     RecordsLateLine(RecordsLateLine),
+    /// Controller admission refused hostile host evidence before it entered the decision plane.
+    HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused),
 
     // ── cli/main.rs (footprint / escalation / carry disclosures) ────────────
     /// A `touches()` footprint is incoherent (omits its own effect coordinate, or a malformed
@@ -282,6 +284,7 @@ impl DiagCode {
             DiagCode::RecordsTornLine(_) => "records-torn-line",
             DiagCode::RecordsAlienLine(_) => "records-alien-line",
             DiagCode::RecordsLateLine(_) => "records-late-line",
+            DiagCode::HostEvidenceAdmissionRefused(_) => "host-evidence-admission-refused",
             DiagCode::FootprintIncoherent(_) => "footprint-incoherent",
             DiagCode::TouchesEscalated(_) => "touches-escalated",
             DiagCode::DerivFamilyIncomplete(_) => "deriv-family-incomplete",
@@ -704,6 +707,32 @@ pub struct RecordsAlienLine {
 pub struct RecordsLateLine {
     /// The number of late lines discarded (`{count}`).
     pub count: usize,
+}
+
+/// The closed controller-owned reason host evidence was refused before admission.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HostEvidenceRefusalKind {
+    IncompatibleVersion,
+    StreamLimit,
+    LineLimit,
+    InvalidUtf8,
+    ControlByte,
+    Framing,
+    Grammar,
+    Numeric,
+    RecordLimit,
+    FieldLimit,
+    RetainedLimit,
+    CollectionLimit,
+    Duplicate,
+    ArithmeticOverflow,
+}
+
+/// Payload of [`DiagCode::HostEvidenceAdmissionRefused`]. Spanless and parameter-free.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HostEvidenceAdmissionRefused {
+    /// The closed admission category; no hostile host data crosses this boundary.
+    pub kind: HostEvidenceRefusalKind,
 }
 
 // ===========================================================================
@@ -1385,6 +1414,11 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::Structural,
         },
+        DiagCode::HostEvidenceAdmissionRefused(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::Pinned,
+            remediation: RemediationClass::Structural,
+        },
         DiagCode::FootprintIncoherent(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
@@ -1721,7 +1755,8 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         | DiagCode::RecordsHeaderlessRefused(_)
         | DiagCode::RecordsGluedLine(_)
         | DiagCode::RecordsHeaderMissing(_)
-        | DiagCode::RecordsSentinelNonce(_) => vec![],
+        | DiagCode::RecordsSentinelNonce(_)
+        | DiagCode::HostEvidenceAdmissionRefused(_) => vec![],
     }
 }
 
@@ -2543,6 +2578,26 @@ mod tests {
             detail: "x".to_owned(),
         });
         assert_eq!(registry(&unresolvable).floor, Floor::None);
+    }
+
+    #[test]
+    fn host_evidence_admission_refusal_is_pinned_and_unwritten() {
+        let code = DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
+            kind: HostEvidenceRefusalKind::Framing,
+        });
+        assert_eq!(code.slug(), "host-evidence-admission-refused");
+        assert_eq!(registry(&code).severity, Severity::Error);
+        assert_eq!(registry(&code).floor, Floor::Pinned);
+        assert_eq!(registry(&code).remediation, RemediationClass::Structural);
+        assert!(params_of(&code, &Interner::default()).is_empty());
+        let entry = crate::catalog::entry(code.slug()).expect("catalog entry");
+        assert!(entry.params.is_empty());
+        assert_eq!(entry.message, None);
+        assert_eq!(entry.help, None);
+        assert_eq!(
+            render_body(&Diag::new_spanless_site(code), &Interner::default()),
+            "[unwritten: host-evidence-admission-refused]"
+        );
     }
 
     /// The gate-3 interaction: the two ⊤-disclosures stay `Note` (they must never silently become

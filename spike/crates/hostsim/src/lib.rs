@@ -700,7 +700,7 @@ apt_get__predict() {
         for (node, class) in classes {
             // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, which these
             // elision DSTs do not exercise (elide-weld's concern is EstablishAmbient — 24D §3).
-            if matches!(class, SkipClass::EstablishAmbient(_)) {
+            if let SkipClass::EstablishAmbient(fact) = class {
                 let vouch = dorc_plan::VerdictVouch::new(
                     "apt_get__is_converged".to_string(),
                     "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
@@ -710,6 +710,7 @@ apt_get__predict() {
                 );
                 vouches.insert(
                     *node,
+                    *fact,
                     dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
                 );
             }
@@ -1522,18 +1523,21 @@ grep__predict() {
     }
 
     /// `262` §2/§5 byte-tier fault DST (THE tear-detector proof): seeded torn/glued/oversize
-    /// mutations of a framed record stream, fed through the PRODUCTION deframer, must fold in the
+    /// mutations of a framed record stream, fed through bounded production admission, must fold in the
     /// SAFE direction — a torn/truncated record is DROPPED or the read unit REFUSED, never a
     /// fabricated shorter (more-licensing) record; an oversized line WIDENS (safe). Includes a
     /// space-bearing deriv coord so last-to-token is stressed under mutation. `sometimes-assert`:
     /// each fault class fires over the seed range (a mutator that never tears is a dead DST).
     #[test]
     fn dst_byte_tier_record_faults_fold_toward_safe_never_fabricate() {
-        use dorc_plan::records::{Framing, LegacyPolicy, TERMINAL_TOKEN, deframe};
+        use dorc_plan::records::{
+            Admission, Framing, HostEvidenceLimits, TERMINAL_TOKEN, admit_unscoped_host_records,
+            read_host_evidence,
+        };
         use fault::RecordFault;
+        use std::io::Cursor;
 
         let framing = Framing::spike("bk".to_owned());
-        let expect = framing.expect();
         let nonce = &framing.nonce.0;
         // A clean framed stream: two site records + a space-bearing deriv coord + its family close.
         let clean = format!(
@@ -1544,36 +1548,53 @@ grep__predict() {
              {nonce} deriv-end 0 n=1 {TERMINAL_TOKEN}\n\
              dorc-records-end/1 nonce={nonce} {TERMINAL_TOKEN}\n"
         );
-        let clean_records: BTreeSet<String> = deframe(&clean, &expect, LegacyPolicy::Refuse)
-            .records
-            .into_iter()
-            .collect();
+        let admit = |raw: &str| match read_host_evidence(
+            Cursor::new(raw.as_bytes()),
+            HostEvidenceLimits::spike_default(),
+        ) {
+            Admission::Admitted(bytes) => {
+                admit_unscoped_host_records(&bytes, &framing, HostEvidenceLimits::spike_default())
+            }
+            Admission::NoObservation => Admission::NoObservation,
+            Admission::Refused(refusal) => Admission::Refused(refusal),
+        };
+        let clean_records: BTreeSet<String> = match admit(&clean) {
+            Admission::Admitted(records) => {
+                records.iter().map(|record| format!("{record:?}")).collect()
+            }
+            other => panic!("clean stream must admit: {other:?}"),
+        };
         assert!(
-            clean_records.contains("deriv 0 coord=/etc/a file/with spaces"),
+            clean_records.contains("Derivation { site: 0, coord: \"/etc/a file/with spaces\" }"),
             "the clean stream round-trips the space-bearing coordinate (last-to-token)"
         );
 
         let (mut torn, mut glued, mut oversize, mut clean_through) = (0u32, 0u32, 0u32, 0u32);
         for seed in 0..512u64 {
             let (mutated, class) = fault::mutate(seed, &clean, TERMINAL_TOKEN);
-            let d = deframe(&mutated, &expect, LegacyPolicy::Refuse);
+            let d = admit(&mutated);
             match class {
                 RecordFault::Torn | RecordFault::Glued | RecordFault::Clean => {
                     // The safe direction: refused OR every emitted record is a CLEAN one (loss
                     // only). A prefix-truncated coordinate loses the token ⇒ dropped, never a
                     // fabricated shorter record — the whole point of the terminal token.
                     assert!(
-                        d.refused || d.records.iter().all(|r| clean_records.contains(r)),
-                        "seed {seed} ({class:?}): fabricated a record outside the clean set: {:?}",
-                        d.records
+                        matches!(d, Admission::Refused(_))
+                            || matches!(
+                                &d,
+                                Admission::Admitted(records)
+                                    if records.iter().all(|record| clean_records.contains(&format!("{record:?}")))
+                            ),
+                        "seed {seed} ({class:?}): fabricated a record outside the clean set: {d:?}",
                     );
                 }
                 RecordFault::Oversize => {
                     // A still-terminated oversized line WIDENS content (more/longer coords = more
-                    // collisions = fewer survivals — safe). It must stay parseable, never refuse.
+                    // collisions = fewer survivals — safe), or exceeds an admission ceiling and
+                    // refuses the whole read unit. Neither outcome fabricates a smaller record.
                     assert!(
-                        !d.refused,
-                        "seed {seed}: an oversized (terminated) line stays parseable"
+                        matches!(d, Admission::Admitted(_) | Admission::Refused(_)),
+                        "seed {seed}: the bounded reader produced no admission outcome"
                     );
                 }
             }

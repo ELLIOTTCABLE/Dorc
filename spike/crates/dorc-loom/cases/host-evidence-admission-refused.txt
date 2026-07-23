@@ -1,0 +1,9 @@
+---
+code: host-evidence-admission-refused
+when-fires: bounded host evidence failed closed admission before entering the decision plane.
+why: host evidence remains controller-owned and decision-inert until admission succeeds.
+---
+-- replay --
+$ dorc plan --book=book.sh
+error[host-evidence-admission-refused]: [unwritten:
+   host-evidence-admission-refused]

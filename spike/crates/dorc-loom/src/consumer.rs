@@ -14,9 +14,10 @@ use std::fs;
 use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_core::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, OperandPosition, RecordsFactTruncated,
-    RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent,
-    render_cli_parts, render_cli_with, render_staged_cli_parts,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
+    HostEvidenceRefusalKind, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
+    SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
+    render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
@@ -685,13 +686,27 @@ impl DorcConsumer {
         }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        let source = case
+        let interner = Interner::default();
+        let Some(source) = case
             .sections()
             .iter()
             .find(|section| section.name() == plan.book)
             .filter(|_| case_relative_path(plan.book))
             .map(errorloom::Section::content)
-            .ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        else {
+            // World-as-payload: no materialized book ⇒ the canonical spanless diagnostic.
+            let diag = Self::world_of(case)?.0;
+            if plan.machine {
+                return Ok(render_diag_jsonl(&diag));
+            }
+            return Ok(reflow_to_canonical(&render_cli_with(
+                &self.mirror,
+                &diag,
+                "",
+                "",
+                &interner,
+            )));
+        };
         if let Some(input) = plan.input {
             let has_input = case_relative_path(input)
                 && case
@@ -706,7 +721,6 @@ impl DorcConsumer {
         if plan.machine {
             return Ok(render_diag_jsonl(&diag));
         }
-        let interner = Interner::default();
         Ok(reflow_to_canonical(&render_cli_with(
             &self.mirror,
             &diag,
@@ -829,6 +843,11 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
             declared: 5,
             unseen: 2,
         }),
+        "host-evidence-admission-refused" => {
+            DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
+                kind: HostEvidenceRefusalKind::Framing,
+            })
+        }
         "escalation-policy" => DiagCode::EscalationPolicy(EscalationPolicy {
             detail: "escalation policy: probe re-uses connection authority for \
                      `tolerates:`-vouched functions only (default)"
