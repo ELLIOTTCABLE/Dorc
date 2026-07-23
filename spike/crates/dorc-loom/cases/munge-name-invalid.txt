@@ -1,5 +1,7 @@
 ---
 code: munge-name-invalid
+when-fires: an emitted `<munged>__<role>` funcname is not a legal sh NAME (leading digit, dot, non-ASCII). oracle/reserved.rs lint_oracle_reserved_names.
+why: ca-munge-charclass (24M §4b): a broken function name cannot ship — REFUSED. `{problem}` is `ShNameProblem::describe()`.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

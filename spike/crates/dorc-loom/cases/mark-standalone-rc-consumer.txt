@@ -1,5 +1,7 @@
 ---
 code: mark-standalone-rc-consumer
+when-fires: the new-grammar mark parser found a standalone mark-block (no command to bind) carrying an rc-consumer or `reads`. oracle/predict/mark_grammar.rs.
+why: 28A:rul-continuation-attachment: a standalone block has no statement to measure/back, so a verdict/observe there is unbacked ⇒ the block drops to ⊤ (`inv-top-reject`).
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

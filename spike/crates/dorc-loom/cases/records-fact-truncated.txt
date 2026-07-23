@@ -1,5 +1,7 @@
 ---
 code: records-fact-truncated
+when-fires: fewer site records arrived than the header declared. plan/records.rs finalize. `{received}`/`{declared}`/`{unseen}` are the site counts.
+why: plans/128 fc-2: a computable range, not a refusal — the unseen sites fold Unknown ⇒ run on their own. NOTE plain-language pass owed: Unknown/⊤-join wording (law-plain-language-surfaces, 24H ack-4).
 ---
 -- replay --
 $ dorc plan --book=book.sh < probe-results.txt

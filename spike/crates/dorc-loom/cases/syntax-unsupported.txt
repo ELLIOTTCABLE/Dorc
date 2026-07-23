@@ -1,5 +1,7 @@
 ---
 code: syntax-unsupported
+when-fires: the parser hit an unmodeled/out-of-scope sh construct; it becomes an `Unsupported` ⊤-node and parsing continues.
+why: inv-top-reject: under-modeling is a loud correctness boundary. PASSTHROUGH — the parser's own description of the construct rides `detail`.
 ---
 -- replay --
 $ dorc plan --book=book.sh

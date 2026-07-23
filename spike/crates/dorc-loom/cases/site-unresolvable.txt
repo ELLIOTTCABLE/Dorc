@@ -1,5 +1,7 @@
 ---
 code: site-unresolvable
+when-fires: a probe could not ship a read-only check for one or more command-sites, so the apply runs each. cli unresolvable_diagnostics (né dq-site-unresolvable).
+why: kFAIL-perform: unsure ⇒ run. PASSTHROUGH — `detail` reproduces BOTH the aggregate label (N sites …) AND the folded `\n  = note: site runs `{excerpt}`` line the old render_body emitted, so the migrated output is byte-identical bar the `sm ` prefix.
 ---
 -- replay --
 $ dorc plan --book=book.sh

@@ -1,5 +1,7 @@
 ---
 code: mark-rc-arity-exceeded
+when-fires: the new-grammar mark parser found two rc-consuming marks (`asserts`/`refutes`) in one block, incl. continuations (`281` §7). oracle/predict/mark_grammar.rs.
+why: 281 §7 rc-arity: one exit code witnesses one cell, so two verdicts on one block is unmeasurable ⇒ the block drops to ⊤ (`inv-top-reject`).
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

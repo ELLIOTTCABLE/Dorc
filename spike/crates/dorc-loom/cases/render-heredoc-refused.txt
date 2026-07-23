@@ -1,5 +1,7 @@
 ---
 code: render-heredoc-refused
+when-fires: the leaf-exact render would elide/guard a licensed leaf whose span covers a `<<` heredoc opener (not its body), so the leaf runs verbatim instead.
+why: kFAIL-perform, arch-1 d-6: substituting the opener span would strand the heredoc body — an Error-class give-up (a broken artifact otherwise). `{verb}` = elide/guard.
 ---
 -- replay --
 $ dorc plan --book=book.sh

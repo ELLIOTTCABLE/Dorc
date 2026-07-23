@@ -1,5 +1,7 @@
 ---
 code: tolerates-unknown-dimension
+when-fires: an unknown context-dimension token appears on a `tolerates:` vouch. oracle/entry.rs collect_tolerance. `{expected}` = the known-dimension list.
+why: 27C §2: the mark vouches nothing and the site stays walled on that dimension (engine-owned closed vocabulary).
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

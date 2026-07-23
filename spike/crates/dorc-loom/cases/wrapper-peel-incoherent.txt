@@ -1,5 +1,7 @@
 ---
 code: wrapper-peel-incoherent
+when-fires: a wrapper's `__predict` and `__lend_map` disagree on the peel tail position. cli/main.rs. Spanned (the predict name_span).
+why: 273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. PASSTHROUGH — the refusal text rides `detail`.
 ---
 -- replay --
 $ dorc plan --book=book.sh

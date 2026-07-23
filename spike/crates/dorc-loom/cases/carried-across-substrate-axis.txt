@@ -1,5 +1,7 @@
 ---
 code: carried-across-substrate-axis
+when-fires: a cross-context elision carried a substrate-axis fact via pure-predicate carry. cli/main.rs. Spanned (the carried site's span).
+why: 27C §9: every cross-context elision renders its attribution chain from day one. PASSTHROUGH — the chain text rides `detail`.
 ---
 -- replay --
 $ dorc plan --book=book.sh

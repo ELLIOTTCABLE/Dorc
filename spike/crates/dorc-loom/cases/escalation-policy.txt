@@ -1,5 +1,7 @@
 ---
 code: escalation-policy
+when-fires: the authority-disclosure line for the probe-escalation policy. cli/main.rs (SPANLESS). Consent legibility.
+why: 27C §2: the disclosure varies by dial (default vs --escalate-any-probe). PASSTHROUGH — the policy text rides `detail`.
 ---
 -- replay --
 $ dorc plan --book=book.sh
