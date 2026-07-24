@@ -14,7 +14,7 @@ use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...>";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...|scaffold SLUG>";
 
 fn main() -> ExitCode {
     match run() {
@@ -30,6 +30,7 @@ enum Command {
     Compile { cases: Vec<PathBuf>, env: RunEnv },
     Promote { cases: Vec<PathBuf>, env: RunEnv },
     Vars { used: bool, cases: Vec<PathBuf> },
+    Scaffold { slug: String },
 }
 
 type SelectedCase = (String, PathBuf);
@@ -48,6 +49,7 @@ fn run() -> Result<ExitCode, String> {
         Command::Compile { cases, env } => compile_cases(&cases, &env, &mut out),
         Command::Promote { cases, env } => promote_cases(&cases, &env, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
+        Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
     }
 }
 
@@ -76,8 +78,63 @@ fn parse_args() -> Result<Command, String> {
                 cases: collect_cases(argv)?,
             })
         }
+        Some("scaffold") => {
+            let slug = argv
+                .next()
+                .ok_or_else(|| format!("scaffold needs a code slug\n{USAGE}"))?;
+            if argv.next().is_some() {
+                return Err(format!("scaffold takes exactly one slug\n{USAGE}"));
+            }
+            Ok(Command::Scaffold { slug })
+        }
         _ => Err(USAGE.to_owned()),
     }
+}
+
+/// Write the empty defining-case skeleton for a freshly-minted code
+/// (`288` §4 prop-scaffold-explicit-command). An EXPLICIT command, never a build or test
+/// side-effect: tests never write source, and concurrent builders never race over the collection.
+///
+/// Everything the skeleton omits is deliberately red. Empty `when-fires`/`why` fail
+/// `required_metadata_is_non_empty`; an empty replay output fails the same-slug coherence gate
+/// (`check_hygiene`) until a genuinely-firing world is authored and blessed — the scaffold-and-forget
+/// guard. `message` is never written, so the code renders `[unwritten: <slug>]` at every seat:
+/// builders author zero user-facing prose (`error-authorship-tier`).
+fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
+    if slug.is_empty()
+        || !slug
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+    {
+        return Err(format!(
+            "slug {slug:?} is not a code slug (lowercase letters, digits, and hyphens)"
+        ));
+    }
+    let path = cases_dir().join(format!("{slug}.loom"));
+    if path.exists() {
+        return Err(format!(
+            "{} already exists; scaffold never overwrites an authored case",
+            path.display()
+        ));
+    }
+    let skeleton = format!(
+        "---\ncode: {slug}\nwhen-fires:\nwhy:\n---\n-- replay --\n$ dorc plan --book=book.sh\n"
+    );
+    std::fs::write(&path, skeleton)
+        .map_err(|error| format!("write {}: {error}", path.display()))?;
+    writeln!(out, "scaffold: wrote {}", path.display()).map_err(|error| error.to_string())?;
+    writeln!(
+        out,
+        "next: author `when-fires`/`why`, then replace the replay with a command that really fires `{slug}`"
+    )
+    .map_err(|error| error.to_string())?;
+    writeln!(
+        out,
+        "then: dorc-loom promote {} (orchestrator-only, on a freshly verified binary)",
+        path.display()
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(ExitCode::SUCCESS)
 }
 
 fn collect_compile_args(
