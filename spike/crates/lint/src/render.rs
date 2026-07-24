@@ -33,7 +33,9 @@ pub fn render_human_parts(report: &LintReport) -> RenderParts {
     let source_count = report.coverage.sources.len();
     if report.findings.is_empty() {
         return structure(format!(
-            "dorc lint: clean — nothing found across {file_count} file(s), {source_count} source(s).\n"
+            "dorc lint: clean — nothing found across {file_count} file{}, {source_count} source{}.\n",
+            plural(file_count),
+            plural(source_count)
         ));
     }
     let mut out = structure(String::from(
