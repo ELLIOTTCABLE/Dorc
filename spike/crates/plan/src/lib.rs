@@ -3755,9 +3755,62 @@ impl Plan {
     #[must_use]
     pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
         use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
+        self.refused_render_steps(ast)
+            .into_iter()
+            .map(|(step, verb)| {
+                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
+                // most-improved case: an inline literal becomes a first-class typed variant the
+                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
+                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
+                // the erasability identity plane are unchanged. The interner resolves no excerpt
+                // here (the payload carries only a site) but is threaded for the shared lowering.
+                Diag::new(
+                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                        site: SiteId::leaf(step.leaf),
+                        verb,
+                        command: command_text_oneline(&step.sh),
+                    }),
+                    ast.node(step.ast).span,
+                )
+            })
+            .collect()
+    }
+
+    /// The `RenderRefusal` collapse narratives paired one-for-one with
+    /// [`render_refusal_diagnostics`](Self::render_refusal_diagnostics)
+    /// (`AID-NEEDS:law-collapse-mints-narrative`): refusing a LICENSED elision is a
+    /// safety-narrowing, so it mints a decision-inert record like every other one. Pairing is by
+    /// construction — both walk [`refused_render_steps`](Self::refused_render_steps) — and pinned
+    /// by a cardinality gate, the same posture the merge mint carries.
+    ///
+    /// Decision-inert and, today, unconsumed by any render: the push disclosure is the
+    /// `render-heredoc-refused` diagnostic, and the narrative exists for the why-chain that does
+    /// not yet read narratives (`289:seam-narrative-render-unconsumed`).
+    #[must_use]
+    pub fn render_refusal_narratives(&self, ast: &Ast) -> Vec<CollapseNarrative> {
+        self.refused_render_steps(ast)
+            .into_iter()
+            .map(|(step, _)| {
+                // Spelled literally, not through `render_refusal_heredoc`: the mint census is a
+                // lexical grep for `CollapseKind::<Variant>` and cannot see a named constructor.
+                CollapseNarrative::new(
+                    TrustTier::Derived,
+                    CollapseKind::RenderRefusal {
+                        site: dorc_core::SiteId::leaf(step.leaf),
+                        cause: dorc_aid::narrative::RenderRefusalTag::Heredoc,
+                    },
+                )
+            })
+            .collect()
+    }
+
+    /// The leaves the disposition layer LICENSED to elide that the leaf-exact render must REFUSE,
+    /// each with its disposition-aware verb. A GUARD refusal says "guard" (X-heredoc's
+    /// expected-diagnostics pins it), a Replace/Omit refusal says "elide".
+    fn refused_render_steps(&self, ast: &Ast) -> Vec<(&Step, &'static str)> {
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
-        let mut diags = Vec::new();
+        let mut refused = Vec::new();
         for step in &self.steps {
             let would_elide = match &step.disposition {
                 // A Replace value-substitutes the span; a Guard EDITS it to `( check ) || <orig>` —
@@ -3768,30 +3821,15 @@ impl Plan {
                 Disposition::Run => false,
             };
             if would_elide && leaf_has_heredoc(ast, step.ast) {
-                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
-                // most-improved case: an inline literal becomes a first-class typed variant the
-                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
-                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
-                // the erasability identity plane are unchanged. The interner resolves no excerpt
-                // here (the payload carries only a site) but is threaded for the shared lowering.
-                // The verb is disposition-aware: a GUARD refusal says "guard" (X-heredoc's
-                // expected-diagnostics pins `guard`), a Replace/Omit refusal says "elide".
                 let verb = if matches!(step.disposition, Disposition::Guard(_)) {
                     "guard"
                 } else {
                     "elide"
                 };
-                diags.push(Diag::new(
-                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
-                        site: SiteId::leaf(step.leaf),
-                        verb,
-                        command: command_text_oneline(&step.sh),
-                    }),
-                    ast.node(step.ast).span,
-                ));
+                refused.push((step, verb));
             }
         }
-        diags
+        refused
     }
 
     /// Collect the span edits the leaf-exact render applies (arch-1) — one `(Span,

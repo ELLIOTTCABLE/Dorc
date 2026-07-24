@@ -1573,6 +1573,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             .chain(entry_narrative.iter().cloned())
             .chain(merge_narrative.iter().cloned())
             .chain(plan.survival_report.collapse_narrative().iter().cloned())
+            .chain(plan.render_refusal_narratives(&parsed.value))
             .collect();
         emit_why_lens(&why_diags, &arena, &book_src, &collapse_narrative);
         // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the
