@@ -246,7 +246,18 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `aid`
 /// itself is included for the `diag.rs` retire-guard.
 const SCANNED_CRATES: &[&str] = &[
-    "aid", "syntax", "analysis", "oracle", "plan", "cli", "coverage", "hostsim",
+    "aid",
+    "syntax",
+    "analysis",
+    "oracle",
+    "plan",
+    "cli",
+    "coverage",
+    "hostsim",
+    // `289:rider-diag-tidy-scan-set` — widened ahead of the lint codes joining the registry, so
+    // their emit sites satisfy the constructed-scan instead of reading as dead catalog.
+    "lint",
+    "dorc-loom",
 ];
 
 /// The `spike/crates` dir (this test runs with cwd = `crates/aid`).
@@ -314,10 +325,17 @@ fn production_emit_source() -> String {
     let non_aid: Vec<&str> = SCANNED_CRATES
         .iter()
         .copied()
-        .filter(|c| *c != "aid")
+        .filter(|c| !NON_EMIT_CRATES.contains(c))
         .collect();
     concat_crate_src(&non_aid)
 }
+
+/// Scanned, but NOT part of the production emit surface. `aid` only DEFINES the codes (its own
+/// match arms and tests would satisfy the grep for every variant — the act-3 vacuity). `dorc-loom`
+/// is the same category one layer out: `canonical_payload` constructs eleven payloads literally as
+/// CASE FIXTURES, so counting them as emits would mask a dead catalog entry whose real emit died.
+/// Both stay in [`SCANNED_CRATES`] for the scans that legitimately want the whole tree.
+const NON_EMIT_CRATES: &[&str] = &["aid", "dorc-loom"];
 
 /// Extract every payload-struct name constructed at a `new_spanless_site(…::<Payload>(…))` call in
 /// `source` — the spanless-mint marker. Matches both the `Code::` alias (the emit crates) and the
@@ -717,5 +735,17 @@ fn constructed_scan_negative_control_excludes_aid_diag_arms() {
     assert!(
         !new_basis.contains("DiagCode::ThisVariantDoesNotExistAnywhere("),
         "sanity: a non-emitted variant is absent from the production basis"
+    );
+    // The SAME vacuity, one layer out (`289:rider-diag-tidy-scan-set`): `dorc-loom`'s
+    // `canonical_payload` constructs payloads literally as case fixtures, so admitting it to the
+    // production basis would let a fixture stand in for a dead emit.
+    let loom_only_marker = "fn canonical_payload(";
+    assert!(
+        scanned_source().contains(loom_only_marker),
+        "precondition: the widened scan set does include dorc-loom's source"
+    );
+    assert!(
+        !new_basis.contains(loom_only_marker),
+        "the production basis must EXCLUDE dorc-loom: its case-fixture constructors are not emits"
     );
 }
