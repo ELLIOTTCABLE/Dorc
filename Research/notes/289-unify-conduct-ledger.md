@@ -266,3 +266,41 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   connectives, per-link provenance stamps) even though nothing fills them this arc;
   the shape-anticipation answer to `289:seam-narrative-render-unconsumed`.
 - 2026-07-24: touches fold cold-verified own-hand (build ok | unit 1167 | e2e 97 | gates ok). Stack tip `397e8e78` verified.
+
+## §2i — Phases-2–3 checkpoint rulings + the phase-4 go (conductor, 2026-07-24)
+
+- Checkpoint @ `40733595` on `ai/r28-unify-p24x` (17 commits; cold gates 1175 unit /
+  97 e2e / clippy 0). Phases 2–3 COMPLETE: mint-seam (mirror-union from cases ·
+  scaffold · repair-command-verbatim reds · walkthrough loom actually exercised
+  end-to-end) · the full hardening package · prose sweep · Unexplained steering
+  correction · lint unification (7 codes, all `sm `-migrated; framed/compact split
+  named a policy; SCANNED_CRATES widened).
+- **`289:finding-census-caught-renderrefusal-unminted`** — the h1/h2 census went red
+  on its FIRST run: `RenderRefusal` collapses were never minted (the `291` nine-site
+  table omitted it). Builder minted it (decision-inert, zero output change, paired by
+  a shared predicate). The hardening package paid for itself same-day; the
+  value-carriage escalation rung correctly NOT taken (missing mint ≠ census leak).
+- **`289:rul-reflow-fix-in-phase-four`** (their flag 2) — the loom bin's
+  `unreflow`/`normalize_layout` heuristics are framed-render-specific and REFUSE
+  compact-rendered transcript edits (`MarkerOutsideEditableSection`). This will bite
+  phase 4's case prose and phase 6's conversion: the fix (compact-aware
+  normalization + a regression test compiling an edited compact-line transcript)
+  joins phase-4 scope. The builder's fallback (direct catalog edit + promote) reads
+  as WORKING-STATE under the `28A:rul-respell-atomic-cutover` licensing; the
+  authoritative check is the fixpoint gates on MY cold binary at fold.
+- NON_EMIT_CRATES split + negative control (their flag 3): ACCEPTED — the literal
+  §4d instruction would have weakened `every_catalog_variant_is_constructed`;
+  gate-strength preserved is the correct reading of intent.
+- **`289:rul-comment-budget-bills-plain-only`** — standing interpretation for the
+  arc: the numeric budget bills plain `//` comments only; `///`/`//!` doc-comments
+  ride the doc-comment-every-public-type law un-billed; mandated prose-sweep
+  rewordings and pure moves don't bill. Under it this lane sits ~41/45: PASS.
+- Deviations accepted: render-policy-before-routing ordering · the
+  `authored-decline-class{,-unreadable}` two-code split (law-codes-vary-by-world) ·
+  compact line emitted as parts (byte-identical; loom-editability is the arc's
+  point) · relay findings frame-less under `--verbose` (empty source; relays stay
+  relays) · the module-doc roster correction · walkthrough on phase-3's first code.
+- PHASE-4 GO issued to the same builder (context-hot), with: merge the stack tip
+  into the lane FIRST (the touches fold landed after their base; surface conflicts
+  now, gates re-verified post-merge), then the pre-briefed W2 route + invocation
+  codes + `dorc-sh` + the reflow fix.
