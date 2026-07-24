@@ -196,7 +196,7 @@ use errorloom::{Case, RunEnv, check_run};
 
 #[test]
 fn transcripts_are_byte_stable() -> Result<(), Box<dyn std::error::Error>> {
-    let case = Case::parse(&std::fs::read_to_string("cases/motd-refused.txt")?)?;
+    let case = Case::parse(&std::fs::read_to_string("cases/motd-refused.loom")?)?;
     let env = RunEnv::new()
         .path_dir("target/debug")   // the tool under test
         .path_dir("tests/mocks");   // inert stand-ins for everything else

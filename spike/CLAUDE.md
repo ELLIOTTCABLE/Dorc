@@ -531,7 +531,7 @@ prompt you write:
 - **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining
   case; the **committed transcript CASE is the authoring surface** and the compiled
   generated catalog lock/table is DERIVED from it (`282:rul-transcript-is-the-
-  authoring-surface`). Cases live at `crates/dorc-loom/cases/<slug>.txt` (txtar +
+  authoring-surface`). Cases live at `crates/dorc-loom/cases/<slug>.loom` (txtar +
   flat-YAML frontmatter). The phase-two compiler is split by ownership: errorloom
   transports renderer-stamped editable sections and opaque variable identities;
   dorc-loom alone parses strict whole-token `{{name}}`, resolves it against the
