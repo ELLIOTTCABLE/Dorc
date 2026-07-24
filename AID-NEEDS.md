@@ -79,7 +79,12 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   *operands*, at the moment of collapse. A new safety-narrowing without its narrative mint
   (and, usually, its row here) is a defect. "Evidence" is deliberately reserved for
   possible future correctness-plane use (`288:rul-narrative-layer-naming`).
-  Mechanics: `27V` §1.
+  Mechanics: `27V` §1. AS-BUILT (2026-07-24): the MINT half is complete and gate-held
+  (a no-wildcard completeness census over `CollapseKind` plus per-class fault-injection
+  pins); the CONSUME half is not — only `VerdictDecline` with an `authored_reason` reaches
+  a user surface, so a missing narrative omits silently rather than advertising itself.
+  There is no `Unexplained` class. That gap is the named seam
+  `289:seam-narrative-render-unconsumed`, owned by the arrangement-home round.
 - **law-trust-tier-is-syntax** — the epistemic tier of every rendered link (strawman
   spellings: measured / vouched / ran / claimed / derived / consented) is a typed field
   rendered uniformly by arrangement code; prose never hand-writes epistemics, so a claim
