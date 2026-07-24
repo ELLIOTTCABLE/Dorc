@@ -25,7 +25,7 @@ fn run(args: &[&str]) -> std::process::Output {
 
 #[test]
 fn compile_keeps_a_clean_selected_case_out_of_the_touched_set() {
-    let path = case("cmdsub-command.txt");
+    let path = case("cmdsub-command.loom");
     let before =
         std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("fixture reads: {error}"));
     let output = run(&[
@@ -44,7 +44,7 @@ fn compile_keeps_a_clean_selected_case_out_of_the_touched_set() {
 
 #[test]
 fn inventories_are_ordered_and_do_not_widen_used_values() {
-    let path = case("cmdsub-command.txt");
+    let path = case("cmdsub-command.loom");
     let path = path.to_str().unwrap_or("fixture path is UTF-8");
     let used = run(&["vars", "--used", path]);
     let all = run(&["vars", "--all", path]);
@@ -62,7 +62,7 @@ fn inventories_are_ordered_and_do_not_widen_used_values() {
 
 #[test]
 fn compile_ignores_clean_generated_inventory_replays() {
-    let path = case("cmdsub-two-sections.txt");
+    let path = case("cmdsub-two-sections.loom");
     let output = run(&[
         "vars",
         "--used",
@@ -78,7 +78,7 @@ fn compile_ignores_clean_generated_inventory_replays() {
 
 #[test]
 fn compile_has_no_preview_for_a_clean_selected_case() {
-    let path = case("cmdsub-command.txt");
+    let path = case("cmdsub-command.loom");
     let output = run(&[
         "vars",
         "--used",
@@ -94,7 +94,7 @@ fn compile_has_no_preview_for_a_clean_selected_case() {
 
 #[test]
 fn compile_does_not_reinterpret_clean_transcript_output() {
-    let path = case("cmdsub-partial-refusal.txt");
+    let path = case("cmdsub-partial-refusal.loom");
     let output = run(&[
         "vars",
         "--used",
@@ -109,7 +109,7 @@ fn compile_does_not_reinterpret_clean_transcript_output() {
 
 #[test]
 fn all_inventory_excludes_foreign_detail() {
-    let path = case("site-foreign.txt");
+    let path = case("site-foreign.loom");
     let output = run(&[
         "vars",
         "--all",
@@ -124,7 +124,7 @@ fn all_inventory_excludes_foreign_detail() {
 
 #[test]
 fn clean_cases_do_not_trigger_marker_compilation() {
-    let unknown = case("cmdsub-unknown.txt");
+    let unknown = case("cmdsub-unknown.loom");
     let unknown = unknown.to_str().unwrap_or("fixture path is UTF-8");
     let refusal = run(&["vars", "--used", unknown]);
     let stdout = String::from_utf8(refusal.stdout)
@@ -132,7 +132,7 @@ fn clean_cases_do_not_trigger_marker_compilation() {
     assert!(refusal.status.success(), "{stdout}");
     assert!(stdout.contains("case: "));
 
-    let foreign = case("site-foreign.txt");
+    let foreign = case("site-foreign.loom");
     let foreign = foreign.to_str().unwrap_or("fixture path is UTF-8");
     let foreign = run(&["vars", "--used", foreign]);
     let stdout = String::from_utf8(foreign.stdout)

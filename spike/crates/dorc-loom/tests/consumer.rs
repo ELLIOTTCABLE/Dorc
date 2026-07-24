@@ -18,7 +18,7 @@ use errorloom::{
     fixpoint_check, structure_bless,
 };
 
-const CASE_PATH: &str = "cases/dangling-reference.txt";
+const CASE_PATH: &str = "cases/dangling-reference.loom";
 const CATALOG_PATH: &str = "crates/core/src/catalog_lock.rs";
 const CODE_PATH: &str = "crates/core/src/diag.rs";
 
@@ -32,7 +32,7 @@ fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
 }
 
 fn whylog_absent_case() -> Case {
-    Case::parse(include_str!("../cases/whylog-absent.txt")).expect("case parses")
+    Case::parse(include_str!("../cases/whylog-absent.loom")).expect("case parses")
 }
 
 #[test]
@@ -62,20 +62,22 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
 
 #[test]
 fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
-    let case = Case::parse(include_str!("../cases/host-evidence-admission-refused.txt"))
-        .expect("case parses");
+    let case = Case::parse(include_str!(
+        "../cases/host-evidence-admission-refused.loom"
+    ))
+    .expect("case parses");
     let rendered = DorcConsumer::new()
         .render_case(&case)
         .expect("canonical payload renders");
     assert_eq!(
         rendered,
-        include_str!("../cases/host-evidence-admission-refused.txt")
+        include_str!("../cases/host-evidence-admission-refused.loom")
     );
 }
 
 #[test]
 fn editable_baseline_renders_a_defining_case_with_help() {
-    let case = Case::parse(include_str!("../cases/whylog-book-desync.txt")).expect("case parses");
+    let case = Case::parse(include_str!("../cases/whylog-book-desync.loom")).expect("case parses");
     let consumer = DorcConsumer::new();
     let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
         panic!("exact whylog replay must not fall back")
@@ -123,10 +125,10 @@ fn editable_baseline_renders_a_defining_case_with_help() {
 #[test]
 fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
     for text in [
-        include_str!("../cases/whylog-absent.txt"),
-        include_str!("../cases/whylog-corrupt.txt"),
-        include_str!("../cases/whylog-version-refused.txt"),
-        include_str!("../cases/whylog-book-desync.txt"),
+        include_str!("../cases/whylog-absent.loom"),
+        include_str!("../cases/whylog-corrupt.loom"),
+        include_str!("../cases/whylog-version-refused.loom"),
+        include_str!("../cases/whylog-book-desync.loom"),
     ] {
         let case = Case::parse(text).expect("case parses");
         let consumer = DorcConsumer::new();
@@ -567,7 +569,8 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
 
 #[test]
 fn replay_with_a_fake_fallback_leaves_case_catalog_and_source_bytes_unchanged() {
-    let case_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.txt");
+    let case_path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.loom");
     let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs");
     let case_before = std::fs::read(&case_path).expect("case reads");
     let catalog_before = std::fs::read(&catalog_path).expect("catalog reads");

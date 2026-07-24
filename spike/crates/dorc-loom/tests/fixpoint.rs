@@ -34,7 +34,7 @@ fn generated_lock_reproduces_the_committed_bytes() {
     );
 }
 
-/// Every committed `cases/*.txt`, sorted for determinism (`inv-determinism`). A missing/empty dir
+/// Every committed `cases/*.loom`, sorted for determinism (`inv-determinism`). A missing/empty dir
 /// yields an empty corpus, so the gates pass vacuously until the pilots land.
 fn load_corpus() -> Vec<CaseFile> {
     let mut cases: Vec<CaseFile> = Vec::new();
@@ -43,7 +43,7 @@ fn load_corpus() -> Vec<CaseFile> {
     };
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().is_some_and(|e| e == "txt") {
+        if path.extension().is_some_and(|e| e == "loom") {
             let name = path
                 .file_name()
                 .expect("case file has a name")
@@ -65,7 +65,7 @@ fn direct_plan_render_fixpoint() {
     let consumer = DorcConsumer::new();
     let corpus: Vec<_> = load_corpus()
         .into_iter()
-        .filter(|case| case.path() == Path::new("cmdsub-operand-top.txt"))
+        .filter(|case| case.path() == Path::new("cmdsub-operand-top.loom"))
         .collect();
     assert_eq!(corpus.len(), 1, "the direct-plan specimen is committed");
     fixpoint_check(&consumer, &corpus).expect("direct-plan case reproduces from the catalog");
@@ -89,14 +89,14 @@ fn corpus_cases_are_hygienic() {
 #[test]
 fn lint_cases_replay_the_complete_production_report() {
     const LINT_CASES: [&str; 8] = [
-        "missing-dialect-marker.txt",
-        "marker-version-unrecognized.txt",
-        "mark-unknown-verb.txt",
-        "mark-rc-arity-exceeded.txt",
-        "mark-standalone-rc-consumer.txt",
-        "mark-hashcolon-malformed.txt",
-        "munge-name-invalid.txt",
-        "tolerates-unknown-dimension.txt",
+        "missing-dialect-marker.loom",
+        "marker-version-unrecognized.loom",
+        "mark-unknown-verb.loom",
+        "mark-rc-arity-exceeded.loom",
+        "mark-standalone-rc-consumer.loom",
+        "mark-hashcolon-malformed.loom",
+        "munge-name-invalid.loom",
+        "tolerates-unknown-dimension.loom",
     ];
     for filename in LINT_CASES {
         let text = std::fs::read_to_string(corpus_dir().join(filename))
@@ -162,15 +162,15 @@ fn lint_cases_replay_the_complete_production_report() {
 #[test]
 fn lint_mark_diagnostics_require_their_defining_source_shape() {
     const MUTATIONS: [(&str, &str, &str); 4] = [
-        ("mark-unknown-verb.txt", "frobnicate", "asserts"),
-        ("mark-rc-arity-exceeded.txt", "\n: refutes sm.a.C@y", ""),
+        ("mark-unknown-verb.loom", "frobnicate", "asserts"),
+        ("mark-rc-arity-exceeded.loom", "\n: refutes sm.a.C@y", ""),
         (
-            "mark-standalone-rc-consumer.txt",
+            "mark-standalone-rc-consumer.loom",
             ": sm.a.B@x",
             "foo : sm.a.B@x",
         ),
         (
-            "mark-hashcolon-malformed.txt",
+            "mark-hashcolon-malformed.loom",
             "#: frobnicate",
             "# ordinary comment",
         ),
@@ -209,8 +209,8 @@ fn lint_mark_diagnostics_require_their_defining_source_shape() {
     }
 
     for filename in [
-        "missing-dialect-marker.txt",
-        "marker-version-unrecognized.txt",
+        "missing-dialect-marker.loom",
+        "marker-version-unrecognized.loom",
     ] {
         let case = Case::parse(
             &std::fs::read_to_string(corpus_dir().join(filename))

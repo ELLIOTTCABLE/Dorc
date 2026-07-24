@@ -1,6 +1,6 @@
 //! Per-code **defining-case** coverage (`27V` §3 · the `282`/`283` generation flip). Prose ownership
 //! and the committed render TRANSCRIPT now live in the
-//! dorc-loom case corpus (`crates/dorc-loom/cases/<slug>.txt`), guarded by the errorloom render-level
+//! dorc-loom case corpus (`crates/dorc-loom/cases/<slug>.loom`), guarded by the errorloom render-level
 //! `fixpoint_check` (`283` §4a). Phase 5 (`283` §5.9) backported the covered codes to those case files
 //! and retired the old per-register fragment goldens (`tests/defining_cases/*` + `DORC_DEFINING_BLESS`);
 //! this file keeps what stays in `core`:
@@ -456,7 +456,7 @@ fn body_parts_keep_empty_parameter_identity() {
 fn is_case_owned(slug: &str) -> bool {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
-        .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.txt")))
+        .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.loom")))
         .is_some_and(|case| case.exists())
 }
 
@@ -475,7 +475,7 @@ fn every_code_is_case_owned_or_ratcheted() {
         assert!(
             owned || ratchet.contains(e.slug),
             "catalog code `{}` has no dorc-loom case file and is not on DEFINING_CASE_RATCHET — \
-             backport it to `crates/dorc-loom/cases/{}.txt` or add a ratchet entry with its trigger \
+             backport it to `crates/dorc-loom/cases/{}.loom` or add a ratchet entry with its trigger \
              surface (silent partial coverage is not acceptable, 27V §3)",
             e.slug,
             e.slug

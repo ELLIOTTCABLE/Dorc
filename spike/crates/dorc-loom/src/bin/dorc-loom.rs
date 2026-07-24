@@ -213,9 +213,9 @@ fn publish(
         wrote = true;
     }
     for (slug, bytes) in &publication.cases {
-        let path = cases_dir.join(format!("{slug}.txt"));
+        let path = cases_dir.join(format!("{slug}.loom"));
         if !path.is_file() {
-            return Err(format!("defining case `{slug}` is not `{slug}.txt`"));
+            return Err(format!("defining case `{slug}` is not `{slug}.loom`"));
         }
         if file_differs(&path, bytes) {
             publish_file(&path, bytes)?;

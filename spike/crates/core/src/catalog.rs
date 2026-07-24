@@ -503,7 +503,7 @@ mod tests {
     fn is_case_owned(slug: &str) -> bool {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
-            .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.txt")))
+            .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.loom")))
             .is_some_and(|case| case.exists())
     }
 

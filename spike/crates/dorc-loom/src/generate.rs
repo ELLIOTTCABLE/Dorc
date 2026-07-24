@@ -114,7 +114,7 @@ pub fn generate_catalog_lock(
     Ok(serialize_lock(&rows))
 }
 
-/// Load every `<dir>/*.txt` defining case keyed by its frontmatter `code` slug. The edge I/O the
+/// Load every `<dir>/*.loom` defining case keyed by its frontmatter `code` slug. The edge I/O the
 /// pure generator, the promote path, and the fixpoint gate all share.
 ///
 /// # Errors
@@ -126,7 +126,7 @@ pub fn load_corpus_by_slug(dir: &Path) -> Result<BTreeMap<String, Case>, String>
         let path = entry
             .map_err(|error| format!("read corpus entry: {error}"))?
             .path();
-        if path.extension().is_none_or(|extension| extension != "txt") {
+        if path.extension().is_none_or(|extension| extension != "loom") {
             continue;
         }
         let text = std::fs::read_to_string(&path)

@@ -935,10 +935,10 @@ pub(crate) mod tests {
         let render = render("name", 0, value);
         InspectedCompilation::new(
             "catalog".to_owned(),
-            vec!["cases/a.txt".to_owned()],
-            vec!["cases/a.txt".to_owned()],
+            vec!["cases/a.loom".to_owned()],
+            vec!["cases/a.loom".to_owned()],
             vec![(
-                "cases/a.txt".to_owned(),
+                "cases/a.loom".to_owned(),
                 "case".to_owned(),
                 true,
                 vec![InspectedReplay::editable(
@@ -973,9 +973,9 @@ pub(crate) mod tests {
         let mut variants = Vec::new();
 
         let mut selected = original.clone();
-        selected.selected_cases[0] = "cases/b.txt".to_owned();
-        selected.cases[0].path = "cases/b.txt".to_owned();
-        selected.touched_cases[0] = "cases/b.txt".to_owned();
+        selected.selected_cases[0] = "cases/b.loom".to_owned();
+        selected.cases[0].path = "cases/b.loom".to_owned();
+        selected.touched_cases[0] = "cases/b.loom".to_owned();
         variants.push(selected);
         let mut touched = original.clone();
         touched.touched_cases.clear();
@@ -1065,9 +1065,9 @@ pub(crate) mod tests {
             "ordinals are validated rather than normalized"
         );
         let mut case = original.clone();
-        case.cases[0].path = "cases/b.txt".to_owned();
-        case.selected_cases[0] = "cases/b.txt".to_owned();
-        case.touched_cases[0] = "cases/b.txt".to_owned();
+        case.cases[0].path = "cases/b.loom".to_owned();
+        case.selected_cases[0] = "cases/b.loom".to_owned();
+        case.touched_cases[0] = "cases/b.loom".to_owned();
         variants.push(case);
         let mut provenance = original.clone();
         let ReplaySpecies::Editable {
@@ -1129,7 +1129,7 @@ pub(crate) mod tests {
     #[test]
     fn canonical_case_order_is_required() {
         let mut inspection = inspection("x");
-        inspection.selected_cases = vec!["cases/b.txt".to_owned(), "cases/a.txt".to_owned()];
+        inspection.selected_cases = vec!["cases/b.loom".to_owned(), "cases/a.loom".to_owned()];
         assert!(encode(&inspection).is_err());
     }
 
@@ -1137,21 +1137,21 @@ pub(crate) mod tests {
     fn construction_canonicalizes_shuffled_case_selection_to_one_packet() {
         let ordered = InspectedCompilation::new(
             "catalog".to_owned(),
-            vec!["cases/a.txt".to_owned(), "cases/b.txt".to_owned()],
-            vec!["cases/a.txt".to_owned(), "cases/b.txt".to_owned()],
+            vec!["cases/a.loom".to_owned(), "cases/b.loom".to_owned()],
+            vec!["cases/a.loom".to_owned(), "cases/b.loom".to_owned()],
             vec![
-                ("cases/a.txt".to_owned(), "a".to_owned(), true, Vec::new()),
-                ("cases/b.txt".to_owned(), "b".to_owned(), true, Vec::new()),
+                ("cases/a.loom".to_owned(), "a".to_owned(), true, Vec::new()),
+                ("cases/b.loom".to_owned(), "b".to_owned(), true, Vec::new()),
             ],
         )
         .expect("ordered inspection");
         let shuffled = InspectedCompilation::new(
             "catalog".to_owned(),
-            vec!["cases/b.txt".to_owned(), "cases/a.txt".to_owned()],
-            vec!["cases/b.txt".to_owned(), "cases/a.txt".to_owned()],
+            vec!["cases/b.loom".to_owned(), "cases/a.loom".to_owned()],
+            vec!["cases/b.loom".to_owned(), "cases/a.loom".to_owned()],
             vec![
-                ("cases/b.txt".to_owned(), "b".to_owned(), true, Vec::new()),
-                ("cases/a.txt".to_owned(), "a".to_owned(), true, Vec::new()),
+                ("cases/b.loom".to_owned(), "b".to_owned(), true, Vec::new()),
+                ("cases/a.loom".to_owned(), "a".to_owned(), true, Vec::new()),
             ],
         )
         .expect("shuffled inspection");
@@ -1161,10 +1161,10 @@ pub(crate) mod tests {
     fn bytes_replays(count: usize) -> InspectedCompilation {
         InspectedCompilation::new(
             "catalog".to_owned(),
-            vec!["cases/a.txt".to_owned()],
-            vec!["cases/a.txt".to_owned()],
+            vec!["cases/a.loom".to_owned()],
+            vec!["cases/a.loom".to_owned()],
             vec![(
-                "cases/a.txt".to_owned(),
+                "cases/a.loom".to_owned(),
                 "case".to_owned(),
                 true,
                 (0..count)
@@ -1177,7 +1177,7 @@ pub(crate) mod tests {
 
     fn cases(count: usize) -> InspectedCompilation {
         let paths: Vec<_> = (0..count)
-            .map(|index| format!("cases/{index:03}.txt"))
+            .map(|index| format!("cases/{index:03}.loom"))
             .collect();
         InspectedCompilation::new(
             "catalog".to_owned(),
@@ -1209,14 +1209,14 @@ pub(crate) mod tests {
             InspectedCompilation::new(
                 "catalog".to_owned(),
                 (0..=MAX_RECEIPT_CASES)
-                    .map(|index| format!("cases/{index:03}.txt"))
+                    .map(|index| format!("cases/{index:03}.loom"))
                     .collect(),
                 (0..=MAX_RECEIPT_CASES)
-                    .map(|index| format!("cases/{index:03}.txt"))
+                    .map(|index| format!("cases/{index:03}.loom"))
                     .collect(),
                 (0..=MAX_RECEIPT_CASES)
                     .map(|index| (
-                        format!("cases/{index:03}.txt"),
+                        format!("cases/{index:03}.loom"),
                         String::new(),
                         true,
                         Vec::new()
@@ -1229,10 +1229,10 @@ pub(crate) mod tests {
         assert!(
             InspectedCompilation::new(
                 "catalog".to_owned(),
-                vec!["cases/a.txt".to_owned()],
-                vec!["cases/a.txt".to_owned()],
+                vec!["cases/a.loom".to_owned()],
+                vec!["cases/a.loom".to_owned()],
                 vec![(
-                    "cases/a.txt".to_owned(),
+                    "cases/a.loom".to_owned(),
                     String::new(),
                     true,
                     (0..=MAX_RECEIPT_REPLAYS)
