@@ -143,3 +143,13 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - 2026-07-24: phase-1 MAP (Opus, fresh worktree, bg) — mechanical extraction spec →
   `notes/290` on `ai/r28-unify-p1`; no engine edits.
 - 2026-07-24: phase-1 EXECUTOR (Opus, fresh worktree, bg) — the 290 cutover as amended by 289 §2c, on `ai/r28-unify-p1x` off `c1cab82a`.
+
+## §2d — r29 evidence-types fence (HUMAN-TYPED 2026-07-24)
+
+- The in-flight r29 work mints NEW `*Evidence*` types that are NOT narration-related
+  (correctness/license-plane — the exact future use `288:rul-narrative-layer-naming`
+  reserved the word for). The Narrative rename must never stomp them: explicit-file-list
+  rewrites only, no blind grep (the `290` §4 design already complies; the human also
+  briefed the executor directly). Standing for the whole arc and any successor: the
+  word "evidence" BELONGS to the correctness plane now — never rename toward it, never
+  sweep it.
