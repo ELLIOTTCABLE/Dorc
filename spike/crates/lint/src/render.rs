@@ -107,10 +107,10 @@ pub enum Verbosity {
 /// against, so a provenance-less finding is compact at every level — the dial selects among shapes
 /// that exist, it never synthesizes one.
 fn frames(finding: &Finding, verbosity: Verbosity) -> bool {
-    if !finding
+    if finding
         .provenance
         .as_ref()
-        .is_some_and(|p| !p.source.is_empty())
+        .is_none_or(|p| p.source.is_empty())
     {
         return false;
     }
