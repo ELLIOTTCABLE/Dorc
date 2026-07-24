@@ -162,6 +162,30 @@ prompt you write:
   fact. An unmodeled command carried in one oracle's body stays ⊤ everywhere else.
   Exactly one vouch reaches out of its file: a tool's own oracle reaching that tool's
   book-sites, argv-keyed.
+- **rul-every-erased-establish-is-vouched** — the vouch requirement follows the
+  MUTATION, not the plan node's shape: an establish erased inside an aggregate
+  (member-loop, inline call) consumes its own reached `ByVouch<VerdictVouch>` exactly
+  as a standalone one does. The aggregate proof is private, non-empty when mutation
+  exists, and identity- and cardinality-matched to the exact ordered establish sites;
+  missing, extra, duplicate, reordered, declined, dynamically-unresolved, or
+  wrong-site/wrong-fact vouches reject the WHOLE aggregate, atomically. Convergence,
+  self-reach, grade, consumption, and render-floor gates remain independently
+  necessary — a vouch is an added condition, never a substitute. A genuinely
+  query-only body proves its read-substitution separately and must never manufacture
+  a mutation vouch to share an API. Never widen the aggregate mints to accept
+  observation.
+- **rul-probe-writes-only-what-it-owns** — controller-generated probe plumbing may
+  open, create, truncate, read, or remove ONLY a resource it exclusively created and
+  still holds; never a host pathname it merely named, was handed, or reconstructed
+  from a string. Setup that cannot be made exclusive DEGRADES the affected lane
+  (supply an inert sink; keep the static tiers) and never retries by name or removes
+  an unowned object; the degradation is decision-inert evidence, and a
+  degraded/failed lane never fails a plan or an apply. Host environment variables are
+  hostile input and never site controller scratch — roots are controller-supplied
+  literals. This is a strictly narrower rule than the no-mutation contract: it binds
+  ENGINE-generated constructs (`rul-probe-mutation-ownership-split`'s owned tier),
+  where "we were only reading" is not a defense, because the write primitive is the
+  scaffolding's, not the author's.
 
 ## Invariants — separation, worlds & survival
 
@@ -299,6 +323,70 @@ prompt you write:
   nondeterminism class. Why-lane note on 141-landings ("likely benign early-exit
   race; consider full-read form"); `dorc plan --exit-code` computes from
   divergence-of-world facts, never raw sink-landings; hostsim injects the race.
+
+## Invariants — host evidence & controller attribution
+
+The controller↔host boundary: how bytes a managed host produced become facts the
+planner may act on. Everything here binds the INTAKE edge, never the kernel.
+
+- **rul-host-bytes-bounded-before-admission** — every byte a managed host produced
+  (probe results on stdin or from a file, a replayed durable, tool errors, any future
+  transport) crosses explicit aggregate-stream, line, record-count, field,
+  retained-byte, collection-cardinality, and numeric bounds BEFORE UTF-8 conversion,
+  interning, or any large allocation — byte-first reading with a hard
+  `take(limit + 1)`-shaped boundary, checked arithmetic, and typed refusal on
+  overflow or truncation. Known records use a closed grammar and narrow parsers.
+  Unknown or malformed material may be RETAINED as bounded raw material and may never
+  become an interned coordinate, identifier, path, template, shell text, claim key, or
+  license input. A writer's cap never proves a pre-existing file is bounded: replay
+  re-bounds independently, and raw blocks nested inside a durable consume both the
+  outer and the inner budget. Limits are injectable policy, not timeless truth.
+- **rul-admission-is-a-closed-outcome** — intake answers `Admitted` /
+  `NoObservation` / `Refused(<closed reason>)`, and the three are not
+  interchangeable. `NoObservation` is a well-owned attempt that produced no usable
+  fact: ordinary conservative planning, the authored command retained or guarded.
+  `Refused` is framing, bounds, attribution, or integrity failure: no plan carrying
+  mutation authority is emitted for that attempt, and refusal returns BEFORE plan
+  construction, artifact rendering, or durable writing. Never collapse both into
+  `Verdict::Unknown` and continue — that silently converts a broken channel into a
+  measurement.
+- **rul-attribution-is-controller-minted** — host, target, attempt, oracle-source-set,
+  and generation identity come from immutable controller-owned invocation context and
+  are attached to accepted records. A payload frame may be CHECKED against expected
+  controller values; it never mints them. Absent or ambiguous scope means no
+  authority. Scope must survive every conversion and cache key. Today's spike is
+  width-one and its scope types are deliberately private and unshared — the
+  re-entry trigger is any second scope becoming representable at all (real transport,
+  concurrency, retry, cross-host reuse, saved approval), which is when carrying the
+  scope has to become checking it.
+- **rul-integrity-failure-withholds-mutation** — this does NOT contradict
+  `two-phases-opposite-fail-directions`; it carves a different input. ANALYSIS
+  uncertainty resolves toward running the authored command (unsure ⇒ run, always).
+  Lost ATTEMPT, TRANSPORT, ATTRIBUTION, or EXECUTION integrity is not uncertainty
+  about the world — it is not knowing whether we are still talking to the world we
+  think we are — and it withholds further mutation rather than becoming a universal
+  "run". Malformed, truncated, ambiguous, or stale authority material must never
+  round up to either verdict. Type the distinction; test it in every
+  phase × user × oracle-reliability cell.
+- **rul-fixture-identity-never-production** — fixed identifiers, fixed nonces, and
+  FNV-style digests are deterministic spike drift-detectors and satisfy fixture and
+  harness surfaces ONLY. They must be structurally unable to reach a production
+  boundary — remote transport, concurrency or retry, saved approval, multi-host
+  caching, default persistence, or anything published. Keep ONE named substitution
+  point rather than copies scattered per crate. Likewise headerless/legacy-tolerant
+  parsing stays behind compile-time test exposure; environment presence alone never
+  grants parser authority. Comments are not a fence — absence of a constructor is.
+- **rul-host-evidence-is-not-the-narrative-plane** — two unrelated planes both reach
+  for the word "evidence", and merging them would be a genuine correctness loss. The
+  DESCRIBE plane's collapse records are our OWN decision-inert narration of why the
+  engine narrowed (`core::evidence`, renaming to `aid::Narrative` under `plans/288`).
+  The INTAKE plane's host evidence is UNTRUSTED INPUT a managed host produced
+  (`HostEvidenceLimits`, `read_host_evidence`, `ScopedHostEvidence`,
+  `AdmittedUnscopedHostRecords`, all in `plan`/`cli`). One is what we say; the other
+  is what we were told. Never alias, unify, or bulk-rename across the two — a
+  workspace-wide rename must be module-driven, never grep-driven, and the intake
+  family is out of its scope. Sanitizing or encoding intake bytes for display never
+  makes them trusted.
 
 ## Invariants — analysis boundaries
 
@@ -568,6 +656,14 @@ prompt you write:
   pending typed ack); unknown verb/class degrades to a generic note, never an error.
   Static-first: per-arm inventory always; per-site class when argv threads; the
   runtime emission is the only-opportunity fallback, deduped (site, arm, class).
+  ⚠ RUNTIME CAPTURE IS CURRENTLY DISABLED: the emitted probe supplies no sink, so the
+  idiom's `:-/dev/null` default takes over and runtime-only classes are not observed.
+  The static tiers (per-arm inventory, per-site classing) are unaffected, and the
+  ingestion side is built and idle. This is a deliberate hold, not an unbuilt feature —
+  the previous mechanism gave the probe lane a write primitive over an unowned host
+  pathname, which `rul-probe-writes-only-what-it-owns` forbids. The replacement is
+  specified and unstarted; the authored idiom does not change when it lands, because
+  the sink VALUE is engine-supplied. Do not restore a pathname-based capture protocol.
   Classes route AID only — the rc-partition stays a flat sink; the license plane
   never reads a class. Silent declines stay legal; classing is enhancement.
   Noise-tolerant (`27W:rul-report-noise-tolerant`): ingestion never silently drops
@@ -625,7 +721,8 @@ prompt you write:
   ONE catalog (const-table + three-state prose + defining-cases 17/52 with the
   shrink-only ratchet + the promote fixpoint tool) · the sealed evidence plane
   minted at every collapse class · the whylog durable + `dorc why --last`
-  replay · the `27W` report lane all three tiers (incl. the runtime drain) ·
+  replay · the `27W` report lane's static tiers + ingestion (the runtime drain built
+  then DISABLED — see decline-class-emission above) ·
   minting-line/file:line attribution end-to-end · the arrangement walker + THE
   FLAGSHIP GREEN (the naked-trust chain, live and replayed) · lint absorbed
   (one severity vocabulary; `dorc_oracle::validate` book-free;
