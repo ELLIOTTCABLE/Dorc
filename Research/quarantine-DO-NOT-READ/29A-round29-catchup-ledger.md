@@ -385,11 +385,21 @@ concurrency, saved approval, cross-host reuse); the quarantined rationale does n
 Documents: this ledger; `299` corrected and the opaque-review waiver recorded; `298` and
 the phase packets ported onto the `ai/main` lineage with superseded headers.
 
-Steering: the six exported invariants; the three false report-lane claims corrected to
-disabled-with-repair-specified, pointing here.
+Steering: the six exported invariants (one new `spike/CLAUDE.md` section for the
+controller-host intake, two additions to the license-and-trust block); the three false
+report-lane claims corrected to disabled-with-repair-specified; crate-local seatings in
+`plan/CLAUDE.md` (the aggregate mints carry the same vouch demand) and `cli/CLAUDE.md`
+(admission precedes the fold; attribution is minted at this edge). Two drive-by coherence
+fixes found while there: `spike/CLAUDE.md` contradicted itself on the `24J` raw-ship debt
+(its build-status said cleared, its invariant bullet still carried the HEAD-DEBT warning)
+and `cli/CLAUDE.md` repeated the stale warning - the repair is real and machine-pinned by
+probe-render tests, so both now say so.
 
-Code: the buildable compile-fail proofs at their honest scope; a doc-comment fence on
-`whylog::inspect`.
+Code: the buildable compile-fail proofs at their honest scope (four in `core::claim`
+pinning the tier algebra, each verified to fail for its intended reason rather than a
+typo; two in `plan` pinning the mint's vouch demand by naming its whole signature, and the
+aggregate proof's unconstructibility); a doc-comment fence on `whylog::inspect`; the
+re-inlined digest collapsed back onto its single substitution point.
 
 Housekeeping: fifteen stranded round-29 worktrees removed plus one orphaned directory
 cleared; eleven provably-merged branches deleted with `-d`.
