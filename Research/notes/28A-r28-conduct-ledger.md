@@ -784,3 +784,34 @@ into branches at the human's own fold — never copy it into the worktree.)
   `28B`, no engine edits.
 - 2026-07-19: janitor (Opus, primary checkout, bg) — survey + guarded cleanup +
   dropped-work report; report to conductor scratchpad, findings banked here after.
+
+## §6 — r28-impl3: the aid/loom unification design sitting (Fable + human, 2026-07-24)
+
+Design-only session; zero engine commits. THE durable is **`plans/288`** (the aid/loom
+unification plan — architecture · strings · minting · lint-merge · test-tree), minted
+this sitting and promoted notes→plans same day; read it, not this note. Ledger-worthy
+pointers:
+
+- Two read-only agents ran, both reports banked INTO `plans/288` (builders wrote no
+  notes): the string-trawl (`288` §6; its load-bearing find:
+  `flag-new-code-seam-absent` — the post-flip machinery cannot mint a NEW DiagCode at
+  all, mirror seeds from `owned_catalog()` only) and the kernel aid-threading scout
+  (`288` §2e; no core-resident narrative minting exists — the feared landmine is
+  absent; the describe/decide grain already IS the file boundary). The trawl lane
+  branch `ai/loom-string-centralize` carries an EMPTY diff — delete at leisure.
+- Headline rulings, all in `288` §0: the aid-crate extraction (whole describe crate;
+  `CollapseEvidence`→`CollapseNarrative` rename; prov stays core) · the dorc-loom
+  mint-guarantee + explicit `scaffold` command · lints join the one registry · the
+  flat test tree + slug-decides-loom-placement · e2e→loom convergence (closed
+  normalizer vocabulary; structural needles) · CLI-errors, `dorc-sh`, and help text
+  all in-registry · rul-error-slugs-are-semantic · the Fable prose burn-down closes
+  the arc (arc-close invariant: every user-facing string loom-editable).
+- Standing human orders minted this sitting (also in conductor memory): opaque-review
+  DEFERRED (infrastructure non-functional; do not attempt, do not re-ask) ·
+  strawman-formats-never-compat-targets (no mapping layers pre-user; a
+  `spike/CLAUDE.md` stability-ledger bullet rides the next steering-sync).
+- `plans/286` (explain surface) read and accommodated (`288` §3: concept looms share
+  the primary collection at unpark); orthogonality confirmed.
+- Session end state: implementation HELD for a fresh context (session r28-impl3 ends
+  at plan-mint); sole open ask = prop-mint-completeness-hardening (`288` §10); first
+  dispatch per `288` §8 = phase 0 ∥ phase 1.

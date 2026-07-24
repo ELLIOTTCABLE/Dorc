@@ -708,6 +708,13 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
   `.gitlabels`; the `AI` label is mandatory; no `Co-Authored-By` trailer; never
   push. Run the four gates first.
 
+- `rul-strawman-formats-no-compat` — pre-user, EVERY versioned wire/format/env
+  name (`dorc-lint-format/1`, `DREP_V1`, `dorc-whylog/1`, `dorc-records/1`, …) is
+  strawman: rename/reshape in place, all sites in one commit; never an adapter, alias, or
+  mapping from a historical spelling. "Permanent once published" clauses activate at
+  publication, not before. Applies generally; *ask* the human if you suspect
+  they want to pay the prices of backwards-compatibility over velocity/simplicity.
+
 ## Spawning subagents (supervisor law — mandatory)
 
 - Every subagent prompt begins with the **Safety block** (verbatim, above), then:
