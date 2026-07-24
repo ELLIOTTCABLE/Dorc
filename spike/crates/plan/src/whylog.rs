@@ -24,6 +24,10 @@ use dorc_core::diag::{Diag, DiagCode, WhylogCorrupt, WhylogVersionRefused};
 
 use std::io::Read;
 
+// One digest, one substitution point (`rul-fixture-identity-never-production`): the spike's
+// FNV stands in for a real content identity, so it must have exactly ONE definition an edge can
+// later replace. Never re-inline it locally.
+use crate::invocation::book_digest;
 use crate::records::{
     Admission, AdmissionRefusal, AdmittedUnscopedHostRecords, BoundedHostBytes, Framing,
     HostEvidenceLimits, TERMINAL_TOKEN, admit_unscoped_host_records,
@@ -220,15 +224,6 @@ pub fn inspect(
         doc: Some(doc),
         diagnostics: Vec::new(),
     }
-}
-
-fn book_digest(source: &str) -> String {
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for byte in source.bytes() {
-        hash ^= u64::from(byte);
-        hash = hash.wrapping_mul(0x100_0000_01b3);
-    }
-    format!("{hash:016x}")
 }
 
 /// Parse a durable's bytes into a [`WhylogDoc`] (`27V` Lane B). Total (`inv-no-throw`): a

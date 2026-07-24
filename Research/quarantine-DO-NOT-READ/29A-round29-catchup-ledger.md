@@ -70,13 +70,13 @@ pass: doc-comment fence plus this record; the type change is deferred because
 than it buys. Re-entry: fence properly when the aid extraction settles, or immediately if
 any host-sourced path acquires a call.
 
-`fnd-third-fnv-digest-copy` - `book_digest` (FNV-1a-64) now exists three times:
-`cli/main.rs`, `plan/invocation.rs`, `plan/whylog.rs` (the third minted post-ACK). FNV is
-a deliberate spike drift-detector, explicitly not adversarial identity, and
-`sinv-production-fences` wants it confined to fixture/harness code with one named
-production substitution point. Three copies is the opposite of one substitution point.
-Cheap to consolidate; belongs to phase five, noted here so phase five does not have to
-rediscover it.
+`fnd-duplicated-fnv-digest` - `book_digest` (FNV-1a-64) is a deliberate spike
+drift-detector, explicitly not adversarial identity, and `sinv-production-fences` wants
+exactly one named production substitution point. `plan/invocation.rs` is that point and
+says so; `cli/main.rs` is a documented thin delegate to it. The post-ACK whylog change
+re-inlined a second, byte-identical implementation locally, which is the opposite of one
+substitution point. FIXED in this pass (the duplicate deleted, the canonical one imported
+with a note); no behavior change, since the two were the same function.
 
 `fnd-export-step-never-ran` - `295`'s export process is mandatory and had not happened:
 `spike/CLAUDE.md` and all seven crate steering files contained zero round-29 entries.
