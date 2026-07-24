@@ -33,7 +33,9 @@ pub fn render_human_parts(report: &LintReport) -> RenderParts {
     let source_count = report.coverage.sources.len();
     if report.findings.is_empty() {
         return structure(format!(
-            "dorc lint: clean — nothing found across {file_count} file(s), {source_count} source(s).\n"
+            "dorc lint: clean — nothing found across {file_count} file{}, {source_count} source{}.\n",
+            plural(file_count),
+            plural(source_count)
         ));
     }
     let mut out = structure(String::from(
@@ -55,8 +57,21 @@ pub fn render_human_parts(report: &LintReport) -> RenderParts {
         }
         append_finding_parts(&mut out, f);
     }
-    out.push(RenderPart::Arrangement { text: format!("\ndorc lint: {errors} error(s), {warns} warning(s), {infos} info(s) across {file_count} file(s).\n"), slug: "lint-summary" });
+    out.push(RenderPart::Arrangement {
+        text: format!(
+            "\ndorc lint: {errors} error{}, {warns} warning{}, {infos} info{} across {file_count} file{}.\n",
+            plural(errors),
+            plural(warns),
+            plural(infos),
+            plural(file_count)
+        ),
+        slug: "lint-summary",
+    });
     out
+}
+
+fn plural(count: usize) -> &'static str {
+    if count == 1 { "" } else { "s" }
 }
 
 fn structure(text: String) -> RenderParts {

@@ -18,4 +18,4 @@ oracle.sh:
  2 | foo__is_converged() { foo "$@" : safe-across netns2; }
    |                                \__________________/
 
-dorc lint: 0 error(s), 1 warning(s), 0 info(s) across 1 file(s).
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

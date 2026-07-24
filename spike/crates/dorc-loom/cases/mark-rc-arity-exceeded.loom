@@ -19,4 +19,4 @@ oracle.sh:
  3 | : refutes sm.a.C@y
    |           \______/
 
-dorc lint: 1 error(s), 0 warning(s), 0 info(s) across 1 file(s).
+dorc lint: 1 error, 0 warnings, 0 infos across 1 file.

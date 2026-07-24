@@ -18,4 +18,4 @@ oracle.sh:
  2 | 中pkg__predict() { :; }
    | \_____________/
 
-dorc lint: 1 error(s), 0 warning(s), 0 info(s) across 1 file(s).
+dorc lint: 1 error, 0 warnings, 0 infos across 1 file.
