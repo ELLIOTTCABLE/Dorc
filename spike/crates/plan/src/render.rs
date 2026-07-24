@@ -82,6 +82,12 @@ pub mod probe {
     use super::{Interner, LeafId, Symbol, sem};
     use crate::records::{self, Nonce};
 
+    /// The report-scratch parent, a CONTROLLER LITERAL — never a host environment expansion
+    /// (`rul-probe-writes-only-what-it-owns`): a host-supplied `TMPDIR`/`HOME`/`XDG_*` would put
+    /// Dorc's directory inside a parent the host chooses, which defeats exclusive ownership. An
+    /// admin override for this root is deliberately out of scope for now.
+    const SCRATCH_ROOT: &str = "/tmp";
+
     /// Format a record's site key: `N` for an ordinary single-fact site, `N.M` for member
     /// `M` of an in-loop Members fact-family (task-L2 item-4). The `.M` sub-key is the one
     /// grammar extension the member-precision slice adds; it keys a record back to a
@@ -207,6 +213,67 @@ pub mod probe {
              else _e=cant-tell; fi; \
              printf '{framed}\\n' \"$_e\" \"$_rc\"\n"
         )
+    }
+
+    /// Open the per-attempt report-scratch DIRECTORY — emitted ONCE per artifact, and only when
+    /// some check drains (`rul-probe-writes-only-what-it-owns`). `mkdir` IS the safety property:
+    /// it creates exclusively and does not resolve a symlink at the final component, so anything
+    /// pre-positioned at the path makes it FAIL rather than clobber, and `-m 700` applies the mode
+    /// at creation (umask unapplied — no group/other-readable window). Failure empties `$_dsc`,
+    /// the degradation signal every later site reads; the lane then writes to `/dev/null` and the
+    /// plan proceeds unaffected (`sinv`-tier degradation is decision-inert, never an error).
+    /// NEVER retry, never fall back to a second name, never remove what is already there.
+    #[must_use]
+    pub fn report_scratch_prologue(nonce: &Nonce) -> String {
+        format!(
+            "_dsc=\"{SCRATCH_ROOT}/dorc-drep.{n}\"; mkdir -m 700 \"$_dsc\" 2>/dev/null || _dsc=\n",
+            n = nonce.0,
+        )
+    }
+
+    /// The TIER-3 report-DRAIN scaffold (`27W` §3 C4 · `decline-class-emission`): the same effect
+    /// record as [`record_scaffold`], plus the check running with `DREP_V1` bound to a per-site
+    /// file INSIDE the exclusively-created scratch directory, its emissions re-framed as `report
+    /// site=<key> …` records. Emitted ONLY for an [`emits_report`](crate::ProbePredict::emits_report)
+    /// check, so every other probe stays byte-identical (`empty-world-byte-identical`).
+    ///
+    /// Every pathname operation here is confined to a container Dorc owns: the `: >` truncate is
+    /// safe because [`report_scratch_prologue`] created the parent at mode 700 this run, and
+    /// `rm -f` unlinks only inside it. When the prologue degraded, `$_dsc` is empty and the sink is
+    /// `/dev/null` — no create, no read-back, no unlink. Pre-creating the file keeps the drain
+    /// simple (a body that emits nothing yields an empty file, not a missing one). `DREP_V1` is a
+    /// plain shell var: the check runs in this same shell, so no export is needed.
+    ///
+    /// GUARANTEE: dash-n-clean — assignments, `if`s, and a `while IFS= read` loop, all valid at
+    /// script top level. Each drained line is ONE `printf` with the payload value-passed as `%s`,
+    /// so a `%` or a space in an author's emission cannot corrupt the frame.
+    #[must_use]
+    pub fn record_scaffold_draining(invocation: &str, key: &str, nonce: &Nonce) -> String {
+        let effect = records::frame(nonce, &format!("site {key} effect=%s rc=%s"));
+        let report = records::frame(nonce, &format!("report site={key} %s"));
+        format!(
+            "if [ -n \"$_dsc\" ]; then DREP_V1=\"$_dsc/{key}\"; : >\"$DREP_V1\"; \
+             else DREP_V1=/dev/null; fi\n\
+             {invocation}; _rc=$?\n\
+             if [ \"$_rc\" -eq 0 ]; then _e=holds; \
+             elif [ \"$_rc\" -eq 1 ]; then _e=absent; \
+             else _e=cant-tell; fi\n\
+             printf '{effect}\\n' \"$_e\" \"$_rc\"\n\
+             if [ -n \"$_dsc\" ]; then \
+             while IFS= read -r _dl; do printf '{report}\\n' \"$_dl\"; done <\"$DREP_V1\"; \
+             rm -f \"$DREP_V1\"; fi\n"
+        )
+    }
+
+    /// Close the report scratch — emitted once, under the same condition as
+    /// [`report_scratch_prologue`]. `rmdir` removes only an EMPTY directory, so cleanup cannot
+    /// cascade beyond what the per-site `rm -f`s already unlinked; `|| :` keeps a failed cleanup
+    /// off the artifact's exit status. Residue on a hostile or unusual host is acceptable and
+    /// disclosed — a failed cleanup is never an error and is never retried by name. `rm -rf` is
+    /// permanently forbidden in this lane (an empty `$_dsc` would make it catastrophic).
+    #[must_use]
+    pub const fn report_scratch_epilogue() -> &'static str {
+        "if [ -n \"$_dsc\" ]; then rmdir \"$_dsc\" 2>/dev/null || :; fi\n"
     }
 
     /// The comment recording an **un-resolvable** site (never invoked): a kill, opaque,
