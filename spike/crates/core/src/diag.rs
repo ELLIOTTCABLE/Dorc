@@ -1034,7 +1034,7 @@ pub struct SpanLabel {
 impl SpanLabel {
     /// This label's source span, or `None` when the label is the second-class spanless case
     /// ([`SpanSite::Spanless`], arch-3-residual-2). Ordinary readers see `Option<Span>` (the same
-    /// shape the legacy [`crate::Diagnostic::span`] carries); they still cannot CONSTRUCT a spanless
+    /// shape the legacy `Diagnostic::span` carried); they still cannot CONSTRUCT a spanless
     /// label (the field is private).
     #[must_use]
     pub fn span(&self) -> Option<Span> {
@@ -2149,7 +2149,7 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
 /// `ProvArena` and surfaced on a [`Diag`] (stage-1 wired [`CmdsubOperandTop::cause`]). It is
 /// render-plane only (`dir-soundiness-ux`: frontload the unsoundness where the operator reads, at
 /// the decision point); it reaches no artifact and (ru-11 WELD) drives no decision — it is pure
-/// OUTPUT explanation, on the [`crate::Exempt::Explanation`] plane.
+/// OUTPUT explanation, on the `Exempt::Explanation` plane.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Explanation {
     /// The cause-derived reason this command was forced to run ("ran because …, ⊤ originated …").
