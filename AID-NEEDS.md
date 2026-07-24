@@ -157,6 +157,14 @@ Registry
 
 ### Authoring-time classes (`dorc lint`; ▶ push, hot-loop-safe, never probes)
 
+Lint's lane-local code namespace is RETIRED (`288` §5, landed): every dorc-MINTED lint finding is an
+ordinary registry `DiagCode` with a defining case, so floors, severity policy, dedup keying,
+`dorc why`-addressability, and the mint guarantee cover lint uniformly. FOREIGN relays
+(`shellcheck:SC2086`, and the tolerant adapter's `external-text` location marker) stay source-tagged
+relay strings forever — they are another tool's vocabulary, not ours. The human render's framed-vs-
+compact split is a named SELECTION POLICY (`289:rul-lint-render-split-is-policy`) with a
+`--terse`/`--verbose` dial, not a side effect of which findings happen to carry provenance.
+
 | aid | what the user learns | demand | moments | grade | mech | st |
 |---|---|---|---|---|---|---|
 | aid-lint-analysis-diagnostics | the no-world pipeline's diagnostics over given files | text+orcl | olo▶ blo▶ ci▶ | d | `27R` source-1 | B |
