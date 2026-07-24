@@ -53,11 +53,28 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   value-carriage-in-the-join is the priced next rung. Rides phase-1-exec or the
   2–4 lane, whichever `notes/290` says is cheapest.
 
+## §2b — Phase-0 landing (conductor, 2026-07-24)
+
+- LANDED @ `2bf13785` on `ai/r28-unify-p0` (2 commits): count-conditional `plural()`
+  helper; BOTH lint sentences fixed — the tally (`render.rs:58`, the `288` §6 phase-0
+  item) and the clean sentence (`render.rs:36`, conductor pull-forward under the
+  human's correctness lean; its phase-7 arrangement-home disposition unmoved). 10
+  expectations hand-edited (8 `.loom` cases + 2 e2e lint `expected.out`); no BLESS;
+  no catalog/lock coupling. Builder gates cold-green (1163 unit / 97 e2e / four
+  gates). Folded @ `c45be8b8`; conductor own-hand verification: cold `-p dorc-lint`
+  rebuild + full clippy + `DRY=1 conduct-bless`.
+- **`289:dec-clean-render-net-rides-loom`** — the builder's coverage flag (the clean
+  render is untested below the substring level) is answered by a RIDER, not a unit
+  pin: pinning full bytes in `report.rs` welds an explicitly-unwelded surface
+  (`27V:rul-output-form-unwelded`) and would churn at phase 7 anyway. RIDER on
+  phase 6: the lint-case loom conversion adds a CLEAN-run case (transcript pin,
+  re-blesses freely) alongside the findings cases.
+
 ## §3 — Lane map (update on every change)
 
 | lane | branch | shape | state |
 |---|---|---|---|
-| phase 0: lint-tally-pluralization | `ai/r28-unify-p0` | single dispatch, worktree | DISPATCHED 2026-07-24 |
+| phase 0: lint-tally-pluralization | `ai/r28-unify-p0` | single dispatch, worktree | LANDED+FOLDED 2026-07-24 @ `2bf13785` → merge `c45be8b8` |
 | phase 1 map: aid-crate extraction spec (`notes/290`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | DISPATCHED 2026-07-24 |
 | phase 1 exec: the extraction cutover | off p1 map | fresh executor after checkpoint | pending |
 | phases 2–4: mint-seam+scaffold · lint-unification · cli-error-migration | — | one checkpointed lane | pending |
