@@ -5053,6 +5053,46 @@ apt_get__disturbs() {
         );
     }
 
+    /// The GUARD lane's half of the same law (`289:rul-touches-mismatch-own-lane`): the funcname
+    /// `strip_verdict` mangles the shipped preamble to must equal the one the guard invokes.
+    /// Both sides now read `VERDICT_SUFFIX`; this pins that they still meet after the strip, and
+    /// covers both invocation spellings — `verdict_fn_name` (keyed on the BOOK word) and
+    /// `build_vouches` (keyed on the lifted funcdef provider) must land on one string.
+    #[test]
+    fn verdict_shipped_def_name_equals_the_invoked_name() {
+        let authored = "\
+apt_get__is_converged() {
+   case $1 in
+   install) dpkg-query -W \"$2\" >/dev/null 2>&1 ;;
+   *) return 2 ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let lifted = dorc_oracle::verdict::VerdictSet::lift(&mut i, authored);
+        let provider = lifted.value.providers().next().expect("one provider");
+        let body = lifted.value.get(provider).expect("the verdict funcdef");
+        let def_name = dorc_oracle::predict::strip_verdict(authored, body, &i)
+            .split_once('(')
+            .expect("the stripped funcdef opens with `<name>(`")
+            .0
+            .to_owned();
+
+        let book_word = i.intern("apt-get");
+        assert_eq!(
+            verdict_fn_name(&i, book_word),
+            def_name,
+            "the guard invocation must name the funcdef the strip actually ships"
+        );
+        assert_eq!(
+            format!(
+                "{}{VERDICT_SUFFIX}",
+                dorc_oracle::to_funcname_segment(i.resolve(provider))
+            ),
+            def_name,
+            "build_vouches's own spelling must land on the same name"
+        );
+    }
+
     /// The reach lane's half of the same law (`289:rul-touches-mismatch-own-lane`): a dynamic
     /// `reaches()` arm ships as an engine-synthesized per-arm wrapper, so its def and invocation
     /// must both be the ONE `arm_fn` string the cli built — nothing may re-derive either side.

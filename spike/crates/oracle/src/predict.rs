@@ -94,13 +94,14 @@ pub fn strip_predict(src: &str, check: &Predict, interner: &Interner) -> String 
 /// GUARD position (24D §2/§3 — the guard's check IS the oracle's own verdict body, strip-only).
 /// Identical to [`strip_predict`] but mangles the funcname to the verdict suffix the guard emitter
 /// invokes (`apt-get.is_converged` → `apt_get__is_converged`), so the shipped preamble def and the
-/// guard invocation agree byte-for-byte. The suffix is hardcoded like every sibling strip fn
-/// (`is_converged` is the sole verdict role — `24C:rul24-ditch-is-diverged`); everything else —
-/// annotation removal, bare-mark deletion, verbatim body bytes — is the strip's standing contract
-/// (strip-fidelity, 23H §9.4).
+/// guard invocation agree byte-for-byte. The suffix comes from
+/// [`VERDICT_SUFFIX`](crate::verdict::VERDICT_SUFFIX), the same constant `dorc_plan`'s guard
+/// emitter invokes through (`is_converged` is the sole verdict role —
+/// `24C:rul24-ditch-is-diverged`); everything else — annotation removal, bare-mark deletion,
+/// verbatim body bytes — is the strip's standing contract (strip-fidelity, 23H §9.4).
 #[must_use]
 pub fn strip_verdict(src: &str, verdict: &Predict, interner: &Interner) -> String {
-    strip_role(src, verdict, interner, "__is_converged")
+    strip_role(src, verdict, interner, crate::verdict::VERDICT_SUFFIX)
 }
 
 /// Strip an authored **touches** funcdef (`<provider>__disturbs`) to runnable sh for shipping in
