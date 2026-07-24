@@ -1,7 +1,8 @@
 #!/bin/sh
-# INERT strawman mock — the `sed 's|^|file:|'` stage of the derivation pipe (24E §14): prepend
-# `file:` to each stdin line. A canned transform for THIS fixture (the expression arg is not
-# interpreted — a spike mock, ru-26). Read-only; logs its args for symmetry. Pure-sh (no real sed
-# under PATH=mocks-only).
+# INERT strawman mock — the `sed 's|^|sm.dorc.File:|'` stage of the derivation pipe (24E §14):
+# prepend `sm.dorc.File:` to each stdin line. A canned transform for THIS fixture (the expression
+# arg is not interpreted — a spike mock, ru-26); it must stay in step with the oracle's expression,
+# since gate-1's deriv parity compares the produced coords against probe-results.txt. Read-only;
+# logs its args for symmetry. Pure-sh (no real sed under PATH=mocks-only).
 . "${0%/*}/.log"; _dorc_logged "$@"
-while IFS= read -r _l; do printf 'file:%s\n' "$_l"; done
+while IFS= read -r _l; do printf 'sm.dorc.File:%s\n' "$_l"; done
