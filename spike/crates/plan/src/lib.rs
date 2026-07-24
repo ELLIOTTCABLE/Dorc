@@ -4949,6 +4949,17 @@ apt_get__is_converged() { return 0; }
             probe_leaves, decline_leaves,
             "the probe checks key by the same positional leaves the declines do"
         );
+
+        // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): a body that REACHES
+        // its check vouches rather than declines, so the same two sites mint no `VerdictDecline`.
+        let vouching_src = "apt_get__is_converged() { dpkg -s \"$2\" : package:\"$2\"@installed ;}";
+        let (_vouches, none) = build_vouches(&[vouching_src], &classes, &value, &mut i);
+        assert!(
+            !none
+                .iter()
+                .any(|ev| matches!(ev.kind(), CollapseKind::VerdictDecline { .. })),
+            "a reached, vouching verdict body is no collapse and narrates nothing: {none:?}"
+        );
     }
 
     #[test]
@@ -6296,6 +6307,26 @@ apt_get__is_converged() { return 0; }
         assert!(
             ev.iter().all(|e| e.tier() == TrustTier::Derived),
             "survival-walk evidence is engine-derived"
+        );
+
+        // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): with nothing running
+        // there is no wall and nothing to demote, so the same walk must mint neither class. Without
+        // this, a mint that fired unconditionally would read as green above.
+        let converged = survival_plan_empty_footprints(
+            "apt-get install -y curl\napt-get install -y nginx\n",
+            |_| Verdict::Converged,
+        );
+        assert!(
+            !converged
+                .survival_report
+                .collapse_narrative()
+                .iter()
+                .any(|e| matches!(
+                    e.kind(),
+                    CollapseKind::WallFormation { .. } | CollapseKind::Demotion { .. }
+                )),
+            "an all-converged book forms no wall and demotes nothing, so it narrates neither: {:?}",
+            converged.survival_report.collapse_narrative()
         );
     }
 

@@ -4939,6 +4939,21 @@ fn emit_static_decline_notes(
     oracle_paths: &[String],
     oracle_srcs: &[String],
 ) {
+    for line in static_decline_notes(collapse_narrative, oracle_paths, oracle_srcs) {
+        eprintln!("{line}");
+    }
+}
+
+/// The pure half of [`emit_static_decline_notes`] — the ONE narrative-consuming render seat, split
+/// out so it is assertable in-process (`289:rul-mint-hardening-package` item 4b: the "and the chain
+/// renders it" clause, satisfiable today for exactly this class). Wording rides
+/// `27V:rul-output-form-unwelded`.
+fn static_decline_notes(
+    collapse_narrative: &[CollapseNarrative],
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> Vec<String> {
+    let mut lines = Vec::new();
     for ev in collapse_narrative {
         let CollapseKind::VerdictDecline {
             authored_reason: Some(reason),
@@ -4954,12 +4969,13 @@ fn emit_static_decline_notes(
         )
         .map(|l| format!(" (at {l})"))
         .unwrap_or_default();
-        eprintln!(
+        lines.push(format!(
             "why: author declines [{}]{at} — a deliberate decline the author classed, so the site \
              runs",
             decline_class_word(reason.class)
-        );
+        ));
     }
+    lines
 }
 
 /// A deterministic content digest binding the records stream to the exact analyzed book bytes
@@ -6381,6 +6397,28 @@ mod tests {
             ),
             "site 6's tier-2 static class is NOT overwritten by the runtime echo (static wins)"
         );
+
+        // `289:rul-mint-hardening-package` item 4b, for the ONE class a render consumes today. The
+        // other eight are minted, threaded, and dropped — `emit_why_lens` takes the narrative slice
+        // as `_collapse_narrative` and ignores it by signature, so a missing narrative omits
+        // SILENTLY rather than rendering an `Unexplained`. That gap is the named seam
+        // `289:seam-narrative-render-unconsumed` (the deferred d4 arrangement walker owns it); do
+        // not close it here.
+        let rendered = static_decline_notes(&paired, &[], &[]);
+        assert_eq!(
+            rendered.len(),
+            2,
+            "both classed declines reach the why lane: {rendered:?}"
+        );
+        assert!(
+            rendered.iter().any(|line| line.contains("unsound"))
+                && rendered.iter().any(|line| line.contains("hazard")),
+            "each rendered line names its own decline class: {rendered:?}"
+        );
+        assert!(
+            static_decline_notes(&[decline(7, None)], &[], &[]).is_empty(),
+            "an unclassed decline narrates nothing on this lane"
+        );
     }
 
     #[test]
@@ -6472,6 +6510,85 @@ mod tests {
                 .iter()
                 .any(|e| matches!(e.kind(), CollapseKind::EntryFailure { .. })),
             "a non-entry site mints no EntryFailure (the class is entry-scoped)"
+        );
+    }
+
+    #[test]
+    fn a_dial_forbidden_wrapped_site_mints_entry_denial_and_a_licensed_one_mints_none() {
+        // `289:rul-mint-hardening-package` item 4a for `EntryDenial` — the one static entry-consent
+        // class with no pin at all. Both directions over the SAME book and oracles, varying only
+        // the admin's dial: `--no-probe-escalation` denies (⇒ narrative), the default vouched dial
+        // over a `safe-across`-marked verdict body consents (⇒ none). Anti-masking: the narrative
+        // is read out of the real analysis, never handed in.
+        const SUDO: &str = "# dorc-lang/v0.2\n\
+             sudo__predict() {\n\
+             while [ \"${1#-}\" != \"$1\" ]; do case \"$1\" in -u) shift 2 ;; *) shift ;; esac; done\n\
+             env -i HOME=/root \"$@\"\n\
+             }\n\
+             sudo__lend_map() {\n\
+             printf '%s\\n' root : lends user\n\
+             : lends fs-view\n\
+             : lends netns\n\
+             \"$@\"\n\
+             }\n\
+             sudo__enter() {\n\
+             sudo -n \"$@\"\n\
+             }\n";
+        const HORK: &str = "# dorc-lang/v0.2\n\
+             hork__is_converged() {\n\
+             : safe-across user\n\
+             case \"$1\" in\n\
+             install) hork query \"$2\" ;;\n\
+             *) return 2 ;;\n\
+             esac\n\
+             }\n";
+
+        let rungs = |dial: dorc_core::EscalationDial| -> Vec<dorc_aid::narrative::EntryDegradeTag> {
+            let mut interner = Interner::default();
+            let srcs = vec![SUDO.to_owned(), HORK.to_owned()];
+            let refs: Vec<&str> = srcs.iter().map(String::as_str).collect();
+            let paths = vec!["sudo.oracle.sh".to_owned(), "hork.oracle.sh".to_owned()];
+            let checks: Vec<_> = refs
+                .iter()
+                .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+                .collect();
+            let verdict_sets: Vec<_> = refs
+                .iter()
+                .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
+                .collect();
+            let parsed = dorc_syntax::parse("sudo hork install frob\n");
+            let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+            let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
+            build_wrapped_analysis(
+                &srcs,
+                &refs,
+                &paths,
+                &checks,
+                &verdict_sets,
+                &parsed.value,
+                &cfg,
+                &value,
+                dial,
+                dorc_core::Capability::Root,
+                &mut interner,
+            )
+            .collapse_narrative
+            .iter()
+            .filter_map(|n| match n.kind() {
+                CollapseKind::EntryDenial { rung } => Some(*rung),
+                _ => None,
+            })
+            .collect()
+        };
+
+        assert_eq!(
+            rungs(dorc_core::EscalationDial::NoEscalation),
+            vec![dorc_aid::narrative::EntryDegradeTag::DialForbids],
+            "a dial-forbidden wrapped site narrates its denial rung"
+        );
+        assert!(
+            rungs(dorc_core::EscalationDial::VouchedOnly).is_empty(),
+            "a consented entry is no collapse and mints nothing"
         );
     }
 

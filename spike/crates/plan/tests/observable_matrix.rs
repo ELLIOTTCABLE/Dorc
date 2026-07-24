@@ -1120,6 +1120,37 @@ fn clean_guard_still_elides_dead_body_heredoc_sibling_stays_unreachable_verbatim
 }
 
 #[test]
+fn render_refusals_mint_paired_narratives_and_a_clean_render_mints_none() {
+    // `289:rul-mint-hardening-package` item 4a for `RenderRefusal`. Refusing a LICENSED elision is
+    // a safety-narrowing, so it mints a decision-inert narrative like every other collapse class —
+    // the mint census caught that it did not. Anti-masking: the narrative is read out of the plan,
+    // never handed in; both directions, so a mint that fires unconditionally fails too.
+    let refused_src =
+        "command -v nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx\npayload\nEOF\n";
+    let (plan, ast) = plan_query_and_ast(refused_src, "nginx", 1, &[]);
+    let narratives = plan.render_refusal_narratives(&ast);
+    assert_eq!(
+        narratives.len(),
+        plan.render_refusal_diagnostics(&ast, &Interner::default())
+            .len(),
+        "one narrative per refusal diagnostic — the two mints pair by construction"
+    );
+    assert!(
+        narratives
+            .iter()
+            .all(|n| matches!(n.kind(), dorc_aid::CollapseKind::RenderRefusal { .. })),
+        "the refusal mints a RenderRefusal: {narratives:?}"
+    );
+
+    let clean_src = "command -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n";
+    let (clean_plan, clean_ast) = plan_query_and_ast(clean_src, "nginx", 0, &[]);
+    assert!(
+        clean_plan.render_refusal_narratives(&clean_ast).is_empty(),
+        "a render that refuses nothing mints nothing"
+    );
+}
+
+#[test]
 fn clean_query_guard_still_renders_dead_body_as_colon() {
     // The plain pole (no heredoc anywhere): the omit-safety gate must keep LICENSING
     // the `:`-edit when the controller genuinely freezes — `true || :`. Guards against

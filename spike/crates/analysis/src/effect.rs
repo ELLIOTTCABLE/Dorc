@@ -1821,6 +1821,61 @@ command__predict() {
     }
 
     #[test]
+    fn the_merge_mint_pairs_with_the_top_cause_mint_in_release_builds() {
+        // `289:rul-mint-hardening-package` item 3. `mint_top_causes` carries a `debug_assert` that
+        // every Opaque-bearing node got a cause; `mint_merge_narrative` mirrors its key and order by
+        // CONSTRUCTION only, and carried no check at all. A `debug_assert` also vanishes under
+        // `--release`, so the pairing is asserted here — a real test runs in every profile.
+        //
+        // Both directions of the pairing: CARDINALITY (one narrative per Opaque-bearing node) and
+        // ORDER (the minted cells are the Opaque-bearing node indices, ascending). Order is
+        // load-bearing because the two mints are consumed positionally downstream.
+        let effects = |opaque: &[bool]| -> Vec<Vec<CommandEffect>> {
+            opaque
+                .iter()
+                .map(|&is_opaque| {
+                    if is_opaque {
+                        vec![CommandEffect::Opaque]
+                    } else {
+                        vec![]
+                    }
+                })
+                .collect()
+        };
+        for shape in [
+            vec![],
+            vec![false, false],
+            vec![true],
+            vec![false, true, false, true, true],
+        ] {
+            let built = effects(&shape);
+            let minted = mint_merge_narrative(&built);
+            let opaque_indices: Vec<u32> = shape
+                .iter()
+                .enumerate()
+                .filter_map(|(i, &is_opaque)| is_opaque.then_some(i as u32))
+                .collect();
+            assert_eq!(
+                minted.len(),
+                opaque_indices.len(),
+                "one narrative per Opaque-bearing node, for {shape:?}"
+            );
+            let cells: Vec<u32> = minted
+                .iter()
+                .map(|narrative| match narrative.kind() {
+                    dorc_aid::CollapseKind::FactMergeDisagreement { cell, .. } => cell.leaf.0,
+                    other => panic!("the merge mint minted {other:?}"),
+                })
+                .collect();
+            assert_eq!(
+                cells, opaque_indices,
+                "the minted cells are the Opaque-bearing node indices in ascending order, for \
+                 {shape:?}"
+            );
+        }
+    }
+
+    #[test]
     fn opaque_upstream_poisons_ambientness() {
         // Why (note 162 O-3, the precision COST being surfaced): a genuinely
         // unrecognized command (`ufw allow` — NO oracle entry) is still Opaque ⇒ ⊤ ⇒
