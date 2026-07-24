@@ -371,6 +371,59 @@ Estimate: the render and prologue are an afternoon; the test inversion and the h
 siting are the work. Recommended as the immediate next security lane, with a frozen packet
 covering the inverted pin's exact assertions before any code moves.
 
+LANDED 2026-07-24 on `ai/r29-catchup` (packet `29B`). The measurement above held except
+for the harness leg, which turned out cheaper still: golden churn was ZERO, not two, and
+no bless was needed. The remaining harness work is section 4k, deferred.
+
+### 4k - The ownership lint, and why it waits
+
+DEFERRED by direction 2026-07-24, pending the sibling test-suite/loom rebuild. Specified
+here so it is not re-derived.
+
+**The change.** `e2e/scan_redirects.awk` (gate-2) currently refuses any redirect whose
+target word contains `$` — a blanket dynamic-target refusal. Replace that single rule with
+a closed allowlist checked BEFORE it, leaving the blanket refusal in place for everything
+else. The four members, and nothing else:
+
+- `/dev/null` — already allowed today.
+- `"$DREP_V1"` — the engine-supplied per-site sink.
+- `"${DREP_V1:-/dev/null}"` — the ORACLE's authored spelling, fixed by the published
+  contract, so this member is not ours to change.
+- a `"$_dsc/`-prefixed target — inside the exclusively-created scratch.
+
+Note the direction: this is strictly MORE precise than today, never more permissive. Today
+the rule is "no `$` at all"; after, it is "no `$` except these four". Do not implement it
+as "allow `$`" with exceptions carved out — that inverts the default and is the whole
+difference between a lint and a hole.
+
+**What it buys, twice over.** It discharges `fnd-gate-two-refuses-the-drained-render`,
+which is what currently denies the tier-3 lane any behavioural e2e coverage. And because
+gate-2 already runs over BOTH rendered artifacts on EVERY case, the same change is the
+corpus-wide ownership lint: any future emission whose redirect target is not provably
+owned fails a build, with the offending line printed. That covers the route a type cannot
+— a builder who never touches the guarded constructor and simply writes its own path
+somewhere new.
+
+**Why it waits.** `plans/288` phase 5 retires `sh e2e/run.sh` and moves the
+one-sanctioned-fixture-executor role into a central Rust runner; phases 5 and 6
+restructure the case tree beneath it. Landing an awk change now means it must be carried
+through that port by someone re-deriving its constraints from scratch.
+
+**The hazard during the parallel window, which is the reason this entry exists.**
+Gate-2's blanket `$`-refusal is load-bearing, and it does not look it: it reads as
+conservatism a port could reasonably simplify away while moving the machinery into Rust.
+Losing it silently removes the only mechanical check that emitted shell writes where it
+claims to. If the port lands before this does, the ported implementation must preserve
+refuse-by-default on dynamic targets even though no case currently exercises the
+allowlist. A defensive one-line citation at the predicate itself is the cheapest
+protection and costs no behavior.
+
+**Alternative siting** if gate-2 does not survive the port: the check belongs wherever
+emitted probe renders are enumerated. The tokenizer already exists — `redirect_targets`,
+a test helper beside `emitting_auto_cell_owns_every_path_it_writes` in `plan/src/lib.rs` —
+and promoting it to run over a corpus of renders is the same lint in a different seat.
+Per-render unit coverage exists today either way; only the corpus-wide sweep is missing.
+
 ## 5 - Cross-lane collisions with `plans/288`
 
 `collide-host-evidence-is-not-narrative` - 288 section 2b renames `core/src/evidence.rs`
