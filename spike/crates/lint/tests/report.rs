@@ -84,7 +84,7 @@ fn clean_book_is_silent_with_a_positive_sentence() {
     let native: Vec<_> = report
         .findings
         .iter()
-        .filter(|f| f.code != "tool-absent")
+        .filter(|f| f.code != "lint-tool-absent")
         .collect();
     assert!(
         native.is_empty(),
@@ -236,7 +236,10 @@ fn the_frame_split_is_a_policy_the_density_dial_moves() {
     // `289:rul-lint-render-split-is-policy`. The default surface must be EXACTLY what the old
     // `provenance.is_some()` accident produced — a framed block for the diag-backed findings and a
     // compact line for the inventory — while `--terse`/`--verbose` move it deliberately.
-    let report = run_native(&[file("book.sh", EVAL_BOOK)], None);
+    let report = run_native(
+        &[file("book.sh", EVAL_BOOK)],
+        Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),
+    );
     let default = render::render_human_parts_at(&report, render::Verbosity::Default).text();
     assert_eq!(
         default,
@@ -268,8 +271,17 @@ fn the_frame_split_is_a_policy_the_density_dial_moves() {
         "--verbose keeps the frames it already had:\n{verbose}"
     );
     assert!(
-        verbose.contains("[unmodeled-inventory:unmodeled-wall-inventory]"),
-        "a provenance-less finding cannot be framed, even at --verbose:\n{verbose}"
+        verbose.contains("error[cfg-top-node]"),
+        "--verbose promotes every source-bearing finding to a frame:\n{verbose}"
+    );
+
+    // A finding with no SOURCE bytes (the external-tool relays) cannot be framed at any density —
+    // a caret needs bytes to point at, so the dial selects among shapes that exist.
+    let relays = run_native(&[file("book.sh", EVAL_BOOK)], None);
+    let relayed = render::render_human_parts_at(&relays, render::Verbosity::Verbose).text();
+    assert!(
+        relayed.contains("[shellcheck:lint-tool-absent]"),
+        "the source-less relay stays compact even at --verbose:\n{relayed}"
     );
 }
 

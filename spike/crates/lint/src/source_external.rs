@@ -16,7 +16,7 @@ use dorc_aid::Severity;
 use dorc_aid::diag::DiagCode;
 use dorc_core::Interner;
 
-use crate::finding::{Finding, FrameChoice, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, NativeDiag, RemapFidelity, SourceStatus};
 use crate::json;
 use crate::runner::ToolRun;
 use crate::source::{LintContext, LintSource, Rung};
@@ -86,9 +86,11 @@ fn run_external(
         out.push(relay_finding(
             String::new(),
             tool,
-            DiagCode::LintToolAbsent(dorc_aid::diag::LintToolAbsent {
-                tool: tool.to_owned(),
-            }),
+            dorc_aid::Diag::new_spanless_site(DiagCode::LintToolAbsent(
+                dorc_aid::diag::LintToolAbsent {
+                    tool: tool.to_owned(),
+                },
+            )),
         ));
         return SourceStatus::Absent;
     }
@@ -126,10 +128,12 @@ fn lint_one_file(
             out.push(relay_finding(
                 file.path.clone(),
                 tool,
-                DiagCode::LintToolOutputUnparsable(dorc_aid::diag::LintToolOutputUnparsable {
-                    tool: tool.to_owned(),
-                    output: one_line_truncated(&raw),
-                }),
+                dorc_aid::Diag::new_spanless_site(DiagCode::LintToolOutputUnparsable(
+                    dorc_aid::diag::LintToolOutputUnparsable {
+                        tool: tool.to_owned(),
+                        output: one_line_truncated(&raw),
+                    },
+                )),
             ));
         }
     }
@@ -318,18 +322,21 @@ fn operational_finding(path: &str, tool: &'static str, rc: i32) -> Finding {
     relay_finding(
         path.to_owned(),
         tool,
-        DiagCode::LintToolFailedWithoutFindings(dorc_aid::diag::LintToolFailedWithoutFindings {
-            tool: tool.to_owned(),
-            rc,
-        }),
+        dorc_aid::Diag::new_spanless_site(DiagCode::LintToolFailedWithoutFindings(
+            dorc_aid::diag::LintToolFailedWithoutFindings {
+                tool: tool.to_owned(),
+                rc,
+            },
+        )),
     )
 }
 
 /// A finding ABOUT an external tool run (`288` §5): a registry code carrying catalog prose, but no
 /// dorc source to point a caret at — the emit context genuinely has no span, so the mint is the
 /// gated spanless one and the finding stays compact and provenance-free (a caret needs bytes).
-fn relay_finding(path: String, tool: &'static str, code: DiagCode) -> Finding {
-    let diag = dorc_aid::Diag::new_spanless_site(code);
+/// Takes the built `Diag` rather than the code, so each call site spells the spanless mint and its
+/// payload LITERALLY — the allow-list gate is a lexical grep for exactly that shape.
+fn relay_finding(path: String, tool: &'static str, diag: dorc_aid::Diag) -> Finding {
     Finding {
         path,
         line: None,
@@ -339,7 +346,13 @@ fn relay_finding(path: String, tool: &'static str, code: DiagCode) -> Finding {
         code: diag.code.slug().to_owned(),
         message: dorc_aid::diag::render_body(&diag, &Interner::default()),
         remap: RemapFidelity::None,
-        provenance: None,
+        // The typed payload rides along (the prose stays loom-editable, and the tool's own bytes
+        // stay inspectable), but the SOURCE is empty — there is nothing to draw a caret against, so
+        // `frames` refuses to promote it even at `--verbose`.
+        provenance: Some(NativeDiag {
+            diag,
+            source: String::new(),
+        }),
         frame: FrameChoice::Compact,
     }
 }

@@ -222,7 +222,16 @@ sysctl__is_converged() {
         let f = &report.findings[0];
         assert_eq!(f.code, "authored-decline-class");
         assert_eq!(f.severity, dorc_aid::Severity::Note, "never gates");
-        assert!(f.message.contains("`unsound`"), "the class: {}", f.message);
+        // Structural, not prose (`288:prop-structural-needles-only`): the class is a TYPED payload
+        // param now, so it survives every re-wording of the catalog register.
+        let code = &f.provenance.as_ref().expect("native provenance").diag.code;
+        assert!(
+            matches!(
+                code,
+                dorc_aid::diag::DiagCode::AuthoredDeclineClass(p) if p.class == "unsound"
+            ),
+            "the read class rides the payload: {code:?}"
+        );
         assert_eq!(f.line, Some(5), "the emitting arm is on line 5");
     }
 
