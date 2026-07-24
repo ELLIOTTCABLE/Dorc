@@ -14,6 +14,6 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  3:1 warn [verdict-body:verdict-terminal-pipeline] [unwritten: verdict-terminal-pipeline]
+  3:1 warn [verdict-body:verdict-terminal-pipeline] sm this __is_converged body answers with a pipeline's tail status (oracle-contract §3): the exit status is the LAST stage's, not necessarily the tool-under-description's — prefer a shape where the modeled tool produces the status directly.
 
 dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

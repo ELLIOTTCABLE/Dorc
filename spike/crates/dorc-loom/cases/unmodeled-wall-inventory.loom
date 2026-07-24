@@ -26,7 +26,7 @@ oracle.sh:
    |
  2 | eval "one"
    | \__/
-  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] [unwritten: unmodeled-wall-inventory]
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 2 unmodeled ⊤-walls in this book; the first is here. Downstream commands (~3 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
   error[cfg-top-node]: sm unsupported construct (⊤): un-probeable and un-skippable
    --> oracle.sh:3:1
    |

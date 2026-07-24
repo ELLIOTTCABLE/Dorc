@@ -5,4 +5,6 @@ why: 27R §4 dir-absent-is-info - a missing tool is the admin's environment, dis
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[lint-tool-absent]: [unwritten: lint-tool-absent]
+note[lint-tool-absent]: sm `shellcheck` was not found on PATH — its checks were
+   skipped. Install it, pass --no-tools to silence this, or --require-tools to
+   make it a hard CI error.

@@ -5,4 +5,5 @@ why: 27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a fo
 ---
 -- replay --
 $ dorc plan --book=book.sh
-warning[lint-tool-failed-without-findings]: [unwritten: lint-tool-failed-without-findings]
+warning[lint-tool-failed-without-findings]: sm `shellcheck` exited with status 2
+   but produced no parseable findings

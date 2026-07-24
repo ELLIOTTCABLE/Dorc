@@ -5,4 +5,5 @@ why: 27R §4 - upstream drift may cost precision, never a crash and never silenc
 ---
 -- replay --
 $ dorc plan --book=book.sh
-warning[lint-tool-output-unparsable]: [unwritten: lint-tool-output-unparsable]
+warning[lint-tool-output-unparsable]: sm unrecognized `checkbashisms` output
+   (raw): possible bashism in - line 4 (should be '.'):

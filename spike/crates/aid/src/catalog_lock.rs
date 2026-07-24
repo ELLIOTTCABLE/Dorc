@@ -533,7 +533,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27W decline-class-emission - classing a decline is enhancement, and the inventory is how an author sees what they classed. Advisory only, never gates; the license plane never reads a class.",
         params: &[],
         example: "[unwritten: authored-decline-class]",
-        message: None,
+        message: Some("sm this verdict arm authors a deliberate decline classed `{{class}}` (a `decline {{class}}` report emission) — the site will run; the class routes the enhancement nags (advisory only)."),
         help: None,
     },
     CatalogEntry {
@@ -542,7 +542,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar - the sibling of authored-decline-class, split by WORLD-STATE (the class resolves only at runtime) rather than by a template hole. 27W:rul-report-noise-tolerant: an unrecognized header degrades to a note, never an error.",
         params: &[],
         example: "[unwritten: authored-decline-class-unreadable]",
-        message: None,
+        message: Some("sm this verdict arm authors a deliberate decline whose class is not statically readable (a dynamic format or an unrecognized class token) — the site will run; the class resolves at runtime (advisory only)."),
         help: None,
     },
     CatalogEntry {
@@ -551,7 +551,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R §4 dir-absent-is-info - a missing tool is the admin's environment, disclosed rather than silently skipped; --require-tools raises it to a hard CI error. World-as-payload: an honest trigger would have to run a real foreign tool, which replay never does.",
         params: &[],
         example: "[unwritten: lint-tool-absent]",
-        message: None,
+        message: Some("sm `{{tool}}` was not found on PATH — its checks were skipped. Install it, pass --no-tools to silence this, or --require-tools to make it a hard CI error."),
         help: None,
     },
     CatalogEntry {
@@ -560,7 +560,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a foreign tool-rc beyond zero/nonzero (checkbashisms' additive 1|2|4 codes are the named trap), so an unexplained failure is reported as itself. World-as-payload: replay never runs a foreign tool.",
         params: &[],
         example: "[unwritten: lint-tool-failed-without-findings]",
-        message: None,
+        message: Some("sm `{{tool}}` exited with status {{rc}} but produced no parseable findings"),
         help: None,
     },
     CatalogEntry {
@@ -569,7 +569,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R §4 - upstream drift may cost precision, never a crash and never silence, so the raw bytes ship as one opaque finding rather than being dropped. World-as-payload: replay never runs a foreign tool.",
         params: &[],
         example: "[unwritten: lint-tool-output-unparsable]",
-        message: None,
+        message: Some("sm unrecognized `{{tool}}` output (raw): {{output}}"),
         help: None,
     },
     CatalogEntry {
@@ -578,7 +578,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R §2 item-2, the gradual-enhancement nag - silence licenses nothing, so a wall is disclosed with the cost it imposes. The downstream count is APPROXIMATE (all downstream commands, not only the modeled ones) - seam-unmodeled-degradation-count.",
         params: &[],
         example: "[unwritten: unmodeled-wall-inventory]",
-        message: None,
+        message: Some("sm {{wall_count}} unmodeled ⊤-{{wall_word}} in this book; the first is here. Downstream commands (~{{downstream}} leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle."),
         help: None,
     },
     CatalogEntry {
@@ -587,7 +587,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "rul-rc-partition - a verdict function's exit status reads one fixed table, so a tail stage's status flattens `1 = complement` and `>=2 = cannot-say` into whatever the tail produced. FALSIFICATION-FIRST (rul-unprovable-rides-the-vouch): the check may under-report, never gate.",
         params: &[],
         example: "[unwritten: verdict-terminal-pipeline]",
-        message: None,
+        message: Some("sm this __is_converged body answers with a pipeline's tail status (oracle-contract §3): the exit status is the LAST stage's, not necessarily the tool-under-description's — prefer a shape where the modeled tool produces the status directly."),
         help: None,
     },
 ];
