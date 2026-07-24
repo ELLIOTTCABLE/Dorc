@@ -25,7 +25,7 @@ fn bless_inlines_then_run_detects_drift() {
     let dir = std::env::temp_dir().join(format!("errorloom-cli-{}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("temp dir");
-    let case_path = dir.join("case.txt");
+    let case_path = dir.join("case.loom");
     fs::write(&case_path, CASE).expect("write case");
 
     let errorloom = env!("CARGO_BIN_EXE_errorloom");
@@ -75,7 +75,7 @@ fn run_refuses_an_oversized_case_before_text_decoding() {
     let dir = std::env::temp_dir().join(format!("errorloom-cli-limit-{}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("temp dir");
-    let case_path = dir.join("oversized.txt");
+    let case_path = dir.join("oversized.loom");
     fs::write(&case_path, vec![b'x'; MAX_CASE_BYTES.saturating_add(1)]).expect("write case");
 
     let run = Command::new(env!("CARGO_BIN_EXE_errorloom"))

@@ -166,7 +166,7 @@ mod tests {
     }
     fn corpus() -> Vec<CaseFile> {
         vec![CaseFile::new(
-            "cases/a.txt",
+            "cases/a.loom",
             "---\n---\n-- replay --\n$ tool\nok\n",
         )]
     }
@@ -185,7 +185,7 @@ mod tests {
         assert!(matches!(
             structure_bless(
                 &Renderer,
-                &FakeGit::new().mark_dirty("cases/a.txt"),
+                &FakeGit::new().mark_dirty("cases/a.loom"),
                 &corpus(),
                 catalog
             ),
@@ -205,7 +205,7 @@ mod tests {
                 &Renderer,
                 &FakeGit::new()
                     .mark_dirty("catalog.rs")
-                    .mark_dirty("cases/a.txt"),
+                    .mark_dirty("cases/a.loom"),
                 &corpus(),
                 catalog
             ),

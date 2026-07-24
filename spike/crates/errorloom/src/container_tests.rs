@@ -251,13 +251,13 @@ fn bounded_file_admission_refuses_over_limit_and_non_utf8_before_parse() {
     let dir = std::env::temp_dir().join(format!("errorloom-limit-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("test directory");
-    let oversized = dir.join("oversized.txt");
+    let oversized = dir.join("oversized.loom");
     std::fs::write(&oversized, vec![b'x'; MAX_CASE_BYTES.saturating_add(1)]).expect("test case");
     assert!(matches!(
         read_case(&oversized),
         Err(CaseReadError::TooLarge)
     ));
-    let malformed = dir.join("malformed.txt");
+    let malformed = dir.join("malformed.loom");
     std::fs::write(&malformed, b"---\n---\n-- replay --\n$ go\n\xff").expect("test case");
     assert!(matches!(
         read_case(&malformed),
