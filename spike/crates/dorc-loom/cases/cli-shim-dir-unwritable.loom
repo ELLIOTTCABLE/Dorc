@@ -1,0 +1,8 @@
+---
+code: cli-shim-dir-unwritable
+when-fires: the --shim-dir materialization edge could not create or write the per-run PATH shims. cli/main.rs. {path} and PASSTHROUGH {detail}.
+why: 274 section 5: shim materialization is session-establishment I/O the wrapped probe needs, so a failure is loud rather than a silently shim-less run that would resolve the wrong guest.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[cli-shim-dir-unwritable]: [unwritten: cli-shim-dir-unwritable]

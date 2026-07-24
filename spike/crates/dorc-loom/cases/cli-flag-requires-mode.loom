@@ -1,0 +1,8 @@
+---
+code: cli-flag-requires-mode
+when-fires: a flag scoped to one invocation was given under another (or its required companion was omitted). cli/lib.rs. {flag} and the {mode} it belongs to.
+why: the flag surface is per-invocation, so accepting it elsewhere would imply a capability that mode does not have. tc-whylog-default-off: the spike opt-in siting is the disclosed cut here.
+---
+-- replay --
+$ dorc plan --whylog=run.whylog --book=webhost.sh
+error[cli-flag-requires-mode]: [unwritten: cli-flag-requires-mode]

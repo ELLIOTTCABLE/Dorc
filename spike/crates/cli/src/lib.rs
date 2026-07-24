@@ -19,6 +19,7 @@
 #![forbid(unsafe_code)]
 
 use dorc_aid::Severity;
+use dorc_aid::diag::{Diag, DiagCode};
 
 /// The one-line usage synopsis, embedded in argument-error messages. The full
 /// mode/flag/exit-code reference is [`HELP`] (printed by `--help` to stdout, exit 0).
@@ -191,8 +192,8 @@ pub struct Args {
 /// its input and free of I/O — the property the loom harness rides.
 ///
 /// # Errors
-/// Returns the rendered usage/argument error a bad invocation produces.
-pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
+/// Returns the typed invocation diagnostic a bad invocation produces (`288` §6).
+pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, Diag> {
     // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
     // errors, and they win even alongside a malformed flag (the conventional precedence).
     if raw.iter().any(|a| a == "-h" || a == "--help") {
@@ -204,13 +205,15 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
     // `dorc strip <file>`: the off-ramp cleaner — a non-analysis invocation, handled before the
     // mode/flag machinery. Exactly one positional (the file to strip); no other flags apply.
     if raw.first().map(String::as_str) == Some("strip") {
-        let path = raw
-            .get(1)
-            .ok_or_else(|| format!("strip needs a file path — {USAGE}"))?;
+        let path = raw.get(1).ok_or_else(|| {
+            spanless(DiagCode::CliStripNeedsPath(
+                dorc_aid::diag::CliStripNeedsPath,
+            ))
+        })?;
         if path.starts_with('-') {
-            return Err(format!(
-                "strip needs a file path, got the flag {path:?} — {USAGE}"
-            ));
+            return Err(spanless(DiagCode::CliStripGotAFlag(
+                dorc_aid::diag::CliStripGotAFlag { got: path.clone() },
+            )));
         }
         return Ok(Invocation::Strip(path.clone()));
     }
@@ -265,9 +268,12 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
             // (did-you-mean); otherwise it is a positional book (the round-trip default — the flag
             // loop below picks it up).
             if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why", "strip"]) {
-                return Err(format!(
-                    "unknown mode {w:?} — did you mean `{sugg}`? {USAGE}"
-                ));
+                return Err(spanless(DiagCode::CliUnknownMode(
+                    dorc_aid::diag::CliUnknownMode {
+                        mode: w.to_owned(),
+                        suggestion: sugg.to_owned(),
+                    },
+                )));
             }
             Mode::RoundTrip
         }
@@ -278,19 +284,28 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
         if let Some(p) = arg.strip_prefix("--book=") {
             books.push(p.to_string());
         } else if arg == "--book" {
-            books.push(it.next().ok_or("--book needs a path")?);
+            books.push(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--book", "a path"))?,
+            );
         } else if arg == "-o" || arg == "--oracle" {
-            oracles.push(it.next().ok_or("-o needs a path")?);
+            oracles.push(it.next().ok_or_else(|| flag_needs_value("-o", "a path"))?);
         } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
             oracles.push(p.to_string());
         } else if let Some(p) = arg.strip_prefix("--oracle-dir=") {
             oracle_dirs.push(p.to_string());
         } else if arg == "--oracle-dir" {
-            oracle_dirs.push(it.next().ok_or("--oracle-dir needs a directory")?);
+            oracle_dirs.push(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--oracle-dir", "a directory"))?,
+            );
         } else if let Some(p) = arg.strip_prefix("--results=") {
             results = Some(p.to_string());
         } else if arg == "--results" {
-            results = Some(it.next().ok_or("--results needs a path")?);
+            results = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--results", "a path"))?,
+            );
         } else if arg == "--debug-argv" {
             debug_argv = true;
         } else if arg == "--trust-footprints" {
@@ -307,15 +322,20 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
                 "nopasswd" => dorc_core::Capability::NonRootNopasswd,
                 "degraded" => dorc_core::Capability::Degraded,
                 other => {
-                    return Err(format!(
-                        "unknown --probe-capability {other:?} (expected root|nopasswd|degraded); {USAGE}"
+                    return Err(value_not_recognized(
+                        "--probe-capability",
+                        other,
+                        "root|nopasswd|degraded",
                     ));
                 }
             };
         } else if let Some(p) = arg.strip_prefix("--whylog-dir=") {
             whylog_dir = Some(p.to_string());
         } else if arg == "--whylog-dir" {
-            whylog_dir = Some(it.next().ok_or("--whylog-dir needs a directory")?);
+            whylog_dir = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--whylog-dir", "a directory"))?,
+            );
         } else if let Some(path) = arg.strip_prefix("--whylog=") {
             whylog = Some(path.to_owned());
         } else if arg == "--last" {
@@ -323,7 +343,10 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
         } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
             shim_dir = Some(p.to_string());
         } else if arg == "--shim-dir" {
-            shim_dir = Some(it.next().ok_or("--shim-dir needs a directory")?);
+            shim_dir = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--shim-dir", "a directory"))?,
+            );
         } else if arg.starts_with('-') {
             // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
             // "unexpected argument" (the recon's missing-suggestion hazard).
@@ -345,12 +368,17 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
                 "--help",
                 "--version",
             ];
-            return match nearest(&arg, &known) {
-                Some(sugg) => Err(format!(
-                    "unknown flag {arg:?} — did you mean `{sugg}`? {USAGE}"
+            return Err(match nearest(&arg, &known) {
+                Some(sugg) => spanless(DiagCode::CliUnknownFlagDidYouMean(
+                    dorc_aid::diag::CliUnknownFlagDidYouMean {
+                        flag: arg.clone(),
+                        suggestion: sugg.to_owned(),
+                    },
                 )),
-                None => Err(format!("unknown flag {arg:?}; {USAGE}")),
-            };
+                None => spanless(DiagCode::CliUnknownFlag(dorc_aid::diag::CliUnknownFlag {
+                    flag: arg.clone(),
+                })),
+            });
         } else {
             // A bare word (no `-`): a positional book (the day-one `dorc plan book.sh` ergonomic;
             // repeatable ⇒ multi-book concatenation).
@@ -358,15 +386,25 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
         }
     }
     if books.is_empty() && !last {
-        return Err(format!(
-            "no book given (a positional path or --book=PATH); {USAGE}"
-        ));
+        return Err(spanless(DiagCode::CliNoBookGiven(
+            dorc_aid::diag::CliNoBookGiven,
+        )));
     }
     if whylog.is_some() && whylog_dir.is_some() {
-        return Err("--whylog and --whylog-dir are mutually exclusive".to_owned());
+        return Err(spanless(DiagCode::CliFlagsMutuallyExclusive(
+            dorc_aid::diag::CliFlagsMutuallyExclusive {
+                first: "--whylog",
+                second: "--whylog-dir",
+            },
+        )));
     }
     if whylog.is_some() && (mode != Mode::Why || !last) {
-        return Err("--whylog is only valid with dorc why --last".to_owned());
+        return Err(spanless(DiagCode::CliFlagRequiresMode(
+            dorc_aid::diag::CliFlagRequiresMode {
+                flag: "--whylog",
+                mode: "dorc why --last",
+            },
+        )));
     }
     Ok(Invocation::Analyze(Args {
         mode,
@@ -422,14 +460,33 @@ fn levenshtein(a: &str, b: &str) -> usize {
 /// we were reading and the path, and translate the common `io::ErrorKind`s to plain English
 /// (a missing/permission-denied file, the two an admin actually hits) rather than the platform's
 /// raw "The system cannot find the file specified. (os error 2)".
+/// THREE SIBLING CODES, not one `{why}`-parameterized code
+/// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`): a missing file, a file you may not read, and
+/// an unclassed OS failure are three states of the world with three different remediations. Only
+/// the residual arm passes the platform's own words through.
 #[must_use]
-pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> String {
-    let why = match err.kind() {
-        std::io::ErrorKind::NotFound => "no such file".to_owned(),
-        std::io::ErrorKind::PermissionDenied => "permission denied".to_owned(),
-        _ => err.to_string(),
-    };
-    format!("cannot read {kind} `{path}`: {why}")
+pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> Diag {
+    match err.kind() {
+        std::io::ErrorKind::NotFound => {
+            spanless(DiagCode::CliFileNotFound(dorc_aid::diag::CliFileNotFound {
+                kind: kind.to_owned(),
+                path: path.to_owned(),
+            }))
+        }
+        std::io::ErrorKind::PermissionDenied => spanless(DiagCode::CliFilePermissionDenied(
+            dorc_aid::diag::CliFilePermissionDenied {
+                kind: kind.to_owned(),
+                path: path.to_owned(),
+            },
+        )),
+        _ => spanless(DiagCode::CliFileUnreadable(
+            dorc_aid::diag::CliFileUnreadable {
+                kind: kind.to_owned(),
+                path: path.to_owned(),
+                detail: err.to_string(),
+            },
+        )),
+    }
 }
 
 /// One-line usage for the `lint` sub-surface (`27R` §5). Embedded in lint arg errors.
@@ -481,7 +538,7 @@ pub enum LintFormat {
 /// taken by files, so subset selection needs a flag — deviation from brew's positional-checks, `27S`).
 /// # Errors
 /// Returns the rendered lint usage/argument error a bad invocation produces.
-pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
+pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, Diag> {
     let mut files = Vec::new();
     let mut oracles = Vec::new();
     let mut oracle_dirs = Vec::new();
@@ -499,19 +556,28 @@ pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
         if let Some(p) = arg.strip_prefix("--oracle-dir=") {
             oracle_dirs.push(p.to_owned());
         } else if arg == "--oracle-dir" {
-            oracle_dirs.push(it.next().ok_or("--oracle-dir needs a directory")?);
+            oracle_dirs.push(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--oracle-dir", "a directory"))?,
+            );
         } else if arg == "-o" || arg == "--oracle" {
-            oracles.push(it.next().ok_or("-o needs a path")?);
+            oracles.push(it.next().ok_or_else(|| flag_needs_value("-o", "a path"))?);
         } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
             oracles.push(p.to_owned());
         } else if let Some(p) = arg.strip_prefix("--format=") {
             format = parse_lint_format(p)?;
         } else if arg == "--format" {
-            format = parse_lint_format(&it.next().ok_or("--format needs a value")?)?;
+            format = parse_lint_format(
+                &it.next()
+                    .ok_or_else(|| flag_needs_value("--format", "a value"))?,
+            )?;
         } else if let Some(p) = arg.strip_prefix("--fail-on=") {
             fail_on = parse_fail_on(p)?;
         } else if arg == "--fail-on" {
-            fail_on = parse_fail_on(&it.next().ok_or("--fail-on needs a value")?)?;
+            fail_on = parse_fail_on(
+                &it.next()
+                    .ok_or_else(|| flag_needs_value("--fail-on", "a value"))?,
+            )?;
         } else if arg == "--no-tools" {
             tools_enabled = false;
         } else if arg == "--require-tools" {
@@ -519,9 +585,10 @@ pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
         } else if let Some(p) = arg.strip_prefix("--expect-files=") {
             expect_files = Some(parse_expect_count(p)?);
         } else if arg == "--expect-files" {
-            expect_files = Some(parse_expect_count(
-                &it.next().ok_or("--expect-files needs a number")?,
-            )?);
+            expect_files =
+                Some(parse_expect_count(&it.next().ok_or_else(|| {
+                    flag_needs_value("--expect-files", "a number")
+                })?)?);
         } else if arg == "--terse" {
             verbosity = dorc_lint::render::Verbosity::Terse;
         } else if arg == "--verbose" {
@@ -531,9 +598,14 @@ pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
         } else if let Some(p) = arg.strip_prefix("--source=") {
             sources.push(p.to_owned());
         } else if arg == "--source" {
-            sources.push(it.next().ok_or("--source needs a name")?);
+            sources.push(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--source", "a name"))?,
+            );
         } else if arg.starts_with('-') {
-            return Err(format!("unknown lint flag {arg:?}; {LINT_USAGE}"));
+            return Err(spanless(DiagCode::CliUnknownFlag(
+                dorc_aid::diag::CliUnknownFlag { flag: arg.clone() },
+            )));
         } else {
             files.push(arg);
         }
@@ -553,33 +625,65 @@ pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
     }))
 }
 
-fn parse_lint_format(v: &str) -> Result<LintFormat, String> {
+fn parse_lint_format(v: &str) -> Result<LintFormat, Diag> {
     match v {
         "human" => Ok(LintFormat::Human),
         "jsonl" => Ok(LintFormat::Jsonl),
-        other => Err(format!(
-            "unknown --format {other:?} (expected human|jsonl); {LINT_USAGE}"
-        )),
+        other => Err(value_not_recognized("--format", other, "human|jsonl")),
     }
 }
 
 /// `--fail-on` → the severity threshold, or `None` for `never`. `27R` §5: only `error`/`warn`
 /// gate (`info` never does).
-fn parse_fail_on(v: &str) -> Result<Option<Severity>, String> {
+fn parse_fail_on(v: &str) -> Result<Option<Severity>, Diag> {
     match v {
         "error" => Ok(Some(Severity::Error)),
         "warn" => Ok(Some(Severity::Warning)),
         "never" => Ok(None),
-        other => Err(format!(
-            "unknown --fail-on {other:?} (expected error|warn|never); {LINT_USAGE}"
-        )),
+        other => Err(value_not_recognized("--fail-on", other, "error|warn|never")),
     }
 }
 
-fn parse_expect_count(v: &str) -> Result<usize, String> {
+fn parse_expect_count(v: &str) -> Result<usize, Diag> {
     v.parse::<usize>().map_err(|_| {
-        format!("--expect-files needs a non-negative integer, got {v:?}; {LINT_USAGE}")
+        spanless(DiagCode::CliFlagValueNotANumber(
+            dorc_aid::diag::CliFlagValueNotANumber {
+                flag: "--expect-files".to_owned(),
+                got: v.to_owned(),
+            },
+        ))
     })
+}
+
+// ── the invocation-error mints (`288` §6) ────────────────────────────────────────────────────
+//
+// An argv has no source span, so every one of these takes the gated spanless constructor. The
+// helpers exist so each producer is one legible line; the payload variant is still spelled
+// LITERALLY at every mint, because the allow-list gate is a lexical grep for exactly that shape.
+
+fn spanless(code: DiagCode) -> Diag {
+    Diag::new_spanless_site(code)
+}
+
+/// A flag that takes a value, given without one — ONE code across every such flag.
+fn flag_needs_value(flag: &str, wants: &'static str) -> Diag {
+    spanless(DiagCode::CliFlagNeedsValue(
+        dorc_aid::diag::CliFlagNeedsValue {
+            flag: flag.to_owned(),
+            wants,
+        },
+    ))
+}
+
+/// A flag value outside its closed vocabulary.
+fn value_not_recognized(flag: &str, got: &str, expected: &'static str) -> Diag {
+    spanless(DiagCode::CliFlagValueNotRecognized(
+        dorc_aid::diag::CliFlagValueNotRecognized {
+            flag: flag.to_owned(),
+            got: got.to_owned(),
+            expected,
+        },
+    ))
 }
 
 #[cfg(test)]

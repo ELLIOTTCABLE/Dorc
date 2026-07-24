@@ -134,6 +134,7 @@ version = "0.0.0"
 dependencies = [
  "dorc-aid",
  "dorc-analysis",
+ "dorc-cli",
  "dorc-core",
  "dorc-lint",
  "dorc-oracle",

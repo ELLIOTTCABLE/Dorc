@@ -1,0 +1,8 @@
+---
+code: cli-flag-value-not-recognized
+when-fires: a flag value outside its closed vocabulary. cli/lib.rs (--probe-capability, --format, --fail-on). {flag}, {got}, and the accepted {expected} set.
+why: 27C axis-1 and 27R section 5: these vocabularies are engine-owned and closed, so naming the whole accepted set is both possible and the fastest repair.
+---
+-- replay --
+$ dorc plan --probe-capability=wat --book=webhost.sh
+error[cli-flag-value-not-recognized]: [unwritten: cli-flag-value-not-recognized]

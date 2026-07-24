@@ -72,7 +72,7 @@ use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 use dorc_cli::{
-    Args, HELP, Invocation, LINT_USAGE, LintArgs, LintFormat, Mode, humane_read_error,
+    Args, HELP, Invocation, LINT_USAGE, LintArgs, LintFormat, Mode, USAGE, humane_read_error,
     parse_args_from,
 };
 
@@ -127,8 +127,8 @@ fn main() -> ExitCode {
         }
         Ok(Invocation::Strip(path)) => match strip_command(&path) {
             Ok(()) => ExitCode::SUCCESS,
-            Err(msg) => {
-                eprintln!("dorc: {msg}");
+            Err(diag) => {
+                report_invocation_error(&diag);
                 ExitCode::from(EXIT_USAGE)
             }
         },
@@ -138,13 +138,13 @@ fn main() -> ExitCode {
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
             Ok(RunOutcome::IngressRefused) => ExitCode::from(12),
-            Err(msg) => {
-                eprintln!("dorc: {msg}");
+            Err(diag) => {
+                report_invocation_error(&diag);
                 ExitCode::from(EXIT_USAGE)
             }
         },
-        Err(msg) => {
-            eprintln!("dorc: {msg}");
+        Err(diag) => {
+            report_invocation_error(&diag);
             ExitCode::from(EXIT_USAGE)
         }
     }
@@ -157,16 +157,48 @@ fn main() -> ExitCode {
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
 /// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
-fn parse_args() -> Result<Invocation, String> {
+fn parse_args() -> Result<Invocation, Diag> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     parse_args_from(raw)
+}
+
+/// The ONE print seat for an invocation error (`288` §6). Body-only: an argv has no span, so the
+/// framed render would draw a caret at nothing. The `dorc: ` prefix and the usage synopsis are
+/// CHROME the seat owns, never part of a catalog register — which is why 20 codes' prose does not
+/// each carry a copy of the usage text (`291` §5d parks usage/help for the arrangement round).
+/// The `--shim-dir` materialization edge's write failures. The one invocation-surface code the
+/// `291` §5a inventory did not name — it fell out of giving `run` a single error type.
+fn shim_dir_unwritable(path: &str, err: &std::io::Error) -> Diag {
+    Diag::new_spanless_site(DiagCode::CliShimDirUnwritable(
+        dorc_aid::diag::CliShimDirUnwritable {
+            path: path.to_owned(),
+            detail: err.to_string(),
+        },
+    ))
+}
+
+/// The lint OPERATIONAL print seat (`27R` §5 exit trichotomy): the lint itself is compromised, so
+/// the message rides the `dorc: lint: ` chrome and the caller returns `EXIT_LINT_OPERATIONAL`.
+fn report_lint_operational(diag: &Diag) {
+    eprintln!(
+        "dorc: lint: {}",
+        dorc_aid::diag::render_body(diag, &Interner::default())
+    );
+}
+
+fn report_invocation_error(diag: &Diag) {
+    eprintln!(
+        "dorc: {}",
+        dorc_aid::diag::render_body(diag, &Interner::default())
+    );
+    eprintln!("{USAGE}");
 }
 
 /// `dorc strip <path>` (`27D` rider-dorc-sh-unbuilt / `274` §13): read the file, erase every dorc
 /// dialect construct (parser-backed — [`dorc_oracle::strip_file`]), print runnable stock sh to
 /// stdout. An unmarked file passes through byte-identical (idempotent). Pure — the strip carries no
 /// diagnostics today, but any it grows are reported to stderr so stdout stays exactly the artifact.
-fn strip_command(path: &str) -> Result<(), String> {
+fn strip_command(path: &str) -> Result<(), Diag> {
     let src = std::fs::read_to_string(path).map_err(|e| humane_read_error("source", path, &e))?;
     let mut interner = Interner::default();
     let stripped = dorc_oracle::strip_file(&mut interner, &src);
@@ -180,7 +212,7 @@ fn strip_command(path: &str) -> Result<(), String> {
 
 /// Read + CONCATENATE the book(s) into one analyzed unit (`\n`-joined so no two files' lines
 /// merge — multi-book concatenation-as-one-unit). Humane per-file errors.
-fn read_books(books: &[String]) -> Result<String, String> {
+fn read_books(books: &[String]) -> Result<String, Diag> {
     let mut out = String::new();
     for (i, path) in books.iter().enumerate() {
         if i > 0 {
@@ -196,7 +228,7 @@ fn read_books(books: &[String]) -> Result<String, String> {
 /// Resolve the oracle PATHS (ack-6): the explicit `-o` list first, then every `*.oracle.sh` in
 /// each `--oracle-dir` (glob-sorted for determinism — the cli is the I/O edge, but the ORDER it
 /// hands the kernel must be stable). A directory that cannot be read is a humane error.
-fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Vec<String>, String> {
+fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Vec<String>, Diag> {
     let mut paths: Vec<String> = oracles.to_vec();
     for dir in oracle_dirs {
         let entries =
@@ -308,21 +340,27 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     let inputs = match read_lint_inputs("file", &args.files) {
         Ok(v) => v,
         Err(msg) => {
-            eprintln!("dorc: lint: {msg}");
+            eprintln!(
+                "dorc: lint: {}",
+                dorc_aid::diag::render_body(&msg, &Interner::default())
+            );
             return ExitCode::from(EXIT_LINT_OPERATIONAL);
         }
     };
     let oracle_paths = match resolve_oracle_paths(&args.oracles, &args.oracle_dirs) {
         Ok(p) => p,
-        Err(msg) => {
-            eprintln!("dorc: {msg}");
+        Err(diag) => {
+            report_invocation_error(&diag);
             return ExitCode::from(EXIT_USAGE);
         }
     };
     let oracles = match read_lint_inputs("oracle", &oracle_paths) {
         Ok(v) => v,
         Err(msg) => {
-            eprintln!("dorc: lint: {msg}");
+            eprintln!(
+                "dorc: lint: {}",
+                dorc_aid::diag::render_body(&msg, &Interner::default())
+            );
             return ExitCode::from(EXIT_LINT_OPERATIONAL);
         }
     };
@@ -354,7 +392,9 @@ fn lint_command(args: &LintArgs) -> ExitCode {
             print!("{}", dorc_lint::render::render_jsonl(&report));
             std::io::stdout().flush().ok();
         }
-        eprintln!("dorc: lint: no lintable files given (operational, not clean); {LINT_USAGE}");
+        report_lint_operational(&Diag::new_spanless_site(DiagCode::LintNoLintableFiles(
+            dorc_aid::diag::LintNoLintableFiles,
+        )));
         return ExitCode::from(EXIT_LINT_OPERATIONAL);
     }
 
@@ -370,10 +410,12 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     if let Some(want) = args.expect_files
         && inputs.len() != want
     {
-        eprintln!(
-            "dorc: lint: --expect-files: expected {want} lintable file(s), saw {} (scope drift)",
-            inputs.len()
-        );
+        report_lint_operational(&Diag::new_spanless_site(DiagCode::LintFileCountDrift(
+            dorc_aid::diag::LintFileCountDrift {
+                expected: want,
+                found: inputs.len(),
+            },
+        )));
         return ExitCode::from(EXIT_LINT_OPERATIONAL);
     }
     if args.require_tools {
@@ -385,10 +427,11 @@ fn lint_command(args: &LintArgs) -> ExitCode {
             .map(|s| s.name)
             .collect();
         if !absent.is_empty() {
-            eprintln!(
-                "dorc: lint: --require-tools: required tool(s) missing from PATH: {}",
-                absent.join(", ")
-            );
+            report_lint_operational(&Diag::new_spanless_site(
+                DiagCode::LintRequiredToolsMissing(dorc_aid::diag::LintRequiredToolsMissing {
+                    tools: absent.join(", "),
+                }),
+            ));
             return ExitCode::from(EXIT_LINT_OPERATIONAL);
         }
     }
@@ -400,7 +443,7 @@ fn lint_command(args: &LintArgs) -> ExitCode {
 
 /// Read a set of paths into [`dorc_lint::LintInput`]s; an unreadable file is a hard error (the lint
 /// cannot lint what it cannot read — an operational failure, `27R` §8b). `kind` labels the humane error.
-fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintInput>, String> {
+fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintInput>, Diag> {
     let mut inputs = Vec::new();
     for path in paths {
         let src = std::fs::read_to_string(path).map_err(|e| humane_read_error(kind, path, &e))?;
@@ -418,15 +461,15 @@ fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintI
 /// a `sudo -n <inner-check>` can exec the guest across the wrapper boundary. On unix the executable
 /// bit is set here; on other platforms (msys) the exec permission is supplied by the session harness
 /// (`e2e/run.sh` `chmod +x`), so a plain write suffices and this stays cross-platform.
-fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), String> {
+fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), Diag> {
     if files.is_empty() {
         return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
     }
-    std::fs::create_dir_all(dir).map_err(|e| format!("cannot create shim dir {dir:?}: {e}"))?;
+    std::fs::create_dir_all(dir).map_err(|e| shim_dir_unwritable(dir, &e))?;
     for (name, content) in files {
         let path = std::path::Path::new(dir).join(name);
         std::fs::write(&path, content)
-            .map_err(|e| format!("cannot write shim {}: {e}", path.display()))?;
+            .map_err(|e| shim_dir_unwritable(&path.display().to_string(), &e))?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt as _;
@@ -441,7 +484,7 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
     clippy::too_many_lines,
     reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here"
 )]
-fn run(args: &Args) -> Result<RunOutcome, String> {
+fn run(args: &Args) -> Result<RunOutcome, Diag> {
     let mut interner = Interner::default();
     let mode = args.mode;
     // rec-1 advisory routing: `plan` and the legacy round-trip overlay the FULL advisory plane
@@ -1214,16 +1257,20 @@ enum ReplayLoad {
 const WHYLOG_KEEP: usize = 5;
 const WHYLOG_CAP: usize = 1_000_000;
 
-fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, String> {
+fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
     // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.
     let path = if let Some(exact) = args.whylog.as_deref() {
         std::path::PathBuf::from(exact)
     } else {
-        let dir = args.whylog_dir.as_deref().ok_or(
-            "dorc why --last needs --whylog-dir=DIR (the spike opt-in siting; the product writes the \
-             durable quietly beside its work — tc-whylog-default-off)",
-        )?;
+        let dir = args.whylog_dir.as_deref().ok_or_else(|| {
+            Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+                dorc_aid::diag::CliFlagRequiresMode {
+                    flag: "--whylog-dir=DIR",
+                    mode: "dorc why --last",
+                },
+            ))
+        })?;
         let Some(path) = newest_whylog(dir) else {
             report_at(
                 advisory,

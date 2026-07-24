@@ -1,0 +1,8 @@
+---
+code: cli-strip-needs-path
+when-fires: dorc strip was given no path. cli/lib.rs parse_args_from. No params - the invocation says everything.
+why: 288 rul-dorc-strip-is-the-offramp: strip takes exactly one positional, so an empty one is unambiguous rather than a guess at intent.
+---
+-- replay --
+$ dorc strip
+error[cli-strip-needs-path]: [unwritten: cli-strip-needs-path]

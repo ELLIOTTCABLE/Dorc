@@ -1,0 +1,8 @@
+---
+code: dorc-sh-script-unreadable
+when-fires: dorc-sh could not read the script it was handed. cli/bin/dorc-sh.rs. {path} and PASSTHROUGH {detail}.
+why: dorc-sh is the shebang runner, so an unreadable script is the whole invocation failing before any strip or exec - reported as itself rather than as a shell error.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[dorc-sh-script-unreadable]: [unwritten: dorc-sh-script-unreadable]

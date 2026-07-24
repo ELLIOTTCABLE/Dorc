@@ -1,0 +1,8 @@
+---
+code: cli-flag-value-not-a-number
+when-fires: a numeric flag was given a non-number. cli/lib.rs parse_expect_count (--expect-files). {flag} and the {got} token.
+why: 27R section 8b: --expect-files is a CI scope assertion, so a malformed count is refused rather than coerced - a silently-zero expectation would pass vacuously.
+---
+-- replay --
+$ dorc lint --expect-files=many oracle.sh
+error[cli-flag-value-not-a-number]: [unwritten: cli-flag-value-not-a-number]

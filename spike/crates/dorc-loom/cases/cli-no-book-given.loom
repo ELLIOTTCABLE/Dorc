@@ -1,0 +1,8 @@
+---
+code: cli-no-book-given
+when-fires: an analysis invocation named no book, by positional or by flag. cli/lib.rs parse_args_from. No params.
+why: there is nothing to analyze and no safe default: guessing a book would be a plan the admin never asked for. dorc why --last is the one exemption, since it reconstructs its book from the durable.
+---
+-- replay --
+$ dorc plan
+error[cli-no-book-given]: [unwritten: cli-no-book-given]
