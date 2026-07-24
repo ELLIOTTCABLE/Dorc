@@ -234,6 +234,26 @@ pub enum DiagCode {
     /// Sibling `*.oracle.sh` files sit on disk beside the loaded set but were not loaded — a
     /// suggest-never-auto-load hint (`24H` ack-6). Advisory; the run is unchanged.
     AidUnloadedSiblingOracle(AidUnloadedSiblingOracle),
+
+    // ── dorc-lint's own findings (`288` §5) — the lane-local namespace retired ────────────────
+    /// The book carries unmodeled ⊤-walls; downstream sites lose full elision until each wall's
+    /// tool has an oracle.
+    UnmodeledWallInventory(UnmodeledWallInventory),
+    /// A verdict body answers with a PIPELINE's tail status, so the rc may not be the described
+    /// tool's (`rul-rc-partition`).
+    VerdictTerminalPipeline(VerdictTerminalPipeline),
+    /// A verdict arm authors a deliberate decline whose class was read statically; the site runs
+    /// and the class routes the nags.
+    AuthoredDeclineClass(AuthoredDeclineClass),
+    /// A verdict arm authors a deliberate decline whose class is NOT statically readable — a
+    /// different world-state, resolved only at runtime.
+    AuthoredDeclineClassUnreadable(AuthoredDeclineClassUnreadable),
+    /// A configured external linter is not on PATH, so its checks did not run.
+    LintToolAbsent(LintToolAbsent),
+    /// An external linter produced output the adapters could not parse at any tier.
+    LintToolOutputUnparsable(LintToolOutputUnparsable),
+    /// An external linter exited nonzero but produced no parseable findings.
+    LintToolFailedWithoutFindings(LintToolFailedWithoutFindings),
 }
 
 impl DiagCode {
@@ -304,6 +324,13 @@ impl DiagCode {
             DiagCode::WhylogAbsent(_) => "whylog-absent",
             DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
             DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
+            DiagCode::UnmodeledWallInventory(_) => "unmodeled-wall-inventory",
+            DiagCode::VerdictTerminalPipeline(_) => "verdict-terminal-pipeline",
+            DiagCode::AuthoredDeclineClass(_) => "authored-decline-class",
+            DiagCode::AuthoredDeclineClassUnreadable(_) => "authored-decline-class-unreadable",
+            DiagCode::LintToolAbsent(_) => "lint-tool-absent",
+            DiagCode::LintToolOutputUnparsable(_) => "lint-tool-output-unparsable",
+            DiagCode::LintToolFailedWithoutFindings(_) => "lint-tool-failed-without-findings",
         }
     }
 }
@@ -890,6 +917,68 @@ pub struct WhylogCorrupt {
 pub struct AidUnloadedSiblingOracle {
     /// The full hint text (the unloaded sibling list; display only, `inv-referent-agnostic`).
     pub detail: String,
+}
+
+/// Payload of [`DiagCode::UnmodeledWallInventory`] (`288` §5): the whole-book wall census the
+/// `unmodeled-inventory` lint source takes. Counts, never identities — `inv-referent-agnostic`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnmodeledWallInventory {
+    /// How many unmodeled ⊤-walls the book carries (`{wall_count}`).
+    pub wall_count: usize,
+    /// The count-agreeing noun for `wall_count` (`{wall_word}`) — pluralization is an engine-owned
+    /// canonical formatter, never something the prose register hand-writes.
+    pub wall_word: &'static str,
+    /// How many leaf sites sit downstream of the FIRST wall (`{downstream}`).
+    pub downstream: usize,
+}
+
+/// Payload of [`DiagCode::VerdictTerminalPipeline`] (`288` §5): a verdict body whose last
+/// status-bearing statement is a pipeline. Carries no operands — the span says which body.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerdictTerminalPipeline;
+
+/// Payload of [`DiagCode::AuthoredDeclineClass`] (`288` §5): one per-arm decline inventory entry
+/// whose `<verb> <class>` header WAS statically readable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthoredDeclineClass {
+    /// The statically-read class token (`{class}`).
+    pub class: String,
+}
+
+/// Payload of [`DiagCode::AuthoredDeclineClassUnreadable`] (`288` §5): the SIBLING world-state —
+/// a dynamic format or an unrecognized class token (`27W:rul-report-noise-tolerant`) leaves the
+/// class unread until runtime. A sibling code, not a `{class}`-hole variant, because the two
+/// differ in world-state and remediation, never in grammar
+/// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthoredDeclineClassUnreadable;
+
+/// Payload of [`DiagCode::LintToolAbsent`] (`288` §5): a configured external linter missing from
+/// PATH. `dir-absent-is-info` — advisory unless `--require-tools` raises it operationally.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintToolAbsent {
+    /// The tool's name (`{tool}`).
+    pub tool: String,
+}
+
+/// Payload of [`DiagCode::LintToolOutputUnparsable`] (`288` §5): PASSTHROUGH `{output}` — the
+/// tolerant adapters fell through every tier, so the tool's own bytes ride the payload.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintToolOutputUnparsable {
+    /// The tool's name (`{tool}`).
+    pub tool: String,
+    /// The tool's output, flattened to one truncated line (`{output}`; display only).
+    pub output: String,
+}
+
+/// Payload of [`DiagCode::LintToolFailedWithoutFindings`] (`288` §5): the exit-trichotomy's third
+/// arm — nonzero rc, nothing parseable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintToolFailedWithoutFindings {
+    /// The tool's name (`{tool}`).
+    pub tool: String,
+    /// The tool's exit status (`{rc}`).
+    pub rc: i32,
 }
 
 // ===========================================================================
@@ -1491,6 +1580,45 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
+        // dorc-lint's own findings (`288` §5). Severities are the ones the lane-local codes
+        // carried, now sourced from HERE (`crib-4`) instead of a construction site.
+        DiagCode::UnmodeledWallInventory(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        DiagCode::VerdictTerminalPipeline(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        DiagCode::AuthoredDeclineClass(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        DiagCode::AuthoredDeclineClassUnreadable(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        // The external-tool trio: absent/unparsable/failed are the ADMIN's environment to fix,
+        // never a Dorc-modeling limitation, so none of them is `Structural`.
+        DiagCode::LintToolAbsent(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
+        DiagCode::LintToolOutputUnparsable(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
+        DiagCode::LintToolFailedWithoutFindings(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
     }
 }
 
@@ -1638,6 +1766,12 @@ impl Diag {
 /// `[]`. The `interner` is threaded for forward-compat (no payload resolves an interned handle at
 /// HEAD — the excerpt handles were retired into `detail` strings). Pure; `inv-no-throw`.
 #[must_use]
+#[expect(
+    clippy::match_same_arms,
+    clippy::too_many_lines,
+    reason = "one arm PER CODE, like `registry` — merging the param-less arms by `|` would hide \
+              which codes declare no holes, and the per-code shape is what makes the fn long"
+)]
 pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'static str, String)> {
     match code {
         DiagCode::CmdsubOperandTop(p) => vec![
@@ -1671,6 +1805,21 @@ pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'sta
         DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
         DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
         DiagCode::AidUnloadedSiblingOracle(p) => vec![("detail", p.detail.clone())],
+        DiagCode::UnmodeledWallInventory(p) => vec![
+            ("wall_count", p.wall_count.to_string()),
+            ("wall_word", p.wall_word.to_owned()),
+            ("downstream", p.downstream.to_string()),
+        ],
+        DiagCode::VerdictTerminalPipeline(_) => vec![],
+        DiagCode::AuthoredDeclineClass(p) => vec![("class", p.class.clone())],
+        DiagCode::AuthoredDeclineClassUnreadable(_) => vec![],
+        DiagCode::LintToolAbsent(p) => vec![("tool", p.tool.clone())],
+        DiagCode::LintToolOutputUnparsable(p) => {
+            vec![("tool", p.tool.clone()), ("output", p.output.clone())]
+        }
+        DiagCode::LintToolFailedWithoutFindings(p) => {
+            vec![("tool", p.tool.clone()), ("rc", p.rc.to_string())]
+        }
         DiagCode::MarkerVersionUnrecognized(p) => vec![("found", p.found.clone())],
         DiagCode::MungeNameInvalid(p) => vec![
             ("source", p.source.clone()),

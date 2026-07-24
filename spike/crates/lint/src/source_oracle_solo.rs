@@ -131,17 +131,20 @@ impl LintSource for OracleDeclinedInventory {
                 };
                 for arm in dorc_oracle::report::report_inventory(verdict) {
                     let (line, col) = dorc_aid::diag::line_col(&oracle.src, arm.arm.lo.0 as usize);
+                    let diag = dorc_aid::Diag::new(decline_code(arm.class), arm.arm);
                     out.push(Finding {
                         path: oracle.path.clone(),
                         line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                         col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                        // Advisory disclosure — an inventory listing, never gates.
-                        severity: dorc_aid::Severity::Note,
+                        severity: diag.severity(),
                         source: self.name(),
-                        code: "authored-decline-class".to_owned(),
-                        message: decline_message(arm.class),
+                        code: diag.code.slug().to_owned(),
+                        message: dorc_aid::diag::render_body(&diag, &Interner::default()),
                         remap: RemapFidelity::Exact,
-                        provenance: None,
+                        provenance: Some(NativeDiag {
+                            diag,
+                            source: oracle.src.clone(),
+                        }),
                         frame: FrameChoice::Compact,
                     });
                 }
@@ -151,20 +154,19 @@ impl LintSource for OracleDeclinedInventory {
     }
 }
 
-/// The inventory finding message for a per-arm decline: the classed form when the `<verb> <class>`
-/// header was recognized, else the generic degrade-note (`27W:rul-report-noise-tolerant`).
-fn decline_message(class: Option<DeclineClass>) -> String {
+/// The registry code for a per-arm decline: SIBLING codes, not one `{class}`-hole code — a
+/// statically-read class and an only-at-runtime one are different world-states with different
+/// remediations (`AID-NEEDS:law-codes-vary-by-world-not-grammar`; `27W:rul-report-noise-tolerant`).
+fn decline_code(class: Option<DeclineClass>) -> dorc_aid::diag::DiagCode {
     match class {
-        Some(c) => format!(
-            "this verdict arm authors a deliberate decline classed `{}` (a `decline {}` report \
-             emission) — the site will run; the class routes the enhancement nags (advisory only).",
-            c.token(),
-            c.token(),
+        Some(c) => {
+            dorc_aid::diag::DiagCode::AuthoredDeclineClass(dorc_aid::diag::AuthoredDeclineClass {
+                class: c.token().to_owned(),
+            })
+        }
+        None => dorc_aid::diag::DiagCode::AuthoredDeclineClassUnreadable(
+            dorc_aid::diag::AuthoredDeclineClassUnreadable,
         ),
-        None => "this verdict arm authors a deliberate decline whose class is not statically \
-                 readable (a dynamic format or an unrecognized class token) — the site will run; \
-                 the class resolves at runtime (advisory only)."
-            .to_owned(),
     }
 }
 

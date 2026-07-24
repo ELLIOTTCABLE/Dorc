@@ -128,6 +128,14 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "WhylogCorrupt",
     // cli/main.rs (aid hint) — AID-NEEDS:aid-unloaded-sibling-oracle (gap-5 / 24H ack-6)
     "AidUnloadedSiblingOracle",
+    // lint — the lane-local namespace retired (`288` §5)
+    "UnmodeledWallInventory",
+    "VerdictTerminalPipeline",
+    "AuthoredDeclineClass",
+    "AuthoredDeclineClassUnreadable",
+    "LintToolAbsent",
+    "LintToolOutputUnparsable",
+    "LintToolFailedWithoutFindings",
 ];
 
 /// Every catalog slug (the stable wire string) — for the retire-guard and reachability. KEEP IN
@@ -192,6 +200,13 @@ const MIGRATED_SLUGS: &[&str] = &[
     "whylog-absent",
     "whylog-corrupt",
     "aid-unloaded-sibling-oracle",
+    "unmodeled-wall-inventory",
+    "verdict-terminal-pipeline",
+    "authored-decline-class",
+    "authored-decline-class-unreadable",
+    "lint-tool-absent",
+    "lint-tool-output-unparsable",
+    "lint-tool-failed-without-findings",
 ];
 
 /// Deliberately RETIRED/RENAMED slugs (`27V`): the `dq-` prefix drop on the five value-plane
@@ -241,6 +256,11 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogCorrupt",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
+    // lint — the external-tool trio is ABOUT a foreign process, not about any dorc bytes, so its
+    // emit context genuinely has no span. The four dorc-native lint codes DO carry real spans.
+    "LintToolAbsent",
+    "LintToolOutputUnparsable",
+    "LintToolFailedWithoutFindings",
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `aid`

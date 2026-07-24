@@ -589,10 +589,13 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 6 covers the four `281` mark-grammar codes plus the `marker-version-unrecognized`
-    // phase-4 pilot's unwritten message, with one headroom (`28A` §2l pre-authorized 5 → 6).
+    // Ceiling 15 (`289:rul-unwritten-ceiling-one-bump`, the lane's ONE conscious bump): the prior 6
+    // (the four `281` mark-grammar codes + the `marker-version-unrecognized` pilot + one headroom)
+    // plus the 7 lint codes `288` §5 moved into the registry, plus 2 headroom. The lint seven are
+    // `sm `-migration candidates (`289:rul-sm-where-ancestor-exists`) — every one has a shipped
+    // ancestor sentence — so this ceiling is expected to be slack, never met.
     assert!(
-        unwritten.len() <= 6,
+        unwritten.len() <= 15,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()

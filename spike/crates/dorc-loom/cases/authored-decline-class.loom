@@ -1,0 +1,23 @@
+---
+code: authored-decline-class
+when-fires: a verdict arm carries a report-sink emission whose `<verb> <class>` header WAS readable statically. lint/source_oracle_solo.rs, tier-1 inventory. `{class}` is the read class token.
+why: 27W decline-class-emission - classing a decline is enhancement, and the inventory is how an author sees what they classed. Advisory only, never gates; the license plane never reads a class.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+foo__is_converged() {
+   case "$1" in
+   key) printf 'decline unsound %s is a write-only trigger key\n' "$2" >>"${DREP_V1:-/dev/null}"
+        return 2 ;;
+   *) return 2 ;;
+   esac
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  4:9 info [oracle-declined-inventory:authored-decline-class] [unwritten: authored-decline-class]
+
+dorc lint: 0 errors, 0 warnings, 1 info across 1 file.

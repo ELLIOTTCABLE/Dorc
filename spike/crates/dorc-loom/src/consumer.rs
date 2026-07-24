@@ -16,7 +16,8 @@ use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_templ
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
     DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
-    HostEvidenceRefusalKind, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
+    HostEvidenceRefusalKind, LintToolAbsent, LintToolFailedWithoutFindings,
+    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
     render_staged_cli_parts,
 };
@@ -875,6 +876,23 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         "dangling-reference" => DiagCode::DanglingReference(DanglingReference {
             coord: "sm.dorc.Package:nginx".to_owned(),
         }),
+        // The external-linter trio (`288` §5). World-as-payload by necessity: an honest trigger
+        // would have to run a real foreign tool, which replay never does (`tools_enabled: false`).
+        "lint-tool-absent" => DiagCode::LintToolAbsent(LintToolAbsent {
+            tool: "shellcheck".to_owned(),
+        }),
+        "lint-tool-output-unparsable" => {
+            DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable {
+                tool: "checkbashisms".to_owned(),
+                output: "possible bashism in - line 4 (should be '.'):".to_owned(),
+            })
+        }
+        "lint-tool-failed-without-findings" => {
+            DiagCode::LintToolFailedWithoutFindings(LintToolFailedWithoutFindings {
+                tool: "shellcheck".to_owned(),
+                rc: 2,
+            })
+        }
         _ => return None,
     };
     Some(Diag::new_spanless_site(code))

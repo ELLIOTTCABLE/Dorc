@@ -1,0 +1,28 @@
+---
+code: unmodeled-wall-inventory
+when-fires: a linted book carries at least one unmodeled ⊤-wall; the finding names the FIRST one. lint/source_unmodeled.rs. `{wall_count}`/`{wall_word}` are the census, `{downstream}` the approximate leaf count after the first wall.
+why: 27R §2 item-2, the gradual-enhancement nag - silence licenses nothing, so a wall is disclosed with the cost it imposes. The downstream count is APPROXIMATE (all downstream commands, not only the modeled ones) - seam-unmodeled-degradation-count.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+eval "apt-get install -y nginx"
+apt-get install -y curl
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[cfg-top-node]: sm unsupported construct (⊤): un-probeable and un-skippable
+   --> oracle.sh:2:1
+   |
+ 2 | eval "apt-get install -y nginx"
+   | \__/
+  error[syntax-unsupported]: sm `eval` executes constructed code (un-analyzable)
+   --> oracle.sh:2:1
+   |
+ 2 | eval "apt-get install -y nginx"
+   | \__/
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] [unwritten: unmodeled-wall-inventory]
+
+dorc lint: 2 errors, 0 warnings, 1 info across 1 file.

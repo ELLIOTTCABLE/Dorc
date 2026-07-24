@@ -1,0 +1,23 @@
+---
+code: authored-decline-class-unreadable
+when-fires: a verdict arm emits a report line whose `<verb> <class>` header is NOT readable statically - a dynamic format or an unrecognized class token. lint/source_oracle_solo.rs. No params.
+why: AID-NEEDS:law-codes-vary-by-world-not-grammar - the sibling of authored-decline-class, split by WORLD-STATE (the class resolves only at runtime) rather than by a template hole. 27W:rul-report-noise-tolerant: an unrecognized header degrades to a note, never an error.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+foo__is_converged() {
+   case "$1" in
+   key) printf 'decline %s cascade not modeled\n' "$2" >>"${DREP_V1:-/dev/null}"
+        return 2 ;;
+   *) return 2 ;;
+   esac
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  4:9 info [oracle-declined-inventory:authored-decline-class-unreadable] [unwritten: authored-decline-class-unreadable]
+
+dorc lint: 0 errors, 0 warnings, 1 info across 1 file.

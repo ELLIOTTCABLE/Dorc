@@ -119,10 +119,7 @@ fn frames(finding: &Finding, verbosity: Verbosity) -> bool {
 
 fn append_finding_parts(out: &mut RenderParts, finding: &Finding, verbosity: Verbosity) {
     if !frames(finding, verbosity) {
-        out.push(RenderPart::Arrangement {
-            text: render_finding_line(finding),
-            slug: "lint-fixed-finding",
-        });
+        append_compact_parts(out, finding);
         return;
     }
     let Some(provenance) = &finding.provenance else {
@@ -145,9 +142,15 @@ fn append_finding_parts(out: &mut RenderParts, finding: &Finding, verbosity: Ver
     });
 }
 
-/// One human finding line: `  <line>:<col> <severity> [<source>:<code>] <message>` plus a
-/// `(approximate)`/`(raw)` tag when the location fidelity is not exact (`27R` §4 remap-fidelity).
-fn render_finding_line(f: &Finding) -> String {
+/// The compact form, emitted as PARTS: `  <line>:<col> <severity> [<source>:<code>] <message>` plus
+/// a `(approximate)`/`(raw)` tag when the location fidelity is not exact (`27R` §4 remap-fidelity).
+///
+/// The message rides the renderer's own catalog parts when the finding has typed provenance, so a
+/// compact finding's prose is loom-EDITABLE like a framed one's (`288` §1: every user-facing string
+/// ends up loom-editable). A relay finding — an external tool's own words — has no catalog prose to
+/// edit and stays flat text. Byte-identical to the old string form, which is what keeps the default
+/// lint surface unchanged.
+fn append_compact_parts(out: &mut RenderParts, f: &Finding) {
     let loc = match (f.line, f.col) {
         (Some(l), Some(c)) => format!("{l}:{c}"),
         (Some(l), None) => format!("{l}"),
@@ -158,13 +161,29 @@ fn render_finding_line(f: &Finding) -> String {
         RemapFidelity::Approximate => " (approximate location)",
         RemapFidelity::None => " (raw)",
     };
-    format!(
-        "  {loc} {} [{}:{}] {}{fidelity}\n",
-        severity_token(f.severity),
-        f.source,
-        f.code,
-        f.message
-    )
+    out.push(RenderPart::Arrangement {
+        text: format!(
+            "  {loc} {} [{}:{}] ",
+            severity_token(f.severity),
+            f.source,
+            f.code
+        ),
+        slug: "lint-fixed-finding",
+    });
+    match &f.provenance {
+        Some(provenance) => out.append(dorc_aid::diag::render_body_parts(
+            &provenance.diag,
+            &dorc_core::Interner::default(),
+        )),
+        None => out.push(RenderPart::Arrangement {
+            text: f.message.clone(),
+            slug: "lint-relay-message",
+        }),
+    }
+    out.push(RenderPart::Arrangement {
+        text: format!("{fidelity}\n"),
+        slug: "lint-finding-terminator",
+    });
 }
 
 /// The JSONL render (`27R` §5, §8b). Line 1 is the envelope (format name + coverage block); each

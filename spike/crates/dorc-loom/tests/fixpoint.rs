@@ -88,7 +88,7 @@ fn corpus_cases_are_hygienic() {
 /// frontmatter slug alone cannot manufacture an output or editable provenance.
 #[test]
 fn lint_cases_replay_the_complete_production_report() {
-    const LINT_CASES: [&str; 8] = [
+    const LINT_CASES: [&str; 12] = [
         "missing-dialect-marker.loom",
         "marker-version-unrecognized.loom",
         "mark-unknown-verb.loom",
@@ -97,6 +97,11 @@ fn lint_cases_replay_the_complete_production_report() {
         "mark-hashcolon-malformed.loom",
         "munge-name-invalid.loom",
         "tolerates-unknown-dimension.loom",
+        // dorc-lint's own findings, now registry codes (`288` §5) — honest-trigger for free.
+        "unmodeled-wall-inventory.loom",
+        "verdict-terminal-pipeline.loom",
+        "authored-decline-class.loom",
+        "authored-decline-class-unreadable.loom",
     ];
     for filename in LINT_CASES {
         let text = std::fs::read_to_string(corpus_dir().join(filename))

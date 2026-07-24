@@ -13,6 +13,7 @@
 //! warn operational finding; unrecognized output ⇒ raw passthrough.
 
 use dorc_aid::Severity;
+use dorc_aid::diag::DiagCode;
 use dorc_core::Interner;
 
 use crate::finding::{Finding, FrameChoice, RemapFidelity, SourceStatus};
@@ -82,21 +83,13 @@ fn run_external(
         return SourceStatus::Off;
     }
     if !ctx.runner.available(tool) {
-        out.push(Finding {
-            path: String::new(),
-            line: None,
-            col: None,
-            severity: Severity::Note,
-            source: tool,
-            code: "tool-absent".to_owned(),
-            message: format!(
-                "`{tool}` was not found on PATH — its checks were skipped. Install it, pass \
-                 --no-tools to silence this, or --require-tools to make it a hard CI error."
-            ),
-            remap: RemapFidelity::None,
-            provenance: None,
-            frame: FrameChoice::Compact,
-        });
+        out.push(relay_finding(
+            String::new(),
+            tool,
+            DiagCode::LintToolAbsent(dorc_aid::diag::LintToolAbsent {
+                tool: tool.to_owned(),
+            }),
+        ));
         return SourceStatus::Absent;
     }
     for file in ctx.files {
@@ -130,21 +123,14 @@ fn lint_one_file(
             }
         }
         ParseResult::Unparsable(raw) => {
-            out.push(Finding {
-                path: file.path.clone(),
-                line: None,
-                col: None,
-                severity: Severity::Warning,
-                source: tool,
-                code: "external-raw".to_owned(),
-                message: format!(
-                    "unrecognized `{tool}` output (raw): {}",
-                    one_line_truncated(&raw)
-                ),
-                remap: RemapFidelity::None,
-                provenance: None,
-                frame: FrameChoice::Compact,
-            });
+            out.push(relay_finding(
+                file.path.clone(),
+                tool,
+                DiagCode::LintToolOutputUnparsable(dorc_aid::diag::LintToolOutputUnparsable {
+                    tool: tool.to_owned(),
+                    output: one_line_truncated(&raw),
+                }),
+            ));
         }
     }
 }
@@ -329,14 +315,29 @@ fn remap_finding(path: &str, line_map: &[u32], tool: &'static str, raw: RawFindi
 /// The "tool exited nonzero with no findings" operational finding (`27R` §4 dir-absent-is-info's
 /// sibling; §8 delta-exit-trichotomy-sharpened).
 fn operational_finding(path: &str, tool: &'static str, rc: i32) -> Finding {
+    relay_finding(
+        path.to_owned(),
+        tool,
+        DiagCode::LintToolFailedWithoutFindings(dorc_aid::diag::LintToolFailedWithoutFindings {
+            tool: tool.to_owned(),
+            rc,
+        }),
+    )
+}
+
+/// A finding ABOUT an external tool run (`288` §5): a registry code carrying catalog prose, but no
+/// dorc source to point a caret at — the emit context genuinely has no span, so the mint is the
+/// gated spanless one and the finding stays compact and provenance-free (a caret needs bytes).
+fn relay_finding(path: String, tool: &'static str, code: DiagCode) -> Finding {
+    let diag = dorc_aid::Diag::new_spanless_site(code);
     Finding {
-        path: path.to_owned(),
+        path,
         line: None,
         col: None,
-        severity: Severity::Warning,
+        severity: diag.severity(),
         source: tool,
-        code: "external-operational".to_owned(),
-        message: format!("`{tool}` exited with status {rc} but produced no parseable findings"),
+        code: diag.code.slug().to_owned(),
+        message: dorc_aid::diag::render_body(&diag, &Interner::default()),
         remap: RemapFidelity::None,
         provenance: None,
         frame: FrameChoice::Compact,
