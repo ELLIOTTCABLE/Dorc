@@ -116,7 +116,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 | lane | branch | shape | state |
 |---|---|---|---|
 | phase 0: lint-tally-pluralization | `ai/r28-unify-p0` | single dispatch, worktree | LANDED+FOLDED 2026-07-24 @ `2bf13785` → merge `c45be8b8` |
-| phase 1 map: aid-crate extraction spec (`notes/290`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | DISPATCHED 2026-07-24 |
+| phase 1 map: aid-crate extraction spec (`notes/290`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | LANDED+FOLDED 2026-07-24 @ `00155aaf` |
 | phase 1 exec: the extraction cutover | off p1 map | fresh executor after checkpoint | pending |
 | phases 2–4: mint-seam+scaffold · lint-unification · cli-error-migration | — | one checkpointed lane | pending |
 | phase 5: flat-tree move + run.sh retirement + safety-law edits | — | serial, atomic paths-only | pending |
