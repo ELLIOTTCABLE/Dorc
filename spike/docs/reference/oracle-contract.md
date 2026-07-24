@@ -578,13 +578,14 @@ The report stream is a write-only side channel a body may append to; it never
 affects an answer (the exit status is the entire in-band answer, section 3), and
 nothing in it is ever read by the license plane.
 
-- Sink. A body writes with `>>"${DREP_V1:-/dev/null}"`. The current probe lane
-  does not set the variable: runtime capture is held until the engine can supply
-  a sink it exclusively owns. Thus current Dorc
-  runs and off-Dorc runs both use the `:-/dev/null` default as a total,
-  `set -u`-safe no-op. Nothing you write needs to change when capture returns:
-  the variable's value is chosen by the engine, per run and per execution
-  environment, and your side of the idiom is fixed. The sink's env NAME carries the
+- Sink. A body writes with `>>"${DREP_V1:-/dev/null}"`. The probe lane sets the
+  variable to a file inside a scratch directory it created exclusively for this
+  run, and drains that file afterwards. Where it cannot establish such a
+  directory it sets the variable to `/dev/null` instead and captures nothing —
+  your writes stay total either way, exactly as they are off-Dorc, where the
+  `:-/dev/null` default makes every write a `set -u`-safe no-op. Nothing you
+  write ever needs to change: the variable's value is chosen by the engine, per
+  run and per execution environment, and your side of the idiom is fixed. The sink's env NAME carries the
   stream's format version (strawman `DREP_V1`); a future format mints a new name,
   and a recognized name is permanent once published - the role-name posture.
   `strip` leaves these lines alone: they are working shell, not annotation.
