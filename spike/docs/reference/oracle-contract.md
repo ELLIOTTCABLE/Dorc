@@ -579,10 +579,12 @@ affects an answer (the exit status is the entire in-band answer, section 3), and
 nothing in it is ever read by the license plane.
 
 - Sink. A body writes with `>>"${DREP_V1:-/dev/null}"`. The current probe lane
-  does not set the variable: runtime capture stays disabled until its execution
-  edge can supply an inherited, ownership-bearing channel. Thus current Dorc
+  does not set the variable: runtime capture is held until the engine can supply
+  a sink it exclusively owns. Thus current Dorc
   runs and off-Dorc runs both use the `:-/dev/null` default as a total,
-  `set -u`-safe no-op. The sink's env NAME carries the
+  `set -u`-safe no-op. Nothing you write needs to change when capture returns:
+  the variable's value is chosen by the engine, per run and per execution
+  environment, and your side of the idiom is fixed. The sink's env NAME carries the
   stream's format version (strawman `DREP_V1`); a future format mints a new name,
   and a recognized name is permanent once published - the role-name posture.
   `strip` leaves these lines alone: they are working shell, not annotation.

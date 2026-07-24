@@ -161,7 +161,7 @@ Registry
 | aid-lint-carrier-payload-bar | carrier/payload quality: which-arg-is-code gates, reconstruction differential, dorcism-in-payload | text+orcl | olo▶ ci▶ | d | `24T:P-A4` | S |
 | aid-lint-kind-adjudicability-bar | kind-topology clauses machine-readable; binding smells; differential discharge — REQUIRED before kinds go community-shared | text+orcl | olo▶ ci▶ | d | `24S:A4`; unowned | S |
 | aid-lint-oracle-solo-mode | oracle files linted with no book present | orcl | olo▶ | d | `dorc_oracle::validate` factored book-free (`27U` d4b); + the decline-inventory source | B |
-| aid-authored-decline-classes | which shapes an oracle deliberately declines, and why (closed class set: unsound/unmodeled/interactive/hazard); routes the enhancement-nags honestly | text+orcl (facts± at tier-3) | olo▶ blo▶ rev▶ post◀ ci▶ | c | `27W` all three tiers built (`27U`: sink recognition, per-site classing, runtime drain + pairing) | B |
+| aid-authored-decline-classes | which shapes an oracle deliberately declines, and why (closed class set: unsound/unmodeled/interactive/hazard); routes the enhancement-nags honestly | text+orcl (facts± at tier-3) | olo▶ blo▶ rev▶ post◀ ci▶ | c | `27W` static tiers live (`27U`: sink recognition, per-arm inventory, per-site classing); the runtime drain + pairing were built then HELD with runtime capture (see `spike/CLAUDE.md` decline-class-emission) | B |
 | aid-coverage-instrument | analyzer-coverage dashboard over a corpus (instrument, never a gate) | text+orcl | ci▶ | d | `dorc-coverage` | B |
 
 ### Error/report classes
@@ -171,7 +171,7 @@ Registry
 | aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining-case-transcript-authored prose + fixpoint-protected committed catalog (`27V` §3; `282` generation flip) | S |
 | aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`) | O |
 | aid-apply-divergence-report | apply-time divergence from prediction: proceed-and-flag report items, never questions | apply | post◀ rev▶ | m | rul-divergence-proceed; whylog feeds | S |
-| aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane BUILT (`DREP_V1` sink recognized + drained + ingested noise-tolerant; `27U`) | B |
+| aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane's recognition + noise-tolerant ingestion BUILT (`27U`); RUNTIME CAPTURE HELD — the probe supplies no `DREP_V1` sink, so runtime-only breadcrumbs are unobserved and the ingestion side idles (see `spike/CLAUDE.md` decline-class-emission) | B |
 
 
 Unowned (rows above whose mechanism no round owns; watch, don't lose)
