@@ -564,15 +564,30 @@ fn normalize_layout(line: &str) -> String {
     if let Some(rest) = line.strip_prefix("   = ") {
         return format!("  = {rest}");
     }
-    if let Some(rest) = line.strip_prefix("  ")
-        && rest
-            .chars()
-            .next()
-            .is_some_and(|character| character.is_ascii_digit())
+    if is_caret_gutter(line)
+        && let Some(rest) = line.strip_prefix("  ")
     {
         return format!(" {rest}");
     }
     line.to_owned()
+}
+
+/// A caret-frame SOURCE-GUTTER line: `<pad><line-number><pad>| <source bytes>`. The gutter is
+/// right-aligned on the frame's widest line number, so a single-digit line inside a frame reaching
+/// three digits carries two leading spaces — which is what [`normalize_layout`] strips.
+///
+/// The `|` is load-bearing. Without it the rule also swallowed a leading space from a COMPACT lint
+/// finding (`  2:1 info [source:code] …`), whose leading two spaces are the renderer's own, and the
+/// mismatch refused every compact-line transcript edit as `MarkerOutsideEditableSection` —
+/// `289:rul-reflow-fix-in-phase-four`. Gutter digits are followed only by spaces then `|`; a
+/// finding's are followed by `:`, so the two shapes never collide.
+fn is_caret_gutter(line: &str) -> bool {
+    let rest = line.trim_start_matches(' ');
+    let digits = rest.trim_start_matches(|c: char| c.is_ascii_digit());
+    if digits.len() == rest.len() {
+        return false; // no line number at all
+    }
+    digits.trim_start_matches(' ').starts_with('|')
 }
 
 fn join_continuations<'a>(
