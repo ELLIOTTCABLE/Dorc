@@ -233,9 +233,8 @@ fn verdict_body_flags_a_terminal_pipeline() {
 
 #[test]
 fn the_frame_split_is_a_policy_the_density_dial_moves() {
-    // `289:rul-lint-render-split-is-policy`. The default surface must be EXACTLY what the old
-    // `provenance.is_some()` accident produced — a framed block for the diag-backed findings and a
-    // compact line for the inventory — while `--terse`/`--verbose` move it deliberately.
+    // `289:rul-lint-render-split-is-policy`: the default must reproduce the old
+    // `provenance.is_some()` accident byte-for-byte, while the dial moves it deliberately.
     let report = run_native(
         &[file("book.sh", EVAL_BOOK)],
         Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),

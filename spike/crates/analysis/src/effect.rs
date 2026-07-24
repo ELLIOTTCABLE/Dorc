@@ -1822,14 +1822,9 @@ command__predict() {
 
     #[test]
     fn the_merge_mint_pairs_with_the_top_cause_mint_in_release_builds() {
-        // `289:rul-mint-hardening-package` item 3. `mint_top_causes` carries a `debug_assert` that
-        // every Opaque-bearing node got a cause; `mint_merge_narrative` mirrors its key and order by
-        // CONSTRUCTION only, and carried no check at all. A `debug_assert` also vanishes under
-        // `--release`, so the pairing is asserted here — a real test runs in every profile.
-        //
-        // Both directions of the pairing: CARDINALITY (one narrative per Opaque-bearing node) and
-        // ORDER (the minted cells are the Opaque-bearing node indices, ascending). Order is
-        // load-bearing because the two mints are consumed positionally downstream.
+        // `289:rul-mint-hardening-package` item 3. `mint_merge_narrative` mirrors `mint_top_causes`
+        // by CONSTRUCTION only, and the sibling's `debug_assert` vanishes under `--release`. Order
+        // is load-bearing here: the two mints are consumed positionally downstream.
         let effects = |opaque: &[bool]| -> Vec<Vec<CommandEffect>> {
             opaque
                 .iter()

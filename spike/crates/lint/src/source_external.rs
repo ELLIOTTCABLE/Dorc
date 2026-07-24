@@ -346,9 +346,8 @@ fn relay_finding(path: String, tool: &'static str, diag: dorc_aid::Diag) -> Find
         code: diag.code.slug().to_owned(),
         message: dorc_aid::diag::render_body(&diag, &Interner::default()),
         remap: RemapFidelity::None,
-        // The typed payload rides along (the prose stays loom-editable, and the tool's own bytes
-        // stay inspectable), but the SOURCE is empty — there is nothing to draw a caret against, so
-        // `frames` refuses to promote it even at `--verbose`.
+        // The typed payload rides along, but the SOURCE is empty — nothing to draw a caret
+        // against, so `frames` refuses to promote this even at `--verbose`.
         provenance: Some(NativeDiag {
             diag,
             source: String::new(),

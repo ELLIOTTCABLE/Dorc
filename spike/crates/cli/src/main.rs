@@ -6410,12 +6410,8 @@ mod tests {
             "site 6's tier-2 static class is NOT overwritten by the runtime echo (static wins)"
         );
 
-        // `289:rul-mint-hardening-package` item 4b, for the ONE class a render consumes today. The
-        // other eight are minted, threaded, and dropped — `emit_why_lens` takes the narrative slice
-        // as `_collapse_narrative` and ignores it by signature, so a missing narrative omits
-        // SILENTLY rather than rendering an `Unexplained`. That gap is the named seam
-        // `289:seam-narrative-render-unconsumed` (the deferred d4 arrangement walker owns it); do
-        // not close it here.
+        // `289:rul-mint-hardening-package` item 4b, for the ONE class a render consumes today; the
+        // other eight are minted and dropped (`289:seam-narrative-render-unconsumed`).
         let rendered = static_decline_notes(&paired, &[], &[]);
         assert_eq!(
             rendered.len(),
@@ -6527,11 +6523,9 @@ mod tests {
 
     #[test]
     fn a_dial_forbidden_wrapped_site_mints_entry_denial_and_a_licensed_one_mints_none() {
-        // `289:rul-mint-hardening-package` item 4a for `EntryDenial` — the one static entry-consent
-        // class with no pin at all. Both directions over the SAME book and oracles, varying only
-        // the admin's dial: `--no-probe-escalation` denies (⇒ narrative), the default vouched dial
-        // over a `safe-across`-marked verdict body consents (⇒ none). Anti-masking: the narrative
-        // is read out of the real analysis, never handed in.
+        // `289:rul-mint-hardening-package` item 4a for `EntryDenial`, the one static entry-consent
+        // class with no pin at all. Both directions over one world, varying only the admin's dial;
+        // anti-masking, so the narrative is read out of the real analysis, never handed in.
         const SUDO: &str = "# dorc-lang/v0.2\n\
              sudo__predict() {\n\
              while [ \"${1#-}\" != \"$1\" ]; do case \"$1\" in -u) shift 2 ;; *) shift ;; esac; done\n\

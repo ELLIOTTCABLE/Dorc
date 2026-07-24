@@ -756,9 +756,7 @@ fn constructed_scan_negative_control_excludes_aid_diag_arms() {
         !new_basis.contains("DiagCode::ThisVariantDoesNotExistAnywhere("),
         "sanity: a non-emitted variant is absent from the production basis"
     );
-    // The SAME vacuity, one layer out (`289:rider-diag-tidy-scan-set`): `dorc-loom`'s
-    // `canonical_payload` constructs payloads literally as case fixtures, so admitting it to the
-    // production basis would let a fixture stand in for a dead emit.
+    // The SAME vacuity one layer out: `dorc-loom`'s case fixtures would stand in for dead emits.
     let loom_only_marker = "fn canonical_payload(";
     assert!(
         scanned_source().contains(loom_only_marker),

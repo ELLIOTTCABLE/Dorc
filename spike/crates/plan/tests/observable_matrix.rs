@@ -1121,10 +1121,8 @@ fn clean_guard_still_elides_dead_body_heredoc_sibling_stays_unreachable_verbatim
 
 #[test]
 fn render_refusals_mint_paired_narratives_and_a_clean_render_mints_none() {
-    // `289:rul-mint-hardening-package` item 4a for `RenderRefusal`. Refusing a LICENSED elision is
-    // a safety-narrowing, so it mints a decision-inert narrative like every other collapse class —
-    // the mint census caught that it did not. Anti-masking: the narrative is read out of the plan,
-    // never handed in; both directions, so a mint that fires unconditionally fails too.
+    // `289:rul-mint-hardening-package` item 4a for `RenderRefusal` — a refused LICENSE is a
+    // safety-narrowing, and the mint census caught that it narrated nothing. Both directions.
     let refused_src =
         "command -v nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx\npayload\nEOF\n";
     let (plan, ast) = plan_query_and_ast(refused_src, "nginx", 1, &[]);
