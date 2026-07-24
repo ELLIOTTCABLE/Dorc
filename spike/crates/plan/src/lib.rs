@@ -20,6 +20,38 @@
 //!
 //! Determinism (`inv-determinism`): a pure function of its inputs; the host
 //! verdict is injected (the real host / `hostsim` is a later seam).
+//!
+//! # The vouch demand, pinned (`297` phase-zero item 4)
+//!
+//! `core::claim` proves no laundering path exists between tiers. What only THIS crate can pin
+//! is that its mints still *ask* for the tier: the regression that algebra cannot see is a
+//! signature quietly weakening to take a bare [`VerdictVouch`], or an `Option` that a `None`
+//! caller can satisfy where a vouch was meant. Naming the whole type pins it, with no values to
+//! construct:
+//!
+//! ```
+//! use dorc_core::claim::ByVouch;
+//! use dorc_plan::{PhasedVerdict, Probe, ReplaceLicense, VerdictVouch};
+//!
+//! let _pinned: fn(
+//!     &dorc_analysis::effect::SkipClass,
+//!     dorc_core::Grade,
+//!     PhasedVerdict<Probe>,
+//!     dorc_analysis::lattice::May<dorc_analysis::lattice::Powerset<dorc_core::Channel>>,
+//!     dorc_core::Predicted<dorc_core::Rc>,
+//!     Option<ByVouch<VerdictVouch>>,
+//! ) -> Option<ReplaceLicense> = ReplaceLicense::prove_replaceable::<Probe>;
+//! ```
+//!
+//! The aggregate paths (member-loop, inline-call) carry the same demand through a private,
+//! non-empty, identity-matched proof. Its unconstructibility from outside is the property; the
+//! failure it guards is narrow but real — a future builder exposing the proof or its mint "just
+//! for a test", which would let a caller assemble an aggregate erasure without one reached vouch
+//! per erased establish.
+//!
+//! ```compile_fail
+//! let _ = dorc_plan::AllEstablishesVouched::mint(&[], &dorc_plan::Vouches::default());
+//! ```
 
 #![forbid(unsafe_code)]
 // Seeded round-19 code predates the take-3 lint gate; this crate-root expect

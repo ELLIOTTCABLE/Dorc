@@ -53,6 +53,62 @@
 //!   guards but not elisions) is an ADD of a [`Rung`] variant, never a re-signing of the mints
 //!   (which carry the rung, never match on it).
 //!
+//! # The properties, pinned (`297` phase-zero item 4)
+//!
+//! The four mechanisms above are stated as "no such `fn` is written" — a claim about ABSENCE,
+//! which ordinary tests cannot express and a well-meaning `From` impl silently repeals. The
+//! doctests below pin them. `erase_mutation` mirrors the real mutation-erasure mint signature in
+//! `plan` (a [`ByVouch`] taken by value); a doctest cannot reach that private mint, so it stands
+//! in — and the property under test is this module's algebra, which is where a laundering path
+//! would have to be added. The positive case compiles with the SAME imports and helpers as the
+//! negative ones, so a `compile_fail` passing for a trivial reason (typo, bad import) would show
+//! up here first.
+//!
+//! ```
+//! use dorc_core::claim::{ByObservation, ByVouch, Claim, Rung};
+//! fn erase_mutation(_: ByVouch<&'static str>) {}
+//! fn reproduce_read(_: ByObservation<u8>) {}
+//!
+//! erase_mutation(Claim::vouched("systemctl.oracle.sh:12", Rung::Both));
+//! reproduce_read(Claim::observed(0u8));
+//! ```
+//!
+//! TC-tier-2, observation half: a measurement is not an authored acceptance. This is the exact
+//! shape of the HEAD vouchless elide (a by-observation claim consumed as a mutation-skip
+//! license).
+//!
+//! ```compile_fail
+//! use dorc_core::claim::{ByVouch, Claim};
+//! fn erase_mutation(_: ByVouch<&'static str>) {}
+//! erase_mutation(Claim::observed("systemctl.oracle.sh:12"));
+//! ```
+//!
+//! TC-tier-2, silence half: "silence licenses nothing" as a type error.
+//!
+//! ```compile_fail
+//! use dorc_core::claim::{ByVouch, Claim};
+//! fn erase_mutation(_: ByVouch<&'static str>) {}
+//! erase_mutation(Claim::silent("systemctl.oracle.sh:12"));
+//! ```
+//!
+//! TC-tier-1: demotion has no inverse. This is the one that repeals quietly — it starts
+//! compiling the day someone adds `From<ByObservation<P>> for ByVouch<P>` to unstick a build.
+//!
+//! ```compile_fail
+//! use dorc_core::claim::{ByObservation, ByVouch, Claim};
+//! let measured: ByObservation<u8> = Claim::observed(0u8);
+//! let _upgraded: ByVouch<u8> = measured.into();
+//! ```
+//!
+//! TC-tier-3: no fact-plane exit from a vouch. [`Claim::observation`] is the sanctioned exit and
+//! exists only on [`ObservationTier`].
+//!
+//! ```compile_fail
+//! use dorc_core::claim::{ByVouch, Claim, Rung};
+//! let vouched: ByVouch<&'static str> = Claim::vouched("systemctl.oracle.sh:12", Rung::Both);
+//! let _fact = vouched.observation();
+//! ```
+//!
 //! # Honest bound (rul24-overtype addendum — the uncheckable half rides here, verbatim intent)
 //!
 //! Types protect the PLUMBING (no claim is ever consumed above its authority); they do NOT and
