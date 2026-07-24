@@ -28,12 +28,13 @@ own output inverts that, and the attempt spent budget on a model unsuited to the
 Scoped to the security lane and its builders. Deliberately recorded only in quarantine, so
 that no out-quarantine conductor reads it as license covering their own work.
 
-Phase state at `ai/main`@`fbbf88f1`, verified in-tree rather than from the handoffs:
+Phase state at `ai/main`@`fbbf88f1`, verified in-tree rather than from the handoffs. One row has
+moved since: phase one landed on `ai/r29-drep-repair`, awaiting the fold.
 
 | phase | state | evidence |
 |---|---|---|
 | 0 - seam map and freeze | partial | map and packets exist; the phase-zero item-4 compile-fail set was never built (see `fnd-compile-fail-set-collapses`) |
-| 1 - owned report channel | landed AS DISABLE | no probe constructs a report pathname; pinned by `emitting_auto_cell_never_constructs_a_report_path`. The owned channel itself was never built - repair specified at section 4 |
+| 1 - owned report channel | landed, complete | the drain runs on a per-attempt `mkdir -m 700` scratch directory rooted at a controller literal; create-failure empties the guard and the lane degrades to `/dev/null`; cleanup is per-file `rm -f` plus an empty-only `rmdir`. Pinned by `emitting_auto_cell_owns_every_path_it_writes` (built per the section-4 spec, each of its properties proven falsifiable) |
 | 2 - every establish vouched | landed, complete | private non-empty `AllEstablishesVouched{head,tail}`; ordered site/fact identity, cardinality, duplicate rejection; distinct `ReadSubstitutionProof`; per-establish `EstablishVouchReceipt` loci |
 | 3 - bounded attributed ingress | landed | all seven `HostEvidenceLimits` bounds; byte-first `take(limit+1)`; closed `Admission`/`AdmissionRefusal`; refusal precedes plan, artifact, and whylog; independent inner whylog budget; controller-minted `Framing` |
 | 4 - sink encoding and artifacts | not begun | `sanitize_report_raw` in `cli/main.rs` is still the only sanitizer |
@@ -89,6 +90,22 @@ lane's runtime drain was built and working, which phase one made false:
 `spike/CLAUDE.md`'s build-status block, and `AID-NEEDS.md`'s `aid-refusal-breadcrumbs`
 and `aid-authored-decline-classes` rows. `spike/docs/reference/oracle-contract.md` 6a
 was already correct and served as the model. Discharged in this pass.
+
+`fnd-gate-two-refuses-the-drained-render` - `e2e/scan_redirects.awk` (gate-2, the pre-exec
+redirection sandbox) refuses any redirect whose target word contains `$`, and it runs on BOTH
+rendered artifacts before the exec gates. The drained probe carries three such lines: the
+scaffold's `: >"$DREP_V1"` and `<"$DREP_V1"`, and - independently of anything the engine emits -
+the ORACLE's own authored `>>"${DREP_V1:-/dev/null}"`, which is the contract's fixed spelling.
+So the refusal predates this repair and is not caused by it: any e2e case shipping an
+emitting verdict body in a RESOLVABLE probe would have hard-failed gate-2 before the disable
+too, which is presumably why no such case was ever authored. The consequence is that the
+tier-3 lane has no behavioural e2e coverage and cannot get any until gate-2 learns to accept
+the engine-supplied sink value. That is a harness change - out of `29B`'s scope, and it needs
+care, because the scanner's conservatism is itself a safety property. Verified by hand on WSL2
+Linux instead (section 4b), which is evidence, not a gate. Whoever opens the harness next
+should treat "allow exactly `"$DREP_V1"`, `"${DREP_V1:-/dev/null}"`, and `"$_dsc"`-rooted
+targets" as the shape to consider - the same closed allowlist the unit pin uses - never a
+blanket relaxation of the dynamic-target rule.
 
 `fnd-attribution-scope-carried-not-consumed` - `WidthOneAttemptScope` is minted, attached
 to admitted evidence via `ScopedHostEvidence`, and then never checked against anything;
@@ -168,10 +185,19 @@ becomes availability only, which is why the spike may keep a deterministic token
 stay stable) and a real transport can mint an unpredictable one purely for
 DoS-resistance.
 
-`~SUSPECT` and load-bearing: this rests on recalled POSIX text for `mkdir` failing
-`EEXIST` on a symlink rather than following it. It is the idiom every hand-rolled secure
-temporary directory uses, `mktemp -d` included, but it must be proven by fixture on each
-target family before anything ships. That test heads the matrix in 4g.
+`+SURE` as of the `29B` build (was `~SUSPECT`, and load-bearing): `mkdir -m 700` refuses
+rather than follows, verified by fixture on Linux 6.18 (WSL2 Ubuntu, ext4-backed `/tmp`)
+across five pre-positioned legs — regular file, directory, symlink to a real file, dangling
+symlink, FIFO. All five returned rc 1; a canary file the symlink pointed at was byte-intact
+after every leg, and the symlink was still a symlink. The nothing-there leg created. `-m 700`
+was separately confirmed to apply at creation under `umask 000` (mode read back `700`), so no
+group- or other-readable window exists. The behavioural legs were run against the ENGINE'S
+OWN rendered probe, not a hand-written approximation: happy path drained its report record and
+left no residue; the pre-positioned-symlink path still emitted its effect record, emitted no
+report record, and touched neither the victim nor the symlink. Not encoded as a permanent test
+(it tests the OS, and is flaky across the platforms this repo builds on) — per `29B` section 5.
+Still unverified on non-Linux target families; msys cannot host the check (it copies rather
+than links).
 
 ### 4c - `rul-report-file-per-invocation`
 
@@ -304,11 +330,15 @@ this kind of repair expensive all turn out to be cheap here:
 - **A session prologue has a natural slot.** `ProbePlan::render_sh` already opens with
   `render::probe::header()` + `records::header_line(...)`; the one-time `mkdir -m 700` and
   its degradation branch go there, and the cleanup at the sentinel. No new architecture.
-- **Golden churn is TWO cases.** The draining scaffold is emitted only for an
-  `emits_report` check, so every other probe stays byte-identical (the original landing
-  held that property deliberately, and `empty-world-byte-identical` still pins it). Only
-  `e2e/cases/decline27-tier3-dynamic` and `e2e/cases/report27-decline-static-classed`
-  reference the sink at all.
+- **Golden churn is ZERO cases** (measured at the build, correcting an estimate of two).
+  The draining scaffold is emitted only for an `emits_report` check, so every other probe
+  stays byte-identical (`empty-world-byte-identical`). The two cases that reference the sink -
+  `e2e/cases/decline27-tier3-dynamic` and `e2e/cases/report27-decline-static-classed` - both
+  render `sites=0`: their site is an unresolvable DECLINE, so no check ships and no scaffold
+  is emitted. 97/97 passed with an empty `git status`; no bless was needed or run.
+  Consequence, and the real gap: **no e2e case exercises a drained probe at all**, so
+  section 5's "the happy path is covered behaviorally for free" does not hold. See
+  `fnd-gate-two-refuses-the-drained-render` below for why one cannot simply be added.
 - **The entered-context cell is ALREADY carved in code.** `cli/main.rs` records that
   entry-composition is out of the tier-3 drain's scope, so `emits_report` is ignored on
   the entry path. The human's ruling that the entry machinery owns the in-context lane
@@ -434,8 +464,10 @@ Branch disposition, decided by `git cherry` against `ai/main` rather than by mer
 
 Ordered by leverage, not urgency.
 
-1. The report-lane repair, section 4. Specified, unstarted, and now dependent on
-   entry-machinery work for its context cells.
+1. Behavioural coverage for the report lane. The repair itself LANDED (`29B`, branch
+   `ai/r29-drep-repair`); what remains is `fnd-gate-two-refuses-the-drained-render` - the e2e
+   harness cannot run a drained probe, so the lane's only executable evidence is a hand-run
+   fixture. The context cells still depend on entry-machinery work.
 2. Phase four - sink encoding and sensitivity separation, plus whylog filesystem
    hardening. The report repair's encoder is a subset.
 3. Phase five - fixture/production identity split (including

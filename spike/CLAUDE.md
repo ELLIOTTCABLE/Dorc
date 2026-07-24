@@ -180,8 +180,12 @@ prompt you write:
   (supply an inert sink; keep the static tiers) and never retries by name or removes
   an unowned object; the degradation is decision-inert evidence, and a
   degraded/failed lane never fails a plan or an apply. Host environment values never
-  site controller resources — roots are controller-supplied
-  literals. This is a strictly narrower rule than the no-mutation contract: it binds
+  site controller resources — roots are controller-supplied literals
+  (**rul-scratch-root-never-read-from-host**: no `TMPDIR`, `HOME`, or `XDG_*`
+  expansion ever sites engine scratch; a host-chosen parent voids the exclusive create
+  that the whole lane rests on, so host-configurability here is forbidden rather than
+  unimplemented — an admin override, if one is ever wanted, is a controller-side value).
+  This is a strictly narrower rule than the no-mutation contract: it binds
   ENGINE-generated constructs (`rul-probe-mutation-ownership-split`'s owned tier):
   the create/truncate/unlink belongs to the scaffolding, not to any author, so a
   read-only intent does not exempt it.
@@ -655,14 +659,16 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   pending typed ack); unknown verb/class degrades to a generic note, never an error.
   Static-first: per-arm inventory always; per-site class when argv threads; the
   runtime emission is the only-opportunity fallback, deduped (site, arm, class).
-  ⚠ RUNTIME CAPTURE IS CURRENTLY DISABLED: the emitted probe supplies no sink, so the
-  idiom's `:-/dev/null` default takes over and runtime-only classes are not observed.
-  The static tiers (per-arm inventory, per-site classing) are unaffected, and the
-  ingestion side is built and idle. This is a deliberate hold, not an unbuilt feature —
-  the previous mechanism gave the probe lane a write primitive over an unowned host
-  pathname, which `rul-probe-writes-only-what-it-owns` forbids. The replacement is
-  specified and unstarted; the authored idiom does not change when it lands, because
-  the sink VALUE is engine-supplied. Do not restore a pathname-based capture protocol.
+  Runtime capture is LIVE, on a channel the controller exclusively owns: an artifact with any
+  emitting check opens ONE per-attempt scratch directory with `mkdir -m 700` (rooted at a
+  controller literal — never a host environment expansion), binds `DREP_V1` to a per-site file
+  inside it, drains that file into `report` records, and unlinks per-file before an empty-only
+  `rmdir`. A failed create EMPTIES the guard variable and the lane degrades to `/dev/null`,
+  never retrying, never removing what is already there, and never failing a plan or an apply.
+  The static tiers (per-arm inventory, per-site classing) are unaffected either way, and the
+  authored idiom never changes because the sink VALUE is engine-supplied. Never restore a
+  pathname-based capture protocol: the probe may not create, truncate, read, or unlink a host
+  pathname it merely named (`rul-probe-writes-only-what-it-owns`).
   Classes route AID only — the rc-partition stays a flat sink; the license plane
   never reads a class. Silent declines stay legal; classing is enhancement.
   Noise-tolerant (`27W:rul-report-noise-tolerant`): ingestion never silently drops
@@ -720,8 +726,9 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   ONE catalog (const-table + three-state prose + defining-cases 17/52 with the
   shrink-only ratchet + the promote fixpoint tool) · the sealed evidence plane
   minted at every collapse class · the whylog durable + `dorc why --last`
-  replay · the `27W` report lane's static tiers + ingestion (the runtime drain built
-  then DISABLED — see decline-class-emission above) ·
+  replay · the `27W` report lane's static tiers + ingestion + the runtime drain, the
+  last re-landed on an exclusively-created scratch directory (decline-class-emission
+  above; no e2e case renders a drained probe yet) ·
   minting-line/file:line attribution end-to-end · the arrangement walker + THE
   FLAGSHIP GREEN (the naked-trust chain, live and replayed) · lint absorbed
   (one severity vocabulary; `dorc_oracle::validate` book-free;

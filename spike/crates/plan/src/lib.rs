@@ -1639,7 +1639,12 @@ pub struct ProbePredict {
     /// composition). `fact` carries the composed [`Context`], so the record re-keys the context-
     /// qualified verdict exactly. `None` ⇒ the ordinary (ambient) shape.
     pub entry: Option<EntryComposed>,
-    /// Static report classification; runtime capture awaits an inherited owned channel.
+    /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
+    /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
+    /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
+    /// [`ProbePlan::render_sh`] ships the DRAIN scaffold: the check runs with `DREP_V1` bound inside
+    /// a scratch directory Dorc exclusively created, its emissions re-framed as `report site=<key> …`
+    /// records. `false` ⇒ the ordinary scaffold, byte-identical (`empty-world-byte-identical`).
     pub emits_report: bool,
 }
 
@@ -1796,6 +1801,10 @@ impl ProbePlan {
         // by the round-trip driver AFTER every record lane (`records::sentinel_line`).
         out.push_str(&records::header_line(framing, self.checks.len()));
         let nonce = &framing.nonce;
+        let drains = self.checks.iter().any(|c| c.emits_report);
+        if drains {
+            out.push_str(&render::probe::report_scratch_prologue(nonce));
+        }
         // R3 (23D §1 — the check IS the oracle): emit each provider's stripped
         // `<provider>__predict` funcdef, then invoke it per SITE with the site's full argv +
         // the self-report wrapper. The funcdef is deduped per funcname but RE-EMITTED
@@ -1863,12 +1872,24 @@ impl ProbePlan {
                 }
                 render::probe::invocation(&fn_name, &check.argv, interner)
             };
-            out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
+            // `27W` §3 C4: an emission-bearing auto-cell body drains; every other stays byte-identical.
+            if check.emits_report {
+                out.push_str(&render::probe::record_scaffold_draining(
+                    &invocation,
+                    &key,
+                    nonce,
+                ));
+            } else {
+                out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
+            }
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
         for site in &self.unresolvable {
             out.push_str(&render::probe::unresolvable_comment(*site));
+        }
+        if drains {
+            out.push_str(render::probe::report_scratch_epilogue());
         }
         out
     }
@@ -7203,50 +7224,126 @@ apt_get__is_converged() { return 0; }
         }
     }
 
+    /// Every redirect target in `rendered`, quote-tracked, comment lines skipped. A SCAN, not a
+    /// search for known-bad strings: a denylist forbids only the shapes someone already thought
+    /// of, and this pin has to survive future additions to the lane.
+    fn redirect_targets(rendered: &str) -> Vec<String> {
+        let mut targets = Vec::new();
+        for line in rendered.lines() {
+            if line.trim_start().starts_with('#') {
+                continue;
+            }
+            let chars: Vec<char> = line.chars().collect();
+            let (mut in_s, mut in_d) = (false, false);
+            let mut i = 0;
+            while i < chars.len() {
+                let c = chars[i];
+                if c == '\'' && !in_d {
+                    in_s = !in_s;
+                } else if c == '"' && !in_s {
+                    in_d = !in_d;
+                } else if (c == '>' || c == '<') && !in_s && !in_d {
+                    let mut j = i + 1;
+                    if chars.get(j) == Some(&c) {
+                        j += 1;
+                    }
+                    while matches!(chars.get(j), Some(' ' | '\t')) {
+                        j += 1;
+                    }
+                    let mut word = String::new();
+                    while let Some(&cc) = chars.get(j) {
+                        if matches!(cc, ' ' | '\t' | ';' | '|' | '(' | ')' | '>' | '<')
+                            || (cc == '&' && !word.is_empty())
+                        {
+                            break;
+                        }
+                        word.push(cc);
+                        j += 1;
+                    }
+                    if !word.is_empty() {
+                        targets.push(word);
+                    }
+                    i = j;
+                    continue;
+                }
+                i += 1;
+            }
+        }
+        targets
+    }
+
+    /// `rul-probe-writes-only-what-it-owns` — the structural net over the tier-3 report lane. The
+    /// probe's pathname operations (create, truncate, read back, unlink, remove) are legitimate
+    /// ONLY inside a container it exclusively created this run, so this asserts the ownership
+    /// SHAPE rather than forbidding the vocabulary: one exclusive create, degrading on failure;
+    /// every sink binding inside that container or `/dev/null`; the non-cascading cleanup pair; no
+    /// host environment siting the scratch; and no scanned redirect escaping the owned set.
     #[test]
-    fn emitting_auto_cell_never_constructs_a_report_path() {
+    fn emitting_auto_cell_owns_every_path_it_writes() {
         let mut i = Interner::default();
         let plan = ProbePlan {
             checks: vec![auto_cell_check(&mut i, true)],
             unresolvable: Vec::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
-        for forbidden in [
-            "TMPDIR",
-            "dorc-drep",
-            "DREP_V1=",
-            "$_drep",
-            ": >",
-            "while IFS= read",
-            "report site=",
-        ] {
-            assert!(
-                !rendered.contains(forbidden),
-                "runtime capture must not create, reopen, drain, or clean a report path ({forbidden}): {rendered}"
-            );
-        }
-        assert!(
-            rendered.contains("printf 'dorc site 0 effect=%s rc=%s @@dorc@@\\n' \"$_e\" \"$_rc\""),
-            "the effect record still ships: {rendered}"
-        );
-    }
-
-    #[test]
-    fn report_classification_does_not_change_probe_bytes() {
-        let mut i = Interner::default();
-        let with_report = ProbePlan {
-            checks: vec![auto_cell_check(&mut i, true)],
-            unresolvable: Vec::new(),
-        };
-        let without_report = ProbePlan {
-            checks: vec![auto_cell_check(&mut i, false)],
-            unresolvable: Vec::new(),
-        };
 
         assert_eq!(
-            with_report.render_sh(&records::Framing::spike(String::new()), &i),
-            without_report.render_sh(&records::Framing::spike(String::new()), &i),
-            "static report classification must not select an unsafe runtime channel"
+            rendered.matches("mkdir -m 700 ").count(),
+            1,
+            "the exclusive create happens ONCE per artifact — a per-site mkdir would be creating \
+             inside a parent nobody proved was ours: {rendered}"
+        );
+        assert!(
+            rendered.contains("|| _dsc=\n"),
+            "a failed exclusive create must EMPTY the guard variable (the degradation signal every \
+             later site reads); never retry, never fall back to a second name: {rendered}"
+        );
+
+        let bindings: Vec<&str> = rendered
+            .match_indices("DREP_V1=")
+            .map(|(at, m)| &rendered[at + m.len()..])
+            .collect();
+        assert_eq!(
+            bindings.len(),
+            2,
+            "one drained site binds the sink exactly twice (owned file, degraded /dev/null): {rendered}"
+        );
+        for tail in &bindings {
+            assert!(
+                tail.starts_with("\"$_dsc/") || tail.starts_with("/dev/null"),
+                "a sink binding is rooted in the owned scratch or is the inert sink, nothing else: {rendered}"
+            );
+        }
+
+        assert!(
+            rendered.contains("rmdir ") && rendered.contains("rm -f "),
+            "cleanup is the non-cascading pair (per-file unlink inside the owned dir, then an \
+             empty-only rmdir): {rendered}"
+        );
+
+        for hostile in ["TMPDIR", "HOME", "XDG_", "rm -rf"] {
+            assert!(
+                !rendered.contains(hostile),
+                "the scratch root is a controller literal and cleanup never recurses ({hostile}): {rendered}"
+            );
+        }
+
+        for target in redirect_targets(&rendered) {
+            let owned = target == "/dev/null"
+                || target == "\"$DREP_V1\""
+                || target == "\"${DREP_V1:-/dev/null}\""
+                || target.starts_with("\"$_dsc/")
+                || target.starts_with('&');
+            assert!(
+                owned,
+                "redirect target {target} is outside the owned set (/dev/null, the engine-supplied \
+                 sink value, or the exclusively-created scratch): {rendered}"
+            );
+        }
+
+        assert!(
+            rendered.contains("printf 'dorc site 0 effect=%s rc=%s @@dorc@@\\n' \"$_e\" \"$_rc\""),
+            "the effect record still ships byte-for-byte (the drain is additive): {rendered}"
         );
     }
 
@@ -7258,15 +7355,22 @@ apt_get__is_converged() { return 0; }
             unresolvable: Vec::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
-        assert!(
-            !rendered.contains("DREP_V1="),
-            "no drain binding: {rendered}"
-        );
-        assert!(!rendered.contains("_drep"), "no drain scratch: {rendered}");
-        assert!(
-            !rendered.contains("report site="),
-            "no report record: {rendered}"
-        );
+        for absent in [
+            "_dsc",
+            "mkdir",
+            "rmdir",
+            "rm -f",
+            "DREP_V1=",
+            "while IFS= read",
+            "report site=",
+        ] {
+            assert!(
+                !rendered.contains(absent),
+                "a report-free probe carries no scratch plumbing at all ({absent}) — this is what \
+                 keeps `empty-world-byte-identical` and holds golden churn to the drained cases: \
+                 {rendered}"
+            );
+        }
         assert!(
             rendered.contains("printf 'dorc site 0 effect=%s rc=%s @@dorc@@\\n' \"$_e\" \"$_rc\""),
             "the ordinary effect record ships: {rendered}"
