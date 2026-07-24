@@ -48,10 +48,10 @@ use crate::predict::PredictSet;
 /// `FnRole::mangled_suffix`); the [`suffixes_match_lifted_roles`](tests) test ties the two.
 pub const RESERVED_ROLE_SUFFIXES: &[&str] = &[
     "__predict",
-    "__disturbs",
+    crate::touches::DISTURBS_SUFFIX,
     "__is_converged",
     "__resolve",
-    "__disturbance_reaches_only",
+    crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX,
     "__state_stored_only_in",
 ];
 
