@@ -5,4 +5,5 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar: the SIBLING of cli-strip-nee
 ---
 -- replay --
 $ dorc strip --book=webhost.sh
-error[cli-strip-got-a-flag]: [unwritten: cli-strip-got-a-flag]
+error[cli-strip-got-a-flag]: sm strip needs a file path, got the flag
+   `--book=webhost.sh`

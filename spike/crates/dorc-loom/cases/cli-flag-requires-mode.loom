@@ -5,4 +5,4 @@ why: the flag surface is per-invocation, so accepting it elsewhere would imply a
 ---
 -- replay --
 $ dorc plan --whylog=run.whylog --book=webhost.sh
-error[cli-flag-requires-mode]: [unwritten: cli-flag-requires-mode]
+error[cli-flag-requires-mode]: sm --whylog is only valid with dorc why --last

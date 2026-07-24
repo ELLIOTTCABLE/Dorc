@@ -5,4 +5,5 @@ why: 27R section 8b: the count is a scope assertion, so drift means the glob sil
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[lint-file-count-drift]: [unwritten: lint-file-count-drift]
+error[lint-file-count-drift]: sm --expect-files: expected 12 lintable file(s),
+   saw 9 (scope drift)

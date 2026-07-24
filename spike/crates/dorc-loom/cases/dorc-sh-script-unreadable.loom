@@ -5,4 +5,5 @@ why: dorc-sh is the shebang runner, so an unreadable script is the whole invocat
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[dorc-sh-script-unreadable]: [unwritten: dorc-sh-script-unreadable]
+error[dorc-sh-script-unreadable]: sm cannot read webhost.sh: No such file or
+   directory (os error 2)

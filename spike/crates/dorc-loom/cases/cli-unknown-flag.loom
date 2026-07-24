@@ -5,4 +5,4 @@ why: inv-top-reject in the small: an unmodeled flag is refused loudly rather tha
 ---
 -- replay --
 $ dorc plan --boook=webhost.sh
-error[cli-unknown-flag]: [unwritten: cli-unknown-flag]
+error[cli-unknown-flag]: sm unknown flag `--boook=webhost.sh`

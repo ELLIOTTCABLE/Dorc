@@ -5,4 +5,5 @@ why: 274 section 5: shim materialization is session-establishment I/O the wrappe
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[cli-shim-dir-unwritable]: [unwritten: cli-shim-dir-unwritable]
+error[cli-shim-dir-unwritable]: sm cannot write shim `/run/dorc/shims`:
+   Read-only file system (os error 30)

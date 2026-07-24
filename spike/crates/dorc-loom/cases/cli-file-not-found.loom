@@ -5,4 +5,4 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar: one of THREE sibling codes o
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[cli-file-not-found]: [unwritten: cli-file-not-found]
+error[cli-file-not-found]: sm cannot read book `webhost.sh`: no such file

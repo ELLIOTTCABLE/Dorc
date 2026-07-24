@@ -5,4 +5,5 @@ why: 27R section 4 dir-absent-is-info, inverted by explicit request: absence is 
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[lint-required-tools-missing]: [unwritten: lint-required-tools-missing]
+error[lint-required-tools-missing]: sm --require-tools: required tool(s) missing
+   from PATH: checkbashisms, shellcheck

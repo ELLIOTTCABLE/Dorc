@@ -5,4 +5,4 @@ why: there is nothing to analyze and no safe default: guessing a book would be a
 ---
 -- replay --
 $ dorc plan
-error[cli-no-book-given]: [unwritten: cli-no-book-given]
+error[cli-no-book-given]: sm no book given (a positional path or --book=PATH)

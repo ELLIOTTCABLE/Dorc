@@ -5,4 +5,5 @@ why: 27R section 8b: zero files is OPERATIONAL, never clean - a vacuous pass is 
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[lint-no-lintable-files]: [unwritten: lint-no-lintable-files]
+error[lint-no-lintable-files]: sm no lintable files given (operational, not
+   clean)

@@ -5,4 +5,5 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar: the sibling of cli-unknown-f
 ---
 -- replay --
 $ dorc plan --wat --book=webhost.sh
-error[cli-unknown-flag-did-you-mean]: [unwritten: cli-unknown-flag-did-you-mean]
+error[cli-unknown-flag-did-you-mean]: sm unknown flag `--wat` — did you mean
+   `--last`?

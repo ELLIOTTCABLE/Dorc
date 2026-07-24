@@ -5,4 +5,4 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar: ONE code for the whole famil
 ---
 -- replay --
 $ dorc plan --book
-error[cli-flag-needs-value]: [unwritten: cli-flag-needs-value]
+error[cli-flag-needs-value]: sm --book needs a path
