@@ -153,3 +153,35 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   briefed the executor directly). Standing for the whole arc and any successor: the
   word "evidence" BELONGS to the correctness plane now — never rename toward it, never
   sweep it.
+
+## §2e — Phase-1 EXEC landing + residue rulings (conductor, 2026-07-24)
+
+- LANDED @ `2ac85127` on `ai/r28-unify-p1x` (4 commits: SiteId prelude · doc-link
+  prelude · THE atomic cutover · steering-sync+reslug). Folded @ `35954157`. Builder
+  gates cold-green at parity (1163 unit / 97 e2e; full `cargo clean`); goldens and
+  `.loom` cases byte-identical throughout; ratchet skip-once fired and re-arms;
+  rewrite counts exact-parity with `290` §4a; hostsim/sweep/errorloom took NO aid dep;
+  the r29 evidence fence verified two ways (identifier-allowlist rename; every
+  surviving `*Evidence` identifier untouched). Conductor own-hand cold verification
+  at the fold: full clean + build + clippy + `DRY=1 conduct-bless`.
+- Deviations accepted (all mechanical): crate-root `#![expect]` carries `missing_docs`
+  only (the map's `indexing_slicing` claim was wrong — `string_slice` territory);
+  two build-found sites the map omitted (test-mod `LeafId` re-import; core inline
+  Carrier-test deletion); `[GroupingKey]` doc-link de-linked (type stayed describe-plane).
+- **`289:rider-dead-diagcode-link`** — `aid/src/diag.rs:243`'s `[crate::DiagCode]`
+  (pre-existing dead link, one-word fix) rides the 2–4 lane's first commit.
+- **`289:rider-narrative-prose-sweep`** — doc-comment PROSE in the collapse-mint lane
+  still says "evidence" (~25 cli + a few analysis/plan mentions). Rule: sweep it
+  WHERE IT NAMES THE NARRATIVE PLANE as part of phase 2's hardening work (which
+  touches those same 9 mint sites); judgment-tier, flag ambiguous mentions; never
+  touch license-plane/HostEvidence prose. Motive: post-r29, "evidence" prose over
+  narrative machinery actively misleads (§2d fence).
+
+## §2f — Phases 2–4 lane (one checkpointed lane per the acked lean)
+
+- Shape: map-then-execute. MAP claims `notes/291`; riders attached: the hardening
+  package (`289:rul-mint-hardening-package`, phase-2 seat) · `289:rider-diag-tidy-scan-set`
+  (phase 3) · `289:rider-dead-diagcode-link` · `289:rider-narrative-prose-sweep` ·
+  the `covered()⊆case-owned` drift guard (`28A` §2u) · the `touches`→`disturbs`
+  fixture residue (`28A:finding-touches-rename-half-done`; verify-in-other-cells
+  first, drop if it resists).
