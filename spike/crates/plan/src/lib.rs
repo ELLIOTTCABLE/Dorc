@@ -35,16 +35,16 @@
 use core::marker::PhantomData;
 use std::collections::{BTreeMap, BTreeSet};
 
+use dorc_aid::diag::Diag;
+use dorc_aid::narrative::{AuthoredReason, ChannelCoverage, DemoteTag, MintSpan};
+use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, TrustTier};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
-use dorc_core::diag::Diag;
-use dorc_core::evidence::{AuthoredReason, ChannelCoverage, DemoteTag, MintSpan};
 use dorc_core::{
-    AstId, ByVouch, Carrier, Channel, CollapseEvidence, CollapseKind, Dialect, EntityRef,
-    FactBacking, Grade, Interner, KindId, Observable, OracleFileId, Predicted, Rc, Rung, Symbol,
-    TrustTier, Verdict,
+    AstId, ByVouch, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId, Observable,
+    OracleFileId, Predicted, Rc, Rung, Symbol, Verdict,
 };
 use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -799,7 +799,7 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
 /// back-map is [`Step::ast`]; the id is this leaf's position in source order.
 ///
 /// Defined in `core` (`dec-seam-ownership`, the `dac-B` shared vocabulary) and
-/// re-exported here: the round-22 structured diagnostic ([`dorc_core::diag::SiteId`])
+/// re-exported here: the round-22 structured diagnostic ([`dorc_aid::diag::SiteId`])
 /// keys on it, so the base crate owns it and `plan` shares the one type rather than a
 /// parallel one (`inv-site-keyed-results`).
 pub use dorc_core::LeafId;
@@ -1168,7 +1168,7 @@ pub fn build_vouches(
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
     interner: &mut Interner,
-) -> (Carrier<Vouches>, Vec<CollapseEvidence>) {
+) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
         VerdictResolution, VerdictSet, check_commands, classify_decline, evaluate_verdict,
@@ -1177,7 +1177,7 @@ pub fn build_vouches(
 
     let mut diags = Vec::new();
     // C5 (`27V` Lane A): decision-inert VerdictDecline evidence beside the no-vouch-⇒-run collapse.
-    let mut collapse_evidence: Vec<CollapseEvidence> = Vec::new();
+    let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
     let verdict_sets: Vec<VerdictSet> = oracle_srcs
         .iter()
         .map(|src| {
@@ -1261,10 +1261,10 @@ pub fn build_vouches(
                     arm: MintSpan(emit_span),
                     arm_file,
                 });
-                collapse_evidence.push(CollapseEvidence::new(
+                collapse_narrative.push(CollapseNarrative::new(
                     TrustTier::Vouched,
                     CollapseKind::VerdictDecline {
-                        site: dorc_core::diag::SiteId::leaf(LeafId(
+                        site: dorc_aid::diag::SiteId::leaf(LeafId(
                             u32::try_from(leaf_idx).unwrap_or(u32::MAX),
                         )),
                         arm: MintSpan(info.arm_span.unwrap_or(verdict.name_span)),
@@ -1296,7 +1296,7 @@ pub fn build_vouches(
             .with_defining_span(defining, arm_file);
         vouches.insert(node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
-    (Carrier::new(vouches, diags), collapse_evidence)
+    (Carrier::new(vouches, diags), collapse_narrative)
 }
 
 /// Mint the elide/guard VOUCHES for wrapped-ENTERING BOOK sites (`27C` §3 / lane-integration
@@ -1447,7 +1447,7 @@ pub struct SurvivalReport {
     /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` evidence the
     /// survival walk mints beside its dispositions (`two-plane-aid-law`; steers nothing). Mint-pass
     /// ordered (`inv-determinism`); threaded to the why-lens seam by the cli (d4 renders).
-    collapse_evidence: Vec<CollapseEvidence>,
+    collapse_narrative: Vec<CollapseNarrative>,
 }
 
 impl SurvivalReport {
@@ -1468,8 +1468,8 @@ impl SurvivalReport {
     /// The C5 wall/demotion collapse-evidence (`27V` Lane A): decision-inert records the cli unions
     /// onto the why-lens seam. Read-only display tier (`two-plane-aid-law`).
     #[must_use]
-    pub fn collapse_evidence(&self) -> &[CollapseEvidence] {
-        &self.collapse_evidence
+    pub fn collapse_narrative(&self) -> &[CollapseNarrative] {
+        &self.collapse_narrative
     }
 }
 
@@ -3251,10 +3251,10 @@ fn wall_walk_survival(
                         survival::DemoteReason::Poisoned { .. } => DemoteTag::Poisoned,
                         survival::DemoteReason::MayAlias => DemoteTag::MayAlias,
                     };
-                    report.collapse_evidence.push(CollapseEvidence::new(
+                    report.collapse_narrative.push(CollapseNarrative::new(
                         TrustTier::Derived,
                         CollapseKind::Demotion {
-                            site: dorc_core::diag::SiteId::leaf(step.leaf),
+                            site: dorc_aid::diag::SiteId::leaf(step.leaf),
                             reason: tag,
                         },
                     ));
@@ -3267,7 +3267,7 @@ fn wall_walk_survival(
         // casts no shadow, so it is skipped here.
         if *is_mutator && matches!(step.disposition, Disposition::Run) {
             // C5 aid: a running mutator forms an Effect-channel wall (`rul-only-oracle-bytes-ship`).
-            report.collapse_evidence.push(CollapseEvidence::new(
+            report.collapse_narrative.push(CollapseNarrative::new(
                 TrustTier::Derived,
                 CollapseKind::WallFormation {
                     participant: step.leaf,
@@ -3754,7 +3754,7 @@ impl Plan {
     /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
     #[must_use]
     pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
-        use dorc_core::diag::{DiagCode, RenderHeredocRefused, SiteId};
+        use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
         let mut diags = Vec::new();
@@ -4938,7 +4938,7 @@ apt_get__is_converged() { return 0; }
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let (classes, _why, kills, _kill_coords, _fact_backings, _collapse_evidence) =
+        let (classes, _why, kills, _kill_coords, _fact_backings, _collapse_narrative) =
             dorc_analysis::effect::classify_with_why_diags(
                 &cfg,
                 &value,
@@ -5906,7 +5906,7 @@ apt_get__is_converged() { return 0; }
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (classified, _why, kills_found, _kill_coords, _fact_backings, _collapse_evidence) =
+        let (classified, _why, kills_found, _kill_coords, _fact_backings, _collapse_narrative) =
             dorc_analysis::effect::classify_with_why_diags(
                 &cfg,
                 &value,
@@ -6232,7 +6232,7 @@ apt_get__is_converged() { return 0; }
 
     #[test]
     fn survival_walk_mints_wall_and_demotion_evidence() {
-        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the running curl mutator mints
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the running curl mutator mints
         // a WallFormation and the demoted nginx a Demotion — DERIVED from the collapse, all Derived.
         let plan = survival_plan_empty_footprints(
             "apt-get install -y curl\napt-get install -y nginx\n",
@@ -6244,7 +6244,7 @@ apt_get__is_converged() { return 0; }
                 }
             },
         );
-        let ev = plan.survival_report.collapse_evidence();
+        let ev = plan.survival_report.collapse_narrative();
         assert!(
             ev.iter()
                 .any(|e| matches!(e.kind(), CollapseKind::WallFormation { .. })),

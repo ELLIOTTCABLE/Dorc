@@ -32,7 +32,8 @@
 //! (a `dorc:`-prefixed word inside a lifted body) IS erased below, honoring the contract where the
 //! construct can actually land in a marked oracle.
 
-use dorc_core::{Carrier, Interner, Span};
+use dorc_aid::Carrier;
+use dorc_core::{Interner, Span};
 
 use crate::marker::{MARKER, MARKER_WINDOW, has_marker};
 use crate::predict::{

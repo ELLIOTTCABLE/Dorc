@@ -3,7 +3,7 @@
 //!
 //! * `oracle-validate` — the book-free oracle-side validation (`dorc_oracle::validate`): the
 //!   effect-map lift, per-file check-dialect lift, dual-peel + fold-entry coherence, munge-reservation
-//!   lint, and the marker gate, lowered from structured [`dorc_core::Diag`]s to findings. The SAME
+//!   lint, and the marker gate, lowered from structured [`dorc_aid::Diag`]s to findings. The SAME
 //!   diagnostics the cli routes to stderr, surfaced here for the author's hot loop.
 //! * `oracle-declined-inventory` — the tier-1 authored-decline inventory (`27W` §3
 //!   `rul-static-first-three-tier`; `AID-NEEDS:aid-authored-decline-classes`): each verdict body's
@@ -12,8 +12,8 @@
 //! Advisory-only (`dir-no-license-plane-contact`): neither mints/reads a license; the decline classes
 //! route AID only.
 
+use dorc_aid::narrative::DeclineClass;
 use dorc_core::Interner;
-use dorc_core::evidence::DeclineClass;
 use dorc_oracle::verdict::VerdictSet;
 
 use crate::finding::{Finding, NativeDiag, RemapFidelity, SourceStatus};
@@ -72,13 +72,13 @@ impl LintSource for OracleValidate {
     }
 }
 
-/// Lower one oracle-validation [`dorc_core::Diag`] into a finding (the same bridge shape as
+/// Lower one oracle-validation [`dorc_aid::Diag`] into a finding (the same bridge shape as
 /// `source-analysis-diagnostics`): the span resolves to the source `(line, col)`; a spanless diag
 /// yields a whole-file finding. Native ⇒ always `RemapFidelity::Exact`.
-fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'static str) -> Finding {
+fn diag_to_finding(path: &str, src: &str, diag: &dorc_aid::Diag, source: &'static str) -> Finding {
     let (line, col) = match diag.primary.span() {
         Some(span) => {
-            let (l, c) = dorc_core::diag::line_col(src, span.lo.0 as usize);
+            let (l, c) = dorc_aid::diag::line_col(src, span.lo.0 as usize);
             (
                 Some(u32::try_from(l).unwrap_or(u32::MAX)),
                 Some(u32::try_from(c).unwrap_or(u32::MAX)),
@@ -93,7 +93,7 @@ fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'stat
         severity: diag.severity(),
         source,
         code: diag.code.slug().to_owned(),
-        message: dorc_core::diag::render_body(diag, &Interner::default()),
+        message: dorc_aid::diag::render_body(diag, &Interner::default()),
         remap: RemapFidelity::Exact,
         provenance: Some(NativeDiag {
             diag: diag.clone(),
@@ -129,13 +129,13 @@ impl LintSource for OracleDeclinedInventory {
                     continue;
                 };
                 for arm in dorc_oracle::report::report_inventory(verdict) {
-                    let (line, col) = dorc_core::diag::line_col(&oracle.src, arm.arm.lo.0 as usize);
+                    let (line, col) = dorc_aid::diag::line_col(&oracle.src, arm.arm.lo.0 as usize);
                     out.push(Finding {
                         path: oracle.path.clone(),
                         line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                         col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
                         // Advisory disclosure — an inventory listing, never gates.
-                        severity: dorc_core::Severity::Note,
+                        severity: dorc_aid::Severity::Note,
                         source: self.name(),
                         code: "authored-decline-class".to_owned(),
                         message: decline_message(arm.class),
@@ -217,7 +217,7 @@ sysctl__is_converged() {
         assert_eq!(report.findings.len(), 1, "one classed decline arm");
         let f = &report.findings[0];
         assert_eq!(f.code, "authored-decline-class");
-        assert_eq!(f.severity, dorc_core::Severity::Note, "never gates");
+        assert_eq!(f.severity, dorc_aid::Severity::Note, "never gates");
         assert!(f.message.contains("`unsound`"), "the class: {}", f.message);
         assert_eq!(f.line, Some(5), "the emitting arm is on line 5");
     }

@@ -1,5 +1,5 @@
-//! `core::evidence` — the **aid/explanation evidence plane** (`27V` Lane A;
-//! `AID-NEEDS:law-collapse-mints-evidence`). A [`CollapseEvidence`] is the pure-data record a
+//! `aid::narrative` — the **aid/explanation narrative plane** (`27V` Lane A;
+//! `AID-NEEDS:law-collapse-mints-narrative`). A [`CollapseNarrative`] is the pure-data record a
 //! safety-narrowing collapse mints, carrying the collapse's OPERANDS so the why-lens / report
 //! surfaces can narrate WHY the engine gave up — without ever letting that narration steer a
 //! decision.
@@ -14,42 +14,42 @@
 //! "Lint-clean licenses nothing" (`AID-NEEDS:law-two-planes-opposite-fail`) runs in this
 //! direction: nothing here can license.
 //!
-//! The seal is the [`core::room`](crate::room) pattern (`27L`): the structural half is that no
-//! license-consuming signature accepts a [`CollapseEvidence`]. The module-level `compile_fail`
-//! doctest below pins it against a REAL license consumer ([`crate::room::mint_from_room`]); the
+//! The seal is the [`core::room`](dorc_core::room) pattern (`27L`): the structural half is that no
+//! license-consuming signature accepts a [`CollapseNarrative`]. The module-level `compile_fail`
+//! doctest below pins it against a REAL license consumer ([`dorc_core::room::mint_from_room`]); the
 //! positive doctest shows a vouch INFORMING a tier (license flowing in) while never being
 //! retained as a license (it is consumed by-reference, only its existence read).
 //!
 //! ```compile_fail
-//! use dorc_core::evidence::{CollapseEvidence, CollapseKind, TrustTier};
+//! use dorc_aid::narrative::{CollapseKind, CollapseNarrative, TrustTier};
 //! use dorc_core::room::mint_from_room;
 //!
-//! let ev = CollapseEvidence::new(TrustTier::Derived, CollapseKind::render_refusal_heredoc(dummy()));
-//! // A license mint demands a `RoomFact<Invited, _>`. Evidence is decision-inert: it can NEVER
-//! // be surrendered to a license input — "collapse-mints-evidence" is a one-way street, a compile
+//! let ev = CollapseNarrative::new(TrustTier::Derived, CollapseKind::render_refusal_heredoc(dummy()));
+//! // A license mint demands a `RoomFact<Invited, _>`. A narrative is decision-inert: it can NEVER
+//! // be surrendered to a license input — "collapse-mints-narrative" is a one-way street, a compile
 //! // fact, not a discipline (`two-plane-aid-law`).
 //! let _ = mint_from_room(ev);
-//! # fn dummy() -> dorc_core::diag::SiteId { unimplemented!() }
+//! # fn dummy() -> dorc_core::SiteId { unimplemented!() }
 //! ```
 //!
 //! # Kernels stay pure (`27V:rul-collapse-mints-evidence`, `22D` stage-1)
 //!
 //! Every operand is a `Copy` scalar ([`Span`], [`LeafId`], [`Channel`], …) or an interned handle
-//! ([`OutBytes`]) — NO [`ProvId`](crate::ProvId), NO `&mut ProvArena`, NO arena registration
-//! inside a [`CollapseEvidence`]. A collapse CONSTRUCTOR demands this pure payload at the VALUE
+//! ([`OutBytes`]) — NO [`ProvId`](dorc_core::ProvId), NO `&mut ProvArena`, NO arena registration
+//! inside a [`CollapseNarrative`]. A collapse CONSTRUCTOR demands this pure payload at the VALUE
 //! level; assigning it an arena receipt (for the why-lens) is a SEPARATE post-pass, exactly as
 //! `analysis::effect::mint_top_causes` mints causes apart from the pure transfer.
 //!
 //! # Eq is at the carrier, not here (`Reach::Top` precedent, fixpoint termination)
 //!
-//! [`CollapseEvidence`] derives `Eq` (unit tests compare it). Where evidence rides a
+//! [`CollapseNarrative`] derives `Eq` (unit tests compare it). Where evidence rides a
 //! fixpoint-iterated lattice value, that CARRIER hand-writes `PartialEq` to EXCLUDE the evidence
 //! — the `analysis::effect::Reach` precedent: `solve`'s convergence test is `joined != state[w]`,
 //! so an evidence-sensitive lattice `Eq` would re-derive-as-changed forever and never terminate.
 //! Nothing in THIS module iterates a fixpoint, so its own `Eq` is free.
 
-use crate::diag::SiteId;
-use crate::{Channel, JOIN_PARENT_CAP, LeafId, OracleFileId, OutBytes, Span};
+use dorc_core::SiteId;
+use dorc_core::{Channel, JOIN_PARENT_CAP, LeafId, OracleFileId, OutBytes, Span};
 
 /// The typed epistemic tier of a rendered link (`27V:mech-trust-tier-typed`;
 /// `AID-NEEDS:law-trust-tier-is-syntax`). Rendered UNIFORMLY by arrangement code (d4) — prose
@@ -79,18 +79,18 @@ impl TrustTier {
     /// aid plane, informing the tier, and is never retained as a license). Consumes the vouch by
     /// reference and reads nothing but that it is present — the one-way flow made a signature.
     #[must_use]
-    pub fn from_vouch<P>(_vouch: &crate::ByVouch<P>) -> Self {
+    pub fn from_vouch<P>(_vouch: &dorc_core::ByVouch<P>) -> Self {
         TrustTier::Vouched
     }
 }
 
-/// The k-cap on a [`CollapseEvidence`] operand list through DEEP merges (the [`JOIN_PARENT_CAP`]
+/// The k-cap on a [`CollapseNarrative`] operand list through DEEP merges (the [`JOIN_PARENT_CAP`]
 /// precedent — `notes/220` §6 / `vp-6`: values are many and capped). Operands past the cap are
 /// dropped with a truncation count rendered "…and N more"; a collapse's own operands are few, but
 /// nested collapses merging their evidence must stay bounded.
-pub const EVIDENCE_OPERAND_CAP: usize = JOIN_PARENT_CAP;
+pub const NARRATIVE_OPERAND_CAP: usize = JOIN_PARENT_CAP;
 
-/// A bounded operand list (the [`crate::Parents`]-shaped value tier): the retained operands plus a
+/// A bounded operand list (the [`dorc_core::Parents`]-shaped value tier): the retained operands plus a
 /// count of those the cap dropped. An explicit struct, never a bare `Vec`, so truncation is part
 /// of the type and never a silently-lossy `Vec::truncate`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -111,15 +111,15 @@ impl<T> Default for Operands<T> {
 }
 
 impl<T: Clone> Operands<T> {
-    /// Cap a list of operands at [`EVIDENCE_OPERAND_CAP`], recording the overflow as the
+    /// Cap a list of operands at [`NARRATIVE_OPERAND_CAP`], recording the overflow as the
     /// truncation count. The caller offers operands in a stable, site-derived order (never visit
     /// order), so which survive is a deterministic function of the program (`vp-9`).
     #[must_use]
     pub fn capped(operands: Vec<T>) -> Self {
         let total = operands.len();
-        let kept: Vec<T> = operands.into_iter().take(EVIDENCE_OPERAND_CAP).collect();
+        let kept: Vec<T> = operands.into_iter().take(NARRATIVE_OPERAND_CAP).collect();
         Self {
-            truncated: u32::try_from(total.saturating_sub(EVIDENCE_OPERAND_CAP))
+            truncated: u32::try_from(total.saturating_sub(NARRATIVE_OPERAND_CAP))
                 .unwrap_or(u32::MAX),
             kept,
         }
@@ -311,7 +311,7 @@ pub enum RenderRefusalTag {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reserved {}
 
-/// The collapse CLASS and its operands (`AID-NEEDS:law-collapse-mints-evidence`: every
+/// The collapse CLASS and its operands (`AID-NEEDS:law-collapse-mints-narrative`: every
 /// safety-narrowing mints evidence carrying its OPERANDS). Deliberately NOT `#[non_exhaustive]`
 /// (the `DiagCode` posture — every consumer is an internal workspace crate, so adding the r26
 /// feeder variants breaks every match as a compiler checklist, never silently defaults).
@@ -379,12 +379,12 @@ impl CollapseKind {
 /// operands. SEALED decision-inert — no method yields a license-plane input (the `compile_fail`
 /// doctest is the structural pin; this is the load-bearing law of the whole dispatch).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CollapseEvidence {
+pub struct CollapseNarrative {
     tier: TrustTier,
     kind: CollapseKind,
 }
 
-impl CollapseEvidence {
+impl CollapseNarrative {
     /// Mint evidence at a collapse. The collapse CONSTRUCTOR demands this at the value level
     /// (`27V:rul-collapse-mints-evidence`); the caller supplies the tier from what the site knows
     /// (a probe merge → [`TrustTier::Measured`], a vouch decline → [`TrustTier::Vouched`], …).
@@ -439,7 +439,7 @@ impl CollapseEvidence {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ByVouch, BytePos, LeafId, Rung};
+    use dorc_core::{ByVouch, BytePos, LeafId, Rung};
 
     /// A fixed non-zero oracle-file id for the tests (the id disambiguates >1 loaded oracle; a
     /// single-file test just needs a stable value).
@@ -464,7 +464,7 @@ mod tests {
         let vouch = ByVouch::vouched(7u32, Rung::Both);
         let tier = TrustTier::from_vouch(&vouch);
         assert_eq!(tier, TrustTier::Vouched);
-        let ev = CollapseEvidence::new(
+        let ev = CollapseNarrative::new(
             tier,
             CollapseKind::VerdictDecline {
                 site: site(1),
@@ -481,7 +481,7 @@ mod tests {
     fn operands_cap_with_a_truncation_marker() {
         // The JOIN_PARENT_CAP precedent: operands past the cap are dropped with an "…and N more"
         // count, never a silently-lossy truncate.
-        let ops: Vec<ValueOperand> = (0..u32::try_from(EVIDENCE_OPERAND_CAP + 3).unwrap())
+        let ops: Vec<ValueOperand> = (0..u32::try_from(NARRATIVE_OPERAND_CAP + 3).unwrap())
             .map(|i| ValueOperand {
                 site: site(i),
                 minting_line: Some(span(i, i + 1)),
@@ -491,7 +491,7 @@ mod tests {
         let capped = Operands::capped(ops);
         assert_eq!(
             capped.kept().len(),
-            EVIDENCE_OPERAND_CAP,
+            NARRATIVE_OPERAND_CAP,
             "retained ops are capped"
         );
         assert_eq!(capped.truncated(), 3, "the remainder is '…and 3 more'");
@@ -512,12 +512,12 @@ mod tests {
                     .collect(),
             )
         };
-        let a = mk(0, u32::try_from(EVIDENCE_OPERAND_CAP + 2).unwrap()); // truncated 2
-        let b = mk(100, u32::try_from(EVIDENCE_OPERAND_CAP + 1).unwrap()); // truncated 1
+        let a = mk(0, u32::try_from(NARRATIVE_OPERAND_CAP + 2).unwrap()); // truncated 2
+        let b = mk(100, u32::try_from(NARRATIVE_OPERAND_CAP + 1).unwrap()); // truncated 1
         let merged = a.merge(b);
         assert_eq!(
             merged.kept().len(),
-            EVIDENCE_OPERAND_CAP,
+            NARRATIVE_OPERAND_CAP,
             "merged union stays capped"
         );
         // 2 (a) + 1 (b) + the union overflow past the cap (a.kept CAP + b.kept CAP − CAP = CAP).
@@ -531,7 +531,7 @@ mod tests {
     fn cancellation_is_reserved_unconstructable_but_matchable() {
         // The r26 reservation: `Cancellation(Reserved)` holds the slot (no consumer forecloses it)
         // yet cannot be constructed at v1 (Reserved is uninhabited). A match still handles it.
-        let ev = CollapseEvidence::new(
+        let ev = CollapseNarrative::new(
             TrustTier::Measured,
             CollapseKind::FactMergeDisagreement {
                 cell: site(1),
@@ -570,7 +570,7 @@ mod tests {
             arm: MintSpan(span(4, 9)),
             arm_file: F,
         };
-        let ev = CollapseEvidence::new(
+        let ev = CollapseNarrative::new(
             TrustTier::Vouched,
             CollapseKind::VerdictDecline {
                 site: site(3),
@@ -601,7 +601,7 @@ mod tests {
             ),
             "a populated reason is never overwritten (tier-2 wins over a tier-3 echo)"
         );
-        let refusal = CollapseEvidence::new(
+        let refusal = CollapseNarrative::new(
             TrustTier::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),
         );
@@ -614,18 +614,18 @@ mod tests {
 
     #[test]
     fn evidence_eq_is_structural_here_carrier_excludes_it_elsewhere() {
-        // CollapseEvidence derives Eq (tests compare it); the Reach-style EXCLUSION is a CARRIER
+        // CollapseNarrative derives Eq (tests compare it); the Reach-style EXCLUSION is a CARRIER
         // property proven where evidence rides a fixpoint value (analysis::effect), not here.
-        let a = CollapseEvidence::new(
+        let a = CollapseNarrative::new(
             TrustTier::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),
         );
-        let b = CollapseEvidence::new(
+        let b = CollapseNarrative::new(
             TrustTier::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),
         );
         assert_eq!(a, b);
-        let c = CollapseEvidence::new(
+        let c = CollapseNarrative::new(
             TrustTier::Ran,
             CollapseKind::render_refusal_heredoc(site(2)),
         );

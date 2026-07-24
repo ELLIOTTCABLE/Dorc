@@ -27,7 +27,8 @@
 //! * `inv-site-keyed-results` — [`SiteId`] preserves command-site keying (promoted from the
 //!   cli's `RecordKey`).
 
-use crate::{LeafId, ProvId, Severity, Span, TopCause};
+use crate::Severity;
+use dorc_core::{ProvId, Span, TopCause};
 
 // ===========================================================================
 // The catalog enum (exhaustive spine) + typed per-variant payloads (type-sketch-1)
@@ -895,29 +896,7 @@ pub struct AidUnloadedSiblingOracle {
 // First-class site identity (type-sketch-5) — the slot, not the fleet machinery
 // ===========================================================================
 
-/// A diagnostic's first-class site identity (`22B` `type-sketch-5`; promoted from the cli's
-/// `RecordKey`). The `site N.M` keying (`member` = the in-loop fact-family index,
-/// `inv-site-keyed-results`) is the FINE key; the COARSE key for fleet rollup is a slot
-/// ([`GroupingKey`]) the machinery does not yet fill (`22B-fork-scope-key` = STUB coarse=fine).
-///
-/// Promoting this into `core` preserves site-keying end-to-end (`inv-site-keyed-results`): the
-/// same `(leaf, member)` pair the cli's probe-records and the apply plan's steps share.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SiteId {
-    /// The stable command-site leaf (the plan's `Step::leaf` for the same source command).
-    pub leaf: LeafId,
-    /// The MEMBER index for an in-loop Members site (`site N.M`): `Some(m)` ⇒ member `m` of a
-    /// fact-family, `None` ⇒ an ordinary single-fact site.
-    pub member: Option<u32>,
-}
-
-impl SiteId {
-    /// A single-fact (non-member) site.
-    #[must_use]
-    pub fn leaf(leaf: LeafId) -> Self {
-        Self { leaf, member: None }
-    }
-}
+pub use dorc_core::SiteId;
 
 /// The hierarchical grouping keys for ⊤-cascade dedup and fleet aggregation (`22B`
 /// `type-sketch-5`; `228` dc-3: `CodeChecker` context-free-v2 + Sentry match-either-hash). The
@@ -1056,7 +1035,7 @@ pub struct SpanLabel {
 impl SpanLabel {
     /// This label's source span, or `None` when the label is the second-class spanless case
     /// ([`SpanSite::Spanless`], arch-3-residual-2). Ordinary readers see `Option<Span>` (the same
-    /// shape the legacy [`crate::Diagnostic::span`] carries); they still cannot CONSTRUCT a spanless
+    /// shape the legacy `Diagnostic::span` carried); they still cannot CONSTRUCT a spanless
     /// label (the field is private).
     #[must_use]
     pub fn span(&self) -> Option<Span> {
@@ -1659,7 +1638,7 @@ impl Diag {
 /// `[]`. The `interner` is threaded for forward-compat (no payload resolves an interned handle at
 /// HEAD — the excerpt handles were retired into `detail` strings). Pure; `inv-no-throw`.
 #[must_use]
-pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static str, String)> {
+pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'static str, String)> {
     match code {
         DiagCode::CmdsubOperandTop(p) => vec![
             ("position", p.position.describe()),
@@ -1775,7 +1754,7 @@ fn help_connective(code: &DiagCode) -> &'static str {
 /// A code with no catalog entry (unreachable once the completeness gate is green) renders the
 /// greppable `[unwritten: <slug>]` placeholder. Pure; `inv-no-throw`.
 #[must_use]
-pub fn render_message(code: &DiagCode, interner: &crate::Interner) -> String {
+pub fn render_message(code: &DiagCode, interner: &dorc_core::Interner) -> String {
     render_message_with(&crate::catalog::CONST_CATALOG, code, interner)
 }
 
@@ -1787,7 +1766,7 @@ pub fn render_message(code: &DiagCode, interner: &crate::Interner) -> String {
 pub fn render_message_with(
     lookup: &dyn crate::catalog::CatalogLookup,
     code: &DiagCode,
-    interner: &crate::Interner,
+    interner: &dorc_core::Interner,
 ) -> String {
     let params = params_of(code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
@@ -1807,7 +1786,12 @@ pub fn render_message_with(
 /// (rul24-lineno-identity). The unit tests pin this shape; the cli's `report()` shares
 /// [`render_body`] + [`frame_region`] but owns the stage prefix + colour + no-source fallback.
 #[must_use]
-pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Interner) -> String {
+pub fn render_cli(
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &dorc_core::Interner,
+) -> String {
     render_cli_with(
         &crate::catalog::CONST_CATALOG,
         diag,
@@ -1826,7 +1810,7 @@ pub fn render_cli_with(
     diag: &Diag,
     src: &str,
     filename: &str,
-    interner: &crate::Interner,
+    interner: &dorc_core::Interner,
 ) -> String {
     use std::fmt::Write;
     let spec = registry(&diag.code);
@@ -1872,7 +1856,7 @@ pub fn render_cli_parts(
     diag: &Diag,
     src: &str,
     filename: &str,
-    interner: &crate::Interner,
+    interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
     let body = render_body_parts_with(lookup, diag, interner);
     let body_text = body.text();
@@ -1919,7 +1903,7 @@ pub fn render_staged_cli_parts(
     diag: &Diag,
     src: &str,
     filename: &str,
-    interner: &crate::Interner,
+    interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
     let mut parts = crate::tagged::RenderParts::new();
     push_arrangement_part(&mut parts, format!("{stage}: "), "cli-stage-prefix");
@@ -1998,7 +1982,7 @@ fn part_with_text(part: &crate::tagged::RenderPart, text: String) -> crate::tagg
 /// The lint crate uses this verbatim as a finding's message; [`render_cli`] and the cli's
 /// `report()` split its first line onto the title and place the rest after the region. Pure.
 #[must_use]
-pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
+pub fn render_body(diag: &Diag, interner: &dorc_core::Interner) -> String {
     render_body_with(&crate::catalog::CONST_CATALOG, diag, interner)
 }
 
@@ -2009,7 +1993,7 @@ pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
 pub fn render_body_with(
     lookup: &dyn crate::catalog::CatalogLookup,
     diag: &Diag,
-    interner: &crate::Interner,
+    interner: &dorc_core::Interner,
 ) -> String {
     use std::fmt::Write;
     let params = params_of(&diag.code, interner);
@@ -2053,14 +2037,17 @@ pub fn render_body_with(
 
 /// The ordered-parts twin of [`render_body`].
 #[must_use]
-pub fn render_body_parts(diag: &Diag, interner: &crate::Interner) -> crate::tagged::RenderParts {
+pub fn render_body_parts(
+    diag: &Diag,
+    interner: &dorc_core::Interner,
+) -> crate::tagged::RenderParts {
     render_body_parts_with(&crate::catalog::CONST_CATALOG, diag, interner)
 }
 
 fn render_body_parts_with(
     lookup: &dyn crate::catalog::CatalogLookup,
     diag: &Diag,
-    interner: &crate::Interner,
+    interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
     let params = params_of(&diag.code, interner);
     let refs: Vec<(&'static str, &str)> = params
@@ -2171,7 +2158,7 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
 /// `ProvArena` and surfaced on a [`Diag`] (stage-1 wired [`CmdsubOperandTop::cause`]). It is
 /// render-plane only (`dir-soundiness-ux`: frontload the unsoundness where the operator reads, at
 /// the decision point); it reaches no artifact and (ru-11 WELD) drives no decision — it is pure
-/// OUTPUT explanation, on the [`crate::Exempt::Explanation`] plane.
+/// OUTPUT explanation, on the `Exempt::Explanation` plane.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Explanation {
     /// The cause-derived reason this command was forced to run ("ran because …, ⊤ originated …").
@@ -2200,7 +2187,7 @@ pub struct Explanation {
 /// `src` resolves the cause's origin span to source text for orientation (referent-agnostic —
 /// shown, never decoded).
 #[must_use]
-pub fn why(diag: &Diag, arena: &crate::ProvArena, src: &str) -> Option<Explanation> {
+pub fn why(diag: &Diag, arena: &dorc_core::ProvArena, src: &str) -> Option<Explanation> {
     // Only a CmdsubOperandTop carries a ⊤-cause at HEAD (stage-1). Other codes: no caused-⊤ to
     // read ⇒ no why-lens line (fd-G honesty — they keep their own message).
     let DiagCode::CmdsubOperandTop(payload) = &diag.code else {
@@ -2474,7 +2461,7 @@ pub fn render_region(diag: &Diag, source: Option<(&str, &str)>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{BytePos, Interner};
+    use dorc_core::{BytePos, Interner, LeafId};
 
     fn span(lo: u32, hi: u32) -> Span {
         Span::new(BytePos(lo), BytePos(hi))
@@ -2925,13 +2912,13 @@ mod tests {
     /// STAGE-2 the why-lens (`22D` §1): `why` reads a [`CmdsubOperandTop`]'s wired ⊤-cause + the
     /// arena and renders the cause-derived "ran because … ⊤ originated at <site>; <remediation>"
     /// line. The cause-site is resolved from the arena origin's span (shown once, minimal-witness).
-    /// Pins that the why-lens consumes the real receipt (a [`crate::OriginKind::TopCause`] origin at
+    /// Pins that the why-lens consumes the real receipt (a [`dorc_core::OriginKind::TopCause`] origin at
     /// a known span) and surfaces the position + remediation hint. The first real receipt-READER.
     #[test]
     fn why_lens_renders_cause_derived_reason() {
-        let mut arena = crate::ProvArena::new();
+        let mut arena = dorc_core::ProvArena::new();
         // The ⊤-cause origin: a give-up minted at the operand's source span (as classify mints it).
-        let cause = arena.leaf(crate::OriginKind::TopCause, Some(span(11, 20)));
+        let cause = arena.leaf(dorc_core::OriginKind::TopCause, Some(span(11, 20)));
         let d = Diag::new(
             DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
             span(0, 20),
@@ -2971,7 +2958,7 @@ mod tests {
     /// stage-1 hard-None that should no longer occur, but the type permits) ⇒ also `None`.
     #[test]
     fn why_lens_returns_none_without_a_caused_top() {
-        let arena = crate::ProvArena::new();
+        let arena = dorc_core::ProvArena::new();
         let src = "irrelevant";
         // A cause-less code: SiteUnresolvable has no cause field ⇒ the why-lens explains nothing.
         let unresolvable = Diag::new(
@@ -3004,8 +2991,8 @@ mod tests {
     /// This is the partition the cli's stage-3 render relies on — the artifact stays receipt-free.
     #[test]
     fn why_lens_is_render_plane_artifact_is_receipt_free() {
-        let mut arena = crate::ProvArena::new();
-        let cause = arena.leaf(crate::OriginKind::TopCause, Some(span(11, 20)));
+        let mut arena = dorc_core::ProvArena::new();
+        let cause = arena.leaf(dorc_core::OriginKind::TopCause, Some(span(11, 20)));
         let d = Diag::new(
             DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
             span(0, 20),

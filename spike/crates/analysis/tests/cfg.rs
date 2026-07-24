@@ -21,10 +21,11 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
+use dorc_aid::Severity;
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, build};
 use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::Graph;
-use dorc_core::{Channel, Severity};
+use dorc_core::Channel;
 use dorc_syntax::parse;
 
 const PI_WEBHOST: &str = include_str!(concat!(
@@ -1586,7 +1587,7 @@ fn funcdef_shadowing_relied_builtin_warns_loudly() {
         Severity::Warning,
         "WARNING-class disclosure (not a Note, not an Error)"
     );
-    let shadow_msg = dorc_core::diag::render_body(shadow[0], &dorc_core::Interner::default());
+    let shadow_msg = dorc_aid::diag::render_body(shadow[0], &dorc_core::Interner::default());
     assert!(
         shadow_msg.contains("`true`"),
         "the warning names the shadowed builtin: {shadow_msg}"
@@ -1603,7 +1604,7 @@ fn funcdef_shadowing_relied_builtin_warns_loudly() {
             .diags
             .iter()
             .any(|d| d.code.slug() == "cfg-builtin-shadowed"
-                && dorc_core::diag::render_body(d, &dorc_core::Interner::default())
+                && dorc_aid::diag::render_body(d, &dorc_core::Interner::default())
                     .contains("`false`")),
         "a `false()` funcdef is disclosed too (the other stand-in word)"
     );
@@ -1677,7 +1678,7 @@ fn inline_refused_for(src: &str, needle: &str) -> bool {
     let parsed = parse(src);
     build(&parsed.value).diags.iter().any(|d| {
         d.code.slug() == "cfg-inline-refused"
-            && dorc_core::diag::render_body(d, &dorc_core::Interner::default()).contains(needle)
+            && dorc_aid::diag::render_body(d, &dorc_core::Interner::default()).contains(needle)
     })
 }
 

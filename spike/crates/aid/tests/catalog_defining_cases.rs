@@ -3,7 +3,7 @@
 //! dorc-loom case corpus (`crates/dorc-loom/cases/<slug>.loom`), guarded by the errorloom render-level
 //! `fixpoint_check` (`283` §4a). Phase 5 (`283` §5.9) backported the covered codes to those case files
 //! and retired the old per-register fragment goldens (`tests/defining_cases/*` + `DORC_DEFINING_BLESS`);
-//! this file keeps what stays in `core`:
+//! this file keeps what stays in `aid`:
 //!
 //! * **production byte equality** — `render_body_parts` / `render_cli_parts` reproduce their product
 //!   render bytes over every real `covered()` payload.
@@ -18,7 +18,7 @@
 //! the transitional twin of the dorc-loom `canonical_payload` constructors; ownership itself is tracked by
 //! the case files, never by membership in this list.
 
-use dorc_core::diag::{
+use dorc_aid::diag::{
     self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
     DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
     HostEvidenceRefusalKind, MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer,
@@ -27,7 +27,7 @@ use dorc_core::diag::{
     SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
     WhylogVersionRefused, WrapperPeelIncoherent,
 };
-use dorc_core::tagged::RenderPart;
+use dorc_aid::tagged::RenderPart;
 use dorc_core::{BytePos, Interner, LeafId, Span, TopCause};
 
 /// A defining case: the code's stable slug + a constructor for its CANONICAL payload (fixed values so
@@ -416,7 +416,7 @@ fn defining_case_parts_match_product_renders() {
         );
         assert_eq!(
             diag::render_cli_parts(
-                &dorc_core::catalog::CONST_CATALOG,
+                &dorc_aid::catalog::CONST_CATALOG,
                 &diag,
                 src,
                 "book.sh",
@@ -469,8 +469,8 @@ fn is_case_owned(slug: &str) -> bool {
 fn every_code_is_case_owned_or_ratcheted() {
     use std::collections::BTreeSet;
     let ratchet: BTreeSet<&str> = DEFINING_CASE_RATCHET.iter().map(|(s, _)| *s).collect();
-    let catalog: BTreeSet<&str> = dorc_core::catalog::CATALOG.iter().map(|e| e.slug).collect();
-    for e in dorc_core::catalog::CATALOG {
+    let catalog: BTreeSet<&str> = dorc_aid::catalog::CATALOG.iter().map(|e| e.slug).collect();
+    for e in dorc_aid::catalog::CATALOG {
         let owned = is_case_owned(e.slug);
         assert!(
             owned || ratchet.contains(e.slug),
@@ -502,11 +502,11 @@ fn every_code_is_case_owned_or_ratcheted() {
 fn ratchet_only_shrinks() {
     use std::process::Command;
     let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    let rel = "crates/core/tests/catalog_defining_cases.rs";
+    let rel = "crates/aid/tests/catalog_defining_cases.rs";
     let spike = manifest
         .parent()
         .and_then(|p| p.parent())
-        .expect("crates/core -> crates -> spike");
+        .expect("crates/aid -> crates -> spike");
     let committed = ["HEAD:spike/", "HEAD:"].iter().find_map(|prefix| {
         let out = Command::new("git")
             .arg("-C")
@@ -558,7 +558,7 @@ fn count_ratchet_entries(src: &str) -> usize {
 /// authored and never silently grows (a bump is a conscious conductor act).
 #[test]
 fn unwritten_renders_are_greppable_and_pinned() {
-    let unwritten: Vec<&str> = dorc_core::catalog::CATALOG
+    let unwritten: Vec<&str> = dorc_aid::catalog::CATALOG
         .iter()
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)

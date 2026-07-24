@@ -2,7 +2,7 @@
 //! JSONL envelope + coverage block, source-subset selection, the clean sentence, and the
 //! severity-threshold counting the cli's exit trichotomy consumes.
 
-use dorc_core::Severity;
+use dorc_aid::Severity;
 use dorc_lint::{
     LintInput, LintOptions, LintReport, NoToolsRunner, json, lint, list_sources, render,
 };

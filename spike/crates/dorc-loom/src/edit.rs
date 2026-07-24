@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use dorc_core::catalog::{TemplatePart, TemplateRefusal, parse_template};
+use dorc_aid::catalog::{TemplatePart, TemplateRefusal, parse_template};
 use errorloom::{
     EditRefusal, EditRefusalClass, EditTransport, EditableFragment, EditableRender,
     EditableSection, RenderComponent, transport_edit_allow_removal,

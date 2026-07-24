@@ -12,7 +12,8 @@
 //! findings govern: findings present ⇒ just findings (rc ignored); zero findings + nonzero rc ⇒ one
 //! warn operational finding; unrecognized output ⇒ raw passthrough.
 
-use dorc_core::{Interner, Severity};
+use dorc_aid::Severity;
+use dorc_core::Interner;
 
 use crate::finding::{Finding, RemapFidelity, SourceStatus};
 use crate::json;

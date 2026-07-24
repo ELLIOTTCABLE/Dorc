@@ -59,9 +59,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
+name = "dorc-aid"
+version = "0.0.0"
+dependencies = [
+ "dorc-core",
+]
+
+[[package]]
 name = "dorc-analysis"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-core",
  "dorc-oracle",
  "dorc-syntax",
@@ -73,6 +81,7 @@ version = "0.0.0"
 dependencies = [
  "anstream",
  "anstyle",
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-lint",
@@ -89,6 +98,7 @@ version = "0.0.0"
 name = "dorc-coverage"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-oracle",
@@ -111,6 +121,7 @@ dependencies = [
 name = "dorc-lint"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-oracle",
@@ -121,6 +132,7 @@ dependencies = [
 name = "dorc-loom"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-lint",
@@ -134,6 +146,7 @@ dependencies = [
 name = "dorc-oracle"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-core",
  "dorc-syntax",
 ]
@@ -142,6 +155,7 @@ dependencies = [
 name = "dorc-plan"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-oracle",
@@ -164,6 +178,7 @@ dependencies = [
 name = "dorc-syntax"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-core",
 ]
 

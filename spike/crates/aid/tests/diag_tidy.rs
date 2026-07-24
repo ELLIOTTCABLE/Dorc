@@ -1,7 +1,7 @@
 //! The diagnostic-catalog **tidy gate** — the cheap structural half of `22A` concl-7 /
 //! `226` §1 (rustc's `tidy error_codes.rs`), the half the Rust type system cannot see.
 //!
-//! The exhaustive [`dorc_core::diag::DiagCode`] enum already buys "every variant HANDLED" for
+//! The exhaustive [`dorc_aid::diag::DiagCode`] enum already buys "every variant HANDLED" for
 //! free: the `registry`, every render arm, and `slug` are exhaustive `match`es that will not
 //! compile with a variant missing. This test covers the THREE things the compiler can't:
 //!
@@ -44,7 +44,7 @@ use std::process::Command;
 /// Every migrated catalog variant's PAYLOAD-struct name — the spine's construction marker. Each
 /// variant wraps a uniquely-named payload struct that is constructed ONLY at an emit site (the
 /// `DiagCode::Variant(Payload { … })` form), so grepping the struct literal is robust to the
-/// `DiagCode`-vs-`Code`-alias the emit crates use. KEEP IN SYNC with [`dorc_core::diag::DiagCode`]
+/// `DiagCode`-vs-`Code`-alias the emit crates use. KEEP IN SYNC with [`dorc_aid::diag::DiagCode`]
 /// — a new variant adds one entry here (the same one-edit friction the catalog promises).
 const MIGRATED_PAYLOADS: &[&str] = &[
     "CmdsubOperandTop",
@@ -198,8 +198,8 @@ const RETIRED_SLUGS: &[&str] = &[
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
-/// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other
-/// code MUST point at a real source span ([`dorc_core::diag::Diag::new`] takes a mandatory
+/// diagnostic with no primary span, via [`dorc_aid::diag::Diag::new_spanless_site`]. Every other
+/// code MUST point at a real source span ([`dorc_aid::diag::Diag::new`] takes a mandatory
 /// [`dorc_core::Span`] — `21Z` drop-B). These are the give-up sites whose emit context genuinely
 /// has no location: the errexit-region pass, the effect-map kind-disagreement check, every framed
 /// records fault/integrity code, and the cli-edge whole-stream/whole-plan verdicts. Entries are
@@ -235,17 +235,17 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "AidUnloadedSiblingOracle",
 ];
 
-/// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`
+/// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `aid`
 /// itself is included for the `diag.rs` retire-guard.
 const SCANNED_CRATES: &[&str] = &[
-    "core", "syntax", "analysis", "oracle", "plan", "cli", "coverage", "hostsim",
+    "aid", "syntax", "analysis", "oracle", "plan", "cli", "coverage", "hostsim",
 ];
 
-/// The `spike/crates` dir (this test runs with cwd = `crates/core`).
+/// The `spike/crates` dir (this test runs with cwd = `crates/aid`).
 fn crates_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
-        .expect("crates/core has a parent (crates/)")
+        .expect("crates/aid has a parent (crates/)")
         .to_path_buf()
 }
 
@@ -289,26 +289,26 @@ fn scanned_source() -> String {
     concat_crate_src(SCANNED_CRATES)
 }
 
-/// The PRODUCTION emit surface for the spanless-mint gate: every scanned crate EXCEPT `core`. The
-/// six real `new_spanless_site` sites live in `analysis`/`oracle`; `core` only DEFINES the
-/// constructor and exercises it in its own `#[cfg(test)]` module — excluding `core` keeps the
-/// self-cleaning direction honest (a removed production site is not masked by core's test usage).
+/// The PRODUCTION emit surface for the spanless-mint gate: every scanned crate EXCEPT `aid`. The
+/// six real `new_spanless_site` sites live in `analysis`/`oracle`; `aid` only DEFINES the
+/// constructor and exercises it in its own `#[cfg(test)]` module — excluding `aid` keeps the
+/// self-cleaning direction honest (a removed production site is not masked by aid's test usage).
 ///
-/// ru-26 residual-b (B8 disclosure): this excludes `core` but NOT the `#[cfg(test)]` modules of the
+/// ru-26 residual-b (B8 disclosure): this excludes `aid` but NOT the `#[cfg(test)]` modules of the
 /// OTHER scanned crates — `rs_files` collects every `.rs` under `src/`, test modules included. So a
-/// test-only construction of a payload in a non-core crate (a `DiagCode::X(…)` inside that crate's
+/// test-only construction of a payload in a non-aid crate (a `DiagCode::X(…)` inside that crate's
 /// own `#[cfg(test)]`) would satisfy `every_catalog_variant_is_constructed` for code `X` even if its
 /// PRODUCTION emit were deleted — the grep cannot tell a `#[cfg(test)]` line from a real one. The
 /// PART C must-emit per-code pins are the real liveness instrument (they FAIL when a production emit
 /// dies); this grep is a cheap belt-and-braces backstop, not a soundness guarantee. Greenfield wants
 /// cfg-aware source partitioning (or an emit-side registration) rather than a whole-`src/` scan.
 fn production_emit_source() -> String {
-    let non_core: Vec<&str> = SCANNED_CRATES
+    let non_aid: Vec<&str> = SCANNED_CRATES
         .iter()
         .copied()
-        .filter(|c| *c != "core")
+        .filter(|c| *c != "aid")
         .collect();
-    concat_crate_src(&non_core)
+    concat_crate_src(&non_aid)
 }
 
 /// Extract every payload-struct name constructed at a `new_spanless_site(…::<Payload>(…))` call in
@@ -340,11 +340,11 @@ fn spanless_site_payloads(source: &str) -> BTreeSet<String> {
 /// the only thing that sees it.
 ///
 /// REWRITTEN (x3a-B/t-1 fix, `224` §10 act-3): the prior scan used `scanned_source()`, which
-/// INCLUDES `core` — so `diag.rs`'s OWN `match` arms (every `DiagCode::Variant(_) =>` in `slug`/
-/// `site`/`registry`/the renders) and `core`'s `#[cfg(test)]` constructions satisfied the grep for
+/// INCLUDES `aid` — so `diag.rs`'s OWN `match` arms (every `DiagCode::Variant(_) =>` in `slug`/
+/// `site`/`registry`/the renders) and `aid`'s `#[cfg(test)]` constructions satisfied the grep for
 /// EVERY variant. The result: deleting a sole PRODUCTION emit left the test green (proven twice — a
 /// dead-catalog variant the gate was built to catch sailed through). The fix scans
-/// `production_emit_source()` (every crate EXCEPT `core`), so only a real emit in a consuming crate
+/// `production_emit_source()` (every crate EXCEPT `aid`), so only a real emit in a consuming crate
 /// counts — exactly what `spanless_mint_allow_list_is_exact` already does for the same reason.
 ///
 /// NEEDLE-SHAPE LIMIT (ru-26 disclosure; t-4): this is a grep for the LITERAL forms
@@ -359,15 +359,15 @@ fn spanless_site_payloads(source: &str) -> BTreeSet<String> {
 fn every_catalog_variant_is_constructed() {
     let source = production_emit_source();
     for payload in MIGRATED_PAYLOADS {
-        // The construction marker, in PRODUCTION (non-core) source only: a real `DiagCode::Payload(`
-        // or `Code::Payload(` emit at a give-up site, NOT diag.rs's own match arms or core's tests.
+        // The construction marker, in PRODUCTION (non-aid) source only: a real `DiagCode::Payload(`
+        // or `Code::Payload(` emit at a give-up site, NOT diag.rs's own match arms or aid's tests.
         let constructed = source.contains(&format!("DiagCode::{payload}("))
             || source.contains(&format!("Code::{payload}("));
         assert!(
             constructed,
             "catalog variant `{payload}` is registered but never constructed at a PRODUCTION emit \
              site (dead catalog — either emit it at a give-up site in a consuming crate, or remove \
-             the variant + its registry/render arms). NB the scan excludes core, so diag.rs's own \
+             the variant + its registry/render arms). NB the scan excludes aid, so diag.rs's own \
              match arms do not count (act-3); a non-literal emit is invisible to it (needle-shape)."
         );
     }
@@ -379,10 +379,10 @@ fn every_catalog_variant_is_constructed() {
 /// `MIGRATED_PAYLOADS` entry that was renamed in the enum but not here.
 #[test]
 fn every_migrated_payload_name_is_a_real_variant() {
-    // The `core::diag::DiagCode` source must define each payload-named variant. Read diag.rs and
+    // The `aid::diag::DiagCode` source must define each payload-named variant. Read diag.rs and
     // assert the variant line exists (the enum arm `Payload(Payload)`).
-    let diag_src = std::fs::read_to_string(crates_dir().join("core/src/diag.rs"))
-        .expect("core/src/diag.rs is readable");
+    let diag_src = std::fs::read_to_string(crates_dir().join("aid/src/diag.rs"))
+        .expect("aid/src/diag.rs is readable");
     for payload in MIGRATED_PAYLOADS {
         assert!(
             diag_src.contains(&format!("{payload}({payload})")),
@@ -409,8 +409,8 @@ fn retire_guard_no_silent_slug_deletion() {
     let crates = crates_dir();
     // `git show HEAD:<path>` — the committed diag.rs. Path is relative to the repo root; compute
     // it from the worktree root via `git rev-parse --show-prefix` would be ideal, but the simpler
-    // robust form is `git show :crates/core/src/diag.rs` (the index) restricted to the spike dir.
-    let diag_rel = "crates/core/src/diag.rs";
+    // robust form is `git show :crates/aid/src/diag.rs` (the index) restricted to the spike dir.
+    let diag_rel = "crates/aid/src/diag.rs";
     let spike_dir = crates
         .parent()
         .expect("crates/ has a parent (spike/)")
@@ -528,14 +528,14 @@ fn committed_slug_arms(diag_rs: &str) -> BTreeSet<String> {
 }
 
 /// (3) The catalog COMPLETENESS bijection (`27V:rul-kill-legacy-diagnostic` / `defining-case-
-/// catalog`): every `DiagCode` variant has EXACTLY ONE [`dorc_core::catalog::CatalogEntry`], and
+/// catalog`): every `DiagCode` variant has EXACTLY ONE [`dorc_aid::catalog::CatalogEntry`], and
 /// every entry names a real variant. `MIGRATED_SLUGS` mirrors the exhaustive `DiagCode::slug`
 /// match (its own gate, `every_migrated_payload_name_is_a_real_variant`, pins that mirror), so the
 /// slug set stands in for the variant set. This is what makes a code with no prose home — or an
 /// orphan catalog row — a loud test failure rather than a silent `[unwritten:]` render.
 #[test]
 fn every_variant_has_exactly_one_catalog_entry() {
-    use dorc_core::catalog::CATALOG;
+    use dorc_aid::catalog::CATALOG;
     let catalog_slugs: BTreeSet<&str> = CATALOG.iter().map(|e| e.slug).collect();
     // No duplicate entries (catalog's own gate also checks this; belt-and-braces here).
     assert_eq!(
@@ -548,7 +548,7 @@ fn every_variant_has_exactly_one_catalog_entry() {
         assert!(
             catalog_slugs.contains(slug),
             "DiagCode variant slug `{slug}` has no CatalogEntry — every code needs exactly one \
-             prose home (27V:rul-kill-legacy-diagnostic). Add its entry to core/src/catalog.rs."
+             prose home (27V:rul-kill-legacy-diagnostic). Add its entry to aid/src/catalog.rs."
         );
     }
     // Every catalog entry names a real variant (no orphan row).
@@ -572,8 +572,8 @@ fn every_variant_has_exactly_one_catalog_entry() {
 /// * an allow-listed `X` that no longer appears at a production `new_spanless_site` site ⇒ FAIL
 ///   (the entry is stale; the code now carries a span or was removed — delete it from the list).
 ///
-/// Scans `production_emit_source` (excludes `core`): the six real sites live in `analysis`/
-/// `oracle`, and excluding core's own definition + `#[cfg(test)]` exercise keeps direction B from
+/// Scans `production_emit_source` (excludes `aid`): the six real sites live in `analysis`/
+/// `oracle`, and excluding aid's own definition + `#[cfg(test)]` exercise keeps direction B from
 /// being masked by the test's construction.
 #[test]
 fn spanless_mint_allow_list_is_exact() {
@@ -676,28 +676,28 @@ fn retire_guard_negative_control_trips_on_unreadable_slug_body() {
 }
 
 /// act-3 NEGATIVE CONTROL (x3a-B/t-1): the constructed-scan must scan PRODUCTION emits only, so a
-/// variant satisfied solely by `diag.rs`'s own match arms (or core's tests) would NOT pass. We
+/// variant satisfied solely by `diag.rs`'s own match arms (or aid's tests) would NOT pass. We
 /// cannot delete a real production emit inside a test, so we pin the load-bearing PROPERTY directly:
-/// the scan basis (`production_emit_source`) excludes `core`'s `diag.rs`, while the OLD basis
+/// the scan basis (`production_emit_source`) excludes `aid`'s `diag.rs`, while the OLD basis
 /// (`scanned_source`) included it. A unique `diag.rs`-only marker present in the old basis and
 /// ABSENT from the new one proves diag.rs's own arms can no longer satisfy the grep — which is
 /// exactly why deleting a sole production emit now fails the scan (the t-1 vacuity is closed).
 #[test]
-fn constructed_scan_negative_control_excludes_core_diag_arms() {
-    // A token that exists ONLY in core/src/diag.rs (the spanless-mint constructor's name). It is a
-    // `core`-internal definition, never written in a consuming crate's emit.
-    let core_only_marker = "pub fn new_spanless_site(";
+fn constructed_scan_negative_control_excludes_aid_diag_arms() {
+    // A token that exists ONLY in aid/src/diag.rs (the spanless-mint constructor's name). It is a
+    // `aid`-internal definition, never written in a consuming crate's emit.
+    let aid_only_marker = "pub fn new_spanless_site(";
     let old_basis = scanned_source();
     let new_basis = production_emit_source();
     assert!(
-        old_basis.contains(core_only_marker),
-        "precondition: the old `scanned_source` basis DID include core/diag.rs (that inclusion was \
+        old_basis.contains(aid_only_marker),
+        "precondition: the old `scanned_source` basis DID include aid/diag.rs (that inclusion was \
          the t-1 vacuity — diag.rs's own arms satisfied the grep for every variant)"
     );
     assert!(
-        !new_basis.contains(core_only_marker),
-        "the rewritten scan basis must EXCLUDE core/diag.rs, so a variant constructed only in \
-         diag.rs's own match arms / core tests is NOT seen — deleting its sole production emit now \
+        !new_basis.contains(aid_only_marker),
+        "the rewritten scan basis must EXCLUDE aid/diag.rs, so a variant constructed only in \
+         diag.rs's own match arms / aid tests is NOT seen — deleting its sole production emit now \
          trips `every_catalog_variant_is_constructed` (act-3, t-1 closed)"
     );
     // Belt-and-braces: confirm a fabricated payload name appearing ONLY as a diag.rs-style arm is

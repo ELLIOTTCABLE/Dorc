@@ -11,6 +11,7 @@ publish = false
 # later seam), so this crate stays a pure, deterministic function of its inputs.
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
+dorc-aid = { path = "../aid", version = "0.0.0" }
 dorc-analysis = { path = "../analysis", version = "0.0.0" }
 # Rendering a leaf back to sh resolves its source span out of the AST.
 dorc-syntax = { path = "../syntax", version = "0.0.0" }

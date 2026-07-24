@@ -8,7 +8,7 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
-use dorc_core::diag::render_staged_cli_parts;
+use dorc_aid::diag::render_staged_cli_parts;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
     replay_case_with_inputs,
@@ -19,8 +19,8 @@ use errorloom::{
 };
 
 const CASE_PATH: &str = "cases/dangling-reference.loom";
-const CATALOG_PATH: &str = "crates/core/src/catalog_lock.rs";
-const CODE_PATH: &str = "crates/core/src/diag.rs";
+const CATALOG_PATH: &str = "crates/aid/src/catalog_lock.rs";
+const CODE_PATH: &str = "crates/aid/src/diag.rs";
 
 fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
     consumer
@@ -165,7 +165,7 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
             replay.output(),
             render_staged_cli_parts(
                 "whylog",
-                &dorc_core::catalog::CONST_CATALOG,
+                &dorc_aid::catalog::CONST_CATALOG,
                 &diag,
                 "",
                 "",
@@ -571,7 +571,7 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
 fn replay_with_a_fake_fallback_leaves_case_catalog_and_source_bytes_unchanged() {
     let case_path =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.loom");
-    let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs");
+    let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs");
     let case_before = std::fs::read(&case_path).expect("case reads");
     let catalog_before = std::fs::read(&catalog_path).expect("catalog reads");
     let case = Case::parse(std::str::from_utf8(&case_before).expect("case is UTF-8"))

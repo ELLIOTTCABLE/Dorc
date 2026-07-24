@@ -385,7 +385,7 @@ fn receipt_store() -> Result<FsReceiptStore, String> {
 }
 
 fn catalog_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs")
 }
 
 fn spike_dir() -> Result<PathBuf, String> {

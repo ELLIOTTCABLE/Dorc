@@ -41,13 +41,13 @@ impl LintSource for AnalysisDiagnostics {
 }
 
 /// Lower one engine `Diagnostic` (the `dn-7` legacy stream both `parse` and `cfg` emit) into a lint
-/// [`Finding`]. The span resolves to a 1-based `(line, col)` via `dorc_core::diag::line_col`
+/// [`Finding`]. The span resolves to a 1-based `(line, col)` via `dorc_aid::diag::line_col`
 /// (rul24-lineno-identity — the SOURCE line space); a span-less diagnostic (the pre-CFG codes) yields
 /// a whole-file finding (`line: None`). Native findings are always `RemapFidelity::Exact` (real span).
-fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'static str) -> Finding {
+fn diag_to_finding(path: &str, src: &str, diag: &dorc_aid::Diag, source: &'static str) -> Finding {
     let (line, col) = match diag.primary.span() {
         Some(span) => {
-            let (l, c) = dorc_core::diag::line_col(src, span.lo.0 as usize);
+            let (l, c) = dorc_aid::diag::line_col(src, span.lo.0 as usize);
             (
                 Some(u32::try_from(l).unwrap_or(u32::MAX)),
                 Some(u32::try_from(c).unwrap_or(u32::MAX)),
@@ -66,7 +66,7 @@ fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'stat
         code: diag.code.slug().to_owned(),
         // The catalog-rendered message (default interner — no payload resolves an interned handle;
         // MINIMAL re-bridge, `27V`).
-        message: dorc_core::diag::render_body(diag, &dorc_core::Interner::default()),
+        message: dorc_aid::diag::render_body(diag, &dorc_core::Interner::default()),
         remap: RemapFidelity::Exact,
         provenance: Some(NativeDiag {
             diag: diag.clone(),

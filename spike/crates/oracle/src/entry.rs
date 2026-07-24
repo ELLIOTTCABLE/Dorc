@@ -31,7 +31,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::diag::{
+use dorc_aid::diag::{
     Diag, DiagCode, HeavyContextNoTolerance, ToleratesOverIdentityDependence,
     ToleratesUnknownDimension,
 };
@@ -140,7 +140,7 @@ fn first_entry_command(body: &[Stmt]) -> Option<&crate::predict::Command> {
 /// `predict`/`lend_map`). The consumer calls [`detect_entry_form`] per body. Same fail-soft contract as
 /// `lift_predicts`.
 #[must_use]
-pub fn lift_entry_set(interner: &mut Interner, src: &str) -> dorc_core::Carrier<PredictSet> {
+pub fn lift_entry_set(interner: &mut Interner, src: &str) -> dorc_aid::Carrier<PredictSet> {
     crate::predict::lift_enters(interner, src)
 }
 

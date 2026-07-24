@@ -1,6 +1,6 @@
 //! The **caret-span-precision survey** (`AID-NEEDS:aid-caret-span-precision`, `24H` ack-8) — the
 //! authoritative record of every diagnostic code's primary-span granularity and the CARET dispatch's
-//! per-code verdict. This is a documentation fixture (the `core/tests/` sanctioned home from the
+//! per-code verdict. This is a documentation fixture (the `aid/tests/` sanctioned home from the
 //! dispatch brief), not a Research note; it is current-truth and rewritten in place when a code's
 //! span granularity changes. The live enforcement lives in `diag_tidy.rs` (`SPANLESS_SITE_PAYLOADS`);
 //! this file is the human/agent-readable WHY behind that allow-list's membership.

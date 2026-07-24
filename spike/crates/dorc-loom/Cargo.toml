@@ -9,13 +9,14 @@ publish = false
 name = "dorc-loom"
 path = "src/bin/dorc-loom.rs"
 
-# The Dorc↔errorloom adapter (`282` §4 · `28A` §1). dorc-core OWNS its tagged-span
+# The Dorc↔errorloom adapter (`282` §4 · `28A` §1). dorc-aid OWNS its tagged-span
 # vocabulary and takes NO dependency on errorloom (kernel-dep-cleanliness); THIS
-# crate is the ordinary consumer shape — it maps a core-owned tagged render onto
+# crate is the ordinary consumer shape — it maps an aid-owned tagged render onto
 # errorloom's generic span schema and proves the gap-free total cover through
 # `errorloom::TaggedRender::new`. Both deps are path-local, publish=false.
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
+dorc-aid = { path = "../aid", version = "0.0.0" }
 errorloom = { path = "../errorloom", version = "0.0.0" }
 # World-as-pipeline (`283:dec-world-two-forms` · `28A` §2n): the marker pilot fires the REAL in-process
 # marker gate over an in-memory source; the cmdsub flagship fires the REAL analysis pipeline (parse →

@@ -27,11 +27,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::diag::{
+use dorc_aid::Carrier;
+use dorc_aid::diag::{
     CfgBuiltinShadowed, CfgErexitUnknown, CfgInlineRefused, CfgTopNode, Depth2PositionalUnthreaded,
     Diag, DiagCode as Code, SiteId,
 };
-use dorc_core::{AstId, BytePos, Carrier, Channel, LeafId, Span};
+use dorc_core::{AstId, BytePos, Channel, LeafId, Span};
 use dorc_syntax::{
     Ast, NodeKind, WordPart,
     ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
@@ -40,7 +41,7 @@ use dorc_syntax::{
 use crate::lattice::Powerset;
 
 // B4 mechanical sweep: cfg codes migrated onto the Diag spine. Payloads live in
-// `dorc_core::diag`; emit sites use `Diag::new(Code::Variant(…), span).label(…).to_legacy(…)`.
+// `dorc_aid::diag`; emit sites use `Diag::new(Code::Variant(…), span).label(…).to_legacy(…)`.
 
 /// arch-2 inlining budgets (`211` §1 / `209` brk-2; pre-spelled in the round-21 charter).
 /// Over-budget ⇒ the call stays `Opaque` WITH a `CfgInlineRefused` diagnostic naming the

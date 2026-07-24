@@ -11,9 +11,11 @@
 //!   transitively. The analyzer kernel is a pure function of its inputs, which is
 //!   what lets the whole pipeline run inside deterministic-simulation tests
 //!   without dependency-injection ceremony. Keep it that way.
-//! * **No-throw stages (`dn-7`).** Every pipeline stage yields a [`Carrier<T>`] —
-//!   a *result paired with accumulated diagnostics* — and never panics on
-//!   malformed input. Errors are data, not control flow.
+//! * **No-throw stages (`dn-7`).** Every pipeline stage yields a `Carrier<T>` — a
+//!   *result paired with accumulated diagnostics* — and never panics on malformed
+//!   input. Errors are data, not control flow. The carrier itself, and everything
+//!   else on the describe plane, lives in `dorc-aid`, which deps this crate and is
+//!   never depended upon by it.
 //!
 //! Identifiers are newtypes, never bare integers (`make illegal states
 //! unrepresentable`): you cannot pass an [`AstId`] where the type wants a fact
@@ -50,13 +52,39 @@ pub struct AstId(pub u32);
 /// in source order.
 ///
 /// Lives in `core` (the `dac-B` shared vocabulary), not `plan`, because the round-22
-/// structured diagnostic ([`diag::SiteId`]) keys on it — a diagnostic's first-class
+/// structured diagnostic ([`SiteId`]) keys on it — a diagnostic's first-class
 /// site identity must be expressible in the base crate every layer agrees on, the
 /// same `dec-seam-ownership` move that pulled [`FactKey`] down here. `plan` re-exports
 /// this type rather than holding a parallel one (`inv-site-keyed-results`: one shared
 /// site-id, never two).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LeafId(pub u32);
+
+/// A diagnostic's first-class site identity (`22B` `type-sketch-5`; promoted from the cli's
+/// `RecordKey`). The `site N.M` keying (`member` = the in-loop fact-family index,
+/// `inv-site-keyed-results`) is the FINE key; the COARSE key for fleet rollup is a slot
+/// (`GroupingKey`, in the describe plane) the machinery does not yet fill
+/// (`22B-fork-scope-key` = STUB coarse=fine).
+///
+/// Sited in `core` beside [`LeafId`] rather than in the describe plane: it is DECIDE-plane
+/// identity (`inv-site-keyed-results`), the same `(leaf, member)` pair the cli's probe-records
+/// and the apply plan's steps share.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SiteId {
+    /// The stable command-site leaf (the plan's `Step::leaf` for the same source command).
+    pub leaf: LeafId,
+    /// The MEMBER index for an in-loop Members site (`site N.M`): `Some(m)` ⇒ member `m` of a
+    /// fact-family, `None` ⇒ an ordinary single-fact site.
+    pub member: Option<u32>,
+}
+
+impl SiteId {
+    /// A single-fact (non-member) site.
+    #[must_use]
+    pub fn leaf(leaf: LeafId) -> Self {
+        Self { leaf, member: None }
+    }
+}
 
 /// Which loaded oracle file a [`Span`] indexes into (`27V:mech-minting-line-threading`,
 /// `tc-oracle-file-identity`). A [`Span`] is a bare byte-range with no file identity, so an
@@ -102,27 +130,6 @@ impl Span {
     }
 }
 
-// ===========================================================================
-// Diagnostics + the no-throw Carrier (dn-7)
-// ===========================================================================
-
-/// Severity of a [`Diag`](diag::Diag). `Error` does not abort the pipeline (stages
-/// never throw); it marks that the carried result is best-effort / degraded. It is the
-/// [`registry`](diag::registry) severity — never set at a construction site.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Severity {
-    Error,
-    Warning,
-    Note,
-}
-
-pub mod diag;
-pub use diag::Diag;
-
-pub mod catalog;
-
-pub mod tagged;
-
 pub mod prov;
 pub use prov::{
     JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProbeStamp, ProvArena, ProvId, Variation,
@@ -149,70 +156,6 @@ pub use room::{HintOnly, Invited, Room, RoomFact, RoomTag};
 
 pub mod escalation;
 pub use escalation::{Capability, EscalationDial};
-
-pub mod evidence;
-pub use evidence::{CollapseEvidence, CollapseKind, TrustTier};
-
-/// `result × accumulated diagnostics` — the type every pipeline stage returns
-/// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
-/// the value, `and_then` sequences a stage while concatenating its diagnostics.
-/// Stages never throw; malformed input yields a degraded `value` plus `Error`
-/// diagnostics, so downstream stages still run and surface *unrelated* problems.
-#[derive(Debug, Clone)]
-pub struct Carrier<T> {
-    pub value: T,
-    pub diags: Vec<Diag>,
-}
-
-impl<T> Carrier<T> {
-    /// A clean result with no diagnostics.
-    #[must_use]
-    pub fn pure(value: T) -> Self {
-        Self {
-            value,
-            diags: Vec::new(),
-        }
-    }
-
-    #[must_use]
-    pub fn new(value: T, diags: Vec<Diag>) -> Self {
-        Self { value, diags }
-    }
-
-    /// Transform the carried value, preserving diagnostics.
-    #[must_use]
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Carrier<U> {
-        Carrier {
-            value: f(self.value),
-            diags: self.diags,
-        }
-    }
-
-    /// Sequence a stage, concatenating its diagnostics after `self`'s.
-    #[must_use]
-    pub fn and_then<U>(mut self, f: impl FnOnce(T) -> Carrier<U>) -> Carrier<U> {
-        let mut next = f(self.value);
-        self.diags.append(&mut next.diags);
-        Carrier {
-            value: next.value,
-            diags: self.diags,
-        }
-    }
-
-    pub fn push(&mut self, diag: Diag) {
-        self.diags.push(diag);
-    }
-
-    #[must_use]
-    pub fn has_errors(&self) -> bool {
-        self.diags.iter().any(|d| d.severity() == Severity::Error)
-    }
-
-    #[must_use]
-    pub fn into_parts(self) -> (T, Vec<Diag>) {
-        (self.value, self.diags)
-    }
-}
 
 // ===========================================================================
 // String interning + the referent-agnostic opaque token (dn-4, W4)
@@ -854,36 +797,5 @@ mod tests {
         // Same cell, SAME context ⇒ equal (the keying is by the composed key, not by identity):
         // a re-measurement in the same wrapper-denoted world hits the same slot (self-healing).
         assert_eq!(ambient.in_context(root_ctx), in_root);
-    }
-
-    #[test]
-    fn carrier_threads_diagnostics_through_stages() {
-        // A Warning-severity Diag (severity is registry data, `crib-4`): CfgBuiltinShadowed is
-        // registry-Warning, so `has_errors()` stays false.
-        let warn = Diag::new(
-            diag::DiagCode::CfgBuiltinShadowed(diag::CfgBuiltinShadowed {
-                detail: "heads up".to_owned(),
-            }),
-            Span::new(BytePos(0), BytePos(1)),
-        );
-        let result = Carrier::pure(2)
-            .map(|n| n + 1)
-            .and_then(|n| Carrier::new(n * 10, vec![warn]));
-        assert_eq!(result.value, 30);
-        assert_eq!(result.diags.len(), 1);
-        assert!(!result.has_errors());
-    }
-
-    #[test]
-    fn carrier_reports_errors_without_panicking() {
-        // An Error-severity Diag: SyntaxMalformed is registry-Error, so `has_errors()` is true.
-        let mut c = Carrier::pure(());
-        c.push(Diag::new(
-            diag::DiagCode::SyntaxMalformed(diag::SyntaxMalformed {
-                detail: "bad input, kept going".to_owned(),
-            }),
-            Span::new(BytePos(0), BytePos(1)),
-        ));
-        assert!(c.has_errors());
     }
 }

@@ -9,8 +9,9 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::diag::{DiagCode, WrapperEntryIncoherent, WrapperPeelIncoherent};
-use dorc_core::{Diag, Interner, Symbol};
+use dorc_aid::Diag;
+use dorc_aid::diag::{DiagCode, WrapperEntryIncoherent, WrapperPeelIncoherent};
+use dorc_core::{Interner, Symbol};
 
 use crate::predict::Predict;
 

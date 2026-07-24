@@ -9,6 +9,7 @@ publish = false
 # deterministic — `inv-determinism`) plus the sh-specific CFG/effect analyses.
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
+dorc-aid = { path = "../aid", version = "0.0.0" }
 # The CFG builder consumes the parser's arena AST (`cfg::build(ast: &Ast)`), so
 # syntax is a real dependency, not dev-only.
 dorc-syntax = { path = "../syntax", version = "0.0.0" }

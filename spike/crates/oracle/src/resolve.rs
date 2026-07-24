@@ -26,7 +26,8 @@
 //! an entity's text — it interns the resolver's OUTPUT as an opaque canonical token and compares
 //! canonical forms as symbols. The OWNER decodes; the engine plumbs (24F reconciliation).
 
-use dorc_core::{Carrier, Interner, Symbol};
+use dorc_aid::Carrier;
+use dorc_core::{Interner, Symbol};
 
 use crate::predict::{Predict, PredictSet, lift_resolvers};
 

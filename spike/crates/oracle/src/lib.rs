@@ -41,7 +41,8 @@
     reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
 )]
 
-use dorc_core::{Carrier, Interner, KindId, ProviderId, SelectorId, Symbol};
+use dorc_aid::Carrier;
+use dorc_core::{Interner, KindId, ProviderId, SelectorId, Symbol};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// The command-keyed `check()` contract (19H §2 / 202 §1 face-check): a dedicated

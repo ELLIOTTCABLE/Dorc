@@ -26,13 +26,14 @@ use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::Lattice;
 use crate::solve::{Direction, Graph, solve};
 use crate::value::{ValueFlow, ValueOf};
-use dorc_core::diag::{
+use dorc_aid::Carrier;
+use dorc_aid::diag::{
     CmdsubInnerNonleaf, CmdsubOperandTop, CommandName, Diag, DiagCode as Code,
     EffectKindDisagreement, OperandPosition, RedirTargetTop, SiteId,
 };
 use dorc_core::{
-    Carrier, Context, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken, ProviderId,
-    SelectorId, Span,
+    Context, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken, ProviderId, SelectorId,
+    Span,
 };
 use dorc_oracle::predict::{self, PredictSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
@@ -74,7 +75,7 @@ pub enum CommandEffect {
     Opaque,
 }
 
-// B4 sweep: EffectKindDisagreement migrated onto Diag spine (payload in dorc_core::diag).
+// B4 sweep: EffectKindDisagreement migrated onto Diag spine (payload in dorc_aid::diag).
 
 /// The source identity of a give-up site for the migrated `dq-cmdsub-operand-top` spine
 /// (`22B` §5 worked-3): a real source [`Span`] (the drop-A fix — s-2 resolves it) and a stable
@@ -1059,8 +1060,8 @@ fn mint_top_causes(
 }
 
 /// Mint the `Derived`-tier fact-merge evidence the static value-plane `Reach::Top` collapse
-/// narrates (C3; `27V` Lane A, `AID-NEEDS:law-collapse-mints-evidence`): one
-/// [`dorc_core::CollapseKind::FactMergeDisagreement`] per Opaque-bearing node — the cell whose
+/// narrates (C3; `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): one
+/// [`dorc_aid::CollapseKind::FactMergeDisagreement`] per Opaque-bearing node — the cell whose
 /// establishers meet to ⊤. Mirrors [`mint_top_causes`] (same Opaque-bearing key, same node-index
 /// order), so the product `Vec` is mint-pass-ordered — deterministic, no clock (`inv-determinism`;
 /// the `two-plane-aid-law` mint-order pin). Decision-inert: the evidence rides OUT of
@@ -1071,15 +1072,15 @@ fn mint_top_causes(
 /// disagreeing establisher values+sites into them; until then the cell keys the disagreement and
 /// each operand's `shown` is `None`. Tier is `Derived` (an engine derivation), CONTRASTING the
 /// `Measured` probe merge (C4, `facts_from_sites`).
-fn mint_merge_evidence(effects: &[Vec<CommandEffect>]) -> Vec<dorc_core::CollapseEvidence> {
+fn mint_merge_narrative(effects: &[Vec<CommandEffect>]) -> Vec<dorc_aid::CollapseNarrative> {
     (0..effects.len())
         .filter(|&i| effects[i].contains(&CommandEffect::Opaque))
         .map(|i| {
-            dorc_core::CollapseEvidence::new(
-                dorc_core::TrustTier::Derived,
-                dorc_core::CollapseKind::FactMergeDisagreement {
+            dorc_aid::CollapseNarrative::new(
+                dorc_aid::TrustTier::Derived,
+                dorc_aid::CollapseKind::FactMergeDisagreement {
                     cell: SiteId::leaf(LeafId(i as u32)),
-                    operands: dorc_core::evidence::Operands::default(),
+                    operands: dorc_aid::narrative::Operands::default(),
                 },
             )
         })
@@ -1303,12 +1304,12 @@ pub type BackingMap = BTreeMap<FactKey, FactBacking>;
 /// [`classify`] PLUS the TYPED cause-bearing cmdsub-⊤ disclosures for the why-lens (`22D`
 /// stage-3). The legacy [`Carrier`]'s `diags` already carries these LOWERED (cause-dropped, for
 /// `report`/gate-3); this ALSO returns them TYPED so the cli's why-lens render can read the
-/// `cause` off them (`to_legacy` drops it — [`dorc_core::diag::why`] needs the typed value).
+/// `cause` off them (`to_legacy` drops it — [`dorc_aid::diag::why`] needs the typed value).
 ///
 /// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags, kill-node-set,
 /// kill-coords, backing-map, collapse-evidence)`. The last element is the C3 aid plane
-/// (`27V` Lane A): one `Derived`-tier [`dorc_core::CollapseKind::FactMergeDisagreement`] per
-/// Opaque-bearing node ([`mint_merge_evidence`]), decision-inert (`two-plane-aid-law`) and threaded
+/// (`27V` Lane A): one `Derived`-tier [`dorc_aid::CollapseKind::FactMergeDisagreement`] per
+/// Opaque-bearing node ([`mint_merge_narrative`]), decision-inert (`two-plane-aid-law`) and threaded
 /// to the why-lens seam. The typed diags are a subset-by-construction of the lowered ones
 /// (the same `CmdsubOperandTop`s, before lowering) — no second pass, no divergence. EXEMPT
 /// (ru-11): the typed diags' `cause` informs the render only, never a decision. The **backing-map**
@@ -1351,7 +1352,7 @@ pub fn classify_with_why_diags(
     BTreeSet<CfgNodeId>,
     BTreeMap<CfgNodeId, FactKey>,
     BTreeMap<FactKey, FactBacking>,
-    Vec<dorc_core::CollapseEvidence>,
+    Vec<dorc_aid::CollapseNarrative>,
 ) {
     let mut diags: Vec<Diag> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
@@ -1375,8 +1376,8 @@ pub fn classify_with_why_diags(
     // (rides `Reach::Top`, excluded from `Eq`); it perturbs no decision.
     let (top_causes, fallback_cause) = mint_top_causes(cfg, ast, &effects, arena);
 
-    // C3 (`27V` Lane A): narrate the give-up as decision-inert evidence (see `mint_merge_evidence`).
-    let collapse_evidence = mint_merge_evidence(&effects);
+    // C3 (`27V` Lane A): narrate the give-up as decision-inert evidence (see `mint_merge_narrative`).
+    let collapse_narrative = mint_merge_narrative(&effects);
 
     // stage-1 cause-wiring (the corrected `tc-cmdsub-cause`): NOW that `top_causes` is minted,
     // finalize the deferred cmdsub-⊤ disclosures with each node's real ⊤-cause. The TYPED diags
@@ -1386,7 +1387,7 @@ pub fn classify_with_why_diags(
     // typed diagnostic for the why-lens, never an artifact or a decision.
     let why_diags = finalize_cmdsub_tops(&cmdsub_tops, &top_causes, fallback_cause);
     // A COPY rides `diags` for `report`/gate-3; the originals are returned for the why-lens
-    // (stage-3) — the typed `cause` on the returned diags is what `dorc_core::diag::why` reads.
+    // (stage-3) — the typed `cause` on the returned diags is what `dorc_aid::diag::why` reads.
     diags.extend(why_diags.iter().cloned());
 
     // Forward reaching-defs: out = in ⊔ gen(node). Each of a node's cells is genned
@@ -1533,7 +1534,7 @@ pub fn classify_with_why_diags(
         kills,
         kill_coords,
         backings,
-        collapse_evidence,
+        collapse_narrative,
     )
 }
 
@@ -1750,7 +1751,7 @@ command__predict() {
         let value = analyze(&built.value, &parsed.value, &mut i);
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (_classes, _why, kills, kill_coords, _backings, _evidence) = classify_with_why_diags(
+        let (_classes, _why, kills, kill_coords, _backings, _narrative) = classify_with_why_diags(
             &built.value,
             &value,
             &parsed.value,
@@ -1773,12 +1774,12 @@ command__predict() {
 
     #[test]
     fn an_opaque_reached_cell_mints_one_fact_merge_disagreement() {
-        // C3 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the collapse MINTS its own
+        // C3 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the collapse MINTS its own
         // evidence (one `Derived` FactMergeDisagreement per Opaque node), never hand-injected.
         let (mut i, idx, _s) = package_setup();
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
 
-        let collapse = |src: &str, i: &mut Interner| -> Vec<dorc_core::CollapseEvidence> {
+        let collapse = |src: &str, i: &mut Interner| -> Vec<dorc_aid::CollapseNarrative> {
             let parsed = dorc_syntax::parse(src);
             let built = cfg::build(&parsed.value);
             let value = analyze(&built.value, &parsed.value, i);
@@ -1803,11 +1804,11 @@ command__predict() {
             1,
             "one Opaque node ⇒ one merge-disagreement"
         );
-        assert_eq!(evidence[0].tier(), dorc_core::TrustTier::Derived);
+        assert_eq!(evidence[0].tier(), dorc_aid::TrustTier::Derived);
         assert!(
             matches!(
                 evidence[0].kind(),
-                dorc_core::CollapseKind::FactMergeDisagreement { .. }
+                dorc_aid::CollapseKind::FactMergeDisagreement { .. }
             ),
             "the collapse minted a FactMergeDisagreement, not a hand-injected record"
         );

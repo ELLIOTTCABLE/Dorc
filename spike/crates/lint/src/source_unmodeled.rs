@@ -55,7 +55,7 @@ impl LintSource for UnmodeledInventory {
             };
             let wall_count = wall_offsets.len();
             let downstream = leaf_offsets.iter().filter(|&&o| o > first_wall).count();
-            let (line, col) = dorc_core::diag::line_col(&file.src, first_wall as usize);
+            let (line, col) = dorc_aid::diag::line_col(&file.src, first_wall as usize);
             let wall_word = if wall_count == 1 { "wall" } else { "walls" };
             let message = format!(
                 "{wall_count} unmodeled ⊤-{wall_word} in this book; the first is here. Downstream \
@@ -66,7 +66,7 @@ impl LintSource for UnmodeledInventory {
                 path: file.path.clone(),
                 line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                 col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                severity: dorc_core::Severity::Note,
+                severity: dorc_aid::Severity::Note,
                 source: self.name(),
                 code: "unmodeled-wall-inventory".to_owned(),
                 message,

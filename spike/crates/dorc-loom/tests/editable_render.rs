@@ -1,6 +1,6 @@
 //! Core render-part adapter regressions.
 
-use dorc_core::tagged::{Field, RenderPart, RenderParts};
+use dorc_aid::tagged::{Field, RenderPart, RenderParts};
 use dorc_loom::{SectionVariableId, TemplateVariableName, to_editable_render};
 use errorloom::{EditableFragment, RenderComponent};
 

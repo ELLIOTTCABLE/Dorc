@@ -22,8 +22,8 @@
 //! arms, its annotation shape, its mark punctuation) — never the meaning of a kind /
 //! entity / selector string. Those stay opaque coordination handles.
 
+use dorc_aid::diag::{Diag, DiagCode, MarkBraceVerdictSingleCell};
 use dorc_core::Span;
-use dorc_core::diag::{Diag, DiagCode, MarkBraceVerdictSingleCell};
 
 use super::ast::{MarkKind, MarkTarget, Pattern, Predict, Stmt, Word};
 
@@ -350,7 +350,7 @@ systemctl__predict() {
         );
         assert_eq!(diags.len(), 1, "exactly one loud diagnostic: {diags:?}");
         assert_eq!(diags[0].code.slug(), "mark-brace-verdict-single-cell");
-        assert_eq!(diags[0].severity(), dorc_core::Severity::Warning);
+        assert_eq!(diags[0].severity(), dorc_aid::Severity::Warning);
     }
 
     #[test]
