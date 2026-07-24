@@ -291,20 +291,55 @@ exceeding each limit; a body emitting the terminal token; cleanup failure; concu
 sessions colliding on the token; and the ordinary report-free probe rendering
 byte-identically.
 
-### 4j - Sizing, and why it is not in this pass
+### 4j - Sizing, measured
 
-Costed against `297`'s phase-zero seam map (which is now the surviving record of the
-deleted scaffold - see the ported `297-security-refresh-phase-packets.md`). The
-exclusive-create primitive itself is genuinely small. Re-enabling the lane around it is
-not: it re-adds a scaffold that the phase-one pin currently forbids outright, so that test
-must be rewritten from "no report plumbing may exist" to "only the owned shape may exist";
-it re-touches emitted probe bytes, so goldens churn across every e2e case that renders a
-probe; it wants the phase-four encoder to be honest; and 4h now makes it depend on
-entry-machinery work that does not exist. `plans/288` phase 5 is concurrently moving the
-e2e tree and retiring `sh e2e/run.sh`, which is exactly the golden surface that would
-churn. Deferring costs nothing here and avoids editing under a live lane - the standing
-test for deferral being whether it interacts poorly with other ongoing work, which it
-does.
+Costed against the actual deletion (`adef70d3`) and the current tree, not estimated. It
+is smaller than the phase-one disposition suggests, and the four things that usually make
+this kind of repair expensive all turn out to be cheap here:
+
+- **The deleted surface is one function.** `render::probe::record_scaffold_draining`, 35
+  lines of `format!`-assembled sh, plus its call-site gate in `plan/src/lib.rs`. The
+  ported `297-security-refresh-phase-packets.md` phase-zero map plus `adef70d3`'s diff are
+  together a complete record of what to rebuild.
+- **A session prologue has a natural slot.** `ProbePlan::render_sh` already opens with
+  `render::probe::header()` + `records::header_line(...)`; the one-time `mkdir -m 700` and
+  its degradation branch go there, and the cleanup at the sentinel. No new architecture.
+- **Golden churn is TWO cases.** The draining scaffold is emitted only for an
+  `emits_report` check, so every other probe stays byte-identical (the original landing
+  held that property deliberately, and `empty-world-byte-identical` still pins it). Only
+  `e2e/cases/decline27-tier3-dynamic` and `e2e/cases/report27-decline-static-classed`
+  reference the sink at all.
+- **The entered-context cell is ALREADY carved in code.** `cli/main.rs` records that
+  entry-composition is out of the tier-3 drain's scope, so `emits_report` is ignored on
+  the entry path. The human's ruling that the entry machinery owns the in-context lane
+  therefore does not block this: the repair lands for unentered sites and leaves the
+  entered carve exactly where it already sits, to be answered when `plans/27C`'s machinery
+  is next opened.
+
+What is genuinely NOT cheap, and why this still wants its own bounded lane rather than a
+tail-end of a catch-up pass:
+
+- **The pin test inverts.** `emitting_auto_cell_never_constructs_a_report_path` currently
+  forbids the whole vocabulary outright (`TMPDIR`, `dorc-drep`, `DREP_V1=`, `$_drep`,
+  `: >`, the read loop). The repair brings most of it back, so the test must be rewritten
+  from "no report plumbing may exist" to "only the owned shape may exist" - and a
+  too-permissive rewrite silently re-opens the write primitive with a green suite. That
+  inversion is the one artifact in this repair that must not be got wrong, and `297`'s own
+  dispatch law says a security-critical bounded piece gets a frozen packet.
+- **The scratch root must be threaded, not constant.** `rul-scratch-root-never-read-from-host`
+  means the renderer receives the root; it cannot read the environment and should not hard-code
+  a literal it cannot vary. `records::Framing` is the right carrier - it is already the
+  controller-minted per-run object holding nonce, host, and attempt - but that is a
+  signature change through `render_sh` and its callers.
+- **The e2e exec gate really runs the probe.** A real `mkdir` executes under the harness,
+  so the sandboxed root has to be supplied there and the created directory has to land
+  somewhere the fixture-safety law tolerates. This is the piece most likely to interact
+  with `plans/288` phase 5, which is concurrently moving the e2e tree and retiring
+  `sh e2e/run.sh`.
+
+Estimate: the render and prologue are an afternoon; the test inversion and the harness
+siting are the work. Recommended as the immediate next security lane, with a frozen packet
+covering the inverted pin's exact assertions before any code moves.
 
 ## 5 - Cross-lane collisions with `plans/288`
 
