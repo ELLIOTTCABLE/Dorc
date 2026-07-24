@@ -16,14 +16,30 @@ discipline: one rule per bullet, slugged; append to the matching section.
   real downstream pipe.
 - **probe-ships-oracle-bytes-only** — the compiled probe is synthesized
   scaffolding + oracle bodies, never book contents (it never inherits the
-  book's `trap`s). ⚠ HEAD DEBT: the landed `24J` pipe-lift raw-ships book
-  bytes — standing-law debt; read `24J`'s header correction and
-  `271:rul-only-oracle-bytes-ship` (+ its build riders) before touching probe
-  emission. Never imitate the landed shape.
-- **results-fold-to-run** — a missing or unparseable fact folds to
+  book's `trap`s). The `24J` raw-ship debt is REPAIRED and machine-pinned
+  (probe-render tests assert the raw book site cannot appear in emitted bytes);
+  their failure means it returned.
+- **results-fold-to-run** — a missing or unparseable FACT folds to
   `Verdict::Unknown` ⇒ run (`kFAIL-perform`); keep that default, it is
   load-bearing. Never silently drop a selector on parse and widen a verdict to
   the whole entity — that is a wrong-elision under apply's fail-direction.
+- **admission-precedes-the-fold** — the fold-to-run default answers a MISSING
+  FACT, never a broken CHANNEL. Bytes reach the fold only through the bounded
+  intake, whose outcome is three-way: `Admitted` proceeds; `NoObservation`
+  (well-owned attempt, no usable fact) takes the fold above; `Refused` (framing,
+  bounds, attribution, or integrity failure) returns BEFORE plan construction,
+  artifact rendering, or whylog writing, and emits no plan carrying mutation
+  authority. Never collapse `Refused` into `Unknown` and continue — "run
+  everything" is the safe answer to not knowing the WORLD, and the wrong answer
+  to not knowing whether we are still talking to the world we think we are
+  (`rul-integrity-failure-withholds-mutation`).
+- **attribution-is-controller-minted** — the run's framing/scope is minted HERE,
+  at this edge, from controller-owned values; an incoming payload frame is
+  CHECKED against it and never mints it. The width-one scope types are private
+  and deliberately unshared. When a second scope first becomes representable —
+  real transport, concurrency, retry, cross-host reuse, saved approval — carrying
+  the scope has to become checking it, and this is the choke point where that
+  lands.
 - **speculate-and-intercept** — the probe model resolves probe-gated branches by
   running the read-only check for real (oracles intercept; not Ansible
   check-mode blindness).

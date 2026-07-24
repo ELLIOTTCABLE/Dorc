@@ -16,6 +16,16 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   `is_converged()`) or let the command run — NEVER fabricate or convert a claim
   to satisfy the type. That conversion is the vouchless-elide hole the weld
   closes.
+- **aggregate-mints-carry-the-same-demand** — the demand follows the MUTATION,
+  not the node shape: an establish erased inside a member-loop or inline-call
+  aggregate consumes its own reached vouch exactly as a standalone one does.
+  `AllEstablishesVouched` is the private, non-empty (head+tail) proof; its mint
+  takes the exact ORDERED `(site, fact)` list and rejects missing, extra,
+  duplicate, reordered, wrong-site, and wrong-fact vouches — the whole aggregate,
+  atomically. Query-only bodies prove `ReadSubstitutionProof` separately and must
+  NEVER manufacture a vouch to share an API. Keep both types and both provers
+  private: the doctest in the crate doc pins that, and exposing either "for a
+  test" is the regression it guards.
 - **vouch-built-once** — vouches are built once (`build_vouches`) and threaded
   via the `Vouches` map; a vouch informs a license and never enters the
   fact-plane.

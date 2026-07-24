@@ -144,10 +144,9 @@ prompt you write:
   compound consumes from it is covered; an rc-only body never sits upstream of a
   byte-consumer) · stream-fidelity of substituted bodies on consumed channels ·
   capture-ships-real-bytes (byte-consumption demands real execution — same rule, not
-  an exception). ⚠ HEAD DEBT: the landed `24J` connected-probe raw-ships book bytes —
-  confirmed standing-law debt; the repair is the block-rebuild probe-emission
-  touch-point. NEVER imitate the landed shape; read `24J`'s header correction before
-  touching probe emission.
+  an exception). The `24J` raw-ship debt is REPAIRED and machine-pinned: probe-render
+  tests assert the raw book site cannot appear in emitted probe bytes, and their
+  failure means the debt returned. Historical shapes in `24J` predate the repair.
 - **rul-argv-flows-bytes-do-not** — the admin's argv flows into the shipped probe as
   the predict's *arguments*, passing THROUGH the oracle author's own argparse (the
   argparse is the type-checker of the vouch — declines included); the admin's bytes
