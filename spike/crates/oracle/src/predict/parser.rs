@@ -13,11 +13,12 @@ use super::ast::{
 };
 use super::lexer::{Tok, Token, lex};
 use super::{VERB_BINDING, lift_failure};
-use dorc_core::diag::{
+use dorc_aid::diag::{
     DiagCode, MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer,
     MarkUnknownVerb,
 };
-use dorc_core::{Carrier, Diag, Interner, Span, Symbol};
+use dorc_aid::{Carrier, Diag};
+use dorc_core::{Interner, Span, Symbol};
 use dorc_syntax::sem;
 
 /// The provider-name suffix marking a command-keyed check (`apt_get__predict`); the

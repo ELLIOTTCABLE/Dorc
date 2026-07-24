@@ -15,7 +15,7 @@ fn corpus_dir() -> PathBuf {
 }
 
 fn committed_lock() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs")
 }
 
 /// The generated-catalog byte-identity gate (`28A` §4 · `282:rul-catalog-lock-is-generated-whole`):

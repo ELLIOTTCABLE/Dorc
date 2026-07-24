@@ -1,15 +1,15 @@
 //! The case-first catalog-lock generator (`28A` §4 checkpoint / `282` §8). The whole
 //! `catalog_lock.rs` is derived from the defining cases (case-owned rows) plus the current lock
-//! (ratcheted, case-less rows carried verbatim). The serializer lives in `dorc_core::catalog`; this
+//! (ratcheted, case-less rows carried verbatim). The serializer lives in `dorc_aid::catalog`; this
 //! module sources only the case-first fields — frontmatter `when_fires`/`why`, and the `example`
 //! rendered from the defining payload.
 
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use dorc_aid::catalog::{CATALOG, LockRow, fill_template, refreshed_params, serialize_lock};
+use dorc_aid::diag::params_of;
 use dorc_core::Interner;
-use dorc_core::catalog::{CATALOG, LockRow, fill_template, refreshed_params, serialize_lock};
-use dorc_core::diag::params_of;
 use errorloom::{Case, CaseRenderer};
 
 use crate::DorcConsumer;

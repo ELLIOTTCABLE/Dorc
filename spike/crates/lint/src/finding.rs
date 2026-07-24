@@ -8,14 +8,14 @@
 //! `error`/`warn`/`info` wire tokens are kept byte-stable at the render edge ([`severity_token`];
 //! `tc-lint-severity-wire-tokens`, conductor-kept) — `Warning`→`warn`, `Note`→`info`.
 
-use dorc_core::Severity;
+use dorc_aid::Severity;
 
 /// The exact diagnostic and source bytes behind a native finding.  This keeps the
 /// authoring render attached to the diagnostic instead of recovering it from text.
 #[derive(Debug, Clone)]
 pub struct NativeDiag {
     /// The originating core diagnostic.
-    pub diag: dorc_core::Diag,
+    pub diag: dorc_aid::Diag,
     /// The exact source text used to compute its span.
     pub source: String,
 }

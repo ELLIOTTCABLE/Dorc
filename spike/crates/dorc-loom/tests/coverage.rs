@@ -1,11 +1,11 @@
 //! `RenderParts` coverage for the editable adapter.
 
-use dorc_core::catalog::{CATALOG, fill_template, fill_template_parts};
-use dorc_core::diag::{
+use dorc_aid::catalog::{CATALOG, fill_template, fill_template_parts};
+use dorc_aid::diag::{
     Diag, DiagCode, MissingDialectMarker, RenderHeredocRefused, SiteId, SiteUnresolvable,
     render_body, render_body_parts, render_cli, render_cli_parts, render_staged_cli_parts,
 };
-use dorc_core::tagged::{Field, RenderPart};
+use dorc_aid::tagged::{Field, RenderPart};
 use dorc_core::{BytePos, Interner, LeafId, Span as SourceSpan};
 use dorc_loom::to_editable_render;
 use errorloom::{EditableFragment, RenderComponent};
@@ -59,7 +59,7 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
     for diag in &diagnostics {
         let body = render_body_parts(diag, &interner);
         let cli = render_cli_parts(
-            &dorc_core::catalog::CONST_CATALOG,
+            &dorc_aid::catalog::CONST_CATALOG,
             diag,
             src,
             "book.sh",
@@ -70,7 +70,7 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
         assert_eq!(
             render_staged_cli_parts(
                 "whylog",
-                &dorc_core::catalog::CONST_CATALOG,
+                &dorc_aid::catalog::CONST_CATALOG,
                 diag,
                 src,
                 "book.sh",

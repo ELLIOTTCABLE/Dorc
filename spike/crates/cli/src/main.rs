@@ -60,16 +60,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 use std::process::ExitCode;
 
-use dorc_core::diag::{
+use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete,
     Diag, DiagCode, EscalationPolicy, FootprintIncoherent, ReachesConflict,
     ReachesProviderCollision, ResolverConflict, ResolverProviderCollision, TouchesEscalated,
     WrappedSiteAdoptionHint,
 };
-use dorc_core::{
-    CollapseEvidence, CollapseKind, Interner, Observable, OutBytes, Predicted, ProvArena, Rc,
-    Severity, Symbol, TrustTier, Verdict,
-};
+use dorc_aid::{CollapseKind, CollapseNarrative, Severity, TrustTier};
+use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
 
 /// The one-line usage synopsis, embedded in argument-error messages. The full
 /// mode/flag/exit-code reference is [`HELP`] (printed by `--help` to stdout, exit 0).
@@ -562,10 +560,7 @@ fn strip_command(path: &str) -> Result<(), String> {
     let mut interner = Interner::default();
     let stripped = dorc_oracle::strip_file(&mut interner, &src);
     for d in &stripped.diags {
-        eprintln!(
-            "dorc: strip: {}",
-            dorc_core::diag::render_body(d, &interner)
-        );
+        eprintln!("dorc: strip: {}", dorc_aid::diag::render_body(d, &interner));
     }
     print!("{}", stripped.value);
     std::io::stdout().flush().ok();
@@ -1152,9 +1147,9 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let peeled_sites = wrapped_analysis.peeled;
     let wrapped_probes = wrapped_analysis.wrapped;
     let carried_attribution = wrapped_analysis.carried;
-    let entry_evidence = wrapped_analysis.collapse_evidence;
+    let entry_narrative = wrapped_analysis.collapse_narrative;
     report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
-    let (classified, why_diags, kills, kill_coords, fact_backings, classify_evidence) =
+    let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
             &value,
@@ -1173,7 +1168,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
     // the verdict) and, converged, mints a `Disposition::Guard`.
-    let (mut vouches, decline_evidence) =
+    let (mut vouches, decline_narrative) =
         build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
@@ -1434,7 +1429,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let (by_fact, merge_evidence) = facts_from_sites(&probe, results);
+    let (by_fact, merge_narrative) = facts_from_sites(&probe, results);
     let probe_origins = probe_origins(&probe, results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
@@ -1570,16 +1565,16 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // `27W` §3 C3 pairing: fold each ingested tier-3 report record (recognized class + site)
         // into its site's `VerdictDecline` via `with_authored_reason` (idempotent — tier-2 static
         // wins). Then union the collapse-evidence onto the why-lens seam (d4 renders; decision-inert).
-        let paired_declines = pair_authored_reasons(decline_evidence, &results.reports);
-        let collapse_evidence: Vec<CollapseEvidence> = classify_evidence
+        let paired_declines = pair_authored_reasons(decline_narrative, &results.reports);
+        let collapse_narrative: Vec<CollapseNarrative> = classify_narrative
             .iter()
             .cloned()
             .chain(paired_declines)
-            .chain(entry_evidence.iter().cloned())
-            .chain(merge_evidence.iter().cloned())
-            .chain(plan.survival_report.collapse_evidence().iter().cloned())
+            .chain(entry_narrative.iter().cloned())
+            .chain(merge_narrative.iter().cloned())
+            .chain(plan.survival_report.collapse_narrative().iter().cloned())
             .collect();
-        emit_why_lens(&why_diags, &arena, &book_src, &collapse_evidence);
+        emit_why_lens(&why_diags, &arena, &book_src, &collapse_narrative);
         // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the
         // NAMED early-exit-race nondeterminism class — a `pipefail`-off `A | grep -q` whose
         // consumer closed the pipe before an upstream stage finished writing. The landing is SAFE
@@ -1589,7 +1584,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         emit_sigpipe_race_notes(results);
         emit_report_lane_notes(results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
         // `27W` §3 tier-2 STATIC decline classes at plan time, with the emitting arm's file:line.
-        emit_static_decline_notes(&collapse_evidence, &oracle_paths, &oracle_srcs);
+        emit_static_decline_notes(&collapse_narrative, &oracle_paths, &oracle_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
@@ -1668,7 +1663,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
                 "whylog",
                 None,
                 &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
-                    dorc_core::diag::WhylogBookDesync {
+                    dorc_aid::diag::WhylogBookDesync {
                         which: "decision-digest".to_owned(),
                     },
                 ))],
@@ -1758,7 +1753,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, String>
                 "whylog",
                 None,
                 &[Diag::new_spanless_site(DiagCode::WhylogAbsent(
-                    dorc_core::diag::WhylogAbsent {
+                    dorc_aid::diag::WhylogAbsent {
                         dir: dir.to_owned(),
                     },
                 ))],
@@ -3132,15 +3127,15 @@ fn build_vouches(
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
     advisory: bool,
-) -> (dorc_plan::Vouches, Vec<CollapseEvidence>) {
+) -> (dorc_plan::Vouches, Vec<CollapseNarrative>) {
     // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
     // share it). This edge only ROUTES the lift diagnostics: surfaced AS-IS (inv-top-reject — the
     // tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
     // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
-    let (lifted, decline_evidence) =
+    let (lifted, decline_narrative) =
         dorc_plan::build_vouches(oracle_refs, classes, value, interner);
     report_at(advisory, "verdict", None, &lifted.diags);
-    (lifted.value, decline_evidence)
+    (lifted.value, decline_narrative)
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
@@ -3235,7 +3230,7 @@ fn unresolvable_diagnostics(
     ast: &dorc_syntax::ast::Ast,
     book_src: &str,
 ) -> Vec<Diag> {
-    use dorc_core::diag::{SiteId, SiteUnresolvable};
+    use dorc_aid::diag::{SiteId, SiteUnresolvable};
     let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
         plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
 
@@ -3353,14 +3348,14 @@ fn emit_plan_summary(plan: &dorc_plan::Plan) {
 /// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
 /// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
 ///
-/// `_collapse_evidence` is the C3/C4 decision-inert evidence seam (`27V` Lane A): the collapse
+/// `_collapse_narrative` is the C3/C4 decision-inert evidence seam (`27V` Lane A): the collapse
 /// records the why-lens will render (d4). Carried through here and IGNORED for now — the render
 /// arrangement is d4's, so surfacing it early would freeze `render-form-unwelded` output.
 fn emit_why_lens(
     why_diags: &[Diag],
     arena: &ProvArena,
     src: &str,
-    _collapse_evidence: &[CollapseEvidence],
+    _collapse_narrative: &[CollapseNarrative],
 ) {
     for line in why_lens_lines(why_diags, arena, src) {
         eprintln!("why: {line}");
@@ -3538,7 +3533,7 @@ fn oracle_locus(
     let (span, file) = defining?;
     let i = file.0 as usize;
     let (path, src) = (oracle_paths.get(i)?, oracle_srcs.get(i)?);
-    let (line, _col) = dorc_core::diag::line_col(src, span.lo.0 as usize);
+    let (line, _col) = dorc_aid::diag::line_col(src, span.lo.0 as usize);
     Some(format!("{path}:{line}"))
 }
 
@@ -3729,7 +3724,7 @@ fn collect_wall_steps(
         .map(|step| {
             let span = ast.node(step.ast).span;
             let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
-            let line = dorc_core::diag::line_col(book_src, lo).0;
+            let line = dorc_aid::diag::line_col(book_src, lo).0;
             let text = book_src.get(lo..hi).unwrap_or("");
             let word = text.split_whitespace().next().unwrap_or("").to_owned();
             let role = match &step.disposition {
@@ -3994,7 +3989,7 @@ struct WhySite {
 /// ack-2 `dorc why`: the source-line-keyed WHY report — the focused query surface (the `plan`
 /// preview points here). **rul24-lineno-identity** (a product invariant): the ONE line-number
 /// space is the SOURCE file's, so a `file:N` this report PRINTS is exactly the `book.sh:N` a query
-/// ACCEPTS — the mapping is 1:1 through [`dorc_core::diag::line_col`]. Three addressing forms:
+/// ACCEPTS — the mapping is 1:1 through [`dorc_aid::diag::line_col`]. Three addressing forms:
 /// * `None` (unargumented) — the CURRENT run's PROBLEMS: every site that runs on a ⊤, runs
 ///   unprobed, or carries a guard / render-refusal (never a clean elide/omit) — "can't be typing
 ///   lines manually when you're already annoyed" (NO cross-run state; kSTATE stays parked).
@@ -4035,7 +4030,7 @@ fn emit_why_report(
     for step in &plan.steps {
         let span = ast.node(step.ast).span;
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
-        let line = dorc_core::diag::line_col(book_src, lo).0;
+        let line = dorc_aid::diag::line_col(book_src, lo).0;
         let command = flatten_ws(book_src.get(lo..hi).unwrap_or("<source unavailable>"));
         if let Disposition::Replace(license, _) = &step.disposition {
             let header = format!("{filename}:{line}  `{command}`");
@@ -4237,7 +4232,7 @@ fn print_why_site(s: &WhySite, filename: &str) {
 
 /// The ⊤-run cause for a Run site, if a `why_diags` disclosure covers it: the FIRST diag whose
 /// primary span starts inside this command's span (the cmdsub-⊤ origin sits at/within the
-/// command), rendered through the why-lens [`dorc_core::diag::why`] (the same cause-chain the
+/// command), rendered through the why-lens [`dorc_aid::diag::why`] (the same cause-chain the
 /// `plan` render surfaces). `None` ⇒ no ⊤-cause (the caller falls to unprobed / not-elidable).
 fn top_run_reason(
     span: dorc_core::Span,
@@ -4248,7 +4243,7 @@ fn top_run_reason(
     why_diags.iter().find_map(|d| {
         let psp = d.primary.span()?;
         (psp.lo.0 >= span.lo.0 && psp.lo.0 < span.hi.0)
-            .then(|| dorc_core::diag::why(d, arena, book_src).map(|e| e.reason))
+            .then(|| dorc_aid::diag::why(d, arena, book_src).map(|e| e.reason))
             .flatten()
     })
 }
@@ -4279,7 +4274,7 @@ fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
 
 /// The why-lens render + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so
 /// the dedup is unit-testable (`x2-fd1`). For each caused-⊤ diag it renders the "why did this run"
-/// line via [`dorc_core::diag::why`], showing a given cause-SITE once.
+/// line via [`dorc_aid::diag::why`], showing a given cause-SITE once.
 ///
 /// stage-4 DEDUP KEY = `(cause, site)`, NOT the cause [`dorc_core::ProvId`] alone (`x2-fd1` fix,
 /// `224` §10): under function inlining two call-sites splice the SAME body `AstId` (`inv-leaf-seam`)
@@ -4291,7 +4286,7 @@ fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
 /// first-seen order is deterministic (`inv-determinism`). The only suppression built (no general
 /// subsystem — `22D` §1 stage-4).
 fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<String> {
-    let mut shown: Vec<(dorc_core::ProvId, dorc_core::diag::SiteId)> = Vec::new();
+    let mut shown: Vec<(dorc_core::ProvId, dorc_aid::diag::SiteId)> = Vec::new();
     let mut lines = Vec::new();
     for diag in why_diags {
         if let Some(key) = cmdsub_cause_site(diag) {
@@ -4300,7 +4295,7 @@ fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Strin
             }
             shown.push(key);
         }
-        if let Some(explanation) = dorc_core::diag::why(diag, arena, src) {
+        if let Some(explanation) = dorc_aid::diag::why(diag, arena, src) {
             lines.push(explanation.reason);
         }
     }
@@ -4311,7 +4306,7 @@ fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Strin
 /// `CmdsubOperandTop` carries a cause at HEAD (stage-1); any other diag returns `None` (the why-lens
 /// does not explain it anyway, fd-G), so it never participates in the dedup. The `site` half is what
 /// separates two inlined call-sites sharing one cause `ProvId` (`x2-fd1`).
-fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_core::diag::SiteId)> {
+fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_aid::diag::SiteId)> {
     match &diag.code {
         DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
         _ => None,
@@ -4325,7 +4320,7 @@ mod why_lens_dedup_tests {
     //! the 2nd forced run's `why:` is wrongly suppressed. The arena hash-conses identical
     //! `(OriginKind, span)` origins (`core::prov` `hash_cons_shares_identical_origins`), so two
     //! `arena.leaf(TopCause, same_span)` calls reproduce the inlined-body cause collision.
-    use dorc_core::diag::{CmdsubOperandTop, CommandName, Diag, DiagCode, OperandPosition, SiteId};
+    use dorc_aid::diag::{CmdsubOperandTop, CommandName, Diag, DiagCode, OperandPosition, SiteId};
     use dorc_core::{BytePos, LeafId, OriginKind, ProvArena, Span, TopCause};
 
     fn cmdsub_top(arena: &mut ProvArena, leaf: u32, body_span: Span) -> Diag {
@@ -4430,16 +4425,16 @@ fn facts_from_sites(
     results: &SiteResults,
 ) -> (
     BTreeMap<dorc_core::FactKey, Observable>,
-    Vec<CollapseEvidence>,
+    Vec<CollapseNarrative>,
 ) {
     use dorc_plan::ProbeSiteKind;
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
     // C4 (`27V` Lane A): `Measured` fact-merge evidence minted beside the ⊤-fold. `first_site`
     // remembers each cell's first establisher so a cross-site conflict names both operands.
-    let mut collapse_evidence: Vec<CollapseEvidence> = Vec::new();
-    let mut first_site: BTreeMap<dorc_core::FactKey, dorc_core::diag::SiteId> = BTreeMap::new();
+    let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
+    let mut first_site: BTreeMap<dorc_core::FactKey, dorc_aid::diag::SiteId> = BTreeMap::new();
     for check in &probe.checks {
-        let site_id = dorc_core::diag::SiteId {
+        let site_id = dorc_aid::diag::SiteId {
             leaf: check.site,
             member: check.member,
         };
@@ -4483,13 +4478,13 @@ fn facts_from_sites(
         if matches!(check.site_kind, ProbeSiteKind::Query { valid: true })
             && record.is_some_and(|r| r.conflicted)
         {
-            collapse_evidence.push(measured_merge_disagreement(site_id, &[site_id]));
+            collapse_narrative.push(measured_merge_disagreement(site_id, &[site_id]));
         }
         // C5 substitution refusal. tc-substitution-refusal-scope: minted ONLY for the invalid-Query
         // withhold (a genuine consumed-channel refusal), NOT the establish withhold (firewall-by-
         // design; it elides via Effect). Flagged UP — a scoping judgment (`inv-superposition`).
         if matches!(check.site_kind, ProbeSiteKind::Query { valid: false }) {
-            collapse_evidence.push(CollapseEvidence::new(
+            collapse_narrative.push(CollapseNarrative::new(
                 TrustTier::Derived,
                 CollapseKind::SubstitutionRefusal {
                     site: site_id,
@@ -4504,11 +4499,11 @@ fn facts_from_sites(
             && rc >= 2
         {
             let class = if rc == 127 {
-                dorc_core::evidence::EntryFailureTag::MissingDeps
+                dorc_aid::narrative::EntryFailureTag::MissingDeps
             } else {
-                dorc_core::evidence::EntryFailureTag::InContextDecline
+                dorc_aid::narrative::EntryFailureTag::InContextDecline
             };
-            collapse_evidence.push(CollapseEvidence::new(
+            collapse_narrative.push(CollapseNarrative::new(
                 TrustTier::Measured,
                 CollapseKind::EntryFailure {
                     site: site_id,
@@ -4520,7 +4515,7 @@ fn facts_from_sites(
         if let Some(prior) = by_fact.get(&check.fact).copied() {
             if prior != obs {
                 let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);
-                collapse_evidence
+                collapse_narrative
                     .push(measured_merge_disagreement(site_id, &[prior_site, site_id]));
             }
             by_fact.insert(check.fact, merge_observable(prior, obs));
@@ -4529,7 +4524,7 @@ fn facts_from_sites(
             by_fact.insert(check.fact, obs);
         }
     }
-    (by_fact, collapse_evidence)
+    (by_fact, collapse_narrative)
 }
 
 /// C6 (`27V` Lane A · `OriginKind::ProbeResult`): mint one probe-result origin per received record
@@ -4575,20 +4570,20 @@ fn probe_origins(
 /// Decision-inert (`two-plane-aid-law`): the conservative meet already folded the channel to ⊤
 /// (`kFAIL-perform`, the only safe resolution of a self-contradicting host); this only narrates why.
 fn measured_merge_disagreement(
-    cell: dorc_core::diag::SiteId,
-    sites: &[dorc_core::diag::SiteId],
-) -> CollapseEvidence {
-    let operands = dorc_core::evidence::Operands::capped(
+    cell: dorc_aid::diag::SiteId,
+    sites: &[dorc_aid::diag::SiteId],
+) -> CollapseNarrative {
+    let operands = dorc_aid::narrative::Operands::capped(
         sites
             .iter()
-            .map(|&site| dorc_core::evidence::ValueOperand {
+            .map(|&site| dorc_aid::narrative::ValueOperand {
                 site,
                 minting_line: None,
                 shown: None,
             })
             .collect(),
     );
-    CollapseEvidence::new(
+    CollapseNarrative::new(
         TrustTier::Measured,
         CollapseKind::FactMergeDisagreement { cell, operands },
     )
@@ -4767,7 +4762,7 @@ struct ReportRecord {
     /// The emitting site (the scaffold's `site=<key>`), if attached.
     site: Option<RecordKey>,
     /// The recognized decline class, or `None` (degrade-generic — unknown token / free-form line).
-    class: Option<dorc_core::evidence::DeclineClass>,
+    class: Option<dorc_aid::narrative::DeclineClass>,
     /// The full raw `<verb> <class> <tail>` emission, sanitized + size-capped at ingestion (the
     /// BASIC cap only — full why-surface sanitization is the security round's, `an-output-sanitization`
     /// fence named; `law-whylog-is-sensitive`). Retained for max-verbosity display (d4).
@@ -4842,9 +4837,9 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
 }
 
 /// The engine-owned display word for a decline class (`27W:rul-class-starter-set`). Delegates to
-/// the one home ([`dorc_core::evidence::DeclineClass::token`]); display only
+/// the one home ([`dorc_aid::narrative::DeclineClass::token`]); display only
 /// (`inv-referent-agnostic`; spellings ride `27V:rul-output-form-unwelded`).
-fn decline_class_word(class: dorc_core::evidence::DeclineClass) -> &'static str {
+fn decline_class_word(class: dorc_aid::narrative::DeclineClass) -> &'static str {
     class.token()
 }
 
@@ -4878,11 +4873,11 @@ fn emit_report_lane_notes(results: &SiteResults) {
 
 /// C3 report-lane pairing (`27W` §3 `rul-static-first-three-tier`): fold each ingested tier-3 report
 /// record (a recognized decline class + a site) into that site's
-/// [`dorc_core::evidence::CollapseKind::VerdictDecline`] evidence via
-/// [`dorc_core::evidence::CollapseEvidence::with_authored_reason`]. The runtime record supplies only
+/// [`dorc_aid::narrative::CollapseKind::VerdictDecline`] evidence via
+/// [`dorc_aid::narrative::CollapseNarrative::with_authored_reason`]. The runtime record supplies only
 /// the missing CLASS — a dynamic format string defeated static reading (`27W` §2 "one honest loss"),
 /// so `classify_decline` traced the reached decline arm but left the class unread. The arm span +
-/// file id are the [`dorc_core::evidence::CollapseKind::VerdictDecline`]'s OWN already-traced reached
+/// file id are the [`dorc_aid::narrative::CollapseKind::VerdictDecline`]'s OWN already-traced reached
 /// arm (the precise `file:line`,
 /// `27V:mech-minting-line-threading`); the inventory-keyed lookup the spec sketched is redundant here
 /// — a class-readable inventory arm implies static ALREADY populated the reason. Deduped
@@ -4890,10 +4885,10 @@ fn emit_report_lane_notes(results: &SiteResults) {
 /// overwrites a statically populated reason (static wins). Empty in the corpus (no oracle emits ⇒
 /// `empty-world-byte-identical`). Decision-inert (`two-plane-aid-law`): classes route AID only.
 fn pair_authored_reasons(
-    evidence: Vec<CollapseEvidence>,
+    evidence: Vec<CollapseNarrative>,
     reports: &[ReportRecord],
-) -> Vec<CollapseEvidence> {
-    use dorc_core::evidence::{AuthoredReason, CollapseKind};
+) -> Vec<CollapseNarrative> {
+    use dorc_aid::narrative::{AuthoredReason, CollapseKind};
     evidence
         .into_iter()
         .map(|ev| {
@@ -4910,7 +4905,7 @@ fn pair_authored_reasons(
             let paired = reports.iter().find_map(|r| {
                 let rk = r.site?;
                 let matches = r.recognized
-                    && dorc_core::diag::SiteId {
+                    && dorc_aid::diag::SiteId {
                         leaf: rk.site,
                         member: rk.member,
                     } == site;
@@ -4939,11 +4934,11 @@ fn pair_authored_reasons(
 /// `empty-world-byte-identical`); wording rides `27V:rul-output-form-unwelded`. Never `error[` ⇒
 /// ignored by the gate-3 floor; the `why:` prefix lets gate-7 pin it.
 fn emit_static_decline_notes(
-    collapse_evidence: &[CollapseEvidence],
+    collapse_narrative: &[CollapseNarrative],
     oracle_paths: &[String],
     oracle_srcs: &[String],
 ) {
-    for ev in collapse_evidence {
+    for ev in collapse_narrative {
         let CollapseKind::VerdictDecline {
             authored_reason: Some(reason),
             ..
@@ -5176,7 +5171,7 @@ fn parse_report_record(rest: &str, out: &mut SiteResults) {
     let verb = words.next();
     let class = words
         .next()
-        .and_then(dorc_core::evidence::DeclineClass::from_token);
+        .and_then(dorc_aid::narrative::DeclineClass::from_token);
     let recognized = verb == Some("decline") && class.is_some();
     let rec = ReportRecord {
         site,
@@ -5481,7 +5476,7 @@ struct WrappedAnalysis {
     /// C5 aid plane (`27V` Lane A): the decision-inert [`CollapseKind::EntryDenial`] evidence minted
     /// when a wrapped site's entry consent degrades to guard/run (`two-plane-aid-law`; steers
     /// nothing). Threaded to the why-lens seam by the cli edge (d4 renders).
-    collapse_evidence: Vec<CollapseEvidence>,
+    collapse_narrative: Vec<CollapseNarrative>,
 }
 
 /// Build the wrapped-BOOK-site analysis (`27C` §3 / lane-integration `27N`): recognize each site
@@ -5508,9 +5503,9 @@ fn build_wrapped_analysis(
     capability: dorc_core::Capability,
     interner: &mut Interner,
 ) -> WrappedAnalysis {
+    use dorc_aid::narrative::EntryDegradeTag;
     use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
     use dorc_analysis::value::ValueOf;
-    use dorc_core::evidence::EntryDegradeTag;
     use dorc_oracle::entry::{
         EntryDecision, EntryDegrade, adoption_hint, decide_entry, peel_book_chain,
     };
@@ -5527,7 +5522,7 @@ fn build_wrapped_analysis(
         wrapped: dorc_plan::WrappedProbes::new(),
         hints: Vec::new(),
         carried: BTreeMap::new(),
-        collapse_evidence: Vec::new(),
+        collapse_narrative: Vec::new(),
     };
     if wrappers.is_empty() {
         return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
@@ -5695,7 +5690,7 @@ fn build_wrapped_analysis(
                         EntryDegrade::RuntimeEntryFailure => None,
                     };
                     if let Some(rung) = rung {
-                        out.collapse_evidence.push(CollapseEvidence::new(
+                        out.collapse_narrative.push(CollapseNarrative::new(
                             TrustTier::Consented,
                             CollapseKind::EntryDenial { rung },
                         ));
@@ -5928,7 +5923,7 @@ fn advisory_filter(advisory: bool, diags: &[Diag]) -> Vec<Diag> {
 /// load-bearing: the e2e gate-3 floor (20B §2) keys on `^<stage>: error[` (an Error fails a case
 /// unless declared in `expected-diagnostics`; warnings stay free-form). Below it, ack-8 (round-24):
 /// the rustc-style REGION FRAME — `--> file:line:col`, the source line in a gutter, and a `^^^`
-/// caret ([`dorc_core::diag::render_legacy_region`]) — replaces the old raw byte-offset `-->
+/// caret ([`dorc_aid::diag::render_legacy_region`]) — replaces the old raw byte-offset `-->
 /// <lo>:<hi>`, WHEN a `source` (`(filename, text)`) is threaded for this stage; a stage whose diags
 /// span an ambiguous/combined source (or are spanless) keeps the byte-offset / no-region fallback.
 /// The frame's `N |` gutter is the SOURCE line (rul24-lineno-identity: the number the user reads is
@@ -5949,9 +5944,9 @@ fn report(stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
     for d in diags {
         let (word, style) = severity_style(d.severity());
         let (filename, src) = source.unwrap_or(("", ""));
-        let rendered = dorc_core::diag::render_staged_cli_parts(
+        let rendered = dorc_aid::diag::render_staged_cli_parts(
             stage,
-            &dorc_core::catalog::CONST_CATALOG,
+            &dorc_aid::catalog::CONST_CATALOG,
             d,
             src,
             filename,
@@ -6289,7 +6284,7 @@ mod tests {
 
     #[test]
     fn report_lane_ingests_recognized_declines_and_retains_noise() {
-        use dorc_core::evidence::DeclineClass;
+        use dorc_aid::narrative::DeclineClass;
         let mut i = Interner::default();
         let r = parse_str(
             "report site=5 decline unsound vm.drop_caches is a write-only trigger key\n\
@@ -6320,15 +6315,15 @@ mod tests {
     fn pairing_folds_a_runtime_record_into_its_site_decline_and_tier2_wins() {
         // C3 (`27W` §3): a runtime record classes a site's previously-unread decline (static wins
         // on a populated reason; a non-matching site is untouched).
-        use dorc_core::evidence::{
+        use dorc_aid::narrative::{
             AuthoredReason, CollapseKind, DeclineClass, DeclineGate, MintSpan,
         };
-        let sid = |leaf: u32| dorc_core::diag::SiteId {
+        let sid = |leaf: u32| dorc_aid::diag::SiteId {
             leaf: LeafId(leaf),
             member: None,
         };
         let decline = |leaf: u32, reason: Option<AuthoredReason>| {
-            CollapseEvidence::new(
+            CollapseNarrative::new(
                 TrustTier::Vouched,
                 CollapseKind::VerdictDecline {
                     site: sid(leaf),
@@ -6440,7 +6435,7 @@ mod tests {
 
     #[test]
     fn entry_bearing_site_ge2_rc_mints_class_only_runtime_entry_failure() {
-        use dorc_core::evidence::EntryFailureTag;
+        use dorc_aid::narrative::EntryFailureTag;
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let entry_probe = probe1_entry(fact, ProbeSiteKind::Query { valid: true });
@@ -7078,7 +7073,7 @@ mod tests {
         );
         assert!(
             diags.iter().any(|d| d.code.slug() == "site-unresolvable"
-                && dorc_core::diag::render_body(d, &i).contains("make install")),
+                && dorc_aid::diag::render_body(d, &i).contains("make install")),
             "the disclosure must name the source command: {diags:?}"
         );
         assert!(
@@ -7096,7 +7091,7 @@ mod tests {
         // per-severity routing decision — pin BOTH directions so a future edit cannot silently
         // (a) leak advisory disclosure into the off-ramp surface, or (b) swallow an error there.
         // One code per severity, spelled with real catalog variants (registry-Error/Warning/Note).
-        use dorc_core::diag::{CfgBuiltinShadowed, RedirTargetTop, SiteId, SyntaxMalformed};
+        use dorc_aid::diag::{CfgBuiltinShadowed, RedirTargetTop, SiteId, SyntaxMalformed};
         use dorc_core::{BytePos, Span};
         let span = Span::new(BytePos(0), BytePos(1));
         let mixed = vec![

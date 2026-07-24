@@ -12,7 +12,7 @@
 //! gate fires at the user boundary (every oracle/book the cli loads). The parser is marker-blind;
 //! this pass flags the dialect-in-unmarked-file post-hoc.
 
-use dorc_core::diag::{Diag, DiagCode, MarkerVersionUnrecognized, MissingDialectMarker};
+use dorc_aid::diag::{Diag, DiagCode, MarkerVersionUnrecognized, MissingDialectMarker};
 use dorc_core::{Interner, Span};
 
 use crate::predict::{

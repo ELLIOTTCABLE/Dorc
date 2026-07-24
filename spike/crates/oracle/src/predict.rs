@@ -31,7 +31,7 @@
 //! entity (by tracing the oracle's own argparse); it never branches on what the
 //! entity's text *means*. Kind strings are opaque coordination handles.
 
-use dorc_core::diag::{Diag, DiagCode as Code, PredictOutOfDialect, PredictUnterminated};
+use dorc_aid::diag::{Diag, DiagCode as Code, PredictOutOfDialect, PredictUnterminated};
 use dorc_core::{Interner, Span};
 
 mod ast;
@@ -307,7 +307,7 @@ const VERB_BINDING: &str = "verb";
 /// through [`Diag::new`] like every other and do NOT join the spanless-mint allow-list.
 ///
 /// Routed through the typed [`Diag`] spine, NOT `Diagnostic::error` (x3a-5/t-4 fix,
-/// `224` §10): severity comes from [`dorc_core::diag::registry`] keyed on the code, never
+/// `224` §10): severity comes from [`dorc_aid::diag::registry`] keyed on the code, never
 /// hardcoded here. Both check codes are registry-declared `Error`, so the lowered output is
 /// byte-identical to the prior `Diagnostic::error(…)` form — but a future registry edit now
 /// actually takes effect instead of being a silent no-op.
@@ -564,7 +564,7 @@ package__disturbance_reaches_only() {
 #[cfg(test)]
 mod lift_failure_tests {
     use super::{Code, lift_failure, lift_predicts};
-    use dorc_core::diag::{PredictOutOfDialect, PredictUnterminated, registry};
+    use dorc_aid::diag::{PredictOutOfDialect, PredictUnterminated, registry};
     use dorc_core::{BytePos, Interner, Span};
 
     /// The emit-vs-registry AGREEMENT pin (x3a-5/t-4 fix, `224` §10): `lift_failure` must source
@@ -598,7 +598,7 @@ mod lift_failure_tests {
         );
         assert_eq!(d.primary.span(), Some(span), "span flows through unchanged");
         assert_eq!(
-            dorc_core::diag::render_body(&d, &interner),
+            dorc_aid::diag::render_body(&d, &interner),
             "sm unterminated",
             "PASSTHROUGH message is `sm ` + the detail"
         );
@@ -616,7 +616,7 @@ mod lift_failure_tests {
         );
         assert_eq!(d.primary.span(), Some(span));
         assert_eq!(
-            dorc_core::diag::render_body(&d, &interner),
+            dorc_aid::diag::render_body(&d, &interner),
             "sm out of dialect"
         );
     }

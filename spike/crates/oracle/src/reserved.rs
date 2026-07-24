@@ -32,7 +32,7 @@
 //! rather than refuse — a policy decision the respell owns. This lint's job is only to guarantee
 //! no broken NAME ships silently (`kFAIL`-safe: refuse over emit-broken).
 
-use dorc_core::diag::{
+use dorc_aid::diag::{
     Diag, DiagCode, MungeNameCollision, MungeNameInvalid, ReservedNamespaceSquat,
 };
 use dorc_core::{Interner, Span};
@@ -367,7 +367,7 @@ mod tests {
         );
         assert!(
             hits.iter()
-                .all(|d| dorc_core::diag::render_body(d, &i).contains("apt_get__predict")),
+                .all(|d| dorc_aid::diag::render_body(d, &i).contains("apt_get__predict")),
             "the collision names the shared emitted funcname: {diags:?}"
         );
     }
@@ -416,9 +416,9 @@ apt_get__predict install -y nginx || apt-get install -y nginx
         let diags = lint_book_reserved_names(&ast);
         assert_eq!(diags.len(), 1, "one squatting funcdef: {diags:?}");
         assert_eq!(diags[0].code.slug(), "reserved-namespace-squat");
-        assert_eq!(diags[0].severity(), dorc_core::Severity::Warning);
+        assert_eq!(diags[0].severity(), dorc_aid::Severity::Warning);
         assert!(
-            dorc_core::diag::render_body(&diags[0], &Interner::default())
+            dorc_aid::diag::render_body(&diags[0], &Interner::default())
                 .contains("apt_get__predict")
         );
     }

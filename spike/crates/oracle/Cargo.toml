@@ -9,6 +9,7 @@ publish = false
 # analyzer-internal kind index. Pure + deterministic; consumes the parser.
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
+dorc-aid = { path = "../aid", version = "0.0.0" }
 dorc-syntax = { path = "../syntax", version = "0.0.0" }
 
 [lints]

@@ -11,6 +11,7 @@ publish = false
 # exactly the AST shape it needs — lossless quoting + first-class redirections.)
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
+dorc-aid = { path = "../aid", version = "0.0.0" }
 
 [lints]
 workspace = true

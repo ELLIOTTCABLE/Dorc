@@ -35,7 +35,7 @@
 //! it. The hash is a hand-rolled FNV-1a (`core` is dependency-free and `DefaultHasher` is not
 //! a stable cross-version function); its job is drift-detection, not cryptographic strength.
 
-use dorc_core::Diag;
+use dorc_aid::Diag;
 
 use crate::{Derivation, Disposition, LicenseVia, Plan, ProbePlan, StandIn, Step};
 
@@ -347,7 +347,7 @@ fn canon_diag(d: &Diag) -> Option<String> {
     // disclosure that a receipt-prompted change may legitimately add or vary ⇒ dropped. The
     // catalog-rendered MESSAGE is EXEMPT (Exempt::Explanation): identity keys on the code slug,
     // the primary span, and the severity only.
-    if d.severity() != dorc_core::Severity::Error {
+    if d.severity() != dorc_aid::Severity::Error {
         return None;
     }
     let site = match d.primary.span() {
@@ -380,7 +380,7 @@ mod tests {
 
     #[test]
     fn canon_drops_non_error_diagnostics() {
-        use dorc_core::diag::{
+        use dorc_aid::diag::{
             CfgBuiltinShadowed, DiagCode, RedirTargetTop, SiteId, SyntaxMalformed,
         };
         // Only Error-class diagnostics are identity (ru-12). A Note (RedirTargetTop) and a
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn canon_diag_message_is_exempt() {
-        use dorc_core::diag::{DiagCode, SyntaxMalformed};
+        use dorc_aid::diag::{DiagCode, SyntaxMalformed};
         // Two errors identical in (code, span, severity) but DIFFERENT in payload detail (⇒
         // different rendered message) canonicalize identically — the message is
         // Exempt::Explanation (identity keys on slug/span/severity only).

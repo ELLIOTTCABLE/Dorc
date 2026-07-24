@@ -40,7 +40,8 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::{Carrier, Interner, Span, Symbol};
+use dorc_aid::Carrier;
+use dorc_core::{Interner, Span, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{

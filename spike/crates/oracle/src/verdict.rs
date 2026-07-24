@@ -58,8 +58,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::evidence::{DeclineClass, DeclineGate};
-use dorc_core::{Carrier, Interner, ProviderId, Rc, Span, Symbol};
+use dorc_aid::Carrier;
+use dorc_aid::narrative::{DeclineClass, DeclineGate};
+use dorc_core::{Interner, ProviderId, Rc, Span, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::report::recognized_class;

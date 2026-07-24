@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::tagged::{self, RenderPart, RenderParts};
+use dorc_aid::tagged::{self, RenderPart, RenderParts};
 use errorloom::{EditableFragment, EditableRender, EditableSection, RenderComponent};
 
 mod consumer;

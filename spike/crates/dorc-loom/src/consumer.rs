@@ -1,5 +1,5 @@
 //! The Dorc case renderer and compiled-edit applier (`282` §5 · §13), implemented against a mutable
-//! owned-catalog mirror ([`dorc_core::catalog::OwnedEntry`]).
+//! owned-catalog mirror ([`dorc_aid::catalog::OwnedEntry`]).
 //!
 //! World-form dispatch (`283:dec-world-two-forms`): a `-- world --`-only case is WORLD-AS-PAYLOAD (a
 //! canonical constructor keyed by slug — the phase-4 floor for the artificial/expensive-world codes);
@@ -11,15 +11,16 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::fs;
 
-use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
-use dorc_core::diag::{
+use dorc_aid::Severity;
+use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
+use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
     DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
     HostEvidenceRefusalKind, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
     render_staged_cli_parts,
 };
-use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
+use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{
     Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
     ReplayDriver, ReplayInput, ReplayResult, RunEnv, RunError, drive_case, drive_case_with_inputs,
@@ -193,8 +194,8 @@ impl DorcConsumer {
             .chain(entry.help.iter())
             .flat_map(|template| parse_template(template).unwrap_or_default())
             .filter_map(|part| match part {
-                dorc_core::catalog::TemplatePart::Hole(name) => Some(name),
-                dorc_core::catalog::TemplatePart::Literal(_) => None,
+                dorc_aid::catalog::TemplatePart::Hole(name) => Some(name),
+                dorc_aid::catalog::TemplatePart::Literal(_) => None,
             })
             .fold(Vec::new(), |mut params, name| {
                 if !params.contains(&name) {
@@ -223,7 +224,7 @@ impl DorcConsumer {
         let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
         let render = to_editable_render(&parts);
         let variables = editable_variables(&render)?;
-        let all_variables = dorc_core::diag::params_of(&diag.code, &interner)
+        let all_variables = dorc_aid::diag::params_of(&diag.code, &interner)
             .into_iter()
             .filter(|(name, _)| !is_foreign_param(name))
             .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
@@ -325,7 +326,7 @@ impl DorcConsumer {
             .map(|(diag, _, _)| diag)
             .or_else(|_| Self::whylog_diagnostic(case))?;
         let interner = Interner::default();
-        let all_variables = dorc_core::diag::params_of(&diag.code, &interner)
+        let all_variables = dorc_aid::diag::params_of(&diag.code, &interner)
             .into_iter()
             .filter(|(name, _)| !is_foreign_param(name))
             .map(|(name, value)| (TemplateVariableName(String::from(name)), value))

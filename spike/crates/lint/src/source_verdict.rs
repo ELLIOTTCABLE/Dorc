@@ -45,12 +45,12 @@ impl LintSource for VerdictBodyFlattening {
                     continue;
                 };
                 if let Some(span) = terminal_pipeline_span(&verdict.body) {
-                    let (line, col) = dorc_core::diag::line_col(&oracle.src, span.lo.0 as usize);
+                    let (line, col) = dorc_aid::diag::line_col(&oracle.src, span.lo.0 as usize);
                     out.push(Finding {
                         path: oracle.path.clone(),
                         line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                         col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                        severity: dorc_core::Severity::Warning,
+                        severity: dorc_aid::Severity::Warning,
                         source: self.name(),
                         code: "verdict-terminal-pipeline".to_owned(),
                         message: "this __is_converged body answers with a pipeline's tail status \

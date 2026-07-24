@@ -26,8 +26,9 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::diag::{Diag, DiagCode, LendMapUnknownDimension};
-use dorc_core::{Carrier, Interner, Symbol};
+use dorc_aid::Carrier;
+use dorc_aid::diag::{Diag, DiagCode, LendMapUnknownDimension};
+use dorc_core::{Interner, Symbol};
 
 use crate::predict::{
     Command, Predict, PredictSet, Stmt, Word, eval_test, lift_lend_maps, pattern_matches,

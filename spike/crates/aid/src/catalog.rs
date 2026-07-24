@@ -537,7 +537,7 @@ mod tests {
         // Cross-check against the enum's own wire tokens (constructed instances name their slug).
         assert_eq!(
             crate::diag::DiagCode::RenderHeredocRefused(crate::diag::RenderHeredocRefused {
-                site: crate::diag::SiteId::leaf(crate::LeafId(0)),
+                site: crate::diag::SiteId::leaf(dorc_core::LeafId(0)),
                 verb: "elide",
                 command: "cat <<EOF".to_owned(),
             })

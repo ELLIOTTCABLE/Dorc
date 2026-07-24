@@ -8,7 +8,7 @@ use std::fmt::Write as _;
 
 use crate::finding::{Coverage, Finding, LintReport, RemapFidelity, severity_token};
 use crate::json::escape_into;
-use dorc_core::tagged::{RenderPart, RenderParts};
+use dorc_aid::tagged::{RenderPart, RenderParts};
 
 /// The versioned machine-format name (`27R` §5 dir-stability-split): the ENVELOPE/field schema is
 /// stable and additive-only (`27R` §8 delta-additive-only-format-policy); a breaking change mints a
@@ -89,8 +89,8 @@ fn append_finding_parts(out: &mut RenderParts, finding: &Finding) {
             text: String::from("  "),
             slug: "lint-indent",
         });
-        out.append(dorc_core::diag::render_cli_parts(
-            &dorc_core::catalog::CONST_CATALOG,
+        out.append(dorc_aid::diag::render_cli_parts(
+            &dorc_aid::catalog::CONST_CATALOG,
             &provenance.diag,
             &provenance.source,
             &finding.path,
