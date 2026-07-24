@@ -117,7 +117,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 |---|---|---|---|
 | phase 0: lint-tally-pluralization | `ai/r28-unify-p0` | single dispatch, worktree | LANDED+FOLDED 2026-07-24 @ `2bf13785` → merge `c45be8b8` |
 | phase 1 map: aid-crate extraction spec (`notes/290`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | LANDED+FOLDED 2026-07-24 @ `00155aaf` |
-| phase 1 exec: the extraction cutover | off p1 map | fresh executor after checkpoint | pending |
+| phase 1 exec: the extraction cutover | `ai/r28-unify-p1x` (base `c1cab82a`) | fresh executor per `290` + `289` §2c | DISPATCHED 2026-07-24 |
 | phases 2–4: mint-seam+scaffold · lint-unification · cli-error-migration | — | one checkpointed lane | pending |
 | phase 5: flat-tree move + run.sh retirement + safety-law edits | — | serial, atomic paths-only | pending |
 | phase 6: e2e→loom conversion | — | serial | pending |
@@ -142,3 +142,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   hand-edits.
 - 2026-07-24: phase-1 MAP (Opus, fresh worktree, bg) — mechanical extraction spec →
   `notes/290` on `ai/r28-unify-p1`; no engine edits.
+- 2026-07-24: phase-1 EXECUTOR (Opus, fresh worktree, bg) — the 290 cutover as amended by 289 §2c, on `ai/r28-unify-p1x` off `c1cab82a`.
