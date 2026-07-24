@@ -181,7 +181,11 @@ prompt you write:
   an unowned object; the degradation is decision-inert evidence, and a
   degraded/failed lane never fails a plan or an apply. Host environment variables are
   hostile input and never site controller scratch — roots are controller-supplied
-  literals. This is a strictly narrower rule than the no-mutation contract: it binds
+  literals (**rul-scratch-root-never-read-from-host**: no `TMPDIR`, `HOME`, or `XDG_*`
+  expansion ever sites engine scratch; a host-chosen parent voids the exclusive create
+  that the whole lane rests on, so host-configurability here is forbidden rather than
+  unimplemented — an admin override, if one is ever wanted, is a controller-side value).
+  This is a strictly narrower rule than the no-mutation contract: it binds
   ENGINE-generated constructs (`rul-probe-mutation-ownership-split`'s owned tier),
   where "we were only reading" is not a defense, because the write primitive is the
   scaffolding's, not the author's.

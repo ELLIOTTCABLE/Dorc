@@ -1642,10 +1642,9 @@ pub struct ProbePredict {
     /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
     /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
     /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
-    /// [`ProbePlan::render_sh`] ships the DRAIN scaffold: the check runs with `DREP_V1` bound to a
-    /// file inside a scratch directory Dorc exclusively created, and its emissions are re-framed as
-    /// `report site=<key> …` records. `false` ⇒ the ordinary scaffold, byte-identical
-    /// (`empty-world-byte-identical`).
+    /// [`ProbePlan::render_sh`] ships the DRAIN scaffold: the check runs with `DREP_V1` bound inside
+    /// a scratch directory Dorc exclusively created, its emissions re-framed as `report site=<key> …`
+    /// records. `false` ⇒ the ordinary scaffold, byte-identical (`empty-world-byte-identical`).
     pub emits_report: bool,
 }
 
@@ -7225,10 +7224,9 @@ apt_get__is_converged() { return 0; }
         }
     }
 
-    /// Every redirect target in `rendered`, quote-tracked, comment lines skipped. Deliberately a
-    /// SCAN (find every `>`/`<` and judge its target) rather than a search for known-bad strings:
-    /// a denylist only ever forbids the shapes someone already thought of, and this pin has to
-    /// survive future additions to the lane.
+    /// Every redirect target in `rendered`, quote-tracked, comment lines skipped. A SCAN, not a
+    /// search for known-bad strings: a denylist forbids only the shapes someone already thought
+    /// of, and this pin has to survive future additions to the lane.
     fn redirect_targets(rendered: &str) -> Vec<String> {
         let mut targets = Vec::new();
         for line in rendered.lines() {
@@ -7275,12 +7273,11 @@ apt_get__is_converged() { return 0; }
     }
 
     /// `rul-probe-writes-only-what-it-owns` — the structural net over the tier-3 report lane. The
-    /// pathname operations the probe performs (create, truncate, read back, unlink, remove) are
-    /// legitimate ONLY inside a container Dorc exclusively created this run, so this asserts the
-    /// ownership SHAPE rather than forbidding the vocabulary: the exclusive create happens exactly
-    /// once, its failure degrades the lane, every sink binding is either inside that container or
-    /// `/dev/null`, cleanup is the non-cascading pair, no host environment variable sites the
-    /// scratch, and no scanned redirect escapes the owned set.
+    /// probe's pathname operations (create, truncate, read back, unlink, remove) are legitimate
+    /// ONLY inside a container it exclusively created this run, so this asserts the ownership
+    /// SHAPE rather than forbidding the vocabulary: one exclusive create, degrading on failure;
+    /// every sink binding inside that container or `/dev/null`; the non-cascading cleanup pair; no
+    /// host environment siting the scratch; and no scanned redirect escaping the owned set.
     #[test]
     fn emitting_auto_cell_owns_every_path_it_writes() {
         let mut i = Interner::default();

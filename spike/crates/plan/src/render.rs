@@ -82,10 +82,11 @@ pub mod probe {
     use super::{Interner, LeafId, Symbol, sem};
     use crate::records::{self, Nonce};
 
-    /// The report-scratch parent, a CONTROLLER LITERAL — never a host environment expansion
-    /// (`rul-probe-writes-only-what-it-owns`): a host-supplied `TMPDIR`/`HOME`/`XDG_*` would put
-    /// Dorc's directory inside a parent the host chooses, which defeats exclusive ownership. An
-    /// admin override for this root is deliberately out of scope for now.
+    /// `rul-scratch-root-never-read-from-host` · `rul-probe-writes-only-what-it-owns`
+    /// (`spike/CLAUDE.md`) — the report-scratch root is a controller-supplied LITERAL. It is never
+    /// read from the host environment: not `TMPDIR`, not `HOME`, not `XDG_*`. Making it
+    /// host-configurable is forbidden, not unimplemented — read those invariants first. (An
+    /// admin-supplied override is out of scope for now, and would arrive as a controller value.)
     const SCRATCH_ROOT: &str = "/tmp";
 
     /// Format a record's site key: `N` for an ordinary single-fact site, `N.M` for member
@@ -218,11 +219,10 @@ pub mod probe {
     /// Open the per-attempt report-scratch DIRECTORY — emitted ONCE per artifact, and only when
     /// some check drains (`rul-probe-writes-only-what-it-owns`). `mkdir` IS the safety property:
     /// it creates exclusively and does not resolve a symlink at the final component, so anything
-    /// pre-positioned at the path makes it FAIL rather than clobber, and `-m 700` applies the mode
-    /// at creation (umask unapplied — no group/other-readable window). Failure empties `$_dsc`,
-    /// the degradation signal every later site reads; the lane then writes to `/dev/null` and the
-    /// plan proceeds unaffected (`sinv`-tier degradation is decision-inert, never an error).
-    /// NEVER retry, never fall back to a second name, never remove what is already there.
+    /// pre-positioned makes it FAIL rather than clobber, and `-m 700` applies the mode at creation
+    /// (umask unapplied — no group/other-readable window). Failure empties `$_dsc`, the
+    /// degradation signal every later site reads: the lane falls to `/dev/null` and the plan
+    /// proceeds. Never retry, never fall back to a second name, never remove what is there.
     #[must_use]
     pub fn report_scratch_prologue(nonce: &Nonce) -> String {
         format!(
@@ -240,9 +240,9 @@ pub mod probe {
     /// Every pathname operation here is confined to a container Dorc owns: the `: >` truncate is
     /// safe because [`report_scratch_prologue`] created the parent at mode 700 this run, and
     /// `rm -f` unlinks only inside it. When the prologue degraded, `$_dsc` is empty and the sink is
-    /// `/dev/null` — no create, no read-back, no unlink. Pre-creating the file keeps the drain
-    /// simple (a body that emits nothing yields an empty file, not a missing one). `DREP_V1` is a
-    /// plain shell var: the check runs in this same shell, so no export is needed.
+    /// `/dev/null` — no create, no read-back, no unlink. Pre-creating keeps the drain simple (a
+    /// body that emits nothing yields an empty file, not a missing one), and `DREP_V1` needs no
+    /// export because the check runs in this same shell.
     ///
     /// GUARANTEE: dash-n-clean — assignments, `if`s, and a `while IFS= read` loop, all valid at
     /// script top level. Each drained line is ONE `printf` with the payload value-passed as `%s`,
