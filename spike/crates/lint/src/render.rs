@@ -55,8 +55,21 @@ pub fn render_human_parts(report: &LintReport) -> RenderParts {
         }
         append_finding_parts(&mut out, f);
     }
-    out.push(RenderPart::Arrangement { text: format!("\ndorc lint: {errors} error(s), {warns} warning(s), {infos} info(s) across {file_count} file(s).\n"), slug: "lint-summary" });
+    out.push(RenderPart::Arrangement {
+        text: format!(
+            "\ndorc lint: {errors} error{}, {warns} warning{}, {infos} info{} across {file_count} file{}.\n",
+            plural(errors),
+            plural(warns),
+            plural(infos),
+            plural(file_count)
+        ),
+        slug: "lint-summary",
+    });
     out
+}
+
+fn plural(count: usize) -> &'static str {
+    if count == 1 { "" } else { "s" }
 }
 
 fn structure(text: String) -> RenderParts {
