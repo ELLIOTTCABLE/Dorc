@@ -185,3 +185,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   the `covered()⊆case-owned` drift guard (`28A` §2u) · the `touches`→`disturbs`
   fixture residue (`28A:finding-touches-rename-half-done`; verify-in-other-cells
   first, drop if it resists).
+- 2026-07-24: phases-2–4 MAP (Opus, fresh worktree, bg) — `notes/291` on `ai/r28-unify-p24` off `35954157` (fold-tip; conductor cold-verify in flight in parallel; exec half gated on both).
