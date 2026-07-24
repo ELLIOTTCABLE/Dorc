@@ -484,7 +484,16 @@ EOF
 #       sides. A case whose fixture intentionally diverges from what the mocks can reproduce
 #       opts out with a one-line `PROBE_RESULTS=authored` marker file.
 #
-# The PROBE_RESULTS=authored opt-out governs (b)+(c) ONLY — (a) always holds. The opt-out
+#   (d) DERIV PARITY (unless PROBE_RESULTS=authored; only for a fixture that HAS `deriv ` lines):
+#       the `deriv <site> coord=…` records the mocked probe PRODUCES must match the authored ones
+#       (a coord SET compare — this lane has no rc to project). WHY IT EXISTS: the derivation
+#       invocation once named a function the shipped def did not define (`__touches` vs
+#       `__disturbs`), so the probe 127'd, emitted zero coords, and every derived footprint
+#       collapsed to a wall — SAFE, hence invisible to (a)/(b)/(c), which only ever look at
+#       `site ` records, while the whole survival product was dead
+#       (`289:rul-touches-mismatch-own-lane`).
+#
+# The PROBE_RESULTS=authored opt-out governs (b)+(c)+(d) ONLY — (a) always holds. The opt-out
 # is the HONEST residual of the convergence axis: today most mocks/ dirs carry only the
 # APPLY commands (apt-get …), not the PROBE commands (dpkg-query/getent/ufw/systemctl), so
 # their probe cannot be faithfully mock-executed until D3b ships probe-specific shims.
@@ -572,15 +581,35 @@ EOF
   _authfile="${_dir}probe-results.txt"
   _produced=$(printf '%s\n' "$_rec_lines" | awk -f "$parity_norm" "$_authfile" - | LC_ALL=C sort)
   _authored=$(grep -E '^site ' "$_authfile" 2>/dev/null | awk -f "$parity_norm" "$_authfile" - | LC_ALL=C sort)
-  if [ "$_produced" = "$_authored" ]; then
+  if [ "$_produced" != "$_authored" ]; then
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [gate-1: mocked probe records diverge from authored probe-results.txt — re-author the fixture, add probe shims, or mark PROBE_RESULTS=authored (do NOT silently re-bless)]"
+      if command -v diff >/dev/null 2>&1; then
+        _af=$(mktemp); printf '%s\n' "$_authored" > "$_af"
+        printf '%s\n' "$_produced" | diff -u "$_af" - 2>/dev/null | sed 's/^/      /' || true
+        rm -f "$_af"
+      fi
+    fi
+    return 1
+  fi
+
+  # (d) deriv parity: the derivation lane's own coords. Only for a fixture that authors `deriv `
+  # lines (every other case has none — the compare is skipped, not vacuously passed). Set-compare
+  # (sorted): a family's coord order is the host tool's, and the `deriv-end` count records are
+  # synthesized by framed_results, so only the coord lines are compared. An empty produced set
+  # against a non-empty authored one is the rc-127 signature this gate exists to catch.
+  _authored_deriv=$(grep -E '^deriv ' "$_authfile" 2>/dev/null | LC_ALL=C sort || true)
+  [ -n "$_authored_deriv" ] || return 0
+  _produced_deriv=$(printf '%s\n' "$_recs" | grep -E '^deriv [0-9]' | LC_ALL=C sort || true)
+  if [ "$_produced_deriv" = "$_authored_deriv" ]; then
     return 0
   fi
   if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
-    echo "FAIL  $_case  [gate-1: mocked probe records diverge from authored probe-results.txt — re-author the fixture, add probe shims, or mark PROBE_RESULTS=authored (do NOT silently re-bless)]"
+    echo "FAIL  $_case  [gate-1: mocked probe's DERIV coords diverge from authored probe-results.txt — the derivation lane is not reproducing its footprint (an empty produced set means the shipped def and its invocation disagree, or a derivation command has no shim)]"
     if command -v diff >/dev/null 2>&1; then
-      _af=$(mktemp); printf '%s\n' "$_authored" > "$_af"
-      printf '%s\n' "$_produced" | diff -u "$_af" - 2>/dev/null | sed 's/^/      /' || true
-      rm -f "$_af"
+      _df=$(mktemp); printf '%s\n' "$_authored_deriv" > "$_df"
+      printf '%s\n' "$_produced_deriv" | diff -u "$_df" - 2>/dev/null | sed 's/^/      /' || true
+      rm -f "$_df"
     fi
   fi
   return 1

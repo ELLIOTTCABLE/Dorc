@@ -2288,7 +2288,7 @@ fn touches_defining_span(
 /// funcdef and trace it statically. `Some(DerivationShip)` iff the trace ESCALATED — it ⊤'d
 /// specifically on a `NonPrintfCommand` (the body reached a host query the static tracer cannot
 /// resolve, e.g. `dpkg -L`), the sanctioned escalation trigger (fork-4B). The body then ships
-/// strip-only (`strip_touches`; `<provider>.touches` → `<provider>__touches`), the SAME strip
+/// strip-only (`strip_touches`; the funcdef mangles to `<provider>__disturbs`), the SAME strip
 /// discipline as the probe/guard lanes. `None` for: a statically-resolvable body (`Emitted` — the
 /// authored-footprint lane owns it), any OTHER ⊤ (degrade-to-wall, fork-4B — the site runs), an
 /// empty emission, or a provider with no touches funcdef. `inv-referent-agnostic`: the operands are
@@ -2951,8 +2951,20 @@ fn build_kind_reaches(
     KindReaches { sets, by_kind }
 }
 
+/// The per-arm wrapper funcname a dynamic `reaches()` arm ships and is invoked under. Engine-
+/// synthesized scaffolding, so def and invocation are one string by construction; the ROLE part is
+/// taken from the shared suffix constant so the emitted namespace tracks the role's real spelling
+/// (`289:rul-touches-mismatch-own-lane` — the half-landed respell left `__reaches_<n>` behind).
+fn reach_arm_fn_name(kind_name: &str, arm_index: usize) -> String {
+    format!(
+        "{}{}_{arm_index}",
+        dorc_oracle::to_funcname_segment(kind_name),
+        dorc_oracle::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX,
+    )
+}
+
 /// Compile the reach-probe (24G §4): for each reach-bearing AUTHORED footprint coordinate, ship each
-/// DYNAMIC `reaches()` arm's per-arm wrapper (`<kind>__reaches_<n>() { <arm bytes> ; }` — the arm
+/// DYNAMIC `reaches()` arm's per-arm wrapper ([`reach_arm_fn_name`]`() { <arm bytes> ; }` — the arm
 /// command's byte-exact span-slice, mark-free by construction) invoked with the entity; its stdout is
 /// the RAW ENTITIES it drags. STATIC arms never ship (traced at expansion). Deduped by (coord, arm).
 /// Dynamic arms apply to AUTHORED footprint coords only this pass (derived coords resolved only
@@ -3013,11 +3025,7 @@ fn collect_reach_probes(
                     .get(cmd_span.lo.0 as usize..cmd_span.hi.0 as usize)
                     .unwrap_or_default()
                     .trim();
-                let arm_fn = format!(
-                    "{}__reaches_{}",
-                    dorc_oracle::to_funcname_segment(&kind_name),
-                    arm.index
-                );
+                let arm_fn = reach_arm_fn_name(&kind_name, arm.index);
                 let arm_sh = format!("{arm_fn}() {{ {bytes} ; }}");
                 probes
                     .entry((coord_label.clone(), arm.index))
@@ -6116,6 +6124,23 @@ mod tests {
         }
     }
 
+    /// `289:rul-touches-mismatch-own-lane` — the synthesized per-arm wrapper takes its ROLE segment
+    /// from the shared suffix constant, so the emitted sh namespace cannot drift from the role's
+    /// real spelling the way the derivation lane's `__touches`/`__disturbs` pair did. Kind-munge and
+    /// arm index ride around it unchanged.
+    #[test]
+    fn reach_arm_wrapper_name_carries_the_role_suffix() {
+        assert_eq!(
+            reach_arm_fn_name("sm.dorc.Package", 0),
+            "sm_dorc_Package__disturbance_reaches_only_0"
+        );
+        assert!(
+            reach_arm_fn_name("package", 3)
+                .contains(dorc_oracle::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX),
+            "the wrapper name is built from the shared constant, never a literal"
+        );
+    }
+
     /// 24F §3 / corr-kind-keying §10: the resolver confusability enforcement. A clean single
     /// `<kind>.resolve()` is resolver-bearing; two files declaring ONE kind's resolver REFUSE both
     /// (the kind keeps token-equality — never first-wins-silently); a resolver keyed to a known
@@ -6242,7 +6267,7 @@ mod tests {
                     node: CfgNodeId(5),
                     provider: i.intern("apt-get"),
                     argv: vec![],
-                    sh: "apt_get__touches() { :; }".to_string(),
+                    sh: "apt_get__disturbs() { :; }".to_string(),
                     call: "apt-manifest".to_string(),
                 }],
             };
@@ -6280,6 +6305,13 @@ mod tests {
         assert!(
             !merged_contains(&framed(2, None), &mut i),
             "no deriv-end ⇒ wall-total"
+        );
+        // EMPTY-but-complete: the shipped body printed nothing (a genuinely absent oracle 127s
+        // under PATH=mocks-only; so does a def↔invocation name disagreement). Silence is NOT an
+        // empty at-most claim — an empty footprint would spare EVERYTHING. It must wall.
+        assert!(
+            !merged_contains(&framed(0, Some(0)), &mut i),
+            "an empty family walls — the engine never manufactures a claim from silence"
         );
     }
 

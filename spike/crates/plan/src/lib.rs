@@ -46,6 +46,7 @@ use dorc_core::{
     AstId, ByVouch, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId, Observable,
     OracleFileId, Predicted, Rc, Rung, Symbol, Verdict,
 };
+use dorc_oracle::touches::DISTURBS_SUFFIX;
 use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
 
@@ -1894,13 +1895,13 @@ fn shim_dispatch_script(fname: &str, fdef: &str) -> String {
     format!("#!/bin/sh\n{fdef}\n{fname} \"$@\"\n")
 }
 
-/// A ship decision for one escalated derivation site (24E §2): the stripped `<provider>__touches`
+/// A ship decision for one escalated derivation site (24E §2): the stripped `<provider>__disturbs`
 /// funcdef + the host tool the body reached (display locus). Returned by the cli's derive-closure,
 /// which owns the oracle sources + the `evaluate_touches` escalation check — so `plan` stays
 /// oracle-free (the same seam-shape as [`compile_probe`]'s `ship_body`).
 #[derive(Debug, Clone)]
 pub struct DerivationShip {
-    /// The stripped `<provider>__touches` funcdef (strip-only; `dorc_oracle::predict::strip_touches`).
+    /// The stripped `<provider>__disturbs` funcdef (strip-only; `dorc_oracle::predict::strip_touches`).
     pub sh: String,
     /// The host tool the touches body reached (e.g. `dpkg -L`) — a display locus for the fork-4B
     /// advisory + the `Derived` footprint origin (24E §9). `inv-referent-agnostic`: never decoded.
@@ -1918,11 +1919,11 @@ pub struct ProbeDerivation {
     pub site: LeafId,
     /// The CFG node — re-keys the readback footprint into the `CfgNodeId`-keyed [`TrustedFootprints`].
     pub node: CfgNodeId,
-    /// The book command word (argv[0]) whose `__touches` this ships.
+    /// The book command word (argv[0]) whose `__disturbs` this ships.
     pub provider: Symbol,
     /// The site's argv after the command word (F-quoted at render).
     pub argv: Vec<Symbol>,
-    /// The stripped `<provider>__touches` funcdef.
+    /// The stripped `<provider>__disturbs` funcdef.
     pub sh: String,
     /// The host tool the body reached (display locus for the `Derived` origin + advisory).
     pub call: String,
@@ -2014,7 +2015,7 @@ pub struct ReachProbe {
     pub coord_label: String,
     /// The reach-function KIND's display name (`package`) for the provenance comment.
     pub kind_label: String,
-    /// The per-arm wrapper funcname (`package__reaches_1`) — the shipped def + invocation agree.
+    /// The per-arm wrapper funcname (`package__disturbance_reaches_only_1`) — def + invocation agree.
     pub arm_fn: String,
     /// The arm index (readback demux — `reach <coord> arm=<index>`; the controller maps it to kind).
     pub arm_index: usize,
@@ -2070,12 +2071,13 @@ impl ReachPlan {
     }
 }
 
-/// The `<provider>__touches` derivation funcname (24E §2/§9), mangled IDENTICALLY to
-/// [`predict_fn_name`] so a site's shipped def (via `strip_touches`) and its invocation agree
-/// byte-for-byte. Referent-agnostic: passed to the host, never branched on.
+/// The `<provider>__disturbs` derivation funcname (24E §2/§9), mangled IDENTICALLY to
+/// [`predict_fn_name`] and suffixed from the SAME constant `strip_touches` mangles the shipped
+/// funcdef with, so a site's def and its invocation agree byte-for-byte. Referent-agnostic:
+/// passed to the host, never branched on.
 fn touches_fn_name(interner: &Interner, provider: Symbol) -> String {
     format!(
-        "{}__touches",
+        "{}{DISTURBS_SUFFIX}",
         dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(
             interner.resolve(provider)
         )),
@@ -2085,7 +2087,7 @@ fn touches_fn_name(interner: &Interner, provider: Symbol) -> String {
 impl DerivationPlan {
     /// Render the derivation-probe as read-only, self-reporting sh, APPENDED to the convergence
     /// probe in the SAME phase-1 block (no shebang — the e2e shebang-split keeps it in phase-1).
-    /// Each provider's stripped `<provider>__touches` funcdef is emitted once (deduped, re-emitted
+    /// Each provider's stripped `<provider>__disturbs` funcdef is emitted once (deduped, re-emitted
     /// on a body change — sh's last-writer-wins, exactly as [`ProbePlan::render_sh`] does for the
     /// multi-body provider), then invoked per SITE with the site's argv, its stdout coord-lines
     /// re-keyed to `deriv <leafid> coord=…` records. Empty ⇒ `""` (nothing appended).
@@ -4978,7 +4980,7 @@ apt_get__is_converged() { return 0; }
     #[test]
     fn compile_derivations_ships_escalated_wall_candidate_and_renders_deriv_scaffold() {
         // 24E §2: a WALL-CANDIDATE site whose touches() ESCALATED (the closure returns a ship)
-        // becomes one ProbeDerivation; render_sh appends the stripped __touches def + a per-site
+        // becomes one ProbeDerivation; render_sh appends the stripped __disturbs def + a per-site
         // `deriv N coord=` scaffold to the phase-1 probe (no second shebang). A non-escalating
         // provider (the un-oracled systemctl, not even a wall candidate) yields no derivation.
         let mut i = Interner::default();
@@ -5011,7 +5013,7 @@ apt_get__is_converged() { return 0; }
                 // forward munge keys the book word `apt-get` on the segment `apt_get`.
                 (dorc_oracle::predict::map_provider_name(i.resolve(provider)) == "apt_get").then(
                     || DerivationShip {
-                        sh: "apt_get__touches() { apt-manifest \"$1\"; }".to_string(),
+                        sh: "apt_get__disturbs() { apt-manifest \"$1\"; }".to_string(),
                         call: "apt-manifest".to_string(),
                     },
                 )
@@ -5029,7 +5031,7 @@ apt_get__is_converged() { return 0; }
         );
         let sh = derivations.render_sh(&records::Nonce::spike_default(), &i);
         assert!(
-            sh.contains("apt_get__touches() { apt-manifest"),
+            sh.contains("apt_get__disturbs() { apt-manifest"),
             "the stripped touches def ships verbatim: {sh}"
         );
         assert!(
@@ -5043,6 +5045,130 @@ apt_get__is_converged() { return 0; }
         assert!(
             !sh.starts_with("#!/bin/sh"),
             "no second shebang — the derivation-probe rides the SAME phase-1 block: {sh}"
+        );
+    }
+
+    /// `289:rul-touches-mismatch-own-lane` — the shipped DEF name and the INVOKED name of the
+    /// derivation lane must be one string. They drifted apart once (the strip mangled to
+    /// `__disturbs` while the invocation still spelled `__touches`), so every shipped derivation
+    /// probe hit rc 127, emitted nothing, and collapsed its footprint to a wall: safe, but the
+    /// whole survival product silently dead. Driven through the REAL strip rather than a
+    /// hand-written fixture, because a hand-written fixture is exactly what hid the bug.
+    #[test]
+    fn derivation_shipped_def_name_equals_the_invoked_name() {
+        let authored = "\
+apt_get__disturbs() {
+   verb=$1; shift
+   case $verb in
+   install) apt-manifest \"$1\" ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let lifted = dorc_oracle::touches::TouchesSet::lift(&mut i, authored);
+        let provider = lifted.value.providers().next().expect("one provider");
+        let body = lifted.value.get(provider).expect("the disturbs funcdef");
+        let stripped = dorc_oracle::predict::strip_touches(authored, body, &i);
+        let def_name = stripped
+            .split_once('(')
+            .expect("the stripped funcdef opens with `<name>(`")
+            .0
+            .to_owned();
+
+        let book_word = i.intern("apt-get");
+        assert_eq!(
+            touches_fn_name(&i, book_word),
+            def_name,
+            "the derivation invocation must name the funcdef the strip actually ships"
+        );
+
+        let plan = DerivationPlan {
+            derivations: vec![ProbeDerivation {
+                site: LeafId(0),
+                node: CfgNodeId(0),
+                provider: book_word,
+                argv: vec![i.intern("install")],
+                sh: stripped,
+                call: "apt-manifest".to_owned(),
+            }],
+        };
+        let sh = plan.render_sh(&records::Nonce::spike_default(), &i);
+        assert!(
+            sh.contains(&format!("{def_name}() {{")) || sh.contains(&format!("{def_name}() \n")),
+            "the def ships under the mangled name: {sh}"
+        );
+        assert!(
+            sh.contains(&format!("\n{def_name} 'install' |")),
+            "the invocation calls that exact name: {sh}"
+        );
+    }
+
+    /// The GUARD lane's half of the same law (`289:rul-touches-mismatch-own-lane`): the funcname
+    /// `strip_verdict` mangles the shipped preamble to must equal the one the guard invokes.
+    /// Both sides now read `VERDICT_SUFFIX`; this pins that they still meet after the strip, and
+    /// covers both invocation spellings — `verdict_fn_name` (keyed on the BOOK word) and
+    /// `build_vouches` (keyed on the lifted funcdef provider) must land on one string.
+    #[test]
+    fn verdict_shipped_def_name_equals_the_invoked_name() {
+        let authored = "\
+apt_get__is_converged() {
+   case $1 in
+   install) dpkg-query -W \"$2\" >/dev/null 2>&1 ;;
+   *) return 2 ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let lifted = dorc_oracle::verdict::VerdictSet::lift(&mut i, authored);
+        let provider = lifted.value.providers().next().expect("one provider");
+        let body = lifted.value.get(provider).expect("the verdict funcdef");
+        let def_name = dorc_oracle::predict::strip_verdict(authored, body, &i)
+            .split_once('(')
+            .expect("the stripped funcdef opens with `<name>(`")
+            .0
+            .to_owned();
+
+        let book_word = i.intern("apt-get");
+        assert_eq!(
+            verdict_fn_name(&i, book_word),
+            def_name,
+            "the guard invocation must name the funcdef the strip actually ships"
+        );
+        assert_eq!(
+            format!(
+                "{}{VERDICT_SUFFIX}",
+                dorc_oracle::to_funcname_segment(i.resolve(provider))
+            ),
+            def_name,
+            "build_vouches's own spelling must land on the same name"
+        );
+    }
+
+    /// The reach lane's half of the same law (`289:rul-touches-mismatch-own-lane`): a dynamic
+    /// `reaches()` arm ships as an engine-synthesized per-arm wrapper, so its def and invocation
+    /// must both be the ONE `arm_fn` string the cli built — nothing may re-derive either side.
+    #[test]
+    fn reach_arm_shipped_def_name_equals_the_invoked_name() {
+        let arm_fn = format!(
+            "sm_dorc_Package{}_0",
+            dorc_oracle::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX
+        );
+        let plan = ReachPlan {
+            probes: vec![ReachProbe {
+                coord_label: "sm.dorc.Package:nginx".to_owned(),
+                kind_label: "sm.dorc.Package".to_owned(),
+                arm_fn: arm_fn.clone(),
+                arm_index: 0,
+                entity_text: "nginx".to_owned(),
+                arm_sh: format!("{arm_fn}() {{ dpkg -L \"$1\" ; }}"),
+            }],
+        };
+        let sh = plan.render_sh(&records::Nonce::spike_default());
+        assert!(
+            sh.contains(&format!("{arm_fn}() {{ dpkg -L")),
+            "the per-arm wrapper ships under arm_fn: {sh}"
+        );
+        assert!(
+            sh.contains(&format!("{arm_fn} 'nginx' |")),
+            "the invocation calls that exact name: {sh}"
         );
     }
 

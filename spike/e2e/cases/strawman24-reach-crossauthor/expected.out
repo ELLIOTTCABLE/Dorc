@@ -26,8 +26,8 @@ installfile__predict '/etc/nginx/nginx.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then 
 # The controller joins arm->kind statically (the kind is fixed at lift — never host-minted).
 
 # reach sm.dorc.Package:nginx via sm.dorc.Package.reaches() arm 0
-sm_dorc_Package__reaches_0() { dpkg -L "$1" ; }
-sm_dorc_Package__reaches_0 'nginx' | while IFS= read -r _re; do printf 'dorc reach sm.dorc.Package:nginx arm=0 entity=%s @@dorc@@\n' "$_re"; done
+sm_dorc_Package__disturbance_reaches_only_0() { dpkg -L "$1" ; }
+sm_dorc_Package__disturbance_reaches_only_0 'nginx' | while IFS= read -r _re; do printf 'dorc reach sm.dorc.Package:nginx arm=0 entity=%s @@dorc@@\n' "$_re"; done
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
