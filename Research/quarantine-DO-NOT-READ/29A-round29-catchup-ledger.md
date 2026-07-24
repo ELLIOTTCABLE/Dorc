@@ -391,9 +391,34 @@ disabled-with-repair-specified, pointing here.
 Code: the buildable compile-fail proofs at their honest scope; a doc-comment fence on
 `whylog::inspect`.
 
-Housekeeping: the stranded round-29 branches and worktrees released, with the
-`ai/r29-ingress` dirty patch committed as frozen evidence first so nothing became
-unrecoverable.
+Housekeeping: fifteen stranded round-29 worktrees removed plus one orphaned directory
+cleared; eleven provably-merged branches deleted with `-d`.
+
+Two pieces of uncommitted work were found and FROZEN rather than lost, both now recoverable
+from their branches:
+
+- `ai/r29-ingress`@`8d2cc3b7` - the phase-three in-flight patch `298` describes (the
+  public-`AttemptScope` and pre-admission-clone repairs). Superseded: both gaps are closed
+  differently and better on `ai/main`. Kept as evidence, not for porting.
+- `ai/r29-resume`@`1849a3a1` - a substantially expanded, never-committed rewrite of `298`
+  itself: named work-unit slugs (`secphase0-map-and-freeze-present-seams` through
+  `secphase5-production-fences-and-authority-regression-gates`), an explicit five-clause
+  acceptance bar, and split immediate/later resumption sequences. Better-structured than
+  the committed `298` and the origin of the `secphase*` vocabulary, but written before the
+  immediate unit landed, so most of its process is now discharged. NOT ported: this ledger
+  supersedes both, and a second overlapping handoff would make the quarantine less
+  coherent, not more. Read it if the `secphase*` naming is wanted.
+
+Branch disposition, decided by `git cherry` against `ai/main` rather than by merge status:
+
+- KEPT, unique commits not upstream, and cited by hash in `298`'s ledger:
+  `ai/r29-impl`, `ai/r29-report-channel`, `ai/r29-aggregate-vouch`, `ai/r29-continuity`,
+  `ai/r29-ingress`, `ai/r29-resume`. Deleting these would orphan those citations.
+- SUPERSEDED, every commit patch-equivalent upstream (rebased in, nothing unique):
+  `ai/r29-resume-report`, `ai/r29-resume-vouch`, `ai/r29-resume-vouch-fix`,
+  `ai/r29-resume-ingress-diagnostic`. Deletion needs `-D` (they are unmerged in the
+  ancestry sense), which the repository's git hook reserves for the human. Left in place;
+  the command is safe whenever they want it.
 
 ## 8 - Outstanding
 
