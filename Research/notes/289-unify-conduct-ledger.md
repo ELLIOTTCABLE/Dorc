@@ -28,17 +28,30 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 ## §1 — Arc state
 
 - Base: `fbbf88f1` (ai/main; carries the 288 promotion + .loom respell).
-- Open ask (`288` §10, the only one): **prop-mint-completeness-hardening** — conductor
-  default is BUILD it (cheap, fails-safe, quality-trumps-progress), riding whichever
-  of phase 1-exec / phase 2 the map half says is cheapest, UNLESS the human vetoes
-  before that dispatch.
+- `288` §10's sole open ask is CLOSED: `289:rul-mint-hardening-package` (§2). No open
+  asks to the human; phase 8 remains the one held item.
 - Phase plan per `288` §8 + the acked compression lean: 0∥1 (running) → 2–4 as one
   checkpointed lane → 5 serial (atomic path move) → 6 → 7 (arrangement-home design
   sitting + build; help-text pilot) → 8 HELD (human ack required) → cleanup builder.
 
 ## §2 — Rulings (conductor, this arc)
 
-(accretes per checkpoint)
+- **`289:rul-mint-hardening-package`** (HUMAN-ACKED 2026-07-24, closes `288` §10) —
+  build prop-mint-completeness-hardening as the four-part gate package, NOT the
+  type-level/value-carriage kernel refactor: (1) a no-wildcard exhaustive
+  `match CollapseKind` inside the completeness gate (compiler forces every new
+  collapse class to visit the pairing site); (2) a tidy-style census over
+  collapse-constructor call-sites (`error_codes.rs` shape); (3) the merge-mint
+  pairing `debug_assert` promoted to a release-mode test gate; (4) DST
+  fault-injection assertions per collapse class (force the seam, assert the
+  narrative minted AND the chain renders it) — item 4 leans MANDATORY per the
+  human's correctness-over-machinery lean ("if you consider 50% and 60%, choose
+  60%, don't force 98%"), and is hard-mandatory if the builder finds a missing
+  narrative silently OMITS a chain link rather than rendering `Unexplained`
+  (builder must check + report which is as-built). Named escalation seam, build
+  NOTHING now: if the census gate ever leaks a real under-narration,
+  value-carriage-in-the-join is the priced next rung. Rides phase-1-exec or the
+  2–4 lane, whichever `notes/290` says is cheapest.
 
 ## §3 — Lane map (update on every change)
 
@@ -61,8 +74,9 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - 2026-07-24 mid-turn: fresh ledger, not 28A. (TYPED.)
 - 2026-07-24 mid-turn: conductor-in-worktree; fresh worktrees for builders; cleanup
   builder at arc end. (TYPED.)
-- OUTSTANDING ASK → human: prop-mint-completeness-hardening (build-vs-accept-assert;
-  conductor default BUILD, veto window open until the phase-1-exec/phase-2 dispatch).
+- 2026-07-24: "Ack and approve" on the hardening package + the standing correctness
+  lean (prefer 60% over 50%, never force 98%) — binds this arc's judgment calls.
+  (TYPED; → `289:rul-mint-hardening-package`.)
 
 ## §5 — Dispatch log
 
