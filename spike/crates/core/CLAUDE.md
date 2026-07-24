@@ -1,9 +1,11 @@
 # spike/crates/core — CLAUDE.md
 
 Role: the shared vocabulary every crate agrees on FIRST (dac-B: agree the types
-before consumers build, or two incompatible graphs grow). Read `spike/CLAUDE.md`
-first — its invariant clusters are this crate's law; this file carries only the
-core-local sharpenings. Registry discipline: one rule per bullet, slugged; append
+before consumers build, or two incompatible graphs grow) — the DECIDE plane. The
+DESCRIBE plane (diagnostics, catalog, render, narrative records, `Carrier`) is
+`crates/aid`, which deps this crate and is never depended upon BY it (`288` §2a).
+Read `spike/CLAUDE.md` first — its invariant clusters are this crate's law; this file
+carries only the core-local sharpenings. Registry discipline: one rule per bullet, slugged; append
 new entries to the matching section.
 
 ## Law — the claim-tier trust algebra (the soundness boundary lives here)
@@ -78,5 +80,11 @@ new entries to the matching section.
 - **inv-determinism-here** — deterministic `Ord`/`Hash` for anything used as a map
   key; the `Interner` is order-of-interning; keep canonical forms so structural
   `Eq` = semantic equality.
-- **inv-no-throw-here** — `core` is the no-throw spine; constructors return data,
-  never panic.
+- **inv-no-throw-here** — constructors return data, never panic. (`Carrier<T>`, the
+  no-throw spine type itself, lives in `crates/aid`; `core` returns bare values and
+  never accumulates diagnostics.)
+- **site-identity-is-decide-plane** — `SiteId` (`leaf` + optional in-loop `member`) lives
+  here beside `LeafId`, not in the describe plane: it is the identity two same-command
+  sites must not collapse across (`inv-site-keyed-results`), shared by the probe-records
+  lane, the apply plan's steps, and every diagnostic. `aid` re-exports it; it is never
+  re-minted.

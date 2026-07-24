@@ -311,7 +311,7 @@ pub enum RenderRefusalTag {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reserved {}
 
-/// The collapse CLASS and its operands (`AID-NEEDS:law-collapse-mints-evidence`: every
+/// The collapse CLASS and its operands (`AID-NEEDS:law-collapse-mints-narrative`: every
 /// safety-narrowing mints evidence carrying its OPERANDS). Deliberately NOT `#[non_exhaustive]`
 /// (the `DiagCode` posture — every consumer is an internal workspace crate, so adding the r26
 /// feeder variants breaks every match as a compiler checklist, never silently defaults).

@@ -6232,7 +6232,7 @@ apt_get__is_converged() { return 0; }
 
     #[test]
     fn survival_walk_mints_wall_and_demotion_evidence() {
-        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the running curl mutator mints
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the running curl mutator mints
         // a WallFormation and the demoted nginx a Demotion — DERIVED from the collapse, all Derived.
         let plan = survival_plan_empty_footprints(
             "apt-get install -y curl\napt-get install -y nginx\n",

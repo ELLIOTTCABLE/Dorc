@@ -800,7 +800,7 @@ x__is_converged() {
 
     #[test]
     fn decline_gate_names_the_reached_decline_shape() {
-        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the gate is DERIVED from the
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the gate is DERIVED from the
         // reached path, never a hand-set tag; a Vouched trace has no gate.
         assert_eq!(
             gate("x__is_converged() { return 2; }\n", &["a"]),

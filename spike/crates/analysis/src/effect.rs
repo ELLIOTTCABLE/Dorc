@@ -1060,7 +1060,7 @@ fn mint_top_causes(
 }
 
 /// Mint the `Derived`-tier fact-merge evidence the static value-plane `Reach::Top` collapse
-/// narrates (C3; `27V` Lane A, `AID-NEEDS:law-collapse-mints-evidence`): one
+/// narrates (C3; `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): one
 /// [`dorc_aid::CollapseKind::FactMergeDisagreement`] per Opaque-bearing node — the cell whose
 /// establishers meet to ⊤. Mirrors [`mint_top_causes`] (same Opaque-bearing key, same node-index
 /// order), so the product `Vec` is mint-pass-ordered — deterministic, no clock (`inv-determinism`;
@@ -1774,7 +1774,7 @@ command__predict() {
 
     #[test]
     fn an_opaque_reached_cell_mints_one_fact_merge_disagreement() {
-        // C3 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the collapse MINTS its own
+        // C3 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the collapse MINTS its own
         // evidence (one `Derived` FactMergeDisagreement per Opaque node), never hand-injected.
         let (mut i, idx, _s) = package_setup();
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];

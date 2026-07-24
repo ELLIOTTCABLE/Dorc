@@ -4565,7 +4565,7 @@ fn probe_origins(
 }
 
 /// Build the `Measured`-tier fact-merge evidence a probe-result disagreement narrates (C4;
-/// `27V` Lane A, `AID-NEEDS:law-collapse-mints-evidence`): a host self-contradiction at `cell`,
+/// `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): a host self-contradiction at `cell`,
 /// carrying the participating establisher sites as operands (`minting_line`/`shown` filled by d3).
 /// Decision-inert (`two-plane-aid-law`): the conservative meet already folded the channel to ⊤
 /// (`kFAIL-perform`, the only safe resolution of a self-contradicting host); this only narrates why.
@@ -6688,7 +6688,7 @@ mod tests {
 
     #[test]
     fn invalid_query_withhold_mints_substitution_refusal() {
-        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the invalid-Query withhold
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the invalid-Query withhold
         // mints one SubstitutionRefusal; a valid Query (substitutable rc) mints none.
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
@@ -6825,7 +6825,7 @@ mod tests {
 
     #[test]
     fn same_cell_disagreement_mints_measured_evidence_agreement_mints_none() {
-        // C4 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): a cross-site disagreement
+        // C4 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): a cross-site disagreement
         // mints one `Measured` FactMergeDisagreement; an agreement mints none.
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");

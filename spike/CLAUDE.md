@@ -21,7 +21,7 @@ gates) → this file → `spike/crates/<c>/CLAUDE.md` for the crate you touch. R
 tension under a new name); root `AGENTS.md` = repo-wide agent law (terminology
 firming, exclusion-check discipline).
 
-**Registry discipline** (this file and all seven crate files): one rule per bullet,
+**Registry discipline** (this file and all eight crate files): one rule per bullet,
 each with a greppable slug; grouped under standing section headers; APPEND new
 entries to the matching section rather than restructuring; cite outside sources as
 `docID:slug` (e.g. `271:rul-lend-map`). Dense beats prose.
@@ -448,6 +448,12 @@ prompt you write:
   **plan-as-API** is the named failure-mode: never promise cross-version
   plan-shape stability; anything like `--exit-code` gates on divergence-of-world,
   never plan shape.
+- **rul-strawman-formats-no-compat** — pre-user, EVERY versioned wire/format/env
+  name (`dorc-lint-format/1`, `DREP_V1`, `dorc-whylog/1`, `dorc-records/1`, …) is
+  strawman: rename/reshape in place, all sites in one commit; never an adapter, alias, or
+  mapping from a historical spelling. "Permanent once published" clauses activate at
+  publication, not before. Applies generally; *ask* the human if you suspect
+  they want to pay the prices of backwards-compatibility over velocity/simplicity.
 - **strip-is-pure-erasure** — `dorc strip` erases binds + marks, erases the
   `dorc:` prefix, rewrites the shebang-runner; NO in-body name rewriting;
   `dorc-sh` row-three untouched. Per-carrier (`281` §9): a colon-form TRAILING
@@ -485,18 +491,21 @@ prompt you write:
   corresponding POSIX rule, simplify it for our purposes, match it in spirit.
   Conservative for the spike; characters once granted can never be clawed back.
 
-## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27V`)
+## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27V`; the
+describe-plane CRATE and its crate-local sharpenings: `spike/crates/aid/CLAUDE.md` — every
+type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-extraction`)
 
 - **two-plane-aid-law** (`26C` §5b, human hard-ack) — the license plane fails toward
   unsureness; the aid/explanation plane fails toward narration with attributed
-  confidence. Aid-evidence is decision-inert at the TYPE level (sealed; no conversion
-  into any license-plane input compiles); license values flow into evidence freely,
-  never back. Lint-clean licenses nothing.
-- **collapse-mints-evidence** (`AID-NEEDS:law-collapse-mints-evidence`) — every
-  safety-narrowing (meet-to-⊤, refuse, decline, wall, demote, cancel) mints
-  decision-inert evidence carrying the collapse's OPERANDS, demanded by the collapse
+  confidence. The aid-narrative plane is decision-inert at the TYPE level (sealed; no
+  conversion into any license-plane input compiles); license values flow into narrative
+  freely, never back. Lint-clean licenses nothing.
+- **collapse-mints-narrative** (née collapse-mints-evidence;
+  `AID-NEEDS:law-collapse-mints-narrative`) — every safety-narrowing (meet-to-⊤, refuse,
+  decline, wall, demote, cancel) mints a decision-inert NARRATIVE record
+  (`aid::CollapseNarrative`) carrying the collapse's OPERANDS, demanded by the collapse
   constructor at the VALUE level (pure data; kernels stay pure — arena registration is
-  post-pass per `22D`). Evidence is Eq-EXCLUDED from lattice equality (fixpoint
+  post-pass per `22D`). The record is Eq-EXCLUDED from lattice equality (fixpoint
   termination, `22W` §2) and k-capped. `Unexplained` is constructible but renders
   self-advertisingly.
 - **trust-tier-is-syntax** — the epistemic tier of every rendered link (STRAWMAN
@@ -707,13 +716,6 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
 - Commits: small + granular + frequent. `(AI <labels>) terse one-line message` per
   `.gitlabels`; the `AI` label is mandatory; no `Co-Authored-By` trailer; never
   push. Run the four gates first.
-
-- `rul-strawman-formats-no-compat` — pre-user, EVERY versioned wire/format/env
-  name (`dorc-lint-format/1`, `DREP_V1`, `dorc-whylog/1`, `dorc-records/1`, …) is
-  strawman: rename/reshape in place, all sites in one commit; never an adapter, alias, or
-  mapping from a historical spelling. "Permanent once published" clauses activate at
-  publication, not before. Applies generally; *ask* the human if you suspect
-  they want to pay the prices of backwards-compatibility over velocity/simplicity.
 
 ## Spawning subagents (supervisor law — mandatory)
 

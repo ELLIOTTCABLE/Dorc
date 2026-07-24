@@ -69,13 +69,16 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   *unsureness*; the aid plane fails toward *narration with attributed confidence*. Aid
   may consume anything, including analyses vetoed for licensing (tool-aware text
   reasoning, host observation, oracle-contributed narration — the `26C` feeder classes),
-  each attributed by class and forever display-tier. Aid-evidence is decision-inert at
-  the type level: no path from any row's machinery into any license-plane input.
+  each attributed by class and forever display-tier. The aid-narrative plane is
+  decision-inert at the type level: no path from any row's machinery into any
+  license-plane input.
   Lint-clean licenses nothing; silence-licenses-nothing runs in both directions.
-- **law-collapse-mints-evidence** — every point where the engine narrows for safety
-  (meet-to-⊤, refuse, decline, wall, demote, cancel) mints a decision-inert evidence
-  record carrying the collapse's *operands*, at the moment of collapse. A new
-  safety-narrowing without its evidence mint (and, usually, its row here) is a defect.
+- **law-collapse-mints-narrative** (née law-collapse-mints-evidence) — every point where
+  the engine narrows for safety (meet-to-⊤, refuse, decline, wall, demote, cancel) mints a
+  decision-inert *narrative* record (`aid::CollapseNarrative`) carrying the collapse's
+  *operands*, at the moment of collapse. A new safety-narrowing without its narrative mint
+  (and, usually, its row here) is a defect. "Evidence" is deliberately reserved for
+  possible future correctness-plane use (`288:rul-narrative-layer-naming`).
   Mechanics: `27V` §1.
 - **law-trust-tier-is-syntax** — the epistemic tier of every rendered link (strawman
   spellings: measured / vouched / ran / claimed / derived / consented) is a typed field
