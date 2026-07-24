@@ -186,3 +186,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   fixture residue (`28A:finding-touches-rename-half-done`; verify-in-other-cells
   first, drop if it resists).
 - 2026-07-24: phases-2–4 MAP (Opus, fresh worktree, bg) — `notes/291` on `ai/r28-unify-p24` off `35954157` (fold-tip; conductor cold-verify in flight in parallel; exec half gated on both).
+- 2026-07-24: conductor cold verification of the extraction fold PASSED (full clean; build ok | unit 1163 | e2e 97 | gates ok). `35954157` is verified base for the 2–4 exec.
