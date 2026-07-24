@@ -241,7 +241,7 @@ impl DiagCode {
     /// WIRE-FORMAT COMMITMENT — flagged). Stable across variant reordering (unlike a numeric
     /// discriminant), greppable, and the key the OOB lane's `code=` field carries
     /// (`226` finding-6, TS's code-stable discipline). These slugs match the legacy
-    /// [`crate::DiagCode`] strings the migrated sites used, so existing `expected-diagnostics`
+    /// `Diagnostic` strings the migrated sites used, so existing `expected-diagnostics`
     /// fixtures and the coverage bridge keep matching.
     #[must_use]
     pub fn slug(&self) -> &'static str {
