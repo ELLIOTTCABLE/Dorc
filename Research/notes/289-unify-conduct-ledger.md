@@ -187,3 +187,54 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   first, drop if it resists).
 - 2026-07-24: phases-2–4 MAP (Opus, fresh worktree, bg) — `notes/291` on `ai/r28-unify-p24` off `35954157` (fold-tip; conductor cold-verify in flight in parallel; exec half gated on both).
 - 2026-07-24: conductor cold verification of the extraction fold PASSED (full clean; build ok | unit 1163 | e2e 97 | gates ok). `35954157` is verified base for the 2–4 exec.
+
+## §2g — Phases-2–4 MAP checkpoint rulings (conductor, 2026-07-24; on `notes/291`'s flags)
+
+- Map LANDED @ `83e93632` (notes-only; folded). Executor: ONE fresh builder, ONE
+  mid-lane checkpoint after the phase-3 close (before phase-4's lib extraction +
+  case fan-out), per the map's sizing. Comment budget 45 accepted (net-new lane).
+- **`289:rul-hardening-h4a-all-h4b-one`** (flag 1) — the silent-omit finding is
+  CONFIRMED and worse: `Unexplained` exists NOWHERE; the why-chain reads witnesses,
+  not narratives (`emit_why_lens` ignores its narrative slice by signature); only
+  VerdictDecline reaches a user surface. So: h4a mint-assertions for ALL NINE classes
+  (hard-mandatory per `289:rul-mint-hardening-package`); h4b render-assertion for the
+  one renderable class; the narrative→render consumption gap is a NAMED SEAM
+  (`289:seam-narrative-render-unconsumed` — future why-render/arrangement round owns
+  it, out of this arc per `288` §2d). RIDER: correct the STALE kept-current registry
+  text (spike/CLAUDE.md + AID-NEEDS "Unexplained … renders self-advertisingly") to
+  as-built truth — kept-current registries must not lie; the law itself stands.
+- **`289:rul-lint-render-split-is-policy`** (flag 2) — preserve the framed/compact
+  split; NAME it a selection policy (render-form-unwelded; avoids 11-case churn and
+  losing caret frames from default lint).
+- **`289:rul-sm-where-ancestor-exists`** (flag 3) — migrated codes whose shipped
+  ancestor sentence exists carry it verbatim under the `sm ` marker (migration, not
+  authorship — the d1 precedent); `[unwritten:]` only for genuinely-new codes.
+  Constantly-firing surfaces must not regress to placeholders while phase 8 is held.
+- **`289:rul-worldless-route-honest-trigger`** (flags 4+9) — W2: real-fired
+  invocation-error cases via a thin `dorc-cli` lib target. The `28A` §2n economics
+  flip here — honest firing is trivially cheap for this family ("`$ dorc strip` IS
+  the world"). The lib target is an INTERNAL loom-harness seam, doc-commented as
+  such, never a public API surface.
+- Flag 5 (`external-text` stays a relay): ACCEPTED. Flag 6 (prose-sweep scope):
+  narrative-plane prose + PRIVATE local identifiers in the nine mint-site files at
+  builder judgment; never public API, never `HostEvidence*`/r29-adjacent; flag
+  ambiguity. Flag 7 (mirror-union seeds from CASES, departing `288` §4's letter):
+  ACCEPTED — the spirit is loud-mintability, and red-until-case-exists with the
+  repair command named VERBATIM at every red satisfies `288:rul-loom-mint-guarantee`
+  better than a silent placeholder row; the flow is enum-variant → red gate naming
+  `dorc-loom scaffold <slug>` → scaffold → `[unwritten:]` row → author world → green.
+- **`289:rul-unwritten-ceiling-one-bump`** (flag 10) — ONE conscious bump for the
+  lane: ceiling = existing 6 + the map's counted genuinely-new codes + 2 headroom
+  (builder computes and states the number; per-entry notes retained). Never
+  per-commit chores, never a silent weaken; phase 8's arc-close invariant (zero
+  unwritten) supersedes the ceiling at close.
+- **`289:rul-touches-mismatch-own-lane`** (flag 8) — the touches rider is a LIVE
+  BUG (def `__disturbs` vs invocation `__touches`; fails safe, value-dead), dropped
+  from the 2–4 lane and dispatched as its own parallel small lane: fix the
+  invocation side to the ruled `__disturbs` suffix, pin def↔invocation to one
+  source, and make `strawman24-derived-survive` exercise the LIVE lane (legitimate
+  golden churn; conductor blesses at fold).
+- Banked: nothing pins the `dorc: `/`dorc-sh: ` prefixes — phase 4 is golden-churn-free.
+
+- 2026-07-24: touches-fix lane (Opus, fresh worktree, bg) + phases-2–4 EXEC (Opus,
+  fresh worktree, bg), both off the post-map stack tip.
