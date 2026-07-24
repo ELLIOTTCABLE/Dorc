@@ -41,6 +41,14 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// The mint recipe, named VERBATIM so a red gate hands the reader the command that repairs it
+/// (`288:rul-loom-mint-guarantee`). The lock is `@generated` and hand-rows are refused, so the ONLY
+/// repair is a defining case plus a promote.
+const REPAIR_HINT: &str = "Mint its prose home: `dorc-loom scaffold <slug>`, author the case's \
+                           when-fires/why and a replay whose output carries the slug, then have \
+                           the orchestrator run `dorc-loom promote <case>`. The lock is generated \
+                           — a hand-written row is refused.";
+
 /// Every migrated catalog variant's PAYLOAD-struct name — the spine's construction marker. Each
 /// variant wraps a uniquely-named payload struct that is constructed ONLY at an emit site (the
 /// `DiagCode::Variant(Payload { … })` form), so grepping the struct literal is robust to the
@@ -536,6 +544,10 @@ fn committed_slug_arms(diag_rs: &str) -> BTreeSet<String> {
 #[test]
 fn every_variant_has_exactly_one_catalog_entry() {
     use dorc_aid::catalog::CATALOG;
+    assert!(
+        REPAIR_HINT.contains("dorc-loom scaffold"),
+        "the completeness failure must name the repair command verbatim; a reword may not drop it"
+    );
     let catalog_slugs: BTreeSet<&str> = CATALOG.iter().map(|e| e.slug).collect();
     // No duplicate entries (catalog's own gate also checks this; belt-and-braces here).
     assert_eq!(
@@ -548,7 +560,7 @@ fn every_variant_has_exactly_one_catalog_entry() {
         assert!(
             catalog_slugs.contains(slug),
             "DiagCode variant slug `{slug}` has no CatalogEntry — every code needs exactly one \
-             prose home (27V:rul-kill-legacy-diagnostic). Add its entry to aid/src/catalog.rs."
+             prose home (27V:rul-kill-legacy-diagnostic). {REPAIR_HINT}"
         );
     }
     // Every catalog entry names a real variant (no orphan row).
