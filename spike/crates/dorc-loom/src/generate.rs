@@ -70,6 +70,12 @@ pub fn build_publication(
 /// compiled message rendered with the defining payload; ratcheted rows carry their current generated
 /// row verbatim. Deterministic — the output IS the committed bytes under the byte-identity fixpoint.
 ///
+/// The row list is the UNION of the mirror and the case corpus (`288` §4 mirror-union, sourced from
+/// CASES per `289` §2g flag-7): the mirror is closed over slugs that already have a lock row, so
+/// without the union a newly-minted code could never gain one. Union rows APPEND in slug order after
+/// the mirror's, so a mint is a pure addition to the committed bytes and the diff stays reviewable;
+/// once promoted, the slug is in the mirror and the union is idempotent.
+///
 /// # Errors
 /// Returns a refusal for missing frontmatter metadata, an un-fireable defining payload, or a message
 /// hole absent from the payload.
@@ -109,6 +115,20 @@ pub fn generate_catalog_lock(
             example,
             message,
             help,
+        });
+    }
+    for (slug, case) in cases {
+        if consumer.mirror().iter().any(|entry| &entry.slug == slug) {
+            continue;
+        }
+        rows.push(LockRow {
+            slug: slug.clone(),
+            when_fires: frontmatter_scalar(case, "when-fires", slug)?,
+            why: frontmatter_scalar(case, "why", slug)?,
+            params: refreshed_params(None, None),
+            example: case_example(consumer, case, None, slug)?,
+            message: None,
+            help: None,
         });
     }
     Ok(serialize_lock(&rows))
@@ -171,4 +191,62 @@ fn frontmatter_scalar(case: &Case, key: &str, slug: &str) -> Result<String, Stri
         .scalar(key)
         .map(str::to_owned)
         .ok_or_else(|| format!("case `{slug}` frontmatter missing `{key}`"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn scaffolded_case(slug: &str) -> Case {
+        let text = format!(
+            "---\ncode: {slug}\nwhen-fires: a freshly minted code.\nwhy: the mint seam.\n---\n\
+             -- replay --\n$ dorc plan --book=book.sh\nerror[{slug}]: placeholder\n"
+        );
+        Case::parse(&text).expect("scaffolded case parses")
+    }
+
+    /// The mint seam: a case whose slug has no mirror row still reaches the generated lock, as an
+    /// APPENDED unwritten row. Without the union a new `DiagCode` variant could never gain a row
+    /// (the mirror is seeded from the lock itself), which is the whole of `288` §4's trawl gap.
+    #[test]
+    fn a_caseless_new_slug_appends_an_unwritten_row() {
+        let consumer = DorcConsumer::new();
+        let cases = BTreeMap::from([(
+            "aaa-brand-new-code".to_owned(),
+            scaffolded_case("aaa-brand-new-code"),
+        )]);
+        let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
+
+        let row = generated
+            .split("    CatalogEntry {\n")
+            .last()
+            .expect("at least one row");
+        assert!(
+            row.contains("slug: \"aaa-brand-new-code\","),
+            "the new row is LAST despite sorting before every existing slug: {row}"
+        );
+        assert!(
+            row.contains("message: None,"),
+            "a minted row is unwritten: {row}"
+        );
+        assert!(
+            row.contains("example: \"[unwritten: aaa-brand-new-code]\","),
+            "the example renders the greppable placeholder: {row}"
+        );
+    }
+
+    /// Union idempotence: once a slug is in the mirror, the case contributes its frontmatter to that
+    /// row rather than a duplicate appended one.
+    #[test]
+    fn a_slug_already_in_the_mirror_gains_no_second_row() {
+        let consumer = DorcConsumer::new();
+        let cases = load_corpus_by_slug(&Path::new(env!("CARGO_MANIFEST_DIR")).join("cases"))
+            .expect("load corpus");
+        let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
+        assert_eq!(
+            generated.matches("slug: \"syntax-unsupported\",").count(),
+            1,
+            "a case-owned slug appears exactly once"
+        );
+    }
 }
