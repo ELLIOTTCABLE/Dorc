@@ -179,12 +179,12 @@ prompt you write:
   from a string. Setup that cannot be made exclusive DEGRADES the affected lane
   (supply an inert sink; keep the static tiers) and never retries by name or removes
   an unowned object; the degradation is decision-inert evidence, and a
-  degraded/failed lane never fails a plan or an apply. Host environment variables are
-  hostile input and never site controller scratch — roots are controller-supplied
+  degraded/failed lane never fails a plan or an apply. Host environment values never
+  site controller resources — roots are controller-supplied
   literals. This is a strictly narrower rule than the no-mutation contract: it binds
-  ENGINE-generated constructs (`rul-probe-mutation-ownership-split`'s owned tier),
-  where "we were only reading" is not a defense, because the write primitive is the
-  scaffolding's, not the author's.
+  ENGINE-generated constructs (`rul-probe-mutation-ownership-split`'s owned tier):
+  the create/truncate/unlink belongs to the scaffolding, not to any author, so a
+  read-only intent does not exempt it.
 
 ## Invariants — separation, worlds & survival
 
