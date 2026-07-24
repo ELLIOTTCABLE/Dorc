@@ -70,6 +70,47 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   phase 6: the lint-case loom conversion adds a CLEAN-run case (transcript pin,
   re-blesses freely) alongside the findings cases.
 
+## §2c — Phase-1 MAP checkpoint rulings (conductor, 2026-07-24; on `notes/290`'s flags)
+
+- Map LANDED @ `00155aaf` on `ai/r28-unify-p1` (notes-only; folded to the stack). The
+  §3a rename decisions are ACCEPTED WHOLESALE — specifically dec-collapse-kind-kept +
+  dec-trust-tier-kept (rename buys nothing, forces law-slug churn) and
+  dec-hostevidence-untouched + dec-errorloom-untouched (genuinely different concepts;
+  renaming would be a semantic error).
+- **`289:rul-carrier-collision-path-rewrites-only`** (flag 1) — oracle's local
+  `enum Carrier` in `predict/mark_grammar.rs` (the `#:`/`:` mark carrier) keeps its
+  name; every rewrite touching that file is import-path-based, never bare-identifier;
+  the §4d bare-identifier step EXCLUDES it. Correction accepted: cli (44 sites) is the
+  heaviest file, not oracle.
+- **`289:rul-user-aid-block-stays-pointered`** (flag 2) — the POINTER reading: the
+  spike/CLAUDE.md User-aid block STAYS at root (it binds emission sites in every
+  crate — plan/cli/analysis builders never auto-load `crates/aid/CLAUDE.md`); the new
+  aid CLAUDE.md carries the crate-local registry plus duplicated deeply-critical
+  bullets (AGENTS.md sanctions repetition for exactly this); the root block gains one
+  relocation-pointer sentence for the moved types.
+- **`289:rul-law-reslug-rides-phase-one`** (flag 3) — re-slug at this lane's
+  steering-sync: `AID-NEEDS:law-collapse-mints-narrative` (née
+  law-collapse-mints-evidence) and spike/CLAUDE.md `collapse-mints-narrative` (née
+  collapse-mints-evidence), body wording updated, in-code citation comments grepped
+  and updated mechanically; historical docs untouched. Motive: "evidence" was
+  deliberately RESERVED for possible future correctness-plane use
+  (`288:rul-narrative-layer-naming`); a kept-current law squatting on the word
+  defeats the reservation.
+- SiteId (flag 4): **TAKE**, as the map's §6 additive prelude, exactly as specified.
+- Dead doc-links (flag 5): FIX the two dead links in a prelude commit (stale refs to
+  killed types); NO cargo-doc gate this arc (machinery past the lean).
+- Ratchet baseline skip-once (flag 6): accepted as designed; must NOT be "fixed";
+  executor reports that it fired.
+- **`289:rider-diag-tidy-scan-set`** (flag 7) — `SCANNED_CRATES` omits lint +
+  dorc-loom (pre-existing): widen it in PHASE 3 when lint findings join the registry.
+- Flags 8/9/12 (prov-stays-core · compile_fail doctest · catalog_lock wiring):
+  confirmed clean, banked so no one re-derives. Flags 10 (plain-`.rs` test moves, no
+  pre-created case dirs) and 11 (hostsim/sweep stay aid-free; investigate-don't-add):
+  accepted as proposed.
+- Hardening disposition: `289:rul-mint-hardening-package` RIDES PHASE 2 (the map's
+  reasoning accepted — a behavior change would destroy the cutover's
+  clean-diff-is-the-correctness-proof property).
+
 ## §3 — Lane map (update on every change)
 
 | lane | branch | shape | state |
