@@ -614,7 +614,7 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
 /// One-line usage for the `lint` sub-surface (`27R` §5). Embedded in lint arg errors.
 const LINT_USAGE: &str = "usage: dorc lint <files…> [-o <oracle>]… [--oracle-dir <dir>] \
     [--format=human|jsonl] [--fail-on=error|warn|never] [--no-tools] [--require-tools] \
-    [--expect-files N] [--source NAME]… [--list-sources]";
+    [--expect-files N] [--source NAME]… [--list-sources] [--terse|--verbose]";
 
 /// The parsed `dorc lint` invocation (`27R` §5). Files + oracle sources + the render/exit knobs.
 struct LintArgs {
@@ -632,6 +632,9 @@ struct LintArgs {
     list_sources: bool,
     /// `--source NAME` subset selection (`27R` §8 delta-named-sources-selectable); empty ⇒ all.
     sources: Vec<String>,
+    /// The human render's density (`289:rul-lint-render-split-is-policy`). Default reproduces each
+    /// finding's declared shape, so the surface only moves when the admin asks.
+    verbosity: dorc_lint::render::Verbosity,
 }
 
 /// The `--format` choice (`27R` §5 dir-two-renders-one-model).
@@ -657,6 +660,7 @@ fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
     let mut expect_files = None;
     let mut list_sources = false;
     let mut sources = Vec::new();
+    let mut verbosity = dorc_lint::render::Verbosity::default();
     let mut it = raw.iter().skip(1).cloned().peekable();
     while let Some(arg) = it.next() {
         if let Some(p) = arg.strip_prefix("--oracle-dir=") {
@@ -685,6 +689,10 @@ fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
             expect_files = Some(parse_expect_count(
                 &it.next().ok_or("--expect-files needs a number")?,
             )?);
+        } else if arg == "--terse" {
+            verbosity = dorc_lint::render::Verbosity::Terse;
+        } else if arg == "--verbose" {
+            verbosity = dorc_lint::render::Verbosity::Verbose;
         } else if arg == "--list-sources" {
             list_sources = true;
         } else if let Some(p) = arg.strip_prefix("--source=") {
@@ -708,6 +716,7 @@ fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
         expect_files,
         list_sources,
         sources,
+        verbosity,
     }))
 }
 
@@ -886,7 +895,10 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     }
 
     match args.format {
-        LintFormat::Human => print!("{}", dorc_lint::render::render_human(&report)),
+        LintFormat::Human => print!(
+            "{}",
+            dorc_lint::render::render_human_parts_at(&report, args.verbosity).text()
+        ),
         LintFormat::Jsonl => print!("{}", dorc_lint::render::render_jsonl(&report)),
     }
     std::io::stdout().flush().ok();

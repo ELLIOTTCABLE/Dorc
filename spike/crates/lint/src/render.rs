@@ -6,7 +6,7 @@
 
 use std::fmt::Write as _;
 
-use crate::finding::{Coverage, Finding, LintReport, RemapFidelity, severity_token};
+use crate::finding::{Coverage, Finding, FrameChoice, LintReport, RemapFidelity, severity_token};
 use crate::json::escape_into;
 use dorc_aid::tagged::{RenderPart, RenderParts};
 
@@ -28,6 +28,12 @@ pub fn render_human(report: &LintReport) -> String {
 /// attempting to recover editable prose from the completed text.
 #[must_use]
 pub fn render_human_parts(report: &LintReport) -> RenderParts {
+    render_human_parts_at(report, Verbosity::default())
+}
+
+/// [`render_human_parts`] at a chosen density (`289:rul-lint-render-split-is-policy`).
+#[must_use]
+pub fn render_human_parts_at(report: &LintReport, verbosity: Verbosity) -> RenderParts {
     let (errors, warns, infos) = report.severity_counts();
     let file_count = report.coverage.files.len();
     let source_count = report.coverage.sources.len();
@@ -55,7 +61,7 @@ pub fn render_human_parts(report: &LintReport) -> RenderParts {
             });
             current_group = Some(group);
         }
-        append_finding_parts(&mut out, f);
+        append_finding_parts(&mut out, f, verbosity);
     }
     out.push(RenderPart::Arrangement {
         text: format!(
@@ -83,29 +89,60 @@ fn structure(text: String) -> RenderParts {
     parts
 }
 
-fn append_finding_parts(out: &mut RenderParts, finding: &Finding) {
-    if let Some(provenance) = &finding.provenance {
-        out.push(RenderPart::Arrangement {
-            text: String::from("  "),
-            slug: "lint-indent",
-        });
-        out.append(dorc_aid::diag::render_cli_parts(
-            &dorc_aid::catalog::CONST_CATALOG,
-            &provenance.diag,
-            &provenance.source,
-            &finding.path,
-            &dorc_core::Interner::default(),
-        ));
-        out.push(RenderPart::Arrangement {
-            text: String::from("\n"),
-            slug: "lint-terminal-newline",
-        });
-    } else {
+/// The human render's density dial (`289:rul-lint-render-split-is-policy`, riding `KNOBS:kFLOW` /
+/// `27V:rul-output-form-unwelded`). [`Default`](Self::default) reproduces each finding's declared
+/// [`FrameChoice`] exactly, so the default surface is unchanged by the policy becoming explicit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Verbosity {
+    /// Every finding renders compact, frames dropped.
+    Terse,
+    /// Each finding's declared [`FrameChoice`].
+    #[default]
+    Default,
+    /// Every finding that HAS provenance renders framed.
+    Verbose,
+}
+
+/// Whether this finding frames under `verbosity`. A frame needs typed provenance to draw a caret
+/// against, so a provenance-less finding is compact at every level — the dial selects among shapes
+/// that exist, it never synthesizes one.
+fn frames(finding: &Finding, verbosity: Verbosity) -> bool {
+    if finding.provenance.is_none() {
+        return false;
+    }
+    match verbosity {
+        Verbosity::Terse => false,
+        Verbosity::Default => finding.frame == FrameChoice::Framed,
+        Verbosity::Verbose => true,
+    }
+}
+
+fn append_finding_parts(out: &mut RenderParts, finding: &Finding, verbosity: Verbosity) {
+    if !frames(finding, verbosity) {
         out.push(RenderPart::Arrangement {
             text: render_finding_line(finding),
             slug: "lint-fixed-finding",
         });
+        return;
     }
+    let Some(provenance) = &finding.provenance else {
+        return;
+    };
+    out.push(RenderPart::Arrangement {
+        text: String::from("  "),
+        slug: "lint-indent",
+    });
+    out.append(dorc_aid::diag::render_cli_parts(
+        &dorc_aid::catalog::CONST_CATALOG,
+        &provenance.diag,
+        &provenance.source,
+        &finding.path,
+        &dorc_core::Interner::default(),
+    ));
+    out.push(RenderPart::Arrangement {
+        text: String::from("\n"),
+        slug: "lint-terminal-newline",
+    });
 }
 
 /// One human finding line: `  <line>:<col> <severity> [<source>:<code>] <message>` plus a

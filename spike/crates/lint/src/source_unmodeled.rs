@@ -12,7 +12,7 @@
 
 use dorc_analysis::cfg::CfgNodeKind;
 
-use crate::finding::{Finding, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The unmodeled-wall inventory source. Deterministic (pure over the source bytes).
@@ -72,6 +72,7 @@ impl LintSource for UnmodeledInventory {
                 message,
                 remap: RemapFidelity::Exact,
                 provenance: None,
+                frame: FrameChoice::Compact,
             });
         }
         SourceStatus::Ran

@@ -232,6 +232,48 @@ fn verdict_body_flags_a_terminal_pipeline() {
 }
 
 #[test]
+fn the_frame_split_is_a_policy_the_density_dial_moves() {
+    // `289:rul-lint-render-split-is-policy`. The default surface must be EXACTLY what the old
+    // `provenance.is_some()` accident produced — a framed block for the diag-backed findings and a
+    // compact line for the inventory — while `--terse`/`--verbose` move it deliberately.
+    let report = run_native(&[file("book.sh", EVAL_BOOK)], None);
+    let default = render::render_human_parts_at(&report, render::Verbosity::Default).text();
+    assert_eq!(
+        default,
+        render::render_human(&report),
+        "the dial's default IS the unparameterized render"
+    );
+    assert!(
+        default.contains("error[syntax-unsupported]"),
+        "a diag-backed finding frames by default:\n{default}"
+    );
+    assert!(
+        default.contains("[unmodeled-inventory:unmodeled-wall-inventory]"),
+        "the inventory finding stays compact by default:\n{default}"
+    );
+
+    let terse = render::render_human_parts_at(&report, render::Verbosity::Terse).text();
+    assert!(
+        terse.contains("[analysis-diagnostics:syntax-unsupported]"),
+        "--terse demotes the framed finding to the compact line:\n{terse}"
+    );
+    assert!(
+        !terse.contains("error[syntax-unsupported]"),
+        "--terse keeps no frames:\n{terse}"
+    );
+
+    let verbose = render::render_human_parts_at(&report, render::Verbosity::Verbose).text();
+    assert!(
+        verbose.contains("error[syntax-unsupported]"),
+        "--verbose keeps the frames it already had:\n{verbose}"
+    );
+    assert!(
+        verbose.contains("[unmodeled-inventory:unmodeled-wall-inventory]"),
+        "a provenance-less finding cannot be framed, even at --verbose:\n{verbose}"
+    );
+}
+
+#[test]
 fn list_sources_enumerates_the_registry() {
     let sources = list_sources();
     let names: Vec<&str> = sources.iter().map(|s| s.name).collect();

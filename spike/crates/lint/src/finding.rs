@@ -81,6 +81,22 @@ impl RemapFidelity {
     }
 }
 
+/// How the human render presents a finding by DEFAULT (`289:rul-lint-render-split-is-policy`).
+///
+/// This used to be an accident: `append_finding_parts` framed a finding iff it carried typed
+/// provenance, so the split moved whenever provenance did. It is now a stated SELECTION POLICY that
+/// each mint site declares, riding `27V:rul-output-form-unwelded` / `KNOBS:kFLOW` — the words and
+/// shapes stay unwelded, but WHICH shape a finding gets is a decision someone made on purpose.
+/// `--verbose` promotes compact→framed wherever provenance exists; `--terse` demotes framed→compact.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FrameChoice {
+    /// The full caret-framed diagnostic block. Requires provenance; without it the render falls
+    /// back to the compact line rather than inventing a frame.
+    Framed,
+    /// The one-line `line:col severity [source:code] message` form.
+    Compact,
+}
+
 /// One lint finding — the whole reporting surface (`27R` §5). Paths and lines are ALWAYS the user's
 /// ORIGINAL file and line (`27R` §4 dir-paths-stay-yours): temp paths and stripped-line numbers
 /// never leak here, because the external adapters remap before minting a `Finding`.
@@ -110,6 +126,8 @@ pub struct Finding {
     /// Typed provenance for a Dorc-native diagnostic; external findings have no
     /// editable catalog prose.
     pub provenance: Option<NativeDiag>,
+    /// The default human-render shape (`289:rul-lint-render-split-is-policy`).
+    pub frame: FrameChoice,
 }
 
 impl Finding {

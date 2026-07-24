@@ -15,7 +15,7 @@
 use dorc_aid::Severity;
 use dorc_core::Interner;
 
-use crate::finding::{Finding, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, RemapFidelity, SourceStatus};
 use crate::json;
 use crate::runner::ToolRun;
 use crate::source::{LintContext, LintSource, Rung};
@@ -95,6 +95,7 @@ fn run_external(
             ),
             remap: RemapFidelity::None,
             provenance: None,
+            frame: FrameChoice::Compact,
         });
         return SourceStatus::Absent;
     }
@@ -142,6 +143,7 @@ fn lint_one_file(
                 ),
                 remap: RemapFidelity::None,
                 provenance: None,
+                frame: FrameChoice::Compact,
             });
         }
     }
@@ -320,6 +322,7 @@ fn remap_finding(path: &str, line_map: &[u32], tool: &'static str, raw: RawFindi
         message: raw.message,
         remap,
         provenance: None,
+        frame: FrameChoice::Compact,
     }
 }
 
@@ -336,6 +339,7 @@ fn operational_finding(path: &str, tool: &'static str, rc: i32) -> Finding {
         message: format!("`{tool}` exited with status {rc} but produced no parseable findings"),
         remap: RemapFidelity::None,
         provenance: None,
+        frame: FrameChoice::Compact,
     }
 }
 

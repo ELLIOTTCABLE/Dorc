@@ -16,7 +16,7 @@ use dorc_aid::narrative::DeclineClass;
 use dorc_core::Interner;
 use dorc_oracle::verdict::VerdictSet;
 
-use crate::finding::{Finding, NativeDiag, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, NativeDiag, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The book-free oracle-validation source: lowers `dorc_oracle::validate`'s stage-diags to findings.
@@ -99,6 +99,7 @@ fn diag_to_finding(path: &str, src: &str, diag: &dorc_aid::Diag, source: &'stati
             diag: diag.clone(),
             source: src.to_owned(),
         }),
+        frame: FrameChoice::Framed,
     }
 }
 
@@ -141,6 +142,7 @@ impl LintSource for OracleDeclinedInventory {
                         message: decline_message(arm.class),
                         remap: RemapFidelity::Exact,
                         provenance: None,
+                        frame: FrameChoice::Compact,
                     });
                 }
             }

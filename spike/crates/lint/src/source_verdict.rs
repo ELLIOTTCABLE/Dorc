@@ -15,7 +15,7 @@ use dorc_core::Interner;
 use dorc_oracle::predict::Stmt;
 use dorc_oracle::verdict::VerdictSet;
 
-use crate::finding::{Finding, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The verdict-body flattening source. Deterministic (pure over the oracle bytes).
@@ -60,6 +60,7 @@ impl LintSource for VerdictBodyFlattening {
                             .to_owned(),
                         remap: RemapFidelity::Exact,
                         provenance: None,
+                        frame: FrameChoice::Compact,
                     });
                 }
             }
