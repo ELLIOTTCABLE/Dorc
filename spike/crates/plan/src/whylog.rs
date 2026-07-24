@@ -157,6 +157,20 @@ pub struct WhylogInspection {
 /// Inspect one exact durable without filesystem or directory access.
 ///
 /// Keeps CLI and transcript replay on one typed-refusal path.
+///
+/// # Bounded-input fence (`rul-host-bytes-bounded-before-admission`)
+///
+/// This takes RAW `&str` and applies NO host-evidence limits: no stream, line, record-count,
+/// field, or retained-byte bound runs before [`parse`]. It is sound only for CONTROLLER-LOCAL
+/// material a repo-local fixture supplied — its one caller today materializes transcript-case
+/// content. It is NOT an intake path, and a durable that a managed host produced or influenced
+/// must reach the engine through [`admit_unscoped_whylog`] instead, which bounds bytes-first and
+/// answers with a closed admission outcome.
+///
+/// Adding a host-sourced caller without converting this to a bounded, scope-carrying signature
+/// re-opens the unbounded-read the ingress work closed. The conversion is deliberately deferred
+/// (its consumer crate is mid-restructure), so this fence is prose rather than a type: if you are
+/// about to add a caller, that deferral has expired.
 #[must_use]
 pub fn inspect(
     raw: Option<&str>,
