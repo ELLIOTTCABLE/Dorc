@@ -265,3 +265,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   accommodate future chain-link/narration prose (multi-link sequences, tier-worded
   connectives, per-link provenance stamps) even though nothing fills them this arc;
   the shape-anticipation answer to `289:seam-narrative-render-unconsumed`.
+- 2026-07-24: touches fold cold-verified own-hand (build ok | unit 1167 | e2e 97 | gates ok). Stack tip `397e8e78` verified.
