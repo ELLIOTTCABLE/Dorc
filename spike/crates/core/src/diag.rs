@@ -27,7 +27,7 @@
 //! * `inv-site-keyed-results` — [`SiteId`] preserves command-site keying (promoted from the
 //!   cli's `RecordKey`).
 
-use crate::{LeafId, ProvId, Severity, Span, TopCause};
+use crate::{ProvId, Severity, Span, TopCause};
 
 // ===========================================================================
 // The catalog enum (exhaustive spine) + typed per-variant payloads (type-sketch-1)
@@ -895,29 +895,7 @@ pub struct AidUnloadedSiblingOracle {
 // First-class site identity (type-sketch-5) — the slot, not the fleet machinery
 // ===========================================================================
 
-/// A diagnostic's first-class site identity (`22B` `type-sketch-5`; promoted from the cli's
-/// `RecordKey`). The `site N.M` keying (`member` = the in-loop fact-family index,
-/// `inv-site-keyed-results`) is the FINE key; the COARSE key for fleet rollup is a slot
-/// ([`GroupingKey`]) the machinery does not yet fill (`22B-fork-scope-key` = STUB coarse=fine).
-///
-/// Promoting this into `core` preserves site-keying end-to-end (`inv-site-keyed-results`): the
-/// same `(leaf, member)` pair the cli's probe-records and the apply plan's steps share.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SiteId {
-    /// The stable command-site leaf (the plan's `Step::leaf` for the same source command).
-    pub leaf: LeafId,
-    /// The MEMBER index for an in-loop Members site (`site N.M`): `Some(m)` ⇒ member `m` of a
-    /// fact-family, `None` ⇒ an ordinary single-fact site.
-    pub member: Option<u32>,
-}
-
-impl SiteId {
-    /// A single-fact (non-member) site.
-    #[must_use]
-    pub fn leaf(leaf: LeafId) -> Self {
-        Self { leaf, member: None }
-    }
-}
+pub use crate::SiteId;
 
 /// The hierarchical grouping keys for ⊤-cascade dedup and fleet aggregation (`22B`
 /// `type-sketch-5`; `228` dc-3: `CodeChecker` context-free-v2 + Sentry match-either-hash). The
@@ -2474,7 +2452,7 @@ pub fn render_region(diag: &Diag, source: Option<(&str, &str)>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{BytePos, Interner};
+    use crate::{BytePos, Interner, LeafId};
 
     fn span(lo: u32, hi: u32) -> Span {
         Span::new(BytePos(lo), BytePos(hi))

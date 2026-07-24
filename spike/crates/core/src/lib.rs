@@ -50,13 +50,39 @@ pub struct AstId(pub u32);
 /// in source order.
 ///
 /// Lives in `core` (the `dac-B` shared vocabulary), not `plan`, because the round-22
-/// structured diagnostic ([`diag::SiteId`]) keys on it — a diagnostic's first-class
+/// structured diagnostic ([`SiteId`]) keys on it — a diagnostic's first-class
 /// site identity must be expressible in the base crate every layer agrees on, the
 /// same `dec-seam-ownership` move that pulled [`FactKey`] down here. `plan` re-exports
 /// this type rather than holding a parallel one (`inv-site-keyed-results`: one shared
 /// site-id, never two).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LeafId(pub u32);
+
+/// A diagnostic's first-class site identity (`22B` `type-sketch-5`; promoted from the cli's
+/// `RecordKey`). The `site N.M` keying (`member` = the in-loop fact-family index,
+/// `inv-site-keyed-results`) is the FINE key; the COARSE key for fleet rollup is a slot
+/// ([`diag::GroupingKey`]) the machinery does not yet fill (`22B-fork-scope-key` = STUB
+/// coarse=fine).
+///
+/// Sited in `core` beside [`LeafId`] rather than in the describe plane: it is DECIDE-plane
+/// identity (`inv-site-keyed-results`), the same `(leaf, member)` pair the cli's probe-records
+/// and the apply plan's steps share.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SiteId {
+    /// The stable command-site leaf (the plan's `Step::leaf` for the same source command).
+    pub leaf: LeafId,
+    /// The MEMBER index for an in-loop Members site (`site N.M`): `Some(m)` ⇒ member `m` of a
+    /// fact-family, `None` ⇒ an ordinary single-fact site.
+    pub member: Option<u32>,
+}
+
+impl SiteId {
+    /// A single-fact (non-member) site.
+    #[must_use]
+    pub fn leaf(leaf: LeafId) -> Self {
+        Self { leaf, member: None }
+    }
+}
 
 /// Which loaded oracle file a [`Span`] indexes into (`27V:mech-minting-line-threading`,
 /// `tc-oracle-file-identity`). A [`Span`] is a bare byte-range with no file identity, so an
