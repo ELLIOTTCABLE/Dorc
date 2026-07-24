@@ -77,10 +77,10 @@ impl FnRole {
     const fn mangled_suffix(self) -> &'static str {
         match self {
             FnRole::Predict => PREDICT_SUFFIX,
-            FnRole::Disturbs => "__disturbs",
+            FnRole::Disturbs => crate::touches::DISTURBS_SUFFIX,
             FnRole::IsConverged => "__is_converged",
             FnRole::Resolve => "__resolve",
-            FnRole::DisturbanceReachesOnly => "__disturbance_reaches_only",
+            FnRole::DisturbanceReachesOnly => crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX,
             FnRole::StateStoredOnlyIn => "__state_stored_only_in",
             FnRole::LendMap => "__lend_map",
             FnRole::Enter => "__enter",
