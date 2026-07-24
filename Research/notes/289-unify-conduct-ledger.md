@@ -238,3 +238,30 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 
 - 2026-07-24: touches-fix lane (Opus, fresh worktree, bg) + phases-2–4 EXEC (Opus,
   fresh worktree, bg), both off the post-map stack tip.
+
+## §2h — Touches-fix landing (conductor, 2026-07-24)
+
+- LANDED @ `d9ff7b81` (6 commits), FOLDED. The live bug (shipped derivation probes
+  defined `__disturbs` but invoked `__touches`; rc 127 ⇒ every derived footprint
+  walled; failed SAFE, value-dead) is fixed at its one site; all four role-family
+  sh-suffixes now flow through role-owning `pub const`s (verdict included — the
+  identical `strip_verdict` trap closed on follow-up); def↔invocation pinned by
+  anti-masking-verified regression tests for disturbs, reaches, AND verdict.
+  Goldens conductor-inspected line-by-line at fold: 4 renames + the `sed` mock
+  un-drifted (`file:` → `sm.dorc.File:`, doubly stale). e2e gains gate-1(d) deriv
+  parity (mocked probe's produced coords ≡ authored coords; adversarially verified).
+  Builder cold gates: 1167 unit / 97 e2e / all four.
+- WHY NOTHING CAUGHT IT, banked: gate-1 never inspected `deriv ` records;
+  `framed_results` round-trips the AUTHORED fixture, not probe execution; and
+  **`289:seam-sweep-blind-to-shipped-bodies`** — the DST/sweep lane sources
+  footprints from `Host::derive` with `sh: String::new()`, structurally blind to
+  the rendered/executed shipped body. Named seam; future DST round owns it.
+- **`289:dec-touches-display-vocab-phase8`** — the `.touches()` display locus
+  (probe comments + why-lens origin vocabulary) stays retired-spelling until the
+  phase-8 prose pass (message-string-coupled class,
+  `28A:finding-old-prose-coupled-to-message-strings`).
+- **`289:rider-arrangement-home-anticipates-chains`** (from the human sitting,
+  unopposed) — phase 7's arrangement-home sitting MUST design the home to
+  accommodate future chain-link/narration prose (multi-link sequences, tier-worded
+  connectives, per-link provenance stamps) even though nothing fills them this arc;
+  the shape-anticipation answer to `289:seam-narrative-render-unconsumed`.
