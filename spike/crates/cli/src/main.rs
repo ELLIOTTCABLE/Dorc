@@ -1564,7 +1564,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     if advisory && mode != Mode::Why {
         // `27W` §3 C3 pairing: fold each ingested tier-3 report record (recognized class + site)
         // into its site's `VerdictDecline` via `with_authored_reason` (idempotent — tier-2 static
-        // wins). Then union the collapse-evidence onto the why-lens seam (d4 renders; decision-inert).
+        // wins). Then union the collapse-narratives onto the why-lens seam (d4 renders; decision-inert).
         let paired_declines = pair_authored_reasons(decline_narrative, &results.reports);
         let collapse_narrative: Vec<CollapseNarrative> = classify_narrative
             .iter()
@@ -3349,7 +3349,7 @@ fn emit_plan_summary(plan: &dorc_plan::Plan) {
 /// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
 /// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
 ///
-/// `_collapse_narrative` is the C3/C4 decision-inert evidence seam (`27V` Lane A): the collapse
+/// `_collapse_narrative` is the C3/C4 decision-inert narrative seam (`27V` Lane A): the collapse
 /// records the why-lens will render (d4). Carried through here and IGNORED for now — the render
 /// arrangement is d4's, so surfacing it early would freeze `render-form-unwelded` output.
 fn emit_why_lens(
@@ -3802,7 +3802,7 @@ struct ChainLink {
 
 /// The naked-trust epilogue (`aid-why-license-chain`; the flagship's product moment,
 /// `tc-naked-trust-epilogue-derivation`, conductor-confirmed). Derived STRUCTURALLY from which
-/// evidence-kinds the chain carries — never an instance guess: a chain that carries `Consented` +
+/// trust-tiers the chain carries — never an instance guess: a chain that carries `Consented` +
 /// `Claimed` + a `Derived` disjointness sparing a `Measured` backing has exactly ONE
 /// unverified-by-construction link, the `Claimed` one, because the survival tier is the SOLE place a
 /// naked human claim ships (`USER_STORY` bought-unsoundness). `leverage` is that claim's line to widen.
@@ -3825,7 +3825,7 @@ struct ChainRender {
 /// flagship acceptance). Pure over the plan's [`dorc_plan::SurvivalWitness`] + display context: the
 /// numbered measured/vouched/ran/claimed/derived/consented links per `USER_STORY` Recovery. `None` when
 /// the step survived no wall (an ordinary elision has no chain to walk). The naked-trust epilogue is
-/// derived from evidence-kind presence only (`tc-naked-trust-epilogue-derivation`).
+/// derived from trust-tier presence only (`tc-naked-trust-epilogue-derivation`).
 fn survival_chain(
     header: String,
     license: &dorc_plan::ReplaceLicense,
@@ -4430,7 +4430,7 @@ fn facts_from_sites(
 ) {
     use dorc_plan::ProbeSiteKind;
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
-    // C4 (`27V` Lane A): `Measured` fact-merge evidence minted beside the ⊤-fold. `first_site`
+    // C4 (`27V` Lane A): the `Measured` fact-merge narrative minted beside the ⊤-fold. `first_site`
     // remembers each cell's first establisher so a cross-site conflict names both operands.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
     let mut first_site: BTreeMap<dorc_core::FactKey, dorc_aid::diag::SiteId> = BTreeMap::new();
@@ -4565,7 +4565,7 @@ fn probe_origins(
     origins
 }
 
-/// Build the `Measured`-tier fact-merge evidence a probe-result disagreement narrates (C4;
+/// Build the `Measured`-tier fact-merge narrative a probe-result disagreement mints (C4;
 /// `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): a host self-contradiction at `cell`,
 /// carrying the participating establisher sites as operands (`minting_line`/`shown` filled by d3).
 /// Decision-inert (`two-plane-aid-law`): the conservative meet already folded the channel to ⊤
@@ -4874,7 +4874,7 @@ fn emit_report_lane_notes(results: &SiteResults) {
 
 /// C3 report-lane pairing (`27W` §3 `rul-static-first-three-tier`): fold each ingested tier-3 report
 /// record (a recognized decline class + a site) into that site's
-/// [`dorc_aid::narrative::CollapseKind::VerdictDecline`] evidence via
+/// [`dorc_aid::narrative::CollapseKind::VerdictDecline`] narrative via
 /// [`dorc_aid::narrative::CollapseNarrative::with_authored_reason`]. The runtime record supplies only
 /// the missing CLASS — a dynamic format string defeated static reading (`27W` §2 "one honest loss"),
 /// so `classify_decline` traced the reached decline arm but left the class unread. The arm span +
@@ -4886,11 +4886,11 @@ fn emit_report_lane_notes(results: &SiteResults) {
 /// overwrites a statically populated reason (static wins). Empty in the corpus (no oracle emits ⇒
 /// `empty-world-byte-identical`). Decision-inert (`two-plane-aid-law`): classes route AID only.
 fn pair_authored_reasons(
-    evidence: Vec<CollapseNarrative>,
+    narratives: Vec<CollapseNarrative>,
     reports: &[ReportRecord],
 ) -> Vec<CollapseNarrative> {
     use dorc_aid::narrative::{AuthoredReason, CollapseKind};
-    evidence
+    narratives
         .into_iter()
         .map(|ev| {
             let CollapseKind::VerdictDecline {
@@ -4925,7 +4925,7 @@ fn pair_authored_reasons(
 }
 
 /// Emit the STATIC/paired decline-class disclosure (`27W` §3 `rul-static-first-three-tier`): one
-/// why-lens line per site whose `VerdictDecline` evidence carries an `authored_reason` — the tier-2
+/// why-lens line per site whose `VerdictDecline` narrative carries an `authored_reason` — the tier-2
 /// static class (argv threaded statically) OR the tier-3 runtime class paired in by
 /// [`pair_authored_reasons`]. A DECLINE is a why-a-line-RUNS disclosure (the author declined ⇒ the
 /// site runs), so it belongs on the same `why:` lane as the run/survival attributions, surfacing the
@@ -5490,7 +5490,7 @@ struct WrappedAnalysis {
     /// the why-lens tether emitted for every carried elision (`emit_carry_attribution`). Keyed by
     /// `AstId` so the plan's per-site step re-keys to the site number for the `why: site N …` line.
     carried: BTreeMap<dorc_core::AstId, String>,
-    /// C5 aid plane (`27V` Lane A): the decision-inert [`CollapseKind::EntryDenial`] evidence minted
+    /// C5 aid plane (`27V` Lane A): the decision-inert [`CollapseKind::EntryDenial`] narrative minted
     /// when a wrapped site's entry consent degrades to guard/run (`two-plane-aid-law`; steers
     /// nothing). Threaded to the why-lens seam by the cli edge (d4 renders).
     collapse_narrative: Vec<CollapseNarrative>,
@@ -6942,7 +6942,7 @@ mod tests {
     }
 
     #[test]
-    fn same_cell_disagreement_mints_measured_evidence_agreement_mints_none() {
+    fn same_cell_disagreement_mints_measured_narrative_agreement_mints_none() {
         // C4 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): a cross-site disagreement
         // mints one `Measured` FactMergeDisagreement; an agreement mints none.
         let mut i = Interner::default();

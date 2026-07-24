@@ -1160,7 +1160,7 @@ fn resolve_vouch_operands(
 #[must_use]
 #[expect(
     clippy::too_many_lines,
-    reason = "the ONE composition every driver shares (vouch lift + decline-evidence mint); \
+    reason = "the ONE composition every driver shares (vouch lift + decline-narrative mint); \
               splitting it would scatter the single vouch-authoring path"
 )]
 pub fn build_vouches(
@@ -1176,7 +1176,7 @@ pub fn build_vouches(
     };
 
     let mut diags = Vec::new();
-    // C5 (`27V` Lane A): decision-inert VerdictDecline evidence beside the no-vouch-⇒-run collapse.
+    // C5 (`27V` Lane A): the decision-inert VerdictDecline narrative beside the no-vouch-⇒-run collapse.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
     let verdict_sets: Vec<VerdictSet> = oracle_srcs
         .iter()
@@ -1444,7 +1444,7 @@ pub struct SurvivalReport {
     /// (the cross-author demote). The why-lens surfaces "site N: poisoned via `<kind>.reaches()`".
     /// Empty when no reach expansion poisoned an elision.
     reach_poisonings: Vec<(LeafId, KindId)>,
-    /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` evidence the
+    /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` narratives the
     /// survival walk mints beside its dispositions (`two-plane-aid-law`; steers nothing). Mint-pass
     /// ordered (`inv-determinism`); threaded to the why-lens seam by the cli (d4 renders).
     collapse_narrative: Vec<CollapseNarrative>,
@@ -1465,7 +1465,7 @@ impl SurvivalReport {
         self.reach_poisonings.iter().copied()
     }
 
-    /// The C5 wall/demotion collapse-evidence (`27V` Lane A): decision-inert records the cli unions
+    /// The C5 wall/demotion collapse-narratives (`27V` Lane A): decision-inert records the cli unions
     /// onto the why-lens seam. Read-only display tier (`two-plane-aid-law`).
     #[must_use]
     pub fn collapse_narrative(&self) -> &[CollapseNarrative] {
@@ -4917,8 +4917,8 @@ apt_get__is_converged() { return 0; }
         )
         .value;
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
-        let (_vouches, evidence) = build_vouches(&[verdict_src], &classes, &value, &mut i);
-        let mut decline_leaves: Vec<u32> = evidence
+        let (_vouches, narrative) = build_vouches(&[verdict_src], &classes, &value, &mut i);
+        let mut decline_leaves: Vec<u32> = narrative
             .iter()
             .filter_map(|ev| match ev.kind() {
                 CollapseKind::VerdictDecline { site, .. } => Some(site.leaf.0),
@@ -6280,7 +6280,7 @@ apt_get__is_converged() { return 0; }
     // `strawman24-nonsurvive-hit` e2e case; no plan-level duplicate here.)
 
     #[test]
-    fn survival_walk_mints_wall_and_demotion_evidence() {
+    fn survival_walk_mints_wall_and_demotion_narratives() {
         // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the running curl mutator mints
         // a WallFormation and the demoted nginx a Demotion — DERIVED from the collapse, all Derived.
         let plan = survival_plan_empty_footprints(
@@ -6306,7 +6306,7 @@ apt_get__is_converged() { return 0; }
         );
         assert!(
             ev.iter().all(|e| e.tier() == TrustTier::Derived),
-            "survival-walk evidence is engine-derived"
+            "survival-walk narratives are engine-derived"
         );
 
         // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): with nothing running

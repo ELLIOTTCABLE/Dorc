@@ -1059,12 +1059,12 @@ fn mint_top_causes(
     (top_causes, fallback_cause)
 }
 
-/// Mint the `Derived`-tier fact-merge evidence the static value-plane `Reach::Top` collapse
+/// Mint the `Derived`-tier fact-merge narrative the static value-plane `Reach::Top` collapse
 /// narrates (C3; `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): one
 /// [`dorc_aid::CollapseKind::FactMergeDisagreement`] per Opaque-bearing node — the cell whose
 /// establishers meet to ⊤. Mirrors [`mint_top_causes`] (same Opaque-bearing key, same node-index
 /// order), so the product `Vec` is mint-pass-ordered — deterministic, no clock (`inv-determinism`;
-/// the `two-plane-aid-law` mint-order pin). Decision-inert: the evidence rides OUT of
+/// the `two-plane-aid-law` mint-order pin). Decision-inert: the narrative rides OUT of
 /// [`classify_with_why_diags`] for the why-lens and feeds no decision (`two-plane-aid-law`;
 /// `empty-world-byte-identical` holds — an oracle-free book has no Opaque nodes and mints none).
 ///
@@ -1307,7 +1307,7 @@ pub type BackingMap = BTreeMap<FactKey, FactBacking>;
 /// `cause` off them (`to_legacy` drops it — [`dorc_aid::diag::why`] needs the typed value).
 ///
 /// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags, kill-node-set,
-/// kill-coords, backing-map, collapse-evidence)`. The last element is the C3 aid plane
+/// kill-coords, backing-map, collapse-narrative)`. The last element is the C3 aid plane
 /// (`27V` Lane A): one `Derived`-tier [`dorc_aid::CollapseKind::FactMergeDisagreement`] per
 /// Opaque-bearing node ([`mint_merge_narrative`]), decision-inert (`two-plane-aid-law`) and threaded
 /// to the why-lens seam. The typed diags are a subset-by-construction of the lowered ones
@@ -1331,7 +1331,7 @@ pub type BackingMap = BTreeMap<FactKey, FactBacking>;
     clippy::too_many_lines,
     reason = "the six parallel products (site classifications + typed why-lens diags + the R3 \
               kill-node set + the killed-coordinate side-map, 24E §7 + the `277` §5 backing-map + \
-              the C3 collapse-evidence aid plane) are the fn's whole output; a named struct for a \
+              the C3 collapse-narrative aid plane) are the fn's whole output; a named struct for a \
               two-call-site return (the cli + the plan test seam) buys nothing. The verdict-provider \
               set (`24L` §7 seam) is one more input, and its threaded call pushes the body just over \
               the line cap — the classify core is irreducibly long"
@@ -1376,7 +1376,7 @@ pub fn classify_with_why_diags(
     // (rides `Reach::Top`, excluded from `Eq`); it perturbs no decision.
     let (top_causes, fallback_cause) = mint_top_causes(cfg, ast, &effects, arena);
 
-    // C3 (`27V` Lane A): narrate the give-up as decision-inert evidence (see `mint_merge_narrative`).
+    // C3 (`27V` Lane A): narrate the give-up as a decision-inert record (see `mint_merge_narrative`).
     let collapse_narrative = mint_merge_narrative(&effects);
 
     // stage-1 cause-wiring (the corrected `tc-cmdsub-cause`): NOW that `top_causes` is minted,
@@ -1775,7 +1775,7 @@ command__predict() {
     #[test]
     fn an_opaque_reached_cell_mints_one_fact_merge_disagreement() {
         // C3 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the collapse MINTS its own
-        // evidence (one `Derived` FactMergeDisagreement per Opaque node), never hand-injected.
+        // narrative (one `Derived` FactMergeDisagreement per Opaque node), never hand-injected.
         let (mut i, idx, _s) = package_setup();
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
 
@@ -1798,16 +1798,16 @@ command__predict() {
             .5
         };
 
-        let evidence = collapse("ufw allow 80/tcp\n", &mut i);
+        let narrative = collapse("ufw allow 80/tcp\n", &mut i);
         assert_eq!(
-            evidence.len(),
+            narrative.len(),
             1,
             "one Opaque node ⇒ one merge-disagreement"
         );
-        assert_eq!(evidence[0].tier(), dorc_aid::TrustTier::Derived);
+        assert_eq!(narrative[0].tier(), dorc_aid::TrustTier::Derived);
         assert!(
             matches!(
-                evidence[0].kind(),
+                narrative[0].kind(),
                 dorc_aid::CollapseKind::FactMergeDisagreement { .. }
             ),
             "the collapse minted a FactMergeDisagreement, not a hand-injected record"
@@ -1816,7 +1816,7 @@ command__predict() {
         let modeled = collapse("apt-get install nginx\n", &mut i);
         assert!(
             modeled.is_empty(),
-            "a modeled-only book has no Opaque collapse and mints no evidence"
+            "a modeled-only book has no Opaque collapse and mints no narrative"
         );
     }
 
