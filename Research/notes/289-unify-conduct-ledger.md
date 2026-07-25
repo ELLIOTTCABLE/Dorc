@@ -477,3 +477,28 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   (plans are ahistorical).
 - 2026-07-24: phase-7 (Opus, fresh worktree, bg) — the §2o registry+transcripts ruling, two-stop (registry+help pilot, CHECKPOINT, chrome migration). Off `9f112f69`.
 - 2026-07-24: phase-6 fold cold-verified own-hand (full clean; conduct-bless: build ok | unit 1182 | e2e 98 passed | looms 72 | gates ok).
+
+## §2p — Phase-7 stop-1 rulings (conductor, 2026-07-24)
+
+- Stop 1 LANDED @ `0c0a4cd3` (8 commits): the arrangement registry
+  (`ArrangementEntry` with occurrence-optional keys, `Words::{Unwritten,Migrated,
+  Authored}` — sequence-shaped, never flat-string) · the generated
+  `arrangement_lock.rs` with mirror-union + its own fixpoint gate · editability via
+  the new `RenderPart::ArrangementWords` species (registry-sourced bytes only;
+  renderer-computed chrome stays immutable Structure) · the help-page pilot loom
+  whose render fixpoint IS the byte-identity proof (the `HELP` const deleted) ·
+  the full edit→compile→promote→re-render loop proven in-process AND with the real
+  tool (run + reverted; working-state licensing, conductor cold verify
+  authoritative). Cold gates 1366 / 0; budget 8/25.
+- **`289:rul-migrated-marker-typed-for-chrome`** (their flag 1) — ACCEPTED as the
+  forced-correct departure: chrome renders verbatim into product bytes, so the
+  `sm ` marker moves out-of-band into `Words::Migrated`; `authored_words_are_
+  case_owned` is the enforcement twin. Cost accepted (migration state visible in
+  the lock, not the transcript); the phase-8 author enumerates via the lock.
+- **`289:rul-version-line-stays-code-owned`** (their flag 2) — `--version` does NOT
+  join the registry, at stop 2 or later this arc: the number is a value, the
+  split-span shape buys nothing, and per-version transcript churn is a real cost.
+- Dead `LINT_USAGE` deleted rather than seeded (their flag 3): accepted; the
+  pre-existing UX gap (lint argument errors carry no usage line) banked as a
+  post-arc residual, NOT built. `SectionKey.code`→`.owner` rename-in-place (flag
+  4): per standing order, accepted. STOP-2 GO issued.
