@@ -1,0 +1,75 @@
+# NON-FUNCTIONAL STRAWMAN v2-b (imagination-tier; conventions per a-fire-morning's
+# final human layer). The HEALTHY-GUARD case at realistic width: a wide book, TWO
+# undescribed walls, a value-flow participant, and a question about a line that is
+# fine -- nothing went wrong; the user is just curious why it keeps not-skipping.
+# Exercises: presence-complete participating-lines at scale (selection shows how
+# MUCH each participant gets, never whether) -- multi-wall join with prose
+# restatement -- guard anatomy as as-shipped sh -- the no-suspect NEXT STEPS shape
+# (improvements, not repairs) -- value-flow provenance (PORT) -- pure ASCII.
+
+-- web.sh (context, abbreviated; 24 lines, 9 tool-sites) --
+ 3  PORT=443
+ 5  apt-get update
+ 6  dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+ 7  cp ./nginx.conf /etc/nginx/nginx.conf
+ 9  certsync push web1
+11  systemctl enable --now nginx
+18  corp-agent enroll --renew
+21  hork tune --profile web
+23  ufw allow "$PORT"/tcp
+
+-- world (context) --
+Steady-state morning; everything converged. No risk flag. corp-agent and hork are
+both undescribed, so line 23 guards on every apply, forever; the admin finally
+asks why it never just goes away.
+
+-- replay --
+$ dorc why web.sh:23
+   [ web.sh, participating lines:
+ 3 | PORT=443
+18 | corp-agent enroll --renew
+21 | hork tune --profile web
+23 | ufw allow "$PORT"/tcp
+
+   === OUTCOME (2026-07-25 09:14:02) ===
+
+   23|ufw guarded RATHER THAN skipped: two undescribed commands really ran
+   above it. A fact reported before they ran cannot be trusted after; the
+   guard re-asks the question live, in place, where nothing can go stale.
+
+   === ANALYSIS ===
+
+   what was known, and why it was not enough:
+
+   * ufw.oracle.sh:44   reported  "Firewall:443/tcp@allowed"
+                                  (ran 09:13:51, rc 0; 443 resolved from 3|PORT)
+   * ufw.oracle.sh:41   vouches   "re-allowing an already-@allowed rule adds
+                                  nothing worth running"
+   ! 18|corp-agent                ran at 09:13:58 -- undescribed: no author has
+                                  said what it touches, so it may touch anything
+   ! 21|hork                      ran at 09:14:00 -- undescribed, same standing
+
+   so: the report was good when it ran, but 18|corp-agent and 21|hork each cast
+   a wall between the report and 23|ufw's turn. What dorc shipped instead of a
+   skip -- your line, untouched, behind the oracle's own live check:
+
+      ( ufw__is_converged allow "$PORT"/tcp ) \
+         || ufw allow "$PORT"/tcp
+
+   at apply, the check answered rc 0 in 40ms; the original never ran. The book
+   stays fast and safe -- but not shorter: this line returns on every apply
+   until the walls above it are described.
+
+   === NEXT STEPS ===
+
+   nothing is wrong. to make this line skippable:
+
+      describe: hork and corp-agent are the walls. a convergence check for
+                either (~2 lines of sh) removes its wall whenever it is
+                converged; describing BOTH lets 23|ufw skip on proof
+                (dorc teach walls)
+
+      review:   `dorc why web.sh:23 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for
+presumed relevance; `--all` enumerates everything the engine holds.)

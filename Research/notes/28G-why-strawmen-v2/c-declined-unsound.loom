@@ -1,0 +1,65 @@
+# NON-FUNCTIONAL STRAWMAN v2-c (imagination-tier; conventions per a-fire-morning's
+# final human layer). The AUTHORED-REFUSAL case: a decline rendered as a first-class
+# answer, not an absence -- today's as-built pull surface shows nothing here (the
+# gallery's push-only finding); this is the aspiration. Exercises: decline-class
+# routing on the pull surface -- show-the-code with the author's comment as the
+# load-bearing display -- the report-lane breadcrumb -- the anti-nag statement --
+# the model-offer (a decline teaches what the model COULD answer) -- the
+# nothing-to-fix NEXT STEPS shape -- pure ASCII.
+
+-- tune.sh (context, abbreviated) --
+ 4  sysctl -w vm.swappiness=10
+ 6  sysctl -w vm.drop_caches=3
+
+-- world (context) --
+Steady morning, no incident. Line 4 skipped on proof (retained key, reported
+converged); line 6 ran, as it does on every apply. The admin wants to know why
+one sysctl skips and its neighbor never does.
+
+-- replay --
+$ dorc why tune.sh:6
+   [ tune.sh, participating lines:
+ 6 | sysctl -w vm.drop_caches=3
+
+   === OUTCOME (2026-07-25 08:02:11) ===
+
+   6|sysctl ran, unguarded and unskippable -- by its author's judgment, not by
+   a gap. sysctl's oracle deliberately declines this key.
+
+   === ANALYSIS ===
+
+   ! sysctl.oracle.sh:23 declines   "[unsound] vm.drop_caches is a write-only
+                                    trigger key"
+
+      The author looked, and ruled the question unanswerable -- for any tool,
+      ever, not just this one. Their arm, as-written:
+
+         [ sysctl.oracle.sh, as-written:
+      22 | vm.drop_caches|vm.compact_memory)
+      23 |    # write-only trigger: writing is an action, not state. the
+      24 |    # kernel doesn't retain it; "is it already done" has no
+      25 |    # answer, ever.
+      26 |    printf 'decline unsound %s is a write-only trigger key\n' "$key" \
+      27 |       >>"${DREP_V1:-/dev/null}"
+      28 |    return 2 ;;
+
+   * dorc                derives    a cannot-say always runs: nothing is ever
+                                    skipped without an authored yes
+
+   so: this line runs on every apply, and that is correct. dorc will not
+   suggest an oracle for this shape; the person who knows the tool already
+   answered.
+
+   === NEXT STEPS ===
+
+   nothing to fix; the run is the right behavior.
+
+      if you expected a skip here: sysctl's model answers for RETAINED keys as
+      two cells -- "@value" (the running kernel) and "@persisted" (the boot
+      config) -- and this key has neither. your own 4|sysctl is the contrast:
+      a retained key, reported, skippable.
+
+      review:  `dorc why tune.sh:6 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for
+presumed relevance; `--all` enumerates everything the engine holds.)

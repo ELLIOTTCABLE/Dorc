@@ -1,0 +1,91 @@
+# NON-FUNCTIONAL STRAWMAN v2-d (imagination-tier; conventions per a-fire-morning's
+# final human layer). The DIVERGENCE case: the world disagreed with the plan
+# mid-apply and a guard fell through (proceed-and-flag, never a mid-apply
+# question). Exercises: the SURPRISES aggregate section (leads when no trust was
+# spent) -- apply-report vs plan-prediction (then-vs-now) -- honest in-book
+# suspicion under the never-a-negative rule (positive pointer, ceiling named) --
+# whylog timestamps as the narrative spine -- guard-doing-its-job framing --
+# pure ASCII.
+
+-- web.sh (context, abbreviated) --
+ 9  systemctl enable --now nginx
+12  hork tune --profile web
+13  ufw allow 443/tcp
+
+-- world (context) --
+No risk flag. At plan time (01:59) nginx reported enabled+active, so line 9
+guarded (it sits below no wall at plan time -- but hork above it in book order
+runs first at apply). At apply, hork ran at 02:00:12; line 9's guard re-asked at
+02:00:41 and the answer had flipped: rc 1. The original bytes ran. Nothing is
+broken this morning; the receipt simply has a surprise in it.
+
+-- replay --
+$ dorc why
+receipt: apply 2026-07-25 02:00:37, host web1, trigger cron
+   book web.sh (matches git HEAD 4c11f0a -- unchanged since the run)
+   oracles: service 2.0, ufw 1.1, + base library
+   risk-profile: none (no trust flags)
+   plan: 2 ran, 2 guarded, 4 skipped (4 by proof)
+   read top-down; every item is addressable: dorc why <line>
+
+=== SURPRISES: the world disagreed with the plan ===
+
+ web.sh:9 | systemctl enable --now nginx
+   the plan reported "Service:nginx@{enabled,active}" at 01:59:52 and expected
+   this guard to pass; at 02:00:41 the live check answered rc 1. the original
+   bytes ran (2.1s, rc 0). the guard did its job: this is the fall-through
+   working, not failing                                    (dorc why web.sh:9)
+
+=== IMPROVEMENTS: dorc can do better, with your help ===
+
+web.sh:12 | hork tune --profile web
+   ran blind, as on every apply: hork is undescribed
+
+~2 lines of sh: a convergence check for hork skips line 12 whenever hork is
+converged                                                     (dorc teach walls)
+
+$ dorc why web.sh:9
+   [ web.sh, participating lines:
+ 9 | systemctl enable --now nginx
+12 | hork tune --profile web
+
+   === OUTCOME (2026-07-25 02:00:37) ===
+
+   9|systemctl guarded, and the guard FELL THROUGH at apply: the fact that
+   held at plan time did not hold when the line's turn came. the original
+   bytes ran, exactly as written.
+
+   === ANALYSIS ===
+
+   what the plan knew, and what the apply found:
+
+   * service.oracle.sh:12  reported  "Service:nginx@{enabled,active}"
+                                     (ran 01:59:52, rc 0 -- plan time)
+   * service.oracle.sh:12  reported  "NOT Service:nginx@{enabled,active}"
+                                     (ran 02:00:41, rc 1 -- apply time, live)
+   * dorc                  derives   something changed service state between
+                                     those two reports. dorc cannot name it.
+   ! 12|hork                         ran at 02:00:12, between them --
+                                     undescribed, so unnameable either way;
+                                     it is the only in-book actor in the window
+
+   so: the guard existed for exactly this. a report is a moment, not a
+   promise; the live re-check caught the drift and the line ran.
+
+   === NEXT STEPS ===
+
+   nothing failed; if the flip itself surprises you:
+
+      suspect:  12|hork is the only in-book actor between the reports --
+                but the window was 49s of real time on a live host; anything
+                outside the book could also have acted. dorc can bound
+                neither.
+      observe:  `dorc plan --why web.sh web1` (re-measures now: is the state
+                still flipping, or was this a one-time drift?)
+      describe: an oracle for hork would let dorc say whether hork COULD have
+                touched service state                      (dorc teach walls)
+
+      review:   `dorc why web.sh:9 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for
+presumed relevance; `--all` enumerates everything the engine holds.)

@@ -1,0 +1,40 @@
+# NON-FUNCTIONAL STRAWMAN v2-e (imagination-tier; conventions per a-fire-morning's
+# final human layer). The RESTRAINT case: a proof-backed skip of the admin's own
+# hand-written guard -- the quietest possible honest answer. Exercises: triptych
+# collapse (NEXT STEPS omitted entirely -- question-relative selection at its
+# floor) -- the admin's own line as the SPEAKER (guard-subsumption attribution:
+# their sh, lifted, is the check) -- no trust spent, said in one breath --
+# pure ASCII.
+
+-- web.sh (context, abbreviated) --
+ 6  dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+
+-- world (context) --
+Steady state; nginx installed. Line 6 skipped on proof. The admin asks, mostly
+out of curiosity, possibly out of first-week distrust.
+
+-- replay --
+$ dorc why web.sh:6
+   [ web.sh, participating lines:
+ 6 | dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+
+   === OUTCOME (2026-07-25 09:14:02) ===
+
+   6|dpkg skipped, on proof: YOUR OWN guard is the check. dorc lifted the left
+   side of your `||`, ran it read-only at plan time, and its answer made the
+   right side dead.
+
+   === ANALYSIS ===
+
+   * web.sh:6 (your guard)  reported  "Package:nginx@installed"
+                                      (`dpkg -s nginx` ran 09:13:51, rc 0;
+                                      probe-safe per the base library's vouch)
+   * base/dpkg.oracle.sh:8  vouches   "a package `dpkg -s` reports installed
+                                      needs no reinstall"
+
+   so: the install arm could not run; the whole line skipped. no trust was
+   spent -- both links rest on a run and a stdlib vouch, and nothing that ran
+   above line 6 touches package state.
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for
+presumed relevance; `--all` enumerates everything the engine holds.)
