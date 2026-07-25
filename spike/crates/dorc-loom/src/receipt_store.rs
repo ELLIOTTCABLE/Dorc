@@ -24,6 +24,8 @@ pub enum ReceiptWriteOutcome {
 
 trait ReceiptFileOperations: Send + Sync {
     fn rename(&self, from: &Path, to: &Path) -> std::io::Result<()>;
+    /// Windows-only: the backup dance below is the sole caller (see [`FsReceiptStore::publish`]).
+    #[cfg(windows)]
     fn remove_file(&self, path: &Path) -> std::io::Result<()>;
 }
 
@@ -34,6 +36,7 @@ impl ReceiptFileOperations for NativeReceiptFileOperations {
         fs::rename(from, to)
     }
 
+    #[cfg(windows)]
     fn remove_file(&self, path: &Path) -> std::io::Result<()> {
         fs::remove_file(path)
     }
@@ -115,7 +118,7 @@ impl FsReceiptStore {
         directory.join(RECEIPT_BACKUP_FILE)
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, windows))]
     fn with_operations(
         target_root: impl Into<PathBuf>,
         operations: Arc<dyn ReceiptFileOperations>,
@@ -160,6 +163,13 @@ impl ReceiptStore for FsReceiptStore {
             match self.operations.rename(&temp_path, &final_path) {
                 Ok(()) => return Ok(ReceiptWriteOutcome::Published),
                 Err(error) => {
+                    // POSIX `rename(2)` replaces an existing destination atomically, so the whole
+                    // backup-and-restore dance below exists ONLY for Windows, where renaming onto
+                    // an existing file fails. Its five helpers carry the same `cfg(windows)` for a
+                    // reason worth stating: an `allow(dead_code)` would keep them compiling on
+                    // Linux, where a cross-platform caller could then reach machinery that answers
+                    // a Windows-only question. Gated, that call fails to resolve — loudly, at
+                    // compile time, on the platform that must not have it.
                     #[cfg(windows)]
                     if final_path.exists() {
                         let old_packet =
@@ -268,6 +278,7 @@ fn validate_existing_final(path: &Path) -> Result<(), String> {
     }
 }
 
+#[cfg(windows)]
 fn validate_backup(path: &Path, expected: &[u8]) -> Result<(), String> {
     match read_valid_receipt(path, "receipt backup target")? {
         Some(packet) if packet == expected => Ok(()),
@@ -276,6 +287,7 @@ fn validate_backup(path: &Path, expected: &[u8]) -> Result<(), String> {
     }
 }
 
+#[cfg(windows)]
 fn remove_validated_backup(
     operations: &dyn ReceiptFileOperations,
     path: &Path,
@@ -314,6 +326,7 @@ fn receipt_path_exists(path: &Path, label: &str) -> Result<bool, String> {
     }
 }
 
+#[cfg(windows)]
 fn ensure_absent_backup(path: &Path) -> Result<(), String> {
     match read_valid_receipt(path, "receipt backup target")? {
         Some(_) => Err("receipt backup appeared before publication".to_owned()),
