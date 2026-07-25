@@ -15,7 +15,10 @@
 //!    the class-specific batteries (lint production-report route, mark mutations).
 //!
 //! Nothing here reaches for a shell: a command the in-process driver cannot dispatch is
-//! an `unsupported replay` failure, never an escalation to generic execution.
+//! an `unsupported replay` failure, never an escalation to generic execution. That is why
+//! item 3 has ONE alternative: a WHOLE-PRODUCT loom (`run:` + `fixpoint: executed`) is proven
+//! by running the real binary in `e2e.rs`, and this runner asserts only that it declares who
+//! does prove it. Items 1 and 2 still hold for every case.
 
 #![expect(
     clippy::print_stderr,
@@ -38,8 +41,8 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let name = &case.name;
     let text = std::fs::read_to_string(&case.path)
         .map_err(|error| format!("FAIL  {name}  [read {}: {error}]", case.path.display()))?;
-    let parsed =
-        Case::parse(&text).map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
+    let parsed = Case::parse(&text)
+        .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
     parsed
         .check_hygiene(Some("code"))
         .map_err(|error| format!("FAIL  {name}  [hygiene: {error}]"))?;

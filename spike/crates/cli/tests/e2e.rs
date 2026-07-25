@@ -961,7 +961,10 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
             }
         }
         LoomRun::Lint => {
-            write("expected-rc", format!("{}\n", scalar("exit").unwrap_or_default()))?;
+            write(
+                "expected-rc",
+                format!("{}\n", scalar("exit").unwrap_or_default()),
+            )?;
             write("cmd", format!("{}\n", lint_flags(spec)?))?;
         }
     }
@@ -2019,7 +2022,10 @@ fn head_ran_drifted(harness: &Harness, dir: &Path, mocks: &Path, apply: &str) ->
         return false;
     }
     let tolerated = tolerances(dir).unwrap_or_default();
-    let got = canonicalize(&harness.capture_run(Payload::Text(apply), mocks), &tolerated);
+    let got = canonicalize(
+        &harness.capture_run(Payload::Text(apply), mocks),
+        &tolerated,
+    );
     let want = strip_trailing_newlines(
         &read_or_empty(&pin)
             .lines()

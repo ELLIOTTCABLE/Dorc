@@ -482,7 +482,7 @@ impl Case {
     pub fn set_section_content(&mut self, name: &str, content: &str) -> bool {
         match self.sections.iter_mut().find(|s| s.name == name) {
             Some(section) => {
-                section.content = content.to_owned();
+                content.clone_into(&mut section.content);
                 true
             }
             None => false,

@@ -12,12 +12,6 @@
 //! Cost of the move, stated: `cargo test -p dorc-loom` alone no longer covers render fixpoint.
 //! `cargo test --workspace` does, and that is every builder's standard gate.
 
-#![expect(
-    clippy::expect_used,
-    clippy::panic,
-    reason = "corpus-loader helper over the committed tree; the no-panic lints guard untrusted input"
-)]
-
 use std::path::{Path, PathBuf};
 
 use dorc_loom::{DorcConsumer, generate_catalog_lock, load_corpus_by_slug, replay_case};
