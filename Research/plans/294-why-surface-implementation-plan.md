@@ -58,15 +58,15 @@ Consumes already-minted data; still pre-parts-model; same-or-next lane:
 - Decline narration on pull: `why N` on a declined site renders the class, the
   arm inlined as-written with the author's comment, the anti-nag statement for
   `unsound`, the model-offer where the catalog knows one
-  (fnd-decline-class-is-push-only fixed; `27W`'s design finally on the pull
+  (`289`:fnd-decline-class-is-push-only fixed; `27W`'s design finally on the pull
   surface).
-- The wall link in guarded chains (fnd-guarded-chain-omits-the-wall): guarded
+- The wall link in guarded chains (`289`:fnd-guarded-chain-omits-the-wall): guarded
   `why N` names its wall(s) as `!` rows and shows the guard's as-shipped sh.
 - The receipt header: invocation record rendered (book digest + git-match
   annotation line, oracle inventory, risk-profile, plan tally, addressability
   line) — `28D:need-exact-input-identity`'s cheap half from existing whylog data.
 - The replay/receipt voice: the footer's receipt-analysis framing;
-  `fnd-replayed-voice-is-byte-identical` dissolves into the receipt-first model.
+  `289:fnd-replayed-voice-is-byte-identical` dissolves into the receipt-first model.
 - `[unnarrated: <class>]` at max verbosity only (prop-unnarrated-is-visible),
   WITH the whylog/narrative version-coupling the caveat demands.
 - The participating-lines block: presence-complete over the asked question's
