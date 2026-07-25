@@ -337,3 +337,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   `DRY=1 conduct-bless` (includes both fixpoint gates on MY binary — the
   working-state promote licensing check).
 - 2026-07-24: phase-5 (Opus, fresh worktree, bg) — two-stop: central runners + differential proof, CHECKPOINT, then atomic move + run.sh retirement + safety-law edit. Off `5bb13199`.
+- 2026-07-24: 2-4 fold cold-verified own-hand (full clean; build ok | unit 1184 | e2e 97 | gates ok, incl. both fixpoint gates on my binary).
