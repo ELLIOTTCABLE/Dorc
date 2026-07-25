@@ -576,3 +576,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   Dorc tooling works there (incl. `dorc-loom promote`) — the pre-flight refuses
   cleanly.
 - 2026-07-24: WSL-repairs fold cold-verified own-hand (conduct-bless: build ok | unit 1200 | e2e 98 passed | looms 73 | gates ok). Stack `fbc44956` verified.
+- HUMAN steer (2026-07-24): harness research gets a SECOND turn, entirely Rust-ecosystem-focused — what e2e/sh testing real Rust projects use (adoption signals, who rolled their own and why), and which capability choices make errorloom maximally-useful/minimally-bloated to the most people at publication (verify the prose-transport-has-no-competitor claim). Queued to the researcher as turn02.
