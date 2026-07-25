@@ -274,8 +274,7 @@ fn the_frame_split_is_a_policy_the_density_dial_moves() {
         "--verbose promotes every source-bearing finding to a frame:\n{verbose}"
     );
 
-    // A finding with no SOURCE bytes (the external-tool relays) cannot be framed at any density —
-    // a caret needs bytes to point at, so the dial selects among shapes that exist.
+    // A finding with no SOURCE bytes cannot be framed at any density: a caret needs bytes.
     let relays = run_native(&[file("book.sh", EVAL_BOOK)], None);
     let relayed = render::render_human_parts_at(&relays, render::Verbosity::Verbose).text();
     assert!(

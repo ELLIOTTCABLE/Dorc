@@ -558,10 +558,9 @@ fn unreflow(render: &str) -> String {
         }
     }
     let mut out = out.join("\n");
-    // `lines()` drops a trailing newline; the renderer's own text keeps one, and the edit compiler
-    // strips the baseline's trailing STRUCTURE component off the dirty text as an exact suffix. So
-    // losing it refused every case edit at the last component — latent until a compact-line case
-    // was the first to actually reach `compile_preview` (`289:rul-reflow-fix-in-phase-four`).
+    // `lines()` drops a trailing newline, and the edit compiler strips the baseline's trailing
+    // STRUCTURE component as an exact suffix — so losing it refused EVERY case edit
+    // (`289:rul-reflow-fix-in-phase-four`).
     if render.ends_with('\n') {
         out.push('\n');
     }

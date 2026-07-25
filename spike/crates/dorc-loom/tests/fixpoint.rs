@@ -64,8 +64,8 @@ fn load_corpus() -> Vec<CaseFile> {
 fn direct_plan_render_fixpoint() {
     const DIRECT_PLAN_CASES: [&str; 4] = [
         "cmdsub-operand-top.loom",
-        // The external-linter relays (`288` §5) are world-as-payload for the same reason the
-        // original specimen is: their honest world is an expensive one replay never enters.
+        // The external-linter relays are world-as-payload for the same reason the original
+        // specimen is: replay never enters their world.
         "lint-tool-absent.loom",
         "lint-tool-output-unparsable.loom",
         "lint-tool-failed-without-findings.loom",

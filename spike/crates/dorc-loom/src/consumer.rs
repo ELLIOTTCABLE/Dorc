@@ -380,9 +380,8 @@ impl DorcConsumer {
         {
             return Ok(world);
         }
-        // The honest-trigger invocation route: the case's own replay argv, run through the REAL
-        // parser (`289:rul-worldless-route-honest-trigger`). Tried BEFORE the payload floor so a
-        // code that can fire for real never settles for a constructed stand-in.
+        // Tried BEFORE the payload floor, so a code that can fire for real never settles for a
+        // constructed stand-in (`289:rul-worldless-route-honest-trigger`).
         if let Some(diag) = case
             .replay()
             .blocks()
@@ -933,8 +932,8 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         "dangling-reference" => DiagCode::DanglingReference(DanglingReference {
             coord: "sm.dorc.Package:nginx".to_owned(),
         }),
-        // The external-linter trio (`288` §5). World-as-payload by necessity: an honest trigger
-        // would have to run a real foreign tool, which replay never does (`tools_enabled: false`).
+        // The external-linter trio: world-as-payload by necessity — replay never runs a foreign
+        // tool (`tools_enabled: false`).
         "lint-tool-absent" => DiagCode::LintToolAbsent(LintToolAbsent {
             tool: "shellcheck".to_owned(),
         }),
@@ -950,9 +949,8 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
                 rc: 2,
             })
         }
-        // The invocation errors whose world is an I/O or environment FAILURE, not an argv: an
-        // honest trigger would need an unreadable file, a full disk, or an absent `sh`. The
-        // argv-decidable ones never reach here — `fire_invocation_error` answers them for real.
+        // The invocation errors whose world is an I/O FAILURE, not an argv — an honest trigger
+        // would need a real unreadable file, a full disk, or an absent `sh`.
         "cli-file-not-found" => DiagCode::CliFileNotFound(CliFileNotFound {
             kind: "book".to_owned(),
             path: "webhost.sh".to_owned(),

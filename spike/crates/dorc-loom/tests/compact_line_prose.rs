@@ -84,8 +84,8 @@ fn an_edited_compact_line_compiles_and_re_holes_its_params() {
     assert_eq!(edit.section().code, "unmodeled-wall-inventory");
     assert_eq!(edit.section().field, "message");
 
-    // The re-holing is the payoff: the interpolated values became named holes again, so the edited
-    // sentence is a TEMPLATE, not a frozen instance of one world.
+    // The re-holing is the payoff: the edited sentence is a TEMPLATE again, not one world's
+    // frozen instance.
     let used: Vec<&str> = edit
         .compiled()
         .used()

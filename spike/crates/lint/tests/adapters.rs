@@ -136,8 +136,8 @@ fn shellcheck_unstructured_output_is_raw_passthrough() {
     assert_eq!(f.code, "lint-tool-output-unparsable");
     assert_eq!(f.line, None);
     assert_eq!(f.remap, RemapFidelity::None);
-    // The tool's own bytes ride the TYPED payload now (`{output}`), not a hand-formatted string, so
-    // the assertion is structural: the prose register can be reworded freely and this still holds.
+    // Structural, not prose: the tool's bytes ride the TYPED `{output}` hole now, so the register
+    // can be reworded freely and this still holds.
     let code = &f
         .provenance
         .as_ref()
