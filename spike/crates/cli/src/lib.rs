@@ -682,9 +682,8 @@ fn parse_expect_count(v: &str) -> Result<usize, InvocationError> {
 
 // ── the invocation-error mints (`288` §6) ────────────────────────────────────────────────────
 //
-// An argv has no source span, so every one of these takes the gated spanless constructor. The
-// helpers exist so each producer is one legible line; the payload variant is still spelled
-// LITERALLY at every mint, because the allow-list gate is a lexical grep for exactly that shape.
+// Spanless, and the payload variant is spelled LITERALLY at every mint — the allow-list gate is a
+// lexical grep for exactly that shape.
 
 /// A flag that takes a value, given without one — ONE code across every such flag.
 fn flag_needs_value(flag: &str, wants: &'static str) -> InvocationError {

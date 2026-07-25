@@ -1047,15 +1047,10 @@ pub struct LintToolFailedWithoutFindings {
 }
 
 // ===========================================================================
-// Invocation errors (`288` §6): the `dorc: {msg}` family + `dorc-sh`. Every one of these is the
-// USER'S invocation to fix, never a Dorc-modeling limitation, so none is `RemediationClass::
-// Structural`. All are SPANLESS — an argv has no source span to point a caret at.
-//
-// The cut follows `AID-NEEDS:law-codes-vary-by-world-not-grammar`: a flag that takes a value and
-// was given none is ONE code however many flags share the shape (grammar-fit ⇒ one `{flag}` hole),
-// while `humane_read_error`'s three `io::ErrorKind` branches are three SIBLING codes (three states
-// of the world, three remediations). The usage synopsis is NOT part of any message — it is chrome
-// the print seat appends (`291` §5d parks help/usage text for the arrangement round).
+// Invocation errors (`288` §6): the `dorc: {msg}` family + `dorc-sh`. All SPANLESS (an argv has no
+// span) and never `Structural` (an invocation error is always the user's to fix). The cut follows
+// `AID-NEEDS:law-codes-vary-by-world-not-grammar` — grammar-fit takes a hole, world-state takes a
+// sibling. The usage synopsis is print-seat chrome, not a register (`291` §5d).
 // ===========================================================================
 
 /// Payload of [`DiagCode::CliStripNeedsPath`]: `dorc strip` with no positional.
@@ -1867,10 +1862,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ResolveDynamism,
         },
-        // Invocation errors (`288` §6). Uniformly Error + no floor + DeclareIdentity: an invocation
-        // error is always the user naming something the surface does not have, and always the
-        // user's to fix. The EXIT codes stay where they are — severity is registry data and never
-        // decides one (`291` §5a step 3).
+        // Uniformly Error + no floor + DeclareIdentity. The EXIT codes are unchanged — severity is
+        // registry data and never decides one (`291` §5a step 3).
         DiagCode::CliStripNeedsPath(_)
         | DiagCode::CliStripGotAFlag(_)
         | DiagCode::CliUnknownMode(_)

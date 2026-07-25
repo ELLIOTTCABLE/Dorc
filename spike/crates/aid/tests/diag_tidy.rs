@@ -304,8 +304,8 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "LintToolAbsent",
     "LintToolOutputUnparsable",
     "LintToolFailedWithoutFindings",
-    // cli — every INVOCATION error (`288` §6). An argv has no source span at all, so this whole
-    // family is spanless by construction, not by omission.
+    // cli — every INVOCATION error: an argv has no span at all, so the family is spanless by
+    // construction, not by omission.
     "CliStripNeedsPath",
     "CliStripGotAFlag",
     "CliUnknownMode",
