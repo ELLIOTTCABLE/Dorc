@@ -1,0 +1,148 @@
+---
+run: round-trip
+fixpoint: executed
+why-addr: 9
+expect-why:
+  - author declines [unsound] && sysctl.oracle.sh:
+expect-why-chain:
+  - dorc why  && book.sh:9:
+  - book.sh:9 && [run] && `sysctl vm.drop_caches`
+  - runs unprobed && unsure ⇒ dorc runs it
+---
+-- book.sh --
+#!/bin/sh
+# whygallery-decline-unsound-arm: a deliberate decline, classed. `sysctl vm.drop_caches` is a
+# write-only trigger key — reading it back says nothing about whether it fired — so the oracle
+# author's verdict member refuses to answer for it, and says WHY in plain sh on the very arm
+# that declined. The class routes to the explanation plane only: no license changes hands, and
+# the site simply runs. Every tool named here is an INERT mock; nothing mutates.
+
+ufw allow 80/tcp
+sysctl vm.drop_caches
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous firewall oracle (ufw) — here only to give the panel a converged line to contrast the
+# declined one against.
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 :! sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+ufw__is_converged() {
+   verb=$1; shift
+   case $verb in
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- sysctl.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# sysctl oracle. Most keys are ordinary readable state; a couple are not state at all — writing
+# them IS the effect — so the verdict member declines those, and classes the decline where it
+# happens. `return 2` is the ordinary rc-partition sink: confused ⇒ run.
+sysctl__is_converged() {
+   key=$1
+   case $key in
+   vm.drop_caches|vm.compact_memory)
+      # A write-only trigger: reading the key back reports nothing about whether it fired, so no
+      # answer here could honestly license keeping this line out of the plan.
+      printf 'decline unsound %s is a write-only trigger key\n' "$key" >>"${DREP_V1:-/dev/null}"
+      return 2 ;;
+   *) sysctl -n -- "$key" >/dev/null 2>&1 ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: only the firewall site is answerable. The sysctl site has no probe at all —
+# the verdict member declined before reaching any command, so nothing was shipped for it.
+site 0 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/sysctl --
+#!/bin/sh
+# INERT mock. The declining arm printf-s and returns before running anything, so the probe never
+# reaches this; only the apply does.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/ufw --
+#!/bin/sh
+# INERT mock. HOST: the rule is already allowed ⇒ rc 0 ⇒ `ufw allow 80/tcp` is converged.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: sysctl vm.drop_caches
+
+-- replay --
+$ dorc --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ef07b6bd52d79bac sites=1 @@dorc@@\n'
+# site 0: sm.dorc.Firewall:80/tcp@allowed
+ufw__predict() {
+   verb=$1; shift
+   rule="$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 ;;
+   esac
+}
+ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# whygallery-decline-unsound-arm: a deliberate decline, classed. `sysctl vm.drop_caches` is a
+# write-only trigger key — reading it back says nothing about whether it fired — so the oracle
+# author's verdict member refuses to answer for it, and says WHY in plain sh on the very arm
+# that declined. The class routes to the explanation plane only: no license changes hands, and
+# the site simply runs. Every tool named here is an INERT mock; nothing mutates.
+
+# ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
+sysctl vm.drop_caches
