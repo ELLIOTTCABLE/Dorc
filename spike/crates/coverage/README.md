@@ -34,7 +34,7 @@ Flags (mirrors the `dorc` cli's arg style):
 ### The gate-set wrapper
 
 `spike/tools/coverage.sh` runs the dashboard over the whole e2e corpus (rollup per
-case), or a one-off book. It is **NOT** wired into `e2e/run.sh` and never fails a
+case), or a one-off book. It is **NOT** wired into the e2e runner and never fails a
 build (exits 0 even when the binary is missing):
 
 ```sh

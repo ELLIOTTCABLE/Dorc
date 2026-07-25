@@ -39,8 +39,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
   running the read-only check for real (oracles intercept; not Ansible
   check-mode blindness).
 
-## The acceptance harness (`spike/e2e/run.sh`; sh-mechanized; this contract is law)
+## The acceptance harness (`tests/e2e.rs` + `tests/looms.rs`; this contract is law)
 
+- **runners-live-here-cases-are-peers** (`288:phase-flat-tree-move`) — this crate owns the
+  two central `harness = false` runners and the round-trip / lint case collections that sit
+  beside them in `tests/`. `sh e2e/run.sh` is RETIRED; every gate below moved into
+  `tests/e2e.rs` unchanged, and `cargo test --workspace` now runs the corpus. `autotests =
+  false` + explicit `[[test]]` targets is what lets case DATA share the dir with the
+  runners; the shape rules that classify a dir are `spike/CLAUDE.md`'s
+  flat-test-tree-and-loom-placement.
 - **per-case gates** — `dash -n` on BOTH rendered artifacts (the load-bearing
   runnability gate; the historical trap was a text-only golden diff shipping a
   non-runnable empty `then`-clause green, twice) · exec-under-mocks for cases
@@ -56,7 +63,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   orchestrator-only, diff inspected case-by-case (BLESS exclusivity —
   `spike/CLAUDE.md`).
 - **count-drifts** — the case-count drifts; count the dirs, never trust a
-  literal.
+  literal. The runners pin only a NON-EMPTY discovery floor (a zero-trial suite would
+  exit green — the one failure their own path constants can cause and not report).
+  RESIDUAL, unchanged from the sh harness: deleting ONE case dir shrinks the suite
+  silently. That deletion is visible in the diff; a broken root is not, which is why the
+  floor guards the root and nothing guards the count.
 
 ## Direction
 

@@ -54,9 +54,10 @@ crate's charter) · `notes/287` (errorloom as-built).
 
 - **one-catalog-no-legacy** (`27V:rul-kill-legacy-diagnostic`) — the structured `DiagCode`
   catalog is the ONLY diagnostics mechanism. Never add a second string-slug path.
-- **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining case;
-  the committed transcript CASE is the authoring surface and `catalog_lock.rs` is DERIVED
-  from it by `dorc-loom compile/promote`. `catalog_lock.rs` is `@generated` — hand-edits
+- **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining case,
+  at `crates/aid/tests/<slug>.loom` (see cases-live-here); the committed transcript CASE is
+  the authoring surface and `catalog_lock.rs` is DERIVED from it by
+  `dorc-loom compile/promote`. `catalog_lock.rs` is `@generated` — hand-edits
   are refused or caught by the byte-identity fixpoint gate. Never hand-edit it; never add
   a hand-written row.
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and case
@@ -92,10 +93,21 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **inv-determinism-here** — deterministic `Ord`/`Hash` for anything used as a map key;
   never iterate a `HashMap`/`HashSet` where order is observable. Render output must be a
   pure function of `(payload, catalog, interner)`.
-- **paths-are-manifest-relative** — the test-side `dorc-loom` case lookup resolves
-  `CARGO_MANIFEST_DIR.parent().join("dorc-loom/cases")`; `dorc-loom` reaches BACK here for
-  `../aid/src/catalog_lock.rs`. Both are depth-coupled to `crates/<c>/` — moving either
-  crate breaks both, silently in one direction (a missing baseline SKIPS the ratchet gate).
+- **cases-live-here** (`288:rul-slug-decides-loom-placement`, landed at
+  `288:phase-flat-tree-move`) — `crates/aid/tests/<slug>.loom` IS the primary loom
+  collection: every canonical case for a registered aid-slug, flat, beside this crate's
+  `.rs` tests. That siting is deliberate — it makes THIS file the registry that fires on
+  every loom edit (`288:rul-claudemd-fires-per-directory`). Cargo compiles only `tests/*.rs`,
+  so the data files are inert here; the runners that drive them are
+  `crates/cli/tests/{e2e,looms}.rs`.
+- **paths-are-manifest-relative** — the case lookup (`is_case_owned`, in both `catalog.rs`
+  and `catalog_defining_cases.rs`) is now manifest-LOCAL — `CARGO_MANIFEST_DIR/tests/
+  <slug>.loom` — so it survives a crate move. What still reaches ACROSS is `dorc-loom`:
+  `../aid/tests` for the corpus and `../aid/src/catalog_lock.rs` for the lock, both
+  depth-coupled to `crates/<c>/`. Moving EITHER crate breaks both, and one direction fails
+  silent: an empty corpus read makes the corpus-wide gates pass VACUOUSLY. `fixpoint.rs`'s
+  `load_corpus` therefore panics on an unreadable dir and asserts non-empty — never soften
+  that back into a silent empty vec.
 
 - **spanless-gate-is-lexical** — `spanless_mint_allow_list_is_exact` is a LEXICAL grep
   for `new_spanless_site(DiagCode::X(` at the emit site: every mint spells its payload

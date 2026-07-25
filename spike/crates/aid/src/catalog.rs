@@ -504,9 +504,9 @@ mod tests {
     /// bytes), so the roster's two-place bookkeeping is no longer needed.
     fn is_case_owned(slug: &str) -> bool {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.loom")))
-            .is_some_and(|case| case.exists())
+            .join("tests")
+            .join(format!("{slug}.loom"))
+            .exists()
     }
 
     /// Gate (`amendment-prose-boundary`, re-keyed at the `283` flip): every WRITTEN user-facing

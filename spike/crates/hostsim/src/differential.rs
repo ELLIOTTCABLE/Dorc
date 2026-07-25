@@ -3,7 +3,7 @@
 //! The cheapest local approximation of the deferred **cm-1** product-gate (`20K` §3/§4):
 //! the one gate that *observes elided sites*. For a seeded `(book, oracle-set,
 //! host-state)` triple, it drives the REAL `dorc` binary, executes the bare book and
-//! the eliding apply under inert mocks (the `e2e/run.sh` discipline), and asserts the
+//! the eliding apply under inert mocks (the e2e runner discipline), and asserts the
 //! soundness property:
 //!
 //! > the apply artifact's execution trace equals the bare book's trace MODULO licensed
@@ -20,7 +20,7 @@
 //! ## Why drive the binary, not the in-process API
 //!
 //! The harness invokes `dorc` as a subprocess and `dash` to execute artifacts, exactly
-//! as `e2e/run.sh` does (the pre-solved Windows/MSYS invocation pattern — heredoc-fed
+//! as the e2e runner does (the pre-solved Windows/MSYS invocation pattern — heredoc-fed
 //! script or absolute book path, `PATH=mocks-only`, sandbox cwd, `DORC_LOG` absolute).
 //! That makes the harness logic itself dependency-light (only `std::process` + string
 //! work) and exercises the true end-to-end pipeline — strictly stronger than the
@@ -600,7 +600,7 @@ fn predict_fn_name(provider: &str) -> String {
 }
 
 // ===========================================================================
-// The shell driver — drives the REAL dorc binary + dash, mirroring e2e/run.sh.
+// The shell driver — drives the REAL dorc binary + dash, mirroring the e2e runner.
 // ===========================================================================
 
 /// Where the harness finds the tools it drives. The binary path mirrors `run.sh`'s
@@ -859,7 +859,7 @@ enum ExecTarget<'a> {
 }
 
 /// Execute a target under PATH=mocks-only + sandbox cwd + an absolute `DORC_LOG`, exactly
-/// the `e2e/run.sh` discipline. Returns the `ran: …`-stripped argv lines (the trace).
+/// the e2e runner discipline. Returns the `ran: …`-stripped argv lines (the trace).
 /// Errors are swallowed (a non-zero rc from `set -e` + a diverged guard is normal); the
 /// trace is whatever was logged.
 fn exec_under_mocks(tools: &Tools, dir: &Path, target: ExecTarget<'_>) -> Vec<String> {

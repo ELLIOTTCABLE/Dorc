@@ -6,7 +6,7 @@
 #
 # Crate set seeded from the round-19 spike-2 (the 19F keep-list substrate +
 # the 43-case corpus); take-3 rebuilds the input side in place. The `dorc`
-# binary e2e/run.sh looks for comes from `crates/cli`.
+# `dorc` binary the e2e runner drives comes from `crates/cli`.
 [workspace]
 resolver = "2"
 members = ["crates/core", "crates/aid", "crates/syntax", "crates/analysis", "crates/oracle", "crates/plan", "crates/hostsim", "crates/sweep", "crates/cli", "crates/coverage", "crates/lint", "crates/errorloom", "crates/dorc-loom"]
