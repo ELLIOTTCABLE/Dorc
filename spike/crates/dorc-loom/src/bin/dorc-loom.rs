@@ -241,7 +241,13 @@ fn touched_cases(gated: &GatedCases) -> Result<std::collections::BTreeMap<String
         let slug = case
             .frontmatter()
             .scalar("code")
-            .ok_or_else(|| format!("touched case {} has no `code`", path.display()))?
+            .or_else(|| case.frontmatter().scalar("arrangement"))
+            .ok_or_else(|| {
+                format!(
+                    "touched case {} declares neither `code` nor `arrangement`",
+                    path.display()
+                )
+            })?
             .to_owned();
         cases.insert(slug, case);
     }
