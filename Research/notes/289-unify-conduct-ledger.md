@@ -756,3 +756,36 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   (a); reframes `prop-span-boundary-tokenization` toward errorloom-core.
   Sitting output, not an immediate build.
 - 2026-07-25: gallery fold cold-verified own-hand (clippy 0; conduct-bless: build ok | unit 1207 | e2e 103 | looms 78 | gates ok).
+
+## §2y — Whystrawmen LANDED + FOLDED + verified; the corpus is ready (2026-07-25)
+
+- LANDED @ `7b6a4a5a` (3 commits), FOLDED @ `7954ff97`; conductor cold verify
+  own-hand (clippy 0; conduct-bless: build ok | unit 1207 | e2e 103 | looms 78 |
+  gates ok; builder additionally proved byte-stability by double unblessed run).
+- **`289:rul-why-blocks-ride-the-gallery`** (rules the builder's naming flag) —
+  ACCEPTED: the five why transcripts live as ADDED replay blocks in the five
+  existing `whygallery-*.loom` worlds (no `whystrawman-*` files; no world
+  duplication/drift; the prefix now honestly means "the why-surface gallery").
+  Harness: `282:rul-multi-replay-per-case` drive+bless COMPLETED in
+  `cli/tests/e2e.rs` (+183/−22: sequential blocks, shared scratch so the whylog
+  flows, per-block bless, scratch-path-leak refusal at capture, empty-slice
+  leaves committed bytes untouched). ALL five outputs are committed bytes;
+  nothing needled or hand-typed.
+- Findings delta banked (sitting inputs): **fnd-guarded-chain-omits-the-wall**
+  (the pulled guard chain never mentions the wall that caused the demotion —
+  push-only again) · **fnd-replayed-voice-is-byte-identical** (`--last` has no
+  replay banner/staleness framing) · the declined thin-truth CONFIRMED as
+  committed bytes (class+arm live in the narrative plane, never reach the pull
+  chain — `289:seam-narrative-render-unconsumed` in the flesh) ·
+  fnd-why-heading is argv-echo not a bug (case-relative driving ⇒ stable bytes).
+- Bug riders banked (real, small, non-blocking; ride any convenient lane):
+  **`289:rider-why-last-address-order`** (`dorc why --last 10` silently parses
+  `10` as the BOOK and renders the zero-arg report at rc 0 — silent wrong
+  surface) · **`289:rider-sibling-note-false-fires-relative`**
+  (`aid-unloaded-sibling-oracle` false-fires listing already-loaded oracles when
+  they were named by relative path).
+- The comparison corpus is COMPLETE: as-built truth committed in the five
+  gallery looms; the conductor's unpoisoned aspirations in
+  `notes/292-why-output-strawmen/` (written+committed BEFORE this landing was
+  read, `7ab5e497`); the human's editing round is next — in-place uncommitted
+  edits (harvested as diff) or 292-style copies, their choice.
