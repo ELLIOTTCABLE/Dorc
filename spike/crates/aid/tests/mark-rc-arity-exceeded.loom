@@ -1,0 +1,22 @@
+---
+code: mark-rc-arity-exceeded
+when-fires: the new-grammar mark parser found two rc-consuming marks (`asserts`/`refutes`) in one block, incl. continuations (`281` §7). oracle/predict/mark_grammar.rs.
+why: 281 §7 rc-arity: one exit code witnesses one cell, so two verdicts on one block is unmeasurable ⇒ the block drops to ⊤ (`inv-top-reject`).
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+dpkg -s nginx : sm.a.B@x
+: refutes sm.a.C@y
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[mark-rc-arity-exceeded]: [unwritten: mark-rc-arity-exceeded]
+   --> oracle.sh:3:11
+   |
+ 3 | : refutes sm.a.C@y
+   |           \______/
+
+dorc lint: 1 error, 0 warnings, 0 infos across 1 file.

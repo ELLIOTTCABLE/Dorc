@@ -18,8 +18,8 @@
 //! engine-owned vocabulary (`DeclineClass::from_token`); the free tail is opaque author text,
 //! never decoded. Nothing here feeds the license plane — classes route AID only.
 
+use dorc_aid::narrative::DeclineClass;
 use dorc_core::Span;
-use dorc_core::evidence::DeclineClass;
 
 use crate::predict::{Command, Predict, Stmt, Word};
 

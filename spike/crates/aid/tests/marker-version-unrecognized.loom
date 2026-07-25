@@ -1,0 +1,21 @@
+---
+code: marker-version-unrecognized
+when-fires: a dorc-lang dialect construct appears in a file whose `# dorc-lang/vX.Y` version marker names a version this binary does not recognize (only v0.2 today), distinct from a wholly-missing marker. oracle/marker.rs.
+why: marker-gates-syntax-only + versioned-additive: an unrecognized version is a loud file-level refusal SEPARATE from missing-marker, so a vNEXT/typo'd-version file is not mis-blamed as markerless (`28A` §2l). `{found}` = the version tag read from the marker.
+---
+-- oracle.sh --
+# dorc-lang/v0.1
+apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[marker-version-unrecognized]: [unwritten: marker-version-unrecognized]
+   --> oracle.sh:2:22
+   |
+ 2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
+   |                      \__________________________/
+
+dorc lint: 1 error, 0 warnings, 0 infos across 1 file.

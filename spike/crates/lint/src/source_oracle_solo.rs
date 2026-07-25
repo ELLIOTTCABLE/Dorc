@@ -3,7 +3,7 @@
 //!
 //! * `oracle-validate` — the book-free oracle-side validation (`dorc_oracle::validate`): the
 //!   effect-map lift, per-file check-dialect lift, dual-peel + fold-entry coherence, munge-reservation
-//!   lint, and the marker gate, lowered from structured [`dorc_core::Diag`]s to findings. The SAME
+//!   lint, and the marker gate, lowered from structured [`dorc_aid::Diag`]s to findings. The SAME
 //!   diagnostics the cli routes to stderr, surfaced here for the author's hot loop.
 //! * `oracle-declined-inventory` — the tier-1 authored-decline inventory (`27W` §3
 //!   `rul-static-first-three-tier`; `AID-NEEDS:aid-authored-decline-classes`): each verdict body's
@@ -12,11 +12,11 @@
 //! Advisory-only (`dir-no-license-plane-contact`): neither mints/reads a license; the decline classes
 //! route AID only.
 
+use dorc_aid::narrative::DeclineClass;
 use dorc_core::Interner;
-use dorc_core::evidence::DeclineClass;
 use dorc_oracle::verdict::VerdictSet;
 
-use crate::finding::{Finding, NativeDiag, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, NativeDiag, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The book-free oracle-validation source: lowers `dorc_oracle::validate`'s stage-diags to findings.
@@ -28,8 +28,8 @@ impl LintSource for OracleValidate {
         "oracle-validate"
     }
 
-    fn describe(&self) -> &'static str {
-        "book-free oracle-side validation (lift/check/coherence/reserved/marker)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-oracle-validate"
     }
 
     fn rung(&self) -> Rung {
@@ -72,13 +72,13 @@ impl LintSource for OracleValidate {
     }
 }
 
-/// Lower one oracle-validation [`dorc_core::Diag`] into a finding (the same bridge shape as
+/// Lower one oracle-validation [`dorc_aid::Diag`] into a finding (the same bridge shape as
 /// `source-analysis-diagnostics`): the span resolves to the source `(line, col)`; a spanless diag
 /// yields a whole-file finding. Native ⇒ always `RemapFidelity::Exact`.
-fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'static str) -> Finding {
+fn diag_to_finding(path: &str, src: &str, diag: &dorc_aid::Diag, source: &'static str) -> Finding {
     let (line, col) = match diag.primary.span() {
         Some(span) => {
-            let (l, c) = dorc_core::diag::line_col(src, span.lo.0 as usize);
+            let (l, c) = dorc_aid::diag::line_col(src, span.lo.0 as usize);
             (
                 Some(u32::try_from(l).unwrap_or(u32::MAX)),
                 Some(u32::try_from(c).unwrap_or(u32::MAX)),
@@ -93,12 +93,13 @@ fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'stat
         severity: diag.severity(),
         source,
         code: diag.code.slug().to_owned(),
-        message: dorc_core::diag::render_body(diag, &Interner::default()),
+        message: dorc_aid::diag::render_body(diag, &Interner::default()),
         remap: RemapFidelity::Exact,
         provenance: Some(NativeDiag {
             diag: diag.clone(),
             source: src.to_owned(),
         }),
+        frame: FrameChoice::Framed,
     }
 }
 
@@ -111,8 +112,8 @@ impl LintSource for OracleDeclinedInventory {
         "oracle-declined-inventory"
     }
 
-    fn describe(&self) -> &'static str {
-        "authored decline classes per verdict arm (tier-1, oracle-solo)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-oracle-declined-inventory"
     }
 
     fn rung(&self) -> Rung {
@@ -129,18 +130,22 @@ impl LintSource for OracleDeclinedInventory {
                     continue;
                 };
                 for arm in dorc_oracle::report::report_inventory(verdict) {
-                    let (line, col) = dorc_core::diag::line_col(&oracle.src, arm.arm.lo.0 as usize);
+                    let (line, col) = dorc_aid::diag::line_col(&oracle.src, arm.arm.lo.0 as usize);
+                    let diag = dorc_aid::Diag::new(decline_code(arm.class), arm.arm);
                     out.push(Finding {
                         path: oracle.path.clone(),
                         line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                         col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                        // Advisory disclosure — an inventory listing, never gates.
-                        severity: dorc_core::Severity::Note,
+                        severity: diag.severity(),
                         source: self.name(),
-                        code: "authored-decline-class".to_owned(),
-                        message: decline_message(arm.class),
+                        code: diag.code.slug().to_owned(),
+                        message: dorc_aid::diag::render_body(&diag, &Interner::default()),
                         remap: RemapFidelity::Exact,
-                        provenance: None,
+                        provenance: Some(NativeDiag {
+                            diag,
+                            source: oracle.src.clone(),
+                        }),
+                        frame: FrameChoice::Compact,
                     });
                 }
             }
@@ -149,20 +154,19 @@ impl LintSource for OracleDeclinedInventory {
     }
 }
 
-/// The inventory finding message for a per-arm decline: the classed form when the `<verb> <class>`
-/// header was recognized, else the generic degrade-note (`27W:rul-report-noise-tolerant`).
-fn decline_message(class: Option<DeclineClass>) -> String {
+/// The registry code for a per-arm decline: SIBLING codes, not one `{class}`-hole code — a
+/// statically-read class and an only-at-runtime one are different world-states with different
+/// remediations (`AID-NEEDS:law-codes-vary-by-world-not-grammar`; `27W:rul-report-noise-tolerant`).
+fn decline_code(class: Option<DeclineClass>) -> dorc_aid::diag::DiagCode {
     match class {
-        Some(c) => format!(
-            "this verdict arm authors a deliberate decline classed `{}` (a `decline {}` report \
-             emission) — the site will run; the class routes the enhancement nags (advisory only).",
-            c.token(),
-            c.token(),
+        Some(c) => {
+            dorc_aid::diag::DiagCode::AuthoredDeclineClass(dorc_aid::diag::AuthoredDeclineClass {
+                class: c.token().to_owned(),
+            })
+        }
+        None => dorc_aid::diag::DiagCode::AuthoredDeclineClassUnreadable(
+            dorc_aid::diag::AuthoredDeclineClassUnreadable,
         ),
-        None => "this verdict arm authors a deliberate decline whose class is not statically \
-                 readable (a dynamic format or an unrecognized class token) — the site will run; \
-                 the class resolves at runtime (advisory only)."
-            .to_owned(),
     }
 }
 
@@ -217,8 +221,17 @@ sysctl__is_converged() {
         assert_eq!(report.findings.len(), 1, "one classed decline arm");
         let f = &report.findings[0];
         assert_eq!(f.code, "authored-decline-class");
-        assert_eq!(f.severity, dorc_core::Severity::Note, "never gates");
-        assert!(f.message.contains("`unsound`"), "the class: {}", f.message);
+        assert_eq!(f.severity, dorc_aid::Severity::Note, "never gates");
+        // Structural, not prose (`288:prop-structural-needles-only`): the class is a TYPED payload
+        // param now, so it survives every re-wording of the catalog register.
+        let code = &f.provenance.as_ref().expect("native provenance").diag.code;
+        assert!(
+            matches!(
+                code,
+                dorc_aid::diag::DiagCode::AuthoredDeclineClass(p) if p.class == "unsound"
+            ),
+            "the read class rides the payload: {code:?}"
+        );
         assert_eq!(f.line, Some(5), "the emitting arm is on line 5");
     }
 

@@ -4,6 +4,9 @@ version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
 publish = false
+# The `tests/` dir holds case DATA (dirs and `.loom` files) beside its two runners, so
+# target discovery is declared, never inferred (`288:rul-flat-test-tree`).
+autotests = false
 
 # The thin driver — the one place (with `hostsim`) where real I/O lives. The
 # analyzer kernel it calls is pure (`inv-determinism`); this binary just reads
@@ -20,8 +23,16 @@ path = "src/main.rs"
 name = "dorc-sh"
 path = "src/bin/dorc-sh.rs"
 
+# The INTERNAL invocation-surface lib (`289:rul-worldless-route-honest-trigger`): a loom-harness
+# seam so a defining case for an invocation error can fire the REAL parser instead of decorating a
+# payload. Never a public API — the crate is `publish = false`.
+[lib]
+name = "dorc_cli"
+path = "src/lib.rs"
+
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
+dorc-aid = { path = "../aid", version = "0.0.0" }
 dorc-syntax = { path = "../syntax", version = "0.0.0" }
 dorc-analysis = { path = "../analysis", version = "0.0.0" }
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
@@ -35,6 +46,30 @@ dorc-lint = { path = "../lint", version = "0.0.0" }
 # KERNEL crates stay dependency-clean (inv-determinism unmoved). Exact-pinned (wildcards=deny).
 anstream = "=0.6.18"
 anstyle = "=1.0.10"
+
+# The two central case runners (`288` §3). They are `harness = false` because a corpus
+# case is DATA, not a `#[test]` fn: libtest-mimic turns each discovered case into one
+# named, filterable trial while keeping the ordinary `cargo test` CLI. Test-only, and
+# pinned to the 0.8.1 line, which shares the workspace's existing anstream/anstyle
+# rather than pulling a second major (`cargo deny check bans`).
+[dev-dependencies]
+libtest-mimic = "=0.8.1"
+# The loom runner replays each case through the SAME production consumer the loom
+# toolchain uses. `dorc-loom` deps this crate's internal lib seam
+# (`289:rul-worldless-route-honest-trigger`), so this edge is a dev-only cycle — cargo
+# resolves it, and no non-test build sees it.
+dorc-loom = { path = "../dorc-loom", version = "0.0.0" }
+errorloom = { path = "../errorloom", version = "0.0.0" }
+
+[[test]]
+name = "e2e"
+path = "tests/e2e.rs"
+harness = false
+
+[[test]]
+name = "looms"
+path = "tests/looms.rs"
+harness = false
 
 [lints]
 workspace = true

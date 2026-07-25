@@ -53,15 +53,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap"
+version = "4.5.60"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2797f34da339ce31042b27d23607e051786132987f595b02ba4f6a6dffb7030a"
+dependencies = [
+ "clap_builder",
+ "clap_derive",
+]
+
+[[package]]
+name = "clap_builder"
+version = "4.5.60"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24a241312cea5059b13574bb9b3861cabf758b879c15190b37b6d6fd63ab6876"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "clap_lex",
+ "strsim",
+]
+
+[[package]]
+name = "clap_derive"
+version = "4.5.55"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a92793da1a46a5f2a02a6f4c46c6496b28c43638adea8306fcb0caa1634f24e5"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "clap_lex"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
+
+[[package]]
 name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
+name = "dorc-aid"
+version = "0.0.0"
+dependencies = [
+ "dorc-core",
+]
+
+[[package]]
 name = "dorc-analysis"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-core",
  "dorc-oracle",
  "dorc-syntax",
@@ -73,12 +121,16 @@ version = "0.0.0"
 dependencies = [
  "anstream",
  "anstyle",
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-lint",
+ "dorc-loom",
  "dorc-oracle",
  "dorc-plan",
  "dorc-syntax",
+ "errorloom",
+ "libtest-mimic",
 ]
 
 [[package]]
@@ -89,6 +141,7 @@ version = "0.0.0"
 name = "dorc-coverage"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-oracle",
@@ -111,6 +164,7 @@ dependencies = [
 name = "dorc-lint"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-oracle",
@@ -121,7 +175,9 @@ dependencies = [
 name = "dorc-loom"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
+ "dorc-cli",
  "dorc-core",
  "dorc-lint",
  "dorc-oracle",
@@ -134,6 +190,7 @@ dependencies = [
 name = "dorc-oracle"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-core",
  "dorc-syntax",
 ]
@@ -142,6 +199,7 @@ dependencies = [
 name = "dorc-plan"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-analysis",
  "dorc-core",
  "dorc-oracle",
@@ -164,6 +222,7 @@ dependencies = [
 name = "dorc-syntax"
 version = "0.0.0"
 dependencies = [
+ "dorc-aid",
  "dorc-core",
 ]
 
@@ -172,16 +231,81 @@ name = "errorloom"
 version = "0.0.0"
 
 [[package]]
+name = "escape8259"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5692dd7b5a1978a5aeb0ce83b7655c58ca8efdcb79d21036ea249da95afec2c6"
+
+[[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
+name = "libtest-mimic"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5297962ef19edda4ce33aaa484386e0a5b3d7f2f4e037cbeee00503ef6b29d33"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "clap",
+ "escape8259",
+]
+
+[[package]]
 name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "proc-macro2"
+version = "1.0.107"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
+name = "quote"
+version = "1.0.47"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001"
+dependencies = [
+ "proc-macro2",
+]
+
+[[package]]
+name = "strsim"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
+
+[[package]]
+name = "syn"
+version = "2.0.119"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "unicode-ident"
+version = "1.0.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "utf8parse"

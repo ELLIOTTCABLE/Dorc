@@ -1,0 +1,144 @@
+---
+run: round-trip
+fixpoint: executed
+tolerate: pipe-stage-order
+---
+-- book.sh --
+# strawman24-pipe-guard-floor (round-25 field-trial book; the pipe-guard shape at the
+otelcol --version | grep -q "0.155.0" || curl -sL https://example.com/otelcol.tar.gz | tar xz
+promtail --version | grep -q "2.9.0" || curl -sL https://example.com/promtail.tar.gz | tar xz
+node_exporter --version | grep -q "1.7.0" || curl -sL https://example.com/nodeexp.tar.gz | tar xz
+
+-- probe-results.txt --
+# no oracle ⇒ every site is skip-unresolvable ⇒ the probe ships no records and consumes none.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/curl --
+#!/bin/sh
+# INERT mock (the fallback mutator's stages): logs its argv, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/grep --
+#!/bin/sh
+# INERT grep shim (the check pipeline's governing last stage): logs its argv, then does a
+# minimal LITERAL substring match over stdin so the guard's rc is GENUINE (depends on what
+# the tool printed, not a hardcoded answer). Supports `grep -q <pattern>` reading stdin.
+# PATH is mocks-only ⇒ builtins only. Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+pat=
+for a in "$@"; do
+  case $a in
+    -*) ;;
+    *) pat=$a ;;
+  esac
+done
+found=1
+while IFS= read -r line; do
+  case $line in
+    *"$pat"*) found=0 ;;
+  esac
+done
+exit "$found"
+
+-- mocks/node_exporter --
+#!/bin/sh
+# INERT mock: logs its argv, prints NO version (diverged host) ⇒ the piped grep -q finds no
+# match ⇒ the || fires. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/otelcol --
+#!/bin/sh
+# INERT mock: logs its argv, prints NO version (diverged host) ⇒ the piped grep -q finds no
+# match ⇒ the || fires. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/promtail --
+#!/bin/sh
+# INERT mock: logs its argv, prints NO version (diverged host) ⇒ the piped grep -q finds no
+# match ⇒ the || fires. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/tar --
+#!/bin/sh
+# INERT mock (the fallback mutator's stages): logs its argv, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: curl -sL https://example.com/nodeexp.tar.gz
+ran: curl -sL https://example.com/otelcol.tar.gz
+ran: curl -sL https://example.com/promtail.tar.gz
+ran: grep -q 0.155.0
+ran: grep -q 1.7.0
+ran: grep -q 2.9.0
+ran: node_exporter --version
+ran: otelcol --version
+ran: promtail --version
+ran: tar xz
+ran: tar xz
+ran: tar xz
+
+-- replay --
+$ dorc --book=book.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=bc45596737e1d519 sites=0 @@dorc@@\n'
+# site:0 skip-unresolvable
+# site:1 skip-unresolvable
+# site:2 skip-unresolvable
+# site:3 skip-unresolvable
+# site:4 skip-unresolvable
+# site:5 skip-unresolvable
+# site:6 skip-unresolvable
+# site:7 skip-unresolvable
+# site:8 skip-unresolvable
+# site:9 skip-unresolvable
+# site:10 skip-unresolvable
+# site:11 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# strawman24-pipe-guard-floor (round-25 field-trial book; the pipe-guard shape at the
+otelcol --version | grep -q "0.155.0" || curl -sL https://example.com/otelcol.tar.gz | tar xz
+promtail --version | grep -q "2.9.0" || curl -sL https://example.com/promtail.tar.gz | tar xz
+node_exporter --version | grep -q "1.7.0" || curl -sL https://example.com/nodeexp.tar.gz | tar xz

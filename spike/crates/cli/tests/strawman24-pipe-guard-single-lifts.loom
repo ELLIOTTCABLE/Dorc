@@ -1,0 +1,107 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+# strawman24-pipe-guard-single-lifts (the CONTRAST to strawman24-pipe-guard-floor / the
+dpkg -s otelcol >/dev/null 2>&1 || curl -sL https://example.com/otelcol.tar.gz | tar xz
+
+-- package-status.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# package-status QUERY oracle: `dpkg -s <pkg>` READS installed-status — a read-only Query of
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+
+-- probe-results.txt --
+# site 0 = the `dpkg -s otelcol` pkgstate Query — VALID (nothing mutates upstream) + holds
+# (otelcol installed) ⇒ its OWN rc=0 is fold-usable ⇒ the `|| curl|tar` fallback is DEAD.
+site 0 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/curl --
+#!/bin/sh
+# INERT shim — the fallback mutator's stage. OMITTED by the fold (dead branch); logs only if
+# it WRONGLY runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT shim for `dpkg` — the book's Query guard AND the pkgstate probe (`dpkg -s [--] <pkg>`).
+# HOST: otelcol installed ⇒ exits 0 ⇒ the guard holds, the fold reads rc 0, the fallback dies.
+. "${0%/*}/.log"; _dorc_logged "$@"
+pkg=$2; [ "$pkg" = "--" ] && pkg=$3
+case $pkg in
+  otelcol) exit 0 ;;
+  *)       exit 1 ;;
+esac
+
+-- mocks/tar --
+#!/bin/sh
+# INERT shim — the fallback mutator's stage. OMITTED by the fold (dead branch); logs only if
+# it WRONGLY runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh -o package-status.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=d6f3f2e64a4de92c sites=1 @@dorc@@\n'
+# site 0: sm.dorc.PkgState:otelcol@installed
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg="$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1
+}
+dpkg__predict '-s' 'otelcol'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+# site:2 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# strawman24-pipe-guard-single-lifts (the CONTRAST to strawman24-pipe-guard-floor / the
+true || : | :   # dorc: elided [dpkg -s otelcol >/dev/null 2>&1; curl -sL https://example.com/otelcol.tar.gz; tar xz] (already converged / dead branch)

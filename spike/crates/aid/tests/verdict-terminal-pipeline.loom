@@ -1,0 +1,19 @@
+---
+code: verdict-terminal-pipeline
+when-fires: a `__is_converged` body's last status-bearing statement is a PIPELINE, so the answering status is the tail stage's. lint/source_verdict.rs. No params - the span says which body.
+why: rul-rc-partition - a verdict function's exit status reads one fixed table, so a tail stage's status flattens `1 = complement` and `>=2 = cannot-say` into whatever the tail produced. FALSIFICATION-FIRST (rul-unprovable-rides-the-vouch): the check may under-report, never gate.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+foo__is_converged() {
+foo --status "$1" | grep -q ok
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  3:1 warn [verdict-body:verdict-terminal-pipeline] sm this __is_converged body answers with a pipeline's tail status (oracle-contract §3): the exit status is the LAST stage's, not necessarily the tool-under-description's — prefer a shape where the modeled tool produces the status directly.
+
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

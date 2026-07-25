@@ -1,5 +1,0 @@
-# site 0 (certsync push web1): cert bundle not synced ⇒ diverged ⇒ certsync push RUNS (the wall).
-# site 1 (systemctl start nginx): nginx active ⇒ converged ⇒ the start elides + survives the wall
-# (CertBundle:web1 disjoint from Service:nginx#active — cross-kind provably-disjoint).
-site 0 effect=absent
-site 1 effect=holds

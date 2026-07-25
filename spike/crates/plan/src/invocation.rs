@@ -4,8 +4,8 @@
 //! interaction. Its inputs are the exact bytes an edge acquired; its output is an ordered
 //! transcript for that edge to decorate and write.
 
-use dorc_core::diag::Diag;
-use dorc_core::tagged::RenderParts;
+use dorc_aid::diag::Diag;
+use dorc_aid::tagged::RenderParts;
 use dorc_core::{Capability, EscalationDial};
 
 use crate::records::LegacyPolicy;

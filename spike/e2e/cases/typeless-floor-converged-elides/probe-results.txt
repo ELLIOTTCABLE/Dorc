@@ -1,6 +1,0 @@
-# site 0 = the AMBIENT foobar (24L §2 floor auto-cell dorc-auto:foobar): its markerless
-# is_converged ran `foobar status …` on the host ⇒ rc 0 ⇒ CONVERGED (holds) ⇒ site 0 elides.
-# site 2 = the same foobar PAST the opaque `hork` wall ⇒ EstablishWritten ⇒ GUARDS (re-checks
-# live at apply). site 1 (hork, unmodeled) ships no record.
-site 0 effect=holds rc=0
-site 2 effect=holds rc=0

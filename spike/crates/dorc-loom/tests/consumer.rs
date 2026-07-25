@@ -8,7 +8,7 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
-use dorc_core::diag::render_staged_cli_parts;
+use dorc_aid::diag::render_staged_cli_parts;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
     replay_case_with_inputs,
@@ -19,8 +19,8 @@ use errorloom::{
 };
 
 const CASE_PATH: &str = "cases/dangling-reference.loom";
-const CATALOG_PATH: &str = "crates/core/src/catalog_lock.rs";
-const CODE_PATH: &str = "crates/core/src/diag.rs";
+const CATALOG_PATH: &str = "crates/aid/src/catalog_lock.rs";
+const CODE_PATH: &str = "crates/aid/src/diag.rs";
 
 fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
     consumer
@@ -32,7 +32,7 @@ fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
 }
 
 fn whylog_absent_case() -> Case {
-    Case::parse(include_str!("../cases/whylog-absent.loom")).expect("case parses")
+    Case::parse(include_str!("../../aid/tests/whylog-absent.loom")).expect("case parses")
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
 #[test]
 fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
     let case = Case::parse(include_str!(
-        "../cases/host-evidence-admission-refused.loom"
+        "../../aid/tests/host-evidence-admission-refused.loom"
     ))
     .expect("case parses");
     let rendered = DorcConsumer::new()
@@ -71,13 +71,14 @@ fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
         .expect("canonical payload renders");
     assert_eq!(
         rendered,
-        include_str!("../cases/host-evidence-admission-refused.loom")
+        include_str!("../../aid/tests/host-evidence-admission-refused.loom")
     );
 }
 
 #[test]
 fn editable_baseline_renders_a_defining_case_with_help() {
-    let case = Case::parse(include_str!("../cases/whylog-book-desync.loom")).expect("case parses");
+    let case =
+        Case::parse(include_str!("../../aid/tests/whylog-book-desync.loom")).expect("case parses");
     let consumer = DorcConsumer::new();
     let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
         panic!("exact whylog replay must not fall back")
@@ -125,10 +126,10 @@ fn editable_baseline_renders_a_defining_case_with_help() {
 #[test]
 fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
     for text in [
-        include_str!("../cases/whylog-absent.loom"),
-        include_str!("../cases/whylog-corrupt.loom"),
-        include_str!("../cases/whylog-version-refused.loom"),
-        include_str!("../cases/whylog-book-desync.loom"),
+        include_str!("../../aid/tests/whylog-absent.loom"),
+        include_str!("../../aid/tests/whylog-corrupt.loom"),
+        include_str!("../../aid/tests/whylog-version-refused.loom"),
+        include_str!("../../aid/tests/whylog-book-desync.loom"),
     ] {
         let case = Case::parse(text).expect("case parses");
         let consumer = DorcConsumer::new();
@@ -165,7 +166,7 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
             replay.output(),
             render_staged_cli_parts(
                 "whylog",
-                &dorc_core::catalog::CONST_CATALOG,
+                &dorc_aid::catalog::CONST_CATALOG,
                 &diag,
                 "",
                 "",
@@ -571,7 +572,7 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
 fn replay_with_a_fake_fallback_leaves_case_catalog_and_source_bytes_unchanged() {
     let case_path =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.loom");
-    let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs");
+    let catalog_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs");
     let case_before = std::fs::read(&case_path).expect("case reads");
     let catalog_before = std::fs::read(&catalog_path).expect("catalog reads");
     let case = Case::parse(std::str::from_utf8(&case_before).expect("case is UTF-8"))

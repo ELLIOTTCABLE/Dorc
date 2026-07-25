@@ -92,7 +92,7 @@ fn shellcheck_good_json1_maps_severity_code_and_line() {
     assert_eq!(f.code, "SC2086");
     assert_eq!(f.line, Some(3), "identity line-map over an unmarked book");
     assert_eq!(f.col, Some(6));
-    assert_eq!(f.severity, dorc_core::Severity::Warning);
+    assert_eq!(f.severity, dorc_aid::Severity::Warning);
     assert_eq!(f.remap, RemapFidelity::Exact, "json1 tier is exact");
     assert_eq!(f.source, "shellcheck");
     assert_eq!(f.path, "book.sh", "the original path, never `-`");
@@ -133,10 +133,23 @@ fn shellcheck_unstructured_output_is_raw_passthrough() {
     );
     assert_eq!(report.findings.len(), 1);
     let f = &report.findings[0];
-    assert_eq!(f.code, "external-raw");
+    assert_eq!(f.code, "lint-tool-output-unparsable");
     assert_eq!(f.line, None);
     assert_eq!(f.remap, RemapFidelity::None);
-    assert!(f.message.contains("no structure"), "raw output rides along");
+    // Structural, not prose: the tool's bytes ride the TYPED `{output}` hole now, so the register
+    // can be reworded freely and this still holds.
+    let code = &f
+        .provenance
+        .as_ref()
+        .expect("typed relay payload")
+        .diag
+        .code;
+    assert!(
+        dorc_aid::diag::params_of(code, &dorc_core::Interner::default())
+            .iter()
+            .any(|(name, value)| *name == "output" && value.contains("no structure")),
+        "the unparsable tool output rides the payload: {code:?}"
+    );
 }
 
 #[test]
@@ -178,8 +191,8 @@ fn nonzero_rc_with_no_findings_is_one_operational_warn() {
         Some(&only(&["checkbashisms"])),
     );
     assert_eq!(report.findings.len(), 1);
-    assert_eq!(report.findings[0].code, "external-operational");
-    assert_eq!(report.findings[0].severity, dorc_core::Severity::Warning);
+    assert_eq!(report.findings[0].code, "lint-tool-failed-without-findings");
+    assert_eq!(report.findings[0].severity, dorc_aid::Severity::Warning);
 }
 
 #[test]
@@ -214,8 +227,8 @@ fn absent_tool_is_one_info_finding_and_absent_status() {
         1,
         "one info finding per RUN, not per file"
     );
-    assert_eq!(report.findings[0].code, "tool-absent");
-    assert_eq!(report.findings[0].severity, dorc_core::Severity::Note);
+    assert_eq!(report.findings[0].code, "lint-tool-absent");
+    assert_eq!(report.findings[0].severity, dorc_aid::Severity::Note);
     assert_eq!(report.coverage.sources[0].status, SourceStatus::Absent);
 }
 

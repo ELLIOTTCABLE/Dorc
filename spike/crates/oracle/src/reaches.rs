@@ -40,13 +40,21 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::{Carrier, Interner, Span, Symbol};
+use dorc_aid::Carrier;
+use dorc_core::{Interner, Span, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{
     Command, Predict, PredictSet, Stmt, TopReason, Word, lift_reaches, resolve_word,
 };
 use crate::touches::printf_lines;
+
+/// The mangled funcname suffix the reach/footprint-expansion role is LIFTED, STRIPPED and INVOKED
+/// under (`kind__disturbance_reaches_only`, né reaches — `281` §5). The ONE source for the parser's
+/// role scan, [`crate::predict::strip_reaches`], and the cli's per-arm wrapper names
+/// (`<kind>__disturbance_reaches_only_<n>`); a second spelling is the def↔invocation mismatch class
+/// (`289:rul-touches-mismatch-own-lane`).
+pub const DISTURBANCE_REACHES_ONLY_SUFFIX: &str = "__disturbance_reaches_only";
 
 /// The set of `<kind>.reaches()` funcdefs lifted from one oracle file, keyed by KIND (like
 /// [`crate::resolve::ResolverSet`]). Reuses the predict dialect AST ([`Predict`]) — a reaches
@@ -56,7 +64,7 @@ use crate::touches::printf_lines;
 pub struct ReachesSet(PredictSet);
 
 impl ReachesSet {
-    /// Lift every `<kind>.reaches` / `<kind>__reaches` funcdef in `src`. Fail-soft (`inv-no-throw`)
+    /// Lift every `<kind>__disturbance_reaches_only` funcdef in `src`. Fail-soft (`inv-no-throw`)
     /// and deterministic (`inv-determinism`) — the same contract as [`crate::predict::lift_predicts`],
     /// routed through the shared role-parametrized parser.
     #[must_use]

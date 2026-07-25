@@ -1,0 +1,21 @@
+---
+code: munge-name-invalid
+when-fires: an emitted `<munged>__<role>` funcname is not a legal sh NAME (leading digit, dot, non-ASCII). oracle/reserved.rs lint_oracle_reserved_names.
+why: ca-munge-charclass (24M §4b): a broken function name cannot ship — REFUSED. `{problem}` is `ShNameProblem::describe()`.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+中pkg__predict() { :; }
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[munge-name-invalid]: sm `ä¸­pkg` munges to the sh function name `ä¸­pkg__predict`, which is not a legal NAME: non-ASCII character `ä` (a NAME admits only ASCII letters/digits/`_`) (ca-munge-charclass, 24M §4b) — REFUSED (a broken function name cannot ship; the munger must transliterate or the name must be renamed)
+   --> oracle.sh:2:1
+   |
+ 2 | 中pkg__predict() { :; }
+   | \_____________/
+
+dorc lint: 1 error, 0 warnings, 0 infos across 1 file.

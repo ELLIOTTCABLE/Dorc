@@ -33,7 +33,7 @@ pub use ast::{
     UnsupportedReason, Word, WordPart,
 };
 
-use dorc_core::Carrier;
+use dorc_aid::Carrier;
 
 /// Parse sh source into an arena AST paired with diagnostics.
 ///

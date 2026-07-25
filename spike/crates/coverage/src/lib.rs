@@ -484,7 +484,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // Kill-AWARE classify (24A §3): mirrors the cli so the dashboard sees the same kill-wall the
     // honest baseline does (a kill-UNAWARE plan would over-report elision on a kill book). The
     // why-diags are cli-render-only; coverage discards them.
-    let (classified, _why_diags, kills, _kill_coords, _fact_backings, _collapse_evidence) =
+    let (classified, _why_diags, kills, _kill_coords, _fact_backings, _collapse_narrative) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
             &value,
@@ -654,7 +654,7 @@ fn render_refused_leaves(
 /// Matches are counted per-diagnostic (NOT as the matched set's len) so two refusals resolving
 /// to one leaf — were span-disjointness ever violated — could not mask a miss by set-dedup.
 fn bridge_refusals_to_leaves(
-    refusals: &[dorc_core::Diag],
+    refusals: &[dorc_aid::Diag],
     leaf_by_span: &BTreeMap<(u32, u32), LeafId>,
 ) -> (std::collections::BTreeSet<LeafId>, u32) {
     let mut refused = std::collections::BTreeSet::new();
@@ -1378,8 +1378,8 @@ dpkg__predict() {
 
     /// A render-refusal diagnostic shaped like the real one (`render-heredoc-refused`), at a real
     /// span (the production shape always carries `Some(step.span)`).
-    fn refusal_diag(span: dorc_core::Span) -> dorc_core::Diag {
-        use dorc_core::diag::{Diag, DiagCode, RenderHeredocRefused, SiteId};
+    fn refusal_diag(span: dorc_core::Span) -> dorc_aid::Diag {
+        use dorc_aid::diag::{Diag, DiagCode, RenderHeredocRefused, SiteId};
         Diag::new(
             DiagCode::RenderHeredocRefused(RenderHeredocRefused {
                 site: SiteId::leaf(LeafId(0)),
@@ -1394,8 +1394,8 @@ dpkg__predict() {
     /// reads only the primary span, so any spanless code exercises it; a records fault code is the
     /// spanless-allow-listed stand-in (`RenderHeredocRefused` is a spanned code and must never mint
     /// spanless — the `diag_tidy` gate would trip).
-    fn spanless_refusal_diag() -> dorc_core::Diag {
-        use dorc_core::diag::{Diag, DiagCode, RecordsHeaderlessRefused};
+    fn spanless_refusal_diag() -> dorc_aid::Diag {
+        use dorc_aid::diag::{Diag, DiagCode, RecordsHeaderlessRefused};
         Diag::new_spanless_site(DiagCode::RecordsHeaderlessRefused(RecordsHeaderlessRefused))
     }
 

@@ -29,7 +29,7 @@ fn section_text(preview: &SectionPreview) -> String {
         .join("\n");
     format!(
         "section: {}.{}#{}:{}\ninterpreted: {fragments}\nbindings:\n{bindings}",
-        preview.section().code,
+        preview.section().owner,
         preview.section().field,
         preview.section().instance,
         preview.section().segment

@@ -20,7 +20,7 @@
 //! [`parse`] is total: a truncated / clobbered / wrong-version durable yields diagnostics
 //! ([`DiagCode::WhylogCorrupt`] / [`DiagCode::WhylogVersionRefused`]), never a panic.
 
-use dorc_core::diag::{Diag, DiagCode, WhylogCorrupt, WhylogVersionRefused};
+use dorc_aid::diag::{Diag, DiagCode, WhylogCorrupt, WhylogVersionRefused};
 
 use std::io::Read;
 
@@ -185,7 +185,7 @@ pub fn inspect(
         return WhylogInspection {
             doc: None,
             diagnostics: vec![Diag::new_spanless_site(DiagCode::WhylogAbsent(
-                dorc_core::diag::WhylogAbsent {
+                dorc_aid::diag::WhylogAbsent {
                     dir: identity.to_owned(),
                 },
             ))],
@@ -215,7 +215,7 @@ pub fn inspect(
             return WhylogInspection {
                 doc: None,
                 diagnostics: vec![Diag::new_spanless_site(DiagCode::WhylogBookDesync(
-                    dorc_core::diag::WhylogBookDesync { which },
+                    dorc_aid::diag::WhylogBookDesync { which },
                 ))],
             };
         }

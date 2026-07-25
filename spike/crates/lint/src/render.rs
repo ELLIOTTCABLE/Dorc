@@ -6,9 +6,9 @@
 
 use std::fmt::Write as _;
 
-use crate::finding::{Coverage, Finding, LintReport, RemapFidelity, severity_token};
+use crate::finding::{Coverage, Finding, FrameChoice, LintReport, RemapFidelity, severity_token};
 use crate::json::escape_into;
-use dorc_core::tagged::{RenderPart, RenderParts};
+use dorc_aid::tagged::{RenderPart, RenderParts};
 
 /// The versioned machine-format name (`27R` §5 dir-stability-split): the ENVELOPE/field schema is
 /// stable and additive-only (`27R` §8 delta-additive-only-format-policy); a breaking change mints a
@@ -28,17 +28,33 @@ pub fn render_human(report: &LintReport) -> String {
 /// attempting to recover editable prose from the completed text.
 #[must_use]
 pub fn render_human_parts(report: &LintReport) -> RenderParts {
+    render_human_parts_at(report, Verbosity::default())
+}
+
+/// [`render_human_parts`] at a chosen density (`289:rul-lint-render-split-is-policy`).
+#[must_use]
+pub fn render_human_parts_at(report: &LintReport, verbosity: Verbosity) -> RenderParts {
     let (errors, warns, infos) = report.severity_counts();
     let file_count = report.coverage.files.len();
     let source_count = report.coverage.sources.len();
     if report.findings.is_empty() {
-        return structure(format!(
-            "dorc lint: clean — nothing found across {file_count} file(s), {source_count} source(s).\n"
-        ));
+        let mut clean = RenderParts::new();
+        sentence(
+            &mut clean,
+            "lint-clean-sentence",
+            &[
+                &file_count.to_string(),
+                plural(file_count),
+                &source_count.to_string(),
+                plural(source_count),
+            ],
+        );
+        newline(&mut clean);
+        return clean;
     }
-    let mut out = structure(String::from(
-        "dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):\n",
-    ));
+    let mut out = RenderParts::new();
+    words(&mut out, "lint-advisory-preamble");
+    newline(&mut out);
     let mut current_group: Option<&str> = None;
     for f in &report.findings {
         let group = if f.path.is_empty() {
@@ -53,66 +69,159 @@ pub fn render_human_parts(report: &LintReport) -> RenderParts {
             });
             current_group = Some(group);
         }
-        append_finding_parts(&mut out, f);
+        append_finding_parts(&mut out, f, verbosity);
     }
-    out.push(RenderPart::Arrangement { text: format!("\ndorc lint: {errors} error(s), {warns} warning(s), {infos} info(s) across {file_count} file(s).\n"), slug: "lint-summary" });
+    newline(&mut out);
+    sentence(
+        &mut out,
+        "lint-summary-sentence",
+        &[
+            &errors.to_string(),
+            plural(errors),
+            &warns.to_string(),
+            plural(warns),
+            &infos.to_string(),
+            plural(infos),
+            &file_count.to_string(),
+            plural(file_count),
+        ],
+    );
+    newline(&mut out);
     out
 }
 
-fn structure(text: String) -> RenderParts {
-    let mut parts = RenderParts::new();
-    parts.push(RenderPart::Arrangement {
-        text,
-        slug: "lint-structure",
-    });
-    parts
+fn plural(count: usize) -> &'static str {
+    if count == 1 { "" } else { "s" }
 }
 
-fn append_finding_parts(out: &mut RenderParts, finding: &Finding) {
-    if let Some(provenance) = &finding.provenance {
-        out.push(RenderPart::Arrangement {
-            text: String::from("  "),
-            slug: "lint-indent",
-        });
-        out.append(dorc_core::diag::render_cli_parts(
-            &dorc_core::catalog::CONST_CATALOG,
-            &provenance.diag,
-            &provenance.source,
-            &finding.path,
-            &dorc_core::Interner::default(),
-        ));
-        out.push(RenderPart::Arrangement {
-            text: String::from("\n"),
-            slug: "lint-terminal-newline",
-        });
-    } else {
-        out.push(RenderPart::Arrangement {
-            text: render_finding_line(finding),
-            slug: "lint-fixed-finding",
-        });
+/// One registry-sourced chrome span (`289:rul-arrangement-home-is-registry-plus-transcripts`).
+/// Every span this seat emits is unstamped, so a slug repeated across findings shares ONE editable
+/// entry — the whole point of occurrence-less keying.
+fn words(parts: &mut RenderParts, slug: &'static str) {
+    sentence(parts, slug, &[]);
+}
+
+/// A line's terminating newline. Layout is never a word: keeping it OUT of the entry also keeps a
+/// render from ending in an editable span, where a transcript that merely lost its trailing newline
+/// would read as a prose edit instead of the malformed transcript it is.
+fn newline(parts: &mut RenderParts) {
+    parts.push(RenderPart::Arrangement {
+        text: String::from("\n"),
+        slug: "lint-line-break",
+    });
+}
+
+/// [`words`] for a line whose entry interleaves computed values (counts, plural suffixes) between
+/// its words. The counts stay renderer-computed; only the words are registry prose.
+fn sentence(parts: &mut RenderParts, slug: &'static str, values: &[&str]) {
+    dorc_aid::arrangement::push_arrangement_sentence(
+        parts,
+        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+        slug,
+        None,
+        values,
+    );
+}
+
+/// The human render's density dial (`289:rul-lint-render-split-is-policy`, riding `KNOBS:kFLOW` /
+/// `27V:rul-output-form-unwelded`). [`Default`](Self::default) reproduces each finding's declared
+/// [`FrameChoice`] exactly, so the default surface is unchanged by the policy becoming explicit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Verbosity {
+    /// Every finding renders compact, frames dropped.
+    Terse,
+    /// Each finding's declared [`FrameChoice`].
+    #[default]
+    Default,
+    /// Every finding that HAS provenance renders framed.
+    Verbose,
+}
+
+/// Whether this finding frames under `verbosity`. A frame needs typed provenance to draw a caret
+/// against, so a provenance-less finding is compact at every level — the dial selects among shapes
+/// that exist, it never synthesizes one.
+fn frames(finding: &Finding, verbosity: Verbosity) -> bool {
+    if finding
+        .provenance
+        .as_ref()
+        .is_none_or(|p| p.source.is_empty())
+    {
+        return false;
+    }
+    match verbosity {
+        Verbosity::Terse => false,
+        Verbosity::Default => finding.frame == FrameChoice::Framed,
+        Verbosity::Verbose => true,
     }
 }
 
-/// One human finding line: `  <line>:<col> <severity> [<source>:<code>] <message>` plus a
-/// `(approximate)`/`(raw)` tag when the location fidelity is not exact (`27R` §4 remap-fidelity).
-fn render_finding_line(f: &Finding) -> String {
+fn append_finding_parts(out: &mut RenderParts, finding: &Finding, verbosity: Verbosity) {
+    if !frames(finding, verbosity) {
+        append_compact_parts(out, finding);
+        return;
+    }
+    let Some(provenance) = &finding.provenance else {
+        return;
+    };
+    out.push(RenderPart::Arrangement {
+        text: String::from("  "),
+        slug: "lint-indent",
+    });
+    out.append(dorc_aid::diag::render_cli_parts(
+        &dorc_aid::catalog::CONST_CATALOG,
+        &provenance.diag,
+        &provenance.source,
+        &finding.path,
+        &dorc_core::Interner::default(),
+    ));
+    out.push(RenderPart::Arrangement {
+        text: String::from("\n"),
+        slug: "lint-terminal-newline",
+    });
+}
+
+/// The compact form, emitted as PARTS: `  <line>:<col> <severity> [<source>:<code>] <message>` plus
+/// a `(approximate)`/`(raw)` tag when the location fidelity is not exact (`27R` §4 remap-fidelity).
+///
+/// The message rides the renderer's own catalog parts when the finding has typed provenance, so a
+/// compact finding's prose is loom-EDITABLE like a framed one's (`288` §1: every user-facing string
+/// ends up loom-editable). A relay finding — an external tool's own words — has no catalog prose to
+/// edit and stays flat text. Byte-identical to the old string form, which is what keeps the default
+/// lint surface unchanged.
+fn append_compact_parts(out: &mut RenderParts, f: &Finding) {
     let loc = match (f.line, f.col) {
         (Some(l), Some(c)) => format!("{l}:{c}"),
         (Some(l), None) => format!("{l}"),
         (None, _) => "-".to_owned(),
     };
-    let fidelity = match f.remap {
-        RemapFidelity::Exact => "",
-        RemapFidelity::Approximate => " (approximate location)",
-        RemapFidelity::None => " (raw)",
-    };
-    format!(
-        "  {loc} {} [{}:{}] {}{fidelity}\n",
-        severity_token(f.severity),
-        f.source,
-        f.code,
-        f.message
-    )
+    out.push(RenderPart::Arrangement {
+        text: format!(
+            "  {loc} {} [{}:{}] ",
+            severity_token(f.severity),
+            f.source,
+            f.code
+        ),
+        slug: "lint-fixed-finding",
+    });
+    match &f.provenance {
+        Some(provenance) => out.append(dorc_aid::diag::render_body_parts(
+            &provenance.diag,
+            &dorc_core::Interner::default(),
+        )),
+        None => out.push(RenderPart::Arrangement {
+            text: f.message.clone(),
+            slug: "lint-relay-message",
+        }),
+    }
+    match f.remap {
+        RemapFidelity::Exact => {}
+        RemapFidelity::Approximate => words(out, "lint-fidelity-approximate"),
+        RemapFidelity::None => words(out, "lint-fidelity-raw"),
+    }
+    out.push(RenderPart::Arrangement {
+        text: String::from("\n"),
+        slug: "lint-finding-terminator",
+    });
 }
 
 /// The JSONL render (`27R` §5, §8b). Line 1 is the envelope (format name + coverage block); each

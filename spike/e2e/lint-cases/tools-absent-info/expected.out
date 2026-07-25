@@ -1,7 +1,0 @@
-dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
-
-(run):
-  - info [checkbashisms:tool-absent] `checkbashisms` was not found on PATH — its checks were skipped. Install it, pass --no-tools to silence this, or --require-tools to make it a hard CI error. (raw)
-  - info [shellcheck:tool-absent] `shellcheck` was not found on PATH — its checks were skipped. Install it, pass --no-tools to silence this, or --require-tools to make it a hard CI error. (raw)
-
-dorc lint: 0 error(s), 0 warning(s), 2 info(s) across 1 file(s).

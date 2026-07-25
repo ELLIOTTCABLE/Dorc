@@ -1,0 +1,8 @@
+---
+code: cli-flag-needs-value
+when-fires: a flag that takes a value was given without one. cli/lib.rs, every value-taking flag. {flag} is the flag, {wants} what it wants.
+why: AID-NEEDS:law-codes-vary-by-world-not-grammar: ONE code for the whole family - the flags differ, the failure does not, so this is grammar-fit and takes a hole rather than a sibling per flag.
+---
+-- replay --
+$ dorc plan --book
+error[cli-flag-needs-value]: sm --book needs a path

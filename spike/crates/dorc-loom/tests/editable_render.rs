@@ -1,6 +1,6 @@
 //! Core render-part adapter regressions.
 
-use dorc_core::tagged::{Field, RenderPart, RenderParts};
+use dorc_aid::tagged::{Field, RenderPart, RenderParts};
 use dorc_loom::{SectionVariableId, TemplateVariableName, to_editable_render};
 use errorloom::{EditableFragment, RenderComponent};
 
@@ -65,7 +65,7 @@ fn adapter_preserves_bytes_and_sections_around_foreign_data() {
     };
     assert_eq!(first.id().segment, 0);
     assert_eq!(second.id().segment, 1);
-    assert_eq!(first.id().code, second.id().code);
+    assert_eq!(first.id().owner, second.id().owner);
     assert_eq!(first.id().field, second.id().field);
     assert_eq!(first.id().instance, second.id().instance);
 }

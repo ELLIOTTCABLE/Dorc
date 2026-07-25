@@ -195,7 +195,7 @@ speculatively - not because they are forbidden, but because you lack the
 engine's knowledge of what is actually missing. The workflow that replaces
 speculation: land the verdict member; then, if a runnable Dorc is available
 (build with `mise exec -- cargo build --workspace` from `spike/`; invocation
-details in the cli crate's `CLAUDE.md` and `spike/e2e/run.sh`), run a plan over
+details in the cli crate's `CLAUDE.md` and `spike/crates/cli/tests/e2e.rs`), run a plan over
 the motivating book and READ IT. The plan's reason strings and hints name what
 is limiting it - which sites stayed unmodeled, which wall degrades the tail,
 what one description would recover - with topology-knowledge you do not have.
@@ -293,8 +293,8 @@ comments restating what self-evident shell does.
    on a fresh host.
 4. If the spike's harness is available and the task includes fixtures: e2e
    fixtures use INERT MOCKS only (`PATH=mocks-only` stubs) - never real
-   mutators; `sh e2e/run.sh` is the only sanctioned executor of fixture
-   material.
+   mutators; the central e2e runner (`cargo test -p dorc-cli --test e2e`) is
+   the only sanctioned executor of fixture material.
 5. Report honestly: every judgment call with its rationale; every shape you
    declined and why; confidence marks (+SURE / ~SUSPECT / -GUESS) on the
    claims your research could not fully ground; every question that needs a

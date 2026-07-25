@@ -67,17 +67,18 @@
 use core::marker::PhantomData;
 use std::collections::{BTreeMap, BTreeSet};
 
+use dorc_aid::diag::Diag;
+use dorc_aid::narrative::{AuthoredReason, ChannelCoverage, DemoteTag, MintSpan};
+use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, TrustTier};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
-use dorc_core::diag::Diag;
-use dorc_core::evidence::{AuthoredReason, ChannelCoverage, DemoteTag, MintSpan};
 use dorc_core::{
-    AstId, ByVouch, Carrier, Channel, CollapseEvidence, CollapseKind, Dialect, EntityRef,
-    FactBacking, Grade, Interner, KindId, Observable, OracleFileId, Predicted, Rc, Rung, Symbol,
-    TrustTier, Verdict,
+    AstId, ByVouch, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId, Observable,
+    OracleFileId, Predicted, Rc, Rung, Symbol, Verdict,
 };
+use dorc_oracle::touches::DISTURBS_SUFFIX;
 use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
 
@@ -831,7 +832,7 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
 /// back-map is [`Step::ast`]; the id is this leaf's position in source order.
 ///
 /// Defined in `core` (`dec-seam-ownership`, the `dac-B` shared vocabulary) and
-/// re-exported here: the round-22 structured diagnostic ([`dorc_core::diag::SiteId`])
+/// re-exported here: the round-22 structured diagnostic ([`dorc_aid::diag::SiteId`])
 /// keys on it, so the base crate owns it and `plan` shares the one type rather than a
 /// parallel one (`inv-site-keyed-results`).
 pub use dorc_core::LeafId;
@@ -1192,7 +1193,7 @@ fn resolve_vouch_operands(
 #[must_use]
 #[expect(
     clippy::too_many_lines,
-    reason = "the ONE composition every driver shares (vouch lift + decline-evidence mint); \
+    reason = "the ONE composition every driver shares (vouch lift + decline-narrative mint); \
               splitting it would scatter the single vouch-authoring path"
 )]
 pub fn build_vouches(
@@ -1200,7 +1201,7 @@ pub fn build_vouches(
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
     interner: &mut Interner,
-) -> (Carrier<Vouches>, Vec<CollapseEvidence>) {
+) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
         VerdictResolution, VerdictSet, check_commands, classify_decline, evaluate_verdict,
@@ -1208,8 +1209,8 @@ pub fn build_vouches(
     };
 
     let mut diags = Vec::new();
-    // C5 (`27V` Lane A): decision-inert VerdictDecline evidence beside the no-vouch-⇒-run collapse.
-    let mut collapse_evidence: Vec<CollapseEvidence> = Vec::new();
+    // C5 (`27V` Lane A): the decision-inert VerdictDecline narrative beside the no-vouch-⇒-run collapse.
+    let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
     let verdict_sets: Vec<VerdictSet> = oracle_srcs
         .iter()
         .map(|src| {
@@ -1293,10 +1294,10 @@ pub fn build_vouches(
                     arm: MintSpan(emit_span),
                     arm_file,
                 });
-                collapse_evidence.push(CollapseEvidence::new(
+                collapse_narrative.push(CollapseNarrative::new(
                     TrustTier::Vouched,
                     CollapseKind::VerdictDecline {
-                        site: dorc_core::diag::SiteId::leaf(LeafId(
+                        site: dorc_aid::diag::SiteId::leaf(LeafId(
                             u32::try_from(leaf_idx).unwrap_or(u32::MAX),
                         )),
                         arm: MintSpan(info.arm_span.unwrap_or(verdict.name_span)),
@@ -1328,7 +1329,7 @@ pub fn build_vouches(
             .with_defining_span(defining, arm_file);
         vouches.insert(node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
-    (Carrier::new(vouches, diags), collapse_evidence)
+    (Carrier::new(vouches, diags), collapse_narrative)
 }
 
 /// Mint the elide/guard VOUCHES for wrapped-ENTERING BOOK sites (`27C` §3 / lane-integration
@@ -1476,10 +1477,10 @@ pub struct SurvivalReport {
     /// (the cross-author demote). The why-lens surfaces "site N: poisoned via `<kind>.reaches()`".
     /// Empty when no reach expansion poisoned an elision.
     reach_poisonings: Vec<(LeafId, KindId)>,
-    /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` evidence the
+    /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` narratives the
     /// survival walk mints beside its dispositions (`two-plane-aid-law`; steers nothing). Mint-pass
     /// ordered (`inv-determinism`); threaded to the why-lens seam by the cli (d4 renders).
-    collapse_evidence: Vec<CollapseEvidence>,
+    collapse_narrative: Vec<CollapseNarrative>,
 }
 
 impl SurvivalReport {
@@ -1497,11 +1498,11 @@ impl SurvivalReport {
         self.reach_poisonings.iter().copied()
     }
 
-    /// The C5 wall/demotion collapse-evidence (`27V` Lane A): decision-inert records the cli unions
+    /// The C5 wall/demotion collapse-narratives (`27V` Lane A): decision-inert records the cli unions
     /// onto the why-lens seam. Read-only display tier (`two-plane-aid-law`).
     #[must_use]
-    pub fn collapse_evidence(&self) -> &[CollapseEvidence] {
-        &self.collapse_evidence
+    pub fn collapse_narrative(&self) -> &[CollapseNarrative] {
+        &self.collapse_narrative
     }
 }
 
@@ -1947,13 +1948,13 @@ fn shim_dispatch_script(fname: &str, fdef: &str) -> String {
     format!("#!/bin/sh\n{fdef}\n{fname} \"$@\"\n")
 }
 
-/// A ship decision for one escalated derivation site (24E §2): the stripped `<provider>__touches`
+/// A ship decision for one escalated derivation site (24E §2): the stripped `<provider>__disturbs`
 /// funcdef + the host tool the body reached (display locus). Returned by the cli's derive-closure,
 /// which owns the oracle sources + the `evaluate_touches` escalation check — so `plan` stays
 /// oracle-free (the same seam-shape as [`compile_probe`]'s `ship_body`).
 #[derive(Debug, Clone)]
 pub struct DerivationShip {
-    /// The stripped `<provider>__touches` funcdef (strip-only; `dorc_oracle::predict::strip_touches`).
+    /// The stripped `<provider>__disturbs` funcdef (strip-only; `dorc_oracle::predict::strip_touches`).
     pub sh: String,
     /// The host tool the touches body reached (e.g. `dpkg -L`) — a display locus for the fork-4B
     /// advisory + the `Derived` footprint origin (24E §9). `inv-referent-agnostic`: never decoded.
@@ -1971,11 +1972,11 @@ pub struct ProbeDerivation {
     pub site: LeafId,
     /// The CFG node — re-keys the readback footprint into the `CfgNodeId`-keyed [`TrustedFootprints`].
     pub node: CfgNodeId,
-    /// The book command word (argv[0]) whose `__touches` this ships.
+    /// The book command word (argv[0]) whose `__disturbs` this ships.
     pub provider: Symbol,
     /// The site's argv after the command word (F-quoted at render).
     pub argv: Vec<Symbol>,
-    /// The stripped `<provider>__touches` funcdef.
+    /// The stripped `<provider>__disturbs` funcdef.
     pub sh: String,
     /// The host tool the body reached (display locus for the `Derived` origin + advisory).
     pub call: String,
@@ -2067,7 +2068,7 @@ pub struct ReachProbe {
     pub coord_label: String,
     /// The reach-function KIND's display name (`package`) for the provenance comment.
     pub kind_label: String,
-    /// The per-arm wrapper funcname (`package__reaches_1`) — the shipped def + invocation agree.
+    /// The per-arm wrapper funcname (`package__disturbance_reaches_only_1`) — def + invocation agree.
     pub arm_fn: String,
     /// The arm index (readback demux — `reach <coord> arm=<index>`; the controller maps it to kind).
     pub arm_index: usize,
@@ -2123,12 +2124,13 @@ impl ReachPlan {
     }
 }
 
-/// The `<provider>__touches` derivation funcname (24E §2/§9), mangled IDENTICALLY to
-/// [`predict_fn_name`] so a site's shipped def (via `strip_touches`) and its invocation agree
-/// byte-for-byte. Referent-agnostic: passed to the host, never branched on.
+/// The `<provider>__disturbs` derivation funcname (24E §2/§9), mangled IDENTICALLY to
+/// [`predict_fn_name`] and suffixed from the SAME constant `strip_touches` mangles the shipped
+/// funcdef with, so a site's def and its invocation agree byte-for-byte. Referent-agnostic:
+/// passed to the host, never branched on.
 fn touches_fn_name(interner: &Interner, provider: Symbol) -> String {
     format!(
-        "{}__touches",
+        "{}{DISTURBS_SUFFIX}",
         dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(
             interner.resolve(provider)
         )),
@@ -2138,7 +2140,7 @@ fn touches_fn_name(interner: &Interner, provider: Symbol) -> String {
 impl DerivationPlan {
     /// Render the derivation-probe as read-only, self-reporting sh, APPENDED to the convergence
     /// probe in the SAME phase-1 block (no shebang — the e2e shebang-split keeps it in phase-1).
-    /// Each provider's stripped `<provider>__touches` funcdef is emitted once (deduped, re-emitted
+    /// Each provider's stripped `<provider>__disturbs` funcdef is emitted once (deduped, re-emitted
     /// on a body change — sh's last-writer-wins, exactly as [`ProbePlan::render_sh`] does for the
     /// multi-body provider), then invoked per SITE with the site's argv, its stdout coord-lines
     /// re-keyed to `deriv <leafid> coord=…` records. Empty ⇒ `""` (nothing appended).
@@ -3304,10 +3306,10 @@ fn wall_walk_survival(
                         survival::DemoteReason::Poisoned { .. } => DemoteTag::Poisoned,
                         survival::DemoteReason::MayAlias => DemoteTag::MayAlias,
                     };
-                    report.collapse_evidence.push(CollapseEvidence::new(
+                    report.collapse_narrative.push(CollapseNarrative::new(
                         TrustTier::Derived,
                         CollapseKind::Demotion {
-                            site: dorc_core::diag::SiteId::leaf(step.leaf),
+                            site: dorc_aid::diag::SiteId::leaf(step.leaf),
                             reason: tag,
                         },
                     ));
@@ -3320,7 +3322,7 @@ fn wall_walk_survival(
         // casts no shadow, so it is skipped here.
         if *is_mutator && matches!(step.disposition, Disposition::Run) {
             // C5 aid: a running mutator forms an Effect-channel wall (`rul-only-oracle-bytes-ship`).
-            report.collapse_evidence.push(CollapseEvidence::new(
+            report.collapse_narrative.push(CollapseNarrative::new(
                 TrustTier::Derived,
                 CollapseKind::WallFormation {
                     participant: step.leaf,
@@ -3807,10 +3809,63 @@ impl Plan {
     /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
     #[must_use]
     pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
-        use dorc_core::diag::{DiagCode, RenderHeredocRefused, SiteId};
+        use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
+        self.refused_render_steps(ast)
+            .into_iter()
+            .map(|(step, verb)| {
+                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
+                // most-improved case: an inline literal becomes a first-class typed variant the
+                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
+                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
+                // the erasability identity plane are unchanged. The interner resolves no excerpt
+                // here (the payload carries only a site) but is threaded for the shared lowering.
+                Diag::new(
+                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                        site: SiteId::leaf(step.leaf),
+                        verb,
+                        command: command_text_oneline(&step.sh),
+                    }),
+                    ast.node(step.ast).span,
+                )
+            })
+            .collect()
+    }
+
+    /// The `RenderRefusal` collapse narratives paired one-for-one with
+    /// [`render_refusal_diagnostics`](Self::render_refusal_diagnostics)
+    /// (`AID-NEEDS:law-collapse-mints-narrative`): refusing a LICENSED elision is a
+    /// safety-narrowing, so it mints a decision-inert record like every other one. Pairing is by
+    /// construction — both walk [`refused_render_steps`](Self::refused_render_steps) — and pinned
+    /// by a cardinality gate, the same posture the merge mint carries.
+    ///
+    /// Decision-inert and, today, unconsumed by any render: the push disclosure is the
+    /// `render-heredoc-refused` diagnostic, and the narrative exists for the why-chain that does
+    /// not yet read narratives (`289:seam-narrative-render-unconsumed`).
+    #[must_use]
+    pub fn render_refusal_narratives(&self, ast: &Ast) -> Vec<CollapseNarrative> {
+        self.refused_render_steps(ast)
+            .into_iter()
+            .map(|(step, _)| {
+                // Spelled literally, not through `render_refusal_heredoc`: the mint census is a
+                // lexical grep for `CollapseKind::<Variant>` and cannot see a named constructor.
+                CollapseNarrative::new(
+                    TrustTier::Derived,
+                    CollapseKind::RenderRefusal {
+                        site: dorc_core::SiteId::leaf(step.leaf),
+                        cause: dorc_aid::narrative::RenderRefusalTag::Heredoc,
+                    },
+                )
+            })
+            .collect()
+    }
+
+    /// The leaves the disposition layer LICENSED to elide that the leaf-exact render must REFUSE,
+    /// each with its disposition-aware verb. A GUARD refusal says "guard" (X-heredoc's
+    /// expected-diagnostics pins it), a Replace/Omit refusal says "elide".
+    fn refused_render_steps(&self, ast: &Ast) -> Vec<(&Step, &'static str)> {
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
-        let mut diags = Vec::new();
+        let mut refused = Vec::new();
         for step in &self.steps {
             let would_elide = match &step.disposition {
                 // A Replace value-substitutes the span; a Guard EDITS it to `( check ) || <orig>` —
@@ -3821,30 +3876,15 @@ impl Plan {
                 Disposition::Run => false,
             };
             if would_elide && leaf_has_heredoc(ast, step.ast) {
-                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
-                // most-improved case: an inline literal becomes a first-class typed variant the
-                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
-                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
-                // the erasability identity plane are unchanged. The interner resolves no excerpt
-                // here (the payload carries only a site) but is threaded for the shared lowering.
-                // The verb is disposition-aware: a GUARD refusal says "guard" (X-heredoc's
-                // expected-diagnostics pins `guard`), a Replace/Omit refusal says "elide".
                 let verb = if matches!(step.disposition, Disposition::Guard(_)) {
                     "guard"
                 } else {
                     "elide"
                 };
-                diags.push(Diag::new(
-                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
-                        site: SiteId::leaf(step.leaf),
-                        verb,
-                        command: command_text_oneline(&step.sh),
-                    }),
-                    ast.node(step.ast).span,
-                ));
+                refused.push((step, verb));
             }
         }
-        diags
+        refused
     }
 
     /// Collect the span edits the leaf-exact render applies (arch-1) — one `(Span,
@@ -4932,8 +4972,8 @@ apt_get__is_converged() { return 0; }
         )
         .value;
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
-        let (_vouches, evidence) = build_vouches(&[verdict_src], &classes, &value, &mut i);
-        let mut decline_leaves: Vec<u32> = evidence
+        let (_vouches, narrative) = build_vouches(&[verdict_src], &classes, &value, &mut i);
+        let mut decline_leaves: Vec<u32> = narrative
             .iter()
             .filter_map(|ev| match ev.kind() {
                 CollapseKind::VerdictDecline { site, .. } => Some(site.leaf.0),
@@ -4964,6 +5004,17 @@ apt_get__is_converged() { return 0; }
             probe_leaves, decline_leaves,
             "the probe checks key by the same positional leaves the declines do"
         );
+
+        // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): a body that REACHES
+        // its check vouches rather than declines, so the same two sites mint no `VerdictDecline`.
+        let vouching_src = "apt_get__is_converged() { dpkg -s \"$2\" : package:\"$2\"@installed ;}";
+        let (_vouches, none) = build_vouches(&[vouching_src], &classes, &value, &mut i);
+        assert!(
+            !none
+                .iter()
+                .any(|ev| matches!(ev.kind(), CollapseKind::VerdictDecline { .. })),
+            "a reached, vouching verdict body is no collapse and narrates nothing: {none:?}"
+        );
     }
 
     #[test]
@@ -4982,7 +5033,7 @@ apt_get__is_converged() { return 0; }
     #[test]
     fn compile_derivations_ships_escalated_wall_candidate_and_renders_deriv_scaffold() {
         // 24E §2: a WALL-CANDIDATE site whose touches() ESCALATED (the closure returns a ship)
-        // becomes one ProbeDerivation; render_sh appends the stripped __touches def + a per-site
+        // becomes one ProbeDerivation; render_sh appends the stripped __disturbs def + a per-site
         // `deriv N coord=` scaffold to the phase-1 probe (no second shebang). A non-escalating
         // provider (the un-oracled systemctl, not even a wall candidate) yields no derivation.
         let mut i = Interner::default();
@@ -4991,7 +5042,7 @@ apt_get__is_converged() { return 0; }
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let (classes, _why, kills, _kill_coords, _fact_backings, _collapse_evidence) =
+        let (classes, _why, kills, _kill_coords, _fact_backings, _collapse_narrative) =
             dorc_analysis::effect::classify_with_why_diags(
                 &cfg,
                 &value,
@@ -5015,7 +5066,7 @@ apt_get__is_converged() { return 0; }
                 // forward munge keys the book word `apt-get` on the segment `apt_get`.
                 (dorc_oracle::predict::map_provider_name(i.resolve(provider)) == "apt_get").then(
                     || DerivationShip {
-                        sh: "apt_get__touches() { apt-manifest \"$1\"; }".to_string(),
+                        sh: "apt_get__disturbs() { apt-manifest \"$1\"; }".to_string(),
                         call: "apt-manifest".to_string(),
                     },
                 )
@@ -5033,7 +5084,7 @@ apt_get__is_converged() { return 0; }
         );
         let sh = derivations.render_sh(&records::Nonce::spike_default(), &i);
         assert!(
-            sh.contains("apt_get__touches() { apt-manifest"),
+            sh.contains("apt_get__disturbs() { apt-manifest"),
             "the stripped touches def ships verbatim: {sh}"
         );
         assert!(
@@ -5047,6 +5098,130 @@ apt_get__is_converged() { return 0; }
         assert!(
             !sh.starts_with("#!/bin/sh"),
             "no second shebang — the derivation-probe rides the SAME phase-1 block: {sh}"
+        );
+    }
+
+    /// `289:rul-touches-mismatch-own-lane` — the shipped DEF name and the INVOKED name of the
+    /// derivation lane must be one string. They drifted apart once (the strip mangled to
+    /// `__disturbs` while the invocation still spelled `__touches`), so every shipped derivation
+    /// probe hit rc 127, emitted nothing, and collapsed its footprint to a wall: safe, but the
+    /// whole survival product silently dead. Driven through the REAL strip rather than a
+    /// hand-written fixture, because a hand-written fixture is exactly what hid the bug.
+    #[test]
+    fn derivation_shipped_def_name_equals_the_invoked_name() {
+        let authored = "\
+apt_get__disturbs() {
+   verb=$1; shift
+   case $verb in
+   install) apt-manifest \"$1\" ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let lifted = dorc_oracle::touches::TouchesSet::lift(&mut i, authored);
+        let provider = lifted.value.providers().next().expect("one provider");
+        let body = lifted.value.get(provider).expect("the disturbs funcdef");
+        let stripped = dorc_oracle::predict::strip_touches(authored, body, &i);
+        let def_name = stripped
+            .split_once('(')
+            .expect("the stripped funcdef opens with `<name>(`")
+            .0
+            .to_owned();
+
+        let book_word = i.intern("apt-get");
+        assert_eq!(
+            touches_fn_name(&i, book_word),
+            def_name,
+            "the derivation invocation must name the funcdef the strip actually ships"
+        );
+
+        let plan = DerivationPlan {
+            derivations: vec![ProbeDerivation {
+                site: LeafId(0),
+                node: CfgNodeId(0),
+                provider: book_word,
+                argv: vec![i.intern("install")],
+                sh: stripped,
+                call: "apt-manifest".to_owned(),
+            }],
+        };
+        let sh = plan.render_sh(&records::Nonce::spike_default(), &i);
+        assert!(
+            sh.contains(&format!("{def_name}() {{")) || sh.contains(&format!("{def_name}() \n")),
+            "the def ships under the mangled name: {sh}"
+        );
+        assert!(
+            sh.contains(&format!("\n{def_name} 'install' |")),
+            "the invocation calls that exact name: {sh}"
+        );
+    }
+
+    /// The GUARD lane's half of the same law (`289:rul-touches-mismatch-own-lane`): the funcname
+    /// `strip_verdict` mangles the shipped preamble to must equal the one the guard invokes.
+    /// Both sides now read `VERDICT_SUFFIX`; this pins that they still meet after the strip, and
+    /// covers both invocation spellings — `verdict_fn_name` (keyed on the BOOK word) and
+    /// `build_vouches` (keyed on the lifted funcdef provider) must land on one string.
+    #[test]
+    fn verdict_shipped_def_name_equals_the_invoked_name() {
+        let authored = "\
+apt_get__is_converged() {
+   case $1 in
+   install) dpkg-query -W \"$2\" >/dev/null 2>&1 ;;
+   *) return 2 ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let lifted = dorc_oracle::verdict::VerdictSet::lift(&mut i, authored);
+        let provider = lifted.value.providers().next().expect("one provider");
+        let body = lifted.value.get(provider).expect("the verdict funcdef");
+        let def_name = dorc_oracle::predict::strip_verdict(authored, body, &i)
+            .split_once('(')
+            .expect("the stripped funcdef opens with `<name>(`")
+            .0
+            .to_owned();
+
+        let book_word = i.intern("apt-get");
+        assert_eq!(
+            verdict_fn_name(&i, book_word),
+            def_name,
+            "the guard invocation must name the funcdef the strip actually ships"
+        );
+        assert_eq!(
+            format!(
+                "{}{VERDICT_SUFFIX}",
+                dorc_oracle::to_funcname_segment(i.resolve(provider))
+            ),
+            def_name,
+            "build_vouches's own spelling must land on the same name"
+        );
+    }
+
+    /// The reach lane's half of the same law (`289:rul-touches-mismatch-own-lane`): a dynamic
+    /// `reaches()` arm ships as an engine-synthesized per-arm wrapper, so its def and invocation
+    /// must both be the ONE `arm_fn` string the cli built — nothing may re-derive either side.
+    #[test]
+    fn reach_arm_shipped_def_name_equals_the_invoked_name() {
+        let arm_fn = format!(
+            "sm_dorc_Package{}_0",
+            dorc_oracle::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX
+        );
+        let plan = ReachPlan {
+            probes: vec![ReachProbe {
+                coord_label: "sm.dorc.Package:nginx".to_owned(),
+                kind_label: "sm.dorc.Package".to_owned(),
+                arm_fn: arm_fn.clone(),
+                arm_index: 0,
+                entity_text: "nginx".to_owned(),
+                arm_sh: format!("{arm_fn}() {{ dpkg -L \"$1\" ; }}"),
+            }],
+        };
+        let sh = plan.render_sh(&records::Nonce::spike_default());
+        assert!(
+            sh.contains(&format!("{arm_fn}() {{ dpkg -L")),
+            "the per-arm wrapper ships under arm_fn: {sh}"
+        );
+        assert!(
+            sh.contains(&format!("{arm_fn} 'nginx' |")),
+            "the invocation calls that exact name: {sh}"
         );
     }
 
@@ -5959,7 +6134,7 @@ apt_get__is_converged() { return 0; }
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (classified, _why, kills_found, _kill_coords, _fact_backings, _collapse_evidence) =
+        let (classified, _why, kills_found, _kill_coords, _fact_backings, _collapse_narrative) =
             dorc_analysis::effect::classify_with_why_diags(
                 &cfg,
                 &value,
@@ -6284,8 +6459,8 @@ apt_get__is_converged() { return 0; }
     // `strawman24-nonsurvive-hit` e2e case; no plan-level duplicate here.)
 
     #[test]
-    fn survival_walk_mints_wall_and_demotion_evidence() {
-        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the running curl mutator mints
+    fn survival_walk_mints_wall_and_demotion_narratives() {
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the running curl mutator mints
         // a WallFormation and the demoted nginx a Demotion — DERIVED from the collapse, all Derived.
         let plan = survival_plan_empty_footprints(
             "apt-get install -y curl\napt-get install -y nginx\n",
@@ -6297,7 +6472,7 @@ apt_get__is_converged() { return 0; }
                 }
             },
         );
-        let ev = plan.survival_report.collapse_evidence();
+        let ev = plan.survival_report.collapse_narrative();
         assert!(
             ev.iter()
                 .any(|e| matches!(e.kind(), CollapseKind::WallFormation { .. })),
@@ -6310,7 +6485,27 @@ apt_get__is_converged() { return 0; }
         );
         assert!(
             ev.iter().all(|e| e.tier() == TrustTier::Derived),
-            "survival-walk evidence is engine-derived"
+            "survival-walk narratives are engine-derived"
+        );
+
+        // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): with nothing running
+        // there is no wall and nothing to demote, so the same walk must mint neither class. Without
+        // this, a mint that fired unconditionally would read as green above.
+        let converged = survival_plan_empty_footprints(
+            "apt-get install -y curl\napt-get install -y nginx\n",
+            |_| Verdict::Converged,
+        );
+        assert!(
+            !converged
+                .survival_report
+                .collapse_narrative()
+                .iter()
+                .any(|e| matches!(
+                    e.kind(),
+                    CollapseKind::WallFormation { .. } | CollapseKind::Demotion { .. }
+                )),
+            "an all-converged book forms no wall and demotes nothing, so it narrates neither: {:?}",
+            converged.survival_report.collapse_narrative()
         );
     }
 

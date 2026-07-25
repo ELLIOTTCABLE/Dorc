@@ -58,8 +58,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::evidence::{DeclineClass, DeclineGate};
-use dorc_core::{Carrier, Interner, ProviderId, Rc, Span, Symbol};
+use dorc_aid::Carrier;
+use dorc_aid::narrative::{DeclineClass, DeclineGate};
+use dorc_core::{Interner, ProviderId, Rc, Span, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::report::recognized_class;
@@ -799,7 +800,7 @@ x__is_converged() {
 
     #[test]
     fn decline_gate_names_the_reached_decline_shape() {
-        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the gate is DERIVED from the
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the gate is DERIVED from the
         // reached path, never a hand-set tag; a Vouched trace has no gate.
         assert_eq!(
             gate("x__is_converged() { return 2; }\n", &["a"]),

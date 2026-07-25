@@ -1,0 +1,9 @@
+---
+code: cli-file-permission-denied
+when-fires: an input file exists but this process may not read it. cli/lib.rs humane_read_error, PermissionDenied arm. {kind} and {path}.
+why: the read-error trichotomys second arm: the file is there, so the repair is permissions, not the path - a distinction the raw OS string buries.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[cli-file-permission-denied]: sm cannot read oracle
+   `/etc/dorc/nginx.oracle.sh`: permission denied

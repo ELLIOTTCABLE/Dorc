@@ -1,5 +1,0 @@
-#!/bin/sh
-# INERT mock: logs its argv, prints NO version (diverged host) ⇒ the piped grep -q finds no
-# match ⇒ the || fires. Mutates nothing.
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0

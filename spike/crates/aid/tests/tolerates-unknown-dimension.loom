@@ -1,0 +1,21 @@
+---
+code: tolerates-unknown-dimension
+when-fires: an unknown context-dimension token appears on a `tolerates:` vouch. oracle/entry.rs collect_tolerance. `{expected}` = the known-dimension list.
+why: 27C §2: the mark vouches nothing and the site stays walled on that dimension (engine-owned closed vocabulary).
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+foo__is_converged() { foo "$@" : safe-across netns2; }
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  warning[tolerates-unknown-dimension]: sm `netns2` is not a known context dimension on a `tolerates:` vouch (expected one of user, fs-view, netns); the mark vouches nothing and the site stays walled on that dimension (`27C` §2).
+   --> oracle.sh:2:32
+   |
+ 2 | foo__is_converged() { foo "$@" : safe-across netns2; }
+   |                                \__________________/
+
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

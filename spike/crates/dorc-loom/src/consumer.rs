@@ -1,5 +1,5 @@
 //! The Dorc case renderer and compiled-edit applier (`282` §5 · §13), implemented against a mutable
-//! owned-catalog mirror ([`dorc_core::catalog::OwnedEntry`]).
+//! owned-catalog mirror ([`dorc_aid::catalog::OwnedEntry`]).
 //!
 //! World-form dispatch (`283:dec-world-two-forms`): a `-- world --`-only case is WORLD-AS-PAYLOAD (a
 //! canonical constructor keyed by slug — the phase-4 floor for the artificial/expensive-world codes);
@@ -11,15 +11,20 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::fs;
 
-use dorc_core::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
-use dorc_core::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
-    HostEvidenceRefusalKind, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
+use dorc_aid::Severity;
+use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
+use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
+use dorc_aid::diag::{
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
+    CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
+    Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
+    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
+    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
+    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
     render_staged_cli_parts,
 };
-use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
+use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{
     Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
     ReplayDriver, ReplayInput, ReplayResult, RunEnv, RunError, drive_case, drive_case_with_inputs,
@@ -99,6 +104,7 @@ impl DorcEditableBaseline {
 #[derive(Debug)]
 pub struct DorcConsumer {
     mirror: Vec<OwnedEntry>,
+    arrangements: Vec<OwnedArrangement>,
 }
 
 /// Why applying a compiled section to the in-memory mirror refused.
@@ -106,8 +112,18 @@ pub struct DorcConsumer {
 pub enum DorcApplyRefusal {
     /// The selected diagnostic code is absent from the mirror.
     MissingCode(String),
-    /// The selected section is not a catalog prose field.
+    /// The selected arrangement slug is absent from the registry.
+    MissingArrangement(String),
+    /// The selected section is neither a catalog prose field nor the arrangement register.
     IllegalField(&'static str),
+    /// An arrangement edit carried a `{{name}}` variable; registry entries store WORDS, never
+    /// templates (`289` §2o: the registry never grows grammar machinery).
+    ArrangementTakesNoVariables(String),
+    /// The edited entry holds a WORD SEQUENCE, and nothing re-splits an edited string back into
+    /// its words. Storage stays sequence-shaped for a future chain narration
+    /// (`289:rider-arrangement-home-anticipates-chains`); the edit path refuses rather than
+    /// guessing, because nothing chain-shaped is built yet.
+    ArrangementIsSequenceStructured(String),
 }
 
 impl Default for DorcConsumer {
@@ -117,24 +133,40 @@ impl Default for DorcConsumer {
 }
 
 impl DorcConsumer {
-    /// A consumer seeded from the compiled-in catalog (the carry-forward starting state).
+    /// A consumer seeded from the compiled-in catalog and arrangement registry (the
+    /// carry-forward starting state for both tables).
     #[must_use]
     pub fn new() -> Self {
         DorcConsumer {
             mirror: owned_catalog(),
+            arrangements: owned_arrangements(),
         }
     }
 
-    /// The current mirror (test/inspection surface).
+    /// The current catalog mirror (test/inspection surface).
     #[must_use]
     pub fn mirror(&self) -> &[OwnedEntry] {
         &self.mirror
+    }
+
+    /// The current arrangement mirror (test/inspection surface).
+    #[must_use]
+    pub fn arrangements(&self) -> &[OwnedArrangement] {
+        &self.arrangements
     }
 
     /// Overwrite a code's message in the mirror (models a raw catalog hand-edit for the fixpoint gate).
     pub fn set_message(&mut self, slug: &str, message: Option<String>) {
         if let Some(e) = self.mirror.iter_mut().find(|e| e.slug == slug) {
             e.message = message;
+        }
+    }
+
+    /// Overwrite an arrangement entry's words in the mirror (the [`Self::set_message`] twin: it
+    /// models a raw registry hand-edit, and stages the word-sequence state nothing authors yet).
+    pub fn set_arrangement_words(&mut self, slug: &str, words: OwnedWords) {
+        if let Some(entry) = self.arrangements.iter_mut().find(|e| e.slug == slug) {
+            entry.words = words;
         }
     }
 
@@ -166,14 +198,17 @@ impl DorcConsumer {
         key: &SectionKey,
         compiled: &crate::CompiledSection,
     ) -> Result<(), DorcApplyRefusal> {
+        if key.field == crate::ARRANGEMENT_FIELD {
+            return self.apply_arrangement_edit(key, compiled);
+        }
         if !matches!(key.field, "message" | "help") {
             return Err(DorcApplyRefusal::IllegalField(key.field));
         }
         let entry = self
             .mirror
             .iter_mut()
-            .find(|entry| entry.slug == key.code)
-            .ok_or_else(|| DorcApplyRefusal::MissingCode(key.code.clone()))?;
+            .find(|entry| entry.slug == key.owner)
+            .ok_or_else(|| DorcApplyRefusal::MissingCode(key.owner.clone()))?;
         let template = compiled
             .fragments()
             .iter()
@@ -193,8 +228,8 @@ impl DorcConsumer {
             .chain(entry.help.iter())
             .flat_map(|template| parse_template(template).unwrap_or_default())
             .filter_map(|part| match part {
-                dorc_core::catalog::TemplatePart::Hole(name) => Some(name),
-                dorc_core::catalog::TemplatePart::Literal(_) => None,
+                dorc_aid::catalog::TemplatePart::Hole(name) => Some(name),
+                dorc_aid::catalog::TemplatePart::Literal(_) => None,
             })
             .fold(Vec::new(), |mut params, name| {
                 if !params.contains(&name) {
@@ -202,6 +237,44 @@ impl DorcConsumer {
                 }
                 params
             });
+        Ok(())
+    }
+
+    /// Apply one compiled arrangement section to the registry mirror — the chrome twin of the
+    /// catalog path above, and the whole of "an arrangement-word edit in a transcript flows to
+    /// its registry entry exactly as catalog prose does" (`289` §2o).
+    ///
+    /// The edit lands on the entry the RENDER read: the occurrence's own entry when it has one,
+    /// else the whole-slug entry — so an edit to any one occurrence of shared chrome updates the
+    /// shared words, which is the truth of a shared entry.
+    fn apply_arrangement_edit(
+        &mut self,
+        key: &SectionKey,
+        compiled: &crate::CompiledSection,
+    ) -> Result<(), DorcApplyRefusal> {
+        let mut words = Vec::new();
+        for fragment in compiled.fragments() {
+            match fragment {
+                crate::CompiledFragment::Text(text) => words.push(text.clone()),
+                crate::CompiledFragment::Variable(_) => {
+                    return Err(DorcApplyRefusal::ArrangementTakesNoVariables(
+                        key.owner.clone(),
+                    ));
+                }
+            }
+        }
+        let index = arrangement_index(&self.arrangements, &key.owner, key.instance)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        let entry = self
+            .arrangements
+            .get_mut(index)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        if entry.words.words().is_some_and(|current| current.len() > 1) {
+            return Err(DorcApplyRefusal::ArrangementIsSequenceStructured(
+                key.owner.clone(),
+            ));
+        }
+        entry.words = OwnedWords::Authored(vec![words.concat()]);
         Ok(())
     }
 
@@ -218,12 +291,15 @@ impl DorcConsumer {
     /// # Errors
     /// Returns the case-world materialization refusal.
     pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+        if let Some(slug) = case.frontmatter().scalar("arrangement") {
+            return self.arrangement_baseline(slug);
+        }
         let (diag, src, filename) = Self::world_of(case)?;
         let interner = Interner::default();
         let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
         let render = to_editable_render(&parts);
         let variables = editable_variables(&render)?;
-        let all_variables = dorc_core::diag::params_of(&diag.code, &interner)
+        let all_variables = dorc_aid::diag::params_of(&diag.code, &interner)
             .into_iter()
             .filter(|(name, _)| !is_foreign_param(name))
             .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
@@ -244,6 +320,10 @@ impl DorcConsumer {
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens = exact_words(command)?;
+        if let Some(slug) = arrangement_page_slug(case, &tokens) {
+            let parts = self.arrangement_page(slug).ok()?;
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         if let ["dorc-loom", "vars", mode, path] = tokens.as_slice()
             && matches!(*mode, "--used" | "--all")
             && case_relative_path(path)
@@ -296,6 +376,11 @@ impl DorcConsumer {
             );
             return Some(ReplayResult::editable(to_editable_render(result.human())));
         }
+        if let Some(diag) = fire_invocation_error(case, &tokens) {
+            let interner = Interner::default();
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         let plan = parse_direct_plan(&tokens)?;
         let source = materialized_source(case, context, plan.book)?;
         if let Some(input) = plan.input {
@@ -321,11 +406,20 @@ impl DorcConsumer {
         render: EditableRender<SectionKey, SectionVariableId>,
     ) -> Result<DorcEditableBaseline, String> {
         let variables = editable_variables(&render)?;
+        // An arrangement case has no diagnostic and no payload: registry entries store WORDS, so
+        // the variable inventory is empty by construction rather than absent by failure.
+        if case.frontmatter().scalar("arrangement").is_some() {
+            return Ok(DorcEditableBaseline {
+                render,
+                variables,
+                all_variables: BTreeMap::new(),
+            });
+        }
         let diag = Self::world_of(case)
             .map(|(diag, _, _)| diag)
             .or_else(|_| Self::whylog_diagnostic(case))?;
         let interner = Interner::default();
-        let all_variables = dorc_core::diag::params_of(&diag.code, &interner)
+        let all_variables = dorc_aid::diag::params_of(&diag.code, &interner)
             .into_iter()
             .filter(|(name, _)| !is_foreign_param(name))
             .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
@@ -334,6 +428,35 @@ impl DorcConsumer {
             render,
             variables,
             all_variables,
+        })
+    }
+
+    /// One whole-page arrangement's part stream, resolved against the COMMITTED registry so the
+    /// span carries a stable slug. A case naming a slug with no row yet renders nothing: its row
+    /// arrives by promotion and the build sees it after a rebuild — the same generation lag the
+    /// catalog has, and the same assertion.
+    fn arrangement_page(&self, slug: &str) -> Result<dorc_aid::tagged::RenderParts, String> {
+        let stable = dorc_aid::arrangement::ARRANGEMENTS
+            .iter()
+            .find(|entry| entry.slug == slug)
+            .map(|entry| entry.slug)
+            .ok_or_else(|| {
+                format!(
+                    "arrangement `{slug}` has no registry row yet — promote the case, then rebuild"
+                )
+            })?;
+        Ok(arrangement_parts(&self.arrangements, stable, None))
+    }
+
+    /// The editable baseline of a whole-page arrangement case — the registry's own render, with
+    /// an empty payload inventory.
+    fn arrangement_baseline(&self, slug: &str) -> Result<DorcEditableBaseline, String> {
+        let render = to_editable_render(&self.arrangement_page(slug)?);
+        let variables = editable_variables(&render)?;
+        Ok(DorcEditableBaseline {
+            render,
+            variables,
+            all_variables: BTreeMap::new(),
         })
     }
 
@@ -370,6 +493,17 @@ impl DorcConsumer {
             && let Ok(world) = fire_book_analysis(slug, section.name(), section.content())
         {
             return Ok(world);
+        }
+        // Tried BEFORE the payload floor, so a code that can fire for real never settles for a
+        // constructed stand-in (`289:rul-worldless-route-honest-trigger`).
+        if let Some(diag) = case
+            .replay()
+            .blocks()
+            .first()
+            .and_then(|block| exact_words(block.command()))
+            .and_then(|tokens| fire_invocation_error(case, &tokens))
+        {
+            return Ok((diag, String::new(), String::new()));
         }
         let diag = canonical_payload(slug)
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
@@ -434,12 +568,79 @@ impl DorcConsumer {
     }
 }
 
+/// The WHOLE-PAGE arrangement route: an invocation whose entire output is one registry entry
+/// (`288:rul-help-text-is-loomable`; the `289` §2o help pilot). Both the driver and the
+/// re-render seat go through this, so the transcript a human edits and the bytes the fixpoint
+/// re-derives are the same registry read.
+///
+/// The declared-arrangement check is this family's honest trigger
+/// (`289:rul-worldless-route-honest-trigger`): a page case whose command renders some OTHER
+/// page is refused rather than quietly transcribing a page it does not claim.
+fn arrangement_page_slug(case: &Case, words: &[&str]) -> Option<&'static str> {
+    let slug = match words {
+        ["dorc", "--help" | "-h"] => dorc_cli::HELP_ARRANGEMENT,
+        _ => return None,
+    };
+    match case.frontmatter().scalar("arrangement") {
+        Some(declared) if declared != slug => None,
+        _ => Some(slug),
+    }
+}
+
+/// The registry index serving `(slug, occurrence)`: the occurrence's own entry when it has one,
+/// else the whole-slug entry. The mutable-mirror twin of
+/// [`ArrangementLookup::words`](dorc_aid::arrangement::ArrangementLookup::words) — kept in step
+/// with it, since an edit must land on the entry the render read.
+fn arrangement_index(
+    arrangements: &[OwnedArrangement],
+    slug: &str,
+    occurrence: usize,
+) -> Option<usize> {
+    arrangements
+        .iter()
+        .position(|entry| entry.slug == slug && entry.occurrence == Some(occurrence))
+        .or_else(|| {
+            arrangements
+                .iter()
+                .position(|entry| entry.slug == slug && entry.occurrence.is_none())
+        })
+}
+
 fn parse_direct_why<'a>(words: &[&'a str]) -> Option<&'a str> {
     let ["dorc", "why", "--last", whylog] = words else {
         return None;
     };
     let path = whylog.strip_prefix("--whylog=")?;
     case_relative_path(path).then_some(path)
+}
+
+/// The HONEST-TRIGGER invocation route (`289:rul-worldless-route-honest-trigger`; `291` §5a W2).
+///
+/// Runs the REAL argument parser over the case's own replay argv and returns the diagnostic it
+/// actually produced — but only when that diagnostic's slug equals the case's declared `code`. The
+/// refusal on mismatch is the whole value (`291:rule-worldless-route-refuses-on-mismatch`): without
+/// it, a case's command would be decorative and could drift from its code forever, on the surface
+/// humans review errors through. `$ dorc strip` IS the world for this family — no fixture needed.
+///
+/// `None` for anything that parses successfully or whose slug disagrees, so the caller falls
+/// through to the plan/payload routes exactly as before.
+fn fire_invocation_error(case: &Case, tokens: &[&str]) -> Option<Diag> {
+    let slug = case.frontmatter().scalar("code")?;
+    let argv: Vec<String> = match tokens.split_first()? {
+        (&"dorc", rest) => rest.iter().map(|word| (*word).to_owned()).collect(),
+        (&"dorc-sh", rest) => return fire_dorc_sh_error(slug, rest),
+        _ => return None,
+    };
+    let diag = dorc_cli::parse_args_from(argv).err()?;
+    (diag.code.slug() == slug).then_some(diag)
+}
+
+/// `dorc-sh`'s three errors have no parser to run — the bin decides them inline from its argv and
+/// the filesystem. Only the ARGV-decidable one is honest here; the two I/O failures would need a
+/// real unreadable file and a real missing shell, so their cases stay world-as-payload.
+fn fire_dorc_sh_error(slug: &str, rest: &[&str]) -> Option<Diag> {
+    (slug == "dorc-sh-usage" && rest.is_empty())
+        .then(|| Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage)))
 }
 
 fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<&'a str> {
@@ -638,6 +839,9 @@ impl DorcConsumer {
     fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
         let words =
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        if let Some(slug) = arrangement_page_slug(case, &words) {
+            return Ok(self.arrangement_page(slug)?.text());
+        }
         if let Some(path) = parse_direct_why(&words) {
             let raw = case
                 .sections()
@@ -683,6 +887,11 @@ impl DorcConsumer {
             )
             .human()
             .text());
+        }
+        if let Some(diag) = fire_invocation_error(case, &words) {
+            let interner = Interner::default();
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
         }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
@@ -814,6 +1023,10 @@ fn render_diag_jsonl(diag: &Diag) -> String {
 /// phase-5 backport (`283` §5.9) renders every non-pipeline covered code SPANLESS: a code may carry a
 /// span in production, but its defining case pins the frame-less title+body prose registers (the
 /// authoring surface), not the caret frame — that is the marker pilot's world-as-pipeline job.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one arm PER CODE, like the catalog registry it mirrors — merging arms would hide which codes have a constructed stand-in"
+)]
 fn canonical_payload(slug: &str) -> Option<Diag> {
     let code = match slug {
         // phase-5 backport: the covered give-up / records / mark-grammar codes.
@@ -873,6 +1086,61 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         }
         "dangling-reference" => DiagCode::DanglingReference(DanglingReference {
             coord: "sm.dorc.Package:nginx".to_owned(),
+        }),
+        // The external-linter trio: world-as-payload by necessity — replay never runs a foreign
+        // tool (`tools_enabled: false`).
+        "lint-tool-absent" => DiagCode::LintToolAbsent(LintToolAbsent {
+            tool: "shellcheck".to_owned(),
+        }),
+        "lint-tool-output-unparsable" => {
+            DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable {
+                tool: "checkbashisms".to_owned(),
+                output: "possible bashism in - line 4 (should be '.'):".to_owned(),
+            })
+        }
+        "lint-tool-failed-without-findings" => {
+            DiagCode::LintToolFailedWithoutFindings(LintToolFailedWithoutFindings {
+                tool: "shellcheck".to_owned(),
+                rc: 2,
+            })
+        }
+        // The invocation errors whose world is an I/O FAILURE, not an argv — an honest trigger
+        // would need a real unreadable file, a full disk, or an absent `sh`.
+        "cli-file-not-found" => DiagCode::CliFileNotFound(CliFileNotFound {
+            kind: "book".to_owned(),
+            path: "webhost.sh".to_owned(),
+        }),
+        "cli-file-permission-denied" => {
+            DiagCode::CliFilePermissionDenied(CliFilePermissionDenied {
+                kind: "oracle".to_owned(),
+                path: "/etc/dorc/nginx.oracle.sh".to_owned(),
+            })
+        }
+        "cli-file-unreadable" => DiagCode::CliFileUnreadable(CliFileUnreadable {
+            kind: "results".to_owned(),
+            path: "probe-results.txt".to_owned(),
+            detail: "Is a directory (os error 21)".to_owned(),
+        }),
+        "cli-shim-dir-unwritable" => DiagCode::CliShimDirUnwritable(CliShimDirUnwritable {
+            path: "/run/dorc/shims".to_owned(),
+            detail: "Read-only file system (os error 30)".to_owned(),
+        }),
+        "lint-no-lintable-files" => DiagCode::LintNoLintableFiles(LintNoLintableFiles),
+        "lint-file-count-drift" => DiagCode::LintFileCountDrift(LintFileCountDrift {
+            expected: 12,
+            found: 9,
+        }),
+        "lint-required-tools-missing" => {
+            DiagCode::LintRequiredToolsMissing(LintRequiredToolsMissing {
+                tools: "checkbashisms, shellcheck".to_owned(),
+            })
+        }
+        "dorc-sh-script-unreadable" => DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable {
+            path: "webhost.sh".to_owned(),
+            detail: "No such file or directory (os error 2)".to_owned(),
+        }),
+        "dorc-sh-exec-failed" => DiagCode::DorcShExecFailed(DorcShExecFailed {
+            detail: "No such file or directory (os error 2)".to_owned(),
         }),
         _ => return None,
     };
@@ -990,7 +1258,7 @@ mod tests {
 
     fn key(segment: usize) -> SectionKey {
         SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment,
@@ -1026,7 +1294,7 @@ mod tests {
     #[test]
     fn editable_variables_preserve_empty_values_and_refuse_disagreement() {
         let key = SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment: 0,
@@ -1523,7 +1791,7 @@ mod tests {
     #[test]
     fn applying_compiled_markers_preserves_duplicate_empty_and_nul_variables() {
         let section = SectionKey {
-            code: String::from("dangling-reference"),
+            owner: String::from("dangling-reference"),
             field: "message",
             instance: 0,
             segment: 0,
@@ -1567,7 +1835,7 @@ mod tests {
         assert_eq!(
             consumer.apply_compiled_section(
                 &SectionKey {
-                    code: String::from("missing-code"),
+                    owner: String::from("missing-code"),
                     field: "message",
                     instance: 0,
                     segment: 0,
@@ -1581,7 +1849,7 @@ mod tests {
         assert_eq!(
             consumer.apply_compiled_section(
                 &SectionKey {
-                    code: String::from("dangling-reference"),
+                    owner: String::from("dangling-reference"),
                     field: "when_fires",
                     instance: 0,
                     segment: 0,
@@ -1596,7 +1864,7 @@ mod tests {
     #[test]
     fn split_editable_fields_refuse_every_segment_without_conflating_other_fields() {
         let split = SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment: 0,

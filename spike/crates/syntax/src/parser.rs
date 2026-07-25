@@ -20,8 +20,9 @@
 //! it appears where the grammar expects a command to start. `echo if` keeps `if`
 //! as an argument because it is not in command position.
 
-use dorc_core::diag::{Diag, DiagCode as Code, SyntaxMalformed, SyntaxUnsupported};
-use dorc_core::{BytePos, Carrier, Span};
+use dorc_aid::Carrier;
+use dorc_aid::diag::{Diag, DiagCode as Code, SyntaxMalformed, SyntaxUnsupported};
+use dorc_core::{BytePos, Span};
 
 use crate::ast::{
     AndOrOp, Ast, AstBuilder, CaseArm, ElseIf, Node, NodeKind, RedirOp, RedirTarget,

@@ -1,0 +1,9 @@
+---
+code: lint-tool-failed-without-findings
+when-fires: an external linter exited nonzero but produced nothing parseable. lint/source_external.rs. `{tool}` is the tool, `{rc}` its exit status.
+why: 27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a foreign tool-rc beyond zero/nonzero (checkbashisms' additive 1|2|4 codes are the named trap), so an unexplained failure is reported as itself. World-as-payload: replay never runs a foreign tool.
+---
+-- replay --
+$ dorc plan --book=book.sh
+warning[lint-tool-failed-without-findings]: sm `shellcheck` exited with status 2
+   but produced no parseable findings

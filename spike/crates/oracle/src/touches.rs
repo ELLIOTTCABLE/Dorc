@@ -30,13 +30,21 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::{Carrier, Interner, Symbol};
+use dorc_aid::Carrier;
+use dorc_core::{Interner, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{
     Command, Predict, PredictSet, Stmt, Word, eval_test, lift_touches, pattern_matches,
     resolve_word,
 };
+
+/// The mangled funcname suffix the at-most footprint role is LIFTED, STRIPPED and INVOKED under
+/// (`cmd__disturbs`, né touches — `281` §5). The ONE source for all three: the parser's role scan,
+/// [`crate::predict::strip_touches`], and `dorc_plan`'s derivation-invocation builder. A second
+/// spelling of this string is the def↔invocation mismatch that shipped rc-127 probes
+/// (`289:rul-touches-mismatch-own-lane`).
+pub const DISTURBS_SUFFIX: &str = "__disturbs";
 
 /// The set of `<provider>.touches()` funcdefs lifted from one oracle file, keyed by
 /// provider. Reuses the `predict` dialect AST ([`Predict`]) — a touches funcdef has the
@@ -46,7 +54,7 @@ use crate::predict::{
 pub struct TouchesSet(PredictSet);
 
 impl TouchesSet {
-    /// Lift every `<provider>.touches` / `<provider>__touches` funcdef in `src`. Fail-soft
+    /// Lift every `<provider>__disturbs` funcdef in `src`. Fail-soft
     /// (`inv-no-throw`) and deterministic (`inv-determinism`) — the same contract as
     /// [`crate::predict::lift_predicts`], routed through the shared role-parametrized parser.
     #[must_use]

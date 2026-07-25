@@ -297,7 +297,7 @@ pub mod probe {
 /// footprint the static `evaluate_touches` tracer could not resolve (24E §2 — the SECOND
 /// probe-shipping path). It rides in the SAME phase-1 artifact as the convergence probe (no
 /// second `#!/bin/sh` — the e2e shebang-split keeps it in phase-1): each escalated wall-candidate
-/// ships its stripped `<provider>__touches` body, and when run pipes its stdout coord-lines into
+/// ships its stripped `<provider>__disturbs` body, and when run pipes its stdout coord-lines into
 /// per-site `deriv <leafid> coord=…` records (`inv-site-keyed-results`). Assembly only —
 /// [`DerivationPlan::render_sh`](crate::DerivationPlan::render_sh) decides which sites escalated
 /// and walks them; these emit the bytes for one decided piece.
@@ -475,7 +475,8 @@ pub mod reach {
         format!("# reach {coord} via {kind}.reaches() arm {arm_index}\n")
     }
 
-    /// The per-arm wrapper funcdef, emitted verbatim (`<kind>__reaches_<n>() { <arm bytes> ; }` —
+    /// The per-arm wrapper funcdef, emitted verbatim
+    /// (`<kind>__disturbance_reaches_only_<n>() { <arm bytes> ; }` —
     /// the arm command's byte-exact span-slice, mark-free by construction; re-emitted per arm-fn on a
     /// body change, sh last-writer-wins). GUARANTEE: `funcdef` is `dash -n`-clean (author sh wrapped
     /// in a function body) + byte-stable; this only appends a trailing newline.

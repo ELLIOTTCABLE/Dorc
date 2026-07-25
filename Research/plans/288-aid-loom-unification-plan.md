@@ -311,13 +311,25 @@ bypasses it at the trawl tip (`aaddb106`; line numbers drift — re-grep by stri
   moves the ONE-sanctioned-fixture-executor role: a deliberate safety-law edit in
   `spike/CLAUDE.md` + every brief's safety block, landing with the porting phase.
 
-### §7b — The arrangement/chrome home (the one remaining design sitting)
+### §7b — The arrangement/chrome home (SETTLED; built at phase 7)
 
-Options banked (parallel generated table / renderer-stamped transcript-sections /
-thin const registry). The transcript-sections option is the `282`-aligned end-state and
-help text (§6) is its cheapest pilot. This sitting must land IN this arc — the
-end-state "always a loom the human can edit" (rul-prose-pass-is-fable-this-arc) covers
-chrome too. Scheduled as phase 7.
+Options 2+3 COMPOSE, per `289` §2o (`289:rul-arrangement-home-is-registry-plus-transcripts`):
+a generated ARRANGEMENT REGISTRY is the storage — `aid/src/arrangement.rs` plus the generated
+`arrangement_lock.rs`, keyed by arrangement-slug + an optional occurrence, entries holding
+ORDERED WORDS that a seat interleaves with its computed values — and renderer-stamped
+`ArrangementWords` spans are the edit surface, so a chrome-word edit in a transcript flows to its
+registry entry exactly as catalog prose does. It generalizes the catalog pipeline rather than
+minting a second one: mirror-union generation, both fixpoint gates, one `dorc-loom promote`
+publishing both locks. `282:rul-arrangement-words-exempt-v1` is thereby LIFTED for migrated
+chrome. Help text was the pilot (`$ dorc --help` as a whole-page loom); usage joined as a
+seat-appended entry. Three fences held in the build: the migrated marker is TYPED
+(`Words::Migrated`), never the catalog's in-band `sm ` prefix, because chrome renders verbatim
+into product bytes; artifact-plane strings (every `plan/src/render.rs` emitter) stay hardcoded
+under the byte floor; and layout is not a word (indents, line breaks, punctuation frames stay
+computed). A value-bearing chrome line renders as ONE span — fragmenting it into word-spans
+fenced by computed ones breaks the edit transport's anchoring for every other prose section in
+the same render — which leaves multi-word entries render-only until something re-splits an
+edited line at its value boundaries.
 
 ## §8 — Phases (each one lane; granular; gates green; atomic where marked)
 

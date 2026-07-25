@@ -21,7 +21,7 @@ gates) → this file → `spike/crates/<c>/CLAUDE.md` for the crate you touch. R
 tension under a new name); root `AGENTS.md` = repo-wide agent law (terminology
 firming, exclusion-check discipline).
 
-**Registry discipline** (this file and all seven crate files): one rule per bullet,
+**Registry discipline** (this file and all eight crate files): one rule per bullet,
 each with a greppable slug; grouped under standing section headers; APPEND new
 entries to the matching section rather than restructuring; cite outside sources as
 `docID:slug` (e.g. `271:rul-lend-map`). Dense beats prose.
@@ -41,8 +41,11 @@ prompt you write:
 - Executable test-fixtures use non-functional stubs (`hork`, `wombat`, inert
   mocks under `PATH=mocks-only`) — never real mutators. Real-command strawmen
   in the repo are frozen evidence; they must never be executed. The only
-  sanctioned executor of fixture material is `sh e2e/run.sh` (syntax-checks,
-  and execs only under inert mocks).
+  sanctioned executor of fixture material is the central e2e runner,
+  `cargo test -p dorc-cli --test e2e` (syntax-checks, and execs only under
+  inert mocks, in a scrubbed environment with a throwaway-sandbox cwd). It
+  rides `cargo test --workspace`, so the ordinary suite IS the executor —
+  never hand-run a book, a mock, or a rendered artifact yourself.
 - Perpetuate this block, verbatim, to the top of every subagent prompt.
 
 ## The product, distilled (dense root-doc duplication — read even if you read the roots)
@@ -539,6 +542,12 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   **plan-as-API** is the named failure-mode: never promise cross-version
   plan-shape stability; anything like `--exit-code` gates on divergence-of-world,
   never plan shape.
+- **rul-strawman-formats-no-compat** — pre-user, EVERY versioned wire/format/env
+  name (`dorc-lint-format/1`, `DREP_V1`, `dorc-whylog/1`, `dorc-records/1`, …) is
+  strawman: rename/reshape in place, all sites in one commit; never an adapter, alias, or
+  mapping from a historical spelling. "Permanent once published" clauses activate at
+  publication, not before. Applies generally; *ask* the human if you suspect
+  they want to pay the prices of backwards-compatibility over velocity/simplicity.
 - **strip-is-pure-erasure** — `dorc strip` erases binds + marks, erases the
   `dorc:` prefix, rewrites the shebang-runner; NO in-body name rewriting;
   `dorc-sh` row-three untouched. Per-carrier (`281` §9): a colon-form TRAILING
@@ -576,20 +585,30 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   corresponding POSIX rule, simplify it for our purposes, match it in spirit.
   Conservative for the spike; characters once granted can never be clawed back.
 
-## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27V`)
+## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27V`; the
+describe-plane CRATE and its crate-local sharpenings: `spike/crates/aid/CLAUDE.md` — every
+type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-extraction`)
 
 - **two-plane-aid-law** (`26C` §5b, human hard-ack) — the license plane fails toward
   unsureness; the aid/explanation plane fails toward narration with attributed
-  confidence. Aid-evidence is decision-inert at the TYPE level (sealed; no conversion
-  into any license-plane input compiles); license values flow into evidence freely,
-  never back. Lint-clean licenses nothing.
-- **collapse-mints-evidence** (`AID-NEEDS:law-collapse-mints-evidence`) — every
-  safety-narrowing (meet-to-⊤, refuse, decline, wall, demote, cancel) mints
-  decision-inert evidence carrying the collapse's OPERANDS, demanded by the collapse
+  confidence. The aid-narrative plane is decision-inert at the TYPE level (sealed; no
+  conversion into any license-plane input compiles); license values flow into narrative
+  freely, never back. Lint-clean licenses nothing.
+- **collapse-mints-narrative** (née collapse-mints-evidence;
+  `AID-NEEDS:law-collapse-mints-narrative`) — every safety-narrowing (meet-to-⊤, refuse,
+  decline, wall, demote, cancel) mints a decision-inert NARRATIVE record
+  (`aid::CollapseNarrative`) carrying the collapse's OPERANDS, demanded by the collapse
   constructor at the VALUE level (pure data; kernels stay pure — arena registration is
-  post-pass per `22D`). Evidence is Eq-EXCLUDED from lattice equality (fixpoint
-  termination, `22W` §2) and k-capped. `Unexplained` is constructible but renders
-  self-advertisingly.
+  post-pass per `22D`). The record is Eq-EXCLUDED from lattice equality (fixpoint
+  termination, `22W` §2) and k-capped. AS-BUILT (2026-07-24): narratives are minted at all
+  nine collapse classes and the mint schedule is gate-held (`aid`'s
+  `narrative_completeness` census + the per-class fault-injection pins), but only
+  `VerdictDecline` carrying an `authored_reason` is CONSUMED by a render — the why-chain is
+  built from `SurvivalWitness`, and `emit_why_lens` ignores its narrative slice by signature.
+  So a missing narrative omits SILENTLY: there is no `Unexplained` class and no
+  self-advertising render. The consumption gap is the named seam
+  `289:seam-narrative-render-unconsumed`, owned by the arrangement-home round. The law above
+  stands; only the "renders self-advertisingly" claim was aspirational.
 - **trust-tier-is-syntax** — the epistemic tier of every rendered link (STRAWMAN
   spellings: measured / vouched / ran / claimed / derived / consented) is a typed
   evidence field rendered uniformly by arrangement code; prose fragments never
@@ -622,8 +641,9 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
 - **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining
   case; the **committed transcript CASE is the authoring surface** and the compiled
   generated catalog lock/table is DERIVED from it (`282:rul-transcript-is-the-
-  authoring-surface`). Cases live at `crates/dorc-loom/cases/<slug>.loom` (txtar +
-  flat-YAML frontmatter). The phase-two compiler is split by ownership: errorloom
+  authoring-surface`). Cases live at `crates/aid/tests/<slug>.loom` (txtar +
+  flat-YAML frontmatter; see flat-test-tree-and-loom-placement). The phase-two
+  compiler is split by ownership: errorloom
   transports renderer-stamped editable sections and opaque variable identities;
   dorc-loom alone parses strict whole-token `{{name}}`, resolves it against the
   current typed payload, and compiles catalog fields. The old tagged-region/
@@ -635,6 +655,9 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   (interruption is loud in git, repaired by rerun). The legacy `DORC_CATALOG_PROMOTE`
   writer is retired; hand-edits to the lock are refused or caught. The build parses
   the catalog and never auto-tracks case files (the lag IS the assertion).
+  The render-level fixpoint has exactly ONE authority — the looms runner, per committed loom
+  (`289:rider-fixpoint-gate-rationalize` retired `dorc-loom`'s stale 4-case allow-list); the
+  lock byte-identity gate stays corpus-global in `dorc-loom`'s own suite.
   `message`/`help` are
   `Option<&'static str>` (`None` renders the `[unwritten:]` placeholder at render
   time, never a stored string); interpolated values use engine-owned canonical
@@ -642,6 +665,26 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   grammar-fit (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Both fixpoint gates
   are live: errorloom render-level + Dorc's generated-lock byte-identity gate
   (`dorc-loom --test fixpoint`).
+- **flat-test-tree-and-loom-placement** (`288` §3, `rul-flat-test-tree` +
+  `rul-slug-decides-loom-placement`) — every case is a peer in a flat
+  `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom`
+  (single-file loom) · `X/X.loom` (multi-file loom) · `X/cmd` (a `dorc lint` case) ·
+  `X/book.sh` + `expected.out` (a round-trip case) · `X/book.sh` alone (a real-tools
+  fixture) · anything else is an `.rs` test's fixture space. A loom whose frontmatter carries
+  `run: round-trip|lint` is a WHOLE-PRODUCT case: both runners see it — the e2e runner
+  materializes and EXECUTES it through the unchanged gate battery, the looms runner parses and
+  hygiene-checks it and defers the transcript proof (`fixpoint: executed`) to that execution
+  (`crates/cli/CLAUDE.md` loom-form-is-the-same-battery). Placement is MECHANICAL:
+  a canonical loom for a REGISTERED aid-slug lives in the ONE primary collection,
+  `crates/aid/tests/`, so `crates/aid/CLAUDE.md` is the registry that auto-loads on
+  every loom edit (`288:rul-claudemd-fires-per-directory`); a tertiary loom pinning
+  UNREGISTERED behaviour stays in its causative crate's `tests/`. Two central runners
+  (`crates/cli/tests/{e2e,looms}.rs`, `harness = false`, targets declared explicitly
+  under `autotests = false`) walk every `crates/*/tests/` and mint one named,
+  filterable trial per case — so case DATA and `.rs` tests coexist in one flat dir.
+  Each runner carries a DISCOVERY FLOOR: walking the wrong roots finds zero cases, and
+  a suite of zero trials would otherwise exit GREEN. Never pin a case COUNT
+  (`count-drifts`); non-empty is the floor.
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
   defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
   unwritten); prose is a conductor/human act issued from the builder's when/why/how
@@ -750,24 +793,48 @@ cargo through mise, from inside `spike/`:**
 
 ```
 mise exec -- cargo build --workspace
-mise exec -- cargo test --workspace
+mise exec -- cargo test --workspace                 # unit + the e2e corpus + the loom corpus
 mise exec -- cargo clippy --workspace --all-targets
-sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): dash -n gate + exec-under-mocks
+mise exec -- cargo test -p dorc-cli --test e2e      # the e2e corpus alone: dash -n gate + exec-under-mocks
+mise exec -- cargo test -p dorc-cli --test looms    # the loom corpus alone: parse + hygiene + render fixpoint
 ```
 
-- `DORC_E2E_QUIET=1` suppresses per-case `ok` lines (final tally only; failures
-  still print in full).
+- Both corpora are `harness = false` runners minting ONE named trial per case, so an
+  ordinary `cargo test … -- <substring>` filters by case name and a failure names the
+  case. `sh e2e/run.sh` is RETIRED (`288:phase-flat-tree-move`); its gates moved into
+  `crates/cli/tests/e2e.rs` unchanged.
+- `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
 - Pre-commit gate set (nothing runs automatically — there is NO git hook; run all
   four yourself before every commit; never `--no-verify`): `cargo fmt --check` ·
   `clippy -D warnings` · `cargo deny check licenses bans sources` · `typos`
   (`mise x -- typos spike` from the worktree root).
 - Before trusting e2e results, force a fresh `cargo build --workspace`; run the
   final e2e FOREGROUND with a generous timeout.
-- **BLESS is EXCLUSIVE** — `BLESS=1` re-blesses ALL cases from whatever
-  `target/debug/dorc` exists at that instant; concurrent agents share one
-  `target/`. Never run BLESS while any build-agent is in flight;
+- **BLESS is EXCLUSIVE** — `BLESS=1 cargo test -p dorc-cli --test e2e` re-blesses ALL
+  cases from whatever `target/debug/dorc` exists at that instant; concurrent agents
+  share one `target/`. Never run BLESS while any build-agent is in flight;
   orchestrator-only, on a freshly-verified binary, resulting diff inspected
   case-by-case. Bless cannot prove an elision RIGHT — review by eye.
+- **one-platform-green-is-not-cross-platform-green** (two live bugs, 2026-07-24) —
+  `#[cfg(windows)]` / `#[cfg(unix)]` code is COMPILED ONLY on its own platform, so the
+  gates never see the other side and it rots silently. Both landed bugs were invisible
+  to a green Windows run: five `receipt_store` items reachable only from the
+  Windows-only rename-backup path were `dead_code` on Linux (`-D warnings` ⇒ hard
+  fail), and the `#[cfg(unix)]` shim `chmod` did not even TYPE-CHECK (`?` on an
+  `io::Error` in a `Result<_, Diag>` seat). Gate a platform-only helper at every
+  member rather than reaching for `allow(dead_code)`: gated, a cross-platform caller
+  fails to resolve loudly; allowed, it compiles into a question the platform cannot
+  answer. Anything touching a `cfg`-gated region must be checked on BOTH platforms
+  before it is trusted — this is a doc, not a mechanical net, because a lint for it
+  would be exactly the imperfect net `271:rul-net-quality-u-curve` warns against.
+- **wsl-needs-a-modern-git** — the repo enables the `relativeWorktrees` extension
+  (git ≥ 2.48); an older git (Ubuntu 24.04 ships 2.43) refuses the WHOLE repository
+  with `fatal: unknown repository extension found`, so every git-touching step —
+  `conduct-bless`'s golden listing, `dorc-loom promote`'s repository gate — dies.
+  `conduct-bless` now pre-flights `mise` and `git` and REFUSES in a line rather than
+  surfacing it after a ten-minute green build. Sharing one `target/` between a Windows
+  and a WSL cargo is NOT implicated: units are host-hashed, and each platform's test
+  binary bakes in its own `CARGO_BIN_EXE_*` path.
 - Lint posture: the workspace lint table in `spike/Cargo.toml` is policy for new
   code — do not weaken it. Legacy crate-root `#![expect(..., reason)]`s
   self-ratchet; remove as layers are replaced; never add new ones to fresh code.
@@ -779,7 +846,13 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
   the lane loudly (opt-in implies require-tools). Never default-on; never
   golden-pins upstream message text (structural + stable-code assertions only);
   never touches files outside the worktree. Real mutators remain forbidden
-  everywhere.
+  everywhere. The lane reads the lint EXIT TRICHOTOMY, never `rc != 0`: 0 (clean) and 1
+  (findings) both mean the tool RAN, and only the operational rc 3 — where `--require-tools`
+  reports an absent tool — is absence (`289:rider-real-tools-lane-rc-bitrot`, fixed; the old
+  reading false-failed on a correct error-severity finding). Windows caveat, by design and
+  unchanged: `checkbashisms` is a perl script `Command::new` cannot spawn there, so list only
+  `shellcheck` on Windows and run the checkbashisms half on *nix
+  (`e2e/lint-real-tools-setup.sh` documents the discovery-vs-spawn mismatch).
 
 ## Code style
 
@@ -810,13 +883,6 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
 - Commits: small + granular + frequent. `(AI <labels>) terse one-line message` per
   `.gitlabels`; the `AI` label is mandatory; no `Co-Authored-By` trailer; never
   push. Run the four gates first.
-
-- `rul-strawman-formats-no-compat` — pre-user, EVERY versioned wire/format/env
-  name (`dorc-lint-format/1`, `DREP_V1`, `dorc-whylog/1`, `dorc-records/1`, …) is
-  strawman: rename/reshape in place, all sites in one commit; never an adapter, alias, or
-  mapping from a historical spelling. "Permanent once published" clauses activate at
-  publication, not before. Applies generally; *ask* the human if you suspect
-  they want to pay the prices of backwards-compatibility over velocity/simplicity.
 
 ## Spawning subagents (supervisor law — mandatory)
 

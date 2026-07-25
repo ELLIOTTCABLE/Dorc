@@ -31,11 +31,11 @@
 //! [`Code::MarkStandaloneRcConsumer`], [`Code::MarkHashcolonMalformed`]) are emitted here — the
 //! literal production emit sites `diag_tidy::every_catalog_variant_is_constructed` requires.
 
-use dorc_core::Span;
-use dorc_core::diag::{
+use dorc_aid::diag::{
     Diag, DiagCode as Code, MarkBraceVerdictSingleCell, MarkHashcolonMalformed,
     MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
 };
+use dorc_core::Span;
 use dorc_syntax::sem;
 
 use super::ast::{Mark, MarkKind, MarkTarget};

@@ -27,7 +27,7 @@
 //! full contract (integrity keys, torn/glued/alien/late, sentinel) rides the FRAMED path,
 //! exercised end-to-end by the `sweep` byte-tier DST and the plan/cli unit pins.
 
-use dorc_core::diag::{
+use dorc_aid::diag::{
     Diag, DiagCode, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, RecordsAlienLine,
     RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing, RecordsHeaderlessRefused,
     RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,

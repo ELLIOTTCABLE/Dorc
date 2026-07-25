@@ -15,7 +15,7 @@ use dorc_core::Interner;
 use dorc_oracle::predict::Stmt;
 use dorc_oracle::verdict::VerdictSet;
 
-use crate::finding::{Finding, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, NativeDiag, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The verdict-body flattening source. Deterministic (pure over the oracle bytes).
@@ -27,8 +27,8 @@ impl LintSource for VerdictBodyFlattening {
         "verdict-body"
     }
 
-    fn describe(&self) -> &'static str {
-        "status-flattening in __is_converged bodies (terminal pipeline)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-verdict-body"
     }
 
     fn rung(&self) -> Rung {
@@ -45,21 +45,27 @@ impl LintSource for VerdictBodyFlattening {
                     continue;
                 };
                 if let Some(span) = terminal_pipeline_span(&verdict.body) {
-                    let (line, col) = dorc_core::diag::line_col(&oracle.src, span.lo.0 as usize);
+                    let (line, col) = dorc_aid::diag::line_col(&oracle.src, span.lo.0 as usize);
+                    let diag = dorc_aid::Diag::new(
+                        dorc_aid::diag::DiagCode::VerdictTerminalPipeline(
+                            dorc_aid::diag::VerdictTerminalPipeline,
+                        ),
+                        span,
+                    );
                     out.push(Finding {
                         path: oracle.path.clone(),
                         line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                         col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                        severity: dorc_core::Severity::Warning,
+                        severity: diag.severity(),
                         source: self.name(),
-                        code: "verdict-terminal-pipeline".to_owned(),
-                        message: "this __is_converged body answers with a pipeline's tail status \
-                                  (oracle-contract §3): the exit status is the LAST stage's, not \
-                                  necessarily the tool-under-description's — prefer a shape where \
-                                  the modeled tool produces the status directly."
-                            .to_owned(),
+                        code: diag.code.slug().to_owned(),
+                        message: dorc_aid::diag::render_body(&diag, &Interner::default()),
                         remap: RemapFidelity::Exact,
-                        provenance: None,
+                        provenance: Some(NativeDiag {
+                            diag,
+                            source: oracle.src.clone(),
+                        }),
+                        frame: FrameChoice::Compact,
                     });
                 }
             }

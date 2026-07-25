@@ -1,5 +1,0 @@
-#!/bin/sh
-# INERT mock: logs its argv, mutates nothing. `systemctl is-active nginx` rc 0 ⇒ holds ⇒ the
-# `systemctl start nginx` elides (converged); gate-1 only asserts record grammar, not the effect.
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0

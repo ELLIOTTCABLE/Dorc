@@ -68,8 +68,10 @@ pub trait LintSource {
     /// and the `Finding::source` tag. Append-only, never re-read to mean something else.
     fn name(&self) -> &'static str;
 
-    /// One-line description for `--list-sources`.
-    fn describe(&self) -> &'static str;
+    /// The ARRANGEMENT SLUG of this source's one-line `--list-sources` description
+    /// (`289:rul-arrangement-home-is-registry-plus-transcripts`). The words live in the registry
+    /// like every other user-facing string; a source names its entry, it does not carry prose.
+    fn describe_arrangement(&self) -> &'static str;
 
     /// Which input-availability rung this source needs (`27R` §8b nit-functionality-ladder). Purely
     /// informational here (shown by `--list-sources`); every registered source is a rung-file or

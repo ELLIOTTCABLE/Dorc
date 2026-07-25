@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use dorc_core::catalog::{TemplatePart, TemplateRefusal, parse_template};
+use dorc_aid::catalog::{TemplatePart, TemplateRefusal, parse_template};
 use errorloom::{
     EditRefusal, EditRefusalClass, EditTransport, EditableFragment, EditableRender,
     EditableSection, RenderComponent, transport_edit_allow_removal,
@@ -223,7 +223,7 @@ fn refuse_split_field(
             _ => None,
         })
         .filter(|section| {
-            section.code == selected.code
+            section.owner == selected.owner
                 && section.field == selected.field
                 && section.instance == selected.instance
         })

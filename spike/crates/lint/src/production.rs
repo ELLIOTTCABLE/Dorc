@@ -1,6 +1,6 @@
 //! One deterministic production-shaped lint invocation for transcript replay.
 
-use dorc_core::tagged::RenderParts;
+use dorc_aid::tagged::RenderParts;
 
 use crate::{LintInput, LintOptions, LintReport, NoToolsRunner, lint, render};
 

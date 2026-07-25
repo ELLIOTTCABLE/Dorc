@@ -1,21 +1,35 @@
-//! The render-level case fixpoint and hygiene gates.
-
-#![expect(
-    clippy::expect_used,
-    reason = "corpus-loader helper over the committed tree; the no-panic lints guard untrusted input"
-)]
+//! The generated-lock fixpoint and the class-specific lint batteries.
+//!
+//! The RENDER-level fixpoint used to live here too, over a hand-listed four-case allow-list.
+//! It does not any more: `crates/cli/tests/looms.rs` fixpoint-checks and hygiene-checks EVERY
+//! committed loom in every collection, so exactly one corpus-level render-fixpoint authority
+//! exists (`289:rider-fixpoint-gate-rationalize`). Two gates over one property meant the
+//! narrower one silently rotted — 48 of 51 cases already held while the list still named
+//! four. What stays here is what the runner cannot hold: the corpus-GLOBAL generated-lock
+//! byte-identity gate (the second of the two fixpoints `defining-case-catalog` names) and the
+//! class batteries that assert production-route identity rather than transcript bytes.
+//!
+//! Cost of the move, stated: `cargo test -p dorc-loom` alone no longer covers render fixpoint.
+//! `cargo test --workspace` does, and that is every builder's standard gate.
 
 use std::path::{Path, PathBuf};
 
-use dorc_loom::{DorcConsumer, generate_catalog_lock, load_corpus_by_slug, replay_case};
-use errorloom::{Case, CaseFile, RunEnv, fixpoint_check};
+use dorc_loom::{
+    DorcConsumer, generate_arrangement_lock, generate_catalog_lock, load_arrangement_corpus,
+    load_corpus_by_slug, replay_case,
+};
+use errorloom::{Case, RunEnv};
 
 fn corpus_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("cases")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
 }
 
 fn committed_lock() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../core/src/catalog_lock.rs")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs")
+}
+
+fn committed_arrangement_lock() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/arrangement_lock.rs")
 }
 
 /// The generated-catalog byte-identity gate (`28A` §4 · `282:rul-catalog-lock-is-generated-whole`):
@@ -26,6 +40,14 @@ fn committed_lock() -> PathBuf {
 fn generated_lock_reproduces_the_committed_bytes() {
     let consumer = DorcConsumer::new();
     let cases = load_corpus_by_slug(&corpus_dir()).expect("load corpus");
+    // The vacuity floor this crate's cross-crate corpus reach needs (`paths-are-manifest-
+    // relative`): an empty read would otherwise generate a stub lock and diff loudly for the
+    // wrong reason. Non-empty, never a count (`count-drifts`).
+    assert!(
+        !cases.is_empty(),
+        "no `.loom` cases under {} — the corpus is not where this crate reaches",
+        corpus_dir().display()
+    );
     let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
     let committed = std::fs::read_to_string(committed_lock()).expect("read committed lock");
     assert_eq!(
@@ -34,53 +56,27 @@ fn generated_lock_reproduces_the_committed_bytes() {
     );
 }
 
-/// Every committed `cases/*.loom`, sorted for determinism (`inv-determinism`). A missing/empty dir
-/// yields an empty corpus, so the gates pass vacuously until the pilots land.
-fn load_corpus() -> Vec<CaseFile> {
-    let mut cases: Vec<CaseFile> = Vec::new();
-    let Ok(entries) = std::fs::read_dir(corpus_dir()) else {
-        return cases;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().is_some_and(|e| e == "loom") {
-            let name = path
-                .file_name()
-                .expect("case file has a name")
-                .to_string_lossy()
-                .into_owned();
-            let text = std::fs::read_to_string(&path).expect("read case file");
-            cases.push(CaseFile::new(name, text));
-        }
-    }
-    cases.sort_by(|a, b| a.path().cmp(b.path()));
-    cases
-}
-
-/// The exact direct-plan corpus specimen re-renders from the current catalog.
-/// Other committed commands now require the configured generic executor and are
-/// intentionally outside this in-process renderer's authority.
+/// The arrangement registry's half of the same byte-identity gate
+/// (`289:rul-arrangement-home-is-registry-plus-transcripts`): regenerating the whole
+/// `arrangement_lock.rs` from the committed registry + arrangement cases reproduces the committed
+/// bytes. A hand-edit to the generated lock, or drift between a case's frontmatter and its
+/// generated row, trips here — exactly as it does for the catalog.
 #[test]
-fn direct_plan_render_fixpoint() {
+fn generated_arrangement_lock_reproduces_the_committed_bytes() {
     let consumer = DorcConsumer::new();
-    let corpus: Vec<_> = load_corpus()
-        .into_iter()
-        .filter(|case| case.path() == Path::new("cmdsub-operand-top.loom"))
-        .collect();
-    assert_eq!(corpus.len(), 1, "the direct-plan specimen is committed");
-    fixpoint_check(&consumer, &corpus).expect("direct-plan case reproduces from the catalog");
-}
-
-/// Every committed case is txtar/hygiene-clean and surfaces its own `code` slug in each replay block
-/// (`282` §2 coherence gate) — the corpus can round-trip through the container.
-#[test]
-fn corpus_cases_are_hygienic() {
-    for case_file in load_corpus() {
-        let case = Case::parse(case_file.text())
-            .unwrap_or_else(|e| panic!("case `{}` parses: {e}", case_file.path().display()));
-        case.check_hygiene(Some("code"))
-            .unwrap_or_else(|e| panic!("case `{}` hygiene: {e}", case_file.path().display()));
-    }
+    let cases = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");
+    assert!(
+        !cases.is_empty(),
+        "no arrangement cases under {} — the corpus is not where this crate reaches",
+        corpus_dir().display()
+    );
+    let generated = generate_arrangement_lock(&consumer, &cases).expect("generate lock");
+    let committed =
+        std::fs::read_to_string(committed_arrangement_lock()).expect("read committed lock");
+    assert_eq!(
+        generated, committed,
+        "the committed arrangement_lock.rs is not a fixpoint of the generator"
+    );
 }
 
 /// Every lint case drives its declared `dorc lint oracle.sh --no-tools` shape through the same
@@ -88,7 +84,7 @@ fn corpus_cases_are_hygienic() {
 /// frontmatter slug alone cannot manufacture an output or editable provenance.
 #[test]
 fn lint_cases_replay_the_complete_production_report() {
-    const LINT_CASES: [&str; 8] = [
+    const LINT_CASES: [&str; 12] = [
         "missing-dialect-marker.loom",
         "marker-version-unrecognized.loom",
         "mark-unknown-verb.loom",
@@ -97,6 +93,11 @@ fn lint_cases_replay_the_complete_production_report() {
         "mark-hashcolon-malformed.loom",
         "munge-name-invalid.loom",
         "tolerates-unknown-dimension.loom",
+        // dorc-lint's own findings, now registry codes (`288` §5) — honest-trigger for free.
+        "unmodeled-wall-inventory.loom",
+        "verdict-terminal-pipeline.loom",
+        "authored-decline-class.loom",
+        "authored-decline-class-unreadable.loom",
     ];
     for filename in LINT_CASES {
         let text = std::fs::read_to_string(corpus_dir().join(filename))

@@ -1,0 +1,14 @@
+---
+code: whylog-corrupt
+when-fires: `dorc why --last` found a durable but it is truncated or otherwise unparseable (a partial write, a clobbered file). plan/whylog.rs parse (`inv-no-throw`: malformed bytes are DATA, never a panic).
+why: inv-no-throw: a corrupt durable is diagnostics, never a crash — the reader refuses politely and names the parse-failure reason. Pull-surface: Warning, Floor::None. `{detail}` = the parse-failure reason (e.g. missing header/end sentinel, an unrecognized section). Remediation register (help) wanted: the durable is damaged — re-run the live analysis to regenerate it.
+---
+-- .whylog --
+dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@
+
+-- replay --
+$ dorc why --last --whylog=.whylog
+whylog: warning[whylog-corrupt]: the saved why-log is damaged and cannot be read
+   back (no dorc-whylog-end sentinel (a truncated write?))
+   = help: this usually means an interrupted write; re-run `dorc why` live, and
+      the next plan or apply will save a fresh why-log

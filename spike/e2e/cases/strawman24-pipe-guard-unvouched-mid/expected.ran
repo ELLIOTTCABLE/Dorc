@@ -1,5 +1,0 @@
-ran: otelcol --version
-ran: cat
-ran: grep -q 0.155.0
-ran: curl -sL https://example.com/otelcol.tar.gz
-ran: tar xz

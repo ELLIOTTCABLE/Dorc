@@ -12,7 +12,7 @@
 
 use dorc_analysis::cfg::CfgNodeKind;
 
-use crate::finding::{Finding, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, NativeDiag, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The unmodeled-wall inventory source. Deterministic (pure over the source bytes).
@@ -24,8 +24,8 @@ impl LintSource for UnmodeledInventory {
         "unmodeled-inventory"
     }
 
-    fn describe(&self) -> &'static str {
-        "per-book ⊤-wall inventory (first wall + downstream degradation)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-unmodeled-inventory"
     }
 
     fn rung(&self) -> Rung {
@@ -36,12 +36,12 @@ impl LintSource for UnmodeledInventory {
         for file in ctx.files {
             let parsed = dorc_syntax::parse(&file.src);
             let cfg = dorc_analysis::cfg::build(&parsed.value);
-            let mut wall_offsets: Vec<u32> = Vec::new();
+            let mut wall_spans: Vec<dorc_core::Span> = Vec::new();
             let mut leaf_offsets: Vec<u32> = Vec::new();
             for (id, node) in cfg.value.iter() {
                 let span = parsed.value.node(node.ast).span;
                 match node.kind {
-                    CfgNodeKind::Top => wall_offsets.push(span.lo.0),
+                    CfgNodeKind::Top => wall_spans.push(span),
                     CfgNodeKind::Command
                         if !cfg.value.is_expansion_internal(id) && !cfg.value.in_loop_body(id) =>
                     {
@@ -50,28 +50,37 @@ impl LintSource for UnmodeledInventory {
                     _ => {}
                 }
             }
-            let Some(&first_wall) = wall_offsets.iter().min() else {
+            let Some(&first) = wall_spans.iter().min_by_key(|span| span.lo.0) else {
                 continue; // no walls ⇒ nothing to inventory (a clean book stays silent here)
             };
-            let wall_count = wall_offsets.len();
+            let first_wall = first.lo.0;
+            let wall_count = wall_spans.len();
             let downstream = leaf_offsets.iter().filter(|&&o| o > first_wall).count();
-            let (line, col) = dorc_core::diag::line_col(&file.src, first_wall as usize);
-            let wall_word = if wall_count == 1 { "wall" } else { "walls" };
-            let message = format!(
-                "{wall_count} unmodeled ⊤-{wall_word} in this book; the first is here. Downstream \
-                 commands (~{downstream} leaf site(s) after it) lose full-elision and fall back to \
-                 runtime guards until each wall's tool has an oracle."
+            let (line, col) = dorc_aid::diag::line_col(&file.src, first_wall as usize);
+            let diag = dorc_aid::Diag::new(
+                dorc_aid::diag::DiagCode::UnmodeledWallInventory(
+                    dorc_aid::diag::UnmodeledWallInventory {
+                        wall_count,
+                        wall_word: if wall_count == 1 { "wall" } else { "walls" },
+                        downstream,
+                    },
+                ),
+                first,
             );
             out.push(Finding {
                 path: file.path.clone(),
                 line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                 col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                severity: dorc_core::Severity::Note,
+                severity: diag.severity(),
                 source: self.name(),
-                code: "unmodeled-wall-inventory".to_owned(),
-                message,
+                code: diag.code.slug().to_owned(),
+                message: dorc_aid::diag::render_body(&diag, &dorc_core::Interner::default()),
                 remap: RemapFidelity::Exact,
-                provenance: None,
+                provenance: Some(NativeDiag {
+                    diag,
+                    source: file.src.clone(),
+                }),
+                frame: FrameChoice::Compact,
             });
         }
         SourceStatus::Ran

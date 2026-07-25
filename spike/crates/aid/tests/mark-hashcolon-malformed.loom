@@ -1,0 +1,21 @@
+---
+code: mark-hashcolon-malformed
+when-fires: the new-grammar mark parser found a `#:` comment that looks like a mark-block but did not parse (`281` §9). oracle/predict/mark_grammar.rs.
+why: 281 §9 graceful degradation: the hash-colon carrier is left a plain comment (never mis-erased) but diagnosed (Warning) so a broken one is never silently ignored.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+#: frobnicate
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  warning[mark-hashcolon-malformed]: [unwritten: mark-hashcolon-malformed]
+   --> oracle.sh:2:1
+   |
+ 2 | #: frobnicate
+   | \/
+
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

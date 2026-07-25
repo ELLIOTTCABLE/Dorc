@@ -34,7 +34,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::diag::{CarryNetnsOnNetKernelForbidden, Diag, DiagCode};
+use dorc_aid::diag::{CarryNetnsOnNetKernelForbidden, Diag, DiagCode};
 use dorc_core::{Interner, OracleFileId, Span, Symbol};
 
 use crate::predict::{Command, MarkKind, Predict, Stmt, Word};

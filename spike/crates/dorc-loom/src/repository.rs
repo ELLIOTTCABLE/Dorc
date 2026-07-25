@@ -377,8 +377,8 @@ mod tests {
         }
     }
 
-    const CATALOG: &str = "spike/crates/core/src/catalog_lock.rs";
-    const CASE: &str = "spike/crates/dorc-loom/cases/one.loom";
+    const CATALOG: &str = "spike/crates/aid/src/catalog_lock.rs";
+    const CASE: &str = "spike/crates/aid/tests/one.loom";
 
     fn case(frontmatter: &str, preamble: &str, book: &str, command: &str, output: &str) -> String {
         format!(

@@ -1,0 +1,97 @@
+---
+run: round-trip
+fixpoint: executed
+exit: 11
+expect-diagnostic:
+  - wrapper-entry-incoherent
+---
+-- book.sh --
+#!/bin/sh
+# wrapper-entry-incoherent-fails-fast (27C:rul-fold-entry-coherence-failfast): the loaded wrapper's
+# __enter and __lend_map disagree on argv flow by STATIC sh-structure — the entry shifts TWO leading
+# args, the lend-fold consumed ONE, so the entry drops an arg the fold relied on. Declarations-
+# genuinely-contradict ⇒ dorc fast-fails (exit 11, EXIT_WRAPPER_INCOHERENT), pre-network. The
+# artifact still ships; the book's own `hork setup` site is unrelated and walls.
+hork setup
+
+-- myctx.oracle.sh --
+# dorc-lang/v0.2
+# An INCOHERENT context wrapper (27C:rul-fold-entry-coherence-failfast): the lend_map consumes ONE
+# leading arg (the fs-view target) before the guest; the entry form consumes TWO. The entry drops an
+# arg the fold relied on — static incoherence, caught pre-network (never a semantic-effect check).
+myctx__lend_map() {
+   printf '%s\n' "$1" : lends fs-view
+   shift
+   "$@"
+}
+myctx__enter() {
+   a=$1; shift
+   b=$1; shift
+   realctx "$a" "$@"
+}
+
+-- probe-results.txt --
+# `hork setup` walls (unmodeled) => no probe site; the run fast-fails on wrapper incoherence.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork setup
+
+-- replay --
+$ dorc --book=book.sh -o myctx.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=aea8738a48b384ba sites=0 @@dorc@@\n'
+# site:0 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# wrapper-entry-incoherent-fails-fast (27C:rul-fold-entry-coherence-failfast): the loaded wrapper's
+# __enter and __lend_map disagree on argv flow by STATIC sh-structure — the entry shifts TWO leading
+# args, the lend-fold consumed ONE, so the entry drops an arg the fold relied on. Declarations-
+# genuinely-contradict ⇒ dorc fast-fails (exit 11, EXIT_WRAPPER_INCOHERENT), pre-network. The
+# artifact still ships; the book's own `hork setup` site is unrelated and walls.
+hork setup

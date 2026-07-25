@@ -31,7 +31,7 @@
 //! entity (by tracing the oracle's own argparse); it never branches on what the
 //! entity's text *means*. Kind strings are opaque coordination handles.
 
-use dorc_core::diag::{Diag, DiagCode as Code, PredictOutOfDialect, PredictUnterminated};
+use dorc_aid::diag::{Diag, DiagCode as Code, PredictOutOfDialect, PredictUnterminated};
 use dorc_core::{Interner, Span};
 
 mod ast;
@@ -94,27 +94,29 @@ pub fn strip_predict(src: &str, check: &Predict, interner: &Interner) -> String 
 /// GUARD position (24D §2/§3 — the guard's check IS the oracle's own verdict body, strip-only).
 /// Identical to [`strip_predict`] but mangles the funcname to the verdict suffix the guard emitter
 /// invokes (`apt-get.is_converged` → `apt_get__is_converged`), so the shipped preamble def and the
-/// guard invocation agree byte-for-byte. The suffix is hardcoded like every sibling strip fn
-/// (`is_converged` is the sole verdict role — `24C:rul24-ditch-is-diverged`); everything else —
-/// annotation removal, bare-mark deletion, verbatim body bytes — is the strip's standing contract
-/// (strip-fidelity, 23H §9.4).
+/// guard invocation agree byte-for-byte. The suffix comes from
+/// [`VERDICT_SUFFIX`](crate::verdict::VERDICT_SUFFIX), the same constant `dorc_plan`'s guard
+/// emitter invokes through (`is_converged` is the sole verdict role —
+/// `24C:rul24-ditch-is-diverged`); everything else — annotation removal, bare-mark deletion,
+/// verbatim body bytes — is the strip's standing contract (strip-fidelity, 23H §9.4).
 #[must_use]
 pub fn strip_verdict(src: &str, verdict: &Predict, interner: &Interner) -> String {
-    strip_role(src, verdict, interner, "__is_converged")
+    strip_role(src, verdict, interner, crate::verdict::VERDICT_SUFFIX)
 }
 
-/// Strip an authored **touches** funcdef (`<provider>.touches`) to runnable sh for shipping in
+/// Strip an authored **touches** funcdef (`<provider>__disturbs`) to runnable sh for shipping in
 /// the DERIVATION-PROBE lane (24E §2/§9 — a payload-bound footprint the tool emits itself). A
-/// touches body that reaches a host tool (`dpkg -L`) cannot be traced statically, so Stage 4
+/// disturbs body that reaches a host tool (`dpkg -L`) cannot be traced statically, so Stage 4
 /// ships it (strip-only) to run read-only on the host; its stdout coord-lines are the derived
-/// footprint. Identical to [`strip_predict`] but mangles the funcname to `__touches`
-/// (`apt-get.touches` → `apt_get__touches`), so the shipped def and the derivation invocation
+/// footprint. Identical to [`strip_predict`] but mangles the funcname to
+/// [`DISTURBS_SUFFIX`](crate::touches::DISTURBS_SUFFIX) (`apt-get` → `apt_get__disturbs`), the same
+/// constant `dorc_plan`'s derivation invocation builds from, so the shipped def and the invocation
 /// agree byte-for-byte. Everything else — annotation removal, bare-mark deletion, verbatim body
 /// bytes — is the strip's standing contract (strip-fidelity, 23H §9.4). Same self-vouch tier as
 /// `strip_predict`/`strip_verdict` (fork-4A: no new trust edge; authorship IS the vouch).
 #[must_use]
 pub fn strip_touches(src: &str, touches: &Predict, interner: &Interner) -> String {
-    strip_role(src, touches, interner, "__disturbs")
+    strip_role(src, touches, interner, crate::touches::DISTURBS_SUFFIX)
 }
 
 /// Strip an authored **resolver** funcdef (`<kind>.resolve`) to runnable sh for the
@@ -137,8 +139,10 @@ pub fn strip_resolve(src: &str, resolver: &Predict, interner: &Interner) -> Stri
 /// arm into the REACH probe lane (24G §4 — the cross-author footprint-expansion mechanism). A
 /// dynamic reaches arm reaches a host tool (`dpkg -L`) whose stdout lines are the reached entities;
 /// it cannot resolve statically, so its body ships strip-only to run read-only per coordinate.
-/// Identical to [`strip_predict`] but mangles the funcname to `__reaches` (`package.reaches` →
-/// `package__reaches`), so the shipped def and the reach invocation agree byte-for-byte. NB `<kind>`
+/// Identical to [`strip_predict`] but mangles the funcname to
+/// [`DISTURBANCE_REACHES_ONLY_SUFFIX`](crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX)
+/// (`package` → `package__disturbance_reaches_only`), so the shipped def and the reach
+/// invocation agree byte-for-byte. NB `<kind>`
 /// is the KIND name here (reaches is kind-keyed, like the resolver), and [`crate::to_funcname_segment`]
 /// maps it identically. The typed-emission trailing marks (`… : service`) are annotation-LINEs the
 /// strip DELETES whole (strip-fidelity, 23H §9.4) — the reached kind was already interned at LIFT
@@ -147,7 +151,12 @@ pub fn strip_resolve(src: &str, resolver: &Predict, interner: &Interner) -> Stri
 /// read-only — `kFAIL-withhold`; authoring IS the vouch; the rc-127 mocks net is the live guarantee).
 #[must_use]
 pub fn strip_reaches(src: &str, reaches: &Predict, interner: &Interner) -> String {
-    strip_role(src, reaches, interner, "__disturbance_reaches_only")
+    strip_role(
+        src,
+        reaches,
+        interner,
+        crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX,
+    )
 }
 
 /// Strip a wrapper's **entry-form** funcdef (`<provider>__enter`) to runnable sh for shipping the
@@ -165,7 +174,9 @@ pub fn strip_enter(src: &str, enter: &Predict, interner: &Interner) -> String {
 
 /// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so the
 /// probe lane (`__predict`), the guard lane (`__is_converged`), and the derivation lane
-/// (`__disturbs`, 24E §2) route through ONE audited implementation. See [`strip_predict`] for the
+/// (`__disturbs`, 24E §2) route through ONE audited implementation. Callers pass the role's
+/// shared suffix CONSTANT, never a literal — the invocation side reads the same constant. See
+/// [`strip_predict`] for the
 /// full contract.
 fn strip_role(src: &str, check: &Predict, interner: &Interner, mangled_suffix: &str) -> String {
     let base = check.span.lo.0 as usize;
@@ -307,7 +318,7 @@ const VERB_BINDING: &str = "verb";
 /// through [`Diag::new`] like every other and do NOT join the spanless-mint allow-list.
 ///
 /// Routed through the typed [`Diag`] spine, NOT `Diagnostic::error` (x3a-5/t-4 fix,
-/// `224` §10): severity comes from [`dorc_core::diag::registry`] keyed on the code, never
+/// `224` §10): severity comes from [`dorc_aid::diag::registry`] keyed on the code, never
 /// hardcoded here. Both check codes are registry-declared `Error`, so the lowered output is
 /// byte-identical to the prior `Diagnostic::error(…)` form — but a future registry edit now
 /// actually takes effect instead of being a silent no-op.
@@ -437,12 +448,12 @@ apt_get__is_converged() {
         );
     }
 
-    /// A TOUCHES funcdef strips with the `__touches` funcname suffix (24E §2/§9): a payload-bound
-    /// body reaching `dpkg -L` ships to the derivation lane, so `apt-get.touches` mangles to
-    /// `apt_get__touches`, body bytes (incl. the host-tool call the static tracer would ⊤ on)
+    /// A TOUCHES funcdef strips with the `__disturbs` funcname suffix (24E §2/§9): a payload-bound
+    /// body reaching `dpkg -L` ships to the derivation lane, so `apt-get` mangles to
+    /// `apt_get__disturbs`, body bytes (incl. the host-tool call the static tracer would ⊤ on)
     /// otherwise verbatim (strip-fidelity). Pins the derivation lane's strip alongside probe/guard.
     #[test]
-    fn touches_body_strips_with_the_touches_funcname() {
+    fn touches_body_strips_with_the_disturbs_funcname() {
         use super::strip_touches;
         use crate::touches::TouchesSet;
         // A payload-bound body reaching a coordinate-emitting host tool (`apt-manifest`, a SIMPLE
@@ -505,13 +516,14 @@ package__resolve() {
         );
     }
 
-    /// A REACHES funcdef strips with the `__reaches` funcname suffix (24G §4): the typed-emission
-    /// trailing marks (`: disturbs service` / `: disturbs file`) are annotation-LINEs the strip DELETES WHOLE
-    /// (strip-fidelity, 23H §9.4 — the reached kind was already interned at LIFT, the vocabulary
-    /// fence), leaving the raw emitting commands verbatim as plain runnable sh. Pins that the
-    /// typed-emission grammar strips clean (`package.reaches` → `package__reaches`, no mark residue).
+    /// A REACHES funcdef strips with the `__disturbance_reaches_only` funcname suffix (24G §4): the
+    /// typed-emission trailing marks (`: disturbs service` / `: disturbs file`) are annotation-LINEs
+    /// the strip DELETES WHOLE (strip-fidelity, 23H §9.4 — the reached kind was already interned at
+    /// LIFT, the vocabulary fence), leaving the raw emitting commands verbatim as plain runnable sh.
+    /// Pins that the typed-emission grammar strips clean (`package` →
+    /// `package__disturbance_reaches_only`, no mark residue).
     #[test]
-    fn reaches_body_strips_with_the_reaches_funcname() {
+    fn reaches_body_strips_with_the_disturbance_reaches_only_funcname() {
         use super::strip_reaches;
         use crate::reaches::ReachesSet;
         let authored = "\
@@ -564,7 +576,7 @@ package__disturbance_reaches_only() {
 #[cfg(test)]
 mod lift_failure_tests {
     use super::{Code, lift_failure, lift_predicts};
-    use dorc_core::diag::{PredictOutOfDialect, PredictUnterminated, registry};
+    use dorc_aid::diag::{PredictOutOfDialect, PredictUnterminated, registry};
     use dorc_core::{BytePos, Interner, Span};
 
     /// The emit-vs-registry AGREEMENT pin (x3a-5/t-4 fix, `224` §10): `lift_failure` must source
@@ -598,7 +610,7 @@ mod lift_failure_tests {
         );
         assert_eq!(d.primary.span(), Some(span), "span flows through unchanged");
         assert_eq!(
-            dorc_core::diag::render_body(&d, &interner),
+            dorc_aid::diag::render_body(&d, &interner),
             "sm unterminated",
             "PASSTHROUGH message is `sm ` + the detail"
         );
@@ -616,7 +628,7 @@ mod lift_failure_tests {
         );
         assert_eq!(d.primary.span(), Some(span));
         assert_eq!(
-            dorc_core::diag::render_body(&d, &interner),
+            dorc_aid::diag::render_body(&d, &interner),
             "sm out of dialect"
         );
     }
