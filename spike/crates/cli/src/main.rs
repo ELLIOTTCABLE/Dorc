@@ -187,6 +187,19 @@ fn report_lint_operational(diag: &Diag) {
     );
 }
 
+/// One registry-sourced chrome line, its computed values interleaved between the entry's words
+/// (`289:rul-arrangement-home-is-registry-plus-transcripts`). These stderr lines have a registry
+/// HOME but not yet an editable face: no case drives them, so their words are edited in the lock
+/// until a page case exists for them.
+fn chrome(slug: &str, values: &[&str]) -> String {
+    dorc_aid::arrangement::arrangement_sentence(
+        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+        slug,
+        None,
+        values,
+    )
+}
+
 fn report_invocation_error(diag: &Diag) {
     eprintln!(
         "dorc: {}",
@@ -1164,9 +1177,7 @@ fn run(args: &Args) -> Result<RunOutcome, Diag> {
         // surface. (This pass keeps the per-line `why:` detail here too — gate-7 pins it; fully
         // moving the detail into `dorc why` is a sanctioned follow-on that churns the 13
         // expected-why needles + rewires gate-7, deferred to keep this pass green.)
-        eprintln!(
-            "dorc: run `dorc why` for the per-site cause-chains, or `dorc why {book_name}:N` to query a source line"
-        );
+        eprintln!("{}", chrome("cli-why-pointer-line", &[book_name]));
     }
 
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
@@ -1249,7 +1260,10 @@ fn run(args: &Args) -> Result<RunOutcome, Diag> {
     // plans/240 Stage-1 yardstick: the plan-summary on stderr, alongside the digest below.
     emit_plan_summary(&plan);
 
-    eprintln!("dorc: decision-digest {decision_digest}");
+    eprintln!(
+        "{}",
+        chrome("cli-decision-digest-line", &[&decision_digest])
+    );
 
     // `27V` Lane B: write the thin durable (opt-in) so `dorc why --last` can replay it (best-effort).
     if let Some(dir) = &args.whylog_dir {
@@ -2895,13 +2909,18 @@ fn emit_plan_summary(plan: &dorc_plan::Plan) {
     // a finding to REPORT (the resolver is too weak/broken), never a license to silently flip the
     // may-alias default. 0 when no resolver-bearing kind participates (the token-equality floor).
     eprintln!(
-        "dorc: plan-summary sites={} elide={} omit={} guard={} run={} may-alias={}",
-        counts.sites,
-        counts.elide,
-        counts.omit,
-        counts.guard,
-        counts.run,
-        plan.survival_report.may_alias_fires(),
+        "{}",
+        chrome(
+            "cli-plan-summary-line",
+            &[
+                &counts.sites.to_string(),
+                &counts.elide.to_string(),
+                &counts.omit.to_string(),
+                &counts.guard.to_string(),
+                &counts.run.to_string(),
+                &plan.survival_report.may_alias_fires().to_string(),
+            ],
+        )
     );
 }
 

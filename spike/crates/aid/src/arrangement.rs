@@ -376,9 +376,12 @@ mod tests {
             assert!(!entry.when_used.is_empty(), "`{}`: when_used", entry.slug);
             assert!(!entry.why.is_empty(), "`{}`: why", entry.slug);
             if let Some(words) = entry.words.words() {
+                // An INDIVIDUAL word may be empty — a line ending in a computed value needs a
+                // trailing empty word to satisfy the words = values + 1 arity. An entry with no
+                // words at all is the unwritten state, which has its own variant.
                 assert!(
-                    !words.is_empty() && words.iter().all(|word| !word.is_empty()),
-                    "`{}`: written words are non-empty — unwritten is `Words::Unwritten`",
+                    words.iter().any(|word| !word.is_empty()),
+                    "`{}`: a written entry has at least one word — unwritten is `Words::Unwritten`",
                     entry.slug
                 );
             }
