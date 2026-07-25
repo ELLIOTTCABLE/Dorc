@@ -1,4 +1,16 @@
-//! The render-level case fixpoint and hygiene gates.
+//! The generated-lock fixpoint and the class-specific lint batteries.
+//!
+//! The RENDER-level fixpoint used to live here too, over a hand-listed four-case allow-list.
+//! It does not any more: `crates/cli/tests/looms.rs` fixpoint-checks and hygiene-checks EVERY
+//! committed loom in every collection, so exactly one corpus-level render-fixpoint authority
+//! exists (`289:rider-fixpoint-gate-rationalize`). Two gates over one property meant the
+//! narrower one silently rotted — 48 of 51 cases already held while the list still named
+//! four. What stays here is what the runner cannot hold: the corpus-GLOBAL generated-lock
+//! byte-identity gate (the second of the two fixpoints `defining-case-catalog` names) and the
+//! class batteries that assert production-route identity rather than transcript bytes.
+//!
+//! Cost of the move, stated: `cargo test -p dorc-loom` alone no longer covers render fixpoint.
+//! `cargo test --workspace` does, and that is every builder's standard gate.
 
 #![expect(
     clippy::expect_used,
@@ -9,7 +21,7 @@
 use std::path::{Path, PathBuf};
 
 use dorc_loom::{DorcConsumer, generate_catalog_lock, load_corpus_by_slug, replay_case};
-use errorloom::{Case, CaseFile, RunEnv, fixpoint_check};
+use errorloom::{Case, RunEnv};
 
 fn corpus_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
@@ -27,85 +39,20 @@ fn committed_lock() -> PathBuf {
 fn generated_lock_reproduces_the_committed_bytes() {
     let consumer = DorcConsumer::new();
     let cases = load_corpus_by_slug(&corpus_dir()).expect("load corpus");
+    // The vacuity floor this crate's cross-crate corpus reach needs (`paths-are-manifest-
+    // relative`): an empty read would otherwise generate a stub lock and diff loudly for the
+    // wrong reason. Non-empty, never a count (`count-drifts`).
+    assert!(
+        !cases.is_empty(),
+        "no `.loom` cases under {} — the corpus is not where this crate reaches",
+        corpus_dir().display()
+    );
     let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
     let committed = std::fs::read_to_string(committed_lock()).expect("read committed lock");
     assert_eq!(
         generated, committed,
         "the committed catalog_lock.rs is not a fixpoint of the generator"
     );
-}
-
-/// Every committed `*.loom`, sorted for determinism (`inv-determinism`). The corpus is no
-/// longer manifest-local — it lives in the crate this one reaches ACROSS to
-/// (`288:rul-slug-decides-loom-placement`) — so an empty read now means a broken path far
-/// more often than an unpopulated corpus, and the corpus-wide gates would pass VACUOUSLY on
-/// it. The floor below makes that loud.
-fn load_corpus() -> Vec<CaseFile> {
-    let mut cases: Vec<CaseFile> = Vec::new();
-    let Ok(entries) = std::fs::read_dir(corpus_dir()) else {
-        panic!("read corpus dir {}", corpus_dir().display());
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().is_some_and(|e| e == "loom") {
-            let name = path
-                .file_name()
-                .expect("case file has a name")
-                .to_string_lossy()
-                .into_owned();
-            let text = std::fs::read_to_string(&path).expect("read case file");
-            cases.push(CaseFile::new(name, text));
-        }
-    }
-    assert!(
-        !cases.is_empty(),
-        "no `.loom` cases under {} — the corpus is not where this crate reaches",
-        corpus_dir().display()
-    );
-    cases.sort_by(|a, b| a.path().cmp(b.path()));
-    cases
-}
-
-/// The exact direct-plan corpus specimens re-render from the current catalog.
-/// Other committed commands now require the configured generic executor and are
-/// intentionally outside this in-process renderer's authority.
-#[test]
-fn direct_plan_render_fixpoint() {
-    const DIRECT_PLAN_CASES: [&str; 4] = [
-        "cmdsub-operand-top.loom",
-        // The external-linter relays are world-as-payload for the same reason the original
-        // specimen is: replay never enters their world.
-        "lint-tool-absent.loom",
-        "lint-tool-output-unparsable.loom",
-        "lint-tool-failed-without-findings.loom",
-    ];
-    let consumer = DorcConsumer::new();
-    let corpus: Vec<_> = load_corpus()
-        .into_iter()
-        .filter(|case| {
-            DIRECT_PLAN_CASES
-                .iter()
-                .any(|name| case.path() == Path::new(name))
-        })
-        .collect();
-    assert_eq!(
-        corpus.len(),
-        DIRECT_PLAN_CASES.len(),
-        "every direct-plan specimen is committed"
-    );
-    fixpoint_check(&consumer, &corpus).expect("direct-plan cases reproduce from the catalog");
-}
-
-/// Every committed case is txtar/hygiene-clean and surfaces its own `code` slug in each replay block
-/// (`282` §2 coherence gate) — the corpus can round-trip through the container.
-#[test]
-fn corpus_cases_are_hygienic() {
-    for case_file in load_corpus() {
-        let case = Case::parse(case_file.text())
-            .unwrap_or_else(|e| panic!("case `{}` parses: {e}", case_file.path().display()));
-        case.check_hygiene(Some("code"))
-            .unwrap_or_else(|e| panic!("case `{}` hygiene: {e}", case_file.path().display()));
-    }
 }
 
 /// Every lint case drives its declared `dorc lint oracle.sh --no-tools` shape through the same
