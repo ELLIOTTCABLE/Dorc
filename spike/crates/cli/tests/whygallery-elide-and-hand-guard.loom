@@ -1,0 +1,235 @@
+---
+run: round-trip
+fixpoint: executed
+why-addr: 8
+expect-why-chain:
+  - dorc why  && book.sh:8:
+  - book.sh:8 && [elide] && `ufw allow 80/tcp`
+  - elided && sm.dorc.Firewall:80/tcp@allowed is converged && probe: holds
+---
+-- book.sh --
+#!/bin/sh
+# whygallery-elide-and-hand-guard: the quiet end of the why-surface. Two famous-oracle elisions,
+# and above them the admin's OWN hand-written guard — recognized, not re-guarded: `dpkg -s nginx`
+# lifts through the pkgstate oracle's argparse, holds, and takes its `||` branch out with it.
+# Every tool named here is an INERT mock; nothing mutates.
+
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+ufw allow 80/tcp
+systemctl enable nginx
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous firewall oracle (ufw): `ufw allow <rule>` establishes Firewall:<rule>@allowed, and
+# `ufw status <rule>` is the read-only check both the probe and the verdict member re-run.
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 :! sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+ufw__is_converged() {
+   verb=$1; shift
+   case $verb in
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous package oracle (apt-get) — here it describes only the branch the admin's own guard
+# already protects, so its fact is measured but its line never reaches the plan.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- pkgstate.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# package-status QUERY oracle — the DESIGN `dpkg -s nginx || apt-get install` idiom. It models
+# only the READ, so the admin's own hand-written guard is recognized (their argv lifts through
+# this argparse) rather than re-guarded.
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+
+-- service.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous service oracle (systemctl). `enable` gates Service:<unit>@enabled.
+systemctl__predict() {
+   verb=$1; shift
+   svc : sm.dorc.Service = "$1"
+   case $verb in
+      start)   systemctl is-active  -- "$svc" : sm.dorc.Service:"$svc"@active ;;
+      enable)  systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"@enabled ;;
+   esac
+}
+
+systemctl__is_converged() {
+   verb=$1; shift
+   case $verb in
+      start)  systemctl is-active  -- "$1" >/dev/null 2>&1 ;;
+      enable) systemctl is-enabled -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records (the records the rendered probe emits; effect from the probe
+# command's rc). Every fact holds, so the whole book leaves the plan.
+site 0 effect=holds rc=0
+site 1 effect=holds rc=0
+site 2 effect=holds rc=0
+site 3 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT probe shim for `dpkg -s <pkg>` (the PkgState query the admin's own hand-guard spells).
+# HOST: nginx IS installed ⇒ rc 0 ⇒ the admin's `||` guard holds ⇒ its install is a dead branch.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` (the Package kind's probe). HOST: nginx installed.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/systemctl --
+#!/bin/sh
+# INERT mock. HOST: nginx is enabled ⇒ rc 0 for `is-enabled`.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/ufw --
+#!/bin/sh
+# INERT mock. HOST: the rule is already allowed ⇒ rc 0 ⇒ `ufw allow 80/tcp` is converged.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=c1776a10f37533f4 sites=4 @@dorc@@\n'
+# site 0: sm.dorc.PkgState:nginx@installed
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg="$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1
+}
+dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Package:nginx@installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: sm.dorc.Firewall:80/tcp@allowed
+ufw__predict() {
+   verb=$1; shift
+   rule="$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 ;;
+   esac
+}
+ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 3: sm.dorc.Service:nginx@enabled
+systemctl__predict() {
+   verb=$1; shift
+   svc="$1"
+   case $verb in
+      start)   systemctl is-active  -- "$svc" ;;
+      enable)  systemctl is-enabled -- "$svc" ;;
+   esac
+}
+systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# whygallery-elide-and-hand-guard: the quiet end of the why-surface. Two famous-oracle elisions,
+# and above them the admin's OWN hand-written guard — recognized, not re-guarded: `dpkg -s nginx`
+# lifts through the pkgstate oracle's argparse, holds, and takes its `||` branch out with it.
+# Every tool named here is an INERT mock; nothing mutates.
+
+true || :   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; apt-get install -y nginx] (already converged / dead branch)
+# ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
+# systemctl enable nginx   # dorc: elided (already converged / dead branch)

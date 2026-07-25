@@ -1,0 +1,200 @@
+---
+run: round-trip
+fixpoint: executed
+flags: --trust-footprints
+why-addr: 10
+expect-why:
+  - site 1 survives+elides past wall site 0 && touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Firewall:443/tcp disjoint
+expect-why-chain:
+  - dorc why  && book.sh:10:
+  - book.sh:10 && `ufw allow 443/tcp`
+  - removed from the plan (elided) && sm.dorc.Firewall:443/tcp is converged && probe: holds
+  - 1. measured && sm.dorc.Firewall:443/tcp was measured converged
+  - 2. vouched && firewall.oracle.sh:
+  - 3. ran && (wall site 0) really ran above this line
+  - 4. claimed && disturbs at most {sm.dorc.Package:oldpkg} && package.oracle.sh:
+  - 5. derived && proven disjoint from sm.dorc.Firewall:443/tcp
+  - 6. consented && `--trust-footprints` was set
+  - link 4 is the one unverified-by-construction claim
+  - to re-measure
+  - to fix && package.oracle.sh: && line to widen
+---
+-- book.sh --
+#!/bin/sh
+# whygallery-survive-trusted-footprint: the ONE place a line leaves the plan on a human CLAIM
+# rather than on a measurement. `apt-get install -y oldpkg` is diverged, so it RUNS — a wall
+# across the book. Its author's `disturbs` member claims that install touches at most the one
+# Package cell it names; the firewall fact below is a different kind entirely, so the claim is
+# provably disjoint of it, and `--trust-footprints` is the admin consenting to act on a claim
+# nothing verifies. Every tool named here is an INERT mock; nothing mutates.
+
+apt-get install -y oldpkg
+ufw allow 443/tcp
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous firewall oracle (ufw). Nothing here knows about packages — the disjointness the
+# survival rests on is derived from the two kinds, never declared by either author.
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 :! sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+ufw__is_converged() {
+   verb=$1; shift
+   case $verb in
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous package oracle (apt-get). The `disturbs` member below is the AT-MOST claim the whole
+# survival hangs on: this author says an install touches the Package cell it names, and nothing
+# else. Nothing checks that. Widening this member is the repair the why-chain points at.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install|purge) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
+   esac
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: site 0 = Package:oldpkg ABSENT ⇒ diverged ⇒ the install RUNS: the wall.
+# site 1 = Firewall:443/tcp holds ⇒ converged, and survives that running wall on the claim.
+site 0 effect=absent rc=1
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT mock for the running wall: logs its argv, mutates nothing. The whole point of the case is
+# that a REAL apt-get might do far more than its author's `disturbs` line claims.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>`. HOST: oldpkg is ABSENT ⇒ rc 1 ⇒ diverged.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1
+
+-- mocks/ufw --
+#!/bin/sh
+# INERT mock. HOST: the rule is already allowed ⇒ rc 0 ⇒ `ufw allow 443/tcp` is converged.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: apt-get install -y oldpkg
+
+-- replay --
+$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f35f9c245d30a3ff sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Package:oldpkg@installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Firewall:443/tcp@allowed
+ufw__predict() {
+   verb=$1; shift
+   rule="$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 ;;
+   esac
+}
+ufw__predict 'allow' '443/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# whygallery-survive-trusted-footprint: the ONE place a line leaves the plan on a human CLAIM
+# rather than on a measurement. `apt-get install -y oldpkg` is diverged, so it RUNS — a wall
+# across the book. Its author's `disturbs` member claims that install touches at most the one
+# Package cell it names; the firewall fact below is a different kind entirely, so the claim is
+# provably disjoint of it, and `--trust-footprints` is the admin consenting to act on a claim
+# nothing verifies. Every tool named here is an INERT mock; nothing mutates.
+
+apt-get install -y oldpkg
+# ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
