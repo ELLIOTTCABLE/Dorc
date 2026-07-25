@@ -418,3 +418,10 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   standing for all lanes: an incursion-window `git add` can COMMIT junk — every
   builder's pre-commit `git status` check must eyeball for `sync-conflict` names
   explicitly. Re-verify after excision: `unit 1184 | e2e 97 | looms 51 | gates ok`.
+- **`289:rul-conflict-files-delete-this-session`** (HUMAN-TYPED 2026-07-24) —
+  `.claude/worktrees` cannot be stignored (cross-machine viewing of worktree work
+  is load-bearing); PHNHRER is idle right now; for THIS SESSION ONLY, builders and
+  conductor brutally delete any `*sync-conflict*` file on sight (report paths).
+  NOT a standing offer — the quarantine-don't-delete posture resumes at session
+  end. The arc-end cleanup builder sweeps the whole repo + all worktrees under
+  this license before it expires.
