@@ -9,11 +9,14 @@
 //! # What an entry is
 //!
 //! An entry is ORDERED WORDS keyed by an arrangement slug plus an OPTIONAL occurrence
-//! discriminator. The sequence shape is deliberate: a future chain-link narration wants
-//! per-link connectives and tier-word slots ([`289:rider-arrangement-home-anticipates-chains`]),
-//! and a flat-string weld would have to be undone to get there. Nothing chain-shaped is BUILT
-//! here — every entry today holds exactly one word, and the edit path refuses a multi-word
-//! entry rather than guessing where an edited string re-splits.
+//! discriminator. The sequence shape earns itself immediately: a chrome line with interpolated
+//! counts stores its fixed runs as the words and lets the seat interleave the computed values
+//! ([`arrangement_sentence`]). It is also the room a future chain-link narration needs for
+//! per-link connectives and tier-word slots (`289:rider-arrangement-home-anticipates-chains`).
+//!
+//! What is NOT built: re-splitting. A single-word entry edits back from a transcript exactly as
+//! catalog prose does; a multi-word entry refuses, because nothing recovers where an edited line
+//! re-divides at its value boundaries.
 //!
 //! Occurrence resolution is selector-shaped, matching the coordinate vocabulary elsewhere in
 //! the project: an occurrence-keyed entry wins for its own occurrence, and the occurrence-less
@@ -193,10 +196,43 @@ pub fn arrangement_text(
     slug: &str,
     occurrence: Option<usize>,
 ) -> String {
-    match lookup.words(slug, occurrence) {
-        Some(words) => words.concat(),
-        None => format!("[unwritten: {slug}]"),
+    arrangement_sentence(lookup, slug, occurrence, &[])
+}
+
+/// One chrome line composed from its entry's ORDERED WORDS and the renderer's computed values,
+/// alternating `words[0] values[0] words[1] …` — the shape a sentence with interpolated counts
+/// needs, and the reason entries are sequences rather than flat strings.
+///
+/// The whole line renders as ONE span, so a value never splits a chrome line into fragments the
+/// edit transport has to re-anchor between (short computed runs — a bare digit, an empty plural
+/// suffix — are not anchors, and fragmenting on them breaks attribution for every OTHER prose
+/// section in the same render). The price, stated: a multi-word entry cannot be edited back from a
+/// transcript yet, because nothing re-splits an edited line at its value boundaries — the edit path
+/// refuses loudly rather than guessing (`DorcApplyRefusal::ArrangementIsSequenceStructured`).
+///
+/// An arity disagreement between the entry and its seat renders the greppable unwritten
+/// placeholder: an entry that cannot serve its seat has no words for it.
+#[must_use]
+pub fn arrangement_sentence(
+    lookup: &dyn ArrangementLookup,
+    slug: &str,
+    occurrence: Option<usize>,
+    values: &[&str],
+) -> String {
+    let Some(words) = lookup.words(slug, occurrence) else {
+        return format!("[unwritten: {slug}]");
+    };
+    if words.len() != values.len().saturating_add(1) {
+        return format!("[unwritten: {slug}]");
     }
+    let mut out = String::new();
+    for (index, word) in words.iter().enumerate() {
+        out.push_str(word);
+        if let Some(value) = values.get(index) {
+            out.push_str(value);
+        }
+    }
+    out
 }
 
 /// Push one registry-sourced arrangement span onto a part stream — the ONE seat that mints an
@@ -209,8 +245,19 @@ pub fn push_arrangement_words(
     slug: &'static str,
     occurrence: Option<usize>,
 ) {
+    push_arrangement_sentence(parts, lookup, slug, occurrence, &[]);
+}
+
+/// [`push_arrangement_words`] for a line carrying computed values (see [`arrangement_sentence`]).
+pub fn push_arrangement_sentence(
+    parts: &mut RenderParts,
+    lookup: &dyn ArrangementLookup,
+    slug: &'static str,
+    occurrence: Option<usize>,
+    values: &[&str],
+) {
     parts.push(RenderPart::ArrangementWords {
-        text: arrangement_text(lookup, slug, occurrence),
+        text: arrangement_sentence(lookup, slug, occurrence, values),
         slug,
         occurrence,
     });
@@ -422,18 +469,31 @@ mod tests {
         assert_eq!(registry.words("absent", None), None);
     }
 
-    /// An unwritten entry renders the same greppable placeholder the catalog does, and a
-    /// registered entry renders its words concatenated.
+    /// A sentence entry interleaves its words with the seat's computed values; an absent entry, or
+    /// one whose word count cannot serve the seat's value count, renders the greppable placeholder
+    /// rather than a silently-wrong line.
     #[test]
-    fn arrangement_text_renders_words_or_the_placeholder() {
+    fn a_sentence_interleaves_words_and_values_or_refuses_by_arity() {
         let registry = vec![OwnedArrangement {
-            slug: "two-words".to_owned(),
+            slug: "tally".to_owned(),
             occurrence: None,
             when_used: "w".to_owned(),
             why: "y".to_owned(),
-            words: OwnedWords::Authored(vec!["a ".to_owned(), "b".to_owned()]),
+            words: OwnedWords::Authored(vec![
+                "found ".to_owned(),
+                " thing".to_owned(),
+                ".".to_owned(),
+            ]),
         }];
-        assert_eq!(arrangement_text(&registry, "two-words", None), "a b");
+        assert_eq!(
+            arrangement_sentence(&registry, "tally", None, &["2", "s"]),
+            "found 2 things."
+        );
+        assert_eq!(
+            arrangement_sentence(&registry, "tally", None, &["2"]),
+            "[unwritten: tally]",
+            "an entry that cannot serve its seat has no words for it"
+        );
         assert_eq!(
             arrangement_text(&registry, "nope", None),
             "[unwritten: nope]"

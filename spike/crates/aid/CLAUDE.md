@@ -84,9 +84,17 @@ crate's charter) · `notes/287` (errorloom as-built).
   change. `authored_words_are_case_owned` is the gate (the `message_registers_are_sm_or_unwritten`
   twin).
 - **arrangement-words-are-a-sequence-nothing-splits** (`289:rider-arrangement-home-anticipates-chains`)
-  — entries store ORDERED WORDS so a future chain narration has room; every entry today holds
-  exactly one, and an edit against a multi-word entry REFUSES
-  (`DorcApplyRefusal::ArrangementIsSequenceStructured`). Do not build word-boundary inference.
+  — entries store ORDERED WORDS: a chrome line with interpolated counts stores its fixed runs and
+  the seat interleaves the computed values (`arrangement_sentence`), which also leaves room for a
+  future chain narration. An edit against a multi-word entry REFUSES
+  (`DorcApplyRefusal::ArrangementIsSequenceStructured`) — nothing re-splits an edited line at its
+  value boundaries. Do not build word-boundary inference.
+- **a-chrome-line-is-one-span** — a value-bearing chrome line renders as ONE `ArrangementWords`
+  span, never as word-spans fenced by computed ones. The edit transport anchors sections on the
+  immutable text BETWEEN them, and a bare digit or an empty plural suffix is not an anchor:
+  fragmenting one line that way broke attribution for every OTHER prose section in the same render
+  (observed, 2026-07-24). Layout — a line's trailing newline included — stays computed, so a render
+  never ends inside an editable span.
 - **error-slugs-are-semantic** (`288:rul-error-slugs-are-semantic`) — code slugs are
   user-facing surface that becomes a real compat surface at publication. Mint them
   semantic-first, never as a file-naming decision.

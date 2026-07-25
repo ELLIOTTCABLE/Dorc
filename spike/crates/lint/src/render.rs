@@ -38,15 +38,23 @@ pub fn render_human_parts_at(report: &LintReport, verbosity: Verbosity) -> Rende
     let file_count = report.coverage.files.len();
     let source_count = report.coverage.sources.len();
     if report.findings.is_empty() {
-        return structure(format!(
-            "dorc lint: clean — nothing found across {file_count} file{}, {source_count} source{}.\n",
-            plural(file_count),
-            plural(source_count)
-        ));
+        let mut clean = RenderParts::new();
+        sentence(
+            &mut clean,
+            "lint-clean-sentence",
+            &[
+                &file_count.to_string(),
+                plural(file_count),
+                &source_count.to_string(),
+                plural(source_count),
+            ],
+        );
+        newline(&mut clean);
+        return clean;
     }
-    let mut out = structure(String::from(
-        "dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):\n",
-    ));
+    let mut out = RenderParts::new();
+    words(&mut out, "lint-advisory-preamble");
+    newline(&mut out);
     let mut current_group: Option<&str> = None;
     for f in &report.findings {
         let group = if f.path.is_empty() {
@@ -63,16 +71,22 @@ pub fn render_human_parts_at(report: &LintReport, verbosity: Verbosity) -> Rende
         }
         append_finding_parts(&mut out, f, verbosity);
     }
-    out.push(RenderPart::Arrangement {
-        text: format!(
-            "\ndorc lint: {errors} error{}, {warns} warning{}, {infos} info{} across {file_count} file{}.\n",
+    newline(&mut out);
+    sentence(
+        &mut out,
+        "lint-summary-sentence",
+        &[
+            &errors.to_string(),
             plural(errors),
+            &warns.to_string(),
             plural(warns),
+            &infos.to_string(),
             plural(infos),
-            plural(file_count)
-        ),
-        slug: "lint-summary",
-    });
+            &file_count.to_string(),
+            plural(file_count),
+        ],
+    );
+    newline(&mut out);
     out
 }
 
@@ -80,13 +94,33 @@ fn plural(count: usize) -> &'static str {
     if count == 1 { "" } else { "s" }
 }
 
-fn structure(text: String) -> RenderParts {
-    let mut parts = RenderParts::new();
+/// One registry-sourced chrome span (`289:rul-arrangement-home-is-registry-plus-transcripts`).
+/// Every span this seat emits is unstamped, so a slug repeated across findings shares ONE editable
+/// entry — the whole point of occurrence-less keying.
+fn words(parts: &mut RenderParts, slug: &'static str) {
+    sentence(parts, slug, &[]);
+}
+
+/// A line's terminating newline. Layout is never a word: keeping it OUT of the entry also keeps a
+/// render from ending in an editable span, where a transcript that merely lost its trailing newline
+/// would read as a prose edit instead of the malformed transcript it is.
+fn newline(parts: &mut RenderParts) {
     parts.push(RenderPart::Arrangement {
-        text,
-        slug: "lint-structure",
+        text: String::from("\n"),
+        slug: "lint-line-break",
     });
-    parts
+}
+
+/// [`words`] for a line whose entry interleaves computed values (counts, plural suffixes) between
+/// its words. The counts stay renderer-computed; only the words are registry prose.
+fn sentence(parts: &mut RenderParts, slug: &'static str, values: &[&str]) {
+    dorc_aid::arrangement::push_arrangement_sentence(
+        parts,
+        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+        slug,
+        None,
+        values,
+    );
 }
 
 /// The human render's density dial (`289:rul-lint-render-split-is-policy`, riding `KNOBS:kFLOW` /
@@ -160,11 +194,6 @@ fn append_compact_parts(out: &mut RenderParts, f: &Finding) {
         (Some(l), None) => format!("{l}"),
         (None, _) => "-".to_owned(),
     };
-    let fidelity = match f.remap {
-        RemapFidelity::Exact => "",
-        RemapFidelity::Approximate => " (approximate location)",
-        RemapFidelity::None => " (raw)",
-    };
     out.push(RenderPart::Arrangement {
         text: format!(
             "  {loc} {} [{}:{}] ",
@@ -184,8 +213,13 @@ fn append_compact_parts(out: &mut RenderParts, f: &Finding) {
             slug: "lint-relay-message",
         }),
     }
+    match f.remap {
+        RemapFidelity::Exact => {}
+        RemapFidelity::Approximate => words(out, "lint-fidelity-approximate"),
+        RemapFidelity::None => words(out, "lint-fidelity-raw"),
+    }
     out.push(RenderPart::Arrangement {
-        text: format!("{fidelity}\n"),
+        text: String::from("\n"),
         slug: "lint-finding-terminator",
     });
 }
