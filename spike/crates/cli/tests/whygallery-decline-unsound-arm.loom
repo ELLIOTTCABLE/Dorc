@@ -146,3 +146,10 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 
 # ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
 sysctl vm.drop_caches
+
+$ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.txt
+dorc why book.sh:9:
+
+book.sh:9  [run]  `sysctl vm.drop_caches`
+  └─ runs unprobed — no read-only check could be shipped (unsure ⇒ dorc runs it, to stay safe)
+  └─ first wall (book order) — an oracle vouching its convergence would elide it when converged
