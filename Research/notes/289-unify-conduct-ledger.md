@@ -394,3 +394,19 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   (b) the files are INVISIBLE to git (`status -uall`/`ls-files --others`/
   `check-ignore` all disagree with `find`) — a fixture tree that can gain
   git-invisible files is a real hazard, escalated to the human.
+
+## §2m — SyncThing incursion #5: BUILD-BREAKING, conductor worktree (2026-07-24)
+
+- The phase-5 fold cold-verify FAILED (exit 101) on machine-sync junk, not code:
+  SyncThing dropped SEVEN `*.sync-conflict-*PHNHRER` copies into the CONDUCTOR
+  worktree — two in cargo-visible locations (`dorc-loom/src/bin/*.rs`,
+  `dorc-loom/tests/*.rs`) where cargo auto-targets them and dies on the illegal
+  crate name; plus copies of `cli/src/main.rs`, root `AID-NEEDS.md`, and THIS
+  LEDGER. Another machine is actively writing into live build trees.
+- Disposition: all seven QUARANTINED (paths preserved) to the session scratchpad
+  `sync-conflict-quarantine/` — moved, never deleted (conflict cleanup stays
+  human-owned); verification re-run; the phase-6 builder pre-warned with the
+  quarantine-and-continue protocol.
+- ESCALATED to the human (with §2l's git-invisibility observation): five
+  incursions across two rounds, now build-breaking and ledger-touching; the
+  `.stignore` exclusion repair is the standing human-owned fix.
