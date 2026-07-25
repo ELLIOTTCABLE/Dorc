@@ -640,3 +640,41 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - AMENDED mid-flight (HUMAN-TYPED 2026-07-25): the worklist rider is a tiny
   TEMPORARY grep shell-script (deleted after the prose pass), NOT a dorc-loom
   subcommand; low criticality, no churn. Relayed to the running builder.
+
+## §2u — Hint-homing LANDED + FOLDED + verified; flag rulings (conductor, 2026-07-25)
+
+- LANDED @ `4f669ee6` on `ai/r28-unify-hints` (4 commits), FOLDED; conductor cold
+  verify own-hand (`clean -p dorc-aid` + full clippy 0 + `DRY=1 conduct-bless`:
+  build ok | unit 1201 | e2e 98 | looms 73 | gates ok). Zero user-visible bytes
+  changed; zero golden/loom churn; both fixpoint gates green (the hand-seeded
+  `Migrated` rows are generator-fixpoint, per the `sm `-row precedent). Four
+  occurrence-less `why-remediation-*` rows, `Words::Migrated` verbatim; the
+  hardcoded `remediation_hint()` fn is dead; four byte-identity migration pins.
+- **`289:seam-whylens-render-seat`** (rules the builder's
+  `tc-whylens-has-no-render-seat`, ACCEPTED as disposed) — the why-lens reason is a
+  FRAGMENT embedded mid-line by two consumers, so it cannot own the trailing
+  computed layout an editable span needs; the rows are read as plain text
+  (`arrangement_text`, the `usage_text` precedent) and are lock-edit-only,
+  FACELESS (single-word bucket; the multi-word seam never fired). The builder's
+  new aid-CLAUDE.md law `a-registry-row-need-not-mint-a-span` is conductor-
+  reviewed and ACCEPTED. Giving the why-lens a real parts-stream seat is a
+  render-form design act — banked to the ONE future transport/register-schema
+  sitting alongside `28A:rul-glued-param-rehole-seam` +
+  `289:seam-multiword-chrome-render-only`.
+- **`289:finding-reason-opener-still-hardcoded`** (banked, NOT extended) — the
+  `why()` reason OPENER ("ran because … (when unsure, run)") remains a hardcoded
+  `format!` in `diag.rs`; it was the OTHER half of `288` §6's class-keyed-prose
+  bullet. Migrating it interleaves computed values (multi-word/lock-only) and
+  re-raises the seat question, so it belongs to the same deferred sitting; the
+  human's unit named the hints, and no-churn was typed. Surfaced to the human —
+  pull it forward if the residue offends.
+- The worklist script (`spike/_prose-worklist.sh`, 30 lines, marked temporary)
+  emits the 102-item phase-8 inventory (74 catalog `sm ` messages + 1 `sm ` help +
+  6 unwritten + 21 arrangement Migrated); its independent 5-row lock-only count
+  confirms `289:seam-multiword-chrome-render-only`'s inventory. `help: None`
+  deliberately excluded (register-absence is completeness, not debt).
+- ARC STATE: phases 0–7 + the hint-homing unit ALL LANDED+FOLDED+verified; stack
+  tip = this fold. Phase 8 (Fable prose burn-down) is the sole open gate, HELD
+  for the human's ack; its entry point is the worklist script; its package is
+  §2s(a)–(e) with (a) now including the 4 `why-remediation-*` lock rows and the
+  opener finding above.
