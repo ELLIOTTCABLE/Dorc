@@ -107,6 +107,13 @@ crate's charter) · `notes/287` (errorloom as-built).
   fragmenting one line that way broke attribution for every OTHER prose section in the same render
   (observed, 2026-07-24). Layout — a line's trailing newline included — stays computed, so a render
   never ends inside an editable span.
+- **a-registry-row-need-not-mint-a-span** — a seat may read registry words as PLAIN TEXT
+  (`arrangement_text`) instead of stamping an `ArrangementWords` span, and two do:
+  `dorc_cli::usage_text`, and the why-lens remediation hint, whose reason is a FRAGMENT (`dorc why`
+  embeds it mid-line) and so cannot own the trailing computed layout that keeps a render from
+  ending inside an editable span (`a-chrome-line-is-one-span`). Such a row is storage-homed but
+  faceless: its edit-home is the lock until a seat renders it into a transcript. Do not "fix" one
+  by stamping a span the transport cannot anchor.
 - **error-slugs-are-semantic** (`288:rul-error-slugs-are-semantic`) — code slugs are
   user-facing surface that becomes a real compat surface at publication. Mint them
   semantic-first, never as a file-naming decision.
