@@ -1148,6 +1148,10 @@ fn drive_extra_replays(
     let mut outputs: Vec<String> = Vec::new();
     for (index, block) in blocks.iter().enumerate().skip(1) {
         match run_replay_block(harness, dir, &framed_path, block.command()) {
+            Ok(got) if scratch_path_leaked(&got, dir) => failures.push(format!(
+                "FAIL  {name}  [replay {index}: `{}` echoed the throwaway materialization path — a transcript carrying a machine-specific absolute path is not committable (`282` §7); spell the invocation with case-relative paths]",
+                block.command()
+            )),
             Ok(got) => {
                 if !harness.bless && got != block.output() {
                     failures.push(format!(
@@ -1172,6 +1176,16 @@ fn drive_extra_replays(
     } else {
         (Vec::new(), failures)
     }
+}
+
+/// Did a render echo back the per-run materialization dir? Renders that quote an argv path
+/// (the `why` heading does) turn an absolute invocation into bytes no other machine reproduces,
+/// so `282` §7 refuses them at capture rather than committing them. Both separator spellings are
+/// checked: Windows argv paths come back with the one the caller supplied.
+fn scratch_path_leaked(output: &str, dir: &Path) -> bool {
+    let native = dir.display().to_string();
+    let slashed = native.replace('\\', "/");
+    output.contains(&native) || output.contains(&slashed)
 }
 
 /// Execute one committed replay command and return its stdout as transcript bytes.
