@@ -304,3 +304,35 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   into the lane FIRST (the touches fold landed after their base; surface conflicts
   now, gates re-verified post-merge), then the pre-briefed W2 route + invocation
   codes + `dorc-sh` + the reflow fix.
+
+## §2j — Phases-2–4 lane COMPLETE + folded (conductor, 2026-07-24)
+
+- LANDED @ `7948a0cb` (27 commits + a clean zero-conflict stack merge), FOLDED @
+  `6686250d`. Cold gates at lane tip: 1184 unit / 97 e2e / clippy 0 / all four.
+  Catalog now 87 rows; ALL 28 lane-minted codes carry `sm `-migrated shipped
+  sentences (`message: None` count unchanged at the pre-existing 6); ceiling 15
+  stands slack. The reflow fix found TWO bugs — the compact-line gutter heuristic
+  AND a latent `str::lines()` trailing-newline drop that had refused EVERY case
+  edit corpus-wide (compact lines were merely first to reach `compile_preview`).
+  The W2 lib target extracted as a pure move (562 lines, one `use`), pinned
+  both-ways (own-command fires / different-code refused / clean-parse falls
+  through to payload world).
+- Flag rulings: `cli-shim-dir-unwritable` beyond-inventory mint ACCEPTED (forced
+  by one-catalog-no-legacy) · the sm-verbatim two-splits (18→21 codes) ACCEPTED
+  (law-codes-vary-by-world doing its job) · `{USAGE}` NOT carried into rows —
+  ACCEPTED, and banked as PHASE-7 INPUT (usage/help text is seat-appended today;
+  the one non-verbatim deviation) · `result_large_err` resolved by targeted
+  reasoned `#[expect]`s ACCEPTED (perf-doctrine: once-per-process cold path;
+  boxing would obscure the mint shape the lexical gate greps) · the three
+  whylog cases that are NOT render-fixpoints (blank-line divergence; churn
+  reverted) banked as PHASE-6 INPUT · comment budget 74-net ACCEPTED for a
+  three-phase two-crate lane (the bulk is world-state-split rationale — deleting
+  reasoning to hit a quota is Goodhart).
+- **`289:rul-spanless-gate-stays-lexical`** (their flag 1) — the gate stays a
+  lexical grep (it caught two helper-factorings and a doc-comment needle this
+  lane; working as designed); the footgun is now a bullet in
+  `crates/aid/CLAUDE.md` (`spanless-gate-is-lexical`) so it is prevented at
+  authoring rather than caught at gate.
+- Conductor cold verification at the fold: full clean + build + clippy +
+  `DRY=1 conduct-bless` (includes both fixpoint gates on MY binary — the
+  working-state promote licensing check).
