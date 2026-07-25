@@ -72,8 +72,7 @@ use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 use dorc_cli::{
-    Args, HELP, Invocation, LINT_USAGE, LintArgs, LintFormat, Mode, USAGE, humane_read_error,
-    parse_args_from,
+    Args, HELP, Invocation, LintArgs, LintFormat, Mode, USAGE, humane_read_error, parse_args_from,
 };
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
@@ -157,6 +156,10 @@ fn main() -> ExitCode {
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
 /// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
 fn parse_args() -> Result<Invocation, Diag> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     parse_args_from(raw)
@@ -198,6 +201,10 @@ fn report_invocation_error(diag: &Diag) {
 /// dialect construct (parser-backed — [`dorc_oracle::strip_file`]), print runnable stock sh to
 /// stdout. An unmarked file passes through byte-identical (idempotent). Pure — the strip carries no
 /// diagnostics today, but any it grows are reported to stderr so stdout stays exactly the artifact.
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
 fn strip_command(path: &str) -> Result<(), Diag> {
     let src = std::fs::read_to_string(path).map_err(|e| humane_read_error("source", path, &e))?;
     let mut interner = Interner::default();
@@ -212,6 +219,10 @@ fn strip_command(path: &str) -> Result<(), Diag> {
 
 /// Read + CONCATENATE the book(s) into one analyzed unit (`\n`-joined so no two files' lines
 /// merge — multi-book concatenation-as-one-unit). Humane per-file errors.
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
 fn read_books(books: &[String]) -> Result<String, Diag> {
     let mut out = String::new();
     for (i, path) in books.iter().enumerate() {
@@ -228,6 +239,10 @@ fn read_books(books: &[String]) -> Result<String, Diag> {
 /// Resolve the oracle PATHS (ack-6): the explicit `-o` list first, then every `*.oracle.sh` in
 /// each `--oracle-dir` (glob-sorted for determinism — the cli is the I/O edge, but the ORDER it
 /// hands the kernel must be stable). A directory that cannot be read is a humane error.
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
 fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Vec<String>, Diag> {
     let mut paths: Vec<String> = oracles.to_vec();
     for dir in oracle_dirs {
@@ -330,6 +345,10 @@ fn executable_exts() -> Vec<String> {
 /// trichotomy (0 clean / 1 findings-at-or-above / operational distinct from both). Operational checks
 /// take precedence over the findings threshold (a compromised run must not read as a clean/findings
 /// signal — `27R` §8 delta-exit-trichotomy-sharpened).
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear exit-trichotomy driver: resolve inputs, run, render, then the operational checks in precedence order; splitting it would scatter the ONE precedence the exit codes encode"
+)]
 fn lint_command(args: &LintArgs) -> ExitCode {
     if args.list_sources {
         for s in dorc_lint::list_sources() {
@@ -443,6 +462,10 @@ fn lint_command(args: &LintArgs) -> ExitCode {
 
 /// Read a set of paths into [`dorc_lint::LintInput`]s; an unreadable file is a hard error (the lint
 /// cannot lint what it cannot read — an operational failure, `27R` §8b). `kind` labels the humane error.
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
 fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintInput>, Diag> {
     let mut inputs = Vec::new();
     for path in paths {
@@ -461,6 +484,10 @@ fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintI
 /// a `sudo -n <inner-check>` can exec the guest across the wrapper boundary. On unix the executable
 /// bit is set here; on other platforms (msys) the exec permission is supplied by the session harness
 /// (`e2e/run.sh` `chmod +x`), so a plain write suffices and this stays cross-platform.
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
 fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), Diag> {
     if files.is_empty() {
         return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
@@ -482,7 +509,8 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
 
 #[expect(
     clippy::too_many_lines,
-    reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here"
+    clippy::result_large_err,
+    reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
 )]
 fn run(args: &Args) -> Result<RunOutcome, Diag> {
     let mut interner = Interner::default();
@@ -1257,6 +1285,10 @@ enum ReplayLoad {
 const WHYLOG_KEEP: usize = 5;
 const WHYLOG_CAP: usize = 1_000_000;
 
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
 fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
     // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.

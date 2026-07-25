@@ -21,6 +21,11 @@
 use dorc_aid::Severity;
 use dorc_aid::diag::{Diag, DiagCode};
 
+/// The invocation-error carrier (`288` §6). A plain [`Diag`]: the parsers hand the print seat the
+/// same typed value every other surface carries, and boxing it would buy nothing but an indirection
+/// on a path that runs at most once per process.
+pub type InvocationError = Diag;
+
 /// The one-line usage synopsis, embedded in argument-error messages. The full
 /// mode/flag/exit-code reference is [`HELP`] (printed by `--help` to stdout, exit 0).
 pub const USAGE: &str =
@@ -193,7 +198,11 @@ pub struct Args {
 ///
 /// # Errors
 /// Returns the typed invocation diagnostic a bad invocation produces (`288` §6).
-pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, Diag> {
+#[expect(
+    clippy::result_large_err,
+    reason = "the Err is a full `Diag` because that is what the print seat renders; the whole family \n              fires at most once per process, so the cold-path size is not worth an indirection"
+)]
+pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> {
     // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
     // errors, and they win even alongside a malformed flag (the conventional precedence).
     if raw.iter().any(|a| a == "-h" || a == "--help") {
@@ -206,12 +215,12 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, Diag> {
     // mode/flag machinery. Exactly one positional (the file to strip); no other flags apply.
     if raw.first().map(String::as_str) == Some("strip") {
         let path = raw.get(1).ok_or_else(|| {
-            spanless(DiagCode::CliStripNeedsPath(
+            Diag::new_spanless_site(DiagCode::CliStripNeedsPath(
                 dorc_aid::diag::CliStripNeedsPath,
             ))
         })?;
         if path.starts_with('-') {
-            return Err(spanless(DiagCode::CliStripGotAFlag(
+            return Err(Diag::new_spanless_site(DiagCode::CliStripGotAFlag(
                 dorc_aid::diag::CliStripGotAFlag { got: path.clone() },
             )));
         }
@@ -268,7 +277,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, Diag> {
             // (did-you-mean); otherwise it is a positional book (the round-trip default — the flag
             // loop below picks it up).
             if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why", "strip"]) {
-                return Err(spanless(DiagCode::CliUnknownMode(
+                return Err(Diag::new_spanless_site(DiagCode::CliUnknownMode(
                     dorc_aid::diag::CliUnknownMode {
                         mode: w.to_owned(),
                         suggestion: sugg.to_owned(),
@@ -369,15 +378,15 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, Diag> {
                 "--version",
             ];
             return Err(match nearest(&arg, &known) {
-                Some(sugg) => spanless(DiagCode::CliUnknownFlagDidYouMean(
+                Some(sugg) => Diag::new_spanless_site(DiagCode::CliUnknownFlagDidYouMean(
                     dorc_aid::diag::CliUnknownFlagDidYouMean {
                         flag: arg.clone(),
                         suggestion: sugg.to_owned(),
                     },
                 )),
-                None => spanless(DiagCode::CliUnknownFlag(dorc_aid::diag::CliUnknownFlag {
-                    flag: arg.clone(),
-                })),
+                None => Diag::new_spanless_site(DiagCode::CliUnknownFlag(
+                    dorc_aid::diag::CliUnknownFlag { flag: arg.clone() },
+                )),
             });
         } else {
             // A bare word (no `-`): a positional book (the day-one `dorc plan book.sh` ergonomic;
@@ -386,20 +395,20 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, Diag> {
         }
     }
     if books.is_empty() && !last {
-        return Err(spanless(DiagCode::CliNoBookGiven(
+        return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
         )));
     }
     if whylog.is_some() && whylog_dir.is_some() {
-        return Err(spanless(DiagCode::CliFlagsMutuallyExclusive(
-            dorc_aid::diag::CliFlagsMutuallyExclusive {
+        return Err(Diag::new_spanless_site(
+            DiagCode::CliFlagsMutuallyExclusive(dorc_aid::diag::CliFlagsMutuallyExclusive {
                 first: "--whylog",
                 second: "--whylog-dir",
-            },
-        )));
+            }),
+        ));
     }
     if whylog.is_some() && (mode != Mode::Why || !last) {
-        return Err(spanless(DiagCode::CliFlagRequiresMode(
+        return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
             dorc_aid::diag::CliFlagRequiresMode {
                 flag: "--whylog",
                 mode: "dorc why --last",
@@ -465,21 +474,21 @@ fn levenshtein(a: &str, b: &str) -> usize {
 /// an unclassed OS failure are three states of the world with three different remediations. Only
 /// the residual arm passes the platform's own words through.
 #[must_use]
-pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> Diag {
+pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> InvocationError {
     match err.kind() {
         std::io::ErrorKind::NotFound => {
-            spanless(DiagCode::CliFileNotFound(dorc_aid::diag::CliFileNotFound {
+            Diag::new_spanless_site(DiagCode::CliFileNotFound(dorc_aid::diag::CliFileNotFound {
                 kind: kind.to_owned(),
                 path: path.to_owned(),
             }))
         }
-        std::io::ErrorKind::PermissionDenied => spanless(DiagCode::CliFilePermissionDenied(
-            dorc_aid::diag::CliFilePermissionDenied {
+        std::io::ErrorKind::PermissionDenied => Diag::new_spanless_site(
+            DiagCode::CliFilePermissionDenied(dorc_aid::diag::CliFilePermissionDenied {
                 kind: kind.to_owned(),
                 path: path.to_owned(),
-            },
-        )),
-        _ => spanless(DiagCode::CliFileUnreadable(
+            }),
+        ),
+        _ => Diag::new_spanless_site(DiagCode::CliFileUnreadable(
             dorc_aid::diag::CliFileUnreadable {
                 kind: kind.to_owned(),
                 path: path.to_owned(),
@@ -538,7 +547,11 @@ pub enum LintFormat {
 /// taken by files, so subset selection needs a flag — deviation from brew's positional-checks, `27S`).
 /// # Errors
 /// Returns the rendered lint usage/argument error a bad invocation produces.
-pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, Diag> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see parse_args_from"
+)]
+pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, InvocationError> {
     let mut files = Vec::new();
     let mut oracles = Vec::new();
     let mut oracle_dirs = Vec::new();
@@ -603,7 +616,7 @@ pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, Diag> {
                     .ok_or_else(|| flag_needs_value("--source", "a name"))?,
             );
         } else if arg.starts_with('-') {
-            return Err(spanless(DiagCode::CliUnknownFlag(
+            return Err(Diag::new_spanless_site(DiagCode::CliUnknownFlag(
                 dorc_aid::diag::CliUnknownFlag { flag: arg.clone() },
             )));
         } else {
@@ -625,7 +638,11 @@ pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, Diag> {
     }))
 }
 
-fn parse_lint_format(v: &str) -> Result<LintFormat, Diag> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see parse_args_from"
+)]
+fn parse_lint_format(v: &str) -> Result<LintFormat, InvocationError> {
     match v {
         "human" => Ok(LintFormat::Human),
         "jsonl" => Ok(LintFormat::Jsonl),
@@ -635,7 +652,11 @@ fn parse_lint_format(v: &str) -> Result<LintFormat, Diag> {
 
 /// `--fail-on` → the severity threshold, or `None` for `never`. `27R` §5: only `error`/`warn`
 /// gate (`info` never does).
-fn parse_fail_on(v: &str) -> Result<Option<Severity>, Diag> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see parse_args_from"
+)]
+fn parse_fail_on(v: &str) -> Result<Option<Severity>, InvocationError> {
     match v {
         "error" => Ok(Some(Severity::Error)),
         "warn" => Ok(Some(Severity::Warning)),
@@ -644,9 +665,13 @@ fn parse_fail_on(v: &str) -> Result<Option<Severity>, Diag> {
     }
 }
 
-fn parse_expect_count(v: &str) -> Result<usize, Diag> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see parse_args_from"
+)]
+fn parse_expect_count(v: &str) -> Result<usize, InvocationError> {
     v.parse::<usize>().map_err(|_| {
-        spanless(DiagCode::CliFlagValueNotANumber(
+        Diag::new_spanless_site(DiagCode::CliFlagValueNotANumber(
             dorc_aid::diag::CliFlagValueNotANumber {
                 flag: "--expect-files".to_owned(),
                 got: v.to_owned(),
@@ -661,13 +686,9 @@ fn parse_expect_count(v: &str) -> Result<usize, Diag> {
 // helpers exist so each producer is one legible line; the payload variant is still spelled
 // LITERALLY at every mint, because the allow-list gate is a lexical grep for exactly that shape.
 
-fn spanless(code: DiagCode) -> Diag {
-    Diag::new_spanless_site(code)
-}
-
 /// A flag that takes a value, given without one — ONE code across every such flag.
-fn flag_needs_value(flag: &str, wants: &'static str) -> Diag {
-    spanless(DiagCode::CliFlagNeedsValue(
+fn flag_needs_value(flag: &str, wants: &'static str) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::CliFlagNeedsValue(
         dorc_aid::diag::CliFlagNeedsValue {
             flag: flag.to_owned(),
             wants,
@@ -676,8 +697,8 @@ fn flag_needs_value(flag: &str, wants: &'static str) -> Diag {
 }
 
 /// A flag value outside its closed vocabulary.
-fn value_not_recognized(flag: &str, got: &str, expected: &'static str) -> Diag {
-    spanless(DiagCode::CliFlagValueNotRecognized(
+fn value_not_recognized(flag: &str, got: &str, expected: &'static str) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::CliFlagValueNotRecognized(
         dorc_aid::diag::CliFlagValueNotRecognized {
             flag: flag.to_owned(),
             got: got.to_owned(),

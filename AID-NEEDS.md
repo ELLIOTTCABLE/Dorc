@@ -202,6 +202,23 @@ Unowned (rows above whose mechanism no round owns; watch, don't lose)
   class-level remediation-hint prose — human/conductor design sitting (`27U` §7).
 
 
+### Invocation-time classes (the `dorc: {msg}` family + `dorc-sh`; ▶ push, pre-analysis)
+
+Every INVOCATION error is an ordinary registry code with a defining case (`288` §6, landed): the
+`dorc: ` / `dorc-sh: ` / `dorc: lint: ` prefixes and the usage synopsis are print-seat CHROME, not
+catalog prose, so 21 codes do not each carry a copy of the usage text. The cut follows
+`law-codes-vary-by-world-not-grammar`: a value-taking flag given no value is ONE code with a
+`{flag}` hole however many flags share the shape, while `humane_read_error`'s `io::ErrorKind`
+branches are THREE siblings (missing / unreadable / unclassed — three worlds, three repairs).
+Severity is uniformly Error with no floor; exit codes are unchanged and never read severity.
+
+Their cases are HONEST-triggered where the world IS the argv (`289:rul-worldless-route-honest-
+trigger`): `dorc-loom` runs the real parser over the case's own replay command through an INTERNAL
+`dorc-cli` lib target and refuses if the declared slug does not fire. The I/O-world members (the
+read-error triple, the shim-dir write, the lint operational trio, `dorc-sh`'s two file/exec
+failures) stay world-as-payload — an honest trigger there would need a real unreadable file, a full
+disk, or an absent `sh`.
+
 Surfaces (selection policies over the registry)
 -----------------------------------------------
 

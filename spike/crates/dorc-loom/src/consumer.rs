@@ -14,11 +14,11 @@ use std::fs;
 use dorc_aid::Severity;
 use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_aid::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
-    CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable, CliShimDirUnwritable,
-    DorcShExecFailed, DorcShScriptUnreadable, HostEvidenceRefusalKind, LintFileCountDrift,
-    LintNoLintableFiles, LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
+    CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
+    Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
+    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
+    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
     LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
     render_staged_cli_parts,
@@ -869,6 +869,10 @@ fn render_diag_jsonl(diag: &Diag) -> String {
 /// phase-5 backport (`283` §5.9) renders every non-pipeline covered code SPANLESS: a code may carry a
 /// span in production, but its defining case pins the frame-less title+body prose registers (the
 /// authoring surface), not the caret frame — that is the marker pilot's world-as-pipeline job.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one arm PER CODE, like the catalog registry it mirrors — merging arms would hide which codes have a constructed stand-in"
+)]
 fn canonical_payload(slug: &str) -> Option<Diag> {
     let code = match slug {
         // phase-5 backport: the covered give-up / records / mark-grammar codes.
@@ -953,10 +957,12 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
             kind: "book".to_owned(),
             path: "webhost.sh".to_owned(),
         }),
-        "cli-file-permission-denied" => DiagCode::CliFilePermissionDenied(CliFilePermissionDenied {
-            kind: "oracle".to_owned(),
-            path: "/etc/dorc/nginx.oracle.sh".to_owned(),
-        }),
+        "cli-file-permission-denied" => {
+            DiagCode::CliFilePermissionDenied(CliFilePermissionDenied {
+                kind: "oracle".to_owned(),
+                path: "/etc/dorc/nginx.oracle.sh".to_owned(),
+            })
+        }
         "cli-file-unreadable" => DiagCode::CliFileUnreadable(CliFileUnreadable {
             kind: "results".to_owned(),
             path: "probe-results.txt".to_owned(),
@@ -976,12 +982,10 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
                 tools: "checkbashisms, shellcheck".to_owned(),
             })
         }
-        "dorc-sh-script-unreadable" => {
-            DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable {
-                path: "webhost.sh".to_owned(),
-                detail: "No such file or directory (os error 2)".to_owned(),
-            })
-        }
+        "dorc-sh-script-unreadable" => DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable {
+            path: "webhost.sh".to_owned(),
+            detail: "No such file or directory (os error 2)".to_owned(),
+        }),
         "dorc-sh-exec-failed" => DiagCode::DorcShExecFailed(DorcShExecFailed {
             detail: "No such file or directory (os error 2)".to_owned(),
         }),
