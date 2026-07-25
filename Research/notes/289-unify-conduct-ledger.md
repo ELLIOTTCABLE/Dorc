@@ -369,3 +369,28 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   Budget 9/20.
 - STOP-2 GO issued. Post-stop-2, the SAFETY BLOCK text changes (sanctioned-executor
   line): every subsequent brief in this arc carries the NEW wording.
+
+## §2l — Phase-5 COMPLETE + folded (conductor, 2026-07-24)
+
+- Stop 2 LANDED @ `e3a74744` (3 commits), FOLDED. 956 renames, every one R100;
+  content edits confined to runners + 6 path-constant files + yardstick;
+  `sh e2e/run.sh` RETIRED; conduct-bless re-pointed with the three-way tally
+  (`unit 1184 | e2e 97 | looms 51`); the sanctioned-executor role moved to
+  `cargo test -p dorc-cli --test e2e` (new Safety-block wording REVIEWED and
+  ACCEPTED — all subsequent briefs carry it). Violated-gate proofs: 6/7 RED,
+  three of them because the builder CLOSED silent directions (zero-trial
+  libtest exits 0; `load_corpus` empty-on-unreadable now panics + asserts
+  non-empty); `is_case_owned` now manifest-local (the depth-coupling gone).
+- **`289:dec-case-count-residual-accepted`** (their flag 2) — deleting a case
+  dir still shrinks the suite silently (v1 stays green), UNCHANGED from run.sh:
+  accepted as the named residual in cli's `count-drifts` (deletion is
+  git-visible; the floor guards the invisible direction). No count-ratchet.
+- Accepted as reported: the scaffold path cosmetic; receipt.rs's opaque fixture
+  identifiers deliberately unrewritten; budget 17/20.
+- **SyncThing incursion #4 (their flag 1), HUMAN-OWNED, untouched:** two
+  `*.sync-conflict-*PHNHRER` snapshots of stop-1's injected-and-reverted
+  differential mutations sit in the p5 agent-worktree's `spike/e2e/cases/` husk
+  — harmless content, but (a) `.claude/worktrees/` demonstrably still syncs, and
+  (b) the files are INVISIBLE to git (`status -uall`/`ls-files --others`/
+  `check-ignore` all disagree with `find`) — a fixture tree that can gain
+  git-invisible files is a real hazard, escalated to the human.
