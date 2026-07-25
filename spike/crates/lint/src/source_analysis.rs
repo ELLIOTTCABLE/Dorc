@@ -20,8 +20,8 @@ impl LintSource for AnalysisDiagnostics {
         "analysis-diagnostics"
     }
 
-    fn describe(&self) -> &'static str {
-        "engine parse/cfg diagnostics over each file (no world)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-analysis-diagnostics"
     }
 
     fn rung(&self) -> Rung {

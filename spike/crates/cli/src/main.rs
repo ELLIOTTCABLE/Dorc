@@ -350,7 +350,12 @@ fn executable_exts() -> Vec<String> {
 fn lint_command(args: &LintArgs) -> ExitCode {
     if args.list_sources {
         for s in dorc_lint::list_sources() {
-            println!("{:<22} [{}]  {}", s.name, s.rung, s.describe);
+            let describe = dorc_aid::arrangement::arrangement_text(
+                &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+                s.describe_arrangement,
+                None,
+            );
+            println!("{:<22} [{}]  {describe}", s.name, s.rung);
         }
         return ExitCode::SUCCESS;
     }

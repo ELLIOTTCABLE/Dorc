@@ -28,8 +28,8 @@ impl LintSource for OracleValidate {
         "oracle-validate"
     }
 
-    fn describe(&self) -> &'static str {
-        "book-free oracle-side validation (lift/check/coherence/reserved/marker)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-oracle-validate"
     }
 
     fn rung(&self) -> Rung {
@@ -112,8 +112,8 @@ impl LintSource for OracleDeclinedInventory {
         "oracle-declined-inventory"
     }
 
-    fn describe(&self) -> &'static str {
-        "authored decline classes per verdict arm (tier-1, oracle-solo)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-oracle-declined-inventory"
     }
 
     fn rung(&self) -> Rung {
