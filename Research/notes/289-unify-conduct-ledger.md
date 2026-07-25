@@ -410,3 +410,11 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - ESCALATED to the human (with §2l's git-invisibility observation): five
   incursions across two rounds, now build-breaking and ledger-touching; the
   `.stignore` exclusion repair is the standing human-owned fix.
+- AMENDMENT: the "git-invisible files" mystery is RESOLVED, and it was worse in a
+  different way — the two e2e-husk conflict files had been SWEPT INTO COMMIT
+  `cc46a948` by the stop-2 add (tracked-and-unmodified = invisible to every
+  status view; that was the whole "invisibility"). Excised from the repo at the
+  follow-up commit; disk copies quarantined; content persists in history. LESSON,
+  standing for all lanes: an incursion-window `git add` can COMMIT junk — every
+  builder's pre-commit `git status` check must eyeball for `sync-conflict` names
+  explicitly. Re-verify after excision: `unit 1184 | e2e 97 | looms 51 | gates ok`.
