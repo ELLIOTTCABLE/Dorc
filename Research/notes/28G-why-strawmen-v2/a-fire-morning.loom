@@ -14,9 +14,9 @@
 # durable-question float (plan remembers what you asked) -- pure ASCII.
 
 -- web.sh (context, abbreviated) --
- 5 apt-get update
- 6 dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
- 7 cp ./nginx.conf /etc/nginx/nginx.conf
+ 5  apt-get update
+ 6  dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+ 7  cp ./nginx.conf /etc/nginx/nginx.conf
  8  certsync push web1
  9  systemctl enable --now nginx
 12  hork tune --profile web
@@ -31,74 +31,80 @@ knows only that the site is down and that dorc ran overnight.
 -- replay --
 $ dorc why
 receipt: apply 2026-07-25 02:00:37, host web1, trigger cron
-  book web.sh (matches git HEAD 9f31c2e -- unchanged since the run)
-  oracles: certsync 1.2, service 2.0, + base library
-  risk-profile: --risk-faultless-skips
-  plan: 2 ran, 1 guarded, 5 skipped (4 by proof, 1 by trusted claim)
-  read top-down; every item is addressable: dorc why <line>
+   book web.sh (matches git HEAD 9f31c2e -- unchanged since the run)
+   oracles: certsync 1.2, service 2.0, + base library
+   risk-profile: --risk-faultless-skips
+   plan: 2 ran, 1 guarded, 5 skipped (4 by proof, 1 by trusted claim)
+   read top-down; every item is addressable: dorc why <line>
 
-TRUST SPENT -- skips resting on a human claim, not proof:
+=== TRUST SPENT: skips resting on a human claim, not proof ===
 
-  web.sh:9   `systemctl enable --now nginx` was skipped PAST 8|certsync
-             really-running, on certsync's at-most claim     (dorc why web.sh:9)
+ web.sh:9 | systemctl enable --now nginx
+   was skipped PAST 8|certsync really-running, on certsync's at-most claim
+   (dorc why web.sh:9)
 
-PROBLEMS -- what dorc could not do:
+=== IMPROVEMENTS: dorc can do better, with your help ===
 
-  web.sh:12  hork tune --profile web
-             ran blind, as on every apply: hork is undescribed
-  web.sh:13  ufw allow 443/tcp
-             guarded live instead of skipped: sits past the wall at 12
+web.sh:12 | hork tune --profile web
+   ran blind, as on every apply: hork is undescribed
+web.sh:13 | ufw allow 443/tcp
+   guarded live instead of skipping: sits past the wall at 12|hork
 
-IMPROVEMENTS -- what dorc could do, if:
-
-  ~2 lines of sh: a convergence check for hork skips lines 12 and 13 whenever
-  hork is converged                                           (dorc teach walls)
+~2 lines of sh: a convergence check for hork skips lines 12 and 13 whenever hork
+is converged                                                  (dorc teach walls)
 
 $ dorc why web.sh:9
    [ web.sh, participating lines:
  8 | certsync push web1
  9 | systemctl enable --now nginx
 
-  === OUTCOME (2026-07-25 02:00:37) ===
+   === OUTCOME (2026-07-25 02:00:37) ===
 
-  9|systemctl skipped RATHER THAN guarded: 8|certsync ran above it, which
-  normally forces an apply-time guard-clause; but --risk-faultless-skips
-  activates acting on authors' at-most claims, and certsync's claim does not
-  reach what 9|systemctl's skip was proved on.
+   9|systemctl skipped RATHER THAN guarded: 8|certsync ran above it, which
+   normally forces an apply-time guard-clause; but --risk-faultless-skips
+   activates acting on authors' at-most claims, and certsync's claim does not
+   reach what 9|systemctl's skip was proved on.
 
-  === ANALYSIS ===
+   === ANALYSIS ===
 
-  the skip stood on all of the following, together:
+   9|systemctl being skipped stood on all of the following, together:
 
-  * service.oracle.sh:12  reported  Package:nginx @enabled+@active
-                                    (ran 01:59:52, rc 0)
-  * service.oracle.sh:9   vouches   re-running an already-active unit adds
-                                    nothing worth running
-  ! certsync.oracle.sh:31 claims    `certsync push` touches AT MOST @cert
-                                    state -- which speaks for everything it
-                                    did NOT measure. text only; no run backs it.
-                     [ certsync.oracle.sh, as-written:
-                  30 | # surveyed 2026-05: cert store only.
-                  31 | push) printf '%s\n' "$1"  : disturbs org.foob.Certs ;;
+   * service.oracle.sh:12  reported  "Package:nginx@{enabled,active}"
+                                     (ran 01:59:52, rc 0)
+   * service.oracle.sh:9   vouches   "re-running an already-@active unit adds
+                                     nothing worth running"
+   ! certsync.oracle.sh:31 claims    "`certsync push` touches AT MOST @cert
+                                     state"
 
-  so: nothing 8|certsync claims to touch overlaps what 9|systemctl's skip was
-  reported on; the skip stood. `!` marks the link that covers unmeasured things
-  -- the class no run can bound.
+      This speaks for everything it did NOT measure. Fact derived from
+      as-written contract only; no run can back it:
 
-  === NEXT STEPS ===
+         [ certsync.oracle.sh, as-written:
+      30 | # surveyed 2026-05: cert store only.
+      31 | push) printf '%s\n' "$1"  : disturbs org.foob.Certs ;;
 
-  if 9|systemctl SHOULD have run:
-    suspect:  the 8|certsync claim -- the only link speaking for unmeasured
+   so: nothing 8|certsync claims to touch overlaps what 9|systemctl's skip was
+   reported on; the skip stood. `!` marks the link that covers unmeasurable
+   things; the class of information no runnable command *could* test.
+
+   === NEXT STEPS ===
+
+   if 9|systemctl SHOULD have run:
+
+      suspect: the 8|certsync claim -- the only link speaking for unmeasured
               state. if `certsync push` also touches @enabled/@active, it is
               what wrongly kept 9|systemctl out.
-    fix:      certsync.oracle.sh:31 (widen the claim; every consumer heals)
-    verify:   `dorc plan --why web.sh web1` -- the fix path: re-measures under
-              plan's standing consent, carries this question forward inline,
-              and leaves you one step from applying. (plan remembers this
-              question: 9|systemctl's fate stays flagged until the analysis
-              changes.)
 
-    the rest: `dorc why web.sh:9 --all` (every link, unselected, exhaustive)
+      fix:     certsync.oracle.sh:31 (widen the claim; every consumer heals)
+
+      verify:  `dorc plan --why web.sh web1` -- the fix path: re-measures under
+               plan's standing consent, carries this question forward inline,
+               and leaves you one step from applying. (plan remembers this
+               question: 9|systemctl's fate stays flagged until the analysis
+               changes.)
+
+      review:  `dorc why web.sh:9 --all` (every link, unselected, exhaustive, if
+               you want)
 
 (Receipt analysis: the run's own records, nothing re-measured. A live-grounded
 version of this report was one consent away -- `dorc why --probe` accepts
