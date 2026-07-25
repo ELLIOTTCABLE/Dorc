@@ -476,3 +476,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - `plans/288` §7b gets rewritten to record the taken option at the lane's landing
   (plans are ahistorical).
 - 2026-07-24: phase-7 (Opus, fresh worktree, bg) — the §2o registry+transcripts ruling, two-stop (registry+help pilot, CHECKPOINT, chrome migration). Off `9f112f69`.
+- 2026-07-24: phase-6 fold cold-verified own-hand (full clean; conduct-bless: build ok | unit 1182 | e2e 98 passed | looms 72 | gates ok).
