@@ -2,7 +2,7 @@
 //!
 //! Every gate below is the sh harness's, moved verbatim in behaviour: the `dash -n`
 //! runnability floor, exec-under-inert-mocks with `PATH=<case>/mocks` only, the ordered
-//! run-set compare (`RAN_ORDER=lax` excepted), gate-1(a)–(d) on the executed probe, the
+//! run-set compare, gate-1(a)–(d) on the executed probe, the
 //! gate-2 redirect scan, the gate-3 stderr-severity floor, gate-5's argv-echo
 //! differential, gate-6's dual-rail license judge, gate-7/gate-hint/gate-8 needles, the
 //! guard-shape floor, the XFAIL/XPASS lens and its two-sided `head-expected.ran` pin,
@@ -15,7 +15,9 @@
 //! - `framed_results` is computed ONCE per case instead of once per gate (it is a pure
 //!   function of the case dir and the shared arg vector, so the gates see identical bytes);
 //! - the content golden mismatch prints a first-divergence window, not a unified diff;
-//! - `DORC_E2E_QUIET=1` selects libtest's terse format rather than suppressing `ok` lines.
+//! - `DORC_E2E_QUIET=1` selects libtest's terse format rather than suppressing `ok` lines;
+//! - `RAN_ORDER=lax` is RETIRED in favour of the declared normalizer vocabulary
+//!   (`tolerate=<class>`, below), which is applied on the capture at bless AND at check.
 
 #![expect(
     clippy::expect_used,
@@ -747,9 +749,67 @@ fn marker(dir: &Path, prefix: &str) -> Result<Option<String>, String> {
     }
 }
 
-/// Is a bare presence-marker file (`RAN_ORDER=lax`, `XFAIL`, …) present?
+/// Is a bare presence-marker file (`XFAIL`, `PROBE_RESULTS=authored`, …) present?
 fn has_marker(dir: &Path, name: &str) -> bool {
     dir.join(name).exists()
+}
+
+// ---------------------------------------------------------------------------
+// the tolerated-nondeterminism normalizers
+
+/// The CLOSED, engine-owned normalizer vocabulary (`288:prop-normalizer-closed-vocabulary`).
+///
+/// A case DECLARES which named class of nondeterminism it tolerates; the named normalizer is
+/// then applied IDENTICALLY at bless-capture and at check, so the committed bytes are the
+/// canonical form and the declaration is the honesty disclosure. One named normalizer per
+/// named class — never a free regex, and never a check-only relaxation (the shape the old
+/// `RAN_ORDER=lax` marker had, which blessed raw bytes and compared sorted ones, so the
+/// committed file recorded an interleaving nothing asserted).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Normalizer {
+    /// Pipeline stages race each other into the run-log: the SET of argvs a pipeline runs is
+    /// determined by the artifact, their interleaving is the kernel's scheduling. Canonical
+    /// form: the run-log sorted (`strawman24-pipe-guard-floor` is the specimen).
+    PipeStageOrder,
+}
+
+impl Normalizer {
+    /// Resolve a declared name, refusing anything outside the vocabulary.
+    fn parse(name: &str) -> Result<Self, String> {
+        match name {
+            "pipe-stage-order" => Ok(Normalizer::PipeStageOrder),
+            _ => Err(format!(
+                "unknown tolerated-nondeterminism class `{name}` — the vocabulary is CLOSED and engine-owned; mint a named normalizer, never a per-case relaxation"
+            )),
+        }
+    }
+
+    /// Canonicalize a captured run-log under this class.
+    fn apply(self, log: &str) -> String {
+        match self {
+            Normalizer::PipeStageOrder => sort_lines(log),
+        }
+    }
+}
+
+/// The normalizers a case declares, from its `tolerate=<comma-list>` marker.
+fn tolerances(dir: &Path) -> Result<Vec<Normalizer>, String> {
+    let declared = marker(dir, "tolerate")?;
+    declared
+        .as_deref()
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(Normalizer::parse)
+        .collect()
+}
+
+/// Apply every declared normalizer, in vocabulary order.
+fn canonicalize(log: &str, tolerated: &[Normalizer]) -> String {
+    tolerated
+        .iter()
+        .fold(log.to_owned(), |log, class| class.apply(&log))
 }
 
 // ---------------------------------------------------------------------------
@@ -1088,7 +1148,16 @@ fn exec_check(
         return;
     }
 
-    let got_ran = strip_trailing_newlines(&read_or_empty(&log));
+    let tolerated = match tolerances(dir) {
+        Ok(tolerated) => tolerated,
+        Err(message) => {
+            failures.push(format!("FAIL  {name}  [tolerate: {message}]"));
+            return;
+        }
+    };
+    // The declared normalizers run on the CAPTURE, on both paths — so what bless commits is
+    // already the canonical form, and the check compares canonical to canonical.
+    let got_ran = canonicalize(&strip_trailing_newlines(&read_or_empty(&log)), &tolerated);
     if harness.bless {
         std::fs::write(dir.join("expected.ran"), format!("{got_ran}\n"))
             .expect("bless expected.ran");
@@ -1102,11 +1171,6 @@ fn exec_check(
         return;
     }
     let want_ran = strip_trailing_newlines(&read_or_empty(&expected));
-    let (got_ran, want_ran) = if has_marker(dir, "RAN_ORDER=lax") {
-        (sort_lines(&got_ran), sort_lines(&want_ran))
-    } else {
-        (got_ran, want_ran)
-    };
     if got_ran != want_ran {
         failures.push(format!(
             "FAIL  {name}  [ap-2-exec: apply ran the wrong commands or wrong order]\n{}",
@@ -1612,7 +1676,8 @@ fn head_ran_drifted(harness: &Harness, dir: &Path, mocks: &Path, apply: &str) ->
     if !pin.is_file() || !mocks.is_dir() {
         return false;
     }
-    let got = harness.capture_run(Payload::Text(apply), mocks);
+    let tolerated = tolerances(dir).unwrap_or_default();
+    let got = canonicalize(&harness.capture_run(Payload::Text(apply), mocks), &tolerated);
     let want = strip_trailing_newlines(
         &read_or_empty(&pin)
             .lines()
@@ -1620,11 +1685,7 @@ fn head_ran_drifted(harness: &Harness, dir: &Path, mocks: &Path, apply: &str) ->
             .collect::<Vec<_>>()
             .join("\n"),
     );
-    if has_marker(dir, "RAN_ORDER=lax") {
-        sort_lines(&got) != sort_lines(&want)
-    } else {
-        got != want
-    }
+    got != want
 }
 
 // ---------------------------------------------------------------------------
