@@ -678,3 +678,28 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   for the human's ack; its entry point is the worklist script; its package is
   §2s(a)–(e) with (a) now including the 4 `why-remediation-*` lock rows and the
   opener finding above.
+
+## §2v — Fold state + a forwarded seam, deferred (conductor, 2026-07-25)
+
+- Human folded the stack into `ai/main` (+pushed) and fast-forwarded `ai/r28-unify`
+  onto the merge (`836feb7b`); stack and ai/main coincide at this writing.
+- **`289:seam-diagnostics-print-not-carried`** (forwarded from a human-run
+  investigation agent; DEFERRED, no action, conductor-ruled) — `cli/src/main.rs`
+  emits diagnostics by PRINTING from inside analysis helpers instead of
+  accumulating them: `build_kind_resolvers` (~:2105) calls `report_at`/
+  `report_by_oracle_file` mid-body and returns bare values, not `Carrier<T>`
+  (~25 such sites; `advisory: bool` — pure render policy — threads through
+  analysis signatures to serve them), against `inv-no-throw`'s stage shape and
+  cli's io-at-edges-only. Symptom: `report()` writes real fd-2 via
+  `anstream::stderr()`, bypassing libtest capture, so one green unit test prints
+  a red `error[resolver-conflict]` frame interleaved into `cargo test` output
+  (the diag IS the asserted behaviour; run correct, rc 0). No correctness/
+  license/DST exposure; costs = diagnostics unreachable-as-values to in-process
+  tests, and emission-order-by-scheduling as a preview of the multi-host
+  concurrency cell. Landed r27-era (`2c36bb00`, `00664b14`); orthogonal to this
+  arc. HOME: the same future seat/walker sitting as
+  `289:seam-whylens-render-seat` + `289:seam-narrative-render-unconsumed` — it
+  is the EMISSION-end face of the identical seam (aid output must exist as
+  data to be composable at a seat; print-in-place forecloses both tagging and
+  Carrier accumulation). The test-noise papercut rides along (unfixable
+  cheaply while writes bypass capture by construction).
