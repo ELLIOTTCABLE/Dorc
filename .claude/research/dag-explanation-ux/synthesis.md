@@ -458,3 +458,123 @@ social causation, not expert readings of machine traces.
 behavioural claim there is revealed preference — what practitioners describe doing, or what
 maintainers changed. The measured evidence in this round comes entirely from compiler
 diagnostics, fault localisation, and instructional psychology.
+
+---
+
+# ADDENDUM (turn 02) — the why-not summarisation paper, read
+
+Appended 2026-07-25 after the human supplied the paper that `§4
+ask-why-not-provenance-summarisation-literature` flagged as UNREAD. **The body above is unchanged
+and was not rewritten.** Read in full via ar5iv (§1–§11 + references, five contiguous chunks);
+registered as [B-lee-approximate-provenance-summaries-2020].
+
+## A0 — Correcting this round's own prediction
+
+§4 called this "the source most likely to change the design, because it would give Dorc a
+principled summarisation objective instead of the folk heuristics." **Having read it, that
+prediction was wrong, and the §4 entry should be read as superseded by this addendum.** It is a
+database-*scalability* paper. Its contribution is sampling + LCA candidate generation +
+best-first top-k search so that provenance containing 10^12 to 10^80 derivations can be
+summarised in minutes. The objective it defines is real, thin, and — critically — **never
+validated against a human**. It sharpens two things in §2 and replaces none of them.
+
+Recording this because the round's calibration depends on it: hard-to-obtain was not evidence of
+importance, and the sharpest sources in this round remain ones that were free and immediate.
+
+## A1 — The formal objective, stated plainly
+
+Three named properties. Only two are scored.
+
+- **Conciseness — NOT a metric. A hard cap.** The algorithm "returns a set of up to k patterns
+  (guaranteeing conciseness)". Size is a budget fixed before you start, never a term traded
+  against the others.
+- **Completeness** `cp(S)` = the fraction of the full provenance covered by at least one pattern
+  in the summary: `|U_p M(Q,D,p,PQ)| / |Prov(PQ)|`. Note the union — overlapping patterns do not
+  double-count, and computing that overlap is the paper's hardest sub-problem.
+- **Informativeness** `info(p)` = `(C(p) - C(t)) / (arity(p) - C(t))`, where `C(p)` is the number
+  of constants in the pattern and `C(t)` the number of constants in *the user's own question*. In
+  words: **how much the answer pins down beyond what the asker already pinned**, normalised by
+  how many slots were left open. `info(S)` is the mean across the summary's patterns.
+- **Score** `sc(S)` = the *harmonic mean* of completeness and informativeness. Not a weighted sum
+  — a harmonic mean collapses toward zero if either term does.
+
+The two degenerate poles are named explicitly, and they map exactly onto Dorc's two failure
+modes: the raw provenance graph is "complete and informative, but not concise"; a single
+all-placeholder pattern is "maximally concise" but "not informative since it only contains
+placeholders". Dorc's density-register ladder is a traverse between precisely those poles, and
+the harmonic mean says both endpoints score approximately 0.
+
+## A2 — Does it replace §2's folk heuristics? Mostly no. Disproof first.
+
+- **`a2-dont-import-the-algorithm`.** +SURE. Pattern summarisation works because why-not
+  provenance is a *cross-product of attribute domains*: thousands of derivations differing only
+  in which constant fills a slot, so replacing one slot with a placeholder covers ~12.8% of the
+  graph in one line. Dorc's chain is ~6 *heterogeneous* links of different kinds — peel, site
+  cell, kind declaration, verdict — and there is no population to generalise over. Nothing here
+  is implementable against a six-link chain; reaching for it would be cargo-culting a
+  scalability technique into a problem that has no scale.
+- **`a2-dont-treat-this-as-human-evidence`.** +SURE, and the sharpest caution in this addendum.
+  §9.2 is titled "Pattern Quality" and measures exactly two things: the error introduced by
+  sampling versus full-provenance ground truth (at most ~2%, typically below 1%), and coverage at
+  varying k (100% for why, ~75% for why-not at k=10). **No participant was ever shown a summary.**
+  "Meaningful" recurs throughout as an assertion. The paper's own related-work section concedes
+  the problem for the whole line — earlier compact representations "are often not semantically
+  meaningful to users" — and this paper does not close that gap; it makes them computable at
+  scale. Every §1 don't-do in this round rests on measured human behaviour. This one does not,
+  and must not be cited as though it does.
+- **`a2-dont-let-constant-counting-become-the-ranking-function`.** +SURE. `info` counts constants.
+  It has no notion of whether a constant is *interesting*. A pattern pinning an arbitrary price
+  outscores one pinning the causally pivotal room-type, at identical arity. Compare the selection
+  criteria that are grounded in what people actually pick — fact/foil difference, intentionality,
+  abnormality, necessity, robustness, responsibility
+  [A-miller-explanation-social-sciences-survey-2019] — none of which a syntactic constant-count
+  can express. The metric was chosen for computability, and the authors say as much: "Most of our
+  results, however, are independent of the choice of ranking metric." Take the *frame*, not the
+  *function*.
+- **The counterweight, which is real and cuts against over-selection.** The paper's motivating
+  example is an argument that a *single* derivation is inadequate: a manager "is unlikely to
+  accept an explanation of the form 'There are no shared rooms available on this date, because
+  listing 8403 is not available for $130 on this day'", and "returning only one derivation is
+  insufficient for justifying the missing answer as only the collective failure of all possible
+  derivations explains the missing answer." That is independent support for the §3 Kulesza
+  counterweight: aggressive selection has its own failure mode, and §2's do-dos are not licence
+  to collapse to one link.
+
+## A3 — What it does add (two things, both small, both real)
+
+- **`a3-informativeness-is-question-relative`.** The one genuinely portable idea, and it is cheap.
+  Score a link by what it adds *beyond what the user's own question already fixed* — subtract
+  `C(t)`. Three independent traditions now converge on this rule: Gricean quantity and epistemic
+  explanation selection ("the explainer should not explain any causes they think the explainee
+  already knows", [A-miller-explanation-social-sciences-survey-2019]), the contrastive do-do in
+  §2, and now a formal metric that literally subtracts the asker's own constants. For Dorc:
+  `dorc why 14` has already told the engine which line and which disposition the user is holding;
+  links that only restate that carry informativeness 0 and should be demoted rather than printed.
+  Implementable today, without any of the paper's machinery.
+- **`a3-conciseness-is-a-cap-not-a-tradeoff`.** The cleanest available formulation of what §2's
+  truncation do-do already recommends on shipped evidence (Clang's 10/6/20/16
+  [B-clang-users-manual-diagnostic-defaults-2026]; Soufflé's depth-4
+  [B-souffle-explain-command-docs-2019]). The structural choice — enforce size, optimise quality
+  only within it — is sharper than the folk version, and argues directly against any
+  render-maximally formulation: in this framing "maximal" is not a high score, it is the
+  disqualified pole.
+
+## A4 — Bearings on the stated Dorc direction (delta only)
+
+| Element | Delta from this reading |
+|---|---|
+| `law-pull-runs-wide-open` | **Threat sharpened, but on formal not empirical grounds.** The complete graph is the named non-summary pole. Weigh this *below* the dilution evidence in §3, which is measured on humans where this is not. |
+| Density registers | **Reframed usefully.** Registers traverse between two poles that both score ~0 under a harmonic mean. That gives the ladder a shape it did not have: the interesting registers are the middle ones, and the one-word tail is a degenerate endpoint rather than a rung. |
+| Chain-length cap | **Confirmed from a fourth independent direction.** Cap first, optimise within the cap. Reinforces `§4 ask-measure-our-own-chain-length-distribution` — you cannot choose k without the histogram. |
+| Tier-words | **Neutral.** Nothing here bears on vocabulary; §1's don't-do stands unchanged. |
+| Join-nodes / numbering | **Neutral.** Different problem shape entirely. |
+| Summarising the chain algorithmically | **Refuted at Dorc's scale.** Do not build this. |
+
+## A5 — Residual open question
+
+`ask-is-there-a-human-evaluated-summarisation-result` — across five veins this round has now found
+*no* study anywhere showing that a summarised or selected derivation measurably helps a human.
+The closest remain [B-typeslicer-wizard-of-oz-user-study-2024] (n=29, Wizard-of-Oz, author-declared
+formative) and [A-are-automated-debugging-techniques-helping-2011] (negative result). If such a
+result exists it was not surfaced by this round, and its absence — not this paper — is the real
+gap in the evidence base.

@@ -1285,5 +1285,18 @@
     "sha256": "cc0548c7757d1fb4d3d7db1e6e95ffde9b595cd2f3debc408b7310355f965c06",
     "acquired": "url",
     "via": "mcp__fetch__fetch(url: 'https://ar5iv.labs.arxiv.org/html/1706.07269', six contiguous 40k chunks) + mcp__claude_ai_Exa__web_fetch_exa(same URL) to recover Tables 1-3"
+  },
+  "B-lee-approximate-provenance-summaries-2020": {
+    "url": "https://ar5iv.labs.arxiv.org/html/2002.00084",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: peer-reviewed PVLDB 13(6) and read end-to-end at source, but for the question I put to it this is a SYSTEMS-SCALABILITY result in a different data regime - the contribution is sampling + LCA + best-first top-k so that provenance with 10^12 to 10^80 derivations can be summarised in minutes. Section 9.2 Pattern Quality measures only sampling error against ground truth and coverage; no human was ever shown a summary, so meaningful and usable are asserted throughout and never tested. Its own related-work section concedes prior compact representations are often not semantically meaningful to users and this paper does not close that gap. Additional provenance caveat: the ar5iv rendering is the extended preprint and still carries live editorial comments (Boris says / Boris deleted / Seokki says), so it is a working copy, not the copy-edited PVLDB text. not C: genuine primary peer-reviewed research, fully read, and it does supply one portable formal idea plus a clean statement of the conciseness-as-hard-cap constraint.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "PARTIAL, and materially less than this round predicted for it. The algorithm does not transfer - pattern summarisation needs a large population of HOMOGENEOUS derivations differing only in which constant fills a slot (a cross-product of attribute domains); Dorc chain is ~6 heterogeneous links of different kinds with nothing to generalise over. What does transfer is the objective vocabulary: completeness = fraction of provenance covered; informativeness = constants in the pattern MINUS constants the user question already pinned, normalised by the unpinned slots; conciseness = a hard cap k, not a scored term; score = harmonic mean of the first two, so both degenerate poles score ~0. The question-relative framing of informativeness is the one genuinely portable idea. Also supplies a counterweight to over-selection: its motivating example argues explicitly that a single derivation is insufficient because only the collective failure of all derivations explains the missing answer.",
+    "graded-by": "top-level-agent",
+    "published": "2020-02",
+    "retrieved": "2026-07-25",
+    "sha256": "d3755334d32e80292180c7e5ad602a016de9a0ee6a0d8ecfbc9599aedf41e96c",
+    "acquired": "url",
+    "via": "human-supplied local PDF, unreadable via Read (pdftoppm absent); read instead as ar5iv HTML per conductor-verified route"
   }
 }
