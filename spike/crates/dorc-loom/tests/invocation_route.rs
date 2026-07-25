@@ -33,7 +33,7 @@ const HONEST_CASES: [&str; 12] = [
 ];
 
 fn cases_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("cases")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
 }
 
 fn read(name: &str) -> Case {

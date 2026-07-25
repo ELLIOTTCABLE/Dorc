@@ -11,7 +11,7 @@ use dorc_loom::{DorcConsumer, generate_catalog_lock, load_corpus_by_slug, replay
 use errorloom::{Case, CaseFile, RunEnv, fixpoint_check};
 
 fn corpus_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("cases")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
 }
 
 fn committed_lock() -> PathBuf {
@@ -34,12 +34,15 @@ fn generated_lock_reproduces_the_committed_bytes() {
     );
 }
 
-/// Every committed `cases/*.loom`, sorted for determinism (`inv-determinism`). A missing/empty dir
-/// yields an empty corpus, so the gates pass vacuously until the pilots land.
+/// Every committed `*.loom`, sorted for determinism (`inv-determinism`). The corpus is no
+/// longer manifest-local — it lives in the crate this one reaches ACROSS to
+/// (`288:rul-slug-decides-loom-placement`) — so an empty read now means a broken path far
+/// more often than an unpopulated corpus, and the corpus-wide gates would pass VACUOUSLY on
+/// it. The floor below makes that loud.
 fn load_corpus() -> Vec<CaseFile> {
     let mut cases: Vec<CaseFile> = Vec::new();
     let Ok(entries) = std::fs::read_dir(corpus_dir()) else {
-        return cases;
+        panic!("read corpus dir {}", corpus_dir().display());
     };
     for entry in entries.flatten() {
         let path = entry.path();
@@ -53,6 +56,11 @@ fn load_corpus() -> Vec<CaseFile> {
             cases.push(CaseFile::new(name, text));
         }
     }
+    assert!(
+        !cases.is_empty(),
+        "no `.loom` cases under {} — the corpus is not where this crate reaches",
+        corpus_dir().display()
+    );
     cases.sort_by(|a, b| a.path().cmp(b.path()));
     cases
 }

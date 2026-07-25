@@ -12,9 +12,10 @@
 //! | `<case>/book.sh` alone   | a real-tools lint fixture (opt-in lane)           |
 //! | anything else            | an `.rs` test's fixture space — not a case        |
 //!
-//! `paths-are-manifest-relative` (`crates/aid/CLAUDE.md`): the roots below are resolved
-//! from `CARGO_MANIFEST_DIR` and are depth-coupled to `crates/<c>/`. They are the ONE
-//! thing `288:phase-flat-tree-move` re-points.
+//! `paths-are-manifest-relative` (`crates/aid/CLAUDE.md`): [`case_roots`] is resolved from
+//! `CARGO_MANIFEST_DIR` and is depth-coupled to `crates/<c>/` — move this crate and the
+//! walk finds nothing, silently. `crates/cli/tests/e2e.rs`'s discovery-floor trial is the
+//! tripwire that makes that failure loud.
 
 #![expect(
     dead_code,
@@ -34,21 +35,22 @@ pub(crate) fn spike_root() -> PathBuf {
         .to_path_buf()
 }
 
-/// The roots the e2e runner walks for dir-form cases.
+/// Every `crates/<c>/tests/` dir, sorted (`inv-determinism`). Both runners walk the same
+/// roots and select by shape, so a collection can be re-homed to whichever crate owns its
+/// steering (`288:rul-slug-decides-loom-placement`) without touching either runner.
 #[must_use]
-pub(crate) fn e2e_roots() -> Vec<PathBuf> {
-    let e2e = spike_root().join("e2e");
-    vec![
-        e2e.join("cases"),
-        e2e.join("lint-cases"),
-        e2e.join("lint-real-cases"),
-    ]
-}
-
-/// The roots the loom runner walks for `.loom` cases.
-#[must_use]
-pub(crate) fn loom_roots() -> Vec<PathBuf> {
-    vec![spike_root().join("crates/dorc-loom/cases")]
+pub(crate) fn case_roots() -> Vec<PathBuf> {
+    let crates = spike_root().join("crates");
+    let Ok(entries) = std::fs::read_dir(&crates) else {
+        return Vec::new();
+    };
+    let mut roots: Vec<PathBuf> = entries
+        .flatten()
+        .map(|entry| entry.path().join("tests"))
+        .filter(|dir| dir.is_dir())
+        .collect();
+    roots.sort();
+    roots
 }
 
 /// What a discovered dir-form case is driven as.

@@ -1,14 +1,14 @@
 #!/bin/sh
 # yardstick.sh — the round-24 measurement instrument (plans/240 Stage-1). For each
-# cases/strawman24-*/ it invokes dorc EXACTLY as run.sh does, parses the plan-summary line dorc
+# cases/strawman24-*/ it invokes dorc EXACTLY as the e2e runner does, parses the plan-summary line dorc
 # emits on stderr, and prints a fixed-width per-case table plus a family aggregate: the round's
 # north-star metric — ELISION FREQUENCY on the strawman family — turned into a number that every
 # later stage must move, visibly, from the CLI.
 #
-# THIS SCRIPT ONLY MEASURES — it runs no gate. Correctness of these cases is run.sh's job: the
+# THIS SCRIPT ONLY MEASURES — it runs no gate. Correctness of these cases is the e2e runner's job: the
 # strawman24-* cases ride the same e2e harness as every other case, and its exec-differential
 # (gate-6 dual-rail + the exec/ran gates) is what proves each elision safe. A number here is
-# meaningless unless `sh e2e/run.sh` is green (or the case is a correctly-pinned XFAIL) — measure
+# meaningless unless `cargo test -p dorc-cli --test e2e` is green (or the case is a correctly-pinned XFAIL) — measure
 # AFTER the differential passes. An XFAIL case's row is its HEAD (defect-present) reading, so it
 # can move when the pinned defect is fixed (e.g. strawman24-modeled-wall's elide drops 1->0 the
 # moment the silence=wall fix lands — the yardstick makes that fix visible as a metric change).
@@ -22,7 +22,7 @@ set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
-# Binary locator — the SAME logic run.sh uses (copied verbatim; this script re-implements no
+# Binary locator — the SAME logic the retired sh harness used (this script re-implements no
 # gate). $DORC overrides.
 dorc=${DORC:-}
 if [ -z "$dorc" ]; then
@@ -55,16 +55,16 @@ row case sites elide omit guard run elide-fr
 echo "$rule"
 
 t_sites=0; t_elide=0; t_omit=0; t_guard=0; t_run=0; n=0; missing=0
-for dir in "$here"/cases/strawman24-*/; do
-  [ -d "$dir" ] || continue
+for dir in "$here"/../crates/cli/tests/strawman24-*/; do
+  [ -d "$dir" ] || { echo "yardstick: no strawman24-* cases under crates/cli/tests — the collection moved" >&2; exit 2; }
   name=$(basename "$dir")
   n=$((n + 1))
-  # Collect -o oracles (glob-sorted, exactly as run.sh assembles them) + the DORC_FLAGS marker
+  # Collect -o oracles (glob-sorted, exactly as the e2e runner assembles them) + the DORC_FLAGS marker
   # (so a `--trust-footprints` case's survivals show in the yardstick — the number Stage 2 moves).
   set --
   for o in "$dir"*.oracle.sh; do [ -e "$o" ] || continue; set -- "$@" -o "$o"; done
   for m in "$dir"DORC_FLAGS=*; do [ -e "$m" ] || continue; set -- "$@" "${m##*DORC_FLAGS=}"; done
-  # Invoke as run.sh does: book + oracles, probe-results on stdin; the summary is on stderr.
+  # Invoke as the e2e runner does: book + oracles, probe-results on stdin; the summary is on stderr.
   summary=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>&1 >/dev/null \
     | grep '^dorc: plan-summary ' || true)
   case $summary in

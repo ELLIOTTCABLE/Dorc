@@ -39,7 +39,13 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libtest_mimic::{Arguments, Failed, Trial};
 
-use support::{E2eCase, E2eKind, discover_e2e, e2e_roots, spike_root};
+use support::{E2eCase, E2eKind, case_roots, discover_e2e, spike_root};
+
+/// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
+/// the pre-flight batteries resolve their specimens against.
+fn own_cases() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests")
+}
 
 /// The fixed spike nonce and terminal token of the `dorc-records/1` framing (`262` §2).
 /// These MIRROR `plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN}` — keep the two in sync.
@@ -1649,7 +1655,7 @@ fn run_lint(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
     );
     if out.code != want_rc {
         return Err(format!(
-            "FAIL  lint/{name}  [lint: exit rc={}, expected {want_rc}]",
+            "FAIL  {name}  [lint: exit rc={}, expected {want_rc}]",
             out.code
         )
         .into());
@@ -1658,7 +1664,7 @@ fn run_lint(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
     let want = strip_trailing_newlines(&strip_cr(&read_or_empty(&dir.join("expected.out"))));
     if got != want {
         return Err(format!(
-            "FAIL  lint/{name}  [lint: stdout content diff]\n{}",
+            "FAIL  {name}  [lint: stdout content diff]\n{}",
             divergence(&want, &got)
         )
         .into());
@@ -1669,14 +1675,18 @@ fn run_lint(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
 /// The opt-in real-external-tools lint lane (`spike/CLAUDE.md` real-tools-lane-opt-in).
 /// Registered ONLY when `DORC_E2E_REAL_TOOLS` is set; the LIST is the coverage assertion,
 /// so a listed tool with no fixture, or an absent tool, fails loudly.
-fn run_lint_real(harness: &Harness, tool: &str, extra_path: &str) -> Result<(), Failed> {
-    let dir = spike_root().join("e2e/lint-real-cases").join(tool);
-    if !dir.join("book.sh").is_file() {
+fn run_lint_real(
+    harness: &Harness,
+    tool: &str,
+    fixture: Option<&PathBuf>,
+    extra_path: &str,
+) -> Result<(), Failed> {
+    let Some(dir) = fixture.filter(|dir| dir.join("book.sh").is_file()) else {
         return Err(format!(
-            "FAIL  lint-real/{tool}  [lint-real: listed tool has no fixture (lint-real-cases/{tool}/book.sh)]"
+            "FAIL  lint-real/{tool}  [lint-real: listed tool has no fixture (a `lint-real-{tool}/book.sh` case dir)]"
         )
         .into());
-    }
+    };
     let (coverage, finding): (&str, &[&str]) = match tool {
         "shellcheck" => (
             "\"name\":\"shellcheck\",\"status\":\"ran\"",
@@ -1703,7 +1713,7 @@ fn run_lint_real(harness: &Harness, tool: &str, extra_path: &str) -> Result<(), 
     };
     let out = capture(
         Command::new(&harness.dorc)
-            .current_dir(&dir)
+            .current_dir(dir)
             .env("PATH", extra_path)
             .args([
                 "lint",
@@ -1898,9 +1908,15 @@ fn guard_shape_selftest() -> Vec<String> {
 /// `--trust-footprints` and assert the elision count DIFFERS. If it matches, the flag is
 /// inert and a flagged survival case's gate-6 attribution would lie.
 fn dorc_flags_selftest(harness: &Harness) -> Option<String> {
-    let dir = spike_root().join("e2e/cases/strawman24-survive-multiwall");
+    let dir = own_cases().join("strawman24-survive-multiwall");
     if !dir.is_dir() {
-        return None;
+        // The sh original skipped a missing anchor. Since the collection moved, a missing
+        // anchor now most likely means the runner is looking in the wrong place — the one
+        // failure that would otherwise disable this battery in silence.
+        return Some(format!(
+            "dorc_flags_selftest: the flagship anchor is missing ({}) — the case collection is not where the runner looks.",
+            dir.display()
+        ));
     }
     let oracle = dir.join("package.oracle.sh").display().to_string();
     let book = format!("--book={}", dir.join("book.sh").display());
@@ -1952,8 +1968,14 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
             harness.dorc.display()
         ));
     }
-    let oracle = spike_root().join("e2e/cases/strawman24-alias-provides/package.oracle.sh");
-    if oracle.is_file() {
+    let oracle = own_cases().join("strawman24-alias-provides/package.oracle.sh");
+    if !oracle.is_file() {
+        return Some(format!(
+            "dorc_sh_smoke: the strip anchor is missing ({}) — the case collection is not where the runner looks.",
+            oracle.display()
+        ));
+    }
+    {
         let stripped = capture(
             Command::new(&harness.dorc)
                 .arg("strip")
@@ -2018,8 +2040,17 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
 /// Run every confound battery before any case. A failing battery ABORTS (exit 3) exactly
 /// as the sh harness does: a lying judge is worse than no judge, so no case may report
 /// green underneath one.
-fn preflight(harness: &Harness) {
+fn preflight(harness: &Harness, discovered: usize) {
     let mut fatal: Vec<String> = Vec::new();
+    // The DISCOVERY FLOOR. Walking the wrong roots yields zero trials, and a suite of zero
+    // trials EXITS GREEN — the one failure mode this runner's own path constants can cause
+    // and not report. A count is deliberately not pinned (`count-drifts`); non-empty is.
+    if discovered == 0 {
+        fatal.push(format!(
+            "FATAL  discovery floor: no cases found under any of {:?} — the collection is not where the runner looks, and an empty suite would otherwise pass.",
+            case_roots()
+        ));
+    }
     let dual = dual_rail_selftest();
     if !dual.is_empty() {
         fatal.push(format!(
@@ -2057,23 +2088,23 @@ fn main() {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
     let harness = Arc::new(Harness::resolve());
-    preflight(&harness);
+    let discovered = discover_e2e(&case_roots());
+    preflight(&harness, discovered.len());
 
     let mut trials: Vec<Trial> = Vec::new();
-    for case in discover_e2e(&e2e_roots()) {
+    let mut real_fixtures: BTreeMap<String, PathBuf> = BTreeMap::new();
+    for case in discovered {
         let harness = Arc::clone(&harness);
         match case.kind {
-            E2eKind::RoundTrip => {
-                trials.push(Trial::test(case.name.clone(), move || {
-                    run_round_trip(&harness, &case)
-                }));
+            E2eKind::RoundTrip => trials.push(Trial::test(case.name.clone(), move || {
+                run_round_trip(&harness, &case)
+            })),
+            E2eKind::Lint => trials.push(Trial::test(case.name.clone(), move || {
+                run_lint(&harness, &case)
+            })),
+            E2eKind::LintReal => {
+                real_fixtures.insert(case.name.clone(), case.dir);
             }
-            E2eKind::Lint => {
-                trials.push(Trial::test(format!("lint/{}", case.name), move || {
-                    run_lint(&harness, &case)
-                }));
-            }
-            E2eKind::LintReal => {}
         }
     }
     if let Ok(list) = std::env::var("DORC_E2E_REAL_TOOLS")
@@ -2081,11 +2112,13 @@ fn main() {
     {
         let tools: Vec<String> = list.split(',').map(str::to_owned).collect();
         let path = Arc::new(real_tools_path(&tools));
+        let fixtures = Arc::new(real_fixtures);
         for tool in tools {
             let harness = Arc::clone(&harness);
             let path = Arc::clone(&path);
+            let fixtures = Arc::clone(&fixtures);
             trials.push(Trial::test(format!("lint-real/{tool}"), move || {
-                run_lint_real(&harness, &tool, &path)
+                run_lint_real(&harness, &tool, fixtures.get(&format!("lint-real-{tool}")), &path)
             }));
         }
     }

@@ -308,7 +308,7 @@ fn publish_file(path: &Path, bytes: &str) -> Result<(), String> {
 }
 
 fn cases_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("cases")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
 }
 
 fn inspect_cases(

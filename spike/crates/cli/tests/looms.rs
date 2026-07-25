@@ -25,7 +25,7 @@ use errorloom::{Case, CaseFile, fixpoint_check};
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use dorc_loom::DorcConsumer;
-use support::{LoomCase, discover_looms, loom_roots};
+use support::{LoomCase, case_roots, discover_looms};
 
 /// The cases known NOT to be render fixpoints at HEAD, with the conductor's ruling that
 /// banked them: `289` §2j — a blank-line divergence in the whylog render, deferred to
@@ -67,7 +67,17 @@ fn main() {
     if args.format.is_none() && std::env::var("DORC_E2E_QUIET").as_deref() == Ok("1") {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
-    let trials: Vec<Trial> = discover_looms(&loom_roots())
+    let discovered = discover_looms(&case_roots());
+    // The DISCOVERY FLOOR (see the e2e runner's): walking the wrong roots yields zero
+    // trials, and a suite of zero trials EXITS GREEN.
+    if discovered.is_empty() {
+        eprintln!(
+            "FATAL  discovery floor: no `.loom` cases found under any of {:?} — the collection is not where the runner looks, and an empty suite would otherwise pass.",
+            case_roots()
+        );
+        std::process::exit(3);
+    }
+    let trials: Vec<Trial> = discovered
         .into_iter()
         .map(|case| {
             let case = Arc::new(case);

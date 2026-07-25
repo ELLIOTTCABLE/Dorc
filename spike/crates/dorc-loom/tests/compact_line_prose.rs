@@ -35,7 +35,7 @@ const CASE: &str = "unmodeled-wall-inventory.loom";
 
 fn case() -> Case {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("cases")
+        .join("../aid/tests")
         .join(CASE);
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("read {CASE}: {e}"));
     Case::parse(&text).unwrap_or_else(|e| panic!("parse {CASE}: {e}"))

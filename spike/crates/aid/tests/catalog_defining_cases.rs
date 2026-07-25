@@ -455,9 +455,9 @@ fn body_parts_keep_empty_parameter_identity() {
 /// backported the covered codes, so completeness keys to real case files, not the `covered()` list.
 fn is_case_owned(slug: &str) -> bool {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .map(|crates| crates.join("dorc-loom/cases").join(format!("{slug}.loom")))
-        .is_some_and(|case| case.exists())
+        .join("tests")
+        .join(format!("{slug}.loom"))
+        .exists()
 }
 
 /// The mint recipe, named VERBATIM so a red gate hands the reader the command that repairs it
