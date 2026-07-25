@@ -564,6 +564,9 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   (interruption is loud in git, repaired by rerun). The legacy `DORC_CATALOG_PROMOTE`
   writer is retired; hand-edits to the lock are refused or caught. The build parses
   the catalog and never auto-tracks case files (the lag IS the assertion).
+  The render-level fixpoint has exactly ONE authority — the looms runner, per committed loom
+  (`289:rider-fixpoint-gate-rationalize` retired `dorc-loom`'s stale 4-case allow-list); the
+  lock byte-identity gate stays corpus-global in `dorc-loom`'s own suite.
   `message`/`help` are
   `Option<&'static str>` (`None` renders the `[unwritten:]` placeholder at render
   time, never a stored string); interpolated values use engine-owned canonical
@@ -576,7 +579,11 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom`
   (single-file loom) · `X/X.loom` (multi-file loom) · `X/cmd` (a `dorc lint` case) ·
   `X/book.sh` + `expected.out` (a round-trip case) · `X/book.sh` alone (a real-tools
-  fixture) · anything else is an `.rs` test's fixture space. Placement is MECHANICAL:
+  fixture) · anything else is an `.rs` test's fixture space. A loom whose frontmatter carries
+  `run: round-trip|lint` is a WHOLE-PRODUCT case: both runners see it — the e2e runner
+  materializes and EXECUTES it through the unchanged gate battery, the looms runner parses and
+  hygiene-checks it and defers the transcript proof (`fixpoint: executed`) to that execution
+  (`crates/cli/CLAUDE.md` loom-form-is-the-same-battery). Placement is MECHANICAL:
   a canonical loom for a REGISTERED aid-slug lives in the ONE primary collection,
   `crates/aid/tests/`, so `crates/aid/CLAUDE.md` is the registry that auto-loads on
   every loom edit (`288:rul-claudemd-fires-per-directory`); a tertiary loom pinning
@@ -716,10 +723,13 @@ mise exec -- cargo test -p dorc-cli --test looms    # the loom corpus alone: par
   the lane loudly (opt-in implies require-tools). Never default-on; never
   golden-pins upstream message text (structural + stable-code assertions only);
   never touches files outside the worktree. Real mutators remain forbidden
-  everywhere. ⚠ RED AT HEAD, pre-existing: the lane reads `rc != 0` as
-  "tool absent", but a current shellcheck reports `SC2182` at error severity, so
-  `dorc lint --require-tools` exits 1 on correct findings and the lane false-fails.
-  A phase-6 rider; do not "fix" it by relaxing require-tools.
+  everywhere. The lane reads the lint EXIT TRICHOTOMY, never `rc != 0`: 0 (clean) and 1
+  (findings) both mean the tool RAN, and only the operational rc 3 — where `--require-tools`
+  reports an absent tool — is absence (`289:rider-real-tools-lane-rc-bitrot`, fixed; the old
+  reading false-failed on a correct error-severity finding). Windows caveat, by design and
+  unchanged: `checkbashisms` is a perl script `Command::new` cannot spawn there, so list only
+  `shellcheck` on Windows and run the checkbashisms half on *nix
+  (`e2e/lint-real-tools-setup.sh` documents the discovery-vs-spawn mismatch).
 
 ## Code style
 

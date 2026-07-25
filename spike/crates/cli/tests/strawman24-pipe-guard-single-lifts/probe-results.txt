@@ -1,3 +1,0 @@
-# site 0 = the `dpkg -s otelcol` pkgstate Query — VALID (nothing mutates upstream) + holds
-# (otelcol installed) ⇒ its OWN rc=0 is fold-usable ⇒ the `|| curl|tar` fallback is DEAD.
-site 0 effect=holds rc=0

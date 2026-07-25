@@ -1,0 +1,96 @@
+---
+run: round-trip
+fixpoint: executed
+apply-exit: 1
+---
+-- book.sh --
+# door1-and-form (door-1 && DUAL, charter 20V §4 / note 215): the `&&` direction of the
+set -e
+dpkg -s nginx >/dev/null 2>&1 && { systemctl stop nginx; rm -f /etc/nginx/sites-enabled/default; }
+
+-- pkgstate.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# package-status QUERY oracle (the DESIGN `dpkg -s nginx || apt-get install` idiom).
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+
+-- probe-results.txt --
+# probe-results: site 1 is the `dpkg -s nginx` pkgstate Query guard; absent ⇒ rc 1. For
+# `&&`, a FAILING guard short-circuits ⇒ the `{ systemctl stop; rm; }` block is DEAD ⇒ both
+# block commands omit. The guard's Query rc is fold-usable (substitutes to `false`).
+site 1 effect=absent rc=1
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT shim for `dpkg` — the pkgstate kind's probe (`dpkg -s <pkg>`; $2=pkg). The mock
+# host has nginx ABSENT (rc 1), so the probe records `site 1 effect=absent rc=1` and the
+# `&&` guard FAILS ⇒ the block is dead. Read-only; logs argv. NB: the APPLY artifact does
+# NOT invoke dpkg (the guard is substituted to `false`); only the PROBE runs it (gate-1).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1   # nginx absent ⇒ guard fails ⇒ `&&` short-circuits the dead block
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh -o pkgstate.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=d744c51011060214 sites=1 @@dorc@@\n'
+# site 1: sm.dorc.PkgState:nginx@installed
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg="$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1
+}
+dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 skip-unresolvable
+# site:2 skip-unresolvable
+# site:3 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# door1-and-form (door-1 && DUAL, charter 20V §4 / note 215): the `&&` direction of the
+set -e
+false && { :; :; }   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; systemctl stop nginx; rm -f /etc/nginx/sites-enabled/default] (already converged / dead branch)

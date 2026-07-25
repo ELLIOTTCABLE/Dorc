@@ -1,0 +1,182 @@
+---
+run: round-trip
+fixpoint: executed
+flags: --trust-footprints
+expect-why:
+  - site 1 survives+elides && wall site 0 && sm.dorc.Package:oldpkg && DERIVED at probe && backing sm.dorc.Package:nginx disjoint
+---
+-- book.sh --
+# strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to
+apt-get install -y oldpkg
+apt-get install -y nginx
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal package oracle (apt/dpkg) — predict() + is_converged() + a PAYLOAD-BOUND touches()
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {                              # PAYLOAD-BOUND footprint (24E §2/§14): DERIVED via a PIPE
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+   install|purge)
+      dpkg -L "$1" | sed 's|^|sm.dorc.File:|'            # the NATURAL idiom ALONE: a PIPE ⇒ NonPrintfCommand ⊤ ⇒ escalate; engine unions package:$1 (24G §8)
+      ;;
+   esac
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed verdict records + the DERIVED-footprint coord lane (24E §5). site 0 =
+# sm.dorc.Package:oldpkg#installed (absent ⇒ diverged ⇒ the oldpkg install RUNS = the footprinted wall);
+# site 1 = sm.dorc.Package:nginx#installed (holds ⇒ converged). The `deriv <leafid> coord=…` lines are the
+# host-run touches() output the derivation-probe reads back: `dpkg -L "$1" | sed` ALONE now, so each
+# site emits ONLY its `sm.dorc.File:/etc/<pkg>.conf` (the boilerplate `printf 'sm.dorc.Package:%s'` was stripped — the
+# engine UNIONS the own coord sm.dorc.Package:<pkg> into the footprint, 24G §8). Under --trust-footprints the
+# nginx install SURVIVES the running oldpkg wall (sm.dorc.Package:nginx disjoint from the hit-surface
+# {sm.dorc.File:/etc/oldpkg.conf} ∪ own sm.dorc.Package:oldpkg) ⇒ elides. dpkg-query is mock-reproducible (rc 1 oldpkg
+# / 0 nginx).
+site 0 effect=absent
+site 1 effect=holds
+deriv 0 coord=sm.dorc.File:/etc/oldpkg.conf
+deriv 1 coord=sm.dorc.File:/etc/nginx.conf
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT strawman mock — `dpkg -L <pkg>` ($1=-L, $2=pkg) lists the package's installed FILES.
+# HOST model: <pkg> lays down exactly /etc/<pkg>.conf. Read-only; logs for symmetry. The disturbs()
+# body pipes this into `sed 's|^|sm.dorc.File:|'` to derive the coordinates (24E §14 pipe idiom).
+. "${0%/*}/.log"; _dorc_logged "$@"
+printf '/etc/%s.conf\n' "$2"
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim — `dpkg-query -W <pkg>` ($1=-W, $2=pkg). HOST: oldpkg NOT installed
+# (rc 1 ⇒ absent ⇒ diverged ⇒ `apt-get install oldpkg` RUNS, the modeled wall); nginx
+# installed (rc 0 ⇒ holds ⇒ converged). Read-only; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${2:-} in oldpkg) exit 1 ;; *) exit 0 ;; esac
+
+-- mocks/sed --
+#!/bin/sh
+# INERT strawman mock — the `sed 's|^|sm.dorc.File:|'` stage of the derivation pipe (24E §14):
+# prepend `sm.dorc.File:` to each stdin line. A canned transform for THIS fixture (the expression
+# arg is not interpreted — a spike mock, ru-26); it must stay in step with the oracle's expression,
+# since gate-1's deriv parity compares the produced coords against probe-results.txt. Read-only;
+# logs its args for symmetry. Pure-sh (no real sed under PATH=mocks-only).
+. "${0%/*}/.log"; _dorc_logged "$@"
+while IFS= read -r _l; do printf 'sm.dorc.File:%s\n' "$_l"; done
+
+-- expected.ran --
+ran: apt-get install -y oldpkg
+
+-- replay --
+$ dorc --book=book.sh -o package.oracle.sh --trust-footprints < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7aba5da3adc63596 sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Package:oldpkg@installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Package:nginx@installed
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# dorc derivation-probe (read-only, 24E §2): payload-bound footprints the static
+# tracer could not resolve. Each escalated wall-candidate ships its touches() body
+# strip-only; when run it prints its footprint coordinates, re-keyed per site:
+#   deriv <leafid> coord=<kind:entity>
+# (the SAME leaf-id the apply plan assigns — inv-site-keyed-results).
+
+# deriv 0: apt-get (host-derivation via apt-get.touches())
+apt_get__disturbs() {                              # PAYLOAD-BOUND footprint (24E §2/§14): DERIVED via a PIPE
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+   install|purge)
+      dpkg -L "$1" | sed 's|^|sm.dorc.File:|'            # the NATURAL idiom ALONE: a PIPE ⇒ NonPrintfCommand ⊤ ⇒ escalate; engine unions package:$1 (24G §8)
+      ;;
+   esac
+}
+apt_get__disturbs 'install' '-y' 'oldpkg' | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 0 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 0 n=%s @@dorc@@\n' "$_n"; }
+# deriv 1: apt-get (host-derivation via apt-get.touches())
+apt_get__disturbs 'install' '-y' 'nginx' | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 1 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 1 n=%s @@dorc@@\n' "$_n"; }
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to
+apt-get install -y oldpkg
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)

@@ -1,4 +1,0 @@
-#!/bin/sh
-# INERT mock: the unmodeled wall (no oracle) — runs, logs, mutates nothing.
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0
