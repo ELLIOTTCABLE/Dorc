@@ -6,7 +6,7 @@ expect-why:
   - site 1 survives+elides && wall site 0 && sm.dorc.Package:oldpkg && DERIVED at probe && backing sm.dorc.Package:nginx disjoint
 ---
 -- book.sh --
-# strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to
+# strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to strawman24-survive-simple, its AUTHORED-footprint twin).
 apt-get install -y oldpkg
 apt-get install -y nginx
 
@@ -137,7 +137,7 @@ $ dorc --book=book.sh -o package.oracle.sh --trust-footprints < probe-results.tx
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7aba5da3adc63596 sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=b25e36cd6f1811b8 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Package:oldpkg@installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -177,6 +177,6 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to
+# strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to strawman24-survive-simple, its AUTHORED-footprint twin).
 apt-get install -y oldpkg
 # apt-get install -y nginx   # dorc: elided (already converged / dead branch)
