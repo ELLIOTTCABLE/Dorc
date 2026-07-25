@@ -240,8 +240,9 @@ mod tests {
     #[test]
     fn a_slug_already_in_the_mirror_gains_no_second_row() {
         let consumer = DorcConsumer::new();
-        let cases = load_corpus_by_slug(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests"))
-            .expect("load corpus");
+        let cases =
+            load_corpus_by_slug(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests"))
+                .expect("load corpus");
         let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
         assert_eq!(
             generated.matches("slug: \"syntax-unsupported\",").count(),

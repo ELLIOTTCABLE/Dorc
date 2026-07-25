@@ -77,7 +77,8 @@ fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
 
 #[test]
 fn editable_baseline_renders_a_defining_case_with_help() {
-    let case = Case::parse(include_str!("../../aid/tests/whylog-book-desync.loom")).expect("case parses");
+    let case =
+        Case::parse(include_str!("../../aid/tests/whylog-book-desync.loom")).expect("case parses");
     let consumer = DorcConsumer::new();
     let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
         panic!("exact whylog replay must not fall back")

@@ -2118,7 +2118,12 @@ fn main() {
             let path = Arc::clone(&path);
             let fixtures = Arc::clone(&fixtures);
             trials.push(Trial::test(format!("lint-real/{tool}"), move || {
-                run_lint_real(&harness, &tool, fixtures.get(&format!("lint-real-{tool}")), &path)
+                run_lint_real(
+                    &harness,
+                    &tool,
+                    fixtures.get(&format!("lint-real-{tool}")),
+                    &path,
+                )
             }));
         }
     }

@@ -2,6 +2,7 @@
 
 #![expect(
     clippy::expect_used,
+    clippy::panic,
     reason = "corpus-loader helper over the committed tree; the no-panic lints guard untrusted input"
 )]
 

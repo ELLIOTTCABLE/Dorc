@@ -17,6 +17,11 @@
 //! Nothing here reaches for a shell: a command the in-process driver cannot dispatch is
 //! an `unsupported replay` failure, never an escalation to generic execution.
 
+#![expect(
+    clippy::print_stderr,
+    reason = "the discovery floor aborts before any trial runs; it has no Failed to return"
+)]
+
 mod support;
 
 use std::sync::Arc;
