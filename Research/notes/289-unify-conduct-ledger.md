@@ -512,3 +512,13 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   shared in-tree mocks (erodes case self-containedness) > bats (bash-dependent,
   wrong for a posh∩dash-floor project). Banked post-arc unless the human pulls it
   forward.
+- HUMAN-TYPED queue additions (2026-07-24, late): (1) conduct-bless FAILS for the
+  human under WSL/zsh in the conductor worktree (my greens are msys/git-bash —
+  ~SUSPECT mixed-platform target/ contamination or worktree-gitdir path
+  translation; NOT critical) — thread to a builder when idle, before arc close.
+  (2) `289:residual-loom-mock-ergonomics` gets a QUICK RESEARCH ROUND first, not a
+  build: Sonnet + Kagi survey of bats-alikes / Rust CLI-test frameworks
+  (trycmd/snapbox/cram/testscript-class) against our needs profile, esp. the
+  scope-bloat question ("does errorloom grow a feature per future test need?");
+  errorloom-feature stays the fallback lean; decision deferred — possibly a
+  pre-phase-8 matter for a clean conductor.
