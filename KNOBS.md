@@ -220,6 +220,16 @@ Poles: `kFLOW-authorable-mechanism ↔ kFLOW-polished-report`
 **Status:** open — deliberately unwelded pending implementation (`27V:rul-output-form-unwelded`): the resting point is decidable only from real generated output across the real failure-mode corpus, never upfront, and never locked by an example render in an LLM-authored document. **Owner:** user (taste, adjudicated over generated output) + implementation evidence. **Lock-in:** low-med — mechanism accretes around authoring habits; the refused extreme is the only hard fence.
 Entangled: `kWARN` (push-surface policy for the same surfaces); the AID-NEEDS law section; `Research/notes/27V` (the build phase this governs).
 
+### `kTASTE`
+Poles: `kTASTE-delightful ↔ kTASTE-productive`
+
+**Tension:** what users *prefer, enjoy, and adopt* — output that reads as care, narrative, a tool on your side — **vs** what measurably *changes outcomes* — acted on, fast, correctly. The two are experimentally divergent: preferred is reliably not more effective ([A-pettit-enhanced-messages-inconclusive-2017] · [A-santos-llm-messages-not-silver-bullet-2024]; adjudicated `Research/notes/28E` §7). This is a *living* tension, product-wide and at every level, not a decision to make once: delight drives adoption, trust, and the willingness to keep reading at all; productivity drives repair under fire. Collapsing it loses silently and deep — information welded into a terse synthesis starves the rich render; information retained for richness pulls shallow layers into including what deeper layers knew was superseded or implied. So both poles must stay *computable*: the model keeps the welded conclusion, the residue, and the selection metadata relating them.
+**Status:** open — deliberately permanent; never resolve, dial per-surface.
+**Owner:** user (taste) + field evidence (trials measure preference and outcome *separately*, forever).
+**Lock-in:** med — the both-poles-computable model shape is retrofit-hostile; per-surface dial positions are cheap.
+Two-users lean: admins retain or abandon on the *productive* pole (fire experiences decide); but the oracle library only exists if engineers find the product *delightful* — something they Think Is Cool and invest their scarce time and life-effort into, a community worth *investing* in. Wrinkle: nearly every oracle-engineer starts out an admin, so delight also feeds the pipeline that produces engineers.
+> False friend of `kFLOW` (mechanism-cost vs polish is a different axis than pleasure vs outcome); entangled with `kWARN` and the register machinery.
+
 ## Platform reach — *how far do we bend for odd hosts/targets?*
 
 ### `kTPLATFORMS`
