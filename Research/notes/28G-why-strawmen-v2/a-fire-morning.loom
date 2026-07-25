@@ -10,6 +10,9 @@
 # note -- the `dorc teach` pointer -- pure ASCII throughout.
 
 -- web.sh (context, abbreviated) --
+ 5 apt-get update
+ 6 dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+ 7 cp ./nginx.conf /etc/nginx/nginx.conf
  8  certsync push web1
  9  systemctl enable --now nginx
 12  hork tune --profile web
