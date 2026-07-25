@@ -789,3 +789,44 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   `notes/292-why-output-strawmen/` (written+committed BEFORE this landing was
   read, `7ab5e497`); the human's editing round is next — in-place uncommitted
   edits (harvested as diff) or 292-style copies, their choice.
+
+## §2z — The human's first strawmen-reaction round (typed 2026-07-25; pre-reading the as-built)
+
+Ruling-grade (typed firm):
+- **`289:rul-ascii-output-forever`** — "no unicode, ever. period. anywhere...
+  permanently": product output is pure ASCII, 90s-leaning, forever. NOTE the
+  as-built chain gutter uses `└─` (top_run_reason) — an ASCII respell is owed,
+  cheap, rides any render-touching lane; committed transcripts re-bless with it.
+  Unifies with spike/docs' existing ASCII law; steering-sync rides next lane.
+- **`289:rul-trust-spent-first-argless-why`** — the zero-arg report leads with
+  TRUST-SPENT, always; danger in the user's face before anything else.
+
+Typed leans (banked, not welded):
+- lean-prose-down-one-step (7/10 → ~6/10 prose-iness; "what would fix/what would
+  bring back" become STRUCTURAL sections, not paragraphs — annoyed-debugging
+  register).
+- lean-why-is-whylog-reconciliation — `dorc why` may collapse to
+  always-receipt-reconciling (against the on-disk book); the live/fuller render
+  becomes `dorc plan --why`; why/plan differ only in consent + ask over the one
+  global model. (Conductor correction owed in-chat: as-built live why does NOT
+  probe — it recomputes from supplied records; the fold is a surface
+  simplification, not a safety fix. Hardens the always-on-whylog requirement;
+  raises the drifted-book question: refuse-on-desync (22F, as-built) vs
+  reconcile-with-drift-annotations.)
+- lean-tree-rendering-is-its-own-firewalled-crate — nested code/prose/why-block
+  rendering + reflow + syntax-highlighting = a segregated internal mini-product
+  (errorloom-precedent); NEEDS INVENTORY BEFORE SHOPPING (no library-bending);
+  fixpoint-reflow fear noted (conductor pointer: Wadler/Oppen document-algebra
+  pretty-printing is the battle-tested linear-ish prior art; sh highlighting can
+  ride Dorc's OWN lexer, no foreign grammar).
+- lean-start-without-mutual-awareness — cross-fragment prose awareness starts
+  OFF; (conductor distinction offered: walker-DERIVED structural awareness
+  ("the only claimed link") is cheap and precedented — the flagship epilogue is
+  already derived-from-evidence-presence; only prose-knowing-prose is deferred).
+- nit-why-steps-are-a-dag — numbering must express join shape (1a/1b/1c -> 2),
+  not force a false total order.
+- ask-cell-human-description — why-surfaces want "what is this cell tracking,
+  in user terms"; possibly a first-class oracle-language display-tier surface
+  (richer user-facing oracle metadata generally); comment-mining is the unloved
+  fallback. Joins `26C:feeder-oracle-why-metadata`'s umbrella; NOT settled.
+- "problems" retitles partially toward "improvements" (could-do-if-you-did).
