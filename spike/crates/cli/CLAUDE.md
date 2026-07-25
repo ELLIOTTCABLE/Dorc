@@ -62,6 +62,33 @@ discipline: one rule per bullet, slugged; append to the matching section.
   but bless cannot prove an elision RIGHT: fresh verified binary,
   orchestrator-only, diff inspected case-by-case (BLESS exclusivity —
   `spike/CLAUDE.md`).
+- **loom-form-is-the-same-battery** (`288:phase-e2e-loom-conversion`) — a whole-product case may be
+  a single-file `.loom`: frontmatter instead of `NAME=value` markers, txtar sections instead of a
+  fixture dir (`mocks/` included, dotfiles included, `expected.ran` as a byte section), and the
+  committed transcript instead of `expected.out`. It is NOT a second harness — `run_loom`
+  MATERIALIZES the case into exactly the dir shape and runs the unchanged gate battery over it, so
+  a conversion cannot quietly drop a check. The frontmatter key vocabulary is CLOSED (`LOOM_KEYS`)
+  and an unread key is refused: a key no gate reads is an assertion the author only believes they
+  made. The replay COMMAND is compared against the invocation the runner actually drives, so a
+  transcript can never show one command while the gates run another.
+- **one-fixpoint-authority-per-case** — `crates/cli/tests/looms.rs` render-fixpoints every committed
+  loom through the in-process consumer; a whole-product loom declares `fixpoint: executed` instead,
+  because its transcript is proven by running the REAL binary here (the stricter proof, and the only
+  one the sanctioned-executor law allows for a case that materializes mocks). `fixpoint: executed`
+  without a `run:` key is refused in the looms runner — otherwise the transcript is proven by
+  nothing. The old 4-case `DIRECT_PLAN_CASES` gate in `dorc-loom` is GONE
+  (`289:rider-fixpoint-gate-rationalize`); do not re-mint a second render-fixpoint authority.
+- **tolerate-is-a-closed-vocabulary** (`288:prop-normalizer-closed-vocabulary`) — a case DECLARES the
+  named nondeterminism class it tolerates (`tolerate=<class>` marker / `tolerate:` frontmatter) from
+  an engine-owned vocabulary, and the named normalizer is applied to the CAPTURE at bless AND at
+  check, so the committed bytes are the canonical form. Never a free regex; never a check-only
+  relaxation (the retired `RAN_ORDER=lax` shape blessed raw bytes and compared sorted ones, so the
+  committed file recorded an interleaving nothing asserted). Current vocabulary: `pipe-stage-order`.
+- **needles-are-structural** (`288:prop-structural-needles-only`) — `expected-diagnostics` /
+  `expect-diagnostic:` is a list of code SLUGS; the `error[<slug>]` needle is DERIVED and every slug
+  is validated against the generated catalog, so a dead slug is REFUSED and a declaration is an
+  ASSERTION (a declared-but-unfired code is red). The why/hint/why-chain needles stay free text —
+  legal, rare, and carrying real semantic content rather than catalog prose.
 - **count-drifts** — the case-count drifts; count the dirs, never trust a
   literal. The runners pin only a NON-EMPTY discovery floor (a zero-trial suite would
   exit green — the one failure their own path constants can cause and not report).

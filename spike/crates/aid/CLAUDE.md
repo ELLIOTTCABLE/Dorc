@@ -106,8 +106,9 @@ crate's charter) · `notes/287` (errorloom as-built).
   `../aid/tests` for the corpus and `../aid/src/catalog_lock.rs` for the lock, both
   depth-coupled to `crates/<c>/`. Moving EITHER crate breaks both, and one direction fails
   silent: an empty corpus read makes the corpus-wide gates pass VACUOUSLY. `fixpoint.rs`'s
-  `load_corpus` therefore panics on an unreadable dir and asserts non-empty — never soften
-  that back into a silent empty vec.
+  surviving lock gate therefore asserts a NON-EMPTY corpus before it generates — never soften
+  that back into a silent empty vec. (Its render-fixpoint half is gone: the ONE render-fixpoint
+  authority is `crates/cli/tests/looms.rs`, per committed loom.)
 
 - **spanless-gate-is-lexical** — `spanless_mint_allow_list_is_exact` is a LEXICAL grep
   for `new_spanless_site(DiagCode::X(` at the emit site: every mint spells its payload
