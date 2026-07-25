@@ -1,12 +1,11 @@
-# 293 — the why-surface design sitting (the seat, the render model, the surfaces)
+# 28E — the why-surface design sitting (the seat, the render model, the surfaces)
 
-AI-authored (Fable conductor, sitting WITH the human, 2026-07-25). THE design durable
-for the round opened at `289` §2w; it SUPERSEDES the in-ledger reaction banking
-(`289` §2z — that ledger is the dev-arc conduct trail, this is the design summary of
-record). Goal was one step toward settled, not settlement: render particulars stay
-unstable-and-improving (`27V:rul-output-form-unwelded`); everything below is graded.
-§7 is reserved for the prior-art round (in flight at this writing) and lands after
-its adjudication.
+AI-authored (Fable conductor, sitting WITH the human, 2026-07-25; né `293`,
+human-moved into the 28-series same day). THE design durable for the round opened at
+`289` §2w; it SUPERSEDES the in-ledger reaction banking (`289` §2z — that ledger is
+the dev-arc conduct trail, this is the design summary of record). Goal was one step
+toward settled, not settlement: render particulars stay unstable-and-improving
+(`27V:rul-output-form-unwelded`); everything below is graded.
 
 Companions: `plans/288` (the unification arc) · `289` §2t–§2z (conduct trail:
 hint-homing · gallery · strawmen · fold verifies · findings) · the corpus this
@@ -20,36 +19,73 @@ sitting leans on) · `plans/282` (loom transport) · root `AID-NEEDS.md` (surfac
 
 HUMAN-TYPED, firm:
 
-- **`293:rul-ascii-output-forever`** — product output is pure ASCII: "no unicode,
+- **`28E:rul-ascii-output-forever`** — product output is pure ASCII: "no unicode,
   ever. period. anywhere... permanently." 90s-leaning by taste and by policy. Bites
   now: the as-built chain gutter prints a Unicode elbow (`top_run_reason`) — an
   ASCII respell is owed, cheap, rides any render lane; committed transcripts
   re-bless with it. Unifies with spike/docs' ASCII law; steering-sync owed.
-- **`293:rul-trust-spent-first-argless-why`** — zero-arg `dorc why` leads with
+- **`28E:rul-trust-spent-first-argless-why`** — zero-arg `dorc why` leads with
   TRUST-SPENT, always, never capped; danger in the user's face first.
-- **`293:rul-sh-rewrap-is-load-bearing-scope`** — an in-process sh-formatter WITH
+- **`28E:rul-sh-rewrap-is-load-bearing-scope`** — an in-process sh-formatter WITH
   TEETH is in scope and load-bearing: it must render sh both LITERALLY (formatter
   duty: correctness-preserving rewrap, escape/continuation-aware, valid sh out) and
   AS DESCRIPTION (ellipsis-elision of uninteresting spans — "line 12 ... line 17" —
   with opinions about what matters), and stay meaningful at brutal width budgets
   (~40 chars after gutters/nesting). Probably lives outside Dorc's core.
-- **`293:rul-reason-tail-is-the-minimal-register`** — the plan render's per-line
+- **`28E:rul-reason-tail-is-the-minimal-register`** — the plan render's per-line
   reason-tail IS the most-compressed render of the same decision-DAG; acked hard
   that this constrains, shapes, and flavours the whole model.
-- **`293:nack-whylog-stores-book-bytes`** — the whylog stays THIN; it never
+- **`28E:nack-whylog-stores-book-bytes`** — the whylog stays THIN; it never
   swallows book bytes. The drift/history answer is source-tracking integration
   (below), with a Dorc-owned book-cache only as the doubted fallback if git proves
   heavy/unreliable. The whole drift question is PARKED as a rabbit-hole; fence
   carried from the sitting: any byte-source integration is ANNOTATION-TIER only —
   it may say "this run's book is commit X, HEAD has drifted", it never substitutes
   bytes into the receipt render.
-- **`293:rul-tree-render-is-a-firewalled-crate`** — nested code/prose/why-block
+- **`28E:rul-tree-render-is-a-firewalled-crate`** — nested code/prose/why-block
   rendering, reflow, and sh-highlighting are a segregated internal mini-product
   (errorloom-precedent; maybe published, maybe not), never polluting Dorc's
   internals; and we run a NEEDS INVENTORY before any library shopping — no bending
   the design to library requirements.
+- **`28E:rul-never-a-dinna-do-it-layer`** (hard rule, human-typed on the sibling
+  round's kill) — Dorc NEVER synthesizes a negative claim ("Dorc did not touch X";
+  "not Dorc's fault") on top of anything other than ENGINE-PROVED derivations:
+  never user input, never oracle vouches or at-most claims, never
+  machine-response data. Negatives may render only as tier-labeled
+  absence-of-evidence with the frame-problem ceiling named in-line; counterfactual
+  blind-run prediction is out PERMANENTLY (a second unmeasured semantics). Rests
+  directly on suspectness-tracking: our logic is always suspect and says so. The
+  POSITIVE pointer half survives (symptom-indexed "these executed lines carry
+  claims/proofs touching X, tier-labeled" — attribution wearing an index).
+  Subsumes `28D:must-never-assert-a-negative`.
+- **`28E:rul-macro-attention-to-footguns`** — taste/marketing/delight drive MICRO
+  design; MACRO design-attention allocates to holes, footguns, and dangers to the
+  user we protect. `why` earned its attention BECAUSE of the 233-class
+  unsoundness purchase; other firefighter dangers (the `28D` A-grades) earn
+  corresponding attention. Impact-projection gets CO-FLAGSHIP billing with the
+  provenance chain on exactly this doctrine; advertising emphasis falls out much
+  later.
+- **`28E:ask-tasty-productive-knob`** (human-typed direction; KNOBS mint + naming
+  = the human's act, pending) — preference and effectiveness are in PERMANENT
+  tension ("tasty" vs "productive"), maintained as a KNOBS-tier deliberate
+  un-weld across the whole product surface, refused resolution on principle.
+  The data-model law underneath: the model retains BOTH the welded synthesis (the
+  productive pole's direction-setting render) AND the narrative-rich residue (the
+  tasty pole's material) PLUS the selection metadata relating them (relevance
+  grades, superseded-by, implied-by) as first-class data — collapsing either way
+  puts the wrong information at the wrong resolution. Upgrades
+  prop-register-per-node: registers are two GOALS x densities, both computable
+  from one model. Field-trial consequence: measure preference AND outcome
+  separately, forever (both poles need signal).
 
 HUMAN-TYPED leans (banked, unwelded):
+
+- **lean-rename-explain-to-teach** — `plans/286`'s surface renames toward
+  `dorc teach` (and `dorc why --teach`), hard-dislocating the teaching register
+  from firefighting; dissolves `286:fork-register-flag-naming`; makes the
+  prior-art teaching-register threat legible in the product's own grammar (it
+  bears on `teach`'s economics, not `why`'s). Rides `286`'s unpark;
+  strawman-formats makes it free.
 
 - **lean-prose-down-one-step** — the aspiration corpus reads ~7/10 prose-y; the
   annoyed-debugging register wants ~6/10: mechanical explanation over flowing
@@ -179,6 +215,46 @@ narratives + a span-aware transport).
 - The human's markup round over both corpora is the sitting's next input; the
   deltas between the three versions of one case are the requirements extractor.
 
+## §2b — Sibling clean-context rounds (2026-07-25, folded)
+
+- **`28D`** (the annoyed-admin firefight survey + its `opaque-approve` seat;
+  human-marked-up at `dcbb714f`) is a sitting input of record. The human-ACKED
+  payoffs bind sequencing: `28D:pay-attribution-spine-is-one-build` (input
+  identity + withheld-action ledger + dependency provenance + partial-apply
+  geometry are ONE build — the spine the elide-half already owes — and LEAD the
+  forensic tier) · `28D:pay-levers-are-subtractive` (the emergency-distrust
+  levers are macro-attention target #1 under `28E:rul-macro-attention-to-
+  footguns`: subtractive-only, NO widening sibling ever, and functional while the
+  analysis is distrusted — which architecturally sites the levers BELOW oracle
+  loading) · `28D:pay-parts-to-the-rim-pays-forward` (outside endorsement of
+  prop-parts-at-birth/prop-carrier-to-the-edge; land them wherever ordering is
+  free).
+- `28D`'s constraints absorbed as GATES (human: gentle understand,
+  trust-but-verify): `must-retention-is-one-decision` — ONE retention design
+  precedes the whole forensic tier, and retention policy keys on what the data
+  COULD HAVE CAUSED (a consumed observable ≠ a fact boolean ≠
+  opt-in-stdout-held-for-debugging; never conflated — human STRONG ack) ·
+  `must-default-durable-lands-with-its-hardening` — GATES this document's §4
+  fold: why-defaults-to-whylog ships WITH the hardening bill (exclusive
+  creation · restrictive mode · atomic replacement · bounded reads ·
+  trusted-directory rule · visible persistence failure · stated sensitivity
+  contract) or ships opt-in · `must-type-the-shell-we-emit` — independently
+  CONVERGES with the prior-art round's dont-let-the-readability-transform-be-
+  unsound (two blind lanes, one constraint: FORMATTED-mode sh carries
+  grammar-typed quoting; DESCRIPTIVE's non-runnable marking is load-bearing) ·
+  `must-encode-per-surface` (no universal sanitize; machine envelopes are sinks
+  too) · `must-not-acquire-cross-run-state-incidentally` (fleet/trend views =
+  retained receipts diffed by an EXTERNAL tool, never engine state; the `292`
+  blast-radius capability SCOPES to the current invocation's loaded oracles) ·
+  `must-split-the-bundled-entries` (per-line stdout capture and on-disk artifact
+  retention never default on, never described as scrubbed) ·
+  `must-keep-the-two-planes-typed-apart` (any aid-to-license path is a design
+  event). The human's adjacent lean, near-ruling: artifacts/plans/whylogs
+  pure-function + digest-verified promote toward build-now/core-promise.
+- The second sibling round's export (human-summarized): the
+  exoneration/counterfactual KILL — absorbed as `28E:rul-never-a-dinna-do-it-
+  layer` above.
+
 ## §3 — The needs inventory (seed; grows with the markup round)
 
 Node vocabulary observed so far: chain-link (tier-worded) · join-node (DAG) ·
@@ -211,18 +287,106 @@ argv bugs banked at `289` §2y (why-last address order; sibling-note false-fire)
   surviving working sh = documentation-that-executes). TRAP fenced: a description
   explaining a confusing cell is often a missing model distinction (the sysctl
   @value/@persisted lesson generalized — the 27W modeling-crutch caution). Measure
-  need across the markup round before minting any role.
+  need across the markup round before minting any role. PRECONDITION from `28D`'s
+  seat, absorbed: decide execute-on-host vs read-statically-from-source BEFORE the
+  mint (execution = a new probe-time surface inheriting the read-only contract +
+  encoding obligations; the `27W` static-first precedent makes static-read the
+  lean, with execution-never-required as the candidate mint condition).
 - Ordering tuning (the seam); mutual-awareness beyond model-facts; the enriched
   errorloom word-model API shape; the TUI itself.
 - Phase 8 (prose burn-down) remains HELD on the human's ack, unchanged.
 
-## §6 — In-flight at this writing
+## §6 — Round state
 
-- Prior-art research round (Opus + /interactive-research): DAG-teaching in
-  constrained text media, disproof-first; lands in `.claude/research/`; §7 below
-  absorbs its adjudication.
-- Janitor sweep #3 under the human's typed 2026-07-25 license (dead worktrees,
-  cancelled r29 branches, sync-conflict files; rescue-hedge on the three held
-  worktrees).
+- Prior-art research round COMPLETE: `.claude/research/dag-explanation-ux/` —
+  100 manifest rows (30A/47B/19C/3D + the Lee addendum at B), synthesis +
+  addendum + the researcher's own §A0 prediction-correction (the "most likely to
+  change the design" billing was wrong, recorded visibly). Reddit unread
+  (robots.txt honored); the five §5-flagged gatherer-graded claims (PubGrub
+  spellings; Miller passages; Clang commits; Nix pair; Soufflé heights) carry a
+  SPOT-VERIFY DEBT before any weld cites them externally.
+- Janitor sweep #3 complete under the typed license (`289`-trail material);
+  `_branch-purge.sh` handed to the human; SyncThing ignore-config remains the
+  human-owned root cause.
+- The human's markup round over the strawmen corpora remains the sitting's next
+  input; phase 8 (prose burn-down) remains HELD on the human's ack.
 
-## §7 — Prior-art adjudication (RESERVED — lands after the research return)
+## §7 — Prior-art adjudication (conductor WITH the human, 2026-07-25)
+
+Dispositions below are adoption-grades over the round's findings, not source
+grades; the round's own transfer caveats (CS1-novice lab base; revealed
+preference weighted higher for our population) are carried, not repeated.
+
+ADOPTED:
+
+- **adopt-outcome-metrics-for-the-trial** (dont-validate-by-preference) — the
+  field trial measures did-they-act / how-fast / was-it-correct AND preference,
+  SEPARATELY (both knob poles need signal); `252`'s "was it illuminating"
+  question dies. Protocol amendment banked for the trial revival.
+- **adopt-contrastive-first** — the chain's mid-register answers "why THIS
+  disposition rather than the other one"; the foil is the line's other
+  disposition (free); the full derivation sits one step behind it.
+- **adopt-endpoint-excerpts** (+ head-and-tail) — excerpt the site and the
+  leverage point in LITERAL bytes (recognition is the point); text-only middles;
+  elided middles counted and named (the Clang shape). The massaging license
+  (`27W:rul-report-surface-massaging`) becomes exception-for-middles, never the
+  anchor default.
+- **adopt-reading-direction-line** — cheapest fix in the corpus; state it.
+- **adopt-question-relative-informativeness** (Lee, the one portable idea) —
+  demote links that only restate what the asker's invocation already fixed (the
+  line, the disposition); three traditions converge here (Grice, the contrastive
+  do-do, Lee's subtract-the-asker's-constants metric).
+- The Bazel cash-out audit PASSES today by construction
+  (law-collapse-mints-evidence); named gaps: C8 operand values (parked rider),
+  apply-report PREDICTED-marking (real-executor era).
+
+ADAPTED:
+
+- **adapt-two-rank-default-render** — the six TrustTiers stay typed law (the
+  honesty/liability property; untouched); the DEFAULT render carries TWO ranks —
+  machine-verified vs human-claimed, the only cut the naked-trust epilogue
+  needs — as glyph/emphasis, not vocabulary; the six words surface at depth from
+  a closed, documented, STACKING table (the Gradle shape; hosts oracle-author
+  `because`-prose someday). The round's most-threatened-element finding, answered
+  at the render, never the type.
+- **adapt-join-only-numbering** — number only nodes referenced non-adjacently
+  (PubGrub); linear chains render as numberless prose; joins render
+  branch-blank-branch with a prose RESTATEMENT at the join (the restatement is
+  the load-bearing half Cargo's bare `(*)` lacks); the epilogue points BY
+  TIER-NAME, not index. lean-ordering-is-a-seam untouched.
+- **adapt-pull-wide-open-reglossed** — pull answers are complete over the ASKED
+  question; the full closure stays one step away and is LABELED
+  exhaustive/unselected (the dilution effect dissolves under that label);
+  Kulesza's completeness-counterweight noted, independently supported by Lee's
+  collective-failure passage.
+- **adapt-chain-as-residue-after-labels** — everything label-able onto the
+  anchor excerpt (primary/secondary, rustc-style) demotes to a label; the chain
+  carries only what code cannot. Strawmen-round-2 tests this shape.
+- **adapt-conciseness-as-cap** (Lee) — both poles degenerate (the full closure
+  AND the bare tail); the middle registers are the product; k-choice is a render
+  default tuned later by field data.
+
+HELD / PUSHBACK:
+
+- **held-placement-reread** — the 0%-to-70% placement result names OUR plan
+  surface as the diff-time analog: priority flows to the reason-tail (converging
+  with `28E:rul-reason-tail-is-the-minimal-register`) and pointer lines must be
+  copy-paste-true; `rul-chain-is-pull-only` SURVIVES.
+- **held-teaching-threat-to-286** — rustc-`--explain`-died + preferred-not-
+  effective carried to `286`'s unpark gate (its economics were designed against
+  the abandonment cause); instrument ladder-climbing in the trial
+  (ask-do-ladders-get-climbed — no such telemetry exists anywhere; we can be
+  first).
+- **held-lee-algorithm-not-imported** — pattern summarization needs a homogeneous
+  population to generalize over; our ~6 heterogeneous links have none. Sharper:
+  Dorc chains are depth-BOUNDED by the license taxonomy (one link per license
+  component), unlike recursive Datalog derivations — what grows in the wild is
+  join WIDTH and site COUNT, measured at the field trial.
+- **dropped-measure-chain-length-now** — conceded to the human's sideeye (a
+  histogram over our own hand-authored fixtures is circular); re-homed to trial
+  instrumentation, where Lee's you-cannot-choose-k-without-it point re-attaches
+  honestly.
+- **resolved-impact-vs-provenance** — by `28E:rul-macro-attention-to-footguns`:
+  co-flagship billing; provenance keeps the naked-trust receipt duty; the impact
+  projection (the positive symptom-index; the improvements section) grows under
+  the same attention doctrine.
