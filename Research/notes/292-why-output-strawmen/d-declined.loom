@@ -1,0 +1,41 @@
+# NON-FUNCTIONAL STRAWMAN (imagination-tier; see README.md). The declined case:
+# an author's deliberate refusal, rendered as a first-class ANSWER rather than
+# an absence. The design burden: the pull surface must be RICHER than the plan's
+# one-line push (today it is poorer — the gallery's fnd-decline-class-is-push-only).
+# The author's voice arrives as their own code and comments (show-the-code);
+# the engine adds the anti-nag statement and the model-offer, and stops.
+
+-- book.sh (context, abbreviated) --
+ 6  sysctl -w vm.drop_caches=3
+
+-- oracle (context) --
+sysctl.oracle.sh declines the drop_caches key as [unsound], with a comment and
+a report-lane breadcrumb on the arm.
+
+-- replay --
+$ dorc why 6
+book.sh:6  sysctl -w vm.drop_caches=3
+  runs on every apply — permanently, and by judgment rather than by gap.
+
+  1. declined   sysctl's oracle deliberately refuses to answer for this
+                shape  [unsound: permanently unanswerable]
+                ┌ sysctl.oracle.sh:23 — the author's own arm, as written:
+                │   vm.drop_caches|vm.compact_memory)
+                │      # write-only trigger: writing is an action, not state.
+                │      # the kernel doesn't retain it; "is it already done"
+                │      # has no answer, ever.
+                │      printf 'decline unsound %s is a write-only trigger key\n' "$key" \
+                │         >>"${DREP_V1:-/dev/null}"
+                │      return 2 ;;
+                └ shown as authored; comments are the author's words, not dorc's
+  2. derived    a cannot-say always runs: nothing may be removed from a plan
+                without an authored yes.
+
+  no oracle improvement changes this line, and dorc will not suggest one —
+  the person who knows this tool ruled the question unanswerable.
+
+  if you expected convergence here: sysctl's model answers for RETAINED
+  state as two cells — @value (the running kernel) and @persisted (the boot
+  config) — and this key has neither. a retained key probes and elides:
+      sysctl -w vm.swappiness=10        # probeable; elides when converged
+  see:  dorc explain declines · dorc explain write-only-triggers

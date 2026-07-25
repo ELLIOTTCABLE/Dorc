@@ -1,0 +1,39 @@
+# NON-FUNCTIONAL STRAWMAN (imagination-tier; see README.md). The aggregate case:
+# zero-argument `dorc why` — a completely different SHAPE from the per-line
+# chains: sections, counts, one line per item, every item an address into the
+# deeper surface. The organizing ideas: attention-arithmetic up front (what was
+# removed, under which license); problems worst-first and CAPPED; trust-spends
+# as its own section, never mixed into problems (spent trust is not a problem,
+# it is a disclosure); one quantified cheapest-improvement, then stop.
+
+-- book.sh (context) --
+The webhost panel: two famous-oracle elisions, one hand-guard lifted, hork
+unmodeled at line 10, ufw guarded below it, one sysctl decline at line 6,
+one survived elision at line 9 under --risk-faultless-skips.
+
+-- replay --
+$ dorc why
+web1 · book.sh · probed 4m ago (06:11:52) · plan accepted 06:12:03
+
+  plan: 2 run · 1 verify · 5 removed — of the removals, 4 rest on proof,
+  1 on a trusted claim (below).
+
+problems — what dorc could not do for you, worst first:
+  1  book.sh:10  hork tune --profile web       runs every apply: nobody has
+     described hork, and it walls 2 later sites          (dorc why 10)
+  2  book.sh:11  ufw allow 443/tcp             verifies instead of eliding,
+     because it sits past the wall at line 10            (dorc why 11)
+  3  book.sh:6   sysctl -w vm.drop_caches=3    runs every apply, permanently:
+     the author ruled it unanswerable [unsound]          (dorc why 6)
+
+trust spent — removals resting on claims, not proof:
+  4  book.sh:9   systemctl enable --now nginx  survived apt-get really
+     running, on apt's at-most claim (apt.oracle.sh:82), under your
+     --risk-faultless-skips                              (dorc why 9)
+
+the cheapest improvement, quantified: a two-minute convergence oracle for
+hork recovers items 1 and 2 whenever hork is converged.
+  see:  dorc explain first-wall
+
+(nothing suppressed; on larger books this report caps at the worst 10 —
+ `dorc why --all` lifts the cap.)

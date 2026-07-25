@@ -1,0 +1,45 @@
+# NON-FUNCTIONAL STRAWMAN (imagination-tier; see README.md). The guarded case:
+# a modeled, converged site sitting BELOW an unmodeled wall. The story here is
+# CFG-shaped — "a thing above you runs, so your fact may be stale" — so the
+# center of the render is inv-chain-as-sh: show the causality as annotated sh,
+# the language the user already reads, instead of prose about line numbers.
+# The check-tax and the enhancement route are stated as costs, not nags.
+
+-- book.sh (context, abbreviated) --
+10  hork tune --profile web >>/var/log/hork.log 2>&1
+11  ufw allow 443/tcp
+
+-- world (context) --
+web1: 443/tcp already allowed; hork unmodeled (no oracle loaded for it).
+
+-- replay --
+$ dorc why 11
+book.sh:11  ufw allow 443/tcp
+  kept in the plan, wrapped in a guard: the original line runs only if a
+  live re-check fails.
+
+  1. measured   port 443/tcp is already allowed on web1  (probed 4m ago)
+                └ ufw.oracle.sh:44, reading the rule table
+  2. vouched    ufw's oracle answers for `allow` invocations  (ufw.oracle.sh:41)
+  3. ran above  book.sh:10 `hork tune` really runs this apply — and nobody
+     + claimed  has described what hork touches, so every fact measured
+                before it may be stale by the time line 11 is reached.
+
+  as sh, what the plan does about that:
+
+      hork tune --profile web          # 10: runs — unmodeled, a wall
+      ( ufw__is_converged allow 443/tcp ) \
+         || ufw allow 443/tcp          # 11: your bytes, untouched, behind a
+                                       #     live re-check that cannot go
+                                       #     stale: everything above it has
+                                       #     already happened
+
+  the inserted check is the oracle author's own sh, unmodified; if it errors
+  or cannot tell, your line simply runs. failure lands on the safe side.
+
+  the cost, honestly: this line pays one read on every apply, forever (the
+  check-tax), and it stays on your screen — a guard makes the book fast and
+  safe, not shorter. removal-by-proof needs hork described:
+  a two-minute convergence oracle for hork would elide line 10 when hork is
+  converged, and an elided wall is no wall — line 11 elides with it.
+  see:  dorc explain walls · dorc explain check-tax

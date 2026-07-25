@@ -1,0 +1,32 @@
+# NON-FUNCTIONAL STRAWMAN (imagination-tier; see README.md). The quiet case:
+# a converged, famous-oracle elision. The design burden here is RESTRAINT —
+# the user asked, so we answer fully, but the answer is genuinely short
+# because the story is genuinely short. Two links, a backing-watch, one
+# copy-paste re-check. Nothing else earns its lines.
+
+-- book.sh (context, abbreviated) --
+ 7  cp ./nginx.conf /etc/nginx/nginx.conf
+ 8  systemctl enable --now nginx
+ 9  hork tune --profile web
+
+-- world (context) --
+web1: nginx unit enabled+active; everything above line 8 converged.
+
+-- replay --
+$ dorc why 8
+book.sh:8  systemctl enable --now nginx
+  removed from the plan (elided); it will not run in this apply.
+
+  1. measured   nginx is enabled+active on web1  (probed 4m ago, 06:11:52)
+                ┌ service.oracle.sh:12 — the read that measured it:
+                │   systemctl is-enabled --quiet -- "$svc"
+                └ asserts sm.dorc.Service:nginx@enabled
+  2. vouched    the oracle's author accepts already-enabled+active as reason
+                enough not to re-run this line  (service.oracle.sh:9)
+
+  nothing above line 8 claims or touches service state, so the measurement
+  stands for the whole apply — this elision rests on proof, not trust.
+
+  what would bring it back: nginx's unit state drifting; or any earlier
+  line growing a claim on sm.dorc.Service.
+  re-check now:   dorc plan book.sh web1

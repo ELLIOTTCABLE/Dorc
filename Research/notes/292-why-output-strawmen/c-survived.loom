@@ -1,0 +1,64 @@
+# NON-FUNCTIONAL STRAWMAN (imagination-tier; see README.md). The maximal case:
+# a survived elision — the one place trust, not measurement, did the work.
+# Everything the design owes the user converges here: the full tier-worded
+# chain, the inlined at-most claim WITH its author's comment, the disjointness
+# shown in coordinates the user can check by eye, the naked-trust epilogue
+# derived from structure (never an instance guess), recovery as copy-paste,
+# and the claim's blast radius. The --last block shows the replayed voice:
+# same chain, one honest banner of difference.
+
+-- book.sh (context, abbreviated) --
+ 7  apt-get install -y oldpkg
+ ...
+10  ufw allow 443/tcp
+
+-- world (context) --
+web1: oldpkg absent (line 7 really runs); 443/tcp allowed (line 10 measured
+converged); apt's oracle ships a disturbs() for install; invocation carried
+--risk-faultless-skips.
+
+-- replay --
+$ dorc why 10
+book.sh:10  ufw allow 443/tcp
+  removed from the plan (elided) — and the removal SURVIVED a mutation that
+  really ran above it, on the strength of a named author's claim. this is
+  the one disposition in this plan resting on trust rather than proof.
+
+  1. measured   port 443/tcp is allowed on web1  (probed 6m ago, 06:11:52)
+                └ ufw.oracle.sh:44, reading ufw's rule table
+  2. vouched    ufw's author accepts already-allowed as reason enough not
+                to re-run this line  (ufw.oracle.sh:41)
+  3. ran above  book.sh:7 `apt-get install -y oldpkg` really ran —
+                ordinarily that would send line 10 back into the plan as a
+                re-check —
+  4. claimed    but apt's oracle claims install disturbs at most:
+                    sm.dorc.Package:oldpkg
+                    sm.dorc.File:(the files oldpkg installs)   ← widened by the
+                                                                 kind-owner's reach
+                ┌ apt.oracle.sh:82
+                │   install) printf '%s\n' "$1"   : disturbs sm.dorc.Package
+                │   # surveyed 2026-05: dpkg db + payload files; nothing else.
+                └ an author's at-most claim; nothing verifies it
+  5. derived    that footprint does not overlap what link 1 measured —
+                sm.dorc.FirewallRule:443/tcp lives in ufw's rule table,
+                which no claimed coordinate reaches
+  6. consented  --risk-faultless-skips was set  (your invocation, 06:11:49)
+
+  if line 10 SHOULD have run: dorc cannot see which link is wrong, but the
+  links are not equally trustworthy — 4 is the only unverified human claim
+  in this chain. if `apt-get install` also touches firewall state, that
+  claim is what wrongly kept line 10 out.
+  to check:  dorc plan book.sh web1     (re-measures the world; dorc keeps
+                                         no memory that can stay wrong)
+  to fix:    apt.oracle.sh:82 is the line to widen; 2 other books on this
+             controller rest on the same claim and heal with it.
+  see:  dorc explain survival · dorc explain at-most-claims
+
+$ dorc plan book.sh web1 --whylog-dir=.dorc && dorc why 10 --last
+  replaying the apply of 2026-07-25 06:12 from its receipt — nothing below
+  is re-measured; the world may have moved since.
+
+  [ the same six links, replayed voice: each "measured" stamped with its
+    original probe time; the epilogue unchanged; one closing line added: ]
+
+  the live view of this line:   dorc why 10   (re-runs the analysis today)
