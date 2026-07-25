@@ -2689,12 +2689,23 @@ pub fn why(diag: &Diag, arena: &dorc_core::ProvArena, src: &str) -> Option<Expla
     // resolved" / "to stay safe" instead of the "⊤"/"kFAIL-perform" jargon (which stays in
     // code/comments/corpus). The `ran because … command-substitution` opener + the remediation
     // hint's `[…]` tag are UNCHANGED (the `expected-why` needles substring-match them).
+    //
+    // SPIKE CUT (churn-avoidance-disclosure): the hint is read as plain TEXT rather than pushed as
+    // a `RenderPart::ArrangementWords` span, because this reason is a FRAGMENT — `dorc why` embeds
+    // it mid-line in a cause-chain — so it cannot own the trailing computed layout that keeps a
+    // render from ending inside an editable span (`a-chrome-line-is-one-span`). Same shape as
+    // `dorc_cli::usage_text`. The opener itself stays hardcoded: it is the parked class-prose
+    // register (`288` §6), not this storage move.
     let reason = format!(
         "ran because {} is a command-substitution `$(…)` or runtime-dynamic value — its value \
          couldn't be resolved (first seen at {where_top}); so dorc runs it, to stay safe (when \
          unsure, run). {}",
         payload.position.describe(),
-        remediation_hint(remediation),
+        crate::arrangement::arrangement_text(
+            &crate::arrangement::CONST_ARRANGEMENTS,
+            remediation_hint_slug(remediation),
+            None,
+        ),
     );
     Some(Explanation {
         reason,
@@ -2709,23 +2720,18 @@ fn remediation_for(code: &DiagCode) -> RemediationClass {
     registry(code).remediation
 }
 
-/// The one-line remediation hint for a class (the why-lens's `<remediation hint>` tail). The four
-/// sentences CARRY verbatim from the old who-classes onto the ru-27 how-classes (the `[tag]` updates
-/// with the rename); the right-user phrasing lives in the prose, not the class.
-fn remediation_hint(class: RemediationClass) -> &'static str {
+/// The arrangement-registry key holding a class's one-line remediation hint (the why-lens's
+/// `<remediation hint>` tail). The hint PROSE lives in the registry
+/// (`289:rul-arrangement-home-is-registry-plus-transcripts`); what stays here is only the
+/// class → key map, so the last hardcoded user-facing prose class in the crate has an editable
+/// home like every other user-facing string (`288` §1). Occurrence-less: one entry serves every
+/// site that reaches a given class.
+fn remediation_hint_slug(class: RemediationClass) -> &'static str {
     match class {
-        RemediationClass::ProvideModel => {
-            "to elide it, an oracle must declare a read-only probe for this kind [provide-model]"
-        }
-        RemediationClass::DeclareIdentity => {
-            "to elide it, add the missing kind/selector/Query declaration [declare-identity]"
-        }
-        RemediationClass::ResolveDynamism => {
-            "to elide it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]"
-        }
-        RemediationClass::Structural => {
-            "no user fix — Dorc cannot model this construct [structural]"
-        }
+        RemediationClass::ProvideModel => "why-remediation-provide-model",
+        RemediationClass::DeclareIdentity => "why-remediation-declare-identity",
+        RemediationClass::ResolveDynamism => "why-remediation-resolve-dynamism",
+        RemediationClass::Structural => "why-remediation-structural",
     }
 }
 

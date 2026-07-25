@@ -124,4 +124,32 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "27R section 5: the report closes by naming itself and its tallies.",
         words: Words::Migrated(&["dorc lint: ", " error", ", ", " warning", ", ", " info", " across ", " file", "."]),
     },
+    ArrangementEntry {
+        slug: "why-remediation-declare-identity",
+        occurrence: None,
+        when_used: "Closes every why-lens reason whose remediation class is DeclareIdentity — the `why:` stderr line and the same reason inside a `dorc why` cause-chain.",
+        why: "ru-6/ru-27 remediation classes: the class says WHAT KIND of fix clears the forced run, and its one-line hint is user-facing prose, so it gets an editable home like every other user-facing string (288 section 1).",
+        words: Words::Migrated(&["to elide it, add the missing kind/selector/Query declaration [declare-identity]"]),
+    },
+    ArrangementEntry {
+        slug: "why-remediation-provide-model",
+        occurrence: None,
+        when_used: "Closes every why-lens reason whose remediation class is ProvideModel.",
+        why: "As why-remediation-declare-identity, for the class cleared by authoring or extending an oracle.",
+        words: Words::Migrated(&["to elide it, an oracle must declare a read-only probe for this kind [provide-model]"]),
+    },
+    ArrangementEntry {
+        slug: "why-remediation-resolve-dynamism",
+        occurrence: None,
+        when_used: "Closes every why-lens reason whose remediation class is ResolveDynamism.",
+        why: "As why-remediation-declare-identity, for the class cleared by making a dynamic operand resolvable.",
+        words: Words::Migrated(&["to elide it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]"]),
+    },
+    ArrangementEntry {
+        slug: "why-remediation-structural",
+        occurrence: None,
+        when_used: "Closes every why-lens reason whose remediation class is Structural.",
+        why: "As why-remediation-declare-identity — and the one that must never imply a user fix exists (271 rul-sin-ordering: mis-attribution is the worst aid failure).",
+        words: Words::Migrated(&["no user fix — Dorc cannot model this construct [structural]"]),
+    },
 ];
