@@ -1093,17 +1093,159 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         LoomRun::RoundTrip => run_round_trip(harness, &case),
         LoomRun::Lint => run_lint(harness, &case),
     };
+    let (extra, extra_failures) = drive_extra_replays(harness, spec, &dir);
     if harness.bless {
-        bless_loom(spec, &dir)?;
+        bless_loom(spec, &dir, &extra)?;
     }
-    outcome
+    match (outcome, extra_failures.is_empty()) {
+        (Ok(()), true) => Ok(()),
+        (Ok(()), false) => Err(extra_failures.join("\n").into()),
+        (Err(failed), true) => Err(failed),
+        (Err(failed), false) => Err(format!(
+            "{}\n{}",
+            failed.message().unwrap_or_default(),
+            extra_failures.join("\n")
+        )
+        .into()),
+    }
+}
+
+/// Drive replay blocks 1..N — the SAME input-state seen through other invocations
+/// (`282:rul-multi-replay-per-case`) — sequentially in the one materialized dir that block 0's
+/// battery just ran in. Sequential-in-one-dir is the whole point: a `--whylog-dir` run and the
+/// `dorc why … --last` that replays it are two blocks sharing scratch state.
+///
+/// Each command is driven with `cwd` = the case dir and its committed words verbatim, so the
+/// invocation a reader sees IS the one that ran, and every path a render echoes back stays
+/// case-relative (an absolute host path in a transcript is not committable).
+///
+/// Returns the captured outputs for blocks 1..N (empty when anything failed, so bless leaves
+/// the committed bytes alone) and the failure lines.
+fn drive_extra_replays(
+    harness: &Harness,
+    spec: &LoomCaseSpec,
+    dir: &Path,
+) -> (Vec<String>, Vec<String>) {
+    let blocks = spec.case.replay().blocks();
+    if blocks.len() < 2 {
+        return (Vec::new(), Vec::new());
+    }
+    let name = &spec.name;
+    let mut failures: Vec<String> = Vec::new();
+    let args = match shared_args(dir) {
+        Ok(args) => args,
+        Err(message) => {
+            return (
+                Vec::new(),
+                vec![format!("FAIL  {name}  [replay: {message}]")],
+            );
+        }
+    };
+    let scratch = Scratch::new("replay");
+    let framed_path = scratch.path.join("framed.txt");
+    std::fs::write(&framed_path, framed_results(harness, dir, &args)).expect("write framed");
+
+    let mut outputs: Vec<String> = Vec::new();
+    for (index, block) in blocks.iter().enumerate().skip(1) {
+        match run_replay_block(harness, dir, &framed_path, block.command()) {
+            Ok(got) => {
+                if !harness.bless && got != block.output() {
+                    failures.push(format!(
+                        "FAIL  {name}  [replay {index}: `{}` no longer reproduces its committed transcript]\n{}",
+                        block.command(),
+                        divergence(
+                            &strip_trailing_newlines(block.output()),
+                            &strip_trailing_newlines(&got)
+                        )
+                    ));
+                }
+                outputs.push(got);
+            }
+            Err(message) => failures.push(format!(
+                "FAIL  {name}  [replay {index}: `{}` — {message}]",
+                block.command()
+            )),
+        }
+    }
+    if failures.is_empty() {
+        (outputs, failures)
+    } else {
+        (Vec::new(), failures)
+    }
+}
+
+/// Execute one committed replay command and return its stdout as transcript bytes.
+///
+/// The accepted shape is deliberately tiny: a `dorc` invocation, optionally reading the case's
+/// `probe-results.txt` (which resolves to the framed stream the battery feeds, exactly as block
+/// 0's committed `< probe-results.txt` does) and optionally discarding stdout. stderr is dropped
+/// — `stdout-contract` makes stdout the product surface — so a non-zero exit is the only
+/// tripwire a silently-broken invocation leaves, and it is fatal here.
+fn run_replay_block(
+    harness: &Harness,
+    dir: &Path,
+    framed: &Path,
+    command: &str,
+) -> Result<String, String> {
+    let mut words: Vec<&str> = command.split_whitespace().collect();
+    let mut stdin_framed = false;
+    let mut discard = false;
+    while words.len() >= 2 {
+        let (redirect, target) = (words[words.len() - 2], words[words.len() - 1]);
+        match redirect {
+            "<" if target == "probe-results.txt" => stdin_framed = true,
+            "<" => {
+                return Err(format!(
+                    "only `< probe-results.txt` is supported, not `{target}`"
+                ));
+            }
+            ">" if target == "/dev/null" => discard = true,
+            ">" => return Err(format!("only `> /dev/null` is supported, not `{target}`")),
+            _ => break,
+        }
+        words.truncate(words.len().saturating_sub(2));
+    }
+    match words.split_first() {
+        Some((&"dorc", rest)) if !rest.is_empty() => {
+            let mut child = harness.dorc();
+            child
+                .current_dir(dir)
+                .args(rest)
+                .stderr(Stdio::null())
+                .stdout(if discard {
+                    Stdio::null()
+                } else {
+                    Stdio::piped()
+                });
+            child.stdin(if stdin_framed {
+                Stdio::from(std::fs::File::open(framed).map_err(|error| format!("{error}"))?)
+            } else {
+                Stdio::null()
+            });
+            let out = capture(&mut child);
+            if out.code != 0 {
+                return Err(format!("exited rc={}", out.code));
+            }
+            let got = strip_trailing_newlines(&strip_cr(&out.stdout));
+            Ok(if got.is_empty() {
+                String::new()
+            } else {
+                format!("{got}\n")
+            })
+        }
+        _ => Err(String::from("not a `dorc` invocation")),
+    }
 }
 
 /// Fold the freshly-blessed `expected.out` / `expected.ran` back into the committed `.loom`.
-fn bless_loom(spec: &LoomCaseSpec, dir: &Path) -> Result<(), Failed> {
+/// `extra` carries blocks 1..N's captured outputs; empty means either a single-block case or a
+/// failed drive, and `set_replay_outputs` then leaves those blocks' committed bytes untouched
+/// rather than overwriting them with broken output.
+fn bless_loom(spec: &LoomCaseSpec, dir: &Path, extra: &[String]) -> Result<(), Failed> {
     let mut case = spec.case.clone();
-    let transcript = read_or_empty(&dir.join("expected.out"));
-    case.set_replay_outputs(vec![transcript]);
+    let mut outputs = vec![read_or_empty(&dir.join("expected.out"))];
+    outputs.extend_from_slice(extra);
+    case.set_replay_outputs(outputs);
     let ran = dir.join("expected.ran");
     if ran.is_file() && !case.set_section_content("expected.ran", &read_or_empty(&ran)) {
         return Err(format!(
@@ -1130,19 +1272,11 @@ struct CaseRun {
     head_ran_drifted: bool,
 }
 
-/// Drive one round-trip case through every gate, then apply the XFAIL/BLESS lens.
-fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
-    let dir = &case.dir;
-    let name = &case.name;
-    let mut run = CaseRun {
-        failures: Vec::new(),
-        guard_shape_bad: false,
-        head_ran_drifted: false,
-    };
-
-    // The shared argv every dorc invocation below reads: `-o <oracle>` (glob-sorted) plus
-    // the optional DORC_FLAGS marker. Single-source threading makes a flag MISMATCH
-    // between gates structurally impossible — load-bearing for gate-6's attribution.
+/// The shared argv every dorc invocation of a case reads: `-o <oracle>` (glob-sorted) plus the
+/// optional `DORC_FLAGS` marker. Single-source threading makes a flag MISMATCH between gates
+/// structurally impossible — load-bearing for gate-6's attribution, and for the extra replay
+/// blocks, whose framed stdin must be the one the battery itself consumed.
+fn shared_args(dir: &Path) -> Result<Vec<String>, String> {
     let mut args: Vec<String> = Vec::new();
     let mut oracles: Vec<PathBuf> = std::fs::read_dir(dir)
         .expect("read case dir")
@@ -1158,11 +1292,24 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
         args.push("-o".to_owned());
         args.push(oracle.display().to_string());
     }
-    match marker(dir, "DORC_FLAGS") {
-        Ok(Some(flags)) => args.push(flags),
-        Ok(None) => {}
-        Err(message) => return Err(format!("FAIL  {name}  [DORC_FLAGS: {message}]").into()),
+    if let Some(flags) = marker(dir, "DORC_FLAGS")? {
+        args.push(flags);
     }
+    Ok(args)
+}
+
+/// Drive one round-trip case through every gate, then apply the XFAIL/BLESS lens.
+fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
+    let dir = &case.dir;
+    let name = &case.name;
+    let mut run = CaseRun {
+        failures: Vec::new(),
+        guard_shape_bad: false,
+        head_ran_drifted: false,
+    };
+
+    let args = shared_args(dir)
+        .map_err(|message| Failed::from(format!("FAIL  {name}  [DORC_FLAGS: {message}]")))?;
     let expected_dorc_exit: i32 = match marker(dir, "DORC_EXIT") {
         Ok(Some(value)) => value.parse().map_err(|_| {
             Failed::from(format!(
