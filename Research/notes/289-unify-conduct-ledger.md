@@ -547,3 +547,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - Migration-net pins for faceless chrome (their flag 1) accepted — a real
   transcript face for the three stderr lines is `286`/post-arc territory.
   `describe_arrangement` rename (flag 2): internal, accepted.
+- 2026-07-24: phase-7 fold cold-verified own-hand (full clean; conduct-bless: build ok | unit 1200 | e2e 98 passed | looms 73 | gates ok). Stack `75344041` verified — ALL BUILD PHASES (0–7) COMPLETE.
