@@ -62,6 +62,30 @@ fn the_lint_sentences_are_byte_identical() {
     );
 }
 
+/// The four why-lens remediation hints, previously a class-keyed `&'static str` match in
+/// `aid/src/diag.rs`. Like the three stderr lines above they are faceless — no transcript renders
+/// them — so these literals are the whole migration net. Each is the pre-migration string, frozen;
+/// the `[tag]` suffix is part of the prose (`expected-why` needles substring-match it).
+#[test]
+fn the_remediation_hints_are_byte_identical() {
+    assert_eq!(
+        rendered("why-remediation-provide-model", &[]),
+        "to elide it, an oracle must declare a read-only probe for this kind [provide-model]"
+    );
+    assert_eq!(
+        rendered("why-remediation-declare-identity", &[]),
+        "to elide it, add the missing kind/selector/Query declaration [declare-identity]"
+    );
+    assert_eq!(
+        rendered("why-remediation-resolve-dynamism", &[]),
+        "to elide it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]"
+    );
+    assert_eq!(
+        rendered("why-remediation-structural", &[]),
+        "no user fix — Dorc cannot model this construct [structural]"
+    );
+}
+
 /// An arity slip renders the greppable placeholder rather than a mangled line — the property that
 /// makes a mis-wired seat loud instead of subtly wrong.
 #[test]
