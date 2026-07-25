@@ -72,7 +72,7 @@ use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 use dorc_cli::{
-    Args, HELP, Invocation, LintArgs, LintFormat, Mode, USAGE, humane_read_error, parse_args_from,
+    Args, Invocation, LintArgs, LintFormat, Mode, humane_read_error, parse_args_from,
 };
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
@@ -116,7 +116,7 @@ enum RunOutcome {
 fn main() -> ExitCode {
     match parse_args() {
         Ok(Invocation::Help) => {
-            print!("{HELP}");
+            print!("{}", dorc_cli::help_text());
             std::io::stdout().flush().ok();
             ExitCode::SUCCESS
         }
@@ -194,7 +194,7 @@ fn report_invocation_error(diag: &Diag) {
         "dorc: {}",
         dorc_aid::diag::render_body(diag, &Interner::default())
     );
-    eprintln!("{USAGE}");
+    eprintln!("{}", dorc_cli::usage_text());
 }
 
 /// `dorc strip <path>` (`27D` rider-dorc-sh-unbuilt / `274` §13): read the file, erase every dorc
