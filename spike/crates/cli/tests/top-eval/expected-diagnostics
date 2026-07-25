@@ -1,2 +1,2 @@
-error[syntax-unsupported]: sm `eval` executes constructed code
-error[cfg-top-node]: sm unsupported construct
+syntax-unsupported
+cfg-top-node

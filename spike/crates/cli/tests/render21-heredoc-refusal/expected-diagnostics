@@ -1,1 +1,15 @@
-render: error[render-heredoc-refused]: leaf-exact render refuses to elide a heredoc-bearing command
+# FLAGGED, not asserted. This case declared `render-heredoc-refused` under the free-text
+# needle form, and it has NEVER fired here: the old gate only screamed at UNDECLARED
+# diagnostics, so a declaration matching nothing was silently decorative. Under the structural
+# form (`288:prop-structural-needles-only`) a declaration IS an assertion, and this one goes
+# red — which is the finding, not a regression.
+#
+# Open question for the conductor/human, deliberately NOT resolved here: the case's own
+# probe-results comment says the disposition layer LICENSES a Replace and the leaf-exact render
+# then REFUSES it (d-6). If that is what happens, the refusal is SILENT for the Replace shape
+# while the sibling `omitsafe21-*` guard shapes do emit it — an unattributed safety-narrowing.
+# If instead the heredoc leaf is never licensed at all, the premise recorded above is stale.
+# Either way it is a behaviour call, not a test edit.
+#
+# Uncomment to re-assert once that is settled:
+# render-heredoc-refused

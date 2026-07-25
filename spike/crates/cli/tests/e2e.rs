@@ -462,7 +462,16 @@ fn norm_parity(records: &str, rc_sites: &BTreeSet<String>) -> String {
 }
 
 // ---------------------------------------------------------------------------
-// needle files (gate-7 / gate-hint / gate-8)
+// needle files (gate-3 / gate-7 / gate-hint / gate-8)
+
+/// Is `slug` a live code in the generated catalog? The structural needle's validator
+/// (`288:prop-structural-needles-only`) — the same table `dorc-loom` regenerates, so a case
+/// and the catalog cannot drift apart in silence.
+fn catalog_has_slug(slug: &str) -> bool {
+    dorc_aid::catalog::owned_catalog()
+        .iter()
+        .any(|entry| entry.slug == slug)
+}
 
 /// Does one haystack line carry every ` && `-conjoined needle of `pattern`?
 fn needle_lands(haystack: &[&str], pattern: &str) -> bool {
@@ -1500,7 +1509,38 @@ fn dual_rail_check(
 }
 
 /// gate-3: an undeclared error-severity diagnostic on dorc's stderr fails the case.
+///
+/// `expected-diagnostics` is a list of code SLUGS, one per line
+/// (`288:prop-structural-needles-only`): the needle `error[<slug>]` is DERIVED, and every slug
+/// is validated against the generated catalog. That kills the two ways the old free-text form
+/// rotted — a needle carrying migrated `sm ` prose stops matching the moment phase 8 rewrites
+/// that prose, and a needle naming a deleted code silently declares nothing forever
+/// (`288:nit-needles-rot`). A dead slug is now REFUSED, so the file cleans itself.
 fn scan_diagnostics(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<String>) {
+    let decl = dir.join("expected-diagnostics");
+    let slugs: Vec<String> = if nonempty_file(&decl) {
+        read_or_empty(&decl)
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty() && !line.starts_with('#'))
+            .map(str::to_owned)
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let dead: Vec<String> = slugs
+        .iter()
+        .filter(|slug| !catalog_has_slug(slug))
+        .map(|slug| format!("`{slug}` is not a code in the generated catalog"))
+        .collect();
+    if !dead.is_empty() {
+        failures.push(format!(
+            "FAIL  {name}  [gate-3: expected-diagnostics names a code that does not exist — declare the live slug, or drop the line]\n{}",
+            indent(&dead)
+        ));
+        return;
+    }
+
     let errors: Vec<&str> = stderr
         .lines()
         .filter(|line| {
@@ -1509,21 +1549,30 @@ fn scan_diagnostics(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<Str
             })
         })
         .collect();
+    let unfired: Vec<String> = slugs
+        .iter()
+        .filter(|slug| {
+            !errors
+                .iter()
+                .any(|line| line.contains(&format!("error[{slug}]")))
+        })
+        .map(|slug| format!("declared but never emitted: error[{slug}]"))
+        .collect();
+    if !unfired.is_empty() {
+        failures.push(format!(
+            "FAIL  {name}  [gate-3: a declared error-severity diagnostic did not fire — the declaration is an assertion, not a mute]\n{}",
+            indent(&unfired)
+        ));
+    }
     if errors.is_empty() {
         return;
     }
-    let decl = dir.join("expected-diagnostics");
-    let patterns: Vec<String> = if nonempty_file(&decl) {
-        read_or_empty(&decl).lines().map(str::to_owned).collect()
-    } else {
-        Vec::new()
-    };
     let undeclared: Vec<String> = errors
         .iter()
         .filter(|line| {
-            !patterns
+            !slugs
                 .iter()
-                .any(|pattern| line.contains(pattern.as_str()))
+                .any(|slug| line.contains(&format!("error[{slug}]")))
         })
         .map(|line| (*line).to_owned())
         .collect();
