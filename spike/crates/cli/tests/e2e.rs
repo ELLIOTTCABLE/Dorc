@@ -2129,12 +2129,10 @@ fn run_lint_real(
             .stdout(Stdio::piped())
             .stderr(Stdio::null()),
     );
-    // `dorc lint`'s exit trichotomy (`27R` §5) is what separates "the tool ran and had
-    // things to say" from "the lane is broken": 0 = clean, 1 = findings at or above the
-    // fail-on floor, 3 = OPERATIONAL (which is where `--require-tools` reports an absent
-    // tool). Reading `rc != 0` as absence made a real, correctly-reported error-severity
-    // finding false-fail the lane (`289:rider-real-tools-lane-rc-bitrot`) — and it read
-    // the healthiest possible outcome as the sickest.
+    // The lint exit trichotomy (`27R` §5) separates ran-with-findings from broken: 0 clean,
+    // 1 findings, 3 OPERATIONAL — and 3 is where `--require-tools` reports an absent tool.
+    // Reading `rc != 0` as absence read the healthiest outcome as the sickest
+    // (`289:rider-real-tools-lane-rc-bitrot`).
     if !matches!(out.code, 0 | 1) {
         return Err(format!(
             "FAIL  lint-real/{tool}  [lint-real: dorc exited {} — a LISTED tool is absent/unrunnable (opt-in requires it)]\n{}",
