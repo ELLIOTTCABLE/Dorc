@@ -2690,12 +2690,11 @@ pub fn why(diag: &Diag, arena: &dorc_core::ProvArena, src: &str) -> Option<Expla
     // code/comments/corpus). The `ran because … command-substitution` opener + the remediation
     // hint's `[…]` tag are UNCHANGED (the `expected-why` needles substring-match them).
     //
-    // SPIKE CUT (churn-avoidance-disclosure): the hint is read as plain TEXT rather than pushed as
-    // a `RenderPart::ArrangementWords` span, because this reason is a FRAGMENT — `dorc why` embeds
-    // it mid-line in a cause-chain — so it cannot own the trailing computed layout that keeps a
-    // render from ending inside an editable span (`a-chrome-line-is-one-span`). Same shape as
-    // `dorc_cli::usage_text`. The opener itself stays hardcoded: it is the parked class-prose
-    // register (`288` §6), not this storage move.
+    // SPIKE CUT (churn-avoidance-disclosure): the hint reads as plain TEXT, not an
+    // `ArrangementWords` span — this reason is a FRAGMENT (`dorc why` embeds it mid-line), so it
+    // cannot own the trailing computed layout that keeps a render from ending inside an editable
+    // span (`a-registry-row-need-not-mint-a-span`). The opener stays hardcoded: it is the parked
+    // class-prose register (`288` §6), not this storage move.
     let reason = format!(
         "ran because {} is a command-substitution `$(…)` or runtime-dynamic value — its value \
          couldn't be resolved (first seen at {where_top}); so dorc runs it, to stay safe (when \
