@@ -7,9 +7,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use dorc_aid::arrangement::{
-    ARRANGEMENTS, ArrangementRow, OwnedWords, serialize_arrangement_lock,
-};
+use dorc_aid::arrangement::{ARRANGEMENTS, ArrangementRow, OwnedWords, serialize_arrangement_lock};
 use dorc_aid::catalog::{CATALOG, LockRow, fill_template, refreshed_params, serialize_lock};
 use dorc_aid::diag::params_of;
 use dorc_core::Interner;
@@ -171,9 +169,14 @@ pub fn generate_arrangement_lock(
         } else {
             let carried = ARRANGEMENTS
                 .iter()
-                .find(|carried| carried.slug == entry.slug && carried.occurrence == entry.occurrence)
+                .find(|carried| {
+                    carried.slug == entry.slug && carried.occurrence == entry.occurrence
+                })
                 .ok_or_else(|| {
-                    format!("carried arrangement `{}` absent from the registry", entry.slug)
+                    format!(
+                        "carried arrangement `{}` absent from the registry",
+                        entry.slug
+                    )
                 })?;
             (carried.when_used.to_owned(), carried.why.to_owned())
         };

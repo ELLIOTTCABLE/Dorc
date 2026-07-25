@@ -8,8 +8,7 @@ use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
     InspectedReplay, Repository, build_publication, classify_prose_changes, compile_preview,
     compile_receipt, load_arrangement_corpus, load_corpus_by_slug, promote_receipt,
-    render_compile_preview,
-    replay_case_with_inputs,
+    render_compile_preview, replay_case_with_inputs,
 };
 use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,

@@ -86,23 +86,12 @@ pub fn to_editable_render(parts: &RenderParts) -> EditableRender<SectionKey, Sec
                 instance,
                 ..
             } => {
-                let key = (*code, *field, *instance);
-                if section
-                    .as_ref()
-                    .is_some_and(|current: &ActiveSection| current.key != key)
-                {
-                    flush_section(&mut components, &mut section);
-                }
-                let current = section.get_or_insert_with(|| {
-                    let active = ActiveSection {
-                        key,
-                        segment: next_segment,
-                        fragments: Vec::new(),
-                        occurrences: BTreeMap::new(),
-                    };
-                    next_segment = next_segment.saturating_add(1);
-                    active
-                });
+                let current = open_section(
+                    &mut components,
+                    &mut section,
+                    &mut next_segment,
+                    (*code, *field, *instance),
+                );
                 current.fragments.push(EditableFragment::Text(text.clone()));
             }
             RenderPart::ParamValue {
@@ -112,23 +101,12 @@ pub fn to_editable_render(parts: &RenderParts) -> EditableRender<SectionKey, Sec
                 param,
                 instance,
             } => {
-                let key = (*code, *field, *instance);
-                if section
-                    .as_ref()
-                    .is_some_and(|current: &ActiveSection| current.key != key)
-                {
-                    flush_section(&mut components, &mut section);
-                }
-                let current = section.get_or_insert_with(|| {
-                    let active = ActiveSection {
-                        key,
-                        segment: next_segment,
-                        fragments: Vec::new(),
-                        occurrences: BTreeMap::new(),
-                    };
-                    next_segment = next_segment.saturating_add(1);
-                    active
-                });
+                let current = open_section(
+                    &mut components,
+                    &mut section,
+                    &mut next_segment,
+                    (*code, *field, *instance),
+                );
                 let occurrence = current.occurrences.entry(*param).or_default();
                 current.fragments.push(EditableFragment::Variable {
                     id: SectionVariableId {
@@ -183,6 +161,29 @@ struct ActiveSection {
     segment: usize,
     fragments: Vec<EditableFragment<SectionVariableId>>,
     occurrences: BTreeMap<&'static str, usize>,
+}
+
+/// The open catalog section for `key`, flushing the previous one when the key changed. Adjacent
+/// parts of one field accumulate into ONE section; a key change is a segment boundary.
+fn open_section<'a>(
+    components: &mut Vec<RenderComponent<SectionKey, SectionVariableId>>,
+    section: &'a mut Option<ActiveSection>,
+    next_segment: &mut usize,
+    key: (&'static str, tagged::Field, usize),
+) -> &'a mut ActiveSection {
+    if section.as_ref().is_some_and(|current| current.key != key) {
+        flush_section(components, section);
+    }
+    section.get_or_insert_with(|| {
+        let active = ActiveSection {
+            key,
+            segment: *next_segment,
+            fragments: Vec::new(),
+            occurrences: BTreeMap::new(),
+        };
+        *next_segment = next_segment.saturating_add(1);
+        active
+    })
 }
 
 fn flush_section(

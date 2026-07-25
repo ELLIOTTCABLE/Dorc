@@ -162,6 +162,14 @@ impl DorcConsumer {
         }
     }
 
+    /// Overwrite an arrangement entry's words in the mirror (the [`Self::set_message`] twin: it
+    /// models a raw registry hand-edit, and stages the word-sequence state nothing authors yet).
+    pub fn set_arrangement_words(&mut self, slug: &str, words: OwnedWords) {
+        if let Some(entry) = self.arrangements.iter_mut().find(|e| e.slug == slug) {
+            entry.words = words;
+        }
+    }
+
     /// Apply one accepted compiled section to the in-memory catalog mirror.
     ///
     /// # Errors
@@ -283,6 +291,9 @@ impl DorcConsumer {
     /// # Errors
     /// Returns the case-world materialization refusal.
     pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+        if let Some(slug) = case.frontmatter().scalar("arrangement") {
+            return self.arrangement_baseline(slug);
+        }
         let (diag, src, filename) = Self::world_of(case)?;
         let interner = Interner::default();
         let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
@@ -309,10 +320,9 @@ impl DorcConsumer {
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens = exact_words(command)?;
-        if let Some(slug) = arrangement_page_slug(&tokens) {
-            return Some(ReplayResult::editable(to_editable_render(
-                &arrangement_parts(&self.arrangements, slug, None),
-            )));
+        if let Some(slug) = arrangement_page_slug(case, &tokens) {
+            let parts = self.arrangement_page(slug).ok()?;
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if let ["dorc-loom", "vars", mode, path] = tokens.as_slice()
             && matches!(*mode, "--used" | "--all")
@@ -396,6 +406,15 @@ impl DorcConsumer {
         render: EditableRender<SectionKey, SectionVariableId>,
     ) -> Result<DorcEditableBaseline, String> {
         let variables = editable_variables(&render)?;
+        // An arrangement case has no diagnostic and no payload: registry entries store WORDS, so
+        // the variable inventory is empty by construction rather than absent by failure.
+        if case.frontmatter().scalar("arrangement").is_some() {
+            return Ok(DorcEditableBaseline {
+                render,
+                variables,
+                all_variables: BTreeMap::new(),
+            });
+        }
         let diag = Self::world_of(case)
             .map(|(diag, _, _)| diag)
             .or_else(|_| Self::whylog_diagnostic(case))?;
@@ -409,6 +428,35 @@ impl DorcConsumer {
             render,
             variables,
             all_variables,
+        })
+    }
+
+    /// One whole-page arrangement's part stream, resolved against the COMMITTED registry so the
+    /// span carries a stable slug. A case naming a slug with no row yet renders nothing: its row
+    /// arrives by promotion and the build sees it after a rebuild — the same generation lag the
+    /// catalog has, and the same assertion.
+    fn arrangement_page(&self, slug: &str) -> Result<dorc_aid::tagged::RenderParts, String> {
+        let stable = dorc_aid::arrangement::ARRANGEMENTS
+            .iter()
+            .find(|entry| entry.slug == slug)
+            .map(|entry| entry.slug)
+            .ok_or_else(|| {
+                format!(
+                    "arrangement `{slug}` has no registry row yet — promote the case, then rebuild"
+                )
+            })?;
+        Ok(arrangement_parts(&self.arrangements, stable, None))
+    }
+
+    /// The editable baseline of a whole-page arrangement case — the registry's own render, with
+    /// an empty payload inventory.
+    fn arrangement_baseline(&self, slug: &str) -> Result<DorcEditableBaseline, String> {
+        let render = to_editable_render(&self.arrangement_page(slug)?);
+        let variables = editable_variables(&render)?;
+        Ok(DorcEditableBaseline {
+            render,
+            variables,
+            all_variables: BTreeMap::new(),
         })
     }
 
@@ -524,10 +572,18 @@ impl DorcConsumer {
 /// (`288:rul-help-text-is-loomable`; the `289` §2o help pilot). Both the driver and the
 /// re-render seat go through this, so the transcript a human edits and the bytes the fixpoint
 /// re-derives are the same registry read.
-fn arrangement_page_slug(words: &[&str]) -> Option<&'static str> {
-    match words {
-        ["dorc", "--help" | "-h"] => Some(dorc_cli::HELP_ARRANGEMENT),
-        _ => None,
+///
+/// The declared-arrangement check is this family's honest trigger
+/// (`289:rul-worldless-route-honest-trigger`): a page case whose command renders some OTHER
+/// page is refused rather than quietly transcribing a page it does not claim.
+fn arrangement_page_slug(case: &Case, words: &[&str]) -> Option<&'static str> {
+    let slug = match words {
+        ["dorc", "--help" | "-h"] => dorc_cli::HELP_ARRANGEMENT,
+        _ => return None,
+    };
+    match case.frontmatter().scalar("arrangement") {
+        Some(declared) if declared != slug => None,
+        _ => Some(slug),
     }
 }
 
@@ -783,8 +839,8 @@ impl DorcConsumer {
     fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
         let words =
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        if let Some(slug) = arrangement_page_slug(&words) {
-            return Ok(arrangement_parts(&self.arrangements, slug, None).text());
+        if let Some(slug) = arrangement_page_slug(case, &words) {
+            return Ok(self.arrangement_page(slug)?.text());
         }
         if let Some(path) = parse_direct_why(&words) {
             let raw = case
