@@ -17,9 +17,9 @@
 //! walk finds nothing, silently. `crates/cli/tests/e2e.rs`'s discovery-floor trial is the
 //! tripwire that makes that failure loud.
 
-#![expect(
+#![allow(
     dead_code,
-    reason = "one shared module, two harness binaries: each runner uses its own half"
+    reason = "one shared module, two harness binaries: the looms runner uses only its own half, so `expect` would go unfulfilled in the e2e binary that uses all of it"
 )]
 
 use std::path::{Path, PathBuf};

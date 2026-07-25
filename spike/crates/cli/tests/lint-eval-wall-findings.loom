@@ -1,3 +1,14 @@
+---
+run: lint
+fixpoint: executed
+exit: 1
+---
+-- book.sh --
+eval "apt-get install -y nginx"
+apt-get install -y curl
+
+-- replay --
+$ dorc lint --source=analysis-diagnostics --source=unmodeled-inventory book.sh
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 book.sh:

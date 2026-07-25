@@ -1,3 +1,14 @@
+---
+run: lint
+fixpoint: executed
+exit: 0
+---
+-- book.sh --
+#!/bin/sh
+apt-get install -y nginx
+
+-- replay --
+$ dorc lint --source=shellcheck --source=checkbashisms book.sh
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 (run):

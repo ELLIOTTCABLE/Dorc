@@ -41,7 +41,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libtest_mimic::{Arguments, Failed, Trial};
 
-use support::{E2eCase, E2eKind, case_roots, discover_e2e, spike_root};
+use support::{E2eCase, E2eKind, LoomCase, case_roots, discover_e2e, discover_looms, spike_root};
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
 /// the pre-flight batteries resolve their specimens against.
@@ -819,6 +819,297 @@ fn canonicalize(log: &str, tolerated: &[Normalizer]) -> String {
     tolerated
         .iter()
         .fold(log.to_owned(), |log, class| class.apply(&log))
+}
+
+// ---------------------------------------------------------------------------
+// loom-form cases (`288` §7 — the whole-product transcript)
+
+/// What a loom-form case's `run:` frontmatter selects.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LoomRun {
+    /// The whole-pipeline round-trip; the replay output is the two rendered artifacts.
+    RoundTrip,
+    /// A `dorc lint` case; the replay output is the lint render.
+    Lint,
+}
+
+/// A `.loom` whose frontmatter declares an executable shape (`288` §7).
+///
+/// The loom is the AUTHORING surface — one file, sections instead of a dir of fixtures,
+/// frontmatter instead of `NAME=value` marker files, and the committed transcript instead of
+/// `expected.out`. It is not a second harness: the case MATERIALIZES into exactly the dir
+/// shape every gate below already speaks, so the whole battery (the `dash -n` floor,
+/// exec-under-mocks, gate-1(a)–(d), gate-2, gate-3, gate-5, gate-6, the needle gates, the
+/// guard-shape floor) runs over it unchanged and the conversion cannot quietly drop a check.
+///
+/// The looms runner (`tests/looms.rs`) parses and hygiene-checks the same file; a round-trip
+/// loom declares `fixpoint: executed`, because its transcript is proven by running the real
+/// binary HERE rather than by the in-process renderer there.
+struct LoomCaseSpec {
+    /// The trial name (the loom's slug).
+    name: String,
+    /// The `.loom` path, for bless write-back.
+    path: PathBuf,
+    /// The parsed case.
+    case: errorloom::Case,
+    /// Which driver owns it.
+    run: LoomRun,
+}
+
+/// The frontmatter keys a loom-form case may carry, and the dir-form artifact each becomes.
+/// Anything else is refused — an unread key is a silently-ineffective assertion.
+const LOOM_KEYS: [&str; 12] = [
+    "run",
+    "fixpoint",
+    "flags",
+    "exit",
+    "apply-exit",
+    "tolerate",
+    "probe-results",
+    "dual-rail",
+    "why-addr",
+    "expect-diagnostic",
+    "expect-why",
+    "expect-hint",
+];
+
+/// Scalar-or-list frontmatter items (an absent key is the empty list).
+fn loom_items(case: &errorloom::Case, key: &str) -> Vec<String> {
+    match case.frontmatter().get(key) {
+        Some(errorloom::FrontmatterValue::Scalar(one)) => vec![one.clone()],
+        Some(errorloom::FrontmatterValue::List(items)) => items.clone(),
+        _ => Vec::new(),
+    }
+}
+
+/// Read and classify one `.loom`, or `Ok(None)` when it carries no `run:` key (an ordinary
+/// catalog case, the looms runner's).
+fn loom_spec(case: &LoomCase) -> Result<Option<LoomCaseSpec>, String> {
+    let text = std::fs::read_to_string(&case.path)
+        .map_err(|error| format!("read {}: {error}", case.path.display()))?;
+    let parsed = errorloom::Case::parse(&text).map_err(|error| format!("{error}"))?;
+    let declared = parsed.frontmatter().scalar("run").map(str::to_owned);
+    let executed = parsed.frontmatter().scalar("fixpoint") == Some("executed");
+    let Some(declared) = declared else {
+        return if executed {
+            // Without a `run:` key nothing executes this case, so `fixpoint: executed` would
+            // hand its transcript to a driver that never runs — no proof at all.
+            Err(format!(
+                "`{}` declares `fixpoint: executed` but no `run:` — nothing would ever execute it",
+                case.name
+            ))
+        } else {
+            Ok(None)
+        };
+    };
+    let run = match declared.as_str() {
+        "round-trip" => LoomRun::RoundTrip,
+        "lint" => LoomRun::Lint,
+        other => return Err(format!("unknown `run: {other}`")),
+    };
+    let known: BTreeSet<&str> = LOOM_KEYS.iter().copied().collect();
+    if let Some(unknown) = parsed.frontmatter().keys().find(|key| !known.contains(key)) {
+        return Err(format!(
+            "unread frontmatter key `{unknown}` — the key vocabulary is closed, and a key no gate reads is an assertion the author only believes they made"
+        ));
+    }
+    Ok(Some(LoomCaseSpec {
+        name: case.name.clone(),
+        path: case.path.clone(),
+        case: parsed,
+        run,
+    }))
+}
+
+/// Materialize a loom-form case into the dir shape the gates read.
+fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
+    for (rel, content) in spec.case.materialized_files() {
+        let target = into.join(&rel);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| format!("{error}"))?;
+        }
+        std::fs::write(&target, content).map_err(|error| format!("{error}"))?;
+        make_executable(&target);
+    }
+    let write = |name: &str, body: String| -> Result<(), String> {
+        std::fs::write(into.join(name), body).map_err(|error| format!("{error}"))
+    };
+    let scalar = |key: &str| spec.case.frontmatter().scalar(key).map(str::to_owned);
+    if let Some(flags) = scalar("flags") {
+        write(&format!("DORC_FLAGS={flags}"), String::new())?;
+    }
+    if let Some(value) = scalar("tolerate") {
+        write(&format!("tolerate={value}"), String::new())?;
+    }
+    if let Some(value) = scalar("probe-results") {
+        write(&format!("PROBE_RESULTS={value}"), String::new())?;
+    }
+    if let Some(value) = scalar("dual-rail") {
+        write(&format!("DUAL_RAIL={value}"), String::new())?;
+    }
+    if let Some(value) = scalar("why-addr") {
+        write(&format!("WHY_ADDR={value}"), String::new())?;
+    }
+    if let Some(value) = scalar("apply-exit") {
+        write(&format!("EXIT_RC={value}"), String::new())?;
+    }
+    match spec.run {
+        LoomRun::RoundTrip => {
+            if let Some(value) = scalar("exit") {
+                write(&format!("DORC_EXIT={value}"), String::new())?;
+            }
+        }
+        LoomRun::Lint => {
+            write("expected-rc", format!("{}\n", scalar("exit").unwrap_or_default()))?;
+            write("cmd", format!("{}\n", lint_flags(spec)?))?;
+        }
+    }
+    for (key, file) in [
+        ("expect-diagnostic", "expected-diagnostics"),
+        ("expect-why", "expected-why"),
+        ("expect-hint", "expected-hint"),
+    ] {
+        let items = loom_items(&spec.case, key);
+        if !items.is_empty() {
+            write(file, format!("{}\n", items.join("\n")))?;
+        }
+    }
+    let transcript = spec
+        .case
+        .replay()
+        .blocks()
+        .first()
+        .ok_or_else(|| String::from("no replay block"))?;
+    write("expected.out", transcript.output().to_owned())?;
+    Ok(())
+}
+
+/// Give a materialized mock the execute bit `PATH` resolution needs on unix (txtar carries no
+/// mode). A no-op on Windows, where `PATH` resolution does not consult it.
+#[cfg(unix)]
+fn make_executable(path: &Path) {
+    use std::os::unix::fs::PermissionsExt as _;
+    if let Ok(meta) = std::fs::metadata(path) {
+        let mut perms = meta.permissions();
+        perms.set_mode(perms.mode() | 0o111);
+        let _ = std::fs::set_permissions(path, perms);
+    }
+}
+
+#[cfg(not(unix))]
+fn make_executable(_path: &Path) {}
+
+/// The lint flag vector a `run: lint` loom's replay command carries, minus the `dorc lint`
+/// head and the trailing book path the driver appends itself. Deriving the `cmd` file from the
+/// COMMAND is what keeps the committed transcript's first line honest: the flags a reader sees
+/// are the flags the case runs.
+fn lint_flags(spec: &LoomCaseSpec) -> Result<String, String> {
+    let command = spec
+        .case
+        .replay()
+        .blocks()
+        .first()
+        .ok_or_else(|| String::from("no replay block"))?
+        .command();
+    let words: Vec<&str> = command.split_whitespace().collect();
+    match words.split_first() {
+        Some((&"dorc", rest)) if rest.first() == Some(&"lint") => {}
+        _ => return Err(format!("`{command}` is not a `dorc lint` invocation")),
+    }
+    if words.last() != Some(&"book.sh") {
+        return Err(format!(
+            "`{command}` must end in the book path the driver appends (`book.sh`)"
+        ));
+    }
+    let mut flags: Vec<&str> = Vec::new();
+    for word in words.iter().skip(2).take(words.len().saturating_sub(3)) {
+        if !word.starts_with('-') {
+            return Err(format!("`{command}` carries a non-flag word `{word}`"));
+        }
+        flags.push(word);
+    }
+    Ok(flags.join(" "))
+}
+
+/// The canonical round-trip invocation for a materialized case: exactly what the runner drives,
+/// rendered as the transcript's command line. The committed command must EQUAL this, so a
+/// transcript can never show one invocation while the gates run another.
+fn round_trip_command(dir: &Path) -> String {
+    let mut command = String::from("dorc --book=book.sh");
+    let mut oracles: Vec<String> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| name.ends_with(".oracle.sh"))
+        .collect();
+    oracles.sort();
+    for oracle in oracles {
+        let _ = write!(command, " -o {oracle}");
+    }
+    if let Ok(Some(flags)) = marker(dir, "DORC_FLAGS") {
+        let _ = write!(command, " {flags}");
+    }
+    if dir.join("probe-results.txt").is_file() {
+        command.push_str(" < probe-results.txt");
+    }
+    command
+}
+
+/// Drive one loom-form case: materialize, run the dir-form battery, then fold any blessed
+/// bytes back into the `.loom` (the loom, not the scratch dir, is what is committed).
+fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
+    let scratch = Scratch::new("loom");
+    let dir = scratch.path.join(&spec.name);
+    std::fs::create_dir_all(&dir).expect("create loom case dir");
+    materialize_loom(spec, &dir)
+        .map_err(|error| Failed::from(format!("FAIL  {}  [loom: {error}]", spec.name)))?;
+
+    let case = E2eCase {
+        name: spec.name.clone(),
+        dir: dir.clone(),
+        kind: match spec.run {
+            LoomRun::RoundTrip => E2eKind::RoundTrip,
+            LoomRun::Lint => E2eKind::Lint,
+        },
+    };
+    if spec.run == LoomRun::RoundTrip {
+        let want = round_trip_command(&dir);
+        let got = spec.case.replay().blocks()[0].command();
+        if got != want {
+            return Err(format!(
+                "FAIL  {}  [loom: the committed replay command is not the invocation the gates drive]\n      committed: {got}\n      drives:    {want}",
+                spec.name
+            )
+            .into());
+        }
+    }
+    let outcome = match spec.run {
+        LoomRun::RoundTrip => run_round_trip(harness, &case),
+        LoomRun::Lint => run_lint(harness, &case),
+    };
+    if harness.bless {
+        bless_loom(spec, &dir)?;
+    }
+    outcome
+}
+
+/// Fold the freshly-blessed `expected.out` / `expected.ran` back into the committed `.loom`.
+fn bless_loom(spec: &LoomCaseSpec, dir: &Path) -> Result<(), Failed> {
+    let mut case = spec.case.clone();
+    let transcript = read_or_empty(&dir.join("expected.out"));
+    case.set_replay_outputs(vec![transcript]);
+    let ran = dir.join("expected.ran");
+    if ran.is_file() && !case.set_section_content("expected.ran", &read_or_empty(&ran)) {
+        return Err(format!(
+            "FAIL  {}  [bless: the case runs under mocks but has no `expected.ran` section to bless into]",
+            spec.name
+        )
+        .into());
+    }
+    std::fs::write(&spec.path, case.to_text())
+        .map_err(|error| Failed::from(format!("FAIL  {}  [bless: {error}]", spec.name)))?;
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -2205,9 +2496,33 @@ fn main() {
     }
     let harness = Arc::new(Harness::resolve());
     let discovered = discover_e2e(&case_roots());
+    let looms = discover_looms(&case_roots());
     preflight(&harness, discovered.len());
 
     let mut trials: Vec<Trial> = Vec::new();
+    for loom in looms {
+        match loom_spec(&loom) {
+            Ok(None) => {}
+            Ok(Some(spec)) => {
+                assert!(
+                    !discovered.iter().any(|case| case.name == spec.name),
+                    "`{}` exists in both dir and loom form — a half-finished conversion runs the case twice under one filter name",
+                    spec.name
+                );
+                let harness = Arc::clone(&harness);
+                let spec = Arc::new(spec);
+                trials.push(Trial::test(spec.name.clone(), move || {
+                    run_loom(&harness, &spec)
+                }));
+            }
+            Err(message) => {
+                let name = loom.name.clone();
+                trials.push(Trial::test(name.clone(), move || {
+                    Err(format!("FAIL  {name}  [loom: {message}]").into())
+                }));
+            }
+        }
+    }
     let mut real_fixtures: BTreeMap<String, PathBuf> = BTreeMap::new();
     for case in discovered {
         let harness = Arc::clone(&harness);

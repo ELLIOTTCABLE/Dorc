@@ -104,6 +104,12 @@ impl Frontmatter {
             _ => None,
         }
     }
+
+    /// Every declared key, sorted. A consumer that reads a CLOSED key vocabulary needs this to
+    /// refuse an unread key: a key nobody reads is an assertion the author believes they made.
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.entries.keys().map(String::as_str)
+    }
 }
 
 /// One txtar file section: a name and its verbatim LF content.
@@ -466,6 +472,20 @@ impl Case {
     pub fn set_replay_outputs(&mut self, outputs: Vec<String>) {
         for (block, out) in self.replay.blocks.iter_mut().zip(outputs) {
             block.output = out;
+        }
+    }
+
+    /// Replace one named file section's content (inline-on-bless for a section a consumer
+    /// regenerates, the sibling of [`Case::set_replay_outputs`]). `false` when no such section
+    /// exists — a bless that silently invented one would commit an unasserted fixture.
+    #[must_use]
+    pub fn set_section_content(&mut self, name: &str, content: &str) -> bool {
+        match self.sections.iter_mut().find(|s| s.name == name) {
+            Some(section) => {
+                section.content = content.to_owned();
+                true
+            }
+            None => false,
         }
     }
 
