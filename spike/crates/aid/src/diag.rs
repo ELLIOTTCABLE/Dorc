@@ -2448,6 +2448,13 @@ fn part_with_text(part: &crate::tagged::RenderPart, text: String) -> crate::tagg
         },
         RenderPart::ForeignText { param, .. } => RenderPart::ForeignText { text, param },
         RenderPart::Arrangement { slug, .. } => RenderPart::Arrangement { text, slug },
+        RenderPart::ArrangementWords {
+            slug, occurrence, ..
+        } => RenderPart::ArrangementWords {
+            text,
+            slug,
+            occurrence: *occurrence,
+        },
     }
 }
 
