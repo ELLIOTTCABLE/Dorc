@@ -223,7 +223,7 @@ fn refuse_split_field(
             _ => None,
         })
         .filter(|section| {
-            section.code == selected.code
+            section.owner == selected.owner
                 && section.field == selected.field
                 && section.instance == selected.instance
         })

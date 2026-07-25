@@ -176,8 +176,8 @@ impl DorcConsumer {
         let entry = self
             .mirror
             .iter_mut()
-            .find(|entry| entry.slug == key.code)
-            .ok_or_else(|| DorcApplyRefusal::MissingCode(key.code.clone()))?;
+            .find(|entry| entry.slug == key.owner)
+            .ok_or_else(|| DorcApplyRefusal::MissingCode(key.owner.clone()))?;
         let template = compiled
             .fragments()
             .iter()
@@ -1103,7 +1103,7 @@ mod tests {
 
     fn key(segment: usize) -> SectionKey {
         SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment,
@@ -1139,7 +1139,7 @@ mod tests {
     #[test]
     fn editable_variables_preserve_empty_values_and_refuse_disagreement() {
         let key = SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment: 0,
@@ -1636,7 +1636,7 @@ mod tests {
     #[test]
     fn applying_compiled_markers_preserves_duplicate_empty_and_nul_variables() {
         let section = SectionKey {
-            code: String::from("dangling-reference"),
+            owner: String::from("dangling-reference"),
             field: "message",
             instance: 0,
             segment: 0,
@@ -1680,7 +1680,7 @@ mod tests {
         assert_eq!(
             consumer.apply_compiled_section(
                 &SectionKey {
-                    code: String::from("missing-code"),
+                    owner: String::from("missing-code"),
                     field: "message",
                     instance: 0,
                     segment: 0,
@@ -1694,7 +1694,7 @@ mod tests {
         assert_eq!(
             consumer.apply_compiled_section(
                 &SectionKey {
-                    code: String::from("dangling-reference"),
+                    owner: String::from("dangling-reference"),
                     field: "when_fires",
                     instance: 0,
                     segment: 0,
@@ -1709,7 +1709,7 @@ mod tests {
     #[test]
     fn split_editable_fields_refuse_every_segment_without_conflating_other_fields() {
         let split = SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment: 0,

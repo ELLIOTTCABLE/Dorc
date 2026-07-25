@@ -98,7 +98,7 @@ enum ReceiptCompiledFragment {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct ReceiptSectionId {
-    code: String,
+    owner: String,
     field: String,
     instance: usize,
     segment: usize,
@@ -548,7 +548,7 @@ fn ordered_paths(paths: &[String], what: &'static str) -> Result<(), ReceiptErro
     Ok(())
 }
 fn validate_section_id(id: &ReceiptSectionId) -> Result<(), ReceiptError> {
-    check_nonempty(&id.code, "section code")?;
+    check_nonempty(&id.owner, "section owner")?;
     check_nonempty(&id.field, "section field")
 }
 fn validate_variable_id(id: &ReceiptVariableId) -> Result<(), ReceiptError> {
@@ -578,7 +578,7 @@ fn check_nonempty(value: &str, what: &'static str) -> Result<(), ReceiptError> {
     }
 }
 fn section_identity(id: &ReceiptSectionId) -> (&str, &str, usize, usize) {
-    (&id.code, &id.field, id.instance, id.segment)
+    (&id.owner, &id.field, id.instance, id.segment)
 }
 fn safe_path(path: &str) -> bool {
     !path.is_empty()
@@ -634,7 +634,7 @@ fn compiled_fragment(fragment: &CompiledFragment) -> ReceiptCompiledFragment {
 }
 fn section_id(id: &SectionKey) -> ReceiptSectionId {
     ReceiptSectionId {
-        code: id.code.clone(),
+        owner: id.owner.clone(),
         field: id.field.to_owned(),
         instance: id.instance,
         segment: id.segment,
@@ -696,7 +696,7 @@ fn encode_render(out: &mut Vec<u8>, render: &ReceiptRender) -> Result<(), Receip
     Ok(())
 }
 fn encode_section_id(out: &mut Vec<u8>, id: &ReceiptSectionId) -> Result<(), ReceiptError> {
-    field(out, "code", &id.code)?;
+    field(out, "owner", &id.owner)?;
     field(out, "field", &id.field)?;
     field(out, "instance", &id.instance.to_string())?;
     field(out, "segment", &id.segment.to_string())
@@ -742,7 +742,7 @@ fn parse_render(frames: &mut Frames<'_>) -> Result<ReceiptRender, ReceiptError> 
 }
 fn parse_section_id(frames: &mut Frames<'_>) -> Result<ReceiptSectionId, ReceiptError> {
     Ok(ReceiptSectionId {
-        code: frames.required("code")?,
+        owner: frames.required("owner")?,
         field: frames.required("field")?,
         instance: number(&frames.required("instance")?)?,
         segment: number(&frames.required("segment")?)?,
@@ -875,7 +875,7 @@ pub(crate) mod tests {
 
     fn key(code: &str, segment: usize) -> SectionKey {
         SectionKey {
-            code: code.to_owned(),
+            owner: code.to_owned(),
             field: "message",
             instance: 0,
             segment,
@@ -958,7 +958,7 @@ pub(crate) mod tests {
         let (_, sections) = editable_species(&mut original);
         sections.push(ReceiptSection {
             id: ReceiptSectionId {
-                code: "code".to_owned(),
+                owner: "code".to_owned(),
                 field: "message".to_owned(),
                 instance: 0,
                 segment: 0,
@@ -1090,7 +1090,7 @@ pub(crate) mod tests {
         id.occurrence = 1;
         render.components.push(ReceiptComponent::EditableSection {
             id: ReceiptSectionId {
-                code: "code".to_owned(),
+                owner: "code".to_owned(),
                 field: "help".to_owned(),
                 instance: 0,
                 segment: 1,
@@ -1099,7 +1099,7 @@ pub(crate) mod tests {
         });
         sections.push(ReceiptSection {
             id: ReceiptSectionId {
-                code: "code".to_owned(),
+                owner: "code".to_owned(),
                 field: "help".to_owned(),
                 instance: 0,
                 segment: 1,
@@ -1289,7 +1289,7 @@ pub(crate) mod tests {
             .1
             .push(ReceiptSection {
                 id: ReceiptSectionId {
-                    code: "code".to_owned(),
+                    owner: "code".to_owned(),
                     field: "message".to_owned(),
                     instance: 0,
                     segment: 0,
@@ -1310,7 +1310,7 @@ pub(crate) mod tests {
         let mut bindings = inspection("x");
         editable_species(&mut bindings).1.push(ReceiptSection {
             id: ReceiptSectionId {
-                code: "code".to_owned(),
+                owner: "code".to_owned(),
                 field: "message".to_owned(),
                 instance: 0,
                 segment: 0,
@@ -1331,7 +1331,7 @@ pub(crate) mod tests {
         editable_species(&mut sections).0.components = (0..MAX_COMPILED_SECTIONS)
             .map(|segment| ReceiptComponent::EditableSection {
                 id: ReceiptSectionId {
-                    code: "code".to_owned(),
+                    owner: "code".to_owned(),
                     field: "message".to_owned(),
                     instance: 0,
                     segment,
@@ -1342,7 +1342,7 @@ pub(crate) mod tests {
         *editable_species(&mut sections).1 = (0..MAX_COMPILED_SECTIONS)
             .map(|segment| ReceiptSection {
                 id: ReceiptSectionId {
-                    code: "code".to_owned(),
+                    owner: "code".to_owned(),
                     field: "message".to_owned(),
                     instance: 0,
                     segment,
@@ -1355,7 +1355,7 @@ pub(crate) mod tests {
         assert!(encode(&sections).is_ok());
         editable_species(&mut sections).1.push(ReceiptSection {
             id: ReceiptSectionId {
-                code: "code".to_owned(),
+                owner: "code".to_owned(),
                 field: "message".to_owned(),
                 instance: 0,
                 segment: MAX_COMPILED_SECTIONS,
@@ -1457,14 +1457,14 @@ pub(crate) mod tests {
         let ReceiptComponent::EditableSection { id, .. } = &mut render.components[2] else {
             panic!("editable section");
         };
-        id.code.clear();
+        id.owner.clear();
         assert!(encode(&invalid).is_err());
 
         let mut invalid = inspection("x");
         let (_, sections) = editable_species(&mut invalid);
         sections.push(ReceiptSection {
             id: ReceiptSectionId {
-                code: "other".to_owned(),
+                owner: "other".to_owned(),
                 field: "message".to_owned(),
                 instance: 0,
                 segment: 0,
@@ -1493,7 +1493,7 @@ pub(crate) mod tests {
         let (_, sections) = editable_species(&mut invalid);
         sections.push(ReceiptSection {
             id: ReceiptSectionId {
-                code: "code".to_owned(),
+                owner: "code".to_owned(),
                 field: "message".to_owned(),
                 instance: 0,
                 segment: 0,

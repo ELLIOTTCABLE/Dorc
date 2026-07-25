@@ -47,12 +47,13 @@ pub struct SectionVariableId {
     pub occurrence: usize,
 }
 
-/// The identity of one contiguous editable catalog field segment.
+/// The identity of one contiguous editable prose segment, in either register.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct SectionKey {
-    /// The diagnostic code slug.
-    pub code: String,
-    /// The catalog field name.
+    /// Who owns the prose: a diagnostic code slug for the catalog registers, an arrangement
+    /// slug for the arrangement registry.
+    pub owner: String,
+    /// Which register of that owner: `message`/`help` (catalog) or [`ARRANGEMENT_FIELD`].
     pub field: &'static str,
     /// The core-emitted field occurrence.
     pub instance: usize,
@@ -164,7 +165,7 @@ fn flush_section(
     };
     components.push(RenderComponent::EditableSection(EditableSection::new(
         SectionKey {
-            code: String::from(section.key.0),
+            owner: String::from(section.key.0),
             field: section.key.1.as_str(),
             instance: section.key.2,
             segment: section.segment,
