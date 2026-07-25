@@ -425,3 +425,53 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   NOT a standing offer — the quarantine-don't-delete posture resumes at session
   end. The arc-end cleanup builder sweeps the whole repo + all worktrees under
   this license before it expires.
+
+## §2n — Phase-6 COMPLETE + folded (conductor, 2026-07-24)
+
+- LANDED @ `950ffe7e` (13 commits), FOLDED. Normalizer vocabulary: ONE citizen
+  (`pipe-stage-order`, capture-and-check symmetric; `RAN_ORDER=lax` retired, six
+  logs re-canonicalized — the `28A` lax-order nit discharged); `sigpipe-rc-landing`
+  and `temp-path-nonce` named-not-minted. Structural needles: slug-validated,
+  DECLARED-IS-ASSERTED. All four riders discharged: lint tier converted + the NEW
+  clean-run loom (`289:dec-clean-render-net-rides-loom` closed) · the whylog trio
+  root-caused to CASE BYTES (missing canonical blank-line; `KNOWN_NON_FIXPOINTS`
+  deleted; divergence-window diagnosis added) · real-tools lane reads the exit
+  trichotomy, GREEN at HEAD under shellcheck · ONE corpus-level fixpoint authority
+  (the looms runner; `DIRECT_PLAN_CASES` + the per-loom duplicate deleted, the
+  non-empty floor preserved). 21 cases converted (all materializer keys exercised
+  by removal); tail = 4 blocked-by-shape (2 preflight anchors + 2 real-tools
+  dir-keyed) + 75 opportunistic post-arc. Windows two-tool real-tools red stays
+  BY DESIGN (checkbashisms unspawnable; no platform-skip law minted). Cold gates:
+  1352 / 0.
+- **`289:finding-needle-assertion-caught-dead-fixture`** — `render21-heredoc-refusal`
+  had asserted NOTHING for several rounds: its oracle carried only `__predict`, so
+  no Replace license ever minted (`rul-vouch-is-verdict-authoring`), so the refusal
+  path was never REACHED — world (c), no silent narrowing on any taken path
+  (`refused_render_steps` drives BOTH diag and narrative; the discriminating test
+  with `__is_converged` added shows `replace` + the refusal firing). Repaired by
+  restoring the vouch; zero golden churn; declaration re-asserted.
+
+## §2o — The arrangement-home RULING (the phase-7 design sitting; conductor, 2026-07-24)
+
+- **`289:rul-arrangement-home-is-registry-plus-transcripts`** — options 2+3 of
+  `288` §7b COMPOSE, generalizing the proven catalog pipeline to a second table:
+  a generated ARRANGEMENT registry (arrangement-slug → ordered-words entries; a
+  lock like `catalog_lock.rs`, same three-state prose protocol, same fixpoint
+  gates) is the STORAGE; renderer-stamped Arrangement spans (the schema already
+  carries the slug) are the EDIT surface; prose-bless attributes arrangement-word
+  edits through the span map to registry entries. `282:rul-arrangement-words-
+  exempt-v1` is thereby LIFTED for migrated chrome. Help text is the pilot
+  (`$ dorc --help` as a whole-page loom — static, param-free); usage text joins as
+  seat-appended entries (the phase-4 `{USAGE}` disposition confirmed).
+- Chain anticipation (`289:rider-arrangement-home-anticipates-chains`) is SHAPE
+  ONLY: entry keys carry an optional occurrence/position discriminator (mirroring
+  span instance-ids) and storage is never welded flat-string-only — room for
+  sequence-structured entries (link connectives, tier-word slots) with NOTHING
+  chain-shaped built this arc.
+- Fences: the tier-word SET stays typed law (only spellings become entries —
+  trust-tier-is-syntax intact); artifact-plane strings (anything landing in the
+  byte-floored `.sh`) stay OUT, flagged not migrated; no build toward `plans/286`
+  (its density registers share the collection at ITS unpark); kFLOW's refused
+  extreme stays refused — the registry stores words, never grammar machinery.
+- `plans/288` §7b gets rewritten to record the taken option at the lane's landing
+  (plans are ahistorical).
