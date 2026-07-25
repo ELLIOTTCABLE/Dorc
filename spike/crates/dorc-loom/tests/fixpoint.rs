@@ -14,7 +14,10 @@
 
 use std::path::{Path, PathBuf};
 
-use dorc_loom::{DorcConsumer, generate_catalog_lock, load_corpus_by_slug, replay_case};
+use dorc_loom::{
+    DorcConsumer, generate_arrangement_lock, generate_catalog_lock, load_arrangement_corpus,
+    load_corpus_by_slug, replay_case,
+};
 use errorloom::{Case, RunEnv};
 
 fn corpus_dir() -> PathBuf {
@@ -23,6 +26,10 @@ fn corpus_dir() -> PathBuf {
 
 fn committed_lock() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs")
+}
+
+fn committed_arrangement_lock() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/arrangement_lock.rs")
 }
 
 /// The generated-catalog byte-identity gate (`28A` §4 · `282:rul-catalog-lock-is-generated-whole`):
@@ -46,6 +53,29 @@ fn generated_lock_reproduces_the_committed_bytes() {
     assert_eq!(
         generated, committed,
         "the committed catalog_lock.rs is not a fixpoint of the generator"
+    );
+}
+
+/// The arrangement registry's half of the same byte-identity gate
+/// (`289:rul-arrangement-home-is-registry-plus-transcripts`): regenerating the whole
+/// `arrangement_lock.rs` from the committed registry + arrangement cases reproduces the committed
+/// bytes. A hand-edit to the generated lock, or drift between a case's frontmatter and its
+/// generated row, trips here — exactly as it does for the catalog.
+#[test]
+fn generated_arrangement_lock_reproduces_the_committed_bytes() {
+    let consumer = DorcConsumer::new();
+    let cases = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");
+    assert!(
+        !cases.is_empty(),
+        "no arrangement cases under {} — the corpus is not where this crate reaches",
+        corpus_dir().display()
+    );
+    let generated = generate_arrangement_lock(&consumer, &cases).expect("generate lock");
+    let committed =
+        std::fs::read_to_string(committed_arrangement_lock()).expect("read committed lock");
+    assert_eq!(
+        generated, committed,
+        "the committed arrangement_lock.rs is not a fixpoint of the generator"
     );
 }
 

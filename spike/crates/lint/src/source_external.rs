@@ -31,8 +31,8 @@ impl LintSource for Shellcheck {
     fn name(&self) -> &'static str {
         "shellcheck"
     }
-    fn describe(&self) -> &'static str {
-        "shellcheck -f json1 -s sh over each stripped file"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-shellcheck"
     }
     fn rung(&self) -> Rung {
         Rung::File
@@ -58,8 +58,8 @@ impl LintSource for Checkbashisms {
     fn name(&self) -> &'static str {
         "checkbashisms"
     }
-    fn describe(&self) -> &'static str {
-        "checkbashisms --lint over each stripped file"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-checkbashisms"
     }
     fn rung(&self) -> Rung {
         Rung::File

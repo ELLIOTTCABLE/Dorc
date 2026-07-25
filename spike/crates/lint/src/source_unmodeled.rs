@@ -24,8 +24,8 @@ impl LintSource for UnmodeledInventory {
         "unmodeled-inventory"
     }
 
-    fn describe(&self) -> &'static str {
-        "per-book ⊤-wall inventory (first wall + downstream degradation)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-unmodeled-inventory"
     }
 
     fn rung(&self) -> Rung {

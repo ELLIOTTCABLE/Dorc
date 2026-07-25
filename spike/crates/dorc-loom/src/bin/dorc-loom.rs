@@ -7,8 +7,8 @@ use std::process::ExitCode;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
     InspectedReplay, Repository, build_publication, classify_prose_changes, compile_preview,
-    compile_receipt, load_corpus_by_slug, promote_receipt, render_compile_preview,
-    replay_case_with_inputs,
+    compile_receipt, load_arrangement_corpus, load_corpus_by_slug, promote_receipt,
+    render_compile_preview, replay_case_with_inputs,
 };
 use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
@@ -241,7 +241,13 @@ fn touched_cases(gated: &GatedCases) -> Result<std::collections::BTreeMap<String
         let slug = case
             .frontmatter()
             .scalar("code")
-            .ok_or_else(|| format!("touched case {} has no `code`", path.display()))?
+            .or_else(|| case.frontmatter().scalar("arrangement"))
+            .ok_or_else(|| {
+                format!(
+                    "touched case {} declares neither `code` nor `arrangement`",
+                    path.display()
+                )
+            })?
             .to_owned();
         cases.insert(slug, case);
     }
@@ -260,14 +266,19 @@ fn publish(
 ) -> Result<(), String> {
     let cases_dir = cases_dir();
     let corpus = load_corpus_by_slug(&cases_dir)?;
-    let publication = build_publication(consumer, &corpus, affected)?;
+    let arrangements = load_arrangement_corpus(&cases_dir)?;
+    let publication = build_publication(consumer, &corpus, &arrangements, affected)?;
 
     let mut wrote = false;
-    let lock_path = catalog_path();
-    if file_differs(&lock_path, &publication.lock) {
-        publish_file(&lock_path, &publication.lock)?;
-        writeln!(out, "promote: wrote {}", lock_path.display()).map_err(|e| e.to_string())?;
-        wrote = true;
+    for (path, bytes) in [
+        (catalog_path(), &publication.lock),
+        (arrangement_path(), &publication.arrangement_lock),
+    ] {
+        if file_differs(&path, bytes) {
+            publish_file(&path, bytes)?;
+            writeln!(out, "promote: wrote {}", path.display()).map_err(|e| e.to_string())?;
+            wrote = true;
+        }
     }
     for (slug, bytes) in &publication.cases {
         let path = cases_dir.join(format!("{slug}.loom"));
@@ -443,6 +454,10 @@ fn receipt_store() -> Result<FsReceiptStore, String> {
 
 fn catalog_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs")
+}
+
+fn arrangement_path() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/arrangement_lock.rs")
 }
 
 fn spike_dir() -> Result<PathBuf, String> {

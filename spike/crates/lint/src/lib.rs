@@ -82,8 +82,9 @@ pub fn lint(
 pub struct SourceInfo {
     /// The stable source name (also the value to pass as a subset selector).
     pub name: &'static str,
-    /// One-line description.
-    pub describe: &'static str,
+    /// The one-line description's ARRANGEMENT SLUG — the print seat resolves the words
+    /// (`289:rul-arrangement-home-is-registry-plus-transcripts`).
+    pub describe_arrangement: &'static str,
     /// The input rung it sits on (`27R` §8b): `file` or `book`.
     pub rung: &'static str,
 }
@@ -95,7 +96,7 @@ pub fn list_sources() -> Vec<SourceInfo> {
         .iter()
         .map(|s| SourceInfo {
             name: s.name(),
-            describe: s.describe(),
+            describe_arrangement: s.describe_arrangement(),
             rung: s.rung().label(),
         })
         .collect()

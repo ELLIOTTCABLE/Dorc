@@ -27,8 +27,8 @@ impl LintSource for VerdictBodyFlattening {
         "verdict-body"
     }
 
-    fn describe(&self) -> &'static str {
-        "status-flattening in __is_converged bodies (terminal pipeline)"
+    fn describe_arrangement(&self) -> &'static str {
+        "lint-source-verdict-body"
     }
 
     fn rung(&self) -> Rung {

@@ -18,6 +18,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   strings. The `dorc: ` / `dorc: lint: ` / `dorc-sh: ` prefixes and the usage synopsis are print-seat
   CHROME the three report seats own, never catalog prose. Exit codes are unchanged and never read
   severity. A new invocation error mints a code + a defining case like any other surface.
+- **chrome-comes-from-the-registry** (`289:rul-arrangement-home-is-registry-plus-transcripts`) —
+  the help page and the seat-appended usage synopsis are arrangement-registry entries
+  (`dorc_cli::help_text` / `usage_text`), not consts; their words are edited through
+  `crates/aid/tests/cli-help-page.loom`, never in source. A new user-facing chrome string mints a
+  registry entry, not a `const`.
 - **io-at-edges-only** — keep I/O in `run()`/`main`; the pipeline
   (`parse → cfg → classify → compile_probe/build_plan`) stays a total
   `Carrier<T>` function of its inputs; never let a clock/RNG/env-read leak

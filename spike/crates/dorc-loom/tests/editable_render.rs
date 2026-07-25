@@ -65,7 +65,7 @@ fn adapter_preserves_bytes_and_sections_around_foreign_data() {
     };
     assert_eq!(first.id().segment, 0);
     assert_eq!(second.id().segment, 1);
-    assert_eq!(first.id().code, second.id().code);
+    assert_eq!(first.id().owner, second.id().owner);
     assert_eq!(first.id().field, second.id().field);
     assert_eq!(first.id().instance, second.id().instance);
 }

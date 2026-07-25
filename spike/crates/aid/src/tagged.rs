@@ -46,12 +46,27 @@ pub enum RenderPart {
         /// The declared param name the hole interpolated.
         param: &'static str,
     },
-    /// Render-owned structure around catalog fields.
+    /// Render-owned structure around catalog fields: bytes the renderer computed itself, and
+    /// therefore never an edit region.
     Arrangement {
         /// Rendered bytes.
         text: String,
         /// What structure this run is.
         slug: &'static str,
+    },
+    /// Prose the renderer pulled from the ARRANGEMENT REGISTRY
+    /// (`289:rul-arrangement-home-is-registry-plus-transcripts`) — chrome with an editable
+    /// face. Only [`crate::arrangement::push_arrangement_words`] mints this, so the bytes and
+    /// the registry entry can never disagree.
+    ArrangementWords {
+        /// Rendered bytes.
+        text: String,
+        /// The registry key's arrangement slug.
+        slug: &'static str,
+        /// Which occurrence of `slug` this span is, when the seat renders the slug more than
+        /// once and wants per-position entries. `None` ⇒ one entry serves every occurrence.
+        /// The stamping is ALL-OR-NOTHING per slug within one render.
+        occurrence: Option<usize>,
     },
 }
 
@@ -63,7 +78,8 @@ impl RenderPart {
             RenderPart::TemplateLiteral { text, .. }
             | RenderPart::ParamValue { text, .. }
             | RenderPart::ForeignText { text, .. }
-            | RenderPart::Arrangement { text, .. } => text,
+            | RenderPart::Arrangement { text, .. }
+            | RenderPart::ArrangementWords { text, .. } => text,
         }
     }
 }

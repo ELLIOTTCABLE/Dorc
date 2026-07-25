@@ -81,7 +81,7 @@ fn an_edited_compact_line_compiles_and_re_holes_its_params() {
             other.len()
         ),
     };
-    assert_eq!(edit.section().code, "unmodeled-wall-inventory");
+    assert_eq!(edit.section().owner, "unmodeled-wall-inventory");
     assert_eq!(edit.section().field, "message");
 
     // The re-holing is the payoff: the edited sentence is a TEMPLATE again, not one world's

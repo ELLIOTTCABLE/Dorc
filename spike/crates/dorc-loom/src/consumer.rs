@@ -12,6 +12,7 @@ use std::fmt::Write;
 use std::fs;
 
 use dorc_aid::Severity;
+use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
 use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
@@ -103,6 +104,7 @@ impl DorcEditableBaseline {
 #[derive(Debug)]
 pub struct DorcConsumer {
     mirror: Vec<OwnedEntry>,
+    arrangements: Vec<OwnedArrangement>,
 }
 
 /// Why applying a compiled section to the in-memory mirror refused.
@@ -110,8 +112,18 @@ pub struct DorcConsumer {
 pub enum DorcApplyRefusal {
     /// The selected diagnostic code is absent from the mirror.
     MissingCode(String),
-    /// The selected section is not a catalog prose field.
+    /// The selected arrangement slug is absent from the registry.
+    MissingArrangement(String),
+    /// The selected section is neither a catalog prose field nor the arrangement register.
     IllegalField(&'static str),
+    /// An arrangement edit carried a `{{name}}` variable; registry entries store WORDS, never
+    /// templates (`289` §2o: the registry never grows grammar machinery).
+    ArrangementTakesNoVariables(String),
+    /// The edited entry holds a WORD SEQUENCE, and nothing re-splits an edited string back into
+    /// its words. Storage stays sequence-shaped for a future chain narration
+    /// (`289:rider-arrangement-home-anticipates-chains`); the edit path refuses rather than
+    /// guessing, because nothing chain-shaped is built yet.
+    ArrangementIsSequenceStructured(String),
 }
 
 impl Default for DorcConsumer {
@@ -121,24 +133,40 @@ impl Default for DorcConsumer {
 }
 
 impl DorcConsumer {
-    /// A consumer seeded from the compiled-in catalog (the carry-forward starting state).
+    /// A consumer seeded from the compiled-in catalog and arrangement registry (the
+    /// carry-forward starting state for both tables).
     #[must_use]
     pub fn new() -> Self {
         DorcConsumer {
             mirror: owned_catalog(),
+            arrangements: owned_arrangements(),
         }
     }
 
-    /// The current mirror (test/inspection surface).
+    /// The current catalog mirror (test/inspection surface).
     #[must_use]
     pub fn mirror(&self) -> &[OwnedEntry] {
         &self.mirror
+    }
+
+    /// The current arrangement mirror (test/inspection surface).
+    #[must_use]
+    pub fn arrangements(&self) -> &[OwnedArrangement] {
+        &self.arrangements
     }
 
     /// Overwrite a code's message in the mirror (models a raw catalog hand-edit for the fixpoint gate).
     pub fn set_message(&mut self, slug: &str, message: Option<String>) {
         if let Some(e) = self.mirror.iter_mut().find(|e| e.slug == slug) {
             e.message = message;
+        }
+    }
+
+    /// Overwrite an arrangement entry's words in the mirror (the [`Self::set_message`] twin: it
+    /// models a raw registry hand-edit, and stages the word-sequence state nothing authors yet).
+    pub fn set_arrangement_words(&mut self, slug: &str, words: OwnedWords) {
+        if let Some(entry) = self.arrangements.iter_mut().find(|e| e.slug == slug) {
+            entry.words = words;
         }
     }
 
@@ -170,14 +198,17 @@ impl DorcConsumer {
         key: &SectionKey,
         compiled: &crate::CompiledSection,
     ) -> Result<(), DorcApplyRefusal> {
+        if key.field == crate::ARRANGEMENT_FIELD {
+            return self.apply_arrangement_edit(key, compiled);
+        }
         if !matches!(key.field, "message" | "help") {
             return Err(DorcApplyRefusal::IllegalField(key.field));
         }
         let entry = self
             .mirror
             .iter_mut()
-            .find(|entry| entry.slug == key.code)
-            .ok_or_else(|| DorcApplyRefusal::MissingCode(key.code.clone()))?;
+            .find(|entry| entry.slug == key.owner)
+            .ok_or_else(|| DorcApplyRefusal::MissingCode(key.owner.clone()))?;
         let template = compiled
             .fragments()
             .iter()
@@ -209,6 +240,44 @@ impl DorcConsumer {
         Ok(())
     }
 
+    /// Apply one compiled arrangement section to the registry mirror — the chrome twin of the
+    /// catalog path above, and the whole of "an arrangement-word edit in a transcript flows to
+    /// its registry entry exactly as catalog prose does" (`289` §2o).
+    ///
+    /// The edit lands on the entry the RENDER read: the occurrence's own entry when it has one,
+    /// else the whole-slug entry — so an edit to any one occurrence of shared chrome updates the
+    /// shared words, which is the truth of a shared entry.
+    fn apply_arrangement_edit(
+        &mut self,
+        key: &SectionKey,
+        compiled: &crate::CompiledSection,
+    ) -> Result<(), DorcApplyRefusal> {
+        let mut words = Vec::new();
+        for fragment in compiled.fragments() {
+            match fragment {
+                crate::CompiledFragment::Text(text) => words.push(text.clone()),
+                crate::CompiledFragment::Variable(_) => {
+                    return Err(DorcApplyRefusal::ArrangementTakesNoVariables(
+                        key.owner.clone(),
+                    ));
+                }
+            }
+        }
+        let index = arrangement_index(&self.arrangements, &key.owner, key.instance)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        let entry = self
+            .arrangements
+            .get_mut(index)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        if entry.words.words().is_some_and(|current| current.len() > 1) {
+            return Err(DorcApplyRefusal::ArrangementIsSequenceStructured(
+                key.owner.clone(),
+            ));
+        }
+        entry.words = OwnedWords::Authored(vec![words.concat()]);
+        Ok(())
+    }
+
     /// Re-render a case corpus from the current in-memory mirror.
     ///
     /// # Errors
@@ -222,6 +291,9 @@ impl DorcConsumer {
     /// # Errors
     /// Returns the case-world materialization refusal.
     pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+        if let Some(slug) = case.frontmatter().scalar("arrangement") {
+            return self.arrangement_baseline(slug);
+        }
         let (diag, src, filename) = Self::world_of(case)?;
         let interner = Interner::default();
         let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
@@ -248,6 +320,10 @@ impl DorcConsumer {
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens = exact_words(command)?;
+        if let Some(slug) = arrangement_page_slug(case, &tokens) {
+            let parts = self.arrangement_page(slug).ok()?;
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         if let ["dorc-loom", "vars", mode, path] = tokens.as_slice()
             && matches!(*mode, "--used" | "--all")
             && case_relative_path(path)
@@ -330,6 +406,15 @@ impl DorcConsumer {
         render: EditableRender<SectionKey, SectionVariableId>,
     ) -> Result<DorcEditableBaseline, String> {
         let variables = editable_variables(&render)?;
+        // An arrangement case has no diagnostic and no payload: registry entries store WORDS, so
+        // the variable inventory is empty by construction rather than absent by failure.
+        if case.frontmatter().scalar("arrangement").is_some() {
+            return Ok(DorcEditableBaseline {
+                render,
+                variables,
+                all_variables: BTreeMap::new(),
+            });
+        }
         let diag = Self::world_of(case)
             .map(|(diag, _, _)| diag)
             .or_else(|_| Self::whylog_diagnostic(case))?;
@@ -343,6 +428,35 @@ impl DorcConsumer {
             render,
             variables,
             all_variables,
+        })
+    }
+
+    /// One whole-page arrangement's part stream, resolved against the COMMITTED registry so the
+    /// span carries a stable slug. A case naming a slug with no row yet renders nothing: its row
+    /// arrives by promotion and the build sees it after a rebuild — the same generation lag the
+    /// catalog has, and the same assertion.
+    fn arrangement_page(&self, slug: &str) -> Result<dorc_aid::tagged::RenderParts, String> {
+        let stable = dorc_aid::arrangement::ARRANGEMENTS
+            .iter()
+            .find(|entry| entry.slug == slug)
+            .map(|entry| entry.slug)
+            .ok_or_else(|| {
+                format!(
+                    "arrangement `{slug}` has no registry row yet — promote the case, then rebuild"
+                )
+            })?;
+        Ok(arrangement_parts(&self.arrangements, stable, None))
+    }
+
+    /// The editable baseline of a whole-page arrangement case — the registry's own render, with
+    /// an empty payload inventory.
+    fn arrangement_baseline(&self, slug: &str) -> Result<DorcEditableBaseline, String> {
+        let render = to_editable_render(&self.arrangement_page(slug)?);
+        let variables = editable_variables(&render)?;
+        Ok(DorcEditableBaseline {
+            render,
+            variables,
+            all_variables: BTreeMap::new(),
         })
     }
 
@@ -452,6 +566,44 @@ impl DorcConsumer {
         .next()
         .ok_or_else(|| "whylog replay produced no diagnostic".to_owned())
     }
+}
+
+/// The WHOLE-PAGE arrangement route: an invocation whose entire output is one registry entry
+/// (`288:rul-help-text-is-loomable`; the `289` §2o help pilot). Both the driver and the
+/// re-render seat go through this, so the transcript a human edits and the bytes the fixpoint
+/// re-derives are the same registry read.
+///
+/// The declared-arrangement check is this family's honest trigger
+/// (`289:rul-worldless-route-honest-trigger`): a page case whose command renders some OTHER
+/// page is refused rather than quietly transcribing a page it does not claim.
+fn arrangement_page_slug(case: &Case, words: &[&str]) -> Option<&'static str> {
+    let slug = match words {
+        ["dorc", "--help" | "-h"] => dorc_cli::HELP_ARRANGEMENT,
+        _ => return None,
+    };
+    match case.frontmatter().scalar("arrangement") {
+        Some(declared) if declared != slug => None,
+        _ => Some(slug),
+    }
+}
+
+/// The registry index serving `(slug, occurrence)`: the occurrence's own entry when it has one,
+/// else the whole-slug entry. The mutable-mirror twin of
+/// [`ArrangementLookup::words`](dorc_aid::arrangement::ArrangementLookup::words) — kept in step
+/// with it, since an edit must land on the entry the render read.
+fn arrangement_index(
+    arrangements: &[OwnedArrangement],
+    slug: &str,
+    occurrence: usize,
+) -> Option<usize> {
+    arrangements
+        .iter()
+        .position(|entry| entry.slug == slug && entry.occurrence == Some(occurrence))
+        .or_else(|| {
+            arrangements
+                .iter()
+                .position(|entry| entry.slug == slug && entry.occurrence.is_none())
+        })
 }
 
 fn parse_direct_why<'a>(words: &[&'a str]) -> Option<&'a str> {
@@ -687,6 +839,9 @@ impl DorcConsumer {
     fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
         let words =
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        if let Some(slug) = arrangement_page_slug(case, &words) {
+            return Ok(self.arrangement_page(slug)?.text());
+        }
         if let Some(path) = parse_direct_why(&words) {
             let raw = case
                 .sections()
@@ -1103,7 +1258,7 @@ mod tests {
 
     fn key(segment: usize) -> SectionKey {
         SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment,
@@ -1139,7 +1294,7 @@ mod tests {
     #[test]
     fn editable_variables_preserve_empty_values_and_refuse_disagreement() {
         let key = SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment: 0,
@@ -1636,7 +1791,7 @@ mod tests {
     #[test]
     fn applying_compiled_markers_preserves_duplicate_empty_and_nul_variables() {
         let section = SectionKey {
-            code: String::from("dangling-reference"),
+            owner: String::from("dangling-reference"),
             field: "message",
             instance: 0,
             segment: 0,
@@ -1680,7 +1835,7 @@ mod tests {
         assert_eq!(
             consumer.apply_compiled_section(
                 &SectionKey {
-                    code: String::from("missing-code"),
+                    owner: String::from("missing-code"),
                     field: "message",
                     instance: 0,
                     segment: 0,
@@ -1694,7 +1849,7 @@ mod tests {
         assert_eq!(
             consumer.apply_compiled_section(
                 &SectionKey {
-                    code: String::from("dangling-reference"),
+                    owner: String::from("dangling-reference"),
                     field: "when_fires",
                     instance: 0,
                     segment: 0,
@@ -1709,7 +1864,7 @@ mod tests {
     #[test]
     fn split_editable_fields_refuse_every_segment_without_conflating_other_fields() {
         let split = SectionKey {
-            code: String::from("code"),
+            owner: String::from("code"),
             field: "message",
             instance: 0,
             segment: 0,

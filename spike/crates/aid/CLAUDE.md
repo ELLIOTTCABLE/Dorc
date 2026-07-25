@@ -67,6 +67,46 @@ crate's charter) · `notes/287` (errorloom as-built).
   migrated builder text, or `[unwritten: <slug>]` (`None`), or unprefixed prose for a
   CASE-OWNED code. `message_registers_are_sm_or_unwritten` enforces it against
   `is_case_owned(slug)`. `[unwritten:]` is a legal resting state.
+- **arrangement-registry-is-the-chrome-home** (`289:rul-arrangement-home-is-registry-plus-transcripts`)
+  — render-owned CHROME (help/usage pages, structure words, preambles, summary lines) lives in a
+  SECOND generated table, `arrangement.rs` + the generated `arrangement_lock.rs`, keyed by
+  arrangement-slug + an optional occurrence. Same pipeline as the catalog: mirror-union generation,
+  the byte-identity lock gate, the per-case render fixpoint, `dorc-loom promote` publishing both
+  locks. A page case declares `arrangement: <slug>` where a code case declares `code:`; the two
+  corpora partition the collection.
+- **only-registry-bytes-are-editable** — a `RenderPart::Arrangement` span is chrome the renderer
+  COMPUTED (immutable structure); only `RenderPart::ArrangementWords`, minted solely by
+  `arrangement::push_arrangement_words`, is an edit region. Never stamp a computed string with a
+  registry slug: an edit would rewrite an entry the render does not read.
+- **artifact-plane-strings-stay-out** (`two-surfaces` / rec-1) — the registry is a RENDER-plane
+  home. Anything landing in the byte-floored `.sh` artifact stays hardcoded: every emitter in
+  `plan/src/render.rs` (probe/plan/apply headers, the guard-preamble banner, `# replace[..]` /
+  `# omit[..]` provenance blocks, the deriv/resolv/reach banners and record scaffolds) writes
+  artifact comment bytes, and receipt-stripping byte-identity is a stronger claim than
+  editability. Machine formats are out for the same reason at a different altitude: the lint JSONL
+  envelope, `--debug-argv`, the records lane. Migrating any of these is a LAW change, not a lane
+  item.
+- **layout-is-not-a-word** — the registry stores words. Pure layout and punctuation — indents,
+  group-header colons, line breaks, the compact finding's `  <line>:<col> <sev> [<src>:<code>] `
+  frame — stay `RenderPart::Arrangement`, and are deliberately NOT migrated. `render-form-unwelded`
+  already keeps arrangement SHAPE free to churn; putting shape in an editable entry would weld it.
+- **arrangement-prose-marker-is-typed** — the catalog's three prose states carry over, but the
+  migrated marker is the `Words::Migrated` VARIANT, not an in-band `sm ` prefix: chrome renders
+  verbatim into product bytes, so an in-band marker would make a migration a visible product
+  change. `authored_words_are_case_owned` is the gate (the `message_registers_are_sm_or_unwritten`
+  twin).
+- **arrangement-words-are-a-sequence-nothing-splits** (`289:rider-arrangement-home-anticipates-chains`)
+  — entries store ORDERED WORDS: a chrome line with interpolated counts stores its fixed runs and
+  the seat interleaves the computed values (`arrangement_sentence`), which also leaves room for a
+  future chain narration. An edit against a multi-word entry REFUSES
+  (`DorcApplyRefusal::ArrangementIsSequenceStructured`) — nothing re-splits an edited line at its
+  value boundaries. Do not build word-boundary inference.
+- **a-chrome-line-is-one-span** — a value-bearing chrome line renders as ONE `ArrangementWords`
+  span, never as word-spans fenced by computed ones. The edit transport anchors sections on the
+  immutable text BETWEEN them, and a bare digit or an empty plural suffix is not an anchor:
+  fragmenting one line that way broke attribution for every OTHER prose section in the same render
+  (observed, 2026-07-24). Layout — a line's trailing newline included — stays computed, so a render
+  never ends inside an editable span.
 - **error-slugs-are-semantic** (`288:rul-error-slugs-are-semantic`) — code slugs are
   user-facing surface that becomes a real compat surface at publication. Mint them
   semantic-first, never as a file-naming decision.
@@ -93,6 +133,11 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **inv-determinism-here** — deterministic `Ord`/`Hash` for anything used as a map key;
   never iterate a `HashMap`/`HashSet` where order is observable. Render output must be a
   pure function of `(payload, catalog, interner)`.
+- **arrangement-lock-is-generated-too** — `arrangement_lock.rs` is `@generated` by `dorc-loom`
+  exactly as `catalog_lock.rs` is; hand-edits are caught by
+  `generated_arrangement_lock_reproduces_the_committed_bytes`. Seeding a MIGRATED row by hand is
+  the one sanctioned hand-write (the `sm `-row precedent), and the gate proves the seed is a
+  generator fixpoint.
 - **cases-live-here** (`288:rul-slug-decides-loom-placement`, landed at
   `288:phase-flat-tree-move`) — `crates/aid/tests/<slug>.loom` IS the primary loom
   collection: every canonical case for a registered aid-slug, flat, beside this crate's

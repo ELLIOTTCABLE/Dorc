@@ -19,6 +19,7 @@
 #![forbid(unsafe_code)]
 
 use dorc_aid::Severity;
+use dorc_aid::arrangement::{CONST_ARRANGEMENTS, arrangement_text};
 use dorc_aid::diag::{Diag, DiagCode};
 
 /// The invocation-error carrier (`288` §6). A plain [`Diag`]: the parsers hand the print seat the
@@ -26,71 +27,36 @@ use dorc_aid::diag::{Diag, DiagCode};
 /// on a path that runs at most once per process.
 pub type InvocationError = Diag;
 
-/// The one-line usage synopsis, embedded in argument-error messages. The full
-/// mode/flag/exit-code reference is [`HELP`] (printed by `--help` to stdout, exit 0).
-pub const USAGE: &str =
-    "usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]";
+/// The arrangement slug of the one-line usage synopsis every invocation-error print seat
+/// appends. Its words live in the arrangement registry, like every other user-facing string
+/// (`289:rul-arrangement-home-is-registry-plus-transcripts`); [`usage_text`] renders it.
+pub const USAGE_ARRANGEMENT: &str = "cli-usage-synopsis";
 
-/// The long help (ack-1 + the cheap help-is-success item): `--help`/`-h` prints this to
-/// STDOUT and exits 0 (a help request is a success, not a usage error). Documents the
-/// mode/flag surface AND the exit-code family the harness crash-guard mirrors.
-pub const HELP: &str = "\
-dorc — spec-mining static-analysis orchestrator (implementation spike)
+/// The arrangement slug of the long help page `--help`/`-h` prints
+/// (`288:rul-help-text-is-loomable`). Its defining loom drives `$ dorc --help` and its
+/// transcript IS the editing surface for the page's prose.
+pub const HELP_ARRANGEMENT: &str = "cli-help-page";
 
-usage: dorc [<mode>] --book=<book.sh> [-o <oracle.sh>]... [options]
+/// The one-line usage synopsis, appended to argument errors by the print seats.
+#[must_use]
+pub fn usage_text() -> String {
+    arrangement_text(&CONST_ARRANGEMENTS, USAGE_ARRANGEMENT, None)
+}
 
-modes (an optional leading token; default is the probe-then-apply round-trip):
-  probe        emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
-  plan         preview the eliding apply on stdout, with the why-lens + diagnostics on stderr
-  apply        emit the byte-floored, receipt-free shippable apply artifact to stdout
-  why [<addr>] report (to stdout) WHY the run decided as it did — bare: the run's problems;
-               `book.sh:N`: the site on that source line; free text: matching commands
-  strip <file> print <file> with every dorc dialect construct erased — runnable stock POSIX sh
-               (the off-ramp cleaner; an unmarked file passes through unchanged)
-  lint <files> the oracle-author doctor/lint grab-bag over the files (no hosts, no probes):
-               parse/cfg diagnostics, unmodeled-wall inventory, verdict-body checks, and
-               shellcheck/checkbashisms when present. Flags: --format=human|jsonl,
-               --fail-on=error|warn|never, --no-tools, --require-tools, --expect-files N,
-               --source NAME (repeatable), --list-sources. Recommended CI line:
-               `dorc lint --format=jsonl --fail-on=warn --require-tools --expect-files N <files>`
-  (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
+/// The long help (ack-1 + the cheap help-is-success item): `--help`/`-h` prints this to STDOUT
+/// and exits 0 (a help request is a success, not a usage error).
+#[must_use]
+pub fn help_text() -> String {
+    arrangement_text(&CONST_ARRANGEMENTS, HELP_ARRANGEMENT, None)
+}
 
-options:
-  <book.sh>...          the book(s) to analyze — a positional path (`dorc plan book.sh`) or
-                        --book=PATH / --book PATH; repeatable ⇒ concatenated as one unit
-  -o, --oracle <o.sh>   an oracle file to load (repeatable; -o PATH, -oPATH, --oracle PATH)
-  --oracle-dir <dir>    load every *.oracle.sh in <dir> (repeatable; glob-sorted)
-  --results <file>      read the probe results from <file> (default: stdin)
-  --trust-footprints    opt into the survival tier (default off)
-  --debug-argv          echo the engine's per-site resolved argv to stderr
-  -h, --help            print this help to stdout and exit 0
-  --version             print the version to stdout and exit 0
-
-stdin:  probe results, one per line — `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
-        (unless --results <file>); stdout: the selected mode's artifact(s); stderr:
-        diagnostics / why-lens / decision-digest.
-
-exit codes:
-  0    success — the analysis completed and the artifact was emitted
-  2    usage error — a bad/unknown argument, a missing --book, or an unreadable file
-  10   parse error — the book carries a construct dorc cannot model (a syntax-level
-       ⊤-reject / CFG ⊤-node); the artifact still ships byte-identically, but the exit
-       signals partial understanding so a `dorc … && deploy` chain stops. First of the
-       reserved 10..19 dorc-semantic fast-fail range (vacuous/obvious, dorc-specific).
-
-  lint exit codes (distinct family — a ⊤-reject book is a FINDING here, never an exit-10):
-  0    clean — no findings at or above --fail-on
-  1    findings at or above --fail-on were reported
-  3    operational — the lint itself is compromised (no lintable files, an --expect-files
-       mismatch, or a --require-tools absence): distinct from both clean and findings
-";
 /// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
 /// are successes printed to stdout, ack-1 help-is-success — never a usage error).
 #[derive(Debug)]
 pub enum Invocation {
     /// A normal analysis run with the parsed [`Args`].
     Analyze(Args),
-    /// `-h`/`--help`: print [`HELP`] to stdout, exit 0.
+    /// `-h`/`--help`: print [`help_text`] to stdout, exit 0.
     Help,
     /// `--version`: print the version to stdout, exit 0.
     Version,
@@ -497,11 +463,6 @@ pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> Invoca
         )),
     }
 }
-
-/// One-line usage for the `lint` sub-surface (`27R` §5). Embedded in lint arg errors.
-pub const LINT_USAGE: &str = "usage: dorc lint <files…> [-o <oracle>]… [--oracle-dir <dir>] \
-    [--format=human|jsonl] [--fail-on=error|warn|never] [--no-tools] [--require-tools] \
-    [--expect-files N] [--source NAME]… [--list-sources] [--terse|--verbose]";
 
 /// The parsed `dorc lint` invocation (`27R` §5). Files + oracle sources + the render/exit knobs.
 #[derive(Debug)]

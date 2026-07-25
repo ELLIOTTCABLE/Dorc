@@ -37,6 +37,8 @@ pub use diag::Diag;
 
 pub mod catalog;
 
+pub mod arrangement;
+
 pub mod tagged;
 
 pub mod narrative;
