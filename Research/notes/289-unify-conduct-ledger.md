@@ -117,13 +117,16 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 |---|---|---|---|
 | phase 0: lint-tally-pluralization | `ai/r28-unify-p0` | single dispatch, worktree | LANDED+FOLDED 2026-07-24 @ `2bf13785` → merge `c45be8b8` |
 | phase 1 map: aid-crate extraction spec (`notes/290`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | LANDED+FOLDED 2026-07-24 @ `00155aaf` |
-| phase 1 exec: the extraction cutover | `ai/r28-unify-p1x` (base `c1cab82a`) | fresh executor per `290` + `289` §2c | DISPATCHED 2026-07-24 |
-| phases 2–4: mint-seam+scaffold · lint-unification · cli-error-migration | — | one checkpointed lane | pending |
-| phase 5: flat-tree move + run.sh retirement + safety-law edits | — | serial, atomic paths-only | pending |
-| phase 6: e2e→loom conversion | — | serial | pending |
-| phase 7: arrangement-home sitting + build (help-text pilot) | — | design sitting then lane | pending |
-| phase 8: Fable prose burn-down | — | HELD — human attention + ack | held |
-| cleanup: worktree/branch janitor | — | guarded, end of arc | pending |
+| phase 1 exec: the extraction cutover | `ai/r28-unify-p1x` | fresh executor per `290` + `289` §2c | LANDED+FOLDED @ `2ac85127` (§2e) |
+| phases 2–4: mint/lint/cli-errors (map `notes/291`) | `ai/r28-unify-p24` + `-p24x` | map-then-execute, mid-lane checkpoint | LANDED+FOLDED @ `7948a0cb` (§2i/§2j) |
+| touches-fix: disturbs-family name pin | `ai/r28-unify-touches` | parallel small lane | LANDED+FOLDED @ `d9ff7b81` (§2h) |
+| phase 5: flat tree + central runners + run.sh retirement | `ai/r28-unify-p5` | two-stop | LANDED+FOLDED @ `e3a74744` (§2k/§2l) |
+| phase 6: e2e→loom conversion + riders | `ai/r28-unify-p6` | single stop + follow-up | LANDED+FOLDED @ `950ffe7e` (§2n) |
+| phase 7: arrangement home + help pilot + chrome | `ai/r28-unify-p7` | two-stop per §2o ruling | LANDED+FOLDED @ `42fa45da` (§2p/§2q) |
+| WSL cross-platform repairs | `ai/r28-unify-wsl` | bounded investigation | LANDED+FOLDED @ `09fe9aa0` (§2r) |
+| harness research (turns 1+2) | none (`.claude/research/loom-harness-alternatives/`) | Sonnet web survey | COMPLETE; decision deferred to the pre-phase-8 conductor |
+| cleanup: worktree/branch janitor | none (repo-global, guarded) | single dispatch | COMPLETE (§2s); all lane branches/worktrees retired |
+| phase 8: Fable prose burn-down | — | HELD — human attention + ack | HELD (the arc's one open gate) |
 
 ## §4 — Ack-ledger (only human-TYPED items count)
 
@@ -577,3 +580,43 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   cleanly.
 - 2026-07-24: WSL-repairs fold cold-verified own-hand (conduct-bless: build ok | unit 1200 | e2e 98 passed | looms 73 | gates ok). Stack `fbc44956` verified.
 - HUMAN steer (2026-07-24): harness research gets a SECOND turn, entirely Rust-ecosystem-focused — what e2e/sh testing real Rust projects use (adoption signals, who rolled their own and why), and which capability choices make errorloom maximally-useful/minimally-bloated to the most people at publication (verify the prose-transport-has-no-competitor claim). Queued to the researcher as turn02.
+
+## §2s — Cleanup sweep + ARC CLOSE (conductor, 2026-07-24)
+
+- Cleanup COMPLETE (guarded janitor, `28C` posture): 10 lane branches + the empty
+  `ai/loom-string-centralize` deleted with merge-guards intact (`-d` from inside
+  the conductor worktree so git's own merged-into-HEAD check tested the right
+  target; `-D` never used); 9 agent worktrees removed + pruned; 585/586
+  sync-conflict files deleted under the session license (list:
+  session-scratchpad `conflicts.txt`). The harness attached a bulk-deletion
+  security warning to the sweep; conductor judgment: within the human's typed
+  session-scoped license, announced twice pre-dispatch; surfaced to the human
+  with the audit pointer.
+- Sweep guards that caught real things: `.git` EXCLUDED (four sync-conflict
+  BRANCH REFS exist under `.git/refs/heads/` incl. one shadowing the conductor
+  branch — SyncThing is writing into `.git`; HUMAN-OWNED, ignore-config-level
+  fix, never ref deletion); the r29-quarantine hit HELD (fence beat license);
+  two tracked conflict fixtures restored on the lane before worktree removal.
+- SURFACED for human adjudication (untouched; continuity with `28A` §4's
+  three-dirty-worktrees item): `agent-a3557130737d11c12` (1 unmerged commit +
+  dirty `Research/trial/observe/recon.sh`) · `agent-af67e0c672b0f437e` (four
+  uncommitted 279a/279b Sol-N review reports + a `.claude-commit` sentinel —
+  looks like finished, never-committed review work) · `agent-a4bc512f21f7ea336`
+  (codex scratch only, near-certainly disposable) · the four `.git` conflict
+  refs · the dead `loom-case-extension` orphan dir.
+- ARC STATE AT CLOSE: every `288` §8 phase 0–7 LANDED+FOLDED+cold-verified;
+  stack `ai/r28-unify`, final verified tally
+  `build ok | unit 1200 | e2e 98 | looms 73 | gates ok`. Opaque-review NOT run
+  (standing human-typed deferral: infrastructure non-functional, do-not-re-ask).
+  Phase 8 is the single open gate, HELD for the human. The phase-8 package:
+  (a) catalog prose — the `sm ` corpus + 6 `[unwritten:]` codes; (b) the
+  arrangement registry — 17 `Words::Migrated` rows (5 multi-word = lock-edited,
+  `289:seam-multiword-chrome-render-only`); (c) the coupled doc-comment/message
+  respell (`28A:finding-old-prose-coupled-to-message-strings`) + the
+  `.touches()` display vocabulary (`289:dec-touches-display-vocab-phase8`);
+  (d) the transport seams one sitting should take together: glued-param
+  re-holing (`28A:rul-glued-param-rehole-seam`) + multi-word re-splitting;
+  (e) deferred-by-design context: catalog canonicalization
+  (`28A:rul-catalog-canonicalization-is-conductor`), the harness-research
+  decision, `289:residual-loom-mock-ergonomics`, the errorloom LICENSE/publish
+  forks.
