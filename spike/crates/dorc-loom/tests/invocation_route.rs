@@ -7,7 +7,6 @@
 //! humans review errors through (`288:rul-errors-human-authored-review-surface`).
 
 #![expect(
-    clippy::expect_used,
     clippy::panic,
     reason = "fixture loader over the committed corpus; the no-panic lints guard untrusted input"
 )]
@@ -69,8 +68,8 @@ fn each_invocation_case_is_fired_by_its_own_command() {
 #[test]
 fn a_command_that_fires_another_code_is_refused() {
     let case = read("cli-no-book-given.loom");
-    let text = std::fs::read_to_string(cases_dir().join("cli-no-book-given.loom"))
-        .expect("read the case");
+    let text =
+        std::fs::read_to_string(cases_dir().join("cli-no-book-given.loom")).expect("read the case");
     // `dorc plan --wat` fires `cli-unknown-flag-did-you-mean`, never `cli-no-book-given`.
     let drifted = text.replace("$ dorc plan\n", "$ dorc plan --wat\n");
     assert_ne!(drifted, text, "the fixture still carries the bare command");
