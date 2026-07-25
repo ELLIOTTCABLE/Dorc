@@ -502,3 +502,13 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   pre-existing UX gap (lint argument errors carry no usage line) banked as a
   post-arc residual, NOT built. `SectionKey.code`→`.owner` rename-in-place (flag
   4): per standing order, accepted. STOP-2 GO issued.
+- Human spot-check findings (2026-07-24): the derived-survive header truncation was
+  r24 damage (`458b26c1`'s comment-rip cut a purpose header mid-sentence) —
+  completed same-line, one-case conductor bless (3-line diff: 2 comments + the
+  book digest). **`289:residual-loom-mock-ergonomics`** — the per-case
+  `_dorc_logged`/mock boilerplate (~40 lines/case) is the converted looms' worst
+  noise; candidate homes assessed: errorloom-builtin recording stubs (lean —
+  consumer-neutral executor capability, pre-publication is the cheap time) >
+  shared in-tree mocks (erodes case self-containedness) > bats (bash-dependent,
+  wrong for a posh∩dash-floor project). Banked post-arc unless the human pulls it
+  forward.
