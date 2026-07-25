@@ -475,3 +475,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   extreme stays refused — the registry stores words, never grammar machinery.
 - `plans/288` §7b gets rewritten to record the taken option at the lane's landing
   (plans are ahistorical).
+- 2026-07-24: phase-7 (Opus, fresh worktree, bg) — the §2o registry+transcripts ruling, two-stop (registry+help pilot, CHECKPOINT, chrome migration). Off `9f112f69`.
