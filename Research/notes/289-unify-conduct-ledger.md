@@ -637,3 +637,6 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - Dispatched 2026-07-25: one Opus lane, fresh worktree, `ai/r28-unify-hints` off
   `f78c0620`. Expected user-visible delta ZERO; sequence-structured bucket landing
   acceptable (reported, not redesigned); no gate hacks; flags up.
+- AMENDED mid-flight (HUMAN-TYPED 2026-07-25): the worklist rider is a tiny
+  TEMPORARY grep shell-script (deleted after the prose pass), NOT a dorc-loom
+  subcommand; low criticality, no churn. Relayed to the running builder.
