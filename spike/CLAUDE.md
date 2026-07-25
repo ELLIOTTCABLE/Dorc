@@ -712,6 +712,26 @@ mise exec -- cargo test -p dorc-cli --test looms    # the loom corpus alone: par
   share one `target/`. Never run BLESS while any build-agent is in flight;
   orchestrator-only, on a freshly-verified binary, resulting diff inspected
   case-by-case. Bless cannot prove an elision RIGHT — review by eye.
+- **one-platform-green-is-not-cross-platform-green** (two live bugs, 2026-07-24) —
+  `#[cfg(windows)]` / `#[cfg(unix)]` code is COMPILED ONLY on its own platform, so the
+  gates never see the other side and it rots silently. Both landed bugs were invisible
+  to a green Windows run: five `receipt_store` items reachable only from the
+  Windows-only rename-backup path were `dead_code` on Linux (`-D warnings` ⇒ hard
+  fail), and the `#[cfg(unix)]` shim `chmod` did not even TYPE-CHECK (`?` on an
+  `io::Error` in a `Result<_, Diag>` seat). Gate a platform-only helper at every
+  member rather than reaching for `allow(dead_code)`: gated, a cross-platform caller
+  fails to resolve loudly; allowed, it compiles into a question the platform cannot
+  answer. Anything touching a `cfg`-gated region must be checked on BOTH platforms
+  before it is trusted — this is a doc, not a mechanical net, because a lint for it
+  would be exactly the imperfect net `271:rul-net-quality-u-curve` warns against.
+- **wsl-needs-a-modern-git** — the repo enables the `relativeWorktrees` extension
+  (git ≥ 2.48); an older git (Ubuntu 24.04 ships 2.43) refuses the WHOLE repository
+  with `fatal: unknown repository extension found`, so every git-touching step —
+  `conduct-bless`'s golden listing, `dorc-loom promote`'s repository gate — dies.
+  `conduct-bless` now pre-flights `mise` and `git` and REFUSES in a line rather than
+  surfacing it after a ten-minute green build. Sharing one `target/` between a Windows
+  and a WSL cargo is NOT implicated: units are host-hashed, and each platform's test
+  binary bakes in its own `CARGO_BIN_EXE_*` path.
 - Lint posture: the workspace lint table in `spike/Cargo.toml` is policy for new
   code — do not weaken it. Legacy crate-root `#![expect(..., reason)]`s
   self-ratchet; remove as layers are replaced; never add new ones to fresh code.

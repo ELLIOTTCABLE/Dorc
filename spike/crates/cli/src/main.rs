@@ -516,8 +516,11 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt as _;
+            // Same edge, same world-state as the write above (the shim dir cannot be made
+            // usable), so it carries the same code rather than minting a grammar-driven sibling
+            // — `AID-NEEDS:law-codes-vary-by-world-not-grammar`. The io error rides `detail`.
             std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))
-                .map_err(|e| format!("cannot mark shim {} executable: {e}", path.display()))?;
+                .map_err(|e| shim_dir_unwritable(&path.display().to_string(), &e))?;
         }
     }
     Ok(())
