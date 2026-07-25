@@ -522,3 +522,28 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   scope-bloat question ("does errorloom grow a feature per future test need?");
   errorloom-feature stays the fallback lean; decision deferred — possibly a
   pre-phase-8 matter for a clean conductor.
+
+## §2q — Phase-7 COMPLETE + folded (conductor, 2026-07-24)
+
+- Stop 2 LANDED @ `42fa45da` (12 commits total), FOLDED. 17 registry rows, all
+  `Words::Migrated` verbatim, ZERO golden churn stop-wide; the artifact-plane
+  fence consumed the whole plan-render annotation class (`artifact-plane-strings-
+  stay-out` + `layout-is-not-a-word` now steering law); occurrence-sharing gives
+  repeated chrome one editable home; `remediation_hint` stays parked; `288` §7b
+  rewritten in place. Cold gates 1371 / 0 (unit 1200 / e2e 98 / looms 73);
+  budget 11/25.
+- Design correction accepted: value-bearing chrome renders as ONE span whose
+  entry holds ordered fixed runs interleaved with computed values
+  (`arrangement_sentence`, arity-guarded — mismatch renders `[unwritten:]`,
+  never a mangled line); trailing newlines stay computed so a render never ends
+  inside an editable span.
+- **`289:seam-multiword-chrome-render-only`** (their flag 3) — the 5 multi-word
+  entries (2 lint sentences, 3 CLI stderr lines) REFUSE transcript edits
+  (`ArrangementIsSequenceStructured`) until value-boundary re-splitting is
+  designed; the 12 single-word entries are fully loop-capable. Same family as
+  `28A:rul-glued-param-rehole-seam` (dumb word-boundary transport vs structured
+  values) — the phase-8 author edits those 5 in the lock; both seams belong to
+  one future transport-design sitting.
+- Migration-net pins for faceless chrome (their flag 1) accepted — a real
+  transcript face for the three stderr lines is `286`/post-arc territory.
+  `describe_arrangement` rename (flag 2): internal, accepted.
