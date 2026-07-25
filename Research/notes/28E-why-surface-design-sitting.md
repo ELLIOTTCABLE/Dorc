@@ -390,3 +390,79 @@ HELD / PUSHBACK:
   co-flagship billing; provenance keeps the naked-trust receipt duty; the impact
   projection (the positive symptom-index; the improvements section) grows under
   the same attention doctrine.
+
+## §8 — The strawman-one convergence round (2026-07-25, session close)
+
+The human worked `28G`'s flagship case over two markup layers; the deltas are
+design rulings extracted by demonstration (the loom's git history is the record):
+
+HUMAN-DEMONSTRATED (via markup; conductor-confirmed in the fan-out):
+- UI voice is admin-English: "skipped" / "guarded" / "guard-clause" on user
+  surfaces (the skip-ban was always LLM-facing; the carve is now exercised
+  deliberately). Engine vocabulary (elide/replace) never leaks into renders.
+- The argless aggregate is TWO sections: TRUST SPENT (first, when present) and
+  IMPROVEMENTS ("dorc can do better, with your help") — PROBLEMS dissolved into
+  improvements; genuine breakage would surface as SURPRISES (the divergence
+  case's leading section when no trust was spent).
+- Row shape: `file:N | command` items; `N|command` inline refs; `=== SECTION ===`
+  dividers; three-space render indentation; `risk-profile:` labeling in the
+  receipt header.
+- Speaker rows quote their payloads ("Package:nginx@{enabled,active}" — brace
+  selector display); the claims row carries its explanation as an indented
+  paragraph below the quote, then the as-written excerpt.
+- NEXT STEPS grew alternatives and a full remediation arc: suspect → fix (widen
+  the claim OR re-plan flagless — the first emergency-distrust lever appearing
+  organically, `28D`'s family) → verify (`plan --why`) → repair (`dorc apply` —
+  the handoff to action) → review (`--all`).
+
+RULED/BANKED this round:
+- **rul-reported-never-measured** (acked, recurring — the reasoning restated
+  because 'measure' has research-ocean momentum): we NEVER know what was
+  measured; we know what the author's check REPORTED when it ran. The runtime
+  tier-word is `reported`, permanently.
+- **rul-danger-axis-is-completion-class** (nack on my reported/written split) —
+  the firefighter's axis is not where words were written but what a claim
+  COVERS: reported things are a class of size N; the at-most claim speaks for
+  universe-minus-N. `!` marks covers-unmeasured. Tier word stays `claims`
+  (momentum); `sworn` auditioned as the stellar-term candidate (testimony
+  register: reported = eyewitness event, sworn = affidavit about everything
+  else), undecided.
+- **quoted-speakers ADOPTED** — every chain row is speaker-first with the
+  tier-word as the sentence's verb; past tense for run events (`reported`),
+  present for standing text (`vouches`, `claims`, `declines`); dorc asserts no
+  world-fact in its own voice — it quotes speakers and vouches only for the run
+  record and its own derivations.
+- **the goals/consent/format matrix** (human vibe, not ruled) — one world of
+  facts; verbs state GOALS and imply consent+format defaults, both tweakable
+  within the verb. `why --probe` is TEACHING (the consent you could have given);
+  `plan --why` is REMEDIATION (re-measures under plan's standing consent,
+  carries the asked question inline, poised for apply). Float, weight-tagged
+  curiosity: a durable ask-record so plan can highlight "the line you asked
+  about is still about to go un-run".
+- **rul-renderer-owns-layout** — semantics marks critical-vs-summarizable;
+  the reflow engine RULES layout (columns, blocks, wrapping). Never lower
+  rendering decisions into the semantics engine; enrich the renderer to
+  understand semantics instead.
+- **presence-complete, density-selected** — the participating-lines block lists
+  every participant of the asked question (completeness lives in code-gutter
+  rows, cheap to scan); ANALYSIS selects; value/CFG-tracing decides how MUCH
+  each participant gets, never whether it appears (a dropped participant is a
+  false provenance claim).
+
+The strawman corpus of record: `notes/28G-why-strawmen-v2/` — `a-fire-morning`
+(flagship; human-marked twice, conductor-retold) · `b-wide-guarded`
+(healthy-guard, two walls, value-flow, no-suspect steps) · `c-declined-unsound`
+(authored refusal as answer; anti-nag; model-offer) · `d-guard-fell-through`
+(SURPRISES; then-vs-now; positive-pointer suspicion with the ceiling named) ·
+`e-skipped-quiet` (restraint; the admin's own guard as speaker; triptych
+collapse). The 292 corpus is superseded by 28G.
+
+LIVING GOAL, restated so it survives the session boundary: every render above
+stays RENDERING-ASSEMBLED FROM EDITABLE SPANS — reverse-inferred from loom text
+through the tagged-render/span-map machinery. Section headers, tier verbs,
+connectives, and footers are arrangement-registry rows; chain prose is
+catalog/class-keyed rows; speaker rows are fixed-runs-interleaved-with-values.
+Nothing above may ever be born as a `format!` literal.
+
+Implementation phasing: **`plans/294`** (minted at session close) is the
+plan-of-record; this document stays the design record.
