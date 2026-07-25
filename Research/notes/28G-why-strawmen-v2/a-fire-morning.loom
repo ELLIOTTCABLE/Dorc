@@ -110,6 +110,6 @@ $ dorc why web.sh:9
                you want)
 
 (Receipt analysis: the run's own records, nothing re-measured. A live-grounded
-version of this report was one consent away -- `dorc why --probe` accepts
-read-only probing up front, next time. Filtered for presumed relevance;
-`--all` enumerates everything the engine holds.)
+version of this report was one consent away; `why --probe` accepts read-only
+probing up front, next time. Filtered for presumed relevance; `why --all`
+enumerates everything the engine holds.)
