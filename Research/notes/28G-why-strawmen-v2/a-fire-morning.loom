@@ -1,13 +1,17 @@
-# NON-FUNCTIONAL STRAWMAN v2 (imagination-tier; whole-cloth, post-sitting -- the
-# 28E rulings applied, the 292 corpus deliberately NOT consulted). One user-moment,
-# two sequential commands on one receipt: the 03:40 morning after a survived
-# elision went wrong overnight. Exercises: why-as-receipt-reconciliation -- the
-# input-identity header -- trust-spent-first / problems / improvements -- the
-# two-rank marks (machine `*` vs human `!`) with tier words as row labels --
-# contrastive-first opener -- numberless join with prose restatement -- endpoint
-# literal excerpt with author comment -- question-relative selection -- labeled
-# exhaustive step -- structural suspect/check/fix sections -- annotation-tier git
-# note -- the `dorc teach` pointer -- pure ASCII throughout.
+# NON-FUNCTIONAL STRAWMAN v2 (imagination-tier; whole-cloth, post-sitting; layout
+# herein is illustrative -- the renderer owns layout, the semantics engine only
+# marks what is critical vs summarizable). One user-moment, two sequential
+# commands on one receipt: the 03:40 morning after a survived removal went wrong.
+# Exercises: why-as-receipt -- input-identity header -- trust-spent-first /
+# problems / improvements -- two-rank marks (`*` runtime-backed vs `!`
+# covers-unmeasured: the danger axis is completion-class, not authorship) --
+# quoted-speakers rows (speaker first, tier-word as the verb; past tense for run
+# events, present tense for standing text) -- `reported` never `measured` (we
+# never know what was measured; we know what the author's check reported when it
+# ran -- recurring weasel, banked) -- contrastive OUTCOME -- numberless join with
+# prose restatement -- endpoint literal excerpt -- suspect/fix/verify handing off
+# into `plan --why` (the remediation verb; the goals/consent matrix) -- the
+# durable-question float (plan remembers what you asked) -- pure ASCII.
 
 -- web.sh (context, abbreviated) --
  5 apt-get update
@@ -65,34 +69,39 @@ $ dorc why web.sh:9
 
   === ANALYSIS ===
 
-  Removal depended upon these three facts, that had to hold together:
+  the removal stood on all of the following, together:
 
-  * measured   Package:nginx was @enabled+@active
-               (service.oracle.sh:12, ran 01:59:52)
-  * vouched    re-running adds nothing when already active
-               (service.oracle.sh:9)
-
-  ! claimed    `certsync push` touches AT MOST @cert state -- an author's claim;
-               cannot be mechanically verified
+  * service.oracle.sh:12  reported  Package:nginx @enabled+@active
+                                    (ran 01:59:52, answered 0)
+  * service.oracle.sh:9   vouches   re-running an already-active unit adds
+                                    nothing worth running
+  ! certsync.oracle.sh:31 claims    `certsync push` touches AT MOST @cert
+                                    state -- which speaks for everything it
+                                    did NOT measure. text only; no run backs it.
                      [ certsync.oracle.sh, as-written:
                   30 | # surveyed 2026-05: cert store only.
                   31 | push) printf '%s\n' "$1"  : disturbs org.foob.Certs ;;
 
-  so: the claim and the measurement do not overlap, and the removal stood.
-  `!` marks the one link no machine can check.
+  so: nothing 8|certsync claims to touch overlaps what 9|systemctl's removal
+  was reported on; the removal stood. `!` marks the link that covers
+  unmeasured things -- the class no run can bound.
 
   === NEXT STEPS ===
 
   if 9|systemctl SHOULD have run:
-    suspect:   the 8|certsync claim -- the only unverified link. if
-               `certsync push` also touches @enabled/@active state, it is what
-               wrongly kept 9|systemctl out.
-    check:    `dorc plan --why web.sh web1` (re-measures now; dorc is stateless)
+    suspect:  the 8|certsync claim -- the only link speaking for unmeasured
+              state. if `certsync push` also touches @enabled/@active, it is
+              what wrongly kept 9|systemctl out.
     fix:      certsync.oracle.sh:31 (widen the claim; every consumer heals)
+    verify:   `dorc plan --why web.sh web1` -- the fix path: re-measures under
+              plan's standing consent, carries this question forward inline,
+              and leaves you one step from applying. (plan remembers this
+              question: 9|systemctl's fate stays flagged until the analysis
+              changes.)
 
     the rest: `dorc why web.sh:9 --all` (every link, unselected, exhaustive)
 
-(Offline analysis from stale state; run `dorc plan web.sh --why` for
-re-measurement and to attempt a fix. Or re-run with `why --probe` for a
-live-state-grounded report. This is filtered for presumed relevance; `why --all`
-to enumerate all engine knowledge.)
+(Receipt analysis: the run's own records, nothing re-measured. A live-grounded
+version of this report was one consent away -- `dorc why --probe` accepts
+read-only probing up front, next time. Filtered for presumed relevance;
+`--all` enumerates everything the engine holds.)
