@@ -604,7 +604,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   looks like finished, never-committed review work) · `agent-a4bc512f21f7ea336`
   (codex scratch only, near-certainly disposable) · the four `.git` conflict
   refs · the dead `loom-case-extension` orphan dir.
-- ARC STATE AT CLOSE: every `288` §8 phase 0–7 LANDED+FOLDED+cold-verified;
+- ARC STATE AT CLOSE (amended — see §2t): every `288` §8 phase 0–7 LANDED+FOLDED+cold-verified;
   stack `ai/r28-unify`, final verified tally
   `build ok | unit 1200 | e2e 98 | looms 73 | gates ok`. Opaque-review NOT run
   (standing human-typed deferral: infrastructure non-functional, do-not-re-ask).
@@ -620,3 +620,20 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   (`28A:rul-catalog-canonicalization-is-conductor`), the harness-research
   decision, `289:residual-loom-mock-ergonomics`, the errorloom LICENSE/publish
   forks.
+
+## §2t — Pre-prose hint-homing (HUMAN-DIRECTED 2026-07-25; re-opens the arc briefly)
+
+- HUMAN-TYPED unit: the `remediation_hint` park (§2q) is UNPARKED — the class-keyed
+  `&'static str` fn in `aid/src/diag.rs` (~:2715) is the last unhomed user-facing
+  prose class and falsifies the phase-8 author's mandate ("the human edits only loom
+  files, ever after") on day one. Ruling rationale: the phase-7 arrangement registry
+  IS class-keyed word storage with the three-state protocol, so this is a STORAGE
+  move (`Words::Migrated` verbatim, occurrence-less rows, render seat reads the
+  registry), not new design; strawman-formats keeps the home freely renameable if
+  the deferred register-schema sitting wants it elsewhere. RIDER folded in: a
+  one-command prose-worklist enumeration (`sm `/`[unwritten:]`/`Migrated` across
+  catalog + arrangement, lock-edit-only rows marked) so the phase-8 author starts
+  from a mechanical list.
+- Dispatched 2026-07-25: one Opus lane, fresh worktree, `ai/r28-unify-hints` off
+  `f78c0620`. Expected user-visible delta ZERO; sequence-structured bucket landing
+  acceptable (reported, not redesigned); no gate hacks; flags up.
