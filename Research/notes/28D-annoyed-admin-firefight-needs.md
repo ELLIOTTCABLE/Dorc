@@ -22,10 +22,18 @@ it often enough to know"; B = reached-for during real incidents, absence materia
 degrades trust; C = would be loved once discovered, but nobody arrives demanding it;
 D = sounds nice to have. Other seats append their own `SEAT X` tokens inside the parens.
 
+The `opaque-approve` seat (appended 2026-07-25 from an out-of-band review lane) grades
+BUILD RISK rather than demand, and reads in the same direction: A = build freely, no
+review wanted; B = ordinary care, standing practice already covers it; C = scope it, and
+expect to split the entry, before a build brief exists; D = do not build without its own
+dedicated round; F = do not ship in any form. It is an approval grade — it never argues
+for building anything, and a high letter is permission rather than endorsement. Rationale
+for individual letters is deliberately not carried here; the letters are the whole export.
+
 Extinguish — the 03:40 set
 --------------------------
 
-- `need-exact-input-identity` (grades: UX-want B): the full identity of what actually ran
+- `need-exact-input-identity` (grades: UX-want B, opaque-approve A): the full identity of what actually ran
   overnight: book bytes (rev/content-hash), the complete loaded oracle-set with
   versions/pins and where each came from, engine version, flags typed
   (`--risk-faultless-skips` on/off decides which whole trust-tiers were even in play),
@@ -35,7 +43,7 @@ Extinguish — the 03:40 set
   cron config reconstructs most of it by hand; the oracle-set identity is the part nothing
   else records (see the A-graded `need-dependency-provenance-audit`).
 
-- `need-ground-truth-action-ledger` (grades: UX-want A): per host, per line: ran /
+- `need-ground-truth-action-ledger` (grades: UX-want A, opaque-approve C): per host, per line: ran /
   guard-short-circuited / guard-fell-through / elided, with wall-clock, tool exit status,
   captured stdout/stderr, and the exact post-guard artifact bytes that executed. The first
   concrete question is "what changed on this box overnight," answered from the actor's own
@@ -44,7 +52,7 @@ Extinguish — the 03:40 set
   that really mutated. A: no experienced admin runs a mutating orchestrator that keeps no
   run-report; this gets checked in the README before first use.
 
-- `need-withheld-action-ledger` (grades: UX-want A): the negative space — every line that
+- `need-withheld-action-ledger` (grades: UX-want A, opaque-approve A): the negative space — every line that
   did NOT run, with its complete license chain (measured / vouched / claimed / derived /
   consented, per USER_STORY's why-render), filterable corpus-wide by trust tier ("only
   elisions resting on an unverified human claim"; "only ones that rode the risk flag").
@@ -53,7 +61,7 @@ Extinguish — the 03:40 set
   is the only place the fire exists at all. A: for a product whose entire pitch is
   not-running things, "show me exactly why you skipped" is an adoption gate.
 
-- `need-probe-phase-account` (grades: UX-want B): everything executed while "only
+- `need-probe-phase-account` (grades: UX-want B, opaque-approve B): everything executed while "only
   looking": which oracle bodies ran on which hosts at plan time — including for plans
   nobody ever applied — each with file:line provenance and exit status; which contexts
   were entered (sudo-class) under which consents; known probe residue (the auth-log
@@ -62,13 +70,13 @@ Extinguish — the 03:40 set
   maximum blast radius at exactly the moment billed as zero-risk. The seat wants to rule
   the entire plan phase in or out with one query.
 
-- `need-world-then-versus-now` (grades: UX-want B): timestamps on every measured fact; the
+- `need-world-then-versus-now` (grades: UX-want B, opaque-approve B): timestamps on every measured fact; the
   plan's age at apply time (approved Friday 18:00, applied Sunday 02:00?); and one command
   for "re-measure now, diff against what you believed then." Splits the three root
   hypotheses — acted on a stale picture / acted correctly and the world moved after /
   innocent entirely — which demand completely different next moves.
 
-- `need-exoneration-or-conviction` (grades: UX-want C): the symptom-indexed backward
+- `need-exoneration-or-conviction` (grades: UX-want C, opaque-approve D): the symptom-indexed backward
   query: given the broken thing (a path, a service, a port), which executed lines COULD
   have touched it, which withheld lines SHOULD have touched it and didn't — plus the
   counterfactual: would a blind top-to-bottom run of the same book have left the host
@@ -80,7 +88,7 @@ Extinguish — the 03:40 set
   the touched-my-path half alone grades B (it is what log-grepping approximates today),
   the counterfactual D-going-on-C.
 
-- `need-fleet-blast-radius` (grades: UX-want B): the cross-host view: which verdicts fired
+- `need-fleet-blast-radius` (grades: UX-want B, opaque-approve C): the cross-host view: which verdicts fired
   identically fleet-wide versus only on the sick host; which hosts share the suspect
   oracle or claim; which had fell-through guards or divergent probe answers. Drives the
   two immediate calls — containment ("are 40 more boxes about to do this?") and diagnosis
@@ -88,7 +96,7 @@ Extinguish — the 03:40 set
   highest-signal debugging artifact this tool could emit). B at the homelab target-market
   scale; becomes A the moment host-count clears a handful.
 
-- `need-partial-apply-geometry` (grades: UX-want A): when the apply dies mid-book: exactly
+- `need-partial-apply-geometry` (grades: UX-want A, opaque-approve B): when the apply dies mid-book: exactly
   where; what completed before it; what proceed-and-flag flagged; and a classification of
   the resulting host state — converged / known-diverged / UNKNOWN. Recovery differs
   completely between "everything ran, one thing was wrong" and "died at line 41 of 210,
@@ -96,7 +104,7 @@ Extinguish — the 03:40 set
   re-running. A: "what happens when a step fails halfway" is a day-one README question
   for any orchestrator, and a mushy answer ends the evaluation.
 
-- `need-suspicion-ranked-claims` (grades: UX-want C): incident triage ordered by the
+- `need-suspicion-ranked-claims` (grades: UX-want C, opaque-approve B): incident triage ordered by the
   engine's own epistemology: every load-bearing human claim in the apply ranked by
   fragility (naked at-most claims above vouches above measurements), cross-ranked by load
   ("this one disturbs() arm licensed 60 elisions") and by recency-of-change. USER_STORY's
@@ -104,7 +112,7 @@ Extinguish — the 03:40 set
   chain"); this is the corpus-wide generalization as the incident landing page. C:
   transformative once experienced, but nobody knows to demand it in advance.
 
-- `need-emergency-distrust-levers` (grades: UX-want A): restore-service controls that
+- `need-emergency-distrust-levers` (grades: UX-want A, opaque-approve A): restore-service controls that
   require zero understanding of the analysis: a full-distrust reconcile (run everything,
   elide nothing); per-oracle quarantine ("plan as if foobar's oracle doesn't exist");
   per-claim revocation; and the off-ramp in one command (emit the original un-Dorc'd book
@@ -113,7 +121,7 @@ Extinguish — the 03:40 set
   single most-demanded item on this list. A: the escape hatch is what an experienced
   admin checks for FIRST in any tool that makes decisions on their behalf.
 
-- `need-raw-greppable-receipts` (grades: UX-want B): everything above also available as
+- `need-raw-greppable-receipts` (grades: UX-want B, opaque-approve C): everything above also available as
   dumb raw data — the receipt as plain text/JSONL, executed artifacts retained as actual
   `.sh` files on disk — not solely through curated `why` renders. When the tool is the
   suspect, its explanations are suspect too; raw ground truth is the trust floor, and 3AM
@@ -122,13 +130,13 @@ Extinguish — the 03:40 set
 Prevent — the morning-after set
 -------------------------------
 
-- `need-root-cause-leverage-point` (grades: UX-want B): attribution terminating at a
+- `need-root-cause-leverage-point` (grades: UX-want B, opaque-approve B): attribution terminating at a
   fixable file:line with a named owner, plus the repair-reach statement ("widening
   foobar.oracle.sh:31 heals every book downstream of it"). Prevention only sticks when
   the fix lands where the error CLASS lives — an oracle repair fixes the fleet; a
   defensive tweak in one book fixes one symptom and leaves the class armed.
 
-- `need-incident-becomes-regression` (grades: UX-want C): freeze last night's wrong
+- `need-incident-becomes-regression` (grades: UX-want C, opaque-approve C): freeze last night's wrong
   decision into a permanent deterministic test — replay the receipt through the engine
   and pin "under these facts, this line must run"; plus the engineer-side harness
   (DESIGN's containerized-TDD tooling cloud) so the fixed oracle carries the case
@@ -136,7 +144,7 @@ Prevent — the morning-after set
   this," and if that is not cheap it never happens. C from this seat; the harness half is
   engineer-seat material and may grade higher there.
 
-- `need-dependency-provenance-audit` (grades: UX-want A): the supply-chain view of
+- `need-dependency-provenance-audit` (grades: UX-want A, opaque-approve A): the supply-chain view of
   oracles: what the books depend on, at which claim tier (verdict-only / disturbs /
   kind-owner), published by whom, pinned how — and what changed between the last good run
   and the first bad one ("foobar's disturbs() gained the renew arm on Tuesday"). After
@@ -146,7 +154,7 @@ Prevent — the morning-after set
   standing policy, and looks for the pin story pre-adoption; the cross-run what-changed
   diff half grades B.
 
-- `need-granular-trust-repricing` (grades: UX-want B): post-burn controls finer than one
+- `need-granular-trust-repricing` (grades: UX-want B, opaque-approve B): post-burn controls finer than one
   global flag: scope `--risk-faultless-skips` per book / per oracle / per kind; standing
   distrust-lists ("guards, never elisions, for anything touching certs"); staleness
   limits ("refuse a plan older than N hours without re-probing"). The realistic
@@ -154,14 +162,14 @@ Prevent — the morning-after set
   drifted-day cost forever; granular repricing keeps the product's value while excluding
   exactly the burned party.
 
-- `need-standing-drift-watch` (grades: UX-want B): the scheduled plan-as-monitor taken
+- `need-standing-drift-watch` (grades: UX-want B, opaque-approve C): the scheduled plan-as-monitor taken
   seriously: the stable exit-code contract, probe cost-classes, timeouts, per-host
   opt-outs (the shape USER_STORY's cooperation section already sketches), plus alerting
   when a long-elided line re-enters a plan. The overnight apply should not be the first
   thing to discover drift; the same diverged fact is a ticket at 14:00 and a fire at
   02:00.
 
-- `need-near-miss-trend-surface` (grades: UX-want C): the shadows a fire casts before
+- `need-near-miss-trend-surface` (grades: UX-want C, opaque-approve D): the shadows a fire casts before
   burning: guard fall-through counts across runs (a guard that keeps falling through is a
   vouched fact that keeps being wrong); accumulating decline/UNK breadcrumbs (unmodeled
   shapes silently blind-running, night after night); unmodeled lines now at 90
@@ -169,7 +177,7 @@ Prevent — the morning-after set
   this-incident, earlier and cheaper. C: real value, but it collides hardest with
   statelessness (tension list below) and nobody demands it pre-adoption.
 
-- `need-consent-custody-trail` (grades: UX-want C): who approved which plan, when; the
+- `need-consent-custody-trail` (grades: UX-want C, opaque-approve C): who approved which plan, when; the
   plan-at-approval versus the plan-at-apply; which flags were typed by whom; whether a
   stale approval was re-validated. The second morning question after "what broke" is "who
   signed off," asked by someone wearing a compliance hat — and it is the admin's honest
