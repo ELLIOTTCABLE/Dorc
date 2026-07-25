@@ -96,6 +96,9 @@ $ dorc why web.sh:9
               what wrongly kept 9|systemctl out.
 
       fix:     certsync.oracle.sh:31 (widen the claim; every consumer heals)
+       OR
+      fix:     `dorc plan web.sh web1` (run without --risk-faultless-skips, to
+               distrust oracle-authored claims)
 
       verify:  `dorc plan --why web.sh web1` -- the fix path: re-measures under
                plan's standing consent, carries this question forward inline,
