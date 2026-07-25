@@ -1,0 +1,9 @@
+---
+code: lint-no-lintable-files
+when-fires: dorc lint was given nothing lintable. cli/main.rs lint_command. No params.
+why: 27R section 8b: zero files is OPERATIONAL, never clean - a vacuous pass is the CI failure mode the exit trichotomy exists to prevent.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[lint-no-lintable-files]: sm no lintable files given (operational, not
+   clean)

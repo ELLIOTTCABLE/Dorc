@@ -6,7 +6,7 @@
 //! that `plan`/`apply` emit with MORE inputs, emitted here with fewer (no world) — every pass whose
 //! inputs exist fires; passes needing probe facts simply never run (they are not stubbed or faked).
 
-use crate::finding::{Finding, NativeDiag, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, FrameChoice, NativeDiag, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The analysis-diagnostics source. Deterministic (`inv-determinism`): the pipeline is a pure
@@ -72,5 +72,6 @@ fn diag_to_finding(path: &str, src: &str, diag: &dorc_aid::Diag, source: &'stati
             diag: diag.clone(),
             source: src.to_owned(),
         }),
+        frame: FrameChoice::Framed,
     }
 }

@@ -1,0 +1,8 @@
+---
+code: dorc-sh-usage
+when-fires: dorc-sh was invoked with no script. cli/bin/dorc-sh.rs. No params.
+why: 288 rul-dorc-sh-not-carved-out: dorc-sh joins the registry like every other surface - slugs, canonical looms, auditable - with only its terse print framing as a surface selection.
+---
+-- replay --
+$ dorc-sh
+error[dorc-sh-usage]: sm usage: dorc-sh <script> [args…]

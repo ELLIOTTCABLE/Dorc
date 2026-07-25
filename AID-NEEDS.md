@@ -79,7 +79,12 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   *operands*, at the moment of collapse. A new safety-narrowing without its narrative mint
   (and, usually, its row here) is a defect. "Evidence" is deliberately reserved for
   possible future correctness-plane use (`288:rul-narrative-layer-naming`).
-  Mechanics: `27V` §1.
+  Mechanics: `27V` §1. AS-BUILT (2026-07-24): the MINT half is complete and gate-held
+  (a no-wildcard completeness census over `CollapseKind` plus per-class fault-injection
+  pins); the CONSUME half is not — only `VerdictDecline` with an `authored_reason` reaches
+  a user surface, so a missing narrative omits silently rather than advertising itself.
+  There is no `Unexplained` class. That gap is the named seam
+  `289:seam-narrative-render-unconsumed`, owned by the arrangement-home round.
 - **law-trust-tier-is-syntax** — the epistemic tier of every rendered link (strawman
   spellings: measured / vouched / ran / claimed / derived / consented) is a typed field
   rendered uniformly by arrangement code; prose never hand-writes epistemics, so a claim
@@ -152,6 +157,14 @@ Registry
 
 ### Authoring-time classes (`dorc lint`; ▶ push, hot-loop-safe, never probes)
 
+Lint's lane-local code namespace is RETIRED (`288` §5, landed): every dorc-MINTED lint finding is an
+ordinary registry `DiagCode` with a defining case, so floors, severity policy, dedup keying,
+`dorc why`-addressability, and the mint guarantee cover lint uniformly. FOREIGN relays
+(`shellcheck:SC2086`, and the tolerant adapter's `external-text` location marker) stay source-tagged
+relay strings forever — they are another tool's vocabulary, not ours. The human render's framed-vs-
+compact split is a named SELECTION POLICY (`289:rul-lint-render-split-is-policy`) with a
+`--terse`/`--verbose` dial, not a side effect of which findings happen to carry provenance.
+
 | aid | what the user learns | demand | moments | grade | mech | st |
 |---|---|---|---|---|---|---|
 | aid-lint-analysis-diagnostics | the no-world pipeline's diagnostics over given files | text+orcl | olo▶ blo▶ ci▶ | d | `27R` source-1 | B |
@@ -188,6 +201,23 @@ Unowned (rows above whose mechanism no round owns; watch, don't lose)
 - The prose-register schema (terse/deep/first-encounter) + a catalog home for the
   class-level remediation-hint prose — human/conductor design sitting (`27U` §7).
 
+
+### Invocation-time classes (the `dorc: {msg}` family + `dorc-sh`; ▶ push, pre-analysis)
+
+Every INVOCATION error is an ordinary registry code with a defining case (`288` §6, landed): the
+`dorc: ` / `dorc-sh: ` / `dorc: lint: ` prefixes and the usage synopsis are print-seat CHROME, not
+catalog prose, so 21 codes do not each carry a copy of the usage text. The cut follows
+`law-codes-vary-by-world-not-grammar`: a value-taking flag given no value is ONE code with a
+`{flag}` hole however many flags share the shape, while `humane_read_error`'s `io::ErrorKind`
+branches are THREE siblings (missing / unreadable / unclassed — three worlds, three repairs).
+Severity is uniformly Error with no floor; exit codes are unchanged and never read severity.
+
+Their cases are HONEST-triggered where the world IS the argv (`289:rul-worldless-route-honest-
+trigger`): `dorc-loom` runs the real parser over the case's own replay command through an INTERNAL
+`dorc-cli` lib target and refuses if the declared slug does not fire. The I/O-world members (the
+read-error triple, the shim-dir write, the lint operational trio, `dorc-sh`'s two file/exec
+failures) stay world-as-payload — an honest trigger there would need a real unreadable file, a full
+disk, or an absent `sh`.
 
 Surfaces (selection policies over the registry)
 -----------------------------------------------

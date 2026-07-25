@@ -1,0 +1,9 @@
+---
+code: cli-unknown-flag-did-you-mean
+when-fires: an unrecognized flag that IS within edit-distance 2 of a real one. cli/lib.rs parse_args_from. {flag} is the token, {suggestion} the nearest real flag.
+why: AID-NEEDS:law-codes-vary-by-world-not-grammar: the sibling of cli-unknown-flag, split by a WORLD-STATE (the flag table has a near neighbour) with its own remediation.
+---
+-- replay --
+$ dorc plan --wat --book=webhost.sh
+error[cli-unknown-flag-did-you-mean]: sm unknown flag `--wat` — did you mean
+   `--last`?

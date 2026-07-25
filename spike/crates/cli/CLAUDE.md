@@ -7,6 +7,17 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Law
 
+- **lib-target-is-a-loom-seam** (`289:rul-worldless-route-honest-trigger`) — `src/lib.rs` is the
+  INTERNAL invocation surface (usage text, `Args`/`LintArgs`/`Mode`, the parsers,
+  `humane_read_error`) and exists for exactly one reason: `dorc-loom` fires the REAL parser over a
+  defining case's own argv, so an invocation-error case is honest rather than decorative. It is
+  NEVER a public API — `publish = false`, and nothing outside `dorc-loom` and the two bins may
+  depend on it. Every I/O edge stays in `main.rs`; if something in the lib starts wanting a clock,
+  a file, or an env read, it is on the wrong side of the seam.
+- **invocation-errors-are-registry-codes** (`288` §6) — the parsers return typed `Diag`s, never
+  strings. The `dorc: ` / `dorc: lint: ` / `dorc-sh: ` prefixes and the usage synopsis are print-seat
+  CHROME the three report seats own, never catalog prose. Exit codes are unchanged and never read
+  severity. A new invocation error mints a code + a defining case like any other surface.
 - **io-at-edges-only** — keep I/O in `run()`/`main`; the pipeline
   (`parse → cfg → classify → compile_probe/build_plan`) stays a total
   `Carrier<T>` function of its inputs; never let a clock/RNG/env-read leak

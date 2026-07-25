@@ -19,11 +19,13 @@
 //! * `sm `-prefixed prior-builder prose migrated VERBATIM from the base tip (`380f2fa`) — the
 //!   `sm ` marker means "builder prose awaiting human rewrite" (`27V:rul-error-authorship-tier`,
 //!   sharpened by `amendment-prose-boundary`);
-//! * the exact placeholder `[unwritten: <slug>]` for any user-facing string that did NOT exist at
-//!   the base tip (a new or split code) — builders author ZERO new user-facing prose; or
-//! * conductor/human-authored prose, unprefixed, whose slug is listed in the gate test's
-//!   `CONDUCTOR_AUTHORED` roster (adding prose without the roster entry fails the gate; a builder
-//!   may never extend the roster).
+//! * `None`, rendering the exact placeholder `[unwritten: <slug>]`, for any user-facing string that
+//!   did NOT exist at the base tip (a new or split code) — builders author ZERO new user-facing
+//!   prose; or
+//! * conductor/human-authored prose, unprefixed, for a CASE-OWNED code (a defining case exists in
+//!   the dorc-loom corpus, so the render-level fixpoint protects it). The `CONDUCTOR_AUTHORED`
+//!   roster that used to police this is retired; `message_registers_are_sm_or_unwritten` keys to
+//!   `is_case_owned` instead.
 //!
 //! The metadata fields (`when_fires` / `why` / `params` / `example`) are conductor/machine-facing,
 //! authored by the builder, and carry NO prefix.

@@ -14,9 +14,12 @@ use std::fs;
 use dorc_aid::Severity;
 use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_aid::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
-    HostEvidenceRefusalKind, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
+    CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
+    Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
+    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
+    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
+    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
     SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
     render_staged_cli_parts,
 };
@@ -297,6 +300,11 @@ impl DorcConsumer {
             );
             return Some(ReplayResult::editable(to_editable_render(result.human())));
         }
+        if let Some(diag) = fire_invocation_error(case, &tokens) {
+            let interner = Interner::default();
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         let plan = parse_direct_plan(&tokens)?;
         let source = materialized_source(case, context, plan.book)?;
         if let Some(input) = plan.input {
@@ -372,6 +380,17 @@ impl DorcConsumer {
         {
             return Ok(world);
         }
+        // Tried BEFORE the payload floor, so a code that can fire for real never settles for a
+        // constructed stand-in (`289:rul-worldless-route-honest-trigger`).
+        if let Some(diag) = case
+            .replay()
+            .blocks()
+            .first()
+            .and_then(|block| exact_words(block.command()))
+            .and_then(|tokens| fire_invocation_error(case, &tokens))
+        {
+            return Ok((diag, String::new(), String::new()));
+        }
         let diag = canonical_payload(slug)
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
         Ok((diag, String::new(), String::new()))
@@ -441,6 +460,35 @@ fn parse_direct_why<'a>(words: &[&'a str]) -> Option<&'a str> {
     };
     let path = whylog.strip_prefix("--whylog=")?;
     case_relative_path(path).then_some(path)
+}
+
+/// The HONEST-TRIGGER invocation route (`289:rul-worldless-route-honest-trigger`; `291` §5a W2).
+///
+/// Runs the REAL argument parser over the case's own replay argv and returns the diagnostic it
+/// actually produced — but only when that diagnostic's slug equals the case's declared `code`. The
+/// refusal on mismatch is the whole value (`291:rule-worldless-route-refuses-on-mismatch`): without
+/// it, a case's command would be decorative and could drift from its code forever, on the surface
+/// humans review errors through. `$ dorc strip` IS the world for this family — no fixture needed.
+///
+/// `None` for anything that parses successfully or whose slug disagrees, so the caller falls
+/// through to the plan/payload routes exactly as before.
+fn fire_invocation_error(case: &Case, tokens: &[&str]) -> Option<Diag> {
+    let slug = case.frontmatter().scalar("code")?;
+    let argv: Vec<String> = match tokens.split_first()? {
+        (&"dorc", rest) => rest.iter().map(|word| (*word).to_owned()).collect(),
+        (&"dorc-sh", rest) => return fire_dorc_sh_error(slug, rest),
+        _ => return None,
+    };
+    let diag = dorc_cli::parse_args_from(argv).err()?;
+    (diag.code.slug() == slug).then_some(diag)
+}
+
+/// `dorc-sh`'s three errors have no parser to run — the bin decides them inline from its argv and
+/// the filesystem. Only the ARGV-decidable one is honest here; the two I/O failures would need a
+/// real unreadable file and a real missing shell, so their cases stay world-as-payload.
+fn fire_dorc_sh_error(slug: &str, rest: &[&str]) -> Option<Diag> {
+    (slug == "dorc-sh-usage" && rest.is_empty())
+        .then(|| Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage)))
 }
 
 fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<&'a str> {
@@ -685,6 +733,11 @@ impl DorcConsumer {
             .human()
             .text());
         }
+        if let Some(diag) = fire_invocation_error(case, &words) {
+            let interner = Interner::default();
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
+        }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
         let interner = Interner::default();
@@ -815,6 +868,10 @@ fn render_diag_jsonl(diag: &Diag) -> String {
 /// phase-5 backport (`283` §5.9) renders every non-pipeline covered code SPANLESS: a code may carry a
 /// span in production, but its defining case pins the frame-less title+body prose registers (the
 /// authoring surface), not the caret frame — that is the marker pilot's world-as-pipeline job.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one arm PER CODE, like the catalog registry it mirrors — merging arms would hide which codes have a constructed stand-in"
+)]
 fn canonical_payload(slug: &str) -> Option<Diag> {
     let code = match slug {
         // phase-5 backport: the covered give-up / records / mark-grammar codes.
@@ -874,6 +931,61 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         }
         "dangling-reference" => DiagCode::DanglingReference(DanglingReference {
             coord: "sm.dorc.Package:nginx".to_owned(),
+        }),
+        // The external-linter trio: world-as-payload by necessity — replay never runs a foreign
+        // tool (`tools_enabled: false`).
+        "lint-tool-absent" => DiagCode::LintToolAbsent(LintToolAbsent {
+            tool: "shellcheck".to_owned(),
+        }),
+        "lint-tool-output-unparsable" => {
+            DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable {
+                tool: "checkbashisms".to_owned(),
+                output: "possible bashism in - line 4 (should be '.'):".to_owned(),
+            })
+        }
+        "lint-tool-failed-without-findings" => {
+            DiagCode::LintToolFailedWithoutFindings(LintToolFailedWithoutFindings {
+                tool: "shellcheck".to_owned(),
+                rc: 2,
+            })
+        }
+        // The invocation errors whose world is an I/O FAILURE, not an argv — an honest trigger
+        // would need a real unreadable file, a full disk, or an absent `sh`.
+        "cli-file-not-found" => DiagCode::CliFileNotFound(CliFileNotFound {
+            kind: "book".to_owned(),
+            path: "webhost.sh".to_owned(),
+        }),
+        "cli-file-permission-denied" => {
+            DiagCode::CliFilePermissionDenied(CliFilePermissionDenied {
+                kind: "oracle".to_owned(),
+                path: "/etc/dorc/nginx.oracle.sh".to_owned(),
+            })
+        }
+        "cli-file-unreadable" => DiagCode::CliFileUnreadable(CliFileUnreadable {
+            kind: "results".to_owned(),
+            path: "probe-results.txt".to_owned(),
+            detail: "Is a directory (os error 21)".to_owned(),
+        }),
+        "cli-shim-dir-unwritable" => DiagCode::CliShimDirUnwritable(CliShimDirUnwritable {
+            path: "/run/dorc/shims".to_owned(),
+            detail: "Read-only file system (os error 30)".to_owned(),
+        }),
+        "lint-no-lintable-files" => DiagCode::LintNoLintableFiles(LintNoLintableFiles),
+        "lint-file-count-drift" => DiagCode::LintFileCountDrift(LintFileCountDrift {
+            expected: 12,
+            found: 9,
+        }),
+        "lint-required-tools-missing" => {
+            DiagCode::LintRequiredToolsMissing(LintRequiredToolsMissing {
+                tools: "checkbashisms, shellcheck".to_owned(),
+            })
+        }
+        "dorc-sh-script-unreadable" => DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable {
+            path: "webhost.sh".to_owned(),
+            detail: "No such file or directory (os error 2)".to_owned(),
+        }),
+        "dorc-sh-exec-failed" => DiagCode::DorcShExecFailed(DorcShExecFailed {
+            detail: "No such file or directory (os error 2)".to_owned(),
         }),
         _ => return None,
     };

@@ -234,6 +234,70 @@ pub enum DiagCode {
     /// Sibling `*.oracle.sh` files sit on disk beside the loaded set but were not loaded — a
     /// suggest-never-auto-load hint (`24H` ack-6). Advisory; the run is unchanged.
     AidUnloadedSiblingOracle(AidUnloadedSiblingOracle),
+
+    // ── dorc-lint's own findings (`288` §5) — the lane-local namespace retired ────────────────
+    /// The book carries unmodeled ⊤-walls; downstream sites lose full elision until each wall's
+    /// tool has an oracle.
+    UnmodeledWallInventory(UnmodeledWallInventory),
+    /// A verdict body answers with a PIPELINE's tail status, so the rc may not be the described
+    /// tool's (`rul-rc-partition`).
+    VerdictTerminalPipeline(VerdictTerminalPipeline),
+    /// A verdict arm authors a deliberate decline whose class was read statically; the site runs
+    /// and the class routes the nags.
+    AuthoredDeclineClass(AuthoredDeclineClass),
+    /// A verdict arm authors a deliberate decline whose class is NOT statically readable — a
+    /// different world-state, resolved only at runtime.
+    AuthoredDeclineClassUnreadable(AuthoredDeclineClassUnreadable),
+    /// A configured external linter is not on PATH, so its checks did not run.
+    LintToolAbsent(LintToolAbsent),
+    /// An external linter produced output the adapters could not parse at any tier.
+    LintToolOutputUnparsable(LintToolOutputUnparsable),
+    /// An external linter exited nonzero but produced no parseable findings.
+    LintToolFailedWithoutFindings(LintToolFailedWithoutFindings),
+
+    // ── invocation errors (`288` §6) — the `dorc: {msg}` family, now registry codes ───────────
+    /// `dorc strip` was given no path.
+    CliStripNeedsPath(CliStripNeedsPath),
+    /// `dorc strip`'s sole positional was a flag, not a path.
+    CliStripGotAFlag(CliStripGotAFlag),
+    /// The leading mode token is not a mode, but is a near-miss for one.
+    CliUnknownMode(CliUnknownMode),
+    /// A flag that takes a value was given without one.
+    CliFlagNeedsValue(CliFlagNeedsValue),
+    /// An unrecognized flag, with no near-miss to suggest.
+    CliUnknownFlag(CliUnknownFlag),
+    /// An unrecognized flag that is a near-miss for a real one.
+    CliUnknownFlagDidYouMean(CliUnknownFlagDidYouMean),
+    /// A flag's value is outside its closed vocabulary.
+    CliFlagValueNotRecognized(CliFlagValueNotRecognized),
+    /// A flag wanting a number was given something else.
+    CliFlagValueNotANumber(CliFlagValueNotANumber),
+    /// No book was given, by positional or by flag.
+    CliNoBookGiven(CliNoBookGiven),
+    /// Two flags that cannot both be given were.
+    CliFlagsMutuallyExclusive(CliFlagsMutuallyExclusive),
+    /// A flag valid only under one mode was given under another.
+    CliFlagRequiresMode(CliFlagRequiresMode),
+    /// An input file does not exist.
+    CliFileNotFound(CliFileNotFound),
+    /// An input file exists but is not readable by this process.
+    CliFilePermissionDenied(CliFilePermissionDenied),
+    /// An input file failed to read for some other OS reason.
+    CliFileUnreadable(CliFileUnreadable),
+    /// `dorc lint` was given nothing lintable.
+    LintNoLintableFiles(LintNoLintableFiles),
+    /// The lintable-file count disagrees with `--expect-files`.
+    LintFileCountDrift(LintFileCountDrift),
+    /// `--require-tools` was given and a configured tool is absent.
+    LintRequiredToolsMissing(LintRequiredToolsMissing),
+    /// `dorc-sh` was invoked with no script.
+    DorcShUsage(DorcShUsage),
+    /// `dorc-sh` could not read its script.
+    DorcShScriptUnreadable(DorcShScriptUnreadable),
+    /// `dorc-sh` could not exec the stock shell.
+    DorcShExecFailed(DorcShExecFailed),
+    /// The per-run PATH shim directory could not be created or written.
+    CliShimDirUnwritable(CliShimDirUnwritable),
 }
 
 impl DiagCode {
@@ -241,7 +305,7 @@ impl DiagCode {
     /// WIRE-FORMAT COMMITMENT — flagged). Stable across variant reordering (unlike a numeric
     /// discriminant), greppable, and the key the OOB lane's `code=` field carries
     /// (`226` finding-6, TS's code-stable discipline). These slugs match the legacy
-    /// [`crate::DiagCode`] strings the migrated sites used, so existing `expected-diagnostics`
+    /// `Diagnostic` strings the migrated sites used, so existing `expected-diagnostics`
     /// fixtures and the coverage bridge keep matching.
     #[must_use]
     pub fn slug(&self) -> &'static str {
@@ -304,6 +368,34 @@ impl DiagCode {
             DiagCode::WhylogAbsent(_) => "whylog-absent",
             DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
             DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
+            DiagCode::UnmodeledWallInventory(_) => "unmodeled-wall-inventory",
+            DiagCode::VerdictTerminalPipeline(_) => "verdict-terminal-pipeline",
+            DiagCode::AuthoredDeclineClass(_) => "authored-decline-class",
+            DiagCode::AuthoredDeclineClassUnreadable(_) => "authored-decline-class-unreadable",
+            DiagCode::LintToolAbsent(_) => "lint-tool-absent",
+            DiagCode::LintToolOutputUnparsable(_) => "lint-tool-output-unparsable",
+            DiagCode::LintToolFailedWithoutFindings(_) => "lint-tool-failed-without-findings",
+            DiagCode::CliStripNeedsPath(_) => "cli-strip-needs-path",
+            DiagCode::CliStripGotAFlag(_) => "cli-strip-got-a-flag",
+            DiagCode::CliUnknownMode(_) => "cli-unknown-mode",
+            DiagCode::CliFlagNeedsValue(_) => "cli-flag-needs-value",
+            DiagCode::CliUnknownFlag(_) => "cli-unknown-flag",
+            DiagCode::CliUnknownFlagDidYouMean(_) => "cli-unknown-flag-did-you-mean",
+            DiagCode::CliFlagValueNotRecognized(_) => "cli-flag-value-not-recognized",
+            DiagCode::CliFlagValueNotANumber(_) => "cli-flag-value-not-a-number",
+            DiagCode::CliNoBookGiven(_) => "cli-no-book-given",
+            DiagCode::CliFlagsMutuallyExclusive(_) => "cli-flags-mutually-exclusive",
+            DiagCode::CliFlagRequiresMode(_) => "cli-flag-requires-mode",
+            DiagCode::CliFileNotFound(_) => "cli-file-not-found",
+            DiagCode::CliFilePermissionDenied(_) => "cli-file-permission-denied",
+            DiagCode::CliFileUnreadable(_) => "cli-file-unreadable",
+            DiagCode::LintNoLintableFiles(_) => "lint-no-lintable-files",
+            DiagCode::LintFileCountDrift(_) => "lint-file-count-drift",
+            DiagCode::LintRequiredToolsMissing(_) => "lint-required-tools-missing",
+            DiagCode::DorcShUsage(_) => "dorc-sh-usage",
+            DiagCode::DorcShScriptUnreadable(_) => "dorc-sh-script-unreadable",
+            DiagCode::DorcShExecFailed(_) => "dorc-sh-exec-failed",
+            DiagCode::CliShimDirUnwritable(_) => "cli-shim-dir-unwritable",
         }
     }
 }
@@ -889,6 +981,246 @@ pub struct WhylogCorrupt {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AidUnloadedSiblingOracle {
     /// The full hint text (the unloaded sibling list; display only, `inv-referent-agnostic`).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::UnmodeledWallInventory`] (`288` §5): the whole-book wall census the
+/// `unmodeled-inventory` lint source takes. Counts, never identities — `inv-referent-agnostic`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnmodeledWallInventory {
+    /// How many unmodeled ⊤-walls the book carries (`{wall_count}`).
+    pub wall_count: usize,
+    /// The count-agreeing noun for `wall_count` (`{wall_word}`) — pluralization is an engine-owned
+    /// canonical formatter, never something the prose register hand-writes.
+    pub wall_word: &'static str,
+    /// How many leaf sites sit downstream of the FIRST wall (`{downstream}`).
+    pub downstream: usize,
+}
+
+/// Payload of [`DiagCode::VerdictTerminalPipeline`] (`288` §5): a verdict body whose last
+/// status-bearing statement is a pipeline. Carries no operands — the span says which body.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerdictTerminalPipeline;
+
+/// Payload of [`DiagCode::AuthoredDeclineClass`] (`288` §5): one per-arm decline inventory entry
+/// whose `<verb> <class>` header WAS statically readable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthoredDeclineClass {
+    /// The statically-read class token (`{class}`).
+    pub class: String,
+}
+
+/// Payload of [`DiagCode::AuthoredDeclineClassUnreadable`] (`288` §5): the SIBLING world-state —
+/// a dynamic format or an unrecognized class token (`27W:rul-report-noise-tolerant`) leaves the
+/// class unread until runtime. A sibling code, not a `{class}`-hole variant, because the two
+/// differ in world-state and remediation, never in grammar
+/// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthoredDeclineClassUnreadable;
+
+/// Payload of [`DiagCode::LintToolAbsent`] (`288` §5): a configured external linter missing from
+/// PATH. `dir-absent-is-info` — advisory unless `--require-tools` raises it operationally.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintToolAbsent {
+    /// The tool's name (`{tool}`).
+    pub tool: String,
+}
+
+/// Payload of [`DiagCode::LintToolOutputUnparsable`] (`288` §5): PASSTHROUGH `{output}` — the
+/// tolerant adapters fell through every tier, so the tool's own bytes ride the payload.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintToolOutputUnparsable {
+    /// The tool's name (`{tool}`).
+    pub tool: String,
+    /// The tool's output, flattened to one truncated line (`{output}`; display only).
+    pub output: String,
+}
+
+/// Payload of [`DiagCode::LintToolFailedWithoutFindings`] (`288` §5): the exit-trichotomy's third
+/// arm — nonzero rc, nothing parseable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintToolFailedWithoutFindings {
+    /// The tool's name (`{tool}`).
+    pub tool: String,
+    /// The tool's exit status (`{rc}`).
+    pub rc: i32,
+}
+
+// ===========================================================================
+// Invocation errors (`288` §6): the `dorc: {msg}` family + `dorc-sh`. All SPANLESS (an argv has no
+// span) and never `Structural` (an invocation error is always the user's to fix). The cut follows
+// `AID-NEEDS:law-codes-vary-by-world-not-grammar` — grammar-fit takes a hole, world-state takes a
+// sibling. The usage synopsis is print-seat chrome, not a register (`291` §5d).
+// ===========================================================================
+
+/// Payload of [`DiagCode::CliStripNeedsPath`]: `dorc strip` with no positional.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliStripNeedsPath;
+
+/// Payload of [`DiagCode::CliStripGotAFlag`]: the sibling world-state — a positional WAS given and
+/// it is a flag, so the user meant something the surface does not offer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliStripGotAFlag {
+    /// The flag found where the path belongs (`{got}`).
+    pub got: String,
+}
+
+/// Payload of [`DiagCode::CliUnknownMode`]: a leading token that is a near-miss for a mode.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliUnknownMode {
+    /// The token given (`{mode}`).
+    pub mode: String,
+    /// The nearest real mode (`{suggestion}`).
+    pub suggestion: String,
+}
+
+/// Payload of [`DiagCode::CliFlagNeedsValue`]: ONE code for every value-taking flag — the flags
+/// differ, the failure does not (grammar-fit ⇒ a `{flag}` hole, never a sibling per flag).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFlagNeedsValue {
+    /// The flag given without its value (`{flag}`).
+    pub flag: String,
+    /// What that flag wants, in the author's own words (`{wants}`) — "a path", "a directory", …
+    pub wants: &'static str,
+}
+
+/// Payload of [`DiagCode::CliUnknownFlag`]: an unrecognized flag with no near neighbour.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliUnknownFlag {
+    /// The unrecognized flag (`{flag}`).
+    pub flag: String,
+}
+
+/// Payload of [`DiagCode::CliUnknownFlagDidYouMean`]: the SIBLING world-state — the flag table has
+/// a near neighbour, so the remediation is "you meant this one", not "read the usage".
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliUnknownFlagDidYouMean {
+    /// The unrecognized flag (`{flag}`).
+    pub flag: String,
+    /// The nearest real flag (`{suggestion}`).
+    pub suggestion: String,
+}
+
+/// Payload of [`DiagCode::CliFlagValueNotRecognized`]: a value outside a flag's closed vocabulary.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFlagValueNotRecognized {
+    /// The flag (`{flag}`).
+    pub flag: String,
+    /// The value given (`{got}`).
+    pub got: String,
+    /// The accepted vocabulary, `|`-joined (`{expected}`).
+    pub expected: &'static str,
+}
+
+/// Payload of [`DiagCode::CliFlagValueNotANumber`]: a numeric flag given a non-number.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFlagValueNotANumber {
+    /// The flag (`{flag}`).
+    pub flag: String,
+    /// The value given (`{got}`).
+    pub got: String,
+}
+
+/// Payload of [`DiagCode::CliNoBookGiven`]: an analysis invocation with nothing to analyze.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliNoBookGiven;
+
+/// Payload of [`DiagCode::CliFlagsMutuallyExclusive`]: two flags that cannot both hold.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFlagsMutuallyExclusive {
+    /// The first flag (`{first}`).
+    pub first: &'static str,
+    /// The second flag (`{second}`).
+    pub second: &'static str,
+}
+
+/// Payload of [`DiagCode::CliFlagRequiresMode`]: a flag scoped to one mode, given under another.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFlagRequiresMode {
+    /// The flag (`{flag}`).
+    pub flag: &'static str,
+    /// The invocation the flag belongs to (`{mode}`).
+    pub mode: &'static str,
+}
+
+/// Payload of [`DiagCode::CliFileNotFound`]: the `NotFound` arm of the read-error trichotomy.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFileNotFound {
+    /// What we were reading, in the caller's words (`{kind}`) — "source", "book", …
+    pub kind: String,
+    /// The path as the user gave it (`{path}`).
+    pub path: String,
+}
+
+/// Payload of [`DiagCode::CliFilePermissionDenied`]: the `PermissionDenied` arm.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFilePermissionDenied {
+    /// What we were reading (`{kind}`).
+    pub kind: String,
+    /// The path (`{path}`).
+    pub path: String,
+}
+
+/// Payload of [`DiagCode::CliFileUnreadable`]: the RESIDUAL arm — PASSTHROUGH `{detail}` carries
+/// the platform's own words, because there is nothing better to say about an unclassed OS error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliFileUnreadable {
+    /// What we were reading (`{kind}`).
+    pub kind: String,
+    /// The path (`{path}`).
+    pub path: String,
+    /// The OS error string (`{detail}`).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::LintNoLintableFiles`]: zero lintable files is OPERATIONAL, never clean.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintNoLintableFiles;
+
+/// Payload of [`DiagCode::LintFileCountDrift`]: the `--expect-files` CI assertion failed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintFileCountDrift {
+    /// What `--expect-files` declared (`{expected}`).
+    pub expected: usize,
+    /// What the invocation actually found (`{found}`).
+    pub found: usize,
+}
+
+/// Payload of [`DiagCode::LintRequiredToolsMissing`]: `--require-tools` with an absent tool.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintRequiredToolsMissing {
+    /// The absent tools, comma-joined (`{tools}`).
+    pub tools: String,
+}
+
+/// Payload of [`DiagCode::DorcShUsage`]: `dorc-sh` with no script.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DorcShUsage;
+
+/// Payload of [`DiagCode::DorcShScriptUnreadable`]: `dorc-sh` could not read its script.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DorcShScriptUnreadable {
+    /// The script path (`{path}`).
+    pub path: String,
+    /// The OS error string (`{detail}`).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::DorcShExecFailed`]: the exec of stock sh itself failed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DorcShExecFailed {
+    /// The OS error string (`{detail}`).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CliShimDirUnwritable`]: the `--shim-dir` materialization edge failed.
+/// NOT in `291` §5a's mapped inventory — the one-error-type-through-`run` extraction surfaced it
+/// as the last raw string on the surface, and `one-catalog-no-legacy` leaves it nowhere to hide.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliShimDirUnwritable {
+    /// The path we could not create or write (`{path}`).
+    pub path: String,
+    /// The OS error string (`{detail}`).
     pub detail: String,
 }
 
@@ -1491,6 +1823,72 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
+        // dorc-lint's own findings (`288` §5). Severities are the ones the lane-local codes
+        // carried, now sourced from HERE (`crib-4`) instead of a construction site.
+        DiagCode::UnmodeledWallInventory(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        DiagCode::VerdictTerminalPipeline(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        DiagCode::AuthoredDeclineClass(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        DiagCode::AuthoredDeclineClassUnreadable(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        // The external-tool trio: absent/unparsable/failed are the ADMIN's environment to fix,
+        // never a Dorc-modeling limitation, so none of them is `Structural`.
+        DiagCode::LintToolAbsent(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
+        DiagCode::LintToolOutputUnparsable(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
+        DiagCode::LintToolFailedWithoutFindings(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
+        // Uniformly Error + no floor + DeclareIdentity. The EXIT codes are unchanged — severity is
+        // registry data and never decides one (`291` §5a step 3).
+        DiagCode::CliStripNeedsPath(_)
+        | DiagCode::CliStripGotAFlag(_)
+        | DiagCode::CliUnknownMode(_)
+        | DiagCode::CliFlagNeedsValue(_)
+        | DiagCode::CliUnknownFlag(_)
+        | DiagCode::CliUnknownFlagDidYouMean(_)
+        | DiagCode::CliFlagValueNotRecognized(_)
+        | DiagCode::CliFlagValueNotANumber(_)
+        | DiagCode::CliNoBookGiven(_)
+        | DiagCode::CliFlagsMutuallyExclusive(_)
+        | DiagCode::CliFlagRequiresMode(_)
+        | DiagCode::CliFileNotFound(_)
+        | DiagCode::CliFilePermissionDenied(_)
+        | DiagCode::CliFileUnreadable(_)
+        | DiagCode::LintNoLintableFiles(_)
+        | DiagCode::LintFileCountDrift(_)
+        | DiagCode::LintRequiredToolsMissing(_)
+        | DiagCode::DorcShUsage(_)
+        | DiagCode::DorcShScriptUnreadable(_)
+        | DiagCode::DorcShExecFailed(_)
+        | DiagCode::CliShimDirUnwritable(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
     }
 }
 
@@ -1638,6 +2036,12 @@ impl Diag {
 /// `[]`. The `interner` is threaded for forward-compat (no payload resolves an interned handle at
 /// HEAD — the excerpt handles were retired into `detail` strings). Pure; `inv-no-throw`.
 #[must_use]
+#[expect(
+    clippy::match_same_arms,
+    clippy::too_many_lines,
+    reason = "one arm PER CODE, like `registry` — merging the param-less arms by `|` would hide \
+              which codes declare no holes, and the per-code shape is what makes the fn long"
+)]
 pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'static str, String)> {
     match code {
         DiagCode::CmdsubOperandTop(p) => vec![
@@ -1671,6 +2075,76 @@ pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'sta
         DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
         DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
         DiagCode::AidUnloadedSiblingOracle(p) => vec![("detail", p.detail.clone())],
+        DiagCode::UnmodeledWallInventory(p) => vec![
+            ("wall_count", p.wall_count.to_string()),
+            ("wall_word", p.wall_word.to_owned()),
+            ("downstream", p.downstream.to_string()),
+        ],
+        DiagCode::VerdictTerminalPipeline(_) => vec![],
+        DiagCode::AuthoredDeclineClass(p) => vec![("class", p.class.clone())],
+        DiagCode::AuthoredDeclineClassUnreadable(_) => vec![],
+        DiagCode::LintToolAbsent(p) => vec![("tool", p.tool.clone())],
+        DiagCode::LintToolOutputUnparsable(p) => {
+            vec![("tool", p.tool.clone()), ("output", p.output.clone())]
+        }
+        DiagCode::CliStripNeedsPath(_)
+        | DiagCode::CliNoBookGiven(_)
+        | DiagCode::LintNoLintableFiles(_)
+        | DiagCode::DorcShUsage(_) => vec![],
+        DiagCode::CliStripGotAFlag(p) => vec![("got", p.got.clone())],
+        DiagCode::CliUnknownMode(p) => vec![
+            ("mode", p.mode.clone()),
+            ("suggestion", p.suggestion.clone()),
+        ],
+        DiagCode::CliFlagNeedsValue(p) => {
+            vec![("flag", p.flag.clone()), ("wants", p.wants.to_owned())]
+        }
+        DiagCode::CliUnknownFlag(p) => vec![("flag", p.flag.clone())],
+        DiagCode::CliUnknownFlagDidYouMean(p) => vec![
+            ("flag", p.flag.clone()),
+            ("suggestion", p.suggestion.clone()),
+        ],
+        DiagCode::CliFlagValueNotRecognized(p) => vec![
+            ("flag", p.flag.clone()),
+            ("got", p.got.clone()),
+            ("expected", p.expected.to_owned()),
+        ],
+        DiagCode::CliFlagValueNotANumber(p) => {
+            vec![("flag", p.flag.clone()), ("got", p.got.clone())]
+        }
+        DiagCode::CliFlagsMutuallyExclusive(p) => vec![
+            ("first", p.first.to_owned()),
+            ("second", p.second.to_owned()),
+        ],
+        DiagCode::CliFlagRequiresMode(p) => {
+            vec![("flag", p.flag.to_owned()), ("mode", p.mode.to_owned())]
+        }
+        DiagCode::CliFileNotFound(p) => {
+            vec![("kind", p.kind.clone()), ("path", p.path.clone())]
+        }
+        DiagCode::CliFilePermissionDenied(p) => {
+            vec![("kind", p.kind.clone()), ("path", p.path.clone())]
+        }
+        DiagCode::CliFileUnreadable(p) => vec![
+            ("kind", p.kind.clone()),
+            ("path", p.path.clone()),
+            ("detail", p.detail.clone()),
+        ],
+        DiagCode::LintFileCountDrift(p) => vec![
+            ("expected", p.expected.to_string()),
+            ("found", p.found.to_string()),
+        ],
+        DiagCode::LintRequiredToolsMissing(p) => vec![("tools", p.tools.clone())],
+        DiagCode::DorcShScriptUnreadable(p) => {
+            vec![("path", p.path.clone()), ("detail", p.detail.clone())]
+        }
+        DiagCode::DorcShExecFailed(p) => vec![("detail", p.detail.clone())],
+        DiagCode::CliShimDirUnwritable(p) => {
+            vec![("path", p.path.clone()), ("detail", p.detail.clone())]
+        }
+        DiagCode::LintToolFailedWithoutFindings(p) => {
+            vec![("tool", p.tool.clone()), ("rc", p.rc.to_string())]
+        }
         DiagCode::MarkerVersionUnrecognized(p) => vec![("found", p.found.clone())],
         DiagCode::MungeNameInvalid(p) => vec![
             ("source", p.source.clone()),

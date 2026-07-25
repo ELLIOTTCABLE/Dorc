@@ -57,18 +57,34 @@ fn load_corpus() -> Vec<CaseFile> {
     cases
 }
 
-/// The exact direct-plan corpus specimen re-renders from the current catalog.
+/// The exact direct-plan corpus specimens re-render from the current catalog.
 /// Other committed commands now require the configured generic executor and are
 /// intentionally outside this in-process renderer's authority.
 #[test]
 fn direct_plan_render_fixpoint() {
+    const DIRECT_PLAN_CASES: [&str; 4] = [
+        "cmdsub-operand-top.loom",
+        // The external-linter relays are world-as-payload for the same reason the original
+        // specimen is: replay never enters their world.
+        "lint-tool-absent.loom",
+        "lint-tool-output-unparsable.loom",
+        "lint-tool-failed-without-findings.loom",
+    ];
     let consumer = DorcConsumer::new();
     let corpus: Vec<_> = load_corpus()
         .into_iter()
-        .filter(|case| case.path() == Path::new("cmdsub-operand-top.loom"))
+        .filter(|case| {
+            DIRECT_PLAN_CASES
+                .iter()
+                .any(|name| case.path() == Path::new(name))
+        })
         .collect();
-    assert_eq!(corpus.len(), 1, "the direct-plan specimen is committed");
-    fixpoint_check(&consumer, &corpus).expect("direct-plan case reproduces from the catalog");
+    assert_eq!(
+        corpus.len(),
+        DIRECT_PLAN_CASES.len(),
+        "every direct-plan specimen is committed"
+    );
+    fixpoint_check(&consumer, &corpus).expect("direct-plan cases reproduce from the catalog");
 }
 
 /// Every committed case is txtar/hygiene-clean and surfaces its own `code` slug in each replay block
@@ -88,7 +104,7 @@ fn corpus_cases_are_hygienic() {
 /// frontmatter slug alone cannot manufacture an output or editable provenance.
 #[test]
 fn lint_cases_replay_the_complete_production_report() {
-    const LINT_CASES: [&str; 8] = [
+    const LINT_CASES: [&str; 12] = [
         "missing-dialect-marker.loom",
         "marker-version-unrecognized.loom",
         "mark-unknown-verb.loom",
@@ -97,6 +113,11 @@ fn lint_cases_replay_the_complete_production_report() {
         "mark-hashcolon-malformed.loom",
         "munge-name-invalid.loom",
         "tolerates-unknown-dimension.loom",
+        // dorc-lint's own findings, now registry codes (`288` §5) — honest-trigger for free.
+        "unmodeled-wall-inventory.loom",
+        "verdict-terminal-pipeline.loom",
+        "authored-decline-class.loom",
+        "authored-decline-class-unreadable.loom",
     ];
     for filename in LINT_CASES {
         let text = std::fs::read_to_string(corpus_dir().join(filename))

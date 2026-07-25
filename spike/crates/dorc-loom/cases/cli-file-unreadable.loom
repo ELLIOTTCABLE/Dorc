@@ -1,0 +1,9 @@
+---
+code: cli-file-unreadable
+when-fires: an input file failed to read for a reason outside the two named arms. cli/lib.rs humane_read_error, residual arm. {kind}, {path}, and PASSTHROUGH {detail}.
+why: the residual arm passes the platforms own words through, because there is nothing more useful to say about an unclassed OS error than to quote it - and inventing a category would mis-attribute.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[cli-file-unreadable]: sm cannot read results `probe-results.txt`: Is a
+   directory (os error 21)

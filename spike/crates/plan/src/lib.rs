@@ -1161,7 +1161,7 @@ fn resolve_vouch_operands(
 #[must_use]
 #[expect(
     clippy::too_many_lines,
-    reason = "the ONE composition every driver shares (vouch lift + decline-evidence mint); \
+    reason = "the ONE composition every driver shares (vouch lift + decline-narrative mint); \
               splitting it would scatter the single vouch-authoring path"
 )]
 pub fn build_vouches(
@@ -1177,7 +1177,7 @@ pub fn build_vouches(
     };
 
     let mut diags = Vec::new();
-    // C5 (`27V` Lane A): decision-inert VerdictDecline evidence beside the no-vouch-⇒-run collapse.
+    // C5 (`27V` Lane A): the decision-inert VerdictDecline narrative beside the no-vouch-⇒-run collapse.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
     let verdict_sets: Vec<VerdictSet> = oracle_srcs
         .iter()
@@ -1445,7 +1445,7 @@ pub struct SurvivalReport {
     /// (the cross-author demote). The why-lens surfaces "site N: poisoned via `<kind>.reaches()`".
     /// Empty when no reach expansion poisoned an elision.
     reach_poisonings: Vec<(LeafId, KindId)>,
-    /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` evidence the
+    /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` narratives the
     /// survival walk mints beside its dispositions (`two-plane-aid-law`; steers nothing). Mint-pass
     /// ordered (`inv-determinism`); threaded to the why-lens seam by the cli (d4 renders).
     collapse_narrative: Vec<CollapseNarrative>,
@@ -1466,7 +1466,7 @@ impl SurvivalReport {
         self.reach_poisonings.iter().copied()
     }
 
-    /// The C5 wall/demotion collapse-evidence (`27V` Lane A): decision-inert records the cli unions
+    /// The C5 wall/demotion collapse-narratives (`27V` Lane A): decision-inert records the cli unions
     /// onto the why-lens seam. Read-only display tier (`two-plane-aid-law`).
     #[must_use]
     pub fn collapse_narrative(&self) -> &[CollapseNarrative] {
@@ -3757,9 +3757,62 @@ impl Plan {
     #[must_use]
     pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
         use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
+        self.refused_render_steps(ast)
+            .into_iter()
+            .map(|(step, verb)| {
+                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
+                // most-improved case: an inline literal becomes a first-class typed variant the
+                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
+                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
+                // the erasability identity plane are unchanged. The interner resolves no excerpt
+                // here (the payload carries only a site) but is threaded for the shared lowering.
+                Diag::new(
+                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                        site: SiteId::leaf(step.leaf),
+                        verb,
+                        command: command_text_oneline(&step.sh),
+                    }),
+                    ast.node(step.ast).span,
+                )
+            })
+            .collect()
+    }
+
+    /// The `RenderRefusal` collapse narratives paired one-for-one with
+    /// [`render_refusal_diagnostics`](Self::render_refusal_diagnostics)
+    /// (`AID-NEEDS:law-collapse-mints-narrative`): refusing a LICENSED elision is a
+    /// safety-narrowing, so it mints a decision-inert record like every other one. Pairing is by
+    /// construction — both walk [`refused_render_steps`](Self::refused_render_steps) — and pinned
+    /// by a cardinality gate, the same posture the merge mint carries.
+    ///
+    /// Decision-inert and, today, unconsumed by any render: the push disclosure is the
+    /// `render-heredoc-refused` diagnostic, and the narrative exists for the why-chain that does
+    /// not yet read narratives (`289:seam-narrative-render-unconsumed`).
+    #[must_use]
+    pub fn render_refusal_narratives(&self, ast: &Ast) -> Vec<CollapseNarrative> {
+        self.refused_render_steps(ast)
+            .into_iter()
+            .map(|(step, _)| {
+                // Spelled literally, not through `render_refusal_heredoc`: the mint census is a
+                // lexical grep for `CollapseKind::<Variant>` and cannot see a named constructor.
+                CollapseNarrative::new(
+                    TrustTier::Derived,
+                    CollapseKind::RenderRefusal {
+                        site: dorc_core::SiteId::leaf(step.leaf),
+                        cause: dorc_aid::narrative::RenderRefusalTag::Heredoc,
+                    },
+                )
+            })
+            .collect()
+    }
+
+    /// The leaves the disposition layer LICENSED to elide that the leaf-exact render must REFUSE,
+    /// each with its disposition-aware verb. A GUARD refusal says "guard" (X-heredoc's
+    /// expected-diagnostics pins it), a Replace/Omit refusal says "elide".
+    fn refused_render_steps(&self, ast: &Ast) -> Vec<(&Step, &'static str)> {
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
-        let mut diags = Vec::new();
+        let mut refused = Vec::new();
         for step in &self.steps {
             let would_elide = match &step.disposition {
                 // A Replace value-substitutes the span; a Guard EDITS it to `( check ) || <orig>` —
@@ -3770,30 +3823,15 @@ impl Plan {
                 Disposition::Run => false,
             };
             if would_elide && leaf_has_heredoc(ast, step.ast) {
-                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
-                // most-improved case: an inline literal becomes a first-class typed variant the
-                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
-                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
-                // the erasability identity plane are unchanged. The interner resolves no excerpt
-                // here (the payload carries only a site) but is threaded for the shared lowering.
-                // The verb is disposition-aware: a GUARD refusal says "guard" (X-heredoc's
-                // expected-diagnostics pins `guard`), a Replace/Omit refusal says "elide".
                 let verb = if matches!(step.disposition, Disposition::Guard(_)) {
                     "guard"
                 } else {
                     "elide"
                 };
-                diags.push(Diag::new(
-                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
-                        site: SiteId::leaf(step.leaf),
-                        verb,
-                        command: command_text_oneline(&step.sh),
-                    }),
-                    ast.node(step.ast).span,
-                ));
+                refused.push((step, verb));
             }
         }
-        diags
+        refused
     }
 
     /// Collect the span edits the leaf-exact render applies (arch-1) — one `(Span,
@@ -4881,8 +4919,8 @@ apt_get__is_converged() { return 0; }
         )
         .value;
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
-        let (_vouches, evidence) = build_vouches(&[verdict_src], &classes, &value, &mut i);
-        let mut decline_leaves: Vec<u32> = evidence
+        let (_vouches, narrative) = build_vouches(&[verdict_src], &classes, &value, &mut i);
+        let mut decline_leaves: Vec<u32> = narrative
             .iter()
             .filter_map(|ev| match ev.kind() {
                 CollapseKind::VerdictDecline { site, .. } => Some(site.leaf.0),
@@ -4912,6 +4950,17 @@ apt_get__is_converged() { return 0; }
         assert_eq!(
             probe_leaves, decline_leaves,
             "the probe checks key by the same positional leaves the declines do"
+        );
+
+        // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): a body that REACHES
+        // its check vouches rather than declines, so the same two sites mint no `VerdictDecline`.
+        let vouching_src = "apt_get__is_converged() { dpkg -s \"$2\" : package:\"$2\"@installed ;}";
+        let (_vouches, none) = build_vouches(&[vouching_src], &classes, &value, &mut i);
+        assert!(
+            !none
+                .iter()
+                .any(|ev| matches!(ev.kind(), CollapseKind::VerdictDecline { .. })),
+            "a reached, vouching verdict body is no collapse and narrates nothing: {none:?}"
         );
     }
 
@@ -6357,7 +6406,7 @@ apt_get__is_converged() {
     // `strawman24-nonsurvive-hit` e2e case; no plan-level duplicate here.)
 
     #[test]
-    fn survival_walk_mints_wall_and_demotion_evidence() {
+    fn survival_walk_mints_wall_and_demotion_narratives() {
         // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the running curl mutator mints
         // a WallFormation and the demoted nginx a Demotion — DERIVED from the collapse, all Derived.
         let plan = survival_plan_empty_footprints(
@@ -6383,7 +6432,27 @@ apt_get__is_converged() {
         );
         assert!(
             ev.iter().all(|e| e.tier() == TrustTier::Derived),
-            "survival-walk evidence is engine-derived"
+            "survival-walk narratives are engine-derived"
+        );
+
+        // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): with nothing running
+        // there is no wall and nothing to demote, so the same walk must mint neither class. Without
+        // this, a mint that fired unconditionally would read as green above.
+        let converged = survival_plan_empty_footprints(
+            "apt-get install -y curl\napt-get install -y nginx\n",
+            |_| Verdict::Converged,
+        );
+        assert!(
+            !converged
+                .survival_report
+                .collapse_narrative()
+                .iter()
+                .any(|e| matches!(
+                    e.kind(),
+                    CollapseKind::WallFormation { .. } | CollapseKind::Demotion { .. }
+                )),
+            "an all-converged book forms no wall and demotes nothing, so it narrates neither: {:?}",
+            converged.survival_report.collapse_narrative()
         );
     }
 

@@ -506,8 +506,15 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   (`aid::CollapseNarrative`) carrying the collapse's OPERANDS, demanded by the collapse
   constructor at the VALUE level (pure data; kernels stay pure — arena registration is
   post-pass per `22D`). The record is Eq-EXCLUDED from lattice equality (fixpoint
-  termination, `22W` §2) and k-capped. `Unexplained` is constructible but renders
-  self-advertisingly.
+  termination, `22W` §2) and k-capped. AS-BUILT (2026-07-24): narratives are minted at all
+  nine collapse classes and the mint schedule is gate-held (`aid`'s
+  `narrative_completeness` census + the per-class fault-injection pins), but only
+  `VerdictDecline` carrying an `authored_reason` is CONSUMED by a render — the why-chain is
+  built from `SurvivalWitness`, and `emit_why_lens` ignores its narrative slice by signature.
+  So a missing narrative omits SILENTLY: there is no `Unexplained` class and no
+  self-advertising render. The consumption gap is the named seam
+  `289:seam-narrative-render-unconsumed`, owned by the arrangement-home round. The law above
+  stands; only the "renders self-advertisingly" claim was aspirational.
 - **trust-tier-is-syntax** — the epistemic tier of every rendered link (STRAWMAN
   spellings: measured / vouched / ran / claimed / derived / consented) is a typed
   evidence field rendered uniformly by arrangement code; prose fragments never

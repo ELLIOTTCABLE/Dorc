@@ -41,6 +41,14 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// The mint recipe, named VERBATIM so a red gate hands the reader the command that repairs it
+/// (`288:rul-loom-mint-guarantee`). The lock is `@generated` and hand-rows are refused, so the ONLY
+/// repair is a defining case plus a promote.
+const REPAIR_HINT: &str = "Mint its prose home: `dorc-loom scaffold <slug>`, author the case's \
+                           when-fires/why and a replay whose output carries the slug, then have \
+                           the orchestrator run `dorc-loom promote <case>`. The lock is generated \
+                           — a hand-written row is refused.";
+
 /// Every migrated catalog variant's PAYLOAD-struct name — the spine's construction marker. Each
 /// variant wraps a uniquely-named payload struct that is constructed ONLY at an emit site (the
 /// `DiagCode::Variant(Payload { … })` form), so grepping the struct literal is robust to the
@@ -120,6 +128,36 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "WhylogCorrupt",
     // cli/main.rs (aid hint) — AID-NEEDS:aid-unloaded-sibling-oracle (gap-5 / 24H ack-6)
     "AidUnloadedSiblingOracle",
+    // lint — the lane-local namespace retired (`288` §5)
+    "UnmodeledWallInventory",
+    "VerdictTerminalPipeline",
+    "AuthoredDeclineClass",
+    "AuthoredDeclineClassUnreadable",
+    "LintToolAbsent",
+    "LintToolOutputUnparsable",
+    "LintToolFailedWithoutFindings",
+    // invocation errors (`288` §6) — the `dorc: {msg}` family + dorc-sh
+    "CliStripNeedsPath",
+    "CliStripGotAFlag",
+    "CliUnknownMode",
+    "CliFlagNeedsValue",
+    "CliUnknownFlag",
+    "CliUnknownFlagDidYouMean",
+    "CliFlagValueNotRecognized",
+    "CliFlagValueNotANumber",
+    "CliNoBookGiven",
+    "CliFlagsMutuallyExclusive",
+    "CliFlagRequiresMode",
+    "CliFileNotFound",
+    "CliFilePermissionDenied",
+    "CliFileUnreadable",
+    "CliShimDirUnwritable",
+    "LintNoLintableFiles",
+    "LintFileCountDrift",
+    "LintRequiredToolsMissing",
+    "DorcShUsage",
+    "DorcShScriptUnreadable",
+    "DorcShExecFailed",
 ];
 
 /// Every catalog slug (the stable wire string) — for the retire-guard and reachability. KEEP IN
@@ -184,6 +222,34 @@ const MIGRATED_SLUGS: &[&str] = &[
     "whylog-absent",
     "whylog-corrupt",
     "aid-unloaded-sibling-oracle",
+    "unmodeled-wall-inventory",
+    "verdict-terminal-pipeline",
+    "authored-decline-class",
+    "authored-decline-class-unreadable",
+    "lint-tool-absent",
+    "lint-tool-output-unparsable",
+    "lint-tool-failed-without-findings",
+    "cli-strip-needs-path",
+    "cli-strip-got-a-flag",
+    "cli-unknown-mode",
+    "cli-flag-needs-value",
+    "cli-unknown-flag",
+    "cli-unknown-flag-did-you-mean",
+    "cli-flag-value-not-recognized",
+    "cli-flag-value-not-a-number",
+    "cli-no-book-given",
+    "cli-flags-mutually-exclusive",
+    "cli-flag-requires-mode",
+    "cli-file-not-found",
+    "cli-file-permission-denied",
+    "cli-file-unreadable",
+    "cli-shim-dir-unwritable",
+    "lint-no-lintable-files",
+    "lint-file-count-drift",
+    "lint-required-tools-missing",
+    "dorc-sh-usage",
+    "dorc-sh-script-unreadable",
+    "dorc-sh-exec-failed",
 ];
 
 /// Deliberately RETIRED/RENAMED slugs (`27V`): the `dq-` prefix drop on the five value-plane
@@ -233,12 +299,51 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogCorrupt",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
+    // lint — the external-tool trio is ABOUT a foreign process, not about any dorc bytes, so its
+    // emit context genuinely has no span. The four dorc-native lint codes DO carry real spans.
+    "LintToolAbsent",
+    "LintToolOutputUnparsable",
+    "LintToolFailedWithoutFindings",
+    // cli — every INVOCATION error: an argv has no span at all, so the family is spanless by
+    // construction, not by omission.
+    "CliStripNeedsPath",
+    "CliStripGotAFlag",
+    "CliUnknownMode",
+    "CliFlagNeedsValue",
+    "CliUnknownFlag",
+    "CliUnknownFlagDidYouMean",
+    "CliFlagValueNotRecognized",
+    "CliFlagValueNotANumber",
+    "CliNoBookGiven",
+    "CliFlagsMutuallyExclusive",
+    "CliFlagRequiresMode",
+    "CliFileNotFound",
+    "CliFilePermissionDenied",
+    "CliFileUnreadable",
+    "CliShimDirUnwritable",
+    "LintNoLintableFiles",
+    "LintFileCountDrift",
+    "LintRequiredToolsMissing",
+    "DorcShUsage",
+    "DorcShScriptUnreadable",
+    "DorcShExecFailed",
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `aid`
 /// itself is included for the `diag.rs` retire-guard.
 const SCANNED_CRATES: &[&str] = &[
-    "aid", "syntax", "analysis", "oracle", "plan", "cli", "coverage", "hostsim",
+    "aid",
+    "syntax",
+    "analysis",
+    "oracle",
+    "plan",
+    "cli",
+    "coverage",
+    "hostsim",
+    // `289:rider-diag-tidy-scan-set` — widened ahead of the lint codes joining the registry, so
+    // their emit sites satisfy the constructed-scan instead of reading as dead catalog.
+    "lint",
+    "dorc-loom",
 ];
 
 /// The `spike/crates` dir (this test runs with cwd = `crates/aid`).
@@ -306,10 +411,17 @@ fn production_emit_source() -> String {
     let non_aid: Vec<&str> = SCANNED_CRATES
         .iter()
         .copied()
-        .filter(|c| *c != "aid")
+        .filter(|c| !NON_EMIT_CRATES.contains(c))
         .collect();
     concat_crate_src(&non_aid)
 }
+
+/// Scanned, but NOT part of the production emit surface. `aid` only DEFINES the codes (its own
+/// match arms and tests would satisfy the grep for every variant — the act-3 vacuity). `dorc-loom`
+/// is the same category one layer out: `canonical_payload` constructs eleven payloads literally as
+/// CASE FIXTURES, so counting them as emits would mask a dead catalog entry whose real emit died.
+/// Both stay in [`SCANNED_CRATES`] for the scans that legitimately want the whole tree.
+const NON_EMIT_CRATES: &[&str] = &["aid", "dorc-loom"];
 
 /// Extract every payload-struct name constructed at a `new_spanless_site(…::<Payload>(…))` call in
 /// `source` — the spanless-mint marker. Matches both the `Code::` alias (the emit crates) and the
@@ -536,6 +648,10 @@ fn committed_slug_arms(diag_rs: &str) -> BTreeSet<String> {
 #[test]
 fn every_variant_has_exactly_one_catalog_entry() {
     use dorc_aid::catalog::CATALOG;
+    assert!(
+        REPAIR_HINT.contains("dorc-loom scaffold"),
+        "the completeness failure must name the repair command verbatim; a reword may not drop it"
+    );
     let catalog_slugs: BTreeSet<&str> = CATALOG.iter().map(|e| e.slug).collect();
     // No duplicate entries (catalog's own gate also checks this; belt-and-braces here).
     assert_eq!(
@@ -548,7 +664,7 @@ fn every_variant_has_exactly_one_catalog_entry() {
         assert!(
             catalog_slugs.contains(slug),
             "DiagCode variant slug `{slug}` has no CatalogEntry — every code needs exactly one \
-             prose home (27V:rul-kill-legacy-diagnostic). Add its entry to aid/src/catalog.rs."
+             prose home (27V:rul-kill-legacy-diagnostic). {REPAIR_HINT}"
         );
     }
     // Every catalog entry names a real variant (no orphan row).
@@ -705,5 +821,15 @@ fn constructed_scan_negative_control_excludes_aid_diag_arms() {
     assert!(
         !new_basis.contains("DiagCode::ThisVariantDoesNotExistAnywhere("),
         "sanity: a non-emitted variant is absent from the production basis"
+    );
+    // The SAME vacuity one layer out: `dorc-loom`'s case fixtures would stand in for dead emits.
+    let loom_only_marker = "fn canonical_payload(";
+    assert!(
+        scanned_source().contains(loom_only_marker),
+        "precondition: the widened scan set does include dorc-loom's source"
+    );
+    assert!(
+        !new_basis.contains(loom_only_marker),
+        "the production basis must EXCLUDE dorc-loom: its case-fixture constructors are not emits"
     );
 }

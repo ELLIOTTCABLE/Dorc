@@ -8,7 +8,7 @@
 //!
 //! The license plane fails toward unsureness; this aid plane fails toward narration with
 //! attributed confidence. The two planes are welded APART at the type level: **license values
-//! flow INTO evidence freely, never back**. There is no method on any type in this module that
+//! flow INTO narration freely, never back**. There is no method on any type in this module that
 //! yields a license-plane input (no `ByVouch`, no `Must`, no `RoomFact<Invited,_>`, no verdict);
 //! every accessor returns display-tier data (a [`TrustTier`], a tag, a [`Span`], a site handle).
 //! "Lint-clean licenses nothing" (`AID-NEEDS:law-two-planes-opposite-fail`) runs in this
@@ -24,15 +24,16 @@
 //! use dorc_aid::narrative::{CollapseKind, CollapseNarrative, TrustTier};
 //! use dorc_core::room::mint_from_room;
 //!
-//! let ev = CollapseNarrative::new(TrustTier::Derived, CollapseKind::render_refusal_heredoc(dummy()));
+//! let kind = CollapseKind::render_refusal_heredoc(dummy());
+//! let narrative = CollapseNarrative::new(TrustTier::Derived, kind);
 //! // A license mint demands a `RoomFact<Invited, _>`. A narrative is decision-inert: it can NEVER
 //! // be surrendered to a license input — "collapse-mints-narrative" is a one-way street, a compile
 //! // fact, not a discipline (`two-plane-aid-law`).
-//! let _ = mint_from_room(ev);
+//! let _ = mint_from_room(narrative);
 //! # fn dummy() -> dorc_core::SiteId { unimplemented!() }
 //! ```
 //!
-//! # Kernels stay pure (`27V:rul-collapse-mints-evidence`, `22D` stage-1)
+//! # Kernels stay pure (`27V:rul-collapse-mints-narrative` (né -evidence), `22D` stage-1)
 //!
 //! Every operand is a `Copy` scalar ([`Span`], [`LeafId`], [`Channel`], …) or an interned handle
 //! ([`OutBytes`]) — NO [`ProvId`](dorc_core::ProvId), NO `&mut ProvArena`, NO arena registration
@@ -42,10 +43,10 @@
 //!
 //! # Eq is at the carrier, not here (`Reach::Top` precedent, fixpoint termination)
 //!
-//! [`CollapseNarrative`] derives `Eq` (unit tests compare it). Where evidence rides a
-//! fixpoint-iterated lattice value, that CARRIER hand-writes `PartialEq` to EXCLUDE the evidence
+//! [`CollapseNarrative`] derives `Eq` (unit tests compare it). Where a narrative rides a
+//! fixpoint-iterated lattice value, that CARRIER hand-writes `PartialEq` to EXCLUDE the narrative
 //! — the `analysis::effect::Reach` precedent: `solve`'s convergence test is `joined != state[w]`,
-//! so an evidence-sensitive lattice `Eq` would re-derive-as-changed forever and never terminate.
+//! so a narrative-sensitive lattice `Eq` would re-derive-as-changed forever and never terminate.
 //! Nothing in THIS module iterates a fixpoint, so its own `Eq` is free.
 
 use dorc_core::SiteId;
@@ -87,7 +88,7 @@ impl TrustTier {
 /// The k-cap on a [`CollapseNarrative`] operand list through DEEP merges (the [`JOIN_PARENT_CAP`]
 /// precedent — `notes/220` §6 / `vp-6`: values are many and capped). Operands past the cap are
 /// dropped with a truncation count rendered "…and N more"; a collapse's own operands are few, but
-/// nested collapses merging their evidence must stay bounded.
+/// nested collapses merging their narratives must stay bounded.
 pub const NARRATIVE_OPERAND_CAP: usize = JOIN_PARENT_CAP;
 
 /// A bounded operand list (the [`dorc_core::Parents`]-shaped value tier): the retained operands plus a
@@ -304,7 +305,7 @@ pub enum RenderRefusalTag {
     Heredoc,
 }
 
-/// The RESERVED cancellation-evidence marker (`27V` Lane A: cancellation is an r26 evidence kind
+/// The RESERVED cancellation-narrative marker (`27V` Lane A: cancellation is an r26 narrative kind
 /// the type must not FORECLOSE). Uninhabited — [`CollapseKind::Cancellation`] cannot be constructed
 /// at v1, but the variant holds the slot so no consumer's exhaustive match forecloses it. The r26
 /// explanation-lane feeders (`26C` §5b) extend [`CollapseKind`] against this reservation.
@@ -312,7 +313,7 @@ pub enum RenderRefusalTag {
 pub enum Reserved {}
 
 /// The collapse CLASS and its operands (`AID-NEEDS:law-collapse-mints-narrative`: every
-/// safety-narrowing mints evidence carrying its OPERANDS). Deliberately NOT `#[non_exhaustive]`
+/// safety-narrowing mints a narrative carrying its OPERANDS). Deliberately NOT `#[non_exhaustive]`
 /// (the `DiagCode` posture — every consumer is an internal workspace crate, so adding the r26
 /// feeder variants breaks every match as a compiler checklist, never silently defaults).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -326,7 +327,7 @@ pub enum CollapseKind {
         operands: Operands<ValueOperand>,
     },
     /// A verdict body declined (`rul-vouch-is-verdict-authoring`) ⇒ the site runs. Carries the
-    /// declining `site` (aligning with its evidence siblings — `WallFormation`/`SubstitutionRefusal`/
+    /// declining `site` (aligning with its narrative siblings — `WallFormation`/`SubstitutionRefusal`/
     /// `Demotion` all key by site), the declining arm (with its file id — `tc-oracle-file-identity`)
     /// + the gate; `authored_reason` populated by the report-lane pairing keyed on `site` (`27W` §3).
     VerdictDecline {
@@ -359,7 +360,7 @@ pub enum CollapseKind {
         site: SiteId,
         cause: RenderRefusalTag,
     },
-    /// RESERVED (r26): cancellation evidence. Unconstructable at v1 (holds the slot only).
+    /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
 }
 
@@ -374,7 +375,7 @@ impl CollapseKind {
     }
 }
 
-/// One decision-inert evidence record minted at a safety-narrowing collapse (`27V` Lane A). Pure
+/// One decision-inert narrative record minted at a safety-narrowing collapse (`27V` Lane A). Pure
 /// data (see module docs): a [`TrustTier`] plus the [`CollapseKind`] carrying the collapse's
 /// operands. SEALED decision-inert — no method yields a license-plane input (the `compile_fail`
 /// doctest is the structural pin; this is the load-bearing law of the whole dispatch).
@@ -385,8 +386,9 @@ pub struct CollapseNarrative {
 }
 
 impl CollapseNarrative {
-    /// Mint evidence at a collapse. The collapse CONSTRUCTOR demands this at the value level
-    /// (`27V:rul-collapse-mints-evidence`); the caller supplies the tier from what the site knows
+    /// Mint a narrative at a collapse. The collapse CONSTRUCTOR demands this at the value level
+    /// (`27V:rul-collapse-mints-narrative`, né -evidence); the caller supplies the tier from what
+    /// the site knows
     /// (a probe merge → [`TrustTier::Measured`], a vouch decline → [`TrustTier::Vouched`], …).
     #[must_use]
     pub fn new(tier: TrustTier, kind: CollapseKind) -> Self {
@@ -405,12 +407,12 @@ impl CollapseNarrative {
         &self.kind
     }
 
-    /// Reconstruct a [`CollapseKind::VerdictDecline`] evidence with its `authored_reason` populated
+    /// Reconstruct a [`CollapseKind::VerdictDecline`] narrative with its `authored_reason` populated
     /// (`27W` §3 · d3): the report-lane ingestion resolves the decline CLASS + emitting-arm span
     /// AFTER the static decline mint (a dynamic-argv decline is classed only at runtime), so the
-    /// evidence gains its authored reason WITHOUT field mutation (immutable evidence — the
+    /// narrative gains its authored reason WITHOUT field mutation (immutable records — the
     /// tc-authored-reason-immutability ruling: a narrow reconstructor, never a mutable setter). A
-    /// non-decline evidence, or one already carrying a reason, is returned unchanged (idempotent —
+    /// A non-decline narrative, or one already carrying a reason, is returned unchanged (idempotent —
     /// the tier-2 static class already populated it, so a tier-3 runtime echo never overwrites).
     #[must_use]
     pub fn with_authored_reason(self, reason: AuthoredReason) -> Self {
@@ -460,7 +462,7 @@ mod tests {
     fn a_vouch_informs_a_tier_but_is_never_retained() {
         // two-plane-aid-law: a license flows INTO the aid plane (informing the tier) and never
         // back. `from_vouch` reads only that the vouch exists — the vouch is consumed by-ref and
-        // dropped; the evidence holds a plain `TrustTier`, not a license.
+        // dropped; the narrative holds a plain `TrustTier`, not a license.
         let vouch = ByVouch::vouched(7u32, Rung::Both);
         let tier = TrustTier::from_vouch(&vouch);
         assert_eq!(tier, TrustTier::Vouched);
@@ -613,9 +615,9 @@ mod tests {
     }
 
     #[test]
-    fn evidence_eq_is_structural_here_carrier_excludes_it_elsewhere() {
+    fn narrative_eq_is_structural_here_carrier_excludes_it_elsewhere() {
         // CollapseNarrative derives Eq (tests compare it); the Reach-style EXCLUSION is a CARRIER
-        // property proven where evidence rides a fixpoint value (analysis::effect), not here.
+        // property proven where a narrative rides a fixpoint value (analysis::effect), not here.
         let a = CollapseNarrative::new(
             TrustTier::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),

@@ -26,6 +26,10 @@ dorc-syntax = { path = "../syntax", version = "0.0.0" }
 dorc-analysis = { path = "../analysis", version = "0.0.0" }
 dorc-plan = { path = "../plan", version = "0.0.0" }
 dorc-lint = { path = "../lint", version = "0.0.0" }
+# The INTERNAL cli lib (`289:rul-worldless-route-honest-trigger`): the loom fires the REAL argument
+# parser so an invocation-error case is honest, not decorative. `cli` does not dep `dorc-loom`, so
+# there is no cycle.
+dorc-cli = { path = "../cli", version = "0.0.0" }
 
 [lints]
 workspace = true

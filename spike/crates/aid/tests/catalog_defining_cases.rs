@@ -460,6 +460,28 @@ fn is_case_owned(slug: &str) -> bool {
         .is_some_and(|case| case.exists())
 }
 
+/// The mint recipe, named VERBATIM so a red gate hands the reader the command that repairs it
+/// (`288:rul-loom-mint-guarantee`).
+const REPAIR_HINT: &str = "Mint its prose home: `dorc-loom scaffold <slug>`, author the case's \
+                           when-fires/why and a replay whose output carries the slug, then have \
+                           the orchestrator run `dorc-loom promote <case>`.";
+
+/// The `covered()`/`canonical_payload` DRIFT GUARD (`28A` §2u). The two constructor tables are
+/// duplicated by design (`28A:rul-keep-covered-with-drift-guard`), but completeness (g12) keys to
+/// case files, so nothing forced `covered()`'s slugs to stay case-owned — a code could leave the
+/// case corpus while `covered()` still claimed to construct it.
+#[test]
+fn every_covered_slug_is_case_owned() {
+    for case in covered() {
+        let slug = case.slug;
+        assert!(
+            is_case_owned(slug),
+            "`covered()` constructs `{slug}` but no defining case owns it — the duplicated \
+             constructor tables have drifted (28A:rul-keep-covered-with-drift-guard)"
+        );
+    }
+}
+
 /// COMPLETENESS (`AID-NEEDS:law-one-defining-case-per-code`, ratchet-tempered): every catalog slug is
 /// EITHER case-owned (a dorc-loom case file, fixpoint-protected) OR on the shrink-only
 /// [`DEFINING_CASE_RATCHET`] — never silently uncovered. Also: no slug is in BOTH (a case-owned code
@@ -468,6 +490,10 @@ fn is_case_owned(slug: &str) -> bool {
 #[test]
 fn every_code_is_case_owned_or_ratcheted() {
     use std::collections::BTreeSet;
+    assert!(
+        REPAIR_HINT.contains("dorc-loom scaffold"),
+        "the completeness failure must name the repair command verbatim; a reword may not drop it"
+    );
     let ratchet: BTreeSet<&str> = DEFINING_CASE_RATCHET.iter().map(|(s, _)| *s).collect();
     let catalog: BTreeSet<&str> = dorc_aid::catalog::CATALOG.iter().map(|e| e.slug).collect();
     for e in dorc_aid::catalog::CATALOG {
@@ -475,9 +501,9 @@ fn every_code_is_case_owned_or_ratcheted() {
         assert!(
             owned || ratchet.contains(e.slug),
             "catalog code `{}` has no dorc-loom case file and is not on DEFINING_CASE_RATCHET — \
-             backport it to `crates/dorc-loom/cases/{}.loom` or add a ratchet entry with its trigger \
-             surface (silent partial coverage is not acceptable, 27V §3)",
-            e.slug,
+             {REPAIR_HINT} (Or, for a legacy code only, add a ratchet entry with its trigger \
+             surface; the ratchet is shrink-only. Silent partial coverage is not acceptable, \
+             27V §3.)",
             e.slug
         );
         assert!(
@@ -563,10 +589,11 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 6 covers the four `281` mark-grammar codes plus the `marker-version-unrecognized`
-    // phase-4 pilot's unwritten message, with one headroom (`28A` §2l pre-authorized 5 → 6).
+    // Ceiling 15 = the prior 6 + the 7 lint codes `288` §5 moved into the registry + 2 headroom
+    // (`289:rul-unwritten-ceiling-one-bump`, the lane's ONE conscious bump). All seven `sm `-migrated
+    // (`289:rul-sm-where-ancestor-exists`), so this is expected to sit slack at 6, never met.
     assert!(
-        unwritten.len() <= 6,
+        unwritten.len() <= 15,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()

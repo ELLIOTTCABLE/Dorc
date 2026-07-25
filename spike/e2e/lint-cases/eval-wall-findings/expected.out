@@ -11,6 +11,6 @@ book.sh:
    |
  1 | eval "apt-get install -y nginx"
    | \__/
-  1:1 info [unmodeled-inventory:unmodeled-wall-inventory] 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~1 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  1:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~1 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
 
 dorc lint: 2 errors, 0 warnings, 1 info across 1 file.

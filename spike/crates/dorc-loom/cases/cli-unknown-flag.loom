@@ -1,0 +1,8 @@
+---
+code: cli-unknown-flag
+when-fires: an unrecognized flag with no near neighbour in the flag table. cli/lib.rs parse_args_from and parse_lint_args. {flag} is the token.
+why: inv-top-reject in the small: an unmodeled flag is refused loudly rather than ignored, because a silently-dropped flag is a plan the admin did not ask for.
+---
+-- replay --
+$ dorc plan --boook=webhost.sh
+error[cli-unknown-flag]: sm unknown flag `--boook=webhost.sh`

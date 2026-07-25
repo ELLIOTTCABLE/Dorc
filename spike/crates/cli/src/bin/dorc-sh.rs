@@ -24,16 +24,38 @@
 
 use std::process::{Command, ExitCode};
 
+/// `dorc-sh`'s three errors join the registry like every other surface
+/// (`288` §6 rul-dorc-sh-not-carved-out) — slugs, canonical looms, auditable. The terse `dorc-sh: `
+/// framing is a print-seat SURFACE SELECTION, not a carve-out. Body-only: an argv has no span.
+///
+/// The seam note stands and changes nothing now: if `dorc-sh` ever ships host-side, host-side
+/// emissions likely stay raw-bytes-upstream with controller-side narration.
+fn report(diag: &dorc_aid::Diag) {
+    eprintln!(
+        "dorc-sh: {}",
+        dorc_aid::diag::render_body(diag, &dorc_core::Interner::default())
+    );
+}
+
 fn main() -> ExitCode {
     let mut args = std::env::args_os().skip(1);
     let Some(script) = args.next() else {
-        eprintln!("dorc-sh: usage: dorc-sh <script> [args…]");
+        report(&dorc_aid::Diag::new_spanless_site(
+            dorc_aid::diag::DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage),
+        ));
         return ExitCode::from(2);
     };
     let src = match std::fs::read_to_string(&script) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("dorc-sh: cannot read {}: {e}", script.to_string_lossy());
+            report(&dorc_aid::Diag::new_spanless_site(
+                dorc_aid::diag::DiagCode::DorcShScriptUnreadable(
+                    dorc_aid::diag::DorcShScriptUnreadable {
+                        path: script.to_string_lossy().into_owned(),
+                        detail: e.to_string(),
+                    },
+                ),
+            ));
             return ExitCode::from(2);
         }
     };
@@ -52,7 +74,11 @@ fn main() -> ExitCode {
         // A POSIX exit status is 0..=255; `try_from` keeps it lint-clean (no truncating `as`).
         Ok(s) => ExitCode::from(u8::try_from(s.code().unwrap_or(1)).unwrap_or(1)),
         Err(e) => {
-            eprintln!("dorc-sh: cannot exec sh: {e}");
+            report(&dorc_aid::Diag::new_spanless_site(
+                dorc_aid::diag::DiagCode::DorcShExecFailed(dorc_aid::diag::DorcShExecFailed {
+                    detail: e.to_string(),
+                }),
+            ));
             ExitCode::from(127)
         }
     }

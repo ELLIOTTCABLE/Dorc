@@ -84,7 +84,7 @@ fn clean_book_is_silent_with_a_positive_sentence() {
     let native: Vec<_> = report
         .findings
         .iter()
-        .filter(|f| f.code != "tool-absent")
+        .filter(|f| f.code != "lint-tool-absent")
         .collect();
     assert!(
         native.is_empty(),
@@ -229,6 +229,58 @@ fn verdict_body_flags_a_terminal_pipeline() {
     assert_eq!(f.severity, Severity::Warning);
     assert_eq!(f.source, "verdict-body");
     assert_eq!(f.line, Some(3), "the pipeline command is on line 3");
+}
+
+#[test]
+fn the_frame_split_is_a_policy_the_density_dial_moves() {
+    // `289:rul-lint-render-split-is-policy`: the default must reproduce the old
+    // `provenance.is_some()` accident byte-for-byte, while the dial moves it deliberately.
+    let report = run_native(
+        &[file("book.sh", EVAL_BOOK)],
+        Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),
+    );
+    let default = render::render_human_parts_at(&report, render::Verbosity::Default).text();
+    assert_eq!(
+        default,
+        render::render_human(&report),
+        "the dial's default IS the unparameterized render"
+    );
+    assert!(
+        default.contains("error[syntax-unsupported]"),
+        "a diag-backed finding frames by default:\n{default}"
+    );
+    assert!(
+        default.contains("[unmodeled-inventory:unmodeled-wall-inventory]"),
+        "the inventory finding stays compact by default:\n{default}"
+    );
+
+    let terse = render::render_human_parts_at(&report, render::Verbosity::Terse).text();
+    assert!(
+        terse.contains("[analysis-diagnostics:syntax-unsupported]"),
+        "--terse demotes the framed finding to the compact line:\n{terse}"
+    );
+    assert!(
+        !terse.contains("error[syntax-unsupported]"),
+        "--terse keeps no frames:\n{terse}"
+    );
+
+    let verbose = render::render_human_parts_at(&report, render::Verbosity::Verbose).text();
+    assert!(
+        verbose.contains("error[syntax-unsupported]"),
+        "--verbose keeps the frames it already had:\n{verbose}"
+    );
+    assert!(
+        verbose.contains("error[cfg-top-node]"),
+        "--verbose promotes every source-bearing finding to a frame:\n{verbose}"
+    );
+
+    // A finding with no SOURCE bytes cannot be framed at any density: a caret needs bytes.
+    let relays = run_native(&[file("book.sh", EVAL_BOOK)], None);
+    let relayed = render::render_human_parts_at(&relays, render::Verbosity::Verbose).text();
+    assert!(
+        relayed.contains("[shellcheck:lint-tool-absent]"),
+        "the source-less relay stays compact even at --verbose:\n{relayed}"
+    );
 }
 
 #[test]

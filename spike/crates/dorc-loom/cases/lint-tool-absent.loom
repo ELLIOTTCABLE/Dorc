@@ -1,0 +1,10 @@
+---
+code: lint-tool-absent
+when-fires: a configured external linter is not on PATH, so its checks did not run. lint/source_external.rs. `{tool}` is the tool name.
+why: 27R §4 dir-absent-is-info - a missing tool is the admin's environment, disclosed rather than silently skipped; --require-tools raises it to a hard CI error. World-as-payload: an honest trigger would have to run a real foreign tool, which replay never does.
+---
+-- replay --
+$ dorc plan --book=book.sh
+note[lint-tool-absent]: sm `shellcheck` was not found on PATH — its checks were
+   skipped. Install it, pass --no-tools to silence this, or --require-tools to
+   make it a hard CI error.

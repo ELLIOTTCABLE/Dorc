@@ -1,0 +1,9 @@
+---
+code: cli-flags-mutually-exclusive
+when-fires: two flags that cannot both hold were both given. cli/lib.rs parse_args_from. {first} and {second} name them.
+why: declarations-genuinely-contradict: a pre-network fail-fast rather than a precedence rule, because either silent winner would be a guess at intent.
+---
+-- replay --
+$ dorc why --last --whylog=run.whylog --whylog-dir=logs
+error[cli-flags-mutually-exclusive]: sm --whylog and --whylog-dir are mutually
+   exclusive

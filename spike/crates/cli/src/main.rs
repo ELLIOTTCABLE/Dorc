@@ -69,64 +69,11 @@ use dorc_aid::diag::{
 use dorc_aid::{CollapseKind, CollapseNarrative, Severity, TrustTier};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
 
-/// The one-line usage synopsis, embedded in argument-error messages. The full
-/// mode/flag/exit-code reference is [`HELP`] (printed by `--help` to stdout, exit 0).
-const USAGE: &str =
-    "usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]";
-
-/// The long help (ack-1 + the cheap help-is-success item): `--help`/`-h` prints this to
-/// STDOUT and exits 0 (a help request is a success, not a usage error). Documents the
-/// mode/flag surface AND the exit-code family the harness crash-guard mirrors.
-const HELP: &str = "\
-dorc — spec-mining static-analysis orchestrator (implementation spike)
-
-usage: dorc [<mode>] --book=<book.sh> [-o <oracle.sh>]... [options]
-
-modes (an optional leading token; default is the probe-then-apply round-trip):
-  probe        emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
-  plan         preview the eliding apply on stdout, with the why-lens + diagnostics on stderr
-  apply        emit the byte-floored, receipt-free shippable apply artifact to stdout
-  why [<addr>] report (to stdout) WHY the run decided as it did — bare: the run's problems;
-               `book.sh:N`: the site on that source line; free text: matching commands
-  strip <file> print <file> with every dorc dialect construct erased — runnable stock POSIX sh
-               (the off-ramp cleaner; an unmarked file passes through unchanged)
-  lint <files> the oracle-author doctor/lint grab-bag over the files (no hosts, no probes):
-               parse/cfg diagnostics, unmodeled-wall inventory, verdict-body checks, and
-               shellcheck/checkbashisms when present. Flags: --format=human|jsonl,
-               --fail-on=error|warn|never, --no-tools, --require-tools, --expect-files N,
-               --source NAME (repeatable), --list-sources. Recommended CI line:
-               `dorc lint --format=jsonl --fail-on=warn --require-tools --expect-files N <files>`
-  (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
-
-options:
-  <book.sh>...          the book(s) to analyze — a positional path (`dorc plan book.sh`) or
-                        --book=PATH / --book PATH; repeatable ⇒ concatenated as one unit
-  -o, --oracle <o.sh>   an oracle file to load (repeatable; -o PATH, -oPATH, --oracle PATH)
-  --oracle-dir <dir>    load every *.oracle.sh in <dir> (repeatable; glob-sorted)
-  --results <file>      read the probe results from <file> (default: stdin)
-  --trust-footprints    opt into the survival tier (default off)
-  --debug-argv          echo the engine's per-site resolved argv to stderr
-  -h, --help            print this help to stdout and exit 0
-  --version             print the version to stdout and exit 0
-
-stdin:  probe results, one per line — `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
-        (unless --results <file>); stdout: the selected mode's artifact(s); stderr:
-        diagnostics / why-lens / decision-digest.
-
-exit codes:
-  0    success — the analysis completed and the artifact was emitted
-  2    usage error — a bad/unknown argument, a missing --book, or an unreadable file
-  10   parse error — the book carries a construct dorc cannot model (a syntax-level
-       ⊤-reject / CFG ⊤-node); the artifact still ships byte-identically, but the exit
-       signals partial understanding so a `dorc … && deploy` chain stops. First of the
-       reserved 10..19 dorc-semantic fast-fail range (vacuous/obvious, dorc-specific).
-
-  lint exit codes (distinct family — a ⊤-reject book is a FINDING here, never an exit-10):
-  0    clean — no findings at or above --fail-on
-  1    findings at or above --fail-on were reported
-  3    operational — the lint itself is compromised (no lintable files, an --expect-files
-       mismatch, or a --require-tools absence): distinct from both clean and findings
-";
+// The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
+// honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
+use dorc_cli::{
+    Args, HELP, Invocation, LintArgs, LintFormat, Mode, USAGE, humane_read_error, parse_args_from,
+};
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
 const EXIT_USAGE: u8 = 2;
@@ -150,24 +97,6 @@ const EXIT_LINT_FINDINGS: u8 = 1;
 /// Numbered 3 (tc-lint-operational-exit-code — golangci-lint uses 3=Failure, shellcheck 3=bad-invoke;
 /// the conservative lean, flagged for the human).
 const EXIT_LINT_OPERATIONAL: u8 = 3;
-
-/// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
-/// are successes printed to stdout, ack-1 help-is-success — never a usage error).
-enum Invocation {
-    /// A normal analysis run with the parsed [`Args`].
-    Analyze(Args),
-    /// `-h`/`--help`: print [`HELP`] to stdout, exit 0.
-    Help,
-    /// `--version`: print the version to stdout, exit 0.
-    Version,
-    /// `dorc strip <file>`: the off-ramp cleaner (`27D` rider-dorc-sh-unbuilt / `274` §13). A
-    /// NON-analysis invocation (like help/version) — it erases every dialect construct from one
-    /// file and prints runnable stock sh to stdout. The path is the sole positional.
-    Strip(String),
-    /// `dorc lint <files…>`: the oracle-author doctor/lint grab-bag (`27R`). A NON-analysis
-    /// invocation over the `dorc-lint` crate; contacts no hosts, ships no probes (`dir-lint-never-probes`).
-    Lint(LintArgs),
-}
 
 /// The outcome of a completed analysis run — the process exit code (ack-1). `Complete` is the
 /// ordinary success; `BookUnmodeled` still emitted the artifact but the book carried an
@@ -197,8 +126,8 @@ fn main() -> ExitCode {
         }
         Ok(Invocation::Strip(path)) => match strip_command(&path) {
             Ok(()) => ExitCode::SUCCESS,
-            Err(msg) => {
-                eprintln!("dorc: {msg}");
+            Err(diag) => {
+                report_invocation_error(&diag);
                 ExitCode::from(EXIT_USAGE)
             }
         },
@@ -208,99 +137,16 @@ fn main() -> ExitCode {
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
             Ok(RunOutcome::IngressRefused) => ExitCode::from(12),
-            Err(msg) => {
-                eprintln!("dorc: {msg}");
+            Err(diag) => {
+                report_invocation_error(&diag);
                 ExitCode::from(EXIT_USAGE)
             }
         },
-        Err(msg) => {
-            eprintln!("dorc: {msg}");
+        Err(diag) => {
+            report_invocation_error(&diag);
             ExitCode::from(EXIT_USAGE)
         }
     }
-}
-
-/// Which user-facing behavioral mode of the core to drive (ui-A — a fair-shape CLI over
-/// the core invocation modes, NOT flag-complete; ru-25). Each maps to one of the engine's
-/// distinct surfaces; `RoundTrip` is the legacy bare-flag invocation the e2e harness drives
-/// (kept so the corpus stays green without a harness rewrite — the least-disruptive path).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Mode {
-    /// `dorc probe …`: emit ONLY the read-only probe artifact (round-trip phase 1). Reads no
-    /// stdin (there are no results yet — this is what you ship to the host to GET them).
-    Probe,
-    /// `dorc plan …`: the human-facing PREVIEW (ru-20 ui-3 / DESIGN approach-3 "still as a
-    /// simple shell-script"). Emits the eliding-apply to stdout AND doubly-emits the why-lens
-    /// + diagnostics to stderr — the cited-sections render surface.
-    Plan,
-    /// `dorc apply …`: the byte-floored, receipt-free shippable artifact (rec-1). Emits the
-    /// SAME apply bytes as `plan` to stdout, but the stderr render surface carries only the
-    /// error floor + the decision-digest (no why-lens, no advisory notes).
-    Apply,
-    /// No mode token: the legacy round-trip (probe THEN apply on stdout, full disclosure on
-    /// stderr). The exact shape `e2e/run.sh` drives — preserved verbatim (tc-subcommand-shape).
-    RoundTrip,
-    /// `dorc why [<address>] …`: the WHY-query surface (ack-2). NOT an artifact-producing
-    /// invocation — its report goes to STDOUT (help/version/why are their own non-analysis
-    /// invocations, per the fences). Runs the full pipeline (it reports on the CURRENT run's
-    /// dispositions, so it consumes stdin results like `plan`), then prints a source-line-keyed
-    /// report (rul24-lineno-identity) instead of an artifact: bare ⇒ the run's PROBLEMS; a
-    /// `book.sh:N` / content address ⇒ that site's cause-chain. Emits no artifact, no digest.
-    Why,
-}
-
-struct Args {
-    mode: Mode,
-    /// The book(s) to analyze — a positional (`dorc plan book.sh`, the day-one ergonomic) OR
-    /// `--book=PATH`, repeatable. Multiple books CONCATENATE into one analyzed unit (a book split
-    /// across files reads as one). At least one is required.
-    books: Vec<String>,
-    oracles: Vec<String>,
-    /// `--oracle-dir DIR` (ack-6): load every `*.oracle.sh` in DIR (glob-sorted, deterministic),
-    /// repeatable — the explicit bulk form alongside `-o` for the spike.
-    oracle_dirs: Vec<String>,
-    /// `--results FILE` (flow pick): read the probe results from FILE instead of the default stdin.
-    results: Option<String>,
-    /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
-    /// then proceed normally — a cli-edge readout the e2e argv-echo differential consumes.
-    debug_argv: bool,
-    /// `--trust-footprints` (rul24-mode-gate): opt into the survival tier — a converged line
-    /// may ELIDE past a RUNNING wall when the wall's authored `touches()` footprint is disjoint
-    /// from the line's fact's backing (Stage 2, the golden hill). DEFAULT OFF; not recommended
-    /// by hints/docs beyond noting availability. Honest framing (24A §1a-addendum): marketing at
-    /// best (the admin chose the danger), theatre at worst (everyone enables it) — demanded
-    /// anyway as the non-vacuous CYA. When off, the footprints are never even lifted (TC-1).
-    trust_footprints: bool,
-    /// The optional `dorc why <address>` positional (ack-2): `book.sh:N` (a source line-address —
-    /// rul24-lineno-identity), or free content to substring-match a command; `None` ⇒ the
-    /// unargumented default (report the CURRENT run's problems). Only meaningful for [`Mode::Why`].
-    why_address: Option<String>,
-    /// The escalation dial (`27C` §1 axis 2 — the ternary admin surface): `--no-probe-escalation` /
-    /// `--probe-escalation` (default) / `--escalate-any-probe`. Gates whether oracle code may
-    /// context-shift under a wrapped site (`27C:rul-two-axis-escalation-consent`).
-    dial: dorc_core::EscalationDial,
-    /// The connection's mechanical capability (`27C` §1 axis 1) — a HOST FACT the cli edge would
-    /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
-    /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
-    capability: dorc_core::Capability,
-    /// `--whylog-dir=DIR` (`27V` Lane B): DIR the thin posthoc-why durable is written to (on a
-    /// plan/apply/round-trip run) and read from (`dorc why --last`). Default UNSET ⇒ NO durable
-    /// write — keeps every existing golden byte-identical and honors `law-whylog-is-sensitive`.
-    /// churn-avoidance-disclosure (tc-whylog-default-off): the PRODUCT posture is the sacred
-    /// zero-setup promise (`USER_STORY`: `--last` works "with nothing you had to set up"), so the
-    /// real-tool default is write-quietly-beside-its-work; this spike opt-in is a disclosed
-    /// scope-cut, one line to flip later.
-    whylog_dir: Option<String>,
-    whylog: Option<String>,
-    /// `--last` (`27V` Lane B): `dorc why --last` replays the most recent durable in `--whylog-dir`
-    /// through the SAME kernel instead of the live pipeline (determinism is the replay license).
-    last: bool,
-    /// `--shim-dir=DIR` (`274` §5 / `27L` task-14 — the shim-materialization edge): DIR into which
-    /// the entry-composed probe's per-run PATH shim files are written (the session-establishment I/O
-    /// that lets a `sudo -n <inner-check>` resolve its guest across the exec boundary). A pure
-    /// side-effect at the cli edge; stdout is unchanged. `None` ⇒ no materialization (a wrapper-free
-    /// or already-answered run writes nothing — `empty-world-byte-identical`).
-    shim_dir: Option<String>,
 }
 
 /// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `-h`/`--help`
@@ -310,252 +156,56 @@ struct Args {
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
 /// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
-fn parse_args() -> Result<Invocation, String> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
+fn parse_args() -> Result<Invocation, Diag> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     parse_args_from(raw)
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "one linear arg surface: the help/version pre-scan, the mode + why-address token, then the flag/positional loop with did-you-mean; splitting it would scatter the ONE parse"
-)]
-fn parse_args_from(raw: Vec<String>) -> Result<Invocation, String> {
-    // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
-    // errors, and they win even alongside a malformed flag (the conventional precedence).
-    if raw.iter().any(|a| a == "-h" || a == "--help") {
-        return Ok(Invocation::Help);
-    }
-    if raw.iter().any(|a| a == "--version") {
-        return Ok(Invocation::Version);
-    }
-    // `dorc strip <file>`: the off-ramp cleaner — a non-analysis invocation, handled before the
-    // mode/flag machinery. Exactly one positional (the file to strip); no other flags apply.
-    if raw.first().map(String::as_str) == Some("strip") {
-        let path = raw
-            .get(1)
-            .ok_or_else(|| format!("strip needs a file path — {USAGE}"))?;
-        if path.starts_with('-') {
-            return Err(format!(
-                "strip needs a file path, got the flag {path:?} — {USAGE}"
-            ));
-        }
-        return Ok(Invocation::Strip(path.clone()));
-    }
-
-    // `dorc lint`: a distinct arg surface (`27R` §5), handled before the analyze machinery like strip.
-    if raw.first().map(String::as_str) == Some("lint") {
-        return parse_lint_args(&raw);
-    }
-
-    let mut books: Vec<String> = Vec::new();
-    let mut oracles = Vec::new();
-    let mut oracle_dirs = Vec::new();
-    let mut results: Option<String> = None;
-    let mut debug_argv = false;
-    let mut trust_footprints = false;
-    let mut why_address: Option<String> = None;
-    let mut dial = dorc_core::EscalationDial::VouchedOnly;
-    let mut capability = dorc_core::Capability::Root;
-    let mut whylog_dir: Option<String> = None;
-    let mut whylog: Option<String> = None;
-    let mut last = false;
-    let mut shim_dir: Option<String> = None;
-    let mut it = raw.into_iter().peekable();
-
-    // A leading bare word (no `-` prefix) selects the mode. A near-miss (`pln`, `aply`) is a
-    // did-you-mean, not a silent book (the recon's missing-suggestion hazard).
-    let mode = match it.peek().map(String::as_str) {
-        Some("probe") => {
-            it.next();
-            Mode::Probe
-        }
-        Some("plan") => {
-            it.next();
-            Mode::Plan
-        }
-        Some("apply") => {
-            it.next();
-            Mode::Apply
-        }
-        Some("why") => {
-            it.next();
-            // ack-2: `why` takes an OPTIONAL address positional — the next token, IF it is not a
-            // flag (`book.sh:N` and content queries never start with `-`). Absent ⇒ the
-            // unargumented default (the run's problems).
-            if it.peek().is_some_and(|a| !a.starts_with('-')) {
-                why_address = it.next();
-            }
-            Mode::Why
-        }
-        Some(w) if !w.starts_with('-') => {
-            // A leading bare word that is NOT a known mode: if it is a NEAR-MISS of one, suggest it
-            // (did-you-mean); otherwise it is a positional book (the round-trip default — the flag
-            // loop below picks it up).
-            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why", "strip"]) {
-                return Err(format!(
-                    "unknown mode {w:?} — did you mean `{sugg}`? {USAGE}"
-                ));
-            }
-            Mode::RoundTrip
-        }
-        _ => Mode::RoundTrip,
-    };
-
-    while let Some(arg) = it.next() {
-        if let Some(p) = arg.strip_prefix("--book=") {
-            books.push(p.to_string());
-        } else if arg == "--book" {
-            books.push(it.next().ok_or("--book needs a path")?);
-        } else if arg == "-o" || arg == "--oracle" {
-            oracles.push(it.next().ok_or("-o needs a path")?);
-        } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
-            oracles.push(p.to_string());
-        } else if let Some(p) = arg.strip_prefix("--oracle-dir=") {
-            oracle_dirs.push(p.to_string());
-        } else if arg == "--oracle-dir" {
-            oracle_dirs.push(it.next().ok_or("--oracle-dir needs a directory")?);
-        } else if let Some(p) = arg.strip_prefix("--results=") {
-            results = Some(p.to_string());
-        } else if arg == "--results" {
-            results = Some(it.next().ok_or("--results needs a path")?);
-        } else if arg == "--debug-argv" {
-            debug_argv = true;
-        } else if arg == "--trust-footprints" {
-            trust_footprints = true;
-        } else if arg == "--no-probe-escalation" {
-            dial = dorc_core::EscalationDial::NoEscalation;
-        } else if arg == "--probe-escalation" {
-            dial = dorc_core::EscalationDial::VouchedOnly;
-        } else if arg == "--escalate-any-probe" {
-            dial = dorc_core::EscalationDial::AnyProbe;
-        } else if let Some(c) = arg.strip_prefix("--probe-capability=") {
-            capability = match c {
-                "root" => dorc_core::Capability::Root,
-                "nopasswd" => dorc_core::Capability::NonRootNopasswd,
-                "degraded" => dorc_core::Capability::Degraded,
-                other => {
-                    return Err(format!(
-                        "unknown --probe-capability {other:?} (expected root|nopasswd|degraded); {USAGE}"
-                    ));
-                }
-            };
-        } else if let Some(p) = arg.strip_prefix("--whylog-dir=") {
-            whylog_dir = Some(p.to_string());
-        } else if arg == "--whylog-dir" {
-            whylog_dir = Some(it.next().ok_or("--whylog-dir needs a directory")?);
-        } else if let Some(path) = arg.strip_prefix("--whylog=") {
-            whylog = Some(path.to_owned());
-        } else if arg == "--last" {
-            last = true;
-        } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
-            shim_dir = Some(p.to_string());
-        } else if arg == "--shim-dir" {
-            shim_dir = Some(it.next().ok_or("--shim-dir needs a directory")?);
-        } else if arg.starts_with('-') {
-            // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
-            // "unexpected argument" (the recon's missing-suggestion hazard).
-            let known = [
-                "--book",
-                "--oracle",
-                "--oracle-dir",
-                "--results",
-                "--debug-argv",
-                "--trust-footprints",
-                "--no-probe-escalation",
-                "--probe-escalation",
-                "--escalate-any-probe",
-                "--probe-capability",
-                "--whylog-dir",
-                "--whylog",
-                "--last",
-                "--shim-dir",
-                "--help",
-                "--version",
-            ];
-            return match nearest(&arg, &known) {
-                Some(sugg) => Err(format!(
-                    "unknown flag {arg:?} — did you mean `{sugg}`? {USAGE}"
-                )),
-                None => Err(format!("unknown flag {arg:?}; {USAGE}")),
-            };
-        } else {
-            // A bare word (no `-`): a positional book (the day-one `dorc plan book.sh` ergonomic;
-            // repeatable ⇒ multi-book concatenation).
-            books.push(arg);
-        }
-    }
-    if books.is_empty() && !last {
-        return Err(format!(
-            "no book given (a positional path or --book=PATH); {USAGE}"
-        ));
-    }
-    if whylog.is_some() && whylog_dir.is_some() {
-        return Err("--whylog and --whylog-dir are mutually exclusive".to_owned());
-    }
-    if whylog.is_some() && (mode != Mode::Why || !last) {
-        return Err("--whylog is only valid with dorc why --last".to_owned());
-    }
-    Ok(Invocation::Analyze(Args {
-        mode,
-        books,
-        oracles,
-        oracle_dirs,
-        results,
-        debug_argv,
-        trust_footprints,
-        why_address,
-        dial,
-        capability,
-        whylog_dir,
-        whylog,
-        last,
-        shim_dir,
-    }))
+/// The ONE print seat for an invocation error (`288` §6). Body-only: an argv has no span, so the
+/// framed render would draw a caret at nothing. The `dorc: ` prefix and the usage synopsis are
+/// CHROME the seat owns, never part of a catalog register — which is why 20 codes' prose does not
+/// each carry a copy of the usage text (`291` §5d parks usage/help for the arrangement round).
+/// The `--shim-dir` materialization edge's write failures. The one invocation-surface code the
+/// `291` §5a inventory did not name — it fell out of giving `run` a single error type.
+fn shim_dir_unwritable(path: &str, err: &std::io::Error) -> Diag {
+    Diag::new_spanless_site(DiagCode::CliShimDirUnwritable(
+        dorc_aid::diag::CliShimDirUnwritable {
+            path: path.to_owned(),
+            detail: err.to_string(),
+        },
+    ))
 }
 
-/// A tiny did-you-mean: the nearest `candidate` to `word` within edit-distance 2 (a typo, not a
-/// wholly different word), or `None`. Case-sensitive; ASCII. Used for mode + flag suggestions.
-fn nearest<'a>(word: &str, candidates: &[&'a str]) -> Option<&'a str> {
-    candidates
-        .iter()
-        .map(|c| (levenshtein(word, c), *c))
-        .filter(|(d, _)| *d <= 2)
-        .min_by_key(|(d, _)| *d)
-        .map(|(_, c)| c)
+/// The lint OPERATIONAL print seat (`27R` §5 exit trichotomy): the lint itself is compromised, so
+/// the message rides the `dorc: lint: ` chrome and the caller returns `EXIT_LINT_OPERATIONAL`.
+fn report_lint_operational(diag: &Diag) {
+    eprintln!(
+        "dorc: lint: {}",
+        dorc_aid::diag::render_body(diag, &Interner::default())
+    );
 }
 
-/// Levenshtein edit-distance (the two-row DP), for [`nearest`]. Pure; small inputs (flag/mode
-/// names), so the allocation is irrelevant.
-#[expect(
-    clippy::indexing_slicing,
-    reason = "the two DP rows are sized `b_chars.len()+1`; `j` ranges `0..b_chars.len()`, so every `[j]`/`[j+1]` index is in-bounds by construction"
-)]
-fn levenshtein(a: &str, b: &str) -> usize {
-    let b_chars: Vec<char> = b.chars().collect();
-    let mut prev: Vec<usize> = (0..=b_chars.len()).collect();
-    let mut cur = vec![0usize; b_chars.len().saturating_add(1)];
-    for (i, ca) in a.chars().enumerate() {
-        cur[0] = i.saturating_add(1);
-        for (j, &cb) in b_chars.iter().enumerate() {
-            let cost = usize::from(ca != cb);
-            cur[j.saturating_add(1)] = (prev[j.saturating_add(1)].saturating_add(1))
-                .min(cur[j].saturating_add(1))
-                .min(prev[j].saturating_add(cost));
-        }
-        std::mem::swap(&mut prev, &mut cur);
-    }
-    prev[b_chars.len()]
+fn report_invocation_error(diag: &Diag) {
+    eprintln!(
+        "dorc: {}",
+        dorc_aid::diag::render_body(diag, &Interner::default())
+    );
+    eprintln!("{USAGE}");
 }
 
-/// A HUMANE file-read error (the recon flagged raw OS phrasing leaking to the user): name what
-/// we were reading and the path, and translate the common `io::ErrorKind`s to plain English
-/// (a missing/permission-denied file, the two an admin actually hits) rather than the platform's
-/// raw "The system cannot find the file specified. (os error 2)".
 /// `dorc strip <path>` (`27D` rider-dorc-sh-unbuilt / `274` §13): read the file, erase every dorc
 /// dialect construct (parser-backed — [`dorc_oracle::strip_file`]), print runnable stock sh to
 /// stdout. An unmarked file passes through byte-identical (idempotent). Pure — the strip carries no
 /// diagnostics today, but any it grows are reported to stderr so stdout stays exactly the artifact.
-fn strip_command(path: &str) -> Result<(), String> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
+fn strip_command(path: &str) -> Result<(), Diag> {
     let src = std::fs::read_to_string(path).map_err(|e| humane_read_error("source", path, &e))?;
     let mut interner = Interner::default();
     let stripped = dorc_oracle::strip_file(&mut interner, &src);
@@ -567,18 +217,13 @@ fn strip_command(path: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> String {
-    let why = match err.kind() {
-        std::io::ErrorKind::NotFound => "no such file".to_owned(),
-        std::io::ErrorKind::PermissionDenied => "permission denied".to_owned(),
-        _ => err.to_string(),
-    };
-    format!("cannot read {kind} `{path}`: {why}")
-}
-
 /// Read + CONCATENATE the book(s) into one analyzed unit (`\n`-joined so no two files' lines
 /// merge — multi-book concatenation-as-one-unit). Humane per-file errors.
-fn read_books(books: &[String]) -> Result<String, String> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
+fn read_books(books: &[String]) -> Result<String, Diag> {
     let mut out = String::new();
     for (i, path) in books.iter().enumerate() {
         if i > 0 {
@@ -594,7 +239,11 @@ fn read_books(books: &[String]) -> Result<String, String> {
 /// Resolve the oracle PATHS (ack-6): the explicit `-o` list first, then every `*.oracle.sh` in
 /// each `--oracle-dir` (glob-sorted for determinism — the cli is the I/O edge, but the ORDER it
 /// hands the kernel must be stable). A directory that cannot be read is a humane error.
-fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Vec<String>, String> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
+fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Vec<String>, Diag> {
     let mut paths: Vec<String> = oracles.to_vec();
     for dir in oracle_dirs {
         let entries =
@@ -609,135 +258,6 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
         paths.extend(found);
     }
     Ok(paths)
-}
-
-/// One-line usage for the `lint` sub-surface (`27R` §5). Embedded in lint arg errors.
-const LINT_USAGE: &str = "usage: dorc lint <files…> [-o <oracle>]… [--oracle-dir <dir>] \
-    [--format=human|jsonl] [--fail-on=error|warn|never] [--no-tools] [--require-tools] \
-    [--expect-files N] [--source NAME]… [--list-sources]";
-
-/// The parsed `dorc lint` invocation (`27R` §5). Files + oracle sources + the render/exit knobs.
-struct LintArgs {
-    files: Vec<String>,
-    oracles: Vec<String>,
-    oracle_dirs: Vec<String>,
-    format: LintFormat,
-    /// The `--fail-on` threshold as a severity, or `None` for `never` (`27R` §5). The one severity
-    /// vocabulary is `core::Severity` (`27V` §3 rider-d); the `warn` wire token maps to `Warning`.
-    fail_on: Option<Severity>,
-    tools_enabled: bool,
-    require_tools: bool,
-    /// `--expect-files N` (`27R` §8b): the exact lintable-file count CI asserts.
-    expect_files: Option<usize>,
-    list_sources: bool,
-    /// `--source NAME` subset selection (`27R` §8 delta-named-sources-selectable); empty ⇒ all.
-    sources: Vec<String>,
-}
-
-/// The `--format` choice (`27R` §5 dir-two-renders-one-model).
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum LintFormat {
-    Human,
-    Jsonl,
-}
-
-/// Parse `dorc lint <files…> [flags]` (`raw[0]` is `"lint"`). No config file, ever (`kOOB` redline —
-/// flags only); no comment-directive suppression for dorc-native findings (the dialect marker stays
-/// the one comment-parse). Files are positionals; `--source NAME` selects a subset (positionals are
-/// taken by files, so subset selection needs a flag — deviation from brew's positional-checks, `27S`).
-fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
-    let mut files = Vec::new();
-    let mut oracles = Vec::new();
-    let mut oracle_dirs = Vec::new();
-    let mut format = LintFormat::Human;
-    // tc-lint-fail-on-default: `error` (hot-loop mercy; CI tightens to `warn`) — `27R` §6, flagged.
-    let mut fail_on = Some(Severity::Error);
-    let mut tools_enabled = true;
-    let mut require_tools = false;
-    let mut expect_files = None;
-    let mut list_sources = false;
-    let mut sources = Vec::new();
-    let mut it = raw.iter().skip(1).cloned().peekable();
-    while let Some(arg) = it.next() {
-        if let Some(p) = arg.strip_prefix("--oracle-dir=") {
-            oracle_dirs.push(p.to_owned());
-        } else if arg == "--oracle-dir" {
-            oracle_dirs.push(it.next().ok_or("--oracle-dir needs a directory")?);
-        } else if arg == "-o" || arg == "--oracle" {
-            oracles.push(it.next().ok_or("-o needs a path")?);
-        } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
-            oracles.push(p.to_owned());
-        } else if let Some(p) = arg.strip_prefix("--format=") {
-            format = parse_lint_format(p)?;
-        } else if arg == "--format" {
-            format = parse_lint_format(&it.next().ok_or("--format needs a value")?)?;
-        } else if let Some(p) = arg.strip_prefix("--fail-on=") {
-            fail_on = parse_fail_on(p)?;
-        } else if arg == "--fail-on" {
-            fail_on = parse_fail_on(&it.next().ok_or("--fail-on needs a value")?)?;
-        } else if arg == "--no-tools" {
-            tools_enabled = false;
-        } else if arg == "--require-tools" {
-            require_tools = true;
-        } else if let Some(p) = arg.strip_prefix("--expect-files=") {
-            expect_files = Some(parse_expect_count(p)?);
-        } else if arg == "--expect-files" {
-            expect_files = Some(parse_expect_count(
-                &it.next().ok_or("--expect-files needs a number")?,
-            )?);
-        } else if arg == "--list-sources" {
-            list_sources = true;
-        } else if let Some(p) = arg.strip_prefix("--source=") {
-            sources.push(p.to_owned());
-        } else if arg == "--source" {
-            sources.push(it.next().ok_or("--source needs a name")?);
-        } else if arg.starts_with('-') {
-            return Err(format!("unknown lint flag {arg:?}; {LINT_USAGE}"));
-        } else {
-            files.push(arg);
-        }
-    }
-    Ok(Invocation::Lint(LintArgs {
-        files,
-        oracles,
-        oracle_dirs,
-        format,
-        fail_on,
-        tools_enabled,
-        require_tools,
-        expect_files,
-        list_sources,
-        sources,
-    }))
-}
-
-fn parse_lint_format(v: &str) -> Result<LintFormat, String> {
-    match v {
-        "human" => Ok(LintFormat::Human),
-        "jsonl" => Ok(LintFormat::Jsonl),
-        other => Err(format!(
-            "unknown --format {other:?} (expected human|jsonl); {LINT_USAGE}"
-        )),
-    }
-}
-
-/// `--fail-on` → the severity threshold, or `None` for `never`. `27R` §5: only `error`/`warn`
-/// gate (`info` never does).
-fn parse_fail_on(v: &str) -> Result<Option<Severity>, String> {
-    match v {
-        "error" => Ok(Some(Severity::Error)),
-        "warn" => Ok(Some(Severity::Warning)),
-        "never" => Ok(None),
-        other => Err(format!(
-            "unknown --fail-on {other:?} (expected error|warn|never); {LINT_USAGE}"
-        )),
-    }
-}
-
-fn parse_expect_count(v: &str) -> Result<usize, String> {
-    v.parse::<usize>().map_err(|_| {
-        format!("--expect-files needs a non-negative integer, got {v:?}; {LINT_USAGE}")
-    })
 }
 
 /// The REAL external-tool runner at the cli edge (`27R` §1 dir-runner-is-the-di-seam): the ONLY
@@ -825,6 +345,10 @@ fn executable_exts() -> Vec<String> {
 /// trichotomy (0 clean / 1 findings-at-or-above / operational distinct from both). Operational checks
 /// take precedence over the findings threshold (a compromised run must not read as a clean/findings
 /// signal — `27R` §8 delta-exit-trichotomy-sharpened).
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear exit-trichotomy driver: resolve inputs, run, render, then the operational checks in precedence order; splitting it would scatter the ONE precedence the exit codes encode"
+)]
 fn lint_command(args: &LintArgs) -> ExitCode {
     if args.list_sources {
         for s in dorc_lint::list_sources() {
@@ -835,21 +359,27 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     let inputs = match read_lint_inputs("file", &args.files) {
         Ok(v) => v,
         Err(msg) => {
-            eprintln!("dorc: lint: {msg}");
+            eprintln!(
+                "dorc: lint: {}",
+                dorc_aid::diag::render_body(&msg, &Interner::default())
+            );
             return ExitCode::from(EXIT_LINT_OPERATIONAL);
         }
     };
     let oracle_paths = match resolve_oracle_paths(&args.oracles, &args.oracle_dirs) {
         Ok(p) => p,
-        Err(msg) => {
-            eprintln!("dorc: {msg}");
+        Err(diag) => {
+            report_invocation_error(&diag);
             return ExitCode::from(EXIT_USAGE);
         }
     };
     let oracles = match read_lint_inputs("oracle", &oracle_paths) {
         Ok(v) => v,
         Err(msg) => {
-            eprintln!("dorc: lint: {msg}");
+            eprintln!(
+                "dorc: lint: {}",
+                dorc_aid::diag::render_body(&msg, &Interner::default())
+            );
             return ExitCode::from(EXIT_LINT_OPERATIONAL);
         }
     };
@@ -881,12 +411,17 @@ fn lint_command(args: &LintArgs) -> ExitCode {
             print!("{}", dorc_lint::render::render_jsonl(&report));
             std::io::stdout().flush().ok();
         }
-        eprintln!("dorc: lint: no lintable files given (operational, not clean); {LINT_USAGE}");
+        report_lint_operational(&Diag::new_spanless_site(DiagCode::LintNoLintableFiles(
+            dorc_aid::diag::LintNoLintableFiles,
+        )));
         return ExitCode::from(EXIT_LINT_OPERATIONAL);
     }
 
     match args.format {
-        LintFormat::Human => print!("{}", dorc_lint::render::render_human(&report)),
+        LintFormat::Human => print!(
+            "{}",
+            dorc_lint::render::render_human_parts_at(&report, args.verbosity).text()
+        ),
         LintFormat::Jsonl => print!("{}", dorc_lint::render::render_jsonl(&report)),
     }
     std::io::stdout().flush().ok();
@@ -894,10 +429,12 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     if let Some(want) = args.expect_files
         && inputs.len() != want
     {
-        eprintln!(
-            "dorc: lint: --expect-files: expected {want} lintable file(s), saw {} (scope drift)",
-            inputs.len()
-        );
+        report_lint_operational(&Diag::new_spanless_site(DiagCode::LintFileCountDrift(
+            dorc_aid::diag::LintFileCountDrift {
+                expected: want,
+                found: inputs.len(),
+            },
+        )));
         return ExitCode::from(EXIT_LINT_OPERATIONAL);
     }
     if args.require_tools {
@@ -909,10 +446,11 @@ fn lint_command(args: &LintArgs) -> ExitCode {
             .map(|s| s.name)
             .collect();
         if !absent.is_empty() {
-            eprintln!(
-                "dorc: lint: --require-tools: required tool(s) missing from PATH: {}",
-                absent.join(", ")
-            );
+            report_lint_operational(&Diag::new_spanless_site(
+                DiagCode::LintRequiredToolsMissing(dorc_aid::diag::LintRequiredToolsMissing {
+                    tools: absent.join(", "),
+                }),
+            ));
             return ExitCode::from(EXIT_LINT_OPERATIONAL);
         }
     }
@@ -924,7 +462,11 @@ fn lint_command(args: &LintArgs) -> ExitCode {
 
 /// Read a set of paths into [`dorc_lint::LintInput`]s; an unreadable file is a hard error (the lint
 /// cannot lint what it cannot read — an operational failure, `27R` §8b). `kind` labels the humane error.
-fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintInput>, String> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
+fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintInput>, Diag> {
     let mut inputs = Vec::new();
     for path in paths {
         let src = std::fs::read_to_string(path).map_err(|e| humane_read_error(kind, path, &e))?;
@@ -942,15 +484,19 @@ fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintI
 /// a `sudo -n <inner-check>` can exec the guest across the wrapper boundary. On unix the executable
 /// bit is set here; on other platforms (msys) the exec permission is supplied by the session harness
 /// (`e2e/run.sh` `chmod +x`), so a plain write suffices and this stays cross-platform.
-fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), String> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
+fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), Diag> {
     if files.is_empty() {
         return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
     }
-    std::fs::create_dir_all(dir).map_err(|e| format!("cannot create shim dir {dir:?}: {e}"))?;
+    std::fs::create_dir_all(dir).map_err(|e| shim_dir_unwritable(dir, &e))?;
     for (name, content) in files {
         let path = std::path::Path::new(dir).join(name);
         std::fs::write(&path, content)
-            .map_err(|e| format!("cannot write shim {}: {e}", path.display()))?;
+            .map_err(|e| shim_dir_unwritable(&path.display().to_string(), &e))?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt as _;
@@ -963,9 +509,10 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
 
 #[expect(
     clippy::too_many_lines,
-    reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here"
+    clippy::result_large_err,
+    reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
 )]
-fn run(args: &Args) -> Result<RunOutcome, String> {
+fn run(args: &Args) -> Result<RunOutcome, Diag> {
     let mut interner = Interner::default();
     let mode = args.mode;
     // rec-1 advisory routing: `plan` and the legacy round-trip overlay the FULL advisory plane
@@ -1564,7 +1111,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     if advisory && mode != Mode::Why {
         // `27W` §3 C3 pairing: fold each ingested tier-3 report record (recognized class + site)
         // into its site's `VerdictDecline` via `with_authored_reason` (idempotent — tier-2 static
-        // wins). Then union the collapse-evidence onto the why-lens seam (d4 renders; decision-inert).
+        // wins). Then union the collapse-narratives onto the why-lens seam (d4 renders; decision-inert).
         let paired_declines = pair_authored_reasons(decline_narrative, &results.reports);
         let collapse_narrative: Vec<CollapseNarrative> = classify_narrative
             .iter()
@@ -1573,6 +1120,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             .chain(entry_narrative.iter().cloned())
             .chain(merge_narrative.iter().cloned())
             .chain(plan.survival_report.collapse_narrative().iter().cloned())
+            .chain(plan.render_refusal_narratives(&parsed.value))
             .collect();
         emit_why_lens(&why_diags, &arena, &book_src, &collapse_narrative);
         // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the
@@ -1737,16 +1285,24 @@ enum ReplayLoad {
 const WHYLOG_KEEP: usize = 5;
 const WHYLOG_CAP: usize = 1_000_000;
 
-fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, String> {
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see dorc_cli::parse_args_from"
+)]
+fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
     // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.
     let path = if let Some(exact) = args.whylog.as_deref() {
         std::path::PathBuf::from(exact)
     } else {
-        let dir = args.whylog_dir.as_deref().ok_or(
-            "dorc why --last needs --whylog-dir=DIR (the spike opt-in siting; the product writes the \
-             durable quietly beside its work — tc-whylog-default-off)",
-        )?;
+        let dir = args.whylog_dir.as_deref().ok_or_else(|| {
+            Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+                dorc_aid::diag::CliFlagRequiresMode {
+                    flag: "--whylog-dir=DIR",
+                    mode: "dorc why --last",
+                },
+            ))
+        })?;
         let Some(path) = newest_whylog(dir) else {
             report_at(
                 advisory,
@@ -3356,7 +2912,7 @@ fn emit_plan_summary(plan: &dorc_plan::Plan) {
 /// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
 /// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
 ///
-/// `_collapse_narrative` is the C3/C4 decision-inert evidence seam (`27V` Lane A): the collapse
+/// `_collapse_narrative` is the C3/C4 decision-inert narrative seam (`27V` Lane A): the collapse
 /// records the why-lens will render (d4). Carried through here and IGNORED for now — the render
 /// arrangement is d4's, so surfacing it early would freeze `render-form-unwelded` output.
 fn emit_why_lens(
@@ -3809,7 +3365,7 @@ struct ChainLink {
 
 /// The naked-trust epilogue (`aid-why-license-chain`; the flagship's product moment,
 /// `tc-naked-trust-epilogue-derivation`, conductor-confirmed). Derived STRUCTURALLY from which
-/// evidence-kinds the chain carries — never an instance guess: a chain that carries `Consented` +
+/// trust-tiers the chain carries — never an instance guess: a chain that carries `Consented` +
 /// `Claimed` + a `Derived` disjointness sparing a `Measured` backing has exactly ONE
 /// unverified-by-construction link, the `Claimed` one, because the survival tier is the SOLE place a
 /// naked human claim ships (`USER_STORY` bought-unsoundness). `leverage` is that claim's line to widen.
@@ -3832,7 +3388,7 @@ struct ChainRender {
 /// flagship acceptance). Pure over the plan's [`dorc_plan::SurvivalWitness`] + display context: the
 /// numbered measured/vouched/ran/claimed/derived/consented links per `USER_STORY` Recovery. `None` when
 /// the step survived no wall (an ordinary elision has no chain to walk). The naked-trust epilogue is
-/// derived from evidence-kind presence only (`tc-naked-trust-epilogue-derivation`).
+/// derived from trust-tier presence only (`tc-naked-trust-epilogue-derivation`).
 fn survival_chain(
     header: String,
     license: &dorc_plan::ReplaceLicense,
@@ -4437,7 +3993,7 @@ fn facts_from_sites(
 ) {
     use dorc_plan::ProbeSiteKind;
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
-    // C4 (`27V` Lane A): `Measured` fact-merge evidence minted beside the ⊤-fold. `first_site`
+    // C4 (`27V` Lane A): the `Measured` fact-merge narrative minted beside the ⊤-fold. `first_site`
     // remembers each cell's first establisher so a cross-site conflict names both operands.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
     let mut first_site: BTreeMap<dorc_core::FactKey, dorc_aid::diag::SiteId> = BTreeMap::new();
@@ -4572,7 +4128,7 @@ fn probe_origins(
     origins
 }
 
-/// Build the `Measured`-tier fact-merge evidence a probe-result disagreement narrates (C4;
+/// Build the `Measured`-tier fact-merge narrative a probe-result disagreement mints (C4;
 /// `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): a host self-contradiction at `cell`,
 /// carrying the participating establisher sites as operands (`minting_line`/`shown` filled by d3).
 /// Decision-inert (`two-plane-aid-law`): the conservative meet already folded the channel to ⊤
@@ -4881,7 +4437,7 @@ fn emit_report_lane_notes(results: &SiteResults) {
 
 /// C3 report-lane pairing (`27W` §3 `rul-static-first-three-tier`): fold each ingested tier-3 report
 /// record (a recognized decline class + a site) into that site's
-/// [`dorc_aid::narrative::CollapseKind::VerdictDecline`] evidence via
+/// [`dorc_aid::narrative::CollapseKind::VerdictDecline`] narrative via
 /// [`dorc_aid::narrative::CollapseNarrative::with_authored_reason`]. The runtime record supplies only
 /// the missing CLASS — a dynamic format string defeated static reading (`27W` §2 "one honest loss"),
 /// so `classify_decline` traced the reached decline arm but left the class unread. The arm span +
@@ -4893,11 +4449,11 @@ fn emit_report_lane_notes(results: &SiteResults) {
 /// overwrites a statically populated reason (static wins). Empty in the corpus (no oracle emits ⇒
 /// `empty-world-byte-identical`). Decision-inert (`two-plane-aid-law`): classes route AID only.
 fn pair_authored_reasons(
-    evidence: Vec<CollapseNarrative>,
+    narratives: Vec<CollapseNarrative>,
     reports: &[ReportRecord],
 ) -> Vec<CollapseNarrative> {
     use dorc_aid::narrative::{AuthoredReason, CollapseKind};
-    evidence
+    narratives
         .into_iter()
         .map(|ev| {
             let CollapseKind::VerdictDecline {
@@ -4932,7 +4488,7 @@ fn pair_authored_reasons(
 }
 
 /// Emit the STATIC/paired decline-class disclosure (`27W` §3 `rul-static-first-three-tier`): one
-/// why-lens line per site whose `VerdictDecline` evidence carries an `authored_reason` — the tier-2
+/// why-lens line per site whose `VerdictDecline` narrative carries an `authored_reason` — the tier-2
 /// static class (argv threaded statically) OR the tier-3 runtime class paired in by
 /// [`pair_authored_reasons`]. A DECLINE is a why-a-line-RUNS disclosure (the author declined ⇒ the
 /// site runs), so it belongs on the same `why:` lane as the run/survival attributions, surfacing the
@@ -4946,6 +4502,21 @@ fn emit_static_decline_notes(
     oracle_paths: &[String],
     oracle_srcs: &[String],
 ) {
+    for line in static_decline_notes(collapse_narrative, oracle_paths, oracle_srcs) {
+        eprintln!("{line}");
+    }
+}
+
+/// The pure half of [`emit_static_decline_notes`] — the ONE narrative-consuming render seat, split
+/// out so it is assertable in-process (`289:rul-mint-hardening-package` item 4b: the "and the chain
+/// renders it" clause, satisfiable today for exactly this class). Wording rides
+/// `27V:rul-output-form-unwelded`.
+fn static_decline_notes(
+    collapse_narrative: &[CollapseNarrative],
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> Vec<String> {
+    let mut lines = Vec::new();
     for ev in collapse_narrative {
         let CollapseKind::VerdictDecline {
             authored_reason: Some(reason),
@@ -4961,12 +4532,13 @@ fn emit_static_decline_notes(
         )
         .map(|l| format!(" (at {l})"))
         .unwrap_or_default();
-        eprintln!(
+        lines.push(format!(
             "why: author declines [{}]{at} — a deliberate decline the author classed, so the site \
              runs",
             decline_class_word(reason.class)
-        );
+        ));
     }
+    lines
 }
 
 /// A deterministic content digest binding the records stream to the exact analyzed book bytes
@@ -5481,7 +5053,7 @@ struct WrappedAnalysis {
     /// the why-lens tether emitted for every carried elision (`emit_carry_attribution`). Keyed by
     /// `AstId` so the plan's per-site step re-keys to the site number for the `why: site N …` line.
     carried: BTreeMap<dorc_core::AstId, String>,
-    /// C5 aid plane (`27V` Lane A): the decision-inert [`CollapseKind::EntryDenial`] evidence minted
+    /// C5 aid plane (`27V` Lane A): the decision-inert [`CollapseKind::EntryDenial`] narrative minted
     /// when a wrapped site's entry consent degrades to guard/run (`two-plane-aid-law`; steers
     /// nothing). Threaded to the why-lens seam by the cli edge (d4 renders).
     collapse_narrative: Vec<CollapseNarrative>,
@@ -6035,26 +5607,6 @@ mod tests {
         );
     }
 
-    /// The did-you-mean helper: a near-miss (edit-distance ≤ 2) suggests, a wholly-different word
-    /// does not (no misleading suggestion). Pins the mode + flag typo-suggestion behavior.
-    #[test]
-    fn nearest_suggests_within_edit_distance_two() {
-        let modes = ["probe", "plan", "apply", "why"];
-        assert_eq!(nearest("pln", &modes), Some("plan"), "one deletion");
-        assert_eq!(nearest("aply", &modes), Some("apply"), "one deletion");
-        assert_eq!(
-            nearest("wanted", &modes),
-            None,
-            "a wholly-different word ⇒ no suggestion"
-        );
-        let flags = ["--trust-footprints", "--debug-argv", "--book"];
-        assert_eq!(
-            nearest("--tust-footprints", &flags),
-            Some("--trust-footprints")
-        );
-        assert_eq!(nearest("--boook", &flags), Some("--book"), "one insertion");
-    }
-
     /// cheap-7: the firehose-suppression classifier. Assignments and pure/no-target-state builtins
     /// (the engine's own list) are structurally-unprobeable ⇒ suppressed; a real un-oracled command
     /// is NOT ⇒ it survives into the aggregate disclosure / the `dorc why` problem set.
@@ -6412,6 +5964,24 @@ mod tests {
             ),
             "site 6's tier-2 static class is NOT overwritten by the runtime echo (static wins)"
         );
+
+        // `289:rul-mint-hardening-package` item 4b, for the ONE class a render consumes today; the
+        // other eight are minted and dropped (`289:seam-narrative-render-unconsumed`).
+        let rendered = static_decline_notes(&paired, &[], &[]);
+        assert_eq!(
+            rendered.len(),
+            2,
+            "both classed declines reach the why lane: {rendered:?}"
+        );
+        assert!(
+            rendered.iter().any(|line| line.contains("unsound"))
+                && rendered.iter().any(|line| line.contains("hazard")),
+            "each rendered line names its own decline class: {rendered:?}"
+        );
+        assert!(
+            static_decline_notes(&[decline(7, None)], &[], &[]).is_empty(),
+            "an unclassed decline narrates nothing on this lane"
+        );
     }
 
     #[test]
@@ -6503,6 +6073,83 @@ mod tests {
                 .iter()
                 .any(|e| matches!(e.kind(), CollapseKind::EntryFailure { .. })),
             "a non-entry site mints no EntryFailure (the class is entry-scoped)"
+        );
+    }
+
+    #[test]
+    fn a_dial_forbidden_wrapped_site_mints_entry_denial_and_a_licensed_one_mints_none() {
+        // `289:rul-mint-hardening-package` item 4a for `EntryDenial`, the one static entry-consent
+        // class with no pin at all. Both directions over one world, varying only the admin's dial;
+        // anti-masking, so the narrative is read out of the real analysis, never handed in.
+        const SUDO: &str = "# dorc-lang/v0.2\n\
+             sudo__predict() {\n\
+             while [ \"${1#-}\" != \"$1\" ]; do case \"$1\" in -u) shift 2 ;; *) shift ;; esac; done\n\
+             env -i HOME=/root \"$@\"\n\
+             }\n\
+             sudo__lend_map() {\n\
+             printf '%s\\n' root : lends user\n\
+             : lends fs-view\n\
+             : lends netns\n\
+             \"$@\"\n\
+             }\n\
+             sudo__enter() {\n\
+             sudo -n \"$@\"\n\
+             }\n";
+        const HORK: &str = "# dorc-lang/v0.2\n\
+             hork__is_converged() {\n\
+             : safe-across user\n\
+             case \"$1\" in\n\
+             install) hork query \"$2\" ;;\n\
+             *) return 2 ;;\n\
+             esac\n\
+             }\n";
+
+        let rungs = |dial: dorc_core::EscalationDial| -> Vec<dorc_aid::narrative::EntryDegradeTag> {
+            let mut interner = Interner::default();
+            let srcs = vec![SUDO.to_owned(), HORK.to_owned()];
+            let refs: Vec<&str> = srcs.iter().map(String::as_str).collect();
+            let paths = vec!["sudo.oracle.sh".to_owned(), "hork.oracle.sh".to_owned()];
+            let checks: Vec<_> = refs
+                .iter()
+                .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+                .collect();
+            let verdict_sets: Vec<_> = refs
+                .iter()
+                .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
+                .collect();
+            let parsed = dorc_syntax::parse("sudo hork install frob\n");
+            let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+            let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
+            build_wrapped_analysis(
+                &srcs,
+                &refs,
+                &paths,
+                &checks,
+                &verdict_sets,
+                &parsed.value,
+                &cfg,
+                &value,
+                dial,
+                dorc_core::Capability::Root,
+                &mut interner,
+            )
+            .collapse_narrative
+            .iter()
+            .filter_map(|n| match n.kind() {
+                CollapseKind::EntryDenial { rung } => Some(*rung),
+                _ => None,
+            })
+            .collect()
+        };
+
+        assert_eq!(
+            rungs(dorc_core::EscalationDial::NoEscalation),
+            vec![dorc_aid::narrative::EntryDegradeTag::DialForbids],
+            "a dial-forbidden wrapped site narrates its denial rung"
+        );
+        assert!(
+            rungs(dorc_core::EscalationDial::VouchedOnly).is_empty(),
+            "a consented entry is no collapse and mints nothing"
         );
     }
 
@@ -6856,7 +6503,7 @@ mod tests {
     }
 
     #[test]
-    fn same_cell_disagreement_mints_measured_evidence_agreement_mints_none() {
+    fn same_cell_disagreement_mints_measured_narrative_agreement_mints_none() {
         // C4 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): a cross-site disagreement
         // mints one `Measured` FactMergeDisagreement; an agreement mints none.
         let mut i = Interner::default();

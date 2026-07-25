@@ -29,9 +29,17 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **collapse-mints-narrative** (`AID-NEEDS:law-collapse-mints-narrative`, née
   law-collapse-mints-evidence) — every safety-narrowing (meet-to-⊤, refuse, decline, wall,
   demote, cancel) mints a decision-inert `CollapseNarrative` carrying the collapse's
-  OPERANDS, demanded by the collapse constructor at the VALUE level. The nine mint sites
-  live in `analysis` (1), `plan` (3), and `cli` (5) — NOT here; this crate owns the TYPE
-  and its constructors, never the mint schedule.
+  OPERANDS, demanded by the collapse constructor at the VALUE level. The ten mint sites
+  live in `analysis` (1), `plan` (4), and `cli` (5) — NOT here; this crate owns the TYPE
+  and its constructors, never the mint schedule. The schedule is gate-held from here all the
+  same: `tests/narrative_completeness.rs` is a no-wildcard `match CollapseKind` plus a
+  lexical census, so a new class cannot land without visiting a mint site.
+- **narrative-mints-outrun-renders** (`289:seam-narrative-render-unconsumed`) — every class
+  is minted; only `VerdictDecline` carrying an `authored_reason` is RENDERED. A missing
+  narrative therefore omits SILENTLY (no `Unexplained` class exists, and `emit_why_lens`
+  ignores its narrative slice by signature). Do not build a narrative render to close this —
+  it is the deferred arrangement walker's, and surfacing it early welds output
+  `27V:rul-output-form-unwelded` keeps free.
 - **narrative-eq-excluded-at-the-carrier** — `CollapseNarrative` derives `Eq`, but any
   fixpoint-iterated lattice value carrying one hand-writes `PartialEq` to EXCLUDE it (the
   `analysis::effect::Reach` precedent): a narrative-sensitive lattice `Eq` never

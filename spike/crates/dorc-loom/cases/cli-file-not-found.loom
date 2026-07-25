@@ -1,0 +1,8 @@
+---
+code: cli-file-not-found
+when-fires: an input file does not exist. cli/lib.rs humane_read_error, NotFound arm. {kind} names what we were reading, {path} is the users own spelling.
+why: AID-NEEDS:law-codes-vary-by-world-not-grammar: one of THREE sibling codes over io::ErrorKind - a missing file, an unreadable one, and an unclassed OS failure are different world-states with different repairs. Never the platforms raw phrasing.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[cli-file-not-found]: sm cannot read book `webhost.sh`: no such file

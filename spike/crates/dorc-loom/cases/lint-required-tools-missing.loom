@@ -1,0 +1,9 @@
+---
+code: lint-required-tools-missing
+when-fires: --require-tools was given and a configured external linter is absent from PATH. cli/main.rs lint_command. {tools} lists them.
+why: 27R section 4 dir-absent-is-info, inverted by explicit request: absence is advisory by default, and --require-tools is how CI says a partial lint must not read as a pass.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[lint-required-tools-missing]: sm --require-tools: required tool(s) missing
+   from PATH: checkbashisms, shellcheck
