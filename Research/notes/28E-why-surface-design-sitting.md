@@ -19,35 +19,35 @@ sitting leans on) · `plans/282` (loom transport) · root `AID-NEEDS.md` (surfac
 
 HUMAN-TYPED, firm:
 
-- **`28E:rul-ascii-output-forever`** — product output is pure ASCII: "no unicode,
+- **`rul-ascii-output-forever`** — product output is pure ASCII: "no unicode,
   ever. period. anywhere... permanently." 90s-leaning by taste and by policy. Bites
   now: the as-built chain gutter prints a Unicode elbow (`top_run_reason`) — an
   ASCII respell is owed, cheap, rides any render lane; committed transcripts
   re-bless with it. Unifies with spike/docs' ASCII law; steering-sync owed.
-- **`28E:rul-trust-spent-first-argless-why`** — zero-arg `dorc why` leads with
+- **`rul-trust-spent-first-argless-why`** — zero-arg `dorc why` leads with
   TRUST-SPENT, always, never capped; danger in the user's face first.
-- **`28E:rul-sh-rewrap-is-load-bearing-scope`** — an in-process sh-formatter WITH
+- **`rul-sh-rewrap-is-load-bearing-scope`** — an in-process sh-formatter WITH
   TEETH is in scope and load-bearing: it must render sh both LITERALLY (formatter
   duty: correctness-preserving rewrap, escape/continuation-aware, valid sh out) and
   AS DESCRIPTION (ellipsis-elision of uninteresting spans — "line 12 ... line 17" —
   with opinions about what matters), and stay meaningful at brutal width budgets
   (~40 chars after gutters/nesting). Probably lives outside Dorc's core.
-- **`28E:rul-reason-tail-is-the-minimal-register`** — the plan render's per-line
+- **`rul-reason-tail-is-the-minimal-register`** — the plan render's per-line
   reason-tail IS the most-compressed render of the same decision-DAG; acked hard
   that this constrains, shapes, and flavours the whole model.
-- **`28E:nack-whylog-stores-book-bytes`** — the whylog stays THIN; it never
+- **`nack-whylog-stores-book-bytes`** — the whylog stays THIN; it never
   swallows book bytes. The drift/history answer is source-tracking integration
   (below), with a Dorc-owned book-cache only as the doubted fallback if git proves
   heavy/unreliable. The whole drift question is PARKED as a rabbit-hole; fence
   carried from the sitting: any byte-source integration is ANNOTATION-TIER only —
   it may say "this run's book is commit X, HEAD has drifted", it never substitutes
   bytes into the receipt render.
-- **`28E:rul-tree-render-is-a-firewalled-crate`** — nested code/prose/why-block
+- **`rul-tree-render-is-a-firewalled-crate`** — nested code/prose/why-block
   rendering, reflow, and sh-highlighting are a segregated internal mini-product
   (errorloom-precedent; maybe published, maybe not), never polluting Dorc's
   internals; and we run a NEEDS INVENTORY before any library shopping — no bending
   the design to library requirements.
-- **`28E:rul-never-a-dinna-do-it-layer`** (hard rule, human-typed on the sibling
+- **`rul-never-a-dinna-do-it-layer`** (hard rule, human-typed on the sibling
   round's kill) — Dorc NEVER synthesizes a negative claim ("Dorc did not touch X";
   "not Dorc's fault") on top of anything other than ENGINE-PROVED derivations:
   never user input, never oracle vouches or at-most claims, never
@@ -58,14 +58,14 @@ HUMAN-TYPED, firm:
   POSITIVE pointer half survives (symptom-indexed "these executed lines carry
   claims/proofs touching X, tier-labeled" — attribution wearing an index).
   Subsumes `28D:must-never-assert-a-negative`.
-- **`28E:rul-macro-attention-to-footguns`** — taste/marketing/delight drive MICRO
+- **`rul-macro-attention-to-footguns`** — taste/marketing/delight drive MICRO
   design; MACRO design-attention allocates to holes, footguns, and dangers to the
   user we protect. `why` earned its attention BECAUSE of the 233-class
   unsoundness purchase; other firefighter dangers (the `28D` A-grades) earn
   corresponding attention. Impact-projection gets CO-FLAGSHIP billing with the
   provenance chain on exactly this doctrine; advertising emphasis falls out much
   later.
-- **`28E:ask-tasty-productive-knob`** (human-typed direction; KNOBS mint + naming
+- **`ask-tasty-productive-knob`** (human-typed direction; KNOBS mint + naming
   = the human's act, pending) — preference and effectiveness are in PERMANENT
   tension ("tasty" vs "productive"), maintained as a KNOBS-tier deliberate
   un-weld across the whole product surface, refused resolution on principle.
@@ -223,7 +223,7 @@ narratives + a span-aware transport).
   identity + withheld-action ledger + dependency provenance + partial-apply
   geometry are ONE build — the spine the elide-half already owes — and LEAD the
   forensic tier) · `28D:pay-levers-are-subtractive` (the emergency-distrust
-  levers are macro-attention target #1 under `28E:rul-macro-attention-to-
+  levers are macro-attention target #1 under `rul-macro-attention-to-
   footguns`: subtractive-only, NO widening sibling ever, and functional while the
   analysis is distrusted — which architecturally sites the levers BELOW oracle
   loading) · `28D:pay-parts-to-the-rim-pays-forward` (outside endorsement of
@@ -252,7 +252,7 @@ narratives + a span-aware transport).
   event). The human's adjacent lean, near-ruling: artifacts/plans/whylogs
   pure-function + digest-verified promote toward build-now/core-promise.
 - The second sibling round's export (human-summarized): the
-  exoneration/counterfactual KILL — absorbed as `28E:rul-never-a-dinna-do-it-
+  exoneration/counterfactual KILL — absorbed as `rul-never-a-dinna-do-it-
   layer` above.
 
 ## §3 — The needs inventory (seed; grows with the markup round)
@@ -370,7 +370,7 @@ HELD / PUSHBACK:
 
 - **held-placement-reread** — the 0%-to-70% placement result names OUR plan
   surface as the diff-time analog: priority flows to the reason-tail (converging
-  with `28E:rul-reason-tail-is-the-minimal-register`) and pointer lines must be
+  with `rul-reason-tail-is-the-minimal-register`) and pointer lines must be
   copy-paste-true; `rul-chain-is-pull-only` SURVIVES.
 - **held-teaching-threat-to-286** — rustc-`--explain`-died + preferred-not-
   effective carried to `286`'s unpark gate (its economics were designed against
@@ -386,7 +386,7 @@ HELD / PUSHBACK:
   histogram over our own hand-authored fixtures is circular); re-homed to trial
   instrumentation, where Lee's you-cannot-choose-k-without-it point re-attaches
   honestly.
-- **resolved-impact-vs-provenance** — by `28E:rul-macro-attention-to-footguns`:
+- **resolved-impact-vs-provenance** — by `rul-macro-attention-to-footguns`:
   co-flagship billing; provenance keeps the naked-trust receipt duty; the impact
   projection (the positive symptom-index; the improvements section) grows under
   the same attention doctrine.

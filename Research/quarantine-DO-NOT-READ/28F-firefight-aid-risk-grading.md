@@ -30,7 +30,7 @@ and it means most of `28D` is cheaper than it looks.
 
 +SURE the residual danger lives in three places, and only three:
 
-- **`28F:tension-collection`** — forensics wants durable capture of precisely the bytes
+- **`tension-collection`** — forensics wants durable capture of precisely the bytes
   that are simultaneously hostile and secret-bearing: applied-line stdout/stderr, argv,
   executed artifacts, host paths. Decision-inertness does nothing for confidentiality.
   A whylog that captures everything is a credential aggregator on the crown-jewel host,
@@ -38,7 +38,7 @@ and it means most of `28D` is cheaper than it looks.
   arbitrary shell output has no recognizable secret type, so "we'll scrub it" is not a
   promise that can be kept. This is where most of the `28D` list's real cost sits.
 
-- **`28F:tension-synthesis`** — forensics wants correlation across runs and across hosts
+- **`tension-synthesis`** — forensics wants correlation across runs and across hosts
   (fleet blast-radius, trend surfaces, cross-run diffs). Building that means building
   cross-host aggregation and cross-run persistent identity — the exact machinery
   `sinv-controller-attribution` fences behind "an explicit reviewed aggregation
@@ -48,7 +48,7 @@ and it means most of `28D` is cheaper than it looks.
   second customer is the planner, and that conversion looks like ordinary ergonomics from
   inside a Fable-conducted round (`292:limit-maintainers-erode-boundaries`).
 
-- **`28F:tension-authority-inversion`** — the decision-inert plane still causes wrong
+- **`tension-authority-inversion`** — the decision-inert plane still causes wrong
   actions, through the human. A confident explanation at 03:40 is an action-driver. The
   sin ladder (`IMPLEMENTATION`, refined: mis-attributed is worse than un-attributed) was
   written about elision attribution; it transplants exactly onto the explain plane, and
@@ -164,7 +164,7 @@ Calibration note: the modal grade is B/C. An A means I would not want to be cons
   claimed residue) that are small and bounded, and it must tier-word claimed residue as
   *claimed*, never measured. The reason it is not A: "including for plans nobody ever
   applied" means plan-only runs write a durable, which is one of the two pressures making
-  the receipt always-on (see `28F:fnd-whylog-default-trips-a-gate`).
+  the receipt always-on (see `fnd-whylog-default-trips-a-gate`).
 
 - **`need-world-then-versus-now` — B.** Freshness-versus-approval is a distinction the
   security round explicitly wants surfaced, and the plan-age disclosure is close to a
@@ -295,7 +295,7 @@ Calibration note: the modal grade is B/C. An A means I would not want to be cons
   line re-enters" half additionally needs cross-run memory and should be graded with
   `need-near-miss-trend-surface`, not here.
 
-- **`need-near-miss-trend-surface` — D.** The clearest `28F:tension-synthesis` instance,
+- **`need-near-miss-trend-surface` — D.** The clearest `tension-synthesis` instance,
   and `28D` names the collision itself. Counting guard fall-throughs across runs, or "90
   consecutive re-runs", requires stable per-line identity across runs plus an accumulating
   store — which is the `kSTATE` verdict shape (`(verdict, content-key, freshness)`) that
@@ -371,7 +371,7 @@ Not part of the `28D` export; recorded here because they arrive on the same lane
 
 ## §5 — Findings
 
-- **`28F:fnd-whylog-default-trips-a-gate`** — +SURE. `28E:lean-why-is-whylog-
+- **`fnd-whylog-default-trips-a-gate`** — +SURE. `28E:lean-why-is-whylog-
   reconciliation` folds `dorc why` onto the receipt and, in `28E` §4's words, "hardens the
   always-on whylog requirement" — the `--whylog-dir` opt-in was a disclosed spike cut, and
   zero-setup-recovery makes default-on load-bearing. That is precisely
@@ -382,7 +382,7 @@ Not part of the `28D` export; recorded here because they arrive on the same lane
   the artifact hardening ship together or the fold ships opt-in. `28E` §4 already says
   "sensitivity fence rides along"; this is that fence, named, with its gate.
 
-- **`28F:fnd-retention-is-the-real-currency`** — +SURE. Eleven of the eighteen items are
+- **`fnd-retention-is-the-real-currency`** — +SURE. Eleven of the eighteen items are
   cheap to compute and expensive to *keep*. Whatever lane opens this tier should make one
   retention decision (what is durable, for how long, at what permissions, classified how)
   and let the features inherit it, rather than letting each feature negotiate its own
@@ -390,7 +390,7 @@ Not part of the `28D` export; recorded here because they arrive on the same lane
   names, ambient permissions, swallowed failures, unbounded replay — five small decisions
   that each looked local.
 
-- **`28F:fnd-forensic-tier-is-an-attribution-tier`** — ~SUSPECT, offered as framing. The
+- **`fnd-forensic-tier-is-an-attribution-tier`** — ~SUSPECT, offered as framing. The
   overlap between `28D`'s list and `295`'s unowned re-entry gates is large enough to be
   worth exploiting: mint-time authority witnesses (`need-withheld-action-ledger`), oracle
   authority-diff (`need-dependency-provenance-audit`), decision identity
@@ -400,7 +400,7 @@ Not part of the `28D` export; recorded here because they arrive on the same lane
   with product motivation rather than security nagging — which, given the firewall, is the
   only way those gates are likely to get built at all.
 
-- **`28F:fnd-two-plane-seal-is-load-bearing-for-this-tier`** — +SURE. Every B in §4
+- **`fnd-two-plane-seal-is-load-bearing-for-this-tier`** — +SURE. Every B in §4
   depends on the seal holding. `288` §2c records that the seal is type-level rather than
   co-location, and survived the `aid` extraction; `289` records the mint-hardening gate
   that caught a never-minted collapse class on day one. Both are good news. The exposure
@@ -446,7 +446,7 @@ features, and the correct export for that is a letter.
 ## §8 — Confidence
 
 +SURE: the three tensions (§1); the rubric's application to the collection and synthesis
-items; `28F:fnd-whylog-default-trips-a-gate` (read directly against `295`'s re-entry
+items; `fnd-whylog-default-trips-a-gate` (read directly against `295`'s re-entry
 list and `29A`'s phase table); that the two-plane seal is type-level and survived the
 extraction (read in `288` §2c and `289`, not re-verified against the Rust this pass).
 
