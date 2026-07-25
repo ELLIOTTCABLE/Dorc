@@ -1,1 +1,0 @@
-# `sudo hork setup` walls (sudo modeled-but-not-consumed) => no probe site.

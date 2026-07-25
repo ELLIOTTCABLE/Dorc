@@ -1,0 +1,125 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# typeless-floor-converged-elides (24L §2 — the floor exemplar). A MARKERLESS, pure-POSIX oracle
+# carrying ONLY a verdict function: its ambient converged site ELIDES; the same site past an
+# opaque wall GUARDS (re-checks live). No `set -e` here so the ambient rc is unconsumed and the
+# elide tier is reachable (under `set -e` an auto-cell's book-command rc is ⊤ ⇒ guard-only).
+foobar sync-certs /etc/nginx/certs
+hork tune --profile web
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# site 0 = the AMBIENT foobar (24L §2 floor auto-cell dorc-auto:foobar): its markerless
+# is_converged ran `foobar status …` on the host ⇒ rc 0 ⇒ CONVERGED (holds) ⇒ site 0 elides.
+# site 2 = the same foobar PAST the opaque `hork` wall ⇒ EstablishWritten ⇒ GUARDS (re-checks
+# live at apply). site 1 (hork, unmodeled) ships no record.
+site 0 effect=holds rc=0
+site 2 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock: the markerless verdict body runs `foobar status --certs-current -- <dir>` in the
+# probe (and the guard's live re-check); respond rc 0 (converged). The book's `sync-certs`
+# mutation is never invoked (site 0 elides; site 2's guard passes ⇒ skipped). Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock: the unmodeled wall (no oracle) — runs, logs, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork tune --profile web
+ran: foobar status --certs-current -- /etc/nginx/certs
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1933e576af8462dd sites=2 @@dorc@@\n'
+# site 0: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: dorc-auto:foobar@converged
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+#!/bin/sh
+# typeless-floor-converged-elides (24L §2 — the floor exemplar). A MARKERLESS, pure-POSIX oracle
+# carrying ONLY a verdict function: its ambient converged site ELIDES; the same site past an
+# opaque wall GUARDS (re-checks live). No `set -e` here so the ambient rc is unconsumed and the
+# elide tier is reachable (under `set -e` an auto-cell's book-command rc is ⊤ ⇒ guard-only).
+# foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)
+hork tune --profile web
+( foobar__is_converged sync-certs /etc/nginx/certs ) || foobar sync-certs /etc/nginx/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]

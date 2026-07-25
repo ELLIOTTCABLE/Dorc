@@ -1,0 +1,198 @@
+---
+run: round-trip
+fixpoint: executed
+flags: --trust-footprints
+why-addr: 12
+expect-why:
+  - site 1 survives+elides && certsync && sm.dorc.Service:nginx disjoint
+  - vouched at && service.oracle.sh:
+expect-why-chain:
+  - # The full `dorc why 12` chain render (aid-why-license-chain; 27V §4 acceptance). Scanned by the
+  - # paired why-chain gate against BOTH `dorc why 12` (live) and `dorc why 12 --last` (replay) — the
+  - # chain is identical through the same kernel. Needles pin CONTENT + STRUCTURE (the six tier-worded
+  - # links in order, the two loci, the naked-trust epilogue + both recovery moves); the byte-render
+  - # re-blesses freely (27V:rul-output-form-unwelded). Anti-masking: the machinery PRODUCES every line.
+  - 1. measured
+  - 2. vouched && service.oracle.sh:
+  - 3. ran && certsync
+  - 4. claimed && certsync.oracle.sh: && sm.dorc.CertBundle
+  - 5. derived && sm.dorc.Service:nginx
+  - 6. consented && trust-footprints
+  - unverified-by-construction
+  - to re-measure
+  - to fix && line to widen
+---
+-- book.sh --
+# survivebite27-naked-trust-chain (27V §4 flagship): the "bought unsoundness" survival-bite, made
+# into the acceptance test for the full `dorc why` chain render (aid-why-license-chain). A LYING
+# `certsync` disturbs (see certsync.oracle.sh) claims at most its OWN CertBundle cell but its real
+# push ALSO reloads nginx (a Service cell a DIFFERENT tool backs) — the omitted cell survives the
+# own-coordinate canary, so under --trust-footprints the downstream service elision is spared a wall
+# it truly collides with. The bite. NOTE (tc-flagship-lie-is-narrative, conductor-accepted): DST
+# cannot observe the world breaking (no real mutation); this case asserts NARRATION-COMPLETENESS
+# ONLY — that `dorc why 12` (the systemctl line) discloses the survival rode a CLAIM (not a measurement), names
+# the claimed link unverified-BY-CONSTRUCTION, and gives the two recovery moves. Never "fix" it
+# toward an impossible world-breakage assertion.
+certsync push web1
+systemctl start nginx
+
+-- certsync.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# LYING wall oracle (27V §4 flagship). `certsync push` rewrites a cert bundle AND — per its real
+# post-push behaviour — reloads nginx. But its disturbs claims at most its OWN CertBundle cell,
+# omitting the Service cell systemctl backs. The omission survives the own-coordinate canary (the
+# CertBundle cell IS certsync's own effect ⇒ own ∈ footprint), so --trust-footprints spares the
+# downstream `systemctl start` elision that truly collides. The frame problem, bought.
+certsync__predict() {
+   verb=$1; shift
+   bundle : sm.dorc.CertBundle = "$1"
+   case $verb in
+      push) certsync status -- "$bundle" : sm.dorc.CertBundle:"$bundle"@synced ;;
+   esac
+}
+
+certsync__disturbs() {                             # THE LIE: at-most its OWN CertBundle cell — the
+   verb=$1; shift                                  # real push ALSO reloads nginx (Service:nginx#active),
+   bundle : sm.dorc.CertBundle = "$1"              # UNCLAIMED and invisible to every coherence check.
+   case $verb in
+      push) printf '%s\n' "$bundle" : disturbs sm.dorc.CertBundle ;;
+   esac
+}
+
+certsync__is_converged() {
+   verb=$1; shift
+   case $verb in
+      push) certsync status -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- service.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# HONEST service oracle: `systemctl start` gates Service:<unit>#active. It backs the downstream
+# elision the lying certsync footprint spares — a DIFFERENT tool's fact, cross-kind from CertBundle.
+systemctl__predict() {
+   verb=$1; shift
+   svc : sm.dorc.Service = "$1"
+   case $verb in
+      start)   systemctl is-active  -- "$svc" : sm.dorc.Service:"$svc"@active ;;
+      enable)  systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"@enabled ;;
+   esac
+}
+
+systemctl__is_converged() {
+   verb=$1; shift
+   case $verb in
+      start)  systemctl is-active  -- "$1" >/dev/null 2>&1 ;;
+      enable) systemctl is-enabled -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# site 0 (certsync push web1): cert bundle not synced ⇒ diverged ⇒ certsync push RUNS (the wall).
+# site 1 (systemctl start nginx): nginx active ⇒ converged ⇒ the start elides + survives the wall
+# (CertBundle:web1 disjoint from Service:nginx#active — cross-kind provably-disjoint).
+site 0 effect=absent
+site 1 effect=holds
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/certsync --
+#!/bin/sh
+# INERT mock (the LYING wall tool's binary): logs its argv, mutates NOTHING. certsync is BOTH the
+# probe (`certsync status web1` — the is_converged check) AND the mutator (`certsync push web1` —
+# the wall). One binary, two rcs: `status` rc 1 ⇒ absent ⇒ the push is a diverged wall that RUNS;
+# `push` rc 0 ⇒ the wall's exec succeeds (the rendered apply exits 0). Real push is never executed.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${1:-} in
+   status) exit 1 ;;
+   *) exit 0 ;;
+esac
+
+-- mocks/systemctl --
+#!/bin/sh
+# INERT mock: logs its argv, mutates nothing. `systemctl is-active nginx` rc 0 ⇒ holds ⇒ the
+# `systemctl start nginx` elides (converged); gate-1 only asserts record grammar, not the effect.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: certsync push web1
+
+-- replay --
+$ dorc --book=book.sh -o certsync.oracle.sh -o service.oracle.sh --trust-footprints < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ac00b369e2a4664a sites=2 @@dorc@@\n'
+# site 0: sm.dorc.CertBundle:web1@synced
+certsync__predict() {
+   verb=$1; shift
+   bundle="$1"
+   case $verb in
+      push) certsync status -- "$bundle" ;;
+   esac
+}
+certsync__predict 'push' 'web1'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Service:nginx@active
+systemctl__predict() {
+   verb=$1; shift
+   svc="$1"
+   case $verb in
+      start)   systemctl is-active  -- "$svc" ;;
+      enable)  systemctl is-enabled -- "$svc" ;;
+   esac
+}
+systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# survivebite27-naked-trust-chain (27V §4 flagship): the "bought unsoundness" survival-bite, made
+# into the acceptance test for the full `dorc why` chain render (aid-why-license-chain). A LYING
+# `certsync` disturbs (see certsync.oracle.sh) claims at most its OWN CertBundle cell but its real
+# push ALSO reloads nginx (a Service cell a DIFFERENT tool backs) — the omitted cell survives the
+# own-coordinate canary, so under --trust-footprints the downstream service elision is spared a wall
+# it truly collides with. The bite. NOTE (tc-flagship-lie-is-narrative, conductor-accepted): DST
+# cannot observe the world breaking (no real mutation); this case asserts NARRATION-COMPLETENESS
+# ONLY — that `dorc why 12` (the systemctl line) discloses the survival rode a CLAIM (not a measurement), names
+# the claimed link unverified-BY-CONSTRUCTION, and gives the two recovery moves. Never "fix" it
+# toward an impossible world-breakage assertion.
+certsync push web1
+# systemctl start nginx   # dorc: elided (already converged / dead branch)

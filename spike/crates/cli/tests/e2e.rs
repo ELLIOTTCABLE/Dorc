@@ -858,7 +858,7 @@ struct LoomCaseSpec {
 
 /// The frontmatter keys a loom-form case may carry, and the dir-form artifact each becomes.
 /// Anything else is refused — an unread key is a silently-ineffective assertion.
-const LOOM_KEYS: [&str; 12] = [
+const LOOM_KEYS: [&str; 13] = [
     "run",
     "fixpoint",
     "flags",
@@ -871,6 +871,7 @@ const LOOM_KEYS: [&str; 12] = [
     "expect-diagnostic",
     "expect-why",
     "expect-hint",
+    "expect-why-chain",
 ];
 
 /// Scalar-or-list frontmatter items (an absent key is the empty list).
@@ -968,6 +969,7 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
         ("expect-diagnostic", "expected-diagnostics"),
         ("expect-why", "expected-why"),
         ("expect-hint", "expected-hint"),
+        ("expect-why-chain", "expected-why-chain"),
     ] {
         let items = loom_items(&spec.case, key);
         if !items.is_empty() {

@@ -1,9 +1,0 @@
-#!/bin/sh
-# INERT shim for `dpkg` — the book's Query guard AND the pkgstate probe (`dpkg -s [--] <pkg>`).
-# HOST: otelcol installed ⇒ exits 0 ⇒ the guard holds, the fold reads rc 0, the fallback dies.
-. "${0%/*}/.log"; _dorc_logged "$@"
-pkg=$2; [ "$pkg" = "--" ] && pkg=$3
-case $pkg in
-  otelcol) exit 0 ;;
-  *)       exit 1 ;;
-esac
