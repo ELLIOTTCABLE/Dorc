@@ -34,7 +34,7 @@ TRUST SPENT -- removals resting on a human claim, not proof:
 
   web.sh:9   systemctl enable --now nginx
              stayed removed PAST line 8 really running, on certsync's
-             at-most claim                                      dorc why 9
+             at-most claim                                   (dorc why web.sh:9)
 
 PROBLEMS -- what dorc could not do:
 
@@ -46,32 +46,50 @@ PROBLEMS -- what dorc could not do:
 IMPROVEMENTS -- what dorc could do, if:
 
   ~2 lines of sh: a convergence check for hork removes lines 12 and 13
-  whenever hork is converged                                dorc teach walls
+  whenever hork is converged                                  (dorc teach walls)
 
-$ dorc why 9
-web.sh:9  systemctl enable --now nginx
-  removed RATHER THAN re-checked: line 8 ran above it, which normally forces
-  a live re-check -- but you consented to act on authors' at-most claims, and
-  certsync's claim does not reach what line 9's removal was proved on.
+$ dorc why web.sh:9
+   [ web.sh, participating lines:
+ 8 | certsync push web1
+ 9 | systemctl enable --now nginx
 
-  the two facts that had to hold together:
+  === OUTCOME (2026-07-25 02:00:37) ===
 
-  * measured 01:59:52   nginx was enabled+active     (service.oracle.sh:12)
-  * vouched             re-running adds nothing when already active
-                        (service.oracle.sh:9)
+  skipped RATHER THAN guarded: 8|certsync ran above it, which normally
+  forces an apply-time guard-clause; but --risk-faultless-skips activates acting
+  on authors' at-most claims, and certsync's claim does not reach what
+  9|systemctl's removal was proved on.
 
-  ! claimed             certsync push touches AT MOST cert state -- an
-                        author's claim; nothing verifies it
-                          30 | # surveyed 2026-05: cert store only.
-                          31 | push) printf '%s\n' "$1"  : disturbs org.foob.Certs ;;
-                        (certsync.oracle.sh, shown as written)
+  === ANALYSIS ===
+
+  Removal depended upon these three facts, that had to hold together:
+
+  * measured   Package:nginx was @enabled+@active
+               (service.oracle.sh:12, ran 01:59:52)
+  * vouched    re-running adds nothing when already active
+               (service.oracle.sh:9)
+
+  ! claimed    `certsync push` touches AT MOST @cert state -- an author's claim;
+               cannot be mechanically verified
+                     [ certsync.oracle.sh, as-written:
+                  30 | # surveyed 2026-05: cert store only.
+                  31 | push) printf '%s\n' "$1"  : disturbs org.foob.Certs ;;
 
   so: the claim and the measurement do not overlap, and the removal stood.
-  `!` marks the one link no machine checked.
+  `!` marks the one link no machine can check.
 
-  if line 9 SHOULD have run:
-    suspect:  the claim -- the only unverified link. if certsync push also
-              touches service state, it is what wrongly kept line 9 out.
-    check:    dorc plan web.sh web1     re-measures now; dorc keeps no memory
-    fix:      certsync.oracle.sh:31     widen the claim; every consumer heals
-    all:      dorc why 9 --all          every link, unselected, exhaustive
+  === NEXT STEPS ===
+
+  if 9|systemctl SHOULD have run:
+    suspect:   the 8|certsync claim -- the only unverified link. if
+               `certsync push` also touches @enabled/@active state, it is what
+               wrongly kept 9|systemctl out.
+    check:    `dorc plan --why web.sh web1` (re-measures now; dorc is stateless)
+    fix:      certsync.oracle.sh:31 (widen the claim; every consumer heals)
+
+    the rest: `dorc why web.sh:9 --all` (every link, unselected, exhaustive)
+
+(Offline analysis from stale state; run `dorc plan web.sh --why` for
+re-measurement and to attempt a fix. Or re-run with `why --probe` for a
+live-state-grounded report. This is filtered for presumed relevance; `why --all`
+to enumerate all engine knowledge.)
