@@ -20,6 +20,24 @@ set -eu
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 spike=$(CDPATH= cd -- "$here/.." && pwd)
 
+# Pre-flight the two tools every step below shells out to. Both have bitten under WSL, and both
+# bite EXPENSIVELY without this: `mise` is absent from a non-login shell (so all four steps die
+# 127), and a git older than this repo's `relativeWorktrees` extension (git 2.48+) refuses the
+# whole repository — which lands on the final golden listing, AFTER a ten-minute green run, as a
+# bare fatal. A refusal is worth more than a tail when the environment, not the tree, is wrong.
+preflight() {
+  _what=$1
+  shift
+  if "$@" >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "conduct-bless: REFUSING — $_what does not work here:" >&2
+  "$@" 2>&1 | sed 's/^/  /' >&2
+  exit 2
+}
+preflight "mise" mise --version
+preflight "git in this worktree" git -C "$spike" rev-parse --git-dir
+
 log=$(mktemp)
 cleanup() { rm -f "$log"; }
 trap cleanup EXIT INT TERM
