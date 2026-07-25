@@ -14,6 +14,29 @@
 
 ---
 
+## THE AID/LOOM UNIFICATION ARC (`plans/288` EXECUTED WHOLE — closed 2026-07-24)
+
+**BUILD COMPLETE, awaiting the human's fold of `ai/r28-unify` and the HELD phase-8
+prose pass.** One sitting, ten lanes, all conductor-cold-verified (final:
+`unit 1200 | e2e 98 | looms 73 | gates ok`). THE durable is **`notes/289`** (rulings,
+landings, seams, the phase-8 package); the specs it executed: `plans/288` (+ maps
+`notes/290`/`291`). What landed: `crates/aid` extracted (describe plane;
+Narrative rename; two-plane seal intact) · the mint-seam + `dorc-loom scaffold` +
+the mint-hardening gate package (caught a never-minted collapse class day one) ·
+lint findings + ~21 CLI/dorc-sh errors as registry codes (all `sm `-migrated) ·
+the flat test tree + central Rust runners (`run.sh` RETIRED; sanctioned-executor
+law re-worded) · e2e→loom convergence machinery (closed normalizer vocabulary;
+catalog-validated needles — which caught a rounds-dead fixture) · the arrangement
+registry + help-page pilot (17 chrome rows loom-editable; artifact-plane fenced
+OUT) · the disturbs-family def↔invocation LIVE BUG fixed + pinned · cross-platform
+gate repairs (a never-type-checked `#[cfg(unix)]` path; WSL git≥2.48 wall;
+conduct-bless pre-flights). Research banked: `.claude/research/loom-harness-
+alternatives/` (errorloom publish-narrow lean; mock-stub crate candidate).
+**Human queue:** the phase-8 prose pass (catalog `sm `/6-unwritten + 17 arrangement
+rows; two transport seams pair with it) · WSL git upgrade + mise activation ·
+SyncThing-writes-into-`.git` (4 conflict refs surfaced) · three dirty worktrees
+(incl. uncommitted 279a/b Sol-N reports) · errorloom LICENSE/publish forks.
+
 ## ERRORLOOM TEMPLATE COMPILER (post-round-28; phase-three CLOSED 2026-07-23)
 
 **MERGE:** the round-29 ingress `ai/main`@`b6fde355` is folded into `ai/r28-phase3-close`
