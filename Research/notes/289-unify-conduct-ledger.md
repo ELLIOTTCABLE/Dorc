@@ -548,3 +548,30 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   transcript face for the three stderr lines is `286`/post-arc territory.
   `describe_arrangement` rename (flag 2): internal, accepted.
 - 2026-07-24: phase-7 fold cold-verified own-hand (full clean; conduct-bless: build ok | unit 1200 | e2e 98 passed | looms 73 | gates ok). Stack `75344041` verified — ALL BUILD PHASES (0–7) COMPLETE.
+
+## §2r — The WSL investigation, folded (conductor, 2026-07-24)
+
+- LANDED @ `09fe9aa0` (4 commits), FOLDED. REPRODUCED under real WSL; all three
+  initial suspects wrong-or-secondary. Mechanisms: (1) `#[cfg(windows)]` receipt
+  machinery ⇒ correct Linux-only dead_code errors under `-D warnings` — five
+  items now platform-gated (deliberately NOT `allow`'d: a future cross-platform
+  caller must fail to RESOLVE); (2) a `#[cfg(unix)]` shim-chmod path that had
+  NEVER type-checked (`String` into a `Diag` seat) — fixed via same-seat reuse
+  (`shim_dir_unwritable`; ruling: ACCEPTED, same edge + same world-state, a
+  separate code would be grammar-driven against law-codes-vary-by-world);
+  (3) the git wall: `extensions.relativeWorktrees` needs git ≥ 2.48, WSL stock
+  2.43 refuses the REPO — conduct-bless now pre-flights git AND mise and refuses
+  in one line in ~50ms instead of failing after a ten-minute green run.
+  Suspect (a) target-contamination CLEARED with evidence (host-keyed unit
+  hashes; the extensionless `dorc` is a PE hardlink, not an ELF intruder) — no
+  guard built against a problem that isn't there.
+- New steering law: `one-platform-green-is-not-cross-platform-green` (+
+  `wsl-needs-a-modern-git`), spike/CLAUDE.md build section.
+- Gates: msys cold full green (1200/98/73); WSL clippy 0 + 1365 tests (the
+  1371−1365 gap = exactly the 7 windows-only minus 1 unix-only cfg tests;
+  builder-verified, accepted as reported).
+- HUMAN STEPS (structural, not built): upgrade WSL git past 2.48
+  (`ppa:git-core/ppa`); make mise activation survive a non-login `sh` if
+  conduct-bless should run under WSL. Until the git upgrade, NO git-touching
+  Dorc tooling works there (incl. `dorc-loom promote`) — the pre-flight refuses
+  cleanly.
