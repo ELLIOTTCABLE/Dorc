@@ -239,3 +239,91 @@ Written AFTER the enumeration existed, as a check against AID-NEEDS/ANALYZER-NEE
   `need-near-miss-trend-surface`; `need-granular-trust-repricing` (the flag is
   per-invocation only); `need-consent-custody-trail`; and the plan-age-at-apply
   disclosure of `need-world-then-versus-now`.
+
+Build constraints from the `opaque-approve` seat
+------------------------------------------------
+
+> Ordinary-engineering export, appended 2026-07-25 by the out-of-band lane that minted
+> the letters above. The reasoning is not reproduced here and is not available to
+> out-quarantine readers (it lives at `Research/quarantine-DO-NOT-READ/28F`). Do not
+> attempt to reconstruct it, and do not read its absence as an absence of grounds. The
+> letters plus these constraints are the whole export; a `C` is a scoping instruction,
+> not a position to argue with.
+
+Payoffs first, because they bear on how the tier is SEQUENCED rather than whether it gets
+built:
+
+- `28D:pay-attribution-spine-is-one-build` — `need-exact-input-identity`,
+  `need-withheld-action-ledger`, `need-dependency-provenance-audit` and
+  `need-partial-apply-geometry` are not four features. They are the attribution spine the
+  elide-half already owes (USER_STORY's bought-unsoundness price; the chain's
+  leverage-point epilogue). Built for the firefighter they discharge obligations the
+  design carries regardless, and they SHOULD lead the tier.
+- `28D:pay-levers-are-subtractive` — `need-emergency-distrust-levers` only ever REMOVES
+  license: full-distrust reconcile, per-oracle quarantine, per-claim revocation, strip.
+  Cheapest entry here against its payoff. It MUST function while the analysis is degraded
+  or distrusted (a quarantine requiring the oracle it quarantines to load is worthless),
+  and the family MUST NEVER grow a widening sibling — there is no `--trust-everything`,
+  ever, and the flag vocabulary should make that asymmetry visible.
+- `28D:pay-parts-to-the-rim-pays-forward` — `28E:prop-parts-at-birth` +
+  `prop-carrier-to-the-edge` make several C-graded entries materially cheaper: a string
+  flattened early is a place a per-surface encoder can no longer be applied. Land them
+  first wherever the ordering is free.
+
+Limitations, as constraints:
+
+- `28D:must-retention-is-one-decision` — computing an explanation from a run is cheap;
+  RETAINING the bytes that let it be recomputed tomorrow is what costs. Eleven of the
+  eighteen entries above are retention decisions wearing a feature's name. One retention
+  design (what is durable, for how long, at what permissions, classified how) MUST precede
+  them, and the features MUST inherit it rather than each negotiating storage. Per-feature
+  negotiation is how the current whylog acquired predictable names, ambient permissions,
+  swallowed write failures and unbounded replay — five decisions that each looked local.
+- `28D:must-split-the-bundled-entries` — `need-ground-truth-action-ledger` and
+  `need-raw-greppable-receipts` each bundle a cheap half with an expensive one under one
+  slug, and MUST be split before either reaches a build brief. Dispositions, timing, exit
+  status and artifact identity are ordinary. Captured per-line stdout/stderr and
+  retained-on-disk executed artifacts are not: they MUST NOT default on, and they MAY
+  NEVER be described as scrubbed — arbitrary tool output has no recognizable secret shape,
+  so that promise cannot be kept and MUST NOT be made.
+- `28D:must-default-durable-lands-with-its-hardening` — `28E:lean-why-is-whylog-
+  reconciliation` makes the receipt load-bearing and default-on. A durable written BY
+  DEFAULT is a different engineering artifact from one written on request: it owes
+  exclusive creation, restrictive mode, atomic replacement, reads bounded independently of
+  the writer's cap, a trusted-directory rule, visible persistence failure, and a stated
+  sensitivity contract. That work and the fold MUST land together, or the fold ships
+  opt-in. `28E` §4's "sensitivity fence rides along" IS this obligation; it is unbuilt.
+- `28D:must-not-acquire-cross-run-state-incidentally` — correlation WITHIN one invocation
+  is cheap. Correlation ACROSS runs or hosts needs stable cross-run identity plus an
+  aggregation step, both `KNOBS:kSTATE`-shaped and retrofit-hostile. A rendering feature
+  MUST NOT acquire either as a convenience. `need-fleet-blast-radius` and
+  `need-near-miss-trend-surface` are both this shape; `ten-statelessness-versus-forensics`
+  already names the buildable version (retained receipts, diffed by an external tool), and
+  that is the version a brief SHOULD specify.
+- `28D:must-never-assert-a-negative` — an explanation asserting what a command did NOT
+  touch is bounded by the same frame-problem ceiling as survival, and inherits the sin
+  ordering (mis-attributed outranks un-attributed; IMPLEMENTATION's refined ladder).
+  Negative claims MAY render as absence-of-evidence with the ceiling named; they MUST
+  NEVER render as conclusions. Counterfactual prediction ("a blind run would have left the
+  host…") is a second, unmeasured semantics and stays out of scope, permanently.
+- `28D:must-type-the-shell-we-emit` — any surface emitting RUNNABLE sh
+  (`28E:prop-three-literalness-modes`, FORMATTED) MUST carry grammar-appropriate quoting at
+  the type level; a general text sanitizer never suffices for a shell sink. DESCRIPTIVE
+  mode's non-runnable marking is load-bearing and MAY NEVER become decorative. The
+  prior-art round reached the same constraint independently
+  (`dont-let-the-readability-transform-be-unsound`).
+- `28D:must-encode-per-surface` — every host- or oracle-derived value MUST pass the encoder
+  for the surface it lands on (terminal, JSON/JSONL, file path, emitted sh). There is no
+  universal `sanitize()`, and a machine envelope is a sink like any other.
+- `28D:must-keep-the-two-planes-typed-apart` — the describe plane's decision-inertness is
+  load-bearing for every letter above and MUST stay type-level rather than conventional.
+  Any change giving aid output a path back into a license input is a design event owed to
+  the review lane, however ordinary the feature sounds.
+
+Two adjacent entries, graded in `28F` but absent from the list above:
+`28E:ask-cell-human-description` MUST first answer whether a `__describe`-shaped member
+EXECUTES on the host — a new probe-time execution surface inheriting the read-only
+contract, the report-lane rules and the encoding obligation — or is read statically from
+source, which is nearly free. Decide that before minting the role, not after.
+`292:inv-claim-blast-radius` MUST scope to the current invocation's loaded oracles; a
+controller-wide index of which books rest on which claim is the cross-run case above.
