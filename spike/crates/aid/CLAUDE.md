@@ -97,6 +97,12 @@ crate's charter) · `notes/287` (errorloom as-built).
   `../aid/src/catalog_lock.rs`. Both are depth-coupled to `crates/<c>/` — moving either
   crate breaks both, silently in one direction (a missing baseline SKIPS the ratchet gate).
 
+- **spanless-gate-is-lexical** — `spanless_mint_allow_list_is_exact` is a LEXICAL grep
+  for `new_spanless_site(DiagCode::X(` at the emit site: every mint spells its payload
+  LITERALLY, never through a factored helper (two builders hit this same red, 2026-07-24;
+  the gate catches helpers, but write the literal form first and save the round-trip).
+  Doc-comments containing the needle shape also trip it — keep examples needle-free.
+
 ## Boundaries
 
 - Diagnostic emission SITES belong in the crate that made the decision, never here. This
