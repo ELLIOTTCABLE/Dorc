@@ -5,6 +5,7 @@ why: inv-no-throw: a corrupt durable is diagnostics, never a crash — the reade
 ---
 -- .whylog --
 dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@
+
 -- replay --
 $ dorc why --last --whylog=.whylog
 whylog: warning[whylog-corrupt]: the saved why-log is damaged and cannot be read

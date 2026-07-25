@@ -24,23 +24,14 @@
 
 mod support;
 
+use std::fmt::Write as _;
 use std::sync::Arc;
 
-use errorloom::{Case, CaseFile, fixpoint_check};
+use errorloom::{Case, CaseFile, CaseRenderer as _, fixpoint_check};
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use dorc_loom::DorcConsumer;
 use support::{LoomCase, case_roots, discover_looms};
-
-/// The cases known NOT to be render fixpoints at HEAD, with the conductor's ruling that
-/// banked them: `289` §2j — a blank-line divergence in the whylog render, deferred to
-/// `288:phase-e2e-loom-conversion`. A pin, not an excuse: a case that starts reproducing
-/// is a loud XPASS to promote, so the list cannot silently outlive the defect.
-const KNOWN_NON_FIXPOINTS: [&str; 3] = [
-    "whylog-book-desync",
-    "whylog-corrupt",
-    "whylog-version-refused",
-];
 
 /// Parse, hygiene-check, and render-fixpoint one committed case.
 fn run_case(case: &LoomCase) -> Result<(), Failed> {
@@ -52,19 +43,40 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         .check_hygiene(Some("code"))
         .map_err(|error| format!("FAIL  {name}  [hygiene: {error}]"))?;
 
-    let file = CaseFile::new(format!("{name}.loom"), text);
-    let reproduced = fixpoint_check(&DorcConsumer::new(), std::slice::from_ref(&file));
-    match (reproduced, KNOWN_NON_FIXPOINTS.contains(&name.as_str())) {
-        (Ok(()), false) | (Err(_), true) => Ok(()),
-        (Ok(()), true) => Err(format!(
-            "XPASS {name}  [known non-fixpoint now reproduces — drop it from KNOWN_NON_FIXPOINTS]"
-        )
-        .into()),
-        (Err(error), false) => Err(format!(
-            "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift: {error:?}]"
-        )
-        .into()),
+    let file = CaseFile::new(format!("{name}.loom"), text.clone());
+    if fixpoint_check(&DorcConsumer::new(), std::slice::from_ref(&file)).is_ok() {
+        return Ok(());
     }
+    // `fixpoint_check` reports only WHICH case drifted, so re-render for the window: the
+    // usual cause is a case authored in a layout the container does not canonicalize to,
+    // and the offending line is the whole diagnosis.
+    let rendered = DorcConsumer::new()
+        .render_case(&Case::parse(&text).map_err(|error| format!("FAIL  {name}  [{error}]"))?)
+        .map_err(|error| format!("FAIL  {name}  [render: {error}]"))?;
+    Err(format!(
+        "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift]\n{}",
+        divergence(&text, &rendered)
+    )
+    .into())
+}
+
+/// A compact first-divergence window over the committed and re-rendered transcripts.
+fn divergence(want: &str, got: &str) -> String {
+    let want: Vec<&str> = want.lines().collect();
+    let got: Vec<&str> = got.lines().collect();
+    let at = (0..want.len().max(got.len()))
+        .find(|i| want.get(*i) != got.get(*i))
+        .unwrap_or(0);
+    let mut out = format!("      first divergence at line {}\n", at.saturating_add(1));
+    for i in at..(at.saturating_add(3)).min(want.len().max(got.len())) {
+        let _ = writeln!(
+            out,
+            "      -{:?}\n      +{:?}",
+            want.get(i).copied().unwrap_or("<eof>"),
+            got.get(i).copied().unwrap_or("<eof>")
+        );
+    }
+    out.trim_end().to_owned()
 }
 
 fn main() {

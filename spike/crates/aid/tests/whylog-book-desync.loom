@@ -6,6 +6,7 @@ why: determinism-is-the-replay-license: the durable stores digests, not book/ora
 -- book.sh --
 #!/bin/sh
 printf '%s\n' current
+
 -- .whylog --
 dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@
 invoc mode=plan @@dorc@@
@@ -13,6 +14,7 @@ book digest=0000000000000000 path=book.sh @@dorc@@
 digest decision= @@dorc@@
 results bytes=0 @@dorc@@
 dorc-whylog-end/1 @@dorc@@
+
 -- replay --
 $ dorc why --last --whylog=.whylog
 whylog: warning[whylog-book-desync]: the saved why-log no longer matches what is

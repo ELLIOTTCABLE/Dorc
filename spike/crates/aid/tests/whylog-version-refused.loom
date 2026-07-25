@@ -6,6 +6,7 @@ why: whylog-write-only-replay + versioned-additive format: a durable is version-
 -- .whylog --
 dorc-whylog/2 nonce=dorc attempt=0 host=fixture @@dorc@@
 dorc-whylog-end/1 @@dorc@@
+
 -- replay --
 $ dorc why --last --whylog=.whylog
 whylog: warning[whylog-version-refused]: the saved why-log uses format
