@@ -41,8 +41,11 @@ prompt you write:
 - Executable test-fixtures use non-functional stubs (`hork`, `wombat`, inert
   mocks under `PATH=mocks-only`) — never real mutators. Real-command strawmen
   in the repo are frozen evidence; they must never be executed. The only
-  sanctioned executor of fixture material is `sh e2e/run.sh` (syntax-checks,
-  and execs only under inert mocks).
+  sanctioned executor of fixture material is the central e2e runner,
+  `cargo test -p dorc-cli --test e2e` (syntax-checks, and execs only under
+  inert mocks, in a scrubbed environment with a throwaway-sandbox cwd). It
+  rides `cargo test --workspace`, so the ordinary suite IS the executor —
+  never hand-run a book, a mock, or a rendered artifact yourself.
 - Perpetuate this block, verbatim, to the top of every subagent prompt.
 
 ## The product, distilled (dense root-doc duplication — read even if you read the roots)
@@ -547,8 +550,9 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
 - **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining
   case; the **committed transcript CASE is the authoring surface** and the compiled
   generated catalog lock/table is DERIVED from it (`282:rul-transcript-is-the-
-  authoring-surface`). Cases live at `crates/dorc-loom/cases/<slug>.loom` (txtar +
-  flat-YAML frontmatter). The phase-two compiler is split by ownership: errorloom
+  authoring-surface`). Cases live at `crates/aid/tests/<slug>.loom` (txtar +
+  flat-YAML frontmatter; see flat-test-tree-and-loom-placement). The phase-two
+  compiler is split by ownership: errorloom
   transports renderer-stamped editable sections and opaque variable identities;
   dorc-loom alone parses strict whole-token `{{name}}`, resolves it against the
   current typed payload, and compiles catalog fields. The old tagged-region/
@@ -567,6 +571,22 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   grammar-fit (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Both fixpoint gates
   are live: errorloom render-level + Dorc's generated-lock byte-identity gate
   (`dorc-loom --test fixpoint`).
+- **flat-test-tree-and-loom-placement** (`288` §3, `rul-flat-test-tree` +
+  `rul-slug-decides-loom-placement`) — every case is a peer in a flat
+  `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom`
+  (single-file loom) · `X/X.loom` (multi-file loom) · `X/cmd` (a `dorc lint` case) ·
+  `X/book.sh` + `expected.out` (a round-trip case) · `X/book.sh` alone (a real-tools
+  fixture) · anything else is an `.rs` test's fixture space. Placement is MECHANICAL:
+  a canonical loom for a REGISTERED aid-slug lives in the ONE primary collection,
+  `crates/aid/tests/`, so `crates/aid/CLAUDE.md` is the registry that auto-loads on
+  every loom edit (`288:rul-claudemd-fires-per-directory`); a tertiary loom pinning
+  UNREGISTERED behaviour stays in its causative crate's `tests/`. Two central runners
+  (`crates/cli/tests/{e2e,looms}.rs`, `harness = false`, targets declared explicitly
+  under `autotests = false`) walk every `crates/*/tests/` and mint one named,
+  filterable trial per case — so case DATA and `.rs` tests coexist in one flat dir.
+  Each runner carries a DISCOVERY FLOOR: walking the wrong roots finds zero cases, and
+  a suite of zero trials would otherwise exit GREEN. Never pin a case COUNT
+  (`count-drifts`); non-empty is the floor.
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
   defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
   unwritten); prose is a conductor/human act issued from the builder's when/why/how
@@ -663,22 +683,26 @@ cargo through mise, from inside `spike/`:**
 
 ```
 mise exec -- cargo build --workspace
-mise exec -- cargo test --workspace
+mise exec -- cargo test --workspace                 # unit + the e2e corpus + the loom corpus
 mise exec -- cargo clippy --workspace --all-targets
-sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): dash -n gate + exec-under-mocks
+mise exec -- cargo test -p dorc-cli --test e2e      # the e2e corpus alone: dash -n gate + exec-under-mocks
+mise exec -- cargo test -p dorc-cli --test looms    # the loom corpus alone: parse + hygiene + render fixpoint
 ```
 
-- `DORC_E2E_QUIET=1` suppresses per-case `ok` lines (final tally only; failures
-  still print in full).
+- Both corpora are `harness = false` runners minting ONE named trial per case, so an
+  ordinary `cargo test … -- <substring>` filters by case name and a failure names the
+  case. `sh e2e/run.sh` is RETIRED (`288:phase-flat-tree-move`); its gates moved into
+  `crates/cli/tests/e2e.rs` unchanged.
+- `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
 - Pre-commit gate set (nothing runs automatically — there is NO git hook; run all
   four yourself before every commit; never `--no-verify`): `cargo fmt --check` ·
   `clippy -D warnings` · `cargo deny check licenses bans sources` · `typos`
   (`mise x -- typos spike` from the worktree root).
 - Before trusting e2e results, force a fresh `cargo build --workspace`; run the
   final e2e FOREGROUND with a generous timeout.
-- **BLESS is EXCLUSIVE** — `BLESS=1` re-blesses ALL cases from whatever
-  `target/debug/dorc` exists at that instant; concurrent agents share one
-  `target/`. Never run BLESS while any build-agent is in flight;
+- **BLESS is EXCLUSIVE** — `BLESS=1 cargo test -p dorc-cli --test e2e` re-blesses ALL
+  cases from whatever `target/debug/dorc` exists at that instant; concurrent agents
+  share one `target/`. Never run BLESS while any build-agent is in flight;
   orchestrator-only, on a freshly-verified binary, resulting diff inspected
   case-by-case. Bless cannot prove an elision RIGHT — review by eye.
 - Lint posture: the workspace lint table in `spike/Cargo.toml` is policy for new
@@ -692,7 +716,10 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
   the lane loudly (opt-in implies require-tools). Never default-on; never
   golden-pins upstream message text (structural + stable-code assertions only);
   never touches files outside the worktree. Real mutators remain forbidden
-  everywhere.
+  everywhere. ⚠ RED AT HEAD, pre-existing: the lane reads `rc != 0` as
+  "tool absent", but a current shellcheck reports `SC2182` at error severity, so
+  `dorc lint --require-tools` exits 1 on correct findings and the lane false-fails.
+  A phase-6 rider; do not "fix" it by relaxing require-tools.
 
 ## Code style
 

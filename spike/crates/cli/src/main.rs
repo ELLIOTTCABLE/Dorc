@@ -483,7 +483,7 @@ fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintI
 /// cli edge (`io-at-edges-only`): create the dir, write each `(name, content)`, mark it executable so
 /// a `sudo -n <inner-check>` can exec the guest across the wrapper boundary. On unix the executable
 /// bit is set here; on other platforms (msys) the exec permission is supplied by the session harness
-/// (`e2e/run.sh` `chmod +x`), so a plain write suffices and this stays cross-platform.
+/// (the e2e runner `chmod +x`s them), so a plain write suffices and this stays cross-platform.
 #[expect(
     clippy::result_large_err,
     reason = "cold invocation path; see dorc_cli::parse_args_from"

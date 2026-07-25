@@ -120,7 +120,7 @@ pub enum Mode {
     /// error floor + the decision-digest (no why-lens, no advisory notes).
     Apply,
     /// No mode token: the legacy round-trip (probe THEN apply on stdout, full disclosure on
-    /// stderr). The exact shape `e2e/run.sh` drives — preserved verbatim (tc-subcommand-shape).
+    /// stderr). The exact shape the e2e runner drives — preserved verbatim (tc-subcommand-shape).
     RoundTrip,
     /// `dorc why [<address>] …`: the WHY-query surface (ack-2). NOT an artifact-producing
     /// invocation — its report goes to STDOUT (help/version/why are their own non-analysis
