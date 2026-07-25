@@ -1,0 +1,186 @@
+---
+run: round-trip
+fixpoint: executed
+why-addr: 9
+expect-why:
+  - guard [sm.dorc.Service] && service.oracle.sh:
+expect-hint:
+  - 'hork' (line 8) && is unmodeled && first wall && un-wall 1 downstream site
+expect-why-chain:
+  - dorc why  && book.sh:9:
+  - book.sh:9 && [guard] && `systemctl start nginx`
+  - guarded && the sm.dorc.Service oracle vouches && re-runs live at apply
+---
+-- book.sh --
+#!/bin/sh
+# whygallery-wall-guards-downstream: what one unmodeled command costs. `hork` has no oracle, so
+# its effect is unknown — everything after it loses the elision license and drops to the guard
+# tier: the original bytes survive verbatim, with the vouching oracle's OWN check in front of them.
+# The line above the wall keeps its elision. Every tool named here is an INERT mock.
+
+ufw allow 80/tcp
+hork tune --profile web
+systemctl start nginx
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous firewall oracle (ufw): `ufw allow <rule>` establishes Firewall:<rule>@allowed, and
+# `ufw status <rule>` is the read-only check both the probe and the verdict member re-run.
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 :! sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+ufw__is_converged() {
+   verb=$1; shift
+   case $verb in
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- service.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The famous service oracle (systemctl). Its verdict member is what ships as the guard body when
+# a converged site sits past a wall: the author's own bytes, strip-only, no engine-written sh.
+systemctl__predict() {
+   verb=$1; shift
+   svc : sm.dorc.Service = "$1"
+   case $verb in
+      start)   systemctl is-active  -- "$svc" : sm.dorc.Service:"$svc"@active ;;
+      enable)  systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"@enabled ;;
+   esac
+}
+
+systemctl__is_converged() {
+   verb=$1; shift
+   case $verb in
+      start)  systemctl is-active  -- "$1" >/dev/null 2>&1 ;;
+      enable) systemctl is-enabled -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records. Both facts hold; only their POSITION relative to the
+# unmodeled `hork` wall separates the elision above it from the guard below it.
+site 0 effect=holds rc=0
+site 2 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock for the UNMODELED wall. No oracle describes `hork`, so nothing downstream of it can
+# be proven still-converged, and the guard tier is the best that can be offered.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/systemctl --
+#!/bin/sh
+# INERT mock. HOST: nginx is active ⇒ rc 0 for `is-active`. This same body re-runs at apply as
+# the inserted guard, which is why `systemctl start nginx` itself never has to.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/ufw --
+#!/bin/sh
+# INERT mock. HOST: the rule is already allowed ⇒ rc 0 ⇒ `ufw allow 80/tcp` is converged.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork tune --profile web
+ran: systemctl is-active -- nginx
+
+-- replay --
+$ dorc --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=734153e67f5f9484 sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Firewall:80/tcp@allowed
+ufw__predict() {
+   verb=$1; shift
+   rule="$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 ;;
+   esac
+}
+ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: sm.dorc.Service:nginx@active
+systemctl__predict() {
+   verb=$1; shift
+   svc="$1"
+   case $verb in
+      start)   systemctl is-active  -- "$svc" ;;
+      enable)  systemctl is-enabled -- "$svc" ;;
+   esac
+}
+systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+systemctl__is_converged() {
+   verb=$1; shift
+   case $verb in
+      start)  systemctl is-active  -- "$1" >/dev/null 2>&1 ;;
+      enable) systemctl is-enabled -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+#!/bin/sh
+# whygallery-wall-guards-downstream: what one unmodeled command costs. `hork` has no oracle, so
+# its effect is unknown — everything after it loses the elision license and drops to the guard
+# tier: the original bytes survive verbatim, with the vouching oracle's OWN check in front of them.
+# The line above the wall keeps its elision. Every tool named here is an INERT mock.
+
+# ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
+hork tune --profile web
+( systemctl__is_converged start nginx ) || systemctl start nginx   # dorc: guard [sm.dorc.Service converged-vouch; probe: holds]
