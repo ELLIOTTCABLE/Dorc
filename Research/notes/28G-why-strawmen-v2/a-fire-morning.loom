@@ -100,11 +100,11 @@ $ dorc why web.sh:9
       fix:     `dorc plan web.sh web1` (run without --risk-faultless-skips, to
                distrust oracle-authored claims)
 
-      verify:  `dorc plan --why web.sh web1` -- the fix path: re-measures under
+      verify:  `dorc plan --why web.sh web1` (the fix path: re-measures under
                plan's standing consent, carries this question forward inline,
-               and leaves you one step from applying. (plan remembers this
-               question: 9|systemctl's fate stays flagged until the analysis
-               changes.)
+               and leaves you one step from applying.)
+      repair:  `dorc apply web1 <plan.sh` (once fixed, apply the fix to the
+               machine)
 
       review:  `dorc why web.sh:9 --all` (every link, unselected, exhaustive, if
                you want)
