@@ -755,3 +755,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   core word-model" objection against `28A:rul-glued-param-rehole-seam` option
   (a); reframes `prop-span-boundary-tokenization` toward errorloom-core.
   Sitting output, not an immediate build.
+- 2026-07-25: gallery fold cold-verified own-hand (clippy 0; conduct-bless: build ok | unit 1207 | e2e 103 | looms 78 | gates ok).
