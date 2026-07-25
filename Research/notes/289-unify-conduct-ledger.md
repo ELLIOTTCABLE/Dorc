@@ -575,3 +575,4 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   conduct-bless should run under WSL. Until the git upgrade, NO git-touching
   Dorc tooling works there (incl. `dorc-loom promote`) — the pre-flight refuses
   cleanly.
+- 2026-07-24: WSL-repairs fold cold-verified own-hand (conduct-bless: build ok | unit 1200 | e2e 98 passed | looms 73 | gates ok). Stack `fbc44956` verified.
