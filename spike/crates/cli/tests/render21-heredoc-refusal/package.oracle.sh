@@ -13,3 +13,13 @@ apt_get__predict() {
       esac
    fi
 }
+
+# The VOUCH this case's premise needs (rul-vouch-is-verdict-authoring). Without it the site
+# never earns a Replace, so the render-refusal below is never even reached — which is exactly
+# how this case silently stopped exercising itself.
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in install) dpkg-query -W "$1" >/dev/null 2>&1 ;; *) return 2 ;; esac
+}

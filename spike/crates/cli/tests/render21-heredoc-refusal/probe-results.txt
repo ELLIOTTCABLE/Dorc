@@ -1,4 +1,7 @@
 # probe-results: site 0 is the install `apt-get install -y nginx` (an EstablishAmbient); holds
 # ⇒ converged ⇒ the disposition layer LICENSES a Replace. But the leaf carries a heredoc, so
 # the leaf-exact render REFUSES the edit (d-6) ⇒ it runs verbatim regardless of convergence.
+# The Replace half of that premise needs `apt_get__is_converged` in the oracle
+# (rul-vouch-is-verdict-authoring): this case sat `run`-disposed and refusal-free for as long as
+# its oracle carried only a `__predict`, exercising nothing it claims to.
 site 0 effect=holds
