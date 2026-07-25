@@ -7,6 +7,9 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use dorc_aid::arrangement::{
+    ARRANGEMENTS, ArrangementRow, OwnedWords, serialize_arrangement_lock,
+};
 use dorc_aid::catalog::{CATALOG, LockRow, fill_template, refreshed_params, serialize_lock};
 use dorc_aid::diag::params_of;
 use dorc_core::Interner;
@@ -14,12 +17,15 @@ use errorloom::{Case, CaseRenderer};
 
 use crate::DorcConsumer;
 
-/// The fully-preflighted candidate set (`282:rul-promote-is-one-atomic-act`): the regenerated whole
-/// lock plus every case's canonical render, computed and fixpoint-checked before any file write.
+/// The fully-preflighted candidate set (`282:rul-promote-is-one-atomic-act`): both regenerated
+/// whole locks plus every case's canonical render, computed and fixpoint-checked before any file
+/// write.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Publication {
     /// The candidate `catalog_lock.rs` bytes.
     pub lock: String,
+    /// The candidate `arrangement_lock.rs` bytes.
+    pub arrangement_lock: String,
     /// Each case's canonical bytes, keyed by defining slug.
     pub cases: BTreeMap<String, String>,
 }
@@ -38,9 +44,11 @@ pub struct Publication {
 pub fn build_publication(
     consumer: &DorcConsumer,
     corpus: &BTreeMap<String, Case>,
+    arrangement_corpus: &BTreeMap<String, Case>,
     affected: &BTreeMap<String, Case>,
 ) -> Result<Publication, String> {
     let lock = generate_catalog_lock(consumer, corpus)?;
+    let arrangement_lock = generate_arrangement_lock(consumer, arrangement_corpus)?;
     let mut rendered: BTreeMap<String, String> = BTreeMap::new();
     for (slug, case) in affected {
         let bytes = consumer
@@ -59,8 +67,12 @@ pub fn build_publication(
     if generate_catalog_lock(consumer, corpus)? != lock {
         return Err("generated-lock fixpoint (determinism) failed".to_owned());
     }
+    if generate_arrangement_lock(consumer, arrangement_corpus)? != arrangement_lock {
+        return Err("generated arrangement-lock fixpoint (determinism) failed".to_owned());
+    }
     Ok(Publication {
         lock,
+        arrangement_lock,
         cases: rendered,
     })
 }
@@ -134,12 +146,89 @@ pub fn generate_catalog_lock(
     Ok(serialize_lock(&rows))
 }
 
-/// Load every `<dir>/*.loom` defining case keyed by its frontmatter `code` slug. The edge I/O the
-/// pure generator, the promote path, and the fixpoint gate all share.
+/// Generate the whole `arrangement_lock.rs` bytes — the chrome twin of
+/// [`generate_catalog_lock`], and deliberately the same shape: mirror rows first (their
+/// `when-used`/`why` re-sourced from a defining case when one exists), then union rows for a
+/// slug that has a case but no entry yet, appended in slug order so a mint is a pure addition.
+///
+/// A slug's entries all read the SAME case's frontmatter: a case defines an arrangement, and the
+/// occurrence discriminator selects between that arrangement's positions, never between subjects.
 ///
 /// # Errors
-/// Returns a refusal for an unreadable directory/file, a malformed case, or a case without a `code`.
+/// Returns a refusal for missing frontmatter metadata or a carried row absent from the current
+/// committed registry.
+pub fn generate_arrangement_lock(
+    consumer: &DorcConsumer,
+    cases: &BTreeMap<String, Case>,
+) -> Result<String, String> {
+    let mut rows = Vec::with_capacity(consumer.arrangements().len());
+    for entry in consumer.arrangements() {
+        let (when_used, why) = if let Some(case) = cases.get(&entry.slug) {
+            (
+                frontmatter_scalar(case, "when-used", &entry.slug)?,
+                frontmatter_scalar(case, "why", &entry.slug)?,
+            )
+        } else {
+            let carried = ARRANGEMENTS
+                .iter()
+                .find(|carried| carried.slug == entry.slug && carried.occurrence == entry.occurrence)
+                .ok_or_else(|| {
+                    format!("carried arrangement `{}` absent from the registry", entry.slug)
+                })?;
+            (carried.when_used.to_owned(), carried.why.to_owned())
+        };
+        rows.push(ArrangementRow {
+            slug: entry.slug.clone(),
+            occurrence: entry.occurrence,
+            when_used,
+            why,
+            words: entry.words.clone(),
+        });
+    }
+    for (slug, case) in cases {
+        if consumer
+            .arrangements()
+            .iter()
+            .any(|entry| &entry.slug == slug)
+        {
+            continue;
+        }
+        rows.push(ArrangementRow {
+            slug: slug.clone(),
+            occurrence: None,
+            when_used: frontmatter_scalar(case, "when-used", slug)?,
+            why: frontmatter_scalar(case, "why", slug)?,
+            words: OwnedWords::Unwritten,
+        });
+    }
+    Ok(serialize_arrangement_lock(&rows))
+}
+
+/// Load every `<dir>/*.loom` defining case keyed by its frontmatter `code` slug. The edge I/O the
+/// pure generator, the promote path, and the fixpoint gate all share. Arrangement cases (which
+/// declare `arrangement:` instead) are [`load_arrangement_corpus`]'s; a case declaring NEITHER is
+/// refused, because a case that defines nothing asserts nothing.
+///
+/// # Errors
+/// Returns a refusal for an unreadable directory/file, a malformed case, or a case that declares
+/// neither key.
 pub fn load_corpus_by_slug(dir: &Path) -> Result<BTreeMap<String, Case>, String> {
+    load_corpus_keyed_by(dir, "code")
+}
+
+/// Load every `<dir>/*.loom` ARRANGEMENT case keyed by its frontmatter `arrangement` slug.
+///
+/// # Errors
+/// Returns a refusal for an unreadable directory/file, a malformed case, or a case that declares
+/// neither key.
+pub fn load_arrangement_corpus(dir: &Path) -> Result<BTreeMap<String, Case>, String> {
+    load_corpus_keyed_by(dir, "arrangement")
+}
+
+/// The two loaders' shared walk: collect the cases declaring `key`, and refuse a case declaring
+/// neither key at all (the same "every case declares what it defines" floor the `code`-only
+/// loader used to hold).
+fn load_corpus_keyed_by(dir: &Path, key: &str) -> Result<BTreeMap<String, Case>, String> {
     let mut cases = BTreeMap::new();
     let entries = std::fs::read_dir(dir).map_err(|error| format!("read corpus dir: {error}"))?;
     for entry in entries {
@@ -153,11 +242,17 @@ pub fn load_corpus_by_slug(dir: &Path) -> Result<BTreeMap<String, Case>, String>
             .map_err(|error| format!("read case {}: {error}", path.display()))?;
         let case = Case::parse(&text)
             .map_err(|error| format!("parse case {}: {error}", path.display()))?;
-        let slug = case
-            .frontmatter()
-            .scalar("code")
-            .ok_or_else(|| format!("case {} has no `code`", path.display()))?
-            .to_owned();
+        let Some(slug) = case.frontmatter().scalar(key).map(str::to_owned) else {
+            if case.frontmatter().scalar("code").is_none()
+                && case.frontmatter().scalar("arrangement").is_none()
+            {
+                return Err(format!(
+                    "case {} declares neither `code` nor `arrangement`",
+                    path.display()
+                ));
+            }
+            continue;
+        };
         if cases.insert(slug.clone(), case).is_some() {
             return Err(format!("duplicate defining case for `{slug}`"));
         }

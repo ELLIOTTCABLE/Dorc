@@ -13,7 +13,10 @@ pub use consumer::{
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod generate;
-pub use generate::{Publication, build_publication, generate_catalog_lock, load_corpus_by_slug};
+pub use generate::{
+    Publication, build_publication, generate_arrangement_lock, generate_catalog_lock,
+    load_arrangement_corpus, load_corpus_by_slug,
+};
 mod edit;
 pub use edit::{
     DorcSectionEdit, DorcSectionEditRefusal, compile_section_edit, compile_section_edits,
@@ -61,12 +64,19 @@ pub struct SectionKey {
     pub segment: usize,
 }
 
+/// The [`SectionKey::field`] value naming the arrangement registry, beside the catalog's
+/// `message`/`help` (`289:rul-arrangement-home-is-registry-plus-transcripts`). An arrangement
+/// section's [`SectionKey::instance`] is its occurrence — the registry resolves an unclaimed
+/// occurrence to the whole-slug entry, which is what lets repeated chrome share one entry.
+pub const ARRANGEMENT_FIELD: &str = "arrangement";
+
 /// Map a core render-part stream to generic editable sections.
 #[must_use]
 pub fn to_editable_render(parts: &RenderParts) -> EditableRender<SectionKey, SectionVariableId> {
     let mut components = Vec::new();
     let mut section = None;
     let mut next_segment = 0usize;
+    let mut arrangement_occurrences: BTreeMap<&'static str, usize> = BTreeMap::new();
     for part in parts.parts() {
         match part {
             RenderPart::TemplateLiteral {
@@ -142,6 +152,25 @@ pub fn to_editable_render(parts: &RenderParts) -> EditableRender<SectionKey, Sec
             RenderPart::Arrangement { text, .. } => {
                 flush_section(&mut components, &mut section);
                 components.push(RenderComponent::Structure(text.clone()));
+            }
+            RenderPart::ArrangementWords {
+                text,
+                slug,
+                occurrence,
+            } => {
+                flush_section(&mut components, &mut section);
+                let position = arrangement_occurrences.entry(slug).or_default();
+                components.push(RenderComponent::EditableSection(EditableSection::new(
+                    SectionKey {
+                        owner: String::from(*slug),
+                        field: ARRANGEMENT_FIELD,
+                        instance: occurrence.unwrap_or(*position),
+                        segment: next_segment,
+                    },
+                    vec![EditableFragment::Text(text.clone())],
+                )));
+                *position = position.saturating_add(1);
+                next_segment = next_segment.saturating_add(1);
             }
         }
     }
