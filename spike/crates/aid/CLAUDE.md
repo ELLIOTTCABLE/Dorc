@@ -78,6 +78,18 @@ crate's charter) · `notes/287` (errorloom as-built).
   COMPUTED (immutable structure); only `RenderPart::ArrangementWords`, minted solely by
   `arrangement::push_arrangement_words`, is an edit region. Never stamp a computed string with a
   registry slug: an edit would rewrite an entry the render does not read.
+- **artifact-plane-strings-stay-out** (`two-surfaces` / rec-1) — the registry is a RENDER-plane
+  home. Anything landing in the byte-floored `.sh` artifact stays hardcoded: every emitter in
+  `plan/src/render.rs` (probe/plan/apply headers, the guard-preamble banner, `# replace[..]` /
+  `# omit[..]` provenance blocks, the deriv/resolv/reach banners and record scaffolds) writes
+  artifact comment bytes, and receipt-stripping byte-identity is a stronger claim than
+  editability. Machine formats are out for the same reason at a different altitude: the lint JSONL
+  envelope, `--debug-argv`, the records lane. Migrating any of these is a LAW change, not a lane
+  item.
+- **layout-is-not-a-word** — the registry stores words. Pure layout and punctuation — indents,
+  group-header colons, line breaks, the compact finding's `  <line>:<col> <sev> [<src>:<code>] `
+  frame — stay `RenderPart::Arrangement`, and are deliberately NOT migrated. `render-form-unwelded`
+  already keeps arrangement SHAPE free to churn; putting shape in an editable entry would weld it.
 - **arrangement-prose-marker-is-typed** — the catalog's three prose states carry over, but the
   migrated marker is the `Words::Migrated` VARIANT, not an in-band `sm ` prefix: chrome renders
   verbatim into product bytes, so an in-band marker would make a migration a visible product
