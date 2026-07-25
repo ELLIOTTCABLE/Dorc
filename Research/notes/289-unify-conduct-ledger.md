@@ -703,3 +703,18 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   data to be composable at a seat; print-in-place forecloses both tagging and
   Carrier accumulation). The test-noise papercut rides along (unfixable
   cheaply while writes bypass capture by construction).
+
+## §2w — The seat design-round OPENED (human-directed 2026-07-25; conductor = the sitting)
+
+- Scope: synthesize `289:seam-whylens-render-seat` + `289:seam-narrative-render-
+  unconsumed` + `289:seam-diagnostics-print-not-carried` (+ the transport siblings:
+  `28A:rul-glued-param-rehole-seam`, `289:seam-multiword-chrome-render-only`) one
+  step toward settled; bank partial human feedback, settle nothing permanently.
+- Corpus finding first: the why-CHAIN has ZERO committed transcripts (the flagship
+  loom pins only the plan/probe artifact; chain renders live in unit asserts;
+  whylog looms are refusal-only; one e2e `expected-why` carries arm-inlining).
+- DISPATCHED 2026-07-25: whygallery lane (Opus, fresh worktree,
+  `ai/r28-unify-whygallery` off `d964d8c1`) — ~5 non-defining gallery looms, one
+  shared webhost-shaped world, replays across plan-stderr / zero-arg why +
+  TRUST-SPENDS / why-N on elided·guarded·survived·declined / whylog + `--last`;
+  captured-output-only, zero engine changes, findings-as-deliverable.
