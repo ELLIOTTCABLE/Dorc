@@ -198,3 +198,41 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 
 apt-get install -y oldpkg
 # ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
+
+$ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints < probe-results.txt
+dorc why book.sh:10:
+
+book.sh:10  `ufw allow 443/tcp`
+  removed from the plan (elided) — sm.dorc.Firewall:443/tcp is converged (probe: holds)
+
+  it was removed because all of the following held together:
+  1. measured: sm.dorc.Firewall:443/tcp was measured converged on the host at plan time
+  2. vouched: the site's own oracle accepts that measured state as reason enough not to re-run this line (firewall.oracle.sh:17)
+  3. ran: `apt-get` (wall site 0) really ran above this line
+  4. claimed: that wall's author claims it disturbs at most {sm.dorc.Package:oldpkg} — an author's claim, nothing verifies it (package.oracle.sh:19)
+  5. derived: that claim is proven disjoint from sm.dorc.Firewall:443/tcp — it does not overlap what was measured
+  6. consented: `--trust-footprints` was set, which is what lets a claim keep a line out of the plan past a running mutation
+
+  if this line SHOULD have run: dorc cannot see which link is wrong, but link 4 is the one unverified-by-construction claim in this chain (a naked footprint claim).
+  to re-measure: `dorc plan <book> <host>` reads the world as it is now — dorc kept no state that can stay wrong, so a broken fact comes back diverged and the line returns.
+  to fix: package.oracle.sh:19 is the line to widen; every book using that oracle inherits the repair.
+
+$ dorc plan --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog < probe-results.txt > /dev/null
+
+$ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog
+dorc why book.sh:10:
+
+book.sh:10  `ufw allow 443/tcp`
+  removed from the plan (elided) — sm.dorc.Firewall:443/tcp is converged (probe: holds)
+
+  it was removed because all of the following held together:
+  1. measured: sm.dorc.Firewall:443/tcp was measured converged on the host at plan time
+  2. vouched: the site's own oracle accepts that measured state as reason enough not to re-run this line (firewall.oracle.sh:17)
+  3. ran: `apt-get` (wall site 0) really ran above this line
+  4. claimed: that wall's author claims it disturbs at most {sm.dorc.Package:oldpkg} — an author's claim, nothing verifies it (package.oracle.sh:19)
+  5. derived: that claim is proven disjoint from sm.dorc.Firewall:443/tcp — it does not overlap what was measured
+  6. consented: `--trust-footprints` was set, which is what lets a claim keep a line out of the plan past a running mutation
+
+  if this line SHOULD have run: dorc cannot see which link is wrong, but link 4 is the one unverified-by-construction claim in this chain (a naked footprint claim).
+  to re-measure: `dorc plan <book> <host>` reads the world as it is now — dorc kept no state that can stay wrong, so a broken fact comes back diverged and the line returns.
+  to fix: package.oracle.sh:19 is the line to widen; every book using that oracle inherits the repair.
