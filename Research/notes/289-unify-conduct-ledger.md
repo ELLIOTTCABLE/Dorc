@@ -718,3 +718,40 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   shared webhost-shaped world, replays across plan-stderr / zero-arg why +
   TRUST-SPENDS / why-N on elided·guarded·survived·declined / whylog + `--last`;
   captured-output-only, zero engine changes, findings-as-deliverable.
+
+## §2x — Gallery landed+folded; the strawmen phase; errorloom word-model steer (2026-07-25)
+
+- Gallery LANDED @ `8355d4ba` (5 looms, fixture-only, gates cold-green incl.
+  e2e 103 / looms 78), FOLDED @ `7f09d181`. Findings banked (builder-observed,
+  design inputs for the sitting): **fnd-why-surface-is-not-committable** (bless
+  drives only `blocks().first()`, zips one output — multi-view transcripts
+  impossible as-built, vs `282:rul-multi-replay-per-case`'s letter) ·
+  **fnd-in-process-driver-needs-a-code** (caseless tier has one drivable shape) ·
+  **fnd-zero-arg-why-unreachable** (argv-reachable, gate-unreachable) ·
+  **fnd-decline-class-is-push-only** (pull-side `why N` on a declined line says
+  nothing — inverts rul-chain-is-pull-only's intent) ·
+  **fnd-why-heading-carries-the-argv-path** (machine-specific headings) ·
+  **fnd-one-annotation-for-three-mechanisms** (elide/omit/survive render as one
+  "elided" comment — rul-attention-honesty review item) ·
+  **fnd-guard-preamble-precedes-the-books-shebang** ·
+  **fnd-errexit-erases-the-gallery** (README's own `set -eu` example would elide
+  nothing) · **fnd-needle-tension-on-the-why-lane** (expect-why needles are
+  free-text by construction; kept structural-anchored).
+- HUMAN-TYPED (2026-07-25): the strawmen phase — five DISPARATE why-output cases
+  on-disk as looms with real output; human then edits them into proposed forms;
+  machinery requirements derived from what satisfies all five generically.
+  Conductor ACKED ready. DISPATCHED: `ai/r28-unify-whystrawmen` off `7f09d181`
+  (elided-minimal · guarded-mid · survived-maximal+`--last` · declined-thin-truth
+  · zero-arg problems-report), with ONE narrowly-licensed machinery change:
+  complete multi-replay drive-and-bless per `282:rul-multi-replay-per-case`
+  (spec-completion of the zip gap; sequential blocks, shared scratch, every
+  block blessed). No render changes; ugly commits ugly.
+- **`289:steer-errorloom-best-to-use`** (HUMAN-TYPED 2026-07-25) — errorloom is
+  unpublished; zero backwards-compat weight. Optimize for best-to-use: if the
+  whitespace-only word-boundary is artificial and consumers must painfully work
+  around it (glued-params; multi-word/sequence entries), fix the word-model IN
+  errorloom — possibly as an enriched, more-complex-API mode (span-aware
+  tokenization/alignment). VOIDS the prior "reaches into the published crate's
+  core word-model" objection against `28A:rul-glued-param-rehole-seam` option
+  (a); reframes `prop-span-boundary-tokenization` toward errorloom-core.
+  Sitting output, not an immediate build.
