@@ -1,0 +1,77 @@
+# NON-FUNCTIONAL STRAWMAN v2 (imagination-tier; whole-cloth, post-sitting -- the
+# 28E rulings applied, the 292 corpus deliberately NOT consulted). One user-moment,
+# two sequential commands on one receipt: the 03:40 morning after a survived
+# elision went wrong overnight. Exercises: why-as-receipt-reconciliation -- the
+# input-identity header -- trust-spent-first / problems / improvements -- the
+# two-rank marks (machine `*` vs human `!`) with tier words as row labels --
+# contrastive-first opener -- numberless join with prose restatement -- endpoint
+# literal excerpt with author comment -- question-relative selection -- labeled
+# exhaustive step -- structural suspect/check/fix sections -- annotation-tier git
+# note -- the `dorc teach` pointer -- pure ASCII throughout.
+
+-- web.sh (context, abbreviated) --
+ 8  certsync push web1
+ 9  systemctl enable --now nginx
+12  hork tune --profile web
+13  ufw allow 443/tcp
+
+-- world (context) --
+Cron applied at 02:00 under --risk-faultless-skips. Certs had drifted, so line 8
+really ran; certsync's at-most claim omits the systemd drop-in it also rewrites;
+line 9's removal survived on that claim; the service came up wrong. The admin
+knows only that the site is down and that dorc ran overnight.
+
+-- replay --
+$ dorc why
+receipt: apply 2026-07-25 02:00:37, host web1, trigger cron
+  book web.sh (matches git HEAD 9f31c2e -- unchanged since the run)
+  oracles: certsync 1.2, service 2.0, + base library
+  consent: --risk-faultless-skips was set
+  plan: 2 ran, 1 re-checked, 5 removed (4 by proof, 1 by trusted claim)
+  read top-down; every item is addressable: dorc why <line>
+
+TRUST SPENT -- removals resting on a human claim, not proof:
+
+  web.sh:9   systemctl enable --now nginx
+             stayed removed PAST line 8 really running, on certsync's
+             at-most claim                                      dorc why 9
+
+PROBLEMS -- what dorc could not do:
+
+  web.sh:12  hork tune --profile web
+             ran blind, as on every apply: hork is undescribed
+  web.sh:13  ufw allow 443/tcp
+             re-checked live instead of removed: sits past the wall at 12
+
+IMPROVEMENTS -- what dorc could do, if:
+
+  ~2 lines of sh: a convergence check for hork removes lines 12 and 13
+  whenever hork is converged                                dorc teach walls
+
+$ dorc why 9
+web.sh:9  systemctl enable --now nginx
+  removed RATHER THAN re-checked: line 8 ran above it, which normally forces
+  a live re-check -- but you consented to act on authors' at-most claims, and
+  certsync's claim does not reach what line 9's removal was proved on.
+
+  the two facts that had to hold together:
+
+  * measured 01:59:52   nginx was enabled+active     (service.oracle.sh:12)
+  * vouched             re-running adds nothing when already active
+                        (service.oracle.sh:9)
+
+  ! claimed             certsync push touches AT MOST cert state -- an
+                        author's claim; nothing verifies it
+                          30 | # surveyed 2026-05: cert store only.
+                          31 | push) printf '%s\n' "$1"  : disturbs org.foob.Certs ;;
+                        (certsync.oracle.sh, shown as written)
+
+  so: the claim and the measurement do not overlap, and the removal stood.
+  `!` marks the one link no machine checked.
+
+  if line 9 SHOULD have run:
+    suspect:  the claim -- the only unverified link. if certsync push also
+              touches service state, it is what wrongly kept line 9 out.
+    check:    dorc plan web.sh web1     re-measures now; dorc keeps no memory
+    fix:      certsync.oracle.sh:31     widen the claim; every consumer heals
+    all:      dorc why 9 --all          every link, unselected, exhaustive
