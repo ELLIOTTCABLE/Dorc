@@ -338,3 +338,34 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   working-state promote licensing check).
 - 2026-07-24: phase-5 (Opus, fresh worktree, bg) — two-stop: central runners + differential proof, CHECKPOINT, then atomic move + run.sh retirement + safety-law edit. Off `5bb13199`.
 - 2026-07-24: 2-4 fold cold-verified own-hand (full clean; build ok | unit 1184 | e2e 97 | gates ok, incl. both fixpoint gates on my binary).
+
+## §2k — Phase-5 stop-1 rulings (conductor, 2026-07-24)
+
+- Stop 1 LANDED @ `8307ca36` (4 commits, additive): central runners with structural
+  discovery (entry-file-names-the-kind; no marker files), the WHOLE run.sh gate set
+  ported, looms runner adds a render-fixpoint per committed loom. Differential proof:
+  97=97 discovery · 11/11 identical mutation failures with identical gate tags ·
+  BLESS 96/97 byte-identical (the 97th = the known lax-order class) · ~30× faster.
+  Cold gates: 1332 workspace (1184 unit + 97 e2e + 51 looms) / deny ok
+  (libtest-mimic pinned =0.8.1 for the anstream-major coherence; 12 dev-only lock
+  entries; the dorc-cli⇄dorc-loom DEV-ONLY dep cycle is cargo-legal and test-scoped
+  — noted for future crate-graph readers).
+- **`289:rul-e2e-stays-in-workspace-suite`** (their flag 2) — the e2e target STAYS
+  in the default `cargo test --workspace` run: at 8–15 s parallel the cost is
+  noise and every builder's standard gate now covers the corpus automatically
+  (gates strengthen; correctness lean). conduct-bless's tally re-points at stop 2
+  with a unit/e2e/looms split.
+- **`289:rider-real-tools-lane-rc-bitrot`** (their flag 1) — pre-existing red at
+  HEAD under `DORC_E2E_REAL_TOOLS=shellcheck`: shellcheck 0.11's findings-exit
+  (rc 1) false-fails the lane's absent-tool check; both harnesses agree byte-level.
+  PHASE-6 rider: distinguish findings-exit from tool-absent.
+- **`289:rider-fixpoint-gate-rationalize`** (their flag 4) — `DIRECT_PLAN_CASES`'
+  4-case restriction is demonstrably stale (48/51 hold), but widening it now would
+  duplicate the looms-runner's new corpus-level fixpoint. PHASE-6 rider: rationalize
+  the two gates into one authority when looms convert.
+- KNOWN_NON_FIXPOINTS pinned with XPASS-on-surprise (their flag 3): exactly right;
+  accepted. The five port deviations (umask-shim unix-only, per-case framed_results,
+  divergence-window, terse-quiet, pre-flight batteries): accepted as noted-at-site.
+  Budget 9/20.
+- STOP-2 GO issued. Post-stop-2, the SAFETY BLOCK text changes (sanctioned-executor
+  line): every subsequent brief in this arc carries the NEW wording.
