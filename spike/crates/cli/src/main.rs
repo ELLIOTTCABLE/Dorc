@@ -160,7 +160,7 @@ fn main() -> ExitCode {
 /// beats a malformed flag) and return the stdout-and-exit-0 variants. Otherwise: an OPTIONAL
 /// leading mode token (`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` /
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
-/// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
+/// `--risk-faultless-skips`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
 #[expect(
     clippy::result_large_err,
@@ -899,7 +899,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     }
 
     // The DERIVATION-probe (24E §2 corr-§2 — the SECOND probe-shipping path, a NEW pipeline
-    // stage): under `--trust-footprints`, a wall-candidate whose `touches()` body ESCALATED (it
+    // stage): under `--risk-faultless-skips`, a wall-candidate whose `touches()` body ESCALATED (it
     // reached a host query the static `evaluate_touches` could not resolve) ships that body into
     // phase-1, runs read-only, and its stdout coord-lines are read back into a `Derived` footprint
     // (merged below, pre-`build_plan_walled`). Lifted for the derivation lane here; the authored
@@ -1112,7 +1112,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let probe_origins = probe_origins(&probe, results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
-    // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
+    // `--risk-faultless-skips` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
     let survival = args.trust_footprints.then(|| {
         let mut fps = build_survival_footprints(
             &oracle_refs,
@@ -1904,7 +1904,7 @@ fn ship_verdict_body(
 }
 
 /// Lift the survival footprints (Stage 2 / rul24-mode-gate) — called ONLY on the
-/// `--trust-footprints` path (TC-1: the footprint data does not exist unflagged). For each
+/// `--risk-faultless-skips` path (TC-1: the footprint data does not exist unflagged). For each
 /// wall-candidate site (an establish-bearing class, or a kill) whose provider declares a
 /// `touches()`, trace it over the site's resolved argv and record the emitted footprint —
 /// after a **coherence check** (23M / the Stage-2 brief): the site's OWN establish coordinate
@@ -4018,10 +4018,10 @@ struct ChainRender {
 
 /// The consent flag as the BINARY spells it. The corpus names this lever
 /// `--risk-faultless-skips` (`spike/CLAUDE.md` survive-license, `271:rul-flag-is-razor-residue`); the
-/// cli implements `--trust-footprints`. A why-surface pointer must be copy-paste-true (`28E` §7
+/// cli implements `--risk-faultless-skips`. A why-surface pointer must be copy-paste-true (`28E` §7
 /// held-placement-reread), so the render prints what the parser accepts and the rename is flagged
 /// upward rather than papered over here.
-const CONSENT_FLAG: &str = "--trust-footprints";
+const CONSENT_FLAG: &str = "--risk-faultless-skips";
 
 /// The engine's own name in the speaker column — the only row dorc speaks in its own voice, and it
 /// speaks only about its own derivations (`28E` §8 quoted-speakers).

@@ -1,7 +1,7 @@
 ---
 run: round-trip
 fixpoint: executed
-flags: --trust-footprints
+flags: --risk-faultless-skips
 why-addr: 10
 expect-why:
   - site 1 survives+elides past wall site 0 && touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Firewall:443/tcp disjoint
@@ -14,7 +14,7 @@ expect-why-chain:
 # rather than on a measurement. `apt-get install -y oldpkg` is diverged, so it RUNS — a wall
 # across the book. Its author's `disturbs` member claims that install touches at most the one
 # Package cell it names; the firewall fact below is a different kind entirely, so the claim is
-# provably disjoint of it, and `--trust-footprints` is the admin consenting to act on a claim
+# provably disjoint of it, and `--risk-faultless-skips` is the admin consenting to act on a claim
 # nothing verifies. Every tool named here is an INERT mock; nothing mutates.
 
 apt-get install -y oldpkg
@@ -140,7 +140,7 @@ exit 0
 ran: apt-get install -y oldpkg
 
 -- replay --
-$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints < probe-results.txt
+$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --risk-faultless-skips < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -148,7 +148,7 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footpri
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ac23b6c56d52730738d93ba69d58ae044a825ebbd86c88f707386cc77986fb3b sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f20abde6608808f4e2f0f3bedcc0702d404f047049d59546b03aa2d81dcbaa5e sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Package:oldpkg@installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -182,13 +182,13 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # rather than on a measurement. `apt-get install -y oldpkg` is diverged, so it RUNS — a wall
 # across the book. Its author's `disturbs` member claims that install touches at most the one
 # Package cell it names; the firewall fact below is a different kind entirely, so the claim is
-# provably disjoint of it, and `--trust-footprints` is the admin consenting to act on a claim
+# provably disjoint of it, and `--risk-faultless-skips` is the admin consenting to act on a claim
 # nothing verifies. Every tool named here is an INERT mock; nothing mutates.
 
 apt-get install -y oldpkg
 # ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
 
-$ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --results=probe-results.txt
+$ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --risk-faultless-skips --results=probe-results.txt
       [ book.sh, participating lines:
     9 | apt-get install -y oldpkg
    10 | ufw allow 443/tcp
@@ -198,7 +198,7 @@ $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-
    === OUTCOME ===
 
    10|ufw skipped RATHER THAN guarded: 9|apt-get ran above it, which normally forces an
-   apply-time guard-clause; but --trust-footprints activates acting on authors' at-most
+   apply-time guard-clause; but --risk-faultless-skips activates acting on authors' at-most
    claims, and that claim does not reach what the skip was reported on.
 
    === ANALYSIS ===
@@ -237,7 +237,7 @@ $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-
 
       fix:      package.oracle.sh:24 (widen the claim; every consumer heals)
    OR
-      fix:      `dorc plan <book> <host>` (run without --trust-footprints, to distrust
+      fix:      `dorc plan <book> <host>` (run without --risk-faultless-skips, to distrust
                 oracle-authored claims)
 
       verify:   `dorc plan <book> <host>` (re-measures the world as it is now; a fact that
@@ -247,9 +247,9 @@ $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc plan --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog < probe-results.txt > /dev/null
+$ dorc plan --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --risk-faultless-skips --whylog-dir=whylog < probe-results.txt > /dev/null
 
-$ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog
+$ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --risk-faultless-skips --whylog-dir=whylog
       [ book.sh, participating lines:
     9 | apt-get install -y oldpkg
    10 | ufw allow 443/tcp
@@ -259,7 +259,7 @@ $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
    === OUTCOME ===
 
    10|ufw skipped RATHER THAN guarded: 9|apt-get ran above it, which normally forces an
-   apply-time guard-clause; but --trust-footprints activates acting on authors' at-most
+   apply-time guard-clause; but --risk-faultless-skips activates acting on authors' at-most
    claims, and that claim does not reach what the skip was reported on.
 
    === ANALYSIS ===
@@ -298,7 +298,7 @@ $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
 
       fix:      package.oracle.sh:24 (widen the claim; every consumer heals)
    OR
-      fix:      `dorc plan <book> <host>` (run without --trust-footprints, to distrust
+      fix:      `dorc plan <book> <host>` (run without --risk-faultless-skips, to distrust
                 oracle-authored claims)
 
       verify:   `dorc plan <book> <host>` (re-measures the world as it is now; a fact that

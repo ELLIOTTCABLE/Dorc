@@ -1,7 +1,7 @@
 ---
 run: round-trip
 fixpoint: executed
-flags: --trust-footprints
+flags: --risk-faultless-skips
 expect-why:
   - site 1 survives+elides && wall site 0 && apt-get touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Package:nginx disjoint
 ---
@@ -49,7 +49,7 @@ apt_get__is_converged() {
 -- probe-results.txt --
 # probe-results: site-keyed records. site 0 = package:oldpkg#installed (absent ⇒ diverged ⇒
 # oldpkg install RUNS = the footprinted wall); site 1 = package:nginx#installed (holds ⇒
-# converged). Under --trust-footprints the nginx install SURVIVES the running oldpkg wall
+# converged). Under --risk-faultless-skips the nginx install SURVIVES the running oldpkg wall
 # (package:nginx disjoint from footprint package:oldpkg) ⇒ elides. Mock-reproducible (dpkg-query
 # returns 1 for oldpkg, 0 for nginx) ⇒ NOT PROBE_RESULTS=authored ⇒ gate-6 runs.
 site 0 effect=absent
@@ -104,7 +104,7 @@ case ${2:-} in oldpkg) exit 1 ;; *) exit 0 ;; esac
 ran: apt-get install -y oldpkg
 
 -- replay --
-$ dorc --book=book.sh -o package.oracle.sh --trust-footprints < probe-results.txt
+$ dorc --book=book.sh -o package.oracle.sh --risk-faultless-skips < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

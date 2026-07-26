@@ -120,7 +120,7 @@ pub struct Args {
     /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
     /// then proceed normally — a cli-edge readout the e2e argv-echo differential consumes.
     pub debug_argv: bool,
-    /// `--trust-footprints` (rul24-mode-gate): opt into the survival tier — a converged line
+    /// `--risk-faultless-skips` (rul24-mode-gate): opt into the survival tier — a converged line
     /// may ELIDE past a RUNNING wall when the wall's authored `touches()` footprint is disjoint
     /// from the line's fact's backing (Stage 2, the golden hill). DEFAULT OFF; not recommended
     /// by hints/docs beyond noting availability. Honest framing (24A §1a-addendum): marketing at
@@ -333,7 +333,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             );
         } else if arg == "--debug-argv" {
             debug_argv = true;
-        } else if arg == "--trust-footprints" {
+        } else if arg == "--risk-faultless-skips" {
             trust_footprints = true;
         } else if arg == "--no-probe-escalation" {
             dial = dorc_core::EscalationDial::NoEscalation;
@@ -385,7 +385,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--oracle-dir",
                 "--results",
                 "--debug-argv",
-                "--trust-footprints",
+                "--risk-faultless-skips",
                 "--no-probe-escalation",
                 "--probe-escalation",
                 "--escalate-any-probe",
@@ -816,10 +816,10 @@ mod tests {
             None,
             "a wholly-different word ⇒ no suggestion"
         );
-        let flags = ["--trust-footprints", "--debug-argv", "--book"];
+        let flags = ["--risk-faultless-skips", "--debug-argv", "--book"];
         assert_eq!(
-            nearest("--tust-footprints", &flags),
-            Some("--trust-footprints")
+            nearest("--risk-faultless-skip", &flags),
+            Some("--risk-faultless-skips")
         );
         assert_eq!(nearest("--boook", &flags), Some("--book"), "one insertion");
     }

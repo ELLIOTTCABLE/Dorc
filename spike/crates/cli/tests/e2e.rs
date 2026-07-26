@@ -2540,7 +2540,7 @@ fn guard_shape_selftest() -> Vec<String> {
 }
 
 /// The `DORC_FLAGS` plumbing confound: run the flagship with and without
-/// `--trust-footprints` and assert the elision count DIFFERS. If it matches, the flag is
+/// `--risk-faultless-skips` and assert the elision count DIFFERS. If it matches, the flag is
 /// inert and a flagged survival case's gate-6 attribution would lie.
 fn dorc_flags_selftest(harness: &Harness) -> Option<String> {
     let dir = own_cases().join("strawman24-survive-multiwall");
@@ -2585,11 +2585,11 @@ fn dorc_flags_selftest(harness: &Harness) -> Option<String> {
     let flagged = elide(&[
         "-o".to_owned(),
         oracle.clone(),
-        "--trust-footprints".to_owned(),
+        "--risk-faultless-skips".to_owned(),
     ]);
     let plain = elide(&["-o".to_owned(), oracle]);
     (flagged == plain).then(|| format!(
-        "dorc_flags_selftest FAILED — --trust-footprints did not change the flagship's elision count ({flagged} flagged vs {plain} plain); the flag is not reaching the engine, so a flagged survival case's gate-6 attribution would lie."
+        "dorc_flags_selftest FAILED — --risk-faultless-skips did not change the flagship's elision count ({flagged} flagged vs {plain} plain); the flag is not reaching the engine, so a flagged survival case's gate-6 attribution would lie."
     ))
 }
 

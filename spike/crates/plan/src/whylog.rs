@@ -1406,7 +1406,7 @@ mod tests {
     fn doc() -> WhylogDoc {
         WhylogDoc {
             mode: "plan".to_owned(),
-            argv: vec!["dorc".to_owned(), "plan".to_owned(), "--trust-footprints".to_owned()],
+            argv: vec!["dorc".to_owned(), "plan".to_owned(), "--risk-faultless-skips".to_owned()],
             book: ("web host.sh".to_owned(), "abc123".to_owned()), // a space-bearing path
             oracles: vec![("foobar.oracle.sh".to_owned(), "def456".to_owned())],
             nonce: "dorc".to_owned(),

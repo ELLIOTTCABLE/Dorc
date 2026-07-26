@@ -1,6 +1,6 @@
 //! `plan::survival` — the frame-rule machine: a converged line ELIDES past a RUNNING wall
 //! when the wall's authored footprint is disjoint from the line's fact's backing (23M /
-//! plans/240 Stage 2 — the golden hill). Mode-gated behind `--trust-footprints`
+//! plans/240 Stage 2 — the golden hill). Mode-gated behind `--risk-faultless-skips`
 //! (rul24-mode-gate); the survival tier is *structurally* unreachable without the flag
 //! because the footprint data ([`TrustedFootprints`]) is never lifted unflagged (TC-1).
 //!
@@ -824,7 +824,7 @@ impl SurvivalWitness {
 
 /// The lifted footprints for one plan run — the mode-gate DATA (TC-1). Keyed by wall-site
 /// [`CfgNodeId`]. Its presence *is* the flag: [`crate::build_plan_walled`] takes
-/// `Option<&TrustedFootprints>`, and the cli constructs one ONLY on the `--trust-footprints`
+/// `Option<&TrustedFootprints>`, and the cli constructs one ONLY on the `--risk-faultless-skips`
 /// path (the lift runs only there). Flag-off ⇒ `None` ⇒ the survival arm never runs and the
 /// footprints were never lifted — a future maintainer *cannot* consult footprints unflagged
 /// because the data does not exist (data-absence, never a `bool`).

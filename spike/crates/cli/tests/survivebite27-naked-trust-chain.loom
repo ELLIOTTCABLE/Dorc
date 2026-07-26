@@ -1,7 +1,7 @@
 ---
 run: round-trip
 fixpoint: executed
-flags: --trust-footprints
+flags: --risk-faultless-skips
 why-addr: 12
 expect-why:
   - site 1 survives+elides && certsync && sm.dorc.Service:nginx disjoint
@@ -19,7 +19,7 @@ expect-why-chain:
 # into the acceptance test for the full `dorc why` chain render (aid-why-license-chain). A LYING
 # `certsync` disturbs (see certsync.oracle.sh) claims at most its OWN CertBundle cell but its real
 # push ALSO reloads nginx (a Service cell a DIFFERENT tool backs) — the omitted cell survives the
-# own-coordinate canary, so under --trust-footprints the downstream service elision is spared a wall
+# own-coordinate canary, so under --risk-faultless-skips the downstream service elision is spared a wall
 # it truly collides with. The bite. NOTE (tc-flagship-lie-is-narrative, conductor-accepted): DST
 # cannot observe the world breaking (no real mutation); this case asserts NARRATION-COMPLETENESS
 # ONLY — that `dorc why 12` (the systemctl line) discloses the survival rode a CLAIM (not a measurement), names
@@ -34,7 +34,7 @@ systemctl start nginx
 # LYING wall oracle (27V §4 flagship). `certsync push` rewrites a cert bundle AND — per its real
 # post-push behaviour — reloads nginx. But its disturbs claims at most its OWN CertBundle cell,
 # omitting the Service cell systemctl backs. The omission survives the own-coordinate canary (the
-# CertBundle cell IS certsync's own effect ⇒ own ∈ footprint), so --trust-footprints spares the
+# CertBundle cell IS certsync's own effect ⇒ own ∈ footprint), so --risk-faultless-skips spares the
 # downstream `systemctl start` elision that truly collides. The frame problem, bought.
 certsync__predict() {
    verb=$1; shift
@@ -144,7 +144,7 @@ exit 0
 ran: certsync push web1
 
 -- replay --
-$ dorc --book=book.sh -o certsync.oracle.sh -o service.oracle.sh --trust-footprints < probe-results.txt
+$ dorc --book=book.sh -o certsync.oracle.sh -o service.oracle.sh --risk-faultless-skips < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -152,7 +152,7 @@ $ dorc --book=book.sh -o certsync.oracle.sh -o service.oracle.sh --trust-footpri
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8446cdedb145206fa827b7c95d26dc7615a02484547602188bda8bcd7ccb2038 sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8827a3b2bcdce2a1a8c0cf8d228972d76f97a72e8ad7e844215d987e619bce14 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.CertBundle:web1@synced
 certsync__predict() {
    verb=$1; shift
@@ -180,7 +180,7 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # into the acceptance test for the full `dorc why` chain render (aid-why-license-chain). A LYING
 # `certsync` disturbs (see certsync.oracle.sh) claims at most its OWN CertBundle cell but its real
 # push ALSO reloads nginx (a Service cell a DIFFERENT tool backs) — the omitted cell survives the
-# own-coordinate canary, so under --trust-footprints the downstream service elision is spared a wall
+# own-coordinate canary, so under --risk-faultless-skips the downstream service elision is spared a wall
 # it truly collides with. The bite. NOTE (tc-flagship-lie-is-narrative, conductor-accepted): DST
 # cannot observe the world breaking (no real mutation); this case asserts NARRATION-COMPLETENESS
 # ONLY — that `dorc why 12` (the systemctl line) discloses the survival rode a CLAIM (not a measurement), names

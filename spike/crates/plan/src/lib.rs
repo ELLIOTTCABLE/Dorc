@@ -288,7 +288,7 @@ pub struct Derivation {
     /// origin on the real `build_plan` path.
     pub witness: dorc_core::Witness,
     /// The SURVIVAL attribution (Stage 2 / TC-3), if this elision crossed ≥1 running wall under
-    /// `--trust-footprints`. `None` for every ordinary elision (pre-wall, or flag-off); `Some`
+    /// `--risk-faultless-skips`. `None` for every ordinary elision (pre-wall, or flag-off); `Some`
     /// names which walls it crossed + whose footprint licensed each. Attached post-mint by the
     /// wall walk ([`ReplaceLicense::with_survival`]); read ONLY by the why-lens render (never the
     /// artifact — rec-1). NOT a proof of adequacy (converged≠no-op stays the vouch's) — see
@@ -1198,7 +1198,7 @@ impl GuardLicense {
 /// reached vouch ⇒ it never guards (no vouch ⇒ run — the map's judgment tier is exactly what
 /// [`GuardLicense::mint`] DEMANDS, TC-tier-2; a fact or silence claim cannot populate it). The cli
 /// edge builds it ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate; NOT
-/// `--trust-footprints`-gated, which governs only the survival tier).
+/// `--risk-faultless-skips`-gated, which governs only the survival tier).
 /// Reached verdict vouches indexed by their exact establish identity.
 ///
 /// Production lifting happens in [`build_vouches`]; public construction remains test/harness
@@ -3181,7 +3181,7 @@ pub fn build_plan(
 ///
 /// # Survival tier (Stage 2 — the golden hill; mode-gate `survival`, TC-1)
 ///
-/// `survival` is the mode-gate DATA (`--trust-footprints`): `None` ⇒ the honest Stage-1 wall
+/// `survival` is the mode-gate DATA (`--risk-faultless-skips`): `None` ⇒ the honest Stage-1 wall
 /// (a running mutator is a TOTAL wall — every downstream converged `Replace` demotes), the
 /// byte-identical baseline. `Some(footprints)` ⇒ the frame-rule walk: a running mutator WITH a
 /// lifted footprint scopes its wall (accumulates its coordinates) instead of totalising it, and

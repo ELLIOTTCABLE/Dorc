@@ -60,7 +60,7 @@ for dir in "$here"/../crates/cli/tests/strawman24-*/; do
   name=$(basename "$dir")
   n=$((n + 1))
   # Collect -o oracles (glob-sorted, exactly as the e2e runner assembles them) + the DORC_FLAGS marker
-  # (so a `--trust-footprints` case's survivals show in the yardstick — the number Stage 2 moves).
+  # (so a `--risk-faultless-skips` case's survivals show in the yardstick — the number Stage 2 moves).
   set --
   for o in "$dir"*.oracle.sh; do [ -e "$o" ] || continue; set -- "$@" -o "$o"; done
   for m in "$dir"DORC_FLAGS=*; do [ -e "$m" ] || continue; set -- "$@" "${m##*DORC_FLAGS=}"; done

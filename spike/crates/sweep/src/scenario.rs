@@ -45,7 +45,7 @@ pub struct Seed(pub u64);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TopologyClass {
     /// A footprinted running wall MISSES a converged victim's entity ⇒ the victim SURVIVES
-    /// (elides past the running wall) under `--trust-footprints`. The golden-hill happy path.
+    /// (elides past the running wall) under `--risk-faultless-skips`. The golden-hill happy path.
     MissConverged,
     /// Footprint misses, but the victim is DIVERGED @S0 ⇒ it runs regardless (no elision).
     MissDiverged,
