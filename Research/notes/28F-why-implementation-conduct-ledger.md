@@ -150,6 +150,8 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   (`271:rul-net-quality-u-curve`) argues against the imperfect net; the
   protection chain is registry-gate + corpus-gate + every-new-code-has-a-
   case, whose one hole is below.
+  <!-- /* superseded 2026-07-26: risky citation — the u-curve rules
+  user-facing product lints, not our own build hygiene. Ruling stands. */ -->
 - **finding-caseless-example-drift** (the lane's real discovery, banked
   OPEN): a ratchet-resident code's catalog `example` has NO mechanical tie
   to its emitter — any emitter reword silently falsifies the frozen sample
