@@ -651,7 +651,19 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let replay = if args.reads_the_receipt() {
         match load_whylog_replay(args, advisory)? {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
-            ReplayLoad::Refused => return Ok(RunOutcome::IngressRefused),
+            // The degraded receipt is answered HERE, above the pipeline, because the pipeline's
+            // first act is to read and analyze the book at the recorded path — which under drift
+            // is not the run's book (`28F:rul-drift-replay-d1`). Only `why` has a surface for it;
+            // every other mode that reads the receipt is trying to re-derive a plan, and there is
+            // no honest degraded plan.
+            ReplayLoad::Drifted(drifted) if mode == Mode::Why => {
+                emit_drifted_why(args.why_address.as_deref(), &drifted);
+                std::io::stdout().flush().ok();
+                return Ok(RunOutcome::Complete);
+            }
+            ReplayLoad::Drifted(_) | ReplayLoad::Refused => {
+                return Ok(RunOutcome::IngressRefused);
+            }
         }
     } else {
         None
@@ -1361,7 +1373,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             ),
             oracles: oracle_paths.clone(),
             risk_profile: args.trust_footprints.then_some(CONSENT_FLAG),
-            counts: plan.disposition_counts(),
+            tally: PlanTally::Derived(plan.disposition_counts()),
             deepest_tier: args.all,
             // Only a replay can disagree, and it declares its stream rather than being assumed.
             narratable: replay
@@ -1440,9 +1452,35 @@ struct Replay {
     records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
 }
 
+/// Everything a drifted receipt renders, and NOTHING that came from the current filesystem.
+///
+/// `28F:rul-drift-replay-d1`. Once the recorded book digest disagrees with the file at the recorded
+/// path, every downstream read of that file is a read of somebody else's book: the kernel would
+/// re-derive a chain for lines the run never saw, and naming them would be `271:rul-sin-ordering`'s
+/// pope-sin — a mis-attribution — rather than a missing answer. So the drifted path collects the
+/// durable's own scalars HERE and the render is structurally unable to reach anything else.
+///
+/// D2 (storing the chain so a drifted receipt could still name lines) is REJECTED: the thin durable
+/// never carries book structure, and the git line cannot rescue line-naming under the
+/// annotation-tier fence.
+struct DriftedReceipt {
+    host: String,
+    book_path: String,
+    /// The digest the RUN was keyed on — not the file's digest now.
+    book_digest: String,
+    oracle_paths: Vec<String>,
+    /// The consent flag as the ORIGINAL invocation spelled it, read back off the recorded argv.
+    risk_profile: Option<&'static str>,
+    started_at: Option<dorc_core::RunInstant>,
+    /// The per-leaf predicted dispositions the durable stored, folded to a tally.
+    tally: PlanTally,
+}
+
 enum ReplayLoad {
     Admitted(Replay),
     NoObservation(Replay),
+    /// The recorded book digest disagrees with the file now at that path: answerable, degraded.
+    Drifted(Box<DriftedReceipt>),
     Refused,
 }
 
@@ -1544,7 +1582,9 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let scope =
         WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
     // An edited book is the ordinary mismatch, so it is NAMED rather than reported as generic
-    // framing. The refusal stands; the degraded drift-disclosed render is the owed follow-on.
+    // framing — and it is the ENTRY to the degraded receipt rather than a dead end
+    // (`28F:rul-drift-replay-d1`). The diag still fires: the reader gets the drift loudly on the
+    // report lane and a durable-derived receipt on stdout.
     if envelope.claims().book_digest() != scope.book.1 {
         report_at(
             advisory,
@@ -1556,7 +1596,19 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
                 },
             ))],
         );
-        return Ok(ReplayLoad::Refused);
+        return Ok(ReplayLoad::Drifted(Box::new(DriftedReceipt {
+            host: envelope.claims().host().to_owned(),
+            book_digest: envelope.claims().book_digest().to_owned(),
+            risk_profile: envelope
+                .argv()
+                .iter()
+                .any(|word| word == CONSENT_FLAG)
+                .then_some(CONSENT_FLAG),
+            started_at: envelope.claims().started_at(),
+            tally: recorded_tally(envelope.apply()),
+            book_path,
+            oracle_paths,
+        })));
     }
     if !replay_claims_match(&envelope, &scope) {
         return Ok(refuse_replay(
@@ -1634,6 +1686,21 @@ fn read_replay_source(path: impl AsRef<std::path::Path>) -> Result<String, ()> {
         return Err(());
     }
     Ok(source)
+}
+
+/// Fold a durable's recorded apply report into the tally a drifted receipt may state.
+///
+/// Keyed on the stored WORD, which is the only shape the durable has — the typed `Disposition` it
+/// came from is unreachable here (re-deriving it needs the book). An unrecognized word is counted
+/// nowhere rather than guessed into a bucket: the tally under-reports instead of mis-reporting
+/// (`271:rul-sin-ordering`), and the parser's own `disposition_valid` already refuses the case.
+fn recorded_tally(apply: &[dorc_plan::whylog::ApplyLine]) -> PlanTally {
+    let count = |tag: &str| apply.iter().filter(|line| line.disposition == tag).count();
+    PlanTally::DriftedUnsplit {
+        run: count("run"),
+        guard: count("guard"),
+        elide: count("replace"),
+    }
 }
 
 fn refuse_replay(advisory: bool, reason: dorc_plan::records::AdmissionRefusal) -> ReplayLoad {
@@ -5347,6 +5414,54 @@ fn emit_why_aggregate(
     print_document(nodes, 0);
 }
 
+/// The DEGRADED `dorc why` render for a replay whose book has drifted (`28F:rul-drift-replay-d1`).
+///
+/// The bad morning's worst case is the admin who edited the book before asking why, and the answer
+/// they used to get was a refusal with nothing behind it. The receipt itself survives drift — it is
+/// header, inventory and tally, all minted by the controller and stored — so it renders, with the
+/// drift stated in it. What cannot survive is everything keyed to SOURCE: the chain re-derives
+/// through the kernel from the book, and leaf-to-line needs the AST, so ANALYSIS and every chain
+/// are suppressed and say so in their place.
+///
+/// An ADDRESSED query gets only the explanation, matching the un-drifted addressed form, which also
+/// renders no banner: the reader asked about a line, and the honest answer names no line at all.
+/// No footer either — its "filtered for presumed relevance" is a claim about selection, and nothing
+/// here was selected.
+fn emit_drifted_why(address: Option<&str>, drifted: &DriftedReceipt) {
+    if let Some(address) = address {
+        print_document(
+            vec![paragraph(
+                &Said::words("why-drift-address-unanswerable", &[address]),
+                "why-drift-address-unanswerable",
+            )],
+            0,
+        );
+        return;
+    }
+    let receipt = Receipt {
+        at: drifted.started_at,
+        replayed: true,
+        host: drifted.host.clone(),
+        book: drifted.book_path.clone(),
+        book_digest: drifted.book_digest.clone(),
+        // Never resolved under drift: the git line answers for the file on disk, and saying that
+        // file matches HEAD would attach a provenance claim to bytes the run never read.
+        at_head: None,
+        oracles: drifted.oracle_paths.clone(),
+        risk_profile: drifted.risk_profile,
+        tally: drifted.tally,
+        deepest_tier: false,
+        narratable: false,
+    };
+    print_document(
+        vec![
+            receipt_banner(&receipt),
+            registry_paragraph("why-drift-analysis-suppressed"),
+        ],
+        0,
+    );
+}
+
 /// One aggregate item: the `file:N | command` headline, its reason beneath, and the
 /// `dorc why <addr>` pointer that turns it into the next question (`28E` §8 row shape).
 ///
@@ -5404,7 +5519,7 @@ struct Receipt {
     oracles: Vec<String>,
     /// The consent flag in force, or `None` for a flagless run.
     risk_profile: Option<&'static str>,
-    counts: dorc_plan::DispositionCounts,
+    tally: PlanTally,
     /// `--all`: the reader asked for the deepest pull tier.
     deepest_tier: bool,
     /// Whether the `[unnarrated:]` census may be asserted over this report at all — the version
@@ -5413,14 +5528,43 @@ struct Receipt {
     narratable: bool,
 }
 
+/// How much of the plan tally a receipt can honestly state.
+///
+/// The skipped-count SPLIT is the line the reader needs most — an `elide_by_trusted_claim` skip
+/// rests on an author's at-most claim rather than on anything measured, and the two carry different
+/// risk — but it is a LICENSE-plane derivation, re-derived through the kernel from the book. A
+/// drifted replay (`28F:rul-drift-replay-d1`) has no kernel run behind it: the thin durable stores
+/// one disposition word per leaf and nothing else, so there the split is not zero, it is unknown,
+/// and rendering the two alike would put a proof-claim on a receipt that holds none.
+/// The two states are also the receipt's drift state, deliberately: the split is missing for
+/// exactly the reason the chain is, so nothing can set one without the other. D2 — storing the
+/// chain so a drifted receipt could still name lines — is REJECTED, which is what makes the
+/// coupling permanent rather than a convenience.
+#[derive(Clone, Copy)]
+enum PlanTally {
+    /// A live run or a clean replay: the counts the plan itself produced.
+    Derived(dorc_plan::DispositionCounts),
+    /// A drifted replay: the durable's own per-leaf dispositions, split unknown.
+    DriftedUnsplit {
+        run: usize,
+        guard: usize,
+        elide: usize,
+    },
+}
+
+impl PlanTally {
+    /// Whether this receipt reports on a run whose book is no longer the file at its path.
+    const fn is_drifted(self) -> bool {
+        matches!(self, PlanTally::DriftedUnsplit { .. })
+    }
+}
+
 /// The receipt header as one banner: the run's identity, then the indented record of what it read
 /// and what it decided.
 ///
 /// The plan tally counts the TYPED disposition, never the rendered word: the words are registry
 /// prose meant to churn (`27V:rul-output-form-unwelded`), so a tally keyed on them would silently
-/// go wrong the first time someone rewrote one. Its skipped-count SPLIT is the line the reader
-/// needs most — an `elide_by_trusted_claim` skip rests on an author's at-most claim rather than on
-/// anything measured, and the two carry different risk.
+/// go wrong the first time someone rewrote one.
 fn receipt_banner(receipt: &Receipt) -> Node<Face> {
     let when = match (receipt.at, receipt.replayed) {
         (Some(at), false) => why_words(
@@ -5433,9 +5577,8 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         ),
         (None, _) => why_words("why-receipt-when-undated", &[]),
     };
-    let counts = receipt.counts;
-    let tally = if counts.elide_by_trusted_claim == 0 {
-        why_words(
+    let tally = match receipt.tally {
+        PlanTally::Derived(counts) if counts.elide_by_trusted_claim == 0 => why_words(
             "why-receipt-plan-tally-by-proof",
             &[
                 &counts.run.to_string(),
@@ -5443,9 +5586,8 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
                 &counts.elide.to_string(),
                 &counts.elide_by_proof.to_string(),
             ],
-        )
-    } else {
-        why_words(
+        ),
+        PlanTally::Derived(counts) => why_words(
             "why-receipt-plan-tally",
             &[
                 &counts.run.to_string(),
@@ -5454,7 +5596,11 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
                 &counts.elide_by_proof.to_string(),
                 &counts.elide_by_trusted_claim.to_string(),
             ],
-        )
+        ),
+        PlanTally::DriftedUnsplit { run, guard, elide } => why_words(
+            "why-receipt-plan-tally-unsplit",
+            &[&run.to_string(), &guard.to_string(), &elide.to_string()],
+        ),
     };
     let risk = receipt.risk_profile.map_or_else(
         || why_words("why-receipt-risk-profile-none", &[]),
@@ -5468,8 +5614,13 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         ),
         None => Said::words("why-receipt-book", &[&receipt.book, &receipt.book_digest]),
     };
-    let body = vec![
-        receipt_row(&book_row),
+    let mut body = vec![receipt_row(&book_row)];
+    if receipt.tally.is_drifted() {
+        // Adjacent to the book row it qualifies: the digest above is the RUN's, and this says the
+        // file at that path no longer carries it, so nothing below ties back to source.
+        body.push(receipt_row(&Said::words("why-receipt-book-drifted", &[])));
+    }
+    body.extend([
         receipt_row(&Said::words(
             "why-receipt-oracles",
             &[&receipt.oracles.join(", ")],
@@ -5480,7 +5631,7 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         // replayed-voice obligation — never let a reader take a prediction for an outcome.
         receipt_row(&Said::words("why-receipt-dispositions-predicted", &[])),
         receipt_row(&Said::words("why-addressability-line", &[])),
-    ];
+    ]);
     Node::new(NodeKind::Banner(Banner {
         headline: vec![dorc_aid::weave::words(
             why_words("why-receipt-header", &[&when, &receipt.host]),
@@ -7960,6 +8111,38 @@ mod tests {
         );
     }
 
+    /// `28F:rul-drift-replay-d1`: a drifted receipt's ONLY count comes from the durable's stored
+    /// disposition WORDS, so this fold is the whole tally. Two things worth pinning: the word
+    /// keying (rename a tag at the writer and a silently-zeroed tally is what a reader would see —
+    /// the drifted receipt has no second source to disagree with), and that an unrecognized word
+    /// lands in no bucket rather than a guessed one, so the tally under-reports rather than
+    /// mis-reports (`271:rul-sin-ordering`). `omit` is absent from the render by design: the
+    /// receipt tally has always been ran/guarded/skipped.
+    #[test]
+    fn a_drifted_tally_counts_the_stored_words_and_guesses_at_none() {
+        let line = |leaf: u32, disposition: &str| dorc_plan::whylog::ApplyLine {
+            leaf,
+            disposition: disposition.to_owned(),
+            predicted: true,
+        };
+        let tally = recorded_tally(&[
+            line(0, "run"),
+            line(1, "replace"),
+            line(2, "replace"),
+            line(3, "guard"),
+            line(4, "omit"),
+            line(5, "a-word-no-writer-emits"),
+        ]);
+        let PlanTally::DriftedUnsplit { run, guard, elide } = tally else {
+            panic!("a recorded tally is always the unsplit, drifted shape");
+        };
+        assert_eq!((run, guard, elide), (1, 1, 2));
+        assert!(
+            tally.is_drifted(),
+            "the unsplit tally IS the receipt's drift state — nothing else carries it"
+        );
+    }
+
     /// [`probe1`] but ENTRY-bearing (a wrapped-context site): the runtime-EntryFailure input.
     fn probe1_entry(fact: FactKey, site_kind: ProbeSiteKind) -> ProbePlan {
         let mut p = probe1(fact, site_kind);
@@ -9269,7 +9452,7 @@ mod not_ours_bytes_tests {
             at_head: None,
             oracles: vec![hostile_line(4), hostile_line(5)],
             risk_profile: Some(CONSENT_FLAG),
-            counts: dorc_plan::DispositionCounts {
+            tally: PlanTally::Derived(dorc_plan::DispositionCounts {
                 sites: 2,
                 elide: 1,
                 elide_by_proof: 0,
@@ -9277,7 +9460,7 @@ mod not_ours_bytes_tests {
                 omit: 0,
                 guard: 0,
                 run: 1,
-            },
+            }),
             deepest_tier: true,
             narratable: true,
         };
@@ -9312,7 +9495,7 @@ mod not_ours_bytes_tests {
             at: receipt.at,
             replayed: receipt.replayed,
             risk_profile: receipt.risk_profile,
-            counts: receipt.counts,
+            tally: receipt.tally,
             deepest_tier: receipt.deepest_tier,
             narratable: receipt.narratable,
         }
