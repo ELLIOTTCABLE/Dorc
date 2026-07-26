@@ -55,13 +55,19 @@ pub fn words(text: impl Into<String>, slug: &'static str) -> Run<Face> {
 /// A computed value: a coordinate, an address, a count. Never editable —
 /// rewriting one would be lying about the world rather than rephrasing a
 /// sentence.
+///
 /// Encoded on the way in, at `cap` bytes. Many of these values are ENGINE-shaped and the encoding
 /// is a no-op on them, but several are not — an oracle's coordinate text, a speaker's `file:line`,
 /// a book site's `N|command` — and a value seat that encoded only the ones it believed were
 /// foreign would be one audit away from wrong. The registry WORDS a value is interleaved with are
 /// never encoded (see [`words`]); only the value is.
 #[must_use]
-pub fn value(text: impl AsRef<str>, slug: &'static str, part: &'static str, cap: usize) -> Run<Face> {
+pub fn value(
+    text: impl AsRef<str>,
+    slug: &'static str,
+    part: &'static str,
+    cap: usize,
+) -> Run<Face> {
     Run::param(
         crate::display::encode_foreign(text.as_ref(), cap),
         Face::Row(slug),

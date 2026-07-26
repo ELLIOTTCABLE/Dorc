@@ -186,7 +186,10 @@ mod tests {
                     once,
                     "encode_line(cap={cap}) is not idempotent on {sample:?}"
                 );
-                assert!(once.len() <= cap, "encode_line(cap={cap}) overran: {once:?}");
+                assert!(
+                    once.len() <= cap,
+                    "encode_line(cap={cap}) overran: {once:?}"
+                );
                 let once = encode_foreign(sample, cap);
                 assert_eq!(
                     encode_foreign(&once, cap),
