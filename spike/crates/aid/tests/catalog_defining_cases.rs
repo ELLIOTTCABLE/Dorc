@@ -85,7 +85,7 @@ fn covered() -> Vec<DefiningCase> {
             slug: "syntax-unsupported",
             build: || {
                 DiagCode::SyntaxUnsupported(SyntaxUnsupported {
-                    detail: "process substitution `<(…)` is not modeled".to_owned(),
+                    detail: "process substitution `<(...)` is not modeled".to_owned(),
                 })
             },
         },
