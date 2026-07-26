@@ -60,6 +60,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 use std::process::ExitCode;
 
+mod whylog_store;
+
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete,
     Diag, DiagCode, EscalationPolicy, FootprintIncoherent, ReachesConflict,
@@ -1468,7 +1470,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
                 },
             ))
         })?;
-        let Some(path) = newest_whylog(dir) else {
+        let Some(path) = whylog_store::newest(dir) else {
             report_at(
                 advisory,
                 "whylog",
@@ -1598,64 +1600,55 @@ fn replay_claims_match(
             })
 }
 
-/// The `whylog-<NNNN>.txt` durables in `dir`, ascending by run-index (deterministic).
-fn whylog_entries(dir: &str) -> Vec<(u64, std::path::PathBuf)> {
-    let mut v: Vec<(u64, std::path::PathBuf)> = std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter_map(|e| {
-            let idx = e
-                .file_name()
-                .to_string_lossy()
-                .strip_prefix("whylog-")?
-                .strip_suffix(".txt")?
-                .parse::<u64>()
-                .ok()?;
-            Some((idx, e.path()))
-        })
-        .collect();
-    v.sort_by_key(|(i, _)| *i);
-    v
-}
-
-/// The newest durable in `dir` (highest run-index), or `None`.
-fn newest_whylog(dir: &str) -> Option<std::path::PathBuf> {
-    whylog_entries(dir).pop().map(|(_, p)| p)
-}
-
-/// Write the durable for a completed run (`27V` Lane B), with retention. Best-effort: a write
-/// failure is swallowed (the durable is a postmortem aid, never load-bearing — stdout is untouched).
+/// Write the durable for a completed run (`27V` Lane B), through the hardened store.
+///
+/// Every refusal is REPORTED (`28F:rul-write-failure-is-error-floor`) — this used to swallow five
+/// of them, which `28D:must-retention-is-one-decision` names as one of the whylog's five
+/// each-looked-local decisions. The artifact on stdout is still untouched by any of this: the
+/// durable is a postmortem aid, so a failure to keep one is loud, not fatal.
 fn write_whylog(
     dir: &str,
     metadata: &dorc_plan::whylog::WhylogV2Metadata,
     records: &dorc_plan::records::AdmittedUnscopedHostRecords,
 ) {
-    if std::fs::create_dir_all(dir).is_err() {
-        return;
-    }
     let write = dorc_plan::whylog::WhylogV2Write::new(metadata, records);
-    let Ok(bytes) = dorc_plan::whylog::try_serialize_v2(
+    let bytes = match dorc_plan::whylog::try_serialize_v2(
         &write,
         dorc_plan::whylog::WhylogLimits::spike_default(),
-    ) else {
-        return;
+    ) {
+        Ok(bytes) => bytes,
+        Err(refusal) => return report_whylog_unwritten(dir, serialize_refusal_reason(refusal)),
     };
-    if bytes.len() > WHYLOG_CAP {
-        return;
+    if let Err(refusal) = whylog_store::publish(dir, &bytes, WHYLOG_CAP, WHYLOG_KEEP) {
+        report_whylog_unwritten(dir, refusal.reason());
     }
-    let next = whylog_entries(dir)
-        .last()
-        .map_or(1, |(i, _)| i.saturating_add(1));
-    let path = std::path::Path::new(dir).join(format!("whylog-{next:04}.txt"));
-    if std::fs::write(&path, bytes).is_err() {
-        return;
-    }
-    let entries = whylog_entries(dir);
-    if let Some(drop_before) = entries.len().checked_sub(WHYLOG_KEEP) {
-        for (_, p) in entries.into_iter().take(drop_before) {
-            let _ = std::fs::remove_file(p);
-        }
+}
+
+/// Report a durable that did not land. Deliberately on [`report`], not `report_at`: the advisory
+/// filter drops everything under `apply`, and an apply whose receipt vanished is precisely the run
+/// an admin will come back asking about.
+fn report_whylog_unwritten(dir: &str, reason: &str) {
+    report(
+        "whylog",
+        None,
+        &[Diag::new_spanless_site(DiagCode::WhylogUnwritten(
+            dorc_aid::diag::WhylogUnwritten {
+                dir: dir.to_owned(),
+                reason: reason.to_owned(),
+            },
+        ))],
+    );
+}
+
+/// The closed reason word a serializer refusal carries into the diagnostic.
+const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal) -> &'static str {
+    use dorc_plan::whylog::WhylogWriteRefusal as R;
+    match refusal {
+        R::Limit => "limit",
+        R::Grammar => "grammar",
+        R::Numeric => "numeric",
+        R::Digest => "digest",
+        R::ArithmeticOverflow => "overflow",
     }
 }
 
