@@ -107,6 +107,7 @@
 //! of arrangement runs is a cross-cutting call for the orchestrator, not one to
 //! settle inside this crate. The change would be additive.
 
+mod align;
 pub mod frame;
 pub mod provenance;
 pub mod render;

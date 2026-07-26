@@ -17,6 +17,7 @@ web1, trigger cron
    || ufw allow "$PORT"/tcp
 
  3 | PORT=443               # the admin's own default
+
 23 | ufw allow "$PORT"/tcp  # guarded on every apply
 
 a convergence check for hork skips lines

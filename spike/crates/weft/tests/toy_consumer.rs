@@ -62,10 +62,17 @@ fn prose(runs: Vec<Run<Key>>) -> Node<Key> {
 }
 
 fn labeled(label: &'static str, body: Vec<Run<Key>>) -> Node<Key> {
+    labeled_in(label, body, None)
+}
+
+/// A labelled row in a named alignment group, so rows that are not siblings
+/// still share one label column.
+fn labeled_in(label: &'static str, body: Vec<Run<Key>>, group: Option<&'static str>) -> Node<Key> {
     Node::new(NodeKind::Labeled(LabeledRow {
         label: vec![word(label, "label")],
         body,
         attachments: Vec::new(),
+        align: group.map(Key::Row),
     }))
 }
 
@@ -87,6 +94,7 @@ fn quoted_row(
             trailer,
         },
         attachments,
+        align: Some(Key::Row("chain")),
     }))
 }
 
@@ -98,6 +106,7 @@ fn analysis_section() -> Node<Key> {
             "unmeasured-gloss",
         )]),
         Node::new(NodeKind::Code(CodeBlock {
+            align: None,
             mode: Literalness::Literal,
             locus: Some(vec![value(
                 "certsync.oracle.sh, as-written:",
@@ -182,17 +191,18 @@ fn next_steps_section() -> Node<Key> {
         branches: vec![
             Branch {
                 connective: None,
-                nodes: vec![labeled(
+                nodes: vec![labeled_in(
                     "fix:",
                     vec![
                         value("certsync.oracle.sh:31", "fix", "target"),
                         prose_text(" (widen the claim; every consumer heals)", "fix", "message"),
                     ],
+                    Some("steps"),
                 )],
             },
             Branch {
                 connective: Some(vec![word("OR", "connective.alternative")]),
-                nodes: vec![labeled(
+                nodes: vec![labeled_in(
                     "fix:",
                     vec![
                         value("`dorc plan web.sh web1`", "fix", "target"),
@@ -202,6 +212,7 @@ fn next_steps_section() -> Node<Key> {
                             "message",
                         ),
                     ],
+                    Some("steps"),
                 )],
             },
         ],
@@ -217,16 +228,17 @@ fn next_steps_section() -> Node<Key> {
                 value("9|systemctl", "steps", "site"),
                 prose_text(" SHOULD have run:", "steps", "opener"),
             ]),
-            labeled(
+            labeled_in(
                 "suspect:",
                 vec![prose_text(
                     "the 8|certsync claim -- the only link speaking for unmeasured state. if `certsync push` also touches @enabled/@active, it is what wrongly kept 9|systemctl out.",
                     "suspect",
                     "message",
                 )],
+                Some("steps"),
             ),
             alternatives,
-            labeled(
+            labeled_in(
                 "verify:",
                 vec![
                     value("`dorc plan --why web.sh web1`", "verify", "target"),
@@ -236,13 +248,15 @@ fn next_steps_section() -> Node<Key> {
                         "message",
                     ),
                 ],
+                Some("steps"),
             ),
-            labeled(
+            labeled_in(
                 "review:",
                 vec![
                     value("`dorc why web.sh:9 --all`", "review", "target"),
                     prose_text(" (every link, unselected, exhaustive)", "review", "message"),
                 ],
+                Some("steps"),
             )
             .summarizable(),
         ],
@@ -292,26 +306,28 @@ fn receipt_banner() -> Node<Key> {
 /// column that squares up across lines and will later carry its own styling.
 /// Splitting the lines into cells is what licenses the alignment padding — the
 /// single-cell excerpts elsewhere in this file stay byte-untouched.
-fn annotated_excerpt() -> Node<Key> {
+fn annotated_line(number: &'static str, code: &'static str, note: &'static str) -> CodeLine<Key> {
+    CodeLine {
+        gutter: Some(value(number, "excerpt", "line")),
+        cells: vec![
+            CodeCell::new(vec![source(code, "web.sh")]).aligned(Key::Row("excerpt.code")),
+            CodeCell::new(vec![source(note, "web.sh")]).aligned(Key::Row("excerpt.note")),
+        ],
+    }
+}
+
+/// Two excerpts, in separate blocks, whose trailing comments share one column.
+///
+/// The blocks are not siblings and neither knows the other exists, so nothing
+/// structural could line them up — the shared column comes from both naming the
+/// same alignment group. Without that the second block would measure only
+/// itself and its comments would land somewhere else entirely.
+fn annotated_excerpt(line: CodeLine<Key>) -> Node<Key> {
     Node::new(NodeKind::Code(CodeBlock {
+        align: Some(Key::Row("excerpt.gutter")),
         mode: Literalness::Literal,
         locus: None,
-        lines: vec![
-            CodeLine {
-                gutter: Some(value("3", "excerpt", "line")),
-                cells: vec![
-                    CodeCell::new(vec![source("PORT=443", "web.sh")]),
-                    CodeCell::new(vec![source("# the admin's own default", "web.sh")]),
-                ],
-            },
-            CodeLine {
-                gutter: Some(value("23", "excerpt", "line")),
-                cells: vec![
-                    CodeCell::new(vec![source("ufw allow \"$PORT\"/tcp", "web.sh")]),
-                    CodeCell::new(vec![source("# guarded on every apply", "web.sh")]),
-                ],
-            },
-        ],
+        lines: vec![line],
     }))
 }
 
@@ -321,6 +337,7 @@ fn improvements_section() -> Node<Key> {
         counts: Some(vec![value("2", "section", "count")]),
         body: vec![
             Node::new(NodeKind::Code(CodeBlock {
+                align: None,
                 mode: Literalness::Descriptive,
                 locus: Some(vec![value("web.sh, described:", "excerpt", "locus")]),
                 lines: vec![CodeLine {
@@ -332,6 +349,7 @@ fn improvements_section() -> Node<Key> {
                 }],
             })),
             Node::new(NodeKind::Code(CodeBlock {
+                align: None,
                 mode: Literalness::Formatted,
                 locus: None,
                 lines: vec![
@@ -351,7 +369,12 @@ fn improvements_section() -> Node<Key> {
                     },
                 ],
             })),
-            annotated_excerpt(),
+            annotated_excerpt(annotated_line("3", "PORT=443", "# the admin's own default")),
+            annotated_excerpt(annotated_line(
+                "23",
+                "ufw allow \"$PORT\"/tcp",
+                "# guarded on every apply",
+            )),
             prose(vec![prose_text(
                 "a convergence check for hork skips lines 12 and 13 whenever hork is converged",
                 "improvement",

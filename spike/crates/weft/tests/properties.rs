@@ -5,9 +5,9 @@
 //! invariant nobody can name is one nobody will preserve.
 
 use weft::{
-    CodeBlock, CodeCell, CodeLine, Document, Frame, Instance, LabeledRow, Literalness, Node,
-    NodeKind, Paragraph, Payload, Provenance, Quoting, Rendered, Reservation, Run, Section, Side,
-    SpeakerRow, Width, render, render_framed,
+    Branch, CodeBlock, CodeCell, CodeLine, Document, Frame, Instance, Join, LabeledRow,
+    Literalness, Node, NodeKind, Paragraph, Payload, Provenance, Quoting, Rendered, Reservation,
+    Run, Section, Side, SpeakerRow, Width, render, render_framed,
 };
 
 /// The width sweep every whole-document property runs over: narrow enough to
@@ -68,6 +68,7 @@ fn mixed_document() -> Document<Key> {
                     trailer: vec![text(" (ran 09:13:51, rc 0)")],
                 },
                 attachments: vec![Node::new(NodeKind::Code(CodeBlock {
+                    align: None,
                     mode: Literalness::Literal,
                     locus: Some(vec![value("ufw.oracle.sh, as-written:")]),
                     lines: vec![CodeLine {
@@ -77,11 +78,13 @@ fn mixed_document() -> Document<Key> {
                         )])],
                     }],
                 }))],
+                align: None,
             })),
             Node::new(NodeKind::Labeled(LabeledRow {
                 label: vec![value("so:")],
                 body: vec![text("the report was good when it ran")],
                 attachments: Vec::new(),
+                align: None,
             })),
         ],
     }))])
@@ -229,6 +232,7 @@ fn an_over_wide_word_overruns_rather_than_being_split() {
 fn literal_code_lines_stay_byte_honest() {
     let line = "ufw status verbose | grep -q \"$1\"  : org.ufw.Firewall:\"$1\"@allowed";
     let document = Document::new(vec![Node::new(NodeKind::Code(CodeBlock {
+        align: None,
         mode: Literalness::Literal,
         locus: None,
         lines: vec![CodeLine {
@@ -247,6 +251,7 @@ fn literal_code_lines_stay_byte_honest() {
 #[test]
 fn a_descriptive_block_is_always_marked_non_runnable() {
     let document = Document::new(vec![Node::new(NodeKind::Code(CodeBlock {
+        align: None,
         mode: Literalness::Descriptive,
         locus: None,
         lines: vec![CodeLine {
@@ -285,6 +290,53 @@ fn a_right_reservation_narrows_only_the_lines_it_covers() {
     assert!(
         lines_of(&rendered).len() > reserved_line + 1,
         "the reservation must narrow a line in the middle, not the last one — otherwise it proves nothing about per-line geometry"
+    );
+}
+
+#[test]
+fn a_named_group_aligns_rows_that_are_not_siblings() {
+    let row = |label: &str, group: Option<&str>| {
+        Node::new(NodeKind::Labeled(LabeledRow {
+            label: vec![value(label)],
+            body: vec![text("body")],
+            attachments: Vec::new(),
+            align: group.map(|name| Key::Row(Box::leak(name.to_owned().into_boxed_str()))),
+        }))
+    };
+    // The short row sits inside a join branch and the long one outside it, so
+    // no structural rule could relate them; only the shared name can.
+    let document = Document::new(vec![
+        Node::new(NodeKind::Join(Join {
+            branches: vec![Branch {
+                connective: None,
+                nodes: vec![row("fix:", Some("steps"))],
+            }],
+            restatement: None,
+        })),
+        row("suspect:", Some("steps")),
+    ]);
+    let rendered = render(&document, 80);
+    let lines = lines_of(&rendered);
+    let body_column = |needle: &str| {
+        lines
+            .iter()
+            .find(|line| line.contains(needle))
+            .and_then(|line| line.find("body"))
+            .expect("both rows render their body")
+    };
+    let indent = 3;
+    assert_eq!(
+        body_column("fix:") - indent,
+        body_column("suspect:"),
+        "a shared group must widen the short row's label column to the group's width, net of the branch indent"
+    );
+
+    let ungrouped = Document::new(vec![row("fix:", None), row("suspect:", None)]);
+    let ungrouped = render(&ungrouped, 80);
+    assert!(
+        ungrouped.text().contains("fix:     body"),
+        "adjacent siblings still align locally without any group: {:?}",
+        ungrouped.text()
     );
 }
 

@@ -11,6 +11,7 @@
 //! from the consumer. Weft mints whitespace and a short, fixed set of structural
 //! glyphs, and nothing else — no vocabulary, no numbering, no counts.
 
+use crate::align::{Alignments, COLUMN_PRIMARY, COLUMN_SECONDARY, COLUMN_TERTIARY};
 use crate::frame::{Frame, Reservation, Side, Width};
 use crate::provenance::Span;
 use crate::sink::Sink;
@@ -72,7 +73,10 @@ impl<K> Rendered<K> {
 
 /// Lays a document out at a given width.
 #[must_use]
-pub fn render<K: Clone>(document: &Document<K>, width: impl Into<Width>) -> Rendered<K> {
+pub fn render<K: Clone + PartialEq>(
+    document: &Document<K>,
+    width: impl Into<Width>,
+) -> Rendered<K> {
     render_framed(document, &Frame::of_width(width.into()))
 }
 
@@ -81,9 +85,12 @@ pub fn render<K: Clone>(document: &Document<K>, width: impl Into<Width>) -> Rend
 /// The entry point for placing a document inside geometry the caller already
 /// owns — a column, a pane, a region beside a float.
 #[must_use]
-pub fn render_framed<K: Clone>(document: &Document<K>, frame: &Frame) -> Rendered<K> {
+pub fn render_framed<K: Clone + PartialEq>(document: &Document<K>, frame: &Frame) -> Rendered<K> {
+    // Named alignment groups are measured over the WHOLE document first, so a
+    // column can be widened by a member the layout has not reached yet.
+    let aligns = Alignments::measure(document);
     let mut sink = Sink::new();
-    render_nodes(&mut sink, &document.nodes, frame);
+    render_nodes(&mut sink, &document.nodes, frame, &aligns);
     let (text, spans) = sink.finish();
     Rendered { text, spans }
 }
@@ -99,7 +106,12 @@ fn advance_to<K: Clone>(sink: &mut Sink<K>, column: usize) {
     sink.pad_to(column.max(minimum));
 }
 
-fn render_nodes<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: &Frame) {
+fn render_nodes<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    nodes: &[Node<K>],
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     let mut index = 0usize;
     while let Some(node) = nodes.get(index) {
         if index > 0 {
@@ -107,10 +119,10 @@ fn render_nodes<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: &Frame) 
         }
         let rest = nodes.get(index..).unwrap_or_default();
         let consumed = match &node.kind {
-            NodeKind::Speaker(_) => render_speaker_group(sink, rest, frame),
-            NodeKind::Labeled(_) => render_labeled_group(sink, rest, frame),
+            NodeKind::Speaker(_) => render_speaker_group(sink, rest, frame, aligns),
+            NodeKind::Labeled(_) => render_labeled_group(sink, rest, frame, aligns),
             other => {
-                render_single(sink, other, frame);
+                render_single(sink, other, frame, aligns);
                 1
             }
         };
@@ -131,21 +143,33 @@ fn separate<K: Clone>(sink: &mut Sink<K>, next: &NodeKind<K>) {
     sink.blank_line();
 }
 
-fn render_single<K: Clone>(sink: &mut Sink<K>, kind: &NodeKind<K>, frame: &Frame) {
+fn render_single<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    kind: &NodeKind<K>,
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     match kind {
-        NodeKind::Section(section) => render_section(sink, section, frame),
-        NodeKind::Code(block) => render_code(sink, block, frame),
+        NodeKind::Section(section) => render_section(sink, section, frame, aligns),
+        NodeKind::Code(block) => render_code(sink, block, frame, aligns),
         NodeKind::Pointer(pointer) => render_pointer(sink, pointer, frame),
-        NodeKind::Banner(banner) => render_banner(sink, banner, frame),
+        NodeKind::Banner(banner) => render_banner(sink, banner, frame, aligns),
         NodeKind::Prose(paragraph) => render_prose(sink, paragraph, frame),
-        NodeKind::Join(join) => render_join(sink, join, frame),
+        NodeKind::Join(join) => render_join(sink, join, frame, aligns),
         NodeKind::Truncation(truncation) => render_truncation(sink, truncation, frame),
-        NodeKind::Speaker(row) => render_speaker_row(sink, row, frame, &SpeakerColumns::stacked()),
-        NodeKind::Labeled(row) => render_labeled_row(sink, row, frame, None),
+        NodeKind::Speaker(row) => {
+            render_speaker_row(sink, row, frame, &SpeakerColumns::stacked(), aligns);
+        }
+        NodeKind::Labeled(row) => render_labeled_row(sink, row, frame, None, aligns),
     }
 }
 
-fn render_section<K: Clone>(sink: &mut Sink<K>, section: &Section<K>, frame: &Frame) {
+fn render_section<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    section: &Section<K>,
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     sink.end_line();
     sink.pad_to(frame.left());
     sink.layout(SECTION_OPEN);
@@ -158,16 +182,21 @@ fn render_section<K: Clone>(sink: &mut Sink<K>, section: &Section<K>, frame: &Fr
     sink.layout(SECTION_CLOSE);
     if !section.body.is_empty() {
         sink.blank_line();
-        render_nodes(sink, &section.body, frame);
+        render_nodes(sink, &section.body, frame, aligns);
     }
 }
 
-fn render_banner<K: Clone>(sink: &mut Sink<K>, banner: &Banner<K>, frame: &Frame) {
+fn render_banner<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    banner: &Banner<K>,
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     sink.end_line();
     wrap(sink, &banner.headline, frame);
     if !banner.body.is_empty() {
         sink.end_line();
-        render_nodes(sink, &banner.body, &frame.inset(INDENT));
+        render_nodes(sink, &banner.body, &frame.inset(INDENT), aligns);
     }
 }
 
@@ -203,12 +232,17 @@ fn render_pointer<K: Clone>(sink: &mut Sink<K>, pointer: &PointerLine<K>, frame:
     emit_runs(sink, &pointer.target);
 }
 
-fn render_join<K: Clone>(sink: &mut Sink<K>, join: &Join<K>, frame: &Frame) {
+fn render_join<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    join: &Join<K>,
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     for (index, branch) in join.branches.iter().enumerate() {
         if index > 0 {
             sink.blank_line();
         }
-        render_branch(sink, branch, frame);
+        render_branch(sink, branch, frame, aligns);
     }
     if let Some(restatement) = &join.restatement {
         sink.blank_line();
@@ -216,7 +250,12 @@ fn render_join<K: Clone>(sink: &mut Sink<K>, join: &Join<K>, frame: &Frame) {
     }
 }
 
-fn render_branch<K: Clone>(sink: &mut Sink<K>, branch: &Branch<K>, frame: &Frame) {
+fn render_branch<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    branch: &Branch<K>,
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     if let Some(connective) = &branch.connective {
         sink.end_line();
         sink.pad_to(frame.left());
@@ -224,16 +263,21 @@ fn render_branch<K: Clone>(sink: &mut Sink<K>, branch: &Branch<K>, frame: &Frame
     }
     if !branch.nodes.is_empty() {
         sink.end_line();
-        render_nodes(sink, &branch.nodes, &frame.inset(INDENT));
+        render_nodes(sink, &branch.nodes, &frame.inset(INDENT), aligns);
     }
 }
 
-fn render_attachments<K: Clone>(sink: &mut Sink<K>, attachments: &[Node<K>], frame: &Frame) {
+fn render_attachments<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    attachments: &[Node<K>],
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     if attachments.is_empty() {
         return;
     }
     sink.blank_line();
-    render_nodes(sink, attachments, &frame.inset(INDENT));
+    render_nodes(sink, attachments, &frame.inset(INDENT), aligns);
 }
 
 // ---- labelled rows -------------------------------------------------------
@@ -244,10 +288,14 @@ fn render_attachments<K: Clone>(sink: &mut Sink<K>, attachments: &[Node<K>], fra
 /// own line with the body indented beneath. The decision is per GROUP rather
 /// than per row, because a table in which some rows hang and others stack reads
 /// as broken rather than as adaptive.
-fn label_column<K>(rows: &[&LabeledRow<K>], frame: &Frame) -> Option<usize> {
+fn label_column<K: Clone + PartialEq>(
+    rows: &[&LabeledRow<K>],
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) -> Option<usize> {
     let width = rows
         .iter()
-        .map(|row| runs_width(&row.label))
+        .map(|row| aligns.shared(row.align.as_ref(), COLUMN_PRIMARY, runs_width(&row.label)))
         .max()
         .unwrap_or(0);
     let body_left = frame.left().saturating_add(width).saturating_add(1);
@@ -266,7 +314,12 @@ fn label_column<K>(rows: &[&LabeledRow<K>], frame: &Frame) -> Option<usize> {
     }
 }
 
-fn render_labeled_group<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: &Frame) -> usize {
+fn render_labeled_group<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    nodes: &[Node<K>],
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) -> usize {
     let rows: Vec<&LabeledRow<K>> = nodes
         .iter()
         .map_while(|node| match &node.kind {
@@ -274,45 +327,43 @@ fn render_labeled_group<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: 
             _ => None,
         })
         .collect();
-    let column = label_column(&rows, frame);
+    let column = label_column(&rows, frame, aligns);
     for (index, row) in rows.iter().enumerate() {
         if index > 0 {
             sink.end_line();
         }
-        render_labeled_row(sink, row, frame, column);
+        render_labeled_row(sink, row, frame, column, aligns);
     }
     rows.len()
 }
 
-fn render_labeled_row<K: Clone>(
+fn render_labeled_row<K: Clone + PartialEq>(
     sink: &mut Sink<K>,
     row: &LabeledRow<K>,
     frame: &Frame,
     column: Option<usize>,
+    aligns: &Alignments<K>,
 ) {
     sink.end_line();
     sink.pad_to(frame.left());
     emit_runs(sink, &row.label);
-    let body_left = match column {
-        Some(label_width) => {
-            let left = frame
-                .left()
-                .saturating_add(label_width.max(runs_width(&row.label)))
-                .saturating_add(1);
-            advance_to(sink, left);
-            left
-        }
-        None => {
-            sink.end_line();
-            frame.left().saturating_add(INDENT)
-        }
+    let body_left = if let Some(label_width) = column {
+        let left = frame
+            .left()
+            .saturating_add(label_width.max(runs_width(&row.label)))
+            .saturating_add(1);
+        advance_to(sink, left);
+        left
+    } else {
+        sink.end_line();
+        frame.left().saturating_add(INDENT)
     };
     wrap(
         sink,
         &row.body,
         &frame.inset(body_left.saturating_sub(frame.left())),
     );
-    render_attachments(sink, &row.attachments, frame);
+    render_attachments(sink, &row.attachments, frame, aligns);
 }
 
 // ---- speaker rows --------------------------------------------------------
@@ -342,22 +393,41 @@ impl SpeakerColumns {
     /// answer the whole diagnostic-renderer family converged on, and the reason
     /// a group renders as one visually coherent table rather than as rows that
     /// happen to be near each other.
-    fn measure<K>(rows: &[&SpeakerRow<K>], frame: &Frame) -> Self {
-        let mark = rows
+    fn measure<K: Clone + PartialEq>(
+        rows: &[&SpeakerRow<K>],
+        frame: &Frame,
+        aligns: &Alignments<K>,
+    ) -> Self {
+        let glyph = rows
             .iter()
-            .filter_map(|row| row.gutter.as_ref())
-            .map(|gutter| gutter.text.len())
+            .map(|row| {
+                let own = row.gutter.as_ref().map_or(0, |gutter| gutter.text.len());
+                aligns.shared(row.align.as_ref(), COLUMN_PRIMARY, own)
+            })
             .max()
-            .map_or(0, |width| width.saturating_add(1));
+            .unwrap_or(0);
+        let mark = if glyph == 0 {
+            0
+        } else {
+            glyph.saturating_add(1)
+        };
         let speaker = rows
             .iter()
-            .map(|row| runs_width(&row.speaker))
+            .map(|row| {
+                aligns.shared(
+                    row.align.as_ref(),
+                    COLUMN_SECONDARY,
+                    runs_width(&row.speaker),
+                )
+            })
             .max()
             .unwrap_or(0);
         let verb = rows
             .iter()
-            .filter_map(|row| row.verb.as_ref())
-            .map(|runs| runs_width(runs))
+            .map(|row| {
+                let own = row.verb.as_ref().map_or(0, |runs| runs_width(runs));
+                aligns.shared(row.align.as_ref(), COLUMN_TERTIARY, own)
+            })
             .max()
             .unwrap_or(0);
         let verb_column = if verb == 0 {
@@ -381,7 +451,12 @@ impl SpeakerColumns {
     }
 }
 
-fn render_speaker_group<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: &Frame) -> usize {
+fn render_speaker_group<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    nodes: &[Node<K>],
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) -> usize {
     let rows: Vec<&SpeakerRow<K>> = nodes
         .iter()
         .map_while(|node| match &node.kind {
@@ -389,21 +464,22 @@ fn render_speaker_group<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: 
             _ => None,
         })
         .collect();
-    let columns = SpeakerColumns::measure(&rows, frame);
+    let columns = SpeakerColumns::measure(&rows, frame, aligns);
     for (index, row) in rows.iter().enumerate() {
         if index > 0 {
             sink.end_line();
         }
-        render_speaker_row(sink, row, frame, &columns);
+        render_speaker_row(sink, row, frame, &columns, aligns);
     }
     rows.len()
 }
 
-fn render_speaker_row<K: Clone>(
+fn render_speaker_row<K: Clone + PartialEq>(
     sink: &mut Sink<K>,
     row: &SpeakerRow<K>,
     frame: &Frame,
     columns: &SpeakerColumns,
+    aligns: &Alignments<K>,
 ) {
     sink.end_line();
     sink.pad_to(frame.left());
@@ -438,7 +514,7 @@ fn render_speaker_row<K: Clone>(
     };
 
     render_payload(sink, row, frame, payload_left);
-    render_attachments(sink, &row.attachments, frame);
+    render_attachments(sink, &row.attachments, frame, aligns);
 }
 
 fn render_payload<K: Clone>(
@@ -490,7 +566,11 @@ fn separator(mode: Literalness, has_gutter: bool) -> &'static str {
 /// A block's cells are columns, exactly as a run of speaker rows is: column `n`
 /// starts where the widest cell `n-1` ends. One-cell lines therefore measure to
 /// a single column and are emitted untouched, while multi-cell lines square up.
-fn cell_columns<K>(block: &CodeBlock<K>, content_left: usize) -> Vec<usize> {
+fn cell_columns<K: Clone + PartialEq>(
+    block: &CodeBlock<K>,
+    content_left: usize,
+    aligns: &Alignments<K>,
+) -> Vec<usize> {
     let cell_count = block
         .lines
         .iter()
@@ -505,7 +585,7 @@ fn cell_columns<K>(block: &CodeBlock<K>, content_left: usize) -> Vec<usize> {
             .lines
             .iter()
             .filter_map(|line| line.cells.get(index))
-            .map(|cell| runs_width(&cell.runs))
+            .map(|cell| aligns.shared(cell.align.as_ref(), index, runs_width(&cell.runs)))
             .max()
             .unwrap_or(0);
         left = left.saturating_add(widest).saturating_add(COLUMN_GAP);
@@ -513,7 +593,12 @@ fn cell_columns<K>(block: &CodeBlock<K>, content_left: usize) -> Vec<usize> {
     columns
 }
 
-fn render_code<K: Clone>(sink: &mut Sink<K>, block: &CodeBlock<K>, frame: &Frame) {
+fn render_code<K: Clone + PartialEq>(
+    sink: &mut Sink<K>,
+    block: &CodeBlock<K>,
+    frame: &Frame,
+    aligns: &Alignments<K>,
+) {
     sink.end_line();
     if let Some(locus) = &block.locus {
         sink.pad_to(frame.left().saturating_add(INDENT));
@@ -524,8 +609,10 @@ fn render_code<K: Clone>(sink: &mut Sink<K>, block: &CodeBlock<K>, frame: &Frame
     let gutter_width = block
         .lines
         .iter()
-        .filter_map(|line| line.gutter.as_ref())
-        .map(|gutter| gutter.text.len())
+        .map(|line| {
+            let own = line.gutter.as_ref().map_or(0, |gutter| gutter.text.len());
+            aligns.shared(block.align.as_ref(), COLUMN_PRIMARY, own)
+        })
         .max()
         .unwrap_or(0);
     let separator = separator(block.mode, gutter_width > 0);
@@ -533,7 +620,7 @@ fn render_code<K: Clone>(sink: &mut Sink<K>, block: &CodeBlock<K>, frame: &Frame
         .left()
         .saturating_add(gutter_width)
         .saturating_add(separator.len());
-    let columns = cell_columns(block, content_left);
+    let columns = cell_columns(block, content_left, aligns);
 
     for line in &block.lines {
         sink.end_line();
