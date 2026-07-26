@@ -374,12 +374,12 @@ fn rendered_corpus_carries_no_minted_non_ascii() {
     }
     assert!(
         cases.len() > 100,
-        "only {} cases discovered — the walk is not looking at the flat case collections",
+        "only {} cases discovered -- the walk is not looking at the flat case collections",
         cases.len()
     );
     assert!(
         rendered_lines > 2000,
-        "only {rendered_lines} rendered lines reached — the case shapes are being misread"
+        "only {rendered_lines} rendered lines reached -- the case shapes are being misread"
     );
 }
 
@@ -401,7 +401,7 @@ fn no_corpus_allowlist_entry_is_stale() {
         assert!(
             !case.rendered.is_ascii(),
             "CORPUS_CASE_ALLOWLIST still excuses `{name}` ({why}) but its render is already pure \
-             ASCII — the list is shrink-only; delete the entry"
+             ASCII -- the list is shrink-only; delete the entry"
         );
     }
 }
