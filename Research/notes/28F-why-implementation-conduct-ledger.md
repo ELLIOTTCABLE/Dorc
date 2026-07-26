@@ -223,11 +223,25 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   format instability; writer validates through the reader's own predicate.
   **`AID-NEEDS:aid-loaded-oracle-inventory` marked B** (conductor edit, this
   commit); the unverified-caveat line struck.
+- **rul-probe-instants-host-says-no-times** (HUMAN-TYPED, 2026-07-25; the firm
+  boundary clarified same sitting) — the RULING is exactly: the HOST says no
+  times; host-reported timestamps are unnecessary — the controller has all the
+  info and mints every instant on its own clock. WITHIN that: dispatch-time,
+  received-at, or BOTH are all fine (builder/render-seat latitude; "sketch
+  them in" = build proceeds at sketch tier). Consequences for W2b: stamp at
+  controller seams (dispatch and/or ingest, both are controller-owned); name
+  fields for what they actually are (`dispatched_at`/`received_at` — the
+  current `observed_at` implies a host-side observation moment and
+  over-claims); a batched wave honestly shares one dispatch instant.
+  Render-word nit noted not ruled: `(ran HH:MM:SS)` renders a controller
+  instant — wording precision is render-seat latitude under
+  output-form-unwelded.
 - **W2b scope bank** (accreted from w2-data's flags, joins the W2b brief):
-  per-record instants DON'T survive the durable (controller-minted at ingest;
-  replay stamps Absent) — W2b adds the per-record-instant line-kind to the v2
+  per-record instants DON'T survive the durable (controller-minted; replay
+  stamps Absent) — W2b adds the per-record-instant line-kind to the v2
   ordered state machine (writer+reader one commit) so the receipt view can
-  honestly render `(ran HH:MM:SS, rc N)` · `GuardLicense` carries no
+  honestly render `(ran HH:MM:SS, rc N)`, under
+  rul-probe-instants-are-dispatch-times above · `GuardLicense` carries no
   Derivation/reported row — extend for the wall-link work · `predict_speaker()`
   still fabricates `<provider>__predict` — swap to `defining_span` at the
   render seat · brace-selector display aggregation (from W1's gap 6) ·
