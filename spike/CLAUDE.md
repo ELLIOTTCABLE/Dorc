@@ -858,6 +858,15 @@ no task covers, and consider adding the task instead.
   (verified against a deliberately-drifted neighbour, 2026-07-26). Scoping a bless this way
   is how an unrelated drift stops riding in silently; the exclusivity rule above is about
   the shared `target/`, not about breadth.
+- **wsl-unix-leg-at-fold** (conductor practice made durable, 2026-07-26; first run
+  caught a real Linux-only panic — `28F:finding-wsl-leg-first-blood`) — this box
+  carries a full mise-in-WSL namespace, so the unix half of the previous bullet is
+  SELF-SERVE: at any fold touching `cfg`-gated or path-handling code, run
+  `wsl.exe -e sh -c 'export PATH="$HOME/.local/bin:$PATH"; cd /mnt/c/<worktree>/spike
+  && CARGO_TARGET_DIR="$HOME/.cache/dorc-wsl-target[-lane]" mise exec -- cargo test
+  --workspace'`. Keep `CARGO_TARGET_DIR` WSL-local (native Linux and Windows builds
+  clobber a shared `target/`) and per-lane-suffixed for concurrent agents; note
+  perms-asserting tests exercise `/tmp` (real Linux fs), not drvfs `/mnt/c`.
 - **one-platform-green-is-not-cross-platform-green** (two live bugs, 2026-07-24) —
   `#[cfg(windows)]` / `#[cfg(unix)]` code is COMPILED ONLY on its own platform, so the
   gates never see the other side and it rots silently. Both landed bugs were invisible

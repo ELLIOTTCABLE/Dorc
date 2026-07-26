@@ -103,6 +103,34 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   dies without `--shell=` (undocumented) · the 4096 ceiling + sentinel
   (above) · `Words::Unwritten` hand-seeding works and should be documented
   as the working path.
+- (HUMAN-TYPED, 2026-07-26, post-close) **rul-declined-is-bottom-rung** —
+  Declined is NOT `!`-class; borderline the OPPOSITE. The danger axis is
+  danger-INTRODUCTION, not machine-uncheckability: a wide at-most claim you
+  trust INTRODUCES danger (draws the `!` human-attention); a decline is a
+  narrow claim that REMOVES danger — it can only lose you value, never
+  introduce danger. No exclamation mark; Declined sits at the BOTTOM rung of
+  the Ord danger-categories. Conductor implementation cut: Declined moves to
+  the existing bottom arm (`Witnessed`), variant names kept (ruled-phrase
+  anchors; renaming is unasked churn), the Knowability DOC re-cut to the
+  danger-introduction axis, with a seam note that the bottom variant's name
+  now under-covers its declined member (rename candidate if it ever grates).
+  Micro-lane dispatched; decline transcripts re-bless `!`→`*`.
+- (HUMAN-TYPED, 2026-07-26) **security is not this conductor's concern —
+  hard ignore.** Struck from my close-out concerns; no successor should
+  re-raise it from this ledger.
+- (HUMAN-TYPED, 2026-07-26) first-blooding sequencing: read-understood, no
+  action taken now, at the human's direction.
+- (conductor, same sitting) **TODO-ADDTL curated** under the human's
+  directive: done riders removed (flag-rename · skip-token ·
+  at-selector-ack · ksalience-repoint — KNOBS already cites `281` as source
+  · pathext-spawn — the PATHEXT suffix handling now exists in main.rs), the
+  nit-tier door1 rider dropped to its `27U` §3 bank, the rider dump
+  dissolved into one pending-rulings entry, and two entries added: the
+  ratchet burn-down (upgraded to correctness by
+  finding-caseless-example-drift) and the why-surface pending-rulings
+  cluster (which also carries the W5⇄W4 sequencing interlock). Net: ~24
+  effective items → 12. spike/CLAUDE.md gains the WSL-unix-leg verify
+  bullet (conductor edit).
 - **lane-ascii-emitters LANDED + FOLDED** @ `c3d37e6a` (9 commits, ff; the
   LAST planned lane). 182 net mechanical replacements across the
   runtime-string surface (in-scope census 67 lines → 11, all jargon);
