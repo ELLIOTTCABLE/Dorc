@@ -119,7 +119,7 @@ $ dorc --book=book.sh -o package.oracle.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e8f53c2e67bba00a sites=3 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=bfc2e4661bd85038047ae98beedc430c71e66f8c7e655d0ef523be6c908a33d2 sites=3 @@dorc@@\n'
 # site 0: sm.dorc.Package:nginx@installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

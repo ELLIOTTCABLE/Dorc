@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=620d1fcd86b4c41e sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=efc31dd7e1855465035cfc7ae1ec8620f10e05495836852eb77f545e2634565c sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Package:vim@installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

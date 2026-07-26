@@ -6293,12 +6293,10 @@ fn static_decline_notes(
 }
 
 /// A deterministic content digest binding the records stream to the exact analyzed book bytes
-/// (`262` §2 `book=`; discharges `tc-probe-no-digest`). SPIKE NOTE (`churn-avoidance-disclosure`):
-/// the spec says sha256; the kernel stays dependency-clean (`inv-determinism` — no `sha2`/`rand`
-/// dep), so this is a hand-rolled FNV-1a-64 rendered hex. Mismatch-detection semantics are
-/// identical (any book-byte change flips the digest); cryptographic strength is not — there is no
-/// adversary-forged-book in the spike model. The real tool substitutes sha256 here, unchanged
-/// callers. Computed at the I/O edge (`io-at-edges-only`), never in the kernel.
+/// (`262` §2 `book=`; discharges `tc-probe-no-digest`). Hand-rolled SHA-256 in the kernel
+/// (`28F:rul-digest-lands-now` retired the FNV-1a-64 stand-in; the kernel stays dependency-clean
+/// per `inv-determinism`, so it is written out rather than pulled in). Computed at the I/O edge
+/// (`io-at-edges-only`), never in the kernel.
 fn book_digest(book_src: &str) -> String {
     dorc_plan::invocation::book_digest(book_src)
 }

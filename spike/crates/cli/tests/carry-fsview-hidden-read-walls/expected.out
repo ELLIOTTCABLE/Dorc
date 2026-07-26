@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8a720b1dae6d20e8 sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=893d8e17f4b344d226e3e7af74d657378944b18a4c5922bc952420154888421f sites=1 @@dorc@@\n'
 # site 0: dorc-auto:kp@converged
 kp__is_converged() {
    kp check "$1" "$2"

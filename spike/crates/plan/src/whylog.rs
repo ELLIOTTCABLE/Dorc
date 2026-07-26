@@ -24,9 +24,8 @@ use dorc_aid::diag::{Diag, DiagCode, WhylogCorrupt, WhylogVersionRefused};
 
 use std::io::Read;
 
-// One digest, one substitution point (`rul-fixture-identity-never-production`): the spike's
-// FNV stands in for a real content identity, so it must have exactly ONE definition an edge can
-// later replace. Never re-inline it locally.
+// One digest, one substitution point (`rul-fixture-identity-never-production`): the content
+// identity a durable carries has exactly ONE definition. Never re-inline it locally.
 use crate::invocation::book_digest;
 use crate::records::{
     Admission, AdmissionRefusal, AdmittedUnscopedHostRecords, BoundedHostBytes, Framing,

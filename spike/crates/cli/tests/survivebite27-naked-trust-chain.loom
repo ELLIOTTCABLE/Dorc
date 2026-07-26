@@ -152,7 +152,7 @@ $ dorc --book=book.sh -o certsync.oracle.sh -o service.oracle.sh --trust-footpri
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ac00b369e2a4664a sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8446cdedb145206fa827b7c95d26dc7615a02484547602188bda8bcd7ccb2038 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.CertBundle:web1@synced
 certsync__predict() {
    verb=$1; shift

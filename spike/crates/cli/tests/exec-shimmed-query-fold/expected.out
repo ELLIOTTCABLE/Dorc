@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=c4063dc5d5e103b8 sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=987814dcdd6ce8658128292131197add1d6545ad81f57814e6275587740d7b5c sites=2 @@dorc@@\n'
 # site 1: sm.dorc.PkgState:nginx@installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac

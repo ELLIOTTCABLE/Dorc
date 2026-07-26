@@ -148,7 +148,7 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footpri
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f35f9c245d30a3ff sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ac23b6c56d52730738d93ba69d58ae044a825ebbd86c88f707386cc77986fb3b sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Package:oldpkg@installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done

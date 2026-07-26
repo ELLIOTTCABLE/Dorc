@@ -119,7 +119,7 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ef07b6bd52d79bac sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=40b575d38a5f71081e564a62db786beff7a1d5abf1d1de9ee54f14d6be88bdbe sites=1 @@dorc@@\n'
 # site 0: sm.dorc.Firewall:80/tcp@allowed
 ufw__predict() {
    verb=$1; shift

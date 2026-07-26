@@ -89,7 +89,7 @@ $ dorc --book=book.sh -o package-status.oracle.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=d6f3f2e64a4de92c sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f5357906233066cf2f4c648ac9777b07f1bf664cf1263b17bf8b034dc7019625 sites=1 @@dorc@@\n'
 # site 0: sm.dorc.PkgState:otelcol@installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac
