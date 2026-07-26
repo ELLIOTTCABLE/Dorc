@@ -58,6 +58,60 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   note. The tier-ORDERING question is open in-chat (the set is kinds, not a
   monotonic scale; code `Ord` is mechanical map-key determinism only; semantic
   ordering stays the `28E:lean-ordering-is-a-seam` seam).
+- **lane-w3-fold EXECUTE LANDED + FOLDED** @ merge `24447241` (14 commits;
+  1455 tests at its tip; both verify legs — Windows + the WSL unix leg —
+  running at fold). Landed: DEFAULT-ON whylog (per-user state root ·
+  `--no-whylog` · retention 64/4MB disclosed interim) · the full bill as the
+  cli-local `whylog_store` (exclusive create, unix 0600/0700 at create,
+  bounded index walk, checked/trusted directory, capped scan,
+  `whylog-unwritten` at ERROR floor) · FNV→hand-rolled SHA-256 (NIST-vector
+  pinned; 102-golden re-bless verified digest-lines-only by masked diff) ·
+  receipt-first `why` (bare `why` finds the durable; `--results`/`--whylog`
+  explicit; `--last` retained) · the git matches-HEAD line (trait +
+  subprocess + fake, pure `SourceMatch`, `DORC_FIXTURE_SOURCE_MATCH` seam) ·
+  the `--risk-faultless-skips` rename EXECUTED (6 looms + 13 markers) · the
+  sensitivity contract (sm-tier, via loom+promote) · path-hint made true ·
+  sibling-note fixed · drift down-payment (`whylog-book-desync` named code
+  replaces the generic framing refusal).
+- **rul-drift-replay-d1** (conductor, on the builder's correct STOP): the
+  drift-disclosed replay spec ASSUMED the chain is durable-derivable — it is
+  not (the chain re-derives through the kernel from the current book;
+  leaf→line needs the AST; the thin durable holds header/apply-dispositions/
+  instants/records only). D1 ACCEPTED (M−): drifted receipts render header +
+  apply-tally + drift line + addressability, chain suppressed WITH the drift
+  note, `why N` says why it cannot name lines. D2 (store chain structure)
+  REJECTED — breaches the thin-durable law, and even the git line cannot
+  rescue line-naming under the annotation-tier fence. D1 is the honest
+  ceiling under standing law; fuller drifted receipts are r30's (with
+  retention + the drifted-wording walk). Dispatch: micro-lane post-verify,
+  rider: rename the `trust_footprints` Rust FIELD (ask-rename-field-too).
+- **W3 flags ruled**: the `--all` HELP ROW was CUT by the loom transport's
+  4096-scalar ceiling (the flag itself lives; the sensitivity contract got
+  compressed to fit) — accepted TRANSIENTLY; loom-cleanup raises the
+  ceiling + fixes the useless `4097` sentinel, then the row is restored and
+  the contract uncompressed · `decision_digest` stays FNV (internal canon
+  plane, not persisted identity; r30 note) · `WhylogAbsent` unreworded
+  (existing prose correct — right call) · `--no-whylog` spelling = builder
+  latitude, human taste later · the builder's "WSL has no cargo" was
+  pre-discovery stale — the §3 WSL leg covers the 4 listed cfg(unix)
+  regions at this fold.
+- **Loom-cleanup order accreted (W3's seven)**: trailing-newline diff trap
+  (reports "first divergence at line 1" with identical-looking lines) ·
+  promote cannot reach world-as-payload cases (FIFTH instance) · promote
+  requires the case committed-at-HEAD (a brand-new case is unpromotable) ·
+  bare promote dies without a prior `compile` (undocumented) · bare promote
+  dies without `--shell=` (undocumented) · the 4096 ceiling + sentinel
+  (above) · `Words::Unwritten` hand-seeding works and should be documented
+  as the working path.
+- **finding-wsl-leg-first-blood** — the §3 WSL leg's FIRST RUN caught a real
+  cross-platform bug in the W3 fold: `loaded_and_discovered_oracle_spellings_
+  share_one_key` (cli/main.rs:7456, the sibling-note canonical-key fix)
+  passes Windows, panics Linux — ~SUSPECT path-separator/canonicalization
+  string-ops. Mainline carries it transiently; the D1 micro-lane fixes it as
+  STEP 0 and self-verifies under WSL (per-lane CARGO_TARGET_DIR suffix to
+  avoid shared-cache collisions); the conductor re-runs the full WSL leg at
+  the D1 fold. The unix perms/symlink tests themselves: state unknown until
+  the full leg re-runs green (the failing suite aborted the count).
 - (HUMAN-TYPED lean, conductor-adopted 2026-07-26) **rul-w3-default-on-aim-high**
   — SUPERSEDES rul-w3-optin-fold-full-bill's disposition. The human dislikes
   punting on persistence ("aim high; it forces important and hard
