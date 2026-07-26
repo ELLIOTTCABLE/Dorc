@@ -103,6 +103,42 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   dies without `--shell=` (undocumented) · the 4096 ceiling + sentinel
   (above) · `Words::Unwritten` hand-seeding works and should be documented
   as the working path.
+- **lane-ascii-emitters LANDED + FOLDED** @ `c3d37e6a` (9 commits, ff; the
+  LAST planned lane). 182 net mechanical replacements across the
+  runtime-string surface (in-scope census 67 lines → 11, all jargon);
+  `solve.rs` was COMMITTED DOUBLE-ENCODED (mojibake + BOM) — repaired in a
+  separable first commit; a fullwidth-paren typo fixed; the corpus-level
+  guard built (`rendered_corpus_carries_no_minted_non_ascii`: 157 cases,
+  4301 rendered lines, 0 minted non-ASCII; echo-of-input-bytes is the
+  author's-voice carve) + shrink-only case allowlist; registry allowlist
+  17 → 10 rows.
+- **Conductor rulings on the ascii-emitters flags**: `#[expect(reason=…)]`
+  attributes correctly OUT (compiled away, never print) · the
+  `⊆`→"is a subset of" debug_assert transliteration ACCEPTED (assertion
+  text is not product prose the human will word) · `·`→`-` in the coverage
+  dev-tool accepted as-swept (one-liner if the human prefers `|`) · the
+  `solve.rs` repair ACCEPTED gladly (corruption is a defect, not style) ·
+  NO source-level lexical gate, ruled deliberately: the u-curve law
+  (`271:rul-net-quality-u-curve`) argues against the imperfect net; the
+  protection chain is registry-gate + corpus-gate + every-new-code-has-a-
+  case, whose one hole is below.
+- **finding-caseless-example-drift** (the lane's real discovery, banked
+  OPEN): a ratchet-resident code's catalog `example` has NO mechanical tie
+  to its emitter — any emitter reword silently falsifies the frozen sample
+  forever (four found and fixed only because this sweep's glyphs tripped
+  the ASCII guard). The structural fix is the ratchet burn-down itself
+  (case-owned codes are corpus-gated); until then known-open, no
+  imperfect net built. **ask-munge-byte-render**: `munge-name-invalid`
+  reports the first UTF-8 byte of `中` as "character `ä`" — deliberate
+  byte-honesty or a `ShNameProblem::describe()` defect; small, next round.
+- **Loom-friction final accretion (ascii-emitters' four)**: `dorc-loom`
+  takes case PATHS not slugs and says neither · the repository dirty-path
+  gate forces a red lockstep commit between test-literal and promote
+  halves · promote updates a world-as-payload case's lock `example` but
+  silently leaves its TRANSCRIPT stale (debt (a) concretized again) · a
+  caseless row's lock hand-edit is the ONLY route and passes the fixpoint
+  legitimately — "never hand-edit the lock" is only approximately true;
+  wants the `aid/CLAUDE.md` line.
 - **lane-loom-cleanup LANDED + FOLDED** @ merge `801c6295` (12 commits; every
   A/B/C work-order item DONE — dispositions in its report, tip 1467 green).
   Highlights: arity-mismatch loud (debug_assert + a committed-transcript

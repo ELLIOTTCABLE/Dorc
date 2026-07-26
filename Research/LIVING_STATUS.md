@@ -14,6 +14,37 @@
 
 ---
 
+## THE WHY-SURFACE IMPLEMENTATION ARC (W1→W3+tails EXECUTED — closed 2026-07-26)
+
+**BUILD COMPLETE on `ai/r28-unify` (the conduct mainline; awaiting the human's fold).**
+THE durable is **`notes/28F`** (every ruling, landing, flag disposition, friction
+bank). Eleven lanes + the opaque W25 stage, all conductor-cold-verified on Windows
+AND (post-discovery) the WSL unix leg — which drew first blood on its first run
+(a Linux-only path-canonicalization panic, fixed same day). What landed: **W1**
+honest words (reported-never-measured · admin-English · `*`/`!` marks ·
+quoted-speakers · triptych · TRUST-SPENT-first · file-qualified addresses) ·
+**weft** (`spike/crates/weft` — the firewalled box-model formatting engine;
+named-table cross-box alignment; total-cover provenance spans; own `CLAUDE.md`) ·
+**W2** data+adapter+narrations (predict spans · DI clock · tool-rc · receipt
+header with the by-proof/by-trusted-claim split · decline anti-nag ·
+wall links · `as-written:` foreign excerpts · `[unnarrated:]` · participating
+lines · whylog instant line-kind) · **W3 aim-high** (human-redirected mid-arc:
+DEFAULT-ON whylog, per-user state root, full hardening bill, SHA-256 digests,
+receipt-first `why`, git matches-HEAD line, the `--risk-faultless-skips` rename
+EXECUTED, D1 drift-disclosed degraded receipts) · the **ASCII sweeps** (locks +
+emitters; corpus-level guard; `solve.rs` committed-mojibake repaired) · the
+**loom-cleanup pass** (ceiling 4096→65536 + true-size refusals · LCS divergence
+reporter · loud arity gate · promote reachability + actionable failures ·
+`DORC_LOOM_DUMP`) · renames: `TrustTier`→`SpeechAct` (unordered kinds) +
+`Knowability` (the one ordered projection). **Human queue (in `28F`)**: W5
+prose (the drift rows + `sm ` corpus + jargon glyphs `⊤`/`⊄`) · the
+`Consented`-knowability first-render ruling · `--no-whylog` spelling taste ·
+`ask-munge-byte-render` · D1 cousins (deleted book; oracle-digest mismatch) ·
+`finding-caseless-example-drift` (closes via ratchet burn-down). **r30**: W4
+(parts-at-birth/carrier/span-coverage → loom-round-trippable why) + the
+emergency-distrust levers + retention design + whylog drifted-wording walk +
+desync-transition machinery.
+
 ## THE WHY-SURFACE DESIGN SITTING (closed 2026-07-25) → THE `28G` IMPLEMENTATION QUEUE
 
 **Design CLOSED, implementation PENDING a fresh conductor.** The record is

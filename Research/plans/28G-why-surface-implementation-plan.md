@@ -147,18 +147,20 @@ cement. Entry point: `spike/_prose-worklist.sh`. Still gated on the human's ack.
   (execute-vs-static precondition first) · `dorc teach` rename (rides `286`'s
   unpark) · TUI. All banked in `28E`.
 
-## §3 — Sizing and the conductor recommendation
+## §3 — Execution status (arc closed 2026-07-26; conduct record `notes/28F`)
 
-W1+W2 are one implementation-conductor sitting under r28 (two to three Opus
-lanes, the `27U` dispatch discipline, days-tier) and are the FIRST-BLOODING
-BLOCKERS — they produce the visible product delta (the strawmen's voice, ~70%
-of it) with no architecture risk. W3 is one more gated lane under the same
-conductor IF the hardening bill sizes small on inspection; otherwise it opens
-r30. W4 is the honest r30 opener either way (structural, cross-crate, wants a
-map-then-execute split). W5 threads in after W1/W2 whenever the human acks.
-Recommendation: mint ONE more r28 implementation-conductor chartered for
-W1→W2(→W3 if cheap), with r30 chartered for W4 + the levers/retention pair;
-the human sizes at seat time.
+**W1, W2, and W3 are EXECUTED** (one implementation-conductor sitting, eleven
+lanes; `28F` holds every ruling and landing). W3 ran AIM-HIGH by human
+mid-arc redirect: default-on whylog with the full hardening bill, not the
+opt-in fold this plan's earlier text assumed; the drifted morning renders a
+D1 degraded receipt (`28F:rul-drift-replay-d1` — the chain is NOT
+durable-derivable, so drifted receipts carry header/tally/drift-line only,
+honestly). The formatting-engine SKELETON (`spike/crates/weft`) was
+human-pulled-forward into the arc (§2's first entry). W5 remains HELD on the
+human's ack, its queue grown (the drift rows; the jargon glyphs). **W4 is
+the r30 opener** (structural, cross-crate, map-then-execute), alongside the
+levers/retention pair, the whylog drifted-wording walk, and the
+desync-transition machinery.
 
 ## §4 — Acceptance, stated once
 
