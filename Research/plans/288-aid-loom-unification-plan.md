@@ -37,11 +37,12 @@ HUMAN-TYPED (2026-07-24; binding):
   from correctness machinery; "evidence" is avoided (correctness may someday need it);
   "account" rejected (ops-domain collision: user accounts). Register-watching stays
   informal by explicit direction — no written reserved-word law.
-- **rul-prose-pass-is-fable-this-arc** — the remaining `sm `/`[unwritten:]` prose is
-  authored by Fable during THIS arc (re-affirming the `28A` §2s re-assignment); end-state:
-  the human edits ONLY loom files, ever — no half-transitioned codebase, no
-  "where did that string come from". Lowest priority vs machinery (human can hand-mint
-  cases later if tokens run out).
+- **rul-prose-authorship-follows-looms-sacrosanct** (née rul-prose-pass-is-fable-this-arc;
+  superseded 2026-07-26) — the remaining `sm `/`[unwritten:]` prose is authored at the
+  loom surface under the AGENTS.md looms-sacrosanct law: AI-authored user-facing prose
+  only under explicit, single-case, narrowly-scoped human ack. End-state unchanged: the
+  human edits ONLY loom files, ever — no half-transitioned codebase, no
+  "where did that string come from".
 - **rul-dorc-sh-not-carved-out** — `dorc-sh` inherits the same machinery: still
   user-surface, still auditable, similar parse errors; the off-ramp does not exempt it.
 - **rul-help-text-is-loomable** — help text is not out-of-scope chrome; it is
@@ -348,11 +349,13 @@ edited line at its value boundaries.
 6. **phase-e2e-loom-conversion** (§7) — normalizers + needles as demanded;
    opportunistic tail thereafter.
 7. **phase-arrangement-home** (§7b) — the design sitting + build; help text as pilot.
-8. **phase-prose-burn-down** (rul-prose-pass-is-fable-this-arc) — Fable authors all
-   remaining `sm ` + `[unwritten:]` prose at the transcript surface; the
-   `28A` doc-comment/message coupling (finding-old-prose-coupled-to-message-strings)
-   discharges here. ARC-CLOSE INVARIANT: zero user-facing strings without an editable
-   loom; zero `sm ` markers; the human's only future edit surface is loom files.
+8. **phase-prose-burn-down** (rul-prose-authorship-follows-looms-sacrosanct) — the
+   remaining `sm ` + `[unwritten:]` prose is authored at the transcript surface
+   (underway 2026-07-26; the why-surface rows wait on `28G` Phase W4's span/transport
+   work for faces); the `28A` doc-comment/message coupling
+   (finding-old-prose-coupled-to-message-strings) discharges here. ARC-CLOSE
+   INVARIANT: zero user-facing strings without an editable loom; zero `sm ` markers;
+   the human's only future edit surface is loom files.
 
 Execution shape (human lean, acked): compress phases 2–4 into one checkpointed lane
 and/or parallelize file-disjoint phases for wallclock — e.g. 0∥1 (disjoint), then the

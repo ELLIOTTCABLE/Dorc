@@ -14,6 +14,28 @@
 
 ---
 
+## THE W4 ARC — PROSE FACES FOR THE WHY SURFACE (EXECUTING; seated 2026-07-26)
+
+The `28G` Phase-W4 arc under a fresh Fable conductor; THE durable is **`notes/28H`**
+(directives, rulings, both scout landings, the hook root-cause). Goal: the human
+authoring prose at the loom surface. Map folded @ `86522ca2` (`_w4-map-DRAFT.md`,
+mainline root): class (a) editable-today = **0 of 111** why rows; class (c)
+transport-blocked = **80%** of sentence-bearing rows → the `28G` §2 transport
+deferral is PULLED IN (dorc-side one-section-many-fragments first, proof-first
+with a glued-boundary case; eleven asks adjudicated in `28H` §2). Lane cut,
+SERIAL on `cli/main.rs`: **carrier** (26 print sites → `Carrier`; advisory
+retreats; zero re-bless) → **parts** (`Said` hoists to aid, `Said::Lens` dies,
+`Explanation` becomes parts; kTASTE `ChainModel` type-room) → **span**
+(occurrence-carrying `Face`, weft→parts bridge, `dorc why` replay arm,
+mid-checkpoint). Prose-onramp inventory banked: 209 rows = 47
+transcript-editable today / 162 lock-only; all 7 `[unwritten:]` catalog codes
+have looms; **W5 authoring is UNDERWAY (human, loom surface) in parallel**. Also
+this seat: the hk `HK=0` master-killswitch found (env-side) + fixed at the
+harness restart — the commit-msg gate is live again; the safety block's
+executor spelling respelled onto mise. Human-pulled scope riders live in `28H`
+§2 (ran-log retirement · loom shell-niceties · simpler why invocations ·
+webhost missing-command-word · probe-results fixture framing).
+
 ## THE WHY-SURFACE IMPLEMENTATION ARC (W1→W3+tails EXECUTED — closed 2026-07-26)
 
 **BUILD COMPLETE on `ai/r28-unify` (the conduct mainline; awaiting the human's fold).**
