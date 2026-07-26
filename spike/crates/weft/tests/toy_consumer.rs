@@ -187,9 +187,6 @@ fn analysis_section() -> Node<Key> {
 }
 
 fn next_steps_section() -> Node<Key> {
-    // Every remediation row names one table, so the two `fix:` rows buried in
-    // the alternatives join square up with the suspect/verify/review rows they
-    // are never siblings of. This is the case the named table exists for.
     let steps = Some(Key::Row("next-steps"));
     let alternatives = Node::new(NodeKind::Join(Join {
         branches: vec![

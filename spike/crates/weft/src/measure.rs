@@ -172,9 +172,7 @@ impl<K: Clone + PartialEq> Draft<K> {
             stops.push(previous.saturating_add(*width).saturating_add(gap));
         }
         let tail = stops.last().copied().unwrap_or(0);
-        // A member objects only when the tail is BOTH too narrow to read as
-        // prose and actually forced to wrap; content that fits keeps its columns
-        // however tight they look.
+        // Both conditions: too narrow to read as prose, AND actually forced to wrap.
         let stacked = self.demands.iter().any(|demand| {
             demand.minimum > 0
                 && tail.saturating_add(demand.minimum) > demand.right
@@ -256,8 +254,7 @@ impl<K: Clone + PartialEq> Walk<K> {
     }
 
     fn nodes(&mut self, nodes: &[Node<K>], frame: &Frame) {
-        // One anonymous table per RUN of adjacent same-kind rows: proximity is
-        // the case of naming where the name is the run itself.
+        // Proximity is the case of naming where the name is the run itself.
         let mut run: Option<usize> = None;
         for (index, node) in nodes.iter().enumerate() {
             let continues = index
@@ -372,8 +369,7 @@ fn code_contribution<K>(block: &CodeBlock<K>, frame: &Frame) -> Contribution {
         cells,
         demand: Demand {
             right: frame.right(),
-            // Source is shown byte-honest and overruns rather than reflowing, so
-            // a code block never votes to stack the table it joins.
+            // Byte-honest and overrunning, so a code block never votes to stack.
             minimum: 0,
             unwrapped: 0,
         },

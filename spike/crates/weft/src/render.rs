@@ -305,9 +305,7 @@ impl<K: Clone + PartialEq> Painter<K> {
         self.sink.pad_to(placement.stops.stop(0));
         emit_runs(&mut self.sink, &row.label);
         let body_left = if placement.stops.stacked() {
-            // A hanging indent charges the label's width to every continuation
-            // line; stacking charges one line, once. The stacked indent is the
-            // TABLE's, not the member's, so a degraded table stays square.
+            // The stacked indent is the TABLE's, so a degraded table stays square.
             self.sink.end_line();
             placement.stops.stop(0).saturating_add(INDENT)
         } else {
@@ -360,8 +358,7 @@ impl<K: Clone + PartialEq> Painter<K> {
         let quoted = matches!(row.payload.quoting, Quoting::Quoted);
         let mut payload_frame = frame.inset(payload_left.saturating_sub(frame.left()));
         if quoted {
-            // The closing quote must land inside the box, so it is withheld from
-            // every line rather than allowed to overrun the last one.
+            // Withheld from every line, so the closing quote lands inside the box.
             payload_frame =
                 payload_frame.reserving(Reservation::all_lines(Side::Right, QUOTE.len()));
             self.sink.pad_to(payload_left);
@@ -400,8 +397,7 @@ impl<K: Clone + PartialEq> Painter<K> {
             .max()
             .unwrap_or(0);
         let separator = separator(block.mode, gutter_width > 0);
-        // Gutters are right-aligned so that the separators of every block in one
-        // table land in the same column, whatever their line numbers measure.
+        // Right-aligned, so every block in one table lands its separator in one column.
         let separator_left = stops.stop(0).saturating_sub(separator.len());
 
         for line in &block.lines {
@@ -432,8 +428,6 @@ impl<K: Clone + PartialEq> Painter<K> {
                 self.advance_to(left);
             }
             match mode {
-                // Byte-honest modes never rewrap; an overrun is preferable to
-                // implying a line break the source does not contain.
                 Literalness::Literal | Literalness::Formatted => {
                     emit_runs(&mut self.sink, &cell.runs);
                 }

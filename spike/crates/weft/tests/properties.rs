@@ -163,10 +163,10 @@ fn a_named_table_squares_up_members_that_are_not_siblings() {
     );
 }
 
+/// At 30 columns the deepest member cannot afford a hanging body, which is what
+/// forces the whole table to stack (`28F:rul-table-degrades-whole`).
 #[test]
 fn a_table_degrades_as_one_unit() {
-    // Narrow enough that the deepest member cannot afford a hanging body, which
-    // is what forces the whole table to stack (`28F:rul-table-degrades-whole`).
     let rendered = render(&table_across_a_join(), 30);
     let hanging = body_columns(&rendered, STEP_LABELS);
     assert!(

@@ -3166,8 +3166,7 @@ fn oracle_excerpt(
     let index = file.0 as usize;
     let (path, src) = (oracle_paths.get(index)?, oracle_srcs.get(index)?);
     let source: Vec<&str> = src.lines().collect();
-    // A span ending at end-of-file resolves to the line AFTER the last one, so both ends clamp:
-    // an excerpt names lines that exist, or it names nothing.
+    // A span ending at end-of-file resolves PAST the last line, so both ends clamp.
     let first = dorc_aid::diag::line_col(src, span.lo.0 as usize)
         .0
         .min(source.len());
@@ -3200,8 +3199,7 @@ fn oracle_excerpt(
             elided: 0,
         });
     }
-    // Keep the head, where the arm is introduced, and its last line, where it returns; say how
-    // much was dropped between them rather than closing over the cut.
+    // Keep the head and the last line, and say how much was dropped between them.
     let head_end = start.saturating_add(EXCERPT_LINES).saturating_sub(2);
     Some(Excerpt {
         path: path.clone(),
@@ -3847,8 +3845,6 @@ fn survival_chain(
     rows.push(StepRow {
         label: StepLabel::Fix,
         body: Said::words("why-next-step-fix-replan", &[CONSENT_FLAG]),
-        // The two repairs are ALTERNATIVES, not successive steps, so the render joins them under
-        // the consumer's own connective rather than stacking them as a to-do list.
         alternative: leverage.is_some(),
     });
     rows.push(StepRow {
@@ -3980,11 +3976,9 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
                         Quoting::Bare
                     },
                     runs: vec![link.payload.run("why-chain-row")],
-                    // Event metadata (`ran 01:59:52, rc 0`) belongs in this trailer, OUTSIDE the
-                    // quotation: the speaker said the payload, not the circumstances under which
-                    // they were heard, and putting run metadata inside the quote puts words in
-                    // their mouth. The rc and timestamp are the narrations lane's and are not
-                    // threaded yet, so the slot renders absent rather than fabricating a time.
+                    // Run metadata sits OUTSIDE the quotation: attributing it to the speaker
+                    // puts words in their mouth. The rc and timestamp are not threaded yet, so
+                    // the slot renders absent rather than fabricating a time.
                     trailer: Vec::new(),
                 },
                 attachments,
