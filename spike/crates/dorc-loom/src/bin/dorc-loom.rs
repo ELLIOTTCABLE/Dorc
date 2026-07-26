@@ -14,7 +14,7 @@ use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...|scaffold SLUG>";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG>\n       an omitted CASE list means every crates/aid/tests/*.loom";
 
 fn main() -> ExitCode {
     match run() {
@@ -158,7 +158,7 @@ fn collect_compile_args(
         }
     }
     if cases.is_empty() {
-        return Err(format!("no case files given\n{USAGE}"));
+        return Ok((corpus_cases()?, env));
     }
     Ok((cases, env))
 }
@@ -185,8 +185,34 @@ fn collect_cases(argv: impl Iterator<Item = String>) -> Result<Vec<PathBuf>, Str
         cases.push(PathBuf::from(arg));
     }
     if cases.is_empty() {
-        return Err(format!("no case files given\n{USAGE}"));
+        return corpus_cases();
     }
+    Ok(cases)
+}
+
+/// Every committed defining case, in a stable order — what a verb operates on when given no
+/// explicit CASE list.
+///
+/// The default is the WHOLE corpus rather than an error because `compile` and `promote` must
+/// see the same list for the receipt to match, and the tool already narrows to the
+/// prose-changed subset itself (`gate_touched_set`). So "all of them" reads as "publish what
+/// I edited", not as a blunderbuss, and spares every caller from keeping two lists in sync.
+/// Sorted because a `read_dir` order is not guaranteed and the receipt is order-sensitive.
+fn corpus_cases() -> Result<Vec<PathBuf>, String> {
+    let dir = cases_dir();
+    let read =
+        std::fs::read_dir(&dir).map_err(|error| format!("read {}: {error}", dir.display()))?;
+    let mut cases: Vec<PathBuf> = read
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("read {}: {error}", dir.display()))?
+        .into_iter()
+        .filter(|path| path.extension().is_some_and(|kind| kind == "loom"))
+        .collect();
+    if cases.is_empty() {
+        return Err(format!("no .loom cases under {}", dir.display()));
+    }
+    cases.sort();
     Ok(cases)
 }
 
