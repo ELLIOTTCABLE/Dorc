@@ -6601,9 +6601,8 @@ apt_get__is_converged() {
 
     #[test]
     fn elide_tally_splits_proof_from_trusted_claim_on_the_real_survival_path() {
-        // The two halves carry different risk, so a receipt owes its reader the split. Tallied over
-        // the SAME fixture that mints a REAL survival witness: a mis-wired split cannot pass against
-        // a hand-built witness the wall walk never made.
+        // The two halves carry different risk, so a receipt owes the split. Tallied over the SAME
+        // fixture that mints a REAL witness — a hand-built one would let a mis-wired split pass.
         let verdict = |e: &str| {
             if e == "nginx" {
                 Verdict::Converged

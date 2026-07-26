@@ -526,11 +526,6 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
     Ok(())
 }
 
-#[expect(
-    clippy::too_many_lines,
-    clippy::result_large_err,
-    reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
-)]
 /// The run's instant source — the DI seam for wall clock (`io-at-edges-only`). It lives HERE, in
 /// the binary, and nowhere else: the analyzer kernel owns no clock type at all, so no kernel
 /// signature can accept one and no kernel path can "reach for a clock to help". Only
@@ -583,6 +578,11 @@ impl RunClock {
     }
 }
 
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
+)]
 fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let mut interner = Interner::default();
     let mode = args.mode;
@@ -1561,6 +1561,10 @@ fn write_whylog(
 /// Assemble the thin durable from a completed run (`27V` §2). The apply report records the PREDICTED
 /// per-leaf disposition (`predicted=true`) — the spike has no apply executor (`tc-apply-report-is-
 /// prediction`); the field shape is additive so a real executor fills genuine outcomes later.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the invocation record IS a wide tuple of independent invocation facts (framing/book/oracles/digest/plan/instant); bundling them behind a params struct would just re-spell this signature one layer down"
+)]
 fn assemble_whylog_metadata(
     framing: &dorc_plan::records::Framing,
     book_name: &str,
@@ -7113,15 +7117,13 @@ mod tests {
 
     #[test]
     fn reported_observation_carries_this_records_rc_and_its_predicts_line() {
-        // The REPORTED row says which funcdef reported, when, and the tool-rc. Each must come
-        // from THIS record/check pair — a wrong-record rc or a defaulted span renders a
-        // confidently-wrong attribution.
+        // Each of the three must come from THIS record/check pair: a wrong-record rc or a
+        // defaulted span renders a confidently-wrong attribution.
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let mut probe = probe1(fact, ProbeSiteKind::Establish);
         let span = dorc_core::Span::new(dorc_core::BytePos(40), dorc_core::BytePos(52));
         probe.checks[0].defining_span = Some((span, dorc_core::OracleFileId(3)));
-        // rc 7, not 0/1: a fabricated or defaulted rc would not survive it.
         let results = parse_str_clocked("site 0 effect=holds rc=7\n", 1_234, 0, &mut i);
         let mut arena = ProvArena::new();
         let origins = probe_origins(&probe, &results, &mut arena);

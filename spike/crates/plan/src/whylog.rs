@@ -787,10 +787,10 @@ pub fn try_serialize_v2(
     retain_metadata(&mut retained, &doc.mode, limits)?;
     retain_metadata(&mut retained, &doc.book.0, limits)?;
     retain_metadata(&mut retained, &doc.book.1, limits)?;
-    // The READER.s own predicate, so the writer can never emit a header its parser would refuse.
-    // No retained budget: the reader keeps a `u64`, not the String every atom above costs.
+    // The READER.s predicate, so the writer cannot emit a header its parser refuses. No retained
+    // budget: the reader keeps a `u64`, not the String every atom above costs.
     let started = render_started(doc.started_at);
-    if parse_started(&started, limits).is_none() {
+    if parse_started(&started, limits).is_err() {
         return Err(WhylogWriteRefusal::Numeric);
     }
     write_v2_line(
@@ -1081,12 +1081,18 @@ fn render_started(at: Option<dorc_core::RunInstant>) -> String {
     at.map_or_else(|| ABSENT_ATOM.to_owned(), |instant| instant.0.to_string())
 }
 
-fn parse_started(value: &str, limits: WhylogLimits) -> Option<Option<dorc_core::RunInstant>> {
+fn parse_started(
+    value: &str,
+    limits: WhylogLimits,
+) -> Result<Option<dorc_core::RunInstant>, AdmissionRefusal> {
     if value == ABSENT_ATOM {
-        return Some(None);
+        return Ok(None);
     }
-    digits_valid(value, limits).ok()?;
-    Some(Some(dorc_core::RunInstant(value.parse().ok()?)))
+    digits_valid(value, limits)?;
+    value
+        .parse()
+        .map(|millis| Some(dorc_core::RunInstant(millis)))
+        .map_err(|_| AdmissionRefusal::Numeric)
 }
 
 type V2Header<'a> = (
@@ -1107,7 +1113,7 @@ fn parse_v2_header(line: &str, limits: WhylogLimits) -> Option<V2Header<'_>> {
     let target = fields.next()?.strip_prefix("target=")?;
     let generation = fields.next()?.strip_prefix("generation=")?;
     let mode = fields.next()?.strip_prefix("mode=")?;
-    let started = parse_started(fields.next()?.strip_prefix("started=")?, limits)?;
+    let started = parse_started(fields.next()?.strip_prefix("started=")?, limits).ok()?;
     if fields.next().is_some()
         || !atom_valid(nonce, limits)
         || !atom_valid(host, limits)
@@ -1512,8 +1518,7 @@ mod tests {
             "the absent atom and a zero instant are distinct wire shapes"
         );
 
-        // Symmetry: an over-wide instant is REFUSED at write, never emitted into a durable the
-        // parser would then call corrupt.
+        // Symmetry: an over-wide instant is refused at write, not emitted then called corrupt.
         let mut overwide = v2_doc();
         overwide.started_at = Some(dorc_core::RunInstant(u64::MAX));
         let narrow = parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 10, 2, 1, 1);
