@@ -3384,38 +3384,65 @@ fn tier_word(tier: TrustTier) -> String {
     )
 }
 
-/// The admin-English disposition word for a plan step (`28E` §8, human-demonstrated). Registry-homed
-/// by ordinal like [`tier_word`]. The `skip`-ban is LLM-facing law over design and code layers
-/// (`271:rul-skip-ban-is-llm-facing`); this is the deliberate user-surface carve, and engine
-/// vocabulary (elide / replace / omit) never appears in a render.
-fn outcome_word(disposition: &dorc_plan::Disposition) -> String {
-    let occurrence = match disposition {
-        dorc_plan::Disposition::Replace(..) => 0,
-        dorc_plan::Disposition::Guard(_) => 1,
-        dorc_plan::Disposition::Run => 2,
-        dorc_plan::Disposition::Omit { .. } => 3,
-    };
-    dorc_aid::arrangement::arrangement_text(
-        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-        "why-outcome-word",
-        Some(occurrence),
-    )
+/// What happened to a line, in the ADMIN's terms rather than the engine's — the typed twin of
+/// [`outcome_word`], so counting and comparing never go through rendered prose.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum OutcomeKind {
+    Skipped,
+    Guarded,
+    Ran,
+    Dropped,
 }
 
-/// The FOIL of a disposition — the other thing that could have happened to the line, which is what
-/// the contrastive OUTCOME sentence answers against (`28E` §7 adopt-contrastive-first: the foil is
-/// the line's other disposition, and it is free). A skip's foil is the guard it would otherwise have
-/// worn; a guard's foil is the skip it could not earn; a run's foil is a guard.
+impl OutcomeKind {
+    /// The disposition, re-read in admin terms. The engine's own vocabulary stops here.
+    fn of(disposition: &dorc_plan::Disposition) -> Self {
+        match disposition {
+            dorc_plan::Disposition::Replace(..) => OutcomeKind::Skipped,
+            dorc_plan::Disposition::Guard(_) => OutcomeKind::Guarded,
+            dorc_plan::Disposition::Run => OutcomeKind::Ran,
+            dorc_plan::Disposition::Omit { .. } => OutcomeKind::Dropped,
+        }
+    }
+
+    /// The other thing that could have happened to the line — what the contrastive OUTCOME sentence
+    /// answers against (`28E` §7 adopt-contrastive-first: the foil is the line's other disposition,
+    /// and it is free).
+    const fn foil(self) -> Self {
+        match self {
+            OutcomeKind::Skipped | OutcomeKind::Ran => OutcomeKind::Guarded,
+            OutcomeKind::Guarded | OutcomeKind::Dropped => OutcomeKind::Skipped,
+        }
+    }
+
+    /// The admin-English word (`28E` §8, human-demonstrated). Registry-homed by ordinal like
+    /// [`tier_word`]. The `skip`-ban is LLM-facing law over design and code layers
+    /// (`271:rul-skip-ban-is-llm-facing`); this is the deliberate user-surface carve, and engine
+    /// vocabulary (elide / replace / omit) never appears in a render.
+    fn word(self) -> String {
+        let occurrence = match self {
+            OutcomeKind::Skipped => 0,
+            OutcomeKind::Guarded => 1,
+            OutcomeKind::Ran => 2,
+            OutcomeKind::Dropped => 3,
+        };
+        dorc_aid::arrangement::arrangement_text(
+            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+            "why-outcome-word",
+            Some(occurrence),
+        )
+    }
+}
+
+/// The admin-English disposition word for a plan step.
+fn outcome_word(disposition: &dorc_plan::Disposition) -> String {
+    OutcomeKind::of(disposition).word()
+}
+
+/// The word for a disposition's FOIL — a skip's is the guard it would otherwise have worn, a
+/// guard's is the skip it could not earn, a run's is a guard.
 fn foil_word(disposition: &dorc_plan::Disposition) -> String {
-    let occurrence = match disposition {
-        dorc_plan::Disposition::Replace(..) | dorc_plan::Disposition::Run => 1,
-        dorc_plan::Disposition::Guard(_) | dorc_plan::Disposition::Omit { .. } => 0,
-    };
-    dorc_aid::arrangement::arrangement_text(
-        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-        "why-outcome-word",
-        Some(occurrence),
-    )
+    OutcomeKind::of(disposition).foil().word()
 }
 
 /// One registry-sourced why-surface line, values interleaved between the entry's words. The
@@ -3522,6 +3549,9 @@ const ENGINE_SPEAKER: &str = "dorc";
 /// links the as-built chain carried as rows are stated in the contrastive OUTCOME instead — the
 /// wall's run and the admin's consent — because neither has a speaker to quote, and OUTCOME puts the
 /// consent AHEAD of the chain rather than last in it.
+///
+/// The `suspect:` row's claim of UNIQUENESS is a model fact — a count of covers-unmeasured rows —
+/// never one fragment knowing what another rendered (`28E` lean-start-without-mutual-awareness).
 #[expect(
     clippy::too_many_arguments,
     reason = "the chain builder threads the display context it quotes (reference/address/disposition/license/wall-map/interner/oracle paths+sources); each is a distinct pipeline output, not a bundle-able struct"
@@ -3629,8 +3659,6 @@ fn survival_chain(
             ),
         ],
     );
-    // The suspect row's uniqueness is a MODEL fact — a count of covers-unmeasured rows — never one
-    // fragment knowing what another rendered (`28E` lean-start-without-mutual-awareness).
     let unmeasured = links
         .iter()
         .filter(|l| l.rank == RowRank::CoversUnmeasured)
@@ -3867,6 +3895,7 @@ struct WhySite {
     /// The command's first word — the `certsync` of an `8|certsync` inline reference.
     word: String,
     command: String,
+    kind: OutcomeKind,
     outcome: String,
     foil: String,
     reasons: Vec<String>,
@@ -3927,8 +3956,7 @@ fn emit_why_report(
 ) {
     use dorc_plan::Disposition;
     let mut sites: Vec<WhySite> = Vec::new();
-    // Every step's `N|command` reference, keyed by leaf — the survival chain names the walls it
-    // crossed this way rather than by the internal site id (`28E` §8 row shape).
+    // A chain names the walls it crossed by `N|command`, never by internal site id (`28E` §8).
     let walls: BTreeMap<dorc_plan::LeafId, String> = plan
         .steps
         .iter()
@@ -3941,7 +3969,6 @@ fn emit_why_report(
             (step.leaf, format!("{line}|{word}"))
         })
         .collect();
-    // Survival chains keyed by SOURCE line — a survived elision's pull answer is its triptych.
     let mut chains: Vec<(usize, ChainRender)> = Vec::new();
     for step in &plan.steps {
         let span = ast.node(step.ast).span;
@@ -4018,9 +4045,8 @@ fn emit_why_report(
                             None,
                         )
                     } else {
-                        // A guarded site is an IMPROVEMENT opportunity, and the leverage is always
-                        // the WALL above it, never the guarded line itself: an elided command casts
-                        // no wall, so describing the wall is what lets this line be removed.
+                        // The leverage is the WALL, never the guarded line: an elided command
+                        // casts no wall, so describing the wall is what frees this line.
                         let wall = first_wall.map(|fw| format!("{}|{}", fw.line, fw.word));
                         (
                             vec![why_words("why-reason-guarded", &[&kind])],
@@ -4043,6 +4069,7 @@ fn emit_why_report(
             line,
             word,
             command,
+            kind: OutcomeKind::of(&step.disposition),
             outcome: outcome_word(&step.disposition),
             foil: foil_word(&step.disposition),
             reasons,
@@ -4064,6 +4091,9 @@ fn emit_why_report(
 /// line-number space is the source file's, so a `file:N` this prints is exactly the address a query
 /// accepts back): a `book.sh:N` / bare `N` line-address, or free content substring-matched against
 /// the command text.
+///
+/// A survived elision already carries a fully-populated triptych; every other disposition gets the
+/// same three panels built from its own ANALYSIS rows, so the surface has exactly ONE shape.
 fn emit_why_triptych(
     address: &str,
     sites: &[WhySite],
@@ -4085,8 +4115,6 @@ fn emit_why_triptych(
         return;
     }
     for site in matched {
-        // A survived elision already carries a fully-populated triptych; every other disposition
-        // gets the same three panels built from its own ANALYSIS rows, so the surface has ONE shape.
         let built;
         let chain = if let Some((_, chain)) = chains.iter().find(|(l, _)| *l == site.line) {
             chain
@@ -4152,6 +4180,10 @@ fn plain_chain(site: &WhySite) -> ChainRender {
 /// (`28E` §0 `rul-trust-spent-first-argless-why`, human-typed — danger in the user's face first),
 /// SURPRISES follows and renders only when the world disagreed with the plan, and IMPROVEMENTS
 /// closes, calm and quantified. The retired PROBLEMS section name appears nowhere.
+///
+/// The receipt header carries only invocation data the model already holds. The rest of the
+/// strawmen's header — run timestamp, host, trigger, book digest, git-match, oracle inventory — is
+/// W2/W3 material, omitted rather than faked.
 fn emit_why_aggregate(
     sites: &[WhySite],
     chains: &[(usize, ChainRender)],
@@ -4172,9 +4204,6 @@ fn emit_why_aggregate(
         return;
     }
 
-    // The receipt header, from invocation data the model already carries. The rest of the strawmen's
-    // header — run timestamp, host, trigger, book digest, git-match, oracle inventory — is W2/W3
-    // material, omitted rather than faked.
     let (ran, guarded, skipped) = plan_tally(sites);
     let risk_profile = if trust_footprints {
         CONSENT_FLAG.to_owned()
@@ -4260,16 +4289,17 @@ fn print_aggregate_item(site: &WhySite, filename: &str, reason: &str) {
 
 /// The plan tally for the receipt header: `(ran, guarded, skipped)`. The strawmen split the skipped
 /// count by proof-versus-claim; that split is W2 material, so the tally reports the totals it holds.
+///
+/// Counts the TYPED disposition, never the rendered word: the words are registry prose and are meant
+/// to churn (`27V:rul-output-form-unwelded`), so a tally keyed on them would silently go wrong the
+/// first time someone rewrote one.
 fn plan_tally(sites: &[WhySite]) -> (usize, usize, usize) {
-    let count = |occurrence: usize| {
-        let word = dorc_aid::arrangement::arrangement_text(
-            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-            "why-outcome-word",
-            Some(occurrence),
-        );
-        sites.iter().filter(|s| s.outcome == word).count()
-    };
-    (count(2), count(1), count(0))
+    let count = |kind: OutcomeKind| sites.iter().filter(|s| s.kind == kind).count();
+    (
+        count(OutcomeKind::Ran),
+        count(OutcomeKind::Guarded),
+        count(OutcomeKind::Skipped),
+    )
 }
 
 /// The ⊤-run cause for a Run site, if a `why_diags` disclosure covers it: the FIRST diag whose

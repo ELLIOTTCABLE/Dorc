@@ -355,10 +355,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 )),
             });
         } else if mode == Mode::Why && why_address.is_none() {
-            // `289:rider-why-last-address-order`: in `why` mode the FIRST bare word is the address
-            // wherever it sits, not only when it leads. `dorc why --last book.sh:9` used to file the
-            // address as a positional BOOK and then answer the unargumented surface at rc 0 — a
-            // silent wrong-surface, and the exact shape `--last` invites (the flag reads first).
+            // `289:rider-why-last-address-order`: the address is the first bare word WHEREVER it
+            // sits — taking it only when it leads answered the wrong surface at rc 0.
             why_address = Some(arg);
         } else {
             // A bare word (no `-`): a positional book (the day-one `dorc plan book.sh` ergonomic;
