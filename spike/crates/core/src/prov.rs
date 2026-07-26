@@ -124,9 +124,14 @@ pub struct RunInstant(pub u64);
 pub struct ProbeStamp {
     /// This record's arrival position in the deframed results stream (no clock).
     pub ordinal: u64,
-    /// When the controller observed the record, when a clock was injected; `None` on any path
-    /// with no clock (replay, tests, the pure kernel entries).
-    pub observed_at: Option<RunInstant>,
+    /// When the CONTROLLER took this record in, on the controller's own clock, when a clock was
+    /// injected; `None` on any path with no clock (replay, tests, the pure kernel entries).
+    ///
+    /// Named for the moment it actually holds. The host says no times, ever
+    /// (`28F:rul-probe-instants-host-says-no-times`, human-typed), so this is emphatically NOT when
+    /// the check ran out there — an `observed_at` here read as a host-side observation moment and
+    /// over-claimed by exactly that distance.
+    pub received_at: Option<RunInstant>,
 }
 
 impl ProbeStamp {
@@ -135,16 +140,16 @@ impl ProbeStamp {
     pub fn at_ordinal(ordinal: u64) -> Self {
         Self {
             ordinal,
-            observed_at: None,
+            received_at: None,
         }
     }
 
-    /// A stamp carrying the controller's observation instant beside the arrival position.
+    /// A stamp carrying the controller's receipt instant beside the arrival position.
     #[must_use]
-    pub fn observed(ordinal: u64, observed_at: Option<RunInstant>) -> Self {
+    pub fn received(ordinal: u64, received_at: Option<RunInstant>) -> Self {
         Self {
             ordinal,
-            observed_at,
+            received_at,
         }
     }
 }
@@ -648,11 +653,11 @@ mod tests {
             Some(span(0, 4)),
         );
         let timed = a.leaf(
-            OriginKind::ProbeResult(ProbeStamp::observed(7, Some(RunInstant(1_700_000_000_000)))),
+            OriginKind::ProbeResult(ProbeStamp::received(7, Some(RunInstant(1_700_000_000_000)))),
             Some(span(0, 4)),
         );
         assert_ne!(clockless, timed, "an observed instant is part of the event");
-        assert_eq!(ProbeStamp::at_ordinal(7).observed_at, None);
+        assert_eq!(ProbeStamp::at_ordinal(7).received_at, None);
     }
 
     #[test]

@@ -3848,13 +3848,14 @@ fn survival_chain(
     let witness = license.derivation().survival.as_ref()?;
     let backing = render_coord(witness.backing(), interner);
     let outcome = outcome_word(disposition);
+    let reported = license.derivation().probe.and_then(|p| p.reported);
     let mut links = vec![ChainLink {
         rank: RowRank::RuntimeBacked,
         tier: TrustTier::Measured,
-        speaker: Some(predict_speaker(reference)),
+        speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
         payload: Said::Value(dorc_plan::fact_label(interner, license.fact())),
         quoted: true,
-        event: None,
+        event: reported.map(reported_event),
         explanation: None,
         excerpt: None,
     }];
@@ -3996,15 +3997,46 @@ fn survival_chain(
     })
 }
 
-/// The speaker of a `reported` row: the check whose run produced the report, named by the funcname
-/// the probe actually shipped and invoked (`<provider>__predict`).
+/// The speaker of a `reported` row: the oracle line whose body produced the report
+/// (`service.oracle.sh:12`, the strawmen's shape), from the reporting record's own threaded
+/// predict-defining span.
 ///
-/// DATA GAP, flagged rather than faked (`28G` §0): the strawmen name this speaker `oracle.sh:LINE`,
-/// but no predict-defining span is threaded to the plan — only the VOUCH's is
-/// (`27V:mech-minting-line-threading` covers `is_converged`, not `predict`). Borrowing the vouch's
-/// file for this row would be a guess about which file hosts the predict, and a mis-attributed
-/// speaker is the worst class of aid failure (`271:rul-sin-ordering`), so the row names the derived
-/// funcname — exact, and claiming no file.
+/// Falls back to the shipped funcname when the span is honestly absent — an entry-composed or
+/// connected-pipe body has no single defining funcdef, and no record reported at all when the
+/// license was minted without a probe-attribution map. Naming a file we did not derive would be a
+/// mis-attributed speaker, the worst class of aid failure (`271:rul-sin-ordering`).
+fn reported_speaker(
+    reference: &str,
+    reported: Option<dorc_plan::ReportedObservation>,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> Option<String> {
+    reported
+        .and_then(|r| oracle_locus(r.predict_span, oracle_paths, oracle_srcs))
+        .or_else(|| Some(predict_speaker(reference)))
+}
+
+/// The `reported` row's payload trailer: WHEN the controller took the report in, and what the
+/// probe command exited with (`28G` strawman `a-fire-morning`'s `(ran 01:59:52, rc 0)` slot).
+///
+/// The instant is CONTROLLER-minted (`28F:rul-probe-instants-host-says-no-times`, human-typed: the
+/// host says no times, ever), and the moment it names is the one this edge actually holds — when
+/// the record was received, not when the check ran on the host. The word says so; a `ran` here
+/// would date a host event we were never told about. `None` for the instant ⇒ the rc alone, never
+/// a fabricated moment.
+fn reported_event(reported: dorc_plan::ReportedObservation) -> Said {
+    let rc = reported.tool_rc.0.to_string();
+    match reported.stamp.received_at {
+        Some(at) => Said::words(
+            "why-chain-event-received",
+            &[&dorc_aid::instant::time_text(at), &rc],
+        ),
+        None => Said::words("why-chain-event-rc-only", &[&rc]),
+    }
+}
+
+/// The speaker of a `reported` row whose record carried no defining span: the funcname the probe
+/// actually shipped and invoked (`<provider>__predict`) — exact, and claiming no file.
 fn predict_speaker(reference: &str) -> String {
     let word = reference.split_once('|').map_or(reference, |(_, w)| w);
     format!(
@@ -5527,7 +5559,7 @@ fn parse_results(
         let Some((tag, rest)) = line.split_once(' ') else {
             continue; // a bare tag with no body ⇒ drop (⇒ Unknown ⇒ run)
         };
-        let stamp = dorc_core::ProbeStamp::observed(idx as u64, clock.now());
+        let stamp = dorc_core::ProbeStamp::received(idx as u64, clock.now());
         match tag {
             // 24E §5: `deriv <leafid> coord=<coord>` — `coord=` is the FREE-CONTENT field
             // (`262` §2 last-to-token): after deframing it runs to end-of-line, whitespace
@@ -5637,7 +5669,7 @@ fn parse_admitted_results(
                         Predicted::Value(OutBytes(interner.intern(value)))
                     }),
                     conflicted: false,
-                    stamp: dorc_core::ProbeStamp::observed(ordinal as u64, clock.now()),
+                    stamp: dorc_core::ProbeStamp::received(ordinal as u64, clock.now()),
                 };
                 out.records
                     .entry(key)
@@ -7416,7 +7448,7 @@ mod tests {
         assert_eq!(
             stamps
                 .iter()
-                .map(|s| s.observed_at)
+                .map(|s| s.received_at)
                 .collect::<Vec<Option<dorc_core::RunInstant>>>(),
             vec![
                 Some(dorc_core::RunInstant(9_000)),
@@ -7430,7 +7462,7 @@ mod tests {
                 .records
                 .values()
                 .next()
-                .map(|r| r.stamp.observed_at),
+                .map(|r| r.stamp.received_at),
             Some(None),
             "no clock ⇒ no instant; never RunInstant(0) masquerading as a measurement"
         );
@@ -7459,7 +7491,7 @@ mod tests {
             "the reporting line is the shipped check's own defining span, file-qualified"
         );
         assert_eq!(
-            reported.stamp.observed_at,
+            reported.stamp.received_at,
             Some(dorc_core::RunInstant(1_234)),
             "the observation instant rides the same stamp the receipt origin was minted from"
         );

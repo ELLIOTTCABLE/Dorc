@@ -25,7 +25,7 @@
 
 use crate::frame::{Frame, Reservation, Side, Width};
 use crate::measure::{Placement, are_adjacent_rows, has_attachments, measure};
-use crate::provenance::Span;
+use crate::provenance::{Provenance, Run, Span};
 use crate::sink::Sink;
 use crate::tree::{
     Banner, Branch, CodeBlock, CodeLine, Document, Join, LabeledRow, Literalness, Node, NodeKind,
@@ -369,9 +369,16 @@ impl<K: Clone + PartialEq> Painter<K> {
             self.sink.layout(QUOTE);
         }
         if !row.payload.trailer.is_empty() {
+            // The gap between what was said and the circumstances of the saying is
+            // wordless geometry, so weft mints it (`weft-geometry-vs-words`). It rides a
+            // run rather than a `layout` call because the wrapper drops a pending space at
+            // a break: the trailer then lands flush at the payload column when it has to
+            // move to its own line, and no trailing space is left behind on the one above.
+            let mut trailer = vec![Run::new(" ", Provenance::Arrangement { key: None })];
+            trailer.extend(row.payload.trailer.iter().cloned());
             wrap(
                 &mut self.sink,
-                &row.payload.trailer,
+                &trailer,
                 &frame.inset(payload_left.saturating_sub(frame.left())),
             );
         }

@@ -593,4 +593,18 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "27W rul-report-surface-massaging licenses the slice and demands the cut be MARKED: a silently-shortened excerpt would misrepresent what the author wrote.",
         words: Words::Migrated(&["", " further lines"]),
     },
+    ArrangementEntry {
+        slug: "why-chain-event-received",
+        occurrence: None,
+        when_used: "The payload trailer of a `reported` speaker row, outside the quotation. Values: the controller instant the record was taken in at, and the probe command's tool-rc.",
+        why: "28G strawman a-fire-morning's `(ran 01:59:52, rc 0)` slot. The word is `received` rather than `ran` because 28F rul-probe-instants-host-says-no-times makes every instant CONTROLLER-minted: the moment held is when this edge took the record in, never when the check ran on the host.",
+        words: Words::Migrated(&["(received ", ", rc ", ")"]),
+    },
+    ArrangementEntry {
+        slug: "why-chain-event-rc-only",
+        occurrence: None,
+        when_used: "The payload trailer of a `reported` speaker row on a run with no injected clock. Value: the probe command's tool-rc.",
+        why: "A replayed durable carries no instant, and re-stamping from the replay's own clock would present this moment as the original one. The trailer drops the moment rather than fabricating it.",
+        words: Words::Migrated(&["(rc ", ")"]),
+    },
 ];
