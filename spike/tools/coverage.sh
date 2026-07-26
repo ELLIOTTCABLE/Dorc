@@ -2,12 +2,12 @@
 # coverage.sh — a thin wrapper over `dorc-coverage` (round-21 arch-6).
 #
 # "Runs in the gate set without becoming a gate" (charter): this prints the
-# analyzer-coverage rollup over the e2e corpus (or a book+oracles you pass). It is
-# NOT wired into e2e/run.sh and NEVER fails a build — it is an INSTRUMENT, read by a
-# human, not an assertion. Run it by hand:
+# analyzer-coverage rollup over the e2e corpus (or a book+oracles you pass). It rides
+# no gate and NEVER fails a build — it is an INSTRUMENT, read by a human, not an
+# assertion. Run it by hand:
 #
-#     sh tools/coverage.sh                 # rollup over every e2e case
-#     sh tools/coverage.sh --full          # ... with the per-site table per case
+#     mise run coverage                    # rollup over every e2e case
+#     mise run coverage -- --full          # ... with the per-site table per case
 #     sh tools/coverage.sh <book.sh> <oracle.sh>...   # a one-off book+oracles
 #     DORC_COVERAGE=/path/to/bin sh tools/coverage.sh  # override the binary
 #
@@ -49,10 +49,12 @@ if [ "$#" -gt 0 ]; then
 fi
 
 # Corpus mode: per e2e case, print the rollup (the table too, with --full). Each case
-# is a dir under e2e/cases/ with book.sh + *.oracle.sh + probe-results.txt.
-cases_dir="$spike/e2e/cases"
+# is a dir beside the runners under crates/cli/tests/ (288:phase-flat-tree-move) holding
+# book.sh + *.oracle.sh + probe-results.txt; the book.sh test below is what separates a
+# case dir from the runners' other neighbours.
+cases_dir="$spike/crates/cli/tests"
 if [ ! -d "$cases_dir" ]; then
-   echo "no e2e/cases dir at $cases_dir" >&2
+   echo "no case dir at $cases_dir" >&2
    exit 0
 fi
 
