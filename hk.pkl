@@ -14,43 +14,91 @@ amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.
 // `cargo +nightly fmt`. The spike carries no toolchain pin — the global mise
 // config supplies `stable` (msvc-hosted on Windows; linker via VS Build Tools;
 // the previous spikes' per-dir gnu pin is tombstoned, do not resurrect it) — so
-// plain `cargo fmt` under `mise x` is correct here. The `--manifest-path`
-// lets the step run from the worktree-root repo top-level.
+// plain `cargo fmt` is correct here. The `--manifest-path` lets the step run from
+// the worktree-root repo top-level.
+//
+// No step spells `mise x --`: `HK_MISE=1` in mise.toml has hk resolve the mise
+// environment per step itself, so the prefix bought only a nested mise process
+// per step. That env var reaches the git hook because `mise run hk-install`
+// installs with `--mise`.
+// NO `workspace_indicator` on the cargo steps. Every crate carries a `Cargo.toml`, so an
+// indicator makes hk treat each as its own workspace and run the step ONCE PER CRATE — and
+// because these commands are workspace-global, that was 14 identical full-workspace runs of
+// both fmt and clippy, serialized on cargo's build lock (measured, not theorized). One
+// unindicated step covers the whole workspace in one invocation.
+//
+// INVOLABLE INVARIANT: This file *must* be verified, falsifiably. Do not modify
+// it without *verifing that you aren't silencing failures*. Test in both
+// directions - manufacture changes that trip the failure-modes, and ensure the
+// tooling blocks.
 local linters = new Mapping<String, Step> {
     ["cargo_fmt"] {
         glob = "spike/**/*.rs"
         stage = "spike/**/*.rs"
-        workspace_indicator = "Cargo.toml"
         // `--all` is required for `cargo fmt` to parse `--manifest-path` here;
         // without it cargo fmt misreads the args and dumps help (verified).
-        check = "mise x -- cargo fmt --all --manifest-path spike/Cargo.toml --check"
-        fix = "mise x -- cargo fmt --all --manifest-path spike/Cargo.toml"
+        check = "cargo fmt --all --manifest-path spike/Cargo.toml --check"
+        fix = "cargo fmt --all --manifest-path spike/Cargo.toml"
     }
     ["cargo_clippy"] {
         glob = "spike/**/*.rs"
-        workspace_indicator = "Cargo.toml"
         // The spike's warnings-are-failures gate lives HERE (pre-commit), never in
         // the manifest — mid-work builds shouldn't break on a toolchain bump.
-        check = "mise x -- cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings"
+        check = "cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings"
     }
     ["cargo_deny"] {
-        glob = "spike/**/Cargo.toml"
+        // The lockfile matters as much as the manifests: a dependency arrives there.
+        glob = List("spike/**/Cargo.toml", "spike/Cargo.lock")
         // Offline checks only; `mise run audit` does the network-touching
         // advisories pass on demand.
-        check = "mise x -- cargo deny --manifest-path spike/Cargo.toml check licenses bans sources"
+        check = "cargo deny --manifest-path spike/Cargo.toml check licenses bans sources"
     }
     ["typos"] {
         glob = "spike/**"
-        check = "mise x -- typos spike"
-        fix = "mise x -- typos --write-changes spike"
+        // `{{files}}`, not `spike`: scanning the whole tree to check three staged files is the
+        // kind of cost that gets a hook bypassed. `spike/_typos.toml` is still found, because
+        // typos discovers config by walking up from each file it is given.
+        check = "typos {{files}}"
+        fix = "typos --write-changes {{files}}"
+    }
+}
+
+// Case corpora, pre-commit only — deliberately NOT in `linters`, which the `check`/`fix` hooks
+// (and therefore `mise run check`, and therefore every gate) reuse. Tests belong to the gates;
+// what belongs here is the subset a commit's own staged paths make relevant.
+local corpora = new Mapping<String, Step> {
+    ["looms"] {
+        glob = List("spike/crates/*/tests/*.loom", "spike/crates/*/tests/*/*.loom")
+        // The whole loom corpus is sub-second, so scoping it would cost more than it saves.
+        check = "cargo test -q -p dorc-cli --test looms --manifest-path spike/Cargo.toml"
+        output_summary = "combined"
+    }
+    ["e2e"] {
+        // Dir-shaped cases only. A single-file `.loom` is the `looms` step's business, and
+        // feeding one here would trip the runner's no-match floor unless it happened to be a
+        // whole-product case.
+        glob = "spike/crates/*/tests/*/**"
+        // The runner takes PATHS and selects the cases they belong to (`split_path_selectors`),
+        // because libtest's single substring filter cannot express a set and a hook knows files,
+        // not trial names. Whole corpus ~6s, one case ~0.9s. A path naming no case is a loud
+        // failure there, never a green no-op.
+        check = "cargo test -q -p dorc-cli --test e2e --manifest-path spike/Cargo.toml -- {{files}}"
+        env { ["DORC_E2E_QUIET"] = "1" }
+        output_summary = "combined"
     }
 }
 
 hooks {
+    // Budget: ~3-4s wall, and it holds only because every step is scoped to the staged paths.
+    // Nothing unscoped belongs here — a hook that outgrows its budget gets `--no-verify`'d, and
+    // then it protects nothing at all. The acceptance suites are `mise run gate:full*`.
     ["pre-commit"] {
         fix = true
         stash = "git"
-        steps = linters
+        steps = (linters) {
+            ["looms"] = corpora["looms"]
+            ["e2e"] = corpora["e2e"]
+        }
     }
     // The gitlabels headliner gate. Separate from `linters` on purpose: it reads the MESSAGE,
     // not the tree, so it belongs to no glob and must run even on a commit touching no Rust.

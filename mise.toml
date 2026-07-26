@@ -7,6 +7,11 @@
 #
 # node is LTS (the kept corpus instrument lives under tools/corpus/). The wasm
 # scanner stack is node-version-agnostic; verified on 25, pinned to 22 LTS.
+#
+# INVOLABLE INVARIANT: This file *must* be verified, falsifiably. Do not modify
+# it without *verifing that you aren't silencing failures*. Test in both
+# directions - manufacture changes that trip the failure-modes, and ensure the
+# tooling blocks.
 
 [tools]
 node = "22"
@@ -56,8 +61,12 @@ typos = "latest"
 shellcheck = "0.11.0"
 
 [env]
-# Route hk's hook invocation + step commands through mise (so `cargo`/`hk`
-# resolve without an activated shell). Matches `mise x` usage in hk.pkl.
+# Route hk's hook invocation + step commands through mise, so `cargo`/`typos`/`cargo-deny`
+# resolve inside a step without an activated shell. This is WHY no step in hk.pkl spells
+# `mise x --`: hk resolves the mise environment per step itself, and the prefix only bought a
+# nested mise process per step. It is load-bearing for the git-hook path, which is why
+# `mise run hk-install` installs with `--mise` (that wrapper is what makes this var reach hk
+# for a contributor who has never activated mise in their shell).
 HK_MISE = "1"
 
 # ── Tasks ───────────────────────────────────────────────────────────────────
@@ -232,7 +241,10 @@ run = "cargo deny --manifest-path spike/Cargo.toml check advisories"
 
 [tasks.hk-install]
 description = "Install hk's git hooks: the pre-commit lint gate AND the commit-msg gitlabels gate (which refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config (affects main and every worktree) — human-gated; read the round-19 spike note first. Agent sessions skip pre-commit via HK_SKIP_HOOK but still get commit-msg."
-run = "hk install"
+# `--mise` wraps the installed hook in `mise x`, which is what lets a contributor who has never
+# activated mise in their shell still get the pinned toolchain — and what carries HK_MISE into
+# the hook, without which every step's bare `cargo` would be unresolvable.
+run = "hk install --mise"
 
 [tasks.bless]
 description = "ORCHESTRATOR-ONLY golden re-bless: fresh build, whole suite, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then build, then bless."

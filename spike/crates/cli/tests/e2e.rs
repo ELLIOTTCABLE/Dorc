@@ -2697,8 +2697,39 @@ fn preflight(harness: &Harness, discovered: usize) {
 
 // ---------------------------------------------------------------------------
 
+/// The case a repo path belongs to, or `None` for an argument that is not a case path.
+///
+/// The case is the segment after `tests/`, so a file nested in a case's `mocks/` attributes to its
+/// case rather than to `mocks`. Both separators are accepted because the caller is a git hook and
+/// git reports forward slashes even on Windows.
+fn case_from_path(argument: &str) -> Option<String> {
+    let normalized = argument.replace('\\', "/");
+    let segment = normalized.split_once("/tests/")?.1.split('/').next()?;
+    let case = segment.strip_suffix(".loom").unwrap_or(segment);
+    (!case.is_empty()).then(|| case.to_owned())
+}
+
+/// Split argv into libtest's own arguments and the case paths a caller wants scoped.
+///
+/// A pre-commit hook knows which files are staged but not which trials they name, and the whole
+/// corpus costs ~7x one case. Taking PATHS lets the hook pay only for what changed without
+/// teaching it our trial-naming scheme. libtest's single substring filter cannot express a set,
+/// which is why this selects here rather than deferring to `Arguments`.
+fn split_path_selectors<I: Iterator<Item = String>>(argv: I) -> (Vec<String>, BTreeSet<String>) {
+    let (mut passthrough, mut cases) = (Vec::new(), BTreeSet::new());
+    for argument in argv {
+        if let Some(case) = case_from_path(&argument) {
+            cases.insert(case);
+        } else {
+            passthrough.push(argument);
+        }
+    }
+    (passthrough, cases)
+}
+
 fn main() {
-    let mut args = Arguments::from_args();
+    let (passthrough, changed) = split_path_selectors(std::env::args());
+    let mut args = Arguments::from_iter(passthrough);
     if args.format.is_none() && std::env::var("DORC_E2E_QUIET").as_deref() == Ok("1") {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
@@ -2767,5 +2798,16 @@ fn main() {
         }
     }
 
+    if !changed.is_empty() {
+        trials.retain(|trial| changed.contains(trial.name()));
+        // The discovery floor, applied to scoping: selecting by path and matching nothing would
+        // otherwise exit GREEN, which is the one way a hook can report success for work it never
+        // ran. A path naming no case is a caller bug, and silence is the failure mode.
+        assert!(
+            !trials.is_empty(),
+            "path selection matched no case: {}",
+            changed.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+    }
     libtest_mimic::run(&args, trials).exit();
 }
