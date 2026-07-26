@@ -1,0 +1,8 @@
+---
+code: whylog-unwritten
+when-fires: a plan/apply/round-trip run finished but its posthoc-why durable did not land - the whylog directory is unusable, the serializer refused a whole document, the bytes exceeded the retention cap, or the create/write failed. cli/main.rs write seat, over the cli-local hardened store. {dir} and the closed {reason} word.
+why: 28D:must-default-durable-lands-with-its-hardening bills a durable for VISIBLE persistence failure; this write path previously answered all five of its failure modes with a bare return, which 28D names among the whylog's each-looked-local decisions. Error-floor rather than advisory (28F:rul-write-failure-is-error-floor) because the advisory plane is suppressed under `apply`, and an apply whose receipt silently vanished is exactly the run an admin later comes back asking about. The artifact on stdout is unaffected - a postmortem aid failing is loud, never fatal. Remediation register (help) wanted: name what to check for the reported reason, and note that the run itself completed and its artifact is unaffected.
+---
+-- replay --
+$ dorc plan --book=webhost.sh
+error[whylog-unwritten]: [unwritten: whylog-unwritten]

@@ -221,6 +221,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "whylog-book-desync",
     "whylog-absent",
     "whylog-corrupt",
+    "whylog-unwritten",
     "aid-unloaded-sibling-oracle",
     "unmodeled-wall-inventory",
     "verdict-terminal-pipeline",
