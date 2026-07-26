@@ -1,7 +1,7 @@
 ---
 code: whylog-book-desync
 when-fires: `dorc why --last` found a durable whose recorded book/oracle content digest (or its stored decision digest) diverges from the current on-disk inputs, so a deterministic replay would NOT reconstruct the recorded run. cli --last reader (the `22F` book-identity/desync guard, cer-2-shaped).
-why: determinism-is-the-replay-license: the durable stores digests, not book/oracle CONTENT, and re-reads them from disk; a changed input breaks the replay tie, so it is refused rather than silently replayed against the wrong source. Pull-surface: Warning, Floor::None. `{which}` = the diverged input (`book`, an oracle path, or `decision-digest`). Remediation register (help) wanted: the book/oracle changed since that run — re-run the live analysis for a current answer.
+why: determinism-is-the-replay-license: the durable stores digests, not book/oracle CONTENT, and re-reads them from disk; a changed input breaks the replay tie, so the recorded run is never silently re-derived against the wrong source. Pull-surface: Warning, Floor::None. `{which}` = the diverged input (`book`, an oracle path, or `decision-digest`). Since 28F rul-drift-replay-d1 the `book` case is the ENTRY to a DEGRADED receipt rather than a dead end — the durable-derived header, oracle inventory and disposition tally still render, with the drift stated in them and every source-keyed section suppressed; the other two still refuse outright. Remediation register (help) wanted: the book/oracle changed since that run — re-run the live analysis for a current answer.
 ---
 -- book.sh --
 #!/bin/sh
