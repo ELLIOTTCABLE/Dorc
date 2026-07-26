@@ -100,6 +100,12 @@ impl FsReceiptStore {
         })
     }
 
+    /// Where a published receipt lands, so a compile can name the durable state it left behind.
+    #[must_use]
+    pub fn path(&self) -> PathBuf {
+        Self::final_path(&self.target_root.join(RECEIPT_DIRECTORY))
+    }
+
     fn receipt_directory(&self, create: bool) -> Result<PathBuf, String> {
         validate_directory_tree(&self.target_root, "receipt target root")?;
         let directory = self.target_root.join(RECEIPT_DIRECTORY);

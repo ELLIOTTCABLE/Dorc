@@ -1748,8 +1748,11 @@ mod tests {
         );
     }
 
+    /// The backslash-and-quote path is the point: these transcripts are full of `"$@"` and
+    /// `%LOCALAPPDATA%\dorc`, and a `{:?}` render doubles every one of them. Only a control
+    /// character may be escaped, or the view stops being readable at exactly the corpus we have.
     #[test]
-    fn inspection_renders_interpretation_bindings_and_concrete_view_deterministically() {
+    fn inspection_renders_only_the_touched_section_as_a_template() {
         let message = key(0);
         let baseline = baseline(vec![
             RenderComponent::Structure(String::from("message: ")),
@@ -1757,9 +1760,9 @@ mod tests {
                 message.clone(),
                 vec![
                     EditableFragment::Text(String::from("run ")),
-                    variable("path", 0, "/x"),
+                    variable("path", 0, "%LOCALAPPDATA%\\dorc"),
                     EditableFragment::Text(String::from(" using ")),
-                    variable("command", 0, "apt-get"),
+                    variable("command", 0, "\"$@\""),
                 ],
             )),
             RenderComponent::Structure(String::from("\nhelp: ")),
@@ -1785,18 +1788,13 @@ mod tests {
         )
         .unwrap_or_else(|error| panic!("{error:?}"));
 
-        let inspection = render_compile_preview(&preview);
-        let (interpretation, concrete) = inspection
-            .split_once("\nconcrete:\n")
-            .unwrap_or_else(|| panic!("missing concrete view: {inspection:?}"));
+        let interpretation = render_compile_preview(&preview);
         assert_eq!(
             interpretation,
-            "section: code.message#0:0\ninterpreted: Text(\"run \") | Variable({{command}}) | Text(\" using \") | Variable({{path}})\nbindings:\n{{command}} = \"apt-get\"\n{{path}} = \"/x\""
+            "section: code.message#0:0\n  run {{command}} using {{path}}\n  {{command}} = \"$@\"\n  {{path}} = %LOCALAPPDATA%\\dorc"
         );
-        assert_eq!(
-            concrete,
-            "message: run apt-get using /x\nhelp: hidden [foreign]"
-        );
+        // An untouched section and a fixed variable are another render's business; showing them
+        // here would bury the one thing this view exists to expose.
         assert!(!interpretation.contains("hidden"));
         assert!(!interpretation.contains("foreign"));
     }

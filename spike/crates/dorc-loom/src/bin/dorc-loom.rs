@@ -48,6 +48,12 @@ enum Command {
 
 type SelectedCase = (String, PathBuf);
 
+/// Refusals carry their count so the closing status line can match the exit code it explains.
+enum Inspected {
+    Ready(InspectedCompilation, DorcConsumer),
+    Refused { cases: usize },
+}
+
 struct GatedCases {
     repository: GitRepository,
     paths: Vec<SelectedCase>,
@@ -59,8 +65,12 @@ fn run() -> Result<ExitCode, String> {
     let command = parse_args()?;
     let stdout = io::stdout();
     let mut out = stdout.lock();
+    let stderr = io::stderr();
+    let mut err = stderr.lock();
     match command {
-        Command::Compile { cases, env, quiet } => compile_cases(&cases, &env, quiet, &mut out),
+        Command::Compile { cases, env, quiet } => {
+            compile_cases(&cases, &env, quiet, &mut out, &mut err)
+        }
         Command::Promote { cases, env, quiet } => promote_cases(&cases, &env, quiet, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
@@ -238,14 +248,20 @@ fn compile_cases(
     env: &RunEnv,
     quiet: bool,
     out: &mut impl Write,
+    err: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
-    let inspection = inspect_cases(&gated, env, quiet, out)?;
-    let Some((inspection, _consumer)) = inspection else {
-        return Ok(ExitCode::from(1));
+    let total = gated.paths.len();
+    let (inspection, _consumer) = match inspect_cases(&gated, env, quiet, out)? {
+        Inspected::Ready(inspection, consumer) => (inspection, consumer),
+        Inspected::Refused { cases } => {
+            status(err, &format!("{total} cases, {cases} refused"))?;
+            return Ok(ExitCode::from(1));
+        }
     };
-    let outcome = compile_receipt(&receipt_store()?, &inspection)?;
+    let store = receipt_store()?;
+    let outcome = compile_receipt(&store, &inspection)?;
     if matches!(outcome, dorc_loom::ReceiptWriteOutcome::CleanupPending) {
         writeln!(
             out,
@@ -254,7 +270,24 @@ fn compile_cases(
         .map_err(|error| error.to_string())?;
     }
     note_staged_cases(&gated.staged, &std::collections::BTreeSet::new(), out)?;
+    status(
+        err,
+        &format!(
+            "{total} cases, {} touched, receipt {}",
+            gated.touched.len(),
+            store.path().display()
+        ),
+    )?;
     Ok(ExitCode::SUCCESS)
+}
+
+/// The one line a compile always emits, quiet included, on stderr.
+///
+/// A compile changes no tracked file, so without this its only trace is a receipt under `target/`
+/// that nothing announces — and a reader who cannot see that durable state has no way to learn
+/// that promote depends on it.
+fn status(err: &mut impl Write, summary: &str) -> Result<(), String> {
+    writeln!(err, "compile: {summary}").map_err(|error| error.to_string())
 }
 
 fn promote_cases(
@@ -265,8 +298,7 @@ fn promote_cases(
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
-    let inspection = inspect_cases(&gated, env, quiet, out)?;
-    let Some((inspection, consumer)) = inspection else {
+    let Inspected::Ready(inspection, consumer) = inspect_cases(&gated, env, quiet, out)? else {
         return Ok(ExitCode::from(1));
     };
     promote_receipt(&receipt_store()?, &inspection)?;
@@ -463,8 +495,8 @@ fn inspect_cases(
     env: &RunEnv,
     quiet: bool,
     out: &mut impl Write,
-) -> Result<Option<(InspectedCompilation, DorcConsumer)>, String> {
-    let (mut consumer, mut refused, mut selected) = (DorcConsumer::new(), false, Vec::new());
+) -> Result<Inspected, String> {
+    let (mut consumer, mut refused, mut selected) = (DorcConsumer::new(), 0usize, Vec::new());
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in &gated.paths {
         let relative_path = relative_path.clone();
@@ -518,7 +550,7 @@ fn inspect_cases(
             inspected_replays.push((index, block.command().to_owned(), routed));
         }
         if let Some((index, error, dirty)) = case_refusal {
-            refused = true;
+            refused = refused.saturating_add(1);
             writeln!(body, "refusal in replay {index}: {error:?}")
                 .map_err(|write| write.to_string())?;
             writeln!(body, "baseline: exact renderer provenance")
@@ -546,8 +578,8 @@ fn inspect_cases(
         let is_touched = gated.touched.contains(&relative_path);
         inspected_cases.push((relative_path, source, is_touched, replays));
     }
-    if refused {
-        return Ok(None);
+    if refused > 0 {
+        return Ok(Inspected::Refused { cases: refused });
     }
     let catalog = std::fs::read_to_string(catalog_path())
         .map_err(|error| format!("read catalog input: {error}"))?;
@@ -557,7 +589,7 @@ fn inspect_cases(
         .map(|(path, _, _, _)| path.clone())
         .collect();
     InspectedCompilation::new(catalog, selected, touched_cases, inspected_cases)
-        .map(|inspection| Some((inspection, consumer)))
+        .map(|inspection| Inspected::Ready(inspection, consumer))
         .map_err(|error| error.to_string())
 }
 
