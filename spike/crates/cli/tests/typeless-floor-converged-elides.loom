@@ -85,7 +85,7 @@ $ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
 # When run, emits one results-record per site on stdout (the return channel):
 #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
-# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a32bd553f0020a6f8deaa18b026864f6d749445f7b0fbf5a11db0f5a301f055c sites=2 @@dorc@@\n'
 # site 0: dorc-auto:foobar@converged

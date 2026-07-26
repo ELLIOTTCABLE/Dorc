@@ -119,7 +119,7 @@ $ dorc --book=book.sh < probe-results.txt
 # When run, emits one results-record per site on stdout (the return channel):
 #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
-# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5925fc22c765395b41d14ec9cbc3d3396012ee2844fa579fbe610e7159670faa sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe

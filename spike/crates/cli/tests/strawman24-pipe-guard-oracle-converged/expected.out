@@ -3,7 +3,7 @@
 # When run, emits one results-record per site on stdout (the return channel):
 #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
-# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=34d5040c8ad72a9a44d1cdb6da8c9473f3b01d60de785aeee85faa53f2f609dc sites=1 @@dorc@@\n'
 # site 1: sm.dorc.GrepMatch:0.155.0@matched

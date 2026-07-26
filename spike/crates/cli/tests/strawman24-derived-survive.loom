@@ -135,7 +135,7 @@ $ dorc --book=book.sh -o package.oracle.sh --risk-faultless-skips < probe-result
 # When run, emits one results-record per site on stdout (the return channel):
 #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
-# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a112ab01d663cc728844303c89b8764034fddf6ca515105c340948e079cff60c sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Package:oldpkg@installed
@@ -153,11 +153,11 @@ apt_get__predict() {
 apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Package:nginx@installed
 apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
-# dorc derivation-probe (read-only, 24E §2): payload-bound footprints the static
+# dorc derivation-probe (read-only, 24E section 2): payload-bound footprints the static
 # tracer could not resolve. Each escalated wall-candidate ships its touches() body
 # strip-only; when run it prints its footprint coordinates, re-keyed per site:
 #   deriv <leafid> coord=<kind:entity>
-# (the SAME leaf-id the apply plan assigns — inv-site-keyed-results).
+# (the SAME leaf-id the apply plan assigns -- inv-site-keyed-results).
 
 # deriv 0: apt-get (host-derivation via apt-get.touches())
 apt_get__disturbs() {                              # PAYLOAD-BOUND footprint (24E §2/§14): DERIVED via a PIPE

@@ -253,7 +253,7 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.ora
 # When run, emits one results-record per site on stdout (the return channel):
 #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
-# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8 sites=7 @@dorc@@\n'
 # site 0: sm.dorc.PkgState:nginx@installed
