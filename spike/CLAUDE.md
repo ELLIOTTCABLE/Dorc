@@ -818,6 +818,12 @@ mise exec -- cargo test -p dorc-cli --test looms    # the loom corpus alone: par
   share one `target/`. Never run BLESS while any build-agent is in flight;
   orchestrator-only, on a freshly-verified binary, resulting diff inspected
   case-by-case. Bless cannot prove an elision RIGHT — review by eye.
+- **bless-honours-the-trial-filter** — the "ALL cases" above is the UNFILTERED run.
+  Bless rides the runner's ordinary trial filter, so `BLESS=1 … --test e2e -- <substring>`
+  re-blesses only the matching trials and leaves every other golden byte-identical
+  (verified against a deliberately-drifted neighbour, 2026-07-26). Scoping a bless this way
+  is how an unrelated drift stops riding in silently; the exclusivity rule above is about
+  the shared `target/`, not about breadth.
 - **one-platform-green-is-not-cross-platform-green** (two live bugs, 2026-07-24) —
   `#[cfg(windows)]` / `#[cfg(unix)]` code is COMPILED ONLY on its own platform, so the
   gates never see the other side and it rots silently. Both landed bugs were invisible
