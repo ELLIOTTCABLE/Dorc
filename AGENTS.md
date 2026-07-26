@@ -97,9 +97,15 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - be careful of paths, esp. re. WSL2/zsh vs BashTool() (which uses msys)
   - be careful of SyncThing, it's live in a parentdir; don't move/create large vendored subrepos without ensuring they're syncthing-ignored *first* (once created-while-unignored, they start to sync; ignoring-them-afterwards leaves borderline-permanent artifacts)
 - you may be in a git-worktree; be careful. AGENTS/KNOBS/DESIGN/TODO are meant to be central communication channels, make sure you're watching for changes to those *anywhere* (use a permissive glob), and applying any changes I direct you to make (remember, they're human-direct-single-auth-to-edit *only*) must be made to the root ones, not the worktree.
-- run things through `mise run <task>`, never a hand-derived command; `mise tasks` lists them, and `dir`/env come with the task, so it works from anywhere in the tree. add a task rather than re-deriving an invocation twice.
-  - trailing args after `--` reach the underlying tool (the *last* one, for a multi-step task), which is where you quieten a chatty one: `mise run check -- --quiet` is silent on success and still prints the full diagnostic, and a nonzero exit, on failure.
-  - `--output=timed` (your harness probably injected this automatically via `MISE_TASK_OUTPUT=timed`) collapses a fast succeeding task to two lines. never pipe a task through `head`/`tail` to shut it up — that truncates the failure you needed to read.
+- run things through `mise run <task>`; `mise tasks` lists them, and `dir`/env come with the task, so it works from anywhere in the tree. add a task rather than re-deriving an invocation twice.
+  - `mise run` is *almost always* preferrable to hand-rolling one-off commands. collaborate and pay back: if tooling chafes, *fix the tooling* for future agents, don't work around it. if not authorized, report upwards, don't swallow. tooling matters.
+  - `mise run both <other-run-slug>` doubly invokes the named task under *both* Windows/gitbash/powershell *and* WSL/UNIX. It doubles the runtime, but is a must for important checks, when actively working on Windows.
+  - liberally add mise tasks for repeated work that's project-specific, don't cargo-cult, write down something maintainable and reusable. (ensure they are cross-platform.)
+  - trailing args after `--` reach the underlying tool (the *last* one, for a multi-step task)
+  - `--output=timed` (your harness hopefully injected this automatically via `MISE_TASK_OUTPUT=timed`) collapses a fast succeeding task to two lines.
+  - never pipe a task through `head`/`tail` to shut it up — that truncates the failure you needed to read. trust the tooling to be brief, or *fix* the tooling to *be able* to be brief, if you get bitten.
+  - `mise run both gate:full-quiet` is the specified run-all-tests, check-everything, be-minimally-noisy law for running tests and excercising contracts before you can call your work complete. all other safety/correctness behaviour is behind that, it's the *only* one you need to run if you don't have another specific goal.
+  - `mise run gate:quick-quiet` is the hot-loop test-runner while you work; it skips slow and loud tests, and leans towards terseness. it's *not* an acceptance suite, you must eventually run the full gate before claiming your work is complete.
 
 ## Project-management
 - it bears repeating that *gitlabels style* must be followed. This is directly contrary to your training data, this project uses an idiosyncratic commit-message form that *does not match* what agents keep producing. The cardinal rule for commit messages is DO NOT DUPLICATE INFORMATION AVAILABLE ELSEWHERE:
