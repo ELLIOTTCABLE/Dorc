@@ -855,8 +855,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
     // the verdict) and, converged, mints a `Disposition::Guard`.
-    let (mut vouches, decline_narrative) =
-        build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+    let vouch_lift = build_vouches(&oracle_refs, &classes, &value, &mut interner);
+    report_at(advisory, "verdict", None, &vouch_lift.diags);
+    let (mut vouches, decline_narrative) = vouch_lift.value;
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
     vouches.extend(dorc_plan::build_wrapped_vouches(
@@ -1129,8 +1130,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--risk-faultless-skips` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
     let survival = args.risk_faultless_skips.then(|| {
-        let mut fps = build_survival_footprints(
-            &oracle_refs,
+        let touches = lift_touches_sets(&oracle_refs, &mut interner);
+        report_at(advisory, "touches", None, &touches.diags);
+        let lifted = build_survival_footprints(
+            &touches.value,
             &classes,
             &kills,
             &kill_coords,
@@ -1138,8 +1141,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &cfg.value,
             &parsed.value,
             &mut interner,
-            advisory,
         );
+        report_at(advisory, "footprint", None, &lifted.diags);
+        let mut fps = lifted.value;
         // 24E §2 corr-§2: merge the host-DERIVED footprints (read back from the phase-1
         // derivation-probe's `deriv` coord-records) into the authored set, before the survival
         // walk. An escalated site has NO authored footprint (its static trace ⊤'d), so the two
@@ -1151,16 +1155,19 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             .iter()
             .map(|d| (d.node, parsed.value.node(cfg.value.node(d.node).ast).span))
             .collect();
-        merge_derived_footprints(
-            &mut fps,
-            &derivations,
-            results,
-            &classes,
-            &kill_coords,
-            &derived_node_spans,
-            &mut interner,
-            book_source,
+        report_at(
             advisory,
+            "derive",
+            book_source,
+            &merge_derived_footprints(
+                &mut fps,
+                &derivations,
+                results,
+                &classes,
+                &kill_coords,
+                &derived_node_spans,
+                &mut interner,
+            ),
         );
         // 24G §4: EXPAND each reach-bearing footprint coord via reaches() — STATIC arms (cli-traced,
         // all coords) + DYNAMIC arms (the `reach` readback, authored coords only). Widening is
@@ -1962,6 +1969,24 @@ fn ship_verdict_body(
     None
 }
 
+/// Lift each oracle's `touches()` set for the authored survival lane, carrying the lift's
+/// diagnostics out as data rather than printing them from inside the lift (`io-at-edges-only`).
+fn lift_touches_sets(
+    oracle_refs: &[&str],
+    interner: &mut Interner,
+) -> Carrier<Vec<dorc_oracle::touches::TouchesSet>> {
+    let mut diags = Vec::new();
+    let sets = oracle_refs
+        .iter()
+        .map(|src| {
+            let lifted = dorc_oracle::touches::TouchesSet::lift(interner, src);
+            diags.extend(lifted.diags);
+            lifted.value
+        })
+        .collect();
+    Carrier::new(sets, diags)
+}
+
 /// Lift the survival footprints (Stage 2 / rul24-mode-gate) — called ONLY on the
 /// `--risk-faultless-skips` path (TC-1: the footprint data does not exist unflagged). For each
 /// wall-candidate site (an establish-bearing class, or a kill) whose provider declares a
@@ -1976,10 +2001,10 @@ fn ship_verdict_body(
 /// [`KindId`] a predict annotation minted — never a parallel string-typed universe (24A §1b).
 #[expect(
     clippy::too_many_arguments,
-    reason = "the cli-edge footprint lift threads the whole compiled context (oracles/classes/kills/kill-coords/value/cfg/ast/interner) + the advisory routing flag; each is a distinct pipeline output, not a bundle-able struct"
+    reason = "the cli-edge footprint lift threads the whole compiled context (touches-sets/classes/kills/kill-coords/value/cfg/ast/interner); each is a distinct pipeline output, not a bundle-able struct"
 )]
 fn build_survival_footprints(
-    oracle_refs: &[&str],
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
     classes: &[(
         dorc_analysis::cfg::CfgNodeId,
         dorc_analysis::effect::SkipClass,
@@ -1990,18 +2015,8 @@ fn build_survival_footprints(
     cfg: &dorc_analysis::cfg::Cfg,
     ast: &dorc_syntax::ast::Ast,
     interner: &mut Interner,
-    advisory: bool,
-) -> dorc_plan::TrustedFootprints {
+) -> Carrier<dorc_plan::TrustedFootprints> {
     use dorc_analysis::effect::SkipClass;
-    let touches_sets: Vec<dorc_oracle::touches::TouchesSet> = oracle_refs
-        .iter()
-        .map(|src| {
-            let lifted = dorc_oracle::touches::TouchesSet::lift(interner, src);
-            report_at(advisory, "touches", None, &lifted.diags);
-            lifted.value
-        })
-        .collect();
-
     let mut footprints = dorc_plan::TrustedFootprints::new();
     let mut diags = Vec::new();
     for (node, class) in classes {
@@ -2015,7 +2030,7 @@ fn build_survival_footprints(
             continue; // not a wall candidate (a pure builtin, a Query, an opaque)
         }
         let Some((provider, coords_with_selectors, arm_span)) =
-            resolve_touches_footprint(*node, value, &touches_sets, interner)
+            resolve_touches_footprint(*node, value, touches_sets, interner)
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
         };
@@ -2046,8 +2061,7 @@ fn build_survival_footprints(
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
         // `tc-disturbs-span-threading`: the MATCHED ARM over the funcdef, still the honest floor.
-        let defining =
-            arm_span.or_else(|| touches_defining_span(provider, &touches_sets, interner));
+        let defining = arm_span.or_else(|| touches_defining_span(provider, touches_sets, interner));
         if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
             .map(|fp| fp.with_own(own).with_defining(defining))
         {
@@ -2062,8 +2076,7 @@ fn build_survival_footprints(
             footprints.insert(*node, footprint);
         }
     }
-    report_at(advisory, "footprint", None, &diags);
-    footprints
+    Carrier::new(footprints, diags)
 }
 
 /// Resolve a wall-candidate site's `touches()` footprint: split its resolved argv into
@@ -2239,10 +2252,6 @@ fn ship_touches_body(
 /// SPIKE-ONLY (ru-26): the `touches-escalated` advisory below makes the static→dynamic boundary
 /// visible in the render/differential; it must NOT leak into greenfield as a permanent
 /// per-escalation requirement.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "the derived-footprint merge threads the compiled context (footprints/derivations/results/classes/kill-coords/node-spans/interner) + the book-source and advisory routing; each is a distinct pipeline output, not a bundle-able struct"
-)]
 fn merge_derived_footprints(
     footprints: &mut dorc_plan::TrustedFootprints,
     derivations: &dorc_plan::DerivationPlan,
@@ -2254,9 +2263,7 @@ fn merge_derived_footprints(
     kill_coords: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
     node_spans: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::Span>,
     interner: &mut Interner,
-    book_source: Option<(&str, &str)>,
-    advisory: bool,
-) {
+) -> Vec<Diag> {
     let mut diags = Vec::new();
     for d in &derivations.derivations {
         // The escalated book command's own span (`aid-caret-span-precision`): every diag this loop
@@ -2337,7 +2344,7 @@ fn merge_derived_footprints(
             footprints.insert(d.node, fp);
         }
     }
-    report_at(advisory, "derive", book_source, &diags);
+    diags
 }
 
 /// Intern one readback `kind:entity` coordinate line into the shared vocabulary (24A §1b fence —
@@ -3042,16 +3049,14 @@ fn build_vouches(
     )],
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
-    advisory: bool,
-) -> (dorc_plan::Vouches, Vec<CollapseNarrative>) {
+) -> Carrier<(dorc_plan::Vouches, Vec<CollapseNarrative>)> {
     // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
-    // share it). This edge only ROUTES the lift diagnostics: surfaced AS-IS (inv-top-reject — the
-    // tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
+    // share it). This edge only RESHAPES the lift: its diagnostics ride out AS-IS (inv-top-reject —
+    // the tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
     // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
     let (lifted, decline_narrative) =
         dorc_plan::build_vouches(oracle_refs, classes, value, interner);
-    report_at(advisory, "verdict", None, &lifted.diags);
-    (lifted.value, decline_narrative)
+    lifted.map(|vouches| (vouches, decline_narrative))
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
@@ -7857,8 +7862,6 @@ mod tests {
                 &BTreeMap::new(),
                 &node_spans,
                 i,
-                None,
-                false,
             );
             fps.contains(CfgNodeId(5))
         };
