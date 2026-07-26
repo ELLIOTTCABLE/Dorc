@@ -137,7 +137,7 @@ mod tests {
     fn a_control_or_non_ascii_byte_is_encoded_before_it_reaches_layout() {
         assert_eq!(escape_foreign("a\tb"), "a\\x09b");
         assert_eq!(escape_foreign("\u{1b}[31m"), "\\x1b[31m");
-        assert_eq!(escape_foreign("caf\u{e9}"), "caf\\xc3\\xa9");
+        assert_eq!(escape_foreign("na\u{ef}ve"), "na\\xc3\\xafve");
     }
 
     /// The tagging is load-bearing, not decorative: an edge must be able to find
