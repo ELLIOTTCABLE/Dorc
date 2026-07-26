@@ -216,8 +216,8 @@ $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-
    `!` marks the link that covers unmeasurable things; the class of information no runnable
    command could test.
 
-   so: nothing 9|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what the
-   skip was reported on; the skip stood.
+   so: nothing 9|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what
+   the skip was reported on; the skip stood.
 
    === NEXT STEPS ===
 
@@ -265,8 +265,8 @@ $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
    `!` marks the link that covers unmeasurable things; the class of information no runnable
    command could test.
 
-   so: nothing 9|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what the
-   skip was reported on; the skip stood.
+   so: nothing 9|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what
+   the skip was reported on; the skip stood.
 
    === NEXT STEPS ===
 

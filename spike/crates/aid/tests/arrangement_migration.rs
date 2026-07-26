@@ -64,25 +64,31 @@ fn the_lint_sentences_are_byte_identical() {
 
 /// The four why-lens remediation hints, previously a class-keyed `&'static str` match in
 /// `aid/src/diag.rs`. Like the three stderr lines above they are faceless — no transcript renders
-/// them — so these literals are the whole migration net. Each is the pre-migration string, frozen;
-/// the `[tag]` suffix is part of the prose (`expected-why` needles substring-match it).
+/// them — so these literals are the whole net; the `[tag]` suffix is part of the prose
+/// (`expected-why` needles substring-match it).
+///
+/// No longer the pre-migration bytes: `28G` Phase W1 respelled them twice, and the net now pins the
+/// respell rather than the freeze. `elide` was ENGINE vocabulary reaching a user surface (the
+/// admin-English carve, `28E` §8), and the em-dash violated `rul-ascii-output-forever`
+/// (`28E` §0, human-typed). A migration net freezes bytes against ACCIDENTAL drift; it never
+/// outranks a ruling that the frozen bytes were wrong.
 #[test]
 fn the_remediation_hints_are_byte_identical() {
     assert_eq!(
         rendered("why-remediation-provide-model", &[]),
-        "to elide it, an oracle must declare a read-only probe for this kind [provide-model]"
+        "to skip it, an oracle must declare a read-only probe for this kind [provide-model]"
     );
     assert_eq!(
         rendered("why-remediation-declare-identity", &[]),
-        "to elide it, add the missing kind/selector/Query declaration [declare-identity]"
+        "to skip it, add the missing kind/selector/Query declaration [declare-identity]"
     );
     assert_eq!(
         rendered("why-remediation-resolve-dynamism", &[]),
-        "to elide it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]"
+        "to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]"
     );
     assert_eq!(
         rendered("why-remediation-structural", &[]),
-        "no user fix — Dorc cannot model this construct [structural]"
+        "no user fix -- Dorc cannot model this construct [structural]"
     );
 }
 

@@ -3431,11 +3431,11 @@ fn why_words(slug: &str, values: &[&str]) -> String {
     )
 }
 
-/// The two-rank mark a chain row wears in the DEFAULT render (`28E` §7 adapt-two-rank-default-render
-/// + §8 `rul-danger-axis-is-completion-class`). The six [`TrustTier`]s stay typed law underneath and
-/// are untouched by this: the rank is a RENDER-layer partition over them, derived from the evidence
-/// kind, because the firefighter's axis is not where a link's words were written but what the link
-/// COVERS.
+/// The two-rank mark a chain row wears in the DEFAULT render (`28E` §7
+/// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). The six
+/// [`TrustTier`]s stay typed law underneath and are untouched by this: the rank is a RENDER-layer
+/// partition over them, derived from the evidence kind, because the firefighter's axis is not where
+/// a link's words were written but what the link COVERS.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum RowRank {
     /// `*` — the row rests on something that actually happened (a probe report, a real run) or on a
@@ -3522,8 +3522,16 @@ const ENGINE_SPEAKER: &str = "dorc";
 /// links the as-built chain carried as rows are stated in the contrastive OUTCOME instead — the
 /// wall's run and the admin's consent — because neither has a speaker to quote, and OUTCOME puts the
 /// consent AHEAD of the chain rather than last in it.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the chain builder threads the display context it quotes (reference/address/disposition/license/wall-map/interner/oracle paths+sources); each is a distinct pipeline output, not a bundle-able struct"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear row-by-row chain construction followed by its NEXT STEPS rows; splitting it would scatter the ONE place the strawman's row set is expressed"
+)]
 fn survival_chain(
-    reference: String,
+    reference: &str,
     address: &str,
     disposition: &dorc_plan::Disposition,
     license: &dorc_plan::ReplaceLicense,
@@ -3538,7 +3546,7 @@ fn survival_chain(
     let mut links = vec![ChainLink {
         rank: RowRank::RuntimeBacked,
         tier: TrustTier::Measured,
-        speaker: Some(predict_speaker(&reference)),
+        speaker: Some(predict_speaker(reference)),
         payload: dorc_plan::fact_label(interner, license.fact()),
         quoted: true,
         explanation: None,
@@ -3612,7 +3620,7 @@ fn survival_chain(
     let outcome_sentence = why_words(
         "why-outcome-contrastive",
         &[
-            &reference,
+            reference,
             &outcome,
             &foil_word(disposition),
             &why_words(
@@ -3651,11 +3659,11 @@ fn survival_chain(
     rows.push(("verify", why_words("why-next-step-verify", &[])));
     rows.push(("review", why_words("why-next-step-review", &[address])));
     Some(ChainRender {
-        reference: reference.clone(),
+        reference: reference.to_owned(),
         crossed: joined_walls.clone(),
         claimant: claimants.join(", "),
         outcome: outcome_sentence,
-        analysis_opener: why_words("why-analysis-opener", &[&reference, &outcome]),
+        analysis_opener: why_words("why-analysis-opener", &[reference, &outcome]),
         links,
         join: Some(why_words("why-analysis-join", &[&joined_walls, &backing])),
         next_steps: NextSteps { rows },
@@ -3710,61 +3718,32 @@ fn wrap_at(text: &str, width: usize, indent: &str) -> Vec<String> {
     lines
 }
 
-/// Render a [`ChainRender`] as the `dorc why <addr>` triptych (`28G` Phase W1).
-///
-/// Three panels: the contrastive OUTCOME, the quoted-speakers ANALYSIS closed by its numberless join
-/// restatement, and the structural NEXT STEPS — which is OMITTED whole when it has no rows, the
-/// question-relative floor `28G` strawman `e-skipped-quiet` demonstrates. Speaker and verb columns
-/// are width-computed across the chain's own rows so payloads align into one readable column.
-fn render_chain(chain: &ChainRender) -> Vec<String> {
-    let speaker_w = chain
-        .links
+/// One block of body text, wrapped to the canonical width and set at the triptych's own indent.
+fn indented(text: &str) -> Vec<String> {
+    wrap_at(text, WHY_WIDTH.saturating_sub(3), "")
+        .into_iter()
+        .map(|line| format!("   {line}"))
+        .collect()
+}
+
+/// The ANALYSIS panel's quoted-speakers rows (`28E` §8): `<rank> <speaker> <verb>  "<payload>"`,
+/// with the speaker and verb columns width-computed across the chain's own rows so every payload
+/// starts in one column and a wrapped payload hangs under itself. A `claims` row's
+/// covers-unmeasured paragraph is set off below its quote, indented further — the seam W2's
+/// `as-written:` source excerpt attaches to.
+fn render_links(links: &[ChainLink]) -> Vec<String> {
+    let speaker_w = links
         .iter()
         .filter_map(|l| l.speaker.as_ref().map(String::len))
         .max()
         .unwrap_or(0);
-    let verb_w = chain
-        .links
+    let verb_w = links
         .iter()
         .map(|l| tier_word(l.tier).len())
         .max()
         .unwrap_or(0);
-
-    let mut out = vec![
-        format!("   {}", why_words("why-outcome-heading", &[])),
-        String::new(),
-    ];
-    out.extend(
-        wrap_at(&chain.outcome, WHY_WIDTH, "   ")
-            .into_iter()
-            .map(|l| {
-                if l.starts_with(' ') {
-                    l
-                } else {
-                    format!("   {l}")
-                }
-            }),
-    );
-    if chain.links.is_empty() {
-        out.push(String::new());
-        return out;
-    }
-    out.push(String::new());
-    out.push(format!("   {}", why_words("why-analysis-heading", &[])));
-    out.push(String::new());
-    out.extend(
-        wrap_at(&chain.analysis_opener, WHY_WIDTH, "   ")
-            .into_iter()
-            .map(|l| {
-                if l.starts_with(' ') {
-                    l
-                } else {
-                    format!("   {l}")
-                }
-            }),
-    );
-    out.push(String::new());
-    for link in &chain.links {
+    let mut out = Vec::new();
+    for link in links {
         let speaker = link.speaker.as_deref().unwrap_or("");
         let verb = tier_word(link.tier);
         let head = format!(
@@ -3795,33 +3774,51 @@ fn render_chain(chain: &ChainRender) -> Vec<String> {
             out.push(String::new());
         }
     }
+    out
+}
+
+/// Render a [`ChainRender`] as the `dorc why <addr>` triptych (`28G` Phase W1).
+///
+/// Three panels: the contrastive OUTCOME, the quoted-speakers ANALYSIS closed by its numberless join
+/// restatement, and the structural NEXT STEPS — which is OMITTED whole when it has no rows, the
+/// question-relative floor `28G` strawman `e-skipped-quiet` demonstrates. Speaker and verb columns
+/// are width-computed across the chain's own rows so payloads align into one readable column.
+fn render_chain(chain: &ChainRender) -> Vec<String> {
+    let mut out = vec![
+        format!("   {}", why_words("why-outcome-heading", &[])),
+        String::new(),
+    ];
+    out.extend(indented(&chain.outcome));
+    if chain.links.is_empty() {
+        out.push(String::new());
+        return out;
+    }
+    out.push(String::new());
+    out.push(format!("   {}", why_words("why-analysis-heading", &[])));
+    out.push(String::new());
+    out.extend(indented(&chain.analysis_opener));
+    out.push(String::new());
+    out.extend(render_links(&chain.links));
     if chain
         .links
         .iter()
         .any(|l| l.rank == RowRank::CoversUnmeasured)
     {
         out.push(String::new());
-        for line in wrap_at(&why_words("why-mark-legend", &[]), WHY_WIDTH, "") {
-            out.push(format!("   {line}"));
-        }
+        out.extend(indented(&why_words("why-mark-legend", &[])));
     }
     if let Some(join) = &chain.join {
         out.push(String::new());
-        for line in wrap_at(join, WHY_WIDTH, "") {
-            out.push(format!("   {line}"));
-        }
+        out.extend(indented(join));
     }
     if !chain.next_steps.rows.is_empty() {
         out.push(String::new());
         out.push(format!("   {}", why_words("why-next-steps-heading", &[])));
         out.push(String::new());
-        for line in wrap_at(
-            &why_words("why-next-steps-opener", &[&chain.reference]),
-            WHY_WIDTH,
-            "",
-        ) {
-            out.push(format!("   {line}"));
-        }
+        out.extend(indented(&why_words(
+            "why-next-steps-opener",
+            &[&chain.reference],
+        )));
         out.push(String::new());
         let label_w = chain
             .next_steps
@@ -3956,7 +3953,7 @@ fn emit_why_report(
         let reference = format!("{line}|{word}");
         if let Disposition::Replace(license, _) = &step.disposition
             && let Some(chain) = survival_chain(
-                reference.clone(),
+                &reference,
                 &format!("{filename}:{line}"),
                 &step.disposition,
                 license,
@@ -4091,12 +4088,11 @@ fn emit_why_triptych(
         // A survived elision already carries a fully-populated triptych; every other disposition
         // gets the same three panels built from its own ANALYSIS rows, so the surface has ONE shape.
         let built;
-        let chain = match chains.iter().find(|(l, _)| *l == site.line) {
-            Some((_, chain)) => chain,
-            None => {
-                built = plain_chain(site);
-                &built
-            }
+        let chain = if let Some((_, chain)) = chains.iter().find(|(l, _)| *l == site.line) {
+            chain
+        } else {
+            built = plain_chain(site);
+            &built
         };
         println!("   [ {}, {} ]", filename, site.reference());
         println!();

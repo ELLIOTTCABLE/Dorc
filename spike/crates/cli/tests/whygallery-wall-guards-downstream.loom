@@ -188,7 +188,7 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-r
 
    === OUTCOME ===
 
-   9|systemctl guarded RATHER THAN skipped: the sm.dorc.Service oracle vouches this is already
-   satisfied, so your line survives untouched behind the oracle's own live check
+   9|systemctl guarded RATHER THAN skipped: the sm.dorc.Service oracle vouches this is
+   already satisfied, so your line survives untouched behind the oracle's own live check
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)
