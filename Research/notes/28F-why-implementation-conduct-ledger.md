@@ -103,6 +103,37 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   dies without `--shell=` (undocumented) · the 4096 ceiling + sentinel
   (above) · `Words::Unwritten` hand-seeding works and should be documented
   as the working path.
+- **lane-loom-cleanup LANDED + FOLDED** @ merge `801c6295` (12 commits; every
+  A/B/C work-order item DONE — dispositions in its report, tip 1467 green).
+  Highlights: arity-mismatch loud (debug_assert + a committed-transcript
+  corpus gate) · lock-fixpoint failures name first-differing-slug/field/
+  offset (<400-byte reports) · LCS + trailing-newline-honest divergence
+  reporter (generic, in errorloom `diff.rs`) · transport ceiling 4096→65536
+  with TRUE-size refusals (`TransportLimits`) · promote reaches
+  world-as-payload · three actionable promote failures · `DORC_LOOM_DUMP`
+  candidate transcripts · `BLESS`-honours-the-trial-filter verified +
+  documented · five registry doc-lines landed.
+- **Conductor rulings on the cleanup flags**: A5's behaviour widening
+  ACCEPTED (driver now agrees with `render_case`; path-unsafe books still
+  decline in both seats; the moved test expectations are the correct new
+  pin) · `ReceiptStore::read → Result<Option<…>>` fine pre-publication ·
+  both spike/CLAUDE.md bullets KEPT (accurate; conductor-reviewed) · C5
+  siting accepted (cross-ref stands) · A1 residual honestly OPEN: release
+  builds degrade silently (debug-assert) and the faceless-row class is
+  shrunk-not-closed · mid-lane red between two commits noted as a bisect
+  nit, tip green.
+- **Conductor prose act (the --all row)**: the builder's restored row was
+  honest-but-partial (named only the unnarrated-classes disclosure); the
+  conductor rewrote it to lead with the exhaustive tier ("print everything
+  the engine holds: every link, unselected, plus collapse classes with no
+  narration yet"), lockstep lock+loom edit @ `49056eb8`, fixpoint green —
+  its `Words::Authored` is now genuinely conductor-authored. (Learned live:
+  the C3 flow means an aid-side prose edit goes transcript-first or
+  lockstep; lock-first alone refuses, correctly.)
+- **lane-ascii-emitters DISPATCHED** (last planned lane): the emitter-side
+  non-ASCII sweep (~960 chars/746 lines) under the product-vs-scaffolding
+  carve — product-reaching strings swept by the mechanical map, jargon
+  inventoried, comments out of scope, pinning tests follow their subjects.
 - **lane-d1-drift LANDED + FOLDED** @ `ef375e0e` (6 commits, fast-forward;
   BOTH platforms green at tip — Windows 1458, WSL full workspace 1454 incl.
   ALL unix whylog_store perms/symlink tests; the 1458/1454 delta is the
