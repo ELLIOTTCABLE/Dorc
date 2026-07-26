@@ -169,7 +169,7 @@ fn trusted_directory(dir: &str) -> Result<PathBuf, PersistRefusal> {
     {
         return Err(PersistRefusal::Directory);
     }
-    if !path.exists() && std::fs::create_dir_all(path).is_err() {
+    if !path.exists() && create_directory(path).is_err() {
         return Err(PersistRefusal::Directory);
     }
     let metadata = std::fs::symlink_metadata(path).map_err(|_| PersistRefusal::Directory)?;
@@ -197,12 +197,56 @@ fn is_reparse_point(metadata: &std::fs::Metadata) -> bool {
     false
 }
 
+/// Create `path` user-only, failing if anything already occupies the name.
+///
+/// The mode rides the SAME `open(2)` as the creation, so the durable never exists group- or
+/// world-readable for even an instant; a `set_permissions` afterwards would leave that window open.
+#[cfg(unix)]
+fn create_exclusive(path: &Path) -> std::io::Result<std::fs::File> {
+    use std::os::unix::fs::OpenOptionsExt as _;
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(path)
+}
+
 /// Create `path`, failing if anything already occupies the name.
+///
+/// # The mode this cannot set, said plainly (`28D`'s restrictive-mode item)
+///
+/// Windows has no mode, and the durable therefore inherits its directory's ACL. `set_readonly`
+/// looks like the answer and is not: it sets `FILE_ATTRIBUTE_READONLY`, which restricts nobody --
+/// promising confidentiality with it would be exactly the unkeepable promise
+/// `28D:must-split-the-bundled-entries` forbids. A real DACL needs `SetNamedSecurityInfo`, i.e. an
+/// FFI dependency, and `inv-no-unsafe` forbids FFI workspace-wide over a graph with zero
+/// third-party crates; lifting that is a design event, not a builder's call.
+///
+/// So the Windows posture is siting, not permissions: keep the durable under a per-user profile
+/// root whose inherited ACL is already user-only, and state the limit in the sensitivity contract
+/// rather than implying a protection that is not there (`AID-NEEDS:law-whylog-is-sensitive`).
+#[cfg(not(unix))]
 fn create_exclusive(path: &Path) -> std::io::Result<std::fs::File> {
     std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(path)
+}
+
+/// Create the durable directory user-only.
+#[cfg(unix)]
+fn create_directory(path: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::DirBuilderExt as _;
+    std::fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(path)
+}
+
+/// Create the durable directory (see [`create_exclusive`] for the mode Windows cannot carry).
+#[cfg(not(unix))]
+fn create_directory(path: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(path)
 }
 
 fn write_and_flush(file: &mut std::fs::File, bytes: &[u8]) -> std::io::Result<()> {
@@ -338,6 +382,31 @@ mod tests {
             std::fs::read(&occupied).expect("occupant bytes"),
             b"a file, not a directory"
         );
+    }
+
+    /// The durable and its directory are user-only on unix. Worth pinning rather than trusting the
+    /// call site, because the failure is SILENT: a durable written 0644 reads exactly like one
+    /// written 0600 to every test that only checks its bytes, and host metadata
+    /// (`AID-NEEDS:law-whylog-is-sensitive`) would sit world-readable with nothing complaining.
+    /// The umask cannot mask a pass here — it only ever REMOVES bits, so an over-permissive result
+    /// still fails.
+    #[cfg(unix)]
+    #[test]
+    fn the_durable_and_its_directory_are_user_only() {
+        use std::os::unix::fs::PermissionsExt as _;
+
+        let scratch = Scratch::new("durable-and-directory-are-user-only");
+        let nested = Path::new(&scratch.dir()).join("made-by-us");
+        let published = publish(&nested.to_string_lossy(), b"sensitive", 1024, 5).expect("durable");
+        let mode = |path: &Path| {
+            std::fs::metadata(path)
+                .expect("metadata")
+                .permissions()
+                .mode()
+                & 0o777
+        };
+        assert_eq!(mode(&published), 0o600, "the durable is user-only");
+        assert_eq!(mode(&nested), 0o700, "so is the directory we created");
     }
 
     /// A symlinked durable directory is refused WITHOUT following it. The attack this closes is
