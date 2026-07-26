@@ -66,6 +66,155 @@ is the human's; untouched.
   human direction; the why-didn't-the-hook-fire investigation rides
   lane-prose-onramp as its Task 3. Standing clamp: every brief now carries an
   explicit no-trailer line (subagent harnesses inject the same instruction).
+- **lane-w4-map LANDED** @ `fc56e973` on `ai/r28-w4-map` (read-only; stopped at
+  checkpoint as briefed; `_w4-map-DRAFT.md`, 645 lines, conductor-read whole).
+  Headline, counted in-tree: class (a) editable-today = 0 of 111 `why-*` rows;
+  class (c) transport-blocked = 45 of 56 sentence-bearing rows (80%), 61% of
+  reached prose chars — the watch item CONFIRMED, the deferred transport work
+  stands directly between the human and W5. Secondary finds: the span map has no
+  production consumer (`print_document` drops it); 26 print sites counted;
+  `advisory: bool` is already kernel-clean (12 cli signatures only); the carrier
+  lane is provably zero-re-bless (stderr is needle-pinned, never byte-goldened).
+- **Conductor adjudication of the map's ASK list** (rulings; the map's §G carries
+  the full arguments):
+  1. `ask-pull-transport-into-this-arc` → **PULL IN** (as lane-w4-span leg A).
+     Grounds: the 80%/61% measurement + the human's push-to-prose directive +
+     AGENTS.md anti-deferral + `289:steer-errorloom-best-to-use`. Flagged to the
+     human for cheap veto; conducting on it meanwhile.
+  2. `ask-word-model-fix-lives-dorcside` → **ADOPT, proof-first**: build the
+     dorc-side one-section-many-fragments shape (`RenderPart::ArrangementValue`;
+     accumulate per `(slug, occurrence)`; `apply_arrangement_edit` re-splits on
+     the compiled fragment series); PROVE it at the leg-A checkpoint on three
+     unit-tier cases — single-run, multi-run, and a GLUED boundary (value abutting
+     a word, no whitespace — the `28A:rul-glued-param-rehole-seam` shape, the one
+     place ~SUSPECT errorloom-needs-no-change could break); touch errorloom only
+     if a refusal class demands it, fix-in-place, no adapters. Supersedes
+     `28E:prop-span-boundary-tokenization` (conductor proposal, never human-typed)
+     as the first shape tried.
+  3. `ask-lift-one-span-per-chrome-line` → **AMEND THE LAW** to "one editable
+     SECTION per chrome line; the section may hold interleaved value fragments;
+     nothing ever splits one chrome line across sections" — preserves the
+     2026-07-24 lesson (many-sections was the breakage). Amendment lands with
+     leg A: `aid/CLAUDE.md` rows + `plans/288` §7b closing text (conductor edit).
+  4. `ask-hoist-said-into-aid` → **YES** (lane-w4-parts). `Said::Lens` deletion is
+     the phase's point; `Said::Foreign` encodes at mint.
+  5. `ask-all-flag-promises-exhaustive` → **the kTASTE residue model discharges
+     it**: `--all` renders `links` unfiltered. Slightly exceeds types-only; a
+     filter-read, not register machinery; kills a false printed promise without
+     prose churn.
+  6. `ask-emission-order-may-move` (tc, flagged up) → **preserve flush points,
+     byte-identical stderr this arc**; re-ordering banked with `289` §2v's
+     multi-host concurrency note.
+  7. `ask-arrangement-normalization-fork` → **normalize only bridge-minted
+     sections**; the arrangement-page path stays verbatim.
+  8. `ask-why-case-collection-placement` (tc, flagged up) → **ADOPT a new
+     in-process-driven why case shape in `crates/aid/tests/`** (registered-aid
+     placement per `288:rul-slug-decides-loom-placement`, read broadly as its own
+     text directs); whygallery whole-product cases retained unchanged as executed
+     evidence. World-shape mechanics = builder latitude; NB `28F`'s banked
+     `run: replay-only` case-shape want is probably this same need — converge on
+     one shape, don't mint two.
+  9. `ask-register-key-axis-reserved` → **ADOPT**: occurrence never carries
+     register; the third-axis note goes in `aid/CLAUDE.md`; no machinery.
+  10. `ask-chain-link-order-is-a-render-default` → **ADOPT**: one-function seat +
+      doc-comment naming it a RENDER DEFAULT; no ordering machinery.
+  11. `ask-why-lens-stderr-unencoded` → **fix in lane-w4-parts** via
+      `Said::Foreign` (encode-at-mint), as law-compliance.
+  Lane cut **ADOPTED as proposed**: three lanes, SERIAL (carrier → parts →
+  span-with-mid-checkpoint); the parallel variant declined (one cross-merge not
+  worth it, no time pressure). kTASTE `ChainModel`/`LinkSelection` shape adopted;
+  one latitude note: `conclusion` may be a parts-stream rather than a single
+  `Said` if the welded synthesis wants it. Zero-churn expectations + empty-diff
+  proofs adopted as per-lane gates. Platform exposure none (confirmed); the
+  `mise run both` leg stays owed at folds as cheap insurance. Rider for the span
+  lane: when adding the `dorc why <addr>` arm to BOTH replay-arm chains
+  (`replay` + `render_direct_replay`), add a cheap mechanical agreement guard if
+  one falls out naturally (`fc56e973`'s §H item 3 — a recorded divergence class).
+- **finding-map-builder-hook-bypass** (self-disclosed, self-corrected) — the map
+  builder's FIRST commit passed `-c core.hooksPath=/dev/null` (effectively
+  `--no-verify`, forbidden); it reset and re-committed with hooks live; the
+  landed tip is clean. Standing brief line from here on: "if a hook refuses your
+  commit, fix the message/content — NEVER bypass (no `--no-verify`, no
+  `core.hooksPath` tricks, no env unset)". Datum for the Task-3 hook
+  investigation: something DID fire in that agent worktree.
+- **Map FOLDED** @ merge `86522ca2` (`_w4-map-DRAFT.md` on the mainline; the lane
+  branch `ai/r28-w4-map` retained as its history).
+- **lane-prose-onramp LANDED** (report-only; its worktree reset clean; scratch
+  branch deleted by conductor — zero commits). Worklist: 209 prose rows = 47
+  transcript-editable today / 162 lock-only; all 7 `[unwritten:]` catalog codes
+  HAVE looms (the best first sitting); ALL arrangement rows are faceless except
+  `cli-help-page` (`dorc-loom`'s corpus is hardcoded to `crates/aid/tests` —
+  confirms the map's gap from the tooling side). Flow VERIFIED green end-to-end
+  on the catalog-loom path (bare `mise run loom:compile` / `loom:promote`; no
+  case list, no `--shell=` needed for the aid corpus — two banked frictions
+  already fixed); the lock hand-seed path works and passes the byte-identity
+  fixpoint but ends at an orchestrator-only bless (unverified by the lane, by
+  design); why-transcripts correctly REFUSE edit authority
+  (`282:rul-replay-editability-is-provenance` observed working). The L6
+  arity-loud fix confirmed live (a deliberate one-word seed for a one-value row
+  panicked `dorc why` in debug — the fix working, not a regression; release
+  degrades to `[unwritten:]`). Six frictions banked in its report; sharpest:
+  promote's word-diff preview is swallowed by `MISE_TASK_OUTPUT=timed`; a
+  transcript edit appends a trailing `\n` to the stored register (the only such
+  row in the lock — wants a trim-or-not ruling before the human's rows diverge
+  in shape); no `loom:compile:verbose` task; `scaffold` has no mise task.
+- **finding-hk-master-killswitch** (the Task-3 answer; human-owned fix) —
+  `HK=0` is live in the agent-session environment, inherited from whatever
+  launches the sessions (NOT repo `.claude/settings.json`, NOT mise config, NOT
+  Windows user/machine env). The installed hook command is
+  `test "${HK:-1}" = "0" || mise x -- hk run <hook> --from-hook`, so `HK=0`
+  short-circuits EVERY hk hook — commit-msg included — in every agent shell.
+  Installation is fine; the matcher is fine (refuses a trailer when invoked
+  directly); `mise run test:hooks` is structurally BLIND to the gap (it spawns
+  the matcher script directly and never exercises the git→hk wiring — green
+  while the gate was dead). Explains finding-commit-trailer-slip completely, and
+  moots finding-map-builder-hook-bypass (hooks were dead in that worktree too).
+  Fixes: (1) HUMAN-OWNED — scrub `HK=0` from the session-launching environment;
+  (2) repo-side PROPOSAL, wants a ruling — extend hook-selftest to assert
+  WIRING reachability (`git hook list commit-msg` non-empty AND env not
+  neutering), so a dead gate is red not green; (3) the human should check their
+  own interactive shell (`echo $HK`) — live human commits may be bypassing too.
+- **Human items pulled into scope (typed 2026-07-26; weight-tags as given):**
+  - `item-ran-log-retirement` (gentle lean, LOW priority, builder-driven —
+    "don't churn over polishing right this second"): the `_dorc_logged` /
+    `expected.ran` mock-run-log machinery should eventually die or fold into
+    dorc-loom as a Rust-powered feature; minimize long-term loom noise; do NOT
+    overengineer a testing-feature suite. Builder read-first:
+    `.claude/research/loom-harness-alternatives/` (the 289-banked
+    mock-stub-crate candidate) + this ledger's replay-only case-shape note.
+    Shape: optional tail lane, investigation-first, skippable under pressure.
+  - `item-probe-results-fixture-legibility` (product surface; conductor answered
+    in-chat) — probe-results.txt is the probe→controller RETURN CHANNEL as a
+    case fixture: bare `site <leafid> effect=… rc=…` body-lines (262 §2), whose
+    VERSION/attribution lives in the `dorc-records/1` framing header + terminal
+    token that the loom fixtures omit (the unframed harness lane;
+    `SiteResults.framed` tracks which lane admitted). Banked ask:
+    `ask-fixtures-exercise-framed-lane` — should case fixtures carry the frame,
+    so replays exercise the strict bounded-admission path production uses?
+  - `item-loom-shell-niceties` (nit, ONLY-if-trivially-cheap): round-trip a
+    replay's `$ dorc …` argv through the shell-executor purely to print
+    EVALUATED argv; the in-process catcher consumes that — looms become 1:1
+    with shell semantics without double-invoking dorc. Span-lane builder
+    assesses while inside the replay driver; declining is fine.
+  - `item-missing-command-word` (bug, investigate in passing):
+    `whygallery-webhost-whole` renders "on 's at-most claim" — an empty
+    speaker/name before the possessive. Parts-lane rider.
+  - `item-simpler-why-invocations` (LEANS, human-tagged "don't encode too
+    strongly"): the loom prose says `dorc why book.sh:14` while the replay
+    lines show flag-heavy harness invocations — telling. Floated thoughts,
+    banked as leans only: oracles intelligently recoverable from the receipt's
+    hashes/filenames; books as positionals not flag-with-payload;
+    probe-results on stdin (NB stdin IS already the default outside `why`; W3
+    respelled why's replays to explicit `--results`). Execute-phase design
+    item; converges with `ask-why-case-collection-placement` — the new why case
+    shape should drive the receipt-first path so transcripts SHOW the simple
+    form.
+- **Lane work-order deltas from the above**: parts lane + item-missing-command-
+  word; span lane + item-loom-shell-niceties (assess-only) + the replay-arm
+  agreement guard; optional tail lane-ran-retirement appended after span.
+- **HOLD (human-directed)** — harness restart pending. Both lanes landed and
+  banked; execute lanes NOT dispatched; resume post-restart from this ledger +
+  `_w4-map-DRAFT.md` (§F lane cut as adjudicated above).
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
