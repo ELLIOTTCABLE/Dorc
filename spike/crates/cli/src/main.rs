@@ -70,7 +70,7 @@ use dorc_aid::diag::{
     WrappedSiteAdoptionHint,
 };
 use dorc_aid::weave::Face;
-use dorc_aid::{CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
+use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
 use weft::{
     Banner, Branch, CodeBlock, CodeCell, CodeLine, Document, Join, LabeledRow, Literalness, Node,
@@ -649,7 +649,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let advisory = !matches!(mode, Mode::Apply);
 
     let replay = if args.reads_the_receipt() {
-        match load_whylog_replay(args, advisory)? {
+        let loaded = load_whylog_replay(args)?;
+        report_at(advisory, "whylog", None, &loaded.diags);
+        match loaded.value {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
             // Answered ABOVE the pipeline, whose first act is analyzing the book at the recorded
             // path — under drift, not the run's book. Only `why` has a degraded surface; every
@@ -1509,7 +1511,7 @@ const WHYLOG_CAP: usize = 4_000_000;
     clippy::too_many_lines,
     reason = "one linear admission ladder: select the durable, bound it, read back the book and oracles it names, check the framing, then admit the records. Every rung answers on its own terms — refusing, or in the book-digest rung's case degrading — and splitting it would scatter the ONE place a replay's inputs are validated"
 )]
-fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
+fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
     // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
     // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.
     let path = if let Some(exact) = args.whylog.as_deref() {
@@ -1525,25 +1527,19 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         })?;
         let dir = dir.as_str();
         let Some(path) = whylog_store::newest(dir) else {
-            report_at(
-                advisory,
-                "whylog",
-                None,
-                &[Diag::new_spanless_site(DiagCode::WhylogAbsent(
+            return Ok(Carrier::new(
+                ReplayLoad::Refused,
+                vec![Diag::new_spanless_site(DiagCode::WhylogAbsent(
                     dorc_aid::diag::WhylogAbsent {
                         dir: dir.to_owned(),
                     },
                 ))],
-            );
-            return Ok(ReplayLoad::Refused);
+            ));
         };
         path
     };
     let Ok(file) = std::fs::File::open(&path) else {
-        return Ok(refuse_replay(
-            advisory,
-            dorc_plan::records::AdmissionRefusal::Framing,
-        ));
+        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
     };
     let envelope = match dorc_plan::whylog::admit_unscoped_whylog(
         file,
@@ -1551,13 +1547,10 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     ) {
         dorc_plan::records::Admission::Admitted(envelope) => envelope,
         dorc_plan::records::Admission::NoObservation => {
-            return Ok(refuse_replay(
-                advisory,
-                dorc_plan::records::AdmissionRefusal::Framing,
-            ));
+            return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
         }
         dorc_plan::records::Admission::Refused(reason) => {
-            return Ok(refuse_replay(advisory, reason));
+            return Ok(refuse_replay(reason));
         }
     };
     let book_path = envelope.recorded_book_path().as_str().to_owned();
@@ -1567,18 +1560,12 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         .map(|oracle| oracle.path().as_str().to_owned())
         .collect();
     let Ok(book) = read_replay_source(&book_path) else {
-        return Ok(refuse_replay(
-            advisory,
-            dorc_plan::records::AdmissionRefusal::Framing,
-        ));
+        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
     };
     let oracle_sources: Vec<String> = match oracle_paths.iter().map(read_replay_source).collect() {
         Ok(sources) => sources,
         Err(()) => {
-            return Ok(refuse_replay(
-                advisory,
-                dorc_plan::records::AdmissionRefusal::Framing,
-            ));
+            return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
         }
     };
     let framing = dorc_plan::records::Framing::spike(book_digest(&book));
@@ -1588,35 +1575,29 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     // framing — and it is the ENTRY to the degraded receipt (`28F:rul-drift-replay-d1`) rather than
     // a dead end. The diag still fires: drift loud on the report lane, receipt on stdout.
     if envelope.claims().book_digest() != scope.book.1 {
-        report_at(
-            advisory,
-            "whylog",
-            None,
-            &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
+        return Ok(Carrier::new(
+            ReplayLoad::Drifted(Box::new(DriftedReceipt {
+                host: envelope.claims().host().to_owned(),
+                book_digest: envelope.claims().book_digest().to_owned(),
+                risk_profile: envelope
+                    .argv()
+                    .iter()
+                    .any(|word| word == CONSENT_FLAG)
+                    .then_some(CONSENT_FLAG),
+                started_at: envelope.claims().started_at(),
+                tally: recorded_tally(envelope.apply()),
+                book_path,
+                oracle_paths,
+            })),
+            vec![Diag::new_spanless_site(DiagCode::WhylogBookDesync(
                 dorc_aid::diag::WhylogBookDesync {
                     which: "book".to_owned(),
                 },
             ))],
-        );
-        return Ok(ReplayLoad::Drifted(Box::new(DriftedReceipt {
-            host: envelope.claims().host().to_owned(),
-            book_digest: envelope.claims().book_digest().to_owned(),
-            risk_profile: envelope
-                .argv()
-                .iter()
-                .any(|word| word == CONSENT_FLAG)
-                .then_some(CONSENT_FLAG),
-            started_at: envelope.claims().started_at(),
-            tally: recorded_tally(envelope.apply()),
-            book_path,
-            oracle_paths,
-        })));
+        ));
     }
     if !replay_claims_match(&envelope, &scope) {
-        return Ok(refuse_replay(
-            advisory,
-            dorc_plan::records::AdmissionRefusal::Framing,
-        ));
+        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
     }
     let decision_digest = envelope.claims().decision_digest().to_owned();
     let started_at = envelope.claims().started_at();
@@ -1628,25 +1609,29 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         &framing,
         dorc_plan::records::HostEvidenceLimits::spike_default(),
     ) {
-        dorc_plan::records::Admission::Admitted(replay) => Ok(ReplayLoad::Admitted(Replay {
-            book_path,
-            oracle_paths,
-            decision_digest,
-            started_at,
-            record_stream_version,
-            instants: instants.clone(),
-            records: Some(replay.records().clone()),
-        })),
-        dorc_plan::records::Admission::NoObservation => Ok(ReplayLoad::NoObservation(Replay {
-            book_path,
-            oracle_paths,
-            decision_digest,
-            started_at,
-            record_stream_version,
-            instants: instants.clone(),
-            records: None,
-        })),
-        dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(advisory, reason)),
+        dorc_plan::records::Admission::Admitted(replay) => {
+            Ok(Carrier::pure(ReplayLoad::Admitted(Replay {
+                book_path,
+                oracle_paths,
+                decision_digest,
+                started_at,
+                record_stream_version,
+                instants: instants.clone(),
+                records: Some(replay.records().clone()),
+            })))
+        }
+        dorc_plan::records::Admission::NoObservation => {
+            Ok(Carrier::pure(ReplayLoad::NoObservation(Replay {
+                book_path,
+                oracle_paths,
+                decision_digest,
+                started_at,
+                record_stream_version,
+                instants: instants.clone(),
+                records: None,
+            })))
+        }
+        dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(reason)),
     }
 }
 
@@ -1705,9 +1690,8 @@ fn recorded_tally(apply: &[dorc_plan::whylog::ApplyLine]) -> PlanTally {
     }
 }
 
-fn refuse_replay(advisory: bool, reason: dorc_plan::records::AdmissionRefusal) -> ReplayLoad {
-    report_at(advisory, "whylog", None, &[reason.spanless_diagnostic()]);
-    ReplayLoad::Refused
+fn refuse_replay(reason: dorc_plan::records::AdmissionRefusal) -> Carrier<ReplayLoad> {
+    Carrier::new(ReplayLoad::Refused, vec![reason.spanless_diagnostic()])
 }
 
 fn replay_claims_match(
