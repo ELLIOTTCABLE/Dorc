@@ -79,6 +79,52 @@ fn generated_arrangement_lock_reproduces_the_committed_bytes() {
     );
 }
 
+/// A WORLD-AS-PAYLOAD case — one whose replay is `dorc plan --book=book.sh` with no materialized
+/// `book.sh` — must reach the driver's editable route, exactly as `render_case` already does. When
+/// the driver declined these, `compile`/`promote` saw bytes-only results, so their prose was
+/// editable nowhere but the generated lock: the corpus contradicted its own loom-is-the-home claim.
+/// Discovered rather than listed, so a new case of this shape joins the gate on arrival.
+#[test]
+fn world_as_payload_cases_reach_the_editable_route() {
+    let cases = load_corpus_by_slug(&corpus_dir()).expect("load corpus");
+    let mut reached = 0usize;
+    for (slug, case) in &cases {
+        let has_book = case.sections().iter().any(|s| s.name() == "book.sh");
+        let plan_blocks: Vec<_> = case
+            .replay()
+            .blocks()
+            .iter()
+            .map(errorloom::ReplayBlock::command)
+            .filter(|command| *command == "dorc plan --book=book.sh")
+            .collect();
+        if has_book || plan_blocks.is_empty() {
+            continue;
+        }
+        let results = replay_case(case, &DorcConsumer::new(), &RunEnv::new(), |command, _| {
+            panic!("world-as-payload case `{slug}` declined `{command}` to the generic executor")
+        })
+        .unwrap_or_else(|error| panic!("replay `{slug}`: {error}"));
+        for (block, routed) in case.replay().blocks().iter().zip(&results) {
+            if block.command() != "dorc plan --book=book.sh" {
+                continue;
+            }
+            assert_eq!(
+                routed
+                    .editable_render()
+                    .map(errorloom::EditableRender::text)
+                    .as_deref(),
+                Some(routed.output()),
+                "`{slug}` carries exact renderer provenance for its payload world"
+            );
+            reached = reached.saturating_add(1);
+        }
+    }
+    assert!(
+        reached > 0,
+        "no world-as-payload case was found — this gate would pass vacuously"
+    );
+}
+
 /// Every lint case drives its declared `dorc lint oracle.sh --no-tools` shape through the same
 /// production report and tagged renderer as the CLI route. The defining code must be real: the
 /// frontmatter slug alone cannot manufacture an output or editable provenance.
