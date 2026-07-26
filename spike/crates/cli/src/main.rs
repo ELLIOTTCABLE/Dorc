@@ -3581,6 +3581,12 @@ struct ChainLink {
     payload: Said,
     /// Whether the payload is the speaker's own words (quoted) or dorc's narration of them (bare).
     quoted: bool,
+    /// Metadata about the SPEAKING rather than the thing said — when a check ran and what it
+    /// exited with (`28G` strawman `a-fire-morning`'s `(ran 01:59:52, rc 0)`). It renders OUTSIDE
+    /// the quotation, because attributing the circumstances to the speaker puts words in their
+    /// mouth. `None` throughout today: the run clock and the stored rcs are the narration lane's,
+    /// and a fabricated timestamp is worse than an absent one.
+    event: Option<Said>,
     /// The indented paragraph carried below the quote — today only the at-most claim's
     /// covers-unmeasured disclosure.
     explanation: Option<Said>,
@@ -3743,6 +3749,7 @@ fn survival_chain(
         speaker: Some(predict_speaker(reference)),
         payload: Said::Value(dorc_plan::fact_label(interner, license.fact())),
         quoted: true,
+        event: None,
         explanation: None,
         excerpt: None,
     }];
@@ -3753,6 +3760,7 @@ fn survival_chain(
             speaker: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
             payload: Said::words("why-vouch-payload-site", &[&backing]),
             quoted: true,
+            event: None,
             explanation: None,
             excerpt: None,
         });
@@ -3771,6 +3779,7 @@ fn survival_chain(
                         &[&dorc_plan::fact_label(interner, receipt.fact)],
                     ),
                     quoted: true,
+                    event: None,
                     explanation: None,
                     excerpt: None,
                 }),
@@ -3801,6 +3810,7 @@ fn survival_chain(
             speaker: locus,
             payload: Said::words("why-claims-payload", &[&provider, &coords.join(" ")]),
             quoted: true,
+            event: None,
             explanation: Some(Said::words("why-claims-covers-unmeasured", &[])),
             excerpt: oracle_excerpt(c.footprint_span(), oracle_paths, oracle_srcs),
         });
@@ -3811,6 +3821,7 @@ fn survival_chain(
         speaker: Some(ENGINE_SPEAKER.to_owned()),
         payload: Said::words("why-derives-payload-disjoint", &[&backing]),
         quoted: false,
+        event: None,
         explanation: None,
         excerpt: None,
     });
@@ -3976,10 +3987,11 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
                         Quoting::Bare
                     },
                     runs: vec![link.payload.run("why-chain-row")],
-                    // Run metadata sits OUTSIDE the quotation: attributing it to the speaker
-                    // puts words in their mouth. The rc and timestamp are not threaded yet, so
-                    // the slot renders absent rather than fabricating a time.
-                    trailer: Vec::new(),
+                    trailer: link
+                        .event
+                        .iter()
+                        .map(|event| event.run("why-chain-event"))
+                        .collect(),
                 },
                 attachments,
             }))
@@ -4424,6 +4436,7 @@ fn plain_chain(site: &WhySite) -> ChainRender {
                 speaker: Some(ENGINE_SPEAKER.to_owned()),
                 payload: reason.clone(),
                 quoted: false,
+                event: None,
                 explanation: None,
                 excerpt: None,
             })
