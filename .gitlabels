@@ -35,8 +35,11 @@
 
 # ## Functionality
 # Reminder: (don't dupe filenames / crates / modules; only for cross-cutting concerns.)
+# (aid)/(cli) name a PURPOSE, not the same-named crate — they apply wherever it lands.
 - (sec security) anything focused on security-impact
 - (ana analysis) the, well, analyzer components (static analysis engine)
+- (aid user-aid) errors, warnings, hints, why — what we tell the user
+- (cli) the invocation surface: argv, usage, exit codes, stdout/stderr contract
 - (MLm ML-model) LLM-behaviour-tweaking (e.g. AGENTS.md, skills, priming-prompts)
 
 # (crate-named strays in the spike history — analysis/plan/fold/hostsim/oracle/core —
