@@ -1216,20 +1216,22 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The `plan`/round-trip render surface keeps its per-line `why:` disclosures (the attribution
     // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
+    // `27W` §3 C3 pairing: fold each ingested tier-3 report record (recognized class + site)
+    // into its site's `VerdictDecline` via `with_authored_reason` (idempotent — tier-2 static
+    // wins). Then union the collapse-narratives onto the why-lens seam (d4 renders; decision-inert).
+    // Built for BOTH readers: the stderr why-lens below, and the `dorc why` pull surface, which is
+    // where a decline becomes a first-class answer rather than an absence.
+    let paired_declines = pair_authored_reasons(decline_narrative, &results.reports);
+    let collapse_narrative: Vec<CollapseNarrative> = classify_narrative
+        .iter()
+        .cloned()
+        .chain(paired_declines)
+        .chain(entry_narrative.iter().cloned())
+        .chain(merge_narrative.iter().cloned())
+        .chain(plan.survival_report.collapse_narrative().iter().cloned())
+        .chain(plan.render_refusal_narratives(&parsed.value))
+        .collect();
     if advisory && mode != Mode::Why {
-        // `27W` §3 C3 pairing: fold each ingested tier-3 report record (recognized class + site)
-        // into its site's `VerdictDecline` via `with_authored_reason` (idempotent — tier-2 static
-        // wins). Then union the collapse-narratives onto the why-lens seam (d4 renders; decision-inert).
-        let paired_declines = pair_authored_reasons(decline_narrative, &results.reports);
-        let collapse_narrative: Vec<CollapseNarrative> = classify_narrative
-            .iter()
-            .cloned()
-            .chain(paired_declines)
-            .chain(entry_narrative.iter().cloned())
-            .chain(merge_narrative.iter().cloned())
-            .chain(plan.survival_report.collapse_narrative().iter().cloned())
-            .chain(plan.render_refusal_narratives(&parsed.value))
-            .collect();
         emit_why_lens(&why_diags, &arena, &book_src, &collapse_narrative);
         // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the
         // NAMED early-exit-race nondeterminism class — a `pipefail`-off `A | grep -q` whose
@@ -1350,6 +1352,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &interner,
             &oracle_paths,
             &oracle_srcs,
+            &collapse_narrative,
             &receipt,
         );
         std::io::stdout().flush().ok();
@@ -3583,6 +3586,7 @@ fn tier_word(tier: TrustTier) -> String {
         TrustTier::Claimed => 3,
         TrustTier::Derived => 4,
         TrustTier::Consented => 5,
+        TrustTier::Declined => 6,
     };
     dorc_aid::arrangement::arrangement_text(
         &dorc_aid::arrangement::CONST_ARRANGEMENTS,
@@ -3801,6 +3805,11 @@ struct StepRow {
 /// explanation over flowing paragraphs). The panel is OMITTED entirely when it has no rows, which
 /// is the triptych-collapse `28G` strawman `e-skipped-quiet` demonstrates.
 struct NextSteps {
+    /// The line that frames the rows. A suspected-wrong skip opens on the reader's doubt; a
+    /// deliberate decline opens by saying there is nothing to repair (`28G` strawman
+    /// `c-declined-unsound`), and reusing one opener for both would ask a reader to fix a
+    /// correctly-behaving line.
+    opener: Said,
     rows: Vec<StepRow>,
 }
 
@@ -3808,8 +3817,6 @@ struct NextSteps {
 /// ANALYSIS, and the structural NEXT STEPS. Content + structure are the law; wording and arrangement
 /// ride `27V:rul-output-form-unwelded` — transcripts re-bless freely on churn here.
 struct ChainRender {
-    /// The asked line's `N|command` reference, the subject of every panel.
-    reference: String,
     /// The `N|command` references of every wall this line was kept past, and the provider whose
     /// at-most claim licensed that — what the aggregate's TRUST SPENT item names.
     crossed: String,
@@ -3994,7 +4001,6 @@ fn survival_chain(
         alternative: false,
     });
     Some(ChainRender {
-        reference: reference.to_owned(),
         crossed: joined_walls.clone(),
         claimant: claimants.join(", "),
         outcome: Said::words(
@@ -4012,8 +4018,124 @@ fn survival_chain(
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
         links,
         join: Some(Said::words("why-analysis-join", &[&joined_walls, &backing])),
-        next_steps: NextSteps { rows },
+        next_steps: NextSteps {
+            opener: Said::words("why-next-steps-opener", &[reference]),
+            rows,
+        },
     })
+}
+
+/// The sites whose author DELIBERATELY declined, keyed by leaf — the pull surface's index into the
+/// `VerdictDecline` narratives (`collapse-mints-narrative`).
+///
+/// Only a decline carrying an `authored_reason` counts: an unclassed decline is ordinary
+/// control-flow (`rul-vouch-is-verdict-authoring` — no vouch ⇒ run) and says nothing a reader could
+/// act on, while a CLASSED one is the author stating why. Reading a narrative for display is the
+/// one direction the two planes allow (`two-plane-aid-law`); nothing here reaches a license.
+fn authored_declines(
+    narrative: &[CollapseNarrative],
+) -> BTreeMap<dorc_plan::LeafId, dorc_aid::narrative::AuthoredReason> {
+    let mut out = BTreeMap::new();
+    for record in narrative {
+        if let CollapseKind::VerdictDecline {
+            site,
+            authored_reason: Some(reason),
+            ..
+        } = record.kind()
+        {
+            out.entry(site.leaf).or_insert(*reason);
+        }
+    }
+    out
+}
+
+/// Build the AUTHORED-REFUSAL triptych (`28G` strawman `c-declined-unsound`): the answer for a
+/// line that runs because the person who knows the tool ruled the question unanswerable.
+///
+/// This is the pull-surface half of `27W`'s decline design, which until now existed only as a
+/// stderr push line (`289:fnd-decline-class-is-push-only`): asking `dorc why` about a declined site
+/// showed the generic ran-blind answer, which reads as a GAP in dorc's knowledge when it is the
+/// opposite — a place the knowledge exists and says no.
+///
+/// The class drives everything class-specific through occurrence-keyed rows, so an `unmodeled`
+/// decline (the author's "not yet") never wears an `unsound` decline's words (the author's "not
+/// ever, by anyone").
+fn decline_chain(
+    reference: &str,
+    address: &str,
+    word: &str,
+    reason: &dorc_aid::narrative::AuthoredReason,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> ChainRender {
+    let class = reason.class;
+    let occurrence = Some(class.occurrence());
+    let arm = Some((reason.arm.0, reason.arm_file));
+    let class_words = |slug: &str| {
+        dorc_aid::arrangement::arrangement_text(
+            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+            slug,
+            occurrence,
+        )
+    };
+    let links = vec![
+        ChainLink {
+            // The decline's whole content is that nothing was measured and nothing ever can be,
+            // which is exactly what the covers-unmeasured rank marks
+            // (`rul-danger-axis-is-completion-class`).
+            rank: RowRank::CoversUnmeasured,
+            tier: TrustTier::Declined,
+            speaker: oracle_locus(arm, oracle_paths, oracle_srcs),
+            payload: Said::words("why-declines-payload", &[class.token()]),
+            quoted: true,
+            event: None,
+            explanation: Some(Said::Words(
+                "why-declines-explanation",
+                class_words("why-declines-explanation"),
+            )),
+            excerpt: oracle_excerpt(arm, oracle_paths, oracle_srcs),
+        },
+        ChainLink {
+            rank: RowRank::RuntimeBacked,
+            tier: TrustTier::Derived,
+            speaker: Some(ENGINE_SPEAKER.to_owned()),
+            payload: Said::words("why-declines-derives-cannot-say-runs", &[]),
+            quoted: false,
+            event: None,
+            explanation: None,
+            excerpt: None,
+        },
+    ];
+    ChainRender {
+        crossed: String::new(),
+        claimant: String::new(),
+        outcome: Said::words(
+            "why-outcome-contrastive",
+            &[
+                reference,
+                &OutcomeKind::Ran.word(),
+                &OutcomeKind::Ran.foil().word(),
+                &why_words("why-outcome-because-declined", &[word]),
+            ],
+        ),
+        analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
+        links,
+        join: Some(Said::Words(
+            "why-declines-join",
+            class_words("why-declines-join"),
+        )),
+        next_steps: NextSteps {
+            opener: Said::Words(
+                "why-declines-next-steps-opener",
+                class_words("why-declines-next-steps-opener"),
+            ),
+            rows: vec![StepRow {
+                label: StepLabel::Review,
+                body: Said::words("why-next-step-review", &[address]),
+                alternative: false,
+            }],
+        },
+    }
 }
 
 /// The speaker of a `reported` row: the oracle line whose body produced the report
@@ -4291,10 +4413,7 @@ fn chain_nodes(chain: &ChainRender) -> Vec<Node<Face>> {
     out.push(panel("why-analysis-heading", analysis));
 
     if !chain.next_steps.rows.is_empty() {
-        let mut arc = vec![paragraph(
-            &Said::words("why-next-steps-opener", &[&chain.reference]),
-            "why-next-steps-opener",
-        )];
+        let mut arc = vec![paragraph(&chain.next_steps.opener, "why-next-steps-opener")];
         arc.extend(step_nodes(&chain.next_steps));
         out.push(panel("why-next-steps-heading", arc));
     }
@@ -4377,9 +4496,11 @@ fn emit_why_report(
     interner: &Interner,
     oracle_paths: &[String],
     oracle_srcs: &[String],
+    narrative: &[CollapseNarrative],
     receipt: &Receipt,
 ) {
     use dorc_plan::Disposition;
+    let declines = authored_declines(narrative);
     let mut sites: Vec<WhySite> = Vec::new();
     // A chain names the walls it crossed by `N|command`, never by internal site id (`28E` §8).
     let walls: BTreeMap<dorc_plan::LeafId, String> = plan
@@ -4417,6 +4538,20 @@ fn emit_why_report(
         {
             chains.push((line, chain));
         }
+        let declined = declines.get(&step.leaf);
+        if let Some(reason) = declined {
+            chains.push((
+                line,
+                decline_chain(
+                    &reference,
+                    &format!("{filename}:{line}"),
+                    &word,
+                    reason,
+                    oracle_paths,
+                    oracle_srcs,
+                ),
+            ));
+        }
         let refused = refusals.iter().any(|d| {
             d.primary
                 .span()
@@ -4425,7 +4560,27 @@ fn emit_why_report(
         let (reasons, class, improvement): (Vec<Said>, AggregateClass, Option<Said>) =
             match &step.disposition {
                 Disposition::Run => {
-                    if let Some(reason) = top_run_reason(span, why_diags, arena, book_src) {
+                    if let Some(reason) = declined {
+                        // The author already answered. Whether that answer leaves room for a
+                        // BETTER oracle is the class's to say — and for every class but
+                        // `unmodeled` it does not, so the write-an-oracle nag would be telling
+                        // the one person who knows the tool to go find out
+                        // (`28G` strawman `c-declined-unsound`).
+                        (
+                            vec![Said::words(
+                                "why-reason-run-declined",
+                                &[reason.class.token()],
+                            )],
+                            if reason.class.an_oracle_could_still_answer() {
+                                AggregateClass::Improvement
+                            } else {
+                                AggregateClass::Quiet
+                            },
+                            reason.class.an_oracle_could_still_answer().then(|| {
+                                Said::words("why-improvement-declined-unmodeled", &[&word])
+                            }),
+                        )
+                    } else if let Some(reason) = top_run_reason(span, why_diags, arena, book_src) {
                         (vec![Said::Lens(reason)], AggregateClass::Quiet, None)
                     } else if probe.unresolvable.contains(&step.leaf)
                         && !is_structurally_unprobeable(&command)
@@ -4578,7 +4733,6 @@ fn plain_chain(site: &WhySite) -> ChainRender {
             (head.text().to_owned(), tail)
         });
     ChainRender {
-        reference: site.reference(),
         crossed: String::new(),
         claimant: String::new(),
         outcome: Said::words(
@@ -4600,7 +4754,10 @@ fn plain_chain(site: &WhySite) -> ChainRender {
             })
             .collect(),
         join: None,
-        next_steps: NextSteps { rows: Vec::new() },
+        next_steps: NextSteps {
+            opener: Said::Value(String::new()),
+            rows: Vec::new(),
+        },
     }
 }
 

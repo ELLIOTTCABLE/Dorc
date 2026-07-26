@@ -73,6 +73,15 @@ pub enum TrustTier {
     Derived,
     /// A context-entry consent decision (the escalation dial × capability).
     Consented,
+    /// An author's DECLINE — they looked at this shape and ruled it unanswerable
+    /// (`decline-class-emission`; `28G` strawman `c-declined-unsound`).
+    ///
+    /// tc-decline-is-a-seventh-tier, FLAGGED not settled: the tier SET is law, and this widens it.
+    /// The alternative was rendering a decline row under an existing tier word, and every one of
+    /// them misstates it — `vouches` most of all, since declining is precisely the author refusing
+    /// to vouch. Mis-attribution is the worst aid failure (`271:rul-sin-ordering`), so the honest
+    /// tier is a new one rather than the nearest old one.
+    Declined,
 }
 
 impl TrustTier {
@@ -210,6 +219,34 @@ impl DeclineClass {
             "interactive" => Some(Self::Interactive),
             "hazard" => Some(Self::Hazard),
             _ => None,
+        }
+    }
+
+    /// Whether a BETTER ORACLE could still answer this shape — the one thing the aggregate's
+    /// improvements section has to know about a decline.
+    ///
+    /// `Unmodeled` is the author saying "not yet"; the rest are the author saying "not ever, by
+    /// anyone" — a write-an-oracle nag against one of those tells the person who already answered
+    /// the question to go answer it (`28G` strawman `c-declined-unsound`: "dorc will not suggest an
+    /// oracle for this shape"). Routing only, on the aid plane; no license reads a class
+    /// (`decline-class-emission`).
+    #[must_use]
+    pub fn an_oracle_could_still_answer(self) -> bool {
+        match self {
+            Self::Unmodeled => true,
+            Self::Unsound | Self::Interactive | Self::Hazard => false,
+        }
+    }
+
+    /// The occurrence discriminator a class-keyed arrangement row is stamped with, so one slug can
+    /// carry four class-specific lines and the unwritten ones stay greppable per class.
+    #[must_use]
+    pub fn occurrence(self) -> usize {
+        match self {
+            Self::Unsound => 0,
+            Self::Unmodeled => 1,
+            Self::Interactive => 2,
+            Self::Hazard => 3,
         }
     }
 
