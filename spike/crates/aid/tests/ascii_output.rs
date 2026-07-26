@@ -125,7 +125,8 @@ fn slugs_carrying_non_ascii() -> BTreeSet<&'static str> {
 
 /// The gate itself: a product-prose register is pure ASCII unless its row is named above. The
 /// failure names the field and the offending characters, because the repair is either the
-/// punctuation map or an authored respell and the glyph decides which.
+/// punctuation map or an authored respell and the glyph decides which. The closing count is the
+/// vacuity floor both registries need — they are generated, and an empty read would pass.
 #[test]
 fn product_prose_registers_are_pure_ascii() {
     let allowed: BTreeSet<&str> = ASCII_SWEEP_ALLOWLIST
@@ -146,7 +147,6 @@ fn product_prose_registers_are_pure_ascii() {
              add a row to ASCII_SWEEP_ALLOWLIST with its reason."
         );
     }
-    // Both registries are generated, so an empty read would pass this gate vacuously.
     assert!(
         checked > 100,
         "only {checked} product-prose registers reached — the registries are not where this gate looks"
