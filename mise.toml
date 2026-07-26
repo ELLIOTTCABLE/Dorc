@@ -86,6 +86,24 @@ HK_MISE = "1"
 # Windows it resolves to Git's `sh.exe`, which must be on PATH).
 # ────────────────────────────────────────────────────────────────────────────
 
+[tasks.hello]
+description = "First run in a fresh clone: install the pinned toolchain, then configure this repo's git hooks. Idempotent — safe to re-run after a pull that moves a pin. Needs `mise trust` to have happened first, which is the one step a task cannot do for you."
+# `mise install` is spelled out rather than left implicit: mise installs on demand by default, but
+# that path is exactly what a `not_found_auto_install=false` / `MISE_NOT_FOUND_AUTO_INSTALL=0`
+# setting turns off, and a contributor carrying that in their own config would otherwise get a
+# confusing miss here. The explicit command is unaffected by it.
+#
+# The hook half writes `hook.hk-*` into `.git/config`, which WORKTREES SHARE — running this from
+# one worktree installs hooks for `main` and every sibling. That is right for a fresh clone and
+# is why this is an explicit command rather than a `postinstall` that fires behind your back.
+# `hk uninstall` reverses it. (`hk install --global`, once per machine, is the alternative that
+# never touches repo config and no-ops in repos with no hk.pkl.) Already global? The per-repo
+# install detects that, skips, and clears stale local hooks — so this never double-fires.
+run = [
+   "mise install",
+   "mise run hk-install",
+]
+
 # The ONE place a WSL leg is spelled. `run_windows` is mise's own platform switch, so no
 # task below knows this exists and nothing is duplicated per-platform: on *nix `both` is a
 # passthrough, on Windows it runs the task natively and then again under WSL, in series.
