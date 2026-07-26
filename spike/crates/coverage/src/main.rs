@@ -623,7 +623,7 @@ apt_get__predict() {
         suspect.bridge_suspect = 2;
         let out = render_report(&suspect, "book.sh", true, false);
         assert!(
-            out.contains("WARNING") && out.contains("217 §5 obs-3"),
+            out.contains("WARNING") && out.contains("217 section 5 obs-3"),
             "a non-zero bridge_suspect renders the loud warning: {out}"
         );
     }

@@ -21,9 +21,10 @@ use dorc_aid::catalog::CATALOG;
 /// * JARGON — the glyph stands for a concept (`⊤` the wall, `⊄` not-a-subset) whose replacement
 ///   is authored English, not a substitution. Owned by the plain-language prose pass
 ///   (`AID-NEEDS:law-plain-language-surfaces`), which several `why` registers already cite.
-/// * PAYLOAD — the row's `example` is a filled sample whose non-ASCII arrives in a runtime VALUE
-///   (a `{{detail}}` passthrough, `TopCause::describe()`, or a deliberately-illegal fixture
-///   name). The words belong to the emit site, so sweeping the sample here would falsify it.
+/// * PAYLOAD — the row's `example` is a filled sample whose non-ASCII arrives in a runtime VALUE.
+///   Only the deliberately-illegal fixture name survives here: every other payload-borne glyph
+///   was swept AT ITS EMITTER (`28F` lane-ascii-emitters) and the sample followed in lockstep,
+///   which is the only honest order — a sample swept alone would misquote its own emitter.
 ///
 /// A row leaves by being swept, not by being re-noted; `no_allowlist_entry_is_stale` fails the
 /// moment an entry stops being needed.
@@ -63,31 +64,7 @@ const ASCII_SWEEP_ALLOWLIST: &[(&str, &str)] = &[
         "footprint-incoherent",
         "JARGON ⊄ + PAYLOAD: the touches()-footprint detail",
     ),
-    // ── PAYLOAD: the emit site or the fixture owns the words ──
-    (
-        "cmdsub-operand-top",
-        "PAYLOAD: `{{cause}}` from core `TopCause::describe()` (`$(…)`)",
-    ),
-    (
-        "syntax-unsupported",
-        "PAYLOAD: the parser's construct description (`<(…)`)",
-    ),
-    (
-        "cfg-inline-refused",
-        "PAYLOAD: analysis/src/cfg.rs inline-refusal detail",
-    ),
-    (
-        "effect-kind-disagreement",
-        "PAYLOAD: analysis/src/effect.rs kind-disagreement detail",
-    ),
-    (
-        "predict-out-of-dialect",
-        "PAYLOAD: the oracle dialect check's detail (`[[ … ]]`)",
-    ),
-    (
-        "wrapper-entry-incoherent",
-        "PAYLOAD: the entry/lend-fold coherence detail",
-    ),
+    // ── PAYLOAD: the fixture owns the words ──
     (
         "munge-name-invalid",
         "PAYLOAD: the deliberately-illegal non-ASCII name the case lints",
