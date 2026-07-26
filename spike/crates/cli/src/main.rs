@@ -717,12 +717,11 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
     // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
     // loaded. Consent legibility — the admin sees, once, what authority the probe re-uses.
-    emit_escalation_policy(
+    report_at(
         advisory,
-        &mut interner,
-        &oracle_refs,
-        args.dial,
-        args.capability,
+        "escalation",
+        None,
+        &escalation_policy_diagnostics(&mut interner, &oracle_refs, args.dial, args.capability),
     );
 
     // Parse + analyze the book (shared interner, so symbols match the oracles). Multiple books
@@ -740,7 +739,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let book_src = read_books(books)?;
     let book_name = books.first().map_or("book.sh", String::as_str);
     // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
-    emit_unloaded_sibling_oracles(advisory, books, &oracle_paths);
+    report_at(
+        advisory,
+        "oracle",
+        None,
+        &unloaded_sibling_oracle_diagnostics(books, &oracle_paths),
+    );
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
@@ -6889,14 +6893,14 @@ fn oracle_path_key(path: &str) -> String {
     }
 }
 
-/// Emit the unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
+/// The unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
 /// ack-6): scan the directories of the loaded oracles + the book(s) for `*.oracle.sh` files that were
 /// NOT loaded, and disclose them (suggest, never auto-load). A cli-edge disclosure — it reads the
 /// filesystem, so it lives here, never in the kernel; the `read_dir` order is OS-dependent, so the
 /// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
 /// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
-fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths: &[String]) {
+fn unloaded_sibling_oracle_diagnostics(books: &[String], oracle_paths: &[String]) -> Vec<Diag> {
     use std::path::Path;
     // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
     // Windows) while the loaded set carries the `-o` args verbatim (forward slash), so a raw string
@@ -6930,7 +6934,7 @@ fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths:
         }
     }
     if unloaded.is_empty() {
-        return;
+        return Vec::new();
     }
     unloaded.sort();
     let detail = unloaded
@@ -6938,32 +6942,26 @@ fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths:
         .map(|p| format!("`{p}`"))
         .collect::<Vec<_>>()
         .join(", ");
-    report_at(
-        advisory,
-        "oracle",
-        None,
-        &[Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
-            AidUnloadedSiblingOracle { detail },
-        ))],
-    );
+    vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
+        AidUnloadedSiblingOracle { detail },
+    ))]
 }
 
-/// Emit the escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
+/// The escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
 /// line). Names the escalation posture the dial + capability set, and the entry-capable wrappers
-/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` to
-/// stderr (advisory), never a gate.
+/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` the
+/// edge reports (advisory), never a gate.
 ///
 /// SCOPE (honest for the spike): this is the POLICY in effect, not a per-book-SITE "will enter"
 /// tally — the book-side entry-composed probe emission (which would count sites per entered context)
 /// is the deferred integration (`27K` §9 / this lane's report). The dial × capability × the loaded
 /// entry forms are all real; what is missing is the per-site consumption in the probe pipeline.
-fn emit_escalation_policy(
-    advisory: bool,
+fn escalation_policy_diagnostics(
     interner: &mut Interner,
     oracle_refs: &[&str],
     dial: dorc_core::EscalationDial,
     capability: dorc_core::Capability,
-) {
+) -> Vec<Diag> {
     use dorc_oracle::entry::{detect_entry_form, lift_entry_set};
     use dorc_oracle::predict::lift_predicts;
 
@@ -6986,7 +6984,8 @@ fn emit_escalation_policy(
         }
     }
     if heads.is_empty() {
-        return; // no entry-capable wrapper loaded ⇒ no escalation is possible ⇒ nothing to disclose
+        // no entry-capable wrapper loaded ⇒ no escalation is possible ⇒ nothing to disclose
+        return Vec::new();
     }
     let head_list = heads.values().cloned().collect::<Vec<_>>().join(", ");
     let cap = match capability {
@@ -7009,14 +7008,9 @@ fn emit_escalation_policy(
              (--escalate-any-probe overrides absent author consent); entry forms: {head_list}."
         ),
     };
-    report_at(
-        advisory,
-        "escalation",
-        None,
-        &[Diag::new_spanless_site(DiagCode::EscalationPolicy(
-            EscalationPolicy { detail: msg },
-        ))],
-    );
+    vec![Diag::new_spanless_site(DiagCode::EscalationPolicy(
+        EscalationPolicy { detail: msg },
+    ))]
 }
 
 /// Whether a predict body peels (a wrapper) — the `detect_peel`-present predicate, factored so the
