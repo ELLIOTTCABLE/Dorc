@@ -69,6 +69,7 @@ use dorc_aid::diag::{
     ReachesProviderCollision, ResolverConflict, ResolverProviderCollision, TouchesEscalated,
     WrappedSiteAdoptionHint,
 };
+use dorc_aid::said::{Said, WHY_SOURCE_CAP, WHY_VALUE_CAP};
 use dorc_aid::weave::Face;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
@@ -3901,39 +3902,13 @@ fn foil_word(disposition: &dorc_plan::Disposition) -> String {
 /// user-facing string the triptych prints comes through here or through [`verb_word`] /
 /// [`outcome_word`], never from a `format!` literal (`28G` §0).
 fn why_words(slug: &str, values: &[&str]) -> String {
-    why_words_at(slug, None, values)
+    dorc_aid::said::words_text(slug, None, values)
 }
 
 /// [`why_words`] for a registry row whose words are keyed by occurrence.
-///
-/// This is the ONE seat that interleaves a computed value into a registry line, and therefore the
-/// one place a value carrying bytes we did not write can enter our own words. The registry words
-/// are never encoded — they are ours, and encoding them twice would be a defect — while every
-/// value passes the display seat first (`sinv-sink-encoding`). A chrome line renders as ONE span
-/// (`a-chrome-line-is-one-span`), so the value cannot carry its own foreign-text span here and
-/// must instead arrive already safe.
 fn why_words_at(slug: &str, occurrence: Option<usize>, values: &[&str]) -> String {
-    let encoded: Vec<String> = values
-        .iter()
-        .map(|value| dorc_aid::display::encode_foreign(value, WHY_VALUE_CAP))
-        .collect();
-    let borrowed: Vec<&str> = encoded.iter().map(String::as_str).collect();
-    dorc_aid::arrangement::arrangement_sentence(
-        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-        slug,
-        occurrence,
-        &borrowed,
-    )
+    dorc_aid::said::words_text(slug, occurrence, values)
 }
-
-/// The display budget for one computed value on the why surface: a coordinate, an address, a
-/// speaker, a `N|command` reference. Generous enough that nothing the corpus produces is touched,
-/// bounded so a pathological book word cannot own the whole render.
-const WHY_VALUE_CAP: usize = 240;
-
-/// The display budget for one quoted line of somebody else's source. Wider than a value's because
-/// a wrapped-off source line is a worse lie than a long one, and still bounded.
-const WHY_SOURCE_CAP: usize = 512;
 
 /// The gutter glyph a chain row wears in the DEFAULT render (`28E` §7
 /// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). ASCII
@@ -3974,48 +3949,6 @@ struct ChainLink {
     /// The speaker's own source, inlined beneath the explanation: the arm plus the author's
     /// adjacent comment (`27W:rul-report-surface-massaging`). Not our bytes.
     excerpt: Option<Excerpt>,
-}
-
-/// A rendered fragment of the why surface, and where its bytes came from.
-///
-/// Carrying the origin past composition is what keeps `28G` §0 honest: the bytes reach weft already
-/// interleaved (`a-chrome-line-is-one-span`), so without this the span map would name the seat that
-/// assembled a line rather than the entry an edit has to rewrite. It also keeps the two classes
-/// apart — registry words are rephrasable, a computed value is not, and rewriting one would be
-/// lying about the world.
-#[derive(Clone)]
-enum Said {
-    /// One registry-sourced line, with the arrangement slug it was composed from.
-    Words(&'static str, String),
-    /// A value the engine computed: a coordinate, an address, a count.
-    Value(String),
-    /// Prose the why-lens flattened to a string before this seat could see its parts — the standing
-    /// `289:seam-whylens-render-seat`. It is not editable and cannot yet name the row it came from;
-    /// giving it a real seat is `28G` Phase W4's.
-    Lens(String),
-}
-
-impl Said {
-    /// One registry line, its values interleaved.
-    fn words(slug: &'static str, values: &[&str]) -> Self {
-        Said::Words(slug, why_words(slug, values))
-    }
-
-    fn text(&self) -> &str {
-        match self {
-            Said::Words(_, text) | Said::Value(text) | Said::Lens(text) => text,
-        }
-    }
-
-    /// The fragment as an attributed run. `part` names the seat for anything with no registry
-    /// entry of its own to point at.
-    fn run(&self, part: &'static str) -> Run<Face> {
-        match self {
-            Said::Words(slug, text) => dorc_aid::weave::words(text.clone(), slug),
-            Said::Value(text) => dorc_aid::weave::value(text, part, "value", WHY_VALUE_CAP),
-            Said::Lens(text) => dorc_aid::weave::value(text, "why-lens", "reason", WHY_SOURCE_CAP),
-        }
-    }
 }
 
 /// The label a NEXT STEPS row wears. Registry-homed by ordinal like [`verb_word`] — the label SET
