@@ -1799,6 +1799,26 @@ mod tests {
         assert!(!interpretation.contains("foreign"));
     }
 
+    /// A whole-page arrangement section is one hole-free span, so the first cut of this render
+    /// escaped a sixty-line help page into a single line and buried the edit it was meant to
+    /// expose. With no variables there is nothing here git's word-diff does not show better.
+    #[test]
+    fn a_hole_free_section_renders_as_one_line() {
+        let page = key(0);
+        let baseline = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                page,
+                vec![EditableFragment::Text(String::from("first\nsecond\nthird"))],
+            ),
+        )]);
+        let preview = compile_preview(&baseline, "first\nsecond changed\nthird")
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(
+            render_compile_preview(&preview),
+            "section: code.message#0:0\n  no variables"
+        );
+    }
+
     #[test]
     fn applying_compiled_markers_preserves_duplicate_empty_and_nul_variables() {
         let section = SectionKey {
