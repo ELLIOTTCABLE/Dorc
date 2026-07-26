@@ -3307,9 +3307,24 @@ fn emit_why_lens(
     src: &str,
     _collapse_narrative: &[CollapseNarrative],
 ) {
-    for line in why_lens_lines(why_diags, arena, src) {
-        eprintln!("why: {line}");
+    for reason in why_lens_reasons(why_diags, arena, src) {
+        eprintln!("why: {}", why_lens_line(&reason));
     }
+}
+
+/// The stderr lens's render seat: one reason's fragments, stamped as runs and concatenated.
+///
+/// It stamps the SAME runs the `dorc why` report hands weft (`Said::runs`), and then throws the
+/// attribution away, because a bare stderr line has no span map to carry it. Going through the
+/// stamp anyway is what keeps the two surfaces from drifting — every fragment is classed once, so
+/// the book's own bytes are encoded here for the same reason they are there
+/// (`ask-why-lens-stderr-unencoded`).
+fn why_lens_line(reason: &Said) -> String {
+    reason
+        .runs("why-lens")
+        .iter()
+        .map(|run| run.text.as_str())
+        .collect()
 }
 
 /// Stage 2 attribution (TC-3 / rul24-divergence-is-the-game): emit, on the why-lens stderr
@@ -4663,7 +4678,7 @@ fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
 /// One attributed fragment as a paragraph.
 fn paragraph(said: &Said, part: &'static str) -> Node<Face> {
     Node::new(NodeKind::Prose(Paragraph {
-        runs: vec![said.run(part)],
+        runs: said.runs(part),
     }))
 }
 
@@ -4719,11 +4734,11 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
                     } else {
                         Quoting::Bare
                     },
-                    runs: vec![link.payload.run("why-chain-row")],
+                    runs: link.payload.runs("why-chain-row"),
                     trailer: link
                         .event
                         .iter()
-                        .map(|event| event.run("why-chain-event"))
+                        .flat_map(|event| event.runs("why-chain-event"))
                         .collect(),
                 },
                 attachments,
@@ -4809,7 +4824,7 @@ fn step_row(row: &StepRow) -> Node<Face> {
             row.label.word(),
             "why-next-step-label",
         )],
-        body: vec![row.body.run("why-next-step")],
+        body: row.body.runs("why-next-step"),
         attachments: Vec::new(),
     }))
 }
@@ -5092,7 +5107,7 @@ fn emit_why_report(
                             }),
                         )
                     } else if let Some(reason) = top_run_reason(span, why_diags, arena, book_src) {
-                        (vec![Said::Lens(reason)], AggregateClass::Quiet, None)
+                        (vec![reason], AggregateClass::Quiet, None)
                     } else if probe.unresolvable.contains(&step.leaf)
                         && !is_structurally_unprobeable(&command)
                     {
@@ -5249,9 +5264,7 @@ fn plain_chain(site: &WhySite) -> ChainRender {
     let (because, rest) = site
         .reasons
         .split_first()
-        .map_or((String::new(), &[][..]), |(head, tail)| {
-            (head.text().to_owned(), tail)
-        });
+        .map_or((String::new(), &[][..]), |(head, tail)| (head.text(), tail));
     ChainRender {
         crossed: String::new(),
         claimant: String::new(),
@@ -5421,7 +5434,7 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
         if !runs.is_empty() {
             runs.push(dorc_aid::weave::mark(" ", "why-item-reason-gap"));
         }
-        runs.push(reason.run("why-item-reason"));
+        runs.extend(reason.runs("why-item-reason"));
     }
     Node::new(NodeKind::Banner(Banner {
         headline: vec![
@@ -5596,7 +5609,7 @@ fn receipt_row(said: &Said) -> Node<Face> {
     Node::new(NodeKind::Labeled(LabeledRow {
         table: Some(Face::Table(RECEIPT_TABLE.to_owned())),
         label: Vec::new(),
-        body: vec![said.run("why-receipt")],
+        body: said.runs("why-receipt"),
         attachments: Vec::new(),
     }))
 }
@@ -5610,11 +5623,11 @@ fn top_run_reason(
     why_diags: &[Diag],
     arena: &ProvArena,
     book_src: &str,
-) -> Option<String> {
+) -> Option<Said> {
     why_diags.iter().find_map(|d| {
         let psp = d.primary.span()?;
         (psp.lo.0 >= span.lo.0 && psp.lo.0 < span.hi.0)
-            .then(|| dorc_aid::diag::why(d, arena, book_src).map(|e| e.reason))
+            .then(|| dorc_aid::diag::why(d, arena, book_src).map(|e| Said::Parts(e.parts)))
             .flatten()
     })
 }
@@ -5666,9 +5679,9 @@ fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
     format!("{kind}:{entity}")
 }
 
-/// The why-lens render + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so
-/// the dedup is unit-testable (`x2-fd1`). For each caused-⊤ diag it renders the "why did this run"
-/// line via [`dorc_aid::diag::why`], showing a given cause-SITE once.
+/// The why-lens reasons + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so
+/// the dedup is unit-testable (`x2-fd1`). For each caused-⊤ diag it takes the "why did this run"
+/// reason from [`dorc_aid::diag::why`], showing a given cause-SITE once.
 ///
 /// stage-4 DEDUP KEY = `(cause, site)`, NOT the cause [`dorc_core::ProvId`] alone (`x2-fd1` fix,
 /// `224` §10): under function inlining two call-sites splice the SAME body `AstId` (`inv-leaf-seam`)
@@ -5679,9 +5692,9 @@ fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
 /// first-occurrences — `ProvId` is `!Ord` (no `BTreeSet`) and the diags arrive in node order, so
 /// first-seen order is deterministic (`inv-determinism`). The only suppression built (no general
 /// subsystem — `22D` §1 stage-4).
-fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<String> {
+fn why_lens_reasons(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Said> {
     let mut shown: Vec<(dorc_core::ProvId, dorc_aid::diag::SiteId)> = Vec::new();
-    let mut lines = Vec::new();
+    let mut reasons = Vec::new();
     for diag in why_diags {
         if let Some(key) = cmdsub_cause_site(diag) {
             if shown.contains(&key) {
@@ -5690,10 +5703,10 @@ fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Strin
             shown.push(key);
         }
         if let Some(explanation) = dorc_aid::diag::why(diag, arena, src) {
-            lines.push(explanation.reason);
+            reasons.push(Said::Parts(explanation.parts));
         }
     }
-    lines
+    reasons
 }
 
 /// The stage-4 render-dedup key a why-lens diag carries, if any: `(⊤-cause, site)`. Only a
@@ -5803,7 +5816,7 @@ mod why_lens_dedup_tests {
             cmdsub_top(&mut arena, 3, body),
             cmdsub_top(&mut arena, 7, body),
         ];
-        let lines = super::why_lens_lines(&diags, &arena, "apt_install \"$(curl a)\"");
+        let lines = super::why_lens_reasons(&diags, &arena, "apt_install \"$(curl a)\"");
         assert_eq!(
             lines.len(),
             2,
@@ -5821,7 +5834,7 @@ mod why_lens_dedup_tests {
             cmdsub_top(&mut arena, 3, body),
             cmdsub_top(&mut arena, 3, body),
         ];
-        let lines = super::why_lens_lines(&diags, &arena, "apt-get install \"$(date)\"");
+        let lines = super::why_lens_reasons(&diags, &arena, "apt-get install \"$(date)\"");
         assert_eq!(
             lines.len(),
             1,
@@ -9303,6 +9316,18 @@ mod not_ours_bytes_tests {
     /// in a render is exactly where the seat that emitted it put it.
     const SOURCE_MARK: &str = "source-mark-9137";
 
+    /// A cause-explanation's own shape, driven with hostile bytes: our coordinate, our quotes, and
+    /// somebody else's line between them ([`dorc_aid::diag::why`]'s parts). The composite is the
+    /// one fragment whose runs are classed INDIVIDUALLY, so the sweep has to see one.
+    fn cause_shaped_parts() -> Said {
+        Said::Parts(vec![
+            Said::Value(hostile_line(5)),
+            Said::Mark("why-cause-quote", " `".to_owned()),
+            Said::foreign(&hostile_line(4), "sweep.book.sh"),
+            Said::Mark("why-cause-quote", "`".to_owned()),
+        ])
+    }
+
     /// One hostile sample folded into a line of somebody else's source.
     fn hostile_line(index: usize) -> String {
         let sample = HOSTILE_SAMPLES
@@ -9341,21 +9366,21 @@ mod not_ours_bytes_tests {
                     &hostile_line(4),
                 ],
             ),
-            analysis_opener: Said::Lens(hostile_line(5)),
+            analysis_opener: cause_shaped_parts(),
             links: vec![ChainLink {
                 tier: SpeechAct::Claimed,
                 speaker: Some(hostile_line(0)),
                 payload: Said::Value(hostile_line(1)),
                 quoted: true,
                 event: Some(Said::words("why-chain-event-rc-only", &[&hostile_line(2)])),
-                explanation: Some(Said::Lens(hostile_line(3))),
+                explanation: Some(Said::foreign(&hostile_line(3), "sweep.oracle.sh")),
                 excerpt: Some(excerpt),
             }],
             participants: vec![2, 3],
             shipped: Some(hostile_line(4)),
             join: Some(Said::Value(hostile_line(5))),
             next_steps: NextSteps {
-                opener: Said::Lens(hostile_line(0)),
+                opener: Said::Value(hostile_line(0)),
                 rows: vec![
                     StepRow {
                         label: StepLabel::Fix,
@@ -9378,7 +9403,7 @@ mod not_ours_bytes_tests {
             foil: foil_word(&dorc_plan::Disposition::Run),
             reasons: vec![Said::Value(hostile_line(5))],
             class: AggregateClass::Improvement,
-            improvement: Some(Said::Lens(hostile_line(0))),
+            improvement: Some(Said::foreign(&hostile_line(0), "sweep.oracle.sh")),
         };
         let receipt = Receipt {
             at: None,
@@ -9411,7 +9436,7 @@ mod not_ours_bytes_tests {
         nodes.push(aggregate_item(
             &site,
             &format!("{SOURCE_MARK}.book.sh"),
-            &[&Said::Lens(hostile_line(1))],
+            &[&cause_shaped_parts()],
         ));
         nodes.extend(chain_nodes(&plain_chain(&site)));
         nodes
