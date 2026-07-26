@@ -17,7 +17,13 @@ class-keyed row — NEVER a `format!` literal — span-stamped through the tagge
 render, so the outputs remain reverse-inferable from loom text (the `282`
 pipeline extended, not bypassed). Per-phase acceptance: the new renders either
 round-trip prose-bless, or are lock-edit-only with the cause documented (the
-faceless/sequence-structured classes). The `28G` strawmen are the DESIGN TARGETS
+faceless/sequence-structured classes). One class of displayed string is NOT ours
+and must not be treated as if it were: source inlined for display — oracle arms,
+their authors' comments, as-shipped guard sh (W2's show-the-code rows; the
+strawmen's `as-written:` gutters). It rides the tagged render's foreign-text
+region rather than a row, and is escaped at the terminal edge like any other
+not-ours bytes (`28D:must-encode-per-surface`) — W2 is its first consumer, so
+the tagging lands there rather than being retrofitted. The `28G` strawmen are the DESIGN TARGETS
 the renderer converges toward; divergences get flagged in landing reports, never
 silently absorbed.
 
@@ -71,7 +77,10 @@ Consumes already-minted data; still pre-parts-model; same-or-next lane:
   WITH the whylog/narrative version-coupling the caveat demands.
 - The participating-lines block: presence-complete over the asked question's
   CFG/value closure, gutter rows; ANALYSIS selects (presence-complete,
-  density-selected).
+  density-selected). The block names the closure it is complete OVER — read at
+  03:40, an unqualified "participating lines" becomes "nothing else was
+  involved", which is a claim about the world rather than about the closure
+  (`28D:must-never-assert-a-negative`).
 
 ### Phase W3 — the surface fold, gated (NEXT; medium; the hardening bill)
 
