@@ -129,7 +129,7 @@ apt_get__predict() {
 }
 apt_get__predict 'install' '-y' 'multi
 line'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
-# site:1 skip-unresolvable
+# site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

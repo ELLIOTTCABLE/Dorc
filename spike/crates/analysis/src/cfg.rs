@@ -1203,7 +1203,7 @@ impl<'a> Builder<'a> {
     /// definition's body commands are NEVER independent plan/apply Step LEAVES — the body text
     /// renders verbatim inside the `name() { … }` definition, and its effects reach the analysis
     /// only via the per-call splices. Pre-arch-2 these detached commands surfaced as
-    /// `MustRun`/`skip-unresolvable` leaves of their own (unreachable, harmless, but noisy and
+    /// `MustRun`/`unresolvable-no-probe` leaves of their own (unreachable, harmless, but noisy and
     /// double-counting the spliced copy); marking them non-leaf collapses the definition to its
     /// proper "no runnable leaf of its own" shape.
     ///

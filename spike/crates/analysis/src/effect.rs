@@ -2095,7 +2095,7 @@ command__predict() {
         // body commands are not independent plan/apply leaves (`i-3`: a definition's body runs
         // only via a call, which would splice it). So `p() { apt-get install nginx; }\necho hi`
         // has exactly ONE leaf — the top-level `echo hi` — and the install does NOT surface as
-        // a `MustRun`/`skip-unresolvable` leaf of its own. (This re-homes the find-A
+        // a `MustRun`/`unresolvable-no-probe` leaf of its own. (This re-homes the find-A
         // reachability intent: an unreachable funcdef body advertises no elidable establish.)
         let (mut i, idx, _s) = package_setup();
         let classes = classify_src("p() { apt-get install nginx; }\necho hi", &mut i, &idx);

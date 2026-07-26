@@ -1,7 +1,7 @@
 # probe-results: site-keyed records (task-D1 WIRE). Grammar:
 #   site <leafid> effect=<holds|absent|cant-tell>
 # site 0 = `set -u`; site 1 = hork (opaque wall). sites 2/3 sit PAST the wall; at HEAD their
-# establish-probes never ship (skip-unresolvable), so these records are consumed by nothing
+# establish-probes never ship (unresolvable-no-probe), so these records are consumed by nothing
 # (the xfail's gate-1 half). Under the guard tier the vouched sites keep their read-only probes.
 # site 2 (curl) holds ⇒ guard minted — the single-operand invocation's check body must not DIE
 #   on its `"$2"` read under set -u (the 23C-fd2 crash); the mitigation runs curl bare via
