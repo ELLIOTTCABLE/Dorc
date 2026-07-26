@@ -4,6 +4,13 @@
 //! every width. Each test states the invariant it exists to defend, because an
 //! invariant nobody can name is one nobody will preserve.
 
+// An integration test is its own crate to clippy, so `allow-expect-in-tests`
+// reaches `#[test]` bodies but not module-level helpers like `body_column`.
+#![expect(
+    clippy::expect_used,
+    reason = "a test helper whose fixture must be present: absence has to fail the trial, not be handled"
+)]
+
 use weft::{
     Branch, CodeBlock, CodeCell, CodeLine, Document, Frame, Instance, Join, LabeledRow,
     Literalness, Node, NodeKind, Paragraph, Payload, Provenance, Quoting, Rendered, Reservation,
