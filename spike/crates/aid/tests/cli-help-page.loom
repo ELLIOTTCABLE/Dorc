@@ -36,8 +36,8 @@ options:
   --whylog-dir <dir>    where receipts are written and read
   --no-whylog           write no receipt for this run
   --last                answer from the most recent receipt (what `why` does anyway)
-  --all                 for `why`, also list the collapse classes this build has no
-                        narration for yet
+  --all                 for `why`, print everything the engine holds: every link,
+                        unselected, plus collapse classes with no narration yet
   --debug-argv          echo the engine's per-site resolved argv to stderr
   -h, --help            print this help to stdout and exit 0
   --version             print the version to stdout and exit 0
