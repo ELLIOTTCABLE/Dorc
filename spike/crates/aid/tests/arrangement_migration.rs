@@ -51,7 +51,7 @@ fn the_why_pointer_line_is_byte_identical() {
 fn the_lint_sentences_are_byte_identical() {
     assert_eq!(
         rendered("lint-clean-sentence", &["3", "s", "1", ""]),
-        "dorc lint: clean — nothing found across 3 files, 1 source."
+        "dorc lint: clean -- nothing found across 3 files, 1 source."
     );
     assert_eq!(
         rendered(

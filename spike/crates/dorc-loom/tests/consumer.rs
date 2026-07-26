@@ -327,7 +327,7 @@ fn applied_template_regenerates_complete_multi_replay_case() {
     let baseline = consumer
         .editable_baseline(&case)
         .expect("editable baseline");
-    let original = "sm coordinate sm.dorc.Package:nginx resolved DANGLING — the kind's resolver reports no such entity (a likely typo / stale name); it degrades to may-alias (the site runs)";
+    let original = "sm coordinate sm.dorc.Package:nginx resolved DANGLING -- the kind's resolver reports no such entity (a likely typo / stale name); it degrades to may-alias (the site runs)";
     assert!(baseline.render().text().contains(original));
     let dirty = baseline.render().text().replace(
         original,
