@@ -58,6 +58,54 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   note. The tier-ORDERING question is open in-chat (the set is kinds, not a
   monotonic scale; code `Ord` is mechanical map-key determinism only; semantic
   ordering stays the `28E:lean-ordering-is-a-seam` seam).
+- **lane-w3-fold MAP LANDED + FOLDED** @ `16cdfb1e` (`_w3-map-DRAFT.md`;
+  read-only, stopped at checkpoint as briefed). Bottom line ACCEPTED as ruled
+  below: **OPT-IN FOLD, with the whole hardening bill landed anyway** — the
+  seven bill items are ≈ one lane, but the default-on flip activates MORE
+  than the seven: the FNV-1a-64 book digest (law-named:
+  rul-fixture-identity-never-production forbids FNV reaching default
+  persistence), unscoped retention (r30-owned by
+  `28D:must-retention-is-one-decision`), Windows restrictive-mode honesty
+  (real DACLs need FFI, forbidden workspace-wide; the honest mitigation is a
+  per-user profile root + a stated contract), and the desync-refusal eating
+  the receipt on the edited-book morning. Surface folds now; durable stays
+  flag-gated; r30's flip = one line + digest + retention design.
+- **Conductor rulings on the W3 map (execute-half charter):**
+  **rul-w3-optin-fold-full-bill** — as above; the `28D` gate's opt-in branch
+  is the sanctioned outcome, no partial credit taken.
+  **rul-safe-store-is-cli-local** — the `FsReceiptStore` reuse is blocked by
+  the `dorc-loom → dorc-cli` dep cycle; the safe-write shapes (exclusive
+  create, unix mode, capped index) land as a cli-local module citing
+  `FsReceiptStore` as reference with a churn-avoidance-disclosure note; a
+  shared crate only when a third consumer appears (simplicity > structure;
+  ~100 lines of well-understood duplication, disclosed).
+  **rul-write-failure-is-error-floor** — whylog persistence failure is an
+  ERROR-floor code family, visible on the apply console (advisory would be
+  suppressed under `apply` — exactly the run whose receipt matters most;
+  22F's error floor is the sanctioned channel).
+  **rul-path-hint-must-match-its-doc** — `tc-path-hint-capability-widening`
+  is a REAL invariant lie (doc says "never a source-loading capability"
+  twice; `load_whylog_replay` uses it as one, unbounded, pre-check): the
+  execute half makes code match doc — bounded read, digest-checked before
+  any trust, or the hint stops proposing loads.
+  **rul-digest-lands-now** — FNV→dependency-free SHA-256 rides the execute
+  half (M): law-named surface; landing it now removes an r30 flip-blocker
+  (old durables breaking is sanctioned by strawman-formats).
+  **Accepted as proposed**: explicit `--results` respell of the 8 in-corpus
+  why invocations (transcripts unchanged; ambient stdin/tty alternatives
+  rejected) · the sibling-note relative-path fix (~10 lines) · the git
+  MATCHES-HEAD line in its S form (Repository-shaped trait in main.rs, pure
+  `SourceMatch` crossing, off/injected under test, hung-git falls to
+  absence); the "HEAD has drifted" capped history walk is DEFERRED (M) ·
+  sensitivity-contract mechanism lands with `sm `-tier prose (the prose act
+  stays conductor/human).
+  **DEFERRED to r30, banked**: the desync-eats-receipt redesign
+  (replay-with-drift-disclosure is design work coupled to the git line's
+  drifted wording + retention) · retention · default-on.
+  **AWAITING HUMAN ACK**: the `--trust-footprints` → `--risk-faultless-skips`
+  rename — priced by the map at S: one const + three parser lines, 6 looms
+  re-blessed in lockstep, ~6 rendered lines, one help-page lock row via its
+  loom; sequenced after the SpeechAct fold.
 - **OPAQUE W25 STAGE COMPLETE + BLIND-FOLDED** @ merge `15edfb05` (5 commits,
   no STOP; per protocol the report carried gates only — all green at its tip,
   1441 tests — and the conductor inspected nothing; merge output suppressed;
