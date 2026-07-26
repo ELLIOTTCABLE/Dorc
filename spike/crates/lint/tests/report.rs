@@ -97,7 +97,7 @@ fn clean_book_is_silent_with_a_positive_sentence() {
     assert!(clean.findings.is_empty());
     let human = render::render_human(&clean);
     assert!(
-        human.contains("clean — nothing found"),
+        human.contains("clean -- nothing found"),
         "positive clean sentence: {human}"
     );
 }

@@ -82,7 +82,7 @@ fn an_edited_help_word_reaches_the_lock_and_the_re_rendered_case() {
     let corpus = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");
     let lock = generate_arrangement_lock(&consumer, &corpus).expect("regenerate the lock");
     assert!(
-        lock.contains("Words::Authored(&[\"dorc — specification-mining"),
+        lock.contains("Words::Authored(&[\"dorc -- specification-mining"),
         "the regenerated lock carries the edited words, no longer marked migrated"
     );
 

@@ -5,4 +5,4 @@ why: 27S did-you-mean: a near-miss is a typo, and naming the intended mode costs
 ---
 -- replay --
 $ dorc pln --book=webhost.sh
-error[cli-unknown-mode]: sm unknown mode `pln` — did you mean `plan`?
+error[cli-unknown-mode]: sm unknown mode `pln` -- did you mean `plan`?

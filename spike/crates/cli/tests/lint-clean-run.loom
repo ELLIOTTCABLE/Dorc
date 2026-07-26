@@ -9,4 +9,4 @@ apt-get install -y nginx
 
 -- replay --
 $ dorc lint --source=analysis-diagnostics book.sh
-dorc lint: clean — nothing found across 1 file, 1 source.
+dorc lint: clean -- nothing found across 1 file, 1 source.
