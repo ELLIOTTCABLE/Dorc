@@ -1503,7 +1503,7 @@ const WHYLOG_CAP: usize = 4_000_000;
 )]
 #[expect(
     clippy::too_many_lines,
-    reason = "one linear admission ladder: select the durable, bound it, read back the book and oracles it names, check the framing, then admit the records. Every rung refuses on its own terms and splitting it would scatter the ONE place a replay's inputs are validated"
+    reason = "one linear admission ladder: select the durable, bound it, read back the book and oracles it names, check the framing, then admit the records. Every rung answers on its own terms — refusing, or in the book-digest rung's case degrading — and splitting it would scatter the ONE place a replay's inputs are validated"
 )]
 fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
