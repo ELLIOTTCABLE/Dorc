@@ -213,4 +213,17 @@ mod tests {
             assert!(!encode_foreign(&"\u{1b}".repeat(400), cap).is_empty());
         }
     }
+
+    /// The truncation marker is three ASCII dots, on both encodings and every caller
+    /// (`rul-ascii-output-forever`): one shared seat is exactly what makes it one marker.
+    #[test]
+    fn the_truncation_marker_is_ascii() {
+        assert!(ELLIPSIS.is_ascii() && ELLIPSIS == "...");
+        for capped in [
+            encode_line(&"z".repeat(400), 32),
+            encode_foreign(&"z".repeat(400), 32),
+        ] {
+            assert!(capped.ends_with("...") && capped.is_ascii(), "{capped:?}");
+        }
+    }
 }

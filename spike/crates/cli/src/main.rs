@@ -7762,10 +7762,22 @@ mod tests {
             "capped at REPORT_RAW_CAP chars (+ the three-dot ASCII ellipsis)"
         );
         assert!(capped.ends_with("..."), "an over-cap tail is ellipsized");
+        assert!(
+            capped.is_ascii(),
+            "the truncation marker is ASCII (`rul-ascii-output-forever`): {capped:?}"
+        );
         let cleaned = sanitize_report_raw("decline unsound has\ta\ttab and \u{7} bell");
         assert!(
             !cleaned.contains('\u{7}') && !cleaned.contains('\t'),
             "control bytes are neutralized (a minimal terminal-safety floor)"
+        );
+        // An author's tail is host-produced text on its way to a terminal, so the lane covers
+        // the characters that change how their NEIGHBOURS display as well as the ones a terminal
+        // acts on directly.
+        let flipped = sanitize_report_raw("decline unsound \u{202e}yek regnad\u{202c} \u{feff}");
+        assert!(
+            !flipped.chars().any(dorc_aid::display::is_format_or_bidi),
+            "bidi and zero-width format controls are neutralized too: {flipped:?}"
         );
     }
 
