@@ -334,9 +334,9 @@ run = [
 ]
 
 [tasks.coverage]
-description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table."
+description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table, or a book plus its oracles for a one-off."
 dir = "spike"
-run = "sh tools/coverage.sh"
+run = "cargo run -q -p internal-tooling -- coverage"
 
 # BROKEN as of 2026-07-26, and not by this wiring: the script pipes the raw
 # probe-results.txt to dorc, but the round-trip now consumes a framed `dorc-records/1`

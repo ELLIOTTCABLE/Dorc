@@ -7,17 +7,20 @@
 
 use std::process::ExitCode;
 
+mod coverage;
 mod hook_selftest;
 
 fn main() -> ExitCode {
-    match std::env::args().nth(1).as_deref() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
         Some("hook-selftest") => hook_selftest::run(),
+        Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
         other => {
             eprintln!(
                 "internal-tooling: unknown task {:?}",
                 other.unwrap_or("<none>")
             );
-            eprintln!("tasks: hook-selftest");
+            eprintln!("tasks: hook-selftest, coverage");
             ExitCode::from(2)
         }
     }
