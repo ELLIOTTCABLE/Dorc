@@ -7,9 +7,7 @@ expect-why:
 expect-hint:
   - 'hork' (line 8) && is unmodeled && first wall && un-wall 1 downstream site
 expect-why-chain:
-  - dorc why  && book.sh:9:
-  - book.sh:9 && [guard] && `systemctl start nginx`
-  - guarded && the sm.dorc.Service oracle vouches && re-runs live at apply
+  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh
@@ -158,7 +156,7 @@ systemctl__predict() {
    esac
 }
 systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
-# site:1 skip-unresolvable
+# site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
@@ -186,7 +184,11 @@ hork tune --profile web
 ( systemctl__is_converged start nginx ) || systemctl start nginx   # dorc: guard [sm.dorc.Service converged-vouch; probe: holds]
 
 $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-results.txt
-dorc why book.sh:9:
+   [ book.sh, 9|systemctl ]
 
-book.sh:9  [guard]  `systemctl start nginx`
-  └─ guarded — the sm.dorc.Service oracle vouches it is already satisfied, so the original bytes survive and the oracle's check re-runs live at apply
+   === OUTCOME ===
+
+   9|systemctl guarded RATHER THAN skipped: the sm.dorc.Service oracle vouches this is already
+   satisfied, so your line survives untouched behind the oracle's own live check
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)

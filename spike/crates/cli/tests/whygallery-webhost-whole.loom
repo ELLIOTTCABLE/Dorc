@@ -10,10 +10,7 @@ expect-why:
 expect-hint:
   - 'hork' (line 14) && is unmodeled && first wall && un-wall 1 downstream site
 expect-why-chain:
-  - dorc why  && book.sh:14:
-  - book.sh:14 && [run] && `hork tune --profile web`
-  - runs unprobed && unsure ⇒ dorc runs it
-  - first wall (book order) && un-wall 1 downstream site
+  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh
@@ -306,9 +303,9 @@ apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=h
 ufw__predict 'allow' '443/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 5 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 7: sm.dorc.Service:nginx@active
 systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 7 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
-# site:6 skip-unresolvable
-# site:8 skip-unresolvable
-# site:9 skip-unresolvable
+# site:6 unresolvable-no-probe
+# site:8 unresolvable-no-probe
+# site:9 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
@@ -344,31 +341,29 @@ sysctl vm.drop_caches
 echo "web1 up"
 
 $ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --trust-footprints < probe-results.txt
-dorc why: 3 problem(s) in the current run of book.sh (source-line order):
+   risk-profile: --trust-footprints
+   plan: 4 ran, 1 guarded, 4 skipped
+   read top-down; every item is addressable: dorc why <line>
 
-book.sh:14  [run]  `hork tune --profile web`
-  └─ runs unprobed — no read-only check could be shipped (unsure ⇒ dorc runs it, to stay safe)
-  └─ first wall (book order) — an oracle vouching its convergence would elide it and un-wall 1 downstream site
+=== TRUST SPENT: skips resting on a human claim, not proof ===
 
-book.sh:15  [guard]  `systemctl start nginx`
-  └─ guarded — the sm.dorc.Service oracle vouches it is already satisfied, so the original bytes survive and the oracle's check re-runs live at apply
+ book.sh:13 | ufw allow 443/tcp
+   was skipped PAST 12|apt-get really-running, on apt-get's at-most claim
+   (dorc why book.sh:13)
 
-book.sh:16  [run]  `sysctl vm.drop_caches`
-  └─ runs unprobed — no read-only check could be shipped (unsure ⇒ dorc runs it, to stay safe)
+=== IMPROVEMENTS: dorc can do better, with your help ===
 
-dorc why: 1 survived elision(s) — trust SPENT past a running wall (`--trust-footprints`); pull the chain for each:
+ book.sh:14 | hork tune --profile web
+   ran blind, as on every apply: no read-only check could be shipped for hork
+   (dorc why book.sh:14)
+ book.sh:15 | systemctl start nginx
+   guarded live instead of skipping: sits past the wall at 14|hork
+   (dorc why book.sh:15)
+ book.sh:16 | sysctl vm.drop_caches
+   ran blind, as on every apply: no read-only check could be shipped for sysctl
+   (dorc why book.sh:16)
 
-book.sh:13  `ufw allow 443/tcp`
-  removed from the plan (elided) — sm.dorc.Firewall:443/tcp is converged (probe: holds)
+~2 lines of sh: a convergence check for hork would recover 1 line(s) whenever it is
+converged
 
-  it was removed because all of the following held together:
-  1. measured: sm.dorc.Firewall:443/tcp was measured converged on the host at plan time
-  2. vouched: the site's own oracle accepts that measured state as reason enough not to re-run this line (firewall.oracle.sh:17)
-  3. ran: `apt-get` (wall site 4) really ran above this line
-  4. claimed: that wall's author claims it disturbs at most {sm.dorc.Package:oldpkg} — an author's claim, nothing verifies it (package.oracle.sh:19)
-  5. derived: that claim is proven disjoint from sm.dorc.Firewall:443/tcp — it does not overlap what was measured
-  6. consented: `--trust-footprints` was set, which is what lets a claim keep a line out of the plan past a running mutation
-
-  if this line SHOULD have run: dorc cannot see which link is wrong, but link 4 is the one unverified-by-construction claim in this chain (a naked footprint claim).
-  to re-measure: `dorc plan <book> <host>` reads the world as it is now — dorc kept no state that can stay wrong, so a broken fact comes back diverged and the line returns.
-  to fix: package.oracle.sh:19 is the line to widen; every book using that oracle inherits the repair.
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)

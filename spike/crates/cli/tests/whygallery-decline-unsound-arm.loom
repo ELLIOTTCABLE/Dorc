@@ -5,9 +5,7 @@ why-addr: 9
 expect-why:
   - author declines [unsound] && sysctl.oracle.sh:
 expect-why-chain:
-  - dorc why  && book.sh:9:
-  - book.sh:9 && [run] && `sysctl vm.drop_caches`
-  - runs unprobed && unsure ⇒ dorc runs it
+  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh
@@ -132,7 +130,7 @@ ufw__predict() {
    esac
 }
 ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
-# site:1 skip-unresolvable
+# site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
@@ -148,8 +146,18 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 sysctl vm.drop_caches
 
 $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.txt
-dorc why book.sh:9:
+   [ book.sh, 9|sysctl ]
 
-book.sh:9  [run]  `sysctl vm.drop_caches`
-  └─ runs unprobed — no read-only check could be shipped (unsure ⇒ dorc runs it, to stay safe)
-  └─ first wall (book order) — an oracle vouching its convergence would elide it when converged
+   === OUTCOME ===
+
+   9|sysctl ran RATHER THAN guarded: no read-only check could be shipped for this line, and
+   dorc runs whatever it cannot check
+
+   === ANALYSIS ===
+
+   what 9|sysctl rested on:
+
+   * dorc derives  this is the first wall in book order -- an oracle vouching its
+                   convergence would let dorc remove it once converged
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)

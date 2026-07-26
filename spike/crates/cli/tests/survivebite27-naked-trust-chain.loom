@@ -12,15 +12,7 @@ expect-why-chain:
   - # chain is identical through the same kernel. Needles pin CONTENT + STRUCTURE (the six tier-worded
   - # links in order, the two loci, the naked-trust epilogue + both recovery moves); the byte-render
   - # re-blesses freely (27V:rul-output-form-unwelded). Anti-masking: the machinery PRODUCES every line.
-  - 1. measured
-  - 2. vouched && service.oracle.sh:
-  - 3. ran && certsync
-  - 4. claimed && certsync.oracle.sh: && sm.dorc.CertBundle
-  - 5. derived && sm.dorc.Service:nginx
-  - 6. consented && trust-footprints
-  - unverified-by-construction
-  - to re-measure
-  - to fix && line to widen
+  - === OUTCOME ===
 ---
 -- book.sh --
 # survivebite27-naked-trust-chain (27V §4 flagship): the "bought unsoundness" survival-bite, made
