@@ -112,6 +112,18 @@ description = "Build the spike workspace. Force this fresh before trusting any e
 dir = "spike"
 run = "cargo build --workspace"
 
+[tasks.dorc]
+description = "Run the product: `mise run dorc -- plan --book=book.sh -o pkg.oracle.sh`. Rebuilds first if stale, so the dev loop always exercises your edit rather than whatever target/ happened to hold. Exit codes are dorc's own (2 usage, 10 parse, the lint family), not cargo's."
+dir = "spike"
+# `-q` matters more than tidiness: dorc's stdout is a CONTRACT (exactly probe-then-apply), so a
+# run must be piping-safe. cargo writes progress to stderr and `-q` drops the rest, leaving stdout
+# byte-identical to the binary's — `mise run dorc -- apply --book=b.sh > out.sh` is honest.
+#
+# mise prints `ERROR task failed` for ANY nonzero exit, so a parse-error run (exit 10) reads as a
+# tooling failure when it is a legitimate dorc outcome that still shipped its artifact. Read
+# dorc's own exit code, not mise's verdict on it.
+run = "cargo run -q -p dorc-cli --bin dorc --"
+
 [tasks.test]
 description = "The WHOLE suite, HUMAN-facing: unit tier + the e2e corpus + the loom corpus (the latter two ride the run as harness=false targets). Full per-test output, progress, and context — the interactive mode; agents want `gate:full-quiet` instead. Args filter by trial name. DORC_E2E_QUIET=1 selects the terse per-case format."
 dir = "spike"
