@@ -818,6 +818,20 @@ mise exec -- cargo test -p dorc-cli --test looms    # the loom corpus alone: par
   share one `target/`. Never run BLESS while any build-agent is in flight;
   orchestrator-only, on a freshly-verified binary, resulting diff inspected
   case-by-case. Bless cannot prove an elision RIGHT — review by eye.
+- **two-bless-paths-split-by-directory** — there are TWO blessing authorities and they do not
+  overlap. `dorc-loom compile`/`promote CASE...` publishes the two generated locks
+  (`crates/aid/src/{catalog,arrangement}_lock.rs`) plus the affected cases under
+  `crates/aid/tests/` — in-process renders, no binary, no execution. `BLESS=1 … --test e2e`
+  regenerates everything under `crates/cli/tests/` (`expected.out`, `expected.ran`, and
+  whole-product loom transcripts) by RUNNING the built binary. ORDER matters when both are due:
+  promote first, then rebuild, then the e2e bless — promote rewrites Rust prose the binary prints,
+  so an e2e bless run before the rebuild goldens the pre-promote wording.
+- **bless-honours-the-trial-filter** — the "ALL cases" above is the UNFILTERED run.
+  Bless rides the runner's ordinary trial filter, so `BLESS=1 … --test e2e -- <substring>`
+  re-blesses only the matching trials and leaves every other golden byte-identical
+  (verified against a deliberately-drifted neighbour, 2026-07-26). Scoping a bless this way
+  is how an unrelated drift stops riding in silently; the exclusivity rule above is about
+  the shared `target/`, not about breadth.
 - **one-platform-green-is-not-cross-platform-green** (two live bugs, 2026-07-24) —
   `#[cfg(windows)]` / `#[cfg(unix)]` code is COMPILED ONLY on its own platform, so the
   gates never see the other side and it rots silently. Both landed bugs were invisible

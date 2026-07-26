@@ -2,9 +2,44 @@
 
 use std::fmt;
 
-const MAX_RENDER_SCALARS: usize = 4_096;
-const MAX_ALIGNMENT_STATES: usize = 1_000_000;
-const MAX_REMOVABLE_OCCURRENCES: usize = 12;
+/// The default per-render scalar ceiling: exactly one maximal replay output
+/// ([`MAX_REPLAY_OUTPUT_BYTES`](crate::MAX_REPLAY_OUTPUT_BYTES)), so the transport
+/// never refuses a render the container itself would accept. The real cost bound is
+/// [`TransportLimits::work_ceiling`]; this one only stops the alignment table's
+/// dimensions from being computed over unbounded input.
+pub const DEFAULT_RENDER_SCALAR_CEILING: usize = 64 * 1024;
+
+/// The default alignment work ceiling — dynamic-programming states plus
+/// occurrence checks, counted across one whole transport.
+pub const DEFAULT_ALIGNMENT_WORK_CEILING: usize = 1_000_000;
+
+/// The default per-section bound on variable occurrences considered for removal.
+/// The removal search is exponential in this (`2^n` masks), so it stays small.
+pub const DEFAULT_REMOVABLE_OCCURRENCES: usize = 12;
+
+/// The transport's resource ceilings. [`Default`] is what [`transport_edit`] and
+/// [`transport_edit_allow_removal`] use; a consumer whose renders outgrow them (or
+/// whose host is smaller than this crate assumes) passes its own through
+/// [`transport_edit_with_limits`] / [`transport_edit_allow_removal_with_limits`].
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct TransportLimits {
+    /// Maximum Unicode scalars in either the baseline render or the edited text.
+    pub scalar_ceiling: usize,
+    /// Maximum alignment work for one whole transport.
+    pub work_ceiling: usize,
+    /// Maximum removable variable occurrences considered per section.
+    pub removable_occurrences: usize,
+}
+
+impl Default for TransportLimits {
+    fn default() -> Self {
+        Self {
+            scalar_ceiling: DEFAULT_RENDER_SCALAR_CEILING,
+            work_ceiling: DEFAULT_ALIGNMENT_WORK_CEILING,
+            removable_occurrences: DEFAULT_REMOVABLE_OCCURRENCES,
+        }
+    }
+}
 
 /// An outer render component.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -164,12 +199,29 @@ pub struct EditRefusalEvidence {
     pub edited_context: String,
 }
 
+/// Which ceiling a limit refusal actually hit. Without it the metadata reads as a
+/// size complaint even when the sizes were comfortably inside their ceiling and the
+/// alignment simply cost too much.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[non_exhaustive]
+pub enum AlignmentLimit {
+    /// The baseline render or the edited text exceeded the scalar ceiling.
+    RenderScalars,
+    /// A section carried more removable variable occurrences than the search bound.
+    RemovableOccurrences,
+    /// The alignment exhausted its work budget.
+    AlignmentWork,
+}
+
 /// Resource metadata for a limit refusal.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct AlignmentLimitMetadata {
-    /// Baseline scalar count, capped at the configured render ceiling plus one.
+    /// Which ceiling was hit.
+    pub exceeded: AlignmentLimit,
+    /// True baseline scalar count — never a `ceiling + 1` sentinel, because the one
+    /// number a size refusal owes its reader is HOW FAR over the input was.
     pub baseline_scalars: usize,
-    /// Edited scalar count, capped at the configured render ceiling plus one.
+    /// True edited scalar count.
     pub edited_scalars: usize,
     /// Per-render scalar ceiling.
     pub scalar_ceiling: usize,
@@ -211,7 +263,8 @@ impl fmt::Display for EditRefusal {
         if let Some(limit) = &self.limit {
             write!(
                 f,
-                " scalars {}/{} ceilings {}/{}",
+                " ({:?}): baseline {} scalars, edited {} scalars, scalar ceiling {}, work ceiling {}",
+                limit.exceeded,
                 limit.baseline_scalars,
                 limit.edited_scalars,
                 limit.scalar_ceiling,
@@ -247,14 +300,26 @@ pub fn transport_edit<S: Clone, V: Clone>(
     baseline: &EditableRender<S, V>,
     edited: &str,
 ) -> Result<EditTransport<S, V>, EditRefusal> {
-    transport_edit_with_budget(baseline, edited, None, &mut WorkBudget::new())
+    transport_edit_with_limits(baseline, edited, TransportLimits::default())
+}
+
+/// [`transport_edit`] under caller-chosen ceilings.
+///
+/// # Errors
+/// Returns [`EditRefusal`] for immutable, variable, ambiguous, or over-limit edits.
+pub fn transport_edit_with_limits<S: Clone, V: Clone>(
+    baseline: &EditableRender<S, V>,
+    edited: &str,
+    limits: TransportLimits,
+) -> Result<EditTransport<S, V>, EditRefusal> {
+    transport_edit_with_budget(baseline, edited, None, &mut WorkBudget::new(limits))
 }
 
 /// Attributes an edit while allowing a uniquely inferred omission of variables.
 ///
 /// A selected occurrence is omitted before the required-anchor alignment runs.
 /// Adjacent text coalesces through [`EditableSection::new`]. The search considers
-/// at most twelve occurrences per section.
+/// at most [`TransportLimits::removable_occurrences`] occurrences per section.
 ///
 /// # Errors
 /// Returns [`EditRefusal`] when no unique minimum-removal interpretation exists.
@@ -262,10 +327,20 @@ pub fn transport_edit_allow_removal<S: Clone, V: Clone>(
     baseline: &EditableRender<S, V>,
     edited: &str,
 ) -> Result<EditTransport<S, V>, EditRefusal> {
-    let baseline_scalars = capped_render_scalar_len(baseline);
-    let edited_scalars = capped_scalar_len(edited);
-    if baseline_scalars > MAX_RENDER_SCALARS || edited_scalars > MAX_RENDER_SCALARS {
-        return Err(limit_refusal(baseline_scalars, edited_scalars));
+    transport_edit_allow_removal_with_limits(baseline, edited, TransportLimits::default())
+}
+
+/// [`transport_edit_allow_removal`] under caller-chosen ceilings.
+///
+/// # Errors
+/// Returns [`EditRefusal`] when no unique minimum-removal interpretation exists.
+pub fn transport_edit_allow_removal_with_limits<S: Clone, V: Clone>(
+    baseline: &EditableRender<S, V>,
+    edited: &str,
+    limits: TransportLimits,
+) -> Result<EditTransport<S, V>, EditRefusal> {
+    if let Some(refusal) = scalar_ceiling_refusal(baseline, edited, limits) {
+        return Err(refusal);
     }
     if baseline.text() == edited {
         return Ok(EditTransport::Unchanged);
@@ -284,14 +359,19 @@ pub fn transport_edit_allow_removal<S: Clone, V: Clone>(
             .iter()
             .filter(|fragment| matches!(fragment, EditableFragment::Variable { .. }))
             .count();
-        if occurrences > MAX_REMOVABLE_OCCURRENCES {
-            return Err(limit_refusal(baseline_scalars, edited_scalars));
+        if occurrences > limits.removable_occurrences {
+            return Err(limit_refusal(
+                AlignmentLimit::RemovableOccurrences,
+                baseline,
+                edited,
+                limits,
+            ));
         }
         candidates.push((component_index, occurrences));
     }
 
-    let mut work = WorkBudget::new();
-    for removals in 0..=MAX_REMOVABLE_OCCURRENCES {
+    let mut work = WorkBudget::new(limits);
+    for removals in 0..=limits.removable_occurrences {
         let mut successes = Vec::new();
         for &(component_index, occurrences) in &candidates {
             if removals > occurrences {
@@ -321,7 +401,7 @@ pub fn transport_edit_allow_removal<S: Clone, V: Clone>(
                         }
                     }
                     Err(refusal) if refusal.class() == EditRefusalClass::AlignmentLimitExceeded => {
-                        return Err(limit_refusal(baseline_scalars, edited_scalars));
+                        return Err(refusal);
                     }
                     Err(_) => {}
                 }
@@ -354,10 +434,8 @@ fn transport_edit_with_budget<S: Clone, V: Clone>(
     only_component: Option<usize>,
     work: &mut WorkBudget,
 ) -> Result<EditTransport<S, V>, EditRefusal> {
-    let baseline_scalars = capped_render_scalar_len(baseline);
-    let edited_scalars = capped_scalar_len(edited);
-    if baseline_scalars > MAX_RENDER_SCALARS || edited_scalars > MAX_RENDER_SCALARS {
-        return Err(limit_refusal(baseline_scalars, edited_scalars));
+    if let Some(refusal) = scalar_ceiling_refusal(baseline, edited, work.limits) {
+        return Err(refusal);
     }
     let original = baseline.text();
     if original == edited {
@@ -397,7 +475,12 @@ fn transport_edit_with_budget<S: Clone, V: Clone>(
         }
     }
     match successful.len() {
-        _ if saw_limit => Err(limit_refusal(baseline_scalars, edited_scalars)),
+        _ if saw_limit => Err(limit_refusal(
+            AlignmentLimit::AlignmentWork,
+            baseline,
+            edited,
+            work.limits,
+        )),
         1 => Ok(EditTransport::Edited(successful.remove(0))),
         0 => Err(classify_refusal(baseline, edited)),
         _ => Err(refuse(
@@ -687,21 +770,24 @@ fn section_parts<V>(fragments: &[EditableFragment<V>]) -> (Vec<Slot>, Vec<Anchor
     (slots, anchors)
 }
 
-struct WorkBudget(usize);
+struct WorkBudget {
+    spent: usize,
+    limits: TransportLimits,
+}
 
 impl WorkBudget {
-    fn new() -> Self {
-        Self(0)
+    fn new(limits: TransportLimits) -> Self {
+        Self { spent: 0, limits }
     }
 
     fn reserve(&mut self, amount: usize) -> Result<(), EditRefusalClass> {
-        let Some(next) = self.0.checked_add(amount) else {
+        let Some(next) = self.spent.checked_add(amount) else {
             return Err(EditRefusalClass::AlignmentLimitExceeded);
         };
-        if next > MAX_ALIGNMENT_STATES {
+        if next > self.limits.work_ceiling {
             return Err(EditRefusalClass::AlignmentLimitExceeded);
         }
-        self.0 = next;
+        self.spent = next;
         Ok(())
     }
 }
@@ -779,37 +865,40 @@ fn fragment_text<V>(fragment: &EditableFragment<V>) -> String {
 fn scalar_len(text: &str) -> usize {
     text.chars().count()
 }
-fn capped_scalar_len(text: &str) -> usize {
-    text.chars()
-        .take(MAX_RENDER_SCALARS.saturating_add(1))
-        .count()
-}
-fn capped_render_scalar_len<S, V>(render: &EditableRender<S, V>) -> usize {
+fn render_scalar_len<S, V>(render: &EditableRender<S, V>) -> usize {
     let mut count: usize = 0;
     for component in &render.components {
-        let text = match component {
-            RenderComponent::Structure(text) => text,
-            RenderComponent::FixedVariable { rendered, .. } => rendered,
+        match component {
+            RenderComponent::Structure(text)
+            | RenderComponent::FixedVariable { rendered: text, .. } => {
+                count = count.saturating_add(scalar_len(text));
+            }
             RenderComponent::EditableSection(section) => {
                 for fragment in &section.fragments {
                     let text = match fragment {
                         EditableFragment::Text(text)
                         | EditableFragment::Variable { rendered: text, .. } => text,
                     };
-                    count = count.saturating_add(capped_scalar_len(text));
-                    if count > MAX_RENDER_SCALARS {
-                        return MAX_RENDER_SCALARS.saturating_add(1);
-                    }
+                    count = count.saturating_add(scalar_len(text));
                 }
-                continue;
             }
-        };
-        count = count.saturating_add(capped_scalar_len(text));
-        if count > MAX_RENDER_SCALARS {
-            return MAX_RENDER_SCALARS.saturating_add(1);
         }
     }
     count
+}
+
+/// The scalar-ceiling gate. Counting is exact rather than capped-with-a-sentinel:
+/// both operands are already in memory, so the walk costs what the ceiling check
+/// would have cost anyway, and the refusal can then say how far over the input was.
+fn scalar_ceiling_refusal<S, V>(
+    baseline: &EditableRender<S, V>,
+    edited: &str,
+    limits: TransportLimits,
+) -> Option<EditRefusal> {
+    let baseline_scalars = render_scalar_len(baseline);
+    let edited_scalars = scalar_len(edited);
+    (baseline_scalars > limits.scalar_ceiling || edited_scalars > limits.scalar_ceiling)
+        .then(|| limit_refusal(AlignmentLimit::RenderScalars, baseline, edited, limits))
 }
 fn common_prefix_scalars(left: &str, right: &str) -> usize {
     left.chars()
@@ -864,15 +953,21 @@ fn refuse_with_component(
     }
 }
 
-fn limit_refusal(baseline_scalars: usize, edited_scalars: usize) -> EditRefusal {
+fn limit_refusal<S, V>(
+    exceeded: AlignmentLimit,
+    baseline: &EditableRender<S, V>,
+    edited: &str,
+    limits: TransportLimits,
+) -> EditRefusal {
     EditRefusal {
         class: EditRefusalClass::AlignmentLimitExceeded,
         evidence: Vec::new(),
         limit: Some(AlignmentLimitMetadata {
-            baseline_scalars,
-            edited_scalars,
-            scalar_ceiling: MAX_RENDER_SCALARS,
-            work_ceiling: MAX_ALIGNMENT_STATES,
+            exceeded,
+            baseline_scalars: render_scalar_len(baseline),
+            edited_scalars: scalar_len(edited),
+            scalar_ceiling: limits.scalar_ceiling,
+            work_ceiling: limits.work_ceiling,
         }),
     }
 }

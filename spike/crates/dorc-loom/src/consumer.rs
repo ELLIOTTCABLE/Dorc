@@ -382,12 +382,21 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         let plan = parse_direct_plan(&tokens)?;
-        let source = materialized_source(case, context, plan.book)?;
+        let interner = Interner::default();
+        // World-as-payload, the branch `render_direct_replay` has always had. Without it the
+        // driver declined, so `compile`/`promote` never saw provenance for these cases.
+        let Some(source) = materialized_source(case, context, plan.book) else {
+            let diag = Self::world_of(case).ok()?.0;
+            if plan.machine {
+                return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
+            }
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        };
         if let Some(input) = plan.input {
             let _ = materialized_input(case, context, input)?;
         }
         let (diag, _, filename) = Self::world_of_source(case, plan.book, &source).ok()?;
-        let interner = Interner::default();
         if plan.machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }

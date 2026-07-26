@@ -50,10 +50,9 @@ fn generated_lock_reproduces_the_committed_bytes() {
     );
     let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
     let committed = std::fs::read_to_string(committed_lock()).expect("read committed lock");
-    assert_eq!(
-        generated, committed,
-        "the committed catalog_lock.rs is not a fixpoint of the generator"
-    );
+    if let Some(report) = lock_difference(&generated, &committed, "CatalogEntry") {
+        panic!("the committed catalog_lock.rs is not a fixpoint of the generator\n{report}");
+    }
 }
 
 /// The arrangement registry's half of the same byte-identity gate
@@ -73,9 +72,235 @@ fn generated_arrangement_lock_reproduces_the_committed_bytes() {
     let generated = generate_arrangement_lock(&consumer, &cases).expect("generate lock");
     let committed =
         std::fs::read_to_string(committed_arrangement_lock()).expect("read committed lock");
+    if let Some(report) = lock_difference(&generated, &committed, "ArrangementEntry") {
+        panic!("the committed arrangement_lock.rs is not a fixpoint of the generator\n{report}");
+    }
+}
+
+/// Both lock gates' failure report. A whole-file `assert_eq!` over a generated lock dumps ~120 KB
+/// of identical rows around the one that moved, and a reader has to diff it by eye — a field-order
+/// slip once hid in exactly that dump. This locates the FIRST differing row, names its slug and
+/// field, and shows only the differing neighbourhood of that field's value.
+///
+/// Returns `None` when the two are byte-identical.
+fn lock_difference(generated: &str, committed: &str, entry: &str) -> Option<String> {
+    if generated == committed {
+        return None;
+    }
+    let marker = format!("    {entry} {{\n");
+    // Each chunk after a marker runs to the NEXT marker, so it trails the row's own closing brace
+    // plus whatever separates the rows; cut there, or a row-count change reads as a field change.
+    let rows = |text: &str| -> Vec<String> {
+        text.split(&marker)
+            .skip(1)
+            .map(|chunk| {
+                chunk
+                    .find("\n    },")
+                    .and_then(|end| chunk.get(..end))
+                    .unwrap_or(chunk)
+                    .to_owned()
+            })
+            .collect()
+    };
+    let (left, right) = (rows(generated), rows(committed));
+    for index in 0..left.len().max(right.len()) {
+        match (left.get(index), right.get(index)) {
+            (Some(l), Some(r)) if l == r => {}
+            (Some(l), Some(r)) => return Some(row_difference(index, l, r)),
+            (Some(l), None) => {
+                return Some(format!(
+                    "row {index} `{}` is GENERATED but absent from the committed lock",
+                    row_slug(l)
+                ));
+            }
+            (None, Some(r)) => {
+                return Some(format!(
+                    "row {index} `{}` is COMMITTED but the generator no longer produces it",
+                    row_slug(r)
+                ));
+            }
+            (None, None) => break,
+        }
+    }
+    // Equal row bodies but unequal files: the difference is in the header or the trailer.
+    Some(format!(
+        "every row matches — the difference is in the generated header/trailer ({} vs {} bytes)",
+        generated.len(),
+        committed.len()
+    ))
+}
+
+/// The first differing FIELD of one row, with the value neighbourhood around the first differing
+/// character. Field values reach thousands of characters (a whole help page is one row's word), so
+/// a bare pair of values would restore the haystack this report exists to remove.
+fn row_difference(index: usize, generated: &str, committed: &str) -> String {
+    const CONTEXT: usize = 60;
+    let (left, right): (Vec<&str>, Vec<&str>) =
+        (generated.lines().collect(), committed.lines().collect());
+    for line in 0..left.len().max(right.len()) {
+        let (l, r) = (left.get(line).copied(), right.get(line).copied());
+        if l == r {
+            continue;
+        }
+        let (l, r) = (l.unwrap_or("<row ends>"), r.unwrap_or("<row ends>"));
+        let field = l.split_once(':').map_or("<field>", |(name, _)| name.trim());
+        let at = l
+            .chars()
+            .zip(r.chars())
+            .position(|(a, b)| a != b)
+            .unwrap_or_else(|| l.chars().count().min(r.chars().count()));
+        let from = at.saturating_sub(CONTEXT);
+        return format!(
+            "row {index} `{}` field `{field}` diverges at character {at}\n  generated: {:?}\n  committed: {:?}",
+            row_slug(generated),
+            window(l, from, at.saturating_add(CONTEXT)),
+            window(r, from, at.saturating_add(CONTEXT)),
+        );
+    }
+    format!(
+        "row {index} `{}` differs only in line count",
+        row_slug(generated)
+    )
+}
+
+fn row_slug(row: &str) -> &str {
+    row.lines()
+        .find_map(|line| line.trim().strip_prefix("slug: \""))
+        .and_then(|rest| rest.split_once('"'))
+        .map_or("<unnamed>", |(slug, _)| slug)
+}
+
+fn window(text: &str, from: usize, to: usize) -> String {
+    let clipped: String = text
+        .chars()
+        .skip(from)
+        .take(to.saturating_sub(from))
+        .collect();
+    format!(
+        "{}{clipped}{}",
+        if from > 0 { "…" } else { "" },
+        if text.chars().count() > to { "…" } else { "" }
+    )
+}
+
+/// The report itself, over injected drift — a failure reporter nothing exercises is a failure
+/// reporter nobody can trust at 3am. Each case pins the one fact that makes the report worth
+/// having: the slug, the field name, and that the value window is bounded.
+#[test]
+fn the_lock_report_names_the_row_and_the_field() {
+    let lock = |why: &str, words: &str| {
+        format!(
+            "// @generated\n    CatalogEntry {{\n        slug: \"first\",\n        why: \"y\",\n    }},\n    \
+             CatalogEntry {{\n        slug: \"second\",\n        why: {why:?},\n        words: {words:?},\n    }},\n];\n"
+        )
+    };
     assert_eq!(
-        generated, committed,
-        "the committed arrangement_lock.rs is not a fixpoint of the generator"
+        lock_difference(&lock("y", "w"), &lock("y", "w"), "CatalogEntry"),
+        None
+    );
+
+    let report = lock_difference(&lock("changed", "w"), &lock("y", "w"), "CatalogEntry")
+        .expect("a differing row reports");
+    assert!(report.contains("row 1 `second`"), "{report}");
+    assert!(report.contains("field `why`"), "{report}");
+    assert!(!report.contains("slug: \"first\""), "{report}");
+
+    let long = "x".repeat(4_000);
+    let report = lock_difference(&lock("y", &long), &lock("y", "w"), "CatalogEntry")
+        .expect("a differing row reports");
+    assert!(report.contains("field `words`"), "{report}");
+    assert!(
+        report.len() < 400,
+        "a 4000-character field value must not restore the haystack: {} bytes",
+        report.len()
+    );
+
+    let dropped = "// @generated\n    CatalogEntry {\n        slug: \"first\",\n        why: \"y\",\n    },\n];\n";
+    let report =
+        lock_difference(&lock("y", "w"), dropped, "CatalogEntry").expect("a dropped row reports");
+    assert!(report.contains("`second`"), "{report}");
+}
+
+/// The static half of the arity net (`aid::arrangement`'s debug assertion is the dynamic half):
+/// no committed transcript may show `[unwritten: <slug>]` for an arrangement row that HAS words.
+/// That combination is only reachable by degradation — a row whose word count stopped matching its
+/// seat — and re-blessing bakes it in quietly, since the placeholder re-renders as a fixpoint.
+#[test]
+fn no_committed_transcript_shows_a_written_arrangement_as_unwritten() {
+    let written: std::collections::BTreeSet<&str> = dorc_aid::arrangement::ARRANGEMENTS
+        .iter()
+        .filter(|entry| entry.words.words().is_some())
+        .map(|entry| entry.slug)
+        .collect();
+    let mut degraded = Vec::new();
+    let mut scanned = 0usize;
+    for entry in std::fs::read_dir(corpus_dir()).expect("read corpus dir") {
+        let path = entry.expect("corpus entry").path();
+        if path.extension().is_none_or(|extension| extension != "loom") {
+            continue;
+        }
+        scanned = scanned.saturating_add(1);
+        let text = std::fs::read_to_string(&path).expect("read case");
+        for slug in &written {
+            if text.contains(&format!("[unwritten: {slug}]")) {
+                degraded.push(format!("{}: {slug}", path.display()));
+            }
+        }
+    }
+    assert!(
+        scanned > 0,
+        "no cases scanned — the gate would pass vacuously"
+    );
+    assert!(
+        degraded.is_empty(),
+        "a written arrangement row renders as unwritten — its word count no longer serves its \
+         seat: {degraded:?}"
+    );
+}
+
+/// A WORLD-AS-PAYLOAD case — one whose replay is `dorc plan --book=book.sh` with no materialized
+/// `book.sh` — must reach the driver's editable route, exactly as `render_case` already does. When
+/// the driver declined these, `compile`/`promote` saw bytes-only results, so their prose was
+/// editable nowhere but the generated lock: the corpus contradicted its own loom-is-the-home claim.
+/// Discovered rather than listed, so a new case of this shape joins the gate on arrival.
+#[test]
+fn world_as_payload_cases_reach_the_editable_route() {
+    let cases = load_corpus_by_slug(&corpus_dir()).expect("load corpus");
+    let mut reached = 0usize;
+    for (slug, case) in &cases {
+        let has_book = case.sections().iter().any(|s| s.name() == "book.sh");
+        let plan_blocks: Vec<_> = case
+            .replay()
+            .blocks()
+            .iter()
+            .map(errorloom::ReplayBlock::command)
+            .filter(|command| *command == "dorc plan --book=book.sh")
+            .collect();
+        if has_book || plan_blocks.is_empty() {
+            continue;
+        }
+        let results = replay_case(case, &DorcConsumer::new(), &RunEnv::new(), |command, _| {
+            panic!("world-as-payload case `{slug}` declined `{command}` to the generic executor")
+        })
+        .unwrap_or_else(|error| panic!("replay `{slug}`: {error}"));
+        for (block, routed) in case.replay().blocks().iter().zip(&results) {
+            if block.command() != "dorc plan --book=book.sh" {
+                continue;
+            }
+            assert_eq!(
+                routed
+                    .editable_render()
+                    .map(errorloom::EditableRender::text)
+                    .as_deref(),
+                Some(routed.output()),
+                "`{slug}` carries exact renderer provenance for its payload world"
+            );
+            reached = reached.saturating_add(1);
+        }
+    }
+    assert!(
+        reached > 0,
+        "no world-as-payload case was found — this gate would pass vacuously"
     );
 }
 

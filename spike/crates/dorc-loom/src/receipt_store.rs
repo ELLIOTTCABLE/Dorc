@@ -50,12 +50,15 @@ pub trait ReceiptStore {
     ///
     /// Returns an I/O or receipt-validation refusal without publishing partial bytes.
     fn publish(&self, packet: &[u8]) -> Result<ReceiptWriteOutcome, String>;
-    /// Read one bounded, grammar-validated current receipt.
+    /// Read one bounded, grammar-validated current receipt, or `None` when none is
+    /// stored. Absence is a STATE, not a failure — it is the ordinary "you have not
+    /// compiled yet" case, and the caller owes its user a different sentence for it
+    /// than for a corrupt or unreadable store.
     ///
     /// # Errors
     ///
     /// Returns an I/O, unsafe-path, size, or receipt-validation refusal.
-    fn read(&self) -> Result<Vec<u8>, String>;
+    fn read(&self) -> Result<Option<Vec<u8>>, String>;
 }
 
 /// Worktree-local receipt storage under one validated ignored target root.
@@ -229,13 +232,12 @@ impl ReceiptStore for FsReceiptStore {
         Err("receipt temporary names exhausted".to_owned())
     }
 
-    fn read(&self) -> Result<Vec<u8>, String> {
+    fn read(&self) -> Result<Option<Vec<u8>>, String> {
         let directory = self.receipt_directory(false)?;
         let final_path = Self::final_path(&directory);
         match read_valid_receipt(&final_path, "receipt final target")? {
-            Some(packet) => Ok(packet),
-            None => read_valid_receipt(&Self::backup_path(&directory), "receipt backup target")?
-                .ok_or_else(|| "receipt is absent".to_owned()),
+            Some(packet) => Ok(Some(packet)),
+            None => read_valid_receipt(&Self::backup_path(&directory), "receipt backup target"),
         }
     }
 }
@@ -442,7 +444,13 @@ mod tests {
         let inspection = inspection("first");
         compile_receipt(&store, &inspection).expect("compile persists");
         promote_receipt(&store, &inspection).expect("promote reads exact receipt");
-        assert_eq!(store.read().expect("receipt reads"), packet("first"));
+        assert_eq!(
+            store
+                .read()
+                .expect("receipt reads")
+                .expect("a published receipt is present"),
+            packet("first")
+        );
     }
 
     #[test]
@@ -474,7 +482,11 @@ mod tests {
         fs::set_permissions(&final_path, permissions).expect("readonly final");
         let read = store.read();
         fs::set_permissions(&final_path, original_permissions).expect("restore final permissions");
-        assert_eq!(read.expect("readonly receipt reads"), packet);
+        assert_eq!(
+            read.expect("readonly receipt reads")
+                .expect("a published receipt is present"),
+            packet
+        );
     }
 
     #[test]
@@ -747,7 +759,13 @@ mod tests {
             fs::read(root.backup_path()).expect("retained backup"),
             packet("first")
         );
-        assert_eq!(store.read().expect("backup recovery read"), packet("first"));
+        assert_eq!(
+            store
+                .read()
+                .expect("backup recovery read")
+                .expect("the backup is present"),
+            packet("first")
+        );
     }
 
     #[cfg(windows)]
@@ -775,7 +793,10 @@ mod tests {
             packet("first")
         );
         assert_eq!(
-            store.read().expect("reader prefers final"),
+            store
+                .read()
+                .expect("reader prefers final")
+                .expect("the final is present"),
             packet("second")
         );
 
@@ -831,7 +852,13 @@ mod tests {
         fs::write(root.backup_path(), packet("prior")).expect("valid backup");
         let store = FsReceiptStore::new(&root.0).expect("trusted root");
 
-        assert_eq!(store.read().expect("backup recovery"), packet("prior"));
+        assert_eq!(
+            store
+                .read()
+                .expect("backup recovery")
+                .expect("the backup is present"),
+            packet("prior")
+        );
         fs::write(root.final_path(), b"malformed final").expect("malformed final");
         assert!(store.read().is_err());
     }

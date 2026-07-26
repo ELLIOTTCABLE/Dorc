@@ -210,8 +210,11 @@ pub fn arrangement_text(
 /// transcript yet, because nothing re-splits an edited line at its value boundaries — the edit path
 /// refuses loudly rather than guessing (`DorcApplyRefusal::ArrangementIsSequenceStructured`).
 ///
-/// An arity disagreement between the entry and its seat renders the greppable unwritten
-/// placeholder: an entry that cannot serve its seat has no words for it.
+/// An arity disagreement between a WRITTEN entry and its seat is a wiring defect, not a resting
+/// state, and it is LOUD: the debug assertion names the row and both counts. In release the render
+/// still degrades to the greppable placeholder rather than a mangled line — but a degradation
+/// nothing announces is invisible to every check except a transcript that happens to cover the
+/// seat, which is how a word-boundary slip once reached a lock (`28F` loom-cleanup A1).
 #[must_use]
 pub fn arrangement_sentence(
     lookup: &dyn ArrangementLookup,
@@ -223,6 +226,14 @@ pub fn arrangement_sentence(
         return format!("[unwritten: {slug}]");
     };
     if words.len() != values.len().saturating_add(1) {
+        debug_assert!(
+            false,
+            "arrangement `{slug}` occurrence {occurrence:?}: {} words cannot serve a seat passing \
+             {} values (a sentence needs values + 1 words); the render degrades to \
+             `[unwritten: {slug}]`",
+            words.len(),
+            values.len()
+        );
         return format!("[unwritten: {slug}]");
     }
     let mut out = String::new();
@@ -472,12 +483,8 @@ mod tests {
         assert_eq!(registry.words("absent", None), None);
     }
 
-    /// A sentence entry interleaves its words with the seat's computed values; an absent entry, or
-    /// one whose word count cannot serve the seat's value count, renders the greppable placeholder
-    /// rather than a silently-wrong line.
-    #[test]
-    fn a_sentence_interleaves_words_and_values_or_refuses_by_arity() {
-        let registry = vec![OwnedArrangement {
+    fn tally_registry() -> Vec<OwnedArrangement> {
+        vec![OwnedArrangement {
             slug: "tally".to_owned(),
             occurrence: None,
             when_used: "w".to_owned(),
@@ -487,20 +494,31 @@ mod tests {
                 " thing".to_owned(),
                 ".".to_owned(),
             ]),
-        }];
+        }]
+    }
+
+    /// A sentence entry interleaves its words with the seat's computed values; an absent entry
+    /// renders the greppable placeholder.
+    #[test]
+    fn a_sentence_interleaves_words_and_values() {
         assert_eq!(
-            arrangement_sentence(&registry, "tally", None, &["2", "s"]),
+            arrangement_sentence(&tally_registry(), "tally", None, &["2", "s"]),
             "found 2 things."
         );
         assert_eq!(
-            arrangement_sentence(&registry, "tally", None, &["2"]),
-            "[unwritten: tally]",
-            "an entry that cannot serve its seat has no words for it"
-        );
-        assert_eq!(
-            arrangement_text(&registry, "nope", None),
+            arrangement_text(&tally_registry(), "nope", None),
             "[unwritten: nope]"
         );
+    }
+
+    /// The loud half: a WRITTEN entry that cannot serve its seat is a wiring defect. Before this
+    /// assertion the render simply degraded to the unwritten placeholder, so editing a row's word
+    /// boundaries was invisible to everything but a transcript that happened to cover the seat.
+    /// The message must carry the row and BOTH counts — the diagnosis is the arithmetic.
+    #[test]
+    #[should_panic(expected = "3 words cannot serve a seat passing 1 values")]
+    fn an_arity_slip_names_the_row_and_both_counts() {
+        let _ = arrangement_sentence(&tally_registry(), "tally", None, &["2"]);
     }
 
     /// The serializer emits the pinned generated header and a `#[rustfmt::skip]` const, so the

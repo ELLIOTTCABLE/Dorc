@@ -165,8 +165,23 @@ pub fn classify_prose_changes(
         if path == catalog {
             return Err("catalog is not clean against HEAD".to_owned());
         }
-        if selected.binary_search(path).is_err() || !status.is_worktree_modified_only() {
+        if selected.binary_search(path).is_err() {
             return Err(format!("dirty path outside selected prose edits: {path}"));
+        }
+        if !status.is_worktree_modified_only() {
+            // A SELECTED case in the wrong git state: "outside selected prose edits" reads as a
+            // contradiction here, and an untracked case has no HEAD side to diff prose against.
+            return Err(match status.index {
+                IndexStatus::Untracked => format!(
+                    "selected case {path} is not committed. Promote reads the prose edit as the \
+                     difference between HEAD and your worktree, so a brand-new case has to be \
+                     committed (with its transcript as authored) before its prose can be promoted"
+                ),
+                _ => format!(
+                    "selected case {path} is staged or otherwise not a plain worktree edit; \
+                     promote accepts an unstaged transcript edit against HEAD and nothing else"
+                ),
+            });
         }
     }
     if repository.current_bytes(catalog)? != repository.head_bytes(catalog)? {
@@ -475,6 +490,26 @@ mod tests {
             let repository = repository(source.clone(), source.clone(), status.as_bytes());
             assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
         }
+    }
+
+    /// A brand-new case is untracked, and the old refusal called it a "dirty path OUTSIDE selected
+    /// prose edits" — a sentence that contradicts itself for a path the author just named on the
+    /// command line, and that names no way forward. The two refusals must now read differently and
+    /// the untracked one must say what to do.
+    #[test]
+    fn an_untracked_selected_case_says_it_must_be_committed() {
+        let source = case(
+            "code: one\n",
+            "",
+            "book",
+            "dorc plan --book=book.sh",
+            "prose\n",
+        );
+        let repository = repository(source.clone(), source, format!("?? {CASE}\0").as_bytes());
+        let error = classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG)
+            .expect_err("an untracked case is unpromotable");
+        assert!(error.contains("not committed"), "{error}");
+        assert!(!error.contains("outside selected prose edits"), "{error}");
     }
 
     #[test]

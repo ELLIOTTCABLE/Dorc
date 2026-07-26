@@ -1,6 +1,7 @@
 use crate::{
-    EditRefusalClass, EditTransport, EditableFragment, EditableRender, EditableSection,
-    RenderComponent, transport_edit, transport_edit_allow_removal,
+    AlignmentLimit, DEFAULT_RENDER_SCALAR_CEILING, EditRefusalClass, EditTransport,
+    EditableFragment, EditableRender, EditableSection, RenderComponent, TransportLimits,
+    transport_edit, transport_edit_allow_removal, transport_edit_with_limits,
 };
 
 fn render(fragments: Vec<EditableFragment<u16>>) -> EditableRender<u8, u16> {
@@ -150,20 +151,59 @@ fn boundaries_and_immutable_components_refuse() {
 
 #[test]
 fn bounded_alignment_refuses_scalar_and_work_exhaustion() {
-    assert_eq!(
-        refusal(
-            &render(vec![EditableFragment::Text("x".repeat(4_097))]),
-            "changed"
-        ),
-        EditRefusalClass::AlignmentLimitExceeded
-    );
+    let over = DEFAULT_RENDER_SCALAR_CEILING.saturating_add(9);
+    let huge = render(vec![EditableFragment::Text("x".repeat(over))]);
+    let limit = transport_edit(&huge, "changed")
+        .expect_err("must refuse")
+        .limit()
+        .cloned()
+        .expect("a limit refusal carries its resource metadata");
+    assert_eq!(limit.exceeded, AlignmentLimit::RenderScalars);
+    // The whole point of the metadata: HOW FAR over. A `ceiling + 1` sentinel here would
+    // tell a reader only what they already knew from the ceiling field.
+    assert_eq!(limit.baseline_scalars, over);
+    assert_eq!(limit.scalar_ceiling, DEFAULT_RENDER_SCALAR_CEILING);
+
     let fragments = (0..700)
         .flat_map(|id| [variable(id, "x"), EditableFragment::Text(" ".into())])
         .collect();
     let baseline = render(fragments);
     let edited = baseline.text().replacen(' ', "!", 1);
+    let limit = transport_edit(&baseline, &edited)
+        .expect_err("must refuse")
+        .limit()
+        .cloned()
+        .expect("a limit refusal carries its resource metadata");
     assert_eq!(
-        refusal(&baseline, &edited),
-        EditRefusalClass::AlignmentLimitExceeded
+        limit.exceeded,
+        AlignmentLimit::AlignmentWork,
+        "a render well inside the scalar ceiling refused for COST, and says so"
+    );
+    assert!(limit.baseline_scalars < limit.scalar_ceiling);
+}
+
+/// The ceilings are the caller's: an embedder on a smaller budget can refuse renders the
+/// default accepts, and the refusal reports the ceiling that was actually in force.
+#[test]
+fn caller_supplied_limits_replace_the_defaults() {
+    let baseline = render(vec![EditableFragment::Text("x".repeat(64))]);
+    let edited = "y".repeat(64);
+    let limit = transport_edit_with_limits(
+        &baseline,
+        &edited,
+        TransportLimits {
+            scalar_ceiling: 16,
+            ..TransportLimits::default()
+        },
+    )
+    .expect_err("over the caller's ceiling")
+    .limit()
+    .cloned()
+    .expect("resource metadata");
+    assert_eq!(limit.scalar_ceiling, 16);
+    assert_eq!(limit.baseline_scalars, 64);
+    assert!(
+        transport_edit(&baseline, &edited).is_ok(),
+        "the same edit is comfortably inside the default ceiling"
     );
 }

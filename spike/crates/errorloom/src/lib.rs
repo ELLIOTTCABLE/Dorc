@@ -43,8 +43,11 @@ use std::fmt::Debug;
 
 mod bless;
 mod container;
+mod diff;
 mod editable;
 mod runner;
+
+pub use crate::diff::describe_divergence;
 
 pub use crate::bless::{
     BlessError, BlessResult, CaseFile, CaseRenderer, FakeGit, Git, GitError, fixpoint_check,
@@ -57,9 +60,11 @@ pub use crate::container::{
     read_case_text,
 };
 pub use crate::editable::{
-    AlignmentLimitMetadata, EditRefusal, EditRefusalClass, EditTransport, EditableFragment,
-    EditableRender, EditableSection, RenderComponent, SectionEdit, transport_edit,
-    transport_edit_allow_removal,
+    AlignmentLimit, AlignmentLimitMetadata, DEFAULT_ALIGNMENT_WORK_CEILING,
+    DEFAULT_REMOVABLE_OCCURRENCES, DEFAULT_RENDER_SCALAR_CEILING, EditRefusal, EditRefusalClass,
+    EditTransport, EditableFragment, EditableRender, EditableSection, RenderComponent, SectionEdit,
+    TransportLimits, transport_edit, transport_edit_allow_removal,
+    transport_edit_allow_removal_with_limits, transport_edit_with_limits,
 };
 pub use crate::runner::{
     Drift, MAX_CAPTURE_BYTES, ReplayCapture, ReplayContext, ReplayDriver, ReplayInput,

@@ -549,9 +549,16 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
         results[1].output(),
         "{\"code\":\"cmdsub-operand-top\",\"severity\":\"note\"}\n"
     );
-    for result in &results[2..] {
-        assert!(result.editable_render().is_none());
-        assert!(result.output().contains("{{command}}"));
+    // A `dorc plan` whose named book is not a materialized case section takes the WORLD-AS-PAYLOAD
+    // route, which is what `render_case` has always done for the same command; the driver used to
+    // decline it instead, and that disagreement is what made those cases unpromotable.
+    assert!(
+        results[5].editable_render().is_some(),
+        "the payload world answers, as the case renderer does for the same command"
+    );
+    for declined in [2usize, 3, 4, 6, 7, 8, 9] {
+        assert!(results[declined].editable_render().is_none());
+        assert!(results[declined].output().contains("{{command}}"));
     }
     assert_eq!(
         calls.into_inner(),
@@ -559,7 +566,6 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
             "dorc lint book.sh",
             "dorc why --last",
             "dorc plan --book=book.sh | jq --pretty",
-            "dorc plan --book=missing.sh",
             "dorc plan --book=book.sh --book=book.sh",
             "dorc plan --book=book.sh --unknown",
             "dorc plan --book=../book.sh",

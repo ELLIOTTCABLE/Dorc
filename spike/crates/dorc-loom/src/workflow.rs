@@ -25,7 +25,13 @@ pub fn compile(
 pub fn promote(store: &impl ReceiptStore, inspection: &InspectedCompilation) -> Result<(), String> {
     let packet = store
         .read()
-        .map_err(|error| format!("promote receipt: {error}"))?;
+        .map_err(|error| format!("promote receipt: {error}"))?
+        .ok_or_else(|| {
+            "promote refused: no compile receipt is stored. Run `dorc-loom compile` over the \
+             same cases first — promote publishes only an interpretation you have already \
+             seen (`282:rul-promote-requires-fresh-compilation`)"
+                .to_owned()
+        })?;
     validate_receipt(&packet, inspection).map_err(|error| format!("promote refused: {error}"))?;
     Ok(())
 }
@@ -46,11 +52,8 @@ mod tests {
             Ok(ReceiptWriteOutcome::Published)
         }
 
-        fn read(&self) -> Result<Vec<u8>, String> {
-            self.0
-                .borrow()
-                .clone()
-                .ok_or_else(|| "absent receipt".to_owned())
+        fn read(&self) -> Result<Option<Vec<u8>>, String> {
+            Ok(self.0.borrow().clone())
         }
     }
 
@@ -75,15 +78,23 @@ mod tests {
             Ok(ReceiptWriteOutcome::Published)
         }
 
-        fn read(&self) -> Result<Vec<u8>, String> {
+        fn read(&self) -> Result<Option<Vec<u8>>, String> {
             if self.fail_read {
                 return Err("read failed".to_owned());
             }
-            self.packet
-                .borrow()
-                .clone()
-                .ok_or_else(|| "absent receipt".to_owned())
+            Ok(self.packet.borrow().clone())
         }
+    }
+
+    /// A promote with no prior compile is the single most likely first-use mistake, and it used to
+    /// surface as the store's raw "receipt is absent". The message must name the step that is
+    /// missing, since nothing else in the output says a compile was ever expected.
+    #[test]
+    fn promoting_without_a_compile_names_the_missing_step() {
+        let error = promote(&MemoryStore::default(), &inspection("current"))
+            .expect_err("no receipt is stored");
+        assert!(error.contains("dorc-loom compile"), "{error}");
+        assert!(!error.contains("receipt is absent"), "{error}");
     }
 
     #[test]

@@ -258,6 +258,13 @@ preserving every untouched variable by identity before tokenization.
 variable omission. Both are bounded and refuse structure edits, fixed-data
 edits, cross-section changes, ambiguous attribution, and excessive work.
 
+The bounds are `TransportLimits`: a per-render scalar ceiling (defaulting to one
+maximal replay output, so the transport never refuses a render the container
+accepted), an alignment work ceiling, and the removable-occurrence search bound.
+`transport_edit_with_limits` / `transport_edit_allow_removal_with_limits` take
+your own. A limit refusal names which ceiling it hit and reports the true
+operand sizes, not a saturated sentinel.
+
 Changing surrounding text may move an untouched variable to a different byte
 offset without requiring an explicit template marker. Existing rendered values
 may also be relocated within the same editable section when one unique

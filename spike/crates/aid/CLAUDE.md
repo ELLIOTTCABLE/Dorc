@@ -147,7 +147,16 @@ crate's charter) · `notes/287` (errorloom as-built).
   exactly as `catalog_lock.rs` is; hand-edits are caught by
   `generated_arrangement_lock_reproduces_the_committed_bytes`. Seeding a MIGRATED row by hand is
   the one sanctioned hand-write (the `sm `-row precedent), and the gate proves the seed is a
-  generator fixpoint.
+  generator fixpoint. Seeding `Words::Unwritten` by hand is sanctioned on the same footing and is
+  the ordinary way a new chrome slug arrives before anyone has words for it: the generator carries
+  the variant straight through from the mirror, `authored_words_are_case_owned` does not bind it,
+  and the render shows the greppable placeholder until a case owns the row.
+- **hand-seeded-rows-match-the-serializer-order** — a hand-seeded row is only a fixpoint if it is
+  spelled in the SERIALIZER's field order, because the gate compares BYTES, not fields: arrangement
+  rows are `slug · occurrence · when_used · why · words`, catalog rows are `slug · when_fires · why ·
+  params · example · message · help`. A row with the right values in the wrong order fails the
+  byte-identity gate with no hint that ORDER is what moved — copy the field sequence from an
+  existing row rather than from a struct definition.
 - **cases-live-here** (`288:rul-slug-decides-loom-placement`, landed at
   `288:phase-flat-tree-move`) — `crates/aid/tests/<slug>.loom` IS the primary loom
   collection: every canonical case for a registered aid-slug, flat, beside this crate's
@@ -164,6 +173,21 @@ crate's charter) · `notes/287` (errorloom as-built).
   surviving lock gate therefore asserts a NON-EMPTY corpus before it generates — never soften
   that back into a silent empty vec. (Its render-fixpoint half is gone: the ONE render-fixpoint
   authority is `crates/cli/tests/looms.rs`, per committed loom.)
+
+- **authoring-a-replay-block-is-blind** — nothing fills a NEW replay block in place: you append
+  `$ <command>` with no output, and the case is then red twice over (the same-slug hygiene gate
+  first, since empty output surfaces no slug; the render fixpoint second). The supported loop is
+  `DORC_LOOM_DUMP=<dir> cargo test -p dorc-cli --test looms -- <case>`, which writes the CANDIDATE
+  transcript — commands re-driven, outputs filled — to `<dir>/<case>.loom` on either failure; copy
+  it over the case and re-run. `dorc-loom promote` cannot do this job: adding a command changes
+  bytes outside the replay-output islands, which it refuses as a non-prose change.
+- **seam-tolerated-nondeterminism-stops-at-the-run-log** — the declared `tolerate:` vocabulary
+  (`crates/cli/CLAUDE.md` tolerate-is-a-closed-vocabulary) normalizes the RUN LOG only
+  (`expected.ran`, `head-expected.ran`); no normalizer is applied to `expected.out` or to a loom's
+  replay-output bytes. So a rendered surface that ever acquires an honest nondeterminism has NO
+  declared-class escape hatch and can only be made deterministic at the source. Named, not built:
+  extending the vocabulary to rendered output is a design question (what a normalizer may touch in
+  bytes a human authors prose into), not a mechanism to add on the way past.
 
 - **spanless-gate-is-lexical** — `spanless_mint_allow_list_is_exact` is a LEXICAL grep
   for `new_spanless_site(DiagCode::X(` at the emit site: every mint spells its payload

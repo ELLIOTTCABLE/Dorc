@@ -11,7 +11,7 @@ use dorc_loom::{
     render_compile_preview, replay_case_with_inputs,
 };
 use errorloom::{
-    Case, ReplayInput, ReplayResult, RunEnv, execute_generic, read_case, read_case_text,
+    Case, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case, read_case_text,
 };
 
 const USAGE: &str = "usage: dorc-loom <compile|promote [--shell=PATH] [--path=DIR]... CASE...|vars <--used|--all> CASE...|scaffold SLUG>";
@@ -322,6 +322,34 @@ fn cases_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
 }
 
+/// Drive one case's replays through the Dorc adapter, routing declines to the generic executor.
+type DrivenReplays = Vec<ReplayResult<dorc_loom::SectionKey, dorc_loom::SectionVariableId>>;
+
+fn drive_replays(
+    case: &Case,
+    consumer: &DorcConsumer,
+    env: &RunEnv,
+    path: &Path,
+    source: &str,
+) -> Result<DrivenReplays, String> {
+    let input = ReplayInput::new(case_name(path)?, source.to_owned())
+        .map_err(|error| format!("{}: {error}", path.display()))?;
+    replay_case_with_inputs(case, consumer, env, &[input], |command, context| {
+        execute_generic(command, context).map(ReplayResult::bytes)
+    })
+    .map_err(|error| match error {
+        // The raw refusal names neither the flag that supplies a shell nor the decline that
+        // needed one.
+        RunError::ShellNotConfigured => format!(
+            "{}: a replay declined the in-process Dorc driver and would need the generic \
+             executor, which has no shell. Rerun with `--shell=PATH` (e.g. `--shell=/bin/sh`), \
+             or make the replay a shape the driver handles",
+            path.display()
+        ),
+        other => format!("{}: {other}", path.display()),
+    })
+}
+
 fn inspect_cases(
     repository: &GitRepository,
     paths: &[SelectedCase],
@@ -343,13 +371,7 @@ fn inspect_cases(
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
         let mut previews = Vec::new();
         let mut case_refusal = None;
-        let input = ReplayInput::new(case_name(path)?, source.clone())
-            .map_err(|error| format!("{}: {error}", path.display()))?;
-        let results =
-            replay_case_with_inputs(&case, &consumer, env, &[input], |command, context| {
-                execute_generic(command, context).map(ReplayResult::bytes)
-            })
-            .map_err(|error| format!("{}: {error}", path.display()))?;
+        let results = drive_replays(&case, &consumer, env, path, &source)?;
         let mut inspected_replays = Vec::new();
         for (index, ((block, head_block), routed)) in case
             .replay()

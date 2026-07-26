@@ -30,7 +30,7 @@ mod support;
 use std::fmt::Write as _;
 use std::sync::Arc;
 
-use errorloom::{Case, CaseFile, CaseRenderer as _, fixpoint_check};
+use errorloom::{Case, CaseFile, CaseRenderer as _, describe_divergence, fixpoint_check};
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use dorc_loom::DorcConsumer;
@@ -43,9 +43,15 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         .map_err(|error| format!("FAIL  {name}  [read {}: {error}]", case.path.display()))?;
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
-    parsed
-        .check_hygiene(Some("code"))
-        .map_err(|error| format!("FAIL  {name}  [hygiene: {error}]"))?;
+    if let Err(error) = parsed.check_hygiene(Some("code")) {
+        // A new replay block is `$ cmd` with no output, which surfaces no slug — so hygiene, not
+        // the fixpoint, is where its author stands when they need the candidate.
+        let candidate = DorcConsumer::new()
+            .render_case(&parsed)
+            .map(|rendered| dump_candidate(name, &rendered))
+            .unwrap_or_default();
+        return Err(format!("FAIL  {name}  [hygiene: {error}]{candidate}").into());
+    }
 
     // A WHOLE-PRODUCT loom's transcript is proven by running the real binary in the e2e runner,
     // which is the stricter proof and the only one the sanctioned-executor law permits for a case
@@ -72,27 +78,38 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         .render_case(&Case::parse(&text).map_err(|error| format!("FAIL  {name}  [{error}]"))?)
         .map_err(|error| format!("FAIL  {name}  [render: {error}]"))?;
     Err(format!(
-        "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift]\n{}",
-        divergence(&text, &rendered)
+        "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift]\n{}{}",
+        divergence(&text, &rendered),
+        dump_candidate(name, &rendered)
     )
     .into())
 }
 
-/// A compact first-divergence window over the committed and re-rendered transcripts.
+/// `DORC_LOOM_DUMP=<dir>` — write each drifted case's CANDIDATE transcript there, so a render
+/// iteration is `diff` against a file instead of promote-then-`git diff`-then-`git checkout`.
+/// Read-only with respect to the corpus: the dump is a scratch copy, never the committed case,
+/// and only drifted cases are written (an unchanged candidate is the committed bytes).
+fn dump_candidate(name: &str, rendered: &str) -> String {
+    let Some(dir) = std::env::var_os("DORC_LOOM_DUMP") else {
+        return String::new();
+    };
+    let dir = std::path::PathBuf::from(dir);
+    let target = dir.join(format!("{name}.loom"));
+    match std::fs::create_dir_all(&dir).and_then(|()| std::fs::write(&target, rendered)) {
+        Ok(()) => format!("\n      candidate written to {}", target.display()),
+        Err(error) => format!("\n      DORC_LOOM_DUMP write failed: {error}"),
+    }
+}
+
+/// An aligned first-divergence window over the committed and re-rendered transcripts, indented
+/// into the runner's failure block.
 fn divergence(want: &str, got: &str) -> String {
-    let want: Vec<&str> = want.lines().collect();
-    let got: Vec<&str> = got.lines().collect();
-    let at = (0..want.len().max(got.len()))
-        .find(|i| want.get(*i) != got.get(*i))
-        .unwrap_or(0);
-    let mut out = format!("      first divergence at line {}\n", at.saturating_add(1));
-    for i in at..(at.saturating_add(3)).min(want.len().max(got.len())) {
-        let _ = writeln!(
-            out,
-            "      -{:?}\n      +{:?}",
-            want.get(i).copied().unwrap_or("<eof>"),
-            got.get(i).copied().unwrap_or("<eof>")
-        );
+    let mut out = String::new();
+    for line in describe_divergence(want, got)
+        .unwrap_or_else(|| String::from("byte-identical (the check and the report disagree)"))
+        .lines()
+    {
+        let _ = writeln!(out, "      {line}");
     }
     out.trim_end().to_owned()
 }
