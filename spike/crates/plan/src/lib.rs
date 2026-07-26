@@ -1582,10 +1582,21 @@ pub struct Plan {
 /// mints a guard until the Stage-3 guard tier — the field exists now so the summary's
 /// grammar is stable across that build (a parse target must not gain a column mid-round).
 /// `sites == elide + omit + guard + run` by construction.
+///
+/// `elide` additionally SPLITS by what the skip rested on — the distinction a receipt header owes
+/// its reader, since the two carry different risk: an `elide_by_proof` skip stands on a probed
+/// fact, while an `elide_by_trusted_claim` skip was kept past a RUNNING wall on an author's at-most
+/// claim under the consent flag (the design's one naked-trust cell — `survive-license`). Derived
+/// from the survival witness the wall walk already attached, so it needs no new decision input.
+/// `elide == elide_by_proof + elide_by_trusted_claim` by construction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DispositionCounts {
     pub sites: usize,
     pub elide: usize,
+    /// Elisions resting on a probed fact alone (no wall crossed).
+    pub elide_by_proof: usize,
+    /// Elisions kept past ≥1 running wall on an at-most claim, under the consent flag.
+    pub elide_by_trusted_claim: usize,
     pub omit: usize,
     pub guard: usize,
     pub run: usize,
@@ -3765,8 +3776,15 @@ impl Plan {
             ..DispositionCounts::default()
         };
         for step in &self.steps {
-            match step.disposition {
-                Disposition::Replace(_, _) => c.elide += 1,
+            match &step.disposition {
+                Disposition::Replace(license, _) => {
+                    c.elide += 1;
+                    if license.derivation().survival.is_some() {
+                        c.elide_by_trusted_claim += 1;
+                    } else {
+                        c.elide_by_proof += 1;
+                    }
+                }
                 Disposition::Omit { .. } => c.omit += 1,
                 Disposition::Guard(_) => c.guard += 1,
                 Disposition::Run => c.run += 1,
@@ -6581,6 +6599,48 @@ apt_get__is_converged() {
     // (The non-disjoint HIT direction — a footprint intersecting the backing demotes even
     // flagged — is pinned by `survival::tests::poisoned_backing_demotes` + the
     // `strawman24-nonsurvive-hit` e2e case; no plan-level duplicate here.)
+
+    #[test]
+    fn elide_tally_splits_proof_from_trusted_claim_on_the_real_survival_path() {
+        // A receipt header that says "5 skipped" owes its reader the SPLIT, because the two halves
+        // carry different risk: one rests on a probed fact, the other on an author's at-most claim
+        // acted on under the consent flag. Tallied over the SAME fixture that mints a real survival
+        // witness, so a mis-wired split cannot pass against a hand-built witness the walk never made.
+        let verdict = |e: &str| {
+            if e == "nginx" {
+                Verdict::Converged
+            } else {
+                Verdict::Diverged
+            }
+        };
+        let flagged = survival_plan(
+            "apt-get install -y oldpkg\napt-get install -y nginx\n",
+            verdict,
+            true,
+        )
+        .disposition_counts();
+        assert_eq!(flagged.elide, 1, "one line elided");
+        assert_eq!(
+            (flagged.elide_by_trusted_claim, flagged.elide_by_proof),
+            (1, 0),
+            "an elision kept past a RUNNING wall rests on the claim, never on proof alone"
+        );
+
+        // The same book with nothing running above it: the identical elision, now by proof.
+        let clean = survival_plan("apt-get install -y nginx\n", verdict, true).disposition_counts();
+        assert_eq!(
+            (clean.elide_by_trusted_claim, clean.elide_by_proof),
+            (0, 1),
+            "no wall crossed ⇒ the skip rests on the probed fact"
+        );
+        for c in [flagged, clean] {
+            assert_eq!(
+                c.elide,
+                c.elide_by_proof + c.elide_by_trusted_claim,
+                "the split partitions the elide bucket exactly"
+            );
+        }
+    }
 
     #[test]
     fn survival_walk_mints_wall_and_demotion_narratives() {
