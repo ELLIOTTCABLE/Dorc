@@ -916,7 +916,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // lane (`build_survival_footprints`) lifts its own — both pure + cheap, and a clean oracle
     // reports no touches diag either way (fork-s4-compile: a parallel compiler, NOT a `compile_probe`
     // extension — different site-set/body-source/readback, the convergence path left unperturbed).
-    let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = if args.trust_footprints {
+    let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = if args.risk_faultless_skips
+    {
         oracle_refs
             .iter()
             .map(|src| {
@@ -929,7 +930,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     } else {
         Vec::new()
     };
-    let derivations = if args.trust_footprints {
+    let derivations = if args.risk_faultless_skips {
         let derive = |p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a);
         dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
     } else {
@@ -958,7 +959,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         advisory,
     );
     let resolver_kinds: BTreeSet<Symbol> = kind_resolvers.resolver_kinds().collect();
-    let resolver_coords = if args.trust_footprints && !resolver_kinds.is_empty() {
+    let resolver_coords = if args.risk_faultless_skips && !resolver_kinds.is_empty() {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
         collect_resolver_coords(
             &classes,
@@ -988,7 +989,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         advisory,
     );
     let reach_kinds: BTreeSet<Symbol> = kind_reaches.reach_kinds().collect();
-    let reaches_plan = if args.trust_footprints && !reach_kinds.is_empty() {
+    let reaches_plan = if args.risk_faultless_skips && !reach_kinds.is_empty() {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
         collect_reach_probes(
             &classes,
@@ -1123,7 +1124,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--risk-faultless-skips` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
-    let survival = args.trust_footprints.then(|| {
+    let survival = args.risk_faultless_skips.then(|| {
         let mut fps = build_survival_footprints(
             &oracle_refs,
             &classes,
@@ -1197,7 +1198,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         &classes,
         &kills,
         survival.as_ref(),
-        args.trust_footprints.then_some(&resolutions),
+        args.risk_faultless_skips.then_some(&resolutions),
         &dorc_oracle::build_dialect(&idx),
         &fact_backings,
         &vouches,
@@ -1372,7 +1373,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 std::path::Path::new(book_name),
             ),
             oracles: oracle_paths.clone(),
-            risk_profile: args.trust_footprints.then_some(CONSENT_FLAG),
+            risk_profile: args.risk_faultless_skips.then_some(CONSENT_FLAG),
             tally: PlanTally::Derived(plan.disposition_counts()),
             deepest_tier: args.all,
             // Only a replay can disagree, and it declares its stream rather than being assumed.

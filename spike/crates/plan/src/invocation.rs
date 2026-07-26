@@ -23,8 +23,8 @@ pub struct OracleInput {
 /// Explicit knobs that affect one invocation's semantic plan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlanOptions {
-    /// Whether the caller explicitly enabled the footprint survival tier.
-    pub trust_footprints: bool,
+    /// Whether the caller explicitly enabled the footprint survival tier (`--risk-faultless-skips`).
+    pub risk_faultless_skips: bool,
     /// The injected context-entry escalation policy.
     pub dial: EscalationDial,
     /// The injected connection capability.

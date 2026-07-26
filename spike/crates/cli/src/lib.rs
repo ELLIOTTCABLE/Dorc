@@ -126,7 +126,7 @@ pub struct Args {
     /// by hints/docs beyond noting availability. Honest framing (24A §1a-addendum): marketing at
     /// best (the admin chose the danger), theatre at worst (everyone enables it) — demanded
     /// anyway as the non-vacuous CYA. When off, the footprints are never even lifted (TC-1).
-    pub trust_footprints: bool,
+    pub risk_faultless_skips: bool,
     /// The optional `dorc why <address>` positional (ack-2): `book.sh:N` (a source line-address —
     /// rul24-lineno-identity), or free content to substring-match a command; `None` ⇒ the
     /// unargumented default (report the CURRENT run's problems). Only meaningful for [`Mode::Why`].
@@ -251,7 +251,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut oracle_dirs = Vec::new();
     let mut results: Option<String> = None;
     let mut debug_argv = false;
-    let mut trust_footprints = false;
+    let mut risk_faultless_skips = false;
     let mut why_address: Option<String> = None;
     let mut dial = dorc_core::EscalationDial::VouchedOnly;
     let mut capability = dorc_core::Capability::Root;
@@ -334,7 +334,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         } else if arg == "--debug-argv" {
             debug_argv = true;
         } else if arg == "--risk-faultless-skips" {
-            trust_footprints = true;
+            risk_faultless_skips = true;
         } else if arg == "--no-probe-escalation" {
             dial = dorc_core::EscalationDial::NoEscalation;
         } else if arg == "--probe-escalation" {
@@ -448,7 +448,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         oracle_dirs,
         results,
         debug_argv,
-        trust_footprints,
+        risk_faultless_skips,
         why_address,
         dial,
         capability,
