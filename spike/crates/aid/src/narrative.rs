@@ -105,38 +105,50 @@ impl SpeechAct {
     /// naked-trust epilogue's which-link derivation route through it rather than re-deriving a rank
     /// per row.
     ///
+    /// `Declined`'s placement here is HUMAN-RULED (`28F:rul-declined-is-bottom-rung`), not by
+    /// analogy: machine-uncheckability is not the axis (both rungs hold human-trusted claims no
+    /// command can check) — the axis is danger-INTRODUCTION, and a decline can only lose the reader
+    /// value, never introduce it, so it sits at the bottom rung outright.
+    ///
     /// `Consented` has no as-built [`CollapseKind::EntryDenial`] render today (`narrative-mints-
     /// outrun-renders` — the class mints but nothing consumes it yet); it is assigned `Witnessed`
     /// here by analogy with `Derived` (both are the engine's own closed-world decisions, never an
     /// author's open-world at-most claim) rather than from any observed row. Flagged for conductor
-    /// review when a consent row first renders.
+    /// review when a consent row first renders. (This analogy note is unrelated to `Declined`'s
+    /// placement above, and remains UNRULED.)
     #[must_use]
     pub const fn knowability(self) -> Knowability {
         match self {
             SpeechAct::Measured
             | SpeechAct::Vouched
             | SpeechAct::Derived
-            | SpeechAct::Consented => Knowability::Witnessed,
-            SpeechAct::Ran | SpeechAct::Claimed | SpeechAct::Declined => {
-                Knowability::CoversUnmeasured
-            }
+            | SpeechAct::Consented
+            | SpeechAct::Declined => Knowability::Witnessed,
+            SpeechAct::Ran | SpeechAct::Claimed => Knowability::CoversUnmeasured,
         }
     }
 }
 
 /// The ordered super-layer of the danger axis (`28E` §7 adapt-two-rank-default-render, sharpened by
-/// §8 `rul-danger-axis-is-completion-class`; `28F:rul-speechact-rename`): the seven [`SpeechAct`]
-/// kinds stay typed law underneath and are UNTOUCHED by this projection — `Knowability` is a
-/// RENDER-relevant partition OVER them, keyed by what a link COVERS rather than where its words were
-/// written. GENUINELY ordered (unlike `SpeechAct`'s own derived `Ord`, which is mechanical map-key
-/// determinism only): [`CoversUnmeasured`](Knowability::CoversUnmeasured) speaks for what no
-/// runnable command COULD witness — an author's at-most claim, or the run of a command nobody has
-/// described (which claims nothing, and therefore covers everything) — and always outranks
-/// [`Witnessed`](Knowability::Witnessed), the class of size N every member of which was observed.
+/// §8 `rul-danger-axis-is-completion-class`, further sharpened by `28F:rul-declined-is-bottom-rung`):
+/// the seven [`SpeechAct`] kinds stay typed law underneath and are UNTOUCHED by this projection —
+/// `Knowability` is a RENDER-relevant partition OVER them. GENUINELY ordered (unlike `SpeechAct`'s
+/// own derived `Ord`, which is mechanical map-key determinism only): the axis is danger-
+/// INTRODUCTION to the reader, NOT machine-uncheckability — both rungs can hold a
+/// machine-uncheckable, human-trusted claim, and that is not what separates them.
+/// [`CoversUnmeasured`](Knowability::CoversUnmeasured) speaks for what no runnable command COULD
+/// witness — a WIDE at-most claim the reader is asked to trust, which INTRODUCES danger (drawing the
+/// `!` mark's extra attention), or the run of a command nobody has described (which claims nothing,
+/// and therefore covers everything) — and always outranks
+/// [`Witnessed`](Knowability::Witnessed), the class of size N every member of which was observed, OR
+/// whose only open-world claim is a NARROW decline that can only lose the reader value, never
+/// introduce danger, and so sits at the bottom rung rather than the top.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Knowability {
     /// `*` — the row rests on something that actually happened (a probe report, a real run) or on a
-    /// derivation over such things. Its class is of size N and every member of it was observed.
+    /// derivation over such things (class of size N, every member observed), OR on an author's
+    /// narrow decline (`28F:rul-declined-is-bottom-rung`) — which is why this variant's name now
+    /// under-covers what it holds; a rename candidate only if it ever grates.
     Witnessed,
     /// `!` — the row speaks for universe-minus-N: an author's at-most claim, or the run of a command
     /// nobody has described (which claims nothing, and therefore covers everything).
