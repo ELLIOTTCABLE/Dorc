@@ -824,8 +824,24 @@ no task covers, and consider adding the task instead.
   *nix but `cmd /c` on Windows, and this project is developed on both. A task body
   therefore carries NO shell syntax: `dir` instead of `cd`, `[tasks.x.env]` instead of
   a `VAR=x` prefix, a `run` ARRAY instead of `&&`, a nested `mise run` to compose across
-  differing `dir`s. `sh <script>` is the sanctioned exception (identical spelling under
-  both shells; on Windows it resolves to Git's `sh.exe`).
+  differing `dir`s. There is NO `sh <script>` exception — git ships `sh` on Windows but
+  does not put it on PATH, so such a task dies from PowerShell/cmd. Work that wanted a
+  script goes in `crates/internal-tooling` (repo plumbing, NOT product code; the
+  cargo-xtask pattern) as `cargo run -q -p internal-tooling -- <task>`. Residual debt:
+  `bless`/`bless:dry` and `yardstick` still spell `sh` and still need git-bash or WSL.
+- **one-shell-answer** — `internal_tooling::Posix::find()` is the ONLY place that answers
+  "where is a POSIX shell": git's own userland on Windows (derived from `git --exec-path`,
+  never hardcoded, never PATH-searched), plain PATH lookup elsewhere. The e2e runner and
+  the plan crate's `dash -n` net both consume it; a third copy is how the second one
+  silently rotted. Never resolve an interpreter by PATH order on Windows — `bash` there is
+  `%SystemRoot%\System32\bash.exe`, the WSL launcher, which runs Linux binaries against
+  Linux paths without a word.
+- **windows-green-was-always-git-bash** (found 2026-07-26) — before this date every
+  "Windows green" in this project was measured from git-bash, which supplies `sh`/`dash` on
+  PATH. From a native shell the e2e runner `exit(2)`s, which takes `cargo nextest list`
+  with it, so `gate:full-quiet` and `gate:full` both died before running anything. A shell
+  is a HARD dependency of this corpus — Dorc's product is sh and these gates execute what
+  they render — so the fix is to resolve one explicitly, never to drop the requirement.
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
 - Pre-commit gate set — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check
   licenses bans sources` · `typos`. Agent shells carry `HK_SKIP_HOOK=pre-commit`, so it
