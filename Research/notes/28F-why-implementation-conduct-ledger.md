@@ -58,6 +58,32 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   note. The tier-ORDERING question is open in-chat (the set is kinds, not a
   monotonic scale; code `Ord` is mechanical map-key determinism only; semantic
   ordering stays the `28E:lean-ordering-is-a-seam` seam).
+- (conductor, under human directive 2026-07-26) **rul-speechact-rename** — the
+  human directed a quick mechanical rename of `TrustTier` ("tier" squats
+  genuinely-ordered critical vocabulary — `claim-tier-gating`'s license tiers
+  ARE ordered with serious effects; "trust" misrepresents an unordered
+  kind-set as a correctness scale). Conductor name choice: **`SpeechAct`**
+  (collision-checked free) — the seven are speech-act KINDS (who speaks,
+  what act), matching quoted-speakers (the render verb IS the act);
+  inherently unordered; squats nothing ("voice" was rejected — squatted by
+  receipt-voice/admin-English-voice; "evidence" was renamed away to
+  narrative in 288). `tier_word()` → `verb_word()`. The ordered SUPER-LAYER
+  the human named gets TYPED (it has ≥2 consumers: the `*`/`!` marks + the
+  naked-trust epilogue): **`Knowability`** (human nit accepted same sitting:
+  "completion" reads as sh/tab-completion in a shell tool; "completeness" is
+  squat-adjacent to the catalog-completeness gates; `Knowability` is free,
+  distinctive, and names the frame-problem semantic — the `!` class speaks
+  for what no runnable command COULD witness. The ruled slug
+  rul-danger-axis-is-completion-class stays the historical anchor; variant
+  names anchor to the ruled phrase — e.g. `Witnessed` / `CoversUnmeasured` —
+  builder latitude), genuinely `Ord`, ONE derivation seat
+  (a method on `SpeechAct` if the mapping is kind-constant, else the typed
+  render-seat fn — builder discovers as-built truth); the kind-enum's derived
+  `Ord` stays (map-key determinism) doc'd MECHANICAL-ONLY. Law SLUGS
+  (`law-trust-tier-is-syntax` etc.) stay unchanged — historical anchors;
+  type-name MENTIONS in spike/aid CLAUDE.mds update. Sonnet-tier dispatch,
+  hard-clamped, AFTER the opaque fold (no parallel churn against an
+  uninspectable diff); before W3's execute half.
 - (HUMAN-TYPED, 2026-07-26; corrected same sitting) **strawmen-b-through-e-are-
   a-gloss** — only `a-fire-morning` is deeply reviewed; `b`–`e` are UNREVIEWED
   gloss: a weight-grading, NOT a work-cut ("I wasn't cutting any work in
