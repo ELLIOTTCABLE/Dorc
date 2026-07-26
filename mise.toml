@@ -94,9 +94,11 @@ dir = "spike"
 run = "cargo build --workspace"
 
 [tasks.test]
-description = "The WHOLE suite: unit tier + the e2e corpus + the loom corpus (the latter two ride the workspace run as harness=false targets). Args filter by trial name. DORC_E2E_QUIET=1 selects the terse per-case format; failures still print in full."
+description = "The WHOLE suite: unit tier + the e2e corpus + the loom corpus (the latter two ride the workspace run as harness=false targets). Args filter by trial name, and reach the test harness rather than cargo — so `-- --quiet` selects libtest's terse format. DORC_E2E_QUIET=1 selects the terse per-case format; failures still print in full."
 dir = "spike"
-run = "cargo test --workspace"
+# The trailing `--` is load-bearing: without it a trailing `--quiet` is cargo's (which only drops
+# the build chatter) rather than libtest's (which drops the per-test lines).
+run = "cargo test --workspace --"
 
 [tasks."test:e2e"]
 description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact."

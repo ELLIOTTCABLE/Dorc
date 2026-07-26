@@ -827,6 +827,13 @@ no task covers, and consider adding the task instead.
   differing `dir`s. `sh <script>` is the sanctioned exception (identical spelling under
   both shells; on Windows it resolves to Git's `sh.exe`).
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
+- **agent-quiet-is-libtest-not-cargo** — in an agent context prefer `mise run test -- --quiet`:
+  libtest's terse format, 1887 → 414 lines on a green workspace, failures still printed whole.
+  It reaches libtest only because the task body ends in `--`; the same flag WITHOUT that is
+  cargo's `--quiet`, which drops build chatter and leaves every per-test line. Never the default —
+  a human reading a run wants those lines — and never approximate it by piping a run through
+  `grep`/`head`, which drops the failure you were looking for. `libtest_mimic` gives the two
+  `harness = false` corpora the same flag for free.
 - Pre-commit gate set — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check
   licenses bans sources` · `typos`. Agent shells carry `HK_SKIP_HOOK=pre-commit`, so it
   does NOT run automatically on you: run `mise run check` yourself before every commit,
