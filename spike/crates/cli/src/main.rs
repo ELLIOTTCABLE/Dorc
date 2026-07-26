@@ -1552,6 +1552,25 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let framing = dorc_plan::records::Framing::spike(book_digest(&book));
     let scope =
         WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
+    // Name the drift rather than reporting a generic framing refusal. An edited book is the ONE
+    // mismatch here that is ordinary rather than sinister — the admin fixed the thing the receipt
+    // is about — and under default-on it is the common morning, so "the book changed since this
+    // run" has to be what the reader is told. The refusal itself still stands: re-deriving through
+    // a different book would answer a question nobody asked. Rendering the receipt ANYWAY, degraded
+    // and drift-disclosed, is the owed follow-on (this lane's report says why it is not here).
+    if envelope.claims().book_digest() != scope.book.1 {
+        report_at(
+            advisory,
+            "whylog",
+            None,
+            &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
+                dorc_aid::diag::WhylogBookDesync {
+                    which: "book".to_owned(),
+                },
+            ))],
+        );
+        return Ok(ReplayLoad::Refused);
+    }
     if !replay_claims_match(&envelope, &scope) {
         return Ok(refuse_replay(
             advisory,
