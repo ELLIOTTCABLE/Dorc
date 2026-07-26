@@ -53,6 +53,67 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
 
 ## §2 — Rulings / landings (accretes)
 
+- **lane-w2b-narrations LANDED + FOLDED** @ merge `c24c5242` (12 commits) —
+  PHASE W2 COMPLETE. All ten items: decline triptych on pull + the anti-nag
+  routing (`an_oracle_could_still_answer`; the wrong sysctl nag is gone) ·
+  guarded chains name their walls + show the as-shipped guard
+  (`GuardLicense.probe`, post-mint, canon-exempted exhaustively) · the receipt
+  header with the skipped SPLIT · receipt/replay voice (durable's own
+  `started_at`, never the replay clock; every receipt states
+  apply-report-is-prediction) · `--all` + `[unnarrated:]` with the
+  PLANE_VERSION×RECORD_STREAM_VERSION coupling gate · participating-lines
+  block naming its closure · the `instant ordinal= at=` line-kind
+  (writer+reader one commit; `observed_at`→`received_at`; replay re-stamps
+  from the durable) · `reported_speaker` from `predict_span` + the
+  `(received HH:MM:SS, rc N)` trailer · per-arm disturbs spans (as-written
+  shows the MATCHED ARM; leverage points at the widenable line) ·
+  brace-selector display grouping (render-seat only, FactKey untouched).
+- **Conductor rulings on the w2b flags:**
+  **`(received …)` over `(ran …)` ACCEPTED** — direct consequence of
+  rul-probe-instants-host-says-no-times; `ran` would date a host event nobody
+  reported. Render-word latitude was explicitly the seat's.
+  **rul-fixture-clock-env-accepted** — `DORC_FIXTURE_CLOCK_MS` (read once at
+  `main()`, harness-set, real clock default) is the DI-seam-at-the-edge
+  pattern; the rejected spike-fixed clock would make every receipt timestamp
+  a lie; case files stay user-shaped (the 282 harness-env law binds replay
+  COMMANDS, which carry nothing). Flagged onward to the human as a taste nit
+  (env vs flag), not a blocker.
+  **rul-placeholders-are-computed** — greppable machine placeholders
+  (`[unwritten: <slug>]`, `[unnarrated: <class>]`) are COMPUTED, not
+  registry rows, by design — they are self-advertising machine states, not
+  prose; precedent: the catalog's render-time `[unwritten:]`. This is the
+  stated carve on `28G` §0's every-string law.
+  **`tc-decline-is-a-seventh-tier` → ESCALATED TO THE HUMAN** (not
+  self-ratified): the builder added `TrustTier::Declined` because every
+  existing tier word misstates a decline (`vouches` worst — declining IS
+  refusing to vouch), and mis-attribution tops the sin-ordering. The tier
+  SET is law (`AID-NEEDS:law-trust-tier-is-syntax`) and the human actively
+  curates this vocabulary (`28E` §8: `reported`, the `sworn` audition).
+  Conductor recommendation: RATIFY (a decline is epistemically distinct;
+  the code as-built stays meanwhile — reverting would misattribute).
+  AWAITING TYPED ACK.
+- **Strawman-distance residuals banked** (honest, caused, none blocking):
+  `b`'s value-flow participant (`PORT=443`) absent — no reaching-definitions
+  query is exposed to the render seat (engine gap; the closure row discloses
+  it) · `c`'s model-offer needs the `__describe` cell-gloss member (deferred
+  by design, `28G` §2) · `d`'s SURPRISES/then-vs-now cannot exist without an
+  apply executor (real-executor era; `tc-apply-report-is-prediction`) ·
+  `e`'s guard-subsumption attribution — the admin's OWN lifted guard as a
+  chain SPEAKER — unbuilt (the Half-B reward surface wearing why-clothes;
+  candidate for W3/r30) · `trigger:`/oracle-versions/`why --probe` footer
+  sentence: no data or deferred, correctly omitted over invented.
+- **W5 prose queue, sharpest first** (from w2b): `why-next-step-describe-
+  walls` SINGULAR case renders `[unwritten:]` — blanks the next-step of the
+  COMMON one-wall guarded case; then the six other Unwritten rows + the
+  non-unsound decline-class occurrence prose.
+- **Loom-cleanup order accreted (w2b)**: arrangement-fixpoint failures should
+  name the first differing slug (a ~120KB assert dump hid a field-order slip)
+  · hand-seeded row FIELD ORDER is an unstated invariant — wants a line in
+  aid's CLAUDE.md or a targeted assert · `tolerate:` normalizers reach the
+  run-log but NOT the replay transcript (future rendered-output
+  nondeterminism has no declared-class escape hatch — design gap) ·
+  replay-block authoring is a blind two-step (document it) · scoped-bless +
+  LCS-diff debts confirmed live again.
 - **lane-w2a-adapter LANDED + FOLDED** @ merge `46ca50b6` (7 commits; clean
   cross-merge with w2-data; 1417 tests at its tip). Leg 1: the named table
   built as ruled (measure walk + prefix-sum stops; three ad-hoc measurement
