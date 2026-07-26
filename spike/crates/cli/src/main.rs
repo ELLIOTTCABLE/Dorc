@@ -647,8 +647,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // load-bearing surface judgment — flagged to the conductor, not silently settled.
     let advisory = !matches!(mode, Mode::Apply);
 
-    // `--last` replay (`27V` Lane B): reconstruct inputs from the durable; a surfaced refusal returns.
-    let replay = if args.last {
+    // Receipt reconciliation (`27V` Lane B; the default for `why` since the `plans/28G` W3 fold):
+    // reconstruct inputs from the durable. A surfaced refusal returns.
+    let replay = if args.reads_the_receipt() {
         match load_whylog_replay(args, advisory)? {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
             ReplayLoad::Refused => return Ok(RunOutcome::IngressRefused),
@@ -1466,7 +1467,9 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
             Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
                 dorc_aid::diag::CliFlagRequiresMode {
                     flag: "--whylog-dir=DIR",
-                    mode: "dorc why --last",
+                    // `--last` is implied now, so naming it here would point at a flag the user did
+                    // not type and does not need (`plans/28G` §1 W3).
+                    mode: "dorc why",
                 },
             ))
         })?;

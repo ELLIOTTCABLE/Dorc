@@ -1231,6 +1231,22 @@ fn run_replay_block(
         }
         words.truncate(words.len().saturating_sub(2));
     }
+    // `--results=probe-results.txt` resolves to the framed stream exactly as `< probe-results.txt`
+    // does, and for the same reason: the case's authored `probe-results.txt` is the EXPECTATION
+    // the record gates compare against, never the bytes dorc is fed. Since the `plans/28G` W3 fold
+    // a `dorc why` must NAME its record source (an unnamed one reads the stored receipt instead),
+    // so the flag form is now the spelling these transcripts carry.
+    let framed_flag = format!("--results={}", framed.display());
+    let words: Vec<&str> = words
+        .into_iter()
+        .map(|word| {
+            if word == "--results=probe-results.txt" {
+                framed_flag.as_str()
+            } else {
+                word
+            }
+        })
+        .collect();
     match words.split_first() {
         Some((&"dorc", rest)) if !rest.is_empty() => {
             let mut child = harness.dorc();
@@ -2128,14 +2144,17 @@ fn scan_why_chain(
         return;
     };
     let book = format!("--book={}", dir.join("book.sh").display());
+    // `--results` rather than a stdin redirect: since the `plans/28G` W3 fold, naming a record
+    // source is what tells `dorc why` to answer from records instead of from the stored receipt.
     let live = capture(
         harness
             .dorc()
             .arg("why")
             .arg(&addr)
             .arg(&book)
+            .arg(format!("--results={}", framed.display()))
             .args(args)
-            .stdin(Stdio::from(std::fs::File::open(framed).unwrap()))
+            .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::null()),
     )

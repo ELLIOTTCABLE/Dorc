@@ -149,8 +149,13 @@ pub struct Args {
     pub whylog_dir: Option<String>,
     /// `--whylog=FILE`: the exact durable to replay (`why --last` only).
     pub whylog: Option<String>,
-    /// `--last` (`27V` Lane B): `dorc why --last` replays the most recent durable in `--whylog-dir`
-    /// through the SAME kernel instead of the live pipeline (determinism is the replay license).
+    /// `--last` (`27V` Lane B): replay the most recent durable in `--whylog-dir` through the SAME
+    /// kernel instead of the live pipeline (determinism is the replay license).
+    ///
+    /// Since `28E:lean-why-is-whylog-reconciliation` this is what `dorc why` does ANYWAY when no
+    /// record source was named ([`Args::reads_the_receipt`]); the flag survives as a spelling
+    /// rather than a switch, because it is printed in committed transcripts and typed in muscle
+    /// memory, and it still means something on the other modes.
     pub last: bool,
     /// `--all`: the DEEPEST pull tier — every `dorc why` footer already points here, so the flag
     /// exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
@@ -168,6 +173,31 @@ pub struct Args {
     /// or already-answered run writes nothing — `empty-world-byte-identical`).
     pub shim_dir: Option<String>,
 }
+
+impl Args {
+    /// Does this invocation answer from the stored receipt rather than from records handed to it?
+    ///
+    /// The surface fold (`28E:lean-why-is-whylog-reconciliation`, phased by `plans/28G` §1 W3):
+    /// `dorc why` is receipt-reconciliation by DEFAULT -- "why did that happen" is the question
+    /// people actually ask, and it is asked with nothing in hand. Records-from-argv survives as the
+    /// harness/tooling posture, and it is now EXPLICIT: naming `--results` (or `--whylog`, which
+    /// names an exact durable) is what selects it.
+    ///
+    /// Deliberately not "is stdin a pipe": that would be an ambient read at a seat sworn off them
+    /// (`io-at-edges-only`), it would make a CI `dorc why` silently answer a different question
+    /// than an interactive one, and it would block on a terminal.
+    #[must_use]
+    pub const fn reads_the_receipt(&self) -> bool {
+        reads_the_receipt(self.mode, self.last, self.results.is_some())
+    }
+}
+
+/// [`Args::reads_the_receipt`] over the parts, so the parser can apply the same rule before it has
+/// an `Args` to ask. Two spellings of this predicate would be two answers to "which surface am I".
+const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
+    last || (matches!(mode, Mode::Why) && !has_results)
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "one linear arg surface: the help/version pre-scan, the mode + why-address token, then the flag/positional loop with did-you-mean; splitting it would scatter the ONE parse"
@@ -381,7 +411,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             books.push(arg);
         }
     }
-    if books.is_empty() && !last {
+    // A receipt names its own book (`28E:lean-why-is-whylog-reconciliation`), so demanding one on
+    // the command line would make the fold's whole point -- asking "why did that happen" with
+    // nothing in hand -- impossible to type. Records handed in still need one: they describe a book
+    // this invocation is not otherwise told about.
+    if books.is_empty() && !reads_the_receipt(mode, last, results.is_some()) {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
         )));
@@ -394,11 +428,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             }),
         ));
     }
-    if whylog.is_some() && (mode != Mode::Why || !last) {
+    if whylog.is_some() && mode != Mode::Why {
         return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
             dorc_aid::diag::CliFlagRequiresMode {
                 flag: "--whylog",
-                mode: "dorc why --last",
+                mode: "dorc why",
             },
         )));
     }
@@ -692,6 +726,73 @@ fn value_not_recognized(flag: &str, got: &str, expected: &'static str) -> Invoca
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn parse(argv: &[&str]) -> Invocation {
+        parse_args_from(argv.iter().map(|word| (*word).to_owned()).collect())
+            .expect("invocation parses")
+    }
+
+    fn analyzed(words: &[&str]) -> Args {
+        match parse(words) {
+            Invocation::Analyze(args) => args,
+            other => panic!("expected an analysis invocation, got {other:?}"),
+        }
+    }
+
+    /// The surface fold (`28E:lean-why-is-whylog-reconciliation`): which invocations answer from
+    /// the stored receipt, and which from records handed in. Worth pinning as a table rather than
+    /// trusting the one-line predicate, because getting it wrong is SILENT in the worst direction —
+    /// a `why` that quietly analyses fresh records while the admin believes they are reading last
+    /// night's receipt is the wrong-surface-at-rc-0 class `289:rider-why-last-address-order` cost
+    /// us once already.
+    #[test]
+    fn only_an_unnamed_record_source_reads_the_receipt() {
+        assert!(
+            analyzed(&["why"]).reads_the_receipt(),
+            "bare `dorc why` is the fold's whole point: no book, no records, read the receipt"
+        );
+        assert!(
+            analyzed(&["why", "10"]).reads_the_receipt(),
+            "an address narrows the question, it does not name a record source"
+        );
+        assert!(
+            !analyzed(&["why", "--results", "r.txt", "--book=book.sh"]).reads_the_receipt(),
+            "naming records is what selects the harness posture"
+        );
+        assert!(
+            analyzed(&["why", "--whylog=run.whylog"]).reads_the_receipt(),
+            "naming an exact durable is still reading a receipt"
+        );
+        assert!(
+            analyzed(&["plan", "--last", "book.sh"]).reads_the_receipt(),
+            "`--last` survives as a spelling and still means replay on the other modes"
+        );
+        assert!(
+            !analyzed(&["plan", "book.sh"]).reads_the_receipt(),
+            "plan without --last is a live analysis, untouched by the fold"
+        );
+    }
+
+    /// A book is required exactly when the invocation cannot learn one from a receipt. The
+    /// `--results`-without-a-book row is the one worth having: records describe a book, and
+    /// accepting them with none named would analyse the empty string and report on nothing.
+    #[test]
+    fn a_book_is_required_unless_a_receipt_supplies_one() {
+        assert!(parse_args_from(vec!["why".to_owned()]).is_ok());
+        assert!(
+            parse_args_from(vec![
+                "why".to_owned(),
+                "--results".to_owned(),
+                "r.txt".to_owned()
+            ])
+            .is_err(),
+            "records without a book have nothing to be about"
+        );
+        assert!(
+            parse_args_from(vec!["plan".to_owned()]).is_err(),
+            "plan still demands its book"
+        );
+    }
 
     /// The did-you-mean helper: a near-miss (edit-distance ≤ 2) suggests, a wholly-different word
     /// does not (no misleading suggestion). Pins the mode + flag typo-suggestion behavior.

@@ -631,7 +631,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a flag scoped to one invocation was given under another (or its required companion was omitted). cli/lib.rs. {flag} and the {mode} it belongs to.",
         why: "the flag surface is per-invocation, so accepting it elsewhere would imply a capability that mode does not have. tc-whylog-default-off: the spike opt-in siting is the disclosed cut here.",
         params: &["flag", "mode"],
-        example: "sm --whylog is only valid with dorc why --last",
+        example: "sm --whylog is only valid with dorc why",
         message: Some("sm {{flag}} is only valid with {{mode}}"),
         help: None,
     },
