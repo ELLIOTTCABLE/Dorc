@@ -220,7 +220,35 @@ is the human's; untouched.
 - **HOLD (human-directed)** — harness restart pending. Both lanes landed and
   banked; execute lanes NOT dispatched; resume post-restart from this ledger +
   `_w4-map-DRAFT.md` (§F lane cut as adjudicated above).
-- (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
+- **lane-w4-carrier LANDED + FOLDED** @ merge `062c4516` (5 commits, tip
+  `f302e230`, builder-rebased onto `8281432d`; one file, 221+/214−). 26 sites
+  confirmed → 24 post (the three whylog-loader seats collapse to one fold
+  point); `advisory: bool` retreats from NINE signatures (map said 8 — builder
+  recount stands) and survives at exactly `report_at` / `report_by_oracle_file`
+  / `advisory_filter`; libtest red-frames dead by construction + PINNED
+  (`resolver-conflict` asserted as a returned value); zero re-bless PROVEN
+  (empty diff over `crates/*/tests`); comment budget net-new ≈2 of 10; both
+  platform gates green at the builder's tip (1465 Windows / 1461 WSL, the cfg
+  split). stderr byte-identity rests on a STRUCTURAL argument + the needle/gate
+  net, not a captured byte-diff — accepted knowingly (the preserve ruling was
+  conservative; stderr shape is render-form-unwelded territory anyway).
+  Conductor fold-verify: own-hand `gate:full-quiet` on the merged tip (the
+  arbiter for some post-report rust-analyzer E0308 noise in the agent worktree
+  — `{unknown}`-typed slice-coercion complaints, ~SUSPECT r-a false positives
+  given two green clippy legs).
+- **Conductor rulings on the carrier flags:**
+  `ask-diags-only-helpers-are-vec-not-carrier` → **`Vec<Diag>` ACCEPTED** for
+  diags-only products (this file's own idiom; `Carrier<()>` is ceremony) ·
+  `ask-kindlift-is-a-second-spine-type` → **ACCEPTED as-built** (two diag groups
+  genuinely frame against different sources; unify-into-one-spine is noted as a
+  parts-lane OPTION, never a mandate) · `ask-touches-set-is-lifted-twice` →
+  **preserved-deliberately ACCEPTED**; banked as a cheap follow-on for whoever
+  next owns that region (unifying moves where diags print — correctly out of a
+  byte-preserving lane) · NEW bounded RIDER for the parts lane:
+  `rider-carrier-must-use-on-carrier` — add `#[must_use]` to `Carrier<T>` in
+  `aid` IF the `-D warnings` fallout is a handful of sites; else revert to a
+  note and report (the silent-drop hazard the builder named is real and
+  type-shaped). — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
   measures how much of the why surface this fences off; if large, the deferred
