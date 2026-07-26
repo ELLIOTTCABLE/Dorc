@@ -136,6 +136,7 @@ dir = "spike"
 # calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
 run = [
   "mise run check -- --quiet",
+  "mise run clippy:clean",
   "cargo build --workspace --quiet",
   "cargo test --workspace --doc --quiet",
   "cargo nextest run --workspace --hide-progress-bar --status-level fail --failure-output final --no-fail-fast",
@@ -179,6 +180,22 @@ description = "Clippy over the workspace with warnings-as-errors — the inner-l
 dir = "spike"
 run = "cargo clippy --workspace --all-targets -- -D warnings"
 
+[tasks."clippy:clean"]
+description = "Clippy from a WIPED, dedicated target dir — ~7s cold, and unsatisfiable by anything another worktree, branch, or platform left in the shared cache. Rides the `gate:full*` pair; run it alone when you suspect a stale clean."
+dir = "spike"
+# Deliberately redundant with `check`'s clippy, and the redundancy is the point: that one is the
+# pre-commit gate (warm, fast, catches the common case), this one is the acceptance check, and it
+# holds only because its cache cannot have been touched by another environment. `cargo clean`
+# here wipes ONLY the lint dir below, never the shared build cache the rest of the gate needs.
+#
+# `--quiet` is cargo's, and suppresses build PROGRESS only — verified against a planted lint:
+# every diagnostic still prints and the exit stays 101. So it costs the human nothing, and the
+# unabridged/quiet split does not need two copies of this task.
+run = ["cargo clean", "cargo clippy --workspace --all-targets --quiet -- -D warnings"]
+
+[tasks."clippy:clean".env]
+CARGO_TARGET_DIR = "target/clippy-clean"
+
 [tasks.check]
 description = "All four lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — the same steps the pre-commit hook runs, from the same hk.pkl."
 run = "hk check --all"
@@ -192,7 +209,13 @@ alias = "gate"
 description = "ACCEPTANCE, human-facing: everything due before a commit, in order — the four lint gates, the commit-msg hook's self-test, a fresh build, then the whole suite, all unabridged. Agents want `gate:full-quiet`."
 # REMIT: a human reading a terminal. Never quieten this to save an agent tokens; that is
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
-run = ["mise run check", "mise run test:hooks", "mise run build", "mise run test"]
+run = [
+  "mise run check",
+  "mise run clippy:clean",
+  "mise run test:hooks",
+  "mise run build",
+  "mise run test",
+]
 
 [tasks."test:hooks"]
 description = "Self-test for the commit-msg gate hk runs. Cheap; rides `gate` because that check fails OPEN — a broken matcher stops refusing and says nothing."
