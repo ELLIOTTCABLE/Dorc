@@ -121,12 +121,14 @@ cement. Entry point: `spike/_prose-worklist.sh`. Still gated on the human's ack.
 
 ## §2 — Deferred, with re-entry pointers (build NONE of these now)
 
-- **The render crate** (doc-algebra layout · reflow · the sh-formatter with
-  teeth · own-lexer highlighting): needs-inventory-first stands
-  (rul-tree-render-is-a-firewalled-crate); the inventory seed is `28E` §3 + §8;
-  the shopping/survey round can run cheaply anytime; BUILD after first-blooding
-  unless W1/W2 rendering pain forces it. Until then the existing walker carries
-  the shapes at fixed width.
+- **The render crate**: the SKELETON is BUILT (human-directed pull-forward,
+  2026-07-25; `spike/crates/weft` — zero-dep firewalled box-model layout,
+  total-cover provenance spans, 80/40 goldens; conduct record `notes/28F`).
+  Its named-table cross-box alignment design lands with the W2 adapter
+  (`28F:rul-weft-table-lands-with-adapter`). Still deferred from the original
+  entry: the sh-formatter with teeth · own-lexer highlighting · doc-algebra
+  reflow optimization · TUI. The needs-inventory-before-library-shopping rule
+  stands for those (rul-tree-render-is-a-firewalled-crate).
 - **DAG join machinery** (join-only numbering, restatement joins): current
   chains are linear-with-one-join; build when real multi-claim joins appear
   (likely stdlib/field-trial era). The render vocabulary stays born-DAG-shaped

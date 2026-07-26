@@ -131,7 +131,7 @@ Registry
 | aid-first-wall-nudge | which unmodeled command forms the first wall; how many sites an oracle for it would recover | text+orcl+topo | rev▶ blo▶ olo▶ | d | first-wall walk (`cli`); USER_STORY st.2–3 | B |
 | aid-oracle-coverage-nudge | "this looks like a guard — an oracle would lift it" (company-it-keeps enrichment) | text+topo | blo▶ olo▶ | g | an-enrichment-nudge | S |
 | aid-unloaded-sibling-oracle | sibling `*.oracle.sh` files exist but are not loaded (suggest, never auto-load) | invoc+text | blo▶ rev▶ | d | `24H` ack-6 | S |
-| aid-loaded-oracle-inventory | which oracles/dirs were actually loaded this run | invoc | rev▶ ci▶ | m | `24H` flow picks | O |
+| aid-loaded-oracle-inventory | which oracles/dirs were actually loaded this run | invoc | rev▶ ci▶ | m | `WhylogV2Metadata.oracles` (ordered path+digest, ordinal-checked on read) | B |
 | aid-survives-attribution | whose at-most claim licensed each survival; the disjointness derivation; the resolver involved | facts+topo | rev▶ post◀ | m+c+d | SurvivalWitness; an-attribution-lanes | B |
 | aid-guard-license-attribution | whose check guards each verify line, under whose vouch | facts+topo | rev▶ post◀ | c+d | GuardLicense lane | B |
 | aid-carry-attribution | which cross-context carries happened, under which invariant lines + closure proof | facts+topo | rev▶ post◀ | c+d | `27C` §4(a); an-read-set-closure | B |
@@ -196,8 +196,6 @@ Unowned (rows above whose mechanism no round owns; watch, don't lose)
 - `aid-lint-kind-adjudicability-bar` (`24S:A4`) — hard-gates community-shared kinds.
 - Why-surface output sanitization (`an-output-sanitization`) + whylog sensitivity —
   security round.
-- `aid-loaded-oracle-inventory` — build-state unverified; confirm against the code
-  before citing as built.
 - The prose-register schema (terse/deep/first-encounter) + a catalog home for the
   class-level remediation-hint prose — human/conductor design sitting (`27U` §7).
 
