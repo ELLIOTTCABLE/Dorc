@@ -3933,25 +3933,28 @@ fn survival_chain(
             excerpt: None,
         });
     } else {
-        links.extend(
-            license
-                .derivation()
-                .establish_vouches
-                .iter()
-                .map(|receipt| ChainLink {
-                    rank: RowRank::RuntimeBacked,
-                    tier: TrustTier::Vouched,
-                    speaker: oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs),
-                    payload: Said::words(
-                        "why-vouch-payload-establish",
-                        &[&dorc_plan::fact_label(interner, receipt.fact)],
-                    ),
-                    quoted: true,
-                    event: None,
-                    explanation: None,
-                    excerpt: None,
-                }),
-        );
+        // One row per SPEAKER, not per erased establish: an aggregate replacement can erase
+        // several cells of one entity through one author's line, and four rows quoting one line
+        // four times is the same sentence said four times.
+        let mut by_speaker: Vec<(Option<String>, Vec<String>)> = Vec::new();
+        for receipt in &license.derivation().establish_vouches {
+            let speaker = oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs);
+            let label = dorc_plan::fact_label(interner, receipt.fact);
+            match by_speaker.iter_mut().find(|(who, _)| *who == speaker) {
+                Some((_, labels)) => labels.push(label),
+                None => by_speaker.push((speaker, vec![label])),
+            }
+        }
+        links.extend(by_speaker.into_iter().map(|(speaker, labels)| ChainLink {
+            rank: RowRank::RuntimeBacked,
+            tier: TrustTier::Vouched,
+            speaker,
+            payload: Said::words("why-vouch-payload-establish", &[&brace_selectors(&labels)]),
+            quoted: true,
+            event: None,
+            explanation: None,
+            excerpt: None,
+        }));
     }
     let mut wall_refs: Vec<String> = Vec::new();
     let mut claimants: Vec<String> = Vec::new();
@@ -4182,6 +4185,46 @@ fn guard_chain(
             rows,
         },
     }
+}
+
+/// Collapse coordinate labels sharing one `kind:entity` into the brace-alternation display
+/// `kind:entity@{a,b}` (`28G` strawman `a-fire-morning` line 72; `281` §7's own spelling for a
+/// multi-cell coordinate, reused rather than a second one invented).
+///
+/// DISPLAY only, and deliberately so: the model still holds N separate [`dorc_core::FactKey`]s,
+/// each with its own selector, and every comparison the engine does still runs per-cell through
+/// the `selector_covers` chokepoint (`selector-chokepoint`). Folding the model would make two cells
+/// look like one to the algebra, which is exactly the collision the chokepoint exists to prevent.
+/// Order is preserved and duplicates are kept out; a label with no `@` passes through untouched.
+fn brace_selectors(labels: &[String]) -> String {
+    let mut grouped: Vec<(String, Vec<String>)> = Vec::new();
+    for label in labels {
+        let (head, selector) = match label.rsplit_once('@') {
+            Some((head, selector)) => (head.to_owned(), Some(selector.to_owned())),
+            None => (label.clone(), None),
+        };
+        let entry = match grouped.iter_mut().find(|(seen, _)| *seen == head) {
+            Some(entry) => entry,
+            None => {
+                grouped.push((head, Vec::new()));
+                grouped.last_mut().unwrap_or_else(|| unreachable!())
+            }
+        };
+        if let Some(selector) = selector
+            && !entry.1.contains(&selector)
+        {
+            entry.1.push(selector);
+        }
+    }
+    grouped
+        .into_iter()
+        .map(|(head, selectors)| match selectors.len() {
+            0 => head,
+            1 => format!("{head}@{}", selectors.join("")),
+            _ => format!("{head}@{{{}}}", selectors.join(",")),
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// The asked line plus every line the answer names, deduped and in source order.
@@ -5364,6 +5407,67 @@ fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_aid::diag::
     match &diag.code {
         DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod brace_selector_tests {
+    use super::brace_selectors;
+
+    /// The whole point of the aggregation is that ONE entity reads as one thing. Two cells of one
+    /// entity spelled as two full coordinates make a reader compare two long strings character by
+    /// character to notice they differ only in the selector; `281` §7's brace-alternation puts the
+    /// difference where the eye already is.
+    #[test]
+    fn cells_of_one_entity_collapse_to_one_braced_coordinate() {
+        assert_eq!(
+            brace_selectors(&[
+                "sm.dorc.Package:nginx@enabled".to_owned(),
+                "sm.dorc.Package:nginx@active".to_owned(),
+            ]),
+            "sm.dorc.Package:nginx@{enabled,active}"
+        );
+    }
+
+    /// Grouping must never merge across entities: `nginx` and `redis` are different things, and a
+    /// render that ran them together would be claiming a skip rested on cells it did not.
+    #[test]
+    fn different_entities_stay_separate_coordinates() {
+        assert_eq!(
+            brace_selectors(&[
+                "sm.dorc.Package:nginx@installed".to_owned(),
+                "sm.dorc.Package:redis@installed".to_owned(),
+            ]),
+            "sm.dorc.Package:nginx@installed sm.dorc.Package:redis@installed"
+        );
+    }
+
+    /// A single cell keeps its plain spelling — braces around one token would suggest a set where
+    /// there is one member — and a selector-less label passes through untouched, since the
+    /// whole-entity form means something different from any braced set.
+    #[test]
+    fn a_lone_cell_and_a_selectorless_label_are_left_alone() {
+        assert_eq!(
+            brace_selectors(&["sm.dorc.Package:nginx@installed".to_owned()]),
+            "sm.dorc.Package:nginx@installed"
+        );
+        assert_eq!(
+            brace_selectors(&["sm.dorc.Package:nginx".to_owned()]),
+            "sm.dorc.Package:nginx"
+        );
+    }
+
+    /// A repeated cell is one cell. Two erased establishes of the same coordinate say the same
+    /// thing, and `@{active,active}` would read as two distinct pieces of evidence.
+    #[test]
+    fn a_repeated_cell_is_not_listed_twice() {
+        assert_eq!(
+            brace_selectors(&[
+                "sm.dorc.Service:nginx@active".to_owned(),
+                "sm.dorc.Service:nginx@active".to_owned(),
+            ]),
+            "sm.dorc.Service:nginx@active"
+        );
     }
 }
 
