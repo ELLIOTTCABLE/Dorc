@@ -284,10 +284,9 @@ fn touched_cases(gated: &GatedCases) -> Result<std::collections::BTreeMap<String
     Ok(cases)
 }
 
-/// Say out loud that a wholly-staged case was accepted, rather than quietly fixing it up:
-/// publication rewrites the worktree copy while the author's `git add` still points at their own
-/// bytes, and dorc-loom mutates no index (`282:rul-promote-is-one-atomic-act`). Naming the paths is
-/// the whole remedy, so failing to name one is the only real failure here.
+/// Naming a staged case IS the remedy: dorc-loom mutates no index
+/// (`282:rul-promote-is-one-atomic-act`), so a rewrite otherwise strands the author's `git add`
+/// on their own pre-promote bytes.
 fn note_staged_cases(
     staged: &std::collections::BTreeSet<String>,
     rewritten: &std::collections::BTreeSet<String>,
@@ -307,8 +306,7 @@ fn note_staged_cases(
     Ok(())
 }
 
-/// Worktree bytes of every staged case, read before publication so the note above can name exactly
-/// those a rewrite left with a stale index copy.
+/// Read before publication, so the note can name exactly the cases a rewrite left stale.
 fn staged_bytes(gated: &GatedCases) -> Result<std::collections::BTreeMap<String, Vec<u8>>, String> {
     gated
         .staged
@@ -737,10 +735,8 @@ fn join_continuations<'a>(
 mod tests {
     use super::*;
 
-    /// Under-naming a rewritten case is the failure that matters: its staged bytes are the author's
-    /// own pre-promote text, so a later bare `git commit` would pick those up and quietly drop the
-    /// promotion. Over-naming an untouched one is only noise, but the two notes ask for different
-    /// things and must not be swapped.
+    /// Under-naming is the failure that matters: a rewritten case's staged bytes are the author's
+    /// own pre-promote text, so a bare `git commit` would take those and drop the promotion.
     #[test]
     fn only_a_rewritten_staged_case_is_told_to_restage() {
         let staged =

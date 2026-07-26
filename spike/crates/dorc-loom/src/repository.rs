@@ -52,9 +52,8 @@ impl ProseClassification {
 
     /// The subset of [`Self::touched`] whose edit is wholly staged rather than wholly unstaged.
     ///
-    /// Classification treats the two alike, because neither ever reads the index. They part
-    /// company after publication: rewriting a staged case strands its index copy at the author's
-    /// pre-promote bytes, and dorc-loom will not stage on their behalf, so it has to say so.
+    /// Classification treats the two alike — neither reads the index. They part company only
+    /// after publication, which strands a staged case's index copy on pre-promote bytes.
     #[must_use]
     pub fn staged(&self) -> &BTreeSet<String> {
         &self.staged
@@ -245,8 +244,7 @@ struct StatusEntry {
     source: Option<String>,
     index: IndexStatus,
     worktree: WorktreeStatus,
-    /// The raw `XY` pair, retained so a refusal can name the state the author is actually in
-    /// rather than the one class it expected.
+    /// Retained so a refusal can name the state the author is in, not just the one it wanted.
     code: [u8; 2],
 }
 
@@ -268,7 +266,6 @@ impl StatusEntry {
     }
 }
 
-/// Which side of the index a legitimate prose edit sits on.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum EditShape {
     Unstaged,
@@ -514,9 +511,8 @@ mod tests {
         assert!(result.touched().is_empty());
     }
 
-    /// A `git add` before running the tool is a reflex, and porcelain `M ` guarantees the worktree
-    /// and index agree — so HEAD -> worktree is still the author's whole edit and nothing about the
-    /// read changes. Only the aftermath differs, which is why the staged set is reported separately.
+    /// Porcelain `M ` guarantees the worktree and index agree, so HEAD -> worktree is still the
+    /// author's whole edit and nothing about the read changes. Only the aftermath differs.
     #[test]
     fn a_wholly_staged_case_is_touched_and_reported_as_staged() {
         let head = case(
@@ -577,9 +573,9 @@ mod tests {
         assert!(!error.contains("outside selected prose edits"), "{error}");
     }
 
-    /// This gate is shared by `compile` and `promote`, so a refusal phrased around `promote` names
-    /// a command the author may not have run. It has the observed `XY` pair in hand and must say
-    /// which state it found, since every refused state has a different way out.
+    /// The gate is shared by `compile` and `promote`, so a refusal phrased around `promote` names
+    /// a command the author may not have run. Every refused state has a different way out, so the
+    /// observed `XY` pair has to appear.
     #[test]
     fn a_refused_git_state_is_named_and_no_verb_is_blamed() {
         let head = case(
