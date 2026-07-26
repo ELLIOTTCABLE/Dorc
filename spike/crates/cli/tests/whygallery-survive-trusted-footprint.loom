@@ -209,13 +209,13 @@ $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-
                                       rc 0)
    * firewall.oracle.sh:17  vouches   "re-running this line adds nothing worth running
                                       while sm.dorc.Firewall:443/tcp holds"
-   ! package.oracle.sh:19   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
+   ! package.oracle.sh:24   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
 
       This speaks for everything it did NOT measure. Fact derived from as-written contract
       only; no run can back it.
 
          [ package.oracle.sh, as-written:
-      19 | apt_get__disturbs() {
+      24 |       install|purge) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
 
    * dorc                   derives   that claim is proven disjoint from
                                       sm.dorc.Firewall:443/tcp -- it does not overlap what
@@ -235,7 +235,7 @@ $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-
                 also touches sm.dorc.Firewall:443/tcp, it is what wrongly kept this line
                 out.
 
-      fix:      package.oracle.sh:19 (widen the claim; every consumer heals)
+      fix:      package.oracle.sh:24 (widen the claim; every consumer heals)
    OR
       fix:      `dorc plan <book> <host>` (run without --trust-footprints, to distrust
                 oracle-authored claims)
@@ -270,13 +270,13 @@ $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
                                       rc 0)
    * firewall.oracle.sh:17  vouches   "re-running this line adds nothing worth running
                                       while sm.dorc.Firewall:443/tcp holds"
-   ! package.oracle.sh:19   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
+   ! package.oracle.sh:24   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
 
       This speaks for everything it did NOT measure. Fact derived from as-written contract
       only; no run can back it.
 
          [ package.oracle.sh, as-written:
-      19 | apt_get__disturbs() {
+      24 |       install|purge) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
 
    * dorc                   derives   that claim is proven disjoint from
                                       sm.dorc.Firewall:443/tcp -- it does not overlap what
@@ -296,7 +296,7 @@ $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
                 also touches sm.dorc.Firewall:443/tcp, it is what wrongly kept this line
                 out.
 
-      fix:      package.oracle.sh:19 (widen the claim; every consumer heals)
+      fix:      package.oracle.sh:24 (widen the claim; every consumer heals)
    OR
       fix:      `dorc plan <book> <host>` (run without --trust-footprints, to distrust
                 oracle-authored claims)

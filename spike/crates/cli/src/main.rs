@@ -1893,7 +1893,7 @@ fn build_survival_footprints(
         if establish.is_none() && !kills.contains(node) {
             continue; // not a wall candidate (a pure builtin, a Query, an opaque)
         }
-        let Some((provider, coords_with_selectors)) =
+        let Some((provider, coords_with_selectors, arm_span)) =
             resolve_touches_footprint(*node, value, &touches_sets, interner)
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
@@ -1924,8 +1924,12 @@ fn build_survival_footprints(
         // footprint. A no-op on the hit-surface HERE (the canary just proved own ∈ coords), but it
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
-        // `tc-disturbs-span-threading`: the `disturbs` funcdef `file:line` = a survival's leverage point.
-        let defining = touches_defining_span(provider, &touches_sets, interner);
+        // `tc-disturbs-span-threading`: a survival's leverage point is the MATCHED ARM — the line
+        // a reader would widen for THEIR invocation — falling back to the funcdef name when the
+        // trace located no emitting line. The funcdef is the honest coarsest answer and stays the
+        // floor; it is just not what a reader needs when they can have the arm.
+        let defining =
+            arm_span.or_else(|| touches_defining_span(provider, &touches_sets, interner));
         if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
             .map(|fp| fp.with_own(own).with_defining(defining))
         {
@@ -1959,10 +1963,14 @@ fn resolve_touches_footprint(
     value: &dorc_analysis::value::ValueFlow,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &mut Interner,
-) -> Option<(Symbol, Vec<FootprintCoord>)> {
+) -> Option<(
+    Symbol,
+    Vec<FootprintCoord>,
+    Option<(dorc_core::Span, dorc_core::OracleFileId)>,
+)> {
     use dorc_analysis::value::ValueOf;
     use dorc_oracle::predict::map_provider_name;
-    use dorc_oracle::touches::{TouchesResolution, evaluate_touches};
+    use dorc_oracle::touches::{TouchesResolution, evaluate_touches_located};
 
     let argv = value.argv_values(node);
     let (first, rest) = argv.split_first()?;
@@ -1979,15 +1987,28 @@ fn resolve_touches_footprint(
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
     let want = map_provider_name(interner.resolve(*provider));
-    let coords = touches_sets.iter().find_map(|set| {
+    // The arm span rides out of the SAME trace that produced the coordinates
+    // (`tc-disturbs-span-threading`): a claim and the line a reader is sent to widen must come
+    // from one evaluation, or the excerpt shows an arm this argv never reached.
+    let (coords, arm) = touches_sets.iter().enumerate().find_map(|(index, set)| {
         set.providers()
             .find(|p| map_provider_name(interner.resolve(*p)) == want)
             .and_then(|p| set.get(p))
-            .and_then(|touches| match evaluate_touches(touches, &arg_refs) {
-                TouchesResolution::Emitted(coords) if !coords.is_empty() => Some(coords),
-                // Emitted(empty) = no claim = wall; Top = ⊤ = wall. Both ⇒ no footprint.
-                TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
-            })
+            .and_then(
+                |touches| match evaluate_touches_located(touches, &arg_refs) {
+                    (TouchesResolution::Emitted(coords), arm) if !coords.is_empty() => Some((
+                        coords,
+                        arm.map(|span| {
+                            (
+                                span,
+                                dorc_core::OracleFileId(u32::try_from(index).unwrap_or(u32::MAX)),
+                            )
+                        }),
+                    )),
+                    // Emitted(empty) = no claim = wall; Top = ⊤ = wall. Both ⇒ no footprint.
+                    (TouchesResolution::Emitted(_) | TouchesResolution::Top(_), _) => None,
+                },
+            )
     })?;
 
     // Intern each opaque `kind:entity@selector` fragment into the shared vocabulary (the fence).
@@ -2009,7 +2030,7 @@ fn resolve_touches_footprint(
             (dorc_plan::EntityCoord::new(kind, entity), selector)
         })
         .collect();
-    Some((*provider, entity_coords))
+    Some((*provider, entity_coords, arm))
 }
 
 /// The `disturbs` funcdef's defining `(Span, OracleFileId)` for a provider (`tc-disturbs-span-
@@ -2441,7 +2462,7 @@ fn collect_resolver_coords(
             SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
         ) || kills.contains(node);
         if is_wall_candidate
-            && let Some((_, fp_coords)) =
+            && let Some((_, fp_coords, _)) =
                 resolve_touches_footprint(*node, value, touches_sets, interner)
         {
             for (c, _selector) in fp_coords {
@@ -2486,7 +2507,7 @@ fn collect_coord_kinds(
             SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
         ) || kills.contains(node);
         if is_wall_candidate
-            && let Some((_, fp_coords)) =
+            && let Some((_, fp_coords, _)) =
                 resolve_touches_footprint(*node, value, touches_sets, interner)
         {
             for (c, _selector) in fp_coords {
@@ -2752,7 +2773,8 @@ fn collect_reach_probes(
         if !is_wall_candidate {
             continue;
         }
-        let Some((_, fp_coords)) = resolve_touches_footprint(*node, value, touches_sets, interner)
+        let Some((_, fp_coords, _)) =
+            resolve_touches_footprint(*node, value, touches_sets, interner)
         else {
             continue;
         };

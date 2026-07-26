@@ -31,7 +31,7 @@
 use std::collections::BTreeMap;
 
 use dorc_aid::Carrier;
-use dorc_core::{Interner, Symbol};
+use dorc_core::{Interner, Span, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{
@@ -159,20 +159,41 @@ impl TouchesTop {
 /// only, every path returns a resolution (the budget bounds loops).
 #[must_use]
 pub fn evaluate_touches(touches: &Predict, argv: &[&str]) -> TouchesResolution {
+    evaluate_touches_located(touches, argv).0
+}
+
+/// [`evaluate_touches`], plus the span of the REACHED emitting region — the `printf` lines that
+/// actually produced this argv's claim, from the first through the last (`tc-disturbs-span-
+/// threading`).
+///
+/// The funcdef's own span is the honest coarsest answer and was what the survival chain used, but
+/// it points a reader at `apt_get__disturbs() {` when what they need is the arm that matched THEIR
+/// invocation and the comment its author wrote above it (`28G` strawman `a-fire-morning` lines
+/// 82–84). Per-arm, keyed on the same trace that produced the coordinates, so the span and the
+/// claim can never come from different arms.
+///
+/// `None` when the reached path emitted nothing (an unmatched verb — no claim, and so no line to
+/// point at) or when the trace degraded to ⊤.
+#[must_use]
+pub fn evaluate_touches_located(
+    touches: &Predict,
+    argv: &[&str],
+) -> (TouchesResolution, Option<Span>) {
     if argv.is_empty() {
-        return TouchesResolution::Top(TouchesTop::EmptyArgv);
+        return (TouchesResolution::Top(TouchesTop::EmptyArgv), None);
     }
     let budget = argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT);
     let mut ev = Emitter {
         positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
         vars: BTreeMap::new(),
         coords: Vec::new(),
+        emitted: None,
         budget,
         steps: 0,
     };
     match ev.run_block(&touches.body) {
-        Flow::Normal => TouchesResolution::Emitted(ev.coords),
-        Flow::Top(reason) => TouchesResolution::Top(reason),
+        Flow::Normal => (TouchesResolution::Emitted(ev.coords), ev.emitted),
+        Flow::Top(reason) => (TouchesResolution::Top(reason), None),
     }
 }
 
@@ -193,6 +214,10 @@ struct Emitter {
     positionals: Vec<String>,
     vars: BTreeMap<Symbol, String>,
     coords: Vec<EmittedCoord>,
+    /// The reached emitting region: the first emitting command's start through the last one's end.
+    /// Widened per emission rather than kept per coordinate, because the display unit is LINES and
+    /// a claim assembled from two printfs is one region of the author's file.
+    emitted: Option<Span>,
     budget: usize,
     steps: usize,
 }
@@ -340,6 +365,15 @@ impl Emitter {
         }
         match printf_lines(&format, &args) {
             Ok(lines) => {
+                if !lines.is_empty() {
+                    self.emitted = Some(match self.emitted {
+                        Some(prior) => Span {
+                            lo: prior.lo.min(cmd.span.lo),
+                            hi: prior.hi.max(cmd.span.hi),
+                        },
+                        None => cmd.span,
+                    });
+                }
                 // Typed emission (`277` §4d / 24P §2): the kind rides the trailing MARK and each
                 // printf line is a RAW ENTITY in that kind (`printf '%s\n' "$1" : sm.dorc.Package`).
                 // The legacy stringly form (a printf with NO mark, `printf 'kind:%s\n'`) parses each
