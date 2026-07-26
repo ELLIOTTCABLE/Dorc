@@ -25,11 +25,10 @@ jq = "1"
 # worktree). Install is a manual, human-gated step — see the round-19 spike
 # note. Run `mise run hk-install` only with that tradeoff understood.
 #
-# MOOT AS OF 2026-07-26: hk 1.44.3's libgit2 rejects `extensions.relativeWorktrees`
-# (which the worktree fleet needs) and refuses to open this repository, so `hk check`
-# and `hk fix` both die before doing anything. `mise run check`/`fmt` run the same
-# steps directly; hk stays pinned so the hook can be re-adopted once it is fixed.
-hk = "1.44.3"
+# FLOOR 1.47.0: earlier hk vendors a libgit2 that rejects `extensions.relativeWorktrees`
+# — which the worktree fleet needs — and cannot open this repository at all. Never pin
+# below it. `HK_LIBGIT2=0` forces hk's shell-git path if a libgit2 problem recurs.
+hk = "1.53.0"
 pkl = "0.31.1"
 
 # Lint/audit toolbelt for the spike (wired as hk.pkl steps; see also
@@ -99,47 +98,33 @@ description = "Clippy over the workspace with warnings-as-errors — the inner-l
 dir = "spike"
 run = "cargo clippy --workspace --all-targets -- -D warnings"
 
-# The four gate steps below are spelled to MATCH ./hk.pkl step-for-step, and are run
-# directly rather than through `hk` because hk's bundled libgit2 refuses this
-# repository outright (`extensions.relativeWorktrees`, which the worktree fleet needs).
-# The hk path is kept as `check:hk` so a fixed hk can be re-adopted by swapping which
-# one `gate` calls. Cheap steps first, so a failure lands fast. If you change a step
-# here, change hk.pkl too — they are two spellings of one gate.
 [tasks.check]
-description = "All four lint gates (fmt-check, typos, cargo-deny licenses/bans/sources, clippy -D warnings), check-only — the set that must be green before every commit."
-run = [
-   "cargo fmt --all --manifest-path spike/Cargo.toml --check",
-   "typos spike",
-   "cargo deny --manifest-path spike/Cargo.toml check licenses bans sources",
-   "cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings",
-]
-
-[tasks."check:hk"]
-description = "The same gates via hk, the pre-commit hook's own path. CURRENTLY BROKEN against this repo: hk 1.44.3's libgit2 rejects extensions.relativeWorktrees and cannot open the repository at all. Use `check`."
+description = "All four lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — the same steps the pre-commit hook runs, from the same hk.pkl."
 run = "hk check --all"
 
 [tasks.fmt]
-description = "Apply cargo fmt to the spike (formatters fix; nothing else — typos is check-only here, since auto-rewriting a corpus this slug-dense deserves a human)."
-run = "cargo fmt --all --manifest-path spike/Cargo.toml"
+description = "Apply the fixers to the spike via hk (cargo fmt, and typos --write-changes)."
+run = "hk fix --all"
 
 [tasks.gate]
 description = "Everything due before a commit, in order: the four lint gates, the commit-msg hook's self-test, a fresh build, then the whole suite."
 run = ["mise run check", "mise run test:hooks", "mise run build", "mise run test"]
 
 [tasks."test:hooks"]
-description = "Self-test for the .githooks/commit-msg gate. Cheap; rides `gate` because that hook fails OPEN — a broken matcher stops refusing and says nothing."
+description = "Self-test for the commit-msg gate hk runs. Cheap; rides `gate` because that check fails OPEN — a broken matcher stops refusing and says nothing."
 run = "sh .githooks/test-commit-msg.sh"
 
-[tasks.hooks-install]
-description = "Install the commit-msg gate (gitlabels headliner form; refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config — sets core.hooksPath, which every worktree of this repo then obeys; human-gated for the same reason as hk-install. REPLACES any existing value: as of 2026-07-26 that is an absolute Windows spelling of the default .git/hooks, which holds only .sample files (nothing is lost) and which cannot resolve on the macOS/WSL legs anyway. The relative path this sets resolves against each worktree's OWN checkout — so a worktree predating the hook is silently ungated until it picks the file up."
-run = "git config core.hooksPath .githooks"
+[tasks.clean]
+description = "cargo clean over the spike workspace — build artifacts only. Deliberately touches NOTHING in the working tree: no `git clean`, no untracked sweep. Dirty and untracked paths here are routinely a human's in-flight work, and a task that eats them is worth more than it saves."
+dir = "spike"
+run = "cargo clean"
 
 [tasks.audit]
 description = "cargo-deny advisories (network: fetches the RustSec DB; not part of the offline pre-commit gates)."
 run = "cargo deny --manifest-path spike/Cargo.toml check advisories"
 
 [tasks.hk-install]
-description = "Install the hk pre-commit hook. WRITES SHARED .git/config (affects main) — human-gated; read the round-19 spike note first."
+description = "Install hk's git hooks: the pre-commit lint gate AND the commit-msg gitlabels gate (which refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config (affects main and every worktree) — human-gated; read the round-19 spike note first. Agent sessions skip pre-commit via HK_SKIP_HOOK but still get commit-msg."
 run = "hk install"
 
 [tasks.bless]
@@ -154,14 +139,14 @@ env = { DRY = "1" }
 run = "sh e2e/conduct-bless.sh"
 
 [tasks."loom:compile"]
-description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Defaults to every case (the tool narrows to the prose-changed ones itself); trailing args scope it."
+description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it."
 dir = "spike"
-run = "sh tools/loom.sh compile"
+run = "cargo run --quiet -p dorc-loom -- compile"
 
 [tasks."loom:promote"]
 description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise."
 dir = "spike"
-run = "sh tools/loom.sh promote"
+run = "cargo run --quiet -p dorc-loom -- promote"
 
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table."
