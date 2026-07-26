@@ -651,11 +651,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let replay = if args.reads_the_receipt() {
         match load_whylog_replay(args, advisory)? {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
-            // The degraded receipt is answered HERE, above the pipeline, because the pipeline's
-            // first act is to read and analyze the book at the recorded path — which under drift
-            // is not the run's book (`28F:rul-drift-replay-d1`). Only `why` has a surface for it;
-            // every other mode that reads the receipt is trying to re-derive a plan, and there is
-            // no honest degraded plan.
+            // Answered ABOVE the pipeline, whose first act is analyzing the book at the recorded
+            // path — under drift, not the run's book. Only `why` has a degraded surface; every
+            // other receipt-reading mode wants a plan, and there is no honest degraded plan.
             ReplayLoad::Drifted(drifted) if mode == Mode::Why => {
                 emit_drifted_why(args.why_address.as_deref(), &drifted);
                 std::io::stdout().flush().ok();
@@ -1583,9 +1581,8 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let scope =
         WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
     // An edited book is the ordinary mismatch, so it is NAMED rather than reported as generic
-    // framing — and it is the ENTRY to the degraded receipt rather than a dead end
-    // (`28F:rul-drift-replay-d1`). The diag still fires: the reader gets the drift loudly on the
-    // report lane and a durable-derived receipt on stdout.
+    // framing — and it is the ENTRY to the degraded receipt (`28F:rul-drift-replay-d1`) rather than
+    // a dead end. The diag still fires: drift loud on the report lane, receipt on stdout.
     if envelope.claims().book_digest() != scope.book.1 {
         report_at(
             advisory,
@@ -5617,8 +5614,7 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
     };
     let mut body = vec![receipt_row(&book_row)];
     if receipt.tally.is_drifted() {
-        // Adjacent to the book row it qualifies: the digest above is the RUN's, and this says the
-        // file at that path no longer carries it, so nothing below ties back to source.
+        // Adjacent to the row it qualifies: the digest above is the RUN's, not the file's now.
         body.push(receipt_row(&Said::words("why-receipt-book-drifted", &[])));
     }
     body.extend([
