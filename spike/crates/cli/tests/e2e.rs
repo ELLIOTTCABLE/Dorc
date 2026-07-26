@@ -166,6 +166,12 @@ fn which(name: &str) -> Option<PathBuf> {
 // the harness's shared, immutable context
 
 /// Binaries, the syntax checker, and the run mode — resolved once, shared by every trial.
+/// The engine's harness clock pin, and the instant every case's transcript is dated by
+/// (`rul-fixture-identity-never-production`). A round number in 2026 so a reader of a committed
+/// transcript can tell at a glance that the date is fixture, not a real morning.
+const FIXTURE_CLOCK_ENV: &str = "DORC_FIXTURE_CLOCK_MS";
+const FIXTURE_CLOCK_MS: u64 = 1_769_306_437_000;
+
 struct Harness {
     /// The `dorc` binary cargo just built for this test target.
     dorc: PathBuf,
@@ -203,8 +209,14 @@ impl Harness {
     /// A bare `dorc` invocation. Every call site appends the case's shared
     /// `-o oracle … [DORC_FLAGS]` argv in the sh harness's own position — argument order
     /// is load-bearing for the mode-dispatching parser.
+    ///
+    /// The clock pin rides here rather than at the call sites: the why surface dates its output
+    /// (receipt header, run-instants on `reported` rows), so an unpinned clock would make every
+    /// transcript carrying one a non-fixpoint by construction.
     fn dorc(&self) -> Command {
-        Command::new(&self.dorc)
+        let mut command = Command::new(&self.dorc);
+        command.env(FIXTURE_CLOCK_ENV, FIXTURE_CLOCK_MS.to_string());
+        command
     }
 
     /// Syntax-check one artifact: `printf '%s\n' "$art" | $checker -n`.

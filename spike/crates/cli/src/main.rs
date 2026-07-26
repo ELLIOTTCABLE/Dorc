@@ -135,7 +135,7 @@ fn main() -> ExitCode {
             }
         },
         Ok(Invocation::Lint(args)) => lint_command(&args),
-        Ok(Invocation::Analyze(args)) => match run(&args, &mut RunClock::system()) {
+        Ok(Invocation::Analyze(args)) => match run(&args, &mut RunClock::for_invocation()) {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
@@ -557,7 +557,38 @@ enum RunClock {
     Absent,
 }
 
+/// The harness's clock pin (`rul-fixture-identity-never-production`) — Unix milliseconds, and the
+/// ONE substitution point for the run's instant, exactly as `records::Framing::spike` is the one
+/// substitution point for the run's nonce/host.
+///
+/// It exists because the why surface now DATES its output: a receipt header and a `reported` row's
+/// run-instant are wall-clock values, so a committed transcript could otherwise never be a
+/// fixpoint. A rendered-but-wrong timestamp was the alternative and is strictly worse — dating a
+/// receipt wrongly is mis-attribution, the top of `271:rul-sin-ordering` — so the real clock stays
+/// the default and the pin is something a harness must deliberately set.
+const FIXTURE_CLOCK_ENV: &str = "DORC_FIXTURE_CLOCK_MS";
+
 impl RunClock {
+    /// The clock this invocation runs on: the harness pin when one is set, else the real one.
+    /// Read at the process edge, once (`io-at-edges-only`).
+    fn for_invocation() -> Self {
+        match std::env::var(FIXTURE_CLOCK_ENV)
+            .ok()
+            .as_deref()
+            .map(str::parse::<u64>)
+        {
+            Some(Ok(millis)) => Self::Ticking {
+                at: dorc_core::RunInstant(millis),
+                step_millis: 0,
+            },
+            // An unparseable pin is a harness mistake, and answering it with the REAL clock would
+            // hide that mistake behind a green-then-red transcript. No clock at all is the loud
+            // reading: every instant renders absent.
+            Some(Err(_)) => Self::Absent,
+            None => Self::system(),
+        }
+    }
+
     /// The ONE wall-clock read. A clock the platform cannot place after the epoch answers
     /// [`Absent`](RunClock::Absent) rather than saturating to a fabricated zero (`inv-no-throw`).
     fn system() -> Self {
