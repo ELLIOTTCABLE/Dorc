@@ -122,6 +122,11 @@ dir = "spike"
 # mise prints `ERROR task failed` for ANY nonzero exit, so a parse-error run (exit 10) reads as a
 # tooling failure when it is a legitimate dorc outcome that still shipped its artifact. Read
 # dorc's own exit code, not mise's verdict on it.
+#
+# `raw_args` because this task is a thin proxy for a tool with its own parser: without it mise
+# intercepts `--help` and prints ITS task help, so `mise run dorc --help` could never reach dorc's
+# own help page — which is a real dorc flag, and a loom-owned one at that.
+raw_args = true
 run = "cargo run -q -p dorc-cli --bin dorc --"
 
 [tasks.test]
