@@ -20,5 +20,12 @@ dorc-syntax = { path = "../syntax", version = "0.0.0" }
 # hyphen↔underscore convention (task-P). The e2e tests also build a kind-index.
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
 
+# TEST-ONLY, and deliberately so: the kernel gains no dependency. `render_corpus`'s
+# `dash -n` net needs a POSIX shell, and `internal-tooling` (std-only repo plumbing, not
+# product code) is the one place that answers where one is — shared with the e2e runner so
+# the two cannot drift into disagreeing about it, as they silently had.
+[dev-dependencies]
+internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
+
 [lints]
 workspace = true
