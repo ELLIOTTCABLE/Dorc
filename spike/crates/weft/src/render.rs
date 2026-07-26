@@ -308,6 +308,11 @@ impl<K: Clone + PartialEq> Painter<K> {
             // The stacked indent is the TABLE's, so a degraded table stays square.
             self.sink.end_line();
             placement.stops.stop(0).saturating_add(INDENT)
+        } else if row.label.is_empty() {
+            // A labelless row is a legitimate member of a labelled table — a block of plain
+            // lines that read as one. The gap `advance_to` would insert has nothing to
+            // separate it from, and would shift the row one column off its own table.
+            placement.stops.stop(0)
         } else {
             self.advance_to(placement.stops.tail());
             placement.stops.tail()

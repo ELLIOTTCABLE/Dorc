@@ -1324,6 +1324,18 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             );
             return Ok(book_outcome);
         }
+        let receipt = Receipt {
+            at: replay
+                .as_ref()
+                .map_or_else(|| clock.now(), |r| r.started_at),
+            replayed: replay.is_some(),
+            host: framing.host.clone(),
+            book: book_name.to_owned(),
+            book_digest: book_digest(&book_src),
+            oracles: oracle_paths.clone(),
+            risk_profile: args.trust_footprints.then_some(CONSENT_FLAG),
+            counts: plan.disposition_counts(),
+        };
         emit_why_report(
             args.why_address.as_deref(),
             &plan,
@@ -1338,7 +1350,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &interner,
             &oracle_paths,
             &oracle_srcs,
-            args.trust_footprints,
+            &receipt,
         );
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
@@ -1380,6 +1392,10 @@ struct Replay {
     book_path: String,
     oracle_paths: Vec<String>,
     decision_digest: String,
+    /// The instant the ORIGINAL run started, as the durable recorded it. The receipt dates itself
+    /// by this and never by the replay's own clock — a replay reports on a moment that has already
+    /// passed, and re-dating it to now would present a reading as a running.
+    started_at: Option<dorc_core::RunInstant>,
     records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
 }
 
@@ -1481,6 +1497,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         ));
     }
     let decision_digest = envelope.claims().decision_digest().to_owned();
+    let started_at = envelope.claims().started_at();
     match dorc_plan::whylog::admit_unscoped_whylog_replay(
         envelope,
         &framing,
@@ -1490,12 +1507,14 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
             book_path,
             oracle_paths,
             decision_digest,
+            started_at,
             records: Some(replay.records().clone()),
         })),
         dorc_plan::records::Admission::NoObservation => Ok(ReplayLoad::NoObservation(Replay {
             book_path,
             oracle_paths,
             decision_digest,
+            started_at,
             records: None,
         })),
         dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(advisory, reason)),
@@ -4060,6 +4079,9 @@ const TRIPTYCH_INSET: usize = 3;
 /// hangs or stacks as a unit (`28F:rul-table-degrades-whole`).
 const STEPS_TABLE: &str = "why-next-steps";
 
+/// The table the receipt header's record lines join — one block, degrading as a unit.
+const RECEIPT_TABLE: &str = "why-receipt";
+
 /// Render a marked tree at `inset` and print it. The ONE seat where the why surface becomes bytes.
 fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
     let frame = weft::Frame::of_width(weft::Width::new(WHY_WIDTH)).inset(inset);
@@ -4299,7 +4321,6 @@ struct WhySite {
     /// The command's first word — the `certsync` of an `8|certsync` inline reference.
     word: String,
     command: String,
-    kind: OutcomeKind,
     outcome: String,
     foil: String,
     reasons: Vec<Said>,
@@ -4356,7 +4377,7 @@ fn emit_why_report(
     interner: &Interner,
     oracle_paths: &[String],
     oracle_srcs: &[String],
-    trust_footprints: bool,
+    receipt: &Receipt,
 ) {
     use dorc_plan::Disposition;
     let mut sites: Vec<WhySite> = Vec::new();
@@ -4473,7 +4494,7 @@ fn emit_why_report(
             line,
             word,
             command,
-            kind: OutcomeKind::of(&step.disposition),
+
             outcome: outcome_word(&step.disposition),
             foil: foil_word(&step.disposition),
             reasons,
@@ -4485,7 +4506,7 @@ fn emit_why_report(
     if let Some(addr) = address {
         emit_why_triptych(addr, &sites, &chains, filename);
     } else {
-        emit_why_aggregate(&sites, &chains, filename, first_wall, trust_footprints);
+        emit_why_aggregate(&sites, &chains, filename, first_wall, receipt);
     }
 }
 
@@ -4590,15 +4611,14 @@ fn plain_chain(site: &WhySite) -> ChainRender {
 /// SURPRISES follows and renders only when the world disagreed with the plan, and IMPROVEMENTS
 /// closes, calm and quantified. The retired PROBLEMS section name appears nowhere.
 ///
-/// The three header lines print directly rather than through the tree: the receipt header's own
-/// render — run timestamp, host, trigger, book digest, git-match, oracle inventory — is the
-/// narration lane's, and these three carry only invocation data the model already holds.
+/// The invocation record leads it ([`receipt_banner`]), because the reader arriving at 03:40 has to
+/// know WHICH run they are reading before any item on it means anything.
 fn emit_why_aggregate(
     sites: &[WhySite],
     chains: &[(usize, ChainRender)],
     filename: &str,
     first_wall: Option<&FirstWallHint>,
-    trust_footprints: bool,
+    receipt: &Receipt,
 ) {
     let surprises: Vec<&WhySite> = sites
         .iter()
@@ -4609,31 +4629,13 @@ fn emit_why_aggregate(
         .filter(|s| s.class == AggregateClass::Improvement)
         .collect();
     if chains.is_empty() && surprises.is_empty() && improvements.is_empty() {
+        print_document(vec![receipt_banner(receipt)], 0);
+        println!();
         println!("{}", why_words("why-nothing-to-report", &[filename]));
         return;
     }
 
-    let (ran, guarded, skipped) = plan_tally(sites);
-    let risk_profile = if trust_footprints {
-        CONSENT_FLAG.to_owned()
-    } else {
-        why_words("why-receipt-risk-profile-none", &[])
-    };
-    println!(
-        "   {}",
-        why_words("why-receipt-risk-profile", &[&risk_profile])
-    );
-    println!(
-        "   {}",
-        why_words(
-            "why-receipt-plan-tally",
-            &[&ran.to_string(), &guarded.to_string(), &skipped.to_string()]
-        )
-    );
-    println!("   {}", why_words("why-addressability-line", &[]));
-    println!();
-
-    let mut nodes: Vec<Node<Face>> = Vec::new();
+    let mut nodes: Vec<Node<Face>> = vec![receipt_banner(receipt)];
     if !chains.is_empty() {
         let items = chains
             .iter()
@@ -4714,19 +4716,114 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
     }))
 }
 
-/// The plan tally for the receipt header: `(ran, guarded, skipped)`. The strawmen split the skipped
-/// count by proof-versus-claim; that split is W2 material, so the tally reports the totals it holds.
+/// The invocation record the zero-argument `dorc why` opens with (`28D:need-exact-input-identity`;
+/// `28G` strawman `a-fire-morning` lines 33–38): which run this is, on which host, over which
+/// bytes, under which consent, and what it decided.
 ///
-/// Counts the TYPED disposition, never the rendered word: the words are registry prose and are meant
-/// to churn (`27V:rul-output-form-unwelded`), so a tally keyed on them would silently go wrong the
-/// first time someone rewrote one.
-fn plan_tally(sites: &[WhySite]) -> (usize, usize, usize) {
-    let count = |kind: OutcomeKind| sites.iter().filter(|s| s.kind == kind).count();
-    (
-        count(OutcomeKind::Ran),
-        count(OutcomeKind::Guarded),
-        count(OutcomeKind::Skipped),
-    )
+/// Every field is CONTROLLER-minted (`rul-attribution-is-controller-minted`) — the host contributes
+/// none of it, including the instant (`28F:rul-probe-instants-host-says-no-times`, human-typed).
+struct Receipt {
+    /// The durable's own start instant on a `--last` replay, this invocation's on a live one, and
+    /// `None` when the edge had no clock. A replay carries the ORIGINAL run's instant, never this
+    /// moment's — reading a replay's clock here would date the receipt to when it was read.
+    at: Option<dorc_core::RunInstant>,
+    /// Whether this report replays a durable rather than reporting the run that just happened.
+    replayed: bool,
+    host: String,
+    book: String,
+    book_digest: String,
+    /// The loaded oracles, in argv order.
+    oracles: Vec<String>,
+    /// The consent flag in force, or `None` for a flagless run.
+    risk_profile: Option<&'static str>,
+    counts: dorc_plan::DispositionCounts,
+}
+
+/// The receipt header as one banner: the run's identity, then the indented record of what it read
+/// and what it decided.
+///
+/// The plan tally counts the TYPED disposition, never the rendered word: the words are registry
+/// prose meant to churn (`27V:rul-output-form-unwelded`), so a tally keyed on them would silently
+/// go wrong the first time someone rewrote one. Its skipped-count SPLIT is the line the reader
+/// needs most — an `elide_by_trusted_claim` skip rests on an author's at-most claim rather than on
+/// anything measured, and the two carry different risk.
+fn receipt_banner(receipt: &Receipt) -> Node<Face> {
+    let when = match (receipt.at, receipt.replayed) {
+        (Some(at), false) => why_words(
+            "why-receipt-when-live",
+            &[&dorc_aid::instant::date_time_text(at)],
+        ),
+        (Some(at), true) => why_words(
+            "why-receipt-when-replayed",
+            &[&dorc_aid::instant::date_time_text(at)],
+        ),
+        (None, _) => why_words("why-receipt-when-undated", &[]),
+    };
+    let counts = receipt.counts;
+    let tally = if counts.elide_by_trusted_claim == 0 {
+        why_words(
+            "why-receipt-plan-tally-by-proof",
+            &[
+                &counts.run.to_string(),
+                &counts.guard.to_string(),
+                &counts.elide.to_string(),
+                &counts.elide_by_proof.to_string(),
+            ],
+        )
+    } else {
+        why_words(
+            "why-receipt-plan-tally",
+            &[
+                &counts.run.to_string(),
+                &counts.guard.to_string(),
+                &counts.elide.to_string(),
+                &counts.elide_by_proof.to_string(),
+                &counts.elide_by_trusted_claim.to_string(),
+            ],
+        )
+    };
+    let risk = receipt.risk_profile.map_or_else(
+        || why_words("why-receipt-risk-profile-none", &[]),
+        str::to_owned,
+    );
+    let body = vec![
+        receipt_row(&Said::words(
+            "why-receipt-book",
+            &[&receipt.book, &receipt.book_digest],
+        )),
+        receipt_row(&Said::words(
+            "why-receipt-oracles",
+            &[&receipt.oracles.join(", ")],
+        )),
+        receipt_row(&Said::words("why-receipt-risk-profile", &[&risk])),
+        receipt_row(&Said::Words("why-receipt-plan-tally", tally)),
+        // The spike has no apply executor, so every disposition on this receipt is what the plan
+        // PREDICTED, not what a machine did (`tc-apply-report-is-prediction`). Saying so is the
+        // whole of the replayed-voice obligation: never let a reader take one for the other.
+        receipt_row(&Said::words("why-receipt-dispositions-predicted", &[])),
+        receipt_row(&Said::words("why-addressability-line", &[])),
+    ];
+    Node::new(NodeKind::Banner(Banner {
+        headline: vec![dorc_aid::weave::words(
+            why_words("why-receipt-header", &[&when, &receipt.host]),
+            "why-receipt-header",
+        )],
+        body,
+    }))
+}
+
+/// One line of the receipt header's indented record.
+///
+/// A labelled row rather than a paragraph, because the six lines are ONE block: weft keeps a run of
+/// like rows tight and puts a blank line between unlike things, and a receipt broken up by blank
+/// lines reads as six separate remarks rather than one identity.
+fn receipt_row(said: &Said) -> Node<Face> {
+    Node::new(NodeKind::Labeled(LabeledRow {
+        table: Some(Face::Table(RECEIPT_TABLE.to_owned())),
+        label: Vec::new(),
+        body: vec![said.run("why-receipt")],
+        attachments: Vec::new(),
+    }))
 }
 
 /// The ⊤-run cause for a Run site, if a `why_diags` disclosure covers it: the FIRST diag whose

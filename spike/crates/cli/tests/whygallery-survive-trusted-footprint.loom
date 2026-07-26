@@ -201,7 +201,8 @@ $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-
 
    10|ufw being skipped stood on all of the following, together:
 
-   * ufw__predict           reported  "sm.dorc.Firewall:443/tcp@allowed"
+   * firewall.oracle.sh:5   reported  "sm.dorc.Firewall:443/tcp@allowed" (received 02:00:37,
+                                      rc 0)
    * firewall.oracle.sh:17  vouches   "re-running this line adds nothing worth running
                                       while sm.dorc.Firewall:443/tcp holds"
    ! package.oracle.sh:19   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
@@ -257,7 +258,7 @@ $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
 
    10|ufw being skipped stood on all of the following, together:
 
-   * ufw__predict           reported  "sm.dorc.Firewall:443/tcp@allowed"
+   * firewall.oracle.sh:5   reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
    * firewall.oracle.sh:17  vouches   "re-running this line adds nothing worth running
                                       while sm.dorc.Firewall:443/tcp holds"
    ! package.oracle.sh:19   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"

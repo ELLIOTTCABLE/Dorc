@@ -341,8 +341,13 @@ sysctl vm.drop_caches
 echo "web1 up"
 
 $ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --trust-footprints < probe-results.txt
+receipt: plan 2026-01-25 02:00:37, host localhost
+   book book.sh (digest de40127febe86c48)
+   oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
+   sysctl.oracle.sh
    risk-profile: --trust-footprints
-   plan: 4 ran, 1 guarded, 4 skipped
+   plan: 4 ran, 1 guarded, 4 skipped (3 by proof, 1 by trusted claim)
+   [unwritten: why-receipt-dispositions-predicted]
    read top-down; every item is addressable: dorc why <line>
 
 === TRUST SPENT: skips resting on a human claim, not proof ===
