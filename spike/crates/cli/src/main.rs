@@ -760,7 +760,7 @@ fn run(args: &Args) -> Result<RunOutcome, Diag> {
     // The read-only, SELF-REPORTING, site-keyed probe (R3 / 23D §1 — the check IS the oracle):
     // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
-    // site ships its probe here (at HEAD it would be `skip-unresolvable`).
+    // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
     let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
     // `24L` §2 — the typeless-floor auto-cell ships its stripped VERDICT body (the probe IS the
     // verdict). `Some` ONLY for an auto-cell fact (keyed on the reserved auto-kind), so `compile_probe`
@@ -1089,7 +1089,7 @@ fn run(args: &Args) -> Result<RunOutcome, Diag> {
         &mut arena,
     );
 
-    // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `skip-unresolvable` comment lands
+    // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `unresolvable-no-probe` comment lands
     // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each
     // probe-unresolvable site's source command as a Note — the apply runs it (`kFAIL-perform`).
     // ADVISORY (Note-severity): the off-ramp `apply` mode suppresses it; `plan`/round-trip show
@@ -2848,7 +2848,7 @@ fn unresolvable_diagnostics(
     let names: Vec<String> = real.iter().map(|(_, _, t)| format!("`{t}`")).collect();
     let plural = if real.len() == 1 { "" } else { "s" };
     let label = format!(
-        "{} site{plural} run unprobed (no read-only check could be shipped): {} — \
+        "{} site{plural} run unprobed (no read-only check could be shipped): {} -- \
          run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)",
         real.len(),
         names.join(", "),
@@ -3038,7 +3038,7 @@ fn emit_survival_attribution(
             format!("; {}", aggregate_loci.join(", "))
         };
         eprintln!(
-            "why: site {} survives+elides past {} — backing {} disjoint (trusted footprint){locus}",
+            "why: site {} survives+elides past {} -- backing {} disjoint (trusted footprint){locus}",
             step.leaf.0,
             crossings.join(", "),
             render_coord(witness.backing(), interner),
@@ -3055,7 +3055,7 @@ fn emit_survival_attribution(
 fn emit_reach_poisonings(plan: &dorc_plan::Plan, interner: &Interner) {
     for (leaf, kind) in plan.survival_report.reach_poisonings() {
         eprintln!(
-            "why: site {} runs — poisoned via {}.reaches() (a reach-expanded coordinate hit its \
+            "why: site {} runs -- poisoned via {}.reaches() (a reach-expanded coordinate hit its \
              backing; the wall drags it cross-author)",
             leaf.0,
             interner.resolve(kind.0),
@@ -3089,7 +3089,7 @@ fn emit_guard_attribution(
         let kind = interner.resolve(license.fact().kind.0);
         if refused.contains(&step.ast) {
             eprintln!(
-                "why: site {} guard refused — the site's structurally-awkward form (a heredoc \
+                "why: site {} guard refused -- the site's structurally-awkward form (a heredoc \
                  body, or a non-`/dev/null` output redirect) would corrupt the artifact or suppress \
                  an admin-spelled side-effect, so the original bytes RUN VERBATIM (to stay safe), \
                  the {kind} oracle's vouch that it is already satisfied notwithstanding",
@@ -3101,7 +3101,7 @@ fn emit_guard_attribution(
                 .map(|l| format!(" (at {l})"))
                 .unwrap_or_default();
             eprintln!(
-                "why: site {} guard [{kind}] — licensed by the {kind} oracle's vouch{locus} that \
+                "why: site {} guard [{kind}] -- licensed by the {kind} oracle's vouch{locus} that \
                  it is already satisfied; the original bytes survive and the check re-runs live at \
                  apply (to stay safe)",
                 step.leaf.0,
@@ -3221,29 +3221,25 @@ impl FirstWallHint {
             } else {
                 "walls"
             };
-            format!("; {} more unmodeled {walls} — dorc why", self.more_walls)
+            format!("; {} more unmodeled {walls} -- dorc why", self.more_walls)
         };
         format!(
-            "'{}' (line {}) is unmodeled: it is the first wall — an oracle vouching its \
+            "'{}' (line {}) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged{unwall_clause}{more_clause}",
             self.word, self.line
         )
     }
 
-    /// The `dorc why` detail line for the wall's own site (the reasoning behind the plan-mode nag).
+    /// The `dorc why` detail row for the wall's own site (the reasoning behind the plan-mode nag).
+    /// Registry-homed like every other why-surface string (`28G` §0), and stated in admin-English:
+    /// the engine's `elide` never reaches a render.
     fn why_detail(&self) -> String {
-        if self.unwall == 0 {
-            "first wall (book order) — an oracle vouching its convergence would elide it when \
-             converged"
-                .to_owned()
+        let recovery = if self.unwall == 0 {
+            String::new()
         } else {
-            let sites = if self.unwall == 1 { "site" } else { "sites" };
-            format!(
-                "first wall (book order) — an oracle vouching its convergence would elide it and \
-                 un-wall {} downstream {sites}",
-                self.unwall
-            )
-        }
+            why_words("why-reason-first-wall-unwall", &[&self.unwall.to_string()])
+        };
+        why_words("why-reason-first-wall", &[&recovery])
     }
 }
 
@@ -3365,78 +3361,234 @@ fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
 
 /// The ONE seat that renders a [`TrustTier`] to a word (`law-trust-tier-is-syntax`;
 /// `27V:mech-trust-tier-typed`): the chain walker below is the ONLY code that turns a typed tier into
-/// prose, so a `claimed` link can never wear a `measured`'s clothes (mis-attribution is the worst aid
-/// failure — `271:rul-sin-ordering`). STRAWMAN spellings, unwelded (`27V:rul-output-form-unwelded`).
-fn tier_word(tier: TrustTier) -> &'static str {
-    match tier {
-        TrustTier::Measured => "measured",
-        TrustTier::Vouched => "vouched",
-        TrustTier::Ran => "ran",
-        TrustTier::Claimed => "claimed",
-        TrustTier::Derived => "derived",
-        TrustTier::Consented => "consented",
+/// prose, so a `claims` link can never wear a `reported`'s clothes (mis-attribution is the worst aid
+/// failure — `271:rul-sin-ordering`).
+///
+/// The words are arrangement-registry rows keyed by the tier's ordinal, never literals (`28G` §0):
+/// the tier SET is the law, the words ride `27V:rul-output-form-unwelded`. `28E` §8 fixes the
+/// grammar they must obey — the tier word is the sentence's VERB, past tense for run events
+/// (`reported`, `ran`) and present for standing text (`vouches`, `claims`, `derives`).
+fn tier_word(tier: TrustTier) -> String {
+    let occurrence = match tier {
+        TrustTier::Measured => 0,
+        TrustTier::Vouched => 1,
+        TrustTier::Ran => 2,
+        TrustTier::Claimed => 3,
+        TrustTier::Derived => 4,
+        TrustTier::Consented => 5,
+    };
+    dorc_aid::arrangement::arrangement_text(
+        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+        "why-tier-word",
+        Some(occurrence),
+    )
+}
+
+/// What happened to a line, in the ADMIN's terms rather than the engine's — the typed twin of
+/// [`outcome_word`], so counting and comparing never go through rendered prose.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum OutcomeKind {
+    Skipped,
+    Guarded,
+    Ran,
+    Dropped,
+}
+
+impl OutcomeKind {
+    /// The disposition, re-read in admin terms. The engine's own vocabulary stops here.
+    fn of(disposition: &dorc_plan::Disposition) -> Self {
+        match disposition {
+            dorc_plan::Disposition::Replace(..) => OutcomeKind::Skipped,
+            dorc_plan::Disposition::Guard(_) => OutcomeKind::Guarded,
+            dorc_plan::Disposition::Run => OutcomeKind::Ran,
+            dorc_plan::Disposition::Omit { .. } => OutcomeKind::Dropped,
+        }
+    }
+
+    /// The other thing that could have happened to the line — what the contrastive OUTCOME sentence
+    /// answers against (`28E` §7 adopt-contrastive-first: the foil is the line's other disposition,
+    /// and it is free).
+    const fn foil(self) -> Self {
+        match self {
+            OutcomeKind::Skipped | OutcomeKind::Ran => OutcomeKind::Guarded,
+            OutcomeKind::Guarded | OutcomeKind::Dropped => OutcomeKind::Skipped,
+        }
+    }
+
+    /// The admin-English word (`28E` §8, human-demonstrated). Registry-homed by ordinal like
+    /// [`tier_word`]. The `skip`-ban is LLM-facing law over design and code layers
+    /// (`271:rul-skip-ban-is-llm-facing`); this is the deliberate user-surface carve, and engine
+    /// vocabulary (elide / replace / omit) never appears in a render.
+    fn word(self) -> String {
+        let occurrence = match self {
+            OutcomeKind::Skipped => 0,
+            OutcomeKind::Guarded => 1,
+            OutcomeKind::Ran => 2,
+            OutcomeKind::Dropped => 3,
+        };
+        dorc_aid::arrangement::arrangement_text(
+            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+            "why-outcome-word",
+            Some(occurrence),
+        )
     }
 }
 
-/// One rendered link in a `dorc why N` disposition chain (`27V` §3 arrangement walker;
-/// `aid-why-license-chain`). `tier` is the only epistemic signal — rendered by [`tier_word`] alone,
-/// never hand-written into `body` (`law-trust-tier-is-syntax`). `locus` is the `file:line` a link
-/// attributes to a named author (`None` for a host measurement / engine derivation / consent flag).
+/// The admin-English disposition word for a plan step.
+fn outcome_word(disposition: &dorc_plan::Disposition) -> String {
+    OutcomeKind::of(disposition).word()
+}
+
+/// The word for a disposition's FOIL — a skip's is the guard it would otherwise have worn, a
+/// guard's is the skip it could not earn, a run's is a guard.
+fn foil_word(disposition: &dorc_plan::Disposition) -> String {
+    OutcomeKind::of(disposition).foil().word()
+}
+
+/// One registry-sourced why-surface line, values interleaved between the entry's words. The
+/// why-render twin of [`chrome`] (`289:rul-arrangement-home-is-registry-plus-transcripts`); every
+/// user-facing string the triptych prints comes through here or through [`tier_word`] /
+/// [`outcome_word`], never from a `format!` literal (`28G` §0).
+fn why_words(slug: &str, values: &[&str]) -> String {
+    dorc_aid::arrangement::arrangement_sentence(
+        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+        slug,
+        None,
+        values,
+    )
+}
+
+/// The two-rank mark a chain row wears in the DEFAULT render (`28E` §7
+/// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). The six
+/// [`TrustTier`]s stay typed law underneath and are untouched by this: the rank is a RENDER-layer
+/// partition over them, derived from the evidence kind, because the firefighter's axis is not where
+/// a link's words were written but what the link COVERS.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RowRank {
+    /// `*` — the row rests on something that actually happened (a probe report, a real run) or on a
+    /// derivation over such things. Its class is of size N and every member of it was observed.
+    RuntimeBacked,
+    /// `!` — the row speaks for universe-minus-N: an author's at-most claim, or the run of a command
+    /// nobody has described (which claims nothing, and therefore covers everything).
+    CoversUnmeasured,
+}
+
+impl RowRank {
+    /// The rank's gutter glyph. ASCII forever (`28E` §0 `rul-ascii-output-forever`, human-typed).
+    const fn glyph(self) -> &'static str {
+        match self {
+            RowRank::RuntimeBacked => "*",
+            RowRank::CoversUnmeasured => "!",
+        }
+    }
+}
+
+/// One quoted-speakers row of a `dorc why <addr>` ANALYSIS panel (`28E` §8 quoted-speakers, ADOPTED):
+/// speaker first, the tier word as the sentence's verb, the payload as the speaker's own quoted
+/// words. Dorc asserts no world-fact in its own voice — it QUOTES speakers, and vouches only for the
+/// run record and for its own derivations (which is why an engine row's payload is unquoted).
 struct ChainLink {
+    rank: RowRank,
     tier: TrustTier,
-    body: String,
-    locus: Option<String>,
+    /// Who is speaking: an oracle `file:line`, a book site's `N|command`, or the engine. `None` when
+    /// the model does not carry a locus for this speaker (rendered as an empty column, never faked).
+    speaker: Option<String>,
+    payload: String,
+    /// Whether the payload is the speaker's own words (quoted) or dorc's narration of them (bare).
+    quoted: bool,
+    /// The indented paragraph carried below the quote — today only the at-most claim's
+    /// covers-unmeasured disclosure. W2 attaches the `as-written:` source excerpt after it.
+    explanation: Option<String>,
 }
 
-/// The naked-trust epilogue (`aid-why-license-chain`; the flagship's product moment,
-/// `tc-naked-trust-epilogue-derivation`, conductor-confirmed). Derived STRUCTURALLY from which
-/// trust-tiers the chain carries — never an instance guess: a chain that carries `Consented` +
-/// `Claimed` + a `Derived` disjointness sparing a `Measured` backing has exactly ONE
-/// unverified-by-construction link, the `Claimed` one, because the survival tier is the SOLE place a
-/// naked human claim ships (`USER_STORY` bought-unsoundness). `leverage` is that claim's line to widen.
-struct NakedTrust {
-    naked_link: u32,
-    leverage: Option<String>,
+/// The NEXT STEPS panel of the triptych (`28E` §8: the human's markup grew this from a two-line
+/// epilogue into a labeled STRUCTURAL remediation arc — `lean-prose-down-one-step`, mechanical
+/// explanation over flowing paragraphs). Every row is a `<label>: <body>` pair; the panel is OMITTED
+/// entirely when it has no rows, which is the triptych-collapse `28G` strawman `e-skipped-quiet`
+/// demonstrates.
+struct NextSteps {
+    rows: Vec<(&'static str, String)>,
 }
 
-/// A `dorc why N` disposition chain (`27V` §3): the numbered links + the naked-trust epilogue.
-/// Content + structure are the law; wording/arrangement ride `27V:rul-output-form-unwelded` (the
-/// byte-render re-blesses freely; needles pin the tier words, the loci, and the epilogue's presence).
+/// A `dorc why <addr>` triptych (`28G` Phase W1): the contrastive OUTCOME, the quoted-speakers
+/// ANALYSIS, and the structural NEXT STEPS. Content + structure are the law; wording and arrangement
+/// ride `27V:rul-output-form-unwelded` — transcripts re-bless freely on churn here.
 struct ChainRender {
-    header: String,
-    disposition: String,
+    /// The asked line's `N|command` reference, the subject of every panel.
+    reference: String,
+    /// The `N|command` references of every wall this line was kept past, and the provider whose
+    /// at-most claim licensed that — what the aggregate's TRUST SPENT item names.
+    crossed: String,
+    claimant: String,
+    outcome: String,
+    /// The ANALYSIS opener, then the speaker rows, then the numberless join restatement
+    /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all).
+    analysis_opener: String,
     links: Vec<ChainLink>,
-    epilogue: Option<NakedTrust>,
+    join: Option<String>,
+    next_steps: NextSteps,
 }
 
-/// Build the SURVIVAL chain for a survived-elision step (`aid-why-license-chain`; the `27V` §4
-/// flagship acceptance). Pure over the plan's [`dorc_plan::SurvivalWitness`] + display context: the
-/// numbered measured/vouched/ran/claimed/derived/consented links per `USER_STORY` Recovery. `None` when
-/// the step survived no wall (an ordinary elision has no chain to walk). The naked-trust epilogue is
-/// derived from trust-tier presence only (`tc-naked-trust-epilogue-derivation`).
+/// The consent flag as the BINARY spells it. The corpus names this lever
+/// `--risk-faultless-skips` (`spike/CLAUDE.md` survive-license, `271:rul-flag-is-razor-residue`); the
+/// cli implements `--trust-footprints`. A why-surface pointer must be copy-paste-true (`28E` §7
+/// held-placement-reread), so the render prints what the parser accepts and the rename is flagged
+/// upward rather than papered over here.
+const CONSENT_FLAG: &str = "--trust-footprints";
+
+/// The engine's own name in the speaker column — the only row dorc speaks in its own voice, and it
+/// speaks only about its own derivations (`28E` §8 quoted-speakers).
+const ENGINE_SPEAKER: &str = "dorc";
+
+/// Build the survived-elision triptych (`28G` Phase W1 over the `27V` §4 flagship). Pure over the
+/// plan's [`dorc_plan::SurvivalWitness`] + display context. `None` when the step survived no wall (an
+/// ordinary elision has no chain to walk).
+///
+/// The row set is `28G` strawman `a-fire-morning`'s exactly: the probe's REPORT, the site oracle's
+/// standing VOUCH, each crossed wall's at-most CLAIM, and dorc's own disjointness DERIVATION. Two
+/// links the as-built chain carried as rows are stated in the contrastive OUTCOME instead — the
+/// wall's run and the admin's consent — because neither has a speaker to quote, and OUTCOME puts the
+/// consent AHEAD of the chain rather than last in it.
+///
+/// The `suspect:` row's claim of UNIQUENESS is a model fact — a count of covers-unmeasured rows —
+/// never one fragment knowing what another rendered (`28E` lean-start-without-mutual-awareness).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the chain builder threads the display context it quotes (reference/address/disposition/license/wall-map/interner/oracle paths+sources); each is a distinct pipeline output, not a bundle-able struct"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear row-by-row chain construction followed by its NEXT STEPS rows; splitting it would scatter the ONE place the strawman's row set is expressed"
+)]
 fn survival_chain(
-    header: String,
+    reference: &str,
+    address: &str,
+    disposition: &dorc_plan::Disposition,
     license: &dorc_plan::ReplaceLicense,
-    trust_footprints: bool,
+    walls: &BTreeMap<dorc_plan::LeafId, String>,
     interner: &Interner,
     oracle_paths: &[String],
     oracle_srcs: &[String],
 ) -> Option<ChainRender> {
     let witness = license.derivation().survival.as_ref()?;
     let backing = render_coord(witness.backing(), interner);
+    let outcome = outcome_word(disposition);
     let mut links = vec![ChainLink {
+        rank: RowRank::RuntimeBacked,
         tier: TrustTier::Measured,
-        body: format!("{backing} was measured converged on the host at plan time"),
-        locus: None,
+        speaker: Some(predict_speaker(reference)),
+        payload: dorc_plan::fact_label(interner, license.fact()),
+        quoted: true,
+        explanation: None,
     }];
     if license.derivation().establish_vouches.is_empty() {
         links.push(ChainLink {
+            rank: RowRank::RuntimeBacked,
             tier: TrustTier::Vouched,
-            body:
-                "the site's own oracle accepts that measured state as reason enough not to re-run \
-                   this line"
-                    .to_owned(),
-            locus: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
+            speaker: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
+            payload: why_words("why-vouch-payload-site", &[&backing]),
+            quoted: true,
+            explanation: None,
         });
     } else {
         links.extend(
@@ -3445,134 +3597,325 @@ fn survival_chain(
                 .establish_vouches
                 .iter()
                 .map(|receipt| ChainLink {
+                    rank: RowRank::RuntimeBacked,
                     tier: TrustTier::Vouched,
-                    body: format!(
-                        "site {}'s oracle accepts {} as reason enough not to re-run its establish",
-                        receipt.site.0,
-                        dorc_plan::fact_label(interner, receipt.fact)
+                    speaker: oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs),
+                    payload: why_words(
+                        "why-vouch-payload-establish",
+                        &[&dorc_plan::fact_label(interner, receipt.fact)],
                     ),
-                    locus: oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs),
+                    quoted: true,
+                    explanation: None,
                 }),
         );
     }
-    let mut claimed_link: Option<u32> = None;
+    let mut wall_refs: Vec<String> = Vec::new();
+    let mut claimants: Vec<String> = Vec::new();
+    let mut leverage: Option<String> = None;
     for c in witness.crossings() {
-        links.push(ChainLink {
-            tier: TrustTier::Ran,
-            body: format!(
-                "`{}` (wall site {}) really ran above this line",
-                interner.resolve(c.provider()),
-                c.wall_leaf().0
-            ),
-            locus: None,
-        });
+        let provider = interner.resolve(c.provider()).to_owned();
+        claimants.push(provider.clone());
+        wall_refs.push(
+            walls
+                .get(&c.wall_leaf())
+                .cloned()
+                .unwrap_or_else(|| provider.clone()),
+        );
         let coords: Vec<String> = c
             .footprint()
             .iter()
             .map(|fc| render_coord(*fc, interner))
             .collect();
+        let locus = oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs);
+        leverage = leverage.or_else(|| locus.clone());
         links.push(ChainLink {
+            rank: RowRank::CoversUnmeasured,
             tier: TrustTier::Claimed,
-            body: format!(
-                "that wall's author claims it disturbs at most {{{}}} — an author's claim, nothing \
-                 verifies it",
-                coords.join(" ")
-            ),
-            locus: oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs),
+            speaker: locus,
+            payload: why_words("why-claims-payload", &[&provider, &coords.join(" ")]),
+            quoted: true,
+            explanation: Some(why_words("why-claims-covers-unmeasured", &[])),
         });
-        claimed_link = Some(u32::try_from(links.len()).unwrap_or(u32::MAX)); // 1-based: the link just pushed
     }
     links.push(ChainLink {
+        rank: RowRank::RuntimeBacked,
         tier: TrustTier::Derived,
-        body: format!(
-            "that claim is proven disjoint from {backing} — it does not overlap what was measured"
-        ),
-        locus: None,
+        speaker: Some(ENGINE_SPEAKER.to_owned()),
+        payload: why_words("why-derives-payload-disjoint", &[&backing]),
+        quoted: false,
+        explanation: None,
     });
-    if trust_footprints {
-        links.push(ChainLink {
-            tier: TrustTier::Consented,
-            body:
-                "`--trust-footprints` was set, which is what lets a claim keep a line out of the \
-                   plan past a running mutation"
-                    .to_owned(),
-            locus: None,
-        });
+
+    let joined_walls = wall_refs.join(", ");
+    let outcome_sentence = why_words(
+        "why-outcome-contrastive",
+        &[
+            reference,
+            &outcome,
+            &foil_word(disposition),
+            &why_words(
+                "why-outcome-because-survived",
+                &[&joined_walls, CONSENT_FLAG],
+            ),
+        ],
+    );
+    let unmeasured = links
+        .iter()
+        .filter(|l| l.rank == RowRank::CoversUnmeasured)
+        .count();
+    let mut rows: Vec<(&'static str, String)> = vec![(
+        "suspect",
+        if unmeasured == 1 {
+            why_words(
+                "why-next-step-suspect-sole-claim",
+                &[&joined_walls, &backing],
+            )
+        } else {
+            why_words(
+                "why-next-step-suspect-several-claims",
+                &[&unmeasured.to_string(), &backing],
+            )
+        },
+    )];
+    if let Some(lev) = &leverage {
+        rows.push(("fix", why_words("why-next-step-fix-widen", &[lev])));
     }
-    // `tc-naked-trust-epilogue-derivation`: consent + a claim ⇒ the claim is naked-by-construction;
-    // absent the triple, no epilogue (a consent-less disjoint survival is not the naked-trust corner).
-    let epilogue = (trust_footprints && claimed_link.is_some()).then(|| NakedTrust {
-        naked_link: claimed_link.unwrap_or(0),
-        leverage: witness
-            .crossings()
-            .iter()
-            .find_map(|c| oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs)),
-    });
+    rows.push((
+        "OR fix",
+        why_words("why-next-step-fix-replan", &[CONSENT_FLAG]),
+    ));
+    rows.push(("verify", why_words("why-next-step-verify", &[])));
+    rows.push(("review", why_words("why-next-step-review", &[address])));
     Some(ChainRender {
-        header,
-        disposition: format!(
-            "removed from the plan (elided) — {backing} is converged (probe: holds)"
-        ),
+        reference: reference.to_owned(),
+        crossed: joined_walls.clone(),
+        claimant: claimants.join(", "),
+        outcome: outcome_sentence,
+        analysis_opener: why_words("why-analysis-opener", &[reference, &outcome]),
         links,
-        epilogue,
+        join: Some(why_words("why-analysis-join", &[&joined_walls, &backing])),
+        next_steps: NextSteps { rows },
     })
 }
 
-/// Render a [`ChainRender`] to output lines (`27V` §3; `27V:rul-output-form-unwelded`). Links number
-/// at render time; each shows `<n>. <tier-word>: <body> (<locus>)`. The epilogue states which link is
-/// unverified-by-construction and the two recovery moves (re-measure + fix at the leverage point).
+/// The speaker of a `reported` row: the check whose run produced the report, named by the funcname
+/// the probe actually shipped and invoked (`<provider>__predict`).
+///
+/// DATA GAP, flagged rather than faked (`28G` §0): the strawmen name this speaker `oracle.sh:LINE`,
+/// but no predict-defining span is threaded to the plan — only the VOUCH's is
+/// (`27V:mech-minting-line-threading` covers `is_converged`, not `predict`). Borrowing the vouch's
+/// file for this row would be a guess about which file hosts the predict, and a mis-attributed
+/// speaker is the worst class of aid failure (`271:rul-sin-ordering`), so the row names the derived
+/// funcname — exact, and claiming no file.
+fn predict_speaker(reference: &str) -> String {
+    let word = reference.split_once('|').map_or(reference, |(_, w)| w);
+    format!(
+        "{}__predict",
+        dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(word))
+    )
+}
+
+/// The canonical render width. Layout is the RENDERER's, never the semantics engine's
+/// (`28E` §8 `rul-renderer-owns-layout`); the doc-algebra reflow engine that will own it for real is
+/// deferred (`28G` §2), so the walker carries the shapes at ONE fixed width and goldens pin there.
+const WHY_WIDTH: usize = 92;
+
+/// Greedy word-wrap to `width`, every line after the first prefixed by `indent`. Pure and total: a
+/// single word longer than the budget occupies its own line rather than being split.
+fn wrap_at(text: &str, width: usize, indent: &str) -> Vec<String> {
+    let mut lines: Vec<String> = Vec::new();
+    let mut current = String::new();
+    for word in text.split_whitespace() {
+        let projected = if current.is_empty() {
+            word.len()
+        } else {
+            current.len().saturating_add(1).saturating_add(word.len())
+        };
+        if !current.is_empty() && projected > width {
+            lines.push(std::mem::take(&mut current));
+            current.push_str(indent);
+        }
+        if !current.is_empty() && !current.ends_with(' ') {
+            current.push(' ');
+        }
+        current.push_str(word);
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    lines
+}
+
+/// One block of body text, wrapped to the canonical width and set at the triptych's own indent.
+fn indented(text: &str) -> Vec<String> {
+    wrap_at(text, WHY_WIDTH.saturating_sub(3), "")
+        .into_iter()
+        .map(|line| format!("   {line}"))
+        .collect()
+}
+
+/// The ANALYSIS panel's quoted-speakers rows (`28E` §8): `<rank> <speaker> <verb>  "<payload>"`,
+/// with the speaker and verb columns width-computed across the chain's own rows so every payload
+/// starts in one column and a wrapped payload hangs under itself. A `claims` row's
+/// covers-unmeasured paragraph is set off below its quote, indented further — the seam W2's
+/// `as-written:` source excerpt attaches to.
+fn render_links(links: &[ChainLink]) -> Vec<String> {
+    let speaker_w = links
+        .iter()
+        .filter_map(|l| l.speaker.as_ref().map(String::len))
+        .max()
+        .unwrap_or(0);
+    let verb_w = links
+        .iter()
+        .map(|l| tier_word(l.tier).len())
+        .max()
+        .unwrap_or(0);
+    let mut out = Vec::new();
+    for link in links {
+        let speaker = link.speaker.as_deref().unwrap_or("");
+        let verb = tier_word(link.tier);
+        let head = format!(
+            "   {} {speaker:<speaker_w$} {verb:<verb_w$}  ",
+            link.rank.glyph()
+        );
+        let payload = if link.quoted {
+            format!("\"{}\"", link.payload)
+        } else {
+            link.payload.clone()
+        };
+        let continuation = " ".repeat(head.len());
+        for (i, line) in wrap_at(&payload, WHY_WIDTH.saturating_sub(head.len()), "")
+            .into_iter()
+            .enumerate()
+        {
+            if i == 0 {
+                out.push(format!("{head}{line}"));
+            } else {
+                out.push(format!("{continuation}{line}"));
+            }
+        }
+        if let Some(explanation) = &link.explanation {
+            out.push(String::new());
+            for line in wrap_at(explanation, WHY_WIDTH.saturating_sub(6), "") {
+                out.push(format!("      {line}"));
+            }
+            out.push(String::new());
+        }
+    }
+    out
+}
+
+/// Render a [`ChainRender`] as the `dorc why <addr>` triptych (`28G` Phase W1).
+///
+/// Three panels: the contrastive OUTCOME, the quoted-speakers ANALYSIS closed by its numberless join
+/// restatement, and the structural NEXT STEPS — which is OMITTED whole when it has no rows, the
+/// question-relative floor `28G` strawman `e-skipped-quiet` demonstrates. Speaker and verb columns
+/// are width-computed across the chain's own rows so payloads align into one readable column.
 fn render_chain(chain: &ChainRender) -> Vec<String> {
     let mut out = vec![
-        chain.header.clone(),
-        format!("  {}", chain.disposition),
+        format!("   {}", why_words("why-outcome-heading", &[])),
         String::new(),
-        "  it was removed because all of the following held together:".to_owned(),
     ];
-    for (i, l) in chain.links.iter().enumerate() {
-        let locus = l
-            .locus
-            .as_ref()
-            .map_or_else(String::new, |s| format!(" ({s})"));
-        out.push(format!(
-            "  {}. {}: {}{locus}",
-            i.saturating_add(1),
-            tier_word(l.tier),
-            l.body
-        ));
-    }
-    if let Some(ep) = &chain.epilogue {
+    out.extend(indented(&chain.outcome));
+    if chain.links.is_empty() {
         out.push(String::new());
-        out.push(format!(
-            "  if this line SHOULD have run: dorc cannot see which link is wrong, but link {} is \
-             the one unverified-by-construction claim in this chain (a naked footprint claim).",
-            ep.naked_link
-        ));
-        out.push(
-            "  to re-measure: `dorc plan <book> <host>` reads the world as it is now — dorc kept no \
-             state that can stay wrong, so a broken fact comes back diverged and the line returns."
-                .to_owned(),
-        );
-        if let Some(lev) = &ep.leverage {
-            out.push(format!(
-                "  to fix: {lev} is the line to widen; every book using that oracle inherits the \
-                 repair."
-            ));
+        return out;
+    }
+    out.push(String::new());
+    out.push(format!("   {}", why_words("why-analysis-heading", &[])));
+    out.push(String::new());
+    out.extend(indented(&chain.analysis_opener));
+    out.push(String::new());
+    out.extend(render_links(&chain.links));
+    if chain
+        .links
+        .iter()
+        .any(|l| l.rank == RowRank::CoversUnmeasured)
+    {
+        out.push(String::new());
+        out.extend(indented(&why_words("why-mark-legend", &[])));
+    }
+    if let Some(join) = &chain.join {
+        out.push(String::new());
+        out.extend(indented(join));
+    }
+    if !chain.next_steps.rows.is_empty() {
+        out.push(String::new());
+        out.push(format!("   {}", why_words("why-next-steps-heading", &[])));
+        out.push(String::new());
+        out.extend(indented(&why_words(
+            "why-next-steps-opener",
+            &[&chain.reference],
+        )));
+        out.push(String::new());
+        let label_w = chain
+            .next_steps
+            .rows
+            .iter()
+            .map(|(label, _)| label.len().saturating_add(1))
+            .max()
+            .unwrap_or(0);
+        for (label, body) in &chain.next_steps.rows {
+            let head = format!("      {:<label_w$}  ", format!("{label}:"));
+            let continuation = " ".repeat(head.len());
+            for (i, line) in wrap_at(body, WHY_WIDTH.saturating_sub(head.len()), "")
+                .into_iter()
+                .enumerate()
+            {
+                if i == 0 {
+                    out.push(format!("{head}{line}"));
+                } else {
+                    out.push(format!("{continuation}{line}"));
+                }
+            }
         }
     }
     out.push(String::new());
     out
 }
 
-/// One site's WHY-record ([`emit_why_report`]): its SOURCE line (rul24-lineno-identity), the
-/// one-line command, the disposition tag, the ASCII cause-chain, and whether it is a PROBLEM
-/// (the unargumented `dorc why` filter — a ⊤/unprobed run, a guard, or a render-refusal, never a
-/// clean elide/omit).
+/// Which aggregate section a site belongs to in the zero-argument `dorc why` (`28E` §8, the
+/// human-demonstrated three-way split; the PROBLEMS section name is RETIRED — genuine breakage
+/// surfaces as a SURPRISE, and everything else dorc could do better about is an IMPROVEMENT).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AggregateClass {
+    /// Nothing to say about this site in the aggregate.
+    Quiet,
+    /// The world disagreed with the plan. Leads the aggregate when no trust was spent.
+    Surprise,
+    /// dorc could do better here, if the reader described more of their world.
+    Improvement,
+}
+
+/// One site's WHY-record ([`emit_why_report`]): its SOURCE line (`rul24-lineno-identity`), the
+/// one-line command, its admin-English outcome, its ANALYSIS rows, and which aggregate section it
+/// belongs to.
 struct WhySite {
     line: usize,
+    /// The command's first word — the `certsync` of an `8|certsync` inline reference.
+    word: String,
     command: String,
-    tag: &'static str,
+    kind: OutcomeKind,
+    outcome: String,
+    foil: String,
     reasons: Vec<String>,
-    is_problem: bool,
+    class: AggregateClass,
+    /// The improvement's one-line reason, when this site is an [`AggregateClass::Improvement`].
+    improvement: Option<String>,
+}
+
+impl WhySite {
+    /// The `N|command` inline reference (`28E` §8, human-demonstrated row shape): short enough to
+    /// sit inside a sentence, and unambiguous because the line number is the SOURCE file's.
+    fn reference(&self) -> String {
+        format!("{}|{}", self.line, self.word)
+    }
+
+    /// The file-qualified address this site answers to — the exact bytes `dorc why` accepts back
+    /// (`28E` §7 held-placement-reread: a pointer line must be copy-paste-true).
+    fn address(&self, filename: &str) -> String {
+        format!("{filename}:{}", self.line)
+    }
 }
 
 /// ack-2 `dorc why`: the source-line-keyed WHY report — the focused query surface (the `plan`
@@ -3585,8 +3928,8 @@ struct WhySite {
 /// * a `book.sh:N` / bare `N` line-address — the site(s) on that source line.
 /// * free content — the site(s) whose command text contains it.
 ///
-/// Each reported site prints a `file:line` header with its disposition tag and command, then an
-/// ASCII depth-indented cause-chain (the `└─` glyph), one root per site (rustc's nested notes).
+/// An ADDRESSED site renders the `28G` triptych (OUTCOME / ANALYSIS / NEXT STEPS); the unargumented
+/// form renders the aggregate (TRUST SPENT first and uncapped, then SURPRISES, then IMPROVEMENTS).
 #[expect(
     clippy::too_many_arguments,
     reason = "the why-report threads the compiled context it reports on (plan/probe/first-wall/why-diags/refusals/arena/ast/src/filename/interner); each is a distinct pipeline output, not a bundle-able struct"
@@ -3613,210 +3956,350 @@ fn emit_why_report(
 ) {
     use dorc_plan::Disposition;
     let mut sites: Vec<WhySite> = Vec::new();
-    // Survival chains (`aid-why-license-chain`) keyed by SOURCE line — a survived elision's pull
-    // answer is the numbered chain, rendered for the addressed line + the unargumented trust-spent list.
+    // A chain names the walls it crossed by `N|command`, never by internal site id (`28E` §8).
+    let walls: BTreeMap<dorc_plan::LeafId, String> = plan
+        .steps
+        .iter()
+        .map(|step| {
+            let span = ast.node(step.ast).span;
+            let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
+            let line = dorc_aid::diag::line_col(book_src, lo).0;
+            let text = book_src.get(lo..hi).unwrap_or("");
+            let word = text.split_whitespace().next().unwrap_or("").to_owned();
+            (step.leaf, format!("{line}|{word}"))
+        })
+        .collect();
     let mut chains: Vec<(usize, ChainRender)> = Vec::new();
     for step in &plan.steps {
         let span = ast.node(step.ast).span;
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
         let line = dorc_aid::diag::line_col(book_src, lo).0;
-        let command = flatten_ws(book_src.get(lo..hi).unwrap_or("<source unavailable>"));
-        if let Disposition::Replace(license, _) = &step.disposition {
-            let header = format!("{filename}:{line}  `{command}`");
-            if let Some(chain) = survival_chain(
-                header,
+        let raw = book_src.get(lo..hi).unwrap_or("<source unavailable>");
+        let command = flatten_ws(raw);
+        let word = raw.split_whitespace().next().unwrap_or("").to_owned();
+        let reference = format!("{line}|{word}");
+        if let Disposition::Replace(license, _) = &step.disposition
+            && let Some(chain) = survival_chain(
+                &reference,
+                &format!("{filename}:{line}"),
+                &step.disposition,
                 license,
-                trust_footprints,
+                &walls,
                 interner,
                 oracle_paths,
                 oracle_srcs,
-            ) {
-                chains.push((line, chain));
-            }
+            )
+        {
+            chains.push((line, chain));
         }
         let refused = refusals.iter().any(|d| {
             d.primary
                 .span()
                 .is_some_and(|s| s.lo == span.lo && s.hi == span.hi)
         });
-        let (tag, reasons, is_problem): (&'static str, Vec<String>, bool) = match &step.disposition
-        {
-            Disposition::Run => {
-                if let Some(reason) = top_run_reason(span, why_diags, arena, book_src) {
-                    ("run", vec![reason], true)
-                } else if probe.unresolvable.contains(&step.leaf)
-                    && !is_structurally_unprobeable(&command)
-                {
-                    let mut reasons = vec![
-                        "runs unprobed — no read-only check could be shipped (unsure ⇒ dorc \
-                         runs it, to stay safe)"
-                            .to_owned(),
-                    ];
-                    // upcoming-firstwall-hint: the FIRST unmodeled wall carries the forward
-                    // reasoning here — the `dorc why` detail behind the plan-mode `hint:` nag.
-                    if let Some(fw) = first_wall.filter(|fw| fw.leaf == step.leaf) {
-                        reasons.push(fw.why_detail());
+        let (reasons, class, improvement): (Vec<String>, AggregateClass, Option<String>) =
+            match &step.disposition {
+                Disposition::Run => {
+                    if let Some(reason) = top_run_reason(span, why_diags, arena, book_src) {
+                        (vec![reason], AggregateClass::Quiet, None)
+                    } else if probe.unresolvable.contains(&step.leaf)
+                        && !is_structurally_unprobeable(&command)
+                    {
+                        let mut reasons = vec![why_words("why-reason-run-unprobed", &[])];
+                        // upcoming-firstwall-hint: the FIRST unmodeled wall carries the forward
+                        // reasoning here — the pull detail behind the plan-mode `hint:` nag.
+                        if let Some(fw) = first_wall.filter(|fw| fw.leaf == step.leaf) {
+                            reasons.push(fw.why_detail());
+                        }
+                        (
+                            reasons,
+                            AggregateClass::Improvement,
+                            Some(why_words("why-improvement-ran-blind", &[&word])),
+                        )
+                    } else {
+                        (
+                            vec![why_words("why-reason-run-not-elidable", &[])],
+                            AggregateClass::Quiet,
+                            None,
+                        )
                     }
-                    ("run", reasons, true)
-                } else {
-                    (
-                        "run",
-                        vec![
-                            "runs — not elidable (a mutator with no converged probe, an inert \
-                             builtin, or a running wall blocks elision)"
-                                .to_owned(),
-                        ],
-                        false,
-                    )
                 }
-            }
-            Disposition::Replace(license, _) => {
-                let mut reasons = vec![format!(
-                    "elided — {} is converged (probe: holds)",
-                    dorc_plan::fact_label(interner, license.fact())
-                )];
-                if let Some(w) = &license.derivation().survival {
-                    reasons.push(format!(
-                        "survived past {} running wall(s) — backing {} proven disjoint (trusted \
-                         footprint)",
-                        w.crossings().len(),
-                        render_coord(w.backing(), interner),
-                    ));
+                Disposition::Replace(license, _) => {
+                    let mut reasons = vec![why_words(
+                        "why-reason-skipped-converged",
+                        &[&dorc_plan::fact_label(interner, license.fact())],
+                    )];
+                    if refused {
+                        reasons.push(why_words("why-reason-render-refused", &[]));
+                        (reasons, AggregateClass::Surprise, None)
+                    } else {
+                        (reasons, AggregateClass::Quiet, None)
+                    }
                 }
-                if refused {
-                    reasons.push(
-                        "render REFUSED (heredoc): the line runs verbatim instead, to stay safe"
-                            .to_owned(),
-                    );
-                    ("elide", reasons, true)
-                } else {
-                    ("elide", reasons, false)
+                Disposition::Guard(license) => {
+                    let kind = interner.resolve(license.fact().kind.0).to_owned();
+                    if refused {
+                        (
+                            vec![why_words("why-reason-guard-refused", &[&kind])],
+                            AggregateClass::Surprise,
+                            None,
+                        )
+                    } else {
+                        // The leverage is the WALL, never the guarded line: an elided command
+                        // casts no wall, so describing the wall is what frees this line.
+                        let wall = first_wall.map(|fw| format!("{}|{}", fw.line, fw.word));
+                        (
+                            vec![why_words("why-reason-guarded", &[&kind])],
+                            if wall.is_some() {
+                                AggregateClass::Improvement
+                            } else {
+                                AggregateClass::Quiet
+                            },
+                            wall.map(|w| why_words("why-improvement-guarded-past-wall", &[&w])),
+                        )
+                    }
                 }
-            }
-            Disposition::Guard(license) => {
-                let kind = interner.resolve(license.fact().kind.0).to_owned();
-                if refused {
-                    (
-                        "guard",
-                        vec![format!(
-                            "guard REFUSED — the site's awkward form (heredoc / non-`/dev/null` \
-                             redirect) runs verbatim (to stay safe), the {kind} oracle's vouch that \
-                             it is already satisfied notwithstanding"
-                        )],
-                        true,
-                    )
-                } else {
-                    (
-                        "guard",
-                        vec![format!(
-                            "guarded — the {kind} oracle vouches it is already satisfied, so the \
-                             original bytes survive and the oracle's check re-runs live at apply"
-                        )],
-                        true,
-                    )
-                }
-            }
-            Disposition::Omit { .. } => (
-                "omit",
-                vec![
-                    "omitted — dead branch (a guard's known status proves it never runs)"
-                        .to_owned(),
-                ],
-                false,
-            ),
-        };
+                Disposition::Omit { .. } => (
+                    vec![why_words("why-reason-omitted", &[])],
+                    AggregateClass::Quiet,
+                    None,
+                ),
+            };
         sites.push(WhySite {
             line,
+            word,
             command,
-            tag,
+            kind: OutcomeKind::of(&step.disposition),
+            outcome: outcome_word(&step.disposition),
+            foil: foil_word(&step.disposition),
             reasons,
-            is_problem,
+            class,
+            improvement,
         });
     }
 
-    // The three addressing forms (rul24-lineno-identity: a line-address matches `s.line`, the
-    // SOURCE line every `WhySite` was keyed on).
-    let (heading, matched): (String, Vec<&WhySite>) = match address {
-        None => (
-            String::new(), // the problem-set heading is emitted below (it names a count)
-            sites.iter().filter(|s| s.is_problem).collect(),
-        ),
-        Some(addr) => match parse_line_address(addr) {
-            Some(n) => (
-                format!("dorc why {filename}:{n}:"),
-                sites.iter().filter(|s| s.line == n).collect(),
-            ),
-            None => (
-                format!("dorc why `{addr}`:"),
-                sites.iter().filter(|s| s.command.contains(addr)).collect(),
-            ),
-        },
-    };
-
-    // A survived elision's pull answer is its full chain (`aid-why-license-chain`), not the flat
-    // reasons; `chain_for` looks one up by source line.
-    let chain_for = |line: usize| chains.iter().find(|(l, _)| *l == line).map(|(_, c)| c);
-
-    if address.is_none() {
-        // `tc-survived-elision-is-problem` (conductor-ruled): two DISTINCT sections — the PROBLEMS
-        // proper, then the TRUST-SPENT survivals (spent trust, not a failure). Neither conflates the other.
-        if matched.is_empty() && chains.is_empty() {
-            println!(
-                "dorc why: no problems in the current run of {filename} — every site elided, ran \
-                 cleanly, or was omitted."
-            );
-            return;
-        }
-        if !matched.is_empty() {
-            println!(
-                "dorc why: {} problem(s) in the current run of {filename} (source-line order):\n",
-                matched.len()
-            );
-            for s in &matched {
-                print_why_site(s, filename);
-            }
-        }
-        if !chains.is_empty() {
-            println!(
-                "dorc why: {} survived elision(s) — trust SPENT past a running wall (`--trust-\
-                 footprints`); pull the chain for each:\n",
-                chains.len()
-            );
-            for (_, chain) in &chains {
-                for l in render_chain(chain) {
-                    println!("{l}");
-                }
-            }
-        }
-        return;
-    }
-    if matched.is_empty() {
-        println!(
-            "{heading} no analyzed command matched (rul24-lineno-identity: a line-address is a SOURCE line)."
-        );
-        return;
-    }
-    println!("{heading}\n");
-    for s in matched {
-        // The addressed pull answer: the full chain when the line survived a wall, else the flat record.
-        if let Some(chain) = chain_for(s.line) {
-            for l in render_chain(chain) {
-                println!("{l}");
-            }
-        } else {
-            print_why_site(s, filename);
-        }
+    if let Some(addr) = address {
+        emit_why_triptych(addr, &sites, &chains, filename);
+    } else {
+        emit_why_aggregate(&sites, &chains, filename, first_wall, trust_footprints);
     }
 }
 
-/// Print one [`WhySite`]: the `file:line` header (with disposition tag + command) then the ASCII
-/// depth-indented cause-chain (`└─` per reason). rul24-lineno-identity: `line` is the SOURCE line.
-fn print_why_site(s: &WhySite, filename: &str) {
-    println!("{filename}:{}  [{}]  `{}`", s.line, s.tag, s.command);
-    for r in &s.reasons {
-        println!("  └─ {r}");
+/// The ADDRESSED pull answer (`28G` Phase W1): the triptych for every site the address matched.
+///
+/// Two addressing forms, both file-qualified on the way OUT (`rul24-lineno-identity`: the ONE
+/// line-number space is the source file's, so a `file:N` this prints is exactly the address a query
+/// accepts back): a `book.sh:N` / bare `N` line-address, or free content substring-matched against
+/// the command text.
+///
+/// A survived elision already carries a fully-populated triptych; every other disposition gets the
+/// same three panels built from its own ANALYSIS rows, so the surface has exactly ONE shape.
+fn emit_why_triptych(
+    address: &str,
+    sites: &[WhySite],
+    chains: &[(usize, ChainRender)],
+    filename: &str,
+) {
+    let matched: Vec<&WhySite> = match parse_line_address(address) {
+        Some(n) if address_names_book(address, filename) => {
+            sites.iter().filter(|s| s.line == n).collect()
+        }
+        Some(_) => Vec::new(),
+        None => sites
+            .iter()
+            .filter(|s| s.command.contains(address))
+            .collect(),
+    };
+    if matched.is_empty() {
+        println!("{}", why_words("why-address-unmatched", &[address]));
+        return;
+    }
+    for site in matched {
+        let built;
+        let chain = if let Some((_, chain)) = chains.iter().find(|(l, _)| *l == site.line) {
+            chain
+        } else {
+            built = plain_chain(site);
+            &built
+        };
+        println!("   [ {}, {} ]", filename, site.reference());
+        println!();
+        for line in render_chain(chain) {
+            println!("{line}");
+        }
+    }
+    println!("{}", why_words("why-receipt-footer", &[]));
+    println!();
+}
+
+/// The triptych for a site with no survival chain: the same three panels, with each of the site's
+/// ANALYSIS rows spoken by dorc in its own voice — which is honest, because these rows ARE engine
+/// derivations rather than quotations of any speaker (`28E` §8 quoted-speakers).
+///
+/// The site's LEADING reason becomes the contrastive because-clause and the rest become ANALYSIS
+/// rows, so nothing is said twice: a one-reason site collapses to OUTCOME alone
+/// (`28E` §7 adopt-question-relative-informativeness — demote what the asker's own question already
+/// fixed). NEXT STEPS is likewise omitted, the triptych-collapse `28G` strawman `e-skipped-quiet`
+/// demonstrates. The richer per-disposition panels — a guarded line naming its wall, a declined line
+/// showing the author's arm — are W2's.
+fn plain_chain(site: &WhySite) -> ChainRender {
+    let (because, rest) = site
+        .reasons
+        .split_first()
+        .map_or((String::new(), &[][..]), |(head, tail)| {
+            (head.clone(), tail)
+        });
+    ChainRender {
+        reference: site.reference(),
+        crossed: String::new(),
+        claimant: String::new(),
+        outcome: why_words(
+            "why-outcome-contrastive",
+            &[&site.reference(), &site.outcome, &site.foil, &because],
+        ),
+        analysis_opener: why_words("why-analysis-opener-plain", &[&site.reference()]),
+        links: rest
+            .iter()
+            .map(|reason| ChainLink {
+                rank: RowRank::RuntimeBacked,
+                tier: TrustTier::Derived,
+                speaker: Some(ENGINE_SPEAKER.to_owned()),
+                payload: reason.clone(),
+                quoted: false,
+                explanation: None,
+            })
+            .collect(),
+        join: None,
+        next_steps: NextSteps { rows: Vec::new() },
+    }
+}
+
+/// The zero-argument `dorc why` aggregate (`28E` §8, human-demonstrated).
+///
+/// Section order is LAW, not taste: TRUST SPENT leads and is never capped
+/// (`28E` §0 `rul-trust-spent-first-argless-why`, human-typed — danger in the user's face first),
+/// SURPRISES follows and renders only when the world disagreed with the plan, and IMPROVEMENTS
+/// closes, calm and quantified. The retired PROBLEMS section name appears nowhere.
+///
+/// The receipt header carries only invocation data the model already holds. The rest of the
+/// strawmen's header — run timestamp, host, trigger, book digest, git-match, oracle inventory — is
+/// W2/W3 material, omitted rather than faked.
+fn emit_why_aggregate(
+    sites: &[WhySite],
+    chains: &[(usize, ChainRender)],
+    filename: &str,
+    first_wall: Option<&FirstWallHint>,
+    trust_footprints: bool,
+) {
+    let surprises: Vec<&WhySite> = sites
+        .iter()
+        .filter(|s| s.class == AggregateClass::Surprise)
+        .collect();
+    let improvements: Vec<&WhySite> = sites
+        .iter()
+        .filter(|s| s.class == AggregateClass::Improvement)
+        .collect();
+    if chains.is_empty() && surprises.is_empty() && improvements.is_empty() {
+        println!("{}", why_words("why-nothing-to-report", &[filename]));
+        return;
+    }
+
+    let (ran, guarded, skipped) = plan_tally(sites);
+    let risk_profile = if trust_footprints {
+        CONSENT_FLAG.to_owned()
+    } else {
+        why_words("why-receipt-risk-profile-none", &[])
+    };
+    println!(
+        "   {}",
+        why_words("why-receipt-risk-profile", &[&risk_profile])
+    );
+    println!(
+        "   {}",
+        why_words(
+            "why-receipt-plan-tally",
+            &[&ran.to_string(), &guarded.to_string(), &skipped.to_string()]
+        )
+    );
+    println!("   {}", why_words("why-addressability-line", &[]));
+
+    if !chains.is_empty() {
+        println!();
+        println!("{}", why_words("why-trust-spent-heading", &[]));
+        println!();
+        for (line, chain) in chains {
+            let Some(site) = sites.iter().find(|s| s.line == *line) else {
+                continue;
+            };
+            print_aggregate_item(
+                site,
+                filename,
+                &why_words(
+                    "why-trust-spent-item-reason",
+                    &[&chain.crossed, &chain.claimant],
+                ),
+            );
+        }
+    }
+    if !surprises.is_empty() {
+        println!();
+        println!("{}", why_words("why-surprises-heading", &[]));
+        println!();
+        for site in &surprises {
+            print_aggregate_item(site, filename, &site.reasons.join(" "));
+        }
+    }
+    if !improvements.is_empty() {
+        println!();
+        println!("{}", why_words("why-improvements-heading", &[]));
+        println!();
+        for site in &improvements {
+            print_aggregate_item(site, filename, site.improvement.as_deref().unwrap_or(""));
+        }
+        if let Some(fw) = first_wall.filter(|fw| fw.unwall > 0) {
+            println!();
+            for text in wrap_at(
+                &why_words(
+                    "why-improvement-quantified",
+                    &[&fw.word, &fw.unwall.to_string()],
+                ),
+                WHY_WIDTH,
+                "",
+            ) {
+                println!("{text}");
+            }
+        }
     }
     println!();
+    println!("{}", why_words("why-receipt-footer", &[]));
+}
+
+/// One aggregate item: the `file:N | command` row, its reason beneath, and the `dorc why <addr>`
+/// pointer that turns it into the next question (`28E` §8 row shape).
+fn print_aggregate_item(site: &WhySite, filename: &str, reason: &str) {
+    println!(" {} | {}", site.address(filename), site.command);
+    for text in wrap_at(reason, WHY_WIDTH.saturating_sub(3), "") {
+        println!("   {text}");
+    }
+    println!(
+        "   {}",
+        why_words("why-item-pointer", &[&site.address(filename)])
+    );
+}
+
+/// The plan tally for the receipt header: `(ran, guarded, skipped)`. The strawmen split the skipped
+/// count by proof-versus-claim; that split is W2 material, so the tally reports the totals it holds.
+///
+/// Counts the TYPED disposition, never the rendered word: the words are registry prose and are meant
+/// to churn (`27V:rul-output-form-unwelded`), so a tally keyed on them would silently go wrong the
+/// first time someone rewrote one.
+fn plan_tally(sites: &[WhySite]) -> (usize, usize, usize) {
+    let count = |kind: OutcomeKind| sites.iter().filter(|s| s.kind == kind).count();
+    (
+        count(OutcomeKind::Ran),
+        count(OutcomeKind::Guarded),
+        count(OutcomeKind::Skipped),
+    )
 }
 
 /// The ⊤-run cause for a Run site, if a `why_diags` disclosure covers it: the FIRST diag whose
@@ -3846,6 +4329,29 @@ fn parse_line_address(addr: &str) -> Option<usize> {
         .unwrap_or(addr)
         .parse::<usize>()
         .ok()
+}
+
+/// Does a file-QUALIFIED address name the book this run analyzed? A bare `12` names no file and
+/// always matches; `web.sh:12` matches only `web.sh`, compared on the trailing path component so a
+/// pasted `./web.sh:12` or an absolute path still resolves.
+///
+/// Load-bearing because the render now PRINTS file-qualified pointers: without the check, a
+/// qualified address naming some other book silently answers for the analyzed one at rc 0 — the
+/// same silent-wrong-surface class as `289:rider-why-last-address-order`.
+fn address_names_book(addr: &str, book_name: &str) -> bool {
+    let Some((file, _)) = addr.rsplit_once(':') else {
+        return true;
+    };
+    if file.is_empty() {
+        return true;
+    }
+    let tail = |path: &str| {
+        path.rsplit(['/', '\\'])
+            .next()
+            .unwrap_or(path)
+            .to_ascii_lowercase()
+    };
+    tail(file) == tail(book_name)
 }
 
 /// Render a [`dorc_plan::EntityCoord`] as `kind:entity` for the attribution surface (empty
@@ -4454,7 +4960,7 @@ fn emit_report_lane_notes(results: &SiteResults) {
         };
         let tail = r.raw.splitn(3, ' ').nth(2).unwrap_or(r.raw.as_str());
         eprintln!(
-            "note: author declines [{}]{at} — {tail}",
+            "note: author declines [{}]{at} -- {tail}",
             decline_class_word(class)
         );
     }
@@ -4558,7 +5064,7 @@ fn static_decline_notes(
         .map(|l| format!(" (at {l})"))
         .unwrap_or_default();
         lines.push(format!(
-            "why: author declines [{}]{at} — a deliberate decline the author classed, so the site \
+            "why: author declines [{}]{at} -- a deliberate decline the author classed, so the site \
              runs",
             decline_class_word(reason.class)
         ));
@@ -4805,7 +5311,7 @@ fn sanitize_report_raw(s: &str) -> String {
     while end > 0 && !cleaned.is_char_boundary(end) {
         end = end.saturating_sub(1);
     }
-    format!("{}…", &cleaned[..end])
+    format!("{}...", &cleaned[..end])
 }
 
 /// Parse `u32` leaf-id.
@@ -5371,7 +5877,7 @@ fn carry_attribution_text(
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "pure-predicate carry across {axes} (unflagged, 27C §4(a)): {kinds} — each vouched invariant \
+        "pure-predicate carry across {axes} (unflagged, 27C section 4(a)): {kinds} -- each vouched invariant \
          across {axes} by its kind-owner's `invariant:` line (vouch-species); the verdict body is \
          engine-proved read-set-closed"
     )
@@ -5629,6 +6135,29 @@ mod tests {
             parse_line_address("make install"),
             None,
             "content with a space ⇒ content match"
+        );
+    }
+
+    /// A file-QUALIFIED address must name the book this run analyzed. The render prints qualified
+    /// pointers now, so the un-checked reading answers for the analyzed book whatever file the
+    /// address named — a silent wrong surface at rc 0, which is the failure this pins shut.
+    /// Path-shape tolerance is deliberate: a pasted `./web.sh:9` is the same address as `web.sh:9`.
+    #[test]
+    fn a_file_qualified_address_must_name_the_analyzed_book() {
+        assert!(address_names_book("web.sh:9", "web.sh"));
+        assert!(address_names_book("9", "web.sh"), "a bare N names no file");
+        assert!(address_names_book("./web.sh:9", "web.sh"), "leading ./");
+        assert!(
+            address_names_book("/srv/books/web.sh:9", "web.sh"),
+            "an absolute path still resolves to the same book"
+        );
+        assert!(
+            address_names_book("web.sh:9", "books\\web.sh"),
+            "a windows-separated book path compares on its last component"
+        );
+        assert!(
+            !address_names_book("other.sh:9", "web.sh"),
+            "a DIFFERENT book must not silently answer for this one"
         );
     }
 
@@ -6013,10 +6542,10 @@ mod tests {
     fn report_lane_sanitizes_and_caps_the_raw_tail() {
         let capped = sanitize_report_raw(&format!("decline hazard {}", "x".repeat(500)));
         assert!(
-            capped.chars().count() <= REPORT_RAW_CAP + 1,
-            "capped at REPORT_RAW_CAP chars (+ the ellipsis)"
+            capped.chars().count() <= REPORT_RAW_CAP + 3,
+            "capped at REPORT_RAW_CAP chars (+ the three-dot ASCII ellipsis)"
         );
-        assert!(capped.ends_with('…'), "an over-cap tail is ellipsized");
+        assert!(capped.ends_with("..."), "an over-cap tail is ellipsized");
         let cleaned = sanitize_report_raw("decline unsound has\ta\ttab and \u{7} bell");
         assert!(
             !cleaned.contains('\u{7}') && !cleaned.contains('\t'),
@@ -6990,41 +7519,73 @@ mod first_wall_tests {
         // M=1, no further walls — the USER_STORY stage-3 sharpened form.
         assert_eq!(
             hint(1, 0).body(),
-            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+            "'foobar' (line 8) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged, and un-wall 1 downstream site"
         );
         // M=2 ⇒ "sites"; a further wall ⇒ the trailing pointer.
         assert_eq!(
             hint(2, 1).body(),
-            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+            "'foobar' (line 8) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged, and un-wall 2 downstream sites; 1 more \
-             unmodeled wall — dorc why"
+             unmodeled wall -- dorc why"
         );
         // M=0 ⇒ the un-wall clause is dropped (never "un-wall 0").
         assert_eq!(
             hint(0, 0).body(),
-            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+            "'foobar' (line 8) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged"
         );
         // more_walls plural.
         assert!(
             hint(0, 2)
                 .body()
-                .ends_with("; 2 more unmodeled walls — dorc why")
+                .ends_with("; 2 more unmodeled walls -- dorc why")
         );
     }
 
+    /// The pull-surface detail carries the recovery COUNT when there is one, and never a bare zero.
+    /// Structure, not bytes: the words are arrangement-registry rows and ride
+    /// `27V:rul-output-form-unwelded`, so pinning them verbatim here would weld exactly what that
+    /// rule keeps free — and would re-break on every prose pass.
     #[test]
     fn why_detail_carries_the_unwall_count() {
-        assert_eq!(
-            hint(1, 0).why_detail(),
-            "first wall (book order) — an oracle vouching its convergence would elide it and \
-             un-wall 1 downstream site"
+        let with_count = hint(1, 0).why_detail();
+        assert!(
+            with_count.contains('1'),
+            "the recovery count must reach the reader: {with_count}"
         );
-        assert_eq!(
-            hint(0, 0).why_detail(),
-            "first wall (book order) — an oracle vouching its convergence would elide it when \
-             converged"
+        let without = hint(0, 0).why_detail();
+        assert!(
+            !without.contains('0'),
+            "a zero count is dropped, never rendered as `0 sites`: {without}"
         );
+        assert!(
+            without.len() < with_count.len(),
+            "the count-free form is the shorter one (the clause was dropped, not blanked)"
+        );
+    }
+
+    /// `rul-ascii-output-forever` (`28E` §0, human-typed: "no unicode, ever. period. anywhere").
+    /// The why-surface strings are the ones this lane authored or respelled; a stray em-dash or
+    /// arrow creeping back into one is exactly what this catches.
+    #[test]
+    fn the_why_surface_renders_pure_ascii() {
+        let mut checked: usize = 0;
+        for entry in dorc_aid::arrangement::ARRANGEMENTS {
+            if !entry.slug.starts_with("why-") {
+                continue;
+            }
+            for word in entry.words.words().unwrap_or(&[]) {
+                assert!(
+                    word.is_ascii(),
+                    "arrangement `{}` carries non-ASCII output: {word:?}",
+                    entry.slug
+                );
+                checked = checked.saturating_add(1);
+            }
+        }
+        assert!(checked > 0, "the why-surface registry rows must be reached");
+        assert!(hint(1, 1).body().is_ascii());
+        assert!(hint(1, 1).why_detail().is_ascii());
     }
 }

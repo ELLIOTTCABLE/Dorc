@@ -1717,13 +1717,13 @@ pub type WrappedProbes = BTreeMap<CfgNodeId, WrappedProbe>;
 /// read-only probe; only resolvable sites get an invocation. An un-resolvable site (a
 /// kill, an opaque command, a written establish, a `MustRun`, or a resolvable class whose
 /// kind has no probe) appears in the rendered artifact as a `site:<id>
-/// skip-unresolvable` comment, never as an invocation (`kFAIL-perform`: no convergence
+/// unresolvable-no-probe` comment, never as an invocation (`kFAIL-perform`: no convergence
 /// knowledge ⇒ the apply runs it).
 #[derive(Debug, Clone, Default)]
 pub struct ProbePlan {
     /// The resolvable sites' checks, in site-id order.
     pub checks: Vec<ProbePredict>,
-    /// The un-resolvable sites' ids (rendered as `skip-unresolvable` comments).
+    /// The un-resolvable sites' ids (rendered as `unresolvable-no-probe` comments).
     pub unresolvable: Vec<LeafId>,
 }
 
@@ -5250,7 +5250,7 @@ apt_get__is_converged() {
             "site 0 record:\n{rendered}"
         );
         assert!(
-            rendered.contains("# site:1 skip-unresolvable"),
+            rendered.contains("# site:1 unresolvable-no-probe"),
             "site 1 comment:\n{rendered}"
         );
     }

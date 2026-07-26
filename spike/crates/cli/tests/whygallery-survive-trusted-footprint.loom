@@ -6,18 +6,7 @@ why-addr: 10
 expect-why:
   - site 1 survives+elides past wall site 0 && touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Firewall:443/tcp disjoint
 expect-why-chain:
-  - dorc why  && book.sh:10:
-  - book.sh:10 && `ufw allow 443/tcp`
-  - removed from the plan (elided) && sm.dorc.Firewall:443/tcp is converged && probe: holds
-  - 1. measured && sm.dorc.Firewall:443/tcp was measured converged
-  - 2. vouched && firewall.oracle.sh:
-  - 3. ran && (wall site 0) really ran above this line
-  - 4. claimed && disturbs at most {sm.dorc.Package:oldpkg} && package.oracle.sh:
-  - 5. derived && proven disjoint from sm.dorc.Firewall:443/tcp
-  - 6. consented && `--trust-footprints` was set
-  - link 4 is the one unverified-by-construction claim
-  - to re-measure
-  - to fix && package.oracle.sh: && line to widen
+  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh
@@ -200,39 +189,97 @@ apt-get install -y oldpkg
 # ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
 
 $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints < probe-results.txt
-dorc why book.sh:10:
+   [ book.sh, 10|ufw ]
 
-book.sh:10  `ufw allow 443/tcp`
-  removed from the plan (elided) — sm.dorc.Firewall:443/tcp is converged (probe: holds)
+   === OUTCOME ===
 
-  it was removed because all of the following held together:
-  1. measured: sm.dorc.Firewall:443/tcp was measured converged on the host at plan time
-  2. vouched: the site's own oracle accepts that measured state as reason enough not to re-run this line (firewall.oracle.sh:17)
-  3. ran: `apt-get` (wall site 0) really ran above this line
-  4. claimed: that wall's author claims it disturbs at most {sm.dorc.Package:oldpkg} — an author's claim, nothing verifies it (package.oracle.sh:19)
-  5. derived: that claim is proven disjoint from sm.dorc.Firewall:443/tcp — it does not overlap what was measured
-  6. consented: `--trust-footprints` was set, which is what lets a claim keep a line out of the plan past a running mutation
+   10|ufw skipped RATHER THAN guarded: 9|apt-get ran above it, which normally forces an
+   apply-time guard-clause; but --trust-footprints activates acting on authors' at-most
+   claims, and that claim does not reach what the skip was reported on.
 
-  if this line SHOULD have run: dorc cannot see which link is wrong, but link 4 is the one unverified-by-construction claim in this chain (a naked footprint claim).
-  to re-measure: `dorc plan <book> <host>` reads the world as it is now — dorc kept no state that can stay wrong, so a broken fact comes back diverged and the line returns.
-  to fix: package.oracle.sh:19 is the line to widen; every book using that oracle inherits the repair.
+   === ANALYSIS ===
+
+   10|ufw being skipped stood on all of the following, together:
+
+   * ufw__predict          reported  "sm.dorc.Firewall:443/tcp@allowed"
+   * firewall.oracle.sh:17 vouches   "re-running this line adds nothing worth running while
+                                     sm.dorc.Firewall:443/tcp holds"
+   ! package.oracle.sh:19  claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
+
+      This speaks for everything it did NOT measure. Fact derived from as-written contract
+      only; no run can back it.
+
+   * dorc                  derives   that claim is proven disjoint from
+                                     sm.dorc.Firewall:443/tcp -- it does not overlap what
+                                     was reported
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: nothing 9|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what
+   the skip was reported on; the skip stood.
+
+   === NEXT STEPS ===
+
+   if 10|ufw SHOULD have run:
+
+      suspect:  the 9|apt-get claim -- the only link speaking for unmeasured state. if it
+                also touches sm.dorc.Firewall:443/tcp, it is what wrongly kept this line
+                out.
+      fix:      package.oracle.sh:19 (widen the claim; every consumer heals)
+      OR fix:   `dorc plan <book> <host>` (run without --trust-footprints, to distrust
+                oracle-authored claims)
+      verify:   `dorc plan <book> <host>` (re-measures the world as it is now; a fact that
+                came back wrong comes back diverged, and the line returns)
+      review:   `dorc why book.sh:10 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)
 
 $ dorc plan --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog < probe-results.txt > /dev/null
 
 $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog
-dorc why book.sh:10:
+   [ book.sh, 10|ufw ]
 
-book.sh:10  `ufw allow 443/tcp`
-  removed from the plan (elided) — sm.dorc.Firewall:443/tcp is converged (probe: holds)
+   === OUTCOME ===
 
-  it was removed because all of the following held together:
-  1. measured: sm.dorc.Firewall:443/tcp was measured converged on the host at plan time
-  2. vouched: the site's own oracle accepts that measured state as reason enough not to re-run this line (firewall.oracle.sh:17)
-  3. ran: `apt-get` (wall site 0) really ran above this line
-  4. claimed: that wall's author claims it disturbs at most {sm.dorc.Package:oldpkg} — an author's claim, nothing verifies it (package.oracle.sh:19)
-  5. derived: that claim is proven disjoint from sm.dorc.Firewall:443/tcp — it does not overlap what was measured
-  6. consented: `--trust-footprints` was set, which is what lets a claim keep a line out of the plan past a running mutation
+   10|ufw skipped RATHER THAN guarded: 9|apt-get ran above it, which normally forces an
+   apply-time guard-clause; but --trust-footprints activates acting on authors' at-most
+   claims, and that claim does not reach what the skip was reported on.
 
-  if this line SHOULD have run: dorc cannot see which link is wrong, but link 4 is the one unverified-by-construction claim in this chain (a naked footprint claim).
-  to re-measure: `dorc plan <book> <host>` reads the world as it is now — dorc kept no state that can stay wrong, so a broken fact comes back diverged and the line returns.
-  to fix: package.oracle.sh:19 is the line to widen; every book using that oracle inherits the repair.
+   === ANALYSIS ===
+
+   10|ufw being skipped stood on all of the following, together:
+
+   * ufw__predict          reported  "sm.dorc.Firewall:443/tcp@allowed"
+   * firewall.oracle.sh:17 vouches   "re-running this line adds nothing worth running while
+                                     sm.dorc.Firewall:443/tcp holds"
+   ! package.oracle.sh:19  claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
+
+      This speaks for everything it did NOT measure. Fact derived from as-written contract
+      only; no run can back it.
+
+   * dorc                  derives   that claim is proven disjoint from
+                                     sm.dorc.Firewall:443/tcp -- it does not overlap what
+                                     was reported
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: nothing 9|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what
+   the skip was reported on; the skip stood.
+
+   === NEXT STEPS ===
+
+   if 10|ufw SHOULD have run:
+
+      suspect:  the 9|apt-get claim -- the only link speaking for unmeasured state. if it
+                also touches sm.dorc.Firewall:443/tcp, it is what wrongly kept this line
+                out.
+      fix:      package.oracle.sh:19 (widen the claim; every consumer heals)
+      OR fix:   `dorc plan <book> <host>` (run without --trust-footprints, to distrust
+                oracle-authored claims)
+      verify:   `dorc plan <book> <host>` (re-measures the world as it is now; a fact that
+                came back wrong comes back diverged, and the line returns)
+      review:   `dorc why book.sh:10 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)

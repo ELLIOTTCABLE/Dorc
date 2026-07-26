@@ -92,7 +92,7 @@ $ dorc --book=book.sh -o sudo.oracle.sh < probe-results.txt
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=796e6aeb86b988d4 sites=0 @@dorc@@\n'
-# site:0 skip-unresolvable
+# site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

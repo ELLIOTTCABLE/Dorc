@@ -10,7 +10,7 @@ promtail --version | grep -q "2.9.0" || curl -sL https://example.com/promtail.ta
 node_exporter --version | grep -q "1.7.0" || curl -sL https://example.com/nodeexp.tar.gz | tar xz
 
 -- probe-results.txt --
-# no oracle ⇒ every site is skip-unresolvable ⇒ the probe ships no records and consumes none.
+# no oracle ⇒ every site is unresolvable-no-probe ⇒ the probe ships no records and consumes none.
 
 -- mocks/.log --
 # newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
@@ -122,18 +122,18 @@ $ dorc --book=book.sh < probe-results.txt
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=bc45596737e1d519 sites=0 @@dorc@@\n'
-# site:0 skip-unresolvable
-# site:1 skip-unresolvable
-# site:2 skip-unresolvable
-# site:3 skip-unresolvable
-# site:4 skip-unresolvable
-# site:5 skip-unresolvable
-# site:6 skip-unresolvable
-# site:7 skip-unresolvable
-# site:8 skip-unresolvable
-# site:9 skip-unresolvable
-# site:10 skip-unresolvable
-# site:11 skip-unresolvable
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+# site:7 unresolvable-no-probe
+# site:8 unresolvable-no-probe
+# site:9 unresolvable-no-probe
+# site:10 unresolvable-no-probe
+# site:11 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

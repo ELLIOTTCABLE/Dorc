@@ -3,9 +3,7 @@ run: round-trip
 fixpoint: executed
 why-addr: 8
 expect-why-chain:
-  - dorc why  && book.sh:8:
-  - book.sh:8 && [elide] && `ufw allow 80/tcp`
-  - elided && sm.dorc.Firewall:80/tcp@allowed is converged && probe: holds
+  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh
@@ -235,7 +233,11 @@ true || :   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; apt-get install -y ng
 # systemctl enable nginx   # dorc: elided (already converged / dead branch)
 
 $ dorc why 8 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh < probe-results.txt
-dorc why book.sh:8:
+   [ book.sh, 8|ufw ]
 
-book.sh:8  [elide]  `ufw allow 80/tcp`
-  └─ elided — sm.dorc.Firewall:80/tcp@allowed is converged (probe: holds)
+   === OUTCOME ===
+
+   8|ufw skipped RATHER THAN guarded: the probe reported sm.dorc.Firewall:80/tcp@allowed
+   already in place, and the site's oracle vouches that is reason enough
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)

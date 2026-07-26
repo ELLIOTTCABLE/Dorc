@@ -354,6 +354,10 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                     dorc_aid::diag::CliUnknownFlag { flag: arg.clone() },
                 )),
             });
+        } else if mode == Mode::Why && why_address.is_none() {
+            // `289:rider-why-last-address-order`: the address is the first bare word WHEREVER it
+            // sits — taking it only when it leads answered the wrong surface at rc 0.
+            why_address = Some(arg);
         } else {
             // A bare word (no `-`): a positional book (the day-one `dorc plan book.sh` ergonomic;
             // repeatable ⇒ multi-book concatenation).
@@ -689,5 +693,35 @@ mod tests {
             Some("--trust-footprints")
         );
         assert_eq!(nearest("--boook", &flags), Some("--book"), "one insertion");
+    }
+
+    /// `289:rider-why-last-address-order`: in `why` mode the address is the first bare word wherever
+    /// it sits. The old reading only took it when it LED, so `dorc why --last book.sh:9` filed the
+    /// address as a positional book and answered the unargumented aggregate at rc 0 — the user asked
+    /// about one line and silently got the whole-run surface, with nothing to notice.
+    #[test]
+    fn a_why_address_is_found_after_a_flag() {
+        let args =
+            |raw: &[&str]| match parse_args_from(raw.iter().map(|a| (*a).to_owned()).collect()) {
+                Ok(Invocation::Analyze(args)) => args,
+                other => panic!("expected an analyze invocation, got {other:?}"),
+            };
+        let leading = args(&["why", "book.sh:9", "--book=book.sh"]);
+        assert_eq!(leading.why_address.as_deref(), Some("book.sh:9"));
+
+        let after_last = args(&["why", "--last", "book.sh:9"]);
+        assert_eq!(
+            after_last.why_address.as_deref(),
+            Some("book.sh:9"),
+            "the address must survive a preceding flag"
+        );
+        assert!(
+            after_last.books.is_empty(),
+            "and must not be mistaken for a positional book"
+        );
+
+        // The `why`-mode carve does not leak: every other mode still reads a bare word as a book.
+        let planned = args(&["plan", "book.sh"]);
+        assert_eq!(planned.books, vec!["book.sh".to_owned()]);
     }
 }

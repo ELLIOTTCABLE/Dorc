@@ -2621,7 +2621,7 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
             p.site.member.map(|m| format!(".{m}")).unwrap_or_default()
         )),
         // All other codes: pure render-plane disclosures or give-ups; no fact-plane artifact
-        // comment (the apply runs the site; the existing skip-unresolvable comment, if any,
+        // comment (the apply runs the site; the existing unresolvable-no-probe comment, if any,
         // is the cli's, not this projection's).
         _ => None,
     }

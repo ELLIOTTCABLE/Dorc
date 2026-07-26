@@ -53,10 +53,10 @@ systemctl__predict() {
 systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 5 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 6: sm.dorc.Service:nginx@active
 systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 6 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
-# site:0 skip-unresolvable
-# site:7 skip-unresolvable
-# site:8 skip-unresolvable
-# site:9 skip-unresolvable
+# site:0 unresolvable-no-probe
+# site:7 unresolvable-no-probe
+# site:8 unresolvable-no-probe
+# site:9 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

@@ -285,7 +285,7 @@ pub mod probe {
     /// so the apply runs the site for real.
     #[must_use]
     pub fn unresolvable_comment(site: LeafId) -> String {
-        format!("# site:{} skip-unresolvable\n", site.0)
+        format!("# site:{} unresolvable-no-probe\n", site.0)
     }
 }
 
