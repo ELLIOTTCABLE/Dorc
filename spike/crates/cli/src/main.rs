@@ -544,7 +544,7 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
 /// [`Absent`](RunClock::Absent) is a first-class "no clock here", not a failure mode: a replayed
 /// durable does not carry the original run's per-record observation times, and re-stamping them
 /// from the REPLAY's clock would present this moment as the original measurement.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum RunClock {
     /// Yields `at`, then advances by `step_millis`. Production reads a whole record stream in one
     /// slurp, so it ticks by zero — every record of one read genuinely shares one instant. A DST
@@ -555,6 +555,12 @@ enum RunClock {
     },
     /// No clock: every read is `None`.
     Absent,
+    /// The instants a durable RECORDED, keyed by the record ordinal they belong to.
+    ///
+    /// Not a clock at all, which is the point: a replay must date its records from the run that
+    /// made them, and reading any live clock here would present the moment of reading as the
+    /// moment of measurement. An ordinal the durable carries no instant for answers `None`.
+    Recorded(BTreeMap<u64, dorc_core::RunInstant>),
 }
 
 /// The harness's clock pin (`rul-fixture-identity-never-production`) — Unix milliseconds, and the
@@ -609,7 +615,19 @@ impl RunClock {
                 *at = dorc_core::RunInstant(read.0.saturating_add(*step_millis));
                 Some(read)
             }
-            Self::Absent => None,
+            Self::Absent | Self::Recorded(_) => None,
+        }
+    }
+
+    /// The instant belonging to the record at `ordinal`.
+    ///
+    /// A live run reads its own clock and ignores the ordinal — the reading IS the record's
+    /// arrival. A replay looks the ordinal up, because its records arrived once, already, and the
+    /// only honest answer is the one that run wrote down.
+    fn at(&mut self, ordinal: u64) -> Option<dorc_core::RunInstant> {
+        match self {
+            Self::Recorded(instants) => instants.get(&ordinal).copied(),
+            Self::Ticking { .. } | Self::Absent => self.now(),
         }
     }
 }
@@ -1018,8 +1036,14 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 framed: true,
                 ..SiteResults::default()
             },
-            // The durable carries no per-record instants; this clock would date them to NOW.
-            |records| parse_admitted_results(records, &mut RunClock::Absent, &mut interner),
+            // Dated from what the ORIGINAL run wrote down, never from any clock reachable now.
+            |records| {
+                parse_admitted_results(
+                    records,
+                    &mut RunClock::Recorded(r.instants.clone()),
+                    &mut interner,
+                )
+            },
         );
         (None, ScopedHostEvidence::new(scope, results), false)
     } else {
@@ -1394,6 +1418,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &decision_digest,
             &plan,
             clock.now(),
+            results,
         );
         if whylog_eligible && let Some(records) = admitted_records.as_ref() {
             write_whylog(dir, &metadata, records);
@@ -1414,6 +1439,8 @@ struct Replay {
     /// gated on, so it can never make a coverage claim about a stream this binary's narrative
     /// plane was not built against.
     record_stream_version: u32,
+    /// The instants the ORIGINAL run recorded for its probe records, by arrival ordinal.
+    instants: BTreeMap<u64, dorc_core::RunInstant>,
     records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
 }
 
@@ -1517,6 +1544,8 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let decision_digest = envelope.claims().decision_digest().to_owned();
     let started_at = envelope.claims().started_at();
     let record_stream_version = envelope.record_stream_version();
+    let instants: BTreeMap<u64, dorc_core::RunInstant> =
+        envelope.recorded_instants().iter().copied().collect();
     match dorc_plan::whylog::admit_unscoped_whylog_replay(
         envelope,
         &framing,
@@ -1528,6 +1557,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
             decision_digest,
             started_at,
             record_stream_version,
+            instants: instants.clone(),
             records: Some(replay.records().clone()),
         })),
         dorc_plan::records::Admission::NoObservation => Ok(ReplayLoad::NoObservation(Replay {
@@ -1536,6 +1566,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
             decision_digest,
             started_at,
             record_stream_version,
+            instants: instants.clone(),
             records: None,
         })),
         dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(advisory, reason)),
@@ -1650,6 +1681,7 @@ fn assemble_whylog_metadata(
     decision_digest: &str,
     plan: &dorc_plan::Plan,
     started_at: Option<dorc_core::RunInstant>,
+    results: &SiteResults,
 ) -> dorc_plan::whylog::WhylogV2Metadata {
     let apply = plan
         .steps
@@ -1674,6 +1706,15 @@ fn assemble_whylog_metadata(
         host: framing.host.clone(),
         decision_digest: decision_digest.to_owned(),
         started_at,
+        // Ordinal-ordered and dedup'd by the map: the same record cannot claim two arrivals, which
+        // is the one shape the reader refuses outright.
+        instants: results
+            .records
+            .values()
+            .filter_map(|record| Some((record.stamp.ordinal, record.stamp.received_at?)))
+            .collect::<BTreeMap<_, _>>()
+            .into_iter()
+            .collect(),
         apply,
     }
 }
@@ -6380,7 +6421,10 @@ fn parse_admitted_results(
                         Predicted::Value(OutBytes(interner.intern(value)))
                     }),
                     conflicted: false,
-                    stamp: dorc_core::ProbeStamp::received(ordinal as u64, clock.now()),
+                    stamp: dorc_core::ProbeStamp::received(
+                        ordinal as u64,
+                        clock.at(ordinal as u64),
+                    ),
                 };
                 out.records
                     .entry(key)
