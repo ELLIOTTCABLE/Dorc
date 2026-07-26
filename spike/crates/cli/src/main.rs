@@ -954,15 +954,22 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
         collect_coord_kinds(&classes, &kills, &value, &touches_sets, &mut interner)
     };
-    let kind_resolvers = build_kind_resolvers(
+    let resolver_lift = build_kind_resolvers(
         &oracle_srcs,
-        &oracle_paths,
         &checks,
         &touches_paired,
         &coord_kinds,
         &mut interner,
-        advisory,
     );
+    report_at(advisory, "resolve", None, &resolver_lift.lift);
+    report_by_oracle_file(
+        advisory,
+        "resolve",
+        &oracle_paths,
+        &oracle_srcs,
+        &resolver_lift.confusability,
+    );
+    let kind_resolvers = resolver_lift.value;
     let resolver_kinds: BTreeSet<Symbol> = kind_resolvers.resolver_kinds().collect();
     let resolver_coords = if args.risk_faultless_skips && !resolver_kinds.is_empty() {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
@@ -984,15 +991,22 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // round-trip (dynamic-arm shipping) is flag-on: for each reach-bearing AUTHORED footprint coord,
     // ship each DYNAMIC arm strip-clean, invoked with the entity; the `reach` readback expands the
     // footprints (via `Footprint::add_reached`) before the survival walk. STATIC arms never ship.
-    let kind_reaches = build_kind_reaches(
+    let reaches_lift = build_kind_reaches(
         &oracle_srcs,
-        &oracle_paths,
         &checks,
         &touches_paired,
         &coord_kinds,
         &mut interner,
-        advisory,
     );
+    report_at(advisory, "reaches", None, &reaches_lift.lift);
+    report_by_oracle_file(
+        advisory,
+        "reaches",
+        &oracle_paths,
+        &oracle_srcs,
+        &reaches_lift.confusability,
+    );
+    let kind_reaches = reaches_lift.value;
     let reach_kinds: BTreeSet<Symbol> = kind_reaches.reach_kinds().collect();
     let reaches_plan = if args.risk_faultless_skips && !reach_kinds.is_empty() {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
@@ -2403,6 +2417,20 @@ fn own_wall_coord(
         .map(|f| dorc_plan::EntityCoord::new(f.kind, f.entity))
 }
 
+/// A kind-keyed lift's product with every diagnostic it raised held as DATA — nothing writes fd 2
+/// from inside the lift (`io-at-edges-only`; it is also what keeps a unit test driving one of these
+/// from painting a red caret frame across a green run).
+///
+/// Two groups, because they frame against different sources: `lift` is the per-file lift's own
+/// diagnostics, which the report seat frames spanlessly as it always has, while `confusability` is
+/// keyed by the oracle file each diagnostic's caret resolves against (`law-lineno-identity`).
+/// `run` reports them in that order, at the point the lift used to print them.
+struct KindLift<T> {
+    value: T,
+    lift: Vec<Diag>,
+    confusability: BTreeMap<usize, Vec<Diag>>,
+}
+
 /// The per-KIND resolvers (24F §3, corr-kind-keying §10): `<kind>.resolve()` funcdefs lifted per
 /// oracle file, combined with CONFUSABILITY enforcement. Resolvers are a SECOND family keyed by KIND
 /// (the kind-owner holds the nouns — 23M contribution-vs-identity), NOT per-command role-siblings;
@@ -2442,21 +2470,20 @@ impl KindResolvers {
 /// symbols/strings, never decoded.
 fn build_kind_resolvers(
     oracle_srcs: &[String],
-    oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
     coord_kinds: &BTreeSet<Symbol>,
     interner: &mut Interner,
-    advisory: bool,
-) -> KindResolvers {
+) -> KindLift<KindResolvers> {
     use dorc_oracle::resolve::ResolverSet;
     use dorc_oracle::to_funcname_segment;
 
+    let mut lift = Vec::new();
     let sets: Vec<ResolverSet> = oracle_srcs
         .iter()
         .map(|src| {
             let lifted = ResolverSet::lift(interner, src);
-            report_at(advisory, "resolve", None, &lifted.diags);
+            lift.extend(lifted.diags);
             lifted.value
         })
         .collect();
@@ -2521,15 +2548,12 @@ fn build_kind_resolvers(
             base_to_idx.insert(kind, idx);
         }
     }
-    report_by_oracle_file(
-        advisory,
-        "resolve",
-        oracle_paths,
-        oracle_srcs,
-        &diags_by_file,
-    );
     let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
-    KindResolvers { sets, by_kind }
+    KindLift {
+        value: KindResolvers { sets, by_kind },
+        lift,
+        confusability: diags_by_file,
+    }
 }
 
 /// Re-key a kind-keyed `munged-base → file-index` map to the RAW coordinate kinds
@@ -2771,21 +2795,20 @@ impl KindReaches {
 /// compared as interned strings, never decoded.
 fn build_kind_reaches(
     oracle_srcs: &[String],
-    oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
     coord_kinds: &BTreeSet<Symbol>,
     interner: &mut Interner,
-    advisory: bool,
-) -> KindReaches {
+) -> KindLift<KindReaches> {
     use dorc_oracle::reaches::ReachesSet;
     use dorc_oracle::to_funcname_segment;
 
+    let mut lift = Vec::new();
     let sets: Vec<ReachesSet> = oracle_srcs
         .iter()
         .map(|src| {
             let lifted = ReachesSet::lift(interner, src);
-            report_at(advisory, "reaches", None, &lifted.diags);
+            lift.extend(lifted.diags);
             lifted.value
         })
         .collect();
@@ -2841,15 +2864,12 @@ fn build_kind_reaches(
             base_to_idx.insert(kind, idx);
         }
     }
-    report_by_oracle_file(
-        advisory,
-        "reaches",
-        oracle_paths,
-        oracle_srcs,
-        &diags_by_file,
-    );
     let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
-    KindReaches { sets, by_kind }
+    KindLift {
+        value: KindReaches { sets, by_kind },
+        lift,
+        confusability: diags_by_file,
+    }
 }
 
 /// The per-arm wrapper funcname a dynamic `reaches()` arm ships and is invoked under. Engine-
@@ -7722,8 +7742,13 @@ mod tests {
     /// 24F §3 / corr-kind-keying §10: the resolver confusability enforcement. A clean single
     /// `<kind>.resolve()` is resolver-bearing; two files declaring ONE kind's resolver REFUSE both
     /// (the kind keeps token-equality — never first-wins-silently); a resolver keyed to a known
-    /// PROVIDER name is KEPT but flagged (the mis-key). Behaviour-pinned (the diagnostics themselves
-    /// are verified end-to-end via the cli binary).
+    /// PROVIDER name is KEPT but flagged (the mis-key).
+    ///
+    /// The conflict's DIAGNOSTIC is asserted here as a returned value, keyed to the first declaring
+    /// file. It used to be asserted only end-to-end through the binary, which meant this test drove
+    /// a helper that printed it: a red caret frame across a green run, and a diagnostic whose
+    /// presence nothing local pinned. Both are the same bug — a decision-carrying helper writing to
+    /// fd 2 (`io-at-edges-only`).
     #[test]
     fn resolver_confusability_conflict_refuses_both_collision_keeps() {
         let mut i = Interner::default();
@@ -7744,18 +7769,14 @@ mod tests {
 
         // A clean single package resolver ⇒ resolver-bearing (kind-keyed by the munged base).
         let clean = vec!["package__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
-        let kr = build_kind_resolvers(
-            &clean,
-            &["clean.oracle.sh".to_string()],
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut i,
-            false,
+        let kr = build_kind_resolvers(&clean, &checks, &touches_paired, &coord_kinds, &mut i);
+        assert!(
+            kr.value.resolver_kinds().any(|k| i.resolve(k) == "package"),
+            "a clean package resolver is resolver-bearing"
         );
         assert!(
-            kr.resolver_kinds().any(|k| i.resolve(k) == "package"),
-            "a clean package resolver is resolver-bearing"
+            kr.lift.is_empty() && kr.confusability.is_empty(),
+            "a clean resolver raises nothing"
         );
 
         // Two files, both package resolvers ⇒ BOTH refused (no resolver kind).
@@ -7763,37 +7784,39 @@ mod tests {
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
         ];
-        let kr_dup = build_kind_resolvers(
-            &dup,
-            &["a.oracle.sh".to_string(), "b.oracle.sh".to_string()],
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut i,
-            false,
-        );
+        let kr_dup = build_kind_resolvers(&dup, &checks, &touches_paired, &coord_kinds, &mut i);
         assert_eq!(
-            kr_dup.resolver_kinds().count(),
+            kr_dup.value.resolver_kinds().count(),
             0,
             "a duplicate resolver for one kind refuses BOTH (token-equality floor)"
+        );
+        let dup_diags = kr_dup
+            .confusability
+            .get(&0)
+            .expect("the conflict frames into the FIRST declaring file");
+        assert!(
+            matches!(dup_diags.as_slice(), [d] if matches!(&d.code, DiagCode::ResolverConflict(c) if c.kind == "package" && c.count == 2)),
+            "the refusal comes back as a diagnostic VALUE, never a write to fd 2"
         );
 
         // A resolver whose kind munges to the known provider "apt-get" (base `apt_get`) ⇒ KEPT
         // (warned, not a silent dud) — the collision is now detected in NAME space, and a raw
         // `apt_get` coord kind re-keys it as bearing.
         let collide = vec!["apt_get__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
-        let kr_col = build_kind_resolvers(
-            &collide,
-            &["collide.oracle.sh".to_string()],
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut i,
-            false,
+        let kr_col = build_kind_resolvers(&collide, &checks, &touches_paired, &coord_kinds, &mut i);
+        assert!(
+            kr_col
+                .value
+                .resolver_kinds()
+                .any(|k| i.resolve(k) == "apt_get"),
+            "a provider-named resolver is kept (the collision is a warning, not a refusal)"
         );
         assert!(
-            kr_col.resolver_kinds().any(|k| i.resolve(k) == "apt_get"),
-            "a provider-named resolver is kept (the collision is a warning, not a refusal)"
+            matches!(
+                kr_col.confusability.get(&0).map(Vec::as_slice),
+                Some([d]) if matches!(&d.code, DiagCode::ResolverProviderCollision(c) if c.name == "apt_get")
+            ),
+            "the mis-key comes back as a diagnostic VALUE too"
         );
     }
 
