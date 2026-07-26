@@ -1579,28 +1579,14 @@ fn indent(lines: &[String]) -> String {
         .join("\n")
 }
 
-/// A compact first-divergence window (the sh harness printed `diff -u`).
+/// An aligned first-divergence window (the sh harness printed `diff -u`).
 fn divergence(want: &str, got: &str) -> String {
-    let want_lines: Vec<&str> = want.lines().collect();
-    let got_lines: Vec<&str> = got.lines().collect();
-    let at = (0..want_lines.len().max(got_lines.len()))
-        .find(|i| want_lines.get(*i) != got_lines.get(*i))
-        .unwrap_or(0);
-    let from = at.saturating_sub(3);
-    let to = (at + 4).min(want_lines.len().max(got_lines.len()));
-    let mut out = format!(
-        "      first divergence at line {} (want {} lines, got {} lines)\n",
-        at + 1,
-        want_lines.len(),
-        got_lines.len()
-    );
-    for i in from..to {
-        let _ = writeln!(
-            out,
-            "      -{}\n      +{}",
-            want_lines.get(i).copied().unwrap_or("<eof>"),
-            got_lines.get(i).copied().unwrap_or("<eof>")
-        );
+    let mut out = String::new();
+    for line in errorloom::describe_divergence(want, got)
+        .unwrap_or_else(|| String::from("byte-identical (the check and the report disagree)"))
+        .lines()
+    {
+        let _ = writeln!(out, "      {line}");
     }
     out.trim_end().to_owned()
 }

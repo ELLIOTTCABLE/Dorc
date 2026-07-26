@@ -43,8 +43,11 @@ use std::fmt::Debug;
 
 mod bless;
 mod container;
+mod diff;
 mod editable;
 mod runner;
+
+pub use crate::diff::describe_divergence;
 
 pub use crate::bless::{
     BlessError, BlessResult, CaseFile, CaseRenderer, FakeGit, Git, GitError, fixpoint_check,

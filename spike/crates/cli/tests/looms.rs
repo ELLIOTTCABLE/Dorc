@@ -30,7 +30,7 @@ mod support;
 use std::fmt::Write as _;
 use std::sync::Arc;
 
-use errorloom::{Case, CaseFile, CaseRenderer as _, fixpoint_check};
+use errorloom::{Case, CaseFile, CaseRenderer as _, describe_divergence, fixpoint_check};
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use dorc_loom::DorcConsumer;
@@ -78,21 +78,15 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     .into())
 }
 
-/// A compact first-divergence window over the committed and re-rendered transcripts.
+/// An aligned first-divergence window over the committed and re-rendered transcripts, indented
+/// into the runner's failure block.
 fn divergence(want: &str, got: &str) -> String {
-    let want: Vec<&str> = want.lines().collect();
-    let got: Vec<&str> = got.lines().collect();
-    let at = (0..want.len().max(got.len()))
-        .find(|i| want.get(*i) != got.get(*i))
-        .unwrap_or(0);
-    let mut out = format!("      first divergence at line {}\n", at.saturating_add(1));
-    for i in at..(at.saturating_add(3)).min(want.len().max(got.len())) {
-        let _ = writeln!(
-            out,
-            "      -{:?}\n      +{:?}",
-            want.get(i).copied().unwrap_or("<eof>"),
-            got.get(i).copied().unwrap_or("<eof>")
-        );
+    let mut out = String::new();
+    for line in describe_divergence(want, got)
+        .unwrap_or_else(|| String::from("byte-identical (the check and the report disagree)"))
+        .lines()
+    {
+        let _ = writeln!(out, "      {line}");
     }
     out.trim_end().to_owned()
 }
