@@ -95,37 +95,31 @@
 //! - **Selection.** [`tree::Criticality`] and [`tree::Register`] are recorded
 //!   and ruled on in no way — nothing is dropped, shortened, or reordered by
 //!   them. Marking can start before the renderer learns to select.
-//! - **Columns shared between elements that are not siblings.** Today a column
-//!   is resolved from structural proximity only: a run of adjacent speaker
-//!   rows, a run of adjacent labelled rows, the lines of one code block. Each
-//!   such group resolves all of its columns together from one left edge, so
-//!   within a group nothing can slip.
+//! - **Float placement.** [`frame::Reservation`]s are declared, never solved
+//!   for; the engine that decides where a float goes plugs into that seam.
 //!
-//!   Across groups, nothing lines up — and there are real cases that want to.
-//!   Two `fix:` rows in different branches of a join are the same kind of thing
-//!   said twice and read as one ragged list. So do the trailing comments of two
-//!   excerpts, and chain rows resuming after an attachment interrupts them.
+//! # Columns: the named table
 //!
-//!   The answer is a named TABLE, not a per-column group. A table is identified
-//!   by an opaque key, rows join it by naming it, and its columns resolve in one
-//!   left-to-right pass: `stop[0]` is the widest member's left edge, `width[n]`
-//!   the widest content in column `n`, and `stop[n+1] = stop[n] + width[n] +
-//!   gap`. Naming a table rather than a column is what makes it correct: a
-//!   column's position is a prefix sum, so sharing one column's width while its
-//!   neighbours resolve independently produces silent one-column offsets. A
-//!   table shares the whole prefix by construction, and cannot express the
-//!   pathological case where two columns each depend on the other.
+//! Column geometry resolves once, before any layout, in a measure walk that
+//! carries each node's left edge. A member joins a TABLE by naming
+//! it, and a table resolves all of its stops in one left-to-right prefix-sum
+//! pass. Structural proximity is not a second mechanism: a run of adjacent rows,
+//! or one code block, is a table nobody named, resolved by the same code.
 //!
-//!   That needs a measure pass that walks the tree carrying each node's left
-//!   edge — the scan half of the two-pass shape. It does not need the right
-//!   edge or any wrapping, because a column's width is its unwrapped content
-//!   and wrapping happens after stops are fixed; so there is no fixpoint here,
-//!   only an ordering. Degradation would move with it, becoming a per-table
-//!   decision on the narrowest member's box rather than a per-run one.
+//! Naming a table rather than a column is what makes sharing correct. A column's
+//! position is a prefix sum, so sharing one column's width while its neighbours
+//! resolve independently produces silent one-column offsets — the half-version
+//! that did exactly that was withdrawn rather than patched. A table shares the
+//! whole prefix by construction, and cannot express the pathological case where
+//! two columns each depend on the other.
 //!
-//!   Deliberately not built. A half-version was written and removed: sharing
-//!   widths without sharing positions is worse than nothing, because it fails
-//!   silently and its natural repair is to bolt on another key.
+//! Naming is also the honest encoding of what relates the members: they are the
+//! same kind of thing repeated, which is a claim about relevance rather than
+//! about tree structure. Two `fix:` rows in different branches of a join are one
+//! ragged list until somebody says they are one list, and only the consumer
+//! knows. The price is stated where it is paid: a table's `stop[0]` is its
+//! widest member's left edge, so relating a shallow member to a deeply nested
+//! one moves the shallow one right.
 //!
 //! # Known tension, flagged rather than resolved
 //!
@@ -139,6 +133,7 @@
 //! settle inside this crate. The change would be additive.
 
 pub mod frame;
+pub(crate) mod measure;
 pub mod provenance;
 pub mod render;
 mod sink;
