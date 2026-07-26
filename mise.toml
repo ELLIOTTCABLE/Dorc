@@ -123,8 +123,16 @@ description = "Apply cargo fmt to the spike (formatters fix; nothing else — ty
 run = "cargo fmt --all --manifest-path spike/Cargo.toml"
 
 [tasks.gate]
-description = "Everything due before a commit, in order: the four lint gates, a fresh build, then the whole suite. Nothing runs automatically — there is no installed git hook."
-run = ["mise run check", "mise run build", "mise run test"]
+description = "Everything due before a commit, in order: the four lint gates, the commit-msg hook's self-test, a fresh build, then the whole suite."
+run = ["mise run check", "mise run test:hooks", "mise run build", "mise run test"]
+
+[tasks."test:hooks"]
+description = "Self-test for the .githooks/commit-msg gate. Cheap; rides `gate` because that hook fails OPEN — a broken matcher stops refusing and says nothing."
+run = "sh .githooks/test-commit-msg.sh"
+
+[tasks.hooks-install]
+description = "Install the commit-msg gate (gitlabels headliner form; refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config — sets core.hooksPath, which every worktree of this repo then obeys; human-gated for the same reason as hk-install. Relative path, so each worktree resolves its OWN checkout — a worktree predating the hook is silently ungated until it picks the file up."
+run = "git config core.hooksPath .githooks"
 
 [tasks.audit]
 description = "cargo-deny advisories (network: fetches the RustSec DB; not part of the offline pre-commit gates)."
@@ -146,14 +154,14 @@ env = { DRY = "1" }
 run = "sh e2e/conduct-bless.sh"
 
 [tasks."loom:compile"]
-description = "dorc-loom compile CASE... — inspect the named .loom cases and publish the receipt that a promote must match. Writes no sources. Pass case paths as args."
+description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Defaults to every case (the tool narrows to the prose-changed ones itself); trailing args scope it."
 dir = "spike"
-run = "cargo run --quiet -p dorc-loom -- compile"
+run = "sh tools/loom.sh compile"
 
 [tasks."loom:promote"]
-description = "dorc-loom promote CASE... — verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases. In-process renders; no binary, no execution. Pass case paths as args."
+description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise."
 dir = "spike"
-run = "cargo run --quiet -p dorc-loom -- promote"
+run = "sh tools/loom.sh promote"
 
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table."
