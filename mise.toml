@@ -104,10 +104,10 @@ dir = "spike"
 run = "cargo build --workspace"
 
 [tasks.test]
-description = "The WHOLE suite, HUMAN-facing: unit tier + the e2e corpus + the loom corpus (the latter two ride the run as harness=false targets). Full per-test output, progress, and context — the interactive mode; agents want `quiet-gate` instead. Args filter by trial name. DORC_E2E_QUIET=1 selects the terse per-case format."
+description = "The WHOLE suite, HUMAN-facing: unit tier + the e2e corpus + the loom corpus (the latter two ride the run as harness=false targets). Full per-test output, progress, and context — the interactive mode; agents want `gate:full-quiet` instead. Args filter by trial name. DORC_E2E_QUIET=1 selects the terse per-case format."
 dir = "spike"
 # REMIT: this task optimizes for a human reading a terminal — legibility and context, never
-# brevity. Never add quiet flags here to save an agent tokens; that is `quiet-gate`'s whole job,
+# brevity. Never add quiet flags here to save an agent tokens; that is the `-quiet` half's job,
 # and the two exist so neither has to compromise. Doctests run FIRST so trailing args land on
 # nextest, which is what `-- <substring>` is for.
 run = [
@@ -115,23 +115,47 @@ run = [
   "cargo nextest run --workspace",
 ]
 
-[tasks.quiet-gate]
-description = "The pre-commit gate, AGENT-facing: `gate`'s work minus the hook self-test, at minimum token cost — roughly 95 lines instead of 2000. Silent on success, LOUD and complete on failure. Prefer this over `gate`/`test` in an agent context; humans want the unabridged ones."
+# The gate matrix: {full, quick} x {human, -quiet}. FULL is the acceptance suite — everything,
+# nothing skipped. QUICK is the hot loop — lint plus the unit tier, ~9s against full's ~30s,
+# and NOT an acceptance suite: it skips the e2e and loom corpora and the doctests, so it cannot
+# tell you your work is done. The `-quiet` half exists only to cut an agent's token burn and
+# must never buy that by hiding a failure; the bare half is for a human reading a terminal and
+# must never be quietened to save an agent tokens. Neither should compromise for the other.
+
+[tasks."gate:full-quiet"]
+description = "ACCEPTANCE, agent-facing: everything `gate:full` runs bar the hook self-test, at minimum token cost — ~95 lines against ~2000. Silent on success, LOUD and complete on failure. The one to run before calling work complete; `mise run both gate:full-quiet` covers the other platform too."
 dir = "spike"
-# REMIT: minimal token burn, and it MUST NOT swallow a failure. Every flag here suppresses
-# SUCCESS chatter only — `--status-level fail` still prints failing trials, `--failure-output
-# final` defers their output rather than dropping it, and every step keeps its nonzero exit. If a
-# flag would ever hide a failure it does not belong in this task, whatever it saves.
-# `--no-fail-fast` is here for the same reason: nextest otherwise abandons ~650 trials at the
-# first failure, and "we never ran them" is a fact this task may not withhold.
-# `test:hooks` is deliberately ABSENT: it exercises hk.pkl, which changes on the order of once a
-# quarter, so paying for it on every agent gate buys nothing. `gate` still runs it, and that is
-# the one an hk.pkl edit calls for. Doctests have no quiet knob past cargo's and set the floor.
+# REMIT: minimal token burn, and it MUST NOT swallow a failure. Every flag suppresses SUCCESS
+# chatter only — `--status-level fail` still prints failing trials, `--failure-output final`
+# defers their output rather than dropping it, every step keeps its nonzero exit. A flag that
+# could hide a failure does not belong here, whatever it saves. `--no-fail-fast` is the same
+# rule: nextest otherwise abandons ~650 trials at the first failure, and "we never ran them" is
+# a fact this task may not withhold.
+# `test:hooks` is deliberately ABSENT: it exercises hk.pkl, which changes about quarterly, so
+# paying for it every agent gate buys nothing. `gate:full` still runs it, and an hk.pkl edit
+# calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
 run = [
   "mise run check -- --quiet",
   "cargo build --workspace --quiet",
   "cargo test --workspace --doc --quiet",
   "cargo nextest run --workspace --hide-progress-bar --status-level fail --failure-output final --no-fail-fast",
+]
+
+[tasks."gate:quick"]
+description = "HOT LOOP, human-facing: the four lint gates plus the unit tier (lib + bin tests), ~9s. NOT an acceptance suite — it skips the e2e corpus, the loom corpus, and the doctests, so a green run here never licenses calling work complete. Run `gate:full` before you do."
+dir = "spike"
+# `--lib --bins` is the whole skip: it selects cargo TARGETS, so the two harness=false corpora
+# and every doctest drop out by construction rather than by a name list that would silently rot
+# as targets are added.
+run = ["mise run check", "cargo nextest run --workspace --lib --bins"]
+
+[tasks."gate:quick-quiet"]
+description = "HOT LOOP, agent-facing: `gate:quick` at minimum token cost. NOT an acceptance suite — skips the e2e corpus, the loom corpus, and the doctests; `gate:full-quiet` is what licenses calling work complete."
+dir = "spike"
+# Same no-swallow remit as `gate:full-quiet`: success chatter only.
+run = [
+  "mise run check -- --quiet",
+  "cargo nextest run --workspace --lib --bins --hide-progress-bar --status-level fail --failure-output final --no-fail-fast",
 ]
 
 [tasks."test:e2e"]
@@ -163,8 +187,11 @@ run = "hk check --all"
 description = "Apply the fixers to the spike via hk (cargo fmt, and typos --write-changes)."
 run = "hk fix --all"
 
-[tasks.gate]
-description = "Everything due before a commit, in order: the four lint gates, the commit-msg hook's self-test, a fresh build, then the whole suite."
+[tasks."gate:full"]
+alias = "gate"
+description = "ACCEPTANCE, human-facing: everything due before a commit, in order — the four lint gates, the commit-msg hook's self-test, a fresh build, then the whole suite, all unabridged. Agents want `gate:full-quiet`."
+# REMIT: a human reading a terminal. Never quieten this to save an agent tokens; that is
+# `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
 run = ["mise run check", "mise run test:hooks", "mise run build", "mise run test"]
 
 [tasks."test:hooks"]
