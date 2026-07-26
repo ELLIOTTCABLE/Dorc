@@ -43,6 +43,14 @@ pub const WHYLOG_END: &str = "dorc-whylog-end/1";
 
 /// The bounded v2 durable tag. V1 remains temporarily available only for current CLI callers.
 pub const WHYLOG_V2_TAG: &str = "dorc-whylog/2";
+
+/// The record-stream version this durable declares, as a number the narrative plane can compare
+/// itself against (`dorc_aid::narrative::PLANE_VERSION`).
+///
+/// The two version together or the `[unnarrated:]` census lies about old receipts
+/// (`28E:prop-unnarrated-is-visible`'s caveat). `record_stream_version_matches_the_narrative_plane`
+/// is the gate; a bump here that leaves the plane behind fails it.
+pub const RECORD_STREAM_VERSION: u32 = 2;
 /// The v2 sentinel is exact and must be followed immediately by EOF.
 pub const WHYLOG_V2_END: &str = "dorc-whylog-end/2";
 
@@ -565,6 +573,8 @@ pub struct UnscopedWhylogEnvelope {
     oracle_sources: Vec<RecordedOracleSource>,
     argv: Vec<String>,
     apply: Vec<ApplyLine>,
+    /// The controller instants the durable recorded, by record ordinal, ascending.
+    instants: Vec<(u64, dorc_core::RunInstant)>,
 }
 
 /// Unscoped records accepted through a matching controller framing. Checkpoint 3C owns scope minting.
@@ -614,6 +624,18 @@ pub struct WhylogV2Metadata {
     /// plan again, never the moment it was first made. `None` ⇒ the edge had no clock, and the
     /// durable says so rather than dating the run from replay.
     pub started_at: Option<dorc_core::RunInstant>,
+    /// When the controller took each probe record in, by that record's arrival ordinal, ascending.
+    ///
+    /// Stored for the same reason `started_at` is: replay re-derives the DECISION through the same
+    /// kernel, but it cannot re-derive WHEN the original run heard anything, and a replay clock
+    /// reading here would present the moment of reading as the moment of measurement. Without
+    /// these the receipt view loses its per-row instants on every replay — the run's own records
+    /// stop being able to say when they arrived.
+    ///
+    /// Controller-minted, like every other instant Dorc holds
+    /// (`28F:rul-probe-instants-host-says-no-times`, human-typed). Records with no instant are
+    /// simply absent from the list rather than carrying a fabricated one.
+    pub instants: Vec<(u64, dorc_core::RunInstant)>,
     /// Ordered predicted apply dispositions.
     pub apply: Vec<ApplyLine>,
 }
@@ -647,6 +669,24 @@ impl UnscopedWhylogEnvelope {
     #[must_use]
     pub fn mode(&self) -> &str {
         &self.mode
+    }
+
+    /// The record-stream version this durable declared.
+    ///
+    /// One value today by construction: [`parse_v2`] admits exactly the [`WHYLOG_V2_TAG`] header
+    /// and refuses every other version outright, so anything that parsed is a `2`. The accessor
+    /// exists anyway because it is the seam a multi-version reader answers differently from — and
+    /// because a consumer keying on the version (the `[unnarrated:]` census) should ASK the
+    /// durable rather than assume the number its own binary was built with.
+    #[must_use]
+    pub const fn record_stream_version(&self) -> u32 {
+        RECORD_STREAM_VERSION
+    }
+
+    /// When the ORIGINAL run took each probe record in, by that record's arrival ordinal.
+    #[must_use]
+    pub fn recorded_instants(&self) -> &[(u64, dorc_core::RunInstant)] {
+        &self.instants
     }
     #[must_use]
     pub fn recorded_book_path(&self) -> &RecordedSourcePathHint {
@@ -838,6 +878,7 @@ pub fn try_serialize_v2(
         limits,
     )?;
     retain_metadata(&mut retained, &doc.decision_digest, limits)?;
+    write_instants(&mut out, &doc.instants, limits)?;
     for apply in &doc.apply {
         retain_metadata(&mut retained, &apply.disposition, limits)?;
         write_v2_line(
@@ -899,6 +940,8 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
     let mut oracle_sources = Vec::new();
     let mut argv = Vec::new();
     let mut apply = Vec::new();
+    let mut instants: Vec<(u64, dorc_core::RunInstant)> = Vec::new();
+    let mut last_instant_ordinal: Option<u64> = None;
     let mut argv_started = false;
     let mut retained = 0usize;
     for value in [nonce, host, target, generation, mode, book.0, book.1] {
@@ -971,6 +1014,21 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
             let Some(line) = token_body(line) else {
                 return Admission::Refused(AdmissionRefusal::Framing);
             };
+            if line.starts_with("instant ") {
+                // An ordinal is a KEY: a duplicate silently redates one record from another's.
+                let Some((ordinal, at)) = parse_instant(line, limits) else {
+                    return Admission::Refused(AdmissionRefusal::Grammar);
+                };
+                if instants.len() >= limits.apply_entries {
+                    return Admission::Refused(AdmissionRefusal::CollectionLimit);
+                }
+                if last_instant_ordinal.is_some_and(|previous| ordinal <= previous) {
+                    return Admission::Refused(AdmissionRefusal::Grammar);
+                }
+                last_instant_ordinal = Some(ordinal);
+                instants.push((ordinal, at));
+                continue;
+            }
             if line.starts_with("apply ") {
                 let Some((leaf, disposition, predicted)) = parse_v2_apply(line, limits) else {
                     return Admission::Refused(AdmissionRefusal::Grammar);
@@ -1035,6 +1093,7 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
             oracle_sources,
             argv,
             apply,
+            instants,
         });
     }
 }
@@ -1165,6 +1224,40 @@ fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool)>
     ))
 }
 
+/// Write the per-record arrival instants, refusing a repeated or out-of-order ordinal before any
+/// of them reach the buffer — the writer's half of the same check the reader makes.
+fn write_instants(
+    out: &mut Vec<u8>,
+    instants: &[(u64, dorc_core::RunInstant)],
+    limits: WhylogLimits,
+) -> Result<(), WhylogWriteRefusal> {
+    let mut last: Option<u64> = None;
+    for (ordinal, at) in instants {
+        if last.is_some_and(|previous| *ordinal <= previous) {
+            return Err(WhylogWriteRefusal::Grammar);
+        }
+        last = Some(*ordinal);
+        write_v2_line(
+            out,
+            format!("instant ordinal={ordinal} at={} {TERMINAL_TOKEN}", at.0),
+            limits,
+        )?;
+    }
+    Ok(())
+}
+
+/// `instant ordinal=<n> at=<unix-millis>` — one probe record's controller-minted arrival moment.
+///
+/// Both fields go through the ordinary digit bounds before any parse; the instant is read with the
+/// SAME predicate the header's `started=` uses, so one durable cannot carry two notions of what a
+/// well-formed moment is.
+fn parse_instant(line: &str, limits: WhylogLimits) -> Option<(u64, dorc_core::RunInstant)> {
+    let body = line.strip_prefix("instant ordinal=")?;
+    let (ordinal, at) = body.split_once(" at=")?;
+    let ordinal = u64::try_from(bounded_number(ordinal, limits).ok()?).ok()?;
+    Some((ordinal, parse_started(at, limits).ok()??))
+}
+
 fn bounded_number(value: &str, limits: WhylogLimits) -> Result<usize, AdmissionRefusal> {
     digits_valid(value, limits)?;
     value.parse().map_err(|_| AdmissionRefusal::Numeric)
@@ -1275,6 +1368,28 @@ fn write_v2_line(
 mod tests {
     use super::*;
 
+    /// The version coupling `28E:prop-unnarrated-is-visible`'s caveat demands, as a gate rather
+    /// than a comment. The `[unnarrated: <class>]` census states which narrative classes this
+    /// binary's renders consume; run against a durable from a binary whose plane held a different
+    /// class set, it would be a confident claim about a run it cannot see. Bumping the durable's
+    /// stream without bumping the plane is exactly how that would happen silently, so it fails
+    /// here — and the declared number must match the tag it is derived from, or the whole coupling
+    /// is keyed on nothing.
+    #[test]
+    fn record_stream_version_matches_the_narrative_plane() {
+        assert_eq!(
+            WHYLOG_V2_TAG,
+            format!("dorc-whylog/{RECORD_STREAM_VERSION}"),
+            "the declared stream version must be the one the wire tag actually carries"
+        );
+        assert_eq!(
+            RECORD_STREAM_VERSION,
+            dorc_aid::narrative::PLANE_VERSION,
+            "the durable's record stream and the narrative plane version TOGETHER, or the \
+             unnarrated census lies about old receipts"
+        );
+    }
+
     fn doc() -> WhylogDoc {
         WhylogDoc {
             mode: "plan".to_owned(),
@@ -1381,6 +1496,7 @@ mod tests {
         host: String,
         decision_digest: String,
         started_at: Option<dorc_core::RunInstant>,
+        instants: Vec<(u64, dorc_core::RunInstant)>,
         raw_results: String,
         apply: Vec<ApplyLine>,
     }
@@ -1396,6 +1512,7 @@ mod tests {
             host: "localhost".to_owned(),
             decision_digest: "0011223344556677".to_owned(),
             started_at: None,
+            instants: Vec::new(),
             raw_results: format!(
                 "dorc-records/1 nonce=dorc attempt=1 host=localhost book=0123456789abcdef sites=1 {TERMINAL_TOKEN}\n\
                  dorc site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n\
@@ -1459,6 +1576,7 @@ mod tests {
             host: fixture.host.clone(),
             decision_digest: fixture.decision_digest.clone(),
             started_at: fixture.started_at,
+            instants: fixture.instants.clone(),
             apply: fixture.apply.clone(),
         };
         let Admission::Admitted(bytes) =
@@ -2063,6 +2181,71 @@ mod tests {
                 HostEvidenceLimits::spike_default()
             ),
             Admission::Refused(AdmissionRefusal::InvalidUtf8)
+        ));
+    }
+
+    /// The instants a run heard its records at are the one thing replay CANNOT re-derive: running
+    /// the kernel again yields the plan, never the moment. If they do not survive the durable, a
+    /// replayed receipt silently loses every per-row instant it had live — which is exactly the
+    /// gap this line-kind exists to close, so the round-trip is pinned rather than assumed.
+    #[test]
+    fn recorded_instants_survive_the_durable_round_trip() {
+        let mut doc = v2_doc();
+        doc.instants = vec![
+            (0, dorc_core::RunInstant(1_769_306_437_000)),
+            (3, dorc_core::RunInstant(1_769_306_439_500)),
+        ];
+        let wire = try_serialize_fixture_v2(
+            &doc,
+            WhylogLimits::spike_default(),
+            HostEvidenceLimits::spike_default(),
+        )
+        .expect("v2 write");
+        let Admission::Admitted(envelope) =
+            admit_unscoped_whylog(&wire[..], WhylogLimits::spike_default())
+        else {
+            panic!("the durable must admit")
+        };
+        assert_eq!(envelope.recorded_instants(), doc.instants.as_slice());
+    }
+
+    /// A record ordinal is a KEY. A durable claiming two arrivals for one record would let a
+    /// reader date a row from a moment that belongs to nothing, so both halves refuse it — the
+    /// writer before any bytes exist, the reader before any of them are believed.
+    #[test]
+    fn a_repeated_instant_ordinal_is_refused_by_both_halves() {
+        let mut doc = v2_doc();
+        doc.instants = vec![
+            (2, dorc_core::RunInstant(1_000)),
+            (2, dorc_core::RunInstant(2_000)),
+        ];
+        assert!(matches!(
+            try_serialize_fixture_v2(
+                &doc,
+                WhylogLimits::spike_default(),
+                HostEvidenceLimits::spike_default()
+            ),
+            Err(WhylogWriteRefusal::Grammar)
+        ));
+
+        doc.instants = vec![(2, dorc_core::RunInstant(1_000))];
+        let wire = try_serialize_fixture_v2(
+            &doc,
+            WhylogLimits::spike_default(),
+            HostEvidenceLimits::spike_default(),
+        )
+        .expect("v2 write");
+        let text = String::from_utf8(wire).expect("ascii wire");
+        let duplicated = text.replace(
+            &format!("instant ordinal=2 at=1000 {TERMINAL_TOKEN}\n"),
+            &format!(
+                "instant ordinal=2 at=1000 {TERMINAL_TOKEN}\n\
+                 instant ordinal=2 at=9999 {TERMINAL_TOKEN}\n"
+            ),
+        );
+        assert!(matches!(
+            admit_unscoped_whylog(duplicated.as_bytes(), WhylogLimits::spike_default()),
+            Admission::Refused(AdmissionRefusal::Grammar)
         ));
     }
 

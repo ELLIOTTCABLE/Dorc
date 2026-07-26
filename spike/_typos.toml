@@ -2,13 +2,16 @@
 # pinned as narrowly as the typos regex engine (no lookaround) allows.
 [default]
 extend-ignore-re = [
-   # `fnd-N` is the Research-corpus slug for "finding N" (fnd-1, fnd-4, ...),
-   # used across the CLAUDE.mds and note cross-references — not a misspelt "find".
-   "\\bfnd-[0-9]+\\b",
+   # `fnd-…` is the Research-corpus slug for a finding — the numbered old form (fnd-1,
+   # fnd-4) and the full-word form the naming law now requires
+   # (fnd-decline-class-is-push-only). Used across the CLAUDE.mds and note
+   # cross-references; not a misspelt "find".
+   "\\bfnd-[0-9a-z-]+\\b",
    # `mis-` is the English prefix written with a hyphen (mis-chosen, mis-reads,
-   # mis-parsing, ...). Matching only the "mis-" span leaves the suffix word
-   # (chosen/reads/...) spell-checked normally; typos otherwise reads "mis" as "miss".
-   "\\bmis-",
+   # mis-parsing, ...), sentence-initial capital included. Matching only the "mis-" span
+   # leaves the suffix word (chosen/reads/...) spell-checked normally; typos otherwise
+   # reads "mis" as "miss".
+   "\\b[Mm]is-",
    # "the two nevers" is round-23 ruling vocabulary (rul-ternary-verdict's pair of
    # never-clauses; spike/CLAUDE.md + notes/23A) — a plural noun, not a misspelt "never".
    "\\bnevers\\b",

@@ -99,6 +99,10 @@ pub enum Mode {
 
 /// The parsed analysis invocation.
 #[derive(Debug)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "this struct IS the argv: one field per flag the parser accepts, and a flag is a bool. Bundling them behind newtypes or an enum would re-spell the command line one layer down without making any state less representable"
+)]
 pub struct Args {
     /// Which behavioral mode of the core to drive.
     pub mode: Mode,
@@ -148,6 +152,15 @@ pub struct Args {
     /// `--last` (`27V` Lane B): `dorc why --last` replays the most recent durable in `--whylog-dir`
     /// through the SAME kernel instead of the live pipeline (determinism is the replay license).
     pub last: bool,
+    /// `--all`: the DEEPEST pull tier — every `dorc why` footer already points here, so the flag
+    /// exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
+    ///
+    /// What it carries today is the `[unnarrated: <class>]` census
+    /// (`28E:prop-unnarrated-is-visible`): the aid plane fails toward narration, so a narrative
+    /// class this run MINTED and no render CONSUMED is disclosed rather than silently omitted. The
+    /// footer's fuller promise — every link, unselected, exhaustive — is not yet built, since the
+    /// render does no link SELECTION to undo.
+    pub all: bool,
     /// `--shim-dir=DIR` (`274` §5 / `27L` task-14 — the shim-materialization edge): DIR into which
     /// the entry-composed probe's per-run PATH shim files are written (the session-establishment I/O
     /// that lets a `sudo -n <inner-check>` resolve its guest across the exec boundary). A pure
@@ -210,6 +223,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut whylog_dir: Option<String> = None;
     let mut whylog: Option<String> = None;
     let mut last = false;
+    let mut all = false;
     let mut shim_dir: Option<String> = None;
     let mut it = raw.into_iter().peekable();
 
@@ -313,6 +327,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             );
         } else if let Some(path) = arg.strip_prefix("--whylog=") {
             whylog = Some(path.to_owned());
+        } else if arg == "--all" {
+            all = true;
         } else if arg == "--last" {
             last = true;
         } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
@@ -339,6 +355,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--whylog-dir",
                 "--whylog",
                 "--last",
+                "--all",
                 "--shim-dir",
                 "--help",
                 "--version",
@@ -399,6 +416,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         whylog_dir,
         whylog,
         last,
+        all,
         shim_dir,
     }))
 }

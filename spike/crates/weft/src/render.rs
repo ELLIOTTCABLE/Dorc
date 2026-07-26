@@ -25,7 +25,7 @@
 
 use crate::frame::{Frame, Reservation, Side, Width};
 use crate::measure::{Placement, are_adjacent_rows, has_attachments, measure};
-use crate::provenance::Span;
+use crate::provenance::{Provenance, Run, Span};
 use crate::sink::Sink;
 use crate::tree::{
     Banner, Branch, CodeBlock, CodeLine, Document, Join, LabeledRow, Literalness, Node, NodeKind,
@@ -308,6 +308,9 @@ impl<K: Clone + PartialEq> Painter<K> {
             // The stacked indent is the TABLE's, so a degraded table stays square.
             self.sink.end_line();
             placement.stops.stop(0).saturating_add(INDENT)
+        } else if row.label.is_empty() {
+            // A labelless row is a legitimate member; the gap would shift it off its own table.
+            placement.stops.stop(0)
         } else {
             self.advance_to(placement.stops.tail());
             placement.stops.tail()
@@ -369,9 +372,13 @@ impl<K: Clone + PartialEq> Painter<K> {
             self.sink.layout(QUOTE);
         }
         if !row.payload.trailer.is_empty() {
+            // Wordless geometry (`weft-geometry-vs-words`), as a RUN not a `layout` call: the
+            // wrapper drops a pending space at a break, leaving none dangling.
+            let mut trailer = vec![Run::new(" ", Provenance::Arrangement { key: None })];
+            trailer.extend(row.payload.trailer.iter().cloned());
             wrap(
                 &mut self.sink,
-                &row.payload.trailer,
+                &trailer,
                 &frame.inset(payload_left.saturating_sub(frame.left())),
             );
         }

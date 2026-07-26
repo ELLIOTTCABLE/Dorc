@@ -341,8 +341,13 @@ sysctl vm.drop_caches
 echo "web1 up"
 
 $ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --trust-footprints < probe-results.txt
+receipt: plan 2026-01-25 02:00:37, host localhost
+   book book.sh (digest de40127febe86c48)
+   oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
+   sysctl.oracle.sh
    risk-profile: --trust-footprints
-   plan: 4 ran, 1 guarded, 4 skipped
+   plan: 4 ran, 1 guarded, 4 skipped (3 by proof, 1 by trusted claim)
+   [unwritten: why-receipt-dispositions-predicted]
    read top-down; every item is addressable: dorc why <line>
 
 === TRUST SPENT: skips resting on a human claim, not proof ===
@@ -350,6 +355,14 @@ $ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate
 book.sh:13 | ufw allow 443/tcp
    was skipped PAST 12|apt-get really-running, on apt-get's at-most claim
    (dorc why book.sh:13)
+
+book.sh:15 | systemctl start nginx
+   was skipped PAST 12|apt-get, 14|hork really-running, on 's at-most claim
+   (dorc why book.sh:15)
+
+book.sh:16 | sysctl vm.drop_caches
+   was skipped PAST  really-running, on 's at-most claim
+   (dorc why book.sh:16)
 
 === IMPROVEMENTS: dorc can do better, with your help ===
 
@@ -361,12 +374,57 @@ book.sh:15 | systemctl start nginx
    guarded live instead of skipping: sits past the wall at 14|hork
    (dorc why book.sh:15)
 
-book.sh:16 | sysctl vm.drop_caches
-   ran blind, as on every apply: no read-only check could be shipped for sysctl
-   (dorc why book.sh:16)
-
 ~2 lines of sh: a convergence check for hork would recover 1 line(s) whenever it is
 converged
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why 15 --all --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --trust-footprints < probe-results.txt
+      [ book.sh, participating lines:
+   12 | apt-get install -y oldpkg
+   14 | hork tune --profile web
+   15 | systemctl start nginx
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   15|systemctl guarded RATHER THAN skipped: 12|apt-get, 14|hork really ran above it. A fact
+   reported before they ran cannot be trusted after; the guard re-asks the question live, in
+   place, where nothing can go stale.
+
+   === ANALYSIS ===
+
+   what was known, and why it was not enough:
+
+   * service.oracle.sh:5   reported  "sm.dorc.Service:nginx@active" (received 02:00:37, rc
+                                     0)
+   * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
+                                     sm.dorc.Service:nginx@active holds"
+   ! 12|apt-get            ran       [unwritten: why-wall-payload]
+   ! 14|hork               ran       undescribed: no author has said what it touches, so it
+                                     may touch anything
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: the report was good when it ran, but each wall above stands between it and
+   15|systemctl's turn. What dorc shipped instead of a skip -- your line, untouched, behind
+   the oracle's own live check:
+
+   ( systemctl__is_converged start nginx ) || systemctl start nginx
+
+   === NEXT STEPS ===
+
+   nothing is wrong. to make this line skippable:
+
+   describe:  [unwritten: why-next-step-describe-walls]
+   review:    `dorc why book.sh:15 --all` (every link, unselected, exhaustive)
+
+   [unnarrated: FactMergeDisagreement]
+
+   [unnarrated: WallFormation]
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)

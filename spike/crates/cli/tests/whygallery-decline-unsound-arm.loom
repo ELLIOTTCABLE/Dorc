@@ -146,19 +146,87 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 sysctl vm.drop_caches
 
 $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.txt
-   [ book.sh, 9|sysctl ]
+      [ book.sh, participating lines:
+   9 | sysctl vm.drop_caches
+
+   [unwritten: why-participating-lines-closure]
 
    === OUTCOME ===
 
-   9|sysctl ran RATHER THAN guarded: no read-only check could be shipped for this line, and
-   dorc runs whatever it cannot check
+   9|sysctl ran RATHER THAN guarded: by its author's judgment, not by a gap. sysctl's oracle
+   deliberately declines this key.
 
    === ANALYSIS ===
 
    what 9|sysctl rested on:
 
-   * dorc  derives  this is the first wall in book order -- an oracle vouching its
-                    convergence would let dorc remove it once converged
+   ! sysctl.oracle.sh:12  declines  "[unsound]"
+
+      The author looked, and ruled the question unanswerable -- for any tool, ever, not just
+      this one. Their arm, as-written:
+
+         [ sysctl.oracle.sh, as-written:
+      10 |       # A write-only trigger: reading the key back reports nothing about whether it fired, so no
+      11 |       # answer here could honestly license keeping this line out of the plan.
+      12 |       printf 'decline unsound %s is a write-only trigger key\n' "$key" >>"${DREP_V1:-/dev/null}"
+
+   * dorc                 derives   a cannot-say always runs: nothing is ever skipped
+                                    without an authored yes
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: this line runs on every apply, and that is correct. dorc will not suggest an oracle
+   for this shape; the person who knows the tool already answered.
+
+   === NEXT STEPS ===
+
+   nothing to fix; the run is the right behavior.
+
+   review:  `dorc why book.sh:9 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why 9 --all --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.txt
+      [ book.sh, participating lines:
+   9 | sysctl vm.drop_caches
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   9|sysctl ran RATHER THAN guarded: by its author's judgment, not by a gap. sysctl's oracle
+   deliberately declines this key.
+
+   === ANALYSIS ===
+
+   what 9|sysctl rested on:
+
+   ! sysctl.oracle.sh:12  declines  "[unsound]"
+
+      The author looked, and ruled the question unanswerable -- for any tool, ever, not just
+      this one. Their arm, as-written:
+
+         [ sysctl.oracle.sh, as-written:
+      10 |       # A write-only trigger: reading the key back reports nothing about whether it fired, so no
+      11 |       # answer here could honestly license keeping this line out of the plan.
+      12 |       printf 'decline unsound %s is a write-only trigger key\n' "$key" >>"${DREP_V1:-/dev/null}"
+
+   * dorc                 derives   a cannot-say always runs: nothing is ever skipped
+                                    without an authored yes
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: this line runs on every apply, and that is correct. dorc will not suggest an oracle
+   for this shape; the person who knows the tool already answered.
+
+   === NEXT STEPS ===
+
+   nothing to fix; the run is the right behavior.
+
+   review:  `dorc why book.sh:9 --all` (every link, unselected, exhaustive)
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)

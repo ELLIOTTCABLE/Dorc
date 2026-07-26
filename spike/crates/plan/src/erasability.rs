@@ -37,7 +37,7 @@
 
 use dorc_aid::Diag;
 
-use crate::{Derivation, Disposition, LicenseVia, Plan, ProbePlan, StandIn, Step};
+use crate::{Derivation, Disposition, GuardLicense, LicenseVia, Plan, ProbePlan, StandIn, Step};
 
 /// The CLOSED set of reasons a field is on the **exempt** plane (`22A` concl-2 / ru-12;
 /// modelled on LLVM's named `DebugLoc` absence-reasons). Extend DELIBERATELY: a new reason is
@@ -194,11 +194,13 @@ fn canon_disposition(d: &Disposition) -> String {
         // its attribution overlay is EXEMPT (`GuardInsert::canonical` drops it), so a plan
         // differing only in guard attribution digests identically (24D §2).
         Disposition::Guard(license) => {
-            format!(
-                "Guard fact={} {}",
-                canon_fact(license.fact()),
-                license.insert().canonical(),
-            )
+            let GuardLicense {
+                fact,
+                insert,
+                // EXEMPT (Exempt::ReceiptId + Exempt::Timing): a why-chain row, decided-without.
+                probe: _,
+            } = license;
+            format!("Guard fact={} {}", canon_fact(*fact), insert.canonical())
         }
     }
 }

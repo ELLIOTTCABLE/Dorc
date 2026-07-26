@@ -1084,12 +1084,30 @@ impl GuardInsert {
     /// manual inversion inside it). `original` is the site's verbatim command bytes.
     #[must_use]
     fn render_line(&self, original: &str) -> String {
-        let check = format!("( {} )", self.vouch.invocation);
         format!(
-            "{check} || {original}   # dorc: guard [{} converged-vouch; probe: {}]",
+            "{} || {original}   # dorc: guard [{} converged-vouch; probe: {}]",
+            self.check_form(),
             self.vouch.kind_label,
             self.probe_word(),
         )
+    }
+
+    /// The check as it ships: `( <verdict-fn> <site argv> )`.
+    #[must_use]
+    pub fn check_form(&self) -> String {
+        format!("( {} )", self.vouch.invocation)
+    }
+
+    /// The guarded line as the apply artifact carries it, MINUS its receipt comment — what the why
+    /// surface shows when it says "here is what dorc shipped instead of a skip" (`28G` strawman
+    /// `b-wide-guarded`).
+    ///
+    /// Display, never execution (`27W:rul-report-surface-massaging`): dropping the provenance
+    /// comment is a repair-directing massage of bytes that are not ours, and the executable plane
+    /// keeps reading [`render_line`]. The two-surfaces byte floor is untouched.
+    #[must_use]
+    pub fn display_line(&self, original: &str) -> String {
+        format!("{} || {original}", self.check_form())
     }
 }
 
@@ -1108,6 +1126,16 @@ impl GuardInsert {
 pub struct GuardLicense {
     fact: FactKey,
     insert: GuardInsert,
+    /// The REPORTED half of a guarded site's chain, exactly as [`Derivation::probe`] is a skipped
+    /// site's: which record measured the fact this guard re-verifies, when it was taken in, with
+    /// what tool-rc, and which funcdef reported it.
+    ///
+    /// A guard's chain has the same three speakers a skip's does — the report, the author's vouch,
+    /// and the walls between them (`28G` strawman `b-wide-guarded`) — and the render could name
+    /// only the second of the three without this. Attached POST-mint, exactly like
+    /// [`ReplaceLicense::with_probe_attribution`]: pure OUTPUT provenance keyed on a site the mint
+    /// already decided, so no decision can read it, and `Eq`/identity treat it as absent.
+    probe: Option<ProbeAttribution>,
 }
 
 impl GuardLicense {
@@ -1131,7 +1159,23 @@ impl GuardLicense {
                 vouch: vouch.into_vouch(),
                 probe_verdict,
             },
+            probe: None,
         })
+    }
+
+    /// Attach the probe-side attribution post-mint — the guard's twin of
+    /// [`ReplaceLicense::with_probe_attribution`], with the same weld: set AFTER the decision, read
+    /// only by the why render, never an input to anything.
+    #[must_use]
+    pub fn with_probe_attribution(mut self, attribution: Option<ProbeAttribution>) -> Self {
+        self.probe = attribution;
+        self
+    }
+
+    /// The record that reported the fact this guard re-verifies, when exactly one did.
+    #[must_use]
+    pub fn reported(&self) -> Option<ReportedObservation> {
+        self.probe.and_then(|p| p.reported)
     }
 
     /// The fact this guard re-verifies (attribution / the why-lens).
@@ -3214,7 +3258,7 @@ pub fn build_plan_walled(
         // ⇒ RUN (`kFAIL-perform`). The Omit render is gated on the governing stage neutralising
         // (`is_neutralised` walks the pipe's leaves), so a governing stage that fails to Replace
         // keeps this member verbatim too — the safe direction.
-        let mut disposition = if let Some(gov_node) = connected.member_governor(*node) {
+        let disposition = if let Some(gov_node) = connected.member_governor(*node) {
             let gov_ast = cfg.node(gov_node).ast;
             let gov_known = leaf_fact
                 .get(&gov_ast)
@@ -3265,11 +3309,8 @@ pub fn build_plan_walled(
                 }
             }
         };
-        if let Disposition::Replace(license, stand_in) = disposition {
-            let license =
-                attach_replace_provenance(license, ast.node(ast_id).span, probe_origins, arena);
-            disposition = Disposition::Replace(license, stand_in);
-        }
+        let disposition =
+            attach_probe_provenance(disposition, ast.node(ast_id).span, probe_origins, arena);
         // Wall-bearing = an establish-bearing class OR a flagged kill (R3 / 24A §3): a running
         // kill mutates but classifies `MustRun`, invisible to `class_is_establish_bearing`, so
         // the threaded `kills` set restores it. A pure builtin / opaque `MustRun` is NOT in
@@ -3334,6 +3375,30 @@ pub fn build_plan_walled(
 /// mint (the WELD): the origins are sites the license already keys on, so they cannot influence the
 /// decision; they are EXEMPT (`Exempt::ReceiptId`/`Exempt::Timing`) and the `erasability` gate
 /// proves they perturb nothing.
+/// Attach the post-mint probe provenance every LICENSING disposition carries — the why-chain's
+/// REPORTED row, keyed on the fact the license already decided on.
+///
+/// Runs strictly after the decision, and both licenses treat it as exempt from their identity
+/// planes, so nothing here can perturb what was decided.
+fn attach_probe_provenance(
+    disposition: Disposition,
+    site_span: dorc_core::Span,
+    probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
+    arena: &mut dorc_core::ProvArena,
+) -> Disposition {
+    match disposition {
+        Disposition::Replace(license, stand_in) => Disposition::Replace(
+            attach_replace_provenance(license, site_span, probe_origins, arena),
+            stand_in,
+        ),
+        Disposition::Guard(license) => {
+            let attribution = probe_origins.get(&license.fact()).copied();
+            Disposition::Guard(license.with_probe_attribution(attribution))
+        }
+        run_or_omit @ (Disposition::Run | Disposition::Omit { .. }) => run_or_omit,
+    }
+}
+
 fn attach_replace_provenance(
     license: ReplaceLicense,
     site_span: dorc_core::Span,

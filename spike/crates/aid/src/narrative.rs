@@ -73,6 +73,15 @@ pub enum TrustTier {
     Derived,
     /// A context-entry consent decision (the escalation dial × capability).
     Consented,
+    /// An author's DECLINE — they looked at this shape and ruled it unanswerable
+    /// (`decline-class-emission`; `28G` strawman `c-declined-unsound`).
+    ///
+    /// tc-decline-is-a-seventh-tier, FLAGGED not settled: the tier SET is law, and this widens it.
+    /// The alternative was rendering a decline row under an existing tier word, and every one of
+    /// them misstates it — `vouches` most of all, since declining is precisely the author refusing
+    /// to vouch. Mis-attribution is the worst aid failure (`271:rul-sin-ordering`), so the honest
+    /// tier is a new one rather than the nearest old one.
+    Declined,
 }
 
 impl TrustTier {
@@ -210,6 +219,34 @@ impl DeclineClass {
             "interactive" => Some(Self::Interactive),
             "hazard" => Some(Self::Hazard),
             _ => None,
+        }
+    }
+
+    /// Whether a BETTER ORACLE could still answer this shape — the one thing the aggregate's
+    /// improvements section has to know about a decline.
+    ///
+    /// `Unmodeled` is the author saying "not yet"; the rest are the author saying "not ever, by
+    /// anyone" — a write-an-oracle nag against one of those tells the person who already answered
+    /// the question to go answer it (`28G` strawman `c-declined-unsound`: "dorc will not suggest an
+    /// oracle for this shape"). Routing only, on the aid plane; no license reads a class
+    /// (`decline-class-emission`).
+    #[must_use]
+    pub fn an_oracle_could_still_answer(self) -> bool {
+        match self {
+            Self::Unmodeled => true,
+            Self::Unsound | Self::Interactive | Self::Hazard => false,
+        }
+    }
+
+    /// The occurrence discriminator a class-keyed arrangement row is stamped with, so one slug can
+    /// carry four class-specific lines and the unwritten ones stay greppable per class.
+    #[must_use]
+    pub fn occurrence(self) -> usize {
+        match self {
+            Self::Unsound => 0,
+            Self::Unmodeled => 1,
+            Self::Interactive => 2,
+            Self::Hazard => 3,
         }
     }
 
@@ -373,7 +410,38 @@ impl CollapseKind {
             cause: RenderRefusalTag::Heredoc,
         }
     }
+
+    /// The class's greppable name — what a `[unnarrated: <class>]` disclosure prints
+    /// (`28E:prop-unnarrated-is-visible`).
+    ///
+    /// Deliberately the VARIANT name rather than user prose: the disclosure exists so a maintainer
+    /// can grep from the rendered output straight to the mint site, and it is a placeholder for
+    /// words nobody has written yet, not words anybody chose.
+    #[must_use]
+    pub const fn class_name(&self) -> &'static str {
+        match self {
+            CollapseKind::FactMergeDisagreement { .. } => "FactMergeDisagreement",
+            CollapseKind::VerdictDecline { .. } => "VerdictDecline",
+            CollapseKind::WallFormation { .. } => "WallFormation",
+            CollapseKind::SubstitutionRefusal { .. } => "SubstitutionRefusal",
+            CollapseKind::EntryDenial { .. } => "EntryDenial",
+            CollapseKind::EntryFailure { .. } => "EntryFailure",
+            CollapseKind::Demotion { .. } => "Demotion",
+            CollapseKind::RenderRefusal { .. } => "RenderRefusal",
+            CollapseKind::Cancellation(_) => "Cancellation",
+        }
+    }
 }
+
+/// The narrative plane's version, which MUST move in lockstep with the whylog's record-stream
+/// version (`dorc_plan::whylog::WHYLOG_V2_TAG`).
+///
+/// The coupling is what keeps `[unnarrated: <class>]` honest across a replay
+/// (`28E:prop-unnarrated-is-visible`'s in-sitting caveat). The census is a claim about which
+/// classes THIS binary's renders consume; asserted over a durable written by a binary whose plane
+/// held different classes, it would be a confident statement about a run it cannot see. Keyed on
+/// the durable's declared version, a mismatch withholds the census instead of lying about it.
+pub const PLANE_VERSION: u32 = 2;
 
 /// One decision-inert narrative record minted at a safety-narrowing collapse (`27V` Lane A). Pure
 /// data (see module docs): a [`TrustTier`] plus the [`CollapseKind`] carrying the collapse's
@@ -405,6 +473,13 @@ impl CollapseNarrative {
     #[must_use]
     pub fn kind(&self) -> &CollapseKind {
         &self.kind
+    }
+
+    /// This narrative's class as a greppable name — the `<class>` of a `[unnarrated: <class>]`
+    /// disclosure (`28E:prop-unnarrated-is-visible`).
+    #[must_use]
+    pub fn class_name(&self) -> &'static str {
+        self.kind.class_name()
     }
 
     /// Reconstruct a [`CollapseKind::VerdictDecline`] narrative with its `authored_reason` populated
