@@ -43,6 +43,14 @@ pub const WHYLOG_END: &str = "dorc-whylog-end/1";
 
 /// The bounded v2 durable tag. V1 remains temporarily available only for current CLI callers.
 pub const WHYLOG_V2_TAG: &str = "dorc-whylog/2";
+
+/// The record-stream version this durable declares, as a number the narrative plane can compare
+/// itself against (`dorc_aid::narrative::PLANE_VERSION`).
+///
+/// The two version together or the `[unnarrated:]` census lies about old receipts
+/// (`28E:prop-unnarrated-is-visible`'s caveat). `record_stream_version_matches_the_narrative_plane`
+/// is the gate; a bump here that leaves the plane behind fails it.
+pub const RECORD_STREAM_VERSION: u32 = 2;
 /// The v2 sentinel is exact and must be followed immediately by EOF.
 pub const WHYLOG_V2_END: &str = "dorc-whylog-end/2";
 
@@ -647,6 +655,18 @@ impl UnscopedWhylogEnvelope {
     #[must_use]
     pub fn mode(&self) -> &str {
         &self.mode
+    }
+
+    /// The record-stream version this durable declared.
+    ///
+    /// One value today by construction: [`parse_v2`] admits exactly the [`WHYLOG_V2_TAG`] header
+    /// and refuses every other version outright, so anything that parsed is a `2`. The accessor
+    /// exists anyway because it is the seam a multi-version reader answers differently from — and
+    /// because a consumer keying on the version (the `[unnarrated:]` census) should ASK the
+    /// durable rather than assume the number its own binary was built with.
+    #[must_use]
+    pub const fn record_stream_version(&self) -> u32 {
+        RECORD_STREAM_VERSION
     }
     #[must_use]
     pub fn recorded_book_path(&self) -> &RecordedSourcePathHint {
@@ -1274,6 +1294,28 @@ fn write_v2_line(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The version coupling `28E:prop-unnarrated-is-visible`'s caveat demands, as a gate rather
+    /// than a comment. The `[unnarrated: <class>]` census states which narrative classes this
+    /// binary's renders consume; run against a durable from a binary whose plane held a different
+    /// class set, it would be a confident claim about a run it cannot see. Bumping the durable's
+    /// stream without bumping the plane is exactly how that would happen silently, so it fails
+    /// here — and the declared number must match the tag it is derived from, or the whole coupling
+    /// is keyed on nothing.
+    #[test]
+    fn record_stream_version_matches_the_narrative_plane() {
+        assert_eq!(
+            WHYLOG_V2_TAG,
+            format!("dorc-whylog/{RECORD_STREAM_VERSION}"),
+            "the declared stream version must be the one the wire tag actually carries"
+        );
+        assert_eq!(
+            RECORD_STREAM_VERSION,
+            dorc_aid::narrative::PLANE_VERSION,
+            "the durable's record stream and the narrative plane version TOGETHER, or the \
+             unnarrated census lies about old receipts"
+        );
+    }
 
     fn doc() -> WhylogDoc {
         WhylogDoc {

@@ -410,7 +410,38 @@ impl CollapseKind {
             cause: RenderRefusalTag::Heredoc,
         }
     }
+
+    /// The class's greppable name — what a `[unnarrated: <class>]` disclosure prints
+    /// (`28E:prop-unnarrated-is-visible`).
+    ///
+    /// Deliberately the VARIANT name rather than user prose: the disclosure exists so a maintainer
+    /// can grep from the rendered output straight to the mint site, and it is a placeholder for
+    /// words nobody has written yet, not words anybody chose.
+    #[must_use]
+    pub const fn class_name(&self) -> &'static str {
+        match self {
+            CollapseKind::FactMergeDisagreement { .. } => "FactMergeDisagreement",
+            CollapseKind::VerdictDecline { .. } => "VerdictDecline",
+            CollapseKind::WallFormation { .. } => "WallFormation",
+            CollapseKind::SubstitutionRefusal { .. } => "SubstitutionRefusal",
+            CollapseKind::EntryDenial { .. } => "EntryDenial",
+            CollapseKind::EntryFailure { .. } => "EntryFailure",
+            CollapseKind::Demotion { .. } => "Demotion",
+            CollapseKind::RenderRefusal { .. } => "RenderRefusal",
+            CollapseKind::Cancellation(_) => "Cancellation",
+        }
+    }
 }
+
+/// The narrative plane's version, which MUST move in lockstep with the whylog's record-stream
+/// version (`dorc_plan::whylog::WHYLOG_V2_TAG`).
+///
+/// The coupling is what keeps `[unnarrated: <class>]` honest across a replay
+/// (`28E:prop-unnarrated-is-visible`'s in-sitting caveat). The census is a claim about which
+/// classes THIS binary's renders consume; asserted over a durable written by a binary whose plane
+/// held different classes, it would be a confident statement about a run it cannot see. Keyed on
+/// the durable's declared version, a mismatch withholds the census instead of lying about it.
+pub const PLANE_VERSION: u32 = 2;
 
 /// One decision-inert narrative record minted at a safety-narrowing collapse (`27V` Lane A). Pure
 /// data (see module docs): a [`TrustTier`] plus the [`CollapseKind`] carrying the collapse's
@@ -442,6 +473,13 @@ impl CollapseNarrative {
     #[must_use]
     pub fn kind(&self) -> &CollapseKind {
         &self.kind
+    }
+
+    /// This narrative's class as a greppable name — the `<class>` of a `[unnarrated: <class>]`
+    /// disclosure (`28E:prop-unnarrated-is-visible`).
+    #[must_use]
+    pub fn class_name(&self) -> &'static str {
+        self.kind.class_name()
     }
 
     /// Reconstruct a [`CollapseKind::VerdictDecline`] narrative with its `authored_reason` populated

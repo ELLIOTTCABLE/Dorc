@@ -1340,6 +1340,13 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             oracles: oracle_paths.clone(),
             risk_profile: args.trust_footprints.then_some(CONSENT_FLAG),
             counts: plan.disposition_counts(),
+            deepest_tier: args.all,
+            // A live run narrates its own records, so the plane and the stream are the same
+            // binary's by construction; only a replay can disagree, and it declares which stream
+            // it wrote so the answer is read rather than assumed.
+            narratable: replay
+                .as_ref()
+                .is_none_or(|r| r.record_stream_version == dorc_aid::narrative::PLANE_VERSION),
         };
         emit_why_report(
             args.why_address.as_deref(),
@@ -1403,6 +1410,10 @@ struct Replay {
     /// by this and never by the replay's own clock — a replay reports on a moment that has already
     /// passed, and re-dating it to now would present a reading as a running.
     started_at: Option<dorc_core::RunInstant>,
+    /// Which record-stream version this durable declared — the key the `[unnarrated:]` census is
+    /// gated on, so it can never make a coverage claim about a stream this binary's narrative
+    /// plane was not built against.
+    record_stream_version: u32,
     records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
 }
 
@@ -1505,6 +1516,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     }
     let decision_digest = envelope.claims().decision_digest().to_owned();
     let started_at = envelope.claims().started_at();
+    let record_stream_version = envelope.record_stream_version();
     match dorc_plan::whylog::admit_unscoped_whylog_replay(
         envelope,
         &framing,
@@ -1515,6 +1527,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
             oracle_paths,
             decision_digest,
             started_at,
+            record_stream_version,
             records: Some(replay.records().clone()),
         })),
         dorc_plan::records::Admission::NoObservation => Ok(ReplayLoad::NoObservation(Replay {
@@ -1522,6 +1535,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
             oracle_paths,
             decision_digest,
             started_at,
+            record_stream_version,
             records: None,
         })),
         dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(advisory, reason)),
@@ -4135,9 +4149,16 @@ fn guard_chain(
         .map(|wall| format!("{}|{}", wall.line, wall.word))
         .collect();
     let joined_walls = wall_refs.join(", ");
-    let rows = walls_above
+    // The ANALYSIS names every wall, because every one of them stands between the report and this
+    // line's turn. The `describe:` step names only the UNDESCRIBED ones: telling a reader to write
+    // an oracle for a command that already has one is the write-an-oracle nag pointed at the wrong
+    // wall, and the modelled wall is not what is keeping this line guarded.
+    let describable: Vec<String> = walls_above
         .iter()
-        .any(|wall| wall.role == WallRole::Opaque)
+        .filter(|wall| wall.role == WallRole::Opaque)
+        .map(|wall| format!("{}|{}", wall.line, wall.word))
+        .collect();
+    let rows = (!describable.is_empty())
         .then(|| {
             vec![
                 StepRow {
@@ -4147,8 +4168,8 @@ fn guard_chain(
                         dorc_aid::arrangement::arrangement_sentence(
                             &dorc_aid::arrangement::CONST_ARRANGEMENTS,
                             "why-next-step-describe-walls",
-                            Some(usize::from(wall_refs.len() > 1)),
-                            &[&joined_walls],
+                            Some(usize::from(describable.len() > 1)),
+                            &[&describable.join(", ")],
                         ),
                     ),
                     alternative: false,
@@ -4185,6 +4206,43 @@ fn guard_chain(
             rows,
         },
     }
+}
+
+/// The narrative classes this run MINTED and no render CONSUMED, as greppable
+/// `[unnarrated: <class>]` lines (`28E:prop-unnarrated-is-visible`).
+///
+/// The aid plane fails toward narration (`two-plane-aid-law`), and a class that mints without ever
+/// being rendered fails toward SILENCE instead — the standing
+/// `289:seam-narrative-render-unconsumed`. Deepest pull tier only: this is a maintainer's disclosure
+/// about the surface's own coverage, and putting it on the default surface would spend the
+/// firefighter's attention on dorc's gaps rather than on their host.
+///
+/// `narratable` carries the version coupling. On a replay it is false when the durable's record
+/// stream and this binary's narrative plane disagree, because the census would then be a confident
+/// claim about a run whose class set this binary never held.
+fn unnarrated_lines(narrative: &[CollapseNarrative], narratable: bool) -> Vec<String> {
+    if !narratable {
+        return Vec::new();
+    }
+    let mut classes: Vec<&'static str> = Vec::new();
+    for record in narrative {
+        let rendered = matches!(
+            record.kind(),
+            CollapseKind::VerdictDecline {
+                authored_reason: Some(_),
+                ..
+            }
+        );
+        let class = record.class_name();
+        if !rendered && !classes.contains(&class) {
+            classes.push(class);
+        }
+    }
+    classes.sort_unstable();
+    classes
+        .into_iter()
+        .map(|class| format!("[unnarrated: {class}]"))
+        .collect()
 }
 
 /// Collapse coordinate labels sharing one `kind:entity` into the brace-alternation display
@@ -4782,6 +4840,11 @@ fn emit_why_report(
 ) {
     use dorc_plan::Disposition;
     let declines = authored_declines(narrative);
+    let unnarrated = if receipt.deepest_tier {
+        unnarrated_lines(narrative, receipt.narratable)
+    } else {
+        Vec::new()
+    };
     let mut sites: Vec<WhySite> = Vec::new();
     // A chain names the walls it crossed by `N|command`, never by internal site id (`28E` §8).
     let walls: BTreeMap<dorc_plan::LeafId, String> = plan
@@ -4975,7 +5038,7 @@ fn emit_why_report(
     }
 
     if let Some(addr) = address {
-        emit_why_triptych(addr, &sites, &chains, filename, book_src);
+        emit_why_triptych(addr, &sites, &chains, filename, book_src, &unnarrated);
     } else {
         emit_why_aggregate(&sites, &chains, filename, first_wall, receipt);
     }
@@ -4996,6 +5059,7 @@ fn emit_why_triptych(
     chains: &[(usize, ChainRender)],
     filename: &str,
     book_src: &str,
+    unnarrated: &[String],
 ) {
     let matched: Vec<&WhySite> = match parse_line_address(address) {
         Some(n) if address_names_book(address, filename) => {
@@ -5028,6 +5092,11 @@ fn emit_why_triptych(
         nodes.extend(participating_block(&participants, filename, book_src));
         nodes.extend(chain_nodes(chain));
     }
+    nodes.extend(
+        unnarrated
+            .iter()
+            .map(|line| paragraph(&Said::Value(line.clone()), "why-unnarrated-class")),
+    );
     print_document(nodes, TRIPTYCH_INSET);
     println!();
     print_document(vec![registry_paragraph("why-receipt-footer")], 0);
@@ -5215,6 +5284,12 @@ struct Receipt {
     /// The consent flag in force, or `None` for a flagless run.
     risk_profile: Option<&'static str>,
     counts: dorc_plan::DispositionCounts,
+    /// `--all`: the reader asked for the deepest pull tier.
+    deepest_tier: bool,
+    /// Whether the `[unnarrated:]` census may be asserted over this report at all — the version
+    /// coupling (`28E:prop-unnarrated-is-visible`'s caveat). False when a replayed durable's
+    /// record stream is not the one this binary's narrative plane was built against.
+    narratable: bool,
 }
 
 /// The receipt header as one banner: the run's identity, then the indented record of what it read
