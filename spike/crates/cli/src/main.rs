@@ -1196,7 +1196,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // Computed once (cheap, pure over the built plan) and consumed by BOTH the advisory `hint:` nag
     // (below) and the `dorc why` detail (`emit_why_report`). `None` ⇒ no unmodeled wall ⇒ no hint
     // (a modeled-but-diverged wall is an honest wall, never this hint's subject).
-    let first_wall = first_wall_hint(&collect_wall_steps(
+    // The walk itself is kept, not just its hint: a guarded line's `dorc why` names every wall
+    // standing between its report and its turn, which is the same book-order roll-up.
+    let wall_steps = collect_wall_steps(
         &plan,
         &probe,
         &classes,
@@ -1204,7 +1206,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         &kills,
         &parsed.value,
         &book_src,
-    ));
+    );
+    let first_wall = first_wall_hint(&wall_steps);
 
     // stage-3 (the why-lens, `22D` §1): the FIRST receipt-READER made user-visible. For each
     // forced-run (never-elided) command whose ⊤ has a wired cause, surface — on the RENDER surface
@@ -1343,6 +1346,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &plan,
             &probe,
             first_wall.as_ref(),
+            &wall_steps,
             &why_diags,
             &refusals,
             &arena,
@@ -3375,6 +3379,18 @@ enum WallRole {
     Transparent,
 }
 
+impl WallRole {
+    /// The occurrence a wall row's payload is keyed by, so an UNDESCRIBED wall and a described
+    /// running mutator never wear each other's words: one may touch anything because nobody said
+    /// otherwise, the other has an author who said exactly what it touches.
+    const fn occurrence(self) -> usize {
+        match self {
+            WallRole::Opaque => 0,
+            WallRole::Honest | WallRole::Guard | WallRole::Transparent => 1,
+        }
+    }
+}
+
 /// One plan step reduced to (leaf, source line, command word, wall role) for [`first_wall_hint`].
 /// `line` is the SOURCE line (rul24-lineno-identity); `word` is the command's first word — the
 /// `'hork'` the hint names.
@@ -3773,6 +3789,10 @@ enum StepLabel {
     Fix,
     Verify,
     Review,
+    /// The improvements-not-repairs step: what to DESCRIBE so a guarded line can eventually skip
+    /// (`28G` strawmen `b-wide-guarded` and `d-guard-fell-through` — a healthy guard has no repair,
+    /// so its arc is a different verb).
+    Describe,
 }
 
 impl StepLabel {
@@ -3782,6 +3802,7 @@ impl StepLabel {
             StepLabel::Fix => 1,
             StepLabel::Verify => 2,
             StepLabel::Review => 3,
+            StepLabel::Describe => 4,
         };
         dorc_aid::arrangement::arrangement_text(
             &dorc_aid::arrangement::CONST_ARRANGEMENTS,
@@ -3826,6 +3847,10 @@ struct ChainRender {
     /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all).
     analysis_opener: Said,
     links: Vec<ChainLink>,
+    /// The guard dorc shipped in place of a skip, as sh — the answer to "so what DID it do"
+    /// (`28G` strawman `b-wide-guarded`). Not our bytes: the oracle author wrote the check and the
+    /// admin wrote the command it fronts.
+    shipped: Option<String>,
     join: Option<Said>,
     next_steps: NextSteps,
 }
@@ -4017,12 +4042,133 @@ fn survival_chain(
         ),
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
         links,
+        shipped: None,
         join: Some(Said::words("why-analysis-join", &[&joined_walls, &backing])),
         next_steps: NextSteps {
             opener: Said::words("why-next-steps-opener", &[reference]),
             rows,
         },
     })
+}
+
+/// Build the HEALTHY-GUARD triptych (`28G` strawmen `b-wide-guarded` and `d-guard-fell-through`):
+/// what dorc knew, why it was not enough to skip, and what it shipped instead.
+///
+/// The wall rows are the point (`289:fnd-guarded-chain-omits-the-wall`). A guarded line's whole
+/// story is that a good report went stale — and until now the chain named the report and the vouch
+/// but never the thing that came between them, leaving the reader with two links that ought to have
+/// been sufficient and no account of why they were not.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the guard chain quotes the same display context the survival chain does, plus the wall walk it names its walls from; each is a distinct pipeline output"
+)]
+fn guard_chain(
+    reference: &str,
+    address: &str,
+    original: &str,
+    license: &dorc_plan::GuardLicense,
+    walls_above: &[&WallStep],
+    interner: &Interner,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> ChainRender {
+    let backing = dorc_plan::fact_label(interner, license.fact());
+    let reported = license.reported();
+    let mut links = vec![
+        ChainLink {
+            rank: RowRank::RuntimeBacked,
+            tier: TrustTier::Measured,
+            speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
+            payload: Said::Value(backing.clone()),
+            quoted: true,
+            event: reported.map(reported_event),
+            explanation: None,
+            excerpt: None,
+        },
+        ChainLink {
+            rank: RowRank::RuntimeBacked,
+            tier: TrustTier::Vouched,
+            speaker: oracle_locus(license.insert().defining_span(), oracle_paths, oracle_srcs),
+            payload: Said::words("why-vouch-payload-site", &[&backing]),
+            quoted: true,
+            event: None,
+            explanation: None,
+            excerpt: None,
+        },
+    ];
+    links.extend(walls_above.iter().map(|wall| ChainLink {
+        // A wall that nobody described claims nothing, and therefore covers everything: exactly
+        // the completion class `!` marks (`rul-danger-axis-is-completion-class`).
+        rank: RowRank::CoversUnmeasured,
+        tier: TrustTier::Ran,
+        speaker: Some(format!("{}|{}", wall.line, wall.word)),
+        payload: Said::Words(
+            "why-wall-payload",
+            dorc_aid::arrangement::arrangement_text(
+                &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+                "why-wall-payload",
+                Some(wall.role.occurrence()),
+            ),
+        ),
+        quoted: false,
+        event: None,
+        explanation: None,
+        excerpt: None,
+    }));
+    let wall_refs: Vec<String> = walls_above
+        .iter()
+        .map(|wall| format!("{}|{}", wall.line, wall.word))
+        .collect();
+    let joined_walls = wall_refs.join(", ");
+    let rows = walls_above
+        .iter()
+        .any(|wall| wall.role == WallRole::Opaque)
+        .then(|| {
+            vec![
+                StepRow {
+                    label: StepLabel::Describe,
+                    body: Said::Words(
+                        "why-next-step-describe-walls",
+                        dorc_aid::arrangement::arrangement_sentence(
+                            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+                            "why-next-step-describe-walls",
+                            Some(usize::from(wall_refs.len() > 1)),
+                            &[&joined_walls],
+                        ),
+                    ),
+                    alternative: false,
+                },
+                StepRow {
+                    label: StepLabel::Review,
+                    body: Said::words("why-next-step-review", &[address]),
+                    alternative: false,
+                },
+            ]
+        })
+        .unwrap_or_default();
+    ChainRender {
+        crossed: joined_walls.clone(),
+        claimant: String::new(),
+        outcome: Said::words(
+            "why-outcome-contrastive",
+            &[
+                reference,
+                &OutcomeKind::Guarded.word(),
+                &OutcomeKind::Guarded.foil().word(),
+                &why_words("why-outcome-because-guarded", &[&joined_walls]),
+            ],
+        ),
+        analysis_opener: Said::words("why-analysis-opener-guarded", &[]),
+        links,
+        // The as-shipped guard is the answer to "so what DID it do", so it closes the panel where
+        // a skip's chain closes with its disjointness restatement.
+        shipped: Some(license.insert().display_line(original)),
+        join: Some(Said::words("why-analysis-join-guarded", &[reference])),
+        next_steps: NextSteps {
+            opener: Said::words("why-next-steps-opener-guarded", &[]),
+            rows,
+        },
+    }
 }
 
 /// The sites whose author DELIBERATELY declined, keyed by leaf — the pull surface's index into the
@@ -4120,6 +4266,7 @@ fn decline_chain(
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
         links,
+        shipped: None,
         join: Some(Said::Words(
             "why-declines-join",
             class_words("why-declines-join"),
@@ -4325,6 +4472,27 @@ fn excerpt_nodes(excerpt: &Excerpt) -> Vec<Node<Face>> {
     out
 }
 
+/// The guard as dorc shipped it, inlined beneath the ANALYSIS restatement.
+///
+/// Rides the same foreign-text class the `as-written:` excerpt does (`28G` §0), and for the same
+/// reason: the check is the oracle author's invocation and the fallback is the admin's own line, so
+/// nothing in the block is ours to rephrase. LITERAL mode — it is displayed sh, and a break the
+/// shipped bytes do not contain would be a lie about what runs.
+fn shipped_block(sh: &str) -> Node<Face> {
+    Node::new(NodeKind::Code(CodeBlock {
+        table: None,
+        mode: Literalness::Literal,
+        locus: None,
+        lines: vec![CodeLine {
+            gutter: None,
+            cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
+                sh,
+                "the shipped guard",
+            )])],
+        }],
+    }))
+}
+
 /// One row of the remediation arc.
 fn step_row(row: &StepRow) -> Node<Face> {
     Node::new(NodeKind::Labeled(LabeledRow {
@@ -4410,6 +4578,7 @@ fn chain_nodes(chain: &ChainRender) -> Vec<Node<Face>> {
             .iter()
             .map(|join| paragraph(join, "why-analysis-join")),
     );
+    analysis.extend(chain.shipped.iter().map(|sh| shipped_block(sh)));
     out.push(panel("why-analysis-heading", analysis));
 
     if !chain.next_steps.rows.is_empty() {
@@ -4487,6 +4656,7 @@ fn emit_why_report(
     plan: &dorc_plan::Plan,
     probe: &dorc_plan::ProbePlan,
     first_wall: Option<&FirstWallHint>,
+    wall_steps: &[WallStep],
     why_diags: &[Diag],
     refusals: &[Diag],
     arena: &ProvArena,
@@ -4537,6 +4707,28 @@ fn emit_why_report(
             )
         {
             chains.push((line, chain));
+        }
+        if let Disposition::Guard(license) = &step.disposition {
+            // Every wall in book order above this line stands between the probe (which ran before
+            // any of them) and the line's turn, so all of them are honestly named.
+            let above: Vec<&WallStep> = wall_steps
+                .iter()
+                .take_while(|wall| wall.leaf != step.leaf)
+                .filter(|wall| matches!(wall.role, WallRole::Opaque | WallRole::Honest))
+                .collect();
+            chains.push((
+                line,
+                guard_chain(
+                    &reference,
+                    &format!("{filename}:{line}"),
+                    &command,
+                    license,
+                    &above,
+                    interner,
+                    oracle_paths,
+                    oracle_srcs,
+                ),
+            ));
         }
         let declined = declines.get(&step.leaf);
         if let Some(reason) = declined {
@@ -4753,6 +4945,7 @@ fn plain_chain(site: &WhySite) -> ChainRender {
                 excerpt: None,
             })
             .collect(),
+        shipped: None,
         join: None,
         next_steps: NextSteps {
             opener: Said::Value(String::new()),

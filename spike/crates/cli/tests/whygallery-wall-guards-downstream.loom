@@ -188,8 +188,36 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-r
 
    === OUTCOME ===
 
-   9|systemctl guarded RATHER THAN skipped: the sm.dorc.Service oracle vouches this is
-   already satisfied, so your line survives untouched behind the oracle's own live check
+   9|systemctl guarded RATHER THAN skipped: 8|hork really ran above it. A fact reported
+   before they ran cannot be trusted after; the guard re-asks the question live, in place,
+   where nothing can go stale.
+
+   === ANALYSIS ===
+
+   what was known, and why it was not enough:
+
+   * service.oracle.sh:5   reported  "sm.dorc.Service:nginx@active" (received 02:00:37, rc
+                                     0)
+   * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
+                                     sm.dorc.Service:nginx@active holds"
+   ! 8|hork                ran       undescribed: no author has said what it touches, so it
+                                     may touch anything
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: the report was good when it ran, but each wall above stands between it and
+   9|systemctl's turn. What dorc shipped instead of a skip -- your line, untouched, behind
+   the oracle's own live check:
+
+   ( systemctl__is_converged start nginx ) || systemctl start nginx
+
+   === NEXT STEPS ===
+
+   nothing is wrong. to make this line skippable:
+
+   describe:  [unwritten: why-next-step-describe-walls]
+   review:    `dorc why book.sh:9 --all` (every link, unselected, exhaustive)
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
