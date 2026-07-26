@@ -451,7 +451,7 @@ impl DorcConsumer {
             .map(|entry| entry.slug)
             .ok_or_else(|| {
                 format!(
-                    "arrangement `{slug}` has no registry row yet — promote the case, then rebuild"
+                    "arrangement `{slug}` has no registry row yet -- promote the case, then rebuild"
                 )
             })?;
         Ok(arrangement_parts(&self.arrangements, stable, None))
@@ -1058,7 +1058,7 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
             command: "cat <<EOF".to_owned(),
         }),
         "syntax-unsupported" => DiagCode::SyntaxUnsupported(SyntaxUnsupported {
-            detail: "process substitution `<(…)` is not modeled".to_owned(),
+            detail: "process substitution `<(...)` is not modeled".to_owned(),
         }),
         "records-fact-truncated" => DiagCode::RecordsFactTruncated(RecordsFactTruncated {
             received: 3,

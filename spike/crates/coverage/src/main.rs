@@ -153,10 +153,10 @@ fn run() -> Result<(), String> {
 /// Deterministic (site-id ordered).
 fn render_report(report: &Report, book_path: &str, has_probe: bool, with_table: bool) -> String {
     let mut out = String::new();
-    let _ = writeln!(out, "# dorc-coverage — analyzer coverage over {book_path}");
+    let _ = writeln!(out, "# dorc-coverage -- analyzer coverage over {book_path}");
     let _ = writeln!(
         out,
-        "# {} sites · probe-results: {}\n",
+        "# {} sites - probe-results: {}\n",
         report.total_sites(),
         if has_probe {
             "supplied"
@@ -171,8 +171,8 @@ fn render_report(report: &Report, book_path: &str, has_probe: bool, with_table: 
     if report.bridge_suspect > 0 {
         let _ = writeln!(
             out,
-            "!! WARNING: {} render-refusal(s) unattributed by the span bridge — elision counts \
-             may OVER-count (217 §5 obs-3); the per-site doors for these leaves are SUSPECT.\n",
+            "!! WARNING: {} render-refusal(s) unattributed by the span bridge -- elision counts \
+             may OVER-count (217 section 5 obs-3); the per-site doors for these leaves are SUSPECT.\n",
             report.bridge_suspect,
         );
     }
@@ -183,9 +183,9 @@ fn render_report(report: &Report, book_path: &str, has_probe: bool, with_table: 
         let headers = vec![
             "site".into(),
             "line".into(),
-            "c1·ok".into(),
-            "c2·orc".into(),
-            "c3·probe".into(),
+            "c1-ok".into(),
+            "c2-orc".into(),
+            "c3-probe".into(),
             "door".into(),
             "why".into(),
             "wt".into(),
@@ -310,20 +310,20 @@ fn render_northstar(report: &Report) -> String {
         .iter()
         .filter(|r| matches!(r.door, Door::GuardTransform))
         .count();
-    let mut out = String::from("## north-star (full-elision vs guard-transform — kept separate)\n");
+    let mut out = String::from("## north-star (full-elision vs guard-transform -- kept separate)\n");
     let _ = writeln!(
         out,
-        "   full-elision     : {:>3} sites · crit-wt {full_w:>4}",
+        "   full-elision     : {:>3} sites - crit-wt {full_w:>4}",
         report.full_elided_count(),
     );
     let _ = writeln!(
         out,
-        "   guard-transform  : {transform_sites:>3} sites · crit-wt {trans_w:>4}   \
+        "   guard-transform  : {transform_sites:>3} sites - crit-wt {trans_w:>4}   \
          (door-4; 0 until it lands)",
     );
     let _ = writeln!(
         out,
-        "   total sites      : {:>3} sites · crit-wt {total_w:>4}",
+        "   total sites      : {:>3} sites - crit-wt {total_w:>4}",
         report.total_sites(),
     );
     let _ = writeln!(
@@ -419,7 +419,7 @@ fn truncate(s: &str, max: usize) -> String {
         return s.to_string();
     }
     let head: String = s.chars().take(max.saturating_sub(1)).collect();
-    format!("{head}…")
+    format!("{head}...")
 }
 
 // ===========================================================================

@@ -28,7 +28,7 @@ pub fn promote(store: &impl ReceiptStore, inspection: &InspectedCompilation) -> 
         .map_err(|error| format!("promote receipt: {error}"))?
         .ok_or_else(|| {
             "promote refused: no compile receipt is stored. Run `dorc-loom compile` over the \
-             same cases first — promote publishes only an interpretation you have already \
+             same cases first -- promote publishes only an interpretation you have already \
              seen (`282:rul-promote-requires-fresh-compilation`)"
                 .to_owned()
         })?;

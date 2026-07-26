@@ -631,7 +631,7 @@ impl Tools {
             .find(|p| p.is_file())
             .ok_or_else(|| {
                 format!(
-                    "dorc binary not found under {} — build it first (cargo build from spike/)",
+                    "dorc binary not found under {} -- build it first (cargo build from spike/)",
                     spike_root.display()
                 )
             })?;
@@ -1215,7 +1215,7 @@ pub fn judge(trial: &Trial, outcome: &RunOutcome, shimmed: &[String]) -> Verdict
             class: FindingClass::TopControlElided,
             diagnosis: format!(
                 "⊤-control trial (shape {:?}) elided commands the engine must run under ⊤ \
-                 (⊤ ⇒ run-everything): bare\\apply = {removed:?}. inv-top-reject says an \
+                 (⊤ => run-everything): bare\\apply = {removed:?}. inv-top-reject says an \
                  unmodeled construct never licenses elision.",
                 trial.shape
             ),

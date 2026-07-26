@@ -72,8 +72,8 @@ pub fn describe_divergence(want: &str, got: &str) -> Option<String> {
 /// there are visually identical.
 fn tail_note(want: &str, got: &str) -> &'static str {
     match (want.ends_with('\n'), got.ends_with('\n')) {
-        (true, false) => " — the fresh text has no trailing newline; the committed one does",
-        (false, true) => " — the fresh text has a trailing newline; the committed one does not",
+        (true, false) => " -- the fresh text has no trailing newline; the committed one does",
+        (false, true) => " -- the fresh text has a trailing newline; the committed one does not",
         _ => "",
     }
 }
@@ -107,7 +107,7 @@ fn aligned_rows(left: &[&str], right: &[&str]) -> Vec<String> {
             }
             Step::Removed(line) | Step::Added(line) => {
                 if emitted >= MAX_REPORTED_LINES {
-                    rows.push(String::from("  … (further differences elided)"));
+                    rows.push(String::from("  ... (further differences elided)"));
                     break;
                 }
                 let sign = if matches!(step, Step::Removed(_)) {
@@ -127,7 +127,7 @@ fn aligned_rows(left: &[&str], right: &[&str]) -> Vec<String> {
 fn show(line: &str) -> String {
     let clipped: String = line.chars().take(MAX_LINE_CHARS).collect();
     if clipped.chars().count() < line.chars().count() {
-        format!("{clipped:?}…")
+        format!("{clipped:?}...")
     } else {
         format!("{clipped:?}")
     }

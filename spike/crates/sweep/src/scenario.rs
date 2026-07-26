@@ -495,7 +495,7 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     };
 
     let book_sh = format!(
-        "# sweep scenario — seed {} — topology {:?} — honesty {:?}\n{}\n",
+        "# sweep scenario -- seed {} -- topology {:?} -- honesty {:?}\n{}\n",
         seed.0,
         topology,
         honesty,

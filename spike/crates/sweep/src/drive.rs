@@ -201,7 +201,7 @@ pub(crate) fn evolve(
     assert_eq!(
         plan.steps.len(),
         ground.site_effects.len(),
-        "sweep net drift: {} plan steps vs {} generated commands — the 1:1 book-order zip broke",
+        "sweep net drift: {} plan steps vs {} generated commands -- the 1:1 book-order zip broke",
         plan.steps.len(),
         ground.site_effects.len(),
     );

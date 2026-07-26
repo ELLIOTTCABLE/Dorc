@@ -72,7 +72,7 @@ fn main() -> std::process::ExitCode {
 /// Run one trial verbosely (the `--seed N` reproducer path).
 fn one_trial(tools: &Tools, seed: u64, spike_root: &Path, emit: bool) {
     let trial = generate(seed);
-    println!("=== seed {seed} · shape {:?} ===", trial.shape);
+    println!("=== seed {seed} - shape {:?} ===", trial.shape);
     println!("--- book.sh ---\n{}", trial.book);
     for (name, _) in &trial.oracles {
         println!("--- oracle: {name} ---");
@@ -153,7 +153,7 @@ fn sweep(tools: &Tools, spike_root: &Path, opts: &Opts, count: u64) -> std::proc
 
     println!("---");
     println!(
-        "sweep: {trials} trials · {clean} clean · {} findings · {rejects} generator-rejects · {:.1}s",
+        "sweep: {trials} trials - {clean} clean - {} findings - {rejects} generator-rejects - {:.1}s",
         findings.len(),
         start.elapsed().as_secs_f64()
     );
@@ -198,7 +198,7 @@ fn emit_one_finding(
 fn short(s: &str) -> String {
     let first = s.lines().next().unwrap_or("");
     if first.len() > 100 {
-        format!("{}…", &first[..100])
+        format!("{}...", &first[..100])
     } else {
         first.to_string()
     }
