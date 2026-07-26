@@ -81,12 +81,28 @@ HK_MISE = "1"
 # redirects, no globs, no quoted paths-with-spaces. Instead use `dir` for cwd,
 # `[tasks.x.env]` for variables, a `run` ARRAY for sequencing (sequential and
 # fail-fast), and a nested `mise run <other>` to compose tasks whose `dir`s
-# differ. The `sh <script>` instruments below are NOT portable, contrary to what
-# this note used to claim: Git for Windows bundles `sh`/`sed`/`awk` but does not
-# put them on PATH, so every `sh` task FAILS from native PowerShell/cmd with
-# `'sh' is not recognized` (verified). Only git HOOKS get a POSIX environment,
-# because git supplies it before hk/mise are involved (see hk.pkl). Do not add
-# another `sh` task; the ones below are known-broken debt.
+# differ.
+#
+# NO `sh <script>` EITHER. Git for Windows bundles `sh`/`sed`/`awk` but does not
+# put them on PATH, so such a task dies with `'sh' is not recognized` from native
+# PowerShell/cmd. Anything that wanted a script goes in `crates/internal-tooling`
+# — the repo's cargo-xtask-pattern tooling crate, NOT product code — spelled
+# `cargo run -q -p internal-tooling -- <task>`. That crate also owns the ONE
+# answer to "where is a POSIX shell", shared with the e2e corpus so the two
+# cannot drift. (Only git HOOKS still get a POSIX environment for free, because
+# git supplies it before hk/mise are involved — see hk.pkl.)
+#
+# Do NOT "fix" a missing shell by putting git's `usr/bin` on PATH. It holds 249
+# binaries including `link.exe`, `find`, `sort`, `tar`: PATH is directory-granular
+# while the hazards are name-granular, so you cannot take git's `sh` without also
+# putting git's `link.exe` ahead of MSVC's. And `bash` on native Windows is
+# `%SystemRoot%\System32\bash.exe` — the WSL launcher, which will run Linux
+# binaries against Linux paths without a word. Resolve interpreters by absolute
+# path; never by PATH order.
+#
+# (Trap that bit during this work: on Windows the variable is `Path`, not `PATH`,
+# so mise's `{{env.PATH}}` — the only spelling in anyone's muscle memory — fails
+# outright. One more reason nothing here templates PATH.)
 # ────────────────────────────────────────────────────────────────────────────
 
 [tasks.hello]
@@ -271,8 +287,9 @@ run = [
 ]
 
 [tasks."test:hooks"]
-description = "Self-test for the commit-msg gate hk runs. Cheap; rides `gate` because that check fails OPEN — a broken matcher stops refusing and says nothing."
-run = "sh .githooks/test-commit-msg.sh"
+description = "Self-test for the commit-msg gate hk runs. Cheap; rides `gate` because that check fails OPEN — a broken matcher stops refusing and says nothing. The hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- hook-selftest"
 
 [tasks.clean]
 description = "cargo clean over the spike workspace — build artifacts only. Deliberately touches NOTHING in the working tree: no `git clean`, no untracked sweep. Dirty and untracked paths here are routinely a human's in-flight work, and a task that eats them is worth more than it saves."
