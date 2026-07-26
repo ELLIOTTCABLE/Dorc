@@ -70,7 +70,7 @@ use dorc_aid::diag::{
     WrappedSiteAdoptionHint,
 };
 use dorc_aid::weave::Face;
-use dorc_aid::{CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
+use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
 use weft::{
     Banner, Branch, CodeBlock, CodeCell, CodeLine, Document, Join, LabeledRow, Literalness, Node,
@@ -649,7 +649,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let advisory = !matches!(mode, Mode::Apply);
 
     let replay = if args.reads_the_receipt() {
-        match load_whylog_replay(args, advisory)? {
+        let loaded = load_whylog_replay(args)?;
+        report_at(advisory, "whylog", None, &loaded.diags);
+        match loaded.value {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
             // Answered ABOVE the pipeline, whose first act is analyzing the book at the recorded
             // path — under drift, not the run's book. Only `why` has a degraded surface; every
@@ -717,12 +719,11 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
     // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
     // loaded. Consent legibility — the admin sees, once, what authority the probe re-uses.
-    emit_escalation_policy(
+    report_at(
         advisory,
-        &mut interner,
-        &oracle_refs,
-        args.dial,
-        args.capability,
+        "escalation",
+        None,
+        &escalation_policy_diagnostics(&mut interner, &oracle_refs, args.dial, args.capability),
     );
 
     // Parse + analyze the book (shared interner, so symbols match the oracles). Multiple books
@@ -740,7 +741,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let book_src = read_books(books)?;
     let book_name = books.first().map_or("book.sh", String::as_str);
     // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
-    emit_unloaded_sibling_oracles(advisory, books, &oracle_paths);
+    report_at(
+        advisory,
+        "oracle",
+        None,
+        &unloaded_sibling_oracle_diagnostics(books, &oracle_paths),
+    );
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
@@ -849,8 +855,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
     // the verdict) and, converged, mints a `Disposition::Guard`.
-    let (mut vouches, decline_narrative) =
-        build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+    let vouch_lift = build_vouches(&oracle_refs, &classes, &value, &mut interner);
+    report_at(advisory, "verdict", None, &vouch_lift.diags);
+    let (mut vouches, decline_narrative) = vouch_lift.value;
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
     vouches.extend(dorc_plan::build_wrapped_vouches(
@@ -947,15 +954,22 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
         collect_coord_kinds(&classes, &kills, &value, &touches_sets, &mut interner)
     };
-    let kind_resolvers = build_kind_resolvers(
+    let resolver_lift = build_kind_resolvers(
         &oracle_srcs,
-        &oracle_paths,
         &checks,
         &touches_paired,
         &coord_kinds,
         &mut interner,
-        advisory,
     );
+    report_at(advisory, "resolve", None, &resolver_lift.lift);
+    report_by_oracle_file(
+        advisory,
+        "resolve",
+        &oracle_paths,
+        &oracle_srcs,
+        &resolver_lift.confusability,
+    );
+    let kind_resolvers = resolver_lift.value;
     let resolver_kinds: BTreeSet<Symbol> = kind_resolvers.resolver_kinds().collect();
     let resolver_coords = if args.risk_faultless_skips && !resolver_kinds.is_empty() {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
@@ -977,15 +991,22 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // round-trip (dynamic-arm shipping) is flag-on: for each reach-bearing AUTHORED footprint coord,
     // ship each DYNAMIC arm strip-clean, invoked with the entity; the `reach` readback expands the
     // footprints (via `Footprint::add_reached`) before the survival walk. STATIC arms never ship.
-    let kind_reaches = build_kind_reaches(
+    let reaches_lift = build_kind_reaches(
         &oracle_srcs,
-        &oracle_paths,
         &checks,
         &touches_paired,
         &coord_kinds,
         &mut interner,
-        advisory,
     );
+    report_at(advisory, "reaches", None, &reaches_lift.lift);
+    report_by_oracle_file(
+        advisory,
+        "reaches",
+        &oracle_paths,
+        &oracle_srcs,
+        &reaches_lift.confusability,
+    );
+    let kind_reaches = reaches_lift.value;
     let reach_kinds: BTreeSet<Symbol> = kind_reaches.reach_kinds().collect();
     let reaches_plan = if args.risk_faultless_skips && !reach_kinds.is_empty() {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
@@ -1123,8 +1144,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--risk-faultless-skips` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
     let survival = args.risk_faultless_skips.then(|| {
-        let mut fps = build_survival_footprints(
-            &oracle_refs,
+        let touches = lift_touches_sets(&oracle_refs, &mut interner);
+        report_at(advisory, "touches", None, &touches.diags);
+        let lifted = build_survival_footprints(
+            &touches.value,
             &classes,
             &kills,
             &kill_coords,
@@ -1132,8 +1155,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &cfg.value,
             &parsed.value,
             &mut interner,
-            advisory,
         );
+        report_at(advisory, "footprint", None, &lifted.diags);
+        let mut fps = lifted.value;
         // 24E §2 corr-§2: merge the host-DERIVED footprints (read back from the phase-1
         // derivation-probe's `deriv` coord-records) into the authored set, before the survival
         // walk. An escalated site has NO authored footprint (its static trace ⊤'d), so the two
@@ -1145,16 +1169,19 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             .iter()
             .map(|d| (d.node, parsed.value.node(cfg.value.node(d.node).ast).span))
             .collect();
-        merge_derived_footprints(
-            &mut fps,
-            &derivations,
-            results,
-            &classes,
-            &kill_coords,
-            &derived_node_spans,
-            &mut interner,
-            book_source,
+        report_at(
             advisory,
+            "derive",
+            book_source,
+            &merge_derived_footprints(
+                &mut fps,
+                &derivations,
+                results,
+                &classes,
+                &kill_coords,
+                &derived_node_spans,
+                &mut interner,
+            ),
         );
         // 24G §4: EXPAND each reach-bearing footprint coord via reaches() — STATIC arms (cli-traced,
         // all coords) + DYNAMIC arms (the `reach` readback, authored coords only). Widening is
@@ -1505,7 +1532,7 @@ const WHYLOG_CAP: usize = 4_000_000;
     clippy::too_many_lines,
     reason = "one linear admission ladder: select the durable, bound it, read back the book and oracles it names, check the framing, then admit the records. Every rung answers on its own terms — refusing, or in the book-digest rung's case degrading — and splitting it would scatter the ONE place a replay's inputs are validated"
 )]
-fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
+fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
     // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
     // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.
     let path = if let Some(exact) = args.whylog.as_deref() {
@@ -1521,25 +1548,19 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         })?;
         let dir = dir.as_str();
         let Some(path) = whylog_store::newest(dir) else {
-            report_at(
-                advisory,
-                "whylog",
-                None,
-                &[Diag::new_spanless_site(DiagCode::WhylogAbsent(
+            return Ok(Carrier::new(
+                ReplayLoad::Refused,
+                vec![Diag::new_spanless_site(DiagCode::WhylogAbsent(
                     dorc_aid::diag::WhylogAbsent {
                         dir: dir.to_owned(),
                     },
                 ))],
-            );
-            return Ok(ReplayLoad::Refused);
+            ));
         };
         path
     };
     let Ok(file) = std::fs::File::open(&path) else {
-        return Ok(refuse_replay(
-            advisory,
-            dorc_plan::records::AdmissionRefusal::Framing,
-        ));
+        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
     };
     let envelope = match dorc_plan::whylog::admit_unscoped_whylog(
         file,
@@ -1547,13 +1568,10 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     ) {
         dorc_plan::records::Admission::Admitted(envelope) => envelope,
         dorc_plan::records::Admission::NoObservation => {
-            return Ok(refuse_replay(
-                advisory,
-                dorc_plan::records::AdmissionRefusal::Framing,
-            ));
+            return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
         }
         dorc_plan::records::Admission::Refused(reason) => {
-            return Ok(refuse_replay(advisory, reason));
+            return Ok(refuse_replay(reason));
         }
     };
     let book_path = envelope.recorded_book_path().as_str().to_owned();
@@ -1563,18 +1581,12 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         .map(|oracle| oracle.path().as_str().to_owned())
         .collect();
     let Ok(book) = read_replay_source(&book_path) else {
-        return Ok(refuse_replay(
-            advisory,
-            dorc_plan::records::AdmissionRefusal::Framing,
-        ));
+        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
     };
     let oracle_sources: Vec<String> = match oracle_paths.iter().map(read_replay_source).collect() {
         Ok(sources) => sources,
         Err(()) => {
-            return Ok(refuse_replay(
-                advisory,
-                dorc_plan::records::AdmissionRefusal::Framing,
-            ));
+            return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
         }
     };
     let framing = dorc_plan::records::Framing::spike(book_digest(&book));
@@ -1584,35 +1596,29 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     // framing — and it is the ENTRY to the degraded receipt (`28F:rul-drift-replay-d1`) rather than
     // a dead end. The diag still fires: drift loud on the report lane, receipt on stdout.
     if envelope.claims().book_digest() != scope.book.1 {
-        report_at(
-            advisory,
-            "whylog",
-            None,
-            &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
+        return Ok(Carrier::new(
+            ReplayLoad::Drifted(Box::new(DriftedReceipt {
+                host: envelope.claims().host().to_owned(),
+                book_digest: envelope.claims().book_digest().to_owned(),
+                risk_profile: envelope
+                    .argv()
+                    .iter()
+                    .any(|word| word == CONSENT_FLAG)
+                    .then_some(CONSENT_FLAG),
+                started_at: envelope.claims().started_at(),
+                tally: recorded_tally(envelope.apply()),
+                book_path,
+                oracle_paths,
+            })),
+            vec![Diag::new_spanless_site(DiagCode::WhylogBookDesync(
                 dorc_aid::diag::WhylogBookDesync {
                     which: "book".to_owned(),
                 },
             ))],
-        );
-        return Ok(ReplayLoad::Drifted(Box::new(DriftedReceipt {
-            host: envelope.claims().host().to_owned(),
-            book_digest: envelope.claims().book_digest().to_owned(),
-            risk_profile: envelope
-                .argv()
-                .iter()
-                .any(|word| word == CONSENT_FLAG)
-                .then_some(CONSENT_FLAG),
-            started_at: envelope.claims().started_at(),
-            tally: recorded_tally(envelope.apply()),
-            book_path,
-            oracle_paths,
-        })));
+        ));
     }
     if !replay_claims_match(&envelope, &scope) {
-        return Ok(refuse_replay(
-            advisory,
-            dorc_plan::records::AdmissionRefusal::Framing,
-        ));
+        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
     }
     let decision_digest = envelope.claims().decision_digest().to_owned();
     let started_at = envelope.claims().started_at();
@@ -1624,25 +1630,29 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         &framing,
         dorc_plan::records::HostEvidenceLimits::spike_default(),
     ) {
-        dorc_plan::records::Admission::Admitted(replay) => Ok(ReplayLoad::Admitted(Replay {
-            book_path,
-            oracle_paths,
-            decision_digest,
-            started_at,
-            record_stream_version,
-            instants: instants.clone(),
-            records: Some(replay.records().clone()),
-        })),
-        dorc_plan::records::Admission::NoObservation => Ok(ReplayLoad::NoObservation(Replay {
-            book_path,
-            oracle_paths,
-            decision_digest,
-            started_at,
-            record_stream_version,
-            instants: instants.clone(),
-            records: None,
-        })),
-        dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(advisory, reason)),
+        dorc_plan::records::Admission::Admitted(replay) => {
+            Ok(Carrier::pure(ReplayLoad::Admitted(Replay {
+                book_path,
+                oracle_paths,
+                decision_digest,
+                started_at,
+                record_stream_version,
+                instants: instants.clone(),
+                records: Some(replay.records().clone()),
+            })))
+        }
+        dorc_plan::records::Admission::NoObservation => {
+            Ok(Carrier::pure(ReplayLoad::NoObservation(Replay {
+                book_path,
+                oracle_paths,
+                decision_digest,
+                started_at,
+                record_stream_version,
+                instants: instants.clone(),
+                records: None,
+            })))
+        }
+        dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(reason)),
     }
 }
 
@@ -1701,9 +1711,8 @@ fn recorded_tally(apply: &[dorc_plan::whylog::ApplyLine]) -> PlanTally {
     }
 }
 
-fn refuse_replay(advisory: bool, reason: dorc_plan::records::AdmissionRefusal) -> ReplayLoad {
-    report_at(advisory, "whylog", None, &[reason.spanless_diagnostic()]);
-    ReplayLoad::Refused
+fn refuse_replay(reason: dorc_plan::records::AdmissionRefusal) -> Carrier<ReplayLoad> {
+    Carrier::new(ReplayLoad::Refused, vec![reason.spanless_diagnostic()])
 }
 
 fn replay_claims_match(
@@ -1974,6 +1983,24 @@ fn ship_verdict_body(
     None
 }
 
+/// Lift each oracle's `touches()` set for the authored survival lane, carrying the lift's
+/// diagnostics out as data rather than printing them from inside the lift (`io-at-edges-only`).
+fn lift_touches_sets(
+    oracle_refs: &[&str],
+    interner: &mut Interner,
+) -> Carrier<Vec<dorc_oracle::touches::TouchesSet>> {
+    let mut diags = Vec::new();
+    let sets = oracle_refs
+        .iter()
+        .map(|src| {
+            let lifted = dorc_oracle::touches::TouchesSet::lift(interner, src);
+            diags.extend(lifted.diags);
+            lifted.value
+        })
+        .collect();
+    Carrier::new(sets, diags)
+}
+
 /// Lift the survival footprints (Stage 2 / rul24-mode-gate) — called ONLY on the
 /// `--risk-faultless-skips` path (TC-1: the footprint data does not exist unflagged). For each
 /// wall-candidate site (an establish-bearing class, or a kill) whose provider declares a
@@ -1988,10 +2015,10 @@ fn ship_verdict_body(
 /// [`KindId`] a predict annotation minted — never a parallel string-typed universe (24A §1b).
 #[expect(
     clippy::too_many_arguments,
-    reason = "the cli-edge footprint lift threads the whole compiled context (oracles/classes/kills/kill-coords/value/cfg/ast/interner) + the advisory routing flag; each is a distinct pipeline output, not a bundle-able struct"
+    reason = "the cli-edge footprint lift threads the whole compiled context (touches-sets/classes/kills/kill-coords/value/cfg/ast/interner); each is a distinct pipeline output, not a bundle-able struct"
 )]
 fn build_survival_footprints(
-    oracle_refs: &[&str],
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
     classes: &[(
         dorc_analysis::cfg::CfgNodeId,
         dorc_analysis::effect::SkipClass,
@@ -2002,18 +2029,8 @@ fn build_survival_footprints(
     cfg: &dorc_analysis::cfg::Cfg,
     ast: &dorc_syntax::ast::Ast,
     interner: &mut Interner,
-    advisory: bool,
-) -> dorc_plan::TrustedFootprints {
+) -> Carrier<dorc_plan::TrustedFootprints> {
     use dorc_analysis::effect::SkipClass;
-    let touches_sets: Vec<dorc_oracle::touches::TouchesSet> = oracle_refs
-        .iter()
-        .map(|src| {
-            let lifted = dorc_oracle::touches::TouchesSet::lift(interner, src);
-            report_at(advisory, "touches", None, &lifted.diags);
-            lifted.value
-        })
-        .collect();
-
     let mut footprints = dorc_plan::TrustedFootprints::new();
     let mut diags = Vec::new();
     for (node, class) in classes {
@@ -2027,7 +2044,7 @@ fn build_survival_footprints(
             continue; // not a wall candidate (a pure builtin, a Query, an opaque)
         }
         let Some((provider, coords_with_selectors, arm_span)) =
-            resolve_touches_footprint(*node, value, &touches_sets, interner)
+            resolve_touches_footprint(*node, value, touches_sets, interner)
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
         };
@@ -2058,8 +2075,7 @@ fn build_survival_footprints(
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
         // `tc-disturbs-span-threading`: the MATCHED ARM over the funcdef, still the honest floor.
-        let defining =
-            arm_span.or_else(|| touches_defining_span(provider, &touches_sets, interner));
+        let defining = arm_span.or_else(|| touches_defining_span(provider, touches_sets, interner));
         if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
             .map(|fp| fp.with_own(own).with_defining(defining))
         {
@@ -2074,8 +2090,7 @@ fn build_survival_footprints(
             footprints.insert(*node, footprint);
         }
     }
-    report_at(advisory, "footprint", None, &diags);
-    footprints
+    Carrier::new(footprints, diags)
 }
 
 /// Resolve a wall-candidate site's `touches()` footprint: split its resolved argv into
@@ -2251,10 +2266,9 @@ fn ship_touches_body(
 /// SPIKE-ONLY (ru-26): the `touches-escalated` advisory below makes the static→dynamic boundary
 /// visible in the render/differential; it must NOT leak into greenfield as a permanent
 /// per-escalation requirement.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "the derived-footprint merge threads the compiled context (footprints/derivations/results/classes/kill-coords/node-spans/interner) + the book-source and advisory routing; each is a distinct pipeline output, not a bundle-able struct"
-)]
+// The product is the `&mut` merge, so the diagnostics are the one thing a caller can drop without
+// noticing — which is the failure this whole lane exists to make impossible.
+#[must_use]
 fn merge_derived_footprints(
     footprints: &mut dorc_plan::TrustedFootprints,
     derivations: &dorc_plan::DerivationPlan,
@@ -2266,9 +2280,7 @@ fn merge_derived_footprints(
     kill_coords: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
     node_spans: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::Span>,
     interner: &mut Interner,
-    book_source: Option<(&str, &str)>,
-    advisory: bool,
-) {
+) -> Vec<Diag> {
     let mut diags = Vec::new();
     for d in &derivations.derivations {
         // The escalated book command's own span (`aid-caret-span-precision`): every diag this loop
@@ -2349,7 +2361,7 @@ fn merge_derived_footprints(
             footprints.insert(d.node, fp);
         }
     }
-    report_at(advisory, "derive", book_source, &diags);
+    diags
 }
 
 /// Intern one readback `kind:entity` coordinate line into the shared vocabulary (24A §1b fence —
@@ -2408,6 +2420,20 @@ fn own_wall_coord(
         .map(|f| dorc_plan::EntityCoord::new(f.kind, f.entity))
 }
 
+/// A kind-keyed lift's product with every diagnostic it raised held as DATA — nothing writes fd 2
+/// from inside the lift (`io-at-edges-only`; it is also what keeps a unit test driving one of these
+/// from painting a red caret frame across a green run).
+///
+/// Two groups, because they frame against different sources: `lift` is the per-file lift's own
+/// diagnostics, which the report seat frames spanlessly as it always has, while `confusability` is
+/// keyed by the oracle file each diagnostic's caret resolves against (`law-lineno-identity`).
+/// `run` reports them in that order, at the point the lift used to print them.
+struct KindLift<T> {
+    value: T,
+    lift: Vec<Diag>,
+    confusability: BTreeMap<usize, Vec<Diag>>,
+}
+
 /// The per-KIND resolvers (24F §3, corr-kind-keying §10): `<kind>.resolve()` funcdefs lifted per
 /// oracle file, combined with CONFUSABILITY enforcement. Resolvers are a SECOND family keyed by KIND
 /// (the kind-owner holds the nouns — 23M contribution-vs-identity), NOT per-command role-siblings;
@@ -2447,21 +2473,20 @@ impl KindResolvers {
 /// symbols/strings, never decoded.
 fn build_kind_resolvers(
     oracle_srcs: &[String],
-    oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
     coord_kinds: &BTreeSet<Symbol>,
     interner: &mut Interner,
-    advisory: bool,
-) -> KindResolvers {
+) -> KindLift<KindResolvers> {
     use dorc_oracle::resolve::ResolverSet;
     use dorc_oracle::to_funcname_segment;
 
+    let mut lift = Vec::new();
     let sets: Vec<ResolverSet> = oracle_srcs
         .iter()
         .map(|src| {
             let lifted = ResolverSet::lift(interner, src);
-            report_at(advisory, "resolve", None, &lifted.diags);
+            lift.extend(lifted.diags);
             lifted.value
         })
         .collect();
@@ -2526,15 +2551,12 @@ fn build_kind_resolvers(
             base_to_idx.insert(kind, idx);
         }
     }
-    report_by_oracle_file(
-        advisory,
-        "resolve",
-        oracle_paths,
-        oracle_srcs,
-        &diags_by_file,
-    );
     let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
-    KindResolvers { sets, by_kind }
+    KindLift {
+        value: KindResolvers { sets, by_kind },
+        lift,
+        confusability: diags_by_file,
+    }
 }
 
 /// Re-key a kind-keyed `munged-base → file-index` map to the RAW coordinate kinds
@@ -2776,21 +2798,20 @@ impl KindReaches {
 /// compared as interned strings, never decoded.
 fn build_kind_reaches(
     oracle_srcs: &[String],
-    oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
     coord_kinds: &BTreeSet<Symbol>,
     interner: &mut Interner,
-    advisory: bool,
-) -> KindReaches {
+) -> KindLift<KindReaches> {
     use dorc_oracle::reaches::ReachesSet;
     use dorc_oracle::to_funcname_segment;
 
+    let mut lift = Vec::new();
     let sets: Vec<ReachesSet> = oracle_srcs
         .iter()
         .map(|src| {
             let lifted = ReachesSet::lift(interner, src);
-            report_at(advisory, "reaches", None, &lifted.diags);
+            lift.extend(lifted.diags);
             lifted.value
         })
         .collect();
@@ -2846,15 +2867,12 @@ fn build_kind_reaches(
             base_to_idx.insert(kind, idx);
         }
     }
-    report_by_oracle_file(
-        advisory,
-        "reaches",
-        oracle_paths,
-        oracle_srcs,
-        &diags_by_file,
-    );
     let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
-    KindReaches { sets, by_kind }
+    KindLift {
+        value: KindReaches { sets, by_kind },
+        lift,
+        confusability: diags_by_file,
+    }
 }
 
 /// The per-arm wrapper funcname a dynamic `reaches()` arm ships and is invoked under. Engine-
@@ -3054,16 +3072,14 @@ fn build_vouches(
     )],
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
-    advisory: bool,
-) -> (dorc_plan::Vouches, Vec<CollapseNarrative>) {
+) -> Carrier<(dorc_plan::Vouches, Vec<CollapseNarrative>)> {
     // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
-    // share it). This edge only ROUTES the lift diagnostics: surfaced AS-IS (inv-top-reject — the
-    // tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
+    // share it). This edge only RESHAPES the lift: its diagnostics ride out AS-IS (inv-top-reject —
+    // the tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
     // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
     let (lifted, decline_narrative) =
         dorc_plan::build_vouches(oracle_refs, classes, value, interner);
-    report_at(advisory, "verdict", None, &lifted.diags);
-    (lifted.value, decline_narrative)
+    lifted.map(|vouches| (vouches, decline_narrative))
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
@@ -6889,14 +6905,14 @@ fn oracle_path_key(path: &str) -> String {
     }
 }
 
-/// Emit the unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
+/// The unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
 /// ack-6): scan the directories of the loaded oracles + the book(s) for `*.oracle.sh` files that were
 /// NOT loaded, and disclose them (suggest, never auto-load). A cli-edge disclosure — it reads the
 /// filesystem, so it lives here, never in the kernel; the `read_dir` order is OS-dependent, so the
 /// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
 /// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
-fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths: &[String]) {
+fn unloaded_sibling_oracle_diagnostics(books: &[String], oracle_paths: &[String]) -> Vec<Diag> {
     use std::path::Path;
     // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
     // Windows) while the loaded set carries the `-o` args verbatim (forward slash), so a raw string
@@ -6930,7 +6946,7 @@ fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths:
         }
     }
     if unloaded.is_empty() {
-        return;
+        return Vec::new();
     }
     unloaded.sort();
     let detail = unloaded
@@ -6938,32 +6954,26 @@ fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths:
         .map(|p| format!("`{p}`"))
         .collect::<Vec<_>>()
         .join(", ");
-    report_at(
-        advisory,
-        "oracle",
-        None,
-        &[Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
-            AidUnloadedSiblingOracle { detail },
-        ))],
-    );
+    vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
+        AidUnloadedSiblingOracle { detail },
+    ))]
 }
 
-/// Emit the escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
+/// The escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
 /// line). Names the escalation posture the dial + capability set, and the entry-capable wrappers
-/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` to
-/// stderr (advisory), never a gate.
+/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` the
+/// edge reports (advisory), never a gate.
 ///
 /// SCOPE (honest for the spike): this is the POLICY in effect, not a per-book-SITE "will enter"
 /// tally — the book-side entry-composed probe emission (which would count sites per entered context)
 /// is the deferred integration (`27K` §9 / this lane's report). The dial × capability × the loaded
 /// entry forms are all real; what is missing is the per-site consumption in the probe pipeline.
-fn emit_escalation_policy(
-    advisory: bool,
+fn escalation_policy_diagnostics(
     interner: &mut Interner,
     oracle_refs: &[&str],
     dial: dorc_core::EscalationDial,
     capability: dorc_core::Capability,
-) {
+) -> Vec<Diag> {
     use dorc_oracle::entry::{detect_entry_form, lift_entry_set};
     use dorc_oracle::predict::lift_predicts;
 
@@ -6986,7 +6996,8 @@ fn emit_escalation_policy(
         }
     }
     if heads.is_empty() {
-        return; // no entry-capable wrapper loaded ⇒ no escalation is possible ⇒ nothing to disclose
+        // no entry-capable wrapper loaded ⇒ no escalation is possible ⇒ nothing to disclose
+        return Vec::new();
     }
     let head_list = heads.values().cloned().collect::<Vec<_>>().join(", ");
     let cap = match capability {
@@ -7009,14 +7020,9 @@ fn emit_escalation_policy(
              (--escalate-any-probe overrides absent author consent); entry forms: {head_list}."
         ),
     };
-    report_at(
-        advisory,
-        "escalation",
-        None,
-        &[Diag::new_spanless_site(DiagCode::EscalationPolicy(
-            EscalationPolicy { detail: msg },
-        ))],
-    );
+    vec![Diag::new_spanless_site(DiagCode::EscalationPolicy(
+        EscalationPolicy { detail: msg },
+    ))]
 }
 
 /// Whether a predict body peels (a wrapper) — the `detect_peel`-present predicate, factored so the
@@ -7739,8 +7745,13 @@ mod tests {
     /// 24F §3 / corr-kind-keying §10: the resolver confusability enforcement. A clean single
     /// `<kind>.resolve()` is resolver-bearing; two files declaring ONE kind's resolver REFUSE both
     /// (the kind keeps token-equality — never first-wins-silently); a resolver keyed to a known
-    /// PROVIDER name is KEPT but flagged (the mis-key). Behaviour-pinned (the diagnostics themselves
-    /// are verified end-to-end via the cli binary).
+    /// PROVIDER name is KEPT but flagged (the mis-key).
+    ///
+    /// The conflict's DIAGNOSTIC is asserted here as a returned value, keyed to the first declaring
+    /// file. It used to be asserted only end-to-end through the binary, which meant this test drove
+    /// a helper that printed it: a red caret frame across a green run, and a diagnostic whose
+    /// presence nothing local pinned. Both are the same bug — a decision-carrying helper writing to
+    /// fd 2 (`io-at-edges-only`).
     #[test]
     fn resolver_confusability_conflict_refuses_both_collision_keeps() {
         let mut i = Interner::default();
@@ -7761,18 +7772,14 @@ mod tests {
 
         // A clean single package resolver ⇒ resolver-bearing (kind-keyed by the munged base).
         let clean = vec!["package__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
-        let kr = build_kind_resolvers(
-            &clean,
-            &["clean.oracle.sh".to_string()],
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut i,
-            false,
+        let kr = build_kind_resolvers(&clean, &checks, &touches_paired, &coord_kinds, &mut i);
+        assert!(
+            kr.value.resolver_kinds().any(|k| i.resolve(k) == "package"),
+            "a clean package resolver is resolver-bearing"
         );
         assert!(
-            kr.resolver_kinds().any(|k| i.resolve(k) == "package"),
-            "a clean package resolver is resolver-bearing"
+            kr.lift.is_empty() && kr.confusability.is_empty(),
+            "a clean resolver raises nothing"
         );
 
         // Two files, both package resolvers ⇒ BOTH refused (no resolver kind).
@@ -7780,37 +7787,39 @@ mod tests {
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
         ];
-        let kr_dup = build_kind_resolvers(
-            &dup,
-            &["a.oracle.sh".to_string(), "b.oracle.sh".to_string()],
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut i,
-            false,
-        );
+        let kr_dup = build_kind_resolvers(&dup, &checks, &touches_paired, &coord_kinds, &mut i);
         assert_eq!(
-            kr_dup.resolver_kinds().count(),
+            kr_dup.value.resolver_kinds().count(),
             0,
             "a duplicate resolver for one kind refuses BOTH (token-equality floor)"
+        );
+        let dup_diags = kr_dup
+            .confusability
+            .get(&0)
+            .expect("the conflict frames into the FIRST declaring file");
+        assert!(
+            matches!(dup_diags.as_slice(), [d] if matches!(&d.code, DiagCode::ResolverConflict(c) if c.kind == "package" && c.count == 2)),
+            "the refusal comes back as a diagnostic VALUE, never a write to fd 2"
         );
 
         // A resolver whose kind munges to the known provider "apt-get" (base `apt_get`) ⇒ KEPT
         // (warned, not a silent dud) — the collision is now detected in NAME space, and a raw
         // `apt_get` coord kind re-keys it as bearing.
         let collide = vec!["apt_get__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
-        let kr_col = build_kind_resolvers(
-            &collide,
-            &["collide.oracle.sh".to_string()],
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut i,
-            false,
+        let kr_col = build_kind_resolvers(&collide, &checks, &touches_paired, &coord_kinds, &mut i);
+        assert!(
+            kr_col
+                .value
+                .resolver_kinds()
+                .any(|k| i.resolve(k) == "apt_get"),
+            "a provider-named resolver is kept (the collision is a warning, not a refusal)"
         );
         assert!(
-            kr_col.resolver_kinds().any(|k| i.resolve(k) == "apt_get"),
-            "a provider-named resolver is kept (the collision is a warning, not a refusal)"
+            matches!(
+                kr_col.confusability.get(&0).map(Vec::as_slice),
+                Some([d]) if matches!(&d.code, DiagCode::ResolverProviderCollision(c) if c.name == "apt_get")
+            ),
+            "the mis-key comes back as a diagnostic VALUE too"
         );
     }
 
@@ -7871,7 +7880,7 @@ mod tests {
                 CfgNodeId(5),
                 dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
             )]);
-            merge_derived_footprints(
+            drop(merge_derived_footprints(
                 &mut fps,
                 &derivations,
                 &results,
@@ -7879,9 +7888,7 @@ mod tests {
                 &BTreeMap::new(),
                 &node_spans,
                 i,
-                None,
-                false,
-            );
+            ));
             fps.contains(CfgNodeId(5))
         };
 
