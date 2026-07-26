@@ -299,12 +299,26 @@ is the human's; untouched.
     to the human: the parts lane's `item-missing-command-word` rider
     re-blesses that SAME loom (mechanical bug fix); recommendation — lane
     proceeds, the human's prose edits rebase over the fixed transcript.
-  - `item-precommit-loom-step-overclaims` (investigate; micro-lane dispatched)
-    — the pre-commit hook "claimed to compile looms" yet accepted made-up
-    transcript content. ~SUSPECT tier confusion rather than a hole:
-    executed-fixpoint cases (`run: round-trip`) defer transcript proof to the
-    e2e runner (`one-fixpoint-authority-per-case`), so a pre-commit loom step
-    can only be hygiene-tier — but IF the full gate ALSO stays green on
-    mismatched content, that is a real hole. Empirical probe: cherry-pick
-    `f4f48316` in a scratch worktree, run the scoped loom + e2e trials, read
-    hk.pkl's actual step; escalate on a green gate.
+  - `item-precommit-loom-step-overclaims` — RESOLVED by lane-loom-gate-probe
+    (report-only; scratch cleaned): **VERDICT (a), tier confusion — the FULL
+    gate goes red on the red-line** (e2e CATCH ×2: the block-0 command pin +
+    — luck-only, not creditable — the ascii gate on an echoed em-dash; the
+    content-diff/dash-n/needle gates are inferred-caught, short-circuited
+    behind the command pin). BUT a real mechanical pre-commit gap: **the hk
+    `e2e` step's glob is dir-shaped-only** (`spike/crates/*/tests/*/**`), so a
+    single-file whole-product loom NEVER reaches the tier that proves its
+    transcript; the `looms` step green-prints all 80 trials (hygiene-only for
+    the 27 `run:` looms, indistinguishable from genuinely-fixpointed); hk
+    prints NOTHING for a glob-missed step in normal mode. hk.pkl's own comment
+    names the escape clause and walks past it. Probe empirically proved: the
+    e2e runner ALREADY handles single-file loom paths; the 27 `run:`-bearing
+    looms are exactly `crates/cli/tests/*.loom`. **lane-precommit-loom-honesty
+    dispatched**: the glob line + the `looms`→`loom-hygiene` rename + honest
+    comments + the no-match-floor benign/bug distinction (convention →
+    mechanism); the `spike/CLAUDE.md` task-table caveat line is the
+    conductor's at fold. Banked frictions: `fixpoint: executed` wants a
+    visible `ok (deferred)` marker (libtest-mimic shape fights it — loom-UX
+    lane candidate) · gate short-circuiting reports one failure where a
+    design-red-line carries five (breadth-vs-first-failure, loom-UX lane) ·
+    blocks 1..N replay commands are driven-verbatim, only block 0 is pinned
+    against the driven invocation (seam note, defensible as-is).
