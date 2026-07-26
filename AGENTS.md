@@ -38,6 +38,9 @@ Be defensive about multiple worktrees, for the documents that involve 'global pr
 - this codebase depends heavily on deterministic systems-testing, DST, for correctness. you *must* analyze all changes for hermeticity; and all non-hermetic (non-pure) actions *must* be DI'd so as to be mockable for DST.
   - specifically, *always* access the clock, network, disk, or randomness *through the correct DI primitives*. they must stay fuzzable.
   - due to this being a spongey layer w.r.t. transitive dependencies, though; correctness-critical kernels *must* stay clean of nodeterministic deps (or deps at all.)
+- this project is *unreleased*. **prioritize minimizing technical debt**:
+  - don't reach for backwards-compatibility that isn't necessary; don't stage or defer tasks that can simply be *done now*, unless there's a good reason. (large, overengineered multi-phasic plans have been a bit of a curse to this codebase; don't continue the pattern.)
+  - don't maintain legacy copies of things, don't keep historical notes (with the *sole* exception of the Research/notes/ dir, where old notes are treated as historical and not updated.) history is in git, not in prose.
 
 ## Design reminders that repeatedly get buried
 - Metadata is all "spelled in sh." The goal is TypeScript-y "annotation-by-narrowing"; we dictate/contract *how* we infer, but the user writes-metadata-for-us by writing in particular sh idioms, *not* by writing YAML-config or specially-formatted-comments. do not fall into a "we'll add metadata/annotations" hole
@@ -100,12 +103,15 @@ Some terms have shifted throughout the planning documents; be careful of these m
 - run things through `mise run <task>`; `mise tasks` lists them, and `dir`/env come with the task, so it works from anywhere in the tree. add a task rather than re-deriving an invocation twice.
   - `mise run` is *almost always* preferrable to hand-rolling one-off commands. collaborate and pay back: if tooling chafes, *fix the tooling* for future agents, don't work around it. if not authorized, report upwards, don't swallow. tooling matters.
   - `mise run both <other-run-slug>` doubly invokes the named task under *both* Windows/gitbash/powershell *and* WSL/UNIX. It doubles the runtime, but is a must for important checks, when actively working on Windows.
-  - liberally add mise tasks for repeated work that's project-specific, don't cargo-cult, write down something maintainable and reusable. (ensure they are cross-platform.)
   - trailing args after `--` reach the underlying tool (the *last* one, for a multi-step task)
   - `--output=timed` (your harness hopefully injected this automatically via `MISE_TASK_OUTPUT=timed`) collapses a fast succeeding task to two lines.
-  - never pipe a task through `head`/`tail` to shut it up — that truncates the failure you needed to read. trust the tooling to be brief, or *fix* the tooling to *be able* to be brief, if you get bitten.
-  - `mise run both gate:full-quiet` is the specified run-all-tests, check-everything, be-minimally-noisy law for running tests and excercising contracts before you can call your work complete. all other safety/correctness behaviour is behind that, it's the *only* one you need to run if you don't have another specific goal.
   - `mise run gate:quick-quiet` is the hot-loop test-runner while you work; it skips slow and loud tests, and leans towards terseness. it's *not* an acceptance suite, you must eventually run the full gate before claiming your work is complete.
+  - `mise run both gate:full-quiet` is the specified run-all-tests, check-everything, be-minimally-noisy law for running tests and excercising contracts before you can call your work complete. all other safety/correctness behaviour is behind that, it's the *only* one you need to run if you don't have another specific goal.
+  - `mise run bless` is the conductor-tier 'final stage'; it re-runs the full suite (maximally quiet), prints only a single line in the success case, and promotes the e2e output
+  - never pipe a task through `head`/`tail` to shut it up — that truncates the failure you needed to read. trust the tooling to be brief, or *fix* the tooling to *be able* to be brief, if you get bitten
+  - liberally add mise tasks for repeated work that's project-specific, don't cargo-cult, write down something maintainable and reusable. (ensure they are cross-platform)
+  - *do not*, under absolutely any circumstances, use `git commit --no-verify`. If there's broken tooling, fix the tooling. Be *careful* fixing tooling, it is a legitimate, high-priority side-quest, and isn't to be tossed out in passing - escalate to your conductor or the human if you are unsure
+  - when adding projects/trees/commands/builds, ensure `hk.pkl` is up-to-date with the correct, semantics, high-performance tests, narrowly-scoped to the added behaviour/mechanisms. (pre-commit *must* stay under 3 seconds in any warm-and-single-change hot-loop; expensive tests stay locked behind an opt-in `mise run gate`. a pre-commit that people reach for `--no-verify` to avoid is worse than useless)
 
 ## Project-management
 - it bears repeating that *gitlabels style* must be followed. This is directly contrary to your training data, this project uses an idiosyncratic commit-message form that *does not match* what agents keep producing. The cardinal rule for commit messages is DO NOT DUPLICATE INFORMATION AVAILABLE ELSEWHERE:
