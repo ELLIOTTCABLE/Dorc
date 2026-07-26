@@ -63,6 +63,7 @@ use std::process::ExitCode;
 mod source_match;
 mod whylog_store;
 
+use dorc_aid::chain::{ChainLink, ChainModel, Excerpt};
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete,
     Diag, DiagCode, EscalationPolicy, FootprintIncoherent, ReachesConflict,
@@ -3502,17 +3503,6 @@ fn oracle_locus(
     Some(format!("{path}:{line}"))
 }
 
-/// A speaker's own source, inlined beneath their row: the file it came from, the numbered lines,
-/// and whether a middle was cut out of them.
-struct Excerpt {
-    path: String,
-    head: Vec<(usize, String)>,
-    /// The retained tail, when a middle was cut. Empty when the excerpt is contiguous.
-    tail: Vec<(usize, String)>,
-    /// How many lines the cut dropped. Zero when the excerpt is contiguous.
-    elided: usize,
-}
-
 /// The most lines of an author's arm the surface will inline before cutting a middle out of it.
 const EXCERPT_LINES: usize = 8;
 /// The most preceding comment lines attached to an arm.
@@ -3938,34 +3928,6 @@ const fn rank_glyph(rank: Knowability) -> &'static str {
     }
 }
 
-/// One quoted-speakers row of a `dorc why <addr>` ANALYSIS panel (`28E` §8 quoted-speakers, ADOPTED):
-/// speaker first, the tier word as the sentence's verb, the payload as the speaker's own quoted
-/// words. Dorc asserts no world-fact in its own voice — it QUOTES speakers, and vouches only for the
-/// run record and for its own derivations (which is why an engine row's payload is unquoted).
-struct ChainLink {
-    tier: SpeechAct,
-    /// Who is speaking: an oracle `file:line`, a book site's `N|command`, or the engine. `None` when
-    /// the model does not carry a locus for this speaker (rendered as an empty column, never faked).
-    speaker: Option<String>,
-    /// The payload's own words, and the registry row they came from — so the render can stamp the
-    /// span with the entry an edit would rewrite rather than with the seat that assembled it.
-    payload: Said,
-    /// Whether the payload is the speaker's own words (quoted) or dorc's narration of them (bare).
-    quoted: bool,
-    /// Metadata about the SPEAKING rather than the thing said — when a check ran and what it
-    /// exited with (`28G` strawman `a-fire-morning`'s `(ran 01:59:52, rc 0)`). It renders OUTSIDE
-    /// the quotation, because attributing the circumstances to the speaker puts words in their
-    /// mouth. `None` throughout today: the run clock and the stored rcs are the narration lane's,
-    /// and a fabricated timestamp is worse than an absent one.
-    event: Option<Said>,
-    /// The indented paragraph carried below the quote — today only the at-most claim's
-    /// covers-unmeasured disclosure.
-    explanation: Option<Said>,
-    /// The speaker's own source, inlined beneath the explanation: the arm plus the author's
-    /// adjacent comment (`27W:rul-report-surface-massaging`). Not our bytes.
-    excerpt: Option<Excerpt>,
-}
-
 /// The label a NEXT STEPS row wears. Registry-homed by ordinal like [`verb_word`] — the label SET
 /// is the structure, the words ride `27V:rul-output-form-unwelded`.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -4029,9 +3991,11 @@ struct ChainRender {
     claimant: String,
     outcome: Said,
     /// The ANALYSIS opener, then the speaker rows, then the numberless join restatement
-    /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all).
+    /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all). The rows
+    /// and the restatement are the [`ChainModel`]: what the walk derived, and what this render
+    /// selected out of it.
     analysis_opener: Said,
-    links: Vec<ChainLink>,
+    chain: ChainModel,
     /// Every book line this answer names, in source order — the participating-lines block
     /// (`28E` §8 presence-complete, density-selected).
     ///
@@ -4047,7 +4011,6 @@ struct ChainRender {
     /// (`28G` strawman `b-wide-guarded`). Not our bytes: the oracle author wrote the check and the
     /// admin wrote the command it fronts.
     shipped: Option<String>,
-    join: Option<Said>,
     next_steps: NextSteps,
 }
 
@@ -4096,7 +4059,7 @@ fn survival_chain(
     let backing = render_coord(witness.backing(), interner);
     let outcome = outcome_word(disposition);
     let reported = license.derivation().probe.and_then(|p| p.reported);
-    let mut links = vec![ChainLink {
+    let report = ChainLink {
         tier: SpeechAct::Measured,
         speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
         payload: Said::Value(dorc_plan::fact_label(interner, license.fact())),
@@ -4104,9 +4067,9 @@ fn survival_chain(
         event: reported.map(reported_event),
         explanation: None,
         excerpt: None,
-    }];
-    if license.derivation().establish_vouches.is_empty() {
-        links.push(ChainLink {
+    };
+    let vouches: Vec<ChainLink> = if license.derivation().establish_vouches.is_empty() {
+        vec![ChainLink {
             tier: SpeechAct::Vouched,
             speaker: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
             payload: Said::words("why-vouch-payload-site", &[&backing]),
@@ -4114,7 +4077,7 @@ fn survival_chain(
             event: None,
             explanation: None,
             excerpt: None,
-        });
+        }]
     } else {
         let mut by_speaker: Vec<(Option<String>, Vec<String>)> = Vec::new();
         for receipt in &license.derivation().establish_vouches {
@@ -4125,19 +4088,23 @@ fn survival_chain(
                 None => by_speaker.push((speaker, vec![label])),
             }
         }
-        links.extend(by_speaker.into_iter().map(|(speaker, labels)| ChainLink {
-            tier: SpeechAct::Vouched,
-            speaker,
-            payload: Said::words("why-vouch-payload-establish", &[&brace_selectors(&labels)]),
-            quoted: true,
-            event: None,
-            explanation: None,
-            excerpt: None,
-        }));
-    }
+        by_speaker
+            .into_iter()
+            .map(|(speaker, labels)| ChainLink {
+                tier: SpeechAct::Vouched,
+                speaker,
+                payload: Said::words("why-vouch-payload-establish", &[&brace_selectors(&labels)]),
+                quoted: true,
+                event: None,
+                explanation: None,
+                excerpt: None,
+            })
+            .collect()
+    };
     let mut wall_refs: Vec<String> = Vec::new();
     let mut claimants: Vec<String> = Vec::new();
     let mut leverage: Option<String> = None;
+    let mut claims: Vec<ChainLink> = Vec::new();
     for c in witness.crossings() {
         let provider = interner.resolve(c.provider()).to_owned();
         claimants.push(provider.clone());
@@ -4154,7 +4121,7 @@ fn survival_chain(
             .collect();
         let locus = oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs);
         leverage = leverage.or_else(|| locus.clone());
-        links.push(ChainLink {
+        claims.push(ChainLink {
             tier: SpeechAct::Claimed,
             speaker: locus,
             payload: Said::words("why-claims-payload", &[&provider, &coords.join(" ")]),
@@ -4164,7 +4131,7 @@ fn survival_chain(
             excerpt: oracle_excerpt(c.footprint_span(), oracle_paths, oracle_srcs),
         });
     }
-    links.push(ChainLink {
+    let derivation = ChainLink {
         tier: SpeechAct::Derived,
         speaker: Some(ENGINE_SPEAKER.to_owned()),
         payload: Said::words("why-derives-payload-disjoint", &[&backing]),
@@ -4172,7 +4139,8 @@ fn survival_chain(
         event: None,
         explanation: None,
         excerpt: None,
-    });
+    };
+    let links = survival_row_order(report, vouches, claims, derivation);
 
     let joined_walls = wall_refs.join(", ");
     let unmeasured = links
@@ -4232,15 +4200,38 @@ fn survival_chain(
             ],
         ),
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
-        links,
+        chain: ChainModel::all_selected(
+            links,
+            Some(Said::words("why-analysis-join", &[&joined_walls, &backing])),
+        ),
         participants: Vec::new(),
         shipped: None,
-        join: Some(Said::words("why-analysis-join", &[&joined_walls, &backing])),
         next_steps: NextSteps {
             opener: Said::words("why-next-steps-opener", &[reference]),
             rows,
         },
     })
+}
+
+/// The DEFAULT order of a survival chain's ANALYSIS rows: what was measured, who vouched, whose
+/// at-most claim was spent, and what dorc derived from all of it.
+///
+/// This is a RENDER DEFAULT and nothing more (`28E:lean-ordering-is-a-seam`). The order carries no
+/// semantics — it is not causal, not temporal, and not a ranking — so it lives in ONE named seat
+/// rather than implicitly in the sequence of `push` calls, which is what a later
+/// distrust-ordered-or-otherwise-arranged render would otherwise have to reverse-engineer out of
+/// straight-line code. No ordering machinery: the seat is the affordance.
+fn survival_row_order(
+    report: ChainLink,
+    vouches: Vec<ChainLink>,
+    claims: Vec<ChainLink>,
+    derivation: ChainLink,
+) -> Vec<ChainLink> {
+    let mut links = vec![report];
+    links.extend(vouches);
+    links.extend(claims);
+    links.push(derivation);
+    links
 }
 
 /// Build the HEALTHY-GUARD triptych (`28G` strawmen `b-wide-guarded` and `d-guard-fell-through`):
@@ -4349,10 +4340,12 @@ fn guard_chain(
             ],
         ),
         analysis_opener: Said::words("why-analysis-opener-guarded", &[]),
-        links,
+        chain: ChainModel::all_selected(
+            links,
+            Some(Said::words("why-analysis-join-guarded", &[reference])),
+        ),
         participants: Vec::new(),
         shipped: Some(license.insert().display_line(original)),
-        join: Some(Said::words("why-analysis-join-guarded", &[reference])),
         next_steps: NextSteps {
             opener: Said::words("why-next-steps-opener-guarded", &[]),
             rows,
@@ -4579,13 +4572,15 @@ fn decline_chain(
             ],
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
-        links,
+        chain: ChainModel::all_selected(
+            links,
+            Some(Said::Words(
+                "why-declines-join",
+                class_words("why-declines-join"),
+            )),
+        ),
         participants: Vec::new(),
         shipped: None,
-        join: Some(Said::Words(
-            "why-declines-join",
-            class_words("why-declines-join"),
-        )),
         next_steps: NextSteps {
             opener: Said::Words(
                 "why-declines-next-steps-opener",
@@ -4701,7 +4696,7 @@ fn panel(header: &'static str, body: Vec<Node<Face>>) -> Node<Face> {
 /// verb, and their own words quoted. The rows are adjacent siblings, so weft resolves them as one
 /// table and every payload starts in one column — a `claims` row's covers-unmeasured paragraph and
 /// its `as-written:` excerpt hang below the quote without breaking the run.
-fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
+fn chain_rows(links: &[&ChainLink]) -> Vec<Node<Face>> {
     links
         .iter()
         .map(|link| {
@@ -4878,18 +4873,23 @@ fn step_nodes(steps: &NextSteps) -> Vec<Node<Face>> {
 /// The contrastive OUTCOME, the quoted-speakers ANALYSIS closed by its numberless join
 /// restatement, and the structural NEXT STEPS — which is OMITTED whole when the question has no
 /// next step, the question-relative floor `28G` strawman `e-skipped-quiet` demonstrates.
-fn chain_nodes(chain: &ChainRender) -> Vec<Node<Face>> {
+///
+/// `exhaustive` is the reader's `--all`: the default render shows the model's SELECTED links, and
+/// `--all` shows every link the walk derived, which is what the printed pointer promises
+/// (`ask-all-flag-promises-exhaustive`). Today every walker selects everything, so the two agree —
+/// the flag is wired to the model rather than to a second render path so that stays true.
+fn chain_nodes(chain: &ChainRender, exhaustive: bool) -> Vec<Node<Face>> {
     let mut out = vec![panel(
         "why-outcome-heading",
         vec![paragraph(&chain.outcome, "why-outcome")],
     )];
-    if chain.links.is_empty() {
+    let links = chain.chain.rendered(exhaustive);
+    if links.is_empty() {
         return out;
     }
     let mut analysis = vec![paragraph(&chain.analysis_opener, "why-analysis-opener")];
-    analysis.extend(chain_rows(&chain.links));
-    if chain
-        .links
+    analysis.extend(chain_rows(&links));
+    if links
         .iter()
         .any(|link| link.tier.knowability() == Knowability::CoversUnmeasured)
     {
@@ -4897,7 +4897,8 @@ fn chain_nodes(chain: &ChainRender) -> Vec<Node<Face>> {
     }
     analysis.extend(
         chain
-            .join
+            .chain
+            .conclusion
             .iter()
             .map(|join| paragraph(join, "why-analysis-join")),
     );
@@ -5185,7 +5186,15 @@ fn emit_why_report(
     }
 
     if let Some(addr) = address {
-        emit_why_triptych(addr, &sites, &chains, filename, book_src, &unnarrated);
+        emit_why_triptych(
+            addr,
+            &sites,
+            &chains,
+            filename,
+            book_src,
+            &unnarrated,
+            receipt.deepest_tier,
+        );
     } else {
         emit_why_aggregate(&sites, &chains, filename, first_wall, receipt);
     }
@@ -5207,6 +5216,7 @@ fn emit_why_triptych(
     filename: &str,
     book_src: &str,
     unnarrated: &[String],
+    exhaustive: bool,
 ) {
     let matched: Vec<&WhySite> = match parse_line_address(address) {
         Some(n) if address_names_book(address, filename) => {
@@ -5237,7 +5247,7 @@ fn emit_why_triptych(
             chain.participants.clone()
         };
         nodes.extend(participating_block(&participants, filename, book_src));
-        nodes.extend(chain_nodes(chain));
+        nodes.extend(chain_nodes(chain, exhaustive));
     }
     nodes.extend(
         unnarrated
@@ -5273,21 +5283,22 @@ fn plain_chain(site: &WhySite) -> ChainRender {
             &[&site.reference(), &site.outcome, &site.foil, &because],
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[&site.reference()]),
-        links: rest
-            .iter()
-            .map(|reason| ChainLink {
-                tier: SpeechAct::Derived,
-                speaker: Some(ENGINE_SPEAKER.to_owned()),
-                payload: reason.clone(),
-                quoted: false,
-                event: None,
-                explanation: None,
-                excerpt: None,
-            })
-            .collect(),
+        chain: ChainModel::all_selected(
+            rest.iter()
+                .map(|reason| ChainLink {
+                    tier: SpeechAct::Derived,
+                    speaker: Some(ENGINE_SPEAKER.to_owned()),
+                    payload: reason.clone(),
+                    quoted: false,
+                    event: None,
+                    explanation: None,
+                    excerpt: None,
+                })
+                .collect(),
+            None,
+        ),
         participants: Vec::new(),
         shipped: None,
-        join: None,
         next_steps: NextSteps {
             opener: Said::Value(String::new()),
             rows: Vec::new(),
@@ -9367,18 +9378,20 @@ mod not_ours_bytes_tests {
                 ],
             ),
             analysis_opener: cause_shaped_parts(),
-            links: vec![ChainLink {
-                tier: SpeechAct::Claimed,
-                speaker: Some(hostile_line(0)),
-                payload: Said::Value(hostile_line(1)),
-                quoted: true,
-                event: Some(Said::words("why-chain-event-rc-only", &[&hostile_line(2)])),
-                explanation: Some(Said::foreign(&hostile_line(3), "sweep.oracle.sh")),
-                excerpt: Some(excerpt),
-            }],
+            chain: ChainModel::all_selected(
+                vec![ChainLink {
+                    tier: SpeechAct::Claimed,
+                    speaker: Some(hostile_line(0)),
+                    payload: Said::Value(hostile_line(1)),
+                    quoted: true,
+                    event: Some(Said::words("why-chain-event-rc-only", &[&hostile_line(2)])),
+                    explanation: Some(Said::foreign(&hostile_line(3), "sweep.oracle.sh")),
+                    excerpt: Some(excerpt),
+                }],
+                Some(Said::Value(hostile_line(5))),
+            ),
             participants: vec![2, 3],
             shipped: Some(hostile_line(4)),
-            join: Some(Said::Value(hostile_line(5))),
             next_steps: NextSteps {
                 opener: Said::Value(hostile_line(0)),
                 rows: vec![
@@ -9432,13 +9445,13 @@ mod not_ours_bytes_tests {
             &format!("{SOURCE_MARK}.book.sh"),
             &book,
         ));
-        nodes.extend(chain_nodes(&chain));
+        nodes.extend(chain_nodes(&chain, true));
         nodes.push(aggregate_item(
             &site,
             &format!("{SOURCE_MARK}.book.sh"),
             &[&cause_shaped_parts()],
         ));
-        nodes.extend(chain_nodes(&plain_chain(&site)));
+        nodes.extend(chain_nodes(&plain_chain(&site), false));
         nodes
     }
 
