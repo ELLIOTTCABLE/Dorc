@@ -152,11 +152,17 @@ description = "The WHOLE suite, HUMAN-facing: unit tier + the e2e corpus + the l
 dir = "spike"
 # REMIT: this task optimizes for a human reading a terminal — legibility and context, never
 # brevity. Never add quiet flags here to save an agent tokens; that is the `-quiet` half's job,
-# and the two exist so neither has to compromise. Doctests run FIRST so trailing args land on
-# nextest, which is what `-- <substring>` is for.
+# and the two exist so neither has to compromise.
+#
+# The filter is a `usage` arg rather than mise's trailing-args passthrough, because that only
+# reaches the LAST command — so `mise run test -- <name>` filtered nextest while every doctest
+# still ran. Templating it puts the same filter on both halves.
+# `[filter]`, not `<filter>`: angle brackets mark a REQUIRED arg, which makes a bare
+# `mise run test` fail with "Missing required arg".
+usage = 'arg "[filter]" var=#true help="substring(s) selecting trials; bare runs everything"'
 run = [
-  "cargo test --workspace --doc",
-  "cargo nextest run --workspace",
+  "cargo test --workspace --doc {{ usage.filter | join(sep=' ') }}",
+  "cargo nextest run --workspace {{ usage.filter | join(sep=' ') }}",
 ]
 
 # The gate matrix: {full, quick} x {human, -quiet}. FULL is the acceptance suite — everything,
