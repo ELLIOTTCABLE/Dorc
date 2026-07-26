@@ -1,0 +1,109 @@
+#!/bin/sh
+# commit-msg — enforce the .gitlabels headliner form, and refuse AI trailers.
+#
+# This project marks LLM involvement in the SUBJECT's label block — `(AI fix)`, not a
+# `Co-Authored-By: Claude` / `Claude-Session:` footer. Agents habitually emit the footer
+# anyway (it is baked into their defaults, and prose in CLAUDE.md loses to that), so the
+# rule is mechanical here rather than advisory. `.gitlabels` is the single source of the
+# vocabulary; this script parses it rather than restating it.
+#
+# Installed by `mise run hooks-install`, which sets core.hooksPath. That is one write to
+# the SHARED .git/config, so it is human-gated like `hk-install`. A relative hooksPath
+# resolves against each worktree's own root, so every worktree whose checkout contains
+# this file is covered — and one checked out BEFORE it landed is silently not. That is
+# the known hole; it closes as branches pick the file up.
+set -eu
+
+msg_file=$1
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+labels_file="$here/../.gitlabels"
+
+die() {
+   echo "commit-msg: REFUSED — $1" >&2
+   shift
+   for line in "$@"; do echo "  $line" >&2; done
+   echo "" >&2
+   echo "  (\`git commit --no-verify\` bypasses this; the project says never to.)" >&2
+   exit 1
+}
+
+# Git has not stripped the editor's `#` block yet at commit-msg time, so drop it here.
+body=$(sed '/^#/d' "$msg_file")
+subject=$(printf '%s\n' "$body" | sed '/^[[:space:]]*$/d' | head -n 1)
+
+[ -n "$subject" ] || die "empty commit message."
+
+# ── the trailers ─────────────────────────────────────────────────────────────
+# Matched by IDENTITY, not by the mere presence of a trailer: a human co-author is
+# legitimate and must keep working. The listed identities are the harnesses this repo
+# actually dispatches (see .claude/agents), plus the stock Claude Code footer. Checked
+# even on the generated-message shapes below, which get a pass on everything else.
+if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*co-authored-by:.*(claude|anthropic|codex|gpt-|openai|deepseek|gemini|antigravity|kimi|moonshot|copilot)'; then
+   die "the commit message carries an AI Co-Authored-By trailer." \
+      "This project spells LLM authorship as a HEADLINER label, never a trailer:" \
+      "    (AI fix) Move WrapperIndex onto the hot-path for ..." \
+      "Delete the trailer and put \`AI\` in the subject's label block."
+fi
+
+if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*claude-session:|generated with .*claude code|co-authored-by:.*noreply@anthropic'; then
+   die "the commit message carries a Claude Code footer." \
+      "Session links and generation footers are not recorded in commits here;" \
+      "LLM involvement is spelled \`(AI ...)\` in the subject's label block."
+fi
+
+# Messages git WRITES rather than an author composing them. Holding a generated "Merge
+# branch 'x'" to the label form would break `git merge` outright; the convention is
+# still `(AI merge) …`, it just cannot be extracted from a hook.
+case $subject in
+   "Merge "*|"Revert \""*|"fixup! "*|"squash! "*|"amend! "*) exit 0 ;;
+esac
+
+# ── the headliner ────────────────────────────────────────────────────────────
+case $subject in
+   "("*")"*) ;;
+   *) die "the subject has no \`(labels)\` block." \
+         "Every commit opens with one, e.g. \`(AI fix) Terse imperative phrase\`." \
+         "Vocabulary: .gitlabels" ;;
+esac
+
+claimed=$(printf '%s\n' "$subject" | sed 's/^(\([^)]*\)).*/\1/')
+[ -n "$claimed" ] || die "the subject's label block is empty." "Vocabulary: .gitlabels"
+
+# ── authorship honesty ───────────────────────────────────────────────────────
+# `AI` is mandatory on every AI-created commit (.gitlabels). Agent-authorship is not
+# inferable from the message, but the harness announces itself in the environment, so
+# gate on that. A human committing from inside a session (the `!` prefix) is the one
+# false positive; DORC_HUMAN_COMMIT=1 is their escape.
+if [ -n "${CLAUDECODE:-}${CLAUDE_CODE_ENTRYPOINT:-}" ] && [ -z "${DORC_HUMAN_COMMIT:-}" ]; then
+   case " $claimed " in
+      *" AI "*|*" AIa "*|*" AI-assisted "*) ;;
+      *) die "committed from an agent session without an \`AI\` label." \
+            "\`AI\` is mandatory on every AI-created commit; \`AIa\` if a human massaged it." \
+            "Human committing from inside a session: DORC_HUMAN_COMMIT=1 git commit ..." ;;
+   esac
+fi
+
+# ── the vocabulary ───────────────────────────────────────────────────────────
+# ADVISORY, deliberately. Backtested over 1877 commits, ~12% carry a label absent from
+# .gitlabels — mostly crate names (`aid` 122x, `cli`, `loom`), exactly the "don't dupe
+# crates" stray the file warns against, and still live in recent history. Blocking on
+# day one would refuse the project's own current idiom. Promote this to `die` once
+# .gitlabels and the history have been reconciled — either is a fine way to reconcile.
+if [ -f "$labels_file" ]; then
+   # Every `- (a b c) description` entry, each parenthesised word an alias. Collection
+   # STOPS at the Historical section, whose entries are strays documented as do-not-use.
+   known=$(awk '
+      /^#+[[:space:]]*##[[:space:]]*Historical/ { exit }
+      /^[[:space:]]*-[[:space:]]*\(/ {
+         line = $0
+         sub(/^[^(]*\(/, "", line)
+         sub(/\).*$/, "", line)
+         print line
+      }
+   ' "$labels_file" | tr ' ' '\n' | sed '/^$/d' | sort -u)
+   for label in $claimed; do
+      printf '%s\n' "$known" | grep -qx -- "$label" && continue
+      echo "commit-msg: WARN — \`$label\` is not a .gitlabels label (allowed, for now)." >&2
+      echo "  Prefer a cross-cutting label over a crate/file name. Vocabulary: .gitlabels" >&2
+   done
+fi
