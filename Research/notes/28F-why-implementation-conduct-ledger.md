@@ -58,6 +58,23 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   note. The tier-ORDERING question is open in-chat (the set is kinds, not a
   monotonic scale; code `Ord` is mechanical map-key determinism only; semantic
   ordering stays the `28E:lean-ordering-is-a-seam` seam).
+- **lane-speechact-rename LANDED + FOLDED** @ merge `268b6c36` (5 commits;
+  own-hand workspace tests green post-merge). Better than briefed: the
+  cli-local hand-stamped `RowRank` field is DELETED — `ChainLink` carries
+  `tier: SpeechAct` only and both consumers derive via
+  `SpeechAct::knowability()` (kind-constant over all 12 as-built sites:
+  Measured/Vouched/Derived→Witnessed; Ran/Claimed/Declined→CoversUnmeasured;
+  no consumer disagreement found). Zero transcript churn confirmed.
+  spike/CLAUDE.md's spellings list was 6 — `declined` added (7) + the
+  SpeechAct/Knowability pointer; law slugs untouched.
+  **OPEN JUDGMENT, awaiting first render**: `Consented` has no as-built
+  chain render; its `Knowability::Witnessed` assignment is BY ANALOGY with
+  Derived (engine's closed-world decisions), documented as judgment-not-fact
+  in the method doc — a real ruling is owed when a consent row first renders.
+- **W3 EXECUTE GO issued** (same builder resumed, CP-D pattern; merges
+  mainline `268b6c36` first; step 11 flag-rename SKIPPED pending the human's
+  ack; drifted-wording walk + desync redesign + retention + default-on all
+  explicitly excluded as r30).
 - **lane-w3-fold MAP LANDED + FOLDED** @ `16cdfb1e` (`_w3-map-DRAFT.md`;
   read-only, stopped at checkpoint as briefed). Bottom line ACCEPTED as ruled
   below: **OPT-IN FOLD, with the whole hardening bill landed anyway** — the
