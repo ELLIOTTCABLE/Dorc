@@ -466,13 +466,18 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   (node only; data arrives from lane-w2-data). Runs parallel with lane-w2-data
   (zero-churn guarantee keeps them disjoint on transcripts).
 
-## §3 — macOS verification round (human-offered 2026-07-26; NON-blocking)
+## §3 — unix verification leg (WSL-first; SELF-SERVE; macOS optional)
 
-The human can dispatch a macOS round at leisure. Genuine need: W3's unix
-restrictive-mode work is `#[cfg(unix)]` — neither type-checked nor executed by
-any gate on this Windows box (a known incident class). Plan: the W3 builder
-keeps cfg-gated regions trivially thin and LISTS them all, marked unverified;
-at the W3 fold the conductor prepares a self-contained macOS packet (checkout ·
-mise · full gate suite · the listed unix-path tests to watch) banked HERE for
-whenever the human runs it. Findings become riders; nothing in the pipeline
-waits on it.
+Need: W3's `#[cfg(unix)]` work is neither type-checked nor executed by the
+Windows gates (known incident class). RESOLVED WSL-first (human-confirmed
+2026-07-26): mise lives in WSL (`~/.local/bin/mise`, segregated namespace,
+same workflow, same dirs) and `mise exec -- cargo` works from
+`/mnt/c/...`/spike — probe-verified (cargo 1.96.0). At the W3 fold the
+conductor RUNS the unix leg directly:
+`wsl.exe -e sh -c 'export PATH="$HOME/.local/bin:$PATH"; cd /mnt/c/Users/ec/Sync/Code/Dorc/.claude/worktrees/r28-unify/spike && CARGO_TARGET_DIR="$HOME/.cache/dorc-wsl-target" mise exec -- cargo test --workspace'`
+— CARGO_TARGET_DIR stays WSL-local (native Linux and Windows builds sharing
+one target/ clobber each other). drvfs caveat honored: perms-asserting tests
+exercise std temp dirs (= /tmp, real Linux fs), not /mnt/c. The builder's
+cfg-region list is the watch-list. macOS round: OPTIONAL taste, no packet
+owed. The W3 builder keeps cfg-gated regions trivially thin and lists them,
+marked unverified-on-Windows.
