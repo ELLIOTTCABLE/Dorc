@@ -178,8 +178,10 @@ pub fn classify_prose_changes(
                      committed (with its transcript as authored) before its prose can be promoted"
                 ),
                 _ => format!(
-                    "selected case {path} is staged or otherwise not a plain worktree edit; \
-                     promote accepts an unstaged transcript edit against HEAD and nothing else"
+                    "selected case {path} is in git state `{code}`; dorc-loom reads a prose edit \
+                     as the difference between HEAD and your worktree, so a selected case must be \
+                     an unstaged worktree edit (` M`) and nothing else",
+                    code = String::from_utf8_lossy(&status.code)
                 ),
             });
         }
@@ -223,6 +225,9 @@ struct StatusEntry {
     source: Option<String>,
     index: IndexStatus,
     worktree: WorktreeStatus,
+    /// The raw `XY` pair, retained so a refusal can name the state the author is actually in
+    /// rather than the one class it expected.
+    code: [u8; 2],
 }
 
 impl StatusEntry {
@@ -294,6 +299,7 @@ fn parse_porcelain(bytes: &[u8]) -> Result<Vec<StatusEntry>, String> {
             source,
             index: index_status,
             worktree: worktree_status,
+            code: [*x, *y],
         });
         index = index.saturating_add(1);
     }
@@ -510,6 +516,26 @@ mod tests {
             .expect_err("an untracked case is unpromotable");
         assert!(error.contains("not committed"), "{error}");
         assert!(!error.contains("outside selected prose edits"), "{error}");
+    }
+
+    /// This gate is shared by `compile` and `promote`, so a refusal phrased around `promote` names
+    /// a command the author may not have run. It has the observed `XY` pair in hand and must say
+    /// which state it found, since every refused state has a different way out.
+    #[test]
+    fn a_refused_git_state_is_named_and_no_verb_is_blamed() {
+        let head = case(
+            "code: one\n",
+            "",
+            "book",
+            "dorc plan --book=book.sh",
+            "old prose\n",
+        );
+        let current = head.replace("old prose", "new prose");
+        let repository = repository(head, current, format!("MM {CASE}\0").as_bytes());
+        let error = classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG)
+            .expect_err("a half-staged case holds a third version");
+        assert!(error.contains("`MM`"), "{error}");
+        assert!(!error.contains("promote"), "{error}");
     }
 
     #[test]
