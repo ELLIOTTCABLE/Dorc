@@ -1,4 +1,8 @@
-# 28F — the firefight/explanation tier, graded for risk
+# 28H — the firefight/explanation tier, graded for risk
+
+> Renamed from `28F` on 2026-07-26: the ordinary lane minted `notes/28F` (the why-surface
+> implementation conduct ledger) for the same number, and that one is cited far more widely
+> — including as `28F:rul-*` rulings. This document moved because it was the cheaper side.
 
 Written by the security conductor 2026-07-25, which sits OUTSIDE the Fable firewall and
 may read every quarantined document directly. Quarantined because its reasoning cites

@@ -245,7 +245,7 @@ Build constraints from the `opaque-approve` seat
 
 > Ordinary-engineering export, appended 2026-07-25 by the out-of-band lane that minted
 > the letters above. The reasoning is not reproduced here and is not available to
-> out-quarantine readers (it lives at `Research/quarantine-DO-NOT-READ/28F`). Do not
+> out-quarantine readers (it lives at `Research/quarantine-DO-NOT-READ/28H`). Do not
 > attempt to reconstruct it, and do not read its absence as an absence of grounds. The
 > letters plus these constraints are the whole export; a `C` is a scoping instruction,
 > not a position to argue with.
@@ -335,7 +335,7 @@ Limitations, as constraints:
   Any change giving aid output a path back into a license input is a design event owed to
   the opaque-review lane, however ordinary the feature sounds.
 
-Two adjacent entries, graded in `28F` but absent from the list above:
+Two adjacent entries, graded in `28H` but absent from the list above:
 `28E:ask-cell-human-description` MUST first answer whether a `__describe`-shaped member
 EXECUTES on the host — a new probe-time execution surface inheriting the read-only
 contract, the report-lane rules and the encoding obligation — or is read statically from
