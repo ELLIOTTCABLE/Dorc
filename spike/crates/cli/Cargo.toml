@@ -60,6 +60,10 @@ anstyle = "=1.0.10"
 # rather than pulling a second major (`cargo deny check bans`).
 [dev-dependencies]
 libtest-mimic = "=0.8.1"
+# The repo's cross-platform tooling crate (NOT product code). The corpus needs a POSIX
+# shell to `-n` and execute rendered artifacts; this is the one place that answers where
+# one is, shared with the mise tasks so they cannot drift apart.
+internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
 # The loom runner replays each case through the SAME production consumer the loom
 # toolchain uses. `dorc-loom` deps this crate's internal lib seam
 # (`289:rul-worldless-route-honest-trigger`), so this edge is a dev-only cycle — cargo

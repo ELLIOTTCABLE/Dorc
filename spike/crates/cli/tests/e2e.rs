@@ -141,26 +141,10 @@ fn sort_lines(value: &str) -> String {
     lines.join("\n")
 }
 
-/// Resolve `name` on `PATH`, honouring the platform's executable extensions.
-fn which(name: &str) -> Option<PathBuf> {
-    let path = std::env::var_os("PATH")?;
-    let exts: Vec<String> = std::env::var("PATHEXT")
-        .map(|raw| raw.split(';').map(str::to_ascii_lowercase).collect())
-        .unwrap_or_default();
-    for dir in std::env::split_paths(&path) {
-        let bare = dir.join(name);
-        if bare.is_file() {
-            return Some(bare);
-        }
-        for ext in &exts {
-            let with_ext = dir.join(format!("{name}{ext}"));
-            if with_ext.is_file() {
-                return Some(with_ext);
-            }
-        }
-    }
-    None
-}
+/// PATH lookup and POSIX-shell discovery live in `internal-tooling`, the repo's
+/// cross-platform tooling crate, so this runner and the mise tasks answer "where is a
+/// shell" identically. Native Windows has none on PATH; that crate derives one from git.
+use internal_tooling::{Posix, which};
 
 // ---------------------------------------------------------------------------
 // the harness's shared, immutable context
@@ -198,16 +182,31 @@ impl Drop for Harness {
 
 impl Harness {
     /// Resolve the harness context, aborting loudly when the `-n` gate has no shell.
+    ///
+    /// A shell is a HARD dependency of this corpus, not a convenience: Dorc's product is
+    /// sh, and these gates syntax-check and then execute rendered artifacts. Saying so in
+    /// the refusal matters — the bare "no POSIX shell" this used to print read as a
+    /// missing nicety, and every "Windows green" before 2026-07-26 was really git-bash
+    /// silently supplying one.
     fn resolve() -> Self {
-        let (checker_name, checker) = ["dash", "sh"]
-            .iter()
-            .find_map(|name| which(name).map(|path| ((*name).to_owned(), path)))
-            .unwrap_or_else(|| {
-                eprintln!(
-                    "no POSIX shell (dash/sh) for the ap-2 syntax gate — cannot validate runnability"
-                );
-                std::process::exit(2);
-            });
+        let posix = Posix::find().unwrap_or_else(|why| {
+            eprintln!(
+                "e2e: no POSIX shell for the -n gate, so runnability cannot be validated — {why}.\n\
+                 This corpus executes the sh it renders; a shell is a dependency, not a nicety.\n\
+                 Windows takes it from git's own userland (no PATH setup needed); elsewhere,\n\
+                 put dash or sh on PATH."
+            );
+            std::process::exit(2);
+        });
+        // `sh` on Windows is git's bash-in-sh-mode, which accepts `[[ ]]`/`<<<` and the
+        // rest the dialect floor bans — a weaker check, so say which one ran.
+        if posix.name != "dash" {
+            eprintln!(
+                "e2e: -n gate running under {} (not dash: a weaker dialect check)",
+                posix.name
+            );
+        }
+        let (checker_name, checker) = (posix.name.to_owned(), posix.shell);
         let state_root =
             std::env::temp_dir().join(format!("dorc-e2e-state-{}", std::process::id()));
         std::fs::create_dir_all(&state_root).expect("create the harness state root");
@@ -2623,9 +2622,12 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
         "#!/usr/bin/env dorc-sh\n# dorc-lang/v0.2\nsmoke__predict() {\n   pkg : sm.dorc.Package = \"$1\"\n   printf 'dorc-sh-smoke ran: %s\\n' \"$pkg\"\n}\nsmoke__predict nginx\n",
     )
     .expect("write smoke script");
-    let sh_dir = which("sh")
-        .and_then(|path| path.parent().map(Path::to_path_buf))
-        .unwrap_or_else(|| PathBuf::from("/bin"));
+    // The harness's own resolved shell, not a fresh PATH search: on Windows there is
+    // nothing named `sh` on PATH to find.
+    let sh_dir = harness
+        .checker
+        .parent()
+        .map_or_else(|| PathBuf::from("/bin"), Path::to_path_buf);
     let out = capture(
         Command::new(&harness.dorc_sh)
             .current_dir(&scratch.path)
