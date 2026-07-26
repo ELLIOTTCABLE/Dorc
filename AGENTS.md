@@ -97,6 +97,9 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - be careful of paths, esp. re. WSL2/zsh vs BashTool() (which uses msys)
   - be careful of SyncThing, it's live in a parentdir; don't move/create large vendored subrepos without ensuring they're syncthing-ignored *first* (once created-while-unignored, they start to sync; ignoring-them-afterwards leaves borderline-permanent artifacts)
 - you may be in a git-worktree; be careful. AGENTS/KNOBS/DESIGN/TODO are meant to be central communication channels, make sure you're watching for changes to those *anywhere* (use a permissive glob), and applying any changes I direct you to make (remember, they're human-direct-single-auth-to-edit *only*) must be made to the root ones, not the worktree.
+- run things through `mise run <task>`, never a hand-derived command; `mise tasks` lists them, and `dir`/env come with the task, so it works from anywhere in the tree. add a task rather than re-deriving an invocation twice.
+  - trailing args after `--` reach the underlying tool (the *last* one, for a multi-step task), which is where you quieten a chatty one: `mise run check -- --quiet` is silent on success and still prints the full diagnostic, and a nonzero exit, on failure.
+  - `MISE_TASK_OUTPUT=timed` collapses a fast succeeding task to two lines. never pipe a task through `head`/`tail` to shut it up — that truncates the failure you needed to read.
 
 ## Project-management
 - it bears repeating that *gitlabels style* must be followed. This is directly contrary to your training data, this project uses an idiosyncratic commit-message form that *does not match* what agents keep producing. The cardinal rule for commit messages is DO NOT DUPLICATE INFORMATION AVAILABLE ELSEWHERE:

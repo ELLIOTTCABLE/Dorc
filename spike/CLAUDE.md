@@ -827,15 +827,18 @@ no task covers, and consider adding the task instead.
   differing `dir`s. `sh <script>` is the sanctioned exception (identical spelling under
   both shells; on Windows it resolves to Git's `sh.exe`).
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
-- Pre-commit gate set (nothing runs automatically — there is NO git hook; run it
-  yourself before every commit; never `--no-verify`): `mise run check` covers all four
-  — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check licenses bans
-  sources` · `typos`. `mise run gate` adds the fresh build and the whole suite. The
-  task runs the four DIRECTLY rather than via `hk`, because hk's bundled libgit2
-  rejects this repo's `extensions.relativeWorktrees` and cannot open it at all — so
-  the `hk.pkl` hook could not run even if it were installed (`check:hk` keeps the
-  path named for whenever that is fixed). `hk.pkl` and the task are two spellings of
-  one gate; change both together.
+- Pre-commit gate set — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check
+  licenses bans sources` · `typos`. Agent shells carry `HK_SKIP_HOOK=pre-commit`, so it
+  does NOT run automatically on you: run `mise run check` yourself before every commit,
+  or `mise run gate` for that plus a fresh build and the whole suite. Never `--no-verify`.
+- **hk-drives-the-hooks** — `hk.pkl` is the one home for every hook step; `mise run
+  check`/`fmt` are thin wrappers over `hk check`/`hk fix --all`, so no step is spelled
+  twice. `mise run hk-install` is human-gated (it writes the shared `.git/config`).
+- **commit-msg-gate-is-mechanical** — hk's `commit-msg` step REFUSES a message carrying an
+  AI `Co-Authored-By` / `Claude-Session:` / generation footer, and refuses an agent-session
+  commit whose label block omits `AI`. Authorship is spelled in the `.gitlabels` HEADLINER,
+  never a trailer. `mise run test:hooks` self-tests it; a human committing from inside a
+  session uses `DORC_HUMAN_COMMIT=1`.
 - Before trusting e2e results, force a fresh `mise run build`; run the
   final e2e FOREGROUND with a generous timeout.
 - **BLESS is EXCLUSIVE** — `BLESS=1 cargo test -p dorc-cli --test e2e` (wrapped as
