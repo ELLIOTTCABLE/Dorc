@@ -165,9 +165,14 @@ dir = "spike"
 run = "cargo run --quiet -p dorc-loom -- compile --quiet"
 
 [tasks."loom:promote"]
-description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise."
+description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases, and word-diff what it wrote. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise. Nothing is staged or committed: the diff is yours to review and revert."
 dir = "spike"
-run = "cargo run --quiet -p dorc-loom -- promote"
+# `282` §6, "the review surface is the git diff" — promote requires a tree clean outside the
+# selected cases, so an unscoped diff afterwards IS the publication and nothing else.
+run = [
+  "cargo run --quiet -p dorc-loom -- promote --quiet",
+  "git --no-pager diff --word-diff",
+]
 
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table."
