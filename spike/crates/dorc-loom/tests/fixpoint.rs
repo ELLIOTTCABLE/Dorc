@@ -79,6 +79,43 @@ fn generated_arrangement_lock_reproduces_the_committed_bytes() {
     );
 }
 
+/// The static half of the arity net (`aid::arrangement`'s debug assertion is the dynamic half):
+/// no committed transcript may show `[unwritten: <slug>]` for an arrangement row that HAS words.
+/// That combination is only reachable by degradation — a row whose word count stopped matching its
+/// seat — and re-blessing bakes it in quietly, since the placeholder re-renders as a fixpoint.
+#[test]
+fn no_committed_transcript_shows_a_written_arrangement_as_unwritten() {
+    let written: std::collections::BTreeSet<&str> = dorc_aid::arrangement::ARRANGEMENTS
+        .iter()
+        .filter(|entry| entry.words.words().is_some())
+        .map(|entry| entry.slug)
+        .collect();
+    let mut degraded = Vec::new();
+    let mut scanned = 0usize;
+    for entry in std::fs::read_dir(corpus_dir()).expect("read corpus dir") {
+        let path = entry.expect("corpus entry").path();
+        if path.extension().is_none_or(|extension| extension != "loom") {
+            continue;
+        }
+        scanned = scanned.saturating_add(1);
+        let text = std::fs::read_to_string(&path).expect("read case");
+        for slug in &written {
+            if text.contains(&format!("[unwritten: {slug}]")) {
+                degraded.push(format!("{}: {slug}", path.display()));
+            }
+        }
+    }
+    assert!(
+        scanned > 0,
+        "no cases scanned — the gate would pass vacuously"
+    );
+    assert!(
+        degraded.is_empty(),
+        "a written arrangement row renders as unwritten — its word count no longer serves its \
+         seat: {degraded:?}"
+    );
+}
+
 /// A WORLD-AS-PAYLOAD case — one whose replay is `dorc plan --book=book.sh` with no materialized
 /// `book.sh` — must reach the driver's editable route, exactly as `render_case` already does. When
 /// the driver declined these, `compile`/`promote` saw bytes-only results, so their prose was

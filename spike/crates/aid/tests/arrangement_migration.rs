@@ -92,12 +92,12 @@ fn the_remediation_hints_are_byte_identical() {
     );
 }
 
-/// An arity slip renders the greppable placeholder rather than a mangled line — the property that
-/// makes a mis-wired seat loud instead of subtly wrong.
+/// An arity slip against a REAL registry row is loud, and says which row and by how much. (The
+/// release-build behaviour it replaces — degrading to `[unwritten: lint-summary-sentence]` — is
+/// still what a shipped binary does; what changed is that no test run can pass through one
+/// silently.)
 #[test]
-fn a_seat_that_disagrees_with_its_entry_renders_unwritten() {
-    assert_eq!(
-        rendered("lint-summary-sentence", &["4"]),
-        "[unwritten: lint-summary-sentence]"
-    );
+#[should_panic(expected = "arrangement `lint-summary-sentence`")]
+fn a_seat_that_disagrees_with_its_entry_is_loud() {
+    let _ = rendered("lint-summary-sentence", &["4"]);
 }
