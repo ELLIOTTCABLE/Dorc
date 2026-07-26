@@ -304,6 +304,49 @@ pub struct Derivation {
     pub vouch_span: Option<(dorc_core::Span, OracleFileId)>,
     /// Ordered attribution for every establish erased by an aggregate replacement.
     pub establish_vouches: Vec<EstablishVouchReceipt>,
+    /// The REPORTED half of the chain, beside `vouch_span`'s VOUCHED half: which record measured
+    /// this license's fact, when, with what tool-rc, and which funcdef reported it
+    /// ([`ProbeAttribution`]). Attached post-mint by `build_plan`, exactly like `witness` —
+    /// output-only provenance the erasability gate exempts. `None` for a license minted without a
+    /// probe-attribution map (the tests' throwaway path, the flag-off/kill-unaware entry).
+    pub probe: Option<ProbeAttribution>,
+}
+
+/// Decision-inert attribution for the ONE probe record that reported a licensing fact — everything
+/// a why-chain's REPORTED row states beyond the payload: who reported it, when, and what the tool
+/// exited with (`27V` Lane A · `AID-NEEDS:law-trust-tier-is-syntax`).
+///
+/// `Some` only when EXACTLY ONE record measured the fact. Two records are two events with no single
+/// speaker, instant, or rc, so the honest answer is absence rather than a silent first-wins pick;
+/// the joined [`dorc_core::ProvId`] on [`ProbeAttribution`] still carries both as receipts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReportedObservation {
+    /// The record's arrival ordinal + the instant the controller observed it (`None` with no clock).
+    pub stamp: dorc_core::ProbeStamp,
+    /// The tool-rc the record carried. Raw carriage, NEVER a decision input: an Establish site's
+    /// rc is the PROBE command's, not the mutator's (`ProbeSiteKind`'s firewall), and the fold
+    /// already decided separately whether it was admissible.
+    pub tool_rc: Rc,
+    /// The defining span (+ oracle file) of the funcdef whose body produced this observation —
+    /// `ProbePredict::defining_span` carried through. `None` when the shipped body had no single
+    /// defining funcdef (entry-composed, connected pipes).
+    pub predict_span: Option<(dorc_core::Span, OracleFileId)>,
+}
+
+/// The probe-side provenance for one fact: its receipt origin plus, when a single record reported
+/// it, that record's [`ReportedObservation`]. Built at the cli edge (where the arena and the
+/// records live) and handed to [`build_plan_walled`], which attaches it to a licensing
+/// disposition's [`Derivation`] AFTER the mint.
+///
+/// THE WELD: pure OUTPUT provenance. Both halves are EXEMPT from the erasability identity plane —
+/// `origin` under `Exempt::ReceiptId`, the observation's instant under `Exempt::Timing` — so a
+/// decision can never read either.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProbeAttribution {
+    /// The `ProbeResult` origin receipt (a join, when several records measured the fact).
+    pub origin: dorc_core::ProvId,
+    /// The single reporting record's observation, when exactly one record reported this fact.
+    pub reported: Option<ReportedObservation>,
 }
 
 /// Decision-inert attribution retained after an aggregate mutation-erasure mint.
@@ -506,6 +549,7 @@ impl ReplaceLicense {
                         survival: None,
                         vouch_span,
                         establish_vouches: Vec::new(),
+                        probe: None,
                     },
                 })
             }
@@ -566,6 +610,7 @@ impl ReplaceLicense {
                 survival: None,
                 vouch_span: None, // Query/loop/call elisions consume no vouch ⇒ no locus
                 establish_vouches: Vec::new(),
+                probe: None,
             },
         })
     }
@@ -627,6 +672,7 @@ impl ReplaceLicense {
                 survival: None,
                 vouch_span: None,
                 establish_vouches,
+                probe: None,
             },
         })
     }
@@ -715,6 +761,7 @@ impl ReplaceLicense {
                 survival: None,
                 vouch_span: None,
                 establish_vouches,
+                probe: None,
             },
         })
     }
@@ -735,6 +782,7 @@ impl ReplaceLicense {
                 survival: None,
                 vouch_span: None,
                 establish_vouches: Vec::new(),
+                probe: None,
             },
         })
     }
@@ -757,6 +805,15 @@ impl ReplaceLicense {
     #[must_use]
     pub fn with_survival(mut self, witness: SurvivalWitness) -> Self {
         self.derivation.survival = Some(witness);
+        self
+    }
+
+    /// Attach the probe-side attribution post-mint (`27V` Lane A) — who reported the licensing
+    /// fact, when, and with what tool-rc. Same posture as [`with_witness`](Self::with_witness):
+    /// set AFTER the decision, read only by the why render, exempt from the identity plane.
+    #[must_use]
+    pub fn with_probe_attribution(mut self, attribution: Option<ProbeAttribution>) -> Self {
+        self.derivation.probe = attribution;
         self
     }
 
@@ -1525,10 +1582,21 @@ pub struct Plan {
 /// mints a guard until the Stage-3 guard tier — the field exists now so the summary's
 /// grammar is stable across that build (a parse target must not gain a column mid-round).
 /// `sites == elide + omit + guard + run` by construction.
+///
+/// `elide` additionally SPLITS by what the skip rested on — the distinction a receipt header owes
+/// its reader, since the two carry different risk: an `elide_by_proof` skip stands on a probed
+/// fact, while an `elide_by_trusted_claim` skip was kept past a RUNNING wall on an author's at-most
+/// claim under the consent flag (the design's one naked-trust cell — `survive-license`). Derived
+/// from the survival witness the wall walk already attached, so it needs no new decision input.
+/// `elide == elide_by_proof + elide_by_trusted_claim` by construction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DispositionCounts {
     pub sites: usize,
     pub elide: usize,
+    /// Elisions resting on a probed fact alone (no wall crossed).
+    pub elide_by_proof: usize,
+    /// Elisions kept past ≥1 running wall on an at-most claim, under the consent flag.
+    pub elide_by_trusted_claim: usize,
     pub omit: usize,
     pub guard: usize,
     pub run: usize,
@@ -1569,6 +1637,54 @@ pub enum ProbeSiteKind {
     /// `!valid` an upstream mutator/opaque made the resting rc stale ⇒ the caller
     /// withholds it (status ⇒ ⊤) and the guard runs for real.
     Query { valid: bool },
+}
+
+/// One oracle body a ship seam resolved for a probe site, together with the DEFINING span of the
+/// funcdef it was sliced out of (`27V:mech-minting-line-threading`, extended past vouches).
+///
+/// The span is the `file:line` a why-chain's REPORTED row points at — the answer to "who reported
+/// this?" beyond a bare `<provider>__predict` funcname. It is file-qualified for the same reason a
+/// vouch span is: a bare [`dorc_core::Span`] is ambiguous once more than one oracle is loaded
+/// (`law-lineno-identity`). `None` is a legitimate answer and is never filled in by guessing —
+/// an entry-composed or connected-pipe body has no single defining funcdef to point at.
+///
+/// Decision-inert: `defining_span` is display provenance only (the erasability gate exempts it),
+/// while `sh`/`emits_report` remain probe-artifact identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShippedCheck {
+    /// The stripped funcdef the site ships (strip-only — `271:rul-only-oracle-bytes-ship`).
+    pub sh: String,
+    /// The funcdef's defining span + which loaded oracle it indexes into; `None` when unthreaded.
+    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    /// `27W` §3 tier-3: the shipped body emits report-lane lines. Only the auto-cell verdict seam
+    /// ever sets this (a `__predict` model never emits reports).
+    pub emits_report: bool,
+}
+
+impl ShippedCheck {
+    /// A `<provider>__predict` body — never report-emitting (`27W` §3 scopes tier-3 to auto-cell).
+    #[must_use]
+    pub fn predict(sh: String, defining_span: Option<(dorc_core::Span, OracleFileId)>) -> Self {
+        Self {
+            sh,
+            defining_span,
+            emits_report: false,
+        }
+    }
+
+    /// A `24L` §2 auto-cell `<provider>__is_converged` body, which may emit report-lane lines.
+    #[must_use]
+    pub fn verdict(
+        sh: String,
+        defining_span: Option<(dorc_core::Span, OracleFileId)>,
+        emits_report: bool,
+    ) -> Self {
+        Self {
+            sh,
+            defining_span,
+            emits_report,
+        }
+    }
 }
 
 /// One read-only check the probe ships for a **command site**: the oracle's own
@@ -1640,6 +1756,13 @@ pub struct ProbePredict {
     /// composition). `fact` carries the composed [`Context`], so the record re-keys the context-
     /// qualified verdict exactly. `None` ⇒ the ordinary (ambient) shape.
     pub entry: Option<EntryComposed>,
+    /// The DEFINING span (+ oracle file) of the funcdef whose body this site ships
+    /// (`27V:mech-minting-line-threading`) — what a why-chain's REPORTED row names as its speaker,
+    /// in place of the reconstructed `<provider>__predict` funcname. Decision-inert display
+    /// provenance: the erasability gate exempts it, so two plans differing only here digest
+    /// identically. `None` for a body with no single defining funcdef (entry-composed, connected
+    /// pipes) — absence is typed, never guessed.
+    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
     /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
     /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
     /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
@@ -2546,8 +2669,8 @@ pub fn compile_probe(
     classes: &[(CfgNodeId, SkipClass)],
     wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
-    ship_body: impl Fn(Symbol, &[Symbol]) -> Option<String>,
-    ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<(String, bool)>,
+    ship_body: impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<ShippedCheck>,
     is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
     let mut checks = Vec::new();
@@ -2581,6 +2704,7 @@ pub fn compile_probe(
                         provider: *provider,
                         argv: Vec::new(),
                         sh: String::new(),
+                        defining_span: None,
                         connected: None,
                         verdict: false,
                         emits_report: false,
@@ -2689,6 +2813,7 @@ pub fn compile_probe(
                     provider: *provider,
                     argv: Vec::new(),
                     sh: String::new(),
+                    defining_span: None,
                     connected: Some(composed.clone()),
                     verdict: false,
                     emits_report: false,
@@ -2710,7 +2835,7 @@ pub fn compile_probe(
         // (`guard23-refusepath-rc0-never-passes`: a declined verdict never licenses, and never probes).
         if matches!(site_kind, ProbeSiteKind::Establish)
             && is_vouched(node)
-            && let Some((provider, argv, sh, emits_report)) =
+            && let Some((provider, argv, shipped)) =
                 ship_auto_for_argv(&value.argv_values(node), fact, &ship_auto)
         {
             checks.push(ProbePredict {
@@ -2720,11 +2845,12 @@ pub fn compile_probe(
                 site_kind,
                 provider,
                 argv,
-                sh,
+                sh: shipped.sh,
+                defining_span: shipped.defining_span,
                 connected: None,
                 verdict: true,
                 entry: None,
-                emits_report,
+                emits_report: shipped.emits_report,
             });
             continue;
         }
@@ -2732,14 +2858,15 @@ pub fn compile_probe(
         // operand, or no check resolving this argv, ⇒ un-shippable (no concrete invocation ⇒
         // `can't-probe ⇒ can't-elide`, `kFAIL-perform`).
         match ship_for_argv(&value.argv_values(node), &ship_body) {
-            Some((provider, argv, sh)) => checks.push(ProbePredict {
+            Some((provider, argv, shipped)) => checks.push(ProbePredict {
                 site,
                 member: None,
                 fact,
                 site_kind,
                 provider,
                 argv,
-                sh,
+                sh: shipped.sh,
+                defining_span: shipped.defining_span,
                 connected: None,
                 verdict: false,
                 emits_report: false,
@@ -2769,28 +2896,26 @@ pub fn compile_probe(
 fn ship_auto_for_argv(
     argv: &[ValueOf],
     fact: FactKey,
-    ship_auto: &impl Fn(FactKey, Symbol, &[Symbol]) -> Option<(String, bool)>,
-) -> Option<(Symbol, Vec<Symbol>, String, bool)> {
-    let (first, rest) = argv.split_first()?;
-    let &ValueOf::Literal(provider) = first else {
-        return None;
-    };
-    let mut operands = Vec::with_capacity(rest.len());
-    for w in rest {
-        let &ValueOf::Literal(s) = w else {
-            return None;
-        };
-        operands.push(s);
-    }
-    // `27W` §3 C4: the auto-cell closure returns (verdict body, emits-report) — the only site that can.
-    let (sh, emits_report) = ship_auto(fact, provider, &operands)?;
-    Some((provider, operands, sh, emits_report))
+    ship_auto: &impl Fn(FactKey, Symbol, &[Symbol]) -> Option<ShippedCheck>,
+) -> Option<(Symbol, Vec<Symbol>, ShippedCheck)> {
+    let (provider, operands) = literal_invocation(argv)?;
+    let shipped = ship_auto(fact, provider, &operands)?;
+    Some((provider, operands, shipped))
 }
 
 fn ship_for_argv(
     argv: &[ValueOf],
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<String>,
-) -> Option<(Symbol, Vec<Symbol>, String)> {
+    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+) -> Option<(Symbol, Vec<Symbol>, ShippedCheck)> {
+    let (provider, operands) = literal_invocation(argv)?;
+    let shipped = ship_body(provider, &operands)?;
+    Some((provider, operands, shipped))
+}
+
+/// The concrete `(provider-word, operands)` invocation a site ships, or `None` when any word is ⊤
+/// (a cmdsub/dynamic provider or operand) ⇒ no concrete invocation ⇒ un-shippable ⇒ un-elidable
+/// (`kFAIL-perform`).
+fn literal_invocation(argv: &[ValueOf]) -> Option<(Symbol, Vec<Symbol>)> {
     let (first, rest) = argv.split_first()?;
     let &ValueOf::Literal(provider) = first else {
         return None;
@@ -2802,8 +2927,7 @@ fn ship_for_argv(
         };
         operands.push(s);
     }
-    let sh = ship_body(provider, &operands)?;
-    Some((provider, operands, sh))
+    Some((provider, operands))
 }
 
 /// Compile the per-member checks for an in-loop MEMBERS establish site (item-4): one
@@ -2819,7 +2943,7 @@ fn push_member_predicts(
     node: CfgNodeId,
     members: &[FactKey],
     value: &ValueFlow,
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<String>,
+    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) {
     // R3: the per-member argvs (aligned with `members`, list order, dups kept —
     // [`ValueFlow::member_argv`]). Absent, or a length mismatch, means the Members
@@ -2835,7 +2959,7 @@ fn push_member_predicts(
     }
     let mut staged = Vec::with_capacity(members.len());
     for (idx, (fact, argv)) in members.iter().zip(member_argvs).enumerate() {
-        let Some((provider, args, sh)) = ship_for_argv(argv, ship_body) else {
+        let Some((provider, args, shipped)) = ship_for_argv(argv, ship_body) else {
             // One member un-shippable ⇒ the whole site is unresolvable (all or none).
             unresolvable.push(site);
             return;
@@ -2847,7 +2971,8 @@ fn push_member_predicts(
             site_kind: ProbeSiteKind::Establish,
             provider,
             argv: args,
-            sh,
+            sh: shipped.sh,
+            defining_span: shipped.defining_span,
             connected: None,
             verdict: false,
             emits_report: false,
@@ -2876,7 +3001,7 @@ fn push_inline_predicts(
     site: LeafId,
     sites: &[InlineSite],
     value: &ValueFlow,
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<String>,
+    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) {
     let mut staged = Vec::new();
     for (idx, body) in sites.iter().enumerate() {
@@ -2886,7 +3011,7 @@ fn push_inline_predicts(
         let body_argv = value.argv_values(body.node);
         match &body.class {
             SkipClass::EstablishAmbient(fact) => {
-                let Some((provider, args, sh)) = ship_for_argv(&body_argv, ship_body) else {
+                let Some((provider, args, shipped)) = ship_for_argv(&body_argv, ship_body) else {
                     // An un-shippable ESTABLISH ⇒ the whole call is unresolvable (all or none).
                     unresolvable.push(site);
                     return;
@@ -2898,7 +3023,8 @@ fn push_inline_predicts(
                     site_kind: ProbeSiteKind::Establish,
                     provider,
                     argv: args,
-                    sh,
+                    sh: shipped.sh,
+                    defining_span: shipped.defining_span,
                     connected: None,
                     verdict: false,
                     emits_report: false,
@@ -2908,7 +3034,7 @@ fn push_inline_predicts(
             SkipClass::QueryResolvable { fact, valid } => {
                 // A read-only guard: ship its check if resolvable (it does NOT gate the call's
                 // elision, so an un-shippable guard is simply omitted, never a blocker).
-                if let Some((provider, args, sh)) = ship_for_argv(&body_argv, ship_body) {
+                if let Some((provider, args, shipped)) = ship_for_argv(&body_argv, ship_body) {
                     staged.push(ProbePredict {
                         site,
                         member,
@@ -2916,7 +3042,8 @@ fn push_inline_predicts(
                         site_kind: ProbeSiteKind::Query { valid: *valid },
                         provider,
                         argv: args,
-                        sh,
+                        sh: shipped.sh,
+                        defining_span: shipped.defining_span,
                         connected: None,
                         verdict: false,
                         emits_report: false,
@@ -3037,7 +3164,7 @@ pub fn build_plan_walled(
     fact_backings: &BTreeMap<FactKey, FactBacking>,
     vouches: &Vouches,
     connected: &ConnectedPipes,
-    probe_origins: &BTreeMap<FactKey, dorc_core::ProvId>,
+    probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
@@ -3140,7 +3267,7 @@ pub fn build_plan_walled(
         };
         if let Disposition::Replace(license, stand_in) = disposition {
             let license =
-                attach_replace_witness(license, ast.node(ast_id).span, probe_origins, arena);
+                attach_replace_provenance(license, ast.node(ast_id).span, probe_origins, arena);
             disposition = Disposition::Replace(license, stand_in);
         }
         // Wall-bearing = an establish-bearing class OR a flagged kill (R3 / 24A §3): a running
@@ -3202,22 +3329,26 @@ pub fn build_plan_walled(
 
 /// arch-1 witness (`vp-17`/`vp-18`) + C6: the FULL granted witness for a licensed `Replace` — the
 /// establish site's `BookSource` origin PLUS the `ProbeResult` origin of the record that measured
-/// its fact converged (absent ⇒ book origin only). Pure OUTPUT provenance attached AFTER the mint
-/// (the WELD): the origins are sites the license already keys on, so they cannot influence the
-/// decision; they are EXEMPT (`Exempt::ReceiptId`) and the `erasability` gate proves they perturb
-/// nothing.
-fn attach_replace_witness(
+/// its fact converged (absent ⇒ book origin only) — and, beside it, that record's
+/// [`ProbeAttribution`] for the why-chain's REPORTED row. Pure OUTPUT provenance attached AFTER the
+/// mint (the WELD): the origins are sites the license already keys on, so they cannot influence the
+/// decision; they are EXEMPT (`Exempt::ReceiptId`/`Exempt::Timing`) and the `erasability` gate
+/// proves they perturb nothing.
+fn attach_replace_provenance(
     license: ReplaceLicense,
     site_span: dorc_core::Span,
-    probe_origins: &BTreeMap<FactKey, dorc_core::ProvId>,
+    probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
     arena: &mut dorc_core::ProvArena,
 ) -> ReplaceLicense {
     let book = arena.leaf(dorc_core::OriginKind::BookSource, Some(site_span));
-    let origins = match probe_origins.get(&license.fact()) {
-        Some(&measured) => vec![book, measured],
+    let attribution = probe_origins.get(&license.fact()).copied();
+    let origins = match attribution {
+        Some(measured) => vec![book, measured.origin],
         None => vec![book],
     };
-    license.with_witness(dorc_core::Witness::of(origins))
+    license
+        .with_witness(dorc_core::Witness::of(origins))
+        .with_probe_attribution(attribution)
 }
 
 /// The BASELINE wall walk (flag-off / Stage-1 / `23Ib-fd10`): walk once in execution order
@@ -3644,8 +3775,15 @@ impl Plan {
             ..DispositionCounts::default()
         };
         for step in &self.steps {
-            match step.disposition {
-                Disposition::Replace(_, _) => c.elide += 1,
+            match &step.disposition {
+                Disposition::Replace(license, _) => {
+                    c.elide += 1;
+                    if license.derivation().survival.is_some() {
+                        c.elide_by_trusted_claim += 1;
+                    } else {
+                        c.elide_by_proof += 1;
+                    }
+                }
                 Disposition::Omit { .. } => c.omit += 1,
                 Disposition::Guard(_) => c.guard += 1,
                 Disposition::Run => c.run += 1,
@@ -4599,7 +4737,7 @@ apt_get__is_converged() { return 0; }
         interner: &Interner,
         provider: Symbol,
         argv: &[Symbol],
-    ) -> Option<String> {
+    ) -> Option<ShippedCheck> {
         use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
         let want = map_provider_name(interner.resolve(provider));
         let arg_texts: Vec<String> = argv
@@ -4614,7 +4752,10 @@ apt_get__is_converged() { return 0; }
                 }
                 let Some(check) = cs.get(cp) else { continue };
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                    return Some(strip_predict(CORPUS_PREDICT_SRC, check, interner));
+                    return Some(ShippedCheck::predict(
+                        strip_predict(CORPUS_PREDICT_SRC, check, interner),
+                        Some((check.name_span, OracleFileId(0))),
+                    ));
                 }
             }
         }
@@ -6459,6 +6600,45 @@ apt_get__is_converged() {
     // `strawman24-nonsurvive-hit` e2e case; no plan-level duplicate here.)
 
     #[test]
+    fn elide_tally_splits_proof_from_trusted_claim_on_the_real_survival_path() {
+        // The two halves carry different risk, so a receipt owes the split. Tallied over the SAME
+        // fixture that mints a REAL witness — a hand-built one would let a mis-wired split pass.
+        let verdict = |e: &str| {
+            if e == "nginx" {
+                Verdict::Converged
+            } else {
+                Verdict::Diverged
+            }
+        };
+        let flagged = survival_plan(
+            "apt-get install -y oldpkg\napt-get install -y nginx\n",
+            verdict,
+            true,
+        )
+        .disposition_counts();
+        assert_eq!(flagged.elide, 1, "one line elided");
+        assert_eq!(
+            (flagged.elide_by_trusted_claim, flagged.elide_by_proof),
+            (1, 0),
+            "an elision kept past a RUNNING wall rests on the claim, never on proof alone"
+        );
+
+        let clean = survival_plan("apt-get install -y nginx\n", verdict, true).disposition_counts();
+        assert_eq!(
+            (clean.elide_by_trusted_claim, clean.elide_by_proof),
+            (0, 1),
+            "no wall crossed ⇒ the skip rests on the probed fact"
+        );
+        for c in [flagged, clean] {
+            assert_eq!(
+                c.elide,
+                c.elide_by_proof + c.elide_by_trusted_claim,
+                "the split partitions the elide bucket exactly"
+            );
+        }
+    }
+
+    #[test]
     fn survival_walk_mints_wall_and_demotion_narratives() {
         // C5 anti-masking (`AID-NEEDS:law-collapse-mints-narrative`): the running curl mutator mints
         // a WallFormation and the demoted nginx a Demotion — DERIVED from the collapse, all Derived.
@@ -7359,6 +7539,7 @@ apt_get__is_converged() {
                 provider: grep,
                 argv: Vec::new(),
                 sh: String::new(),
+                defining_span: None,
                 connected: Some(ComposedProbe {
                     stages: vec![
                         ComposedStage {
@@ -7412,6 +7593,7 @@ apt_get__is_converged() {
             sh: "sysctl__is_converged() { printf \"$fmt\" \"$1\" >>\"${DREP_V1:-/dev/null}\"; \
                  return 2; }"
                 .to_owned(),
+            defining_span: None,
             connected: None,
             verdict: true,
             emits_report,
@@ -7601,6 +7783,7 @@ apt_get__is_converged() {
                 provider: hork,
                 argv: Vec::new(),
                 sh: String::new(),
+                defining_span: None,
                 connected: None,
                 verdict: false,
                 emits_report: false,
@@ -7654,6 +7837,7 @@ apt_get__is_converged() {
                 provider: i.intern("hork"),
                 argv: Vec::new(),
                 sh: String::new(),
+                defining_span: None,
                 connected: None,
                 verdict: false,
                 emits_report: false,

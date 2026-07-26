@@ -132,8 +132,8 @@ impl Span {
 
 pub mod prov;
 pub use prov::{
-    JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProbeStamp, ProvArena, ProvId, Variation,
-    Witness,
+    JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProbeStamp, ProvArena, ProvId, RunInstant,
+    Variation, Witness,
 };
 
 pub mod unord;

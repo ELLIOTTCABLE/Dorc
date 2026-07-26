@@ -511,6 +511,7 @@ pub struct RecordedReplayClaims {
     generation: String,
     book_digest: String,
     decision_digest: String,
+    started_at: Option<dorc_core::RunInstant>,
 }
 
 impl RecordedReplayClaims {
@@ -542,6 +543,14 @@ impl RecordedReplayClaims {
     #[must_use]
     pub fn decision_digest(&self) -> &str {
         &self.decision_digest
+    }
+
+    /// WHEN the recorded run started — the receipt's date line, and the one whylog field that
+    /// genuinely cannot be recomputed by replaying the durable through the kernel (the thin-durable
+    /// test). `None` when the writing controller had no clock; absence renders as absence.
+    #[must_use]
+    pub const fn started_at(&self) -> Option<dorc_core::RunInstant> {
+        self.started_at
     }
 }
 
@@ -600,6 +609,11 @@ pub struct WhylogV2Metadata {
     pub host: String,
     /// Controller-computed decision digest.
     pub decision_digest: String,
+    /// When the controller started this run, from the edge's injected clock. Stored because it is
+    /// the one invocation fact replay CANNOT recompute — re-deriving through the kernel yields the
+    /// plan again, never the moment it was first made. `None` ⇒ the edge had no clock, and the
+    /// durable says so rather than dating the run from replay.
+    pub started_at: Option<dorc_core::RunInstant>,
     /// Ordered predicted apply dispositions.
     pub apply: Vec<ApplyLine>,
 }
@@ -773,10 +787,16 @@ pub fn try_serialize_v2(
     retain_metadata(&mut retained, &doc.mode, limits)?;
     retain_metadata(&mut retained, &doc.book.0, limits)?;
     retain_metadata(&mut retained, &doc.book.1, limits)?;
+    // The READER.s predicate, so the writer cannot emit a header its parser refuses. No retained
+    // budget: the reader keeps a `u64`, not the String every atom above costs.
+    let started = render_started(doc.started_at);
+    if parse_started(&started, limits).is_err() {
+        return Err(WhylogWriteRefusal::Numeric);
+    }
     write_v2_line(
         &mut out,
         format!(
-            "{WHYLOG_V2_TAG} nonce={} attempt={} host={} target=width-one generation=width-one mode={} {TERMINAL_TOKEN}",
+            "{WHYLOG_V2_TAG} nonce={} attempt={} host={} target=width-one generation=width-one mode={} started={started} {TERMINAL_TOKEN}",
             doc.nonce, doc.attempt, doc.host, doc.mode
         ),
         limits,
@@ -864,7 +884,8 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
     let Some(header) = header.strip_prefix(&format!("{WHYLOG_V2_TAG} ")) else {
         return Admission::Refused(AdmissionRefusal::Grammar);
     };
-    let Some((nonce, attempt, host, target, generation, mode)) = parse_v2_header(header, limits)
+    let Some((nonce, attempt, host, target, generation, mode, started_at)) =
+        parse_v2_header(header, limits)
     else {
         return Admission::Refused(AdmissionRefusal::Grammar);
     };
@@ -1001,6 +1022,7 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
             generation: generation.to_owned(),
             book_digest: book.1.to_owned(),
             decision_digest,
+            started_at,
         };
         let mode = mode.to_owned();
         let book_path = RecordedSourcePathHint(book.0.to_owned());
@@ -1051,10 +1073,39 @@ fn token_body(line: &str) -> Option<&str> {
     line.strip_suffix(TERMINAL_TOKEN)?.strip_suffix(' ')
 }
 
-fn parse_v2_header(
-    line: &str,
+/// The `started=` header atom: Unix milliseconds, or `ABSENT_ATOM` when the writer had no clock.
+/// A closed two-shape grammar, so "we do not know when" can never be confused with an instant.
+const ABSENT_ATOM: &str = "-";
+
+fn render_started(at: Option<dorc_core::RunInstant>) -> String {
+    at.map_or_else(|| ABSENT_ATOM.to_owned(), |instant| instant.0.to_string())
+}
+
+fn parse_started(
+    value: &str,
     limits: WhylogLimits,
-) -> Option<(&str, u32, &str, &str, &str, &str)> {
+) -> Result<Option<dorc_core::RunInstant>, AdmissionRefusal> {
+    if value == ABSENT_ATOM {
+        return Ok(None);
+    }
+    digits_valid(value, limits)?;
+    value
+        .parse()
+        .map(|millis| Some(dorc_core::RunInstant(millis)))
+        .map_err(|_| AdmissionRefusal::Numeric)
+}
+
+type V2Header<'a> = (
+    &'a str,
+    u32,
+    &'a str,
+    &'a str,
+    &'a str,
+    &'a str,
+    Option<dorc_core::RunInstant>,
+);
+
+fn parse_v2_header(line: &str, limits: WhylogLimits) -> Option<V2Header<'_>> {
     let mut fields = line.split(' ');
     let nonce = fields.next()?.strip_prefix("nonce=")?;
     let attempt = fields.next()?.strip_prefix("attempt=")?;
@@ -1062,6 +1113,7 @@ fn parse_v2_header(
     let target = fields.next()?.strip_prefix("target=")?;
     let generation = fields.next()?.strip_prefix("generation=")?;
     let mode = fields.next()?.strip_prefix("mode=")?;
+    let started = parse_started(fields.next()?.strip_prefix("started=")?, limits).ok()?;
     if fields.next().is_some()
         || !atom_valid(nonce, limits)
         || !atom_valid(host, limits)
@@ -1078,6 +1130,7 @@ fn parse_v2_header(
         target,
         generation,
         mode,
+        started,
     ))
 }
 
@@ -1327,6 +1380,7 @@ mod tests {
         attempt: u32,
         host: String,
         decision_digest: String,
+        started_at: Option<dorc_core::RunInstant>,
         raw_results: String,
         apply: Vec<ApplyLine>,
     }
@@ -1341,6 +1395,7 @@ mod tests {
             attempt: 1,
             host: "localhost".to_owned(),
             decision_digest: "0011223344556677".to_owned(),
+            started_at: None,
             raw_results: format!(
                 "dorc-records/1 nonce=dorc attempt=1 host=localhost book=0123456789abcdef sites=1 {TERMINAL_TOKEN}\n\
                  dorc site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n\
@@ -1403,6 +1458,7 @@ mod tests {
             attempt: fixture.attempt,
             host: fixture.host.clone(),
             decision_digest: fixture.decision_digest.clone(),
+            started_at: fixture.started_at,
             apply: fixture.apply.clone(),
         };
         let Admission::Admitted(bytes) =
@@ -1427,6 +1483,49 @@ mod tests {
             inner_limits(8 * 1024 * 1024),
         )
         .expect("the admitted fixture is v2 grammar-valid")
+    }
+
+    #[test]
+    fn run_instant_survives_the_durable_and_absence_stays_absence() {
+        // The one invocation fact replay cannot recompute, so it must survive the wire EXACTLY —
+        // rounding dates a receipt wrong, and a clockless writer must not read back as the epoch.
+        let limits = WhylogLimits::spike_default();
+        let read_back = |doc: &V2Fixture| {
+            let Admission::Admitted(envelope) = admit_unscoped_whylog(&v2_wire(doc)[..], limits)
+            else {
+                panic!("clean v2 durable must admit")
+            };
+            envelope.claims.started_at
+        };
+        let mut timed = v2_doc();
+        timed.started_at = Some(dorc_core::RunInstant(1_753_401_637_123));
+        assert_eq!(
+            read_back(&timed),
+            Some(dorc_core::RunInstant(1_753_401_637_123)),
+            "millisecond-exact, not rounded to the second"
+        );
+
+        let mut clockless = v2_doc();
+        clockless.started_at = None;
+        assert_eq!(
+            read_back(&clockless),
+            None,
+            "no clock ⇒ no instant, never RunInstant(0)"
+        );
+        assert_ne!(
+            read_back(&clockless),
+            Some(dorc_core::RunInstant(0)),
+            "the absent atom and a zero instant are distinct wire shapes"
+        );
+
+        // Symmetry: an over-wide instant is refused at write, not emitted then called corrupt.
+        let mut overwide = v2_doc();
+        overwide.started_at = Some(dorc_core::RunInstant(u64::MAX));
+        let narrow = parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 10, 2, 1, 1);
+        assert_eq!(
+            try_serialize_fixture_v2(&overwide, narrow, inner_limits(8 * 1024 * 1024)),
+            Err(WhylogWriteRefusal::Numeric),
+        );
     }
 
     #[test]

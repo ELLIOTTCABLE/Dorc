@@ -229,6 +229,8 @@ fn canon_derivation(d: &Derivation) -> String {
         vouch_span: _, // EXEMPT (C7): the vouch's `file:line` is why-lens attribution only (a
         // vouch informs, never becomes a fact — TC-tier-3), like `witness`/`survival`.
         establish_vouches: _, // EXEMPT: aggregate vouch receipts are narration-only.
+        probe: _, // EXEMPT (Exempt::ReceiptId + Exempt::Timing): a why-chain row. Its tool-rc is
+                  // CARRIED, never consumed — the fold read its own admissible copy pre-mint.
     } = d;
     format!(
         "deriv(fact={} via={} ambient={ambient} grade={grade:?} verdict={verdict:?})",
@@ -306,6 +308,8 @@ fn canon_probe(probe: &ProbePlan) -> String {
             provider,
             argv,
             sh,
+            defining_span: _, // EXEMPT (Exempt::Explanation): a speaker label. The BODY (`sh`) is
+            // identity above; where it was sliced from changes no emitted byte.
             connected,
             verdict,
             entry,

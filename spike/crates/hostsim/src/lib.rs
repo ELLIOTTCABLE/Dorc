@@ -725,7 +725,7 @@ apt_get__predict() {
         interner: &Interner,
         provider: dorc_core::Symbol,
         argv: &[dorc_core::Symbol],
-    ) -> Option<String> {
+    ) -> Option<dorc_plan::ShippedCheck> {
         use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
         let want = map_provider_name(interner.resolve(provider));
         let arg_texts: Vec<String> = argv
@@ -740,7 +740,10 @@ apt_get__predict() {
                 }
                 let Some(check) = cs.get(cp) else { continue };
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                    return Some(strip_predict(CORPUS_PREDICT_SRC, check, interner));
+                    return Some(dorc_plan::ShippedCheck::predict(
+                        strip_predict(CORPUS_PREDICT_SRC, check, interner),
+                        Some((check.name_span, dorc_core::OracleFileId(0))),
+                    ));
                 }
             }
         }
@@ -1378,7 +1381,7 @@ grep__predict() {
         interner: &Interner,
         provider: dorc_core::Symbol,
         argv: &[dorc_core::Symbol],
-    ) -> Option<String> {
+    ) -> Option<dorc_plan::ShippedCheck> {
         use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
         let want = map_provider_name(interner.resolve(provider));
         let arg_texts: Vec<String> = argv
@@ -1393,7 +1396,10 @@ grep__predict() {
                 }
                 let Some(check) = cs.get(cp) else { continue };
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                    return Some(strip_predict(src, check, interner));
+                    return Some(dorc_plan::ShippedCheck::predict(
+                        strip_predict(src, check, interner),
+                        Some((check.name_span, dorc_core::OracleFileId(0))),
+                    ));
                 }
             }
         }
