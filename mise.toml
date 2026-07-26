@@ -67,6 +67,22 @@ HK_MISE = "1"
 # Windows it resolves to Git's `sh.exe`, which must be on PATH).
 # ────────────────────────────────────────────────────────────────────────────
 
+# The ONE place a WSL leg is spelled. `run_windows` is mise's own platform switch, so no
+# task below knows this exists and nothing is duplicated per-platform: on *nix `both` is a
+# passthrough, on Windows it runs the task natively and then again under WSL, in series.
+# This is what makes a `#[cfg(windows)]`/`#[cfg(unix)]` change trustworthy — each side
+# compiles only its own arms, so one platform's green says nothing about the other's.
+# The WSL leg shares spike/target/ (safe: units are host-hashed, and each platform's test
+# binary bakes its own CARGO_BIN_EXE_* path) but pays a full Linux rebuild the first time.
+[tasks.both]
+description = "Run a task natively AND under WSL, in series — `mise run both test`. Either leg failing fails the run. On non-Windows it just runs the task. Needs the repo trusted on the WSL side once (`wsl -- mise trust`)."
+usage = 'arg "<task>" var=#true help="the task, plus any of its own args, to run on both platforms"'
+run = "mise run {{ usage.task | join(sep=' ') }}"
+run_windows = [
+   "mise run {{ usage.task | join(sep=' ') }}",
+   "wsl -- mise run {{ usage.task | join(sep=' ') }}",
+]
+
 [tasks.build]
 description = "Build the spike workspace. Force this fresh before trusting any e2e result — the corpus runs whatever binary target/ happens to hold."
 dir = "spike"

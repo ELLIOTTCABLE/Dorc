@@ -880,8 +880,9 @@ no task covers, and consider adding the task instead.
   member rather than reaching for `allow(dead_code)`: gated, a cross-platform caller
   fails to resolve loudly; allowed, it compiles into a question the platform cannot
   answer. Anything touching a `cfg`-gated region must be checked on BOTH platforms
-  before it is trusted — this is a doc, not a mechanical net, because a lint for it
-  would be exactly the imperfect net `271:rul-net-quality-u-curve` warns against.
+  before it is trusted: `mise run both <task>` runs it natively and then under WSL, in
+  series, and fails if either leg does. Still no LINT for it — that would be exactly the
+  imperfect net `271:rul-net-quality-u-curve` warns against — but the run is mechanical.
 - **wsl-needs-a-modern-git** — the repo enables the `relativeWorktrees` extension
   (git ≥ 2.48); an older git (Ubuntu 24.04 ships 2.43) refuses the WHOLE repository
   with `fatal: unknown repository extension found`, so every git-touching step —
