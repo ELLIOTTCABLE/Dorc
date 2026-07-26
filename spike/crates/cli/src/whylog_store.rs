@@ -124,9 +124,8 @@ pub(crate) fn publish(
             Ok(mut file) => {
                 if write_and_flush(&mut file, bytes).is_err() {
                     drop(file);
-                    // Our own partial byte-run, created this call and held until now: removing it
-                    // is `rul-probe-writes-only-what-it-owns`'s ownership test passing, not an
-                    // exception to it. A truncated durable that survived would replay as corrupt.
+                    // Ours, created this call and still held: `rul-probe-writes-only-what-it-owns`
+                    // PASSES, and a truncated durable would replay as corrupt.
                     let _ = std::fs::remove_file(&path);
                     return Err(PersistRefusal::Write);
                 }

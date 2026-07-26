@@ -298,8 +298,6 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogBookDesync",
     "WhylogAbsent",
     "WhylogCorrupt",
-    // cli/main.rs — the WRITE-side refusal is about the durable that could not be created, so it
-    // has no more of a source point than its reader siblings above.
     "WhylogUnwritten",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",

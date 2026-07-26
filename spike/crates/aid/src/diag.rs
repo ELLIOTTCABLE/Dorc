@@ -1834,11 +1834,6 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::Structural,
         },
-        // The one whylog code that is not a pull-surface disclosure: it reports a PUSH-time loss,
-        // on the run that just happened, and it must survive `apply`'s advisory suppression
-        // (`28F:rul-write-failure-is-error-floor`). WarnOrDeny rather than Pinned — an admin who
-        // genuinely does not want receipts should be able to raise or accept it, never mute it
-        // into the silence this code exists to end.
         DiagCode::WhylogUnwritten(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,

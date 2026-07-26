@@ -420,10 +420,6 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             books.push(arg);
         }
     }
-    // A receipt names its own book (`28E:lean-why-is-whylog-reconciliation`), so demanding one on
-    // the command line would make the fold's whole point -- asking "why did that happen" with
-    // nothing in hand -- impossible to type. Records handed in still need one: they describe a book
-    // this invocation is not otherwise told about.
     if books.is_empty() && !reads_the_receipt(mode, last, results.is_some()) {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,

@@ -648,8 +648,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // load-bearing surface judgment — flagged to the conductor, not silently settled.
     let advisory = !matches!(mode, Mode::Apply);
 
-    // Receipt reconciliation (`27V` Lane B; the default for `why` since the `plans/28G` W3 fold):
-    // reconstruct inputs from the durable. A surfaced refusal returns.
     let replay = if args.reads_the_receipt() {
         match load_whylog_replay(args, advisory)? {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
@@ -1405,9 +1403,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         chrome("cli-decision-digest-line", &[&decision_digest])
     );
 
-    // `27V` Lane B: write the durable so a later `dorc why` can replay it. Default-on
-    // (`28F:rul-w3-default-on-aim-high`) — a receipt nobody remembered to ask for is the only kind
-    // that exists on the morning it is needed.
+    // Default-on: the receipt nobody asked for is the only kind that exists on the bad morning.
     if let Some(dir) = durable_destination(args) {
         let metadata = assemble_whylog_metadata(
             &framing,
@@ -1478,15 +1474,10 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let path = if let Some(exact) = args.whylog.as_deref() {
         std::path::PathBuf::from(exact)
     } else {
-        // The SAME destination the write seat chose, or a `why` would search somewhere no run
-        // ever wrote. `--no-whylog` reaches here only when someone asked to read receipts they
-        // just asked not to keep, and the honest answer is the same as any other empty directory.
         let dir = durable_destination(args).ok_or_else(|| {
             Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
                 dorc_aid::diag::CliFlagRequiresMode {
                     flag: "--whylog-dir=DIR",
-                    // `--last` is implied now, so naming it here would point at a flag the user did
-                    // not type and does not need (`plans/28G` §1 W3).
                     mode: "dorc why",
                 },
             ))
@@ -1552,12 +1543,8 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let framing = dorc_plan::records::Framing::spike(book_digest(&book));
     let scope =
         WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
-    // Name the drift rather than reporting a generic framing refusal. An edited book is the ONE
-    // mismatch here that is ordinary rather than sinister — the admin fixed the thing the receipt
-    // is about — and under default-on it is the common morning, so "the book changed since this
-    // run" has to be what the reader is told. The refusal itself still stands: re-deriving through
-    // a different book would answer a question nobody asked. Rendering the receipt ANYWAY, degraded
-    // and drift-disclosed, is the owed follow-on (this lane's report says why it is not here).
+    // An edited book is the ordinary mismatch, so it is NAMED rather than reported as generic
+    // framing. The refusal stands; the degraded drift-disclosed render is the owed follow-on.
     if envelope.claims().book_digest() != scope.book.1 {
         report_at(
             advisory,
@@ -5473,9 +5460,7 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         || why_words("why-receipt-risk-profile-none", &[]),
         str::to_owned,
     );
-    // The git annotation REPLACES the digest row rather than joining it: both answer "which book",
-    // and a commit is the answer a person can act on. Absent, the digest row stands unchanged --
-    // exact-or-absent, never a third half-informative shape.
+    // Replaces the digest row rather than joining it: exact-or-absent, never a third shape.
     let book_row = match &receipt.at_head {
         Some(matched) => Said::words(
             "why-receipt-book-at-head",
@@ -9262,9 +9247,6 @@ mod not_ours_bytes_tests {
             host: hostile_line(1),
             book: hostile_line(2),
             book_digest: hostile_line(3),
-            // Swept as `None` here and as `Some` in the second banner below: the two are exclusive
-            // rows, and a git commit is a SUBPROCESS's stdout — as not-ours as anything a host
-            // reported (`28D:must-encode-per-surface`), so both spellings need the sweep.
             at_head: None,
             oracles: vec![hostile_line(4), hostile_line(5)],
             risk_profile: Some(CONSENT_FLAG),

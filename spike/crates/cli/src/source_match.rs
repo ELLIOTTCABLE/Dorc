@@ -128,10 +128,7 @@ impl SourceRepository for GitRepository {
         }
         let within = path.parent().unwrap_or_else(|| Path::new("."));
         let name = path.file_name()?.to_str()?;
-        // `status --porcelain` over one path answers tracked-AND-unmodified in a single word:
-        // empty output means git knows the file and has nothing to say about it. `diff --quiet`
-        // would have said "no difference" about an UNTRACKED file, which is the wrong answer to
-        // "is this the committed book".
+        // `diff --quiet` would call an UNTRACKED file unchanged; `status --porcelain` will not.
         Some(
             Self::query(within, &["status", "--porcelain", "--", name])?
                 .trim()

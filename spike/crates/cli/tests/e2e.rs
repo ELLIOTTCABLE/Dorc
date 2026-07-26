@@ -242,9 +242,8 @@ impl Harness {
             command.env(key, &self.state_root);
         }
         command.env_remove("HOME");
-        // `real-tools-lane-opt-in`: the suite makes zero external invocations by default, and the
-        // receipt's git annotation would otherwise depend on whether a case's scratch directory
-        // happens to sit inside a repository — a transcript that flips with the developer's TMPDIR.
+        // `real-tools-lane-opt-in`: zero external invocations; and no transcript may flip with
+        // whether the developer.s TMPDIR sits inside a repository.
         command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
         command
     }
@@ -1262,10 +1261,7 @@ fn run_replay_block(
         words.truncate(words.len().saturating_sub(2));
     }
     // `--results=probe-results.txt` resolves to the framed stream exactly as `< probe-results.txt`
-    // does, and for the same reason: the case's authored `probe-results.txt` is the EXPECTATION
-    // the record gates compare against, never the bytes dorc is fed. Since the `plans/28G` W3 fold
-    // a `dorc why` must NAME its record source (an unnamed one reads the stored receipt instead),
-    // so the flag form is now the spelling these transcripts carry.
+    // does -- the authored file is the gates. EXPECTATION, never the bytes dorc is fed.
     let framed_flag = format!("--results={}", framed.display());
     let words: Vec<&str> = words
         .into_iter()
@@ -2174,8 +2170,6 @@ fn scan_why_chain(
         return;
     };
     let book = format!("--book={}", dir.join("book.sh").display());
-    // `--results` rather than a stdin redirect: since the `plans/28G` W3 fold, naming a record
-    // source is what tells `dorc why` to answer from records instead of from the stored receipt.
     let live = capture(
         harness
             .dorc()
