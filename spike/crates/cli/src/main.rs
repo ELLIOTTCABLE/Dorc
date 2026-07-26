@@ -6710,11 +6710,37 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
     }
 }
 
-/// Emit the escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
-/// line). Names the escalation posture the dial + capability set, and the entry-capable wrappers
-/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` to
-/// stderr (advisory), never a gate.
+/// The comparison key that lets a LOADED oracle path and a DISCOVERED one denote the same file.
 ///
+/// `289:rider-sibling-note-false-fires-relative`: the loaded set carries `-o` args verbatim
+/// (`firewall.oracle.sh`) while discovery yields `read_dir` paths (`./firewall.oracle.sh`), so a raw
+/// string compare reported every relatively-named oracle as unloaded. Both spellings converge here
+/// by dropping `.` components and spelling every separator `/`.
+///
+/// The separator fold happens BEFORE the components are read, because `\` is a separator only on
+/// Windows: a Unix `Path` reads `oracles\fw.oracle.sh` as one nameless-parent file whose name
+/// contains a backslash, so folding afterwards would leave a `./` the forward-slash spelling of the
+/// same path never grows (`one-platform-green-is-not-cross-platform-green`).
+///
+/// Deliberately textual, not `canonicalize`: this feeds a HINT, and a hint must not acquire the
+/// power to touch the filesystem or to fail. Two spellings of one path through different symlinks
+/// still miss, which costs a suppressed hint and never a wrong one.
+fn oracle_path_key(path: &str) -> String {
+    use std::path::{Component, Path, PathBuf};
+
+    let slash_separated = path.replace('\\', "/");
+    let keyed: PathBuf = Path::new(&slash_separated)
+        .components()
+        .filter(|c| !matches!(c, Component::CurDir))
+        .collect();
+    let keyed = keyed.to_string_lossy().replace('\\', "/");
+    if keyed.is_empty() {
+        ".".to_string()
+    } else {
+        keyed
+    }
+}
+
 /// Emit the unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
 /// ack-6): scan the directories of the loaded oracles + the book(s) for `*.oracle.sh` files that were
 /// NOT loaded, and disclose them (suggest, never auto-load). A cli-edge disclosure — it reads the
@@ -6722,26 +6748,6 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 /// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
 /// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
-/// The comparison key that lets a LOADED oracle path and a DISCOVERED one denote the same file.
-///
-/// `289:rider-sibling-note-false-fires-relative`: the loaded set carries `-o` args verbatim
-/// (`firewall.oracle.sh`) while discovery yields `read_dir` paths (`./firewall.oracle.sh`), so a raw
-/// string compare reported every relatively-named oracle as unloaded. Both sides now spell an empty
-/// parent as `.` and separators as `/`, so the two forms of one bare filename converge.
-///
-/// Deliberately textual, not `canonicalize`: this feeds a HINT, and a hint must not acquire the
-/// power to touch the filesystem or to fail. Two spellings of one path through different symlinks
-/// still miss, which costs a suppressed hint and never a wrong one.
-fn oracle_path_key(path: &str) -> String {
-    let path = std::path::Path::new(path);
-    let parent = path
-        .parent()
-        .filter(|d| !d.as_os_str().is_empty())
-        .unwrap_or_else(|| std::path::Path::new("."));
-    let name = path.file_name().unwrap_or_default();
-    parent.join(name).to_string_lossy().replace('\\', "/")
-}
-
 fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths: &[String]) {
     use std::path::Path;
     // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
@@ -6794,6 +6800,11 @@ fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths:
     );
 }
 
+/// Emit the escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
+/// line). Names the escalation posture the dial + capability set, and the entry-capable wrappers
+/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` to
+/// stderr (advisory), never a gate.
+///
 /// SCOPE (honest for the spike): this is the POLICY in effect, not a per-book-SITE "will enter"
 /// tally — the book-side entry-composed probe emission (which would count sites per entered context)
 /// is the deferred integration (`27K` §9 / this lane's report). The dial × capability × the loaded
@@ -7457,6 +7468,14 @@ mod tests {
             oracle_path_key("oracles/fw.oracle.sh"),
             oracle_path_key("oracles\\fw.oracle.sh"),
             "separators normalize, so a Windows walk matches a forward-slash arg"
+        );
+        // The three spellings must land on ONE key, not merely agree pairwise: the bug this replaced
+        // folded separators AFTER reading components, so on Unix the backslash spelling grew a `./`
+        // prefix its forward-slash twin never had, and only the platform that splits `\` was green.
+        assert_eq!(
+            oracle_path_key("oracles\\fw.oracle.sh"),
+            oracle_path_key("./oracles/fw.oracle.sh"),
+            "a leading `.` is dropped at any depth, on either platform"
         );
         assert_ne!(
             oracle_path_key("a/fw.oracle.sh"),
