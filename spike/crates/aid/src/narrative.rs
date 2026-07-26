@@ -113,9 +113,10 @@ impl SpeechAct {
     #[must_use]
     pub const fn knowability(self) -> Knowability {
         match self {
-            SpeechAct::Measured | SpeechAct::Vouched | SpeechAct::Derived | SpeechAct::Consented => {
-                Knowability::Witnessed
-            }
+            SpeechAct::Measured
+            | SpeechAct::Vouched
+            | SpeechAct::Derived
+            | SpeechAct::Consented => Knowability::Witnessed,
             SpeechAct::Ran | SpeechAct::Claimed | SpeechAct::Declined => {
                 Knowability::CoversUnmeasured
             }
