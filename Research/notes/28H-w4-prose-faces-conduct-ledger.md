@@ -174,6 +174,11 @@ is the human's; untouched.
   WIRING reachability (`git hook list commit-msg` non-empty AND env not
   neutering), so a dead gate is red not green; (3) the human should check their
   own interactive shell (`echo $HK`) — live human commits may be bypassing too.
+  RESOLVED (1): post-harness-restart probe 2026-07-26 — `HK` unset,
+  `HK_SKIP_HOOK=pre-commit` intact; `git hook run commit-msg` REFUSES a
+  trailer-carrying message (rc=1) and passes a lawful one (rc=0). The gate is
+  live for conductor and builders alike. (2) remains open — the selftest is
+  still wiring-blind; the gate died silently once.
 - **Human items pulled into scope (typed 2026-07-26; weight-tags as given):**
   - `item-ran-log-retirement` (gentle lean, LOW priority, builder-driven —
     "don't churn over polishing right this second"): the `_dorc_logged` /
