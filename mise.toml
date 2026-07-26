@@ -116,7 +116,7 @@ run = [
 ]
 
 [tasks.quiet-gate]
-description = "The pre-commit gate, AGENT-facing: the same work as `gate` at minimum token cost — roughly 110 lines instead of 2000. Silent on success, LOUD and complete on failure. Prefer this over `gate`/`test` in an agent context; humans want the unabridged ones."
+description = "The pre-commit gate, AGENT-facing: `gate`'s work minus the hook self-test, at minimum token cost — roughly 95 lines instead of 2000. Silent on success, LOUD and complete on failure. Prefer this over `gate`/`test` in an agent context; humans want the unabridged ones."
 dir = "spike"
 # REMIT: minimal token burn, and it MUST NOT swallow a failure. Every flag here suppresses
 # SUCCESS chatter only — `--status-level fail` still prints failing trials, `--failure-output
@@ -124,10 +124,11 @@ dir = "spike"
 # flag would ever hide a failure it does not belong in this task, whatever it saves.
 # `--no-fail-fast` is here for the same reason: nextest otherwise abandons ~650 trials at the
 # first failure, and "we never ran them" is a fact this task may not withhold.
-# `test:hooks` and doctests have no quiet knob past cargo's, so they set the floor.
+# `test:hooks` is deliberately ABSENT: it exercises hk.pkl, which changes on the order of once a
+# quarter, so paying for it on every agent gate buys nothing. `gate` still runs it, and that is
+# the one an hk.pkl edit calls for. Doctests have no quiet knob past cargo's and set the floor.
 run = [
   "mise run check -- --quiet",
-  "mise run test:hooks",
   "cargo build --workspace --quiet",
   "cargo test --workspace --doc --quiet",
   "cargo nextest run --workspace --hide-progress-bar --status-level fail --failure-output final --no-fail-fast",
