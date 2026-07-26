@@ -238,8 +238,6 @@ fn render_attachments<K: Clone>(sink: &mut Sink<K>, attachments: &[Node<K>], fra
     render_nodes(sink, attachments, &frame.inset(INDENT));
 }
 
-// ---- labelled rows -------------------------------------------------------
-
 /// Whether a group of labelled rows keeps its label column, and how wide it is.
 ///
 /// `Some(width)` hangs each body off its label; `None` puts every label on its
@@ -255,11 +253,9 @@ fn label_column<K: Clone>(rows: &[&LabeledRow<K>], frame: &Frame) -> Option<usiz
     let body_left = frame.left().saturating_add(width).saturating_add(1);
     let usable = frame.right().saturating_sub(body_left);
     let anything_wraps = rows.iter().any(|row| runs_width(&row.body) > usable);
-    // A hanging indent is alignment when the box is roomy and a tax when it is
-    // not: every continuation line pays the label's width forever, while
-    // stacking pays one line once. So it survives only while the body stays
-    // wide enough to read as prose, and only while it is buying something —
-    // stacking rows that already fit on one line just spends lines.
+    // A hanging indent charges the label's width to every continuation line;
+    // stacking charges one line, once. So it survives only while the body stays
+    // wide enough to read as prose, and only while it is buying something.
     let hanging_is_affordable = body_left.saturating_add(MIN_LABELED_BODY) <= frame.right();
     if hanging_is_affordable || !anything_wraps {
         Some(width)
@@ -313,8 +309,6 @@ fn render_labeled_row<K: Clone>(
     );
     render_attachments(sink, &row.attachments, frame);
 }
-
-// ---- speaker rows --------------------------------------------------------
 
 /// The column geometry shared by one run of adjacent speaker rows.
 struct SpeakerColumns {
@@ -470,8 +464,6 @@ fn render_payload<K: Clone>(
         );
     }
 }
-
-// ---- code blocks ---------------------------------------------------------
 
 /// The gutter separator for a mode, given whether the block has a gutter.
 ///
