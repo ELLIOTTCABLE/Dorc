@@ -137,6 +137,9 @@ pub struct Section<K> {
 /// speakers, the verbs, or the payloads independently.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SpeakerRow<K> {
+    /// The table this row joins, if the consumer relates it to rows it is not
+    /// adjacent to. `None` joins the anonymous table of its own structural run.
+    pub table: Option<K>,
     /// A one-glyph rank mark in the leftmost slot, if the row carries one.
     pub gutter: Option<Run<K>>,
     /// Who spoke — a source locus, a line reference, a tool name.
@@ -197,6 +200,9 @@ pub enum Literalness {
 /// An excerpt of source.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct CodeBlock<K> {
+    /// The table this block joins, if its gutter and cells should square up with
+    /// blocks it is not adjacent to. `None` measures the block alone.
+    pub table: Option<K>,
     /// How literally the lines are being shown.
     pub mode: Literalness,
     /// A label naming where the excerpt came from, rendered above it.
@@ -249,6 +255,10 @@ impl<K> CodeCell<K> {
 /// attached material.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LabeledRow<K> {
+    /// The table this row joins, if the consumer relates it to rows it is not
+    /// adjacent to — two `fix:` rows in different branches of a join being the
+    /// case this exists for. `None` joins the anonymous table of its own run.
+    pub table: Option<K>,
     /// The label.
     pub label: Vec<Run<K>>,
     /// The row's body.

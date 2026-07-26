@@ -62,7 +62,14 @@ fn prose(runs: Vec<Run<Key>>) -> Node<Key> {
 }
 
 fn labeled(label: &'static str, body: Vec<Run<Key>>) -> Node<Key> {
+    labeled_in(None, label, body)
+}
+
+/// A labelled row that joins a NAMED table, so it squares up with rows it is not
+/// adjacent to — the `fix:` rows inside the alternatives join being exactly that.
+fn labeled_in(table: Option<Key>, label: &'static str, body: Vec<Run<Key>>) -> Node<Key> {
     Node::new(NodeKind::Labeled(LabeledRow {
+        table,
         label: vec![word(label, "label")],
         body,
         attachments: Vec::new(),
@@ -78,6 +85,7 @@ fn quoted_row(
     attachments: Vec<Node<Key>>,
 ) -> Node<Key> {
     Node::new(NodeKind::Speaker(SpeakerRow {
+        table: None,
         gutter: Some(word(mark, "mark")),
         speaker: vec![value(speaker, "chain", "locus")],
         verb: Some(vec![word(verb, "tier")]),
@@ -98,6 +106,7 @@ fn analysis_section() -> Node<Key> {
             "unmeasured-gloss",
         )]),
         Node::new(NodeKind::Code(CodeBlock {
+            table: None,
             mode: Literalness::Literal,
             locus: Some(vec![value(
                 "certsync.oracle.sh, as-written:",
@@ -178,11 +187,13 @@ fn analysis_section() -> Node<Key> {
 }
 
 fn next_steps_section() -> Node<Key> {
+    let steps = Some(Key::Row("next-steps"));
     let alternatives = Node::new(NodeKind::Join(Join {
         branches: vec![
             Branch {
                 connective: None,
-                nodes: vec![labeled(
+                nodes: vec![labeled_in(
+                    steps,
                     "fix:",
                     vec![
                         value("certsync.oracle.sh:31", "fix", "target"),
@@ -192,7 +203,8 @@ fn next_steps_section() -> Node<Key> {
             },
             Branch {
                 connective: Some(vec![word("OR", "connective.alternative")]),
-                nodes: vec![labeled(
+                nodes: vec![labeled_in(
+                    steps,
                     "fix:",
                     vec![
                         value("`dorc plan web.sh web1`", "fix", "target"),
@@ -217,7 +229,8 @@ fn next_steps_section() -> Node<Key> {
                 value("9|systemctl", "steps", "site"),
                 prose_text(" SHOULD have run:", "steps", "opener"),
             ]),
-            labeled(
+            labeled_in(
+                steps,
                 "suspect:",
                 vec![prose_text(
                     "the 8|certsync claim -- the only link speaking for unmeasured state. if `certsync push` also touches @enabled/@active, it is what wrongly kept 9|systemctl out.",
@@ -226,7 +239,8 @@ fn next_steps_section() -> Node<Key> {
                 )],
             ),
             alternatives,
-            labeled(
+            labeled_in(
+                steps,
                 "verify:",
                 vec![
                     value("`dorc plan --why web.sh web1`", "verify", "target"),
@@ -237,7 +251,8 @@ fn next_steps_section() -> Node<Key> {
                     ),
                 ],
             ),
-            labeled(
+            labeled_in(
+                steps,
                 "review:",
                 vec![
                     value("`dorc why web.sh:9 --all`", "review", "target"),
@@ -310,6 +325,7 @@ fn annotated_line(number: &'static str, code: &'static str, note: &'static str) 
 /// to agree — see the crate doc's seam on that.
 fn annotated_excerpt() -> Node<Key> {
     Node::new(NodeKind::Code(CodeBlock {
+        table: None,
         mode: Literalness::Literal,
         locus: None,
         lines: vec![
@@ -325,6 +341,7 @@ fn improvements_section() -> Node<Key> {
         counts: Some(vec![value("2", "section", "count")]),
         body: vec![
             Node::new(NodeKind::Code(CodeBlock {
+                table: None,
                 mode: Literalness::Descriptive,
                 locus: Some(vec![value("web.sh, described:", "excerpt", "locus")]),
                 lines: vec![CodeLine {
@@ -336,6 +353,7 @@ fn improvements_section() -> Node<Key> {
                 }],
             })),
             Node::new(NodeKind::Code(CodeBlock {
+                table: None,
                 mode: Literalness::Formatted,
                 locus: None,
                 lines: vec![

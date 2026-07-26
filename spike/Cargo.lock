@@ -103,6 +103,7 @@ name = "dorc-aid"
 version = "0.0.0"
 dependencies = [
  "dorc-core",
+ "weft",
 ]
 
 [[package]]
@@ -131,6 +132,7 @@ dependencies = [
  "dorc-syntax",
  "errorloom",
  "libtest-mimic",
+ "weft",
 ]
 
 [[package]]

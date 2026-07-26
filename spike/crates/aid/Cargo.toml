@@ -6,12 +6,17 @@ rust-version.workspace = true
 publish = false
 
 # The DESCRIBE plane (`288` §2a): narrative records, the diagnostic catalog, render seats, and
-# the no-throw `Carrier`. Depends on `core` and NOTHING else — DST-clean by construction (no
-# clock, RNG, filesystem, or network, directly or transitively), so the whole pipeline stays a
-# pure function of its inputs inside deterministic-simulation tests. Adding a dependency here
-# requires proving it carries no nondeterminism (see spike/CLAUDE.md `inv-determinism`).
+# the no-throw `Carrier`. DST-clean by construction (no clock, RNG, filesystem, or network,
+# directly or transitively), so the whole pipeline stays a pure function of its inputs inside
+# deterministic-simulation tests. Adding a dependency here requires proving it carries no
+# nondeterminism (see spike/CLAUDE.md `inv-determinism`).
+#
+# `weft` is the layout engine the describe plane renders through. It is zero-dependency and a
+# pure function of (tree, frame), so it clears the determinism bar; and the edge points the
+# right way — `aid → weft`, never the reverse, since weft may never learn a Dorc type.
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
+weft = { path = "../weft", version = "0.0.0" }
 
 [lints]
 workspace = true

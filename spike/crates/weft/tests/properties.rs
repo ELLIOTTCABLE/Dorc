@@ -59,6 +59,7 @@ fn mixed_document() -> Document<Key> {
         body: vec![
             prose(vec![text("what was known, and why it was not enough:")]),
             Node::new(NodeKind::Speaker(SpeakerRow {
+                table: None,
                 gutter: Some(value("*")),
                 speaker: vec![value("ufw.oracle.sh:44")],
                 verb: Some(vec![value("reported")]),
@@ -68,6 +69,7 @@ fn mixed_document() -> Document<Key> {
                     trailer: vec![text(" (ran 09:13:51, rc 0)")],
                 },
                 attachments: vec![Node::new(NodeKind::Code(CodeBlock {
+                    table: None,
                     mode: Literalness::Literal,
                     locus: Some(vec![value("ufw.oracle.sh, as-written:")]),
                     lines: vec![CodeLine {
@@ -79,6 +81,7 @@ fn mixed_document() -> Document<Key> {
                 }))],
             })),
             Node::new(NodeKind::Labeled(LabeledRow {
+                table: None,
                 label: vec![value("so:")],
                 body: vec![text("the report was good when it ran")],
                 attachments: Vec::new(),
@@ -89,6 +92,118 @@ fn mixed_document() -> Document<Key> {
 
 fn lines_of(rendered: &Rendered<Key>) -> Vec<&str> {
     rendered.text().lines().collect()
+}
+
+fn labeled(table: Option<Key>, label: &str, body: &str) -> Node<Key> {
+    Node::new(NodeKind::Labeled(LabeledRow {
+        table,
+        label: vec![value(label)],
+        body: vec![text(body)],
+        attachments: Vec::new(),
+    }))
+}
+
+/// A shallow row and two rows buried in the branches of a join, all naming one
+/// table — the shape the named table exists for, and the one no structural rule
+/// can relate.
+fn table_across_a_join() -> Document<Key> {
+    let steps = Some(Key::Row("steps"));
+    Document::new(vec![
+        labeled(steps, "suspect:", "the claim is the only unmeasured link"),
+        Node::new(NodeKind::Join(weft::Join {
+            branches: vec![
+                weft::Branch {
+                    connective: None,
+                    nodes: vec![labeled(steps, "fix:", "widen the claim")],
+                },
+                weft::Branch {
+                    connective: Some(vec![value("OR")]),
+                    nodes: vec![labeled(steps, "fix:", "re plan without the flag")],
+                },
+            ],
+            restatement: None,
+        })),
+        labeled(steps, "review:", "every link unselected"),
+    ])
+}
+
+/// The column a labelled row's body starts in, for every line that carries one
+/// of the table's labels.
+fn body_columns(rendered: &Rendered<Key>, labels: &[&str]) -> Vec<usize> {
+    lines_of(rendered)
+        .iter()
+        .filter_map(|line| {
+            let trimmed = line.trim_start();
+            let label = labels.iter().find(|label| trimmed.starts_with(**label))?;
+            let indent = line.len().saturating_sub(trimmed.len());
+            let rest = trimmed.get(label.len()..)?;
+            let gap = rest.len().saturating_sub(rest.trim_start().len());
+            (!rest.trim().is_empty())
+                .then_some(indent.saturating_add(label.len()).saturating_add(gap))
+        })
+        .collect()
+}
+
+const STEP_LABELS: &[&str] = &["suspect:", "fix:", "review:"];
+
+#[test]
+fn a_named_table_squares_up_members_that_are_not_siblings() {
+    let rendered = render(&table_across_a_join(), 80);
+    let columns = body_columns(&rendered, STEP_LABELS);
+    assert_eq!(
+        columns.len(),
+        4,
+        "all four labelled rows must render on a line of their own: {:?}",
+        rendered.text()
+    );
+    assert!(
+        columns.windows(2).all(|pair| pair[0] == pair[1]),
+        "a table shares its whole prefix, so every member's body starts in ONE column; got {columns:?} in\n{}",
+        rendered.text()
+    );
+}
+
+/// At 30 columns the deepest member cannot afford a hanging body, which is what
+/// forces the whole table to stack (`28F:rul-table-degrades-whole`).
+#[test]
+fn a_table_degrades_as_one_unit() {
+    let rendered = render(&table_across_a_join(), 30);
+    let hanging = body_columns(&rendered, STEP_LABELS);
+    assert!(
+        hanging.is_empty(),
+        "one narrow member stacks the WHOLE table: a table where some rows hang and \
+         others stack reads as broken, not as adaptive; got\n{}",
+        rendered.text()
+    );
+}
+
+/// The measure walk and the layout walk must visit the same members, in the same
+/// order, at the same insets. A debug assertion checks every member; this drives
+/// it over every container the vocabulary has, at every swept width, so a walk
+/// that stops mirroring its twin fails loudly instead of shifting a column.
+#[test]
+fn the_layout_walk_agrees_with_the_measure_walk_everywhere() {
+    let nested = Document::new(vec![
+        Node::new(NodeKind::Section(Section {
+            header: vec![value("ANALYSIS")],
+            counts: None,
+            body: vec![Node::new(NodeKind::Banner(weft::Banner {
+                headline: vec![value("receipt:")],
+                body: vec![
+                    mixed_document().nodes.remove(0),
+                    table_across_a_join().nodes.remove(1),
+                ],
+            }))],
+        })),
+        table_across_a_join().nodes.remove(0),
+    ]);
+    for width in SWEEP {
+        let rendered = render(&nested, width);
+        assert!(
+            !rendered.text().is_empty(),
+            "the nested document must render at width {width}"
+        );
+    }
 }
 
 #[test]
@@ -229,6 +344,7 @@ fn an_over_wide_word_overruns_rather_than_being_split() {
 fn literal_code_lines_stay_byte_honest() {
     let line = "ufw status verbose | grep -q \"$1\"  : org.ufw.Firewall:\"$1\"@allowed";
     let document = Document::new(vec![Node::new(NodeKind::Code(CodeBlock {
+        table: None,
         mode: Literalness::Literal,
         locus: None,
         lines: vec![CodeLine {
@@ -247,6 +363,7 @@ fn literal_code_lines_stay_byte_honest() {
 #[test]
 fn a_descriptive_block_is_always_marked_non_runnable() {
     let document = Document::new(vec![Node::new(NodeKind::Code(CodeBlock {
+        table: None,
         mode: Literalness::Descriptive,
         locus: None,
         lines: vec![CodeLine {

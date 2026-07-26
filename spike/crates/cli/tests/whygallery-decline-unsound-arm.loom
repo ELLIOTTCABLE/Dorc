@@ -157,7 +157,8 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-re
 
    what 9|sysctl rested on:
 
-   * dorc derives  this is the first wall in book order -- an oracle vouching its
-                   convergence would let dorc remove it once converged
+   * dorc  derives  this is the first wall in book order -- an oracle vouching its
+                    convergence would let dorc remove it once converged
 
-(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)

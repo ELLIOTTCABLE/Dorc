@@ -1,6 +1,6 @@
 receipt: apply 2026-07-25 02:00:37, host web1, trigger cron
-   oracles: certsync 1.2, service 2.0, + base library
-   plan:    2 ran, 1 guarded, 5 skipped
+   oracles:  certsync 1.2, service 2.0, + base library
+   plan:     2 ran, 1 guarded, 5 skipped
 
 === IMPROVEMENTS (2) ===
 

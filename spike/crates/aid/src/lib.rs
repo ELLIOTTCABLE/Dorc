@@ -41,6 +41,8 @@ pub mod arrangement;
 
 pub mod tagged;
 
+pub mod weave;
+
 pub mod narrative;
 pub use narrative::{CollapseKind, CollapseNarrative, TrustTier};
 
