@@ -408,7 +408,7 @@ impl Parser {
             vec![construct],
             format!(
                 "a redirection trailing a `{construct_name}` construct (e.g. `{} < file`) is not \
-                 modeled — the construct's I/O redirection is outside the modeled subset",
+                 modeled -- the construct's I/O redirection is outside the modeled subset",
                 construct_close(construct_name),
             ),
         )
@@ -590,7 +590,7 @@ impl Parser {
         let close_hi = if matches!(self.peek(), TokKind::RParen) {
             self.bump().span
         } else {
-            self.push_malformed(open.span, "unterminated subshell `(` (no `)`）");
+            self.push_malformed(open.span, "unterminated subshell `(` (no `)`)");
             self.peek_span()
         };
         let redirs = self.parse_redirs();
@@ -1037,7 +1037,7 @@ impl Parser {
                 UnsupportedReason::ArithmeticExpansion,
                 span,
                 salvage(),
-                "arithmetic expansion `$(( … ))` used as a command",
+                "arithmetic expansion `$(( ... ))` used as a command",
             ));
         }
 

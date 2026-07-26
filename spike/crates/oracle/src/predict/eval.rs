@@ -144,7 +144,7 @@ impl TopReason {
             }
             TopReason::BudgetExceeded => "iteration budget exceeded",
             TopReason::Pipeline => {
-                "selected path reached a command pipeline (out of dialect ⇒ runs)"
+                "selected path reached a command pipeline (out of dialect => runs)"
             }
         }
     }
@@ -520,7 +520,7 @@ pub(crate) fn resolve_word(
         // use (a peel's guest) is handled by the command-running callers (verdict `run_command`,
         // the predict `Command` handler), which never route through here.
         Word::PositionalArgs => Err(TopReason::NonConcreteWord(
-            "`\"$@\"` is the positional list — not one value (⊤ in value position)",
+            "`\"$@\"` is the positional list -- not one value (⊤ in value position)",
         )),
         // Unmodeled expansions fail in every position — including `[ ]` tests:
         // evaluating them as text or guessing dash's glob semantics would be a

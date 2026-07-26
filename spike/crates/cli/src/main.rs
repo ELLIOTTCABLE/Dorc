@@ -2046,7 +2046,7 @@ fn build_survival_footprints(
             diags.push(Diag::new(
                 DiagCode::FootprintIncoherent(FootprintIncoherent {
                     detail: "touches() footprint omits this command's own effect coordinate \
-                             (at-least ⊄ at-most) — footprint refused, the site walls"
+                             (at-least ⊄ at-most) -- footprint refused, the site walls"
                         .to_string(),
                 }),
                 span,
@@ -2328,7 +2328,7 @@ fn merge_derived_footprints(
             diags.push(Diag::new(
                 DiagCode::FootprintIncoherent(FootprintIncoherent {
                     detail: "derived touches() emitted a malformed coordinate (not kind:entity) \
-                             — footprint refused, the site walls (an at-most claim cannot be \
+                             -- footprint refused, the site walls (an at-most claim cannot be \
                              partial)"
                         .to_string(),
                 }),
@@ -3168,7 +3168,7 @@ fn unresolvable_diagnostics(
         let Some(&id) = ast_of_leaf.get(&leaf) else {
             debug_assert!(
                 false,
-                "unresolvable site has no plan step — unresolvable ⊆ plan.steps by \
+                "unresolvable site has no plan step -- unresolvable is a subset of plan.steps by \
                  construction (f-7); a hit means the probe/plan site spaces diverged"
             );
             continue;

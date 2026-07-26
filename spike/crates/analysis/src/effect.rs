@@ -523,7 +523,7 @@ fn cell_effect(
         // Spanless: no source location at this classification depth (arch-3-residual-2).
         let msg = format!(
             "check annotation kind `{annotation_kind_str}` disagrees with the effect-map \
-             kind `{em_kind}` for this verb — the annotation (declared identity) wins"
+             kind `{em_kind}` for this verb -- the annotation (declared identity) wins"
         );
         diags.push(Diag::new_spanless_site(Code::EffectKindDisagreement(
             EffectKindDisagreement { detail: msg },

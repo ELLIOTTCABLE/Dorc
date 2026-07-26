@@ -90,7 +90,7 @@ fn head_word_display(w: &Word) -> String {
     match w {
         Word::Literal(s) | Word::SingleQuotedLiteral(s) => s.clone(),
         Word::Positional(n) => format!("${n}"),
-        _ => "…".to_owned(),
+        _ => "...".to_owned(),
     }
 }
 

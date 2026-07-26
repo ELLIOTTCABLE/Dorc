@@ -361,7 +361,7 @@ fn one_line_truncated(s: &str) -> String {
     let flat: String = s.split_whitespace().collect::<Vec<_>>().join(" ");
     if flat.chars().count() > 400 {
         let cut: String = flat.chars().take(400).collect();
-        format!("{cut}…")
+        format!("{cut}...")
     } else {
         flat
     }

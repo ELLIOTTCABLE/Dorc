@@ -2745,7 +2745,7 @@ pub fn why(diag: &Diag, arena: &dorc_core::ProvArena, src: &str) -> Option<Expla
     // span (`a-registry-row-need-not-mint-a-span`). The opener stays hardcoded: it is the parked
     // class-prose register (`288` §6), not this storage move.
     let reason = format!(
-        "ran because {} is a command-substitution `$(…)` or runtime-dynamic value — its value \
+        "ran because {} is a command-substitution `$(...)` or runtime-dynamic value -- its value \
          couldn't be resolved (first seen at {where_top}); so dorc runs it, to stay safe (when \
          unsure, run). {}",
         payload.position.describe(),

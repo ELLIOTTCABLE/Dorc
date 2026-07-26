@@ -158,7 +158,7 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
                 DiagCode::WrapperEntryIncoherent(WrapperEntryIncoherent {
                     detail: format!(
                         "wrapper `{}`: __enter and __lend_map disagree on argv flow (entry \
-                         consumes {} leading arg(s), the lend-fold consumes {}) — static \
+                         consumes {} leading arg(s), the lend-fold consumes {}) -- static \
                          incoherence (27C:rul-fold-entry-coherence-failfast, \
                          declarations-genuinely-contradict). The entry form drops/transforms args \
                          the fold relied on; make the entry pass the fold's guest verbatim.",
@@ -182,7 +182,7 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
                         detail: format!(
                             "wrapper `{}`: __predict and __lend_map disagree on the peel tail \
                              position (predict reaches \"$@\" after {} argv token(s), lend_map \
-                             after {}) — static incoherence (273 §5, \
+                             after {}) -- static incoherence (273 section 5, \
                              declarations-genuinely-contradict). The guest would start at a \
                              different token depending on which member dispatched; fix the \
                              argparse so both peel to the same tail.",

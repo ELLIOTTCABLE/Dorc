@@ -4236,7 +4236,7 @@ fn normalise_edits(mut edits: Vec<SpanEdit>) -> Vec<SpanEdit> {
             // debug, and conservatively drop e in release (never produce a corrupt splice).
             debug_assert!(
                 e.hi <= prev.hi,
-                "partial span-edit overlap [{},{}) vs [{},{}) — leaf-seam violated",
+                "partial span-edit overlap [{},{}) vs [{},{}) -- leaf-seam violated",
                 prev.lo,
                 prev.hi,
                 e.lo,
@@ -4412,7 +4412,7 @@ fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
     debug_assert_eq!(
         spliced_count,
         edits.len(),
-        "span-edit count mismatch: {spliced_count} spliced vs {} collected — an edit was \
+        "span-edit count mismatch: {spliced_count} spliced vs {} collected -- an edit was \
          orphaned or double-applied (P1 21E f-1 invariant)",
         edits.len(),
     );

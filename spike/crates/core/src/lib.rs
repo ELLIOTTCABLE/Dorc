@@ -333,10 +333,10 @@ impl TopCause {
     pub fn describe(self) -> &'static str {
         match self {
             Self::UnmodeledExpansion => {
-                "a command-substitution `$(…)` / arithmetic / operator-form expansion"
+                "a command-substitution `$(...)` / arithmetic / operator-form expansion"
             }
             Self::UnresolvablePositional => "an unresolvable positional parameter (`$@`/`$*`/`$N`)",
-            Self::DynamicParameter => "a dynamic special parameter (`$?`/`$$`/`$!`/…)",
+            Self::DynamicParameter => "a dynamic special parameter (`$?`/`$$`/`$!`/...)",
             Self::DynamicValue => "a runtime-dynamic variable value (unset or branch-conflicted)",
             Self::SplitOrGlob => "an unquoted field-split / glob / tilde expansion",
             Self::NonConvergent => "a non-convergent value-flow result",

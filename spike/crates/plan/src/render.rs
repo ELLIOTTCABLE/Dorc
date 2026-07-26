@@ -129,7 +129,7 @@ pub mod probe {
          # When run, emits one results-record per site on stdout (the return channel):\n\
          #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>\n\
          # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);\n\
-         # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).\n\n"
+         # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).\n\n"
     }
 
     /// A per-site provenance comment naming the cell the site (or member) checks (`# site
@@ -310,11 +310,11 @@ pub mod deriv {
     /// probe, so it never opens a second phase.
     #[must_use]
     pub const fn header() -> &'static str {
-        "# dorc derivation-probe (read-only, 24E §2): payload-bound footprints the static\n\
+        "# dorc derivation-probe (read-only, 24E section 2): payload-bound footprints the static\n\
          # tracer could not resolve. Each escalated wall-candidate ships its touches() body\n\
          # strip-only; when run it prints its footprint coordinates, re-keyed per site:\n\
          #   deriv <leafid> coord=<kind:entity>\n\
-         # (the SAME leaf-id the apply plan assigns — inv-site-keyed-results).\n\n"
+         # (the SAME leaf-id the apply plan assigns -- inv-site-keyed-results).\n\n"
     }
 
     /// A per-site derivation provenance comment (`# deriv <leafid>: <provider> (host-derivation
@@ -391,7 +391,7 @@ pub mod resolv {
     /// opens a second phase.
     #[must_use]
     pub const fn header() -> &'static str {
-        "# dorc resolver-probe (read-only, 24F §3): owner-declared identity canonicalization. Each\n\
+        "# dorc resolver-probe (read-only, 24F section 3): owner-declared identity canonicalization. Each\n\
          # resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it\n\
          # prints the canonical form (or a dangling marker), re-keyed by the coordinate:\n\
          #   resolv <kind:entity> canon=<canonical>   |   resolv <kind:entity> dangling\n\
@@ -460,11 +460,11 @@ pub mod reach {
     /// second phase.
     #[must_use]
     pub const fn header() -> &'static str {
-        "# dorc reach-probe (read-only, 24G §4): owner-declared reaches() expansion. Each dynamic\n\
+        "# dorc reach-probe (read-only, 24G section 4): owner-declared reaches() expansion. Each dynamic\n\
          # reaches() arm of a reach-bearing footprint coord runs with the ENTITY; when run it prints\n\
          # the RAW ENTITIES it drags (its stdout lines), re-keyed by the coord AND the arm index:\n\
          #   reach <kind:entity> arm=<n> entity=<reached>\n\
-         # The controller joins arm->kind statically (the kind is fixed at lift — never host-minted).\n\n"
+         # The controller joins arm->kind statically (the kind is fixed at lift -- never host-minted).\n\n"
     }
 
     /// A per-(coord, arm) provenance comment (`# reach <kind:entity> via <kind>.reaches() arm N`).

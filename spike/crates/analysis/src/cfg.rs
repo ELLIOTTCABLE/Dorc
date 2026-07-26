@@ -778,7 +778,7 @@ impl<'a> Builder<'a> {
         if defs.len() > 1 {
             let detail = format!(
                 "function `{name}` is defined more than once; the call is not inlined \
-                 (redefinition tracking is out of the modeled subset) — it runs as an \
+                 (redefinition tracking is out of the modeled subset) -- it runs as an \
                  ordinary unmodeled command"
             );
             self.diags.push(Diag::new(
@@ -798,7 +798,7 @@ impl<'a> Builder<'a> {
         if self.inline_stack.contains(&body) {
             let detail = format!(
                 "recursive call to `{name}` (direct or transitive within the active inline \
-                 stack); not inlined — it runs as an ordinary unmodeled command"
+                 stack); not inlined -- it runs as an ordinary unmodeled command"
             );
             self.diags.push(Diag::new(
                 Code::CfgInlineRefused(CfgInlineRefused { detail }),
@@ -808,7 +808,7 @@ impl<'a> Builder<'a> {
         }
         if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
             let detail = format!(
-                "call to `{name}` exceeds the inline-depth budget ({}); not inlined — it \
+                "call to `{name}` exceeds the inline-depth budget ({}); not inlined -- it \
                  runs as an ordinary unmodeled command",
                 inline_budget::MAX_DEPTH
             );
@@ -840,7 +840,7 @@ impl<'a> Builder<'a> {
         if let Some(construct) = self.body_uses_unmodeled_positional(body) {
             let detail = format!(
                 "call to `{name}` not inlined: its body uses `{construct}` (out of the \
-                 modeled subset) — it runs as an ordinary unmodeled command"
+                 modeled subset) -- it runs as an ordinary unmodeled command"
             );
             self.diags.push(Diag::new(
                 Code::CfgInlineRefused(CfgInlineRefused { detail }),
@@ -853,7 +853,7 @@ impl<'a> Builder<'a> {
         if let Some(detail) = self.body_has_unmodeled_write_redirect(body) {
             let detail = format!(
                 "call to `{name}` not inlined: its body has an unmodeled write-redirect \
-                 ({detail}) — it runs as an ordinary unmodeled command (tc-M2)"
+                 ({detail}) -- it runs as an ordinary unmodeled command (tc-M2)"
             );
             self.diags.push(Diag::new(
                 Code::CfgInlineRefused(CfgInlineRefused { detail }),
@@ -893,7 +893,7 @@ impl<'a> Builder<'a> {
         if estimate > inline_budget::MAX_NODES_PER_SITE {
             let detail = format!(
                 "call to `{name}` exceeds the per-call inline-node budget ({} > {}); not \
-                 inlined — it runs as an ordinary unmodeled command",
+                 inlined -- it runs as an ordinary unmodeled command",
                 estimate,
                 inline_budget::MAX_NODES_PER_SITE
             );
@@ -906,7 +906,7 @@ impl<'a> Builder<'a> {
         if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
             let detail = format!(
                 "call to `{name}` exceeds the per-book inline-node budget ({} spliced + {} \
-                 more > {}); not inlined — it runs as an ordinary unmodeled command",
+                 more > {}); not inlined -- it runs as an ordinary unmodeled command",
                 self.spliced_node_total,
                 estimate,
                 inline_budget::MAX_NODES_PER_BOOK
@@ -952,7 +952,7 @@ impl<'a> Builder<'a> {
                 debug_assert!(
                     inner_sites.iter().all(|&s| s.0 > node.0),
                     "inline ordering: inner CALL {node:?} must precede its flattened body sites \
-                     {inner_sites:?} (the flattened_inner dedupe relies on arena order; 217 §5 obs-2)"
+                     {inner_sites:?} (the flattened_inner dedupe relies on arena order; 217 section 5 obs-2)"
                 );
                 sites.extend(inner_sites.iter().copied());
                 flattened_inner.extend(inner_sites.iter().copied());
