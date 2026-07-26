@@ -24,7 +24,7 @@
 //! glyphs, and nothing else — no vocabulary, no numbering, no counts.
 
 use crate::frame::{Frame, Reservation, Side, Width};
-use crate::measure::{Placement, are_adjacent_rows, measure};
+use crate::measure::{Placement, are_adjacent_rows, has_attachments, measure};
 use crate::provenance::Span;
 use crate::sink::Sink;
 use crate::tree::{
@@ -159,14 +159,19 @@ impl<K: Clone + PartialEq> Painter<K> {
     /// Vertical separation between two nodes.
     ///
     /// A blank line belongs between unlike things. Two exceptions: a run of
-    /// same-kind rows is one table and reads as one block, and a pointer refers
-    /// to what precedes it, so separating it from that would be a lie about what
-    /// it points at.
+    /// same-kind rows reads as one block, and a pointer refers to what precedes
+    /// it, so separating it from that would be a lie about what it points at.
+    ///
+    /// A row whose attachments rendered is no longer tight against its
+    /// successor: the material hanging under it has to end somewhere visible, or
+    /// the next row reads as part of the attachment. Note that this is a
+    /// SPACING judgment only — the interrupted rows still share their table, so
+    /// the run resumes squared up after the interruption.
     fn separate(&mut self, previous: &NodeKind<K>, next: &NodeKind<K>) {
         if matches!(next, NodeKind::Pointer(_)) {
             return;
         }
-        if are_adjacent_rows(previous, next) {
+        if are_adjacent_rows(previous, next) && !has_attachments(previous) {
             self.sink.end_line();
             return;
         }
@@ -249,10 +254,22 @@ impl<K: Clone + PartialEq> Painter<K> {
         emit_runs(&mut self.sink, &pointer.target);
     }
 
+    /// Branches are separated by the same rule as siblings: alternatives that
+    /// are each one row read as one list interrupted by a connective, while
+    /// branches carrying blocks need the air.
     fn join(&mut self, join: &Join<K>, frame: &Frame) {
         for (index, branch) in join.branches.iter().enumerate() {
-            if index > 0 {
-                self.sink.blank_line();
+            let previous = index
+                .checked_sub(1)
+                .and_then(|i| join.branches.get(i))
+                .and_then(|branch| branch.nodes.last());
+            if let Some(previous) = previous {
+                match branch.nodes.first() {
+                    Some(first) if are_adjacent_rows(&previous.kind, &first.kind) => {
+                        self.sink.end_line();
+                    }
+                    _ => self.sink.blank_line(),
+                }
             }
             self.branch(branch, frame);
         }

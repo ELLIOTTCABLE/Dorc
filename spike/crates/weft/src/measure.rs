@@ -185,12 +185,23 @@ impl<K: Clone + PartialEq> Draft<K> {
 }
 
 /// Whether two adjacent nodes are rows of one kind, and so belong to one
-/// anonymous table with no blank line between them.
+/// anonymous table.
 pub(crate) fn are_adjacent_rows<K>(left: &NodeKind<K>, right: &NodeKind<K>) -> bool {
     matches!(
         (left, right),
         (NodeKind::Speaker(_), NodeKind::Speaker(_)) | (NodeKind::Labeled(_), NodeKind::Labeled(_))
     )
+}
+
+/// Whether a node hung material beneath itself. Grouping ignores this — a run of
+/// rows interrupted by an attachment is still one table, which is half of why
+/// tables are named rather than inherited — but SPACING does not.
+pub(crate) fn has_attachments<K>(kind: &NodeKind<K>) -> bool {
+    match kind {
+        NodeKind::Speaker(row) => !row.attachments.is_empty(),
+        NodeKind::Labeled(row) => !row.attachments.is_empty(),
+        _ => false,
+    }
 }
 
 /// Measures a document: resolves every table, and predicts every member's left

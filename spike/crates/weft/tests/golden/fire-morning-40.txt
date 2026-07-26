@@ -39,7 +39,6 @@ if 9|systemctl SHOULD have run:
    fix:
       certsync.oracle.sh:31 (widen the
       claim; every consumer heals)
-
 OR
    fix:
       `dorc plan web.sh web1` (run
