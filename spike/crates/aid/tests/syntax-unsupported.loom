@@ -5,4 +5,4 @@ why: inv-top-reject: under-modeling is a loud correctness boundary. PASSTHROUGH 
 ---
 -- replay --
 $ dorc plan --book=book.sh
-error[syntax-unsupported]: sm process substitution `<(…)` is not modeled
+error[syntax-unsupported]: sm process substitution `<(...)` is not modeled

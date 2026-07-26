@@ -431,7 +431,7 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
             (
                 TemplateVariableName(String::from("cause")),
                 String::from(
-                    "a command-substitution `$(…)` / arithmetic / operator-form expansion"
+                    "a command-substitution `$(...)` / arithmetic / operator-form expansion"
                 ),
             ),
         ]

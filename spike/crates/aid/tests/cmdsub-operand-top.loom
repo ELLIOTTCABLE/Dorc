@@ -14,7 +14,7 @@ systemctl enable nginx
 
 -- replay --
 $ dorc plan --book=book.sh
-note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` /
+note[cmdsub-operand-top]: operand 3 is a command-substitution `$(...)` /
    arithmetic / operator-form expansion, so Dorc cannot know its value until the
    command runs on the host -- there is nothing to resolve and no read-only
    probe to check. Dorc elides a command only when it can prove the command's
