@@ -419,6 +419,13 @@ fn render_payload<K: Clone>(
     if quoted {
         sink.layout(QUOTE);
     }
+    if !row.payload.trailer.is_empty() {
+        wrap(
+            sink,
+            &row.payload.trailer,
+            &frame.inset(payload_left.saturating_sub(frame.left())),
+        );
+    }
 }
 
 // ---- code blocks ---------------------------------------------------------

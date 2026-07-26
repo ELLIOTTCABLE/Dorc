@@ -156,6 +156,11 @@ pub struct Payload<K> {
     pub quoting: Quoting,
     /// The payload words.
     pub runs: Vec<Run<K>>,
+    /// Material about the *speaking*, not the thing said — when a check ran and
+    /// what it exited with. It sits outside the quotation, because attributing
+    /// it to the speaker would put words in their mouth: they said the payload,
+    /// not the circumstances under which they were heard.
+    pub trailer: Vec<Run<K>>,
 }
 
 /// Whether a payload is a verbatim quotation or the consumer's own prose.

@@ -72,7 +72,11 @@ pub(crate) fn emit_runs<K: Clone>(sink: &mut Sink<K>, runs: &[Run<K>]) {
 pub(crate) fn wrap<K: Clone>(sink: &mut Sink<K>, runs: &[Run<K>], frame: &Frame) {
     let mut line = 0usize;
     let mut pending: Option<(&str, &Provenance<K>)> = None;
-    let mut placed = false;
+    // Continuing a line that already has content, rather than starting one, is
+    // what makes hanging indents and post-quote trailers fall out for free —
+    // and it is why leading whitespace survives there but is dropped at the
+    // start of a fresh line, where it would just be indent noise.
+    let mut placed = !sink.line_is_empty();
 
     for token in tokenize(runs) {
         match token {
@@ -85,10 +89,7 @@ pub(crate) fn wrap<K: Clone>(sink: &mut Sink<K>, runs: &[Run<K>], frame: &Frame)
                 let (left, right) = frame.usable(line);
                 if placed {
                     let gap = pending.map_or(0, |(space, _)| space.len());
-                    let end = sink
-                        .column()
-                        .saturating_add(gap)
-                        .saturating_add(text.len());
+                    let end = sink.column().saturating_add(gap).saturating_add(text.len());
                     if end > right {
                         sink.newline();
                         line = line.saturating_add(1);

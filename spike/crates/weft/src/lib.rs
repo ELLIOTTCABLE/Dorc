@@ -100,8 +100,8 @@
 pub mod frame;
 pub mod provenance;
 pub mod render;
-pub mod tree;
 mod sink;
+pub mod tree;
 mod wrap;
 
 pub use frame::{Frame, Reservation, Side, Width};
