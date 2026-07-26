@@ -53,6 +53,43 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
 
 ## §2 — Rulings / landings (accretes)
 
+- **lane-w2a-adapter LANDED + FOLDED** @ merge `46ca50b6` (7 commits; clean
+  cross-merge with w2-data; 1417 tests at its tip). Leg 1: the named table
+  built as ruled (measure walk + prefix-sum stops; three ad-hoc measurement
+  paths deleted; assert verified by injected-drift red; ragged NEXT-STEPS
+  resolved; gutter-is-a-lead). Leg 2: adapter sited `aid::weave` (keys +
+  constructors) / cli (composition; only aid+cli dep weft); `Said`
+  provenance-typed (`Words(slug)|Value|Lens`); W1's leftover string literals
+  gone; six headings' `===` moved to weft geometry. Leg 3: `as-written:`
+  foreign block live (comment-walk + cap + counted truncation between
+  same-table code blocks; encode-at-mint `\xNN`). Payload trailer plumbed,
+  `None` until W2b fills it. Nine divergences flagged-not-absorbed (D1 rides
+  the disturbs-arm span gap; D2–D9 accepted: table-limits/judgment tier).
+  Weft crate `CLAUDE.md` MINTED at this fold (its F4 flag; the
+  firm invariants now sit crate-adjacent).
+- **Conduct lesson (from w2a's F1): ledger edits COMMIT IMMEDIATELY** — the
+  three weft rulings existed only in my working tree when w2a dispatched;
+  builders can only cite committed law. Practice corrected as of `f2fdac14`.
+- **W2b scope additions from w2a**: `tc-disturbs-span-threading` (per-arm span
+  for disturbs claims — makes `as-written:` show the matched arm + author
+  comment instead of the funcdef line; engine-side, plan/survival) ·
+  `predict_speaker` defining_span flip (F3, was already banked) ·
+  `ChainLink.event` trailer fill. Standing seams re-confirmed, NOT W2b's:
+  span-map-unconsumed/loom-round-trip (W4; `Said` slugs make the future
+  bridge a mapping not a re-derivation) · `Said::Lens` pre-flattened (named
+  in-code).
+- **Loom-cleanup work order accreted (w2a's L1–L7)**: `BLESS=<substring>`
+  scoped bless (all-or-nothing rides drift in silently) · dry-run candidate
+  transcripts to a scratch path (render-lane iteration cost) · LCS failure
+  diff (line-paired diff is noise once line counts change) · needle-freeness
+  documented (needles survived a wholesale re-home — correct but worth
+  stating) · record the sanctioned hand-seed path against the lock's
+  DO-NOT-EDIT banner · **L6, the sharpest: arity-mismatch degrades to a
+  silent `[unwritten:]` render** — editing a Migrated row's word boundaries
+  is invisible to every check but the transcript fixpoint; wants a loud
+  pre-render gate (`error-prose-conductor-flow`'s failure taste) · the two
+  bless paths' corpus-reach split needs an ordering statement.
+
 - (human-typed, mid-W1, delivered by the human DIRECTLY to the weft builder;
   banked here for durability — none critical, all early-architecture steers so
   the skeleton doesn't weld against needed richness):
