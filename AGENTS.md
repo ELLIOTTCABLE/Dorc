@@ -124,6 +124,7 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - speak in imperative case, plain-english as much as possible
   - avoid multi-line breakdowns as commit-message-trailers, context discovers in-filesystem-tree, in more discoverable places (work-log or chronological-notes-document that you're probably already keeping, in most cases)
     - single exception: if a commit was *fully mechanical* (commit A -> a single shell-command -> commit B), then including that shell-command as the folded third/later lines of the commit-message is reasonable
+- worktrees are in heavy use; create your own when you have work to do, but also clean up afterself - delete your own worktree when your work is entirely complete, if-and-only-if there is nothing of value left laying around. (*only* delete worktrees *you* created, though.)
 - our error-looms are *sacrosanct*.
   - AIs do *not* author human-facing prose without explicit, single-case, narrowly-scoped ack from a human (and that, rarely.)
   - when authoring, even placeholder text, read *the entire loom* - the whole point of the complex loom subsystem is to place the *entire* user-story in-context while writing prose. (Never `tail`, never truncate, this is *not* the place to be trying to save tokens.)
