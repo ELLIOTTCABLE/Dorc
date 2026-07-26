@@ -248,10 +248,58 @@ is the human's; untouched.
   `rider-carrier-must-use-on-carrier` — add `#[must_use]` to `Carrier<T>` in
   `aid` IF the `-D warnings` fallout is a handful of sites; else revert to a
   note and report (the silent-drop hazard the builder named is real and
-  type-shaped). — value-bearing lines
+  type-shaped).
+- (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
   measures how much of the why surface this fences off; if large, the deferred
   transport enrichment (`28G` §2) gets priced INTO this arc (per AGENTS.md's new
   anti-deferral law + `289:steer-errorloom-best-to-use`: errorloom is unpublished,
-  fix the word-model in place, no adapters).
+  fix the word-model in place, no adapters). [Confirmed by the map's class-(c)
+  measurement; transport work pulled in — see the adjudication above.]
+- **Human workflow items (typed 2026-07-26, mid-arc; conductor-checked):**
+  - `item-loom-blast-radius-dirty-gate` + `item-input-edit-is-a-structure-bless`
+    + `item-errorloom-obvious-flow-pass` — the human edited an INPUT section
+    (re-hardwrapped a `-- book.sh --` comment) and `loom:compile` refused on
+    dirty-tree. Logic CHECKED, holds with one caveat: the blunt gate exists
+    because compile/promote is a render-back that OVERWRITES loom files — the
+    real hazard is MIXED same-file edits (uncommitted prose + input edits in
+    one loom), which is exactly what `282`'s prose-bless/structure-bless
+    EXCLUSIVITY names (the human's recalled term is right). Correct scope:
+    dirty-refusal only within the blast radius (touched looms + the two
+    generated locks) — repo dirt outside it is ceremony, agreed; an
+    input-section edit routes to the STRUCTURE-BLESS path (re-drive the
+    replay, re-render, re-anchor surviving prose spans, show the diff) —
+    designed in `282`, ~SUSPECT unbuilt/partial as a first-class compile path
+    (today's route is the blind `DORC_LOOM_DUMP` two-step); mixed input+prose
+    edits in ONE file refuse with the exclusivity message naming both paths.
+    Plus the flow-legibility pass: every refusal names the next command; the
+    edit/compile/review/promote/commit path obvious from any error. HOME: a
+    loom-UX lane AFTER span leg A (leg A reworks `to_editable_render` /
+    `apply_arrangement_edit`; building UX atop pre-rework shapes churns
+    twice); sized at the span fold.
+  - `rul-fixture-records-enriched-not-reduced` (human lean, direction-setting)
+    — fixture/loom probe-records ENRICH rather than reduce: carry the full
+    framed `dorc-records/1` form verbatim (version statement, DST-stabilized
+    clocks/hashes and all), PLUS a very-much-not-on-the-wire debug/fixture
+    mode appending a commented correlation form to each `site` line
+    (`# 12|apt-get` — command word only, no argv, churn-minimal; the reader
+    already tolerates `#` lines by design). Supersedes
+    `ask-fixtures-exercise-framed-lane` in the ENRICH direction. New why-cases
+    adopt at the span lane; corpus-wide fixture respell is a tail item, not
+    mid-arc churn.
+  - `item-webhost-redline-orphaned` — the human red-lined
+    `whygallery-webhost-whole.loom` @ `f4f48316` (their branch), deliberately
+    non-compiling; proper compiling prose edits to follow. COLLISION FLAGGED
+    to the human: the parts lane's `item-missing-command-word` rider
+    re-blesses that SAME loom (mechanical bug fix); recommendation — lane
+    proceeds, the human's prose edits rebase over the fixed transcript.
+  - `item-precommit-loom-step-overclaims` (investigate; micro-lane dispatched)
+    — the pre-commit hook "claimed to compile looms" yet accepted made-up
+    transcript content. ~SUSPECT tier confusion rather than a hole:
+    executed-fixpoint cases (`run: round-trip`) defer transcript proof to the
+    e2e runner (`one-fixpoint-authority-per-case`), so a pre-commit loom step
+    can only be hygiene-tier — but IF the full gate ALSO stays green on
+    mismatched content, that is a real hole. Empirical probe: cherry-pick
+    `f4f48316` in a scratch worktree, run the scoped loom + e2e trials, read
+    hk.pkl's actual step; escalate on a green gate.
