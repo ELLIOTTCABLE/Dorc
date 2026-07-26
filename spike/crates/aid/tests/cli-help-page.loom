@@ -46,9 +46,9 @@ receipts -- every plan/apply/round-trip writes one; `dorc why` reads it:
   sm  Holds: book path + digest, oracles, flags, probe records, per-line
   sm  disposition -- never book text, never a command's output.
   sm  Kept in $XDG_STATE_HOME/dorc (else ~/.local/state/dorc; Windows
-  sm  %LOCALAPPDATA%\dorc). Secret-free by design, but it names your hosts,
+  sm  %LOCALAPPDATA%\dorc). Sensitive: it names your hosts,
   sm  paths and oracles: unix writes it 0600 in a 0700 directory; Windows has
-  sm  no mode, so there that per-user location is the only protection.
+  sm  no mode, so there that per-user location is the *only protection.*
 
 stdin:  probe results, one per line -- `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
         (unless --results <file>); stdout: the selected mode's artifact(s); stderr:
