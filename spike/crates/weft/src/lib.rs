@@ -95,15 +95,37 @@
 //! - **Selection.** [`tree::Criticality`] and [`tree::Register`] are recorded
 //!   and ruled on in no way — nothing is dropped, shortened, or reordered by
 //!   them. Marking can start before the renderer learns to select.
-//! - **Shared column POSITION.** The `align` keys share a column *width*
-//!   between elements that are not siblings; they do not share a position, and
-//!   a column's position is a prefix sum of everything to its left, enclosing
-//!   indent included. Members at different nesting depths therefore share a
-//!   width and still land in different places. The successor — globally
-//!   resolved column stops, and per-group rather than per-run degradation —
-//!   needs the measure pass to walk geometry, which is the scan half of the
-//!   two-pass shape. The limits are spelled out in that module and pinned by
-//!   test rather than left to be rediscovered.
+//! - **Columns shared between elements that are not siblings.** Today a column
+//!   is resolved from structural proximity only: a run of adjacent speaker
+//!   rows, a run of adjacent labelled rows, the lines of one code block. Each
+//!   such group resolves all of its columns together from one left edge, so
+//!   within a group nothing can slip.
+//!
+//!   Across groups, nothing lines up — and there are real cases that want to.
+//!   Two `fix:` rows in different branches of a join are the same kind of thing
+//!   said twice and read as one ragged list. So do the trailing comments of two
+//!   excerpts, and chain rows resuming after an attachment interrupts them.
+//!
+//!   The answer is a named TABLE, not a per-column group. A table is identified
+//!   by an opaque key, rows join it by naming it, and its columns resolve in one
+//!   left-to-right pass: `stop[0]` is the widest member's left edge, `width[n]`
+//!   the widest content in column `n`, and `stop[n+1] = stop[n] + width[n] +
+//!   gap`. Naming a table rather than a column is what makes it correct: a
+//!   column's position is a prefix sum, so sharing one column's width while its
+//!   neighbours resolve independently produces silent one-column offsets. A
+//!   table shares the whole prefix by construction, and cannot express the
+//!   pathological case where two columns each depend on the other.
+//!
+//!   That needs a measure pass that walks the tree carrying each node's left
+//!   edge — the scan half of the two-pass shape. It does not need the right
+//!   edge or any wrapping, because a column's width is its unwrapped content
+//!   and wrapping happens after stops are fixed; so there is no fixpoint here,
+//!   only an ordering. Degradation would move with it, becoming a per-table
+//!   decision on the narrowest member's box rather than a per-run one.
+//!
+//!   Deliberately not built. A half-version was written and removed: sharing
+//!   widths without sharing positions is worse than nothing, because it fails
+//!   silently and its natural repair is to bolt on another key.
 //!
 //! # Known tension, flagged rather than resolved
 //!
@@ -116,7 +138,6 @@
 //! of arrangement runs is a cross-cutting call for the orchestrator, not one to
 //! settle inside this crate. The change would be additive.
 
-mod align;
 pub mod frame;
 pub mod provenance;
 pub mod render;

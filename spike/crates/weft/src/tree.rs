@@ -147,11 +147,6 @@ pub struct SpeakerRow<K> {
     pub payload: Payload<K>,
     /// Material hanging below the row: explanation, an excerpt of the source.
     pub attachments: Vec<Node<K>>,
-    /// A shared-width group: rows naming this key share their mark, speaker and
-    /// verb column WIDTHS, even when an attachment or a section boundary sits
-    /// between them. Width, not position — see the `align` module for the
-    /// prefix-sum limits.
-    pub align: Option<K>,
 }
 
 /// A speaker row's payload, and whether it is a verbatim quotation.
@@ -208,13 +203,6 @@ pub struct CodeBlock<K> {
     pub locus: Option<Vec<Run<K>>>,
     /// The lines themselves.
     pub lines: Vec<CodeLine<K>>,
-    /// A shared-width group for the gutter column.
-    ///
-    /// Needed alongside the per-cell groups, not instead of them: sharing cell
-    /// widths only lines two blocks up if their gutters are the same width too,
-    /// and a two-digit line number in one excerpt would otherwise shunt all its
-    /// columns one place right of the other's.
-    pub align: Option<K>,
 }
 
 /// One line of an excerpt: a gutter cell and one or more content cells.
@@ -247,25 +235,13 @@ pub struct CodeLine<K> {
 pub struct CodeCell<K> {
     /// The cell's text, which for real source is foreign.
     pub runs: Vec<Run<K>>,
-    /// A shared-width group: cells naming this key share a column WIDTH across
-    /// block boundaries, so two excerpts trailing comments can line up without
-    /// being siblings — provided every column to their left, the gutter
-    /// included, is grouped too.
-    pub align: Option<K>,
 }
 
 impl<K> CodeCell<K> {
-    /// Constructs an ungrouped cell, aligned only within its own block.
+    /// Constructs a cell.
     #[must_use]
     pub fn new(runs: Vec<Run<K>>) -> Self {
-        Self { runs, align: None }
-    }
-
-    /// Puts the cell in a named alignment group.
-    #[must_use]
-    pub fn aligned(mut self, group: K) -> Self {
-        self.align = Some(group);
-        self
+        Self { runs }
     }
 }
 
@@ -279,12 +255,6 @@ pub struct LabeledRow<K> {
     pub body: Vec<Run<K>>,
     /// Material hanging below the row.
     pub attachments: Vec<Node<K>>,
-    /// A shared-width group: rows naming this key share one label column WIDTH,
-    /// wherever they sit. The remediation rows of a report are the motivating
-    /// case — they read as one list even when a join splits them across
-    /// branches. Width, not position: rows at different nesting depths stay
-    /// offset by that difference (see the `align` module).
-    pub align: Option<K>,
 }
 
 /// Where a pointer line sits relative to what precedes it.

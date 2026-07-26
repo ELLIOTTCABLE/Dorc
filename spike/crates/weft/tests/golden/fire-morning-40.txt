@@ -36,21 +36,17 @@ suspect:
    @enabled/@active, it is what wrongly
    kept 9|systemctl out.
 
-   fix:
-      certsync.oracle.sh:31 (widen the
-      claim; every consumer heals)
+   fix: certsync.oracle.sh:31 (widen the
+        claim; every consumer heals)
 
 OR
-   fix:
-      `dorc plan web.sh web1` (run
-      without the risk flag, to distrust
-      oracle-authored claims)
+   fix: `dorc plan web.sh web1` (run
+        without the risk flag, to
+        distrust oracle-authored claims)
 
-verify:
-   `dorc plan --why web.sh web1`
-   (re-measures under plan's standing
-   consent, and leaves you one step from
-   applying.)
-review:
-   `dorc why web.sh:9 --all` (every
-   link, unselected, exhaustive)
+verify: `dorc plan --why web.sh web1`
+        (re-measures under plan's
+        standing consent, and leaves you
+        one step from applying.)
+review: `dorc why web.sh:9 --all` (every
+        link, unselected, exhaustive)

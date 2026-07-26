@@ -4,17 +4,10 @@
 //! every width. Each test states the invariant it exists to defend, because an
 //! invariant nobody can name is one nobody will preserve.
 
-// An integration test is its own crate to clippy, so `allow-expect-in-tests`
-// reaches `#[test]` bodies but not module-level helpers like `body_column`.
-#![expect(
-    clippy::expect_used,
-    reason = "a test helper whose fixture must be present: absence has to fail the trial, not be handled"
-)]
-
 use weft::{
-    Branch, CodeBlock, CodeCell, CodeLine, Document, Frame, Instance, Join, LabeledRow,
-    Literalness, Node, NodeKind, Paragraph, Payload, Provenance, Quoting, Rendered, Reservation,
-    Run, Section, Side, SpeakerRow, Width, render, render_framed,
+    CodeBlock, CodeCell, CodeLine, Document, Frame, Instance, LabeledRow, Literalness, Node,
+    NodeKind, Paragraph, Payload, Provenance, Quoting, Rendered, Reservation, Run, Section, Side,
+    SpeakerRow, Width, render, render_framed,
 };
 
 /// The width sweep every whole-document property runs over: narrow enough to
@@ -75,7 +68,6 @@ fn mixed_document() -> Document<Key> {
                     trailer: vec![text(" (ran 09:13:51, rc 0)")],
                 },
                 attachments: vec![Node::new(NodeKind::Code(CodeBlock {
-                    align: None,
                     mode: Literalness::Literal,
                     locus: Some(vec![value("ufw.oracle.sh, as-written:")]),
                     lines: vec![CodeLine {
@@ -85,13 +77,11 @@ fn mixed_document() -> Document<Key> {
                         )])],
                     }],
                 }))],
-                align: None,
             })),
             Node::new(NodeKind::Labeled(LabeledRow {
                 label: vec![value("so:")],
                 body: vec![text("the report was good when it ran")],
                 attachments: Vec::new(),
-                align: None,
             })),
         ],
     }))])
@@ -239,7 +229,6 @@ fn an_over_wide_word_overruns_rather_than_being_split() {
 fn literal_code_lines_stay_byte_honest() {
     let line = "ufw status verbose | grep -q \"$1\"  : org.ufw.Firewall:\"$1\"@allowed";
     let document = Document::new(vec![Node::new(NodeKind::Code(CodeBlock {
-        align: None,
         mode: Literalness::Literal,
         locus: None,
         lines: vec![CodeLine {
@@ -258,7 +247,6 @@ fn literal_code_lines_stay_byte_honest() {
 #[test]
 fn a_descriptive_block_is_always_marked_non_runnable() {
     let document = Document::new(vec![Node::new(NodeKind::Code(CodeBlock {
-        align: None,
         mode: Literalness::Descriptive,
         locus: None,
         lines: vec![CodeLine {
@@ -297,73 +285,6 @@ fn a_right_reservation_narrows_only_the_lines_it_covers() {
     assert!(
         lines_of(&rendered).len() > reserved_line + 1,
         "the reservation must narrow a line in the middle, not the last one — otherwise it proves nothing about per-line geometry"
-    );
-}
-
-fn labeled_row(label: &'static str, group: Option<&'static str>) -> Node<Key> {
-    Node::new(NodeKind::Labeled(LabeledRow {
-        label: vec![value(label)],
-        body: vec![text("body")],
-        attachments: Vec::new(),
-        align: group.map(Key::Row),
-    }))
-}
-
-/// Two rows with no common parent: one inside a join branch, one outside it.
-fn split_rows(group: Option<&'static str>) -> Document<Key> {
-    Document::new(vec![
-        Node::new(NodeKind::Join(Join {
-            branches: vec![Branch {
-                connective: None,
-                nodes: vec![labeled_row("fix:", group)],
-            }],
-            restatement: None,
-        })),
-        labeled_row("suspect:", group),
-    ])
-}
-
-fn body_column(rendered: &Rendered<Key>, needle: &str) -> usize {
-    lines_of(rendered)
-        .iter()
-        .find(|line| line.contains(needle))
-        .and_then(|line| line.find("body"))
-        .expect("both rows render their body")
-}
-
-#[test]
-fn a_named_group_shares_a_column_width_between_rows_that_are_not_siblings() {
-    let grouped = render(&split_rows(Some("steps")), 80);
-    let ungrouped = render(&split_rows(None), 80);
-
-    let widened = body_column(&grouped, "fix:") - body_column(&ungrouped, "fix:");
-    assert_eq!(
-        widened,
-        "suspect:".len() - "fix:".len(),
-        "the short row's label column must widen to the group's width; nothing structural relates these two rows, so only the shared name can do it"
-    );
-}
-
-/// The known limit of width-sharing, pinned so it cannot drift silently.
-///
-/// A column's screen position is a prefix sum — enclosing indent, then gutter,
-/// then separator, then every column to its left. A group shares ONE term of
-/// that sum, so members at different nesting depths share a width and still
-/// land in different places. Sharing a *position* needs the measure pass to
-/// know each member's absolute left, which it deliberately does not yet.
-#[test]
-fn shared_width_is_not_shared_position_across_nesting_depths() {
-    let grouped = render(&split_rows(Some("steps")), 80);
-    let nested = body_column(&grouped, "fix:");
-    let outer = body_column(&grouped, "suspect:");
-    assert_ne!(
-        nested, outer,
-        "if these ever coincide, position-sharing has landed and this test should become the alignment test it is standing in for"
-    );
-    assert_eq!(
-        nested - outer,
-        3,
-        "the offset is exactly the branch's indent, and nothing else"
     );
 }
 
