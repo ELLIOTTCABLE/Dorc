@@ -150,7 +150,7 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         occurrence: None,
         when_used: "Closes every why-lens reason whose remediation class is Structural.",
         why: "As why-remediation-declare-identity — and the one that must never imply a user fix exists (271 rul-sin-ordering: mis-attribution is the worst aid failure).",
-        words: Words::Migrated(&["no user fix — Dorc cannot model this construct [structural]"]),
+        words: Words::Migrated(&["no user fix -- Dorc cannot model this construct [structural]"]),
     },
     ArrangementEntry {
         slug: "why-tier-word",

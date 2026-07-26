@@ -2848,7 +2848,7 @@ fn unresolvable_diagnostics(
     let names: Vec<String> = real.iter().map(|(_, _, t)| format!("`{t}`")).collect();
     let plural = if real.len() == 1 { "" } else { "s" };
     let label = format!(
-        "{} site{plural} run unprobed (no read-only check could be shipped): {} — \
+        "{} site{plural} run unprobed (no read-only check could be shipped): {} -- \
          run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)",
         real.len(),
         names.join(", "),
@@ -3038,7 +3038,7 @@ fn emit_survival_attribution(
             format!("; {}", aggregate_loci.join(", "))
         };
         eprintln!(
-            "why: site {} survives+elides past {} — backing {} disjoint (trusted footprint){locus}",
+            "why: site {} survives+elides past {} -- backing {} disjoint (trusted footprint){locus}",
             step.leaf.0,
             crossings.join(", "),
             render_coord(witness.backing(), interner),
@@ -3055,7 +3055,7 @@ fn emit_survival_attribution(
 fn emit_reach_poisonings(plan: &dorc_plan::Plan, interner: &Interner) {
     for (leaf, kind) in plan.survival_report.reach_poisonings() {
         eprintln!(
-            "why: site {} runs — poisoned via {}.reaches() (a reach-expanded coordinate hit its \
+            "why: site {} runs -- poisoned via {}.reaches() (a reach-expanded coordinate hit its \
              backing; the wall drags it cross-author)",
             leaf.0,
             interner.resolve(kind.0),
@@ -3089,7 +3089,7 @@ fn emit_guard_attribution(
         let kind = interner.resolve(license.fact().kind.0);
         if refused.contains(&step.ast) {
             eprintln!(
-                "why: site {} guard refused — the site's structurally-awkward form (a heredoc \
+                "why: site {} guard refused -- the site's structurally-awkward form (a heredoc \
                  body, or a non-`/dev/null` output redirect) would corrupt the artifact or suppress \
                  an admin-spelled side-effect, so the original bytes RUN VERBATIM (to stay safe), \
                  the {kind} oracle's vouch that it is already satisfied notwithstanding",
@@ -3101,7 +3101,7 @@ fn emit_guard_attribution(
                 .map(|l| format!(" (at {l})"))
                 .unwrap_or_default();
             eprintln!(
-                "why: site {} guard [{kind}] — licensed by the {kind} oracle's vouch{locus} that \
+                "why: site {} guard [{kind}] -- licensed by the {kind} oracle's vouch{locus} that \
                  it is already satisfied; the original bytes survive and the check re-runs live at \
                  apply (to stay safe)",
                 step.leaf.0,
@@ -3221,10 +3221,10 @@ impl FirstWallHint {
             } else {
                 "walls"
             };
-            format!("; {} more unmodeled {walls} — dorc why", self.more_walls)
+            format!("; {} more unmodeled {walls} -- dorc why", self.more_walls)
         };
         format!(
-            "'{}' (line {}) is unmodeled: it is the first wall — an oracle vouching its \
+            "'{}' (line {}) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged{unwall_clause}{more_clause}",
             self.word, self.line
         )
@@ -4074,7 +4074,10 @@ fn emit_why_triptych(
     filename: &str,
 ) {
     let matched: Vec<&WhySite> = match parse_line_address(address) {
-        Some(n) => sites.iter().filter(|s| s.line == n).collect(),
+        Some(n) if address_names_book(address, filename) => {
+            sites.iter().filter(|s| s.line == n).collect()
+        }
+        Some(_) => Vec::new(),
         None => sites
             .iter()
             .filter(|s| s.command.contains(address))
@@ -4300,6 +4303,29 @@ fn parse_line_address(addr: &str) -> Option<usize> {
         .unwrap_or(addr)
         .parse::<usize>()
         .ok()
+}
+
+/// Does a file-QUALIFIED address name the book this run analyzed? A bare `12` names no file and
+/// always matches; `web.sh:12` matches only `web.sh`, compared on the trailing path component so a
+/// pasted `./web.sh:12` or an absolute path still resolves.
+///
+/// Load-bearing because the render now PRINTS file-qualified pointers: without the check, a
+/// qualified address naming some other book silently answers for the analyzed one at rc 0 — the
+/// same silent-wrong-surface class as `289:rider-why-last-address-order`.
+fn address_names_book(addr: &str, book_name: &str) -> bool {
+    let Some((file, _)) = addr.rsplit_once(':') else {
+        return true;
+    };
+    if file.is_empty() {
+        return true;
+    }
+    let tail = |path: &str| {
+        path.rsplit(['/', '\\'])
+            .next()
+            .unwrap_or(path)
+            .to_ascii_lowercase()
+    };
+    tail(file) == tail(book_name)
 }
 
 /// Render a [`dorc_plan::EntityCoord`] as `kind:entity` for the attribution surface (empty
@@ -4908,7 +4934,7 @@ fn emit_report_lane_notes(results: &SiteResults) {
         };
         let tail = r.raw.splitn(3, ' ').nth(2).unwrap_or(r.raw.as_str());
         eprintln!(
-            "note: author declines [{}]{at} — {tail}",
+            "note: author declines [{}]{at} -- {tail}",
             decline_class_word(class)
         );
     }
@@ -5012,7 +5038,7 @@ fn static_decline_notes(
         .map(|l| format!(" (at {l})"))
         .unwrap_or_default();
         lines.push(format!(
-            "why: author declines [{}]{at} — a deliberate decline the author classed, so the site \
+            "why: author declines [{}]{at} -- a deliberate decline the author classed, so the site \
              runs",
             decline_class_word(reason.class)
         ));
@@ -5259,7 +5285,7 @@ fn sanitize_report_raw(s: &str) -> String {
     while end > 0 && !cleaned.is_char_boundary(end) {
         end = end.saturating_sub(1);
     }
-    format!("{}…", &cleaned[..end])
+    format!("{}...", &cleaned[..end])
 }
 
 /// Parse `u32` leaf-id.
@@ -5825,7 +5851,7 @@ fn carry_attribution_text(
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "pure-predicate carry across {axes} (unflagged, 27C §4(a)): {kinds} — each vouched invariant \
+        "pure-predicate carry across {axes} (unflagged, 27C section 4(a)): {kinds} -- each vouched invariant \
          across {axes} by its kind-owner's `invariant:` line (vouch-species); the verdict body is \
          engine-proved read-set-closed"
     )
@@ -6083,6 +6109,29 @@ mod tests {
             parse_line_address("make install"),
             None,
             "content with a space ⇒ content match"
+        );
+    }
+
+    /// A file-QUALIFIED address must name the book this run analyzed. The render prints qualified
+    /// pointers now, so the un-checked reading answers for the analyzed book whatever file the
+    /// address named — a silent wrong surface at rc 0, which is the failure this pins shut.
+    /// Path-shape tolerance is deliberate: a pasted `./web.sh:9` is the same address as `web.sh:9`.
+    #[test]
+    fn a_file_qualified_address_must_name_the_analyzed_book() {
+        assert!(address_names_book("web.sh:9", "web.sh"));
+        assert!(address_names_book("9", "web.sh"), "a bare N names no file");
+        assert!(address_names_book("./web.sh:9", "web.sh"), "leading ./");
+        assert!(
+            address_names_book("/srv/books/web.sh:9", "web.sh"),
+            "an absolute path still resolves to the same book"
+        );
+        assert!(
+            address_names_book("web.sh:9", "books\\web.sh"),
+            "a windows-separated book path compares on its last component"
+        );
+        assert!(
+            !address_names_book("other.sh:9", "web.sh"),
+            "a DIFFERENT book must not silently answer for this one"
         );
     }
 
@@ -6467,10 +6516,10 @@ mod tests {
     fn report_lane_sanitizes_and_caps_the_raw_tail() {
         let capped = sanitize_report_raw(&format!("decline hazard {}", "x".repeat(500)));
         assert!(
-            capped.chars().count() <= REPORT_RAW_CAP + 1,
-            "capped at REPORT_RAW_CAP chars (+ the ellipsis)"
+            capped.chars().count() <= REPORT_RAW_CAP + 3,
+            "capped at REPORT_RAW_CAP chars (+ the three-dot ASCII ellipsis)"
         );
-        assert!(capped.ends_with('…'), "an over-cap tail is ellipsized");
+        assert!(capped.ends_with("..."), "an over-cap tail is ellipsized");
         let cleaned = sanitize_report_raw("decline unsound has\ta\ttab and \u{7} bell");
         assert!(
             !cleaned.contains('\u{7}') && !cleaned.contains('\t'),
@@ -7444,41 +7493,73 @@ mod first_wall_tests {
         // M=1, no further walls — the USER_STORY stage-3 sharpened form.
         assert_eq!(
             hint(1, 0).body(),
-            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+            "'foobar' (line 8) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged, and un-wall 1 downstream site"
         );
         // M=2 ⇒ "sites"; a further wall ⇒ the trailing pointer.
         assert_eq!(
             hint(2, 1).body(),
-            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+            "'foobar' (line 8) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged, and un-wall 2 downstream sites; 1 more \
-             unmodeled wall — dorc why"
+             unmodeled wall -- dorc why"
         );
         // M=0 ⇒ the un-wall clause is dropped (never "un-wall 0").
         assert_eq!(
             hint(0, 0).body(),
-            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+            "'foobar' (line 8) is unmodeled: it is the first wall -- an oracle vouching its \
              convergence would elide it when converged"
         );
         // more_walls plural.
         assert!(
             hint(0, 2)
                 .body()
-                .ends_with("; 2 more unmodeled walls — dorc why")
+                .ends_with("; 2 more unmodeled walls -- dorc why")
         );
     }
 
+    /// The pull-surface detail carries the recovery COUNT when there is one, and never a bare zero.
+    /// Structure, not bytes: the words are arrangement-registry rows and ride
+    /// `27V:rul-output-form-unwelded`, so pinning them verbatim here would weld exactly what that
+    /// rule keeps free — and would re-break on every prose pass.
     #[test]
     fn why_detail_carries_the_unwall_count() {
-        assert_eq!(
-            hint(1, 0).why_detail(),
-            "first wall (book order) — an oracle vouching its convergence would elide it and \
-             un-wall 1 downstream site"
+        let with_count = hint(1, 0).why_detail();
+        assert!(
+            with_count.contains('1'),
+            "the recovery count must reach the reader: {with_count}"
         );
-        assert_eq!(
-            hint(0, 0).why_detail(),
-            "first wall (book order) — an oracle vouching its convergence would elide it when \
-             converged"
+        let without = hint(0, 0).why_detail();
+        assert!(
+            !without.contains('0'),
+            "a zero count is dropped, never rendered as `0 sites`: {without}"
         );
+        assert!(
+            without.len() < with_count.len(),
+            "the count-free form is the shorter one (the clause was dropped, not blanked)"
+        );
+    }
+
+    /// `rul-ascii-output-forever` (`28E` §0, human-typed: "no unicode, ever. period. anywhere").
+    /// The why-surface strings are the ones this lane authored or respelled; a stray em-dash or
+    /// arrow creeping back into one is exactly what this catches.
+    #[test]
+    fn the_why_surface_renders_pure_ascii() {
+        let mut checked: usize = 0;
+        for entry in dorc_aid::arrangement::ARRANGEMENTS {
+            if !entry.slug.starts_with("why-") {
+                continue;
+            }
+            for word in entry.words.words().unwrap_or(&[]) {
+                assert!(
+                    word.is_ascii(),
+                    "arrangement `{}` carries non-ASCII output: {word:?}",
+                    entry.slug
+                );
+                checked = checked.saturating_add(1);
+            }
+        }
+        assert!(checked > 0, "the why-surface registry rows must be reached");
+        assert!(hint(1, 1).body().is_ascii());
+        assert!(hint(1, 1).why_detail().is_ascii());
     }
 }
