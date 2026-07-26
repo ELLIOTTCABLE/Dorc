@@ -2266,6 +2266,9 @@ fn ship_touches_body(
 /// SPIKE-ONLY (ru-26): the `touches-escalated` advisory below makes the static→dynamic boundary
 /// visible in the render/differential; it must NOT leak into greenfield as a permanent
 /// per-escalation requirement.
+// The product is the `&mut` merge, so the diagnostics are the one thing a caller can drop without
+// noticing — which is the failure this whole lane exists to make impossible.
+#[must_use]
 fn merge_derived_footprints(
     footprints: &mut dorc_plan::TrustedFootprints,
     derivations: &dorc_plan::DerivationPlan,
@@ -7877,7 +7880,7 @@ mod tests {
                 CfgNodeId(5),
                 dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
             )]);
-            merge_derived_footprints(
+            drop(merge_derived_footprints(
                 &mut fps,
                 &derivations,
                 &results,
@@ -7885,7 +7888,7 @@ mod tests {
                 &BTreeMap::new(),
                 &node_spans,
                 i,
-            );
+            ));
             fps.contains(CfgNodeId(5))
         };
 
