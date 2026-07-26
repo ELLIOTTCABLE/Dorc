@@ -1,0 +1,19 @@
+[package]
+name = "weft"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "A firewalled ASCII layout engine: renders a marked explanation tree to text plus a total-cover map of where every emitted byte came from."
+# publish stays off; the crate knows no Dorc types and could someday stand alone,
+# but naming/licensing are unsettled (the errorloom posture).
+publish = false
+
+# ZERO dependencies, permanently. Layout is a pure function of (tree, width) and
+# a correctness-critical kernel under the spike's DST discipline: no clock, no
+# RNG, no filesystem, no network, directly or transitively. A dependency here
+# would also drag a foreign vocabulary into a crate whose whole point is that it
+# has none. Any future dep must clear `cargo deny check licenses bans sources`
+# and stay compatible with the workspace `forbid(unsafe)`.
+
+[lints]
+workspace = true

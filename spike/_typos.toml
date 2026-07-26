@@ -28,4 +28,8 @@ extend-ignore-re = [
    # hex identifier, not prose — hex runs (a-f) accidentally spell typo-triggers
    # (`ede`, `ba`, ...). Ignore the whole digest token.
    "book=[0-9a-f]+",
+   # `Oppen` — Derek Oppen, whose 1980 two-pass prettyprinting algorithm the layout
+   # crate cites as the shape its measure/emit split is converging on. A surname,
+   # not a misspelt "open".
+   "\\bOppen\\b",
 ]
