@@ -14,12 +14,13 @@ expect-why-chain:
 ---
 -- book.sh --
 #!/bin/sh
-# whygallery-webhost-whole: the whole why-surface on one USER_STORY-shaped webhost book — a
-# famous-oracle elision, the admin's own hand-guard, a diverged modeled wall whose `disturbs`
-# claim lets a converged line survive it under --risk-faultless-skips, an unmodeled `hork` wall, a
-# modeled site downstream of that wall (the guard tier), and an `unsound` classed decline.
-# Every tool named here is an INERT mock; nothing mutates. NB no `set -e`: errexit makes every
-# line's status consumed, which defeats elision outright (strawman24-errexit-defeats measures it).
+# whygallery-webhost-whole: the whole why-surface on one USER_STORY-shaped
+# webhost book — a famous-oracle elision, the admin's own hand-guard, a diverged
+# modeled wall whose `disturbs` claim lets a converged line survive it under
+# --risk-faultless-skips, an unmodeled `hork` wall, a modeled site downstream of
+# that wall (the guard tier), and an `unsound` classed decline. NB no `set -e`:
+# errexit makes every line's status consumed, which defeats elision outright on
+# a book like this with no admin-explicit `|| true` opt-ins.
 
 dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
 ufw allow 80/tcp
@@ -34,8 +35,9 @@ echo "web1 up"
 -- firewall.oracle.sh --
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.2
-# The famous firewall oracle (ufw): `ufw allow <rule>` establishes Firewall:<rule>@allowed, and
-# `ufw status <rule>` is the read-only check both the probe and the verdict member re-run.
+# The famous firewall oracle (ufw): `ufw allow <rule>` establishes
+# Firewall:<rule>@allowed, and `ufw status <rule>` is the read-only check both
+# the probe and the verdict member re-run.
 ufw__predict() {
    verb=$1; shift
    rule : sm.dorc.Firewall = "$1"
@@ -151,13 +153,13 @@ sysctl__is_converged() {
 # 4 = Package:oldpkg ABSENT ⇒ diverged ⇒ that install RUNS: the modeled wall
 # 5 = Firewall:443/tcp holds ⇒ converged, and survives the wall under --risk-faultless-skips
 # 7 = Service:nginx@active holds ⇒ converged, but sits past the unmodeled `hork` wall ⇒ guard
-site 0 effect=holds rc=0
-site 1 effect=holds rc=0
-site 2 effect=holds rc=0
-site 3 effect=holds rc=0
-site 4 effect=absent rc=1
-site 5 effect=holds rc=0
-site 7 effect=holds rc=0
+site 0 effect=holds rc=0   #  9|dpkg (...)
+site 1 effect=holds rc=0   #  9|systemctl (Firewall:80/tcp, Service:nginx@enabled)
+site 2 effect=holds rc=0   # 10|ufw (...)
+site 3 effect=holds rc=0   # 11|systemctl (...)
+site 4 effect=absent rc=1  # 12|apt-get (Package:oldpkg)
+site 5 effect=holds rc=0   # 13|ufw (Firewall:443/tcp)
+site 7 effect=holds rc=0   # 15|systemctl (Service:nginx@active)
 
 -- mocks/.log --
 # newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
@@ -247,13 +249,17 @@ ran: systemctl is-active -- nginx
 ran: sysctl vm.drop_caches
 
 -- replay --
-$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips < probe-results.txt
+$ dorc apply --risk-faultless-skips --no-dispatch --dump book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh <probe-results.txt
 #!/bin/sh
-# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
-# When run, emits one results-record per site on stdout (the return channel):
-#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
-# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
-# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+#
+# COMPILED APPLY OUTPUT. to regenerate, if unedited:
+#    dorc .... specific, scoped, narrow, fully reproductive command here
+# inputs:
+#  - /path/to/book.sh (SHA256 a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8)
+#  - /path/to/firewall.oracle.sh (SHA256 ...)
+#  - etc etc etc
+#
+# (Feel free to remove this header if you manually edit the apply. Dorc does not require it to proceed with the application after your edits.)
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8 sites=7 @@dorc@@\n'
 # site 0: sm.dorc.PkgState:nginx@installed
@@ -307,6 +313,7 @@ systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; 
 # site:8 unresolvable-no-probe
 # site:9 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -340,7 +347,7 @@ hork tune --profile web
 sysctl vm.drop_caches
 echo "web1 up"
 
-$ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
+$ dorc why --risk-faultless-skips
 receipt: plan 2026-01-25 02:00:37, host localhost
    book book.sh (digest a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8)
    oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
@@ -380,11 +387,17 @@ converged
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why 15 --all --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
-      [ book.sh, participating lines:
-   12 | apt-get install -y oldpkg
-   14 | hork tune --profile web
-   15 | systemctl start nginx
+$ dorc why book.sh:15 --all
+receipt: plan 2026-01-25 02:00:37, host localhost
+   book book.sh (digest a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8)
+   oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
+   sysctl.oracle.sh
+   risk-profile: --risk-faultless-skips
+
+   [ book.sh, participating lines:
+12 | apt-get install -y oldpkg
+14 | hork tune --profile web
+15 | systemctl start nginx
 
    [unwritten: why-participating-lines-closure]
 
