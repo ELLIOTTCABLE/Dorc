@@ -58,6 +58,14 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   note. The tier-ORDERING question is open in-chat (the set is kinds, not a
   monotonic scale; code `Ord` is mechanical map-key determinism only; semantic
   ordering stays the `28E:lean-ordering-is-a-seam` seam).
+- **OPAQUE W25 STAGE COMPLETE + BLIND-FOLDED** @ merge `15edfb05` (5 commits,
+  no STOP; per protocol the report carried gates only — all green at its tip,
+  1441 tests — and the conductor inspected nothing; merge output suppressed;
+  own-hand gate verify run post-fold). Proceeding per the human's directive.
+- **lane-speechact-rename DISPATCHED** (Sonnet, hard-clamped, off `15edfb05`)
+  + **lane-w3-fold MAP HALF DISPATCHED** (Opus, read-only, STOPS at the
+  checkpoint; its map note lands as `_w3-map-DRAFT.md` on its branch) — in
+  parallel; the rename folds before W3's execute go.
 - (conductor, under human directive 2026-07-26) **rul-speechact-rename** — the
   human directed a quick mechanical rename of `TrustTier` ("tier" squats
   genuinely-ordered critical vocabulary — `claim-tier-gating`'s license tiers
