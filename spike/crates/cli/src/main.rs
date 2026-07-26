@@ -60,6 +60,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 use std::process::ExitCode;
 
+mod source_match;
 mod whylog_store;
 
 use dorc_aid::diag::{
@@ -1356,6 +1357,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             host: framing.host.clone(),
             book: book_name.to_owned(),
             book_digest: book_digest(&book_src),
+            at_head: source_match::resolve(
+                &source_match::GitRepository,
+                std::path::Path::new(book_name),
+            ),
             oracles: oracle_paths.clone(),
             risk_profile: args.trust_footprints.then_some(CONSENT_FLAG),
             counts: plan.disposition_counts(),
@@ -5385,6 +5390,10 @@ struct Receipt {
     host: String,
     book: String,
     book_digest: String,
+    /// The commit the book sits at, when it sits at one exactly (`28E:lean-git-source-tracking-
+    /// secondary`). Already-resolved pure data: the subprocess that answered it was spent at the
+    /// edge, and a `None` here is indistinguishable from "no repository", by design.
+    at_head: Option<source_match::SourceMatch>,
     /// The loaded oracles, in argv order.
     oracles: Vec<String>,
     /// The consent flag in force, or `None` for a flagless run.
@@ -5445,11 +5454,18 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         || why_words("why-receipt-risk-profile-none", &[]),
         str::to_owned,
     );
+    // The git annotation REPLACES the digest row rather than joining it: both answer "which book",
+    // and a commit is the answer a person can act on. Absent, the digest row stands unchanged --
+    // exact-or-absent, never a third half-informative shape.
+    let book_row = match &receipt.at_head {
+        Some(matched) => Said::words(
+            "why-receipt-book-at-head",
+            &[&receipt.book, &matched.commit],
+        ),
+        None => Said::words("why-receipt-book", &[&receipt.book, &receipt.book_digest]),
+    };
     let body = vec![
-        receipt_row(&Said::words(
-            "why-receipt-book",
-            &[&receipt.book, &receipt.book_digest],
-        )),
+        receipt_row(&book_row),
         receipt_row(&Said::words(
             "why-receipt-oracles",
             &[&receipt.oracles.join(", ")],
@@ -9227,6 +9243,10 @@ mod not_ours_bytes_tests {
             host: hostile_line(1),
             book: hostile_line(2),
             book_digest: hostile_line(3),
+            // Swept as `None` here and as `Some` in the second banner below: the two are exclusive
+            // rows, and a git commit is a SUBPROCESS's stdout — as not-ours as anything a host
+            // reported (`28D:must-encode-per-surface`), so both spellings need the sweep.
+            at_head: None,
             oracles: vec![hostile_line(4), hostile_line(5)],
             risk_profile: Some(CONSENT_FLAG),
             counts: dorc_plan::DispositionCounts {
@@ -9241,7 +9261,7 @@ mod not_ours_bytes_tests {
             deepest_tier: true,
             narratable: true,
         };
-        let mut nodes = vec![receipt_banner(&receipt)];
+        let mut nodes = vec![receipt_banner(&receipt), receipt_banner(&at_head(&receipt))];
         nodes.extend(participating_block(
             &[2, 3],
             &format!("{SOURCE_MARK}.book.sh"),
@@ -9255,6 +9275,27 @@ mod not_ours_bytes_tests {
         ));
         nodes.extend(chain_nodes(&plain_chain(&site)));
         nodes
+    }
+
+    /// The same receipt wearing its git-annotation row instead of its digest row. The two are
+    /// exclusive, so the sweep renders both banners: a commit is a SUBPROCESS's stdout, as not-ours
+    /// as anything a host reported (`28D:must-encode-per-surface`).
+    fn at_head(receipt: &Receipt) -> Receipt {
+        Receipt {
+            at_head: Some(source_match::SourceMatch {
+                commit: hostile_line(6),
+            }),
+            oracles: receipt.oracles.clone(),
+            host: receipt.host.clone(),
+            book: receipt.book.clone(),
+            book_digest: receipt.book_digest.clone(),
+            at: receipt.at,
+            replayed: receipt.replayed,
+            risk_profile: receipt.risk_profile,
+            counts: receipt.counts,
+            deepest_tier: receipt.deepest_tier,
+            narratable: receipt.narratable,
+        }
     }
 
     /// THE SWEEP. Over every seat the why surface has, every not-ours run is already

@@ -242,6 +242,10 @@ impl Harness {
             command.env(key, &self.state_root);
         }
         command.env_remove("HOME");
+        // `real-tools-lane-opt-in`: the suite makes zero external invocations by default, and the
+        // receipt's git annotation would otherwise depend on whether a case's scratch directory
+        // happens to sit inside a repository — a transcript that flips with the developer's TMPDIR.
+        command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
         command
     }
 

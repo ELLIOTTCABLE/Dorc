@@ -538,6 +538,13 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Words::Migrated(&["book ", " (digest ", ")"]),
     },
     ArrangementEntry {
+        slug: "why-receipt-book-at-head",
+        occurrence: None,
+        when_used: "The book row of the receipt header when the run's book is byte-identical to the same path at git HEAD. Values: the book's name, and the short commit.",
+        why: "28E lean-git-source-tracking-secondary, per 28G strawman a-fire-morning line 34. Annotation tier only (the nack-whylog-stores-book-bytes fence): it says which commit the run's book is, and never substitutes bytes from git into the render. Exact-or-absent -- a miss falls back to why-receipt-book and says nothing, because a partial answer about provenance is worse than none.",
+        words: Words::Unwritten,
+    },
+    ArrangementEntry {
         slug: "why-receipt-oracles",
         occurrence: None,
         when_used: "The loaded-oracle inventory row of the receipt header. Value: the oracle paths, in argv order.",
