@@ -508,7 +508,12 @@ fn inspect_cases(
                         "bytes-only replay changed".to_owned(),
                     ));
                 }
-                writeln!(body, "replay: {index} bytes-only").map_err(|error| error.to_string())?;
+                // Structure, not a change: a bytes-only replay that actually diverged took the
+                // refusal branch above, so quiet loses nothing by dropping the inventory line.
+                if !quiet {
+                    writeln!(body, "replay: {index} bytes-only")
+                        .map_err(|error| error.to_string())?;
+                }
             }
             inspected_replays.push((index, block.command().to_owned(), routed));
         }
