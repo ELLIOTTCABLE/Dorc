@@ -34,6 +34,7 @@ pub trait Repository {
 pub struct ProseClassification {
     selected: Vec<String>,
     touched: BTreeSet<String>,
+    staged: BTreeSet<String>,
 }
 
 impl ProseClassification {
@@ -47,6 +48,16 @@ impl ProseClassification {
     #[must_use]
     pub fn touched(&self) -> &BTreeSet<String> {
         &self.touched
+    }
+
+    /// The subset of [`Self::touched`] whose edit is wholly staged rather than wholly unstaged.
+    ///
+    /// Classification treats the two alike, because neither ever reads the index. They part
+    /// company after publication: rewriting a staged case strands its index copy at the author's
+    /// pre-promote bytes, and dorc-loom will not stage on their behalf, so it has to say so.
+    #[must_use]
+    pub fn staged(&self) -> &BTreeSet<String> {
+        &self.staged
     }
 }
 
@@ -137,9 +148,9 @@ impl Repository for GitRepository {
 
 /// Parse and classify the complete repository snapshot without performing I/O.
 ///
-/// Only selected, worktree-only modified cases may differ, and only within raw
-/// replay-output islands. Replay provenance decides whether those islands are
-/// editable in the subsequent inspection pass.
+/// Only selected cases whose edit sits wholly on one side of the index may
+/// differ, and only within raw replay-output islands. Replay provenance decides
+/// whether those islands are editable in the subsequent inspection pass.
 ///
 /// # Errors
 ///
@@ -168,7 +179,7 @@ pub fn classify_prose_changes(
         if selected.binary_search(path).is_err() {
             return Err(format!("dirty path outside selected prose edits: {path}"));
         }
-        if !status.is_worktree_modified_only() {
+        if status.prose_edit_shape().is_none() {
             // A SELECTED case in the wrong git state: "outside selected prose edits" reads as a
             // contradiction here, and an untracked case has no HEAD side to diff prose against.
             return Err(match status.index {
@@ -180,7 +191,7 @@ pub fn classify_prose_changes(
                 _ => format!(
                     "selected case {path} is in git state `{code}`; dorc-loom reads a prose edit \
                      as the difference between HEAD and your worktree, so a selected case must be \
-                     an unstaged worktree edit (` M`) and nothing else",
+                     either wholly unstaged (` M`) or wholly staged (`M `) and nothing else",
                     code = String::from_utf8_lossy(&status.code)
                 ),
             });
@@ -190,7 +201,7 @@ pub fn classify_prose_changes(
         return Err("catalog is not clean against HEAD".to_owned());
     }
 
-    let mut touched = BTreeSet::new();
+    let (mut touched, mut staged) = (BTreeSet::new(), BTreeSet::new());
     for path in &selected {
         let current = repository.current_bytes(path)?;
         let head = repository.head_bytes(path)?;
@@ -208,15 +219,24 @@ pub fn classify_prose_changes(
         let changed = current != head;
         match (changed, by_path.get(path)) {
             (false, None) => {}
-            (true, Some(status)) if status.is_worktree_modified_only() => {
-                touched.insert(path.clone());
-            }
+            (true, Some(status)) => match status.prose_edit_shape() {
+                Some(shape) => {
+                    touched.insert(path.clone());
+                    if shape == EditShape::Staged {
+                        staged.insert(path.clone());
+                    }
+                }
+                None => return Err(format!("selected case has invalid status: {path}")),
+            },
             (false, Some(_)) => return Err(format!("status differs without case bytes: {path}")),
             (true, None) => return Err(format!("case bytes differ without git status: {path}")),
-            (true, Some(_)) => return Err(format!("selected case has invalid status: {path}")),
         }
     }
-    Ok(ProseClassification { selected, touched })
+    Ok(ProseClassification {
+        selected,
+        touched,
+        staged,
+    })
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -231,11 +251,28 @@ struct StatusEntry {
 }
 
 impl StatusEntry {
-    fn is_worktree_modified_only(&self) -> bool {
-        self.source.is_none()
-            && self.index == IndexStatus::Clean
-            && self.worktree == WorktreeStatus::Modified
+    /// The two porcelain states in which HEAD -> worktree is the author's whole edit.
+    ///
+    /// Porcelain's second column reports worktree-against-INDEX, so a clean one means a wholly
+    /// staged case holds no third version for that diff to miss; `MM` does, and is refused. A
+    /// rename keeps its bytes at another path, where `head_bytes` would not find them.
+    fn prose_edit_shape(&self) -> Option<EditShape> {
+        if self.source.is_some() {
+            return None;
+        }
+        match (self.index, self.worktree) {
+            (IndexStatus::Clean, WorktreeStatus::Modified) => Some(EditShape::Unstaged),
+            (IndexStatus::Modified, WorktreeStatus::Clean) => Some(EditShape::Staged),
+            _ => None,
+        }
     }
+}
+
+/// Which side of the index a legitimate prose edit sits on.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum EditShape {
+    Unstaged,
+    Staged,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -436,6 +473,7 @@ mod tests {
             classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).expect("accept");
         assert_eq!(result.selected(), &[CASE.to_owned()]);
         assert_eq!(result.touched(), &BTreeSet::from([CASE.to_owned()]));
+        assert!(result.staged().is_empty());
     }
 
     #[test]
@@ -476,8 +514,28 @@ mod tests {
         assert!(result.touched().is_empty());
     }
 
+    /// A `git add` before running the tool is a reflex, and porcelain `M ` guarantees the worktree
+    /// and index agree — so HEAD -> worktree is still the author's whole edit and nothing about the
+    /// read changes. Only the aftermath differs, which is why the staged set is reported separately.
     #[test]
-    fn rejects_all_porcelain_classes_other_than_worktree_modified() {
+    fn a_wholly_staged_case_is_touched_and_reported_as_staged() {
+        let head = case(
+            "code: one\nwhy: old\n",
+            "preamble\n",
+            "book",
+            "dorc plan --book=book.sh",
+            "old prose\n",
+        );
+        let current = head.replace("old prose", "new prose");
+        let repository = repository(head, current, format!("M  {CASE}\0").as_bytes());
+        let result =
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).expect("accept");
+        assert_eq!(result.touched(), &BTreeSet::from([CASE.to_owned()]));
+        assert_eq!(result.staged(), &BTreeSet::from([CASE.to_owned()]));
+    }
+
+    #[test]
+    fn rejects_porcelain_classes_outside_the_two_legal_edit_shapes() {
         let source = case(
             "code: one\n",
             "",
@@ -486,8 +544,9 @@ mod tests {
             "prose\n",
         );
         for status in [
-            format!("M  {CASE}\0"),
             format!("?? {CASE}\0"),
+            format!("MM {CASE}\0"),
+            format!("A  {CASE}\0"),
             format!("R  {CASE}\0old.txt\0"),
             format!("C  {CASE}\0old.txt\0"),
             format!(" D {CASE}\0"),

@@ -39,6 +39,7 @@ struct GatedCases {
     repository: GitRepository,
     paths: Vec<SelectedCase>,
     touched: std::collections::BTreeSet<String>,
+    staged: std::collections::BTreeSet<String>,
 }
 
 fn run() -> Result<ExitCode, String> {
@@ -235,6 +236,7 @@ fn compile_cases(
         )
         .map_err(|error| error.to_string())?;
     }
+    note_staged_cases(&gated.staged, &std::collections::BTreeSet::new(), out)?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -251,7 +253,9 @@ fn promote_cases(
     };
     promote_receipt(&receipt_store()?, &inspection)?;
     let affected = touched_cases(&gated)?;
+    let before = staged_bytes(&gated)?;
     publish(&consumer, &affected, out)?;
+    note_staged_cases(&gated.staged, &rewritten_staged(&gated, &before)?, out)?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -278,6 +282,57 @@ fn touched_cases(gated: &GatedCases) -> Result<std::collections::BTreeMap<String
         cases.insert(slug, case);
     }
     Ok(cases)
+}
+
+/// Say out loud that a wholly-staged case was accepted, rather than quietly fixing it up:
+/// publication rewrites the worktree copy while the author's `git add` still points at their own
+/// bytes, and dorc-loom mutates no index (`282:rul-promote-is-one-atomic-act`). Naming the paths is
+/// the whole remedy, so failing to name one is the only real failure here.
+fn note_staged_cases(
+    staged: &std::collections::BTreeSet<String>,
+    rewritten: &std::collections::BTreeSet<String>,
+    out: &mut impl Write,
+) -> Result<(), String> {
+    for path in staged {
+        let note = if rewritten.contains(path) {
+            format!(
+                "note: {path} was staged and has been rewritten; `git add` it again before \
+                 committing -- dorc-loom never touches your index"
+            )
+        } else {
+            format!("note: {path} is staged; dorc-loom read your worktree and never the index")
+        };
+        writeln!(out, "{note}").map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+/// Worktree bytes of every staged case, read before publication so the note above can name exactly
+/// those a rewrite left with a stale index copy.
+fn staged_bytes(gated: &GatedCases) -> Result<std::collections::BTreeMap<String, Vec<u8>>, String> {
+    gated
+        .staged
+        .iter()
+        .map(|path| {
+            gated
+                .repository
+                .current_bytes(path)
+                .map(|bytes| (path.clone(), bytes))
+        })
+        .collect()
+}
+
+fn rewritten_staged(
+    gated: &GatedCases,
+    before: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> Result<std::collections::BTreeSet<String>, String> {
+    let mut rewritten = std::collections::BTreeSet::new();
+    for (path, bytes) in before {
+        if gated.repository.current_bytes(path)? != *bytes {
+            rewritten.insert(path.clone());
+        }
+    }
+    Ok(rewritten)
 }
 
 /// Compute the entire preflighted candidate set from the edited mirror, then publish the changed
@@ -536,6 +591,7 @@ fn gate_touched_set(cases: &[PathBuf]) -> Result<GatedCases, String> {
         repository,
         paths,
         touched: classification.touched().clone(),
+        staged: classification.staged().clone(),
     })
 }
 
@@ -675,4 +731,29 @@ fn join_continuations<'a>(
         joined.push_str(line.trim());
     }
     joined
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Under-naming a rewritten case is the failure that matters: its staged bytes are the author's
+    /// own pre-promote text, so a later bare `git commit` would pick those up and quietly drop the
+    /// promotion. Over-naming an untouched one is only noise, but the two notes ask for different
+    /// things and must not be swapped.
+    #[test]
+    fn only_a_rewritten_staged_case_is_told_to_restage() {
+        let staged =
+            std::collections::BTreeSet::from(["kept.loom".to_owned(), "rewritten.loom".to_owned()]);
+        let rewritten = std::collections::BTreeSet::from(["rewritten.loom".to_owned()]);
+        let mut out = Vec::new();
+        note_staged_cases(&staged, &rewritten, &mut out).expect("note");
+        let out = String::from_utf8(out).expect("notes are utf-8");
+        assert!(
+            out.contains("rewritten.loom was staged and has been rewritten"),
+            "{out}"
+        );
+        assert!(out.contains("kept.loom is staged;"), "{out}");
+        assert!(!out.contains("kept.loom was staged"), "{out}");
+    }
 }
