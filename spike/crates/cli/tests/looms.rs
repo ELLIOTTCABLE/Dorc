@@ -43,9 +43,16 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         .map_err(|error| format!("FAIL  {name}  [read {}: {error}]", case.path.display()))?;
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
-    parsed
-        .check_hygiene(Some("code"))
-        .map_err(|error| format!("FAIL  {name}  [hygiene: {error}]"))?;
+    if let Err(error) = parsed.check_hygiene(Some("code")) {
+        // Dump here too, not only on the fixpoint path. Authoring a NEW replay block is `$ cmd`
+        // with no output yet, and an empty output cannot surface the case's own slug — so hygiene,
+        // which runs first, is exactly where that author is standing when they need the candidate.
+        let candidate = DorcConsumer::new()
+            .render_case(&parsed)
+            .map(|rendered| dump_candidate(name, &rendered))
+            .unwrap_or_default();
+        return Err(format!("FAIL  {name}  [hygiene: {error}]{candidate}").into());
+    }
 
     // A WHOLE-PRODUCT loom's transcript is proven by running the real binary in the e2e runner,
     // which is the stricter proof and the only one the sanctioned-executor law permits for a case
