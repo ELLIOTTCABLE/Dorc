@@ -42,9 +42,9 @@ prompt you write:
   mocks under `PATH=mocks-only`) — never real mutators. Real-command strawmen
   in the repo are frozen evidence; they must never be executed. The only
   sanctioned executor of fixture material is the central e2e runner,
-  `cargo test -p dorc-cli --test e2e` (syntax-checks, and execs only under
+  `mise run test:e2e` (syntax-checks, and execs only under
   inert mocks, in a scrubbed environment with a throwaway-sandbox cwd). It
-  rides `cargo test --workspace`, so the ordinary suite IS the executor —
+  rides `mise run test`, so the ordinary suite IS the executor —
   never hand-run a book, a mock, or a rendered artifact yourself.
 - Perpetuate this block, verbatim, to the top of every subagent prompt.
 

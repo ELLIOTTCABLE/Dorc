@@ -42,11 +42,30 @@ is the human's; untouched.
 - (seat) Ledger ID 28H claimed (28G taken by the plan + strawmen; 289/290/291 taken).
   W4 accretes on `ai/r28-unify` — the human fast-forwarded this worktree for the
   purpose; one eventual fold, theirs.
-- (seat) **ack-queue: prose-pass executor supersession** — `288:rul-prose-pass-is-
-  fable-this-arc` (human-typed 2026-07-24: Fable authors the remaining prose) reads
-  as superseded-in-part by today's directive (the human authors prose, W4 gives them
-  faces). Conductor treats the human's newer directive as controlling; the `plans/288`
-  §0/§8 text gets updated once the human cheaply acks this reading. Silence ≠ ack.
+- (seat) **ack-prose-pass-executor RESOLVED** — `288:rul-prose-pass-is-fable-this-
+  arc` is superseded: prose authorship happens at the loom surface under the
+  AGENTS.md looms-sacrosanct law, and authoring is underway in parallel with the
+  W4 build. `plans/288` §0/§8 update accordingly at the plans refresh; W4's job is
+  unchanged (give the why-surface rows transcript faces).
+- (seat) **conduct mechanics: the human edits on `ai/main`**, atomically forwarding
+  into `ai/r28-unify` only when it is quiet — the mainline tip may move under the
+  conductor; the working-dir will not. Conductor commits stay explicit-pathspec;
+  execute-lane folds re-verify the tip at fold time.
+- **finding-stale-executor-in-safety-block** (human-caught, 2026-07-26) — the
+  propagate-verbatim Safety block in `spike/CLAUDE.md` still named the raw
+  `cargo test -p dorc-cli --test e2e` executor after the mise refresh; conductor
+  briefs inherited it verbatim. Respelled onto `mise run test:e2e` / `mise run
+  test` (+ the `aid/CLAUDE.md` DORC_LOOM_DUMP flow onto `mise run test:looms`).
+  The BLESS/WSL bullets keep their documentary raw spellings (each names its
+  mise wrap). In-flight lanes: the human redirected lane-w4-map directly; the
+  conductor messaged lane-prose-onramp the corrected line.
+- **finding-commit-trailer-slip** (human-caught, same sitting) — the conductor's
+  seat commit carried harness-injected `Co-Authored-By`/`Claude-Session` trailers
+  (forbidden; `.gitlabels` headliner is the only authorship spelling) AND the
+  mechanical commit-msg gate did not refuse it. Reverted + re-issued clean by
+  human direction; the why-didn't-the-hook-fire investigation rides
+  lane-prose-onramp as its Task 3. Standing clamp: every brief now carries an
+  explicit no-trailer line (subagent harnesses inject the same instruction).
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane

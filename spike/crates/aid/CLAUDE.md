@@ -177,7 +177,7 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **authoring-a-replay-block-is-blind** — nothing fills a NEW replay block in place: you append
   `$ <command>` with no output, and the case is then red twice over (the same-slug hygiene gate
   first, since empty output surfaces no slug; the render fixpoint second). The supported loop is
-  `DORC_LOOM_DUMP=<dir> cargo test -p dorc-cli --test looms -- <case>`, which writes the CANDIDATE
+  `DORC_LOOM_DUMP=<dir> mise run test:looms -- <case>`, which writes the CANDIDATE
   transcript — commands re-driven, outputs filled — to `<dir>/<case>.loom` on either failure; copy
   it over the case and re-run. `dorc-loom promote` cannot do this job: adding a command changes
   bytes outside the replay-output islands, which it refuses as a non-prose change.
