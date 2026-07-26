@@ -587,9 +587,6 @@ impl RunClock {
                 at: dorc_core::RunInstant(millis),
                 step_millis: 0,
             },
-            // An unparseable pin is a harness mistake, and answering it with the REAL clock would
-            // hide that mistake behind a green-then-red transcript. No clock at all is the loud
-            // reading: every instant renders absent.
             Some(Err(_)) => Self::Absent,
             None => Self::system(),
         }
@@ -1036,7 +1033,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 framed: true,
                 ..SiteResults::default()
             },
-            // Dated from what the ORIGINAL run wrote down, never from any clock reachable now.
             |records| {
                 parse_admitted_results(
                     records,
@@ -1220,8 +1216,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // Computed once (cheap, pure over the built plan) and consumed by BOTH the advisory `hint:` nag
     // (below) and the `dorc why` detail (`emit_why_report`). `None` ⇒ no unmodeled wall ⇒ no hint
     // (a modeled-but-diverged wall is an honest wall, never this hint's subject).
-    // The walk itself is kept, not just its hint: a guarded line's `dorc why` names every wall
-    // standing between its report and its turn, which is the same book-order roll-up.
     let wall_steps = collect_wall_steps(
         &plan,
         &probe,
@@ -1246,8 +1240,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `27W` §3 C3 pairing: fold each ingested tier-3 report record (recognized class + site)
     // into its site's `VerdictDecline` via `with_authored_reason` (idempotent — tier-2 static
     // wins). Then union the collapse-narratives onto the why-lens seam (d4 renders; decision-inert).
-    // Built for BOTH readers: the stderr why-lens below, and the `dorc why` pull surface, which is
-    // where a decline becomes a first-class answer rather than an absence.
     let paired_declines = pair_authored_reasons(decline_narrative, &results.reports);
     let collapse_narrative: Vec<CollapseNarrative> = classify_narrative
         .iter()
@@ -1365,9 +1357,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             risk_profile: args.trust_footprints.then_some(CONSENT_FLAG),
             counts: plan.disposition_counts(),
             deepest_tier: args.all,
-            // A live run narrates its own records, so the plane and the stream are the same
-            // binary's by construction; only a replay can disagree, and it declares which stream
-            // it wrote so the answer is read rather than assumed.
+            // Only a replay can disagree, and it declares its stream rather than being assumed.
             narratable: replay
                 .as_ref()
                 .is_none_or(|r| r.record_stream_version == dorc_aid::narrative::PLANE_VERSION),
@@ -1706,8 +1696,6 @@ fn assemble_whylog_metadata(
         host: framing.host.clone(),
         decision_digest: decision_digest.to_owned(),
         started_at,
-        // Ordinal-ordered and dedup'd by the map: the same record cannot claim two arrivals, which
-        // is the one shape the reader refuses outright.
         instants: results
             .records
             .values()
@@ -1924,10 +1912,7 @@ fn build_survival_footprints(
         // footprint. A no-op on the hit-surface HERE (the canary just proved own ∈ coords), but it
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
-        // `tc-disturbs-span-threading`: a survival's leverage point is the MATCHED ARM — the line
-        // a reader would widen for THEIR invocation — falling back to the funcdef name when the
-        // trace located no emitting line. The funcdef is the honest coarsest answer and stays the
-        // floor; it is just not what a reader needs when they can have the arm.
+        // `tc-disturbs-span-threading`: the MATCHED ARM over the funcdef, still the honest floor.
         let defining =
             arm_span.or_else(|| touches_defining_span(provider, &touches_sets, interner));
         if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
@@ -1987,9 +1972,6 @@ fn resolve_touches_footprint(
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
     let want = map_provider_name(interner.resolve(*provider));
-    // The arm span rides out of the SAME trace that produced the coordinates
-    // (`tc-disturbs-span-threading`): a claim and the line a reader is sent to widen must come
-    // from one evaluation, or the excerpt shows an arm this argv never reached.
     let (coords, arm) = touches_sets.iter().enumerate().find_map(|(index, set)| {
         set.providers()
             .find(|p| map_provider_name(interner.resolve(*p)) == want)
@@ -4010,9 +3992,6 @@ fn survival_chain(
             excerpt: None,
         });
     } else {
-        // One row per SPEAKER, not per erased establish: an aggregate replacement can erase
-        // several cells of one entity through one author's line, and four rows quoting one line
-        // four times is the same sentence said four times.
         let mut by_speaker: Vec<(Option<String>, Vec<String>)> = Vec::new();
         for receipt in &license.derivation().establish_vouches {
             let speaker = oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs);
@@ -4189,8 +4168,6 @@ fn guard_chain(
         },
     ];
     links.extend(walls_above.iter().map(|wall| ChainLink {
-        // A wall that nobody described claims nothing, and therefore covers everything: exactly
-        // the completion class `!` marks (`rul-danger-axis-is-completion-class`).
         rank: RowRank::CoversUnmeasured,
         tier: TrustTier::Ran,
         speaker: Some(format!("{}|{}", wall.line, wall.word)),
@@ -4212,10 +4189,7 @@ fn guard_chain(
         .map(|wall| format!("{}|{}", wall.line, wall.word))
         .collect();
     let joined_walls = wall_refs.join(", ");
-    // The ANALYSIS names every wall, because every one of them stands between the report and this
-    // line's turn. The `describe:` step names only the UNDESCRIBED ones: telling a reader to write
-    // an oracle for a command that already has one is the write-an-oracle nag pointed at the wrong
-    // wall, and the modelled wall is not what is keeping this line guarded.
+    // ANALYSIS names every wall; `describe:` only the UNDESCRIBED ones, else the nag lands wrong.
     let describable: Vec<String> = walls_above
         .iter()
         .filter(|wall| wall.role == WallRole::Opaque)
@@ -4259,8 +4233,6 @@ fn guard_chain(
         ),
         analysis_opener: Said::words("why-analysis-opener-guarded", &[]),
         links,
-        // The as-shipped guard is the answer to "so what DID it do", so it closes the panel where
-        // a skip's chain closes with its disjointness restatement.
         participants: Vec::new(),
         shipped: Some(license.insert().display_line(original)),
         join: Some(Said::words("why-analysis-join-guarded", &[reference])),
@@ -4457,9 +4429,6 @@ fn decline_chain(
     };
     let links = vec![
         ChainLink {
-            // The decline's whole content is that nothing was measured and nothing ever can be,
-            // which is exactly what the covers-unmeasured rank marks
-            // (`rul-danger-axis-is-completion-class`).
             rank: RowRank::CoversUnmeasured,
             tier: TrustTier::Declined,
             speaker: oracle_locus(arm, oracle_paths, oracle_srcs),
@@ -4961,8 +4930,6 @@ fn emit_why_report(
             chains.push((line, chain));
         }
         if let Disposition::Guard(license) = &step.disposition {
-            // Every wall in book order above this line stands between the probe (which ran before
-            // any of them) and the line's turn, so all of them are honestly named.
             let above: Vec<&WallStep> = wall_steps
                 .iter()
                 .take_while(|wall| wall.leaf != step.leaf)
@@ -5003,11 +4970,6 @@ fn emit_why_report(
             match &step.disposition {
                 Disposition::Run => {
                     if let Some(reason) = declined {
-                        // The author already answered. Whether that answer leaves room for a
-                        // BETTER oracle is the class's to say — and for every class but
-                        // `unmodeled` it does not, so the write-an-oracle nag would be telling
-                        // the one person who knows the tool to go find out
-                        // (`28G` strawman `c-declined-unsound`).
                         (
                             vec![Said::words(
                                 "why-reason-run-declined",
@@ -5413,9 +5375,8 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         )),
         receipt_row(&Said::words("why-receipt-risk-profile", &[&risk])),
         receipt_row(&Said::Words("why-receipt-plan-tally", tally)),
-        // The spike has no apply executor, so every disposition on this receipt is what the plan
-        // PREDICTED, not what a machine did (`tc-apply-report-is-prediction`). Saying so is the
-        // whole of the replayed-voice obligation: never let a reader take one for the other.
+        // `tc-apply-report-is-prediction`: no apply executor exists, so saying so IS the whole
+        // replayed-voice obligation — never let a reader take a prediction for an outcome.
         receipt_row(&Said::words("why-receipt-dispositions-predicted", &[])),
         receipt_row(&Said::words("why-addressability-line", &[])),
     ];

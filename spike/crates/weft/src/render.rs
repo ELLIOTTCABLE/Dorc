@@ -309,9 +309,7 @@ impl<K: Clone + PartialEq> Painter<K> {
             self.sink.end_line();
             placement.stops.stop(0).saturating_add(INDENT)
         } else if row.label.is_empty() {
-            // A labelless row is a legitimate member of a labelled table — a block of plain
-            // lines that read as one. The gap `advance_to` would insert has nothing to
-            // separate it from, and would shift the row one column off its own table.
+            // A labelless row is a legitimate member; the gap would shift it off its own table.
             placement.stops.stop(0)
         } else {
             self.advance_to(placement.stops.tail());
@@ -374,11 +372,8 @@ impl<K: Clone + PartialEq> Painter<K> {
             self.sink.layout(QUOTE);
         }
         if !row.payload.trailer.is_empty() {
-            // The gap between what was said and the circumstances of the saying is
-            // wordless geometry, so weft mints it (`weft-geometry-vs-words`). It rides a
-            // run rather than a `layout` call because the wrapper drops a pending space at
-            // a break: the trailer then lands flush at the payload column when it has to
-            // move to its own line, and no trailing space is left behind on the one above.
+            // Wordless geometry (`weft-geometry-vs-words`), as a RUN not a `layout` call: the
+            // wrapper drops a pending space at a break, leaving none dangling.
             let mut trailer = vec![Run::new(" ", Provenance::Arrangement { key: None })];
             trailer.extend(row.payload.trailer.iter().cloned());
             wrap(

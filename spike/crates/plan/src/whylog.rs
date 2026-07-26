@@ -1026,8 +1026,7 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
                 return Admission::Refused(AdmissionRefusal::Framing);
             };
             if line.starts_with("instant ") {
-                // Ascending-and-distinct, checked here rather than trusted: a record ordinal is a
-                // KEY, and a duplicate would silently redate one record from another's arrival.
+                // An ordinal is a KEY: a duplicate silently redates one record from another's.
                 let Some((ordinal, at)) = parse_instant(line, limits) else {
                     return Admission::Refused(AdmissionRefusal::Grammar);
                 };

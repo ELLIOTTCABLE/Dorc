@@ -3315,8 +3315,6 @@ pub fn build_plan_walled(
                     attach_replace_provenance(license, ast.node(ast_id).span, probe_origins, arena);
                 disposition = Disposition::Replace(license, stand_in);
             }
-            // The guard's chain reports on the same fact the license keys on, so the lookup is the
-            // skip's — and, like the skip's, it runs strictly after the mint.
             Disposition::Guard(license) => {
                 let attribution = probe_origins.get(&license.fact()).copied();
                 disposition = Disposition::Guard(license.with_probe_attribution(attribution));

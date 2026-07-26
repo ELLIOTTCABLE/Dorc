@@ -194,14 +194,10 @@ fn canon_disposition(d: &Disposition) -> String {
         // its attribution overlay is EXEMPT (`GuardInsert::canonical` drops it), so a plan
         // differing only in guard attribution digests identically (24D §2).
         Disposition::Guard(license) => {
-            // EXHAUSTIVE destructure, as `canon_derivation` is: a future guard field will not
-            // compile until it is classified identity-or-exempt.
             let GuardLicense {
                 fact,
                 insert,
-                // EXEMPT (Exempt::ReceiptId + Exempt::Timing): the why-chain's REPORTED row. Which
-                // record reported the fact, when it arrived, and what the probe command exited
-                // with are all things the mint had already decided without.
+                // EXEMPT (Exempt::ReceiptId + Exempt::Timing): a why-chain row, decided-without.
                 probe: _,
             } = license;
             format!("Guard fact={} {}", canon_fact(*fact), insert.canonical())
