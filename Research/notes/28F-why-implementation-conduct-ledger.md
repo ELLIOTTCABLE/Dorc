@@ -103,6 +103,46 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   dies without `--shell=` (undocumented) · the 4096 ceiling + sentinel
   (above) · `Words::Unwritten` hand-seeding works and should be documented
   as the working path.
+- **lane-d1-drift LANDED + FOLDED** @ `ef375e0e` (6 commits, fast-forward;
+  BOTH platforms green at tip — Windows 1458, WSL full workspace 1454 incl.
+  ALL unix whylog_store perms/symlink tests; the 1458/1454 delta is the
+  cfg split, expected). Leg 0 root cause: `oracle_path_key` folded `\`→`/`
+  AFTER reading Path components (`\` is a separator only on Windows); fix
+  folds first then filters `Component::CurDir`; three-way-convergence
+  assert added; an adjacent doc-attachment defect (W3's insert orphaned two
+  doc-comments) repaired. Leg 1: the D1 degraded receipt exactly per
+  rul-drift-replay-d1 — `ReplayLoad::Drifted` short-circuits ABOVE the
+  pipeline (structurally unable to reach kernel or book);
+  `whylog-book-desync` is the entry, not a dead end; FOUR arrangement rows
+  (3 drift rows Unwritten + `why-receipt-plan-tally-unsplit` Migrated — the
+  elide split is a license-plane derivation the durable never stored, so
+  the unsplit tally row is FORCED honesty, and `PlanTally::DriftedUnsplit`
+  types drift-and-missing-split as one fact); risk-profile read from
+  RECORDED argv. Leg 2: `trust_footprints` field → `risk_faultless_skips`.
+- **Conductor rulings on the D1 flags:**
+  **rul-drifted-receipt-exits-zero** — exit 0 ACCEPTED: an answer WAS
+  produced (degraded, disclosed); refusal codes are for refusals. A future
+  machine-consumer drift signal belongs to the `--exit-code` family, gated
+  on divergence-of-world semantics — seam note, not now.
+  **Owed D1 cousins banked (S, next conductor or r30)**: book DELETED/moved
+  (`read_replay_source` failure — arguably the same admin moment, same
+  DriftedReceipt path, different rung) and ORACLE-digest mismatch still
+  dead-end through generic Framing refusals.
+  **W5 prose queue +4**: the three drift rows + the pre-existing
+  `why-receipt-when-replayed` (its placeholder currently sits where the
+  drifted headline's date belongs — the drift render reads worse than it
+  will).
+- **Loom-cleanup order accreted (D1's six)**: a `run: replay-only` case
+  shape (a replay-only case pays ~100 lines of round-trip scaffolding) ·
+  replay blocks cannot mutate the case world — transition premises (drift,
+  retention, re-run-after-edit) must fake changed worlds as static data,
+  so the TRANSITION itself is never exercised (harness design gap, note
+  don't build) · hand-writing a `dorc-whylog/2` durable is undocumented and
+  field-order-load-bearing in three places — wants a fixture helper or one
+  commented exemplar · `BLESS=1` + `--` filter ALREADY scopes bless (B2
+  reduces to confirm+document; cleanup lane messaged mid-flight) · the
+  trailing-newline trap re-confirmed · hand-seeding the CATALOG lock works
+  identically to the arrangement lock and is nowhere written down.
 - **finding-wsl-leg-first-blood** — the §3 WSL leg's FIRST RUN caught a real
   cross-platform bug in the W3 fold: `loaded_and_discovered_oracle_spellings_
   share_one_key` (cli/main.rs:7456, the sibling-note canonical-key fix)
