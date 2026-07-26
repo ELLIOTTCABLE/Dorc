@@ -1,24 +1,55 @@
-//! Alignment shared between nodes that are not siblings.
+//! Column widths shared between nodes that are not siblings.
 //!
 //! Columns fall out of proximity easily enough: a run of adjacent speaker rows
 //! measures itself, a code block measures its own cells. But the things a
 //! reader wants squared up are not reliably siblings. Two `fix:` rows sitting
-//! in different branches of a join are the same kind of thing said twice, and
-//! ought to line up; so do the trailing comments of two separate excerpts, and
-//! so does a row of chain evidence that resumes after an attachment interrupts
-//! it. Under a purely structural rule none of those can align, because the tree
-//! puts them under different parents.
+//! in different branches of a join are the same kind of thing said twice; so
+//! are the trailing comments of two separate excerpts, and a row of chain
+//! evidence that resumes after an attachment interrupts it. Under a purely
+//! structural rule none of those can relate, because the tree puts them under
+//! different parents.
 //!
-//! So alignment is *named* rather than inherited. Any element may carry an
-//! opaque group key, and every element sharing that key shares a column width,
-//! wherever it sits in the document. Measurement is a whole-document pass that
-//! runs before layout, which is what lets a width be shared backwards — a row
-//! near the top can be widened by one near the bottom it will never meet.
+//! So the relationship is *named* rather than inherited. Any element may carry
+//! an opaque group key, and every element sharing that key shares a column
+//! width wherever it sits. Measurement is a whole-document pass that runs
+//! before layout, which is what lets a width be shared backwards — a row near
+//! the top can be widened by one near the bottom it will never meet. Naming is
+//! also the honest encoding: these elements relate because they are the *same
+//! kind of thing repeated*, which is a claim about relevance, not structure.
+//! The consumer knows which repetitions matter; weft cannot infer it.
 //!
-//! Naming rather than nesting is also the honest encoding of what is going on:
-//! these elements align because they are the *same kind of thing repeated*, and
-//! that is a claim about relevance, not about structure. The consumer knows
-//! which repetitions matter; weft cannot infer it and does not try.
+//! # This shares width, NOT position — read before relying on it
+//!
+//! A column's screen position is a prefix sum:
+//!
+//! ```text
+//! position(column n) = enclosing indent
+//!                    + gutter width + separator width
+//!                    + sum of every column left of n, plus their gaps
+//! ```
+//!
+//! A group shares ONE term of that sum. Two members land in the same place
+//! only when every other term already agrees, which means:
+//!
+//! - **every column to the left must also be grouped** — sharing a comment
+//!   column while leaving the code column ungrouped just moves the mismatch;
+//! - **members must sit at the same nesting depth** — enclosing indent is not
+//!   groupable at all, so a row inside a join branch stays offset by the
+//!   branch's indent no matter what it names;
+//! - **code blocks must share a literalness mode** — a descriptive block's
+//!   marker is a different width from a runnable block's separator.
+//!
+//! Miss one and the result is a silent one- or two-column offset, not an error.
+//!
+//! The successor is column STOPS: the measure pass learns each member's
+//! absolute left, a group resolves to `max(start)` across its members, and
+//! every member pads to that stop — which also makes narrow-width degradation
+//! a per-group decision rather than a per-local-run one. That needs the measure
+//! pass to walk geometry rather than widths alone, i.e. a genuine dry run of
+//! the layout pass (the scan half of the Oppen two-pass shape). Deliberately
+//! not built here: the resolver's hard cases — what a stop does when it cannot
+//! fit the box, whether a group spanning two depths aligns outward or refuses —
+//! want real consumer demands rather than invented ones.
 
 use crate::tree::{Document, Node, NodeKind};
 use crate::wrap::runs_width;

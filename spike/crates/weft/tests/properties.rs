@@ -293,50 +293,70 @@ fn a_right_reservation_narrows_only_the_lines_it_covers() {
     );
 }
 
-#[test]
-fn a_named_group_aligns_rows_that_are_not_siblings() {
-    let row = |label: &str, group: Option<&str>| {
-        Node::new(NodeKind::Labeled(LabeledRow {
-            label: vec![value(label)],
-            body: vec![text("body")],
-            attachments: Vec::new(),
-            align: group.map(|name| Key::Row(Box::leak(name.to_owned().into_boxed_str()))),
-        }))
-    };
-    // The short row sits inside a join branch and the long one outside it, so
-    // no structural rule could relate them; only the shared name can.
-    let document = Document::new(vec![
+fn labeled_row(label: &'static str, group: Option<&'static str>) -> Node<Key> {
+    Node::new(NodeKind::Labeled(LabeledRow {
+        label: vec![value(label)],
+        body: vec![text("body")],
+        attachments: Vec::new(),
+        align: group.map(Key::Row),
+    }))
+}
+
+/// Two rows with no common parent: one inside a join branch, one outside it.
+fn split_rows(group: Option<&'static str>) -> Document<Key> {
+    Document::new(vec![
         Node::new(NodeKind::Join(Join {
             branches: vec![Branch {
                 connective: None,
-                nodes: vec![row("fix:", Some("steps"))],
+                nodes: vec![labeled_row("fix:", group)],
             }],
             restatement: None,
         })),
-        row("suspect:", Some("steps")),
-    ]);
-    let rendered = render(&document, 80);
-    let lines = lines_of(&rendered);
-    let body_column = |needle: &str| {
-        lines
-            .iter()
-            .find(|line| line.contains(needle))
-            .and_then(|line| line.find("body"))
-            .expect("both rows render their body")
-    };
-    let indent = 3;
-    assert_eq!(
-        body_column("fix:") - indent,
-        body_column("suspect:"),
-        "a shared group must widen the short row's label column to the group's width, net of the branch indent"
-    );
+        labeled_row("suspect:", group),
+    ])
+}
 
-    let ungrouped = Document::new(vec![row("fix:", None), row("suspect:", None)]);
-    let ungrouped = render(&ungrouped, 80);
-    assert!(
-        ungrouped.text().contains("fix:     body"),
-        "adjacent siblings still align locally without any group: {:?}",
-        ungrouped.text()
+fn body_column(rendered: &Rendered<Key>, needle: &str) -> usize {
+    lines_of(rendered)
+        .iter()
+        .find(|line| line.contains(needle))
+        .and_then(|line| line.find("body"))
+        .expect("both rows render their body")
+}
+
+#[test]
+fn a_named_group_shares_a_column_width_between_rows_that_are_not_siblings() {
+    let grouped = render(&split_rows(Some("steps")), 80);
+    let ungrouped = render(&split_rows(None), 80);
+
+    let widened = body_column(&grouped, "fix:") - body_column(&ungrouped, "fix:");
+    assert_eq!(
+        widened,
+        "suspect:".len() - "fix:".len(),
+        "the short row's label column must widen to the group's width; nothing structural relates these two rows, so only the shared name can do it"
+    );
+}
+
+/// The known limit of width-sharing, pinned so it cannot drift silently.
+///
+/// A column's screen position is a prefix sum — enclosing indent, then gutter,
+/// then separator, then every column to its left. A group shares ONE term of
+/// that sum, so members at different nesting depths share a width and still
+/// land in different places. Sharing a *position* needs the measure pass to
+/// know each member's absolute left, which it deliberately does not yet.
+#[test]
+fn shared_width_is_not_shared_position_across_nesting_depths() {
+    let grouped = render(&split_rows(Some("steps")), 80);
+    let nested = body_column(&grouped, "fix:");
+    let outer = body_column(&grouped, "suspect:");
+    assert_ne!(
+        nested, outer,
+        "if these ever coincide, position-sharing has landed and this test should become the alignment test it is standing in for"
+    );
+    assert_eq!(
+        nested - outer,
+        3,
+        "the offset is exactly the branch's indent, and nothing else"
     );
 }
 

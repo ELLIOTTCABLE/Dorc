@@ -147,9 +147,10 @@ pub struct SpeakerRow<K> {
     pub payload: Payload<K>,
     /// Material hanging below the row: explanation, an excerpt of the source.
     pub attachments: Vec<Node<K>>,
-    /// An alignment group: rows sharing this key share their mark, speaker and
-    /// verb column widths, even when an attachment or a section boundary sits
-    /// between them.
+    /// A shared-width group: rows naming this key share their mark, speaker and
+    /// verb column WIDTHS, even when an attachment or a section boundary sits
+    /// between them. Width, not position — see the `align` module for the
+    /// prefix-sum limits.
     pub align: Option<K>,
 }
 
@@ -207,7 +208,7 @@ pub struct CodeBlock<K> {
     pub locus: Option<Vec<Run<K>>>,
     /// The lines themselves.
     pub lines: Vec<CodeLine<K>>,
-    /// An alignment group for the gutter column.
+    /// A shared-width group for the gutter column.
     ///
     /// Needed alongside the per-cell groups, not instead of them: sharing cell
     /// widths only lines two blocks up if their gutters are the same width too,
@@ -246,9 +247,10 @@ pub struct CodeLine<K> {
 pub struct CodeCell<K> {
     /// The cell's text, which for real source is foreign.
     pub runs: Vec<Run<K>>,
-    /// An alignment group: cells sharing this key share a column width across
-    /// block boundaries, so two excerpts' trailing comments can line up without
-    /// being siblings.
+    /// A shared-width group: cells naming this key share a column WIDTH across
+    /// block boundaries, so two excerpts trailing comments can line up without
+    /// being siblings — provided every column to their left, the gutter
+    /// included, is grouped too.
     pub align: Option<K>,
 }
 
@@ -277,10 +279,11 @@ pub struct LabeledRow<K> {
     pub body: Vec<Run<K>>,
     /// Material hanging below the row.
     pub attachments: Vec<Node<K>>,
-    /// An alignment group: rows sharing this key share one label column,
+    /// A shared-width group: rows naming this key share one label column WIDTH,
     /// wherever they sit. The remediation rows of a report are the motivating
     /// case — they read as one list even when a join splits them across
-    /// branches, and a list whose labels do not line up does not read as one.
+    /// branches. Width, not position: rows at different nesting depths stay
+    /// offset by that difference (see the `align` module).
     pub align: Option<K>,
 }
 

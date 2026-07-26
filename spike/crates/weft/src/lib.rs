@@ -95,6 +95,15 @@
 //! - **Selection.** [`tree::Criticality`] and [`tree::Register`] are recorded
 //!   and ruled on in no way — nothing is dropped, shortened, or reordered by
 //!   them. Marking can start before the renderer learns to select.
+//! - **Shared column POSITION.** The `align` keys share a column *width*
+//!   between elements that are not siblings; they do not share a position, and
+//!   a column's position is a prefix sum of everything to its left, enclosing
+//!   indent included. Members at different nesting depths therefore share a
+//!   width and still land in different places. The successor — globally
+//!   resolved column stops, and per-group rather than per-run degradation —
+//!   needs the measure pass to walk geometry, which is the scan half of the
+//!   two-pass shape. The limits are spelled out in that module and pinned by
+//!   test rather than left to be rediscovered.
 //!
 //! # Known tension, flagged rather than resolved
 //!
