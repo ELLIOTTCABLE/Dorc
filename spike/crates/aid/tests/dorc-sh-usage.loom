@@ -5,4 +5,4 @@ why: 288 rul-dorc-sh-not-carved-out: dorc-sh joins the registry like every other
 ---
 -- replay --
 $ dorc-sh
-error[dorc-sh-usage]: sm usage: dorc-sh <script> [args…]
+error[dorc-sh-usage]: sm usage: dorc-sh <script> [args...]

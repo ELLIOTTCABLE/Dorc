@@ -12,7 +12,7 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  warning[tolerates-unknown-dimension]: sm `netns2` is not a known context dimension on a `tolerates:` vouch (expected one of user, fs-view, netns); the mark vouches nothing and the site stays walled on that dimension (`27C` §2).
+  warning[tolerates-unknown-dimension]: sm `netns2` is not a known context dimension on a `tolerates:` vouch (expected one of user, fs-view, netns); the mark vouches nothing and the site stays walled on that dimension (`27C` section 2).
    --> oracle.sh:2:32
    |
  2 | foo__is_converged() { foo "$@" : safe-across netns2; }

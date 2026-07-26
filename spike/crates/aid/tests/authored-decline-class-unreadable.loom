@@ -18,6 +18,6 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  4:9 info [oracle-declined-inventory:authored-decline-class-unreadable] sm this verdict arm authors a deliberate decline whose class is not statically readable (a dynamic format or an unrecognized class token) — the site will run; the class resolves at runtime (advisory only).
+  4:9 info [oracle-declined-inventory:authored-decline-class-unreadable] sm this verdict arm authors a deliberate decline whose class is not statically readable (a dynamic format or an unrecognized class token) -- the site will run; the class resolves at runtime (advisory only).
 
 dorc lint: 0 errors, 0 warnings, 1 info across 1 file.
