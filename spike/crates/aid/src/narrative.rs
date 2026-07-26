@@ -10,7 +10,7 @@
 //! attributed confidence. The two planes are welded APART at the type level: **license values
 //! flow INTO narration freely, never back**. There is no method on any type in this module that
 //! yields a license-plane input (no `ByVouch`, no `Must`, no `RoomFact<Invited,_>`, no verdict);
-//! every accessor returns display-tier data (a [`TrustTier`], a tag, a [`Span`], a site handle).
+//! every accessor returns display-tier data (a [`SpeechAct`], a tag, a [`Span`], a site handle).
 //! "Lint-clean licenses nothing" (`AID-NEEDS:law-two-planes-opposite-fail`) runs in this
 //! direction: nothing here can license.
 //!
@@ -21,11 +21,11 @@
 //! retained as a license (it is consumed by-reference, only its existence read).
 //!
 //! ```compile_fail
-//! use dorc_aid::narrative::{CollapseKind, CollapseNarrative, TrustTier};
+//! use dorc_aid::narrative::{CollapseKind, CollapseNarrative, SpeechAct};
 //! use dorc_core::room::mint_from_room;
 //!
 //! let kind = CollapseKind::render_refusal_heredoc(dummy());
-//! let narrative = CollapseNarrative::new(TrustTier::Derived, kind);
+//! let narrative = CollapseNarrative::new(SpeechAct::Derived, kind);
 //! // A license mint demands a `RoomFact<Invited, _>`. A narrative is decision-inert: it can NEVER
 //! // be surrendered to a license input — "collapse-mints-narrative" is a one-way street, a compile
 //! // fact, not a discipline (`two-plane-aid-law`).
@@ -52,15 +52,21 @@
 use dorc_core::SiteId;
 use dorc_core::{Channel, JOIN_PARENT_CAP, LeafId, OracleFileId, OutBytes, Span};
 
-/// The typed epistemic tier of a rendered link (`27V:mech-trust-tier-typed`;
+/// The typed speech-act kind of a rendered link (`27V:mech-trust-tier-typed`;
 /// `AID-NEEDS:law-trust-tier-is-syntax`). Rendered UNIFORMLY by arrangement code (d4) — prose
 /// fragments never hand-write epistemics, so a claim can never be dressed as a measurement
 /// (`271:rul-sin-ordering`: mis-attribution is the worst aid failure). A closed enum (the
-/// `OriginKind` posture: adding a tier must break every exhaustive match). Spellings are STRAWMAN
-/// and ride `27V:rul-output-form-unwelded` — the tier SET and its typed rendering are the law; the
+/// `OriginKind` posture: adding a kind must break every exhaustive match). Spellings are STRAWMAN
+/// and ride `27V:rul-output-form-unwelded` — the kind SET and its typed rendering are the law; the
 /// words are unwelded pending real generated output.
+///
+/// Deliberately UNORDERED (`28F:rul-speechact-rename`): the seven kinds are WHO speaks and WHAT
+/// act they perform (a measurement reported, a vouch reached, a claim asserted, …), never a
+/// correctness scale. The derived `Ord` below is mechanical map-key determinism only
+/// (`inv-determinism`), never a semantic ranking — the one genuine semantic ordering over these
+/// kinds is the projection [`Knowability`], via [`SpeechAct::knowability`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum TrustTier {
+pub enum SpeechAct {
     /// A host measurement (a probe actually observed it).
     Measured,
     /// An author's vouch (a reached `is_converged()` answered in the named sense).
@@ -84,14 +90,57 @@ pub enum TrustTier {
     Declined,
 }
 
-impl TrustTier {
+impl SpeechAct {
     /// Derive a tier from the EXISTENCE of a vouch (`two-plane-aid-law`: a license flows INTO the
     /// aid plane, informing the tier, and is never retained as a license). Consumes the vouch by
     /// reference and reads nothing but that it is present — the one-way flow made a signature.
     #[must_use]
     pub fn from_vouch<P>(_vouch: &dorc_core::ByVouch<P>) -> Self {
-        TrustTier::Vouched
+        SpeechAct::Vouched
     }
+
+    /// The ordered [`Knowability`] projection (`28F:rul-speechact-rename`): KIND-CONSTANT over the
+    /// as-built chain renders (`spike/crates/cli/src/main.rs`'s survival/guard/decline/plain chain
+    /// builders), so this is the ONE derivation seat — both the `*`/`!` mark render and the
+    /// naked-trust epilogue's which-link derivation route through it rather than re-deriving a rank
+    /// per row.
+    ///
+    /// `Consented` has no as-built [`CollapseKind::EntryDenial`] render today (`narrative-mints-
+    /// outrun-renders` — the class mints but nothing consumes it yet); it is assigned `Witnessed`
+    /// here by analogy with `Derived` (both are the engine's own closed-world decisions, never an
+    /// author's open-world at-most claim) rather than from any observed row. Flagged for conductor
+    /// review when a consent row first renders.
+    #[must_use]
+    pub const fn knowability(self) -> Knowability {
+        match self {
+            SpeechAct::Measured
+            | SpeechAct::Vouched
+            | SpeechAct::Derived
+            | SpeechAct::Consented => Knowability::Witnessed,
+            SpeechAct::Ran | SpeechAct::Claimed | SpeechAct::Declined => {
+                Knowability::CoversUnmeasured
+            }
+        }
+    }
+}
+
+/// The ordered super-layer of the danger axis (`28E` §7 adapt-two-rank-default-render, sharpened by
+/// §8 `rul-danger-axis-is-completion-class`; `28F:rul-speechact-rename`): the seven [`SpeechAct`]
+/// kinds stay typed law underneath and are UNTOUCHED by this projection — `Knowability` is a
+/// RENDER-relevant partition OVER them, keyed by what a link COVERS rather than where its words were
+/// written. GENUINELY ordered (unlike `SpeechAct`'s own derived `Ord`, which is mechanical map-key
+/// determinism only): [`CoversUnmeasured`](Knowability::CoversUnmeasured) speaks for what no
+/// runnable command COULD witness — an author's at-most claim, or the run of a command nobody has
+/// described (which claims nothing, and therefore covers everything) — and always outranks
+/// [`Witnessed`](Knowability::Witnessed), the class of size N every member of which was observed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Knowability {
+    /// `*` — the row rests on something that actually happened (a probe report, a real run) or on a
+    /// derivation over such things. Its class is of size N and every member of it was observed.
+    Witnessed,
+    /// `!` — the row speaks for universe-minus-N: an author's at-most claim, or the run of a command
+    /// nobody has described (which claims nothing, and therefore covers everything).
+    CoversUnmeasured,
 }
 
 /// The k-cap on a [`CollapseNarrative`] operand list through DEEP merges (the [`JOIN_PARENT_CAP`]
@@ -444,12 +493,12 @@ impl CollapseKind {
 pub const PLANE_VERSION: u32 = 2;
 
 /// One decision-inert narrative record minted at a safety-narrowing collapse (`27V` Lane A). Pure
-/// data (see module docs): a [`TrustTier`] plus the [`CollapseKind`] carrying the collapse's
+/// data (see module docs): a [`SpeechAct`] plus the [`CollapseKind`] carrying the collapse's
 /// operands. SEALED decision-inert — no method yields a license-plane input (the `compile_fail`
 /// doctest is the structural pin; this is the load-bearing law of the whole dispatch).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CollapseNarrative {
-    tier: TrustTier,
+    tier: SpeechAct,
     kind: CollapseKind,
 }
 
@@ -457,15 +506,15 @@ impl CollapseNarrative {
     /// Mint a narrative at a collapse. The collapse CONSTRUCTOR demands this at the value level
     /// (`27V:rul-collapse-mints-narrative`, né -evidence); the caller supplies the tier from what
     /// the site knows
-    /// (a probe merge → [`TrustTier::Measured`], a vouch decline → [`TrustTier::Vouched`], …).
+    /// (a probe merge → [`SpeechAct::Measured`], a vouch decline → [`SpeechAct::Vouched`], …).
     #[must_use]
-    pub fn new(tier: TrustTier, kind: CollapseKind) -> Self {
+    pub fn new(tier: SpeechAct, kind: CollapseKind) -> Self {
         Self { tier, kind }
     }
 
     /// The epistemic tier (display read — `mech-trust-tier-typed`). Rendered by d4 only.
     #[must_use]
-    pub fn tier(&self) -> TrustTier {
+    pub fn tier(&self) -> SpeechAct {
         self.tier
     }
 
@@ -537,10 +586,10 @@ mod tests {
     fn a_vouch_informs_a_tier_but_is_never_retained() {
         // two-plane-aid-law: a license flows INTO the aid plane (informing the tier) and never
         // back. `from_vouch` reads only that the vouch exists — the vouch is consumed by-ref and
-        // dropped; the narrative holds a plain `TrustTier`, not a license.
+        // dropped; the narrative holds a plain `SpeechAct`, not a license.
         let vouch = ByVouch::vouched(7u32, Rung::Both);
-        let tier = TrustTier::from_vouch(&vouch);
-        assert_eq!(tier, TrustTier::Vouched);
+        let tier = SpeechAct::from_vouch(&vouch);
+        assert_eq!(tier, SpeechAct::Vouched);
         let ev = CollapseNarrative::new(
             tier,
             CollapseKind::VerdictDecline {
@@ -551,7 +600,7 @@ mod tests {
                 authored_reason: None,
             },
         );
-        assert_eq!(ev.tier(), TrustTier::Vouched);
+        assert_eq!(ev.tier(), SpeechAct::Vouched);
     }
 
     #[test]
@@ -609,7 +658,7 @@ mod tests {
         // The r26 reservation: `Cancellation(Reserved)` holds the slot (no consumer forecloses it)
         // yet cannot be constructed at v1 (Reserved is uninhabited). A match still handles it.
         let ev = CollapseNarrative::new(
-            TrustTier::Measured,
+            SpeechAct::Measured,
             CollapseKind::FactMergeDisagreement {
                 cell: site(1),
                 operands: Operands::default(),
@@ -648,7 +697,7 @@ mod tests {
             arm_file: F,
         };
         let ev = CollapseNarrative::new(
-            TrustTier::Vouched,
+            SpeechAct::Vouched,
             CollapseKind::VerdictDecline {
                 site: site(3),
                 arm: MintSpan(span(0, 3)),
@@ -679,7 +728,7 @@ mod tests {
             "a populated reason is never overwritten (tier-2 wins over a tier-3 echo)"
         );
         let refusal = CollapseNarrative::new(
-            TrustTier::Derived,
+            SpeechAct::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),
         );
         assert_eq!(
@@ -694,16 +743,16 @@ mod tests {
         // CollapseNarrative derives Eq (tests compare it); the Reach-style EXCLUSION is a CARRIER
         // property proven where a narrative rides a fixpoint value (analysis::effect), not here.
         let a = CollapseNarrative::new(
-            TrustTier::Derived,
+            SpeechAct::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),
         );
         let b = CollapseNarrative::new(
-            TrustTier::Derived,
+            SpeechAct::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),
         );
         assert_eq!(a, b);
         let c = CollapseNarrative::new(
-            TrustTier::Ran,
+            SpeechAct::Ran,
             CollapseKind::render_refusal_heredoc(site(2)),
         );
         assert_ne!(a, c, "a different tier is a different record");

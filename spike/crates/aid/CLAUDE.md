@@ -118,9 +118,12 @@ crate's charter) · `notes/287` (errorloom as-built).
   user-facing surface that becomes a real compat surface at publication. Mint them
   semantic-first, never as a file-naming decision.
 - **trust-tier-is-syntax** (`AID-NEEDS:law-trust-tier-is-syntax`) — the epistemic tier of
-  every rendered link is a typed `TrustTier` field rendered uniformly by arrangement code;
+  every rendered link is a typed `SpeechAct` field rendered uniformly by arrangement code;
   prose fragments NEVER hand-write epistemics. The tier SET and its typed rendering are
-  the law; the words ride `27V:rul-output-form-unwelded`.
+  the law; the words ride `27V:rul-output-form-unwelded`. `SpeechAct` is deliberately
+  UNORDERED (`28F:rul-speechact-rename`; née `TrustTier` — "tier" squatted genuinely-ordered
+  vocabulary); the one genuine semantic ordering over the same seven kinds is the
+  `Knowability` projection, minted at the ONE seat `SpeechAct::knowability`.
 - **render-form-unwelded** (`27V:rul-output-form-unwelded`) — wording, numbering,
   connectives, and arrangement shape are unstable-and-improving. Goldens pin content +
   structure and re-bless freely; never treat a current render as contract.

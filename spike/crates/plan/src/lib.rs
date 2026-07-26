@@ -69,7 +69,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::Diag;
 use dorc_aid::narrative::{AuthoredReason, ChannelCoverage, DemoteTag, MintSpan};
-use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, TrustTier};
+use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
@@ -1396,7 +1396,7 @@ pub fn build_vouches(
                     arm_file,
                 });
                 collapse_narrative.push(CollapseNarrative::new(
-                    TrustTier::Vouched,
+                    SpeechAct::Vouched,
                     CollapseKind::VerdictDecline {
                         site: dorc_aid::diag::SiteId::leaf(LeafId(
                             u32::try_from(leaf_idx).unwrap_or(u32::MAX),
@@ -3503,7 +3503,7 @@ fn wall_walk_survival(
                         survival::DemoteReason::MayAlias => DemoteTag::MayAlias,
                     };
                     report.collapse_narrative.push(CollapseNarrative::new(
-                        TrustTier::Derived,
+                        SpeechAct::Derived,
                         CollapseKind::Demotion {
                             site: dorc_aid::diag::SiteId::leaf(step.leaf),
                             reason: tag,
@@ -3519,7 +3519,7 @@ fn wall_walk_survival(
         if *is_mutator && matches!(step.disposition, Disposition::Run) {
             // C5 aid: a running mutator forms an Effect-channel wall (`rul-only-oracle-bytes-ship`).
             report.collapse_narrative.push(CollapseNarrative::new(
-                TrustTier::Derived,
+                SpeechAct::Derived,
                 CollapseKind::WallFormation {
                     participant: step.leaf,
                     channel: ChannelCoverage {
@@ -4052,7 +4052,7 @@ impl Plan {
                 // Spelled literally, not through `render_refusal_heredoc`: the mint census is a
                 // lexical grep for `CollapseKind::<Variant>` and cannot see a named constructor.
                 CollapseNarrative::new(
-                    TrustTier::Derived,
+                    SpeechAct::Derived,
                     CollapseKind::RenderRefusal {
                         site: dorc_core::SiteId::leaf(step.leaf),
                         cause: dorc_aid::narrative::RenderRefusalTag::Heredoc,
@@ -6729,7 +6729,7 @@ apt_get__is_converged() {
             "the demoted nginx install mints a Demotion"
         );
         assert!(
-            ev.iter().all(|e| e.tier() == TrustTier::Derived),
+            ev.iter().all(|e| e.tier() == SpeechAct::Derived),
             "survival-walk narratives are engine-derived"
         );
 

@@ -610,10 +610,13 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   `289:seam-narrative-render-unconsumed`, owned by the arrangement-home round. The law above
   stands; only the "renders self-advertisingly" claim was aspirational.
 - **trust-tier-is-syntax** — the epistemic tier of every rendered link (STRAWMAN
-  spellings: measured / vouched / ran / claimed / derived / consented) is a typed
-  evidence field rendered uniformly by arrangement code; prose fragments never
-  hand-write epistemics. The tier SET and its typed rendering are the law; the words
-  ride render-form-unwelded.
+  spellings: measured / vouched / ran / claimed / derived / consented / declined) is a
+  typed evidence field (`SpeechAct`; née `TrustTier` — `28F:rul-speechact-rename`,
+  "tier" squatted genuinely-ordered vocabulary) rendered uniformly by arrangement code;
+  prose fragments never hand-write epistemics. The tier SET and its typed rendering are
+  the law; the words ride render-form-unwelded. `SpeechAct` is deliberately UNORDERED;
+  the one genuine semantic ordering over the same seven kinds is the `Knowability`
+  projection, minted at the ONE seat `SpeechAct::knowability`.
 - **render-form-unwelded** (`27V:rul-output-form-unwelded`) — the particulars of
   rendered aid output (wording, numbering, connectives, arrangement shape) are
   unstable-and-improving pending real-world generated output; `KNOBS:kFLOW` governs

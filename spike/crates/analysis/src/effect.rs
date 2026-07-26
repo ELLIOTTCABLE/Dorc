@@ -1077,7 +1077,7 @@ fn mint_merge_narrative(effects: &[Vec<CommandEffect>]) -> Vec<dorc_aid::Collaps
         .filter(|&i| effects[i].contains(&CommandEffect::Opaque))
         .map(|i| {
             dorc_aid::CollapseNarrative::new(
-                dorc_aid::TrustTier::Derived,
+                dorc_aid::SpeechAct::Derived,
                 dorc_aid::CollapseKind::FactMergeDisagreement {
                     cell: SiteId::leaf(LeafId(i as u32)),
                     operands: dorc_aid::narrative::Operands::default(),
@@ -1804,7 +1804,7 @@ command__predict() {
             1,
             "one Opaque node ⇒ one merge-disagreement"
         );
-        assert_eq!(narrative[0].tier(), dorc_aid::TrustTier::Derived);
+        assert_eq!(narrative[0].tier(), dorc_aid::SpeechAct::Derived);
         assert!(
             matches!(
                 narrative[0].kind(),
