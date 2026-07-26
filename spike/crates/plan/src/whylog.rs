@@ -469,19 +469,33 @@ impl WhylogLimits {
     }
 }
 
-/// A recorded, untrusted source path hint. It is never a source-loading capability.
+/// A recorded, untrusted source path a durable claims its run read.
+///
+/// # What it is and is not (`28F:rul-path-hint-must-match-its-doc`)
+///
+/// It is a CLAIM, never an authority. It mints no scope, no framing, and no trust: nothing derived
+/// from it may be believed until [`RecordedReplayClaims::book_digest`] (or the per-oracle
+/// [`RecordedOracleSource::digest`]) has been compared against a digest of what was actually read.
+///
+/// A replay edge does open the named path — that is what reconstructing a run's inputs MEANS — and
+/// the honest statement is therefore narrower than "never a source-loading capability", which this
+/// type used to claim while its one caller loaded sources with it. The edge owes a BOUNDED,
+/// regular-file-only read whose result is a candidate until the digest matches (`dorc-cli`'s
+/// `read_replay_source`); the type owes callers no more authority than that.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordedSourcePathHint(String);
 
 impl RecordedSourcePathHint {
-    /// Exposes the recorded untrusted hint for checkpoint 3C comparison only.
+    /// The recorded untrusted claim. Comparing it is always sound; acting on it demands the
+    /// bounded-read-then-digest-check discipline the type doc names.
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 }
 
-/// One ordered recorded oracle identity claim. It is not an authority to load a source.
+/// One ordered recorded oracle identity claim, on [`RecordedSourcePathHint`]'s terms: a claim to be
+/// digest-checked, never an authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordedOracleSource {
     ordinal: usize,

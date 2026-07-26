@@ -1512,22 +1512,21 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         .iter()
         .map(|oracle| oracle.path().as_str().to_owned())
         .collect();
-    let Ok(book) = std::fs::read_to_string(&book_path) else {
+    let Ok(book) = read_replay_source(&book_path) else {
         return Ok(refuse_replay(
             advisory,
             dorc_plan::records::AdmissionRefusal::Framing,
         ));
     };
-    let oracle_sources: Vec<String> =
-        match oracle_paths.iter().map(std::fs::read_to_string).collect() {
-            Ok(sources) => sources,
-            Err(_) => {
-                return Ok(refuse_replay(
-                    advisory,
-                    dorc_plan::records::AdmissionRefusal::Framing,
-                ));
-            }
-        };
+    let oracle_sources: Vec<String> = match oracle_paths.iter().map(read_replay_source).collect() {
+        Ok(sources) => sources,
+        Err(()) => {
+            return Ok(refuse_replay(
+                advisory,
+                dorc_plan::records::AdmissionRefusal::Framing,
+            ));
+        }
+    };
     let framing = dorc_plan::records::Framing::spike(book_digest(&book));
     let scope =
         WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
@@ -1567,6 +1566,46 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         })),
         dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(advisory, reason)),
     }
+}
+
+/// The ceiling on a source file a DURABLE named, as opposed to one the admin typed
+/// (`rul-host-bytes-bounded-before-admission`: limits are injectable policy, not timeless truth —
+/// this is the cli-local policy value, sibling to [`WHYLOG_CAP`]).
+const REPLAY_SOURCE_CAP: u64 = 16 * 1024 * 1024;
+
+/// Read one book or oracle a durable NAMED, bounded and regular-file-only.
+///
+/// `28F:rul-path-hint-must-match-its-doc`. `RecordedSourcePathHint` says it is never a
+/// source-loading capability, and this is the one seat that comes closest to making it one: the
+/// digest comparison that decides whether the named file is the run's file happens AFTER the read,
+/// so the read itself has to be safe on its own terms. Two ways it was not:
+///
+/// * unbounded — `/dev/zero` or a huge file at the named path was slurped whole before any check;
+/// * unfiltered — a FIFO at the named path blocks the replay forever, which no timeout would catch
+///   because nothing here has one.
+///
+/// So: `symlink_metadata` (never a following stat) must say regular file, the size must be under
+/// [`REPLAY_SOURCE_CAP`], and the read is `take`-bounded anyway rather than trusting the stat it
+/// just did. The result is still only a CANDIDATE — `replay_claims_match` remains the thing that
+/// decides it is the run's book, and a mismatch refuses.
+fn read_replay_source(path: impl AsRef<std::path::Path>) -> Result<String, ()> {
+    use std::io::Read as _;
+
+    let path = path.as_ref();
+    let metadata = std::fs::symlink_metadata(path).map_err(|_| ())?;
+    if !metadata.is_file() || metadata.len() > REPLAY_SOURCE_CAP {
+        return Err(());
+    }
+    let file = std::fs::File::open(path).map_err(|_| ())?;
+    let mut source = String::new();
+    let read = file
+        .take(REPLAY_SOURCE_CAP.saturating_add(1))
+        .read_to_string(&mut source)
+        .map_err(|_| ())?;
+    if read as u64 > REPLAY_SOURCE_CAP {
+        return Err(());
+    }
+    Ok(source)
 }
 
 fn refuse_replay(advisory: bool, reason: dorc_plan::records::AdmissionRefusal) -> ReplayLoad {
