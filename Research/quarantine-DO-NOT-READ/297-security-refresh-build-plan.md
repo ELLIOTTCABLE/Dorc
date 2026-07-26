@@ -299,6 +299,24 @@ container sizes rather than relying only on elapsed time or OOM behavior.
 
 ## phase-four-centralize-sink-encoding-and-sensitive-artifacts
 
+> PHASING AMENDMENT (security conductor, 2026-07-25). This phase is two units under
+> one name, and the ordinary-lane work now sequences them. **(b) the whylog
+> filesystem hardening** below is the HARD GATE the ordinary `28G` W3 already carries
+> — it lands there, with that lane, or W3's default-on whylog fold ships opt-in
+> instead; no partial credit. **(a) the sink type family** stays deferred and should
+> NOT be attempted before `28G` W4 (`prop-parts-at-birth` + `prop-carrier-to-the-edge`):
+> W4 deletes the very strings a pre-W4 migration would type, and typing them twice is
+> the only outcome available. r30 is its honest home, beside the retention design.
+>
+> ONE SLIVER of (a) is pulled forward, because `28G` W2 mints its first consumer:
+> the why-surface begins inlining ORACLE SOURCE and its authors' comments for
+> display (the show-the-code rows). That is bytes we did not write reaching a
+> terminal, and it wants the existing sanitizer at the new site rather than the
+> type family. Frozen as `phase-four-a-inlined-source-display-encoder` in the phase
+> packets, cross-lane alias **`28G` W2.5**, dispatched by the `28G` conductor to an
+> opaque builder immediately after W2 lands. Its whole point is that phase four
+> proper later MIGRATES a tagged call site instead of hunting an untagged one.
+
 ### orthogonal-value-axes
 
 Introduce destination-specific rendered types with private constructors, such as

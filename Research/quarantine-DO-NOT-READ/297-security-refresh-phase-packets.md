@@ -406,7 +406,157 @@ public fieldwise scoped-evidence construction, partial admission after a limit/i
 interner insertion before budget enforcement, `Refused -> Unknown/NoObservation`, a mutation-capable
 plan after refusal, or new transport/fleet/retry identity semantics.
 
+## phase-four-a-inlined-source-display-encoder
+
+FROZEN 2026-07-25 by the security conductor, against `ai/main`@`0355484b`. Cross-lane alias
+**`28G` W2.5**. The one sliver of phase four pulled forward, because `28G` W2 mints its first
+consumer; the phasing rationale is the amendment at `297-security-refresh-build-plan.md`
+phase four. Dispatched by the `28G` conductor to an OPAQUE builder after W2 lands; that
+builder's entry point is `29C`. This packet is the compression boundary — after it the work
+is mechanical, and a question it does not answer is a STOP, not a judgment call.
+
+### 1 - What is being added, in one paragraph
+
+`28G` W2 begins inlining ORACLE SOURCE into user-facing why renders — the decline arm
+as-written, its author's comment as load-bearing display, the guard's as-shipped sh (the
+`28G` strawmen's `[ <file>, as-written:` gutters). Those bytes were written by somebody
+else, they are shown to a person who is being asked to JUDGE them, and today nothing sits
+between them and the terminal: `sanitize_report_raw` (`crates/cli/src/main.rs:4796`) is the
+only sanitizer in the tree and it serves one lane. The unit gives inlined source two
+properties it does not have — a part-class saying it is not our words, and an encoder pass
+before it reaches a terminal — using what exists. It does NOT build the phase-four type
+family.
+
+### 2 - The property, stated exactly
+
+For every USER-FACING WHY/AID DISPLAY render:
+
+1. every run of bytes originating outside this repository — oracle source lines, oracle
+   comments, book source lines shown in a gutter, host-reported text — is classed
+   `RenderPart::ForeignText` (`crates/aid/src/tagged.rs:43`), never `TemplateLiteral`,
+   `Arrangement`, or `ArrangementWords`; and
+2. those bytes pass the display encoder (section 3) before reaching a terminal; and
+3. our own words — catalog rows, arrangement-registry rows, renderer-computed structure —
+   are NEVER encoded (double-escaping is a defect) and NEVER classed `ForeignText`.
+
+SCOPE CARVE, load-bearing, do not cross: this binds DISPLAY surfaces only. The plan render's
+book lines and every emitted `.sh` artifact are the BYTE-FLOOR plane and MUST remain
+byte-for-byte unchanged (`rul-attention-honesty`; `law-render-overlay-never-artifact`;
+`27W:rul-report-surface-massaging` is what licenses display-sh to differ from artifact-sh).
+If a change would alter one byte of any emitted artifact, it is out of scope: STOP.
+
+### 3 - The encoder, exact and closed
+
+Promote `sanitize_report_raw` out of `cli` into a shared display seat in `aid` (its
+doc-comment already names itself the placeholder for this). Behaviour, and this list is
+CLOSED:
+
+- control characters (`char::is_control` — C0, DEL, C1) become a space. UNCHANGED.
+- Unicode bidi and format controls become a space. NEW, and it is the reason this unit
+  exists at all: this render shows code a human is deciding about, so a comment that
+  displays differently than it lexes defeats the surface's whole purpose. Cover general
+  category `Cf` plus the explicit set U+202A..U+202E and U+2066..U+2069.
+- size cap, truncated at a char boundary. UNCHANGED IN SHAPE, but the cap becomes a
+  PARAMETER of the seat: `REPORT_RAW_CAP`'s 200 is right for a breadcrumb and wrong for a
+  source line, so the source-gutter caller passes its own. Do not hardcode 200 into the
+  shared seat; do not change the report lane's own value.
+- the truncation ellipsis becomes ASCII `...`. Today it is `…` (`cli/src/main.rs:4803`),
+  which violates `rul-ascii-output-forever` and would be MULTIPLIED by this promotion. `28G`
+  W1 owns the ASCII respell generally; this one instance rides here because promoting the
+  function spreads it. If W1 already fixed it, assert it and move on.
+- the encoder is IDEMPOTENT: encoding already-encoded text returns it unchanged. This is
+  the property section 5's biting test rests on, so it is a requirement, not an
+  observation.
+
+OUT OF SCOPE, and attempting any of it is a STOP: the per-sink type family
+(`TerminalText`, `JsonString`, `PathSegment`, `shell::PosixWord`); JSON, path, or shell
+encoders; confusable/normalization/homoglyph handling; identity-comparison changes of any
+kind (comparison stays on raw/typed values, never on encoded display strings); the whylog
+filesystem hardening (that is the ordinary lane's W3 gate, not yours).
+
+### 4 - Files and symbols in scope
+
+- `crates/aid/src/tagged.rs` — `RenderPart::ForeignText` is the class to use; it needs no
+  new variant. If you believe it does, STOP.
+- `crates/aid/` — the new shared display-encoder seat, and the why-render sites that emit
+  inlined source. Whether W2 created a fresh arm-inlining path or extended an existing one,
+  the property in section 2 is the same: tag at the point of creation.
+- `crates/cli/src/main.rs` — `sanitize_report_raw` and `REPORT_RAW_CAP` move or delegate;
+  the report lane's observable behaviour does not change except the ASCII ellipsis.
+- The why transcripts and looms that churn: re-bless only after inspecting the diff by eye,
+  and only encoder/ASCII deltas may appear. Any other case churning is a STOP.
+
+NOT in scope, and a change to any of them is a STOP: `records::Framing`; the ingestion and
+deframing side; `oracle::report`'s static tiers; the license plane in any form; the plan
+render; the artifact emitters; anything under `crates/plan/src/render.rs`.
+
+### 5 - The tests that must bite a later builder
+
+You cannot be rescued by your conductor, and the builder who next touches these renders will
+not have your context. Tests are the whole of your protection. Build all four:
+
+1. **The idempotence sweep — the one that bites.** Over every why-surface render the test
+   corpus can produce, assert that every `ForeignText` part is already encoder-clean
+   (encoding it again is a no-op), and that no part OUTSIDE `ForeignText` contains a control
+   or bidi character. A later builder who adds a show-the-code site and forgets the encoder
+   fails this without ever having read this packet. Name it so its purpose is obvious from
+   the failure output.
+2. **Classification.** Drive a render whose inlined source carries a distinctive marker;
+   assert the marker's bytes appear ONLY inside `ForeignText` parts, and that no
+   `TemplateLiteral`/`Arrangement`/`ArrangementWords` run contains them.
+3. **Hostile fixtures, through the real render.** An oracle comment containing: a raw ESC
+   and a CSI sequence; a bidi override (U+202E); NUL and DEL; a line far past the cap; and
+   invalid-looking but valid UTF-8. Each asserted encoded, each asserted non-empty (we
+   never silently drop an author's text).
+4. **The artifact anti-regression.** Assert the emitted probe and apply artifacts are
+   byte-identical before and after this unit for a case that exercises inlined source
+   display. This is section 2's scope carve, machine-pinned.
+
+Before ending your turn, deliberately break each of the four properties in a scratch edit,
+confirm the corresponding test catches it, and revert. A test that cannot catch its own
+property is worse than no test — say in your report that you did this.
+
+### 6 - Verification, and the unattended clause
+
+The full gate set from `spike/CLAUDE.md`, cold, including `clippy -D warnings` on a fresh
+target dir, and the e2e run natively. You are unattended: if the gates fail for reasons
+inside your scope, FIX THEM on your own judgement and keep going — that is expected of you,
+not an escalation. If they fail for reasons OUTSIDE your scope, that is a non-security
+finding and you may report it plainly to your conductor (section 7).
+
+### 7 - Stop conditions, and the blocked path
+
+STOP and do not decide, if: the property in section 2 cannot be established without changing
+an emitted artifact byte; `ForeignText` turns out to be the wrong class and a new variant
+seems needed; the encoder promotion would change the report lane's records; a case outside
+the expected set churns; or you find yourself wanting to widen scope, add a flag, or start
+the type family.
+
+Because your conductor cannot receive your reasoning, a STOP is not a question you may ask
+them. Write the block, in full, as a new quarantined document beside this one, and tell your
+conductor exactly: **"my unit is blocked; the human must read
+`Research/quarantine-DO-NOT-READ/<the file you wrote>` before it can proceed."** Nothing
+further — no surface, no symbol, no cause. Then stop.
+
+You MAY, freely and in ordinary language, report to your conductor any finding or work that
+is NOT about your primary unit: unrelated bugs, gate flakiness, dead code, churn you had to
+absorb. Only the primary unit's subject matter is closed.
+
+### 8 - Invariants that bind this work
+
+From `spike/CLAUDE.md`: `two-plane-aid-law` (this is entirely describe-plane; nothing here
+may become or influence a license input), `rul-attention-honesty`,
+`law-render-overlay-never-artifact`, `inv-determinism` (the encoder is a pure function — no
+clock, RNG, locale, or environment), `empty-world-byte-identical`, `skip-banned`,
+`rul-ascii-output-forever`. From this quarantine: `sinv-sink-encoding` is the governing rule
+and this packet is its first, narrowest construction; `sinv-hostile-sensitive-orthogonal`
+(encoding is not declassification — you are making bytes safe to DISPLAY, and claiming
+nothing about whether they are sensitive).
+
 ## serial-phase-placeholders
 
-Phase four sink matrix/artifact store and phase five production fences remain intentionally
-unfrozen. No builder may begin them from this packet.
+The remainder of phase four — the sink type family and the artifact store — and all of
+phase five remain intentionally unfrozen. No builder may begin them from this packet. The
+one carve is `phase-four-a-inlined-source-display-encoder` above, which is frozen, narrow,
+and closed; phase four's own text scopes collection widening out of itself, and that
+remains `sinv-sensitive-artifacts`'s.
