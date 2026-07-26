@@ -599,7 +599,10 @@ mod tests {
             Some(span(5, 9)),
         );
         let node = a.node(id).expect("read back");
-        assert_eq!(node.kind, OriginKind::ProbeResult(ProbeStamp::at_ordinal(0)));
+        assert_eq!(
+            node.kind,
+            OriginKind::ProbeResult(ProbeStamp::at_ordinal(0))
+        );
         assert_eq!(node.site, Some(span(5, 9)));
         // An id whose index exceeds the arena resolves to None (defensive; never panics).
         let bogus = ProvId(NonZeroU32::new(999).unwrap());
