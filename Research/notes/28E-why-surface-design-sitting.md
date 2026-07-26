@@ -464,5 +464,5 @@ connectives, and footers are arrangement-registry rows; chain prose is
 catalog/class-keyed rows; speaker rows are fixed-runs-interleaved-with-values.
 Nothing above may ever be born as a `format!` literal.
 
-Implementation phasing: **`plans/294`** (minted at session close) is the
+Implementation phasing: **`plans/28E`** (minted at session close) is the
 plan-of-record; this document stays the design record.

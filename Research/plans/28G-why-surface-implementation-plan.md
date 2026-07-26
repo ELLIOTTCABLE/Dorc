@@ -1,4 +1,4 @@
-# 294 — the why-surface implementation plan (phased; post-sitting)
+# 28G — the why-surface implementation plan (phased; post-sitting)
 
 PLANS-TIER, ahistorical, kept-current: if wrong, rewrite it. AI-authored (Fable
 conductor, session close 2026-07-25). Phases the `28E` design record (+ its §8

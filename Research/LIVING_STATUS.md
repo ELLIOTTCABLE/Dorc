@@ -14,11 +14,11 @@
 
 ---
 
-## THE WHY-SURFACE DESIGN SITTING (closed 2026-07-25) → THE `294` IMPLEMENTATION QUEUE
+## THE WHY-SURFACE DESIGN SITTING (closed 2026-07-25) → THE `28G` IMPLEMENTATION QUEUE
 
 **Design CLOSED, implementation PENDING a fresh conductor.** The record is
 **`notes/28E`** (rulings §0/§8 · the mint/carry/compose/render synthesis · the
-prior-art adjudication §7); the phased plan-of-record is **`plans/294`** — read
+prior-art adjudication §7); the phased plan-of-record is **`plans/28G`** — read
 BOTH before any why/render/aid work. The strawman corpus of record (design
 targets, human-marked): **`notes/28G-why-strawmen-v2/`** (five cases; the human
 is still working them over slowly — expect further markup layers; `292` is
@@ -29,8 +29,8 @@ permanent). Headline rulings a successor must not re-derive: reported-never-
 measured · quoted-speakers rows · completion-class danger axis (`*`/`!`) ·
 never-a-dinna-do-it-layer (negatives only on engine-proved derivations) ·
 trust-spent-first · renderer-owns-layout · ASCII-forever · everything
-rendering-assembled-from-editable-spans (`294` §0 — the living goal). Sizing
-recc (`294` §3): ONE more r28 implementation-conductor for phases W1→W2(→W3);
+rendering-assembled-from-editable-spans (`28G` §0 — the living goal). Sizing
+recc (`28G` §3): ONE more r28 implementation-conductor for phases W1→W2(→W3);
 r30 for W4 + levers/retention. Phase W5 (= the held phase-8 prose pass) still
 awaits the human's ack. First-blooding is slightly BLOCKED on W1/W2 per the
 human ("the reports and errors ARE the product").
