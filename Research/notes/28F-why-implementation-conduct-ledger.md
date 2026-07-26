@@ -58,6 +58,26 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   note. The tier-ORDERING question is open in-chat (the set is kinds, not a
   monotonic scale; code `Ord` is mechanical map-key determinism only; semantic
   ordering stays the `28E:lean-ordering-is-a-seam` seam).
+- (HUMAN-TYPED lean, conductor-adopted 2026-07-26) **rul-w3-default-on-aim-high**
+  — SUPERSEDES rul-w3-optin-fold-full-bill's disposition. The human dislikes
+  punting on persistence ("aim high; it forces important and hard
+  considerations — just the sort of thing we should be exploring in a
+  spike"; not a hard nack, latitude acknowledged, adopted). Re-cut, messaged
+  to the in-flight W3 builder: DEFAULT-ON whylog shipping WITH the full bill
+  at its honest per-platform ceiling (the 28D gate's other sanctioned
+  branch). Deltas from opt-in: default root = per-user state dir
+  (XDG_STATE_HOME / LOCALAPPDATA; the SITING is what discharges Windows
+  restrictive-mode honestly — per-user ACLs, stated in the contract, no
+  FFI); minimal opt-OUT spelling (builder latitude, flagged); NEW step —
+  desync gets DRIFT-DISCLOSED DEGRADED REPLAY instead of wholesale refusal
+  (durable-derived content renders; current-book reads suppressed with drift
+  notes; addresses labeled run-book; nack-whylog-stores-book-bytes stands
+  absolute; refusal only for version/corruption; STOP-and-flag if past M);
+  retention = existing caps as DISCLOSED INTERIM, modest ask-next-week bump
+  latitude (the retention DESIGN stays r30, binding the forensic tier);
+  sensitivity contract now load-bearing, ships sm-tier. The two prior
+  default-on blockers were already dissolved by rul-digest-lands-now and
+  the siting ruling; the desync design is the one genuinely new work item.
 - **lane-speechact-rename LANDED + FOLDED** @ merge `268b6c36` (5 commits;
   own-hand workspace tests green post-merge). Better than briefed: the
   cli-local hand-stamped `RowRank` field is DELETED — `ChainLink` carries
