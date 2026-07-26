@@ -310,7 +310,8 @@ fn render_northstar(report: &Report) -> String {
         .iter()
         .filter(|r| matches!(r.door, Door::GuardTransform))
         .count();
-    let mut out = String::from("## north-star (full-elision vs guard-transform -- kept separate)\n");
+    let mut out =
+        String::from("## north-star (full-elision vs guard-transform -- kept separate)\n");
     let _ = writeln!(
         out,
         "   full-elision     : {:>3} sites - crit-wt {full_w:>4}",
