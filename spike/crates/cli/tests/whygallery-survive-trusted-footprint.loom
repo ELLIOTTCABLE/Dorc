@@ -189,7 +189,11 @@ apt-get install -y oldpkg
 # ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
 
 $ dorc why 10 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints < probe-results.txt
-   [ book.sh, 10|ufw ]
+      [ book.sh, participating lines:
+    9 | apt-get install -y oldpkg
+   10 | ufw allow 443/tcp
+
+   [unwritten: why-participating-lines-closure]
 
    === OUTCOME ===
 
@@ -246,7 +250,11 @@ relevance; `--all` enumerates everything the engine holds.)
 $ dorc plan --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog < probe-results.txt > /dev/null
 
 $ dorc why 10 --last --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --trust-footprints --whylog-dir=whylog
-   [ book.sh, 10|ufw ]
+      [ book.sh, participating lines:
+    9 | apt-get install -y oldpkg
+   10 | ufw allow 443/tcp
+
+   [unwritten: why-participating-lines-closure]
 
    === OUTCOME ===
 

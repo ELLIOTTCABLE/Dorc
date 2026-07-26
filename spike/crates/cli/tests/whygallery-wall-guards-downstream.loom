@@ -184,7 +184,11 @@ hork tune --profile web
 ( systemctl__is_converged start nginx ) || systemctl start nginx   # dorc: guard [sm.dorc.Service converged-vouch; probe: holds]
 
 $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-results.txt
-   [ book.sh, 9|systemctl ]
+      [ book.sh, participating lines:
+   8 | hork tune --profile web
+   9 | systemctl start nginx
+
+   [unwritten: why-participating-lines-closure]
 
    === OUTCOME ===
 

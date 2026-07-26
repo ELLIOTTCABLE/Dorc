@@ -657,6 +657,20 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Words::Migrated(&["", " further lines"]),
     },
     ArrangementEntry {
+        slug: "why-participating-lines-locus",
+        occurrence: None,
+        when_used: "Labels the participating-lines block that opens an addressed `dorc why` answer. Value: the book's filename.",
+        why: "28G strawman a-fire-morning line 57, verbatim. Completeness lives in cheap-to-scan gutter rows (28E section 8 presence-complete, density-selected).",
+        words: Words::Migrated(&["", ", participating lines:"]),
+    },
+    ArrangementEntry {
+        slug: "why-participating-lines-closure",
+        occurrence: None,
+        when_used: "Follows the participating-lines block, naming the closure the block is complete over.",
+        why: "28E rul-never-a-dinna-do-it-layer: an unqualified `participating lines` read at 03:40 becomes `nothing else was involved`, which is a claim about the WORLD rather than about a closure. The closure today is the answer's own references -- the asked line plus the walls and crossings it names -- and NOT the value closure, which no exposed reaching-definitions query can supply.",
+        words: Words::Unwritten,
+    },
+    ArrangementEntry {
         slug: "why-next-step-label",
         occurrence: Some(4),
         when_used: "The label of a NEXT STEPS row naming what to DESCRIBE so a guarded line can eventually skip.",
@@ -807,8 +821,8 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         slug: "why-declines-next-steps-opener",
         occurrence: Some(2),
         when_used: "Opens the NEXT STEPS panel of an `interactive` decline.",
-        words: Words::Unwritten,
         why: "Nothing to repair, but the reason differs from the unsound case and the opener should say which.",
+        words: Words::Unwritten,
     },
     ArrangementEntry {
         slug: "why-declines-next-steps-opener",

@@ -3847,6 +3847,17 @@ struct ChainRender {
     /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all).
     analysis_opener: Said,
     links: Vec<ChainLink>,
+    /// Every book line this answer names, in source order — the participating-lines block
+    /// (`28E` §8 presence-complete, density-selected).
+    ///
+    /// PRESENCE is the invariant: a participant the ANALYSIS mentions and this list omits would be
+    /// a false provenance claim, so the block is complete over the closure it declares and the
+    /// panels below select only how MUCH each one gets. The closure is the answer's own references
+    /// — the asked line plus every wall and crossing the chain names. It is NOT the value closure:
+    /// no reaching-definitions query is exposed, so a `PORT=443` feeding the asked line's argv
+    /// (`28G` strawman `b-wide-guarded` line 29) does not appear, which is exactly why the block
+    /// has to say which closure it is complete over rather than saying "participating lines" flat.
+    participants: Vec<usize>,
     /// The guard dorc shipped in place of a skip, as sh — the answer to "so what DID it do"
     /// (`28G` strawman `b-wide-guarded`). Not our bytes: the oracle author wrote the check and the
     /// admin wrote the command it fronts.
@@ -4042,6 +4053,7 @@ fn survival_chain(
         ),
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
         links,
+        participants: Vec::new(),
         shipped: None,
         join: Some(Said::words("why-analysis-join", &[&joined_walls, &backing])),
         next_steps: NextSteps {
@@ -4162,6 +4174,7 @@ fn guard_chain(
         links,
         // The as-shipped guard is the answer to "so what DID it do", so it closes the panel where
         // a skip's chain closes with its disjointness restatement.
+        participants: Vec::new(),
         shipped: Some(license.insert().display_line(original)),
         join: Some(Said::words("why-analysis-join-guarded", &[reference])),
         next_steps: NextSteps {
@@ -4169,6 +4182,60 @@ fn guard_chain(
             rows,
         },
     }
+}
+
+/// The asked line plus every line the answer names, deduped and in source order.
+///
+/// Source order, not chain order: the block is a reading aid over the book, and the reader's eye
+/// expects the file's own sequence. Chain ORDER stays the ANALYSIS panel's, where it means
+/// something (`28E` lean-ordering-is-a-seam).
+fn participants(asked: usize, named: impl Iterator<Item = usize>) -> Vec<usize> {
+    let mut lines: BTreeSet<usize> = named.collect();
+    lines.insert(asked);
+    lines.into_iter().collect()
+}
+
+/// The participating-lines block that opens an addressed answer (`28E` §8 presence-complete,
+/// density-selected; `28G` strawman `a-fire-morning` lines 57–59).
+///
+/// The qualification row beneath it is not decoration. "Participating lines" read alone, at 03:40,
+/// becomes "nothing else was involved" — a claim about the WORLD rather than about a closure, and
+/// exactly the negative `28E:rul-never-a-dinna-do-it-layer` forbids Dorc from ever synthesizing.
+/// The block therefore states which closure it is complete over.
+fn participating_block(lines: &[usize], filename: &str, book_src: &str) -> Vec<Node<Face>> {
+    let source: Vec<&str> = book_src.lines().collect();
+    let rows: Vec<CodeLine<Face>> = lines
+        .iter()
+        .filter_map(|number| {
+            let text = source.get(number.saturating_sub(1))?;
+            Some(CodeLine {
+                gutter: Some(dorc_aid::weave::value(
+                    number.to_string(),
+                    "why-participating-lines",
+                    "line",
+                )),
+                cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
+                    text.trim_end(),
+                    filename.to_owned(),
+                )])],
+            })
+        })
+        .collect();
+    if rows.is_empty() {
+        return Vec::new();
+    }
+    vec![
+        Node::new(NodeKind::Code(CodeBlock {
+            table: Some(Face::Table(format!("participating:{filename}"))),
+            mode: Literalness::Literal,
+            locus: Some(vec![dorc_aid::weave::words(
+                why_words("why-participating-lines-locus", &[filename]),
+                "why-participating-lines-locus",
+            )]),
+            lines: rows,
+        })),
+        registry_paragraph("why-participating-lines-closure"),
+    ]
 }
 
 /// The sites whose author DELIBERATELY declined, keyed by leaf — the pull surface's index into the
@@ -4266,6 +4333,7 @@ fn decline_chain(
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
         links,
+        participants: Vec::new(),
         shipped: None,
         join: Some(Said::Words(
             "why-declines-join",
@@ -4685,6 +4753,14 @@ fn emit_why_report(
             (step.leaf, format!("{line}|{word}"))
         })
         .collect();
+    let lines_by_leaf: BTreeMap<dorc_plan::LeafId, usize> = plan
+        .steps
+        .iter()
+        .map(|step| {
+            let lo = ast.node(step.ast).span.lo.0 as usize;
+            (step.leaf, dorc_aid::diag::line_col(book_src, lo).0)
+        })
+        .collect();
     let mut chains: Vec<(usize, ChainRender)> = Vec::new();
     for step in &plan.steps {
         let span = ast.node(step.ast).span;
@@ -4695,7 +4771,7 @@ fn emit_why_report(
         let word = raw.split_whitespace().next().unwrap_or("").to_owned();
         let reference = format!("{line}|{word}");
         if let Disposition::Replace(license, _) = &step.disposition
-            && let Some(chain) = survival_chain(
+            && let Some(mut chain) = survival_chain(
                 &reference,
                 &format!("{filename}:{line}"),
                 &step.disposition,
@@ -4706,6 +4782,13 @@ fn emit_why_report(
                 oracle_srcs,
             )
         {
+            let crossed = license
+                .derivation()
+                .survival
+                .iter()
+                .flat_map(|w| w.crossings())
+                .filter_map(|c| lines_by_leaf.get(&c.wall_leaf()).copied());
+            chain.participants = participants(line, crossed);
             chains.push((line, chain));
         }
         if let Disposition::Guard(license) = &step.disposition {
@@ -4716,33 +4799,31 @@ fn emit_why_report(
                 .take_while(|wall| wall.leaf != step.leaf)
                 .filter(|wall| matches!(wall.role, WallRole::Opaque | WallRole::Honest))
                 .collect();
-            chains.push((
-                line,
-                guard_chain(
-                    &reference,
-                    &format!("{filename}:{line}"),
-                    &command,
-                    license,
-                    &above,
-                    interner,
-                    oracle_paths,
-                    oracle_srcs,
-                ),
-            ));
+            let mut chain = guard_chain(
+                &reference,
+                &format!("{filename}:{line}"),
+                &command,
+                license,
+                &above,
+                interner,
+                oracle_paths,
+                oracle_srcs,
+            );
+            chain.participants = participants(line, above.iter().map(|wall| wall.line));
+            chains.push((line, chain));
         }
         let declined = declines.get(&step.leaf);
         if let Some(reason) = declined {
-            chains.push((
-                line,
-                decline_chain(
-                    &reference,
-                    &format!("{filename}:{line}"),
-                    &word,
-                    reason,
-                    oracle_paths,
-                    oracle_srcs,
-                ),
-            ));
+            let mut chain = decline_chain(
+                &reference,
+                &format!("{filename}:{line}"),
+                &word,
+                reason,
+                oracle_paths,
+                oracle_srcs,
+            );
+            chain.participants = participants(line, std::iter::empty());
+            chains.push((line, chain));
         }
         let refused = refusals.iter().any(|d| {
             d.primary
@@ -4851,7 +4932,7 @@ fn emit_why_report(
     }
 
     if let Some(addr) = address {
-        emit_why_triptych(addr, &sites, &chains, filename);
+        emit_why_triptych(addr, &sites, &chains, filename, book_src);
     } else {
         emit_why_aggregate(&sites, &chains, filename, first_wall, receipt);
     }
@@ -4871,6 +4952,7 @@ fn emit_why_triptych(
     sites: &[WhySite],
     chains: &[(usize, ChainRender)],
     filename: &str,
+    book_src: &str,
 ) {
     let matched: Vec<&WhySite> = match parse_line_address(address) {
         Some(n) if address_names_book(address, filename) => {
@@ -4895,10 +4977,12 @@ fn emit_why_triptych(
             built = plain_chain(site);
             &built
         };
-        nodes.push(paragraph(
-            &Said::words("why-site-header", &[filename, &site.reference()]),
-            "why-site-header",
-        ));
+        let participants = if chain.participants.is_empty() {
+            vec![site.line]
+        } else {
+            chain.participants.clone()
+        };
+        nodes.extend(participating_block(&participants, filename, book_src));
         nodes.extend(chain_nodes(chain));
     }
     print_document(nodes, TRIPTYCH_INSET);
@@ -4945,6 +5029,7 @@ fn plain_chain(site: &WhySite) -> ChainRender {
                 excerpt: None,
             })
             .collect(),
+        participants: Vec::new(),
         shipped: None,
         join: None,
         next_steps: NextSteps {
