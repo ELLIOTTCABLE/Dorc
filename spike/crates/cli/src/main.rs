@@ -3744,13 +3744,39 @@ fn foil_word(disposition: &dorc_plan::Disposition) -> String {
 /// user-facing string the triptych prints comes through here or through [`tier_word`] /
 /// [`outcome_word`], never from a `format!` literal (`28G` §0).
 fn why_words(slug: &str, values: &[&str]) -> String {
+    why_words_at(slug, None, values)
+}
+
+/// [`why_words`] for a registry row whose words are keyed by occurrence.
+///
+/// This is the ONE seat that interleaves a computed value into a registry line, and therefore the
+/// one place a value carrying bytes we did not write can enter our own words. The registry words
+/// are never encoded — they are ours, and encoding them twice would be a defect — while every
+/// value passes the display seat first (`sinv-sink-encoding`). A chrome line renders as ONE span
+/// (`a-chrome-line-is-one-span`), so the value cannot carry its own foreign-text span here and
+/// must instead arrive already safe.
+fn why_words_at(slug: &str, occurrence: Option<usize>, values: &[&str]) -> String {
+    let encoded: Vec<String> = values
+        .iter()
+        .map(|value| dorc_aid::display::encode_foreign(value, WHY_VALUE_CAP))
+        .collect();
+    let borrowed: Vec<&str> = encoded.iter().map(String::as_str).collect();
     dorc_aid::arrangement::arrangement_sentence(
         &dorc_aid::arrangement::CONST_ARRANGEMENTS,
         slug,
-        None,
-        values,
+        occurrence,
+        &borrowed,
     )
 }
+
+/// The display budget for one computed value on the why surface: a coordinate, an address, a
+/// speaker, a `N|command` reference. Generous enough that nothing the corpus produces is touched,
+/// bounded so a pathological book word cannot own the whole render.
+const WHY_VALUE_CAP: usize = 240;
+
+/// The display budget for one quoted line of somebody else's source. Wider than a value's because
+/// a wrapped-off source line is a worse lie than a long one, and still bounded.
+const WHY_SOURCE_CAP: usize = 512;
 
 /// The two-rank mark a chain row wears in the DEFAULT render (`28E` §7
 /// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). The six
@@ -3842,8 +3868,10 @@ impl Said {
     fn run(&self, part: &'static str) -> Run<Face> {
         match self {
             Said::Words(slug, text) => dorc_aid::weave::words(text.clone(), slug),
-            Said::Value(text) => dorc_aid::weave::value(text.clone(), part, "value"),
-            Said::Lens(text) => dorc_aid::weave::value(text.clone(), "why-lens", "reason"),
+            Said::Value(text) => dorc_aid::weave::value(text, part, "value", WHY_VALUE_CAP),
+            Said::Lens(text) => {
+                dorc_aid::weave::value(text, "why-lens", "reason", WHY_SOURCE_CAP)
+            }
         }
     }
 }
@@ -4211,8 +4239,7 @@ fn guard_chain(
                 label: StepLabel::Describe,
                 body: Said::Words(
                     "why-next-step-describe-walls",
-                    dorc_aid::arrangement::arrangement_sentence(
-                        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+                    why_words_at(
                         "why-next-step-describe-walls",
                         Some(usize::from(describable.len() > 1)),
                         &[&describable.join(", ")],
@@ -4354,10 +4381,12 @@ fn participating_block(lines: &[usize], filename: &str, book_src: &str) -> Vec<N
                     number.to_string(),
                     "why-participating-lines",
                     "line",
+                    WHY_VALUE_CAP,
                 )),
                 cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
                     text.trim_end(),
                     filename.to_owned(),
+                    WHY_SOURCE_CAP,
                 )])],
             })
         })
@@ -4608,7 +4637,9 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
                 speaker: link
                     .speaker
                     .iter()
-                    .map(|who| dorc_aid::weave::value(who.clone(), "why-chain-row", "speaker"))
+                    .map(|who| {
+                        dorc_aid::weave::value(who, "why-chain-row", "speaker", WHY_VALUE_CAP)
+                    })
                     .collect(),
                 verb: Some(vec![dorc_aid::weave::words(
                     tier_word(link.tier),
@@ -4656,10 +4687,12 @@ fn excerpt_nodes(excerpt: &Excerpt) -> Vec<Node<Face>> {
                         number.to_string(),
                         "why-as-written",
                         "line",
+                        WHY_VALUE_CAP,
                     )),
                     cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
                         text,
                         excerpt.path.clone(),
+                        WHY_SOURCE_CAP,
                     )])],
                 })
                 .collect(),
@@ -4694,6 +4727,7 @@ fn shipped_block(sh: &str) -> Node<Face> {
             cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
                 sh,
                 "the shipped guard",
+                WHY_SOURCE_CAP,
             )])],
         }],
     }))
@@ -5276,9 +5310,9 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
     }
     Node::new(NodeKind::Banner(Banner {
         headline: vec![
-            dorc_aid::weave::value(address.clone(), "why-item", "address"),
+            dorc_aid::weave::value(&address, "why-item", "address", WHY_VALUE_CAP),
             dorc_aid::weave::mark(" | ", "why-item-gutter"),
-            dorc_aid::weave::foreign(&site.command, filename),
+            dorc_aid::weave::foreign(&site.command, filename, WHY_SOURCE_CAP),
         ],
         body: vec![
             Node::new(NodeKind::Prose(Paragraph { runs })),
@@ -6481,23 +6515,15 @@ fn parse_report_record(rest: &str, out: &mut SiteResults) {
     }
 }
 
-/// Sanitize + size-cap a report-lane emission's raw text at ingestion (`27W` §2 — the BASIC cap
-/// only; full why-surface sanitization is the security round's, fence `an-output-sanitization`).
-/// Control bytes become spaces (a minimal terminal-safety floor); the text is truncated at a char
-/// boundary past [`REPORT_RAW_CAP`] with an ellipsis. NEVER a decision input (decision-inert).
+/// Sanitize + size-cap a report-lane emission's raw text at ingestion (`27W` §2).
+///
+/// A thin delegation to the shared display seat: the lane keeps its own budget
+/// ([`REPORT_RAW_CAP`]) and its own destination (a plain advisory line, which nothing measures),
+/// while the encoding itself is one implementation shared with every other display route. NEVER a
+/// decision input (decision-inert), and encoding grants the bytes no trust
+/// (`sinv-hostile-sensitive-orthogonal`).
 fn sanitize_report_raw(s: &str) -> String {
-    let cleaned: String = s
-        .chars()
-        .map(|c| if c.is_control() { ' ' } else { c })
-        .collect();
-    if cleaned.len() <= REPORT_RAW_CAP {
-        return cleaned;
-    }
-    let mut end = REPORT_RAW_CAP;
-    while end > 0 && !cleaned.is_char_boundary(end) {
-        end = end.saturating_sub(1);
-    }
-    format!("{}...", &cleaned[..end])
+    dorc_aid::display::encode_line(s, REPORT_RAW_CAP)
 }
 
 /// Parse `u32` leaf-id.
