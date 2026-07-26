@@ -3258,7 +3258,7 @@ pub fn build_plan_walled(
         // ⇒ RUN (`kFAIL-perform`). The Omit render is gated on the governing stage neutralising
         // (`is_neutralised` walks the pipe's leaves), so a governing stage that fails to Replace
         // keeps this member verbatim too — the safe direction.
-        let mut disposition = if let Some(gov_node) = connected.member_governor(*node) {
+        let disposition = if let Some(gov_node) = connected.member_governor(*node) {
             let gov_ast = cfg.node(gov_node).ast;
             let gov_known = leaf_fact
                 .get(&gov_ast)
@@ -3309,18 +3309,8 @@ pub fn build_plan_walled(
                 }
             }
         };
-        match disposition {
-            Disposition::Replace(license, stand_in) => {
-                let license =
-                    attach_replace_provenance(license, ast.node(ast_id).span, probe_origins, arena);
-                disposition = Disposition::Replace(license, stand_in);
-            }
-            Disposition::Guard(license) => {
-                let attribution = probe_origins.get(&license.fact()).copied();
-                disposition = Disposition::Guard(license.with_probe_attribution(attribution));
-            }
-            Disposition::Run | Disposition::Omit { .. } => {}
-        }
+        let disposition =
+            attach_probe_provenance(disposition, ast.node(ast_id).span, probe_origins, arena);
         // Wall-bearing = an establish-bearing class OR a flagged kill (R3 / 24A §3): a running
         // kill mutates but classifies `MustRun`, invisible to `class_is_establish_bearing`, so
         // the threaded `kills` set restores it. A pure builtin / opaque `MustRun` is NOT in
@@ -3385,6 +3375,30 @@ pub fn build_plan_walled(
 /// mint (the WELD): the origins are sites the license already keys on, so they cannot influence the
 /// decision; they are EXEMPT (`Exempt::ReceiptId`/`Exempt::Timing`) and the `erasability` gate
 /// proves they perturb nothing.
+/// Attach the post-mint probe provenance every LICENSING disposition carries — the why-chain's
+/// REPORTED row, keyed on the fact the license already decided on.
+///
+/// Runs strictly after the decision, and both licenses treat it as exempt from their identity
+/// planes, so nothing here can perturb what was decided.
+fn attach_probe_provenance(
+    disposition: Disposition,
+    site_span: dorc_core::Span,
+    probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
+    arena: &mut dorc_core::ProvArena,
+) -> Disposition {
+    match disposition {
+        Disposition::Replace(license, stand_in) => Disposition::Replace(
+            attach_replace_provenance(license, site_span, probe_origins, arena),
+            stand_in,
+        ),
+        Disposition::Guard(license) => {
+            let attribution = probe_origins.get(&license.fact()).copied();
+            Disposition::Guard(license.with_probe_attribution(attribution))
+        }
+        run_or_omit @ (Disposition::Run | Disposition::Omit { .. }) => run_or_omit,
+    }
+}
+
 fn attach_replace_provenance(
     license: ReplaceLicense,
     site_span: dorc_core::Span,

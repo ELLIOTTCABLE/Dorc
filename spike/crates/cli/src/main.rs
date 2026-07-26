@@ -1450,6 +1450,10 @@ const WHYLOG_CAP: usize = 1_000_000;
     clippy::result_large_err,
     reason = "cold invocation path; see dorc_cli::parse_args_from"
 )]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear admission ladder: select the durable, bound it, read back the book and oracles it names, check the framing, then admit the records. Every rung refuses on its own terms and splitting it would scatter the ONE place a replay's inputs are validated"
+)]
 fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
     // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.
@@ -1943,16 +1947,20 @@ fn build_survival_footprints(
 /// dialect consults (`None` ⇒ whole-entity ⊤).
 type FootprintCoord = (dorc_plan::EntityCoord, Option<dorc_core::SelectorId>);
 
+/// One resolved `disturbs` footprint: whose claim it is, the cells it names, and the arm that
+/// emitted them (`tc-disturbs-span-threading`; `None` when the trace located no emitting line).
+type ResolvedFootprint = (
+    Symbol,
+    Vec<FootprintCoord>,
+    Option<(dorc_core::Span, dorc_core::OracleFileId)>,
+);
+
 fn resolve_touches_footprint(
     node: dorc_analysis::cfg::CfgNodeId,
     value: &dorc_analysis::value::ValueFlow,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &mut Interner,
-) -> Option<(
-    Symbol,
-    Vec<FootprintCoord>,
-    Option<(dorc_core::Span, dorc_core::OracleFileId)>,
-)> {
+) -> Option<ResolvedFootprint> {
     use dorc_analysis::value::ValueOf;
     use dorc_oracle::predict::map_provider_name;
     use dorc_oracle::touches::{TouchesResolution, evaluate_touches_located};
@@ -4195,30 +4203,30 @@ fn guard_chain(
         .filter(|wall| wall.role == WallRole::Opaque)
         .map(|wall| format!("{}|{}", wall.line, wall.word))
         .collect();
-    let rows = (!describable.is_empty())
-        .then(|| {
-            vec![
-                StepRow {
-                    label: StepLabel::Describe,
-                    body: Said::Words(
+    let rows = if describable.is_empty() {
+        Vec::new()
+    } else {
+        vec![
+            StepRow {
+                label: StepLabel::Describe,
+                body: Said::Words(
+                    "why-next-step-describe-walls",
+                    dorc_aid::arrangement::arrangement_sentence(
+                        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
                         "why-next-step-describe-walls",
-                        dorc_aid::arrangement::arrangement_sentence(
-                            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-                            "why-next-step-describe-walls",
-                            Some(usize::from(describable.len() > 1)),
-                            &[&describable.join(", ")],
-                        ),
+                        Some(usize::from(describable.len() > 1)),
+                        &[&describable.join(", ")],
                     ),
-                    alternative: false,
-                },
-                StepRow {
-                    label: StepLabel::Review,
-                    body: Said::words("why-next-step-review", &[address]),
-                    alternative: false,
-                },
-            ]
-        })
-        .unwrap_or_default();
+                ),
+                alternative: false,
+            },
+            StepRow {
+                label: StepLabel::Review,
+                body: Said::words("why-next-step-review", &[address]),
+                alternative: false,
+            },
+        ]
+    };
     ChainRender {
         crossed: joined_walls.clone(),
         claimant: String::new(),
@@ -4296,14 +4304,11 @@ fn brace_selectors(labels: &[String]) -> String {
             Some((head, selector)) => (head.to_owned(), Some(selector.to_owned())),
             None => (label.clone(), None),
         };
-        let entry = match grouped.iter_mut().find(|(seen, _)| *seen == head) {
-            Some(entry) => entry,
-            None => {
-                grouped.push((head, Vec::new()));
-                grouped.last_mut().unwrap_or_else(|| unreachable!())
-            }
-        };
-        if let Some(selector) = selector
+        if !grouped.iter().any(|(seen, _)| *seen == head) {
+            grouped.push((head.clone(), Vec::new()));
+        }
+        if let Some(entry) = grouped.iter_mut().find(|(seen, _)| *seen == head)
+            && let Some(selector) = selector
             && !entry.1.contains(&selector)
         {
             entry.1.push(selector);
@@ -4924,7 +4929,7 @@ fn emit_why_report(
                 .derivation()
                 .survival
                 .iter()
-                .flat_map(|w| w.crossings())
+                .flat_map(dorc_plan::SurvivalWitness::crossings)
                 .filter_map(|c| lines_by_leaf.get(&c.wall_leaf()).copied());
             chain.participants = participants(line, crossed);
             chains.push((line, chain));
@@ -4948,8 +4953,8 @@ fn emit_why_report(
             chain.participants = participants(line, above.iter().map(|wall| wall.line));
             chains.push((line, chain));
         }
-        let declined = declines.get(&step.leaf);
-        if let Some(reason) = declined {
+        let authored_decline = declines.get(&step.leaf);
+        if let Some(reason) = authored_decline {
             let mut chain = decline_chain(
                 &reference,
                 &format!("{filename}:{line}"),
@@ -4969,7 +4974,7 @@ fn emit_why_report(
         let (reasons, class, improvement): (Vec<Said>, AggregateClass, Option<Said>) =
             match &step.disposition {
                 Disposition::Run => {
-                    if let Some(reason) = declined {
+                    if let Some(reason) = authored_decline {
                         (
                             vec![Said::words(
                                 "why-reason-run-declined",

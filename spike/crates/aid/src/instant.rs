@@ -17,48 +17,59 @@ use dorc_core::RunInstant;
 /// against one (the two-plane seal is by construction — there is no route back).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Civil {
-    pub year: i64,
-    pub month: u32,
-    pub day: u32,
-    pub hour: u32,
-    pub minute: u32,
-    pub second: u32,
+    pub year: u64,
+    pub month: u64,
+    pub day: u64,
+    pub hour: u64,
+    pub minute: u64,
+    pub second: u64,
 }
 
 /// Break an instant into its UTC civil parts.
 ///
-/// The days-to-civil arithmetic is the standard shift-the-epoch-to-March algorithm, which is
-/// exact over the whole proleptic Gregorian range and needs no table and no dependency — the
-/// crate's zero-nondeterminism bar rules out reaching for a date library
-/// (`aid-is-dst-clean`).
+/// The days-to-civil arithmetic is the standard shift-the-epoch-to-March algorithm, which needs
+/// no table and no dependency — the crate's zero-nondeterminism bar rules out reaching for a date
+/// library (`aid-is-dst-clean`). It runs entirely in unsigned arithmetic, which the epoch origin
+/// makes total: a [`RunInstant`] is milliseconds SINCE the epoch, so no intermediate here can go
+/// negative and every subtraction below is ordered by construction.
 #[must_use]
 pub fn civil(at: RunInstant) -> Civil {
-    let seconds = (at.0 / 1_000) as i64;
-    let days = seconds.div_euclid(86_400);
-    let time_of_day = seconds.rem_euclid(86_400);
+    let seconds = at.0 / 1_000;
+    let time_of_day = seconds % 86_400;
 
-    let shifted = days + 719_468;
-    let era = shifted.div_euclid(146_097);
-    let day_of_era = shifted.rem_euclid(146_097);
-    let year_of_era =
-        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let march_month = (5 * day_of_year + 2) / 153;
-    let day = (day_of_year - (153 * march_month + 2) / 5 + 1) as u32;
+    let shifted = (seconds / 86_400).saturating_add(719_468);
+    let era = shifted / 146_097;
+    let day_of_era = shifted % 146_097;
+    let year_of_era = day_of_era
+        .saturating_sub(day_of_era / 1_460)
+        .saturating_add(day_of_era / 36_524)
+        .saturating_sub(day_of_era / 146_096)
+        / 365;
+    let day_of_year = day_of_era.saturating_sub(
+        year_of_era
+            .saturating_mul(365)
+            .saturating_add(year_of_era / 4)
+            .saturating_sub(year_of_era / 100),
+    );
+    let march_month = day_of_year.saturating_mul(5).saturating_add(2) / 153;
+    let day = day_of_year
+        .saturating_sub(march_month.saturating_mul(153).saturating_add(2) / 5)
+        .saturating_add(1);
     let month = if march_month < 10 {
-        march_month + 3
+        march_month.saturating_add(3)
     } else {
-        march_month - 9
-    } as u32;
-    let year = year_of_era + era * 400 + i64::from(month <= 2);
+        march_month.saturating_sub(9)
+    };
 
     Civil {
-        year,
+        year: year_of_era
+            .saturating_add(era.saturating_mul(400))
+            .saturating_add(u64::from(month <= 2)),
         month,
         day,
-        hour: (time_of_day / 3_600) as u32,
-        minute: (time_of_day % 3_600 / 60) as u32,
-        second: (time_of_day % 60) as u32,
+        hour: time_of_day / 3_600,
+        minute: time_of_day % 3_600 / 60,
+        second: time_of_day % 60,
     }
 }
 

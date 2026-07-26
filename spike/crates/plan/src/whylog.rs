@@ -878,18 +878,7 @@ pub fn try_serialize_v2(
         limits,
     )?;
     retain_metadata(&mut retained, &doc.decision_digest, limits)?;
-    let mut last_ordinal: Option<u64> = None;
-    for (ordinal, at) in &doc.instants {
-        if last_ordinal.is_some_and(|previous| *ordinal <= previous) {
-            return Err(WhylogWriteRefusal::Grammar);
-        }
-        last_ordinal = Some(*ordinal);
-        write_v2_line(
-            &mut out,
-            format!("instant ordinal={ordinal} at={} {TERMINAL_TOKEN}", at.0),
-            limits,
-        )?;
-    }
+    write_instants(&mut out, &doc.instants, limits)?;
     for apply in &doc.apply {
         retain_metadata(&mut retained, &apply.disposition, limits)?;
         write_v2_line(
@@ -1233,6 +1222,28 @@ fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool)>
         disposition_valid(disposition).then_some(disposition)?,
         predicted,
     ))
+}
+
+/// Write the per-record arrival instants, refusing a repeated or out-of-order ordinal before any
+/// of them reach the buffer — the writer's half of the same check the reader makes.
+fn write_instants(
+    out: &mut Vec<u8>,
+    instants: &[(u64, dorc_core::RunInstant)],
+    limits: WhylogLimits,
+) -> Result<(), WhylogWriteRefusal> {
+    let mut last: Option<u64> = None;
+    for (ordinal, at) in instants {
+        if last.is_some_and(|previous| *ordinal <= previous) {
+            return Err(WhylogWriteRefusal::Grammar);
+        }
+        last = Some(*ordinal);
+        write_v2_line(
+            out,
+            format!("instant ordinal={ordinal} at={} {TERMINAL_TOKEN}", at.0),
+            limits,
+        )?;
+    }
+    Ok(())
 }
 
 /// `instant ordinal=<n> at=<unix-millis>` — one probe record's controller-minted arrival moment.

@@ -99,6 +99,10 @@ pub enum Mode {
 
 /// The parsed analysis invocation.
 #[derive(Debug)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "this struct IS the argv: one field per flag the parser accepts, and a flag is a bool. Bundling them behind newtypes or an enum would re-spell the command line one layer down without making any state less representable"
+)]
 pub struct Args {
     /// Which behavioral mode of the core to drive.
     pub mode: Mode,
