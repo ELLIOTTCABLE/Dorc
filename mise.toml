@@ -36,6 +36,16 @@ pkl = "0.31.1"
 "cargo:cargo-deny" = "latest"
 typos = "latest"
 
+# The `mise run test` runner. Pinned looser than the lanes above but tighter than the
+# toolbelt, because the whole suite rides it.
+#
+# DANGER: nextest runs ZERO doctests, and this workspace has 12 — one of them the
+# `compile_fail` doctest in `aid/src/narrative.rs` that holds the narrative seal shut
+# ACROSS the crate seam. `mise run test` therefore pairs it with `cargo test --doc` and
+# that second step is not optional; a bare `cargo nextest run` is green with the seal
+# gone. Reach for the task, never the tool.
+"cargo:cargo-nextest" = "0.9"
+
 # Opt-in `dorc lint` real-external-tools test lane ONLY (human-authorized 2026-07-18;
 # spike/CLAUDE.md `real-tools-lane-opt-in`, `Research/notes/27T`). Pinned EXACT so the lane's
 # live-fire is reproducible. shellcheck is INERT for every default gate/suite: the default
@@ -94,11 +104,34 @@ dir = "spike"
 run = "cargo build --workspace"
 
 [tasks.test]
-description = "The WHOLE suite: unit tier + the e2e corpus + the loom corpus (the latter two ride the workspace run as harness=false targets). Args filter by trial name, and reach the test harness rather than cargo — so `-- --quiet` selects libtest's terse format. DORC_E2E_QUIET=1 selects the terse per-case format; failures still print in full."
+description = "The WHOLE suite, HUMAN-facing: unit tier + the e2e corpus + the loom corpus (the latter two ride the run as harness=false targets). Full per-test output, progress, and context — the interactive mode; agents want `quiet-gate` instead. Args filter by trial name. DORC_E2E_QUIET=1 selects the terse per-case format."
 dir = "spike"
-# The trailing `--` is load-bearing: without it a trailing `--quiet` is cargo's (which only drops
-# the build chatter) rather than libtest's (which drops the per-test lines).
-run = "cargo test --workspace --"
+# REMIT: this task optimizes for a human reading a terminal — legibility and context, never
+# brevity. Never add quiet flags here to save an agent tokens; that is `quiet-gate`'s whole job,
+# and the two exist so neither has to compromise. Doctests run FIRST so trailing args land on
+# nextest, which is what `-- <substring>` is for.
+run = [
+  "cargo test --workspace --doc",
+  "cargo nextest run --workspace",
+]
+
+[tasks.quiet-gate]
+description = "The pre-commit gate, AGENT-facing: the same work as `gate` at minimum token cost — roughly 110 lines instead of 2000. Silent on success, LOUD and complete on failure. Prefer this over `gate`/`test` in an agent context; humans want the unabridged ones."
+dir = "spike"
+# REMIT: minimal token burn, and it MUST NOT swallow a failure. Every flag here suppresses
+# SUCCESS chatter only — `--status-level fail` still prints failing trials, `--failure-output
+# final` defers their output rather than dropping it, and every step keeps its nonzero exit. If a
+# flag would ever hide a failure it does not belong in this task, whatever it saves.
+# `--no-fail-fast` is here for the same reason: nextest otherwise abandons ~650 trials at the
+# first failure, and "we never ran them" is a fact this task may not withhold.
+# `test:hooks` and doctests have no quiet knob past cargo's, so they set the floor.
+run = [
+  "mise run check -- --quiet",
+  "mise run test:hooks",
+  "cargo build --workspace --quiet",
+  "cargo test --workspace --doc --quiet",
+  "cargo nextest run --workspace --hide-progress-bar --status-level fail --failure-output final --no-fail-fast",
+]
 
 [tasks."test:e2e"]
 description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact."
