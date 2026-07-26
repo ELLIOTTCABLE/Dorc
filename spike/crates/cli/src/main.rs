@@ -6639,13 +6639,33 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 /// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
 /// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
+/// The comparison key that lets a LOADED oracle path and a DISCOVERED one denote the same file.
+///
+/// `289:rider-sibling-note-false-fires-relative`: the loaded set carries `-o` args verbatim
+/// (`firewall.oracle.sh`) while discovery yields `read_dir` paths (`./firewall.oracle.sh`), so a raw
+/// string compare reported every relatively-named oracle as unloaded. Both sides now spell an empty
+/// parent as `.` and separators as `/`, so the two forms of one bare filename converge.
+///
+/// Deliberately textual, not `canonicalize`: this feeds a HINT, and a hint must not acquire the
+/// power to touch the filesystem or to fail. Two spellings of one path through different symlinks
+/// still miss, which costs a suppressed hint and never a wrong one.
+fn oracle_path_key(path: &str) -> String {
+    let path = std::path::Path::new(path);
+    let parent = path
+        .parent()
+        .filter(|d| !d.as_os_str().is_empty())
+        .unwrap_or_else(|| std::path::Path::new("."));
+    let name = path.file_name().unwrap_or_default();
+    parent.join(name).to_string_lossy().replace('\\', "/")
+}
+
 fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths: &[String]) {
     use std::path::Path;
     // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
     // Windows) while the loaded set carries the `-o` args verbatim (forward slash), so a raw string
     // compare would miss every loaded oracle on Windows and falsely report it unloaded.
     let norm = |p: &str| p.replace('\\', "/");
-    let loaded: BTreeSet<String> = oracle_paths.iter().map(|p| norm(p)).collect();
+    let loaded: BTreeSet<String> = oracle_paths.iter().map(|p| oracle_path_key(p)).collect();
     let mut dirs: BTreeSet<std::path::PathBuf> = BTreeSet::new();
     for p in oracle_paths.iter().chain(books.iter()) {
         if let Some(parent) = Path::new(p).parent() {
@@ -6665,9 +6685,8 @@ fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths:
         };
         for entry in entries.flatten() {
             let shown = norm(&entry.path().to_string_lossy());
-            if shown.ends_with(".oracle.sh")
-                && !loaded.contains(&shown)
-                && !unloaded.contains(&shown)
+            let key = oracle_path_key(&shown);
+            if shown.ends_with(".oracle.sh") && !loaded.contains(&key) && !unloaded.contains(&shown)
             {
                 unloaded.push(shown);
             }
@@ -7306,6 +7325,30 @@ mod tests {
         let d =
             dorc_plan::records::deframe(input, &expect, dorc_plan::records::LegacyPolicy::Tolerate);
         parse_results(&d.records, d.framed, &mut RunClock::Absent, interner)
+    }
+
+    /// `289:rider-sibling-note-false-fires-relative`: the loaded `-o` spelling and the `read_dir`
+    /// spelling of ONE file must key alike, or the unloaded-sibling hint accuses every relatively
+    /// named oracle of being unloaded. The bare-name/dot-slash pair is the exact shape every
+    /// in-corpus case drives (`-o firewall.oracle.sh` against a `read_dir(".")` walk), so it is the
+    /// pair worth pinning; the sub-directory rows guard against a fix that only special-cases `.`.
+    #[test]
+    fn loaded_and_discovered_oracle_spellings_share_one_key() {
+        assert_eq!(
+            oracle_path_key("firewall.oracle.sh"),
+            oracle_path_key("./firewall.oracle.sh"),
+            "a bare -o name and its read_dir(\".\") path are one file"
+        );
+        assert_eq!(
+            oracle_path_key("oracles/fw.oracle.sh"),
+            oracle_path_key("oracles\\fw.oracle.sh"),
+            "separators normalize, so a Windows walk matches a forward-slash arg"
+        );
+        assert_ne!(
+            oracle_path_key("a/fw.oracle.sh"),
+            oracle_path_key("b/fw.oracle.sh"),
+            "same basename in different dirs stays distinct — the hint must still fire"
+        );
     }
 
     /// ack-2 / rul24-lineno-identity: the `dorc why` address parser reads a SOURCE line-number from
