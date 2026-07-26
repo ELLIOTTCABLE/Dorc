@@ -39,6 +39,8 @@ pub mod catalog;
 
 pub mod arrangement;
 
+pub mod display;
+
 pub mod instant;
 
 pub mod tagged;

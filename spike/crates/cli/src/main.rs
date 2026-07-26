@@ -3744,13 +3744,39 @@ fn foil_word(disposition: &dorc_plan::Disposition) -> String {
 /// user-facing string the triptych prints comes through here or through [`tier_word`] /
 /// [`outcome_word`], never from a `format!` literal (`28G` §0).
 fn why_words(slug: &str, values: &[&str]) -> String {
+    why_words_at(slug, None, values)
+}
+
+/// [`why_words`] for a registry row whose words are keyed by occurrence.
+///
+/// This is the ONE seat that interleaves a computed value into a registry line, and therefore the
+/// one place a value carrying bytes we did not write can enter our own words. The registry words
+/// are never encoded — they are ours, and encoding them twice would be a defect — while every
+/// value passes the display seat first (`sinv-sink-encoding`). A chrome line renders as ONE span
+/// (`a-chrome-line-is-one-span`), so the value cannot carry its own foreign-text span here and
+/// must instead arrive already safe.
+fn why_words_at(slug: &str, occurrence: Option<usize>, values: &[&str]) -> String {
+    let encoded: Vec<String> = values
+        .iter()
+        .map(|value| dorc_aid::display::encode_foreign(value, WHY_VALUE_CAP))
+        .collect();
+    let borrowed: Vec<&str> = encoded.iter().map(String::as_str).collect();
     dorc_aid::arrangement::arrangement_sentence(
         &dorc_aid::arrangement::CONST_ARRANGEMENTS,
         slug,
-        None,
-        values,
+        occurrence,
+        &borrowed,
     )
 }
+
+/// The display budget for one computed value on the why surface: a coordinate, an address, a
+/// speaker, a `N|command` reference. Generous enough that nothing the corpus produces is touched,
+/// bounded so a pathological book word cannot own the whole render.
+const WHY_VALUE_CAP: usize = 240;
+
+/// The display budget for one quoted line of somebody else's source. Wider than a value's because
+/// a wrapped-off source line is a worse lie than a long one, and still bounded.
+const WHY_SOURCE_CAP: usize = 512;
 
 /// The two-rank mark a chain row wears in the DEFAULT render (`28E` §7
 /// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). The six
@@ -3842,8 +3868,8 @@ impl Said {
     fn run(&self, part: &'static str) -> Run<Face> {
         match self {
             Said::Words(slug, text) => dorc_aid::weave::words(text.clone(), slug),
-            Said::Value(text) => dorc_aid::weave::value(text.clone(), part, "value"),
-            Said::Lens(text) => dorc_aid::weave::value(text.clone(), "why-lens", "reason"),
+            Said::Value(text) => dorc_aid::weave::value(text, part, "value", WHY_VALUE_CAP),
+            Said::Lens(text) => dorc_aid::weave::value(text, "why-lens", "reason", WHY_SOURCE_CAP),
         }
     }
 }
@@ -4211,8 +4237,7 @@ fn guard_chain(
                 label: StepLabel::Describe,
                 body: Said::Words(
                     "why-next-step-describe-walls",
-                    dorc_aid::arrangement::arrangement_sentence(
-                        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+                    why_words_at(
                         "why-next-step-describe-walls",
                         Some(usize::from(describable.len() > 1)),
                         &[&describable.join(", ")],
@@ -4354,10 +4379,12 @@ fn participating_block(lines: &[usize], filename: &str, book_src: &str) -> Vec<N
                     number.to_string(),
                     "why-participating-lines",
                     "line",
+                    WHY_VALUE_CAP,
                 )),
                 cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
                     text.trim_end(),
                     filename.to_owned(),
+                    WHY_SOURCE_CAP,
                 )])],
             })
         })
@@ -4608,7 +4635,9 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
                 speaker: link
                     .speaker
                     .iter()
-                    .map(|who| dorc_aid::weave::value(who.clone(), "why-chain-row", "speaker"))
+                    .map(|who| {
+                        dorc_aid::weave::value(who, "why-chain-row", "speaker", WHY_VALUE_CAP)
+                    })
                     .collect(),
                 verb: Some(vec![dorc_aid::weave::words(
                     tier_word(link.tier),
@@ -4656,10 +4685,12 @@ fn excerpt_nodes(excerpt: &Excerpt) -> Vec<Node<Face>> {
                         number.to_string(),
                         "why-as-written",
                         "line",
+                        WHY_VALUE_CAP,
                     )),
                     cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
                         text,
                         excerpt.path.clone(),
+                        WHY_SOURCE_CAP,
                     )])],
                 })
                 .collect(),
@@ -4694,6 +4725,7 @@ fn shipped_block(sh: &str) -> Node<Face> {
             cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
                 sh,
                 "the shipped guard",
+                WHY_SOURCE_CAP,
             )])],
         }],
     }))
@@ -5276,9 +5308,9 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
     }
     Node::new(NodeKind::Banner(Banner {
         headline: vec![
-            dorc_aid::weave::value(address.clone(), "why-item", "address"),
+            dorc_aid::weave::value(&address, "why-item", "address", WHY_VALUE_CAP),
             dorc_aid::weave::mark(" | ", "why-item-gutter"),
-            dorc_aid::weave::foreign(&site.command, filename),
+            dorc_aid::weave::foreign(&site.command, filename, WHY_SOURCE_CAP),
         ],
         body: vec![
             Node::new(NodeKind::Prose(Paragraph { runs })),
@@ -6481,23 +6513,15 @@ fn parse_report_record(rest: &str, out: &mut SiteResults) {
     }
 }
 
-/// Sanitize + size-cap a report-lane emission's raw text at ingestion (`27W` §2 — the BASIC cap
-/// only; full why-surface sanitization is the security round's, fence `an-output-sanitization`).
-/// Control bytes become spaces (a minimal terminal-safety floor); the text is truncated at a char
-/// boundary past [`REPORT_RAW_CAP`] with an ellipsis. NEVER a decision input (decision-inert).
+/// Sanitize + size-cap a report-lane emission's raw text at ingestion (`27W` §2).
+///
+/// A thin delegation to the shared display seat: the lane keeps its own budget
+/// ([`REPORT_RAW_CAP`]) and its own destination (a plain advisory line, which nothing measures),
+/// while the encoding itself is one implementation shared with every other display route. NEVER a
+/// decision input (decision-inert), and encoding grants the bytes no trust
+/// (`sinv-hostile-sensitive-orthogonal`).
 fn sanitize_report_raw(s: &str) -> String {
-    let cleaned: String = s
-        .chars()
-        .map(|c| if c.is_control() { ' ' } else { c })
-        .collect();
-    if cleaned.len() <= REPORT_RAW_CAP {
-        return cleaned;
-    }
-    let mut end = REPORT_RAW_CAP;
-    while end > 0 && !cleaned.is_char_boundary(end) {
-        end = end.saturating_sub(1);
-    }
-    format!("{}...", &cleaned[..end])
+    dorc_aid::display::encode_line(s, REPORT_RAW_CAP)
 }
 
 /// Parse `u32` leaf-id.
@@ -7738,10 +7762,22 @@ mod tests {
             "capped at REPORT_RAW_CAP chars (+ the three-dot ASCII ellipsis)"
         );
         assert!(capped.ends_with("..."), "an over-cap tail is ellipsized");
+        assert!(
+            capped.is_ascii(),
+            "the truncation marker is ASCII (`rul-ascii-output-forever`): {capped:?}"
+        );
         let cleaned = sanitize_report_raw("decline unsound has\ta\ttab and \u{7} bell");
         assert!(
             !cleaned.contains('\u{7}') && !cleaned.contains('\t'),
             "control bytes are neutralized (a minimal terminal-safety floor)"
+        );
+        // An author's tail is host-produced text on its way to a terminal, so the lane covers
+        // the characters that change how their NEIGHBOURS display as well as the ones a terminal
+        // acts on directly.
+        let flipped = sanitize_report_raw("decline unsound \u{202e}yek regnad\u{202c} \u{feff}");
+        assert!(
+            !flipped.chars().any(dorc_aid::display::is_format_or_bidi),
+            "bidi and zero-width format controls are neutralized too: {flipped:?}"
         );
     }
 
@@ -8961,6 +8997,378 @@ mod first_wall_tests {
             shown.saturating_add(whole.elided),
             ARM_SOURCE.lines().count(),
             "every source line is either shown or counted in the cut, never silently dropped"
+        );
+    }
+}
+
+#[cfg(test)]
+mod not_ours_bytes_tests {
+    //! The why surface shows bytes we did not write.
+    //!
+    //! Oracle arms, their authors' comments, book lines and host-reported text all reach a
+    //! terminal through this surface. They are classed not-ours and encoded on the way in
+    //! (`aid::weave::foreign` over the `aid::display` seat), and these four tests are what keeps
+    //! that true for somebody who never read this comment. They read as one battery: the sweep
+    //! covers every seat, the classification test pins which class the bytes wear, the hostile
+    //! fixtures drive real dangerous input through the real render, and the last one pins the
+    //! byte-floored artifact plane OUT of all of it.
+    use super::*;
+
+    /// Bytes that must never reach a terminal as themselves, plus one plain non-ASCII sequence.
+    const HOSTILE_SAMPLES: &[&str] = &[
+        "\u{1b}",
+        "\u{1b}[31m before-and-after",
+        "\u{202e}reversed\u{202c}",
+        "nul\u{0}and\u{7f}del",
+        "tab\there",
+        "na\u{ef}ve \u{feff}zero-width",
+    ];
+
+    /// A distinctive run of printable ASCII: it survives encoding VERBATIM, so wherever it lands
+    /// in a render is exactly where the seat that emitted it put it.
+    const SOURCE_MARK: &str = "source-mark-9137";
+
+    /// One hostile sample folded into a line of somebody else's source.
+    fn hostile_line(index: usize) -> String {
+        let sample = HOSTILE_SAMPLES
+            .get(index.checked_rem(HOSTILE_SAMPLES.len()).unwrap_or_default())
+            .copied()
+            .unwrap_or_default();
+        format!("{SOURCE_MARK} {sample} # arm {index}")
+    }
+
+    /// Render a why-surface node list the way the surface itself does, and hand back the span map.
+    fn swept(nodes: Vec<Node<Face>>) -> weft::Rendered<Face> {
+        let frame = weft::Frame::of_width(weft::Width::new(WHY_WIDTH)).inset(TRIPTYCH_INSET);
+        weft::render_framed(&Document::new(nodes), &frame)
+    }
+
+    /// Every seat of the why surface, driven with bytes we did not write in every slot that takes
+    /// them. Built from STRUCT LITERALS on purpose: a new field on any of these types stops this
+    /// compiling, so whoever adds one has to decide what hostile content belongs in it.
+    fn every_why_surface_node() -> Vec<Node<Face>> {
+        let book = format!("#!/bin/sh\n{}\n{}\n", hostile_line(0), hostile_line(1));
+        let excerpt = Excerpt {
+            path: format!("{SOURCE_MARK}.oracle.sh"),
+            head: vec![(10, hostile_line(2)), (11, hostile_line(3))],
+            tail: vec![(90, hostile_line(4))],
+            elided: 78,
+        };
+        let chain = ChainRender {
+            crossed: hostile_line(5),
+            claimant: hostile_line(0),
+            outcome: Said::words(
+                "why-outcome-contrastive",
+                &[
+                    &hostile_line(1),
+                    &hostile_line(2),
+                    &hostile_line(3),
+                    &hostile_line(4),
+                ],
+            ),
+            analysis_opener: Said::Lens(hostile_line(5)),
+            links: vec![ChainLink {
+                rank: RowRank::CoversUnmeasured,
+                tier: TrustTier::Claimed,
+                speaker: Some(hostile_line(0)),
+                payload: Said::Value(hostile_line(1)),
+                quoted: true,
+                event: Some(Said::words("why-chain-event-rc-only", &[&hostile_line(2)])),
+                explanation: Some(Said::Lens(hostile_line(3))),
+                excerpt: Some(excerpt),
+            }],
+            participants: vec![2, 3],
+            shipped: Some(hostile_line(4)),
+            join: Some(Said::Value(hostile_line(5))),
+            next_steps: NextSteps {
+                opener: Said::Lens(hostile_line(0)),
+                rows: vec![
+                    StepRow {
+                        label: StepLabel::Fix,
+                        body: Said::Value(hostile_line(1)),
+                        alternative: false,
+                    },
+                    StepRow {
+                        label: StepLabel::Review,
+                        body: Said::words("why-next-step-review", &[&hostile_line(2)]),
+                        alternative: true,
+                    },
+                ],
+            },
+        };
+        let site = WhySite {
+            line: 2,
+            word: hostile_line(3),
+            command: hostile_line(4),
+            outcome: outcome_word(&dorc_plan::Disposition::Run),
+            foil: foil_word(&dorc_plan::Disposition::Run),
+            reasons: vec![Said::Value(hostile_line(5))],
+            class: AggregateClass::Improvement,
+            improvement: Some(Said::Lens(hostile_line(0))),
+        };
+        let receipt = Receipt {
+            at: None,
+            replayed: false,
+            host: hostile_line(1),
+            book: hostile_line(2),
+            book_digest: hostile_line(3),
+            oracles: vec![hostile_line(4), hostile_line(5)],
+            risk_profile: Some(CONSENT_FLAG),
+            counts: dorc_plan::DispositionCounts {
+                sites: 2,
+                elide: 1,
+                elide_by_proof: 0,
+                elide_by_trusted_claim: 1,
+                omit: 0,
+                guard: 0,
+                run: 1,
+            },
+            deepest_tier: true,
+            narratable: true,
+        };
+        let mut nodes = vec![receipt_banner(&receipt)];
+        nodes.extend(participating_block(
+            &[2, 3],
+            &format!("{SOURCE_MARK}.book.sh"),
+            &book,
+        ));
+        nodes.extend(chain_nodes(&chain));
+        nodes.push(aggregate_item(
+            &site,
+            &format!("{SOURCE_MARK}.book.sh"),
+            &[&Said::Lens(hostile_line(1))],
+        ));
+        nodes.extend(chain_nodes(&plain_chain(&site)));
+        nodes
+    }
+
+    /// THE SWEEP. Over every seat the why surface has, every not-ours run is already
+    /// encoder-clean, and nothing else carries a control or bidi character.
+    ///
+    /// This is the test that bites somebody who adds a show-the-code row and hands weft the
+    /// bytes directly. It does not care where they added it or what they called it: if the run
+    /// reaches the render carrying anything a terminal would act on, or carrying an escape a
+    /// second encoding pass would change, the sweep names the span and fails.
+    #[test]
+    fn every_why_surface_run_is_already_encoded_and_only_not_ours_bytes_are_escaped() {
+        let rendered = swept(every_why_surface_node());
+        let text = rendered.text().to_owned();
+        assert!(!text.is_empty(), "the sweep must reach a real render");
+        let mut foreign_spans = 0_usize;
+        for span in rendered.spans() {
+            let bytes = text
+                .get(span.start..span.end())
+                .expect("a span lies within its own render");
+            if matches!(span.provenance, weft::Provenance::Foreign { .. }) {
+                foreign_spans = foreign_spans.saturating_add(1);
+                assert_eq!(
+                    dorc_aid::display::encode_foreign(bytes, WHY_SOURCE_CAP),
+                    bytes,
+                    "a not-ours run reached the render un-encoded (re-encoding changed it): \
+                     {bytes:?}"
+                );
+                continue;
+            }
+            for c in bytes.chars() {
+                assert!(
+                    c == '\n' || dorc_aid::display::is_display_safe(c),
+                    "a run that is NOT classed not-ours carries {c:?}, which a terminal acts on \
+                     — either the bytes are somebody else's and belong in a foreign run, or the \
+                     value needs the display seat before it is interleaved: {bytes:?}"
+                );
+                assert!(
+                    c.is_ascii(),
+                    "the surface is pure ASCII (`rul-ascii-output-forever`) and weft measures \
+                     bytes as columns; {c:?} reached it: {bytes:?}"
+                );
+            }
+        }
+        assert!(
+            foreign_spans > 4,
+            "only {foreign_spans} not-ours runs reached the sweep — the seats it means to cover \
+             are not being reached"
+        );
+    }
+
+    /// CLASSIFICATION. Inlined source lands ONLY in not-ours runs.
+    ///
+    /// The marker is printable ASCII, so encoding leaves it verbatim and every occurrence in the
+    /// render is a seat that emitted somebody else's bytes. Any occurrence outside a foreign run
+    /// is a show-the-code site wearing the wrong class — which reads to a round-trip as OUR
+    /// words, and therefore as rephrasable prose.
+    #[test]
+    fn inlined_source_bytes_appear_only_inside_not_ours_runs() {
+        let rendered = swept(vec![
+            {
+                let excerpt = Excerpt {
+                    path: "certsync.oracle.sh".to_owned(),
+                    head: vec![(4, format!("# {SOURCE_MARK} the author's own comment"))],
+                    tail: Vec::new(),
+                    elided: 0,
+                };
+                Node::new(NodeKind::Section(Section {
+                    header: vec![dorc_aid::weave::words(
+                        why_words("why-analysis-heading", &[]),
+                        "why-analysis-heading",
+                    )],
+                    counts: None,
+                    body: excerpt_nodes(&excerpt),
+                }))
+            },
+            shipped_block(&format!("( certsync__is_converged ) || {SOURCE_MARK}")),
+        ]);
+        let text = rendered.text().to_owned();
+        assert!(
+            text.matches(SOURCE_MARK).count() >= 2,
+            "both inlined-source seats must reach the render: {text}"
+        );
+        let mut inside_foreign = 0_usize;
+        for span in rendered.spans() {
+            let bytes = text
+                .get(span.start..span.end())
+                .expect("a span lies within its own render");
+            let hits = bytes.matches(SOURCE_MARK).count();
+            if hits == 0 {
+                continue;
+            }
+            assert!(
+                matches!(span.provenance, weft::Provenance::Foreign { .. }),
+                "inlined source landed in a run classed {:?} — somebody else's bytes must wear \
+                 the not-ours class, never a template, value or arrangement one: {bytes:?}",
+                span.provenance
+            );
+            inside_foreign = inside_foreign.saturating_add(hits);
+        }
+        assert!(
+            inside_foreign >= 2,
+            "the marker was found in the text but not inside any not-ours span"
+        );
+    }
+
+    /// HOSTILE FIXTURES, through the real render. Each is encoded, and each survives non-empty:
+    /// silently dropping an author's text would be its own kind of lie about the source.
+    #[test]
+    fn a_hostile_oracle_comment_is_encoded_and_never_silently_dropped() {
+        let long = "L".repeat(WHY_SOURCE_CAP.saturating_mul(3));
+        let cases: Vec<(&str, String)> = vec![
+            ("a bare escape", "\u{1b}".to_owned()),
+            ("a CSI colour sequence", "\u{1b}[31mred\u{1b}[0m".to_owned()),
+            ("a bidi override", "# \u{202e}rewordppa\u{202c}".to_owned()),
+            ("NUL and DEL", "a\u{0}b\u{7f}c".to_owned()),
+            ("a line far past the cap", long),
+            (
+                "valid non-ASCII UTF-8",
+                "# na\u{ef}ve \u{2014} surveyed".to_owned(),
+            ),
+        ];
+        for (what, source) in cases {
+            let excerpt = Excerpt {
+                path: "hostile.oracle.sh".to_owned(),
+                head: vec![(1, source.clone())],
+                tail: Vec::new(),
+                elided: 0,
+            };
+            let rendered = swept(excerpt_nodes(&excerpt));
+            let text = rendered.text();
+            assert!(
+                text.is_ascii(),
+                "{what} reached the terminal un-encoded: {text:?}"
+            );
+            for c in text.chars() {
+                assert!(
+                    c == '\n' || dorc_aid::display::is_display_safe(c),
+                    "{what} left {c:?} in the render: {text:?}"
+                );
+            }
+            let foreign: String = rendered
+                .spans()
+                .iter()
+                .filter(|span| matches!(span.provenance, weft::Provenance::Foreign { .. }))
+                .filter_map(|span| text.get(span.start..span.end()))
+                .collect();
+            assert!(
+                !foreign.trim().is_empty(),
+                "{what} was dropped rather than encoded — an author's text always survives in \
+                 some readable form"
+            );
+        }
+    }
+
+    /// THE ARTIFACT PLANE STAYS OUT OF IT. Display encoding is a render-plane act; the emitted
+    /// probe and apply are byte-floored (`two-surfaces`, `law-render-overlay-never-artifact`) and
+    /// carry the book's bytes exactly as written.
+    ///
+    /// Driven over one book whose source carries an escape and a bidi override, so the two planes
+    /// are forced apart in the same run: the artifacts must contain the RAW bytes and never the
+    /// escaped spelling, and the why surface must contain the escaped spelling and never the raw
+    /// bytes. A change that encoded on the way to an artifact fails the first half; a change that
+    /// stopped encoding on the way to a terminal fails the second.
+    #[test]
+    fn display_encoding_never_reaches_the_emitted_artifacts() {
+        let raw = "\u{1b}[31m\u{202e}";
+        let book = format!("make install # {SOURCE_MARK} {raw}\n");
+        let mut interner = Interner::default();
+        let parsed = dorc_syntax::parse(&book);
+        let cfg = dorc_analysis::cfg::build(&parsed.value);
+        let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
+        let idx = dorc_oracle::KindIndex::default();
+        let mut arena = ProvArena::new();
+        let classified = dorc_analysis::effect::classify(
+            &cfg.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &[],
+            &BTreeSet::new(),
+            &mut interner,
+            &mut arena,
+        );
+        let classes = classified.value;
+        let probe = dorc_plan::compile_probe(
+            &parsed.value,
+            &cfg.value,
+            &value,
+            &classes,
+            &BTreeMap::new(),
+            &dorc_plan::ConnectedPipes::default(),
+            |_, _| None,
+            |_, _, _| None,
+            |_| false,
+        );
+        let plan = dorc_plan::build_plan(
+            &book,
+            &parsed.value,
+            &cfg.value,
+            &classes,
+            &dorc_plan::Vouches::new(),
+            |_| Observable::verdict_only(Verdict::Unknown),
+            &mut arena,
+        );
+        let framing = dorc_plan::records::Framing::spike("fixture".to_owned());
+        let artifacts = format!(
+            "{}{}",
+            probe.render_sh(&framing, &interner),
+            plan.render_apply(&book, &parsed.value)
+        );
+        assert!(
+            artifacts.contains(raw),
+            "the byte-floored artifact must carry the book's bytes verbatim: {artifacts:?}"
+        );
+        assert!(
+            !artifacts.contains("\\x1b"),
+            "a display encoding reached an emitted artifact — the overlay never becomes the \
+             artifact: {artifacts:?}"
+        );
+
+        let shown = swept(participating_block(&[1], "book.sh", &book));
+        let text = shown.text();
+        assert!(
+            text.contains("\\x1b") && text.contains("\\xe2\\x80\\xae"),
+            "the same bytes reach the terminal only in their encoded form: {text:?}"
+        );
+        assert!(
+            !text.contains(raw),
+            "raw escape/override bytes reached the terminal: {text:?}"
         );
     }
 }

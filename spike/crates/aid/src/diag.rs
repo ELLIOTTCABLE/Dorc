@@ -2036,13 +2036,36 @@ impl Diag {
 /// `[]`. The `interner` is threaded for forward-compat (no payload resolves an interned handle at
 /// HEAD — the excerpt handles were retired into `detail` strings). Pure; `inv-no-throw`.
 #[must_use]
+pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'static str, String)> {
+    let raw = params_of_raw(code);
+    raw.into_iter()
+        .map(|(name, value)| {
+            if crate::catalog::is_foreign_param(name) {
+                (name, crate::display::encode_line(&value, FOREIGN_PARAM_CAP))
+            } else {
+                (name, value)
+            }
+        })
+        .collect()
+}
+
+/// The budget for one passthrough value on a diagnostic line. Generous — a `detail` is an
+/// engine-authored sentence, not a quotation — and bounded, because some of them carry a source
+/// command that the book, not we, decided the length of.
+const FOREIGN_PARAM_CAP: usize = 2048;
+
+/// The per-code hole values, before the passthrough ones are made safe to display.
+///
+/// Split from [`params_of`] so BOTH renders — the string one and the parts one — see the same
+/// bytes: they must agree exactly, and encoding at only one of them would make the two disagree
+/// the first time a book carried something interesting.
 #[expect(
     clippy::match_same_arms,
     clippy::too_many_lines,
     reason = "one arm PER CODE, like `registry` — merging the param-less arms by `|` would hide \
               which codes declare no holes, and the per-code shape is what makes the fn long"
 )]
-pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'static str, String)> {
+fn params_of_raw(code: &DiagCode) -> Vec<(&'static str, String)> {
     match code {
         DiagCode::CmdsubOperandTop(p) => vec![
             ("position", p.position.describe()),
@@ -3494,6 +3517,49 @@ mod tests {
             render_artifact_comment(&d),
             None,
             "the why-lens (cause/receipt) must NEVER reach the artifact (rec-1 two-surfaces weld)"
+        );
+    }
+
+    /// A passthrough value is somebody else's bytes reaching a terminal, so it wears the
+    /// not-ours class AND arrives already encoded. Both renders read one seat
+    /// ([`params_of`]), so the string form and the parts form can never disagree about what a
+    /// reader is shown.
+    #[test]
+    fn a_passthrough_value_reaches_both_renders_already_encoded() {
+        let hostile = "make install \u{1b}[31m \u{202e}llatsni ekam\u{202c}\u{7}";
+        let diag = Diag::new(
+            DiagCode::SiteUnresolvable(SiteUnresolvable {
+                site: site(0),
+                detail: hostile.to_owned(),
+            }),
+            span(0, 5),
+        );
+        let interner = Interner::default();
+        let parts = render_body_parts(&diag, &interner);
+        let mut foreign = 0_usize;
+        for part in parts.parts() {
+            let text = part.text();
+            if matches!(part, crate::tagged::RenderPart::ForeignText { .. }) {
+                foreign = foreign.saturating_add(1);
+                assert_eq!(
+                    crate::display::encode_line(text, FOREIGN_PARAM_CAP),
+                    text,
+                    "a passthrough value reached the render un-encoded: {text:?}"
+                );
+                assert!(!text.trim().is_empty(), "the value must not be dropped");
+            }
+            for c in text.chars() {
+                assert!(
+                    c == '\n' || crate::display::is_display_safe(c),
+                    "{c:?} reached a diagnostic render: {text:?}"
+                );
+            }
+        }
+        assert_eq!(foreign, 1, "the detail is the render's one not-ours run");
+        assert_eq!(
+            render_body(&diag, &interner),
+            parts.text(),
+            "the two renders must agree byte for byte, encoding included"
         );
     }
 }

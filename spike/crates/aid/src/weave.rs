@@ -55,9 +55,25 @@ pub fn words(text: impl Into<String>, slug: &'static str) -> Run<Face> {
 /// A computed value: a coordinate, an address, a count. Never editable —
 /// rewriting one would be lying about the world rather than rephrasing a
 /// sentence.
+///
+/// Encoded on the way in, at `cap` bytes. Many of these values are ENGINE-shaped and the encoding
+/// is a no-op on them, but several are not — an oracle's coordinate text, a speaker's `file:line`,
+/// a book site's `N|command` — and a value seat that encoded only the ones it believed were
+/// foreign would be one audit away from wrong. The registry WORDS a value is interleaved with are
+/// never encoded (see [`words`]); only the value is.
 #[must_use]
-pub fn value(text: impl Into<String>, slug: &'static str, part: &'static str) -> Run<Face> {
-    Run::param(text, Face::Row(slug), Face::Part(part), Instance(0))
+pub fn value(
+    text: impl AsRef<str>,
+    slug: &'static str,
+    part: &'static str,
+    cap: usize,
+) -> Run<Face> {
+    Run::param(
+        crate::display::encode_foreign(text.as_ref(), cap),
+        Face::Row(slug),
+        Face::Part(part),
+        Instance(0),
+    )
 }
 
 /// Structure the CONSUMER computed rather than weft: a rank glyph, a separator
@@ -86,33 +102,17 @@ pub fn mark(text: impl Into<String>, part: &'static str) -> Run<Face> {
 /// round-trip can never mistake them for editable prose; and they are encoded
 /// before they enter the render, because weft measures bytes as columns and does
 /// not sanitise its input, so an unescaped control byte would corrupt the layout
-/// as well as the terminal (`28D:must-encode-per-surface`).
-#[must_use]
-pub fn foreign(text: &str, source: impl Into<String>) -> Run<Face> {
-    Run::foreign(escape_foreign(text), Face::Source(source.into()))
-}
-
-/// The display encoding for not-ours bytes: printable ASCII survives verbatim,
-/// everything else becomes `\xNN`.
+/// as well as the terminal (`28D:must-encode-per-surface`). The encoding itself is
+/// [`crate::display::encode_foreign`], the shared seat both display destinations answer to.
 ///
-/// Deliberately narrow. The job is terminal safety and honest column arithmetic,
-/// not quoting — a backslash is printable and stays a backslash, so an oracle's
-/// `printf '%s\n'` still reads as the author wrote it rather than as `\\n`. The
-/// cost of that choice is that an escaped byte and a source backslash-x are
-/// spelled the same; the alternative doubles every backslash in every shell
-/// excerpt on the surface, which is a worse lie about the source more often.
+/// The `cap` is the CALLER's, in bytes: a breadcrumb and a quoted source line want very different
+/// budgets, and the seat has no way to tell which it is holding.
 #[must_use]
-pub fn escape_foreign(text: &str) -> String {
-    use std::fmt::Write as _;
-    let mut out = String::with_capacity(text.len());
-    for byte in text.bytes() {
-        if (0x20..=0x7e).contains(&byte) {
-            out.push(char::from(byte));
-        } else {
-            let _ = write!(out, "\\x{byte:02x}");
-        }
-    }
-    out
+pub fn foreign(text: &str, source: impl Into<String>, cap: usize) -> Run<Face> {
+    Run::foreign(
+        crate::display::encode_foreign(text, cap),
+        Face::Source(source.into()),
+    )
 }
 
 #[cfg(test)]
@@ -121,24 +121,6 @@ mod tests {
     use weft::{
         CodeBlock, CodeCell, CodeLine, Document, Literalness, Node, NodeKind, Span, render,
     };
-
-    #[test]
-    fn printable_ascii_survives_escaping_verbatim() {
-        let arm = r#"push) printf '%s\n' "$1"  : disturbs org.foob.Certs ;;"#;
-        assert_eq!(
-            escape_foreign(arm),
-            arm,
-            "an oracle arm is shown as its author wrote it; escaping quotes or backslashes \
-             would be a lie about the source"
-        );
-    }
-
-    #[test]
-    fn a_control_or_non_ascii_byte_is_encoded_before_it_reaches_layout() {
-        assert_eq!(escape_foreign("a\tb"), "a\\x09b");
-        assert_eq!(escape_foreign("\u{1b}[31m"), "\\x1b[31m");
-        assert_eq!(escape_foreign("na\u{ef}ve"), "na\\xc3\\xafve");
-    }
 
     /// The tagging is load-bearing, not decorative: an edge must be able to find
     /// not-ours bytes in the span map, and every byte they contributed must
@@ -150,10 +132,11 @@ mod tests {
             mode: Literalness::Literal,
             locus: None,
             lines: vec![CodeLine {
-                gutter: Some(value("31", "excerpt", "line")),
+                gutter: Some(value("31", "excerpt", "line", 32)),
                 cells: vec![CodeCell::new(vec![foreign(
                     "push)\tprintf 'x'\u{7}",
                     "certsync.oracle.sh",
+                    512,
                 )])],
             }],
         }))]);
