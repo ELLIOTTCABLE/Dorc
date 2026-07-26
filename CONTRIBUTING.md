@@ -19,19 +19,30 @@ higher scruitny and churns less often; human eyes are more useful there.)
 
 I use [Mise][] heavily; it's easiest to manage the tooling via that.
 
-Compile and test:
+First-time setup, after cloning the repo for the first time (not necessary in a
+worktree):
 
 ```sh
 curl https://mise.run | sh    # or <https://mise.jdx.dev/installing-mise.html>
+mise trust                    # required by mise
 mise run hello                # briefly setup project-local tooling (repo-local)
-mise run gate                 # runs a full build: unit-tests, E2E, and looms
+```
+
+Compile and test:
+
+```sh
+mise run both gate            # runs a full build: unit-tests, E2E, and looms
 mise run dorc --help          # run Dorc! (args are passed in raw.)
+
+# rerun a single test-case
+mise run test errexit_unknown_is_conservative
 ```
 
 Our tests include both [errorloom][]s (executable, *authoritative* e2e txtar
 files that you edit in-place; see below) and a small residue of non-loomable e2e
-tests, all of which are run by the above `mise run gate`. `mise run` will list
-all available tasks.
+tests, all of which are run by the above `mise run gate`. `mise run tests` runs
+*only* the Rust unit-tests, and is less valuable. `mise run` will list all
+available tasks.
 
    [mise]: <https://mise.jdx.dev/getting-started.html> "mise-en-place, a cross-platform tool/version manager and dev-environment manager"
    [errorloom]: <https://github.com/ELLIOTTCABLE/Dorc/tree/main/spike/crates/errorloom> "our format for e2e tests and prose-authorship"
@@ -56,8 +67,15 @@ git commit spike\crates\aid\tests\cli-help-page.loom \
 ```
 
 Note that you *must* have a clean worktree for this. Loom-editing is *only*
-allowed in a completely clean working-dir. After editing, the loom will print
-your changes as a preview; and you can `git add` and commit.
+allowed in a completely clean working-dir. This is because loom is a
+*render-back* process - it reads what you changed, then re-renders everything
+from scratch, and *overwrites* your edits. (You may `git add` before compiling
+if you wish, but still, the only modified files must be looms if *any* edited
+file is a loom.) The render-back depends on the entire project's state and is
+inherently E2E.
+
+After editing, the promotion will print your changes as a preview; after
+confirming they rendered how you wanted, you can `git add` and commit.
 
 
 ## Commiting
@@ -89,4 +107,4 @@ cargo-cult what you see in previous commits.
 *separately, then commit your own tweaks without the label; but if they're
 *mixed, they get the label. Period.
 
-   [.gitlabels]: <github.com/ELLIOTTCABLE/.gitlabels>
+   [.gitlabels]: <https://github.com/ELLIOTTCABLE/.gitlabels>
