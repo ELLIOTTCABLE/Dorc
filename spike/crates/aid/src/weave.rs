@@ -31,8 +31,10 @@ pub enum Face {
     Part(&'static str),
     /// Bytes that are NOT ours, named by where they were taken from.
     Source(String),
-    /// A table identity: what relates rows that are not siblings.
-    Table(&'static str),
+    /// A table identity: what relates members that are not siblings. Owned rather than static
+    /// because some tables are per-instance — the two halves of one cut excerpt relate to each
+    /// other and to nothing else.
+    Table(String),
 }
 
 /// A whole registry-sourced line, as one run.
@@ -56,6 +58,24 @@ pub fn words(text: impl Into<String>, slug: &'static str) -> Run<Face> {
 #[must_use]
 pub fn value(text: impl Into<String>, slug: &'static str, part: &'static str) -> Run<Face> {
     Run::param(text, Face::Row(slug), Face::Part(part), Instance(0))
+}
+
+/// Structure the CONSUMER computed rather than weft: a rank glyph, a separator
+/// the consumer owns, the space between two joined fragments.
+///
+/// Punctuation is not a word (`layout-is-not-a-word`), so this is deliberately
+/// not a registry row — putting shape in an editable entry would weld the
+/// arrangement that `27V:rul-output-form-unwelded` keeps free. Keyed by a
+/// [`Face::Part`] rather than a [`Face::Row`], which is what tells it apart from
+/// registry words in the span map.
+#[must_use]
+pub fn mark(text: impl Into<String>, part: &'static str) -> Run<Face> {
+    Run::new(
+        text,
+        Provenance::Arrangement {
+            key: Some(Face::Part(part)),
+        },
+    )
 }
 
 /// Bytes taken from somebody else's file — an oracle arm, its author's comment,

@@ -347,23 +347,26 @@ $ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate
 
 === TRUST SPENT: skips resting on a human claim, not proof ===
 
- book.sh:13 | ufw allow 443/tcp
+book.sh:13 | ufw allow 443/tcp
    was skipped PAST 12|apt-get really-running, on apt-get's at-most claim
    (dorc why book.sh:13)
 
 === IMPROVEMENTS: dorc can do better, with your help ===
 
- book.sh:14 | hork tune --profile web
+book.sh:14 | hork tune --profile web
    ran blind, as on every apply: no read-only check could be shipped for hork
    (dorc why book.sh:14)
- book.sh:15 | systemctl start nginx
+
+book.sh:15 | systemctl start nginx
    guarded live instead of skipping: sits past the wall at 14|hork
    (dorc why book.sh:15)
- book.sh:16 | sysctl vm.drop_caches
+
+book.sh:16 | sysctl vm.drop_caches
    ran blind, as on every apply: no read-only check could be shipped for sysctl
    (dorc why book.sh:16)
 
 ~2 lines of sh: a convergence check for hork would recover 1 line(s) whenever it is
 converged
 
-(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
