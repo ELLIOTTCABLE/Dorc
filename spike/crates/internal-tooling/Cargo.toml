@@ -1,0 +1,25 @@
+[package]
+name = "internal-tooling"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# NOT PART OF DORC. This crate is repo plumbing — the cross-platform home for work that
+# used to be `sh` scripts under `.githooks/`, `e2e/`, and `tools/`. Nothing in the product
+# links it; it exists so `mise run gate` needs no POSIX shell on the developer's PATH.
+#
+# It is the `cargo-xtask` pattern: automation that bootstraps from cargo and rustc alone,
+# and that is cross-platform BECAUSE it does not go through a shell. Deliberately
+# dependency-free — a dep here would be re-importing the assumptions this crate exists to
+# delete.
+[[bin]]
+name = "internal-tooling"
+path = "src/main.rs"
+
+[lib]
+name = "internal_tooling"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
