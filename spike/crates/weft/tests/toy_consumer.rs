@@ -18,15 +18,14 @@
 
 #![expect(
     clippy::expect_used,
-    clippy::panic,
-    reason = "golden-file plumbing in a test: a missing or unwritable fixture must fail the trial loudly"
+    reason = "golden-file plumbing in a test helper: a missing or unwritable fixture must fail the trial loudly"
 )]
 
 use std::path::PathBuf;
 use weft::{
-    Banner, Branch, CodeBlock, CodeLine, Document, Instance, Join, LabeledRow, Literalness, Node,
-    NodeKind, Paragraph, Payload, Placement, PointerLine, Quoting, Run, Section, SpeakerRow,
-    Truncation, render,
+    Banner, Branch, CodeBlock, CodeCell, CodeLine, Document, Instance, Join, LabeledRow,
+    Literalness, Node, NodeKind, Paragraph, Payload, Placement, PointerLine, Quoting, Run, Section,
+    SpeakerRow, Truncation, render,
 };
 
 /// One opaque key namespace covering every identity the consumer needs.
@@ -108,17 +107,17 @@ fn analysis_section() -> Node<Key> {
             lines: vec![
                 CodeLine {
                     gutter: Some(value("30", "excerpt", "line")),
-                    content: vec![source(
+                    cells: vec![CodeCell::new(vec![source(
                         "# surveyed 2026-05: cert store only.",
                         "certsync.oracle.sh",
-                    )],
+                    )])],
                 },
                 CodeLine {
                     gutter: Some(value("31", "excerpt", "line")),
-                    content: vec![source(
+                    cells: vec![CodeCell::new(vec![source(
                         "push) printf '%s\\n' \"$1\"  : disturbs org.foob.Certs ;;",
                         "certsync.oracle.sh",
-                    )],
+                    )])],
                 },
             ],
         })),
@@ -257,110 +256,148 @@ fn fire_morning() -> Document<Key> {
 /// A second document whose only job is to render every node kind the first one
 /// does not reach, so nothing in the vocabulary ships unrendered.
 fn vocabulary_sampler() -> Document<Key> {
-    Document::new(vec![
-        Node::new(NodeKind::Banner(Banner {
-            headline: vec![
-                word("receipt:", "banner.receipt"),
-                value(
-                    " apply 2026-07-25 02:00:37, host web1, trigger cron",
+    Document::new(vec![receipt_banner(), improvements_section()])
+}
+
+fn receipt_banner() -> Node<Key> {
+    Node::new(NodeKind::Banner(Banner {
+        headline: vec![
+            word("receipt:", "banner.receipt"),
+            value(
+                " apply 2026-07-25 02:00:37, host web1, trigger cron",
+                "banner",
+                "identity",
+            ),
+        ],
+        body: vec![
+            labeled(
+                "oracles:",
+                vec![value(
+                    "certsync 1.2, service 2.0, + base library",
                     "banner",
-                    "identity",
-                ),
-            ],
-            body: vec![
-                labeled(
-                    "oracles:",
-                    vec![value(
-                        "certsync 1.2, service 2.0, + base library",
-                        "banner",
-                        "inventory",
-                    )],
-                ),
-                labeled(
-                    "plan:",
-                    vec![value("2 ran, 1 guarded, 5 skipped", "banner", "tally")],
-                ),
-            ],
-        })),
-        Node::new(NodeKind::Section(Section {
-            header: vec![word("IMPROVEMENTS", "section.improvements")],
-            counts: Some(vec![value("2", "section", "count")]),
-            body: vec![
-                Node::new(NodeKind::Code(CodeBlock {
-                    mode: Literalness::Descriptive,
-                    locus: Some(vec![value("web.sh, described:", "excerpt", "locus")]),
-                    lines: vec![CodeLine {
-                        gutter: Some(value("12", "excerpt", "line")),
-                        content: vec![source(
-                            "hork tune --profile web ... and the rest of a very long invocation that must wrap",
-                            "web.sh",
-                        )],
-                    }],
-                })),
-                Node::new(NodeKind::Code(CodeBlock {
-                    mode: Literalness::Formatted,
-                    locus: None,
-                    lines: vec![
-                        CodeLine {
-                            gutter: None,
-                            content: vec![source(
-                                "( ufw__is_converged allow \"$PORT\"/tcp ) \\",
-                                "guard",
-                            )],
-                        },
-                        CodeLine {
-                            gutter: None,
-                            content: vec![source("   || ufw allow \"$PORT\"/tcp", "guard")],
-                        },
-                    ],
-                })),
-                prose(vec![prose_text(
-                    "a convergence check for hork skips lines 12 and 13 whenever hork is converged",
-                    "improvement",
-                    "message",
-                )]),
-                Node::new(NodeKind::Pointer(PointerLine {
-                    placement: Placement::Trailing,
-                    target: vec![value("(dorc teach walls)", "pointer", "command")],
-                })),
-                Node::new(NodeKind::Join(Join {
-                    branches: vec![
-                        Branch {
-                            connective: Some(vec![word("both", "connective.join")]),
-                            nodes: vec![prose(vec![prose_text(
-                                "hork is undescribed",
-                                "branch",
-                                "message",
-                            )])],
-                        },
-                        Branch {
-                            connective: Some(vec![word("and", "connective.join")]),
-                            nodes: vec![prose(vec![prose_text(
-                                "corp-agent is undescribed",
-                                "branch",
-                                "message",
-                            )])],
-                        },
-                    ],
-                    restatement: Some(Paragraph {
-                        runs: vec![prose_text(
-                            "so both walls stand between the report and this line's turn.",
-                            "restatement",
+                    "inventory",
+                )],
+            ),
+            labeled(
+                "plan:",
+                vec![value("2 ran, 1 guarded, 5 skipped", "banner", "tally")],
+            ),
+        ],
+    }))
+}
+
+/// An excerpt whose trailing comments form their own aligned column.
+///
+/// The box model has to reach *into* code, not stop at it: these comments are a
+/// column that squares up across lines and will later carry its own styling.
+/// Splitting the lines into cells is what licenses the alignment padding — the
+/// single-cell excerpts elsewhere in this file stay byte-untouched.
+fn annotated_excerpt() -> Node<Key> {
+    Node::new(NodeKind::Code(CodeBlock {
+        mode: Literalness::Literal,
+        locus: None,
+        lines: vec![
+            CodeLine {
+                gutter: Some(value("3", "excerpt", "line")),
+                cells: vec![
+                    CodeCell::new(vec![source("PORT=443", "web.sh")]),
+                    CodeCell::new(vec![source("# the admin's own default", "web.sh")]),
+                ],
+            },
+            CodeLine {
+                gutter: Some(value("23", "excerpt", "line")),
+                cells: vec![
+                    CodeCell::new(vec![source("ufw allow \"$PORT\"/tcp", "web.sh")]),
+                    CodeCell::new(vec![source("# guarded on every apply", "web.sh")]),
+                ],
+            },
+        ],
+    }))
+}
+
+fn improvements_section() -> Node<Key> {
+    Node::new(NodeKind::Section(Section {
+        header: vec![word("IMPROVEMENTS", "section.improvements")],
+        counts: Some(vec![value("2", "section", "count")]),
+        body: vec![
+            Node::new(NodeKind::Code(CodeBlock {
+                mode: Literalness::Descriptive,
+                locus: Some(vec![value("web.sh, described:", "excerpt", "locus")]),
+                lines: vec![CodeLine {
+                    gutter: Some(value("12", "excerpt", "line")),
+                    cells: vec![CodeCell::new(vec![source(
+                        "hork tune --profile web ... and the rest of a very long invocation that must wrap",
+                        "web.sh",
+                    )])],
+                }],
+            })),
+            Node::new(NodeKind::Code(CodeBlock {
+                mode: Literalness::Formatted,
+                locus: None,
+                lines: vec![
+                    CodeLine {
+                        gutter: None,
+                        cells: vec![CodeCell::new(vec![source(
+                            "( ufw__is_converged allow \"$PORT\"/tcp ) \\",
+                            "guard",
+                        )])],
+                    },
+                    CodeLine {
+                        gutter: None,
+                        cells: vec![CodeCell::new(vec![source(
+                            "   || ufw allow \"$PORT\"/tcp",
+                            "guard",
+                        )])],
+                    },
+                ],
+            })),
+            annotated_excerpt(),
+            prose(vec![prose_text(
+                "a convergence check for hork skips lines 12 and 13 whenever hork is converged",
+                "improvement",
+                "message",
+            )]),
+            Node::new(NodeKind::Pointer(PointerLine {
+                placement: Placement::Trailing,
+                target: vec![value("(dorc teach walls)", "pointer", "command")],
+            })),
+            Node::new(NodeKind::Join(Join {
+                branches: vec![
+                    Branch {
+                        connective: Some(vec![word("both", "connective.join")]),
+                        nodes: vec![prose(vec![prose_text(
+                            "hork is undescribed",
+                            "branch",
                             "message",
-                        )],
-                    }),
-                })),
-                Node::new(NodeKind::Truncation(Truncation {
-                    note: vec![value("3 further links (--all)", "truncation", "note")],
-                }))
-                .summarizable(),
-                Node::new(NodeKind::Pointer(PointerLine {
-                    placement: Placement::Standalone,
-                    target: vec![value("(dorc why web.sh:13)", "pointer", "command")],
-                })),
-            ],
-        })),
-    ])
+                        )])],
+                    },
+                    Branch {
+                        connective: Some(vec![word("and", "connective.join")]),
+                        nodes: vec![prose(vec![prose_text(
+                            "corp-agent is undescribed",
+                            "branch",
+                            "message",
+                        )])],
+                    },
+                ],
+                restatement: Some(Paragraph {
+                    runs: vec![prose_text(
+                        "so both walls stand between the report and this line's turn.",
+                        "restatement",
+                        "message",
+                    )],
+                }),
+            })),
+            Node::new(NodeKind::Truncation(Truncation {
+                note: vec![value("3 further links (--all)", "truncation", "note")],
+            }))
+            .summarizable(),
+            Node::new(NodeKind::Pointer(PointerLine {
+                placement: Placement::Standalone,
+                target: vec![value("(dorc why web.sh:13)", "pointer", "command")],
+            })),
+        ],
+    }))
 }
 
 fn check_golden(name: &str, rendered: &str) {

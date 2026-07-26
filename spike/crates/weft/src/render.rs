@@ -15,8 +15,8 @@ use crate::frame::{Frame, Reservation, Side, Width};
 use crate::provenance::Span;
 use crate::sink::Sink;
 use crate::tree::{
-    Banner, Branch, CodeBlock, Document, Join, LabeledRow, Literalness, Node, NodeKind, Paragraph,
-    Placement, PointerLine, Quoting, Section, SpeakerRow, Truncation,
+    Banner, Branch, CodeBlock, CodeLine, Document, Join, LabeledRow, Literalness, Node, NodeKind,
+    Paragraph, Placement, PointerLine, Quoting, Section, SpeakerRow, Truncation,
 };
 use crate::wrap::{emit_runs, runs_width, wrap};
 
@@ -26,6 +26,11 @@ const INDENT: usize = 3;
 const COLUMN_GAP: usize = 2;
 /// Below this many columns of payload, a speaker row stacks instead of aligning.
 const MIN_PAYLOAD: usize = 20;
+/// Below this many columns of body, a labelled row stacks instead of hanging.
+/// Higher than [`MIN_PAYLOAD`] on purpose: a speaker row's columns carry three
+/// distinct things a reader scans down, and are worth crowding to keep; a
+/// labelled row's column carries one short word, so prose wins sooner.
+const MIN_LABELED_BODY: usize = 32;
 
 const SECTION_OPEN: &str = "=== ";
 const SECTION_CLOSE: &str = " ===";
@@ -136,7 +141,7 @@ fn render_single<K: Clone>(sink: &mut Sink<K>, kind: &NodeKind<K>, frame: &Frame
         NodeKind::Join(join) => render_join(sink, join, frame),
         NodeKind::Truncation(truncation) => render_truncation(sink, truncation, frame),
         NodeKind::Speaker(row) => render_speaker_row(sink, row, frame, &SpeakerColumns::stacked()),
-        NodeKind::Labeled(row) => render_labeled_row(sink, row, frame, 0),
+        NodeKind::Labeled(row) => render_labeled_row(sink, row, frame, None),
     }
 }
 
@@ -233,6 +238,34 @@ fn render_attachments<K: Clone>(sink: &mut Sink<K>, attachments: &[Node<K>], fra
 
 // ---- labelled rows -------------------------------------------------------
 
+/// Whether a group of labelled rows keeps its label column, and how wide it is.
+///
+/// `Some(width)` hangs each body off its label; `None` puts every label on its
+/// own line with the body indented beneath. The decision is per GROUP rather
+/// than per row, because a table in which some rows hang and others stack reads
+/// as broken rather than as adaptive.
+fn label_column<K>(rows: &[&LabeledRow<K>], frame: &Frame) -> Option<usize> {
+    let width = rows
+        .iter()
+        .map(|row| runs_width(&row.label))
+        .max()
+        .unwrap_or(0);
+    let body_left = frame.left().saturating_add(width).saturating_add(1);
+    let usable = frame.right().saturating_sub(body_left);
+    let anything_wraps = rows.iter().any(|row| runs_width(&row.body) > usable);
+    // A hanging indent is alignment when the box is roomy and a tax when it is
+    // not: every continuation line pays the label's width forever, while
+    // stacking pays one line once. So it survives only while the body stays
+    // wide enough to read as prose, and only while it is buying something —
+    // stacking rows that already fit on one line just spends lines.
+    let hanging_is_affordable = body_left.saturating_add(MIN_LABELED_BODY) <= frame.right();
+    if hanging_is_affordable || !anything_wraps {
+        Some(width)
+    } else {
+        None
+    }
+}
+
 fn render_labeled_group<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: &Frame) -> usize {
     let rows: Vec<&LabeledRow<K>> = nodes
         .iter()
@@ -241,16 +274,12 @@ fn render_labeled_group<K: Clone>(sink: &mut Sink<K>, nodes: &[Node<K>], frame: 
             _ => None,
         })
         .collect();
-    let label_width = rows
-        .iter()
-        .map(|row| runs_width(&row.label))
-        .max()
-        .unwrap_or(0);
+    let column = label_column(&rows, frame);
     for (index, row) in rows.iter().enumerate() {
         if index > 0 {
             sink.end_line();
         }
-        render_labeled_row(sink, row, frame, label_width);
+        render_labeled_row(sink, row, frame, column);
     }
     rows.len()
 }
@@ -259,18 +288,30 @@ fn render_labeled_row<K: Clone>(
     sink: &mut Sink<K>,
     row: &LabeledRow<K>,
     frame: &Frame,
-    label_width: usize,
+    column: Option<usize>,
 ) {
     sink.end_line();
     sink.pad_to(frame.left());
     emit_runs(sink, &row.label);
-    let body_left = frame
-        .left()
-        .saturating_add(label_width.max(runs_width(&row.label)))
-        .saturating_add(1);
-    let body_frame = frame.inset(body_left.saturating_sub(frame.left()));
-    advance_to(sink, body_left);
-    wrap(sink, &row.body, &body_frame);
+    let body_left = match column {
+        Some(label_width) => {
+            let left = frame
+                .left()
+                .saturating_add(label_width.max(runs_width(&row.label)))
+                .saturating_add(1);
+            advance_to(sink, left);
+            left
+        }
+        None => {
+            sink.end_line();
+            frame.left().saturating_add(INDENT)
+        }
+    };
+    wrap(
+        sink,
+        &row.body,
+        &frame.inset(body_left.saturating_sub(frame.left())),
+    );
     render_attachments(sink, &row.attachments, frame);
 }
 
@@ -444,6 +485,34 @@ fn separator(mode: Literalness, has_gutter: bool) -> &'static str {
     }
 }
 
+/// The left edge of each content cell, measured across the whole block.
+///
+/// A block's cells are columns, exactly as a run of speaker rows is: column `n`
+/// starts where the widest cell `n-1` ends. One-cell lines therefore measure to
+/// a single column and are emitted untouched, while multi-cell lines square up.
+fn cell_columns<K>(block: &CodeBlock<K>, content_left: usize) -> Vec<usize> {
+    let cell_count = block
+        .lines
+        .iter()
+        .map(|line| line.cells.len())
+        .max()
+        .unwrap_or(0);
+    let mut columns = Vec::with_capacity(cell_count);
+    let mut left = content_left;
+    for index in 0..cell_count {
+        columns.push(left);
+        let widest = block
+            .lines
+            .iter()
+            .filter_map(|line| line.cells.get(index))
+            .map(|cell| runs_width(&cell.runs))
+            .max()
+            .unwrap_or(0);
+        left = left.saturating_add(widest).saturating_add(COLUMN_GAP);
+    }
+    columns
+}
+
 fn render_code<K: Clone>(sink: &mut Sink<K>, block: &CodeBlock<K>, frame: &Frame) {
     sink.end_line();
     if let Some(locus) = &block.locus {
@@ -464,6 +533,7 @@ fn render_code<K: Clone>(sink: &mut Sink<K>, block: &CodeBlock<K>, frame: &Frame
         .left()
         .saturating_add(gutter_width)
         .saturating_add(separator.len());
+    let columns = cell_columns(block, content_left);
 
     for line in &block.lines {
         sink.end_line();
@@ -479,14 +549,30 @@ fn render_code<K: Clone>(sink: &mut Sink<K>, block: &CodeBlock<K>, frame: &Frame
             sink.pad_to(frame.left().saturating_add(gutter_width));
         }
         sink.layout(separator);
-        match block.mode {
+        render_cells(sink, line, block.mode, frame, &columns);
+    }
+}
+
+fn render_cells<K: Clone>(
+    sink: &mut Sink<K>,
+    line: &CodeLine<K>,
+    mode: Literalness,
+    frame: &Frame,
+    columns: &[usize],
+) {
+    for (index, cell) in line.cells.iter().enumerate() {
+        let left = columns.get(index).copied().unwrap_or_else(|| sink.column());
+        if index > 0 {
+            advance_to(sink, left);
+        }
+        match mode {
             // Byte-honest modes never rewrap; an overrun is preferable to
             // implying a line break the source does not contain.
-            Literalness::Literal | Literalness::Formatted => emit_runs(sink, &line.content),
+            Literalness::Literal | Literalness::Formatted => emit_runs(sink, &cell.runs),
             Literalness::Descriptive => wrap(
                 sink,
-                &line.content,
-                &frame.inset(content_left.saturating_sub(frame.left())),
+                &cell.runs,
+                &frame.inset(left.saturating_sub(frame.left())),
             ),
         }
     }

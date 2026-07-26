@@ -4,17 +4,10 @@
 //! every width. Each test states the invariant it exists to defend, because an
 //! invariant nobody can name is one nobody will preserve.
 
-#![expect(
-    clippy::expect_used,
-    clippy::panic,
-    clippy::arithmetic_side_effects,
-    reason = "test assertions: panic-based checks and plain counter arithmetic over fixture-sized data"
-)]
-
 use weft::{
-    CodeBlock, CodeLine, Document, Frame, Instance, LabeledRow, Literalness, Node, NodeKind,
-    Paragraph, Payload, Provenance, Quoting, Rendered, Reservation, Run, Section, Side, SpeakerRow,
-    Width, render, render_framed,
+    CodeBlock, CodeCell, CodeLine, Document, Frame, Instance, LabeledRow, Literalness, Node,
+    NodeKind, Paragraph, Payload, Provenance, Quoting, Rendered, Reservation, Run, Section, Side,
+    SpeakerRow, Width, render, render_framed,
 };
 
 /// The width sweep every whole-document property runs over: narrow enough to
@@ -79,9 +72,9 @@ fn mixed_document() -> Document<Key> {
                     locus: Some(vec![value("ufw.oracle.sh, as-written:")]),
                     lines: vec![CodeLine {
                         gutter: Some(value("44")),
-                        content: vec![source(
+                        cells: vec![CodeCell::new(vec![source(
                             "ufw status verbose | grep -q \"$1\"  : org.ufw.Firewall:\"$1\"@allowed",
-                        )],
+                        )])],
                     }],
                 }))],
             })),
@@ -240,7 +233,7 @@ fn literal_code_lines_stay_byte_honest() {
         locus: None,
         lines: vec![CodeLine {
             gutter: None,
-            content: vec![source(line)],
+            cells: vec![CodeCell::new(vec![source(line)])],
         }],
     }))]);
     let rendered = render(&document, 30);
@@ -258,7 +251,7 @@ fn a_descriptive_block_is_always_marked_non_runnable() {
         locus: None,
         lines: vec![CodeLine {
             gutter: None,
-            content: vec![source("hork tune ... --profile web")],
+            cells: vec![CodeCell::new(vec![source("hork tune ... --profile web")])],
         }],
     }))]);
     let rendered = render(&document, 80);

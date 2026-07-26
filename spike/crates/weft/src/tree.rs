@@ -205,14 +205,44 @@ pub struct CodeBlock<K> {
     pub lines: Vec<CodeLine<K>>,
 }
 
-/// One line of an excerpt.
+/// One line of an excerpt: a gutter cell and one or more content cells.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct CodeLine<K> {
     /// The gutter cell — a line number, usually. Widths are derived from the
     /// block's contents, never supplied.
     pub gutter: Option<Run<K>>,
-    /// The line's content, which for real source is foreign text.
-    pub content: Vec<Run<K>>,
+    /// The line's content cells, left to right.
+    pub cells: Vec<CodeCell<K>>,
+}
+
+/// One cell of a code line, and a column the whole block shares.
+///
+/// Code is not a leaf, and treating it as one is the simplification that bites.
+/// Real formatted source has boxes inside it — a run of trailing comments
+/// aligned across several lines is a column that wraps within itself, aligns
+/// with its neighbours above and below, and carries its own styling. So the
+/// descent from box model into code is two-way: a block measures its cells into
+/// columns exactly as a run of speaker rows does, and a future sh formatter
+/// emits cells rather than having to invent a second layout system underneath
+/// this one.
+///
+/// Splitting a line into cells is also the consumer's act of *licensing*
+/// alignment padding: a one-cell line is emitted with its bytes untouched,
+/// while a multi-cell line has asked for its columns to be squared up. That
+/// keeps byte-honesty a property the consumer controls rather than one the
+/// renderer quietly spends.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct CodeCell<K> {
+    /// The cell's text, which for real source is foreign.
+    pub runs: Vec<Run<K>>,
+}
+
+impl<K> CodeCell<K> {
+    /// Constructs a cell.
+    #[must_use]
+    pub fn new(runs: Vec<Run<K>>) -> Self {
+        Self { runs }
+    }
 }
 
 /// A labelled structural row: a label, a body hanging under it, and optional

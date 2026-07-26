@@ -61,6 +61,16 @@
 //! excerpt for exactly the lines it sits beside. Declaring reservations is here;
 //! *solving* for float placement is not.
 //!
+//! Crucially the descent into code is **two-way, not a clean one-way leaf**.
+//! Formatted source has boxes inside it: a run of trailing comments aligned
+//! across several lines is itself a column that wraps within itself, aligns with
+//! its neighbours, and takes its own styling. So a [`tree::CodeLine`] is made of
+//! [`tree::CodeCell`]s that a block measures into columns by the same rule a run
+//! of speaker rows uses, and the eventual sh formatter emits cells rather than
+//! inventing a second layout system underneath this one. Styling interleaves the
+//! same way: a token class is just another provenance key on a run inside a
+//! cell inside a box, so highlighting never needs a parallel tree.
+//!
 //! # Seams — what is deliberately absent
 //!
 //! Each of these is a known next piece, not an oversight:
@@ -108,7 +118,7 @@ pub use frame::{Frame, Reservation, Side, Width};
 pub use provenance::{Instance, Provenance, Run, Span};
 pub use render::{Rendered, render, render_framed};
 pub use tree::{
-    Banner, Branch, CodeBlock, CodeLine, Criticality, Document, Join, LabeledRow, Literalness,
-    Mark, Node, NodeKind, Paragraph, Payload, Placement, PointerLine, Quoting, Register, Section,
-    SpeakerRow, Truncation,
+    Banner, Branch, CodeBlock, CodeCell, CodeLine, Criticality, Document, Join, LabeledRow,
+    Literalness, Mark, Node, NodeKind, Paragraph, Payload, Placement, PointerLine, Quoting,
+    Register, Section, SpeakerRow, Truncation,
 };
