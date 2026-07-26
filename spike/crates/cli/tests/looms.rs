@@ -44,9 +44,8 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
     if let Err(error) = parsed.check_hygiene(Some("code")) {
-        // Dump here too, not only on the fixpoint path. Authoring a NEW replay block is `$ cmd`
-        // with no output yet, and an empty output cannot surface the case's own slug — so hygiene,
-        // which runs first, is exactly where that author is standing when they need the candidate.
+        // A new replay block is `$ cmd` with no output, which surfaces no slug — so hygiene, not
+        // the fixpoint, is where its author stands when they need the candidate.
         let candidate = DorcConsumer::new()
             .render_case(&parsed)
             .map(|rendered| dump_candidate(name, &rendered))

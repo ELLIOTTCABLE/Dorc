@@ -169,11 +169,8 @@ pub fn classify_prose_changes(
             return Err(format!("dirty path outside selected prose edits: {path}"));
         }
         if !status.is_worktree_modified_only() {
-            // A SELECTED case in the wrong git state. Saying "dirty path outside selected prose
-            // edits" here reads as a contradiction — the path IS selected — and leaves the author
-            // of a brand-new case with nothing to act on. The untracked case is the common one:
-            // promote's whole prose-edit story is a diff against HEAD, so a case with no HEAD
-            // side has no prose edit to promote, only a whole new file to commit first.
+            // A SELECTED case in the wrong git state: "outside selected prose edits" reads as a
+            // contradiction here, and an untracked case has no HEAD side to diff prose against.
             return Err(match status.index {
                 IndexStatus::Untracked => format!(
                     "selected case {path} is not committed. Promote reads the prose edit as the \

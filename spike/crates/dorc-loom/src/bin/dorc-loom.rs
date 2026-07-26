@@ -338,9 +338,8 @@ fn drive_replays(
         execute_generic(command, context).map(ReplayResult::bytes)
     })
     .map_err(|error| match error {
-        // errorloom never discovers a shell, so a replay the in-process driver declines dies here
-        // with a bare "no controlled shell configured" that names neither the flag that supplies
-        // one nor the fact that a decline happened at all.
+        // The raw refusal names neither the flag that supplies a shell nor the decline that
+        // needed one.
         RunError::ShellNotConfigured => format!(
             "{}: a replay declined the in-process Dorc driver and would need the generic \
              executor, which has no shell. Rerun with `--shell=PATH` (e.g. `--shell=/bin/sh`), \

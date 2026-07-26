@@ -383,10 +383,8 @@ impl DorcConsumer {
         }
         let plan = parse_direct_plan(&tokens)?;
         let interner = Interner::default();
-        // WORLD-AS-PAYLOAD: no materialized book, so the canonical spanless diagnostic IS the
-        // world. `render_direct_replay` has always taken this branch; without it here the driver
-        // DECLINED, the generic executor produced bytes-only, and every such case was unreachable
-        // by `compile`/`promote` (five recorded instances, all editing the lock directly instead).
+        // World-as-payload, the branch `render_direct_replay` has always had. Without it the
+        // driver declined, so `compile`/`promote` never saw provenance for these cases.
         let Some(source) = materialized_source(case, context, plan.book) else {
             let diag = Self::world_of(case).ok()?.0;
             if plan.machine {
