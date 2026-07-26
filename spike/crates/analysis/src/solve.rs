@@ -1,15 +1,15 @@
-﻿//! The fixed-point solver â€” a propagation worklist generic over any [`Lattice`]
+//! The fixed-point solver — a propagation worklist generic over any [`Lattice`]
 //! and a [`Graph`], in either [`Direction`].
 //!
 //! Pure + deterministic (`inv-determinism`): FIFO worklist, graph-order
-//! neighbours, ordered lattice values â‡’ identical inputs converge to the
+//! neighbours, ordered lattice values ⇒ identical inputs converge to the
 //! identical per-node fixed point.
 //!
 //! Termination is guaranteed ONLY when the caller upholds the preconditions
 //! below; the type system cannot express them (see `Research/notes/165`), so the
 //! solver fails *loud, not silent*: a precondition violation trips a generous
 //! iteration cap and returns [`Solution::converged`]` == false` rather than
-//! hanging (this was an empirically-real infinite loop, not a theoretical one â€”
+//! hanging (this was an empirically-real infinite loop, not a theoretical one —
 //! note 164). A correctness-critical caller MUST check `converged`.
 
 use crate::lattice::Lattice;
@@ -30,7 +30,7 @@ pub trait Graph {
     fn pred(&self, node: usize) -> &[usize];
 }
 
-/// Dataflow direction â€” the only axis distinguishing, e.g., reaching-definitions
+/// Dataflow direction — the only axis distinguishing, e.g., reaching-definitions
 /// (forward) from the apply-phase minimization slice (backward). Same solver,
 /// same lattice; only which neighbours a node's output flows to changes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,7 +44,7 @@ pub enum Direction {
 /// `states[v]` is the *input* abstract state at node `v` (the state immediately
 /// before it, for a forward analysis; after it, for backward); the output state
 /// is `transfer(v, &states[v])`. `converged` is `false` iff the iteration cap was
-/// hit before a fixed point â€” which happens ONLY when a [`solve`] precondition
+/// hit before a fixed point — which happens ONLY when a [`solve`] precondition
 /// was violated; a well-formed analysis always converges. `rounds` is the number
 /// of node-visits performed (diagnostic).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,16 +56,16 @@ pub struct Solution<L> {
 
 /// Solve a monotone dataflow problem to its least fixed point.
 ///
-/// **Preconditions the caller must uphold** (the type system cannot â€” note 165):
-/// 1. `transfer` is **monotone** (`x âŠ‘ y â‡’ f(x) âŠ‘ f(y)`);
+/// **Preconditions the caller must uphold** (the type system cannot — note 165):
+/// 1. `transfer` is **monotone** (`x ⊑ y ⇒ f(x) ⊑ f(y)`);
 /// 2. the lattice `L` has **finite height** for the values this analysis can
 ///    actually produce (e.g. a `MapL`/`Powerset` whose keys/elements are drawn
-///    from a *bounded* set â€” a transfer that mints a fresh key/element every
+///    from a *bounded* set — a transfer that mints a fresh key/element every
 ///    visit climbs forever);
 /// 3. `L`'s `Eq` is **semantic** (agrees with lattice equality);
 /// 4. every graph edge endpoint is `< node_count()`.
 ///
-/// Violating 1/2/3 is caught as `Solution::converged == false` (never a hang â€”
+/// Violating 1/2/3 is caught as `Solution::converged == false` (never a hang —
 /// the iteration cap). Violating 4 is a `debug_assert` (release: skipped edge).
 #[must_use]
 pub fn solve<G: Graph, L: Lattice>(
@@ -75,7 +75,7 @@ pub fn solve<G: Graph, L: Lattice>(
 ) -> Solution<L> {
     let n = graph.node_count();
     // A node's output flows to its successors (forward) or predecessors
-    // (backward) â€” its consumer set, where we propagate-and-join.
+    // (backward) — its consumer set, where we propagate-and-join.
     let flows_to = |v: usize| -> &[usize] {
         match direction {
             Direction::Forward => graph.succ(v),
@@ -108,7 +108,7 @@ pub fn solve<G: Graph, L: Lattice>(
                 "Graph edge endpoint {w} out of range (node_count {n})"
             );
             if w >= n {
-                continue; // release-mode defensive skip â€” never panic (inv-no-throw)
+                continue; // release-mode defensive skip — never panic (inv-no-throw)
             }
             let joined = state[w].join(&out);
             if joined != state[w] {
@@ -166,7 +166,7 @@ mod tests {
         Powerset(xs.iter().copied().collect::<BTreeSet<_>>())
     }
 
-    /// Forward-may "gen" transfer: out = in âˆª {node-id}. Monotone + bounded.
+    /// Forward-may "gen" transfer: out = in ∪ {node-id}. Monotone + bounded.
     fn gen_xfer(v: usize, inp: &Powerset<usize>) -> Powerset<usize> {
         let mut s = inp.clone();
         s.0.insert(v);
@@ -178,7 +178,7 @@ mod tests {
         let g = TestGraph::from_edges(4, &[(0, 1), (1, 2), (2, 3)]);
         let r = solve(&g, Direction::Forward, gen_xfer);
         assert!(r.converged);
-        assert_eq!(r.states[0], set(&[]), "entry has no predecessors â‡’ âŠ¥");
+        assert_eq!(r.states[0], set(&[]), "entry has no predecessors ⇒ ⊥");
         assert_eq!(
             r.states[3],
             set(&[0, 1, 2]),
@@ -219,7 +219,7 @@ mod tests {
         assert_eq!(
             r.states[3],
             set(&[]),
-            "exit has no successors â‡’ âŠ¥ (backward boundary)"
+            "exit has no successors ⇒ ⊥ (backward boundary)"
         );
         assert!(
             r.states[0].contains(&3),
@@ -237,7 +237,7 @@ mod tests {
         let g = TestGraph::from_edges(4, &[(0, 1), (0, 2), (1, 3), (2, 3)]);
         let a = solve(&g, Direction::Forward, gen_xfer);
         let b = solve(&g, Direction::Forward, gen_xfer);
-        assert_eq!(a, b, "same graph + transfer â‡’ identical solution");
+        assert_eq!(a, b, "same graph + transfer ⇒ identical solution");
     }
 
     #[test]
@@ -270,8 +270,8 @@ mod tests {
     fn solve_runs_a_must_analysis_over_the_dual() {
         use crate::lattice::{Flat, Must};
         // The engine-wide-meet payoff (note 165 L1): a *must* analysis needs no new
-        // solver â€” running the unchanged worklist over the order-dual `Must<L>`
-        // turns âŠ”-at-merges into âŠ“-at-merges. On a diamond, a fact is must-true at
+        // solver — running the unchanged worklist over the order-dual `Must<L>`
+        // turns ⊔-at-merges into ⊓-at-merges. On a diamond, a fact is must-true at
         // the join only if BOTH branches agree.
         let g = TestGraph::from_edges(4, &[(0, 1), (0, 2), (1, 3), (2, 3)]);
 
@@ -283,7 +283,7 @@ mod tests {
         assert_eq!(
             agree.states[3],
             Must(Flat::Elem(5)),
-            "both branches agree â‡’ must-Elem(5)"
+            "both branches agree ⇒ must-Elem(5)"
         );
 
         let disagree = solve(&g, Direction::Forward, |v, inp: &Must<Flat<u8>>| match v {
@@ -295,7 +295,7 @@ mod tests {
         assert_eq!(
             disagree.states[3],
             Must(Flat::Bottom),
-            "branches disagree â‡’ âŠ“ â‡’ âŠ¥, no must-fact"
+            "branches disagree ⇒ ⊓ ⇒ ⊥, no must-fact"
         );
     }
 }
