@@ -131,7 +131,7 @@ description = "Self-test for the .githooks/commit-msg gate. Cheap; rides `gate` 
 run = "sh .githooks/test-commit-msg.sh"
 
 [tasks.hooks-install]
-description = "Install the commit-msg gate (gitlabels headliner form; refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config — sets core.hooksPath, which every worktree of this repo then obeys; human-gated for the same reason as hk-install. Relative path, so each worktree resolves its OWN checkout — a worktree predating the hook is silently ungated until it picks the file up."
+description = "Install the commit-msg gate (gitlabels headliner form; refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config — sets core.hooksPath, which every worktree of this repo then obeys; human-gated for the same reason as hk-install. REPLACES any existing value: as of 2026-07-26 that is an absolute Windows spelling of the default .git/hooks, which holds only .sample files (nothing is lost) and which cannot resolve on the macOS/WSL legs anyway. The relative path this sets resolves against each worktree's OWN checkout — so a worktree predating the hook is silently ungated until it picks the file up."
 run = "git config core.hooksPath .githooks"
 
 [tasks.audit]
