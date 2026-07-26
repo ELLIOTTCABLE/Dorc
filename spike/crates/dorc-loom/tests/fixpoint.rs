@@ -50,10 +50,9 @@ fn generated_lock_reproduces_the_committed_bytes() {
     );
     let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
     let committed = std::fs::read_to_string(committed_lock()).expect("read committed lock");
-    assert_eq!(
-        generated, committed,
-        "the committed catalog_lock.rs is not a fixpoint of the generator"
-    );
+    if let Some(report) = lock_difference(&generated, &committed, "CatalogEntry") {
+        panic!("the committed catalog_lock.rs is not a fixpoint of the generator\n{report}");
+    }
 }
 
 /// The arrangement registry's half of the same byte-identity gate
@@ -73,10 +72,153 @@ fn generated_arrangement_lock_reproduces_the_committed_bytes() {
     let generated = generate_arrangement_lock(&consumer, &cases).expect("generate lock");
     let committed =
         std::fs::read_to_string(committed_arrangement_lock()).expect("read committed lock");
+    if let Some(report) = lock_difference(&generated, &committed, "ArrangementEntry") {
+        panic!("the committed arrangement_lock.rs is not a fixpoint of the generator\n{report}");
+    }
+}
+
+/// Both lock gates' failure report. A whole-file `assert_eq!` over a generated lock dumps ~120 KB
+/// of identical rows around the one that moved, and a reader has to diff it by eye — a field-order
+/// slip once hid in exactly that dump. This locates the FIRST differing row, names its slug and
+/// field, and shows only the differing neighbourhood of that field's value.
+///
+/// Returns `None` when the two are byte-identical.
+fn lock_difference(generated: &str, committed: &str, entry: &str) -> Option<String> {
+    if generated == committed {
+        return None;
+    }
+    let marker = format!("    {entry} {{\n");
+    // Each chunk after a marker runs to the NEXT marker, so it trails the row's own closing brace
+    // plus whatever separates the rows; cut there, or a row-count change reads as a field change.
+    let rows = |text: &str| -> Vec<String> {
+        text.split(&marker)
+            .skip(1)
+            .map(|chunk| {
+                chunk
+                    .find("\n    },")
+                    .and_then(|end| chunk.get(..end))
+                    .unwrap_or(chunk)
+                    .to_owned()
+            })
+            .collect()
+    };
+    let (left, right) = (rows(generated), rows(committed));
+    for index in 0..left.len().max(right.len()) {
+        match (left.get(index), right.get(index)) {
+            (Some(l), Some(r)) if l == r => {}
+            (Some(l), Some(r)) => return Some(row_difference(index, l, r)),
+            (Some(l), None) => {
+                return Some(format!(
+                    "row {index} `{}` is GENERATED but absent from the committed lock",
+                    row_slug(l)
+                ));
+            }
+            (None, Some(r)) => {
+                return Some(format!(
+                    "row {index} `{}` is COMMITTED but the generator no longer produces it",
+                    row_slug(r)
+                ));
+            }
+            (None, None) => break,
+        }
+    }
+    // Equal row bodies but unequal files: the difference is in the header or the trailer.
+    Some(format!(
+        "every row matches — the difference is in the generated header/trailer ({} vs {} bytes)",
+        generated.len(),
+        committed.len()
+    ))
+}
+
+/// The first differing FIELD of one row, with the value neighbourhood around the first differing
+/// character. Field values reach thousands of characters (a whole help page is one row's word), so
+/// a bare pair of values would restore the haystack this report exists to remove.
+fn row_difference(index: usize, generated: &str, committed: &str) -> String {
+    const CONTEXT: usize = 60;
+    let (left, right): (Vec<&str>, Vec<&str>) =
+        (generated.lines().collect(), committed.lines().collect());
+    for line in 0..left.len().max(right.len()) {
+        let (l, r) = (left.get(line).copied(), right.get(line).copied());
+        if l == r {
+            continue;
+        }
+        let (l, r) = (l.unwrap_or("<row ends>"), r.unwrap_or("<row ends>"));
+        let field = l.split_once(':').map_or("<field>", |(name, _)| name.trim());
+        let at = l
+            .chars()
+            .zip(r.chars())
+            .position(|(a, b)| a != b)
+            .unwrap_or_else(|| l.chars().count().min(r.chars().count()));
+        let from = at.saturating_sub(CONTEXT);
+        return format!(
+            "row {index} `{}` field `{field}` diverges at character {at}\n  generated: {:?}\n  committed: {:?}",
+            row_slug(generated),
+            window(l, from, at.saturating_add(CONTEXT)),
+            window(r, from, at.saturating_add(CONTEXT)),
+        );
+    }
+    format!(
+        "row {index} `{}` differs only in line count",
+        row_slug(generated)
+    )
+}
+
+fn row_slug(row: &str) -> &str {
+    row.lines()
+        .find_map(|line| line.trim().strip_prefix("slug: \""))
+        .and_then(|rest| rest.split_once('"'))
+        .map_or("<unnamed>", |(slug, _)| slug)
+}
+
+fn window(text: &str, from: usize, to: usize) -> String {
+    let clipped: String = text
+        .chars()
+        .skip(from)
+        .take(to.saturating_sub(from))
+        .collect();
+    format!(
+        "{}{clipped}{}",
+        if from > 0 { "…" } else { "" },
+        if text.chars().count() > to { "…" } else { "" }
+    )
+}
+
+/// The report itself, over injected drift — a failure reporter nothing exercises is a failure
+/// reporter nobody can trust at 3am. Each case pins the one fact that makes the report worth
+/// having: the slug, the field name, and that the value window is bounded.
+#[test]
+fn the_lock_report_names_the_row_and_the_field() {
+    let lock = |why: &str, words: &str| {
+        format!(
+            "// @generated\n    CatalogEntry {{\n        slug: \"first\",\n        why: \"y\",\n    }},\n    \
+             CatalogEntry {{\n        slug: \"second\",\n        why: {why:?},\n        words: {words:?},\n    }},\n];\n"
+        )
+    };
     assert_eq!(
-        generated, committed,
-        "the committed arrangement_lock.rs is not a fixpoint of the generator"
+        lock_difference(&lock("y", "w"), &lock("y", "w"), "CatalogEntry"),
+        None
     );
+
+    let report = lock_difference(&lock("changed", "w"), &lock("y", "w"), "CatalogEntry")
+        .expect("a differing row reports");
+    assert!(report.contains("row 1 `second`"), "{report}");
+    assert!(report.contains("field `why`"), "{report}");
+    assert!(!report.contains("slug: \"first\""), "{report}");
+
+    let long = "x".repeat(4_000);
+    let report = lock_difference(&lock("y", &long), &lock("y", "w"), "CatalogEntry")
+        .expect("a differing row reports");
+    assert!(report.contains("field `words`"), "{report}");
+    assert!(
+        report.len() < 400,
+        "a 4000-character field value must not restore the haystack: {} bytes",
+        report.len()
+    );
+
+    let dropped = "// @generated\n    CatalogEntry {\n        slug: \"first\",\n        why: \"y\",\n    },\n];\n";
+    let report =
+        lock_difference(&lock("y", "w"), dropped, "CatalogEntry").expect("a dropped row reports");
+    assert!(report.contains("`second`"), "{report}");
 }
 
 /// The static half of the arity net (`aid::arrangement`'s debug assertion is the dynamic half):
