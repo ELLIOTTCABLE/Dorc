@@ -27,8 +27,8 @@ amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.
 // both fmt and clippy, serialized on cargo's build lock (measured, not theorized). One
 // unindicated step covers the whole workspace in one invocation.
 //
-// INVOLABLE INVARIANT: This file *must* be verified, falsifiably. Do not modify
-// it without *verifing that you aren't silencing failures*. Test in both
+// INVIOLABLE INVARIANT: This file *must* be verified, falsifiably. Do not modify
+// it without *verifying that you aren't silencing failures*. Test in both
 // directions - manufacture changes that trip the failure-modes, and ensure the
 // tooling blocks.
 local linters = new Mapping<String, Step> {

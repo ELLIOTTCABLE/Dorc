@@ -8,8 +8,8 @@
 # node is LTS (the kept corpus instrument lives under tools/corpus/). The wasm
 # scanner stack is node-version-agnostic; verified on 25, pinned to 22 LTS.
 #
-# INVOLABLE INVARIANT: This file *must* be verified, falsifiably. Do not modify
-# it without *verifing that you aren't silencing failures*. Test in both
+# INVIOLABLE INVARIANT: This file *must* be verified, falsifiably. Do not modify
+# it without *verifying that you aren't silencing failures*. Test in both
 # directions - manufacture changes that trip the failure-modes, and ensure the
 # tooling blocks.
 
