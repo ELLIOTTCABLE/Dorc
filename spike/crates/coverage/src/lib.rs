@@ -393,7 +393,7 @@ fn ship_predict_body(
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
-) -> Option<String> {
+) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
@@ -401,14 +401,20 @@ fn ship_predict_body(
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (src, cs) in oracle_srcs.iter().zip(checks) {
+    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate() {
         for cp in cs.providers() {
             if map_provider_name(interner.resolve(cp)) != want {
                 continue;
             }
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(strip_predict(src, check, interner));
+                return Some(dorc_plan::ShippedCheck::predict(
+                    strip_predict(src, check, interner),
+                    Some((
+                        check.name_span,
+                        dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
+                    )),
+                ));
             }
         }
     }

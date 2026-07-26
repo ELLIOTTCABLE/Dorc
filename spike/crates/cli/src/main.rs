@@ -130,7 +130,7 @@ fn main() -> ExitCode {
             }
         },
         Ok(Invocation::Lint(args)) => lint_command(&args),
-        Ok(Invocation::Analyze(args)) => match run(&args) {
+        Ok(Invocation::Analyze(args)) => match run(&args, &mut RunClock::system()) {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
@@ -531,7 +531,59 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
     clippy::result_large_err,
     reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
 )]
-fn run(args: &Args) -> Result<RunOutcome, Diag> {
+/// The run's instant source — the DI seam for wall clock (`io-at-edges-only`). It lives HERE, in
+/// the binary, and nowhere else: the analyzer kernel owns no clock type at all, so no kernel
+/// signature can accept one and no kernel path can "reach for a clock to help". Only
+/// [`dorc_core::RunInstant`] values (already read) cross inward.
+///
+/// Nondeterminism enters ONCE, at [`system`](RunClock::system) — the single wall-clock read in the
+/// product, exactly as `records::Nonce` is minted once at this edge and DI'd inward
+/// (`inv-determinism`: nondeterminism is seeded and injected, never ambient). Everything after is a
+/// deterministic tick, so a seeded DST clock and the production clock are the same code path.
+///
+/// [`Absent`](RunClock::Absent) is a first-class "no clock here", not a failure mode: a replayed
+/// durable does not carry the original run's per-record observation times, and re-stamping them
+/// from the REPLAY's clock would present this moment as the original measurement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RunClock {
+    /// Yields `at`, then advances by `step_millis`. Production reads a whole record stream in one
+    /// slurp, so it ticks by zero — every record of one read genuinely shares one instant. A DST
+    /// seed supplies a non-zero step to make per-record instants distinguishable.
+    Ticking {
+        at: dorc_core::RunInstant,
+        step_millis: u64,
+    },
+    /// No clock: every read is `None`.
+    Absent,
+}
+
+impl RunClock {
+    /// The ONE wall-clock read. A clock the platform cannot place after the epoch answers
+    /// [`Absent`](RunClock::Absent) rather than saturating to a fabricated zero (`inv-no-throw`).
+    fn system() -> Self {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()
+            .and_then(|d| u64::try_from(d.as_millis()).ok())
+            .map_or(Self::Absent, |millis| Self::Ticking {
+                at: dorc_core::RunInstant(millis),
+                step_millis: 0,
+            })
+    }
+
+    fn now(&mut self) -> Option<dorc_core::RunInstant> {
+        match self {
+            Self::Ticking { at, step_millis } => {
+                let read = *at;
+                *at = dorc_core::RunInstant(read.0.saturating_add(*step_millis));
+                Some(read)
+            }
+            Self::Absent => None,
+        }
+    }
+}
+
+fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let mut interner = Interner::default();
     let mode = args.mode;
     // rec-1 advisory routing: `plan` and the legacy round-trip overlay the FULL advisory plane
@@ -767,7 +819,7 @@ fn run(args: &Args) -> Result<RunOutcome, Diag> {
     // reads a `Some` as the auto-cell signal. rul-only-oracle-bytes-ship: the shipped bytes are the
     // oracle's OWN authored `is_converged` funcdef, strip-only; the admin's argv flows as arguments.
     let ship_auto =
-        |fact: dorc_core::FactKey, p: Symbol, _a: &[Symbol]| -> Option<(String, bool)> {
+        |fact: dorc_core::FactKey, p: Symbol, _a: &[Symbol]| -> Option<dorc_plan::ShippedCheck> {
             if !dorc_core::is_auto_kind(&interner, fact.kind) {
                 return None;
             }
@@ -930,7 +982,9 @@ fn run(args: &Args) -> Result<RunOutcome, Diag> {
                 framed: true,
                 ..SiteResults::default()
             },
-            |records| parse_admitted_results(records, &mut interner),
+            // Replay re-ingests the ORIGINAL run's records: the durable does not carry their
+            // observation instants, and this process's clock would date them to now.
+            |records| parse_admitted_results(records, &mut RunClock::Absent, &mut interner),
         );
         (None, ScopedHostEvidence::new(scope, results), false)
     } else {
@@ -964,7 +1018,7 @@ fn run(args: &Args) -> Result<RunOutcome, Diag> {
         };
         match admitted {
             dorc_plan::records::Admission::Admitted(records) => {
-                let parsed = parse_admitted_results(&records, &mut interner);
+                let parsed = parse_admitted_results(&records, clock, &mut interner);
                 (Some(records), ScopedHostEvidence::new(scope, parsed), true)
             }
             dorc_plan::records::Admission::NoObservation => (
@@ -1559,7 +1613,7 @@ fn ship_predict_body(
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
-) -> Option<String> {
+) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
@@ -1567,18 +1621,28 @@ fn ship_predict_body(
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (src, cs) in oracle_srcs.iter().zip(checks) {
+    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate() {
         for cp in cs.providers() {
             if map_provider_name(interner.resolve(cp)) != want {
                 continue;
             }
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(strip_predict(src, check, interner));
+                return Some(dorc_plan::ShippedCheck::predict(
+                    strip_predict(src, check, interner),
+                    Some((check.name_span, oracle_file_id(idx))),
+                ));
             }
         }
     }
     None
+}
+
+/// The loaded-oracle index a threaded span belongs to (`law-lineno-identity`): the position in the
+/// driver's ordered oracle-source list, which is the ONE disambiguator between two oracles'
+/// line-number spaces. Saturating rather than panicking (`inv-no-throw`).
+fn oracle_file_id(idx: usize) -> dorc_core::OracleFileId {
+    dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX))
 }
 
 /// Resolve a connected pipe STAGE's stripped `<provider>__predict` body PLUS its STDOUT coverage
@@ -1633,10 +1697,10 @@ fn ship_verdict_body(
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     interner: &Interner,
     provider: Symbol,
-) -> Option<(String, bool)> {
+) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     let want = map_provider_name(interner.resolve(provider));
-    for (src, set) in oracle_srcs.iter().zip(verdict_sets) {
+    for (idx, (src, set)) in oracle_srcs.iter().zip(verdict_sets).enumerate() {
         for vp in set.providers() {
             if map_provider_name(interner.resolve(vp)) != want {
                 continue;
@@ -1644,7 +1708,11 @@ fn ship_verdict_body(
             let Some(verdict) = set.get(vp) else { continue };
             // `27W` §3 C4: pair the body with whether it emits report lines (gates the tier-3 drain).
             let emits_report = dorc_oracle::report::emits_report(verdict);
-            return Some((strip_verdict(src, verdict, interner), emits_report));
+            return Some(dorc_plan::ShippedCheck::verdict(
+                strip_verdict(src, verdict, interner),
+                Some((verdict.name_span, oracle_file_id(idx))),
+                emits_report,
+            ));
         }
     }
     None
@@ -4630,15 +4698,20 @@ fn facts_from_sites(
 /// two events). Runs at the cli edge where the arena lives (`io-at-edges-only`); the [`Observable`]
 /// stays receipt-clean (the tc-c6-scope ruling: the receipt rides the record, not the value).
 ///
-/// The origin's source SPAN is `None` at v1 — the fact-keying IS the replay tie; attaching the
-/// site's book span for display ("measured at line N") is a refinement deferred to the span
-/// dispatch / d4 render (churn-avoidance-disclosure: a spike scope-cut, not a silent omission).
+/// The origin NODE's source span stays `None`: an [`dorc_core::OriginNode`] carries a bare
+/// [`dorc_core::Span`], which is file-ambiguous once >1 oracle is loaded (`law-lineno-identity`).
+/// The file-qualified reporting span therefore rides the [`dorc_plan::ReportedObservation`] beside
+/// the receipt, which is also where the tool-rc and the observation instant live.
+///
+/// A fact measured by SEVERAL records keeps the joined receipt but reports NO single observation:
+/// two records are two events with no one speaker, instant, or rc, and inventing a winner would be
+/// a fabricated measurement.
 fn probe_origins(
     probe: &dorc_plan::ProbePlan,
     results: &SiteResults,
     arena: &mut ProvArena,
-) -> BTreeMap<dorc_core::FactKey, dorc_core::ProvId> {
-    let mut origins: BTreeMap<dorc_core::FactKey, dorc_core::ProvId> = BTreeMap::new();
+) -> BTreeMap<dorc_core::FactKey, dorc_plan::ProbeAttribution> {
+    let mut origins: BTreeMap<dorc_core::FactKey, dorc_plan::ProbeAttribution> = BTreeMap::new();
     for check in &probe.checks {
         let Some(record) = results.records.get(&RecordKey {
             site: check.site,
@@ -4646,15 +4719,20 @@ fn probe_origins(
         }) else {
             continue;
         };
-        let origin = arena.leaf(
-            dorc_core::OriginKind::ProbeResult(dorc_core::ProbeStamp(record.ordinal)),
-            None,
-        );
-        let merged = match origins.get(&check.fact) {
-            Some(&prior) => arena.join(None, &[prior, origin]).unwrap_or(origin),
-            None => origin,
+        let origin = arena.leaf(dorc_core::OriginKind::ProbeResult(record.stamp), None);
+        let reported = Some(dorc_plan::ReportedObservation {
+            stamp: record.stamp,
+            tool_rc: record.rc,
+            predict_span: check.defining_span,
+        });
+        let attribution = match origins.get(&check.fact) {
+            Some(prior) => dorc_plan::ProbeAttribution {
+                origin: arena.join(None, &[prior.origin, origin]).unwrap_or(origin),
+                reported: None,
+            },
+            None => dorc_plan::ProbeAttribution { origin, reported },
         };
-        origins.insert(check.fact, merged);
+        origins.insert(check.fact, attribution);
     }
     origins
 }
@@ -4893,11 +4971,11 @@ struct SiteRecord {
     rc: Rc,
     stdout: Predicted<OutBytes>,
     stderr: Predicted<OutBytes>,
-    /// The record-stream ORDINAL (C6, `27V` §2): this record's arrival position in the deframed
-    /// stream, minted into the [`dorc_core::OriginKind::ProbeResult`] stamp so the whylog can
-    /// order/replay probe events deterministically (no clock — `inv-determinism`). A meet keeps
-    /// the first-seen ordinal.
-    ordinal: u64,
+    /// This record's identity as a probe EVENT (C6, `27V` §2): its arrival ordinal in the deframed
+    /// stream (deterministic, no clock) plus the instant the controller observed it, when the edge
+    /// injected a clock. Minted straight into the [`dorc_core::OriginKind::ProbeResult`] origin so
+    /// the whylog can order/attribute probe events. A meet keeps the first-seen stamp.
+    stamp: dorc_core::ProbeStamp,
     /// A DUPLICATE-MEET marker (`262` §2 / `26A` stop-1): set when two records for one
     /// (site, member) key DISAGREED and were met toward ⊤. The §1 tie-break law forbids
     /// first-wins/last-wins; a conflict is can't-tell. `verdict` is already `Unknown` when
@@ -5107,7 +5185,12 @@ fn book_digest(book_src: &str) -> String {
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
 #[cfg(test)]
-fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> SiteResults {
+fn parse_results(
+    records: &[String],
+    framed: bool,
+    clock: &mut RunClock,
+    interner: &mut Interner,
+) -> SiteResults {
     let mut out = SiteResults {
         framed,
         ..SiteResults::default()
@@ -5117,7 +5200,8 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
         let Some((tag, rest)) = line.split_once(' ') else {
             continue; // a bare tag with no body ⇒ drop (⇒ Unknown ⇒ run)
         };
-        let ordinal = idx as u64; // C6: record-stream ordinal (arrival position; no clock)
+        // C6: arrival position (deterministic) + the controller-side observation instant.
+        let stamp = dorc_core::ProbeStamp::observed(idx as u64, clock.now());
         match tag {
             // 24E §5: `deriv <leafid> coord=<coord>` — `coord=` is the FREE-CONTENT field
             // (`262` §2 last-to-token): after deframing it runs to end-of-line, whitespace
@@ -5186,7 +5270,7 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
                     }
                 }
             }
-            "site" => parse_site_record(rest, ordinal, &mut out, interner),
+            "site" => parse_site_record(rest, stamp, &mut out, interner),
             "report" => parse_report_record(rest, &mut out), // `27W` §2 tier-3 (decision-inert lane)
             _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
@@ -5197,6 +5281,7 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
 /// Converts only grammar-admitted records. The legacy string parser above is replay-only until 3C2.
 fn parse_admitted_results(
     records: &dorc_plan::records::AdmittedUnscopedHostRecords,
+    clock: &mut RunClock,
     interner: &mut Interner,
 ) -> SiteResults {
     let mut out = SiteResults {
@@ -5226,7 +5311,7 @@ fn parse_admitted_results(
                         Predicted::Value(OutBytes(interner.intern(value)))
                     }),
                     conflicted: false,
-                    ordinal: ordinal as u64,
+                    stamp: dorc_core::ProbeStamp::observed(ordinal as u64, clock.now()),
                 };
                 out.records
                     .entry(key)
@@ -5340,7 +5425,12 @@ fn split_key<'a>(body: &'a str, key: &str) -> Option<(&'a str, &'a str)> {
 /// Unknown keys BEFORE the free-content field are ignored (additive-keys, `24Kc`). A duplicate
 /// (site, member) record MERGES BY MEET, never last-wins (`262` §1 tie-break law).
 #[cfg(test)]
-fn parse_site_record(rest: &str, ordinal: u64, out: &mut SiteResults, interner: &mut Interner) {
+fn parse_site_record(
+    rest: &str,
+    stamp: dorc_core::ProbeStamp,
+    out: &mut SiteResults,
+    interner: &mut Interner,
+) {
     // `stdout=` is the trailing free-content field; everything from it runs to EOL.
     let (head, stdout) = match split_key(rest, "stdout=") {
         Some((h, v)) => (h, Predicted::Value(OutBytes(interner.intern(v)))),
@@ -5368,7 +5458,7 @@ fn parse_site_record(rest: &str, ordinal: u64, out: &mut SiteResults, interner: 
         stdout,
         stderr,
         conflicted: false,
-        ordinal,
+        stamp,
     };
     out.records
         .entry(key)
@@ -5401,7 +5491,7 @@ fn meet_record(a: SiteRecord, b: SiteRecord) -> SiteRecord {
             Predicted::Top
         },
         conflicted: a.conflicted || b.conflicted || rc_conflict || a.verdict != b.verdict,
-        ordinal: a.ordinal, // keep the first-seen ordinal (C6): the meet is order-independent
+        stamp: a.stamp, // keep the first-seen stamp (C6): the meet is order-independent
     }
 }
 
@@ -5971,19 +6061,19 @@ fn resolve_inner_check(
 ) -> Option<(String, String)> {
     use dorc_oracle::predict::map_provider_name;
     let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
-    if let Some(sh) = ship_predict_body(
+    if let Some(shipped) = ship_predict_body(
         oracle_srcs,
         checks,
         interner,
         inner_provider,
         inner_operands,
     ) {
-        return Some((format!("{seg}__predict"), sh));
+        return Some((format!("{seg}__predict"), shipped.sh));
     }
-    // Entry-composition is out of the tier-3 drain scope this round, so `emits_report` is ignored.
-    let (sh, _emits_report) =
-        ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
-    Some((format!("{seg}__is_converged"), sh))
+    // Entry-composition is out of both the tier-3 drain scope and the span-threading scope this
+    // round: the composed body has no single defining funcdef to name, so its site stays span-less.
+    let shipped = ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
+    Some((format!("{seg}__is_converged"), shipped.sh))
 }
 
 fn report_at(advisory: bool, stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
@@ -6111,7 +6201,7 @@ mod tests {
         let expect = dorc_plan::records::Framing::spike(String::new()).expect();
         let d =
             dorc_plan::records::deframe(input, &expect, dorc_plan::records::LegacyPolicy::Tolerate);
-        parse_results(&d.records, d.framed, interner)
+        parse_results(&d.records, d.framed, &mut RunClock::Absent, interner)
     }
 
     /// ack-2 / rul24-lineno-identity: the `dorc why` address parser reads a SOURCE line-number from
@@ -6337,7 +6427,7 @@ mod tests {
                 &dorc_plan::records::Framing::spike("bk".to_owned()).expect(),
                 dorc_plan::records::LegacyPolicy::Refuse,
             );
-            let results = parse_results(&d.records, d.framed, i);
+            let results = parse_results(&d.records, d.framed, &mut RunClock::Absent, i);
             let derivations = dorc_plan::DerivationPlan {
                 derivations: vec![dorc_plan::ProbeDerivation {
                     site: LeafId(5),
@@ -6411,6 +6501,7 @@ mod tests {
                 provider: fact.kind.0,
                 argv: vec![],
                 sh: "{ :; }".to_string(),
+                defining_span: None,
                 connected: None,
                 verdict: false,
                 emits_report: false,
@@ -6956,17 +7047,133 @@ mod tests {
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let mut arena = ProvArena::new();
         let origins = probe_origins(&probe, &results, &mut arena);
-        let id = origins
+        let attribution = origins
             .get(&fact)
             .copied()
             .expect("the establish fact carries a probe-result origin");
         let node = arena
-            .node(id)
+            .node(attribution.origin)
             .expect("the measured origin resolves in the arena");
         assert_eq!(
             node.kind,
-            dorc_core::OriginKind::ProbeResult(dorc_core::ProbeStamp(0)),
+            dorc_core::OriginKind::ProbeResult(dorc_core::ProbeStamp::at_ordinal(0)),
             "the ProbeResult stamp is the record's stream ordinal (site 0 = the 0th deframed record)"
+        );
+    }
+
+    /// Deframe `input` under an INJECTED stepping clock, so a per-record instant is a property of
+    /// the injected source rather than of the machine the test runs on.
+    fn parse_str_clocked(input: &str, at: u64, step: u64, interner: &mut Interner) -> SiteResults {
+        let expect = dorc_plan::records::Framing::spike(String::new()).expect();
+        let d =
+            dorc_plan::records::deframe(input, &expect, dorc_plan::records::LegacyPolicy::Tolerate);
+        let mut clock = RunClock::Ticking {
+            at: dorc_core::RunInstant(at),
+            step_millis: step,
+        };
+        parse_results(&d.records, d.framed, &mut clock, interner)
+    }
+
+    #[test]
+    fn record_observation_instants_come_from_the_injected_clock_not_wall_time() {
+        // The clock is a DI seam, so a record's observation instant must be EXACTLY what the
+        // injected source yielded — and a stepping source must distinguish successive records
+        // (the shape a streaming transport will need). Wall time never enters a test's answer.
+        let mut i = Interner::default();
+        let results = parse_str_clocked(
+            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
+            9_000,
+            7,
+            &mut i,
+        );
+        let stamps: Vec<dorc_core::ProbeStamp> =
+            results.records.values().map(|r| r.stamp).collect();
+        assert_eq!(
+            stamps
+                .iter()
+                .map(|s| s.observed_at)
+                .collect::<Vec<Option<dorc_core::RunInstant>>>(),
+            vec![
+                Some(dorc_core::RunInstant(9_000)),
+                Some(dorc_core::RunInstant(9_007)),
+            ],
+            "each record carries the instant the injected clock yielded for it, in arrival order"
+        );
+        // An absent clock is honest absence, never an epoch-zero stand-in.
+        let clockless = parse_str("site 0 effect=holds rc=0\n", &mut i);
+        assert_eq!(
+            clockless
+                .records
+                .values()
+                .next()
+                .map(|r| r.stamp.observed_at),
+            Some(None),
+            "no clock ⇒ no instant; never RunInstant(0) masquerading as a measurement"
+        );
+    }
+
+    #[test]
+    fn reported_observation_carries_this_records_rc_and_its_predicts_line() {
+        // The why-chain's REPORTED row states three things beyond the payload: which funcdef
+        // reported, when, and the tool-rc. Each must come from THIS record/check pair — an
+        // rc read off the wrong record, or a span defaulted to the first-loaded oracle, would
+        // render a confidently-wrong attribution.
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let mut probe = probe1(fact, ProbeSiteKind::Establish);
+        let span = dorc_core::Span::new(dorc_core::BytePos(40), dorc_core::BytePos(52));
+        probe.checks[0].defining_span = Some((span, dorc_core::OracleFileId(3)));
+        // rc 7 is deliberately not 0/1: a fabricated or defaulted rc would not survive this.
+        let results = parse_str_clocked("site 0 effect=holds rc=7\n", 1_234, 0, &mut i);
+        let mut arena = ProvArena::new();
+        let origins = probe_origins(&probe, &results, &mut arena);
+        let reported = origins
+            .get(&fact)
+            .and_then(|a| a.reported)
+            .expect("one record measured the fact ⇒ one reporting observation");
+        assert_eq!(reported.tool_rc, Rc(7), "the rc is this record's, verbatim");
+        assert_eq!(
+            reported.predict_span,
+            Some((span, dorc_core::OracleFileId(3))),
+            "the reporting line is the shipped check's own defining span, file-qualified"
+        );
+        assert_eq!(
+            reported.stamp.observed_at,
+            Some(dorc_core::RunInstant(1_234)),
+            "the observation instant rides the same stamp the receipt origin was minted from"
+        );
+    }
+
+    #[test]
+    fn two_records_on_one_fact_report_no_single_observation() {
+        // Two records are two events: there is no one speaker, instant, or rc to quote. The
+        // receipt still JOINS both (nothing is lost from the evidence plane); only the single
+        // reporting row goes absent, because picking a winner would fabricate a measurement.
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
+        let results = parse_str_clocked(
+            "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
+            500,
+            1,
+            &mut i,
+        );
+        let mut arena = ProvArena::new();
+        let attribution = probe_origins(&probe, &results, &mut arena)
+            .get(&fact)
+            .copied()
+            .expect("the fact is still keyed");
+        assert!(
+            attribution.reported.is_none(),
+            "two reporting records ⇒ no single reported row"
+        );
+        assert_eq!(
+            arena
+                .node(attribution.origin)
+                .expect("the joined origin resolves")
+                .kind,
+            dorc_core::OriginKind::Join,
+            "both records survive as receipts under a join"
         );
     }
 
@@ -6982,6 +7189,7 @@ mod tests {
                     argv: vec![],
                     site_kind: k0,
                     sh: "{ :; }".to_string(),
+                    defining_span: None,
                     connected: None,
                     verdict: false,
                     emits_report: false,
@@ -6995,6 +7203,7 @@ mod tests {
                     argv: vec![],
                     site_kind: k1,
                     sh: "{ :; }".to_string(),
+                    defining_span: None,
                     connected: None,
                     verdict: false,
                     emits_report: false,
@@ -7112,7 +7321,7 @@ mod tests {
             "the framed round-trip is not refused: {:?}",
             d.diagnostics
         );
-        parse_results(&d.records, d.framed, i)
+        parse_results(&d.records, d.framed, &mut RunClock::Absent, i)
     }
 
     #[test]
@@ -7210,6 +7419,7 @@ mod tests {
             argv: vec![],
             site_kind: ProbeSiteKind::Query { valid: true },
             sh: "{ :; }".to_string(),
+            defining_span: None,
             connected: None,
             verdict: false,
             emits_report: false,
