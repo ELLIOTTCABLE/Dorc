@@ -2,16 +2,13 @@
 //!
 //! Two destinations, two encodings, one home. A rendered why-surface is measured in bytes and
 //! laid out in columns, so anything reaching it must be printable ASCII or the geometry is a lie
-//! as well as the terminal being at risk; a plain advisory line printed straight to stderr is not
-//! measured by anything, so it keeps its own text and only has its dangerous runs neutralised.
-//! Both encodings live here rather than at their call sites so that a new display route picks one
-//! deliberately instead of inventing a third.
+//! as well as the terminal being at risk; a plain advisory line printed straight to stderr is
+//! measured by nothing, so it keeps its own text and only loses the runs a terminal acts on.
+//! Both live here so a new display route picks one deliberately instead of inventing a third.
 //!
-//! Neither encoding says ANYTHING about whether the bytes are trustworthy or fit to retain
-//! (`sinv-hostile-sensitive-orthogonal`): making a byte safe to print is not a judgment about the
-//! byte. Both are pure functions of their inputs (`inv-determinism`) and both are IDEMPOTENT —
-//! encoding already-encoded text returns it unchanged — which is what lets a sweep assert that a
-//! rendered surface is already clean without knowing which seat produced it.
+//! Making a byte safe to print says NOTHING about whether it is trustworthy or fit to retain.
+//! Both are pure (`inv-determinism`) and both are IDEMPOTENT — which is what lets a sweep assert
+//! a rendered surface is already clean without knowing which seat produced it.
 
 use std::fmt::Write as _;
 
@@ -84,16 +81,14 @@ pub fn encode_line(text: &str, cap: usize) -> String {
 /// Encode bytes taken from somebody else's file — an oracle arm, its author's comment, a book
 /// line, a host's own words — for a MEASURED surface.
 ///
-/// Printable ASCII survives verbatim; every other byte becomes `\xNN`. Deliberately narrow: the
-/// job is terminal safety and honest column arithmetic, not quoting — a backslash is printable and
-/// stays a backslash, so an oracle's `printf '%s\n'` still reads as the author wrote it rather
-/// than as `\\n`. The cost is that an escaped byte and a source backslash-x are spelled the same;
-/// the alternative doubles every backslash in every shell excerpt on the surface, which is a worse
-/// lie about the source more often.
+/// Printable ASCII survives verbatim; every other byte becomes `\xNN`, capped at `cap` bytes.
+/// Escaping rather than blanking, because a reader deciding about code needs to see that
+/// something was there, and the escaped form measures as the columns it occupies.
 ///
-/// Escaping rather than blanking is the deliberate choice for this destination: a reader deciding
-/// about code needs to see that something was there, and the escaped form both says so and
-/// measures as the columns it occupies. The result never exceeds `cap` bytes.
+/// Deliberately narrow: this is terminal safety and column arithmetic, not quoting — a backslash
+/// stays a backslash, so an oracle's `printf '%s\n'` reads as its author wrote it. The cost is
+/// that an escaped byte and a source backslash-x are spelled the same; doubling every backslash
+/// in every shell excerpt would be a worse lie about the source more often.
 #[must_use]
 pub fn encode_foreign(text: &str, cap: usize) -> String {
     let mut out = String::with_capacity(text.len());
