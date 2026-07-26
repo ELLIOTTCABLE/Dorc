@@ -160,7 +160,7 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --results=
 
    what 9|sysctl rested on:
 
-   ! sysctl.oracle.sh:12  declines  "[unsound]"
+   * sysctl.oracle.sh:12  declines  "[unsound]"
 
       The author looked, and ruled the question unanswerable -- for any tool, ever, not just
       this one. Their arm, as-written:
@@ -172,9 +172,6 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --results=
 
    * dorc                 derives   a cannot-say always runs: nothing is ever skipped
                                     without an authored yes
-
-   `!` marks the link that covers unmeasurable things; the class of information no runnable
-   command could test.
 
    so: this line runs on every apply, and that is correct. dorc will not suggest an oracle
    for this shape; the person who knows the tool already answered.
@@ -203,7 +200,7 @@ $ dorc why 9 --all --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --re
 
    what 9|sysctl rested on:
 
-   ! sysctl.oracle.sh:12  declines  "[unsound]"
+   * sysctl.oracle.sh:12  declines  "[unsound]"
 
       The author looked, and ruled the question unanswerable -- for any tool, ever, not just
       this one. Their arm, as-written:
@@ -215,9 +212,6 @@ $ dorc why 9 --all --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --re
 
    * dorc                 derives   a cannot-say always runs: nothing is ever skipped
                                     without an authored yes
-
-   `!` marks the link that covers unmeasurable things; the class of information no runnable
-   command could test.
 
    so: this line runs on every apply, and that is correct. dorc will not suggest an oracle
    for this shape; the person who knows the tool already answered.
