@@ -844,6 +844,13 @@ no task covers, and consider adding the task instead.
   is a HARD dependency of this corpus — Dorc's product is sh and these gates execute what
   they render — so the fix is to resolve one explicitly, never to drop the requirement.
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
+- **never-filter-a-task** — if a task is too loud, run its `-quiet` variant; if it has
+  none, ADD one. Do NOT filter at the call site: `head`/`tail`/`grep`, and their
+  PowerShell spellings `Select-Object -First/-Last` and `Select-String`, truncate the
+  failure you needed AND hide the real exit code behind the filter's own (a `cmd | tail`
+  reports tail's 0 however cmd died — that produced a false green in this repo on
+  2026-07-26). On Windows also skip `2>&1` on a native command: PowerShell wraps each
+  stderr line in a NativeCommandError and can flip `$?` on a process that exited 0.
 - Pre-commit gate set — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check
   licenses bans sources` · `typos`. Agent shells carry `HK_SKIP_HOOK=pre-commit`, so it
   does NOT run automatically on you: run `mise run check` yourself before every commit,
