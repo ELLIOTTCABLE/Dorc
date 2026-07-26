@@ -48,7 +48,7 @@ pub mod tagged;
 pub mod weave;
 
 pub mod narrative;
-pub use narrative::{CollapseKind, CollapseNarrative, TrustTier};
+pub use narrative::{CollapseKind, CollapseNarrative, Knowability, SpeechAct};
 
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
