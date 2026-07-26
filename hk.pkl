@@ -103,6 +103,10 @@ hooks {
     // The gitlabels headliner gate. Separate from `linters` on purpose: it reads the MESSAGE,
     // not the tree, so it belongs to no glob and must run even on a commit touching no Rust.
     // Agent sessions skip `pre-commit` but NOT this — the trailer habit it refuses is theirs.
+    // `sh` is safe HERE and nowhere else in this project: git runs hook commands through its own
+    // bundled sh, so git's `usr/bin` is on PATH for everything downstream — verified by committing
+    // from native PowerShell, where `sh`/`sed`/`awk` are otherwise all absent. A mise TASK gets no
+    // such environment (see mise.toml). Don't "fix" this one; don't copy it into a task.
     ["commit-msg"] {
         steps {
             ["gitlabels"] {

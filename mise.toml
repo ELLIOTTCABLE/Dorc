@@ -81,9 +81,12 @@ HK_MISE = "1"
 # redirects, no globs, no quoted paths-with-spaces. Instead use `dir` for cwd,
 # `[tasks.x.env]` for variables, a `run` ARRAY for sequencing (sequential and
 # fail-fast), and a nested `mise run <other>` to compose tasks whose `dir`s
-# differ. The `sh <script>` instruments below are the deliberate exception: they
-# genuinely need a POSIX shell and that spelling is identical under both (on
-# Windows it resolves to Git's `sh.exe`, which must be on PATH).
+# differ. The `sh <script>` instruments below are NOT portable, contrary to what
+# this note used to claim: Git for Windows bundles `sh`/`sed`/`awk` but does not
+# put them on PATH, so every `sh` task FAILS from native PowerShell/cmd with
+# `'sh' is not recognized` (verified). Only git HOOKS get a POSIX environment,
+# because git supplies it before hk/mise are involved (see hk.pkl). Do not add
+# another `sh` task; the ones below are known-broken debt.
 # ────────────────────────────────────────────────────────────────────────────
 
 [tasks.hello]
