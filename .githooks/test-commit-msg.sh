@@ -82,7 +82,11 @@ check leaves-a-non-agent-commit-alone pass CLAUDECODE= CLAUDE_CODE_ENTRYPOINT= <
 EOF
 
 check warns-but-admits-an-unknown-label pass CLAUDECODE=1 <<'EOF'
-(AI fix aid) Reword the catalog register
+(AI fix loom) Reword the catalog register
+EOF
+
+check accepts-the-purpose-labels pass CLAUDECODE=1 <<'EOF'
+(AI fix aid cli) Reword a register and the usage line
 EOF
 
 check strips-the-editor-comment-block pass CLAUDECODE=1 <<'EOF'

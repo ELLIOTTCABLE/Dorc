@@ -1,4 +1,4 @@
-amends "package://github.com/jdx/hk/releases/download/v1.44.3/hk@1.44.3#/Config.pkl"
+amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.pkl"
 
 // Pre-commit `cargo fmt` for the round-19 Rust spike, scoped to spike Rust.
 //
@@ -51,6 +51,16 @@ hooks {
         fix = true
         stash = "git"
         steps = linters
+    }
+    // The gitlabels headliner gate. Separate from `linters` on purpose: it reads the MESSAGE,
+    // not the tree, so it belongs to no glob and must run even on a commit touching no Rust.
+    // Agent sessions skip `pre-commit` but NOT this — the trailer habit it refuses is theirs.
+    ["commit-msg"] {
+        steps {
+            ["gitlabels"] {
+                check = "sh .githooks/commit-msg {{commit_msg_file}}"
+            }
+        }
     }
     ["fix"] {
         fix = true

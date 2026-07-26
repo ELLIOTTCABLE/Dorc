@@ -7,11 +7,10 @@
 # rule is mechanical here rather than advisory. `.gitlabels` is the single source of the
 # vocabulary; this script parses it rather than restating it.
 #
-# Installed by `mise run hooks-install`, which sets core.hooksPath. That is one write to
-# the SHARED .git/config, so it is human-gated like `hk-install`. A relative hooksPath
-# resolves against each worktree's own root, so every worktree whose checkout contains
-# this file is covered — and one checked out BEFORE it landed is silently not. That is
-# the known hole; it closes as branches pick the file up.
+# Driven by hk, not by core.hooksPath: it is the `commit-msg` hook's one step in ../hk.pkl,
+# installed with every other hook by `mise run hk-install`. Runs as `sh commit-msg <FILE>`,
+# so it takes the message file as $1 and cares about nothing else in its environment except
+# the agent-session markers below.
 set -eu
 
 msg_file=$1
@@ -84,11 +83,9 @@ if [ -n "${CLAUDECODE:-}${CLAUDE_CODE_ENTRYPOINT:-}" ] && [ -z "${DORC_HUMAN_COM
 fi
 
 # ── the vocabulary ───────────────────────────────────────────────────────────
-# ADVISORY, deliberately. Backtested over 1877 commits, ~12% carry a label absent from
-# .gitlabels — mostly crate names (`aid` 122x, `cli`, `loom`), exactly the "don't dupe
-# crates" stray the file warns against, and still live in recent history. Blocking on
-# day one would refuse the project's own current idiom. Promote this to `die` once
-# .gitlabels and the history have been reconciled — either is a fine way to reconcile.
+# ADVISORY, deliberately: a slice of live history still carries crate-named strays, so
+# refusing them outright would block the project's own idiom. Promote to `die` once the
+# stragglers are either retired or adopted into .gitlabels.
 if [ -f "$labels_file" ]; then
    # Every `- (a b c) description` entry, each parenthesised word an alias. Collection
    # STOPS at the Historical section, whose entries are strays documented as do-not-use.
