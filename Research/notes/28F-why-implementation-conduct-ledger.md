@@ -53,6 +53,19 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
 
 ## §2 — Rulings / landings (accretes)
 
+- (HUMAN-TYPED, 2026-07-26) **ack-decline-tier-ratified** — `TrustTier::Declined`
+  RATIFIED; the tc-flag doc-comment in `narrative.rs` retired to a ratification
+  note. The tier-ORDERING question is open in-chat (the set is kinds, not a
+  monotonic scale; code `Ord` is mechanical map-key determinism only; semantic
+  ordering stays the `28E:lean-ordering-is-a-seam` seam).
+- (HUMAN-TYPED, 2026-07-26; corrected same sitting) **strawmen-b-through-e-are-
+  a-gloss** — only `a-fire-morning` is deeply reviewed; `b`–`e` are UNREVIEWED
+  gloss: a weight-grading, NOT a work-cut ("I wasn't cutting any work in
+  particular"). Build cheap machinery toward them where easy; expect further
+  markup layers to re-shape them. Priority: the opaque stage → **W3** →
+  pushing forward (the human's first message said W4 — misspoke, corrected).
+  Sequencing unchanged from the plan: W3 next after opaque, W4 after.
+
 - **lane-w2b-narrations LANDED + FOLDED** @ merge `c24c5242` (12 commits) —
   PHASE W2 COMPLETE. All ten items: decline triptych on pull + the anti-nag
   routing (`an_oracle_could_still_answer`; the wrong sysctl nag is gone) ·

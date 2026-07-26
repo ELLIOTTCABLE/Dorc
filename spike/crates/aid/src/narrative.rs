@@ -76,8 +76,8 @@ pub enum TrustTier {
     /// An author's DECLINE — they looked at this shape and ruled it unanswerable
     /// (`decline-class-emission`; `28G` strawman `c-declined-unsound`).
     ///
-    /// tc-decline-is-a-seventh-tier, FLAGGED not settled: the tier SET is law, and this widens it.
-    /// The alternative was rendering a decline row under an existing tier word, and every one of
+    /// RATIFIED (human-typed ack 2026-07-26, `28F`): the tier-SET widening is settled. The
+    /// alternative was rendering a decline row under an existing tier word, and every one of
     /// them misstates it — `vouches` most of all, since declining is precisely the author refusing
     /// to vouch. Mis-attribution is the worst aid failure (`271:rul-sin-ordering`), so the honest
     /// tier is a new one rather than the nearest old one.
