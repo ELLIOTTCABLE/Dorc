@@ -24,6 +24,11 @@ jq = "1"
 # `hook.*` entry into the SHARED `.git/config` (affecting `main` and every
 # worktree). Install is a manual, human-gated step — see the round-19 spike
 # note. Run `mise run hk-install` only with that tradeoff understood.
+#
+# MOOT AS OF 2026-07-26: hk 1.44.3's libgit2 rejects `extensions.relativeWorktrees`
+# (which the worktree fleet needs) and refuses to open this repository, so `hk check`
+# and `hk fix` both die before doing anything. `mise run check`/`fmt` run the same
+# steps directly; hk stays pinned so the hook can be re-adopted once it is fixed.
 hk = "1.44.3"
 pkl = "0.31.1"
 
@@ -46,18 +51,122 @@ shellcheck = "0.11.0"
 # resolve without an activated shell). Matches `mise x` usage in hk.pkl.
 HK_MISE = "1"
 
-[tasks.hk-install]
-description = "Install the hk pre-commit hook. WRITES SHARED .git/config (affects main) — human-gated; read the round-19 spike note first."
-run = "hk install"
+# ── Tasks ───────────────────────────────────────────────────────────────────
+# `mise run <name>` works from ANYWHERE in the tree: `dir` resolves against this
+# file, not your cwd. `mise tasks` lists them. Trailing args after `--` are
+# appended to the task's LAST command, so `mise run test:e2e -- <substring>`
+# filters trials by case name.
+#
+# PORTABILITY CONTRACT for anyone adding a task: mise pipes an inline `run`
+# string through `sh -c` on *nix but `cmd /c` on Windows, so a task body must
+# carry NO shell syntax — no `&&`, no `$VAR`/`%VAR%`, no `VAR=x cmd` prefix, no
+# redirects, no globs, no quoted paths-with-spaces. Instead use `dir` for cwd,
+# `[tasks.x.env]` for variables, a `run` ARRAY for sequencing (sequential and
+# fail-fast), and a nested `mise run <other>` to compose tasks whose `dir`s
+# differ. The `sh <script>` instruments below are the deliberate exception: they
+# genuinely need a POSIX shell and that spelling is identical under both (on
+# Windows it resolves to Git's `sh.exe`, which must be on PATH).
+# ────────────────────────────────────────────────────────────────────────────
+
+[tasks.build]
+description = "Build the spike workspace. Force this fresh before trusting any e2e result — the corpus runs whatever binary target/ happens to hold."
+dir = "spike"
+run = "cargo build --workspace"
+
+[tasks.test]
+description = "The WHOLE suite: unit tier + the e2e corpus + the loom corpus (the latter two ride the workspace run as harness=false targets). Args filter by trial name. DORC_E2E_QUIET=1 selects the terse per-case format; failures still print in full."
+dir = "spike"
+run = "cargo test --workspace"
+
+[tasks."test:e2e"]
+description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact."
+dir = "spike"
+run = "cargo test -p dorc-cli --test e2e"
+
+[tasks."test:looms"]
+description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint."
+dir = "spike"
+run = "cargo test -p dorc-cli --test looms"
+
+[tasks."test:real-tools"]
+description = "The opt-in real-external-linter lane — the one sanctioned real-invocation path, read-only tools over repo-local fixtures. Off in every default gate. checkbashisms is a perl script Command::new cannot spawn on Windows, so the tool list narrows there; the *nix half provisions it via e2e/lint-real-tools-setup.sh."
+dir = "spike"
+env = { DORC_E2E_REAL_TOOLS = "{% if os() == 'windows' %}shellcheck{% else %}shellcheck,checkbashisms{% endif %}" }
+run = "cargo test -p dorc-cli --test e2e"
+
+[tasks.clippy]
+description = "Clippy over the workspace with warnings-as-errors — the inner-loop subset of `check`, minus fmt/deny/typos. The -D warnings gate lives in the task, never in the manifest, so mid-work builds don't break on a toolchain bump."
+dir = "spike"
+run = "cargo clippy --workspace --all-targets -- -D warnings"
+
+# The four gate steps below are spelled to MATCH ./hk.pkl step-for-step, and are run
+# directly rather than through `hk` because hk's bundled libgit2 refuses this
+# repository outright (`extensions.relativeWorktrees`, which the worktree fleet needs).
+# The hk path is kept as `check:hk` so a fixed hk can be re-adopted by swapping which
+# one `gate` calls. Cheap steps first, so a failure lands fast. If you change a step
+# here, change hk.pkl too — they are two spellings of one gate.
+[tasks.check]
+description = "All four lint gates (fmt-check, typos, cargo-deny licenses/bans/sources, clippy -D warnings), check-only — the set that must be green before every commit."
+run = [
+   "cargo fmt --all --manifest-path spike/Cargo.toml --check",
+   "typos spike",
+   "cargo deny --manifest-path spike/Cargo.toml check licenses bans sources",
+   "cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings",
+]
+
+[tasks."check:hk"]
+description = "The same gates via hk, the pre-commit hook's own path. CURRENTLY BROKEN against this repo: hk 1.44.3's libgit2 rejects extensions.relativeWorktrees and cannot open the repository at all. Use `check`."
+run = "hk check --all"
 
 [tasks.fmt]
-description = "Apply cargo fmt to the spike via hk (formatters fix; nothing else)."
-run = "hk fix --all"
+description = "Apply cargo fmt to the spike (formatters fix; nothing else — typos is check-only here, since auto-rewriting a corpus this slug-dense deserves a human)."
+run = "cargo fmt --all --manifest-path spike/Cargo.toml"
 
-[tasks.check]
-description = "All lint gates (fmt/clippy/deny/typos), check-only — same set the pre-commit hook runs."
-run = "hk check --all"
+[tasks.gate]
+description = "Everything due before a commit, in order: the four lint gates, a fresh build, then the whole suite. Nothing runs automatically — there is no installed git hook."
+run = ["mise run check", "mise run build", "mise run test"]
 
 [tasks.audit]
 description = "cargo-deny advisories (network: fetches the RustSec DB; not part of the offline pre-commit gates)."
 run = "cargo deny --manifest-path spike/Cargo.toml check advisories"
+
+[tasks.hk-install]
+description = "Install the hk pre-commit hook. WRITES SHARED .git/config (affects main) — human-gated; read the round-19 spike note first."
+run = "hk install"
+
+[tasks.bless]
+description = "ORCHESTRATOR-ONLY golden re-bless: fresh build, whole suite, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then build, then bless."
+dir = "spike"
+run = "sh e2e/conduct-bless.sh"
+
+[tasks."bless:dry"]
+description = "conduct-bless minus the bless pass: build + suite + tally, zero golden writes. The only mode a builder may run."
+dir = "spike"
+env = { DRY = "1" }
+run = "sh e2e/conduct-bless.sh"
+
+[tasks."loom:compile"]
+description = "dorc-loom compile CASE... — inspect the named .loom cases and publish the receipt that a promote must match. Writes no sources. Pass case paths as args."
+dir = "spike"
+run = "cargo run --quiet -p dorc-loom -- compile"
+
+[tasks."loom:promote"]
+description = "dorc-loom promote CASE... — verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases. In-process renders; no binary, no execution. Pass case paths as args."
+dir = "spike"
+run = "cargo run --quiet -p dorc-loom -- promote"
+
+[tasks.coverage]
+description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table."
+dir = "spike"
+run = "sh tools/coverage.sh"
+
+# BROKEN as of 2026-07-26, and not by this wiring: the script pipes the raw
+# probe-results.txt to dorc, but the round-trip now consumes a framed `dorc-records/1`
+# stream that the e2e runner builds by first running the compiled probe
+# (`framed_results` in crates/cli/tests/e2e.rs). Every case is refused at intake with
+# host-evidence-admission-refused, so the family reads 0.00. Fixing it means porting
+# that framing — or, better, moving the measurement into the runner that already has it.
+[tasks.yardstick]
+description = "INSTRUMENT, never a gate: the strawman24 elision-frequency table. KNOWN-BROKEN — reports NO-SUMMARY for every case (its invocation drifted from the records-lane framing); the failure is loud, not yours. A number here is meaningless unless test:e2e is green anyway."
+dir = "spike"
+run = "sh e2e/yardstick.sh"
