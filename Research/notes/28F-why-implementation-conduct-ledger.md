@@ -463,3 +463,14 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   excerpt block (28G §0's first consumer) + the payload-trailer vocabulary
   (node only; data arrives from lane-w2-data). Runs parallel with lane-w2-data
   (zero-churn guarantee keeps them disjoint on transcripts).
+
+## §3 — macOS verification round (human-offered 2026-07-26; NON-blocking)
+
+The human can dispatch a macOS round at leisure. Genuine need: W3's unix
+restrictive-mode work is `#[cfg(unix)]` — neither type-checked nor executed by
+any gate on this Windows box (a known incident class). Plan: the W3 builder
+keeps cfg-gated regions trivially thin and LISTS them all, marked unverified;
+at the W3 fold the conductor prepares a self-contained macOS packet (checkout ·
+mise · full gate suite · the listed unix-path tests to watch) banked HERE for
+whenever the human runs it. Findings become riders; nothing in the pipeline
+waits on it.
