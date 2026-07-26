@@ -23,6 +23,11 @@ is the human's; untouched.
   for the human as a resource where genuinely valuable, act autonomously otherwise.
 - `plans/288` and `plans/286` remain live inputs, bits possibly superseded; updating
   `plans/` as appropriate is in-remit for this conductor.
+- (added mid-arc, human-typed) **product-vs-internal-carve** for ALL loom-infra
+  work: errorloom is a product too — per change, ask "genuine quality-of-life
+  for any errorloom user, or Dorc-specific bloat?"; Dorc-specifics live in
+  dorc-loom/the consumer. Propagates into every loom-touching brief. (Full text
+  + the webhost red-line distillation: `notes/28I`.)
 
 ## §1 — Lane plan (conductor's cut; map-then-execute per `28G` §3)
 
