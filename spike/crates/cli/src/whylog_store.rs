@@ -3,9 +3,17 @@
 //! `28D:must-default-durable-lands-with-its-hardening` bills a durable that is written on the
 //! product's own initiative for exclusive creation, a restrictive mode, atomic replacement, bounded
 //! reads, a trusted-directory rule, visible persistence failure, and a stated sensitivity contract.
-//! The `28F` W3 ruling took the gate's OPT-IN branch -- the whylog stays behind `--whylog-dir` -- and
-//! landed the bill anyway, because five of those seven were owed on the opt-in path regardless: two
-//! concurrent runs silently truncated each other's durable, and every failure returned quietly.
+//! `28F:rul-w3-default-on-aim-high` took the gate's DEFAULT-ON branch and pays the bill at its
+//! honest per-platform ceiling -- so every run writes a receipt, and everything below is what makes
+//! that defensible rather than convenient. Before it, two concurrent runs silently truncated each
+//! other's durable and every failure returned quietly.
+//!
+//! # Where a receipt lands by default
+//!
+//! [`default_root`] resolves a PER-USER STATE directory. The siting is load-bearing twice over: it
+//! keeps receipts out of the working tree, and on Windows -- where no mode exists and FFI is
+//! forbidden (see [`create_exclusive`]) -- the profile root's inherited ACL is the confidentiality
+//! story, so the choice of directory IS the permission mechanism.
 //!
 //! # Why this duplicates `dorc-loom`'s `FsReceiptStore` (`28F:rul-safe-store-is-cli-local`)
 //!
@@ -38,6 +46,31 @@ const NAME_ATTEMPTS: u64 = 16;
 /// the local filesystem hands us, on the same reasoning -- the scan runs on every plan, apply, and
 /// `why`, and a directory someone filled should cost a refusal rather than an allocation.
 const MAX_ENTRIES: usize = 4096;
+
+/// The per-user state directory receipts land in when the admin named none.
+///
+/// Unix follows the XDG state convention (`$XDG_STATE_HOME/dorc`, else `~/.local/state/dorc`);
+/// Windows uses `%LOCALAPPDATA%\dorc`. `None` when the environment names neither -- a stripped
+/// environment is not a persistence FAILURE, it is an absence of anywhere to persist to, and the
+/// caller distinguishes the two.
+///
+/// # This reads the environment, and `rul-scratch-root-never-read-from-host` says not to
+///
+/// That law binds ENGINE SCRATCH ON A MANAGED HOST: a host-chosen parent there voids the exclusive
+/// create the probe lane rests on, so host-configurability is forbidden rather than unimplemented.
+/// This is the CONTROLLER's own state directory on the operator's own machine, read at the cli edge
+/// (`io-at-edges-only`) like every other environment value. The two are one keystroke apart in a
+/// grep and worlds apart in consequence; do not merge them.
+#[must_use]
+pub(crate) fn default_root() -> Option<PathBuf> {
+    let from = |key: &str| std::env::var_os(key).filter(|value| !value.is_empty());
+    if cfg!(windows) {
+        return from("LOCALAPPDATA").map(|base| PathBuf::from(base).join("dorc"));
+    }
+    from("XDG_STATE_HOME")
+        .map(|base| PathBuf::from(base).join("dorc"))
+        .or_else(|| from("HOME").map(|home| PathBuf::from(home).join(".local/state/dorc")))
+}
 
 /// Why a durable was not persisted. Closed, and each arm is separately reportable.
 ///

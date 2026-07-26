@@ -139,14 +139,19 @@ pub struct Args {
     /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
     /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
     pub capability: dorc_core::Capability,
-    /// `--whylog-dir=DIR` (`27V` Lane B): DIR the thin posthoc-why durable is written to (on a
-    /// plan/apply/round-trip run) and read from (`dorc why --last`). Default UNSET ⇒ NO durable
-    /// write — keeps every existing golden byte-identical and honors `law-whylog-is-sensitive`.
-    /// churn-avoidance-disclosure (tc-whylog-default-off): the PRODUCT posture is the sacred
-    /// zero-setup promise (`USER_STORY`: `--last` works "with nothing you had to set up"), so the
-    /// real-tool default is write-quietly-beside-its-work; this spike opt-in is a disclosed
-    /// scope-cut, one line to flip later.
+    /// `--whylog-dir=DIR` (`27V` Lane B): DIR the posthoc-why durable is written to (on a
+    /// plan/apply/round-trip run) and read from (`dorc why`). Unset ⇒ the per-user state directory
+    /// (`dorc_cli`'s caller resolves it), because the promise is zero-setup: `USER_STORY` has
+    /// `dorc why` working "with nothing you had to set up beforehand", and a receipt nobody
+    /// remembered to ask for is the only kind that exists on the bad morning.
     pub whylog_dir: Option<String>,
+    /// `--no-whylog`: write no durable for this run.
+    ///
+    /// The escape hatch default-on owes: a receipt is host metadata written unprompted
+    /// (`AID-NEEDS:law-whylog-is-sensitive`), so refusing one must be typeable. Per-invocation and
+    /// subtractive-only, which is the shape `28D:pay-levers-are-subtractive` demands of anything in
+    /// this family — there is no widening sibling and never will be.
+    pub no_whylog: bool,
     /// `--whylog=FILE`: the exact durable to replay (`why --last` only).
     pub whylog: Option<String>,
     /// `--last` (`27V` Lane B): replay the most recent durable in `--whylog-dir` through the SAME
@@ -253,6 +258,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut whylog_dir: Option<String> = None;
     let mut whylog: Option<String> = None;
     let mut last = false;
+    let mut no_whylog = false;
     let mut all = false;
     let mut shim_dir: Option<String> = None;
     let mut it = raw.into_iter().peekable();
@@ -361,6 +367,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             all = true;
         } else if arg == "--last" {
             last = true;
+        } else if arg == "--no-whylog" {
+            no_whylog = true;
         } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
             shim_dir = Some(p.to_string());
         } else if arg == "--shim-dir" {
@@ -384,6 +392,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--probe-capability",
                 "--whylog-dir",
                 "--whylog",
+                "--no-whylog",
                 "--last",
                 "--all",
                 "--shim-dir",
@@ -448,6 +457,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         dial,
         capability,
         whylog_dir,
+        no_whylog,
         whylog,
         last,
         all,

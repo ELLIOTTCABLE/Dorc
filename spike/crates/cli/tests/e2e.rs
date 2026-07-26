@@ -183,6 +183,17 @@ struct Harness {
     checker_name: String,
     /// `BLESS=1` — regenerate goldens from the current engine output.
     bless: bool,
+    /// The throwaway per-user state root every invocation is pointed at, so default-on receipts
+    /// land here instead of in the developer's real profile directory.
+    state_root: PathBuf,
+}
+
+impl Drop for Harness {
+    /// Take the throwaway state root with us. Default-on means every case leaves receipts, and a
+    /// suite that grows a new litter of them per run is a suite nobody wants to keep running.
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.state_root);
+    }
 }
 
 impl Harness {
@@ -197,12 +208,16 @@ impl Harness {
                 );
                 std::process::exit(2);
             });
+        let state_root =
+            std::env::temp_dir().join(format!("dorc-e2e-state-{}", std::process::id()));
+        std::fs::create_dir_all(&state_root).expect("create the harness state root");
         Self {
             dorc: PathBuf::from(env!("CARGO_BIN_EXE_dorc")),
             dorc_sh: PathBuf::from(env!("CARGO_BIN_EXE_dorc-sh")),
             checker,
             checker_name,
             bless: std::env::var("BLESS").as_deref() == Ok("1"),
+            state_root,
         }
     }
 
@@ -213,9 +228,20 @@ impl Harness {
     /// The clock pin rides here rather than at the call sites: the why surface dates its output
     /// (receipt header, run-instants on `reported` rows), so an unpinned clock would make every
     /// transcript carrying one a non-fixpoint by construction.
+    /// A `dorc` invocation with the harness's pinned clock and a throwaway state root.
+    ///
+    /// The state root is re-pointed rather than the durable disabled, so the corpus exercises the
+    /// REAL default-destination resolver instead of a bypass of it. It must be re-pointed at all:
+    /// since `28F:rul-w3-default-on-aim-high` every plan/apply/round-trip writes a receipt, and
+    /// inheriting the developer's environment would have the suite depositing them in a real
+    /// profile directory — outside the worktree, which no test may touch.
     fn dorc(&self) -> Command {
         let mut command = Command::new(&self.dorc);
         command.env(FIXTURE_CLOCK_ENV, FIXTURE_CLOCK_MS.to_string());
+        for key in ["XDG_STATE_HOME", "LOCALAPPDATA"] {
+            command.env(key, &self.state_root);
+        }
+        command.env_remove("HOME");
         command
     }
 

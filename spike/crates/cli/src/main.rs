@@ -1400,8 +1400,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         chrome("cli-decision-digest-line", &[&decision_digest])
     );
 
-    // `27V` Lane B: write the thin durable (opt-in) so `dorc why --last` can replay it (best-effort).
-    if let Some(dir) = &args.whylog_dir {
+    // `27V` Lane B: write the durable so a later `dorc why` can replay it. Default-on
+    // (`28F:rul-w3-default-on-aim-high`) — a receipt nobody remembered to ask for is the only kind
+    // that exists on the morning it is needed.
+    if let Some(dir) = durable_destination(args) {
         let metadata = assemble_whylog_metadata(
             &framing,
             book_name,
@@ -1414,7 +1416,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             results,
         );
         if whylog_eligible && let Some(records) = admitted_records.as_ref() {
-            write_whylog(dir, &metadata, records);
+            write_whylog(&dir, &metadata, records);
         }
     }
     Ok(book_outcome)
@@ -1443,11 +1445,19 @@ enum ReplayLoad {
     Refused,
 }
 
-/// Whylog retention (ruling tc-whylog-retention-params, builder latitude): keep the newest
-/// [`WHYLOG_KEEP`] durables by run-index; cap each at [`WHYLOG_CAP`] bytes. Deterministic (index
-/// order, no clock — `inv-determinism` at the edge).
-const WHYLOG_KEEP: usize = 5;
-const WHYLOG_CAP: usize = 1_000_000;
+/// Whylog retention: keep the newest [`WHYLOG_KEEP`] durables by run-index; cap each at
+/// [`WHYLOG_CAP`] bytes. Deterministic (index order, no clock — `inv-determinism` at the edge).
+///
+/// INTERIM, and disclosed as such (`churn-avoidance-disclosure`). The real retention design —
+/// what is durable, for how long, at what permissions, classified how — is ONE decision that
+/// `28D:must-retention-is-one-decision` puts ahead of the whole forensic tier, and it is r30's.
+/// These two numbers are not that decision; they are what keeps default-on honest until it lands.
+///
+/// Sized against the promise rather than a guess: `USER_STORY` says "ask tomorrow; ask next week",
+/// and the shape that has to survive is nightly cron applies plus a firefighting day's re-runs.
+/// The old keep-5 could not survive one bad morning; these can hold a week of them.
+const WHYLOG_KEEP: usize = 64;
+const WHYLOG_CAP: usize = 4_000_000;
 
 #[expect(
     clippy::result_large_err,
@@ -1463,7 +1473,10 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let path = if let Some(exact) = args.whylog.as_deref() {
         std::path::PathBuf::from(exact)
     } else {
-        let dir = args.whylog_dir.as_deref().ok_or_else(|| {
+        // The SAME destination the write seat chose, or a `why` would search somewhere no run
+        // ever wrote. `--no-whylog` reaches here only when someone asked to read receipts they
+        // just asked not to keep, and the honest answer is the same as any other empty directory.
+        let dir = durable_destination(args).ok_or_else(|| {
             Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
                 dorc_aid::diag::CliFlagRequiresMode {
                     flag: "--whylog-dir=DIR",
@@ -1473,6 +1486,7 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
                 },
             ))
         })?;
+        let dir = dir.as_str();
         let Some(path) = whylog_store::newest(dir) else {
             report_at(
                 advisory,
@@ -1663,6 +1677,22 @@ fn write_whylog(
     };
     if let Err(refusal) = whylog_store::publish(dir, &bytes, WHYLOG_CAP, WHYLOG_KEEP) {
         report_whylog_unwritten(dir, refusal.reason());
+    }
+}
+
+/// Where this run's receipt goes: the admin's `--whylog-dir`, else the per-user state directory.
+///
+/// `None` on two very different grounds, and the difference is why this returns an Option rather
+/// than a path: `--no-whylog` is a REFUSAL the admin typed, and an unresolvable state root is an
+/// environment with nowhere to put anything. Neither is a persistence failure, so neither reports
+/// one — the failures are what happens once a destination exists (`whylog-unwritten`).
+fn durable_destination(args: &Args) -> Option<String> {
+    if args.no_whylog {
+        return None;
+    }
+    match &args.whylog_dir {
+        Some(named) => Some(named.clone()),
+        None => whylog_store::default_root().map(|root| root.to_string_lossy().into_owned()),
     }
 }
 
@@ -7358,6 +7388,37 @@ mod tests {
         let d =
             dorc_plan::records::deframe(input, &expect, dorc_plan::records::LegacyPolicy::Tolerate);
         parse_results(&d.records, d.framed, &mut RunClock::Absent, interner)
+    }
+
+    /// The two destination answers that do not depend on the environment. `--no-whylog` must win
+    /// over an explicitly named directory: a refusal the admin typed is the one instruction in this
+    /// family that nothing may override (`28D:pay-levers-are-subtractive` — the levers only ever
+    /// REMOVE, and a subtractive control that a sibling flag can defeat is not one).
+    #[test]
+    fn a_refusal_beats_a_named_directory() {
+        let args = |argv: &[&str]| match parse_args_from(
+            argv.iter().map(|word| (*word).to_owned()).collect(),
+        )
+        .expect("invocation parses")
+        {
+            Invocation::Analyze(parsed) => parsed,
+            other => panic!("expected an analysis invocation, got {other:?}"),
+        };
+        assert_eq!(
+            durable_destination(&args(&["plan", "book.sh", "--whylog-dir=logs"])).as_deref(),
+            Some("logs"),
+            "a named directory is used as given"
+        );
+        assert_eq!(
+            durable_destination(&args(&[
+                "plan",
+                "book.sh",
+                "--whylog-dir=logs",
+                "--no-whylog"
+            ])),
+            None,
+            "and is still refused when the admin says no receipt"
+        );
     }
 
     /// `289:rider-sibling-note-false-fires-relative`: the loaded `-o` spelling and the `read_dir`
