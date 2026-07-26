@@ -72,10 +72,27 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         .render_case(&Case::parse(&text).map_err(|error| format!("FAIL  {name}  [{error}]"))?)
         .map_err(|error| format!("FAIL  {name}  [render: {error}]"))?;
     Err(format!(
-        "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift]\n{}",
-        divergence(&text, &rendered)
+        "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift]\n{}{}",
+        divergence(&text, &rendered),
+        dump_candidate(name, &rendered)
     )
     .into())
+}
+
+/// `DORC_LOOM_DUMP=<dir>` — write each drifted case's CANDIDATE transcript there, so a render
+/// iteration is `diff` against a file instead of promote-then-`git diff`-then-`git checkout`.
+/// Read-only with respect to the corpus: the dump is a scratch copy, never the committed case,
+/// and only drifted cases are written (an unchanged candidate is the committed bytes).
+fn dump_candidate(name: &str, rendered: &str) -> String {
+    let Some(dir) = std::env::var_os("DORC_LOOM_DUMP") else {
+        return String::new();
+    };
+    let dir = std::path::PathBuf::from(dir);
+    let target = dir.join(format!("{name}.loom"));
+    match std::fs::create_dir_all(&dir).and_then(|()| std::fs::write(&target, rendered)) {
+        Ok(()) => format!("\n      candidate written to {}", target.display()),
+        Err(error) => format!("\n      DORC_LOOM_DUMP write failed: {error}"),
+    }
 }
 
 /// An aligned first-divergence window over the committed and re-rendered transcripts, indented
