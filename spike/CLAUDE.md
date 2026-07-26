@@ -791,29 +791,55 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
 
 ## Build / test / run
 
-No per-dir toolchain pin; the global mise config supplies stable. **Always invoke
-cargo through mise, from inside `spike/`:**
+No per-dir toolchain pin; the global mise config supplies stable. **Use the mise
+tasks — never hand-derive an invocation.** They carry the cwd, the env, and the
+ordering that are easy to get subtly wrong, and they run from anywhere in the tree
+(`dir` resolves against the root `mise.toml`, not your cwd):
 
 ```
-mise exec -- cargo build --workspace
-mise exec -- cargo test --workspace                 # unit + the e2e corpus + the loom corpus
-mise exec -- cargo clippy --workspace --all-targets
-mise exec -- cargo test -p dorc-cli --test e2e      # the e2e corpus alone: dash -n gate + exec-under-mocks
-mise exec -- cargo test -p dorc-cli --test looms    # the loom corpus alone: parse + hygiene + render fixpoint
+mise run build            # cargo build --workspace
+mise run test             # unit + the e2e corpus + the loom corpus
+mise run test:e2e         # the e2e corpus alone: dash -n gate + exec-under-mocks
+mise run test:looms       # the loom corpus alone: parse + hygiene + render fixpoint
+mise run clippy           # workspace clippy, -D warnings
+mise run check            # all four lint gates, check-only
+mise run gate             # check + a fresh build + the whole suite (the pre-commit set)
+mise run bless            # ORCHESTRATOR-ONLY golden re-bless (see below)
+mise run bless:dry        # ... build + suite + tally, zero golden writes
+mise run loom:compile     # dorc-loom compile CASE...
+mise run loom:promote     # dorc-loom promote CASE... (publishes the two locks)
+mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
+mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
 ```
 
-- Both corpora are `harness = false` runners minting ONE named trial per case, so an
-  ordinary `cargo test … -- <substring>` filters by case name and a failure names the
+`mise tasks` lists them with the full caveat text; trailing args after `--` append
+to the task's last command. Reach for raw `mise exec -- cargo …` only for something
+no task covers, and consider adding the task instead.
+
+- Both corpora are `harness = false` runners minting ONE named trial per case, so
+  `mise run test -- <substring>` filters by case name and a failure names the
   case. `sh e2e/run.sh` is RETIRED (`288:phase-flat-tree-move`); its gates moved into
   `crates/cli/tests/e2e.rs` unchanged.
+- **task-bodies-are-shell-free** — mise pipes an inline task `run` through `sh -c` on
+  *nix but `cmd /c` on Windows, and this project is developed on both. A task body
+  therefore carries NO shell syntax: `dir` instead of `cd`, `[tasks.x.env]` instead of
+  a `VAR=x` prefix, a `run` ARRAY instead of `&&`, a nested `mise run` to compose across
+  differing `dir`s. `sh <script>` is the sanctioned exception (identical spelling under
+  both shells; on Windows it resolves to Git's `sh.exe`).
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
-- Pre-commit gate set (nothing runs automatically — there is NO git hook; run all
-  four yourself before every commit; never `--no-verify`): `cargo fmt --check` ·
-  `clippy -D warnings` · `cargo deny check licenses bans sources` · `typos`
-  (`mise x -- typos spike` from the worktree root).
-- Before trusting e2e results, force a fresh `cargo build --workspace`; run the
+- Pre-commit gate set (nothing runs automatically — there is NO git hook; run it
+  yourself before every commit; never `--no-verify`): `mise run check` covers all four
+  — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check licenses bans
+  sources` · `typos`. `mise run gate` adds the fresh build and the whole suite. The
+  task runs the four DIRECTLY rather than via `hk`, because hk's bundled libgit2
+  rejects this repo's `extensions.relativeWorktrees` and cannot open it at all — so
+  the `hk.pkl` hook could not run even if it were installed (`check:hk` keeps the
+  path named for whenever that is fixed). `hk.pkl` and the task are two spellings of
+  one gate; change both together.
+- Before trusting e2e results, force a fresh `mise run build`; run the
   final e2e FOREGROUND with a generous timeout.
-- **BLESS is EXCLUSIVE** — `BLESS=1 cargo test -p dorc-cli --test e2e` re-blesses ALL
+- **BLESS is EXCLUSIVE** — `BLESS=1 cargo test -p dorc-cli --test e2e` (wrapped as
+  `mise run bless`) re-blesses ALL
   cases from whatever `target/debug/dorc` exists at that instant; concurrent agents
   share one `target/`. Never run BLESS while any build-agent is in flight;
   orchestrator-only, on a freshly-verified binary, resulting diff inspected
