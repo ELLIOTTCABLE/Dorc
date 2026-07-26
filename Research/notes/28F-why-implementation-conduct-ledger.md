@@ -690,3 +690,22 @@ exercise std temp dirs (= /tmp, real Linux fs), not /mnt/c. The builder's
 cfg-region list is the watch-list. macOS round: OPTIONAL taste, no packet
 owed. The W3 builder keeps cfg-gated regions trivially thin and lists them,
 marked unverified-on-Windows.
+
+## §4 — Arc final state (2026-07-26)
+
+**lane-declined-rerank LANDED + FOLDED** @ `2b8b0b26` (ff; 2 commits; conductor
+verify green — 67 suites, fmt). rul-declined-is-bottom-rung implemented:
+Declined → the bottom (`Witnessed`) arm; Knowability docs re-cut to the
+danger-introduction axis; the Consented-by-analogy note explicitly left
+still-UNRULED; the seam sentence on Witnessed's under-covering name in place.
+One mechanical corollary, correct and worth knowing: the `why-mark-legend`
+paragraph DISAPPEARS from the decline transcript — the legend gates on a
+`CoversUnmeasured` link being present, and a decline chain no longer has one
+(the legend explained a mark that no longer appears there). Exactly one loom
+re-blessed, rank-flips + the legend drop only.
+
+THE ARC IS CLOSED at this tip: eleven build lanes + the opaque W25 stage +
+two post-close micro-lanes, all conductor-verified, both platforms. Awaiting
+the human's fold of `ai/r28-unify`. Successor pointers: LIVING_STATUS (top
+section) · `plans/28G` §3 (execution status) · TODO-ADDTL (curated
+2026-07-26) · this ledger for every ruling.
