@@ -160,9 +160,9 @@ env = { DRY = "1" }
 run = "sh e2e/conduct-bless.sh"
 
 [tasks."loom:compile"]
-description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it."
+description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it. Runs --quiet, so only cases with something to report print; drop to a raw `cargo run` for the full per-case listing."
 dir = "spike"
-run = "cargo run --quiet -p dorc-loom -- compile"
+run = "cargo run --quiet -p dorc-loom -- compile --quiet"
 
 [tasks."loom:promote"]
 description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise."

@@ -14,7 +14,7 @@ use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG>\n       an omitted CASE list means every crates/aid/tests/*.loom";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG>\n       an omitted CASE list means every crates/aid/tests/*.loom";
 
 fn main() -> ExitCode {
     match run() {
@@ -27,10 +27,23 @@ fn main() -> ExitCode {
 }
 
 enum Command {
-    Compile { cases: Vec<PathBuf>, env: RunEnv },
-    Promote { cases: Vec<PathBuf>, env: RunEnv },
-    Vars { used: bool, cases: Vec<PathBuf> },
-    Scaffold { slug: String },
+    Compile {
+        cases: Vec<PathBuf>,
+        env: RunEnv,
+        quiet: bool,
+    },
+    Promote {
+        cases: Vec<PathBuf>,
+        env: RunEnv,
+        quiet: bool,
+    },
+    Vars {
+        used: bool,
+        cases: Vec<PathBuf>,
+    },
+    Scaffold {
+        slug: String,
+    },
 }
 
 type SelectedCase = (String, PathBuf);
@@ -47,8 +60,8 @@ fn run() -> Result<ExitCode, String> {
     let stdout = io::stdout();
     let mut out = stdout.lock();
     match command {
-        Command::Compile { cases, env } => compile_cases(&cases, &env, &mut out),
-        Command::Promote { cases, env } => promote_cases(&cases, &env, &mut out),
+        Command::Compile { cases, env, quiet } => compile_cases(&cases, &env, quiet, &mut out),
+        Command::Promote { cases, env, quiet } => promote_cases(&cases, &env, quiet, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
     }
@@ -58,12 +71,12 @@ fn parse_args() -> Result<Command, String> {
     let mut argv = std::env::args().skip(1);
     match argv.next().as_deref() {
         Some("compile") => {
-            let (cases, env) = collect_compile_args(argv)?;
-            Ok(Command::Compile { cases, env })
+            let (cases, env, quiet) = collect_compile_args(argv)?;
+            Ok(Command::Compile { cases, env, quiet })
         }
         Some("promote") => {
-            let (cases, env) = collect_compile_args(argv)?;
-            Ok(Command::Promote { cases, env })
+            let (cases, env, quiet) = collect_compile_args(argv)?;
+            Ok(Command::Promote { cases, env, quiet })
         }
         Some("vars") => {
             let mode = argv
@@ -140,9 +153,10 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
 
 fn collect_compile_args(
     mut argv: impl Iterator<Item = String>,
-) -> Result<(Vec<PathBuf>, RunEnv), String> {
+) -> Result<(Vec<PathBuf>, RunEnv, bool), String> {
     let mut env = RunEnv::new().path_dir(binary_dir()?);
     let mut cases = Vec::new();
+    let mut quiet = false;
     while let Some(arg) = argv.next() {
         if let Some(shell) = arg.strip_prefix("--shell=") {
             env = env.shell(shell);
@@ -152,6 +166,8 @@ fn collect_compile_args(
             env = env.shell(next_value(&mut argv, "--shell")?);
         } else if arg == "--path" {
             env = env.path_dir(next_value(&mut argv, "--path")?);
+        } else if arg == "--quiet" {
+            quiet = true;
         } else if arg.starts_with('-') {
             return Err(format!("unknown option {arg:?}\n{USAGE}"));
         } else {
@@ -159,9 +175,9 @@ fn collect_compile_args(
         }
     }
     if cases.is_empty() {
-        return Ok((corpus_cases()?, env));
+        return Ok((corpus_cases()?, env, quiet));
     }
-    Ok((cases, env))
+    Ok((cases, env, quiet))
 }
 
 fn next_value(argv: &mut impl Iterator<Item = String>, option: &str) -> Result<String, String> {
@@ -220,11 +236,12 @@ fn corpus_cases() -> Result<Vec<PathBuf>, String> {
 fn compile_cases(
     cases: &[PathBuf],
     env: &RunEnv,
+    quiet: bool,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
-    let inspection = inspect_cases(&gated.repository, &gated.paths, &gated.touched, env, out)?;
+    let inspection = inspect_cases(&gated, env, quiet, out)?;
     let Some((inspection, _consumer)) = inspection else {
         return Ok(ExitCode::from(1));
     };
@@ -243,11 +260,12 @@ fn compile_cases(
 fn promote_cases(
     cases: &[PathBuf],
     env: &RunEnv,
+    quiet: bool,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
-    let inspection = inspect_cases(&gated.repository, &gated.paths, &gated.touched, env, out)?;
+    let inspection = inspect_cases(&gated, env, quiet, out)?;
     let Some((inspection, consumer)) = inspection else {
         return Ok(ExitCode::from(1));
     };
@@ -429,25 +447,35 @@ fn drive_replays(
     })
 }
 
+/// A case with nothing to report costs a `--quiet` caller nothing: the header is written only once
+/// its body is, so the untouched majority of the corpus falls silent while every refusal,
+/// interpretation, and note survives verbatim.
+fn emit_case(out: &mut impl Write, path: &Path, body: &[u8], quiet: bool) -> Result<(), String> {
+    if quiet && body.is_empty() {
+        return Ok(());
+    }
+    writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
+    out.write_all(body).map_err(|error| error.to_string())
+}
+
 fn inspect_cases(
-    repository: &GitRepository,
-    paths: &[SelectedCase],
-    touched: &std::collections::BTreeSet<String>,
+    gated: &GatedCases,
     env: &RunEnv,
+    quiet: bool,
     out: &mut impl Write,
 ) -> Result<Option<(InspectedCompilation, DorcConsumer)>, String> {
     let (mut consumer, mut refused, mut selected) = (DorcConsumer::new(), false, Vec::new());
     let mut inspected_cases = Vec::new();
-    for (relative_path, path) in paths {
+    for (relative_path, path) in &gated.paths {
         let relative_path = relative_path.clone();
         let (case, source) = load_with_text(path)?;
-        let head = repository.head_bytes(&relative_path)?;
+        let head = gated.repository.head_bytes(&relative_path)?;
         let head = std::str::from_utf8(&head)
             .map_err(|_| format!("HEAD case is not UTF-8: {relative_path}"))?;
         let head_case = Case::parse(head)
             .map_err(|error| format!("parse HEAD case {relative_path}: {error}"))?;
         selected.push(relative_path.clone());
-        writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
+        let mut body = Vec::new();
         let mut previews = Vec::new();
         let mut case_refusal = None;
         let results = drive_replays(&case, &consumer, env, path, &source)?;
@@ -480,21 +508,22 @@ fn inspect_cases(
                         "bytes-only replay changed".to_owned(),
                     ));
                 }
-                writeln!(out, "replay: {index} bytes-only").map_err(|error| error.to_string())?;
+                writeln!(body, "replay: {index} bytes-only").map_err(|error| error.to_string())?;
             }
             inspected_replays.push((index, block.command().to_owned(), routed));
         }
         if let Some((index, error, dirty)) = case_refusal {
             refused = true;
-            writeln!(out, "refusal in replay {index}: {error:?}")
+            writeln!(body, "refusal in replay {index}: {error:?}")
                 .map_err(|write| write.to_string())?;
-            writeln!(out, "baseline: exact renderer provenance")
+            writeln!(body, "baseline: exact renderer provenance")
                 .map_err(|write| write.to_string())?;
-            writeln!(out, "edited:\n{}", bounded_evidence(&dirty))
+            writeln!(body, "edited:\n{}", bounded_evidence(&dirty))
                 .map_err(|write| write.to_string())?;
+            emit_case(out, path, &body, quiet)?;
             continue;
         }
-        let mut compiled = emit_previews(&mut consumer, previews, path, out)?;
+        let mut compiled = emit_previews(&mut consumer, previews, path, &mut body)?;
         let replays = inspected_replays
             .into_iter()
             .map(|(index, command, routed)| match routed.editable_render() {
@@ -508,7 +537,8 @@ fn inspect_cases(
                 None => InspectedReplay::bytes(index, command, routed.output().to_owned()),
             })
             .collect();
-        let is_touched = touched.contains(&relative_path);
+        emit_case(out, path, &body, quiet)?;
+        let is_touched = gated.touched.contains(&relative_path);
         inspected_cases.push((relative_path, source, is_touched, replays));
     }
     if refused {
@@ -751,5 +781,24 @@ mod tests {
         );
         assert!(out.contains("kept.loom is staged;"), "{out}");
         assert!(!out.contains("kept.loom was staged"), "{out}");
+    }
+
+    /// Quiet may drop a header, never a report — the corpus is ~50 cases and all but the edited one
+    /// have nothing to say, but a refusal buried in that listing is the whole reason to look.
+    #[test]
+    fn quiet_drops_only_a_case_that_said_nothing() {
+        let mut silent = Vec::new();
+        emit_case(&mut silent, Path::new("silent.loom"), b"", true).expect("emit");
+        assert!(silent.is_empty());
+
+        let mut speaking = Vec::new();
+        emit_case(&mut speaking, Path::new("loud.loom"), b"replay: 0\n", true).expect("emit");
+        let speaking = String::from_utf8(speaking).expect("notes are utf-8");
+        assert!(speaking.contains("case: "), "{speaking}");
+        assert!(speaking.contains("replay: 0"), "{speaking}");
+
+        let mut verbose = Vec::new();
+        emit_case(&mut verbose, Path::new("silent.loom"), b"", false).expect("emit");
+        assert!(!verbose.is_empty());
     }
 }
