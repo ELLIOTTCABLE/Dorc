@@ -982,8 +982,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 framed: true,
                 ..SiteResults::default()
             },
-            // Replay re-ingests the ORIGINAL run's records: the durable does not carry their
-            // observation instants, and this process's clock would date them to now.
+            // The durable carries no per-record instants; this clock would date them to NOW.
             |records| parse_admitted_results(records, &mut RunClock::Absent, &mut interner),
         );
         (None, ScopedHostEvidence::new(scope, results), false)
@@ -5203,7 +5202,6 @@ fn parse_results(
         let Some((tag, rest)) = line.split_once(' ') else {
             continue; // a bare tag with no body ⇒ drop (⇒ Unknown ⇒ run)
         };
-        // C6: arrival position (deterministic) + the controller-side observation instant.
         let stamp = dorc_core::ProbeStamp::observed(idx as u64, clock.now());
         match tag {
             // 24E §5: `deriv <leafid> coord=<coord>` — `coord=` is the FREE-CONTENT field
@@ -7079,9 +7077,8 @@ mod tests {
 
     #[test]
     fn record_observation_instants_come_from_the_injected_clock_not_wall_time() {
-        // The clock is a DI seam, so a record's observation instant must be EXACTLY what the
-        // injected source yielded — and a stepping source must distinguish successive records
-        // (the shape a streaming transport will need). Wall time never enters a test's answer.
+        // A record.s instant must be EXACTLY what the injected source yielded, and a stepping
+        // source must distinguish records. Wall time never enters a test.s answer.
         let mut i = Interner::default();
         let results = parse_str_clocked(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
@@ -7102,7 +7099,6 @@ mod tests {
             ],
             "each record carries the instant the injected clock yielded for it, in arrival order"
         );
-        // An absent clock is honest absence, never an epoch-zero stand-in.
         let clockless = parse_str("site 0 effect=holds rc=0\n", &mut i);
         assert_eq!(
             clockless
@@ -7117,16 +7113,15 @@ mod tests {
 
     #[test]
     fn reported_observation_carries_this_records_rc_and_its_predicts_line() {
-        // The why-chain's REPORTED row states three things beyond the payload: which funcdef
-        // reported, when, and the tool-rc. Each must come from THIS record/check pair — an
-        // rc read off the wrong record, or a span defaulted to the first-loaded oracle, would
-        // render a confidently-wrong attribution.
+        // The REPORTED row says which funcdef reported, when, and the tool-rc. Each must come
+        // from THIS record/check pair — a wrong-record rc or a defaulted span renders a
+        // confidently-wrong attribution.
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let mut probe = probe1(fact, ProbeSiteKind::Establish);
         let span = dorc_core::Span::new(dorc_core::BytePos(40), dorc_core::BytePos(52));
         probe.checks[0].defining_span = Some((span, dorc_core::OracleFileId(3)));
-        // rc 7 is deliberately not 0/1: a fabricated or defaulted rc would not survive this.
+        // rc 7, not 0/1: a fabricated or defaulted rc would not survive it.
         let results = parse_str_clocked("site 0 effect=holds rc=7\n", 1_234, 0, &mut i);
         let mut arena = ProvArena::new();
         let origins = probe_origins(&probe, &results, &mut arena);
@@ -7149,9 +7144,8 @@ mod tests {
 
     #[test]
     fn two_records_on_one_fact_report_no_single_observation() {
-        // Two records are two events: there is no one speaker, instant, or rc to quote. The
-        // receipt still JOINS both (nothing is lost from the evidence plane); only the single
-        // reporting row goes absent, because picking a winner would fabricate a measurement.
+        // Two records are two events with no one speaker, instant, or rc; picking a winner would
+        // fabricate a measurement. The receipt still joins both — nothing leaves the evidence plane.
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);

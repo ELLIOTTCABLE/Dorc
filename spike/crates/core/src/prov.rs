@@ -640,10 +640,8 @@ mod tests {
 
     #[test]
     fn observation_instant_distinguishes_otherwise_identical_events() {
-        // The clock rides the stamp (`27V` §2 room, extended): a record observed at a different
-        // instant is a different EVENT, so hash-consing must not merge it with a clockless stamp
-        // at the same ordinal. This is what lets a whylog order/attribute probe events by time
-        // without a parallel shape.
+        // A record observed at a different instant is a different EVENT, so hash-consing must not
+        // merge it with a clockless stamp at the same ordinal.
         let mut a = ProvArena::new();
         let clockless = a.leaf(
             OriginKind::ProbeResult(ProbeStamp::at_ordinal(7)),
@@ -654,7 +652,6 @@ mod tests {
             Some(span(0, 4)),
         );
         assert_ne!(clockless, timed, "an observed instant is part of the event");
-        // A clockless stamp is honest ABSENCE, never a zero instant standing in for one.
         assert_eq!(ProbeStamp::at_ordinal(7).observed_at, None);
     }
 

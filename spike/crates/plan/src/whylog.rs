@@ -787,9 +787,8 @@ pub fn try_serialize_v2(
     retain_metadata(&mut retained, &doc.mode, limits)?;
     retain_metadata(&mut retained, &doc.book.0, limits)?;
     retain_metadata(&mut retained, &doc.book.1, limits)?;
-    // Validate the instant through the READER's own predicate, so the writer can never emit a
-    // header its parser would refuse. It costs no retained budget: the reader keeps a `u64`, not
-    // free text (contrast every atom above, which is retained as a String).
+    // The READER.s own predicate, so the writer can never emit a header its parser would refuse.
+    // No retained budget: the reader keeps a `u64`, not the String every atom above costs.
     let started = render_started(doc.started_at);
     if parse_started(&started, limits).is_none() {
         return Err(WhylogWriteRefusal::Numeric);
@@ -1482,9 +1481,8 @@ mod tests {
 
     #[test]
     fn run_instant_survives_the_durable_and_absence_stays_absence() {
-        // The run instant is the ONE invocation fact replay cannot recompute, so it has to survive
-        // the wire EXACTLY — a truncated, rounded, or defaulted instant would date a receipt wrong.
-        // Its absence is equally load-bearing: a clockless writer must not read back as the epoch.
+        // The one invocation fact replay cannot recompute, so it must survive the wire EXACTLY —
+        // rounding dates a receipt wrong, and a clockless writer must not read back as the epoch.
         let limits = WhylogLimits::spike_default();
         let read_back = |doc: &V2Fixture| {
             let Admission::Admitted(envelope) = admit_unscoped_whylog(&v2_wire(doc)[..], limits)
@@ -1514,8 +1512,8 @@ mod tests {
             "the absent atom and a zero instant are distinct wire shapes"
         );
 
-        // Writer/reader symmetry: an instant too wide for the numeric cap must be REFUSED at
-        // write, never emitted into a durable the parser would then reject as corrupt.
+        // Symmetry: an over-wide instant is REFUSED at write, never emitted into a durable the
+        // parser would then call corrupt.
         let mut overwide = v2_doc();
         overwide.started_at = Some(dorc_core::RunInstant(u64::MAX));
         let narrow = parser_limits(64 * 1024, 16 * 1024, 4 * 1024 * 1024, 10, 2, 1, 1);

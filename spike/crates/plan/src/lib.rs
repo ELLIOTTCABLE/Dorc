@@ -2899,7 +2899,6 @@ fn ship_auto_for_argv(
     ship_auto: &impl Fn(FactKey, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) -> Option<(Symbol, Vec<Symbol>, ShippedCheck)> {
     let (provider, operands) = literal_invocation(argv)?;
-    // `27W` §3 C4: the auto-cell closure returns the verdict body — the only site that can emit reports.
     let shipped = ship_auto(fact, provider, &operands)?;
     Some((provider, operands, shipped))
 }
@@ -6602,10 +6601,9 @@ apt_get__is_converged() {
 
     #[test]
     fn elide_tally_splits_proof_from_trusted_claim_on_the_real_survival_path() {
-        // A receipt header that says "5 skipped" owes its reader the SPLIT, because the two halves
-        // carry different risk: one rests on a probed fact, the other on an author's at-most claim
-        // acted on under the consent flag. Tallied over the SAME fixture that mints a real survival
-        // witness, so a mis-wired split cannot pass against a hand-built witness the walk never made.
+        // The two halves carry different risk, so a receipt owes its reader the split. Tallied over
+        // the SAME fixture that mints a REAL survival witness: a mis-wired split cannot pass against
+        // a hand-built witness the wall walk never made.
         let verdict = |e: &str| {
             if e == "nginx" {
                 Verdict::Converged
@@ -6626,7 +6624,6 @@ apt_get__is_converged() {
             "an elision kept past a RUNNING wall rests on the claim, never on proof alone"
         );
 
-        // The same book with nothing running above it: the identical elision, now by proof.
         let clean = survival_plan("apt-get install -y nginx\n", verdict, true).disposition_counts();
         assert_eq!(
             (clean.elide_by_trusted_claim, clean.elide_by_proof),
