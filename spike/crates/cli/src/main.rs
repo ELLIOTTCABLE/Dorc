@@ -67,7 +67,7 @@ use dorc_aid::diag::{
     WrappedSiteAdoptionHint,
 };
 use dorc_aid::weave::Face;
-use dorc_aid::{CollapseKind, CollapseNarrative, Severity, TrustTier};
+use dorc_aid::{CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
 use weft::{
     Banner, Branch, CodeBlock, CodeCell, CodeLine, Document, Join, LabeledRow, Literalness, Node,
@@ -3652,7 +3652,7 @@ fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
     }
 }
 
-/// The ONE seat that renders a [`TrustTier`] to a word (`law-trust-tier-is-syntax`;
+/// The ONE seat that renders a [`SpeechAct`] to a word (`law-trust-tier-is-syntax`;
 /// `27V:mech-trust-tier-typed`): the chain walker below is the ONLY code that turns a typed tier into
 /// prose, so a `claims` link can never wear a `reported`'s clothes (mis-attribution is the worst aid
 /// failure — `271:rul-sin-ordering`).
@@ -3661,15 +3661,15 @@ fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
 /// the tier SET is the law, the words ride `27V:rul-output-form-unwelded`. `28E` §8 fixes the
 /// grammar they must obey — the tier word is the sentence's VERB, past tense for run events
 /// (`reported`, `ran`) and present for standing text (`vouches`, `claims`, `derives`).
-fn tier_word(tier: TrustTier) -> String {
+fn verb_word(tier: SpeechAct) -> String {
     let occurrence = match tier {
-        TrustTier::Measured => 0,
-        TrustTier::Vouched => 1,
-        TrustTier::Ran => 2,
-        TrustTier::Claimed => 3,
-        TrustTier::Derived => 4,
-        TrustTier::Consented => 5,
-        TrustTier::Declined => 6,
+        SpeechAct::Measured => 0,
+        SpeechAct::Vouched => 1,
+        SpeechAct::Ran => 2,
+        SpeechAct::Claimed => 3,
+        SpeechAct::Derived => 4,
+        SpeechAct::Consented => 5,
+        SpeechAct::Declined => 6,
     };
     dorc_aid::arrangement::arrangement_text(
         &dorc_aid::arrangement::CONST_ARRANGEMENTS,
@@ -3710,7 +3710,7 @@ impl OutcomeKind {
     }
 
     /// The admin-English word (`28E` §8, human-demonstrated). Registry-homed by ordinal like
-    /// [`tier_word`]. The `skip`-ban is LLM-facing law over design and code layers
+    /// [`verb_word`]. The `skip`-ban is LLM-facing law over design and code layers
     /// (`271:rul-skip-ban-is-llm-facing`); this is the deliberate user-surface carve, and engine
     /// vocabulary (elide / replace / omit) never appears in a render.
     fn word(self) -> String {
@@ -3741,7 +3741,7 @@ fn foil_word(disposition: &dorc_plan::Disposition) -> String {
 
 /// One registry-sourced why-surface line, values interleaved between the entry's words. The
 /// why-render twin of [`chrome`] (`289:rul-arrangement-home-is-registry-plus-transcripts`); every
-/// user-facing string the triptych prints comes through here or through [`tier_word`] /
+/// user-facing string the triptych prints comes through here or through [`verb_word`] /
 /// [`outcome_word`], never from a `format!` literal (`28G` §0).
 fn why_words(slug: &str, values: &[&str]) -> String {
     why_words_at(slug, None, values)
@@ -3778,28 +3778,16 @@ const WHY_VALUE_CAP: usize = 240;
 /// a wrapped-off source line is a worse lie than a long one, and still bounded.
 const WHY_SOURCE_CAP: usize = 512;
 
-/// The two-rank mark a chain row wears in the DEFAULT render (`28E` §7
-/// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). The six
-/// [`TrustTier`]s stay typed law underneath and are untouched by this: the rank is a RENDER-layer
-/// partition over them, derived from the evidence kind, because the firefighter's axis is not where
-/// a link's words were written but what the link COVERS.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum RowRank {
-    /// `*` — the row rests on something that actually happened (a probe report, a real run) or on a
-    /// derivation over such things. Its class is of size N and every member of it was observed.
-    RuntimeBacked,
-    /// `!` — the row speaks for universe-minus-N: an author's at-most claim, or the run of a command
-    /// nobody has described (which claims nothing, and therefore covers everything).
-    CoversUnmeasured,
-}
-
-impl RowRank {
-    /// The rank's gutter glyph. ASCII forever (`28E` §0 `rul-ascii-output-forever`, human-typed).
-    const fn glyph(self) -> &'static str {
-        match self {
-            RowRank::RuntimeBacked => "*",
-            RowRank::CoversUnmeasured => "!",
-        }
+/// The gutter glyph a chain row wears in the DEFAULT render (`28E` §7
+/// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). ASCII
+/// forever (`28E` §0 `rul-ascii-output-forever`, human-typed). The rank itself is the ordered
+/// [`Knowability`] projection over the seven [`SpeechAct`] kinds, minted at the ONE derivation seat
+/// (`SpeechAct::knowability`, `28F:rul-speechact-rename`) — this function only picks the glyph a
+/// `Knowability` already decided, never re-derives one.
+const fn rank_glyph(rank: Knowability) -> &'static str {
+    match rank {
+        Knowability::Witnessed => "*",
+        Knowability::CoversUnmeasured => "!",
     }
 }
 
@@ -3808,8 +3796,7 @@ impl RowRank {
 /// words. Dorc asserts no world-fact in its own voice — it QUOTES speakers, and vouches only for the
 /// run record and for its own derivations (which is why an engine row's payload is unquoted).
 struct ChainLink {
-    rank: RowRank,
-    tier: TrustTier,
+    tier: SpeechAct,
     /// Who is speaking: an oracle `file:line`, a book site's `N|command`, or the engine. `None` when
     /// the model does not carry a locus for this speaker (rendered as an empty column, never faked).
     speaker: Option<String>,
@@ -3874,7 +3861,7 @@ impl Said {
     }
 }
 
-/// The label a NEXT STEPS row wears. Registry-homed by ordinal like [`tier_word`] — the label SET
+/// The label a NEXT STEPS row wears. Registry-homed by ordinal like [`verb_word`] — the label SET
 /// is the structure, the words ride `27V:rul-output-form-unwelded`.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum StepLabel {
@@ -4005,8 +3992,7 @@ fn survival_chain(
     let outcome = outcome_word(disposition);
     let reported = license.derivation().probe.and_then(|p| p.reported);
     let mut links = vec![ChainLink {
-        rank: RowRank::RuntimeBacked,
-        tier: TrustTier::Measured,
+        tier: SpeechAct::Measured,
         speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
         payload: Said::Value(dorc_plan::fact_label(interner, license.fact())),
         quoted: true,
@@ -4016,8 +4002,7 @@ fn survival_chain(
     }];
     if license.derivation().establish_vouches.is_empty() {
         links.push(ChainLink {
-            rank: RowRank::RuntimeBacked,
-            tier: TrustTier::Vouched,
+            tier: SpeechAct::Vouched,
             speaker: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
             payload: Said::words("why-vouch-payload-site", &[&backing]),
             quoted: true,
@@ -4036,8 +4021,7 @@ fn survival_chain(
             }
         }
         links.extend(by_speaker.into_iter().map(|(speaker, labels)| ChainLink {
-            rank: RowRank::RuntimeBacked,
-            tier: TrustTier::Vouched,
+            tier: SpeechAct::Vouched,
             speaker,
             payload: Said::words("why-vouch-payload-establish", &[&brace_selectors(&labels)]),
             quoted: true,
@@ -4066,8 +4050,7 @@ fn survival_chain(
         let locus = oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs);
         leverage = leverage.or_else(|| locus.clone());
         links.push(ChainLink {
-            rank: RowRank::CoversUnmeasured,
-            tier: TrustTier::Claimed,
+            tier: SpeechAct::Claimed,
             speaker: locus,
             payload: Said::words("why-claims-payload", &[&provider, &coords.join(" ")]),
             quoted: true,
@@ -4077,8 +4060,7 @@ fn survival_chain(
         });
     }
     links.push(ChainLink {
-        rank: RowRank::RuntimeBacked,
-        tier: TrustTier::Derived,
+        tier: SpeechAct::Derived,
         speaker: Some(ENGINE_SPEAKER.to_owned()),
         payload: Said::words("why-derives-payload-disjoint", &[&backing]),
         quoted: false,
@@ -4090,7 +4072,7 @@ fn survival_chain(
     let joined_walls = wall_refs.join(", ");
     let unmeasured = links
         .iter()
-        .filter(|l| l.rank == RowRank::CoversUnmeasured)
+        .filter(|l| l.tier.knowability() == Knowability::CoversUnmeasured)
         .count();
     let mut rows = vec![StepRow {
         label: StepLabel::Suspect,
@@ -4181,8 +4163,7 @@ fn guard_chain(
     let reported = license.reported();
     let mut links = vec![
         ChainLink {
-            rank: RowRank::RuntimeBacked,
-            tier: TrustTier::Measured,
+            tier: SpeechAct::Measured,
             speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
             payload: Said::Value(backing.clone()),
             quoted: true,
@@ -4191,8 +4172,7 @@ fn guard_chain(
             excerpt: None,
         },
         ChainLink {
-            rank: RowRank::RuntimeBacked,
-            tier: TrustTier::Vouched,
+            tier: SpeechAct::Vouched,
             speaker: oracle_locus(license.insert().defining_span(), oracle_paths, oracle_srcs),
             payload: Said::words("why-vouch-payload-site", &[&backing]),
             quoted: true,
@@ -4202,8 +4182,7 @@ fn guard_chain(
         },
     ];
     links.extend(walls_above.iter().map(|wall| ChainLink {
-        rank: RowRank::CoversUnmeasured,
-        tier: TrustTier::Ran,
+        tier: SpeechAct::Ran,
         speaker: Some(format!("{}|{}", wall.line, wall.word)),
         payload: Said::Words(
             "why-wall-payload",
@@ -4461,8 +4440,7 @@ fn decline_chain(
     };
     let links = vec![
         ChainLink {
-            rank: RowRank::CoversUnmeasured,
-            tier: TrustTier::Declined,
+            tier: SpeechAct::Declined,
             speaker: oracle_locus(arm, oracle_paths, oracle_srcs),
             payload: Said::words("why-declines-payload", &[class.token()]),
             quoted: true,
@@ -4474,8 +4452,7 @@ fn decline_chain(
             excerpt: oracle_excerpt(arm, oracle_paths, oracle_srcs),
         },
         ChainLink {
-            rank: RowRank::RuntimeBacked,
-            tier: TrustTier::Derived,
+            tier: SpeechAct::Derived,
             speaker: Some(ENGINE_SPEAKER.to_owned()),
             payload: Said::words("why-declines-derives-cannot-say-runs", &[]),
             quoted: false,
@@ -4631,7 +4608,10 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
             attachments.extend(link.excerpt.iter().flat_map(excerpt_nodes));
             Node::new(NodeKind::Speaker(SpeakerRow {
                 table: None,
-                gutter: Some(dorc_aid::weave::mark(link.rank.glyph(), "why-rank-mark")),
+                gutter: Some(dorc_aid::weave::mark(
+                    rank_glyph(link.tier.knowability()),
+                    "why-rank-mark",
+                )),
                 speaker: link
                     .speaker
                     .iter()
@@ -4640,7 +4620,7 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
                     })
                     .collect(),
                 verb: Some(vec![dorc_aid::weave::words(
-                    tier_word(link.tier),
+                    verb_word(link.tier),
                     "why-tier-word",
                 )]),
                 payload: Payload {
@@ -4806,7 +4786,7 @@ fn chain_nodes(chain: &ChainRender) -> Vec<Node<Face>> {
     if chain
         .links
         .iter()
-        .any(|link| link.rank == RowRank::CoversUnmeasured)
+        .any(|link| link.tier.knowability() == Knowability::CoversUnmeasured)
     {
         analysis.push(registry_paragraph("why-mark-legend"));
     }
@@ -5193,8 +5173,7 @@ fn plain_chain(site: &WhySite) -> ChainRender {
         links: rest
             .iter()
             .map(|reason| ChainLink {
-                rank: RowRank::RuntimeBacked,
-                tier: TrustTier::Derived,
+                tier: SpeechAct::Derived,
                 speaker: Some(ENGINE_SPEAKER.to_owned()),
                 payload: reason.clone(),
                 quoted: false,
@@ -5779,7 +5758,7 @@ fn facts_from_sites(
         // design; it elides via Effect). Flagged UP — a scoping judgment (`inv-superposition`).
         if matches!(check.site_kind, ProbeSiteKind::Query { valid: false }) {
             collapse_narrative.push(CollapseNarrative::new(
-                TrustTier::Derived,
+                SpeechAct::Derived,
                 CollapseKind::SubstitutionRefusal {
                     site: site_id,
                     top_channel: dorc_core::Channel::StatusRelaxable,
@@ -5798,7 +5777,7 @@ fn facts_from_sites(
                 dorc_aid::narrative::EntryFailureTag::InContextDecline
             };
             collapse_narrative.push(CollapseNarrative::new(
-                TrustTier::Measured,
+                SpeechAct::Measured,
                 CollapseKind::EntryFailure {
                     site: site_id,
                     class,
@@ -5888,7 +5867,7 @@ fn measured_merge_disagreement(
             .collect(),
     );
     CollapseNarrative::new(
-        TrustTier::Measured,
+        SpeechAct::Measured,
         CollapseKind::FactMergeDisagreement { cell, operands },
     )
 }
@@ -7017,7 +6996,7 @@ fn build_wrapped_analysis(
                     };
                     if let Some(rung) = rung {
                         out.collapse_narrative.push(CollapseNarrative::new(
-                            TrustTier::Consented,
+                            SpeechAct::Consented,
                             CollapseKind::EntryDenial { rung },
                         ));
                     }
@@ -7678,7 +7657,7 @@ mod tests {
         };
         let decline = |leaf: u32, reason: Option<AuthoredReason>| {
             CollapseNarrative::new(
-                TrustTier::Vouched,
+                SpeechAct::Vouched,
                 CollapseKind::VerdictDecline {
                     site: sid(leaf),
                     arm: MintSpan(dorc_core::Span::new(
@@ -8414,7 +8393,7 @@ mod tests {
             1,
             "one cross-site disagreement ⇒ one record"
         );
-        assert_eq!(evidence[0].tier(), TrustTier::Measured);
+        assert_eq!(evidence[0].tier(), SpeechAct::Measured);
         assert!(matches!(
             evidence[0].kind(),
             CollapseKind::FactMergeDisagreement { .. }
@@ -9068,8 +9047,7 @@ mod not_ours_bytes_tests {
             ),
             analysis_opener: Said::Lens(hostile_line(5)),
             links: vec![ChainLink {
-                rank: RowRank::CoversUnmeasured,
-                tier: TrustTier::Claimed,
+                tier: SpeechAct::Claimed,
                 speaker: Some(hostile_line(0)),
                 payload: Said::Value(hostile_line(1)),
                 quoted: true,
