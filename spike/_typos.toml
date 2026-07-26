@@ -17,7 +17,7 @@ extend-ignore-re = [
    "\\bnevers\\b",
    # DELIBERATE near-miss fixtures of the CLI mode/flag fuzzy-matcher test (`nearest`, cli/main.rs):
    # `aply`/`tust`/`boook` are the one-edit-away typos the suggester must resolve to
-   # apply/--trust-footprints/--book. Not misspellings to fix — the test asserts they ARE caught.
+   # apply/--risk-faultless-skips/--book. Not misspellings to fix — the test asserts they ARE caught.
    "\\baply\\b",
    "\\btust\\b",
    "\\bboook\\b",

@@ -229,6 +229,10 @@ pub enum DiagCode {
     WhylogAbsent(WhylogAbsent),
     /// A durable was found but is truncated / unparseable — diagnostics, never a panic.
     WhylogCorrupt(WhylogCorrupt),
+    /// The run's durable could not be persisted, so no receipt exists for it to be asked about
+    /// later. Error-floor (`28F:rul-write-failure-is-error-floor`): the advisory plane is
+    /// suppressed under `apply`, which is exactly the run whose receipt matters most.
+    WhylogUnwritten(WhylogUnwritten),
 
     // ── cli/main.rs (aid hints) — `AID-NEEDS:aid-unloaded-sibling-oracle` (gap-5, ack-6) ──────
     /// Sibling `*.oracle.sh` files sit on disk beside the loaded set but were not loaded — a
@@ -367,6 +371,7 @@ impl DiagCode {
             DiagCode::WhylogBookDesync(_) => "whylog-book-desync",
             DiagCode::WhylogAbsent(_) => "whylog-absent",
             DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
+            DiagCode::WhylogUnwritten(_) => "whylog-unwritten",
             DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
             DiagCode::UnmodeledWallInventory(_) => "unmodeled-wall-inventory",
             DiagCode::VerdictTerminalPipeline(_) => "verdict-terminal-pipeline",
@@ -973,6 +978,19 @@ pub struct WhylogAbsent {
 pub struct WhylogCorrupt {
     /// The parse-failure reason (`{detail}`).
     pub detail: String,
+}
+
+/// Payload of [`DiagCode::WhylogUnwritten`] (`28D:must-default-durable-lands-with-its-hardening`,
+/// the visible-persistence-failure item): the run finished but its durable did not land. `{dir}` =
+/// the whylog directory; `{reason}` = the closed refusal word (`directory` / `names-exhausted` /
+/// `oversize` / `write` from the store, or `limit` / `grammar` / `numeric` / `digest` / `overflow`
+/// from the serializer).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhylogUnwritten {
+    /// The whylog directory the durable was to land in (`{dir}`).
+    pub dir: String,
+    /// The closed refusal word (`{reason}`).
+    pub reason: String,
 }
 
 /// Payload of [`DiagCode::AidUnloadedSiblingOracle`] (PASSTHROUGH `{detail}`; `AID-NEEDS:aid-unloaded-
@@ -1816,6 +1834,11 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::Structural,
         },
+        DiagCode::WhylogUnwritten(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
         // The unloaded-sibling hint: a Note (suggest, never auto-load); ProvideModel — the oracle
         // exists on disk, loading it provides the model that would lift the wall.
         DiagCode::AidUnloadedSiblingOracle(_) => CodeSpec {
@@ -2097,6 +2120,9 @@ fn params_of_raw(code: &DiagCode) -> Vec<(&'static str, String)> {
         DiagCode::WhylogBookDesync(p) => vec![("which", p.which.clone())],
         DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
         DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
+        DiagCode::WhylogUnwritten(p) => {
+            vec![("dir", p.dir.clone()), ("reason", p.reason.clone())]
+        }
         DiagCode::AidUnloadedSiblingOracle(p) => vec![("detail", p.detail.clone())],
         DiagCode::UnmodeledWallInventory(p) => vec![
             ("wall_count", p.wall_count.to_string()),

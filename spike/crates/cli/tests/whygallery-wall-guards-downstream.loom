@@ -135,7 +135,7 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-results
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=734153e67f5f9484 sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=914975be337997f0ad39ed1dd9d0fcc309f936269de6e2551a73a5ee95ee7927 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Firewall:80/tcp@allowed
 ufw__predict() {
    verb=$1; shift
@@ -183,7 +183,7 @@ systemctl__is_converged() {
 hork tune --profile web
 ( systemctl__is_converged start nginx ) || systemctl start nginx   # dorc: guard [sm.dorc.Service converged-vouch; probe: holds]
 
-$ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-results.txt
+$ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh --results=probe-results.txt
       [ book.sh, participating lines:
    8 | hork tune --profile web
    9 | systemctl start nginx

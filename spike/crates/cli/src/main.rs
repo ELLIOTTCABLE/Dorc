@@ -60,6 +60,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 use std::process::ExitCode;
 
+mod source_match;
+mod whylog_store;
+
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete,
     Diag, DiagCode, EscalationPolicy, FootprintIncoherent, ReachesConflict,
@@ -157,7 +160,7 @@ fn main() -> ExitCode {
 /// beats a malformed flag) and return the stdout-and-exit-0 variants. Otherwise: an OPTIONAL
 /// leading mode token (`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` /
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
-/// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
+/// `--risk-faultless-skips`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
 #[expect(
     clippy::result_large_err,
@@ -645,8 +648,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // load-bearing surface judgment — flagged to the conductor, not silently settled.
     let advisory = !matches!(mode, Mode::Apply);
 
-    // `--last` replay (`27V` Lane B): reconstruct inputs from the durable; a surfaced refusal returns.
-    let replay = if args.last {
+    let replay = if args.reads_the_receipt() {
         match load_whylog_replay(args, advisory)? {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
             ReplayLoad::Refused => return Ok(RunOutcome::IngressRefused),
@@ -895,7 +897,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     }
 
     // The DERIVATION-probe (24E §2 corr-§2 — the SECOND probe-shipping path, a NEW pipeline
-    // stage): under `--trust-footprints`, a wall-candidate whose `touches()` body ESCALATED (it
+    // stage): under `--risk-faultless-skips`, a wall-candidate whose `touches()` body ESCALATED (it
     // reached a host query the static `evaluate_touches` could not resolve) ships that body into
     // phase-1, runs read-only, and its stdout coord-lines are read back into a `Derived` footprint
     // (merged below, pre-`build_plan_walled`). Lifted for the derivation lane here; the authored
@@ -1108,7 +1110,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let probe_origins = probe_origins(&probe, results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
-    // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
+    // `--risk-faultless-skips` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
     let survival = args.trust_footprints.then(|| {
         let mut fps = build_survival_footprints(
             &oracle_refs,
@@ -1353,6 +1355,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             host: framing.host.clone(),
             book: book_name.to_owned(),
             book_digest: book_digest(&book_src),
+            at_head: source_match::resolve(
+                &source_match::GitRepository,
+                std::path::Path::new(book_name),
+            ),
             oracles: oracle_paths.clone(),
             risk_profile: args.trust_footprints.then_some(CONSENT_FLAG),
             counts: plan.disposition_counts(),
@@ -1397,8 +1403,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         chrome("cli-decision-digest-line", &[&decision_digest])
     );
 
-    // `27V` Lane B: write the thin durable (opt-in) so `dorc why --last` can replay it (best-effort).
-    if let Some(dir) = &args.whylog_dir {
+    // Default-on: the receipt nobody asked for is the only kind that exists on the bad morning.
+    if let Some(dir) = durable_destination(args) {
         let metadata = assemble_whylog_metadata(
             &framing,
             book_name,
@@ -1411,7 +1417,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             results,
         );
         if whylog_eligible && let Some(records) = admitted_records.as_ref() {
-            write_whylog(dir, &metadata, records);
+            write_whylog(&dir, &metadata, records);
         }
     }
     Ok(book_outcome)
@@ -1440,11 +1446,19 @@ enum ReplayLoad {
     Refused,
 }
 
-/// Whylog retention (ruling tc-whylog-retention-params, builder latitude): keep the newest
-/// [`WHYLOG_KEEP`] durables by run-index; cap each at [`WHYLOG_CAP`] bytes. Deterministic (index
-/// order, no clock — `inv-determinism` at the edge).
-const WHYLOG_KEEP: usize = 5;
-const WHYLOG_CAP: usize = 1_000_000;
+/// Whylog retention: keep the newest [`WHYLOG_KEEP`] durables by run-index; cap each at
+/// [`WHYLOG_CAP`] bytes. Deterministic (index order, no clock — `inv-determinism` at the edge).
+///
+/// INTERIM, and disclosed as such (`churn-avoidance-disclosure`). The real retention design —
+/// what is durable, for how long, at what permissions, classified how — is ONE decision that
+/// `28D:must-retention-is-one-decision` puts ahead of the whole forensic tier, and it is r30's.
+/// These two numbers are not that decision; they are what keeps default-on honest until it lands.
+///
+/// Sized against the promise rather than a guess: `USER_STORY` says "ask tomorrow; ask next week",
+/// and the shape that has to survive is nightly cron applies plus a firefighting day's re-runs.
+/// The old keep-5 could not survive one bad morning; these can hold a week of them.
+const WHYLOG_KEEP: usize = 64;
+const WHYLOG_CAP: usize = 4_000_000;
 
 #[expect(
     clippy::result_large_err,
@@ -1460,15 +1474,16 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     let path = if let Some(exact) = args.whylog.as_deref() {
         std::path::PathBuf::from(exact)
     } else {
-        let dir = args.whylog_dir.as_deref().ok_or_else(|| {
+        let dir = durable_destination(args).ok_or_else(|| {
             Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
                 dorc_aid::diag::CliFlagRequiresMode {
                     flag: "--whylog-dir=DIR",
-                    mode: "dorc why --last",
+                    mode: "dorc why",
                 },
             ))
         })?;
-        let Some(path) = newest_whylog(dir) else {
+        let dir = dir.as_str();
+        let Some(path) = whylog_store::newest(dir) else {
             report_at(
                 advisory,
                 "whylog",
@@ -1510,25 +1525,39 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
         .iter()
         .map(|oracle| oracle.path().as_str().to_owned())
         .collect();
-    let Ok(book) = std::fs::read_to_string(&book_path) else {
+    let Ok(book) = read_replay_source(&book_path) else {
         return Ok(refuse_replay(
             advisory,
             dorc_plan::records::AdmissionRefusal::Framing,
         ));
     };
-    let oracle_sources: Vec<String> =
-        match oracle_paths.iter().map(std::fs::read_to_string).collect() {
-            Ok(sources) => sources,
-            Err(_) => {
-                return Ok(refuse_replay(
-                    advisory,
-                    dorc_plan::records::AdmissionRefusal::Framing,
-                ));
-            }
-        };
+    let oracle_sources: Vec<String> = match oracle_paths.iter().map(read_replay_source).collect() {
+        Ok(sources) => sources,
+        Err(()) => {
+            return Ok(refuse_replay(
+                advisory,
+                dorc_plan::records::AdmissionRefusal::Framing,
+            ));
+        }
+    };
     let framing = dorc_plan::records::Framing::spike(book_digest(&book));
     let scope =
         WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
+    // An edited book is the ordinary mismatch, so it is NAMED rather than reported as generic
+    // framing. The refusal stands; the degraded drift-disclosed render is the owed follow-on.
+    if envelope.claims().book_digest() != scope.book.1 {
+        report_at(
+            advisory,
+            "whylog",
+            None,
+            &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
+                dorc_aid::diag::WhylogBookDesync {
+                    which: "book".to_owned(),
+                },
+            ))],
+        );
+        return Ok(ReplayLoad::Refused);
+    }
     if !replay_claims_match(&envelope, &scope) {
         return Ok(refuse_replay(
             advisory,
@@ -1567,6 +1596,46 @@ fn load_whylog_replay(args: &Args, advisory: bool) -> Result<ReplayLoad, Diag> {
     }
 }
 
+/// The ceiling on a source file a DURABLE named, as opposed to one the admin typed
+/// (`rul-host-bytes-bounded-before-admission`: limits are injectable policy, not timeless truth —
+/// this is the cli-local policy value, sibling to [`WHYLOG_CAP`]).
+const REPLAY_SOURCE_CAP: u64 = 16 * 1024 * 1024;
+
+/// Read one book or oracle a durable NAMED, bounded and regular-file-only.
+///
+/// `28F:rul-path-hint-must-match-its-doc`. `RecordedSourcePathHint` says it is never a
+/// source-loading capability, and this is the one seat that comes closest to making it one: the
+/// digest comparison that decides whether the named file is the run's file happens AFTER the read,
+/// so the read itself has to be safe on its own terms. Two ways it was not:
+///
+/// * unbounded — `/dev/zero` or a huge file at the named path was slurped whole before any check;
+/// * unfiltered — a FIFO at the named path blocks the replay forever, which no timeout would catch
+///   because nothing here has one.
+///
+/// So: `symlink_metadata` (never a following stat) must say regular file, the size must be under
+/// [`REPLAY_SOURCE_CAP`], and the read is `take`-bounded anyway rather than trusting the stat it
+/// just did. The result is still only a CANDIDATE — `replay_claims_match` remains the thing that
+/// decides it is the run's book, and a mismatch refuses.
+fn read_replay_source(path: impl AsRef<std::path::Path>) -> Result<String, ()> {
+    use std::io::Read as _;
+
+    let path = path.as_ref();
+    let metadata = std::fs::symlink_metadata(path).map_err(|_| ())?;
+    if !metadata.is_file() || metadata.len() > REPLAY_SOURCE_CAP {
+        return Err(());
+    }
+    let file = std::fs::File::open(path).map_err(|_| ())?;
+    let mut source = String::new();
+    let read = file
+        .take(REPLAY_SOURCE_CAP.saturating_add(1))
+        .read_to_string(&mut source)
+        .map_err(|_| ())?;
+    if read as u64 > REPLAY_SOURCE_CAP {
+        return Err(());
+    }
+    Ok(source)
+}
+
 fn refuse_replay(advisory: bool, reason: dorc_plan::records::AdmissionRefusal) -> ReplayLoad {
     report_at(advisory, "whylog", None, &[reason.spanless_diagnostic()]);
     ReplayLoad::Refused
@@ -1598,64 +1667,71 @@ fn replay_claims_match(
             })
 }
 
-/// The `whylog-<NNNN>.txt` durables in `dir`, ascending by run-index (deterministic).
-fn whylog_entries(dir: &str) -> Vec<(u64, std::path::PathBuf)> {
-    let mut v: Vec<(u64, std::path::PathBuf)> = std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter_map(|e| {
-            let idx = e
-                .file_name()
-                .to_string_lossy()
-                .strip_prefix("whylog-")?
-                .strip_suffix(".txt")?
-                .parse::<u64>()
-                .ok()?;
-            Some((idx, e.path()))
-        })
-        .collect();
-    v.sort_by_key(|(i, _)| *i);
-    v
-}
-
-/// The newest durable in `dir` (highest run-index), or `None`.
-fn newest_whylog(dir: &str) -> Option<std::path::PathBuf> {
-    whylog_entries(dir).pop().map(|(_, p)| p)
-}
-
-/// Write the durable for a completed run (`27V` Lane B), with retention. Best-effort: a write
-/// failure is swallowed (the durable is a postmortem aid, never load-bearing — stdout is untouched).
+/// Write the durable for a completed run (`27V` Lane B), through the hardened store.
+///
+/// Every refusal is REPORTED (`28F:rul-write-failure-is-error-floor`) — this used to swallow five
+/// of them, which `28D:must-retention-is-one-decision` names as one of the whylog's five
+/// each-looked-local decisions. The artifact on stdout is still untouched by any of this: the
+/// durable is a postmortem aid, so a failure to keep one is loud, not fatal.
 fn write_whylog(
     dir: &str,
     metadata: &dorc_plan::whylog::WhylogV2Metadata,
     records: &dorc_plan::records::AdmittedUnscopedHostRecords,
 ) {
-    if std::fs::create_dir_all(dir).is_err() {
-        return;
-    }
     let write = dorc_plan::whylog::WhylogV2Write::new(metadata, records);
-    let Ok(bytes) = dorc_plan::whylog::try_serialize_v2(
+    let bytes = match dorc_plan::whylog::try_serialize_v2(
         &write,
         dorc_plan::whylog::WhylogLimits::spike_default(),
-    ) else {
-        return;
+    ) {
+        Ok(bytes) => bytes,
+        Err(refusal) => return report_whylog_unwritten(dir, serialize_refusal_reason(refusal)),
     };
-    if bytes.len() > WHYLOG_CAP {
-        return;
+    if let Err(refusal) = whylog_store::publish(dir, &bytes, WHYLOG_CAP, WHYLOG_KEEP) {
+        report_whylog_unwritten(dir, refusal.reason());
     }
-    let next = whylog_entries(dir)
-        .last()
-        .map_or(1, |(i, _)| i.saturating_add(1));
-    let path = std::path::Path::new(dir).join(format!("whylog-{next:04}.txt"));
-    if std::fs::write(&path, bytes).is_err() {
-        return;
+}
+
+/// Where this run's receipt goes: the admin's `--whylog-dir`, else the per-user state directory.
+///
+/// `None` on two very different grounds, and the difference is why this returns an Option rather
+/// than a path: `--no-whylog` is a REFUSAL the admin typed, and an unresolvable state root is an
+/// environment with nowhere to put anything. Neither is a persistence failure, so neither reports
+/// one — the failures are what happens once a destination exists (`whylog-unwritten`).
+fn durable_destination(args: &Args) -> Option<String> {
+    if args.no_whylog {
+        return None;
     }
-    let entries = whylog_entries(dir);
-    if let Some(drop_before) = entries.len().checked_sub(WHYLOG_KEEP) {
-        for (_, p) in entries.into_iter().take(drop_before) {
-            let _ = std::fs::remove_file(p);
-        }
+    match &args.whylog_dir {
+        Some(named) => Some(named.clone()),
+        None => whylog_store::default_root().map(|root| root.to_string_lossy().into_owned()),
+    }
+}
+
+/// Report a durable that did not land. Deliberately on [`report`], not `report_at`: the advisory
+/// filter drops everything under `apply`, and an apply whose receipt vanished is precisely the run
+/// an admin will come back asking about.
+fn report_whylog_unwritten(dir: &str, reason: &str) {
+    report(
+        "whylog",
+        None,
+        &[Diag::new_spanless_site(DiagCode::WhylogUnwritten(
+            dorc_aid::diag::WhylogUnwritten {
+                dir: dir.to_owned(),
+                reason: reason.to_owned(),
+            },
+        ))],
+    );
+}
+
+/// The closed reason word a serializer refusal carries into the diagnostic.
+const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal) -> &'static str {
+    use dorc_plan::whylog::WhylogWriteRefusal as R;
+    match refusal {
+        R::Limit => "limit",
+        R::Grammar => "grammar",
+        R::Numeric => "numeric",
+        R::Digest => "digest",
+        R::ArithmeticOverflow => "overflow",
     }
 }
 
@@ -1834,7 +1910,7 @@ fn ship_verdict_body(
 }
 
 /// Lift the survival footprints (Stage 2 / rul24-mode-gate) — called ONLY on the
-/// `--trust-footprints` path (TC-1: the footprint data does not exist unflagged). For each
+/// `--risk-faultless-skips` path (TC-1: the footprint data does not exist unflagged). For each
 /// wall-candidate site (an establish-bearing class, or a kill) whose provider declares a
 /// `touches()`, trace it over the site's resolved argv and record the emitted footprint —
 /// after a **coherence check** (23M / the Stage-2 brief): the site's OWN establish coordinate
@@ -3948,10 +4024,10 @@ struct ChainRender {
 
 /// The consent flag as the BINARY spells it. The corpus names this lever
 /// `--risk-faultless-skips` (`spike/CLAUDE.md` survive-license, `271:rul-flag-is-razor-residue`); the
-/// cli implements `--trust-footprints`. A why-surface pointer must be copy-paste-true (`28E` §7
+/// cli implements `--risk-faultless-skips`. A why-surface pointer must be copy-paste-true (`28E` §7
 /// held-placement-reread), so the render prints what the parser accepts and the rename is flagged
 /// upward rather than papered over here.
-const CONSENT_FLAG: &str = "--trust-footprints";
+const CONSENT_FLAG: &str = "--risk-faultless-skips";
 
 /// The engine's own name in the speaker column — the only row dorc speaks in its own voice, and it
 /// speaks only about its own derivations (`28E` §8 quoted-speakers).
@@ -5320,6 +5396,10 @@ struct Receipt {
     host: String,
     book: String,
     book_digest: String,
+    /// The commit the book sits at, when it sits at one exactly (`28E:lean-git-source-tracking-
+    /// secondary`). Already-resolved pure data: the subprocess that answered it was spent at the
+    /// edge, and a `None` here is indistinguishable from "no repository", by design.
+    at_head: Option<source_match::SourceMatch>,
     /// The loaded oracles, in argv order.
     oracles: Vec<String>,
     /// The consent flag in force, or `None` for a flagless run.
@@ -5380,11 +5460,16 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         || why_words("why-receipt-risk-profile-none", &[]),
         str::to_owned,
     );
+    // Replaces the digest row rather than joining it: exact-or-absent, never a third shape.
+    let book_row = match &receipt.at_head {
+        Some(matched) => Said::words(
+            "why-receipt-book-at-head",
+            &[&receipt.book, &matched.commit],
+        ),
+        None => Said::words("why-receipt-book", &[&receipt.book, &receipt.book_digest]),
+    };
     let body = vec![
-        receipt_row(&Said::words(
-            "why-receipt-book",
-            &[&receipt.book, &receipt.book_digest],
-        )),
+        receipt_row(&book_row),
         receipt_row(&Said::words(
             "why-receipt-oracles",
             &[&receipt.oracles.join(", ")],
@@ -6261,12 +6346,10 @@ fn static_decline_notes(
 }
 
 /// A deterministic content digest binding the records stream to the exact analyzed book bytes
-/// (`262` §2 `book=`; discharges `tc-probe-no-digest`). SPIKE NOTE (`churn-avoidance-disclosure`):
-/// the spec says sha256; the kernel stays dependency-clean (`inv-determinism` — no `sha2`/`rand`
-/// dep), so this is a hand-rolled FNV-1a-64 rendered hex. Mismatch-detection semantics are
-/// identical (any book-byte change flips the digest); cryptographic strength is not — there is no
-/// adversary-forged-book in the spike model. The real tool substitutes sha256 here, unchanged
-/// callers. Computed at the I/O edge (`io-at-edges-only`), never in the kernel.
+/// (`262` §2 `book=`; discharges `tc-probe-no-digest`). Hand-rolled SHA-256 in the kernel
+/// (`28F:rul-digest-lands-now` retired the FNV-1a-64 stand-in; the kernel stays dependency-clean
+/// per `inv-determinism`, so it is written out rather than pulled in). Computed at the I/O edge
+/// (`io-at-edges-only`), never in the kernel.
 fn book_digest(book_src: &str) -> String {
     dorc_plan::invocation::book_digest(book_src)
 }
@@ -6639,13 +6722,33 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 /// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
 /// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
+/// The comparison key that lets a LOADED oracle path and a DISCOVERED one denote the same file.
+///
+/// `289:rider-sibling-note-false-fires-relative`: the loaded set carries `-o` args verbatim
+/// (`firewall.oracle.sh`) while discovery yields `read_dir` paths (`./firewall.oracle.sh`), so a raw
+/// string compare reported every relatively-named oracle as unloaded. Both sides now spell an empty
+/// parent as `.` and separators as `/`, so the two forms of one bare filename converge.
+///
+/// Deliberately textual, not `canonicalize`: this feeds a HINT, and a hint must not acquire the
+/// power to touch the filesystem or to fail. Two spellings of one path through different symlinks
+/// still miss, which costs a suppressed hint and never a wrong one.
+fn oracle_path_key(path: &str) -> String {
+    let path = std::path::Path::new(path);
+    let parent = path
+        .parent()
+        .filter(|d| !d.as_os_str().is_empty())
+        .unwrap_or_else(|| std::path::Path::new("."));
+    let name = path.file_name().unwrap_or_default();
+    parent.join(name).to_string_lossy().replace('\\', "/")
+}
+
 fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths: &[String]) {
     use std::path::Path;
     // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
     // Windows) while the loaded set carries the `-o` args verbatim (forward slash), so a raw string
     // compare would miss every loaded oracle on Windows and falsely report it unloaded.
     let norm = |p: &str| p.replace('\\', "/");
-    let loaded: BTreeSet<String> = oracle_paths.iter().map(|p| norm(p)).collect();
+    let loaded: BTreeSet<String> = oracle_paths.iter().map(|p| oracle_path_key(p)).collect();
     let mut dirs: BTreeSet<std::path::PathBuf> = BTreeSet::new();
     for p in oracle_paths.iter().chain(books.iter()) {
         if let Some(parent) = Path::new(p).parent() {
@@ -6665,9 +6768,8 @@ fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths:
         };
         for entry in entries.flatten() {
             let shown = norm(&entry.path().to_string_lossy());
-            if shown.ends_with(".oracle.sh")
-                && !loaded.contains(&shown)
-                && !unloaded.contains(&shown)
+            let key = oracle_path_key(&shown);
+            if shown.ends_with(".oracle.sh") && !loaded.contains(&key) && !unloaded.contains(&shown)
             {
                 unloaded.push(shown);
             }
@@ -7306,6 +7408,61 @@ mod tests {
         let d =
             dorc_plan::records::deframe(input, &expect, dorc_plan::records::LegacyPolicy::Tolerate);
         parse_results(&d.records, d.framed, &mut RunClock::Absent, interner)
+    }
+
+    /// The two destination answers that do not depend on the environment. `--no-whylog` must win
+    /// over an explicitly named directory: a refusal the admin typed is the one instruction in this
+    /// family that nothing may override (`28D:pay-levers-are-subtractive` — the levers only ever
+    /// REMOVE, and a subtractive control that a sibling flag can defeat is not one).
+    #[test]
+    fn a_refusal_beats_a_named_directory() {
+        let args = |argv: &[&str]| match parse_args_from(
+            argv.iter().map(|word| (*word).to_owned()).collect(),
+        )
+        .expect("invocation parses")
+        {
+            Invocation::Analyze(parsed) => parsed,
+            other => panic!("expected an analysis invocation, got {other:?}"),
+        };
+        assert_eq!(
+            durable_destination(&args(&["plan", "book.sh", "--whylog-dir=logs"])).as_deref(),
+            Some("logs"),
+            "a named directory is used as given"
+        );
+        assert_eq!(
+            durable_destination(&args(&[
+                "plan",
+                "book.sh",
+                "--whylog-dir=logs",
+                "--no-whylog"
+            ])),
+            None,
+            "and is still refused when the admin says no receipt"
+        );
+    }
+
+    /// `289:rider-sibling-note-false-fires-relative`: the loaded `-o` spelling and the `read_dir`
+    /// spelling of ONE file must key alike, or the unloaded-sibling hint accuses every relatively
+    /// named oracle of being unloaded. The bare-name/dot-slash pair is the exact shape every
+    /// in-corpus case drives (`-o firewall.oracle.sh` against a `read_dir(".")` walk), so it is the
+    /// pair worth pinning; the sub-directory rows guard against a fix that only special-cases `.`.
+    #[test]
+    fn loaded_and_discovered_oracle_spellings_share_one_key() {
+        assert_eq!(
+            oracle_path_key("firewall.oracle.sh"),
+            oracle_path_key("./firewall.oracle.sh"),
+            "a bare -o name and its read_dir(\".\") path are one file"
+        );
+        assert_eq!(
+            oracle_path_key("oracles/fw.oracle.sh"),
+            oracle_path_key("oracles\\fw.oracle.sh"),
+            "separators normalize, so a Windows walk matches a forward-slash arg"
+        );
+        assert_ne!(
+            oracle_path_key("a/fw.oracle.sh"),
+            oracle_path_key("b/fw.oracle.sh"),
+            "same basename in different dirs stays distinct — the hint must still fire"
+        );
     }
 
     /// ack-2 / rul24-lineno-identity: the `dorc why` address parser reads a SOURCE line-number from
@@ -9090,6 +9247,7 @@ mod not_ours_bytes_tests {
             host: hostile_line(1),
             book: hostile_line(2),
             book_digest: hostile_line(3),
+            at_head: None,
             oracles: vec![hostile_line(4), hostile_line(5)],
             risk_profile: Some(CONSENT_FLAG),
             counts: dorc_plan::DispositionCounts {
@@ -9104,7 +9262,7 @@ mod not_ours_bytes_tests {
             deepest_tier: true,
             narratable: true,
         };
-        let mut nodes = vec![receipt_banner(&receipt)];
+        let mut nodes = vec![receipt_banner(&receipt), receipt_banner(&at_head(&receipt))];
         nodes.extend(participating_block(
             &[2, 3],
             &format!("{SOURCE_MARK}.book.sh"),
@@ -9118,6 +9276,27 @@ mod not_ours_bytes_tests {
         ));
         nodes.extend(chain_nodes(&plain_chain(&site)));
         nodes
+    }
+
+    /// The same receipt wearing its git-annotation row instead of its digest row. The two are
+    /// exclusive, so the sweep renders both banners: a commit is a SUBPROCESS's stdout, as not-ours
+    /// as anything a host reported (`28D:must-encode-per-surface`).
+    fn at_head(receipt: &Receipt) -> Receipt {
+        Receipt {
+            at_head: Some(source_match::SourceMatch {
+                commit: hostile_line(6),
+            }),
+            oracles: receipt.oracles.clone(),
+            host: receipt.host.clone(),
+            book: receipt.book.clone(),
+            book_digest: receipt.book_digest.clone(),
+            at: receipt.at,
+            replayed: receipt.replayed,
+            risk_profile: receipt.risk_profile,
+            counts: receipt.counts,
+            deepest_tier: receipt.deepest_tier,
+            narratable: receipt.narratable,
+        }
     }
 
     /// THE SWEEP. Over every seat the why surface has, every not-ours run is already

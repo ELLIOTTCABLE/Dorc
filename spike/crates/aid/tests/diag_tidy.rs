@@ -221,6 +221,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "whylog-book-desync",
     "whylog-absent",
     "whylog-corrupt",
+    "whylog-unwritten",
     "aid-unloaded-sibling-oracle",
     "unmodeled-wall-inventory",
     "verdict-terminal-pipeline",
@@ -297,6 +298,7 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogBookDesync",
     "WhylogAbsent",
     "WhylogCorrupt",
+    "WhylogUnwritten",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
     // lint — the external-tool trio is ABOUT a foreign process, not about any dorc bytes, so its

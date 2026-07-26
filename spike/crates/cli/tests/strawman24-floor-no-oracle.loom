@@ -78,7 +78,7 @@ $ dorc --book=book.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7cee65fdd13daebe sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f096ac513af93fc55ac057f7c8b1c83e114e7b91fe3023eab30e915522fbe298 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe

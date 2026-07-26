@@ -119,7 +119,7 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ef07b6bd52d79bac sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=40b575d38a5f71081e564a62db786beff7a1d5abf1d1de9ee54f14d6be88bdbe sites=1 @@dorc@@\n'
 # site 0: sm.dorc.Firewall:80/tcp@allowed
 ufw__predict() {
    verb=$1; shift
@@ -145,7 +145,7 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
 sysctl vm.drop_caches
 
-$ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.txt
+$ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --results=probe-results.txt
       [ book.sh, participating lines:
    9 | sysctl vm.drop_caches
 
@@ -188,7 +188,7 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-re
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why 9 --all --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh < probe-results.txt
+$ dorc why 9 --all --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --results=probe-results.txt
       [ book.sh, participating lines:
    9 | sysctl vm.drop_caches
 

@@ -21,8 +21,8 @@ use dorc_aid::diag::{
     HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
     LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
     LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
-    render_staged_cli_parts,
+    SiteUnresolvable, SyntaxUnsupported, WhylogUnwritten, WrapperPeelIncoherent, render_cli_parts,
+    render_cli_with, render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{
@@ -1124,6 +1124,10 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         "cli-shim-dir-unwritable" => DiagCode::CliShimDirUnwritable(CliShimDirUnwritable {
             path: "/run/dorc/shims".to_owned(),
             detail: "Read-only file system (os error 30)".to_owned(),
+        }),
+        "whylog-unwritten" => DiagCode::WhylogUnwritten(WhylogUnwritten {
+            dir: "/var/lib/dorc/whylog".to_owned(),
+            reason: "directory".to_owned(),
         }),
         "lint-no-lintable-files" => DiagCode::LintNoLintableFiles(LintNoLintableFiles),
         "lint-file-count-drift" => DiagCode::LintFileCountDrift(LintFileCountDrift {

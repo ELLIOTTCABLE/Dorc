@@ -94,7 +94,7 @@ $ dorc --book=book.sh -o pkgstate.oracle.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1f00f887f1817ec4 sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=b22c2368978a3d466164c3e05156af6044ebf04e9218a6645dcab10a894aeecb sites=1 @@dorc@@\n'
 # site 1: sm.dorc.PkgState:nginx@installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac

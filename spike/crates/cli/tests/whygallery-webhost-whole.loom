@@ -1,7 +1,7 @@
 ---
 run: round-trip
 fixpoint: executed
-flags: --trust-footprints
+flags: --risk-faultless-skips
 why-addr: 14
 expect-why:
   - site 5 survives+elides past wall site 4 && apt-get touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Firewall:443/tcp disjoint
@@ -16,7 +16,7 @@ expect-why-chain:
 #!/bin/sh
 # whygallery-webhost-whole: the whole why-surface on one USER_STORY-shaped webhost book — a
 # famous-oracle elision, the admin's own hand-guard, a diverged modeled wall whose `disturbs`
-# claim lets a converged line survive it under --trust-footprints, an unmodeled `hork` wall, a
+# claim lets a converged line survive it under --risk-faultless-skips, an unmodeled `hork` wall, a
 # modeled site downstream of that wall (the guard tier), and an `unsound` classed decline.
 # Every tool named here is an INERT mock; nothing mutates. NB no `set -e`: errexit makes every
 # line's status consumed, which defeats elision outright (strawman24-errexit-defeats measures it).
@@ -149,7 +149,7 @@ sysctl__is_converged() {
 # 0 = the admin's own `dpkg -s nginx` read (holds ⇒ their `||` guard holds ⇒ the install is dead)
 # 1 = Package:nginx (the dead install's own fact) · 2 = Firewall:80/tcp · 3 = Service:nginx@enabled
 # 4 = Package:oldpkg ABSENT ⇒ diverged ⇒ that install RUNS: the modeled wall
-# 5 = Firewall:443/tcp holds ⇒ converged, and survives the wall under --trust-footprints
+# 5 = Firewall:443/tcp holds ⇒ converged, and survives the wall under --risk-faultless-skips
 # 7 = Service:nginx@active holds ⇒ converged, but sits past the unmodeled `hork` wall ⇒ guard
 site 0 effect=holds rc=0
 site 1 effect=holds rc=0
@@ -247,7 +247,7 @@ ran: systemctl is-active -- nginx
 ran: sysctl vm.drop_caches
 
 -- replay --
-$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --trust-footprints < probe-results.txt
+$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -255,7 +255,7 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.ora
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=de40127febe86c48 sites=7 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8 sites=7 @@dorc@@\n'
 # site 0: sm.dorc.PkgState:nginx@installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac
@@ -325,7 +325,7 @@ systemctl__is_converged() {
 #!/bin/sh
 # whygallery-webhost-whole: the whole why-surface on one USER_STORY-shaped webhost book — a
 # famous-oracle elision, the admin's own hand-guard, a diverged modeled wall whose `disturbs`
-# claim lets a converged line survive it under --trust-footprints, an unmodeled `hork` wall, a
+# claim lets a converged line survive it under --risk-faultless-skips, an unmodeled `hork` wall, a
 # modeled site downstream of that wall (the guard tier), and an `unsound` classed decline.
 # Every tool named here is an INERT mock; nothing mutates. NB no `set -e`: errexit makes every
 # line's status consumed, which defeats elision outright (strawman24-errexit-defeats measures it).
@@ -340,12 +340,12 @@ hork tune --profile web
 sysctl vm.drop_caches
 echo "web1 up"
 
-$ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --trust-footprints < probe-results.txt
+$ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
 receipt: plan 2026-01-25 02:00:37, host localhost
-   book book.sh (digest de40127febe86c48)
+   book book.sh (digest a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8)
    oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
    sysctl.oracle.sh
-   risk-profile: --trust-footprints
+   risk-profile: --risk-faultless-skips
    plan: 4 ran, 1 guarded, 4 skipped (3 by proof, 1 by trusted claim)
    [unwritten: why-receipt-dispositions-predicted]
    read top-down; every item is addressable: dorc why <line>
@@ -380,7 +380,7 @@ converged
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why 15 --all --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --trust-footprints < probe-results.txt
+$ dorc why 15 --all --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
       [ book.sh, participating lines:
    12 | apt-get install -y oldpkg
    14 | hork tune --profile web

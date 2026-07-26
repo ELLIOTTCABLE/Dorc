@@ -277,7 +277,7 @@ fn every_topology_class_and_both_behaviours_are_reached() {
     );
     assert!(
         flag_distinguishes > 0,
-        "--trust-footprints NEVER changed the plan in {n} seeds — the flag is inert, so the \
+        "--risk-faultless-skips NEVER changed the plan in {n} seeds — the flag is inert, so the \
          survival tier is untested."
     );
     eprintln!(

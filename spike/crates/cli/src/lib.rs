@@ -120,7 +120,7 @@ pub struct Args {
     /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
     /// then proceed normally — a cli-edge readout the e2e argv-echo differential consumes.
     pub debug_argv: bool,
-    /// `--trust-footprints` (rul24-mode-gate): opt into the survival tier — a converged line
+    /// `--risk-faultless-skips` (rul24-mode-gate): opt into the survival tier — a converged line
     /// may ELIDE past a RUNNING wall when the wall's authored `touches()` footprint is disjoint
     /// from the line's fact's backing (Stage 2, the golden hill). DEFAULT OFF; not recommended
     /// by hints/docs beyond noting availability. Honest framing (24A §1a-addendum): marketing at
@@ -139,18 +139,28 @@ pub struct Args {
     /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
     /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
     pub capability: dorc_core::Capability,
-    /// `--whylog-dir=DIR` (`27V` Lane B): DIR the thin posthoc-why durable is written to (on a
-    /// plan/apply/round-trip run) and read from (`dorc why --last`). Default UNSET ⇒ NO durable
-    /// write — keeps every existing golden byte-identical and honors `law-whylog-is-sensitive`.
-    /// churn-avoidance-disclosure (tc-whylog-default-off): the PRODUCT posture is the sacred
-    /// zero-setup promise (`USER_STORY`: `--last` works "with nothing you had to set up"), so the
-    /// real-tool default is write-quietly-beside-its-work; this spike opt-in is a disclosed
-    /// scope-cut, one line to flip later.
+    /// `--whylog-dir=DIR` (`27V` Lane B): DIR the posthoc-why durable is written to (on a
+    /// plan/apply/round-trip run) and read from (`dorc why`). Unset ⇒ the per-user state directory
+    /// (`dorc_cli`'s caller resolves it), because the promise is zero-setup: `USER_STORY` has
+    /// `dorc why` working "with nothing you had to set up beforehand", and a receipt nobody
+    /// remembered to ask for is the only kind that exists on the bad morning.
     pub whylog_dir: Option<String>,
+    /// `--no-whylog`: write no durable for this run.
+    ///
+    /// The escape hatch default-on owes: a receipt is host metadata written unprompted
+    /// (`AID-NEEDS:law-whylog-is-sensitive`), so refusing one must be typeable. Per-invocation and
+    /// subtractive-only, which is the shape `28D:pay-levers-are-subtractive` demands of anything in
+    /// this family — there is no widening sibling and never will be.
+    pub no_whylog: bool,
     /// `--whylog=FILE`: the exact durable to replay (`why --last` only).
     pub whylog: Option<String>,
-    /// `--last` (`27V` Lane B): `dorc why --last` replays the most recent durable in `--whylog-dir`
-    /// through the SAME kernel instead of the live pipeline (determinism is the replay license).
+    /// `--last` (`27V` Lane B): replay the most recent durable in `--whylog-dir` through the SAME
+    /// kernel instead of the live pipeline (determinism is the replay license).
+    ///
+    /// Since `28E:lean-why-is-whylog-reconciliation` this is what `dorc why` does ANYWAY when no
+    /// record source was named ([`Args::reads_the_receipt`]); the flag survives as a spelling
+    /// rather than a switch, because it is printed in committed transcripts and typed in muscle
+    /// memory, and it still means something on the other modes.
     pub last: bool,
     /// `--all`: the DEEPEST pull tier — every `dorc why` footer already points here, so the flag
     /// exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
@@ -168,6 +178,31 @@ pub struct Args {
     /// or already-answered run writes nothing — `empty-world-byte-identical`).
     pub shim_dir: Option<String>,
 }
+
+impl Args {
+    /// Does this invocation answer from the stored receipt rather than from records handed to it?
+    ///
+    /// The surface fold (`28E:lean-why-is-whylog-reconciliation`, phased by `plans/28G` §1 W3):
+    /// `dorc why` is receipt-reconciliation by DEFAULT -- "why did that happen" is the question
+    /// people actually ask, and it is asked with nothing in hand. Records-from-argv survives as the
+    /// harness/tooling posture, and it is now EXPLICIT: naming `--results` (or `--whylog`, which
+    /// names an exact durable) is what selects it.
+    ///
+    /// Deliberately not "is stdin a pipe": that would be an ambient read at a seat sworn off them
+    /// (`io-at-edges-only`), it would make a CI `dorc why` silently answer a different question
+    /// than an interactive one, and it would block on a terminal.
+    #[must_use]
+    pub const fn reads_the_receipt(&self) -> bool {
+        reads_the_receipt(self.mode, self.last, self.results.is_some())
+    }
+}
+
+/// [`Args::reads_the_receipt`] over the parts, so the parser can apply the same rule before it has
+/// an `Args` to ask. Two spellings of this predicate would be two answers to "which surface am I".
+const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
+    last || (matches!(mode, Mode::Why) && !has_results)
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "one linear arg surface: the help/version pre-scan, the mode + why-address token, then the flag/positional loop with did-you-mean; splitting it would scatter the ONE parse"
@@ -223,6 +258,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut whylog_dir: Option<String> = None;
     let mut whylog: Option<String> = None;
     let mut last = false;
+    let mut no_whylog = false;
     let mut all = false;
     let mut shim_dir: Option<String> = None;
     let mut it = raw.into_iter().peekable();
@@ -297,7 +333,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             );
         } else if arg == "--debug-argv" {
             debug_argv = true;
-        } else if arg == "--trust-footprints" {
+        } else if arg == "--risk-faultless-skips" {
             trust_footprints = true;
         } else if arg == "--no-probe-escalation" {
             dial = dorc_core::EscalationDial::NoEscalation;
@@ -331,6 +367,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             all = true;
         } else if arg == "--last" {
             last = true;
+        } else if arg == "--no-whylog" {
+            no_whylog = true;
         } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
             shim_dir = Some(p.to_string());
         } else if arg == "--shim-dir" {
@@ -347,13 +385,14 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--oracle-dir",
                 "--results",
                 "--debug-argv",
-                "--trust-footprints",
+                "--risk-faultless-skips",
                 "--no-probe-escalation",
                 "--probe-escalation",
                 "--escalate-any-probe",
                 "--probe-capability",
                 "--whylog-dir",
                 "--whylog",
+                "--no-whylog",
                 "--last",
                 "--all",
                 "--shim-dir",
@@ -381,7 +420,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             books.push(arg);
         }
     }
-    if books.is_empty() && !last {
+    if books.is_empty() && !reads_the_receipt(mode, last, results.is_some()) {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
         )));
@@ -394,11 +433,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             }),
         ));
     }
-    if whylog.is_some() && (mode != Mode::Why || !last) {
+    if whylog.is_some() && mode != Mode::Why {
         return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
             dorc_aid::diag::CliFlagRequiresMode {
                 flag: "--whylog",
-                mode: "dorc why --last",
+                mode: "dorc why",
             },
         )));
     }
@@ -414,6 +453,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         dial,
         capability,
         whylog_dir,
+        no_whylog,
         whylog,
         last,
         all,
@@ -693,6 +733,73 @@ fn value_not_recognized(flag: &str, got: &str, expected: &'static str) -> Invoca
 mod tests {
     use super::*;
 
+    fn parse(argv: &[&str]) -> Invocation {
+        parse_args_from(argv.iter().map(|word| (*word).to_owned()).collect())
+            .expect("invocation parses")
+    }
+
+    fn analyzed(words: &[&str]) -> Args {
+        match parse(words) {
+            Invocation::Analyze(args) => args,
+            other => panic!("expected an analysis invocation, got {other:?}"),
+        }
+    }
+
+    /// The surface fold (`28E:lean-why-is-whylog-reconciliation`): which invocations answer from
+    /// the stored receipt, and which from records handed in. Worth pinning as a table rather than
+    /// trusting the one-line predicate, because getting it wrong is SILENT in the worst direction —
+    /// a `why` that quietly analyses fresh records while the admin believes they are reading last
+    /// night's receipt is the wrong-surface-at-rc-0 class `289:rider-why-last-address-order` cost
+    /// us once already.
+    #[test]
+    fn only_an_unnamed_record_source_reads_the_receipt() {
+        assert!(
+            analyzed(&["why"]).reads_the_receipt(),
+            "bare `dorc why` is the fold's whole point: no book, no records, read the receipt"
+        );
+        assert!(
+            analyzed(&["why", "10"]).reads_the_receipt(),
+            "an address narrows the question, it does not name a record source"
+        );
+        assert!(
+            !analyzed(&["why", "--results", "r.txt", "--book=book.sh"]).reads_the_receipt(),
+            "naming records is what selects the harness posture"
+        );
+        assert!(
+            analyzed(&["why", "--whylog=run.whylog"]).reads_the_receipt(),
+            "naming an exact durable is still reading a receipt"
+        );
+        assert!(
+            analyzed(&["plan", "--last", "book.sh"]).reads_the_receipt(),
+            "`--last` survives as a spelling and still means replay on the other modes"
+        );
+        assert!(
+            !analyzed(&["plan", "book.sh"]).reads_the_receipt(),
+            "plan without --last is a live analysis, untouched by the fold"
+        );
+    }
+
+    /// A book is required exactly when the invocation cannot learn one from a receipt. The
+    /// `--results`-without-a-book row is the one worth having: records describe a book, and
+    /// accepting them with none named would analyse the empty string and report on nothing.
+    #[test]
+    fn a_book_is_required_unless_a_receipt_supplies_one() {
+        assert!(parse_args_from(vec!["why".to_owned()]).is_ok());
+        assert!(
+            parse_args_from(vec![
+                "why".to_owned(),
+                "--results".to_owned(),
+                "r.txt".to_owned()
+            ])
+            .is_err(),
+            "records without a book have nothing to be about"
+        );
+        assert!(
+            parse_args_from(vec!["plan".to_owned()]).is_err(),
+            "plan still demands its book"
+        );
+    }
+
     /// The did-you-mean helper: a near-miss (edit-distance ≤ 2) suggests, a wholly-different word
     /// does not (no misleading suggestion). Pins the mode + flag typo-suggestion behavior.
     #[test]
@@ -705,10 +812,10 @@ mod tests {
             None,
             "a wholly-different word ⇒ no suggestion"
         );
-        let flags = ["--trust-footprints", "--debug-argv", "--book"];
+        let flags = ["--risk-faultless-skips", "--debug-argv", "--book"];
         assert_eq!(
-            nearest("--tust-footprints", &flags),
-            Some("--trust-footprints")
+            nearest("--risk-faultless-skip", &flags),
+            Some("--risk-faultless-skips")
         );
         assert_eq!(nearest("--boook", &flags), Some("--book"), "one insertion");
     }
