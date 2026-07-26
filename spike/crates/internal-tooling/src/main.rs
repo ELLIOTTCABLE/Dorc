@@ -7,6 +7,7 @@
 
 use std::process::ExitCode;
 
+mod bless;
 mod coverage;
 mod hook_selftest;
 
@@ -15,12 +16,13 @@ fn main() -> ExitCode {
     match args.first().map(String::as_str) {
         Some("hook-selftest") => hook_selftest::run(),
         Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
+        Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
         other => {
             eprintln!(
                 "internal-tooling: unknown task {:?}",
                 other.unwrap_or("<none>")
             );
-            eprintln!("tasks: hook-selftest, coverage");
+            eprintln!("tasks: hook-selftest, coverage, bless");
             ExitCode::from(2)
         }
     }

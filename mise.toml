@@ -308,15 +308,14 @@ description = "Install hk's git hooks: the pre-commit lint gate AND the commit-m
 run = "hk install --mise"
 
 [tasks.bless]
-description = "ORCHESTRATOR-ONLY golden re-bless: fresh build, whole suite, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then build, then bless."
+description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
 dir = "spike"
-run = "sh e2e/conduct-bless.sh"
+run = "cargo run -q -p internal-tooling -- bless"
 
 [tasks."bless:dry"]
-description = "conduct-bless minus the bless pass: build + suite + tally, zero golden writes. The only mode a builder may run."
+description = "bless minus the bless pass: the whole acceptance gate plus the tally, zero golden writes. The only mode a builder may run."
 dir = "spike"
-env = { DRY = "1" }
-run = "sh e2e/conduct-bless.sh"
+run = "cargo run -q -p internal-tooling -- bless --dry"
 
 [tasks."loom:compile"]
 description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it. Runs --quiet, so only cases with something to report print; drop to a raw `cargo run` for the full per-case listing."

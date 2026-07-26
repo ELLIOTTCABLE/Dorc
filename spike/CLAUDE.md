@@ -828,7 +828,8 @@ no task covers, and consider adding the task instead.
   does not put it on PATH, so such a task dies from PowerShell/cmd. Work that wanted a
   script goes in `crates/internal-tooling` (repo plumbing, NOT product code; the
   cargo-xtask pattern) as `cargo run -q -p internal-tooling -- <task>`. Residual debt:
-  `bless`/`bless:dry` and `yardstick` still spell `sh` and still need git-bash or WSL.
+  `yardstick` alone still spells `sh`, and still needs git-bash or WSL — it is
+  KNOWN-BROKEN for an unrelated reason anyway.
 - **one-shell-answer** — `internal_tooling::Posix::find()` is the ONLY place that answers
   "where is a POSIX shell": git's own userland on Windows (derived from `git --exec-path`,
   never hardcoded, never PATH-searched), plain PATH lookup elsewhere. The e2e runner and
