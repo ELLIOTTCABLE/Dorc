@@ -119,10 +119,12 @@ as-built detail lives in granular commits + this ledger. Conductor residency:
   **DEFERRED to r30, banked**: the desync-eats-receipt redesign
   (replay-with-drift-disclosure is design work coupled to the git line's
   drifted wording + retention) · retention · default-on.
-  **AWAITING HUMAN ACK**: the `--trust-footprints` → `--risk-faultless-skips`
-  rename — priced by the map at S: one const + three parser lines, 6 looms
-  re-blessed in lockstep, ~6 rendered lines, one help-page lock row via its
-  loom; sequenced after the SpeechAct fold.
+  **ACKED (human-typed, 2026-07-26)**: the `--trust-footprints` →
+  `--risk-faultless-skips` rename is a GO ("pending for ages, no reason to
+  wait") — step 11 un-skipped mid-lane, builder messaged; priced S: one const
+  + three parser lines, 6 looms re-blessed in lockstep, ~6 rendered lines,
+  one help-page lock row via its loom; sequenced late per the map. The
+  long-standing rider-flag-rename-re-ask is thereby DISCHARGED.
 - **OPAQUE W25 STAGE COMPLETE + BLIND-FOLDED** @ merge `15edfb05` (5 commits,
   no STOP; per protocol the report carried gates only — all green at its tip,
   1441 tests — and the conductor inspected nothing; merge output suppressed;
