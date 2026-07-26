@@ -881,9 +881,8 @@ no task covers, and consider adding the task instead.
   fails to resolve loudly; allowed, it compiles into a question the platform cannot
   answer. Anything touching a `cfg`-gated region must be checked on BOTH platforms
   before it is trusted: `mise run both <task>` runs it on both sides in series — whichever
-  you started from, it adds the other — and fails if either leg does. Still no LINT for it
-  — that would be exactly the imperfect net `271:rul-net-quality-u-curve` warns against —
-  but the run is mechanical.
+  you started from, it adds the other — and fails if either leg does. No lint enforces it;
+  the run is the mechanism.
 - **wsl-needs-a-modern-git** — the repo enables the `relativeWorktrees` extension
   (git ≥ 2.48); an older git (Ubuntu 24.04 ships 2.43) refuses the WHOLE repository
   with `fatal: unknown repository extension found`, so every git-touching step —
