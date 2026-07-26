@@ -1332,6 +1332,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &oracle_srcs,
             &decision_digest,
             &plan,
+            clock.now(),
         );
         if whylog_eligible && let Some(records) = admitted_records.as_ref() {
             write_whylog(dir, &metadata, records);
@@ -1569,6 +1570,7 @@ fn assemble_whylog_metadata(
     oracle_srcs: &[String],
     decision_digest: &str,
     plan: &dorc_plan::Plan,
+    started_at: Option<dorc_core::RunInstant>,
 ) -> dorc_plan::whylog::WhylogV2Metadata {
     let apply = plan
         .steps
@@ -1592,6 +1594,7 @@ fn assemble_whylog_metadata(
         attempt: framing.attempt,
         host: framing.host.clone(),
         decision_digest: decision_digest.to_owned(),
+        started_at,
         apply,
     }
 }
