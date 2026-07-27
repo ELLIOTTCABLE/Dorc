@@ -61,6 +61,21 @@ corroboration. r26 LIVE-EXECUTION state (executor landed, box up, acceptance lan
 CONTRIBUTING deliverable pending) is in the scratchpad ledger + `notes/26E`; the human
 resumes it in a fresh window.
 
+**`26I:fnd-state-builtins-silently-mis-key` — CLOSED** on `ai/r26-builtin-deny` @ `fb53b859`
+(off `ai/r26-unify`), durable **`notes/26J-builtin-deny.md`**. Human-framed side-lane: DENY the
+unmodeled heads, do not model them. 22 heads refused at the two tracers' plain-command arm
+(`predict/eval.rs` `run_stmt`, `verdict.rs` `run_command`), riding the seats' existing ⊤ channels
+— new `TopReason::StateMutatingBuiltin` surfaces through `site-unresolvable`'s named-cause render;
+`VerdictTop::StateMutatingBuiltin` never vouches. `26I`'s evidence reproduced BEFORE the fix
+(resolved `Operand("install")` while the shipped `probe_body` carried the `set -- alpha` span;
+whole-product `site 0 effect=holds` on a cell never measured), pinned after at both tiers. The
+adjudication's load-bearing corrections: `:` is the MARK CARRIER (26 in-role uses — denying it
+would delete `state_stored_only_in`/`lend_map`/`safe-across`), keyword-`shift` is a modeled
+`Stmt::Shift` (460 uses), and `command` must stay (the contract's own gate). Zero golden movement,
+both legs (1602/1598). Residue is needs-human, in `26J`: the authoring-side lint stays unbuilt
+(it needs a which-roles-to-scan ruling `__resolve` complicates), verdict-lane ⊤s reach no surface
+at all (pre-existing, general), and book-side `set --` is an unmodeled sub-form gap.
+
 ## ROUND 26 — MINTED 2026-07-27: live execution (the next round; planning pending)
 
 **The human's re-cut (typed 2026-07-27):** two months in, the tool has never run against a
