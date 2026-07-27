@@ -2689,6 +2689,60 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
             out.stdout
         ));
     }
+    gate_differential(harness, &sh_dir)
+}
+
+/// The and-or GATE differential: the tracer's static answer for `[ … ] || return 2` must be the
+/// one a real shell gives. The tracer says a second operand trips the gate and a single operand
+/// does not; here the SAME body runs under the harness's POSIX shell, through `dorc-sh` (which
+/// strips and execs it), and its stdout/rc say which path the shell actually took.
+///
+/// Builtin-only by construction — the body is `[`, `printf`, and `return`, and `PATH` is the shell's
+/// own directory — so this runs no tool whatever the environment, exactly as the smoke above does.
+/// This is the closest sanctioned execution differential the corpus has: it rides the one runner
+/// allowed to execute fixture material rather than opening a second execution lane.
+fn gate_differential(harness: &Harness, sh_dir: &Path) -> Option<String> {
+    let scratch = Scratch::new("dorcgate");
+    let marked = scratch.path.join("gate.sh");
+    std::fs::write(
+        &marked,
+        "#!/usr/bin/env dorc-sh\n\
+         # dorc-lang/v0.2\n\
+         gate__predict() {\n   \
+            [ \"${2-}\" = \"\" ] || return 2\n   \
+            pkg : sm.dorc.Package = \"$1\"\n   \
+            printf 'gate cleared: %s\\n' \"$pkg\"\n\
+         }\n\
+         gate__predict \"$@\"\n\
+         printf 'rc=%s\\n' \"$?\"\n",
+    )
+    .expect("write the gate script");
+    // (argv, what the TRACER says: cleared, and the body's rc)
+    for (argv, cleared, rc) in [
+        (vec!["nginx"], true, "0"),
+        (vec!["nginx", "curl"], false, "2"),
+    ] {
+        let mut command = Command::new(&harness.dorc_sh);
+        command
+            .current_dir(&scratch.path)
+            .env_clear()
+            .env("PATH", sh_dir)
+            .env("LC_ALL", "C")
+            .env("TZ", "UTC")
+            .arg(&marked);
+        for arg in &argv {
+            command.arg(arg);
+        }
+        let out = capture(command.stdout(Stdio::piped()).stderr(Stdio::piped()));
+        let ran = out.stdout.contains("gate cleared: nginx");
+        if ran != cleared || !out.stdout.contains(&format!("rc={rc}")) {
+            return Some(format!(
+                "gate_differential: for argv {argv:?} the tracer says cleared={cleared} rc={rc}, \
+                 but {} actually produced: {}{}",
+                harness.checker_name, out.stdout, out.stderr
+            ));
+        }
+    }
     None
 }
 
