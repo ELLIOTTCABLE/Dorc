@@ -458,6 +458,12 @@ pub enum CollapseKind {
         site: SiteId,
         cause: RenderRefusalTag,
     },
+    /// The validity fixpoint hit its iteration cap and DEGRADED TO ORIGIN (`26H` §4.4): every
+    /// erasure discarded, the whole run recomputed with nothing erased. A safety-narrowing —
+    /// elisions the fixpoint had licensed are withdrawn — so it narrates like any other
+    /// (`law-collapse-mints-narrative`), even though the path is unreachable while erasure stays
+    /// monotone. Carries how many rounds ran and how many erasures were thrown away.
+    FixpointCapDegrade { rounds: u32, discarded: u32 },
     /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
 }
@@ -489,6 +495,7 @@ impl CollapseKind {
             CollapseKind::EntryFailure { .. } => "EntryFailure",
             CollapseKind::Demotion { .. } => "Demotion",
             CollapseKind::RenderRefusal { .. } => "RenderRefusal",
+            CollapseKind::FixpointCapDegrade { .. } => "FixpointCapDegrade",
             CollapseKind::Cancellation(_) => "Cancellation",
         }
     }

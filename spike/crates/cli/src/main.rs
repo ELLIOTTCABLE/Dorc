@@ -1158,8 +1158,22 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let settled =
-        settle_validity_fixpoint(&frozen, &probe, results, origin, &mut interner, &mut arena);
+    let fixpoint_cap = u32::try_from(origin.classes.len())
+        .unwrap_or(u32::MAX)
+        .max(1);
+    let settled = settle_validity_fixpoint(
+        &frozen,
+        &probe,
+        results,
+        origin,
+        fixpoint_cap,
+        &mut interner,
+        &mut arena,
+    );
+    debug_assert!(
+        !settled.capped,
+        "the validity fixpoint hit its site-count cap — erasure stopped being monotone"
+    );
     let round = settled.round;
     let classes = round.classes;
     let kills = round.kills;
@@ -5791,7 +5805,10 @@ struct SettledFixpoint {
     merge_narrative: Vec<CollapseNarrative>,
     collapsed: BTreeMap<dorc_core::FactKey, u32>,
     ledger: dorc_plan::erase::ErasureLedger,
-    /// Round 1's validity bits — the ORIGIN model's answer, kept so the why-chain can tell a
+    /// Did the loop hit its cap and degrade to origin? Unreachable at the production bound, so
+    /// the caller `debug_assert`s it false; the fault-injection pin drives it true deliberately.
+    capped: bool,
+    /// Round 1.s validity bits — the ORIGIN model's answer, kept so the why-chain can tell a
     /// site that was always trustworthy from one whose guard only became trustworthy because
     /// something upstream was proven dead. The latter is the cascade `26H` §4.6 requires be
     /// renderable, and it is the only reason any round-1 quantity outlives its round.
@@ -5980,12 +5997,10 @@ fn settle_validity_fixpoint(
     probe: &dorc_plan::ProbePlan,
     results: &SiteResults,
     origin: ClassifiedRound,
+    cap: u32,
     interner: &mut Interner,
     arena: &mut ProvArena,
 ) -> SettledFixpoint {
-    let cap = u32::try_from(origin.classes.len())
-        .unwrap_or(u32::MAX)
-        .max(1);
     let mut ledger = dorc_plan::erase::ErasureLedger::new();
     let origin_validity = validity_view(&origin.classes);
     let mut round = origin;
@@ -6018,14 +6033,12 @@ fn settle_validity_fixpoint(
                 merge_narrative,
                 collapsed,
                 ledger,
+                capped: false,
                 origin_validity,
             };
         }
-        debug_assert!(
-            number < cap,
-            "validity fixpoint hit its {cap}-round cap — erasure stopped being monotone"
-        );
         if number >= cap {
+            let discarded = u32::try_from(ledger.len()).unwrap_or(u32::MAX);
             ledger.rebuild_from_origin();
             let round = classify_round(
                 frozen,
@@ -6036,13 +6049,24 @@ fn settle_validity_fixpoint(
                 &mut BTreeSet::new(),
             );
             let validity = validity_view(&round.classes);
-            let (by_fact, merge_narrative, collapsed) = facts_from_sites(probe, results, &validity);
+            let (by_fact, mut merge_narrative, collapsed) =
+                facts_from_sites(probe, results, &validity);
+            // Withdrawing licensed elisions is a safety-narrowing like any other, so it narrates
+            // (`law-collapse-mints-narrative`). Decision-inert; unrendered today by design.
+            merge_narrative.push(CollapseNarrative::new(
+                SpeechAct::Derived,
+                CollapseKind::FixpointCapDegrade {
+                    rounds: number,
+                    discarded,
+                },
+            ));
             return SettledFixpoint {
                 round,
                 by_fact,
                 merge_narrative,
                 collapsed,
                 ledger,
+                capped: true,
                 origin_validity,
             };
         }
@@ -9021,6 +9045,132 @@ mod tests {
             collapsed.get(&fact),
             Some(&3),
             "and it counts every site on the cell, including the ones that agreed"
+        );
+    }
+
+    /// The ladder oracle: a query verb (`:?`) and a mutating verb (`:`) — the two halves of the
+    /// idiom the validity fixpoint exists to make cascade.
+    const FIXPOINT_ORACLE: &str = r#"
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+"#;
+
+    /// Drive the REAL fixpoint over a two-rung ladder at the given iteration `cap`.
+    fn settle_ladder(cap: u32, records: &str) -> SettledFixpoint {
+        let book = "dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n\
+                    dpkg -s beta >/dev/null 2>&1 || apt-get install -y beta\n";
+        let mut interner = Interner::default();
+        let oracle_srcs = vec![FIXPOINT_ORACLE.to_owned()];
+        let idx = dorc_oracle::lift(&mut interner, &[FIXPOINT_ORACLE]).value;
+        let checks =
+            vec![dorc_oracle::predict::lift_predicts(&mut interner, FIXPOINT_ORACLE).value];
+        let verdicts = dorc_oracle::verdict::VerdictIndex::default();
+        let parsed = dorc_syntax::parse(book);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
+        let mut arena = ProvArena::new();
+        let peeled = BTreeMap::new();
+        let frozen = FrozenModel {
+            cfg: &cfg,
+            value: &value,
+            ast: &parsed.value,
+            idx: &idx,
+            checks: &checks,
+            verdicts: &verdicts,
+            peeled: &peeled,
+        };
+        let origin = classify_round(
+            &frozen,
+            &dorc_analysis::erase::ErasedSites::none(),
+            &mut interner,
+            &mut arena,
+            &mut BTreeMap::new(),
+            &mut BTreeSet::new(),
+        );
+        let probe = {
+            let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
+            dorc_plan::compile_probe(
+                &parsed.value,
+                &cfg,
+                &value,
+                &origin.classes,
+                &BTreeMap::new(),
+                &dorc_plan::ConnectedPipes::default(),
+                ship,
+                |_, _, _| None,
+                |_| false,
+            )
+        };
+        let results = parse_str(records, &mut interner);
+        settle_validity_fixpoint(
+            &frozen,
+            &probe,
+            &results,
+            origin,
+            cap,
+            &mut interner,
+            &mut arena,
+        )
+    }
+
+    /// The cascade's own liveness: uncapped, rung 2's guard becomes valid because rung 1's
+    /// install was proven dead — what `26G:fnd-dead-branch-still-invalidates` says must happen.
+    #[test]
+    fn the_fixpoint_erases_a_dead_mutator_and_revalidates_below_it() {
+        let settled = settle_ladder(
+            64,
+            "site 0 effect=holds rc=0\nsite 1 effect=holds\n\
+             site 2 effect=holds rc=0\nsite 3 effect=holds\n",
+        );
+        assert_eq!(settled.ledger.len(), 2, "both installs are proven dead");
+        assert!(
+            settled.ledger.entries().any(|e| e.round().0 >= 2),
+            "the second erasure is a round-2+ finding — that IS the cascade"
+        );
+    }
+
+    /// FAULT INJECTION for `CollapseKind::FixpointCapDegrade`: force the cap to 1 so a fixpoint
+    /// that genuinely wants a second round trips it. The degrade must discard EVERY erasure (the
+    /// answer becomes the pre-W-C one, never a partial fixpoint) and must narrate — withdrawing
+    /// licensed elisions is a safety-narrowing like any other.
+    #[test]
+    fn a_capped_fixpoint_degrades_to_origin_and_narrates() {
+        let records = "site 0 effect=holds rc=0\nsite 1 effect=holds\n\
+                       site 2 effect=holds rc=0\nsite 3 effect=holds\n";
+        let capped = settle_ladder(1, records);
+        assert!(
+            capped.ledger.is_empty(),
+            "a capped fixpoint ships NO erasure at all, not a partial set"
+        );
+        assert_eq!(
+            capped
+                .merge_narrative
+                .iter()
+                .filter(|e| matches!(e.kind(), CollapseKind::FixpointCapDegrade { .. }))
+                .count(),
+            1,
+            "the degrade mints exactly one narrative"
+        );
+        assert!(
+            !settle_ladder(64, records)
+                .merge_narrative
+                .iter()
+                .any(|e| matches!(e.kind(), CollapseKind::FixpointCapDegrade { .. })),
+            "a fixpoint that quiesces normally narrates no degrade"
         );
     }
 

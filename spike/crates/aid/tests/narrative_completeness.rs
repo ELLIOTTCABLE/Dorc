@@ -56,6 +56,7 @@ fn census_marker(kind: &CollapseKind) -> &'static str {
         CollapseKind::EntryFailure { .. } => "CollapseKind::EntryFailure",
         CollapseKind::Demotion { .. } => "CollapseKind::Demotion",
         CollapseKind::RenderRefusal { .. } => "CollapseKind::RenderRefusal",
+        CollapseKind::FixpointCapDegrade { .. } => "CollapseKind::FixpointCapDegrade",
         CollapseKind::Cancellation(reserved) => match *reserved {},
     }
 }
@@ -101,6 +102,10 @@ fn constructible_classes() -> Vec<CollapseKind> {
             reason: DemoteTag::TotalWall,
         },
         CollapseKind::render_refusal_heredoc(site(0)),
+        CollapseKind::FixpointCapDegrade {
+            rounds: 1,
+            discarded: 0,
+        },
     ]
 }
 
