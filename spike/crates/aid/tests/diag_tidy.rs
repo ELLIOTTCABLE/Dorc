@@ -523,6 +523,33 @@ fn every_migrated_payload_name_is_a_real_variant() {
     }
 }
 
+/// The other direction, and a separate test on purpose: the retire-guard reads `HEAD`, so it
+/// cannot see a slug ADDED to `diag.rs` without a matching `MIGRATED_SLUGS` entry until that change
+/// is already committed — it goes green on the offending commit and red on the next unrelated run,
+/// which reads as a spurious failure in whatever landed after.
+///
+/// This reads the WORKING TREE, so a desync fails on the change that caused it. It cannot replace
+/// the retire-guard: working-tree-vs-list catches ADDITIONS, and only committed-vs-current catches
+/// a DELETION — a slug dropped from both the file and the list vanishes from a working-tree scan
+/// entirely, which is the tautology the retire-guard was rewritten to escape.
+#[test]
+fn every_working_tree_slug_is_listed() {
+    let diag = std::fs::read_to_string(crates_dir().join("aid/src/diag.rs")).expect("read diag.rs");
+    let slugs = committed_slug_arms(&diag);
+    assert!(
+        !slugs.is_empty(),
+        "the `slug()` shape-scan matched nothing in the working tree — fix the scan rather than \
+         letting this pass vacuously"
+    );
+    for slug in slugs {
+        assert!(
+            MIGRATED_SLUGS.contains(&slug.as_str()) || RETIRED_SLUGS.contains(&slug.as_str()),
+            "`{slug}` is in `DiagCode::slug()` but not in MIGRATED_SLUGS — that list is documented \
+             as kept in sync with it, and the retire-guard cannot report it until the next commit."
+        );
+    }
+}
+
 /// (2) The git-diff RETIRE-GUARD (`226` §1): a catalog slug removed from the committed `diag.rs`
 /// without being recorded as retired is a SILENT variant deletion. We diff the committed
 /// `diag.rs` against the working tree and fail if a `MIGRATED_SLUGS` entry's literal was deleted.
