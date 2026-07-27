@@ -56,6 +56,18 @@ pub(super) enum Tok {
     /// `|` — case-arm pattern alternation (also sh pipe, but the dialect only uses
     /// it between case patterns).
     Pipe,
+    /// `||` — the OR-ELSE list operator. A token in its own right rather than two adjacent
+    /// [`Pipe`](Tok::Pipe)s: the span-adjacency heuristic that stood in for it could report a
+    /// degrade REASON but could never carry the list's structure.
+    DPipe,
+    /// `&&` — the AND-THEN list operator. Until this existed, `a && b` scanned as the three WORDS
+    /// `a`, `&&`, `b`, so every statement right of the operator was invisible to the tracers while
+    /// the byte-exact shipped body still ran it — a wrong `Resolved`, not a degrade
+    /// (`26G:§FINDING-andand-resolves-a-wrong-coordinate`).
+    DAmp,
+    /// `&` — the async (background) separator. Lexed for exactly the [`DAmp`](Tok::DAmp) reason
+    /// (`a & b` swallowed `b` identically) and modeled no further than it takes to degrade.
+    Amp,
     /// `[` — test-command open bracket (a standalone token only when space-flanked,
     /// the sh `[` builtin).
     LBracket,
@@ -132,7 +144,20 @@ impl Lexer<'_> {
                         self.punct(Tok::Semi, 1);
                     }
                 }
-                b'|' => self.punct(Tok::Pipe, 1),
+                b'|' => {
+                    if self.peek(1) == Some(b'|') {
+                        self.punct(Tok::DPipe, 2);
+                    } else {
+                        self.punct(Tok::Pipe, 1);
+                    }
+                }
+                b'&' => {
+                    if self.peek(1) == Some(b'&') {
+                        self.punct(Tok::DAmp, 2);
+                    } else {
+                        self.punct(Tok::Amp, 1);
+                    }
+                }
                 b'[' if self.bracket_is_standalone(true) => self.punct(Tok::LBracket, 1),
                 b']' if self.bracket_is_standalone(false) => self.punct(Tok::RBracket, 1),
                 b'>' | b'<' => self.redirect(),
@@ -404,6 +429,10 @@ fn span(lo: usize, hi: usize) -> Span {
 /// bytes — they fall to the lexer's Error path. Whitespace, the standalone
 /// metacharacters, the redirection operators, and NUL all map to the same "not a
 /// word byte" outcome.
+///
+/// `&` is a metacharacter here, as POSIX has it — an unquoted `&` always ends a word. The
+/// redirection forms that carry one (`2>&1`, `>&2`) never reach this predicate: [`Lexer::redirect`]
+/// consumes their `&` by explicit peek before the word arm sees the byte.
 fn is_word_byte(b: u8) -> bool {
     let is_meta = matches!(
         b,
@@ -414,6 +443,7 @@ fn is_word_byte(b: u8) -> bool {
             | b')'
             | b';'
             | b'|'
+            | b'&'
             | b'`'
             | b'"'
             | b'\''
