@@ -63,9 +63,12 @@ keying) → W-C (validity fixpoint). W-D precedes W-B because more/fewer resolvi
 upstream input to the keying work (same coupling logic as
 `26G:haz-fixing-keying-changes-fold-inputs`); every workstream lands separately, re-blesses
 separately, never measured while another is in flight. The safety-direction law now carries
-ONE exception: `26G:§FINDING-andand-resolves-a-wrong-coordinate` (found by W-A2's bounded
-investigation) IS a wrong-yes-capable soundness defect — the only one known — and W-D
-phase 1 exists to close it. Everywhere else the standing rule holds: any diff that makes
+ONE exception (STATUS 2026-07-28, post-phase-1: DISCHARGED — kept for the record):
+`26G:§FINDING-andand-resolves-a-wrong-coordinate` was a wrong-yes-capable soundness defect,
+and W-D's map probe found TWO MORE in the same lexing family (`26G:§FINDING-ortrue-vouches-
+a-forged-rc`; the lone-`&` twin of the coordinate bug). ALL THREE are closed and
+discriminator-pinned by W-D phase 1 @ `6300dd78`; no known wrong-yes-capable defect remains
+open as of that commit. Everywhere else the standing rule holds: any diff that makes
 MORE elide without a pinned law argument is presumptively wrong.
 
 ## §1½. W-D — and-or lists in oracle bodies (minted 2026-07-28; provenance: the human's
@@ -372,7 +375,9 @@ record-set.
   `inv-top-reject` ⊤-shrink, its own purity argument). The gate idiom is now broken-but-LOUD
   (`TopReason::OrList` reaches the `site-unresolvable` note); a doc-side interim note is the
   human's call (docs are their voice).
-- R-5-andlist-resolves-wrong — NOT a precision question like its siblings: `&` is not a
+- R-5-andlist-resolves-wrong — CLOSED by W-D phase 1 @ `6300dd78` (entry kept for the
+  record; the two sibling wrong-yes finds closed with it) — NOT a precision question like
+  its siblings: `&` is not a
   predict-lexer metacharacter, so `a && b` lexes as three WORDS and every statement right of
   `&&` is invisible to the tracer while the byte-exact shipped probe still runs it. A swallowed
   `shift` therefore resolves a coordinate off the UNSHIFTED argv while the host measures the
