@@ -1110,9 +1110,6 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
             "DORC_TRANSPORT",
             format!("local:{}", harness.checker.display()),
         )
-        // The shell's own name for itself. On Windows the OS spelling and the shell spelling
-        // genuinely differ and only this harness knows both: msys `dash` cannot exec a `C:\…`
-        // path, and `CreateProcess` cannot start `/usr/bin/dash`.
         .env(
             "DORC_TRANSPORT_INTERPRETER",
             if cfg!(windows) {
@@ -1121,8 +1118,6 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
                 harness.checker.display().to_string()
             },
         )
-        // Mocks FIRST, so a mocked tool keeps winning and the shim only adds the disjoint
-        // oracle-check names — the same ordering `probe_exec_check` uses.
         .env("PATH", &probe_path)
         .arg("plan")
         .arg(format!("--host={CLOSED_LOOP_HOST}"))
@@ -1150,10 +1145,6 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
         )));
     }
 
-    // The committed fixture is HEADERLESS, and the production ingress refuses a headerless stream
-    // outright — so the corpus has always fed it through `framed_results`, which synthesizes the
-    // framing around it. That indirection is exactly what a real probe does not need, and exactly
-    // why this comparison is worth making.
     let framed = scratch.path.join("framed-results.txt");
     std::fs::write(&framed, framed_results(harness, dir, &args)).expect("write framed");
     let results = std::fs::File::open(&framed).expect("open framed results");
@@ -2931,9 +2922,6 @@ fn main() {
     let looms = discover_looms(&case_roots());
     preflight(&harness, discovered.len());
 
-    // T1: one closed-loop trial, over a case carrying BOTH inert mocks and an authored fixture —
-    // the fixture is what the real probe output gets compared against. One case is enough: this
-    // pins the CHAIN, not any case's verdicts.
     let closed_loop_dir = discovered
         .iter()
         .find(|case| {

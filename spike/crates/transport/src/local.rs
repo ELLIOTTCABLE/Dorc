@@ -45,10 +45,8 @@ impl LocalDriver {
 
 impl SessionDriver for LocalDriver {
     fn run(&mut self, request: &SessionRequest<'_>) -> SessionOutcome {
-        // The interpreter arrives as `$0` rather than interpolated into the command line, because
-        // a path is DATA and a command line is CODE: `C:\Program Files\Git\usr\bin\dash.exe`
-        // word-splits into `C:Program` the moment it is pasted into a shell string. Passing it as
-        // an argument lets the OS carry it across intact and the shell quote it for us.
+        // `$0`, never interpolation: a path is DATA and a command line is CODE, and
+        // `C:\Program Files\...` word-splits the moment it is pasted into a shell string.
         let mut command = Command::new(&self.shell);
         command
             .arg("-c")

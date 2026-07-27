@@ -88,9 +88,6 @@ pub(crate) fn driver_for_invocation(
         && let Some(shell) = spec.strip_prefix("local:")
     {
         eprintln!("dorc: {TRANSPORT_ENV}=local — running through a local shell, not ssh");
-        // The shell's own name for itself, when the OS's name for it will not do (msys `dash`
-        // cannot exec a `C:\…` path). Supplied by the harness that resolved the shell, because
-        // only it knows both spellings.
         return Box::new(match std::env::var(TRANSPORT_INTERPRETER_ENV) {
             Ok(interpreter) if !interpreter.is_empty() => {
                 LocalDriver::new(PathBuf::from(shell), interpreter)

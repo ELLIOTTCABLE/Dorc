@@ -529,7 +529,6 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             dorc_aid::diag::CliNoBookGiven,
         )));
     }
-    // Two answers to one question; preferring either would key the evidence source to argv order.
     if results.is_some() && host.is_some() {
         return Err(Diag::new_spanless_site(
             DiagCode::CliFlagsMutuallyExclusive(dorc_aid::diag::CliFlagsMutuallyExclusive {
@@ -538,8 +537,6 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             }),
         ));
     }
-    // Round-trip's stdout is probe-then-apply split on a shebang; shipping the probe would
-    // silently remove half of it. `probe --host` is a real surface, merely unbuilt.
     if host.is_some() && !matches!(mode, Mode::Plan | Mode::Apply) {
         return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
             dorc_aid::diag::CliFlagRequiresMode {

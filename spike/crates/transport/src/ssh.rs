@@ -216,11 +216,9 @@ mod tests {
             ("localhost:2222", "localhost", Some(2222)),
             ("root@localhost:2222", "root@localhost", Some(2222)),
             ("192.0.2.7:22", "192.0.2.7", Some(22)),
-            // Unbracketed IPv6 is an ADDRESS, never a port: its colons are part of it.
             ("::1", "::1", None),
             ("fe80::1", "fe80::1", None),
             ("root@fe80::1", "root@fe80::1", None),
-            // A port beside IPv6 needs the bracket, which is the only thing that disambiguates.
             ("[::1]:2222", "::1", Some(2222)),
             ("[fe80::1]", "fe80::1", None),
             ("deploy@[::1]:2222", "deploy@::1", Some(2222)),

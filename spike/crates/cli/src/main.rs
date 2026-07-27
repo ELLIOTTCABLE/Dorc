@@ -651,8 +651,6 @@ impl RunClock {
     reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
 )]
 fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
-    // Before the pipeline, so building and applying in one breath is unreachable rather than
-    // merely unwritten.
     if args.mode == Mode::Apply
         && let Some(host) = args.host.as_deref()
     {
@@ -1079,8 +1077,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         std::io::stdout().flush().ok();
     }
 
-    // The framing returned is the WINNING attempt's, so admission checks records against the
-    // attempt that produced them. Hostless, none of this runs — the byte-identity fence.
     let (framing, shipped_evidence) = match args.host.as_deref() {
         None => (framing, None),
         Some(raw) => {

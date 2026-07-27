@@ -97,8 +97,6 @@ impl HostId {
             return Err(HostIdRejected::NotOneWord);
         }
 
-        // ssh splits the user off at the LAST `@`, so a `@` inside a user name resolves here
-        // exactly as it will there.
         let (user, host) = match raw.rfind('@') {
             Some(at) => (
                 raw.get(..=at).unwrap_or_default(),

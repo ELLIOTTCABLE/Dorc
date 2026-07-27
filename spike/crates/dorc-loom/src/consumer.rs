@@ -954,8 +954,6 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
                 return None;
             }
         } else if *word == "--host" {
-            // Accepted so a transport case's transcript can show the command that really produces
-            // it. The destination is never contacted — these cases land on world-as-payload.
             index = index.saturating_add(1);
             words.get(index)?;
         } else if *word == "--verbose" {
@@ -1450,9 +1448,6 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         "dorc-sh-exec-failed" => DiagCode::DorcShExecFailed(DorcShExecFailed {
             detail: "No such file or directory (os error 2)".to_owned(),
         }),
-        // The transport family, for the same reason as the I/O failures above: an honest trigger
-        // needs a real host and a really severed connection, and this corpus may not open a
-        // socket at all.
         "transport-crlf-refused" => DiagCode::TransportCrlfRefused(TransportCrlfRefused {
             which: "webhost.dorc-plan.sh".to_owned(),
             line: "1".to_owned(),
