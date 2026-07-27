@@ -350,6 +350,17 @@ is the human's; untouched.
   Frictions banked: `loom-hygiene`'s glob reaches dorc-loom fixtures (whole-
   corpus run on a fixture edit; sub-second, harmless, noted) · WSL env note:
   `wsl -- mise trust --all` where plain `mise trust` fails config parse.
+- **rul-selection-is-goal-derived REFINED** (human-typed correction, same
+  sitting): the conductor's first regloss of `law-pull-runs-wide-open`
+  OVER-CORRECTED — "answer maximally" was always a REGISTER statement (any pull
+  answer is generous next to the jealously-meted push surfaces; that contrast
+  stands), not a density mandate, and the goal-law never forbade curating
+  maximally — it forbids curating WRONG; density is a tuning within the goal.
+  Second refinement: spike-era posture — the present concern is THE ARCHITECTURE
+  to tune prosody/verbosity (generate more/better/extra/noisy output data; it
+  forces the architecture to track it; down-tuning is cheap later, up-tuning is
+  very hard — kWARN tune-high generalized), far more than where the tuning sits.
+  Both edits applied to the two AID-NEEDS law entries in place.
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
