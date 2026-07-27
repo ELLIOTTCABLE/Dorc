@@ -113,6 +113,11 @@ pub enum DiagCode {
     PredictOutOfDialect(PredictOutOfDialect),
     /// A check function body is structurally unterminated (a missing `;;` or `esac` etc.).
     PredictUnterminated(PredictUnterminated),
+    /// A role-funcdef the file DECLARES is absent from the lifted set and no other diagnostic said
+    /// why — its binds and marks went inert while the file still parsed clean (`26G`'s
+    /// silence-is-the-common-cause class). Cause-AGNOSTIC by design: it reports the LOSS, never a
+    /// reason, so it catches drop paths and unrouted roles nobody has found yet.
+    OracleRoleFnUnlifted(OracleRoleFnUnlifted),
 
     // ── oracle/reserved.rs (munge-reservation lint) ─────────────────────────
     /// An emitted `<munged>__<role>` funcname is not a legal sh NAME (leading digit / dot /
@@ -208,6 +213,10 @@ pub enum DiagCode {
     ResolverProviderCollision(ResolverProviderCollision),
     /// A coordinate resolved DANGLING (no such entity on an enumerable kind) — the site runs.
     DanglingReference(DanglingReference),
+    /// Two or more sites measured ONE shared cell and reported different things, so the meet ⊤s
+    /// the cell and de-licenses every site on it — including sites that reported cleanly. One
+    /// line per cell, not per disagreeing pair (`26G:fnd-shared-auto-cell-collides`).
+    SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree),
     /// Two oracle files declare one kind's reach-function — BOTH refused, no expansion.
     ReachesConflict(ReachesConflict),
     /// A reach-function keyed to a name matching a known COMMAND provider (a likely mis-key).
@@ -330,6 +339,7 @@ impl DiagCode {
             DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
             DiagCode::PredictOutOfDialect(_) => "predict-out-of-dialect",
             DiagCode::PredictUnterminated(_) => "predict-unterminated",
+            DiagCode::OracleRoleFnUnlifted(_) => "oracle-role-fn-unlifted",
             DiagCode::MungeNameInvalid(_) => "munge-name-invalid",
             DiagCode::MungeNameCollision(_) => "munge-name-collision",
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
@@ -364,6 +374,7 @@ impl DiagCode {
             DiagCode::ResolverConflict(_) => "resolver-conflict",
             DiagCode::ResolverProviderCollision(_) => "resolver-provider-collision",
             DiagCode::DanglingReference(_) => "dangling-reference",
+            DiagCode::SharedCellMeasurementsDisagree(_) => "shared-cell-measurements-disagree",
             DiagCode::ReachesConflict(_) => "reaches-conflict",
             DiagCode::ReachesProviderCollision(_) => "reaches-provider-collision",
             DiagCode::WrapperEntryIncoherent(_) => "wrapper-entry-incoherent",
@@ -633,6 +644,14 @@ pub struct PredictOutOfDialect {
 pub struct PredictUnterminated {
     /// The check parser's description (display only).
     pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleRoleFnUnlifted`] (TEMPLATIZED): the declared-but-unlifted
+/// role-funcdef. Spanned at its own name, so the caret lands on the function the author wrote.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleRoleFnUnlifted {
+    /// The funcdef name as the file spells it (`{funcname}`, e.g. `wombat__is_converged`).
+    pub funcname: String,
 }
 
 // ===========================================================================
@@ -923,6 +942,18 @@ pub struct ResolverProviderCollision {
 pub struct DanglingReference {
     /// The rendered dangling coordinate (`{coord}`, display only).
     pub coord: String,
+}
+
+/// Payload of [`DiagCode::SharedCellMeasurementsDisagree`] (TEMPLATIZED): the shared cell whose
+/// per-site measurements met to ⊤, and how many sites measured it. Spanless — a cell is a
+/// cross-site coordinate with no one source point, and naming any single site as the location
+/// would frame a shared collapse as one line's fault.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SharedCellMeasurementsDisagree {
+    /// The rendered cell coordinate (`{cell}`, display only).
+    pub cell: String,
+    /// How many sites measured it (`{sites}`).
+    pub sites: u32,
 }
 
 /// Payload of [`DiagCode::ReachesConflict`] (TEMPLATIZED): the kind and the reach-function count.
@@ -1629,6 +1660,14 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::ProvideModel,
         },
+        // The cause-agnostic backstop: WARNING, not Error. It fires where the engine cannot say
+        // what went wrong, so refusing on it would refuse on our own ignorance; and the loss is
+        // always safety-correct (an unlifted funcdef vouches for nothing, it only stops helping).
+        DiagCode::OracleRoleFnUnlifted(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
         // ── sweep: severities preserve each emit site's CURRENT classification exactly.
         // Floor rule (as elsewhere): Error ⇒ WarnOrDeny (a refusal must not silence below Warning);
         // Warning/Note disclosures ⇒ None.
@@ -1800,6 +1839,14 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             remediation: RemediationClass::ProvideModel,
         },
         DiagCode::DanglingReference(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
+        // The shared-cell meet: a Note on the advisory tier. The sites RUN (the safe direction),
+        // so nothing rides on it; splitting the cell needs an authored coordinate, which is a
+        // DeclareIdentity act by the oracle author.
+        DiagCode::SharedCellMeasurementsDisagree(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
@@ -2121,6 +2168,7 @@ fn params_of_raw(code: &DiagCode) -> Vec<(&'static str, String)> {
         DiagCode::EffectKindDisagreement(p) => vec![("detail", p.detail.clone())],
         DiagCode::PredictOutOfDialect(p) => vec![("detail", p.detail.clone())],
         DiagCode::PredictUnterminated(p) => vec![("detail", p.detail.clone())],
+        DiagCode::OracleRoleFnUnlifted(p) => vec![("funcname", p.funcname.clone())],
         DiagCode::FootprintIncoherent(p) => vec![("detail", p.detail.clone())],
         DiagCode::EscalationPolicy(p) => vec![("detail", p.detail.clone())],
         DiagCode::CarriedAcrossSubstrateAxis(p) => vec![("detail", p.detail.clone())],
@@ -2252,6 +2300,9 @@ fn params_of_raw(code: &DiagCode) -> Vec<(&'static str, String)> {
         }
         DiagCode::ResolverProviderCollision(p) => vec![("name", p.name.clone())],
         DiagCode::DanglingReference(p) => vec![("coord", p.coord.clone())],
+        DiagCode::SharedCellMeasurementsDisagree(p) => {
+            vec![("cell", p.cell.clone()), ("sites", p.sites.to_string())]
+        }
         DiagCode::ReachesConflict(p) => {
             vec![("kind", p.kind.clone()), ("count", p.count.to_string())]
         }
