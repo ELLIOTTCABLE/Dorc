@@ -596,6 +596,13 @@ plainly because it sets the priority: none of these is an emergency, and a rushe
 them — particularly the separation consequence in `fnd-shared-auto-cell-collides` — can easily
 be *worse* than the defect, by converting a precision loss into a soundness loss. Prefer slow.
 
+<!-- /* superceded IN PART, TWICE, by the appended §FINDING sections below. The claim is true of
+     the FOUR ORIGINAL findings and false of the note as a whole: `§FINDING-andand-resolves-a-
+     wrong-coordinate` (2026-07-27) and `§FINDING-ortrue-vouches-a-forged-rc` (2026-07-28) are
+     both wrong-YES-capable, found later by pulling on this note's own threads. Do not carry
+     "no soundness bug exists here" forward from this paragraph. The PRIORITY advice — prefer
+     slow, a rushed fix can convert precision loss into soundness loss — stands unamended. */ -->
+
 **haz-pass-order-is-analysis-then-plan-once.** `analysis` is records-blind by construction;
 `plan`/`cli` hold the records. Several natural-looking fixes ("just check whether it is dead")
 are impossible in the crate where the decision is currently made. Expect any real fix to either
@@ -740,3 +747,62 @@ elision movement" tripwire. It needs a conductor checkpoint and its own re-bless
 whoever takes it: a single `&` (background/`a & b`) rides the same `_ => self.word()` arm and wants
 the same exclusion-check; the corpus's `&`-bearing text is all inside redirects (`2>&1`), which the
 `redirect()` lexer already consumes before the word arm sees it.
+
+---
+
+# §FINDING-ortrue-vouches-a-forged-rc (appended 2026-07-28, during the W-D phase-1 build)
+
+FOUND AND FIXED in the same phase, unlike the two findings above — it was discovered by scout
+probe while mapping W-D, and W-D phase 1 closes it as a side effect of lexing `||`. A **soundness**
+finding (a wrong *yes*), the second one this note now carries, so `haz-safety-direction-holds-
+everywhere` is superseded a second time (marker in place at that paragraph).
+
+## The mechanism
+
+`oracle/src/verdict.rs` `Tracer::run_command` has **no list guard and no `cmd.pipeline` guard**. An
+or-list arrived there as one folded `Command` whose `words` were only the FIRST stage's, so
+`decline_idiom(words.first())` saw an ordinary command, `reached_command` was set, and the trace
+answered `Vouched`. Everything right of the `||` was invisible to the decision.
+
+## The repro (pure static; `dorc_oracle::verdict::{VerdictSet, evaluate_verdict}`, nothing executed)
+
+`evaluate_verdict(check, ["nginx"])`, one variable changed per row:
+
+| `x__is_converged()` body | resolution (before W-D) |
+|---|---|
+| `dpkg-query -W "$1"` | `Vouched` — correct, the reached authored check |
+| `dpkg-query -W "$1" \|\| true` | **`Vouched`** |
+| `dpkg-query -W "$1" \|\| return 0` | **`Vouched`** |
+| `command -v x … \|\| return 2` then a real check | `Vouched` — right answer, reached by the wrong route |
+
+## Why it has teeth
+
+Row 2 is `R2-ORTRUE`'s named disaster shape, statically vouched. The vouch licenses a guard, and
+the guard **re-runs the whole stripped body live**: `dpkg-query -W "$1" || true` exits 0 on every
+host, converged or not, so `( x__is_converged nginx ) || <mutator>` suppresses the mutator
+unconditionally. That is the always-skip guard `strip.rs`'s own doc-comment calls the disaster
+shape (`23H` §9.4) — reached by writing the exact idiom the oracle CLAUDE.md quality bar warns
+about (`R2-ORTRUE`: "refuse an errexit-masked rc as a probe verdict … a lifted guard's rc is a
+verdict only if the analyzer can prove it unmasked"). Row 3 is the same hole spelled numerically.
+
+Severity is HIGHER than `§FINDING-andand-resolves-a-wrong-coordinate`'s in one respect and lower
+in another. Higher: the `&&` defect needs a swallowed statement that changes the coordinate
+(a `shift`) to bite, whereas this one bites on the plain, contract-adjacent spelling with nothing
+unusual in it. Lower: it is verdict-lane only, and it needs an author to write a masking tail —
+which no corpus oracle does, so nothing shipped was ever wrong because of it.
+
+Note the asymmetry with pipelines, which this finding does NOT change: a pipeline tail's rc is a
+real command's rc, merely the wrong command's, and that hazard is deliberately handled as a LINT
+(`lint/source_verdict.rs`, `source-verdict-body-status-flattening`). A `|| true` rc is not merely
+the wrong command's — it is forged, world-independent, and unfalsifiable. That is the line drawn.
+
+## Fixed under W-D phase 1
+
+`||` lexes now, so all three masked rows are `Stmt::AndOr` and the verdict tracer ⊤s them
+(`VerdictTop::AndOrList`) instead of reading a left operand as a reached check. Pinned by
+`verdict.rs`'s `an_rc_masking_or_list_never_vouches` (rows 2 and 3 never vouch) and
+`the_unmasked_spelling_still_vouches` (row 1 is untouched — the fix is a fence, not a blanket).
+Row 4 is ⊤ during phase 1 and is restored by phase 2's `cmd || return N≥2` closed form, which is
+sound for the reason rows 2–3 are not: `N ≥ 2` routes the failure branch into the rc-partition's
+flat can't-say sink rather than forging a pass. `seam-verdict-bang-and-ortrue-flattening` keeps
+its name minus its or-list half; the `!` half stays unbuilt.
