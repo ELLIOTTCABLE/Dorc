@@ -5,11 +5,17 @@
 //! (oracle-contract §3 "Mind pipeline tails"). That flattens `≥2 = cannot-say` and `1 = complement`
 //! into whatever the tail produced — a verdict-correctness hazard.
 //!
-//! SPIKE SCOPE (`churn-avoidance-disclosure`): the sibling `!`-on-the-answering-status and `|| true`
-//! flattening mechanicals are NOT detected here — those constructs are OUT of the verdict dialect, so
-//! they never lift and instead surface through `source-analysis-diagnostics` as `predict-out-of-dialect`
-//! give-ups. A dedicated precise lint for them needs lexer-level bang/or-list support the dialect does
-//! not expose; named `seam-verdict-bang-and-ortrue-flattening`.
+//! SPIKE SCOPE (`churn-avoidance-disclosure`): the sibling `!`-on-the-answering-status mechanical is
+//! NOT detected here — `!` is still out of the verdict dialect, so it never lifts and instead
+//! surfaces through `source-analysis-diagnostics` as a `predict-out-of-dialect` give-up. A precise
+//! lint for it still needs lexer-level bang support; the seam keeps its name,
+//! `seam-verdict-bang-and-ortrue-flattening`, minus its or-list half.
+//!
+//! That or-list half (`|| true`) is CLOSED, and by a fix rather than a lint: `||` lexes now, so
+//! `check || true` is an and-or list the verdict tracer ⊤s
+//! ([`dorc_oracle::verdict::VerdictTop::AndOrList`]) instead of reading its left operand as a
+//! reached check. It used to VOUCH — and the guard that vouch licensed re-ran the same body live,
+//! where the `|| true` forced rc 0 on every host, converged or not.
 
 use dorc_core::Interner;
 use dorc_oracle::predict::Stmt;

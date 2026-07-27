@@ -47,10 +47,10 @@
 //! code ⇒ [`VerdictResolution::Declined`] (conservative: no vouch ⇒ run, kFAIL-perform).
 //!
 //! **Scope note (ru-26 churn-avoidance):** `return` still parses as a plain command (the dialect
-//! has no `Stmt::Return`), caught HERE in the tracer, not at parse. A bare test-led shorthand
-//! `[ … ] || return N` remains out of dialect and ⊤-rejects at LIFT — a deliberate parser
-//! scope-cut, NOT closed by this fix (extending the parser is out of scope): a verdict function
-//! needing that arity-refuse spells it in-dialect as `if [ … ]; then return N; fi`.
+//! has no `Stmt::Return`), caught HERE in the tracer, not at parse. An and-or list now PARSES
+//! ([`crate::predict::AndOr`]) but no supported form covers one yet, so every list ⊤s
+//! ([`VerdictTop::AndOrList`]) — including the test-led `[ … ] || return N` arity-refuse, which a
+//! verdict function still spells in-dialect as `if [ … ]; then return N; fi`.
 //!
 //! `inv-referent-agnostic`: the tracer never decodes the entity's text — it reuses the predict
 //! argparse primitives ([`resolve_word`]/[`eval_test`]/[`pattern_matches`]) to find the reached
@@ -158,6 +158,16 @@ pub enum VerdictTop {
     NonConcreteWord(&'static str),
     /// The iteration budget was exhausted (a loop did not terminate within bound).
     BudgetExceeded,
+    /// The reached path contains an and-or list (`a && b`, `a || b`, `a & b`), which no supported
+    /// form covers yet ⇒ no witness ⇒ run.
+    ///
+    /// This variant fences a SOUNDNESS hole, not a precision one. The tracer had no list guard at
+    /// all, so an or-list's LEFT operand read as a reached authored check: `dpkg-query -W "$1" ||
+    /// true` VOUCHED, and the guard that vouch licenses re-runs the same body live, where the
+    /// `|| true` forces rc 0 on every host — an always-skip guard suppressing the mutator whatever
+    /// the world says (`23H` §9.4's disaster shape; the errexit-masked rc `R2-ORTRUE` forbids as a
+    /// verdict). `|| return 0` vouched identically.
+    AndOrList,
 }
 
 impl VerdictTop {
@@ -168,6 +178,7 @@ impl VerdictTop {
             VerdictTop::EmptyArgv => "empty argv",
             VerdictTop::NonConcreteWord(w) => w,
             VerdictTop::BudgetExceeded => "iteration budget exceeded",
+            VerdictTop::AndOrList => "reached an and-or list (out of dialect => runs)",
         }
     }
 }
@@ -419,6 +430,7 @@ impl Tracer {
             },
             // The vouch signal: an authored check command RAN on the reached path.
             Stmt::Command(cmd) => self.run_command(cmd),
+            Stmt::AndOr(_) => Flow::Top(VerdictTop::AndOrList),
             // An annotation desugars to a binding (as in touches); a bare mark is a no-op. Neither
             // is a "check command", so neither vouches on its own.
             Stmt::Annotation(anno) => {
@@ -640,6 +652,17 @@ fn collect_check_commands(body: &[Stmt], out: &mut Vec<String>) {
                 collect_check_commands(else_body, out);
             }
             Stmt::While { body, .. } => collect_check_commands(body, out),
+            // A list's commands RUN when the guard runs; omitting them leaves gate-6's judge
+            // screaming at the guard's own checks as unrelated apply-only lines (cf-5).
+            Stmt::AndOr(list) => {
+                for cmd in list.commands() {
+                    if let Some(Word::Literal(w)) = cmd.words.first()
+                        && !out.iter().any(|c| c == w)
+                    {
+                        out.push(w.clone());
+                    }
+                }
+            }
             Stmt::Assign { .. } | Stmt::Shift { .. } | Stmt::Annotation(_) => {}
         }
     }
@@ -1064,6 +1087,40 @@ foo__is_converged() {
             trace(implicit, &["handled"]),
             VerdictResolution::Vouched,
             "the matched arm reaches the explicit `return 0` ⇒ Vouched"
+        );
+    }
+
+    /// `fnd-ortrue-vouches-today` — the SOUNDNESS pin. The tracer had no list guard, so an
+    /// or-list's LEFT operand read as a reached authored check and `check || true` VOUCHED. The
+    /// guard that vouch licenses re-runs this body live, where `|| true` forces rc 0 on every
+    /// host — the mutator suppressed whatever the world says (`23H` §9.4's always-skip shape, and
+    /// exactly the errexit-masked rc `R2-ORTRUE` refuses as a verdict). `|| return 0` was the same
+    /// hole spelled numerically. Neither may ever vouch again.
+    #[test]
+    fn an_rc_masking_or_list_never_vouches() {
+        for masked in [
+            "dpkg-query -W \"$1\" || true",
+            "dpkg-query -W \"$1\" || return 0",
+        ] {
+            let src = format!("x__is_converged() {{\n   {masked}\n}}\n");
+            assert!(
+                !matches!(trace(&src, &["nginx"]), VerdictResolution::Vouched),
+                "`{masked}` forges the body's rc ⇒ it must never vouch"
+            );
+        }
+    }
+
+    /// The other side of that discriminator, so the fix is a fence and not a blanket: the SAME
+    /// body without the masking tail still vouches. What changed is the rc-forging list, not the
+    /// reached-check rule.
+    #[test]
+    fn the_unmasked_spelling_still_vouches() {
+        assert_eq!(
+            trace(
+                "x__is_converged() {\n   dpkg-query -W \"$1\"\n}\n",
+                &["nginx"]
+            ),
+            VerdictResolution::Vouched,
         );
     }
 
