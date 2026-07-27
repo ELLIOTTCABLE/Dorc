@@ -21,11 +21,16 @@ kit=Research/trial/r26
 
 work=${TMPDIR:-/tmp}/dorc-r26-renders.$$
 mkdir -p "$work"
-trap 'rm -rf "$work"' EXIT INT TERM
 
-# The ceiling variant is the same book minus its single bare index-refresh. Never committed: it
-# exists only to measure what that one line costs.
-grep -v '^apt-get update$' "$here/smoke-book.sh" >"$work/ceiling-book.sh"
+# The ceiling variant is the same book minus its single bare index-refresh, with its own framed
+# records (removing L1 renumbers every site below it). Never committed — both exist only to measure
+# what that one line costs — but built IN-TREE rather than under TMPDIR: the render names both
+# paths, and a $$-stamped absolute temp path made this one render differ on every run and every
+# machine, alone among the five.
+ceiling=$here/.ceiling-book.sh
+ceiling_records=$here/.ceiling-records.txt
+trap 'rm -rf "$work"; rm -f "$ceiling" "$ceiling_records"' EXIT INT TERM
+grep -v '^apt-get update$' "$here/smoke-book.sh" >"$ceiling"
 
 render() {
    title=$1
@@ -58,10 +63,10 @@ render 'CONVERGED world (hermetic; records hand-authored, nothing executed)' \
 
 # The ceiling's site ids renumber (L1 removal shifts everything down), so its records are framed
 # against its own book.
-DORC=$dorc "$here/frame-records.sh" "$work/ceiling-book.sh" "$kit/oracles" \
-   "$kit/records/ceiling.txt" >"$work/ceiling.framed.txt"
+DORC=$dorc "$here/frame-records.sh" "$kit/.ceiling-book.sh" "$kit/oracles" \
+   "$kit/records/ceiling.txt" >"$ceiling_records"
 render 'CONVERGED world, CEILING VARIANT (the book minus its bare `apt-get update`)' \
-   "$work/ceiling-book.sh" "$work/ceiling.framed.txt" plan-ceiling-converged.txt
+   "$kit/.ceiling-book.sh" "$kit/.ceiling-records.txt" plan-ceiling-converged.txt
 
 # `container-book.sh` — what `mise run livetest` drives. These two are the baselines the live loop
 # asserts its summary COUNTS against, so they are the ones that must stay re-derivable.

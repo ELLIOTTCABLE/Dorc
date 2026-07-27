@@ -1,2 +1,7 @@
 sources/
 Vendor/
+
+# Built and removed by trial/r26/render-baselines.sh. In-tree, not under TMPDIR, so the ceiling
+# render names them by the same worktree-relative paths on every machine.
+trial/r26/.ceiling-book.sh
+trial/r26/.ceiling-records.txt
