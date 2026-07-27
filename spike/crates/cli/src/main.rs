@@ -4184,17 +4184,14 @@ fn survival_chain(
             crossed: joined_walls.clone(),
             claimant: claimants.join(", "),
         }),
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[
-                reference,
-                &outcome,
-                &foil_word(disposition),
-                &why_words(
-                    "why-outcome-because-survived",
-                    &[&joined_walls, CONSENT_FLAG],
-                ),
-            ],
+        outcome: contrastive(
+            reference,
+            &outcome,
+            &foil_word(disposition),
+            Said::words(
+                "why-outcome-because-survived",
+                &[&joined_walls, CONSENT_FLAG],
+            ),
         ),
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
         chain: ChainModel::all_selected(
@@ -4316,14 +4313,11 @@ fn guard_chain(
     };
     ChainRender {
         trust: None,
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[
-                reference,
-                &OutcomeKind::Guarded.word(),
-                &OutcomeKind::Guarded.foil().word(),
-                &why_words("why-outcome-because-guarded", &[&joined_walls]),
-            ],
+        outcome: contrastive(
+            reference,
+            &OutcomeKind::Guarded.word(),
+            &OutcomeKind::Guarded.foil().word(),
+            Said::words("why-outcome-because-guarded", &[&joined_walls]),
         ),
         analysis_opener: Said::words("why-analysis-opener-guarded", &[]),
         chain: ChainModel::all_selected(
@@ -4537,14 +4531,11 @@ fn decline_chain(
     ];
     ChainRender {
         trust: None,
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[
-                reference,
-                &OutcomeKind::Ran.word(),
-                &OutcomeKind::Ran.foil().word(),
-                &why_words("why-outcome-because-declined", &[word]),
-            ],
+        outcome: contrastive(
+            reference,
+            &OutcomeKind::Ran.word(),
+            &OutcomeKind::Ran.foil().word(),
+            Said::words("why-outcome-because-declined", &[word]),
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
         chain: ChainModel::all_selected(links, Some(class_said("why-declines-join"))),
@@ -4627,13 +4618,42 @@ const STEPS_TABLE: &str = "why-next-steps";
 /// The table the receipt header's record lines join — one block, degrading as a unit.
 const RECEIPT_TABLE: &str = "why-receipt";
 
-/// Render a marked tree at `inset` and print it. The ONE seat where the why surface becomes bytes.
-fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
+/// Lay a marked tree out at `inset` and re-attribute it — the ONE seat where the why surface
+/// becomes bytes, and the span map's production consumer.
+///
+/// The render happens ONCE and the span map is carried, not dropped: the printed bytes come out
+/// of the part stream, so every transcript the corpus drives proves the bridge total and
+/// byte-exact (`_w4-map-DRAFT:gap-span-map-unconsumed`). Nothing here is `dorc why`-specific — a
+/// loom driver re-renders the same tree through the same seat and gets a stream it can attribute
+/// an edit against.
+fn why_parts(nodes: Vec<Node<Face>>, inset: usize) -> dorc_aid::tagged::RenderParts {
     let frame = weft::Frame::of_width(weft::Width::new(WHY_WIDTH)).inset(inset);
-    print!(
-        "{}",
-        weft::render_framed(&Document::new(nodes), &frame).text()
-    );
+    dorc_aid::weave::to_render_parts(&weft::render_framed(&Document::new(nodes), &frame))
+}
+
+/// [`why_parts`], printed.
+fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
+    print!("{}", why_parts(nodes, inset).text());
+}
+
+/// The OUTCOME panel's one contrastive sentence, from all four chain walkers.
+///
+/// The because-clause arrives as a composed fragment rather than a flattened string, which is
+/// what un-truncates it: a raw value is capped at [`WHY_VALUE_CAP`] because a pathological book
+/// word must not own the render, but a because-clause is OUR OWN registry words with their own
+/// already-capped values inside, and capping it a second time cut a 281-byte reason at 240
+/// (`28H:ask-because-clause-truncates-at-two-forty`).
+fn contrastive(reference: &str, outcome: &str, foil: &str, because: Said) -> Said {
+    Said::sentence(
+        "why-outcome-contrastive",
+        None,
+        vec![
+            Said::Value(reference.to_owned()),
+            Said::Value(outcome.to_owned()),
+            Said::Value(foil.to_owned()),
+            because,
+        ],
+    )
 }
 
 /// One attributed fragment as a paragraph.
@@ -5220,23 +5240,22 @@ fn emit_why_triptych(
 /// demonstrates. The richer per-disposition panels — a guarded line naming its wall, a declined line
 /// showing the author's arm — are the narration lane's.
 ///
-/// SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): the because-clause is a VALUE
-/// interleaved into the outcome row, so a multi-fragment reason is FLATTENED here and its
-/// fragments' own registry rows get no face in the transcript. The bytes are right — every
-/// fragment is already encoded, and the flattened value is what the row has always carried — but
-/// until a chrome line can hold interleaved value fragments (the transport half of `28G` Phase
-/// W4), an edit to one of those rows has to be made in the lock rather than at the transcript.
+/// RESIDUAL SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): a multi-fragment
+/// reason still renders as ONE value of the outcome row, so its own fragments' registry rows get
+/// no face of their own in the transcript — nesting them would split the outcome line across
+/// sections, which is exactly what `28H` ruling 3 forbids. What DID change is the budget: a
+/// composed reason is no longer re-capped as if it were raw foreign bytes, so a long
+/// because-clause reads in full.
 fn plain_chain(site: &WhySite) -> ChainRender {
     let (because, rest) = site
         .reasons
         .split_first()
-        .map_or((String::new(), &[][..]), |(head, tail)| (head.text(), tail));
+        .map_or((Said::Value(String::new()), &[][..]), |(head, tail)| {
+            (head.clone(), tail)
+        });
     ChainRender {
         trust: None,
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[&site.reference(), &site.outcome, &site.foil, &because],
-        ),
+        outcome: contrastive(&site.reference(), &site.outcome, &site.foil, because),
         analysis_opener: Said::words("why-analysis-opener-plain", &[&site.reference()]),
         chain: ChainModel::all_selected(
             rest.iter()
@@ -5690,6 +5709,63 @@ fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_aid::diag::
     match &diag.code {
         DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod because_clause_tests {
+    use super::{Said, WHY_VALUE_CAP, contrastive};
+
+    /// The full cmdsub reason, as `dorc_aid::diag::why` composes it: our opener row, our locus
+    /// value, the book's own bytes, our remediation row. 281 bytes at the shape that motivated
+    /// the fix.
+    fn composed_reason() -> Said {
+        Said::Parts(vec![
+            Said::words("why-reason-cmdsub-opener", &["operand 3"]),
+            Said::Value("6:20".to_owned()),
+            Said::Mark("why-cause-quote", " `".to_owned()),
+            Said::foreign("apt-get install -y \"$(resolve-dynamism)\"", "book.sh"),
+            Said::Mark("why-cause-quote", "`".to_owned()),
+            Said::words("why-reason-cmdsub-closer", &[]),
+            Said::words("why-remediation-resolve-dynamism", &[]),
+        ])
+    }
+
+    /// A because-clause is OUR words with their own already-capped values inside, so the display
+    /// budget that stops a pathological book word owning the render must not apply to it a second
+    /// time (`28H:ask-because-clause-truncates-at-two-forty`). It used to, and cut the reason at
+    /// 240 bytes mid-sentence.
+    #[test]
+    fn a_composed_because_clause_renders_whole() {
+        let reason = composed_reason();
+        let whole = reason.text();
+        assert!(
+            whole.len() > WHY_VALUE_CAP,
+            "the fixture must exceed the raw-value budget or it proves nothing: {} bytes",
+            whole.len()
+        );
+        let rendered = contrastive("14|apt-get", "ran", "skipped", reason).text();
+        assert!(
+            rendered.contains(&whole),
+            "the whole clause survives, so nothing was truncated: {rendered}"
+        );
+    }
+
+    /// The budget still binds where it was FOR: a raw value is somebody else's bytes, and one
+    /// pathological book word may not own the render.
+    #[test]
+    fn a_raw_because_clause_is_still_capped() {
+        let rendered = contrastive(
+            "14|apt-get",
+            "ran",
+            "skipped",
+            Said::Value("z".repeat(WHY_VALUE_CAP * 2)),
+        )
+        .text();
+        assert!(
+            rendered.contains("..."),
+            "a raw value is capped: {rendered}"
+        );
     }
 }
 
