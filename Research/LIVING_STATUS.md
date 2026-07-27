@@ -14,6 +14,27 @@
 
 ---
 
+## r26 UNIFIED (branch `ai/r26-unify`, off `ai/r28-unify` @ `9050248e`)
+
+All four r26 lanes folded onto one branch, both legs green (Win 1592 / WSL 1588, 1 skipped
+each; `bless:dry` clean): analyzer-findings (ff) · adversarial-review (`26I`) · executor
+(the transport seam) · live-target (`trial/r26` + `26E`). Only two conflicts, both expected:
+the generated `catalog_lock.rs` (union-resolved, then verified AT the loom generator's
+fixpoint — `loom:compile` reports 62 cases / 0 touched) and one `dorc-loom` import block.
+**ZERO pre-existing goldens moved** — every transcript change in the arc is an ADD, so the
+feared cross-lane interaction (the executor's T1 closed-loop running over the kernel arc's
+changed dispositions) did not materialize.
+
+Hygiene settled on the branch: **the `260:dec-26-exit-codes` collision is closed** — 11 was
+never free (`EXIT_WRAPPER_INCOHERENT`), so the transport family renumbered to one code per
+world-state (12 ingress-refused · 13 host-not-reached · 14 session-lost · 15 apply-failed),
+matching the diag plane's cut; `260` §6/§9 rewritten to match. **D9 (real apply outcomes into
+the whylog) was LEFT, not partially built**: `run()` short-circuits to `ship_consented_apply`
+before the pipeline, so the remote-apply path never reaches `write_whylog`, and
+`WhylogDoc.apply` stays plan-time prediction — `26D` d3's human ruling is still unspent.
+STILL OPEN: deleting the superseded `ai/r26-executor-blocked` (@ `4acd4543`) is human-gated
+by the branch-deletion hook.
+
 ## THE r26 KERNEL ARC (2026-07-27/28 overnight — CLOSED; branch `ai/r26-analyzer-findings` @ `02ccf6e1`)
 
 Human-escalated mid-round: four analyzer findings from the live-execution prep became a
