@@ -7,21 +7,21 @@
 #
 # The judgment behind the yes: plain `cp` (no -p, no -a) leaves an existing DST's mode and owner
 # alone, so once the bytes match, all that skipping costs is a fresh mtime. That is acceptable for
-# a config drop. It would not be acceptable for `cp -p` or for anything recursive — both of which
-# decline on the leading-dash gate. `cp SRC DIR` establishes DIR/basename(SRC), a different cell
-# than this file models; it declines on its own, since cmp cannot read a directory and exits 2.
+# a config drop. It would not be acceptable for `cp -p` or anything recursive — both of which
+# decline on the leading-dash gate.
 #
-# NB: `test`, not `[` — a bracket test silently voids every mark in this file (see ../README.md).
+# Three shapes decline without a written gate, because cmp itself exits 2 on each and 2 already
+# means cannot-say: a missing source, a missing destination, and `cp SRC DIR` (which establishes
+# DIR/basename(SRC), a different cell than this file models). Writing `[ -e ]` tests for them would
+# be strictly worse — a file test in a condition silently voids every mark here (../README.md §4).
 #
 # Kind: r26.smoke.File — throwaway, minted for this round only.
 
 cp__is_converged() {
-   command -v cmp >/dev/null 2>&1 || return 2
-   test "$#" -eq 2 || return 2
-   test "${1#-}" = "$1" || return 2
-   test "${2#-}" = "$2" || return 2
-   test -f "$1" || return 2
+   if [ "${3-}" != "" ]; then return 2; fi
+   if [ "${2-}" = "" ]; then return 2; fi
+   if [ "${1#-}" != "$1" ]; then return 2; fi
+   if [ "${2#-}" != "$2" ]; then return 2; fi
    dst : r26.smoke.File = "$2"
-   test -e "$dst" || return 1
    cmp -s -- "$1" "$dst"   : r26.smoke.File:"$dst"@content
 }

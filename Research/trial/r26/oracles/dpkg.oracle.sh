@@ -12,19 +12,20 @@
 # There is deliberately no `dpkg__is_converged`: `dpkg -s` is a read whose exit status the book
 # consumes, so there is nothing here it would ever be safe to skip.
 #
-# NB: `test`, not `[` — a bracket test silently voids every mark in this file (see ../README.md).
+# No `command -v dpkg` existence gate, on purpose: it costs every elision in the book (see
+# ../README.md §4) and buys nothing, because a missing delegate exits 127, which the rc partition
+# already reads as cannot-say.
 #
 # Kind: r26.smoke.PkgState — throwaway, minted for this round only, NOT the stdlib's sm.dorc.*.
 
 dpkg__predict() {
-   command -v dpkg >/dev/null 2>&1 || return 2
    case "${1-}" in
    -s|--status) ;;
    *) return 2 ;;
    esac
-   test "${2-}" != "" || return 2
-   test "${3-}" = "" || return 2
-   test "${2#-}" = "$2" || return 2
+   if [ "${3-}" != "" ]; then return 2; fi
+   if [ "${2-}" = "" ]; then return 2; fi
+   if [ "${2#-}" != "$2" ]; then return 2; fi
    pkg : r26.smoke.PkgState = "$2"
    dpkg -s "$pkg" >/dev/null 2>&1   :? r26.smoke.PkgState:"$pkg"@installed
 }

@@ -10,7 +10,9 @@
 #   · four hand-guarded installs, the `dpkg -s x || apt-get install -y x` idiom whose LHS
 #     the dpkg oracle lets dorc lift;
 #   · two `cp` config drops whose convergence an oracle checks by content;
-#   · one `systemctl enable --now`, two service cells behind one verdict;
+#   · `systemctl enable` then `start`, two service cells, one verdict each — split rather than
+#     written `enable --now`, because two cells cannot ride a single exit status (the oracle
+#     declines `--now` and says so);
 #   · two honest walls at the tail — `curl` (no oracle at all) and `logger` (an oracle that
 #     deliberately declines: writing a syslog line has no convergence criterion).
 #
@@ -32,7 +34,8 @@ dpkg -s nginx           >/dev/null 2>&1 || apt-get install -y nginx
 cp ./r26-smoke.conf /etc/nginx/conf.d/r26-smoke.conf
 cp ./r26-motd /etc/motd
 
-systemctl enable --now nginx
+systemctl enable nginx
+systemctl start nginx
 
 curl -fsS -o /dev/null http://127.0.0.1:8088/r26
 

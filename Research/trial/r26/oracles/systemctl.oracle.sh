@@ -1,49 +1,41 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.2
 #
-# systemctl — three shapes, one unit per call: `enable`, `start`, and `enable --now`. Two cells
-# live here, @enabled and @active; `enable --now` establishes both, so its arm answers for @active
-# and discloses the @enabled read that gates it, because one exit status can only witness one cell.
+# systemctl — two verbs, one unit per call: `enable` (the @enabled cell) and `start` (@active).
+# They are separate cells on purpose: `enable` tells you the unit comes back after a reboot,
+# `start` tells you it is up right now, and observing either says nothing about the other.
+#
+# `enable --now` is DECLINED, and that is the most instructive arm in this file. It establishes
+# both cells at once, but a verdict body answers through a single exit status, and one status can
+# witness exactly one cell. Answering on @active alone would let an active-but-not-enabled unit
+# read as converged and skip the enable — the unit would then not survive a reboot. That is a wrong
+# yes, so this file refuses the shape and lets the line run.
 #
 # Known narrowness, stated rather than hidden: `systemctl is-enabled` also exits 0 for `static` and
 # `indirect` units, so for those this oracle reads converged. Accepted here because the book's only
 # unit is an ordinary enableable one; an oracle written for strangers' books would compare the
 # printed state instead of leaning on the status.
 #
-# NB: `test`, not `[` — a bracket test silently voids every mark in this file (see ../README.md).
-#
 # Kind: r26.smoke.Service — throwaway, minted for this round only, NOT the stdlib's sm.dorc.*.
 
 systemctl__is_converged() {
-   command -v systemctl >/dev/null 2>&1 || return 2
-   test "$#" -ge 2 || return 2
+   if [ "${1-}" = "" ]; then return 2; fi
    verb="$1"; shift
-   now=no
    case "${1-}" in
-   --now) now=yes; shift ;;
+   --now)
+      printf 'decline unmodeled --now establishes two cells and one exit status witnesses one\n' >>"${DREP_V1:-/dev/null}"
+      return 2 ;;
    esac
-   test "$#" -eq 1 || return 2
-   test "${1#-}" = "$1" || return 2
+   if [ "${2-}" != "" ]; then return 2; fi
+   if [ "${1-}" = "" ]; then return 2; fi
+   if [ "${1#-}" != "$1" ]; then return 2; fi
    svc : r26.smoke.Service = "$1"
    case "$verb" in
    enable)
-      case "$now" in
-      no)
-         systemctl is-enabled --quiet -- "$svc" 2>/dev/null   : r26.smoke.Service:"$svc"@enabled
-         ;;
-      *)
-         systemctl is-enabled --quiet -- "$svc" 2>/dev/null   :? r26.smoke.Service:"$svc"@enabled
-         case $? in
-         0) ;;
-         1) return 1 ;;
-         *) return 2 ;;
-         esac
-         systemctl is-active --quiet -- "$svc" 2>/dev/null    : r26.smoke.Service:"$svc"@active
-         ;;
-      esac
+      systemctl is-enabled --quiet -- "$svc" 2>/dev/null   : r26.smoke.Service:"$svc"@enabled
       ;;
    start)
-      systemctl is-active --quiet -- "$svc" 2>/dev/null   : r26.smoke.Service:"$svc"@active
+      systemctl is-active --quiet -- "$svc" 2>/dev/null    : r26.smoke.Service:"$svc"@active
       ;;
    restart|reload|reload-or-restart)
       # A restart is an action, not a state: the unit being up right now says nothing about
