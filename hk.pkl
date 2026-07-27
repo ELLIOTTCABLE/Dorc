@@ -77,14 +77,24 @@ local corpora = new Mapping<String, Step> {
         output_summary = "combined"
     }
     ["e2e"] {
-        // Dir-shaped cases only. A single-file `.loom` is the `loom-hygiene` step's business, and
-        // feeding one here would trip the runner's no-match floor unless it happened to be a
-        // whole-product case.
-        glob = "spike/crates/*/tests/*/**"
+        // Both shapes a whole-product case comes in: a case DIR, and a single-file `.loom`
+        // carrying `run:`. The loom half is load-bearing and its absence was SILENT — hk prints
+        // nothing at all for a glob-missed step, so a commit touching only a whole-product loom
+        // drew a green `loom-hygiene` and no hint that the transcript tier never ran.
+        //
+        // Crate-scoped rather than `*/tests/*.loom`: every `run:`-bearing loom lives in
+        // `crates/cli/tests/` (27 of 27), while `crates/aid/tests/` holds ~50 catalog looms this
+        // runner mints no trial for, and widening would spawn the e2e binary for them to do
+        // nothing. The scope's cost is that a `run:` loom homed elsewhere escapes this HOOK — it
+        // still runs in every full suite, and the runner's floor now answers honestly rather than
+        // aborting when such a path is hand-selected.
+        glob = List("spike/crates/*/tests/*/**", "spike/crates/cli/tests/*.loom")
         // The runner takes PATHS and selects the cases they belong to (`split_path_selectors`),
         // because libtest's single substring filter cannot express a set and a hook knows files,
-        // not trial names. Whole corpus ~6s, one case ~0.9s. A path naming no case is a loud
-        // failure there, never a green no-op.
+        // not trial names. Whole corpus ~6s, one case ~0.9s. A path naming nothing under any case
+        // root is a loud failure there, never a green no-op; a path naming something the runner
+        // drives no trial for — an `.rs` test's fixture dir, which this glob does reach — exits
+        // clean with a note.
         check = "cargo test -q -p dorc-cli --test e2e --manifest-path spike/Cargo.toml -- {{files}}"
         env { ["DORC_E2E_QUIET"] = "1" }
         output_summary = "combined"
