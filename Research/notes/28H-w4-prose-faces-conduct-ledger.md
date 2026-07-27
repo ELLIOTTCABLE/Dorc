@@ -463,6 +463,62 @@ is the human's; untouched.
   surface stabilizes — likely r30. The human's instinct that the bag must
   not grow buried and divergent is adopted as law NOW; the machinery waits
   for the inventory.
+- **lane-w4-drifted-driver LANDED + FOLDED** @ merge `5fba54d3` (6 commits, tip
+  `416318db`, builder-rebased onto `db5884ef`; own-hand gate at fold; builder
+  both-leg 1482 Windows / 1478 WSL). The extraction re-derived at ~285 lines /
+  14 items (the estimate missed `CONSENT_FLAG`/`recorded_tally`/the
+  envelope→`DriftedReceipt` constructor + `SourceMatch`-value-crosses-query-
+  stays — all sound); the drifted-receipt replay arm lives in BOTH chains with
+  the mechanical agreement guard (which measured a real pre-existing third
+  divergence: diagnostic renders reflow in one chain and not the other —
+  `ask-two-chains-differ-by-a-reflow`, banked, now a declared guard column);
+  TWO first why-faced cases minted (`why-drift-{analysis-suppressed,
+  address-unanswerable}.loom`); THE LOOP PROVEN end-to-end (edit → compile →
+  promote → lock updated → fixpoint green → reset).
+- **finding-why-render-reads-the-const-not-the-mirror** (the lane's sharpest;
+  flagged up, banked OPEN) — `Said`'s render seat reads the compiled-in
+  `CONST_ARRANGEMENTS`, not promote's mutable mirror, so promote can NEVER
+  bring a why transcript into step with the lock it just wrote (catalog +
+  arrangement-PAGE paths thread the mirror; only the why line path lags). The
+  authoring loop for why rows is therefore two-step (edit → compile → promote
+  → REBUILD → `DORC_LOOM_DUMP` re-render → commit) with the intermediate red;
+  it interacts badly with the blast-radius dirty gate (the loop needs an
+  intermediate commit). Threading a lookup through `Said` is ~60 seats,
+  lane-sized. HOME: the loom-UX lane, top item. Impact-scoped: the human's
+  bulk worklist (catalog codes) is UNAFFECTED; only why arrangement rows lag,
+  of which two are faced today.
+- **Conductor rulings on the drifted-driver flags:**
+  divergent-edit was LAST-WINS (empirically confirmed) → **fixed to refuse
+  exactly per the conditional ruling** (pre-pass before the mirror; shared
+  words-derivation so the guard and the write cannot disagree;
+  same-words-twice still lands) — ACCEPTED ·
+  rider-6 ACCEPTED with method noted (zero-byte-change proven by a scoped
+  needle pinned across both revisions — empty-diff would have been vacuous) ·
+  rider-7 (shell-niceties) **DECLINE ACCEPTED**: `exact_words` already refuses
+  every shell metacharacter, so the 1:1 claim is ALREADY TRUE where claimed;
+  extending coverage buys forms no hand-written case wants, at the cost of a
+  per-block process spawn against the 3s budget + cross-shell nondeterminism
+  the fixpoint gates cannot absorb + breaking the deliberately shell-free
+  runner — relayed to the human ·
+  the case shape: conventional in-process cases, `run: replay-only` NOT minted
+  — a `run:`-less loom already IS that shape; minting the key would name the
+  absence of a key. The `28F` want RE-READ as a visibility concern
+  (`fixpoint: executed` indistinguishable in output) — banked for loom-UX ·
+  `tc-one-transcript-many-rows-ownership` (law-tier, correctly flagged up) →
+  DEFERRED to loom-UX/r30 with a conductor LEAN: explicit frontmatter
+  ownership declaration (a case declares the row-set it owns), which also
+  answers `friction-report-case-declares-a-page-key`'s key-overload; today's
+  behavior (foreign-row edits refuse via `authored_words_are_case_owned`)
+  fails safe meanwhile ·
+  `friction-unreflow-is-diagnostic-shaped` fix ACCEPTED (dorc-loom-side,
+  corpus-scanned first, exact-inverse restored; errorloom untouched) ·
+  builder self-disclosure: first commit used `-c core.hooksPath=.githooks`
+  (bypasses hk's chain even when pointing at repo hooks), self-corrected —
+  SECOND builder reaching for hooksPath under friction; the clamp held
+  (self-correction), pattern noted for brief language ·
+  Conductor doc-edits owed at close: `cli/CLAUDE.md` lib-seam bullet
+  under-describes (the drifted-why render seat joined) · `aid/CLAUDE.md`
+  cases-live-here names the why-drift cases.
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
