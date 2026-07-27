@@ -254,6 +254,57 @@ is the human's; untouched.
   `aid` IF the `-D warnings` fallout is a handful of sites; else revert to a
   note and report (the silent-drop hazard the builder named is real and
   type-shaped).
+- **lane-w4-parts LANDED + FOLDED** @ merge `2d3eec1d` (8 commits, tip
+  `0c4db94c`, builder-rebased onto `435f961f`; own-hand gate running at fold).
+  All nine items: `Said` hoisted into `aid/said.rs` (`Said::Lens` DELETED);
+  `Explanation { parts, remediation }` with the four-part decomposition;
+  5 entries / 4 slugs hand-seeded `Words::Migrated` (promote confirmed the seed
+  IS the generator's fixpoint, zero writes); both consumer seats own skeletons;
+  kTASTE `chain.rs` (`ChainModel`/`LinkSelection`/`Relevance`/`LinkRef`;
+  `--all` reads `links` unfiltered — the printed promise is now true); the
+  chain-row-order seat + render-default doc; `#[must_use]` on `Carrier<T>`
+  (zero real dropped-carrier sites; 23 redundant attributes deleted). Byte-level
+  verbatim-migration proof (`a_reason_reads_exactly_as_the_hardcoded_sentence_
+  did`, 281 bytes, boundaries included). Gates 1469 Windows / 1465 WSL. Churn:
+  exactly ONE test-tree file moved — the sanctioned rider-8 re-bless.
+- **Conductor rulings on the parts flags:**
+  `Said::Parts` + `Said::Mark` deviations ACCEPTED (Parts spares ~60 site
+  reshapes; Mark carries punctuation without minting an editable row —
+  layout-is-not-a-word). FENCE noted for successors: **`Said::Mark` must never
+  carry English words** — glyphs/punctuation only, or it becomes a dodge of
+  the every-string-is-a-row law. `conclusion: Option<Said>` ACCEPTED
+  (plain_chain genuinely reaches no restatement). 5-rows-not-3 ACCEPTED (the
+  closer row is arithmetically forced; `why-reason-cmdsub-locus-absent` was a
+  third §0 violation the map missed).
+  **rider-8 (`item-missing-command-word`) — FIXED AS A TYPE**: `ChainRender.
+  trust: Option<TrustSpent>`, minted only by `survival_chain`; the two bogus
+  TRUST SPENT items (guard/decline chains with empty claimants, wrong verbs)
+  are gone from the webhost transcript (8-line drift, inspected, sanctioned).
+  **`ask-aggregate-owes-declines-and-guards-a-section`** → ESCALATED TO THE
+  HUMAN as a taste question (conductor read: post-fix quiet-by-default looks
+  design-CORRECT — the anti-nag ruling + strawman-e restraint; the per-line
+  surface is where declines narrate — but the argless aggregate's owed-a-line
+  question is theirs).
+  **`ask-because-clause-truncates-at-two-forty`** → banked as a SPAN-LANE
+  CHECKPOINT ITEM: the addressed-why ⊤-run reason (281 bytes) renders
+  truncated through the `WHY_VALUE_CAP=240` value slot until the transport
+  work removes the flattening; span leg B must verify it un-truncated + pin it
+  with a case.
+  **`friction-bless-task-cannot-scope-a-sanctioned-drift` — FIXED IN LANE,
+  ACCEPTED**: `mise run bless -- <substring>` now scopes the BLESS pass, and
+  a SCOPED bless inverts to bless-then-gate (a sanctioned drift is red until
+  blessed); unscoped unchanged. Dorc-internal tooling; errorloom untouched.
+  Conductor doc-edit batch GROWS (owed at the span-leg-A fold, with the §7b
+  amendment): aid/CLAUDE.md third-key-axis note (ruling 9) ·
+  `a-registry-row-need-not-mint-a-span` under-describes the four-faceless-row
+  reason · said/chain module mentions · spike/CLAUDE.md `test:looms` deferral
+  caveat (from the probe) · the webhost-collision is now REAL (the human's
+  `f4f48316` red-line rebases over the fixed transcript).
+  Second datum banked for `item-loom-blast-radius-dirty-gate` (the builder's
+  own uncommitted lock seed tripped the dirty gate — fixpoint confirmation is
+  forcibly after-the-fact) · `friction-hand-seeded-row-has-no-reach-gate`
+  banked (nothing asserts a seat reaches a hand-seeded slug until a transcript
+  covers it; the span lane's why-case shape is the closure).
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
