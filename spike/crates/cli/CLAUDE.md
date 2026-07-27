@@ -60,6 +60,22 @@ discipline: one rule per bullet, slugged; append to the matching section.
   real transport, concurrency, retry, cross-host reuse, saved approval — carrying
   the scope has to become checking it, and this is the choke point where that
   lands.
+- **the-fixpoint-owns-the-rounds-and-builds-nothing-else** (`26H` §4/§4¾ — W-C) —
+  `settle_validity_fixpoint` re-derives classify + the records fold against the residual model
+  until a round proves no further branch dead. Three things bind. FROZEN: book/CFG/value-flow, the
+  ADMITTED records (admission runs ONCE, before the loop — no re-probe, no re-admission), the
+  vouches, and the compiled probe. Probe EMISSION is untouched because there is exactly ONE
+  `ProbePlan`, built from round 1 and never rebuilt; what moves per round is a validity VIEW over
+  it, and nothing else about the record intake moves — an erased site KEEPS contributing its
+  measurement, because the deadness of the line that measured the world does not un-measure the
+  world. NEVER-SURVIVES: intermediate rounds are unobservable not because they are discarded but
+  because they are never built — the loop body constructs a classification and a fold, and every
+  plan, narrative, render, whylog write, and `report_at` sits outside it. The sole deliberate
+  exception is the round-tagged derivation link (`attribute_cascades`), durable so `dorc why` can
+  answer a cascaded elision; that is a HARD requirement, not polish. Cap-hit is unreachable
+  (erasure is monotone, bound = site count) and DISCARDS the ledger to re-derive from origin
+  rather than ship a partial fixpoint, so the degraded answer is exactly the pre-W-C one —
+  `solve`'s own unenforceable-termination bargain, `debug_assert`-loud in dev and under DST.
 - **speculate-and-intercept** — the probe model resolves probe-gated branches by
   running the read-only check for real (oracles intercept; not Ansible
   check-mode blindness).

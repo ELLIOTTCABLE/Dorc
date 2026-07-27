@@ -55,6 +55,24 @@ discipline: one rule per bullet, slugged; append to the matching section.
   transitions on one kind), still ⊤-conservative on lookup miss.
 - **no-strong-update-v1** — `Kill` accumulates; "probably unique" may only DEMOTE
   (the 231 fence); the uniqueness bit is a reserved seam, never inferred hot.
+- **erasure-is-applied-once-never-consulted** (`26H` §4 — W-C) — `classify_with_why_diags` takes
+  an `erase::ErasedSites` overlay and applies it at ONE seam: the effect vector, before `solve`.
+  Everything downstream (reach, `valid`, classes, kills, backings, ⊤-causes) derives from that
+  residual, so an erased site is indistinguishable from one that never mutated and NO consumer is
+  handed the overlay to consult. That uniformity IS the safety property, and it is why the
+  rejected mask-parameter shape — a flag every present and future consumer must remember — is not
+  coming back. Spelling is `CommandEffect::Pure`; an `Erased` variant would recreate exactly the
+  must-remember surface. The same pass returns the INVALIDATOR set (Establish/Kill/Opaque, taken
+  POST-erasure) because `SkipClass` cannot answer "does this gen into reach": a kill, an opaque,
+  and a blessed pure builtin all classify `MustRun`.
+- **erasure-licence-is-a-fence-not-a-guarantee** — `erase::ErasureLicense::for_site` is PUBLIC and
+  therefore forgeable: this crate cannot depend on `plan`, so the type system cannot prove a
+  licence traces to a records-proven derivation. Do not read that seal as a type guarantee. The
+  real seal is one layer up (`plan::erase`: a ledger entry demands a `DeadBranchProof`, which
+  demands a `FoldResult` no foreign crate can populate); here the fence is LEXICAL —
+  `licence_mint_has_exactly_one_caller` in `dorc-plan` fails if a second caller appears anywhere
+  in the workspace. A new caller is not a refactor; it is a second, unproven route to shrinking
+  the analyzer model.
 - **verdict-lane-is-site-keyed** (`26H` §3) — `command_effect` reaches the verdict lane
   from TWO fallbacks (nothing resolved this argv; something RESOLVED but declared no cells
   for its verb) and answers with the author's coordinate when the reached path carries

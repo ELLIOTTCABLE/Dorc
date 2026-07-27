@@ -50,6 +50,25 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   a different cell than the record keys. The vouch gate stays on the verdict branch alone
   (the verdict IS the probe, so a declined argv has nothing to measure and must ship no
   record — `guard23-refusepath-rc0-never-passes`).
+- **erasure-demands-a-proof-and-a-rendered-death** (`26H` §4 — W-C; `erase.rs` is THE transform
+  where this can be wrong, and its tests are the review's centre of gravity) — `prove_dead_branches`
+  is the sole mint of a `DeadBranchProof`, and it demands FOUR things, not one: the fold proved the
+  site unreachable from a KNOWN controlling status; the site actually gens into reach (the caller's
+  invalidator set — never `Disposition`, because omitted-for-any-other-reason is not dead); the site
+  is not floored into running anyway (in-loop, ⊤-successor); and the controller will really be
+  SUBSTITUTED AWAY. That fourth is the wrong-yes fence — a fold-`Omit`ted leaf whose controller is
+  not neutralised renders VERBATIM and runs behind the live guard (`is_neutralised`,
+  `omitsafe21-heredoc-guard-keeps-body`), so erasing it would license downstream elisions off a
+  mutator the artifact still executes. It is computed from analysis data and the fold input alone,
+  through the shared `query_substitutes` seat, so no OUTCOME becomes a premise
+  (`pin-no-outcome-as-generator`). Its refusal check is `leaf_has_heredoc` and ONLY that, matching
+  `is_neutralised`'s `Replace` arm: `leaf_has_blocking_output_redirect` is the GUARD tier's refusal
+  and including it would refuse `cmd >/dev/null 2>&1 || mutator`, the exact ladder idiom the
+  fixpoint exists to fix.
+- **erasure-is-records-grounded-only** — a statically-known controlling rc (empty list, bare
+  assignment, funcdef — all rc 0 in the fold) is SOUND but is not a measurement, and the ledger's
+  name promises records. Those branches keep today's behaviour; widening to static deadness is its
+  own future design with its own name, never a quiet relaxation of this predicate.
 
 ## Law — guards
 
