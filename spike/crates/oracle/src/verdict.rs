@@ -714,9 +714,8 @@ impl Tracer {
                 return Flow::Top(top_from_word(reason));
             }
         }
-        // Ahead of the idiom read: a denied head is neither a decline nor a check, and letting it
-        // set `reached_command` would vouch for a coordinate the shipped guard re-measures under
-        // different positionals (`26I`, `26J`).
+        // Ahead of the idiom read: letting a denied head set `reached_command` would vouch for a
+        // coordinate the shipped guard re-measures under different positionals (`26I`).
         if let Some(head) = state_mutating_builtin(cmd) {
             return Flow::Top(VerdictTop::StateMutatingBuiltin(head));
         }

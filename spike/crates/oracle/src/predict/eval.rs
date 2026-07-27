@@ -573,9 +573,8 @@ impl Evaluator {
                 if is_return_head(cmd) {
                     return Flow::Top(TopReason::Declined);
                 }
-                // Checked with the guards above and for the same reason: walking on would leave
-                // the tracer's positionals/vars behind the bytes it is about to ship, and key the
-                // measurement off the stale ones (`26I`, `26J`).
+                // Before the probe span, like the guards above: walking on would key the
+                // measurement off positionals the shipped bytes have already moved (`26I`).
                 if let Some(head) = state_mutating_builtin(cmd) {
                     return Flow::Top(TopReason::StateMutatingBuiltin(head));
                 }

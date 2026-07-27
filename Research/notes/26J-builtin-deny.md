@@ -102,10 +102,48 @@ The other oracle lanes need no change and were checked: `touches.rs` / `reaches.
 `PURE_BUILTINS` is likewise an allow-list, and every denied head already rejects there as
 `UnmarkedExternalCommand`.
 
-Authoring-time surface: a `oracle-state-mutating-builtin` diagnostic at the lift/validate seat,
-so the author is told at their own file rather than only via a book-side site note. It is
-argv-independent, so it fires even when the head sits on a case arm this argv never selects —
-which the trace-time ⊤ by construction cannot catch.
+## What verification established
+
+`26I`'s finding reproduced independently before the fix (the note's own
+`haz-trial-claims-need-independent-check` discharged): with the hook disabled, `evaluate` over its
+evidence body and argv `["install"]` returns `Resolved { kind: "sm.dorc.X", entity:
+Operand("install") }` — and its `probe_body` carries the `set -- alpha` span itself, so the
+mis-keying statement was being SHIPPED into the probe. Whole-product, the same case renders a
+probe that reports `site 0 effect=holds`: a converged holds filed against a cell the shipped body
+never measured. `+SURE`, the finding is exactly as written.
+
+After: the site is `unresolvable-no-probe`, nothing ships, nothing keys, and the apply runs the
+command. Both are pinned — `the_evidence_case_can_no_longer_ship_a_wrong_coordinate` at the unit
+tier and `deny26-state-builtin-mis-keys` at the whole-product tier.
+
+Resolutions only DISAPPEAR: the deny is a pure ⊤-grow at a single arm, reachable only by a head on
+the table, and the corpus has no in-role occurrence of any of them. Both gate legs moved zero
+goldens.
+
+## needs-human residue
+
+- `authoring-surface-stays-silent` — `dorc lint` still reports 0 errors / 0 warnings on an oracle
+  whose predict body the deny has made entirely dead. The book-side `site-unresolvable` note now
+  carries the named cause, but the author gets nothing at their own file, which is
+  `26G:haz-silence-is-the-common-cause` still firing. An `oracle-state-mutating-builtin` lint at
+  the validate seat would fix it AND would be argv-independent (it would catch a head on a case
+  arm this argv never selects, which the trace-time ⊤ structurally cannot). Deliberately NOT built
+  here, because it needs a ruling the deny itself did not: **which roles it should scan**. The
+  deny binds the two TRACED roles (predict, verdict); `__resolve` is host-run strip-only and its
+  body legitimately carries constructs neither tracer models, so a lint that scans role bodies
+  textually would over-fire on exactly the role the and-or work already carved out.
+- `verdict-degrades-have-no-channel` — a verdict-lane ⊤ reaches no surface at all. Both consumers
+  (`plan/src/lib.rs:1399`, `:1500`) test `!matches!(…, Vouched)` and discard the reason;
+  `classify_decline` narrates a genuine decline but a ⊤ falls past it. Pre-existing and general —
+  it swallows `AndOrList`, `BudgetExceeded`, and `NonConcreteWord` identically — so this lane
+  neither caused nor worsened it, but the new variant inherits the silence. Building the
+  verdict-side twin of `unresolvable_causes` is its own errand.
+- `book-side-set-subform-deny` — see `§book-lane`. A `set` whose first operand is not an option
+  (`set --`, `set alpha`) is the positional-rebinding form; `set -e` / `set -o pipefail` must keep
+  modeling. Whether the book dialect refuses the former is a scope call.
+- `inert-column-is-relative-not-absolute` — the table is closed against the state a tracer carries
+  TODAY. If the tracers ever model cwd, IFS, or the function table, the inert column must be
+  re-adjudicated: those heads are inert *relative to what is modeled*, not absolutely.
 
 ## §book-lane — adjudicated, and mostly already closed
 
@@ -125,11 +163,3 @@ errexit modeling is load-bearing), so it would have to be a sub-form deny in the
 `syntax/parser.rs` uses for `unset`/`printf` — which is a book-dialect scope decision, not the
 oracle-lane side-lane this note closes.
 
-## needs-human residue
-
-- `book-side-set-subform-deny` — above. A `set` whose first operand is not an option (`set --`,
-  `set alpha`) is the positional-rebinding form; `set -e`/`set -o pipefail` must keep modeling.
-  Whether the book dialect refuses the former is a scope call.
-- The deny-list is closed against the heads a tracer can diverge on TODAY. If the tracers ever
-  grow state (cwd, IFS, function table), the inert column must be re-adjudicated against the new
-  state — the column is inert *relative to what is modeled*, not absolutely.
