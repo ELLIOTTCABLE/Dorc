@@ -412,6 +412,13 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Words::Migrated(&["(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed relevance; `--all` enumerates everything the engine holds.)"]),
     },
     ArrangementEntry {
+        slug: "why-reason-elide-cascaded",
+        occurrence: None,
+        when_used: "The ANALYSIS row for a site whose guard became trustworthy only after the validity fixpoint proved upstream mutators dead: the erased lines (v0), the line whose measured rc proved the last of them dead (v1), and the round (v2).",
+        why: "26H section 4.6: an unattributable cascaded elision is the second-worst sin. A depth-N elision rests on an N-conjunction of measurements, and the admin is owed that chain rather than a bare converged.",
+        words: Words::Unwritten,
+    },
+    ArrangementEntry {
         slug: "why-reason-run-unprobed",
         occurrence: None,
         when_used: "The ANALYSIS row for a site that ran because no read-only check could be shipped for it.",
