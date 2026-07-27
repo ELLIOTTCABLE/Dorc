@@ -435,6 +435,12 @@ independently of finding the parse sites, and I would sequence it first.
 
 Trial label: `README.md` §4 item 2.
 
+<!-- /* superceded IN PART by §CORRECTION-orlist-not-command-v (appended 2026-07-27): the
+     MECHANISM this section names is wrong. The degrade is caused by the `||` (or-list); NOT by
+     `command -v`, which models fine on its own, and NOT by "unmodeled statements" generally.
+     Every OBSERVATION below reproduces; only the attribution is wrong. The knock-on is that
+     `26H` §5's R-1-model-command-v is a wrongly-posed question. Read the correction first. */ -->
+
 ### 1. Verified root cause
 
 Reproduced decisively, and the effect is total. A book `wombat query thing … || wombat sync thing`
@@ -603,3 +609,67 @@ survive re-derivation (the "no fixture has two same-command sites" claim, and th
 coordinate-mark evidence), and one understated its finding (the sibling-`cant-tell` collapse).
 The trial's *measurements* were reliable; its *mechanisms* were inferred. Re-verify before
 building on any of them, including this note.
+
+---
+
+# §CORRECTION-orlist-not-command-v (appended 2026-07-27, during the W-A build)
+
+Appended, not merged: the original text stands as written and carries an inline superseded-marker
+at the affected section. This corrects `fnd-existence-gate-darkens-oracle` §1 — and, by the note's
+own `haz-trial-claims-need-independent-check`, it is that hazard firing on this note. The error was
+inherited from the r26 trial (`README.md` §4 item 2) and re-stated here without an independent
+single-variable check; the observations were reproduced, the *mechanism* was not.
+
+## What is wrong
+
+`fnd-existence-gate-darkens-oracle` attributes the degrade to `command -v` specifically, and
+generalises to "any unmodeled statement before a marked line makes the site unresolvable"
+(the trial's wording, which the finding adopted). Both are wrong.
+
+## The corrected mechanism
+
+Controlled bisect — one `wombat__predict` body, every line held constant except the leading gate,
+planned read-only against the same book:
+
+| gate line under test | site resolution |
+|---|---|
+| *(no gate)* | RESOLVES |
+| `command -v wombat >/dev/null 2>&1 \|\| return 2` | unresolvable |
+| `wombat ping >/dev/null 2>&1 \|\| return 2` | **unresolvable** |
+| `command -v wombat >/dev/null 2>&1` (same command, no `\|\|`) | **RESOLVES** |
+| `if [ "${1-}" = "" ]; then return 2; fi` | RESOLVES |
+| `wombat ping >/dev/null 2>&1 && return 2` | RESOLVES |
+
+Rows 3 and 4 are the discriminator: swapping the command while keeping `||` still fails; keeping
+`command -v` while dropping `||` succeeds. **The or-list is the cause. `command -v` models fine.**
+
+Why: `oracle/src/predict/lexer.rs:135` lexes `|` as a one-byte `Tok::Pipe`, so `||` arrives as two
+adjacent pipe tokens; `parse_command` (`parser.rs`, the `CmdTok::Pipe` arm) raises `pipeline = true`
+for each, folding the whole or-list into one accepted, byte-exact-shipping Command; and
+`eval.rs`'s `run_stmt` degrades any `cmd.pipeline` to `Flow::Top`. The site then runs unprobed. The
+reason was discarded at `analysis/src/effect.rs:347` (`Resolution::Top(_) => None`), which is why
+nothing surfaced. `&&` does NOT share the mechanism (row 6) — it is not lexed as a pipe.
+
+## What still stands
+
+Everything observational: the gate as the contract writes it does darken a predict body totally;
+`dorc lint` reported 0 errors / 0 warnings; the contract prescribes that exact line at
+`oracle-contract.md:103-104`; and the finding's law verdict (a doc-vs-engine contradiction, plus
+`inv-top-reject`'s silence violation) is unaffected — only the named construct changes.
+
+## Knock-on for the ruling queue
+
+`26H` §5's **R-1-model-command-v is wrongly posed**. It asks whether the tracer should model
+`command -v` (and how far `test`/`[`/`case $?` go). `command -v` already models. The real
+ruling-gated question is **or-lists in oracle bodies** — which the verdict-lift scope note in
+`oracle/src/verdict.rs` records as a deliberate parser scope-cut, not an oversight — weighed
+against fixing the oracle-contract, whose taught existence-gate idiom is currently unusable.
+That is a doc-vs-dialect choice for the human, and it is a different, broader question than the
+one the queue currently holds.
+
+## Landed under W-A (diagnostics only, no dispositions moved)
+
+The or-list degrade now reports as itself (`TopReason::OrList`) instead of borrowing the pipeline
+reason — a mis-attribution outranks silence, and "reached a command pipeline" is what an author
+who wrote the contract's own `|| return 2` would have been told. Behaviour is pinned identical:
+both shapes still degrade to ⊤, and the accept/degrade decision is untouched.
