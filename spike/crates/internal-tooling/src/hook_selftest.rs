@@ -8,7 +8,7 @@
 //! enforcement of a convention agents actively fight, it is untyped sh, and its failure
 //! direction is OPEN — a broken matcher stops refusing and says nothing.
 
-use std::process::{Command, ExitCode, Stdio};
+use std::process::{Command, Stdio};
 
 use internal_tooling::Posix;
 
@@ -157,12 +157,12 @@ fn run_case(
     status.map(|status| status.success())
 }
 
-pub(crate) fn run() -> ExitCode {
+pub(crate) fn run() -> u8 {
     let posix = match Posix::find() {
         Ok(posix) => posix,
         Err(why) => {
             eprintln!("hook-selftest: no POSIX shell — {why}");
-            return ExitCode::from(2);
+            return 2;
         }
     };
     let hook = internal_tooling::repo_root().join(".githooks/commit-msg");
@@ -179,7 +179,7 @@ pub(crate) fn run() -> ExitCode {
         match run_case(case, &posix.shell, &hook, &path, &msg_file) {
             Err(why) => {
                 eprintln!("hook-selftest: {why}");
-                return ExitCode::from(2);
+                return 2;
             }
             Ok(passed) if passed == case.want_pass => println!("ok   {name}"),
             Ok(passed) => {
@@ -196,9 +196,9 @@ pub(crate) fn run() -> ExitCode {
             "commit-msg hook: all cases green (via {})",
             posix.shell.display()
         );
-        ExitCode::SUCCESS
+        0
     } else {
         eprintln!("{failures} case(s) failed");
-        ExitCode::FAILURE
+        1
     }
 }
