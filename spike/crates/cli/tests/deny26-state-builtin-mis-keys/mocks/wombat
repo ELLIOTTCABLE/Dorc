@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT mock: the site is unresolvable (no probe ships), so this is invoked ONLY by the apply.
+# Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

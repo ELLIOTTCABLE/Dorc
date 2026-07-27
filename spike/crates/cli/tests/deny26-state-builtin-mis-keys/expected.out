@@ -1,0 +1,20 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e6167eb2a4ba81919f5481350f6e3c2edacc9a77e7e8ac884b905307f8f147c4 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# deny26-state-builtin-mis-keys (`26I:fnd-state-builtins-silently-mis-key`, `26J`): the oracle's
+# predict body rebinds the positionals with `set --` BETWEEN the bind and the probe. Before the
+# deny, the engine keyed this site's own entity (`install`) while the shipped probe body measured
+# `alpha` — a converged `holds` about alpha would then license folding a mutator on install, the
+# priority-1 under-execute. The head is refused, the site is unresolvable, and it RUNS.
+wombat install
