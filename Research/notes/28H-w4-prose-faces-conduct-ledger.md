@@ -361,6 +361,69 @@ is the human's; untouched.
   forces the architecture to track it; down-tuning is cheap later, up-tuning is
   very hard — kWARN tune-high generalized), far more than where the tuning sits.
   Both edits applied to the two AID-NEEDS law entries in place.
+- **lane-w4-span LANDED + FOLDED** @ merge `3d09e441` (5 commits, tip
+  `4d21bbde`, builder-rebased onto `35a71135`; own-hand gate at fold; builder
+  ran `both gate:full-quiet` twice — 1478 Windows / 1474 WSL, 0 failures).
+  Leg A COMPLETE, checkpoint green on all three round-trips — single-run,
+  multi-run-WRAPPED-at-40, and GLUED — against the REAL layout engine;
+  **errorloom untouched, the fallback license unspent**
+  (`ask-word-model-fix-lives-dorcside` CONFIRMED; the one non-aid fix was
+  dorc-loom's own `compile_section_edits` anchoring — unchanged-by-prefix +
+  last-by-suffix — and a weft prerequisite: multi-run words unbreakable at
+  seams). The page-vs-line fork is TYPED (two `SectionKey::field` constants,
+  two apply fns; whitespace collapse provably no-op on every committed line
+  row outside `cli-help-page`). Leg B's bridge landed with a STRONGER proof
+  than briefed: `print_document` prints out of the part stream, so the whole
+  e2e battery is a byte-identity proof the bridge is total and lossless
+  (`fnd-span-map-has-no-production-consumer` discharged corpus-wide). The
+  240-byte truncation fixed as a TYPE-shaped budget (raw values cap; composed
+  values arrive pre-encoded/pre-capped) + unit-pinned (no corpus case reaches
+  it — noted). Empty diff over both test trees + both locks: no bless, no
+  promote, zero churn.
+- **Items 9–11 (the `dorc why <addr>` driver + new cases) did NOT land** —
+  builder stopped-and-sized rather than bulldozed (correct): the why render
+  seat lives in the dorc-cli BINARY (`emit_why_report`, 16 args fed by ~600
+  lines of `run()`); dorc-loom deps the lib; the full extraction is
+  lane-sized `main.rs` work with corpus byte-risk. Its
+  `prop-drifted-why-is-the-thin-driver` ADOPTED by the conductor: 200–250
+  lines of pure code motion (the self-contained `emit_drifted_why` closure)
+  into `cli/src/lib.rs` buys real edit authority over ~8 receipt/drift rows —
+  the TOP of the human's own W5 priority list — through an already-committed
+  real invocation. **lane-w4-drifted-driver dispatched** with the riders
+  below. The FULL extraction (chain-row faces) goes to the human as a scope
+  call: this-arc extension vs the r30 opener; chain prose is lock-editable
+  meanwhile (hand-seed + scoped bless — the flow the human has already run).
+- **Conductor rulings on the span flags:**
+  1. `ask-empty-value-loses-its-variable` → **empty-rendering values are a
+     SEAT defect**: a row with a sometimes-empty clause is TWO sentence forms
+     = occurrence-keyed variants (the registry's existing mechanism; matches
+     the N+1 arity arithmetic). The live `FirstWallHint` instance rides the
+     drifted-driver lane as a rider. Weft stays unable to emit zero-width
+     runs — correct, not a gap.
+  2. `ask-leading-space-is-dropped-at-a-line-start` → accepted as-is
+     (one-time self-normalizing entry churn; fixpoint-stable both ways).
+  3. `ask-repeated-occurrence-shares-a-section-key` → the `refuse_split_field`
+     relaxation ACCEPTED IN PRINCIPLE (each span is a complete rendering of
+     one shared entry) **CONDITIONAL: divergent edits to the same entry in one
+     transcript must REFUSE, never last-wins** — verify + pin rides the
+     drifted-driver lane; if it last-wins today, that is a defect to fix
+     there.
+  4. `ask-unwritten-placeholder-stays-editable` → builder's reading UPHELD:
+     the placeholder text stays computed (never a row), but its span keeps the
+     row's face so a transcript edit is the WORDS-MINT path for wordless rows
+     — removing it would cliff all 21 Unwritten rows into lock hand-seeds.
+     The values-bearing sibling gap (`friction-no-way-to-seed-a-values-row-
+     from-a-transcript`) goes to the loom-UX lane as a design item (seed/
+     scaffold affordance with arity).
+  5. `tc-page-vs-line-fork-is-a-field-constant` → accepted; promote to an
+     enum only when a third field class appears (strawman-formats makes it
+     cheap).
+  Frictions banked for the loom-UX lane: the intermediate-edited-section
+  `AmbiguousCandidate` residue (will bite first on a multi-section why
+  transcript) · arity-slip loud-only-in-debug (now a REACHABLE authoring
+  mistake — wants compile-time refusal) · `unreflow` now demonstrably
+  unnecessary for weft-rendered surfaces · editable-text-welded-to-output
+  bites harder (the absorption/collapse pair exists because of it).
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
