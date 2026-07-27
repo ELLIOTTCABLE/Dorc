@@ -1041,10 +1041,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let framing = dorc_plan::records::Framing::spike(book_digest(&book_src));
     if mode == Mode::Probe {
         print!("{}", probe.render_sh(&framing, &interner));
-        print!("{}", derivations.render_sh(&framing.nonce, &interner)); // 24E §2: SAME phase-1 block
-        print!("{}", resolvers.render_sh(&framing.nonce)); // 24F §3: SAME phase-1 block
-        print!("{}", reaches_plan.render_sh(&framing.nonce)); // 24G §4: SAME phase-1 block
-        print!("{}", dorc_plan::records::sentinel_line(&framing.nonce));
+        print!("{}", derivations.render_sh(framing.nonce(), &interner)); // 24E §2: SAME phase-1 block
+        print!("{}", resolvers.render_sh(framing.nonce())); // 24F §3: SAME phase-1 block
+        print!("{}", reaches_plan.render_sh(framing.nonce())); // 24G §4: SAME phase-1 block
+        print!("{}", dorc_plan::records::sentinel_line(framing.nonce()));
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
     }
@@ -1054,10 +1054,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // and `apply` emit ONLY the apply artifact (the probe is an internal compile there).
     if mode == Mode::RoundTrip {
         print!("{}", probe.render_sh(&framing, &interner));
-        print!("{}", derivations.render_sh(&framing.nonce, &interner)); // 24E §2: SAME phase-1 block
-        print!("{}", resolvers.render_sh(&framing.nonce)); // 24F §3: SAME phase-1 block
-        print!("{}", reaches_plan.render_sh(&framing.nonce)); // 24G §4: SAME phase-1 block
-        print!("{}", dorc_plan::records::sentinel_line(&framing.nonce));
+        print!("{}", derivations.render_sh(framing.nonce(), &interner)); // 24E §2: SAME phase-1 block
+        print!("{}", resolvers.render_sh(framing.nonce())); // 24F §3: SAME phase-1 block
+        print!("{}", reaches_plan.render_sh(framing.nonce())); // 24G §4: SAME phase-1 block
+        print!("{}", dorc_plan::records::sentinel_line(framing.nonce()));
         std::io::stdout().flush().ok();
     }
 
@@ -1395,7 +1395,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 .as_ref()
                 .map_or_else(|| clock.now(), |r| r.started_at),
             replayed: replay.is_some(),
-            host: framing.host.clone(),
+            host: framing.host().to_owned(),
             book: book_name.to_owned(),
             book_digest: book_digest(&book_src),
             at_head: source_match::resolve(
@@ -1799,9 +1799,9 @@ fn assemble_whylog_metadata(
             .zip(oracle_srcs)
             .map(|(p, s)| (p.clone(), book_digest(s)))
             .collect(),
-        nonce: framing.nonce.0.clone(),
-        attempt: framing.attempt,
-        host: framing.host.clone(),
+        nonce: framing.nonce().0.clone(),
+        attempt: framing.attempt(),
+        host: framing.host().to_owned(),
         decision_digest: decision_digest.to_owned(),
         started_at,
         instants: results
@@ -5901,10 +5901,10 @@ impl WidthOneAttemptScope {
         sources: &[String],
     ) -> Self {
         Self {
-            host: framing.host.clone(),
+            host: framing.host().to_owned(),
             target: WidthOneLocalTargetId,
-            nonce: framing.nonce.0.clone(),
-            attempt: framing.attempt,
+            nonce: framing.nonce().0.clone(),
+            attempt: framing.attempt(),
             sources: paths
                 .iter()
                 .zip(sources)

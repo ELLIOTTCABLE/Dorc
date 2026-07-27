@@ -1967,7 +1967,7 @@ impl ProbePlan {
         // computable range at the deframer (`26A` amend-smalls). The end-sentinel is emitted
         // by the round-trip driver AFTER every record lane (`records::sentinel_line`).
         out.push_str(&records::header_line(framing, self.checks.len()));
-        let nonce = &framing.nonce;
+        let nonce = framing.nonce();
         let drains = self.checks.iter().any(|c| c.emits_report);
         if drains {
             out.push_str(&render::probe::report_scratch_prologue(nonce));
