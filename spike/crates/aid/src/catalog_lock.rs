@@ -806,4 +806,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: None,
     },
+    CatalogEntry {
+        slug: "mark-on-and-or-list",
+        when_fires: "a `# dorc-lang/v0.2`-marked oracle trails an effect mark on an item of an and-or list (`probe : sm.dorc.K:\"$e\"@sel || return 2`, `a && b :? …`), so the mark is refused and mints no cell. oracle/predict/parser.rs refuse_item_marks, at parse, spanned at the refused mark. The list itself still parses and still ships byte-exact; only the mark is dropped, and `dorc strip` still erases its bytes.",
+        why: "a verdict mark claims THIS command's rc establishes the property, but an and-or list answers with the LIST's rc, so the claim has no owner. In `probe : k:e@sel || return 2` the marked cell's complement sense can never be spoken - rc 1 is unreachable, the `||` having routed every failure to 2 - and in `probe : k:e@sel || true` the rc is forged 0 on every host whatever the world says, which is the errexit-masked rc R2-ORTRUE forbids as a verdict and the always-skip guard shape (23H 9.4). `281` 7's one-verdict-per-line rc-arity reaches the same place from the grammar side. Refusing is the loud half of a fix, not a new restriction: before and-or lists were lexed at all, a `&&` list's mark was honored off a command whose right-hand statements no tracer could see. Warn-tier, never a refusal - the cell is simply unminted, so the site runs, which is the safe direction; but an author who wrote an annotation that does nothing must hear it (the silent-inert authored-construct class). Remediation register (help) wanted: the mark belongs on the command whose rc it reads, on its own line, with the gate above it.",
+        params: &[],
+        example: "[unwritten: mark-on-and-or-list]",
+        message: None,
+        help: None,
+    },
 ];
