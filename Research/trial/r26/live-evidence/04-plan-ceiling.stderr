@@ -1,0 +1,16 @@
+oracle: note[aid-unloaded-sibling-oracle]: sibling oracle files exist on disk but were not loaded: `C:/Users/ec/AppData/Local/Temp/t1.oracle.sh`
+  = help: load them with `--oracle <file>` (or point `--oracle-dir` at their directory); dorc never loads an oracle you did not name
+probe: note[site-unresolvable]: sm 6 sites run unprobed (no read-only check could be shipped): `apt-get install -y ca-certificates`, `apt-get install -y curl`, `apt-get install -y jq`, `apt-get install -y nginx`, `curl -fsS -o /dev/null http://127.0.0.1:8088/r26`, `logger -t dorc-r26 "r26 smoke book applied"` -- run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)   = note: site runs `apt-get install -y ca-certificates`
+   --> C:/Users/ec/AppData/Local/Temp/ceiling-book.sh:28:44
+   |
+28 | dpkg -s ca-certificates >/dev/null 2>&1 || apt-get install -y ca-certificates
+   |                                            \________________________________/
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unsound] (at oracles\logger.oracle.sh:11) -- a deliberate decline the author classed, so the site runs
+hint: 'curl' (line 39) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why C:/Users/ec/AppData/Local/Temp/ceiling-book.sh:N` to query a source line
+dorc: plan-summary sites=15 elide=4 omit=4 guard=0 run=7 may-alias=0
+dorc: decision-digest 161d8a3bd739331d

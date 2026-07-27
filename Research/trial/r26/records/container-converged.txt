@@ -1,0 +1,17 @@
+# HAND-AUTHORED probe records — `container-book.sh` against the same container after one
+# successful apply. Nothing was executed to produce this file.
+#
+# All four packages present, both dropped files byte-identical to their sources.
+
+# site 1 -- dpkg -s ca-certificates
+site 1 effect=holds rc=0
+# site 3 -- dpkg -s curl
+site 3 effect=holds rc=0
+# site 5 -- dpkg -s jq
+site 5 effect=holds rc=0
+# site 7 -- dpkg -s nginx
+site 7 effect=holds rc=0
+# site 9 -- cp r26-smoke.conf: content already identical
+site 9 effect=holds rc=0
+# site 10 -- cp r26-motd /etc/motd: content already identical
+site 10 effect=holds rc=0

@@ -1,0 +1,14 @@
+# Live recon of 140.82.10.231, before any dorc mutation.
+# Captured 2026-07-27T18:52:54Z
+
+ca-certificates  installed
+curl             installed
+jq               installed
+nginx            ABSENT
+
+conf drop:   (absent)
+motd:        434 Jul 17 14:01 /etc/motd
+nginx enabled: Failed to get unit file state for nginx.service: No such file or directory
+nginx active:  inactive
+
+debian: 12.15  kernel: 6.1.0-50-amd64

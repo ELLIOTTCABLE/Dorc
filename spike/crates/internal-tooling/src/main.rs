@@ -10,6 +10,7 @@ use std::process::ExitCode;
 mod bless;
 mod coverage;
 mod hook_selftest;
+mod livetest;
 mod step_globs;
 
 fn main() -> ExitCode {
@@ -20,12 +21,13 @@ fn main() -> ExitCode {
         Some("hook-selftest") => ExitCode::from(hook_selftest::run().max(step_globs::run())),
         Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
         Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
+        Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
         other => {
             eprintln!(
                 "internal-tooling: unknown task {:?}",
                 other.unwrap_or("<none>")
             );
-            eprintln!("tasks: hook-selftest, coverage, bless");
+            eprintln!("tasks: hook-selftest, coverage, bless, livetest");
             ExitCode::from(2)
         }
     }

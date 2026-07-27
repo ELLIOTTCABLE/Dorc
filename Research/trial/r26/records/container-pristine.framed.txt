@@ -1,0 +1,8 @@
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=98bebb88b7d09e1bc6456d055576c4a444a7ca59f8e88ca3366adc65957f9ac5 sites=6 @@dorc@@
+dorc site 1 effect=absent rc=1 @@dorc@@
+dorc site 3 effect=absent rc=1 @@dorc@@
+dorc site 5 effect=absent rc=1 @@dorc@@
+dorc site 7 effect=absent rc=1 @@dorc@@
+dorc site 9 effect=cant-tell rc=2 @@dorc@@
+dorc site 10 effect=absent rc=1 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@

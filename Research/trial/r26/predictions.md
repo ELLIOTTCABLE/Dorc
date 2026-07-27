@@ -82,6 +82,9 @@ L1 commented out. Confidence **~SUSPECT** on the exact count, **+SURE** on the d
 
 ## §3. What `dorc plan` actually said (hermetic, hand-fed records)
 
+> **Superseded as ground truth by §6.** The numbers below were measured before the kernel arc
+> landed and are kept as the historical first measurement. `renders/` now holds §6's numbers.
+
 Renders under `renders/`. Engine tallies count **sites**, not book lines — the four guarded-install
 lines carry two sites each, so 11 tool-lines is 16 sites.
 
@@ -155,3 +158,55 @@ than the elision count would have been.
   nothing to do with taste: three ordinary shell constructs silently void every mark in a marked
   file. See `README.md` §4. Do not "tidy" these files back toward idiom without re-running the
   strip check documented there.
+
+## §6. Re-registration on the r26 engine — the live-run baselines
+
+The §3 numbers were computed before the kernel arc (the and-or-list, ladder-fold and verdict-keying
+work merged at `9c575524`). They are stale as ground truth, so the kit's own hermetic method was
+re-run on the current engine and `renders/` refreshed. **This section, and the refreshed renders,
+are committed before any live run happens** — the git order is the evidence, exactly as §0's
+discipline requires. The live run asserts against these, not against §3.
+
+Reproduce with `Research/trial/r26/render-baselines.sh` (new; it wraps `frame-records.sh` plus the
+three `dorc plan` invocations, and builds the uncommitted ceiling book itself).
+
+The framing did not move: `frame-records.sh` re-derives both `records/*.framed.txt` byte-identically,
+same site ids, same book digest. Only dispositions changed.
+
+| world | §3 (pre-arc) | §6 (current engine) |
+|---|---|---|
+| pristine | `sites=16 elide=0 omit=0 guard=0 run=16` | `sites=16 elide=0 omit=0 guard=0 run=16` |
+| converged | `sites=16 elide=0 omit=0 guard=2 run=14` | `sites=16 elide=0 omit=0 guard=0 run=16` |
+| ceiling | `sites=15 elide=1 omit=1 guard=2 run=11` | `sites=15 elide=4 omit=4 guard=0 run=7` |
+
+Three deltas, each with a cause:
+
+**del-guarded-ladder-now-cascades — the ceiling's elisions went 1 → 4.** §4's cap (nee m-3: only the
+guard sitting above the first mutator site can fold, so a run of `dpkg -s x || apt-get install -y x`
+lines yields at most one elision) has lifted. `70039fb8` iterates classify-and-fold to a fixpoint,
+so proving the first line's install branch dead removes the mutator that was blocking the second,
+and so on down the ladder. All four guarded installs now elide in the ceiling variant. That cap's
+description of the mechanism was right and its permanence was wrong.
+
+**del-sibling-verdict-cells-split — two `cp` sites no longer collide.** `d6758c3d`/`4483f530` key a
+verdict-marked site on the coordinate its author wrote rather than on a synthesized
+`dorc-auto:<cmd>@converged`. The probe artifact now reports
+`r26.smoke.File:/etc/nginx/conf.d/r26-smoke.conf@content` and `r26.smoke.File:/etc/motd@content` as
+distinct cells, where it previously collapsed both onto one. §4's collision finding (nee m-2: an
+`is_converged` site keys a synthesized per-command coordinate, so two sites of one command share a
+cell and only one can be licensed) no longer holds.
+
+**del-authored-coordinate-voids-guard — and yet the guards went 2 → 0, which is a defect, not a
+win.** Splitting the cells should have taken the converged world from two guards to four. It took it
+to none: every `cp` and `systemctl` site now runs verbatim. The split is happening on the probe side
+only — the vouch that comes back keys the authored coordinate, and nothing on the licensing side
+asks for that cell, so a correct `holds` buys nothing. Demonstrated directly: strip the trailing
+`: r26.smoke.File:"$dst"@content` mark from `cp.oracle.sh` and the two sites collapse back onto
+`dorc-auto:cp@converged` and one guard reappears (`guard=1`). **An authored coordinate on an
+`is_converged` verdict is currently strictly worse than no coordinate at all** — which is the
+opposite of what the contract asks authors to write.
+
+The corpus does not catch del-authored-coordinate-voids-guard: `794c0e41` pinned the keying change
+with two `.loom` prose cases and no whole-product case, and no e2e case in the collection pairs an
+`is_converged` oracle carrying an authored coordinate with records that vouch it. `test:e2e` is
+green at 109 cases with this defect live. That gap is the finding worth more than the number.

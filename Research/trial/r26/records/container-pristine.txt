@@ -1,0 +1,24 @@
+# HAND-AUTHORED probe records — `container-book.sh` against a FRESH `debian:12-slim` plus the
+# openssh-server livetest installs into it. Nothing was executed to produce this file.
+#
+# All four packages are absent. `debian:12-slim` does NOT ship ca-certificates and openssh-server
+# does not pull it in — measured against a real container, after an earlier draft of this file
+# guessed otherwise and livetest caught it. Neither dropped file is in place: /etc/nginx/conf.d
+# does not exist yet, so cmp exits 2, and /etc/motd exists but is the stock Debian one, so cmp
+# exits 1.
+#
+# Comments must stand on their OWN line: a trailing `#` after a record parses as a record field
+# and the whole stream is refused.
+
+# site 1 -- dpkg -s ca-certificates: not on the slim image
+site 1 effect=absent rc=1
+# site 3 -- dpkg -s curl: not installed
+site 3 effect=absent rc=1
+# site 5 -- dpkg -s jq: not installed
+site 5 effect=absent rc=1
+# site 7 -- dpkg -s nginx: not installed
+site 7 effect=absent rc=1
+# site 9 -- cp r26-smoke.conf: dest missing, so cmp exits 2
+site 9 effect=cant-tell rc=2
+# site 10 -- cp r26-motd /etc/motd: dest exists but is the stock file
+site 10 effect=absent rc=1

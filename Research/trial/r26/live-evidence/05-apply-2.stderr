@@ -1,0 +1,4 @@
+Synchronizing state of nginx.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable nginx
+curl: (7) Failed to connect to 127.0.0.1 port 8088 after 0 ms: Couldn't connect to server
+apply: error[transport-apply-failed]: [unwritten: transport-apply-failed]

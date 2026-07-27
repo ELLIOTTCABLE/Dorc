@@ -1,0 +1,6 @@
+Hit:1 https://deb.debian.org/debian bookworm InRelease
+Hit:2 https://deb.debian.org/debian-security bookworm-security InRelease
+Hit:3 https://deb.debian.org/debian bookworm-updates InRelease
+Hit:4 https://apprepo.vultr.com/debian universal InRelease
+Hit:5 https://debian.mirror.constant.com bookworm InRelease
+Reading package lists...
