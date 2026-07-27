@@ -25,6 +25,9 @@ use std::time::Duration;
 /// "here".
 const TRANSPORT_ENV: &str = "DORC_TRANSPORT";
 
+/// The local shell's own name for itself, when it differs from the OS's name for it.
+const TRANSPORT_INTERPRETER_ENV: &str = "DORC_TRANSPORT_INTERPRETER";
+
 /// Pins the run nonce so a committed transcript can be a fixpoint, exactly as
 /// `DORC_FIXTURE_CLOCK_MS` pins the clock. No normalizer may touch rendered output
 /// (`seam-tolerated-nondeterminism-stops-at-the-run-log`), so pinning the source is the only way
@@ -85,7 +88,15 @@ pub(crate) fn driver_for_invocation(
         && let Some(shell) = spec.strip_prefix("local:")
     {
         eprintln!("dorc: {TRANSPORT_ENV}=local — running through a local shell, not ssh");
-        return Box::new(LocalDriver::new(PathBuf::from(shell)));
+        // The shell's own name for itself, when the OS's name for it will not do (msys `dash`
+        // cannot exec a `C:\…` path). Supplied by the harness that resolved the shell, because
+        // only it knows both spellings.
+        return Box::new(match std::env::var(TRANSPORT_INTERPRETER_ENV) {
+            Ok(interpreter) if !interpreter.is_empty() => {
+                LocalDriver::new(PathBuf::from(shell), interpreter)
+            }
+            _ => LocalDriver::same_spelling(PathBuf::from(shell)),
+        });
     }
     let mut options = SshOptions {
         accept_new_host_key: accept_new,

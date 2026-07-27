@@ -1079,6 +1079,127 @@ fn lint_flags(spec: &LoomCaseSpec) -> Result<String, String> {
     Ok(flags.join(" "))
 }
 
+/// T1, the closed loop (`26D` §5): probe REALLY executed, its REAL captured output admitted, a
+/// plan built from it — with no authored `probe-results.txt` anywhere in that chain.
+///
+/// Both halves existed already and had never been joined: `probe_exec_check` runs a real probe but
+/// only COMPARES its output against an authored fixture, and `exec_check` runs an apply built from
+/// that same authored fixture. Captured-real-probe-output feeding a plan build existed nowhere, so
+/// nothing proved the fixtures describe what a probe actually emits.
+///
+/// The closing assertion is the byte-comparison: the plan built from REAL captured output must
+/// equal the plan the ordinary fixture-fed run produces. A divergence means the corpus has been
+/// grading itself against a description of the world rather than the world, and IS the finding.
+///
+/// Hermetic throughout — the local driver is a shell, the shipped probe sees only the case's inert
+/// mocks, and no socket is opened.
+fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Failed> {
+    let scratch = Scratch::new("loop");
+    let sandbox = scratch.path.join("sand");
+    std::fs::create_dir_all(&sandbox).expect("create sandbox");
+
+    let args = shared_args(dir).map_err(Failed::from)?;
+    let shim_dir = scratch.path.join("shims");
+    std::fs::create_dir_all(&shim_dir).expect("create shim dir");
+    let probe_path = std::env::join_paths([mocks, shim_dir.as_path()]).expect("join probe PATH");
+
+    let mut shipped = harness.dorc();
+    shipped
+        .current_dir(&sandbox)
+        .env(
+            "DORC_TRANSPORT",
+            format!("local:{}", harness.checker.display()),
+        )
+        // The shell's own name for itself. On Windows the OS spelling and the shell spelling
+        // genuinely differ and only this harness knows both: msys `dash` cannot exec a `C:\…`
+        // path, and `CreateProcess` cannot start `/usr/bin/dash`.
+        .env(
+            "DORC_TRANSPORT_INTERPRETER",
+            if cfg!(windows) {
+                format!("/usr/bin/{}", harness.checker_name)
+            } else {
+                harness.checker.display().to_string()
+            },
+        )
+        // Mocks FIRST, so a mocked tool keeps winning and the shim only adds the disjoint
+        // oracle-check names — the same ordering `probe_exec_check` uses.
+        .env("PATH", &probe_path)
+        .arg("plan")
+        .arg(format!("--host={CLOSED_LOOP_HOST}"))
+        .arg(format!("--shim-dir={}", shim_dir.display()))
+        .arg(format!("--book={}", dir.join("book.sh").display()))
+        .args(&args);
+    let shipped = capture(shipped.stdout(Stdio::piped()).stderr(Stdio::piped()));
+    if shipped.code != 0 {
+        return Err(Failed::from(format!(
+            "closed loop: `dorc plan --host` exited {} — a real probe never made it back through admission\n{}",
+            shipped.code,
+            shipped.stderr.trim()
+        )));
+    }
+    if shipped.stdout.trim().is_empty() {
+        return Err(Failed::from(
+            "closed loop: no apply artifact — a real probe ran but produced no admissible plan"
+                .to_owned(),
+        ));
+    }
+    if let Some(error) = harness.syntax_error(&shipped.stdout) {
+        return Err(Failed::from(format!(
+            "closed loop: the plan built from REAL probe output is not runnable\n{}",
+            error.trim()
+        )));
+    }
+
+    // The committed fixture is HEADERLESS, and the production ingress refuses a headerless stream
+    // outright — so the corpus has always fed it through `framed_results`, which synthesizes the
+    // framing around it. That indirection is exactly what a real probe does not need, and exactly
+    // why this comparison is worth making.
+    let framed = scratch.path.join("framed-results.txt");
+    std::fs::write(&framed, framed_results(harness, dir, &args)).expect("write framed");
+    let results = std::fs::File::open(&framed).expect("open framed results");
+
+    let mut fixture_fed = harness.dorc();
+    fixture_fed
+        .current_dir(&sandbox)
+        .arg("plan")
+        .arg(format!("--shim-dir={}", shim_dir.display()))
+        .arg(format!("--book={}", dir.join("book.sh").display()))
+        .args(&args);
+    let fixture_fed = capture(
+        fixture_fed
+            .stdin(Stdio::from(results))
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped()),
+    );
+    if fixture_fed.code != 0 {
+        return Err(Failed::from(format!(
+            "closed loop: the fixture-fed comparison run exited {} — the loop cannot be compared \
+             against a run that did not happen\n{}",
+            fixture_fed.code,
+            fixture_fed.stderr.trim()
+        )));
+    }
+
+    if strip_cr(&shipped.stdout) != strip_cr(&fixture_fed.stdout) {
+        return Err(Failed::from(format!(
+            "closed loop: the plan from REAL probe output differs from the plan the authored \
+             fixture produces\n--- from a real probe ---\n{}\n--- from the fixture ---\n{}",
+            shipped.stdout.trim(),
+            fixture_fed.stdout.trim()
+        )));
+    }
+    Ok(())
+}
+
+/// The destination the closed loop names. Never resolved — the local driver replaces the ssh
+/// invocation wholesale, and `.invalid` is reserved by RFC 2606, so a regression that reached the
+/// network would fail rather than contact anything.
+const CLOSED_LOOP_HOST: &str = "closed-loop.invalid";
+
+/// The case the closed loop drives. Chosen for shape, not verdicts: it carries inert mocks AND an
+/// authored fixture, which is what makes the real-vs-fixture comparison possible at all.
+const CLOSED_LOOP_CASE: &str = "context-entry-babby-elides";
+
 /// The canonical round-trip invocation for a materialized case: exactly what the runner drives,
 /// rendered as the transcript's command line. The committed command must EQUAL this, so a
 /// transcript can never show one invocation while the gates run another.
@@ -2810,6 +2931,18 @@ fn main() {
     let looms = discover_looms(&case_roots());
     preflight(&harness, discovered.len());
 
+    // T1: one closed-loop trial, over a case carrying BOTH inert mocks and an authored fixture —
+    // the fixture is what the real probe output gets compared against. One case is enough: this
+    // pins the CHAIN, not any case's verdicts.
+    let closed_loop_dir = discovered
+        .iter()
+        .find(|case| {
+            case.name == CLOSED_LOOP_CASE
+                && case.dir.join("mocks").is_dir()
+                && case.dir.join("probe-results.txt").is_file()
+        })
+        .map(|case| case.dir.clone());
+
     let mut trials: Vec<Trial> = Vec::new();
     for loom in looms {
         match loom_spec(&loom) {
@@ -2868,6 +3001,14 @@ fn main() {
                 )
             }));
         }
+    }
+
+    if let Some(dir) = closed_loop_dir {
+        let harness = Arc::clone(&harness);
+        let mocks = dir.join("mocks");
+        trials.push(Trial::test("closed-loop".to_owned(), move || {
+            run_closed_loop(&harness, &dir, &mocks)
+        }));
     }
 
     if !changed.is_empty() {
