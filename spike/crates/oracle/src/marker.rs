@@ -140,6 +140,11 @@ fn first_dialect_span(body: &[Stmt]) -> Option<Span> {
                     note(s);
                 }
             }
+            Stmt::AndOr(list) => {
+                for r in &list.refused_marks {
+                    note(r.mark.span);
+                }
+            }
             Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
     }

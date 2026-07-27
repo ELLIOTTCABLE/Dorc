@@ -271,6 +271,13 @@ fn collect_strip_edits(
                 collect_strip_edits(else_body, src, base, edits);
             }
             Stmt::While { body, .. } => collect_strip_edits(body, src, base, edits),
+            Stmt::AndOr(list) => {
+                for r in &list.refused_marks {
+                    let lo = (r.host.hi.0 as usize).saturating_sub(base);
+                    let hi = (r.mark.span.hi.0 as usize).saturating_sub(base);
+                    edits.push((lo, hi, String::new()));
+                }
+            }
             Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
     }

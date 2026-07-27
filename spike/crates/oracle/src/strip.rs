@@ -250,6 +250,21 @@ fn collect_file_strip_edits(body: &[Stmt], src: &str, edits: &mut Vec<(usize, us
                 collect_file_strip_edits(else_body, src, edits);
             }
             Stmt::While { body, .. } => collect_file_strip_edits(body, src, edits),
+            // Region-erase only: a whole-line delete would take the rest of the list with it.
+            Stmt::AndOr(list) => {
+                for r in &list.refused_marks {
+                    edits.push((
+                        r.host.hi.0 as usize,
+                        r.mark.span.hi.0 as usize,
+                        String::new(),
+                    ));
+                }
+                for c in list.commands() {
+                    if let Some(dorc_prefix) = dorc_command_prefix_edit(c, src) {
+                        edits.push(dorc_prefix);
+                    }
+                }
+            }
             Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
     }
@@ -464,6 +479,37 @@ sm_dorc_Package__state_stored_only_in() {\n\
             out.lines().next(),
             Some("#!/usr/bin/env sh"),
             "line 1 is the stock-sh shebang"
+        );
+    }
+
+    /// An and-or list ships BYTE-EXACT: the operator, both items, and their redirects survive the
+    /// strip untouched. This is the corpus's own resolver line, which is also the `dorc_sh_smoke`
+    /// strip anchor — a list that failed to lift would take a working resolver with it.
+    #[test]
+    fn an_and_or_list_strips_byte_exact() {
+        let src = "#!/usr/bin/env dorc-sh\n# dorc-lang/v0.2\nsm_dorc_Package__resolve() {\n   dpkg-query -W -f '${Package}\\n' -- \"$1\" 2>/dev/null || printf '%s\\n' \"$1\"\n}\n";
+        let out = strip(src);
+        assert!(
+            out.contains(
+                "   dpkg-query -W -f '${Package}\\n' -- \"$1\" 2>/dev/null || printf '%s\\n' \"$1\"\n"
+            ),
+            "the list survives verbatim:\n{out}"
+        );
+    }
+
+    /// A REFUSED mark still erases. The list is not a mark host any more, but its bytes are still
+    /// dialect text, and an off-ramp artifact that shipped one would not be dialect-free.
+    #[test]
+    fn a_refused_mark_on_a_list_still_erases() {
+        let src = "# dorc-lang/v0.2\nw__predict() {\n   thing : sm.dorc.Thing = \"$1\"\n   w q \"$thing\" : sm.dorc.Thing:\"$thing\"@present || return 2\n}\n";
+        let out = strip(src);
+        assert!(
+            !out.contains("sm.dorc.Thing:"),
+            "no mark survives the strip:\n{out}"
+        );
+        assert!(
+            out.contains("   w q \"$thing\" || return 2\n"),
+            "the list's own bytes are kept:\n{out}"
         );
     }
 
