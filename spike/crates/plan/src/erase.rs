@@ -55,8 +55,7 @@ use dorc_syntax::ast::Ast;
 
 use crate::fold::AbstractRc;
 use crate::{
-    has_top_successor, leaf_facts, leaf_has_blocking_output_redirect, leaf_has_heredoc,
-    query_substitutes, subtree_leaves_all,
+    has_top_successor, leaf_facts, leaf_has_heredoc, query_substitutes, subtree_leaves_all,
 };
 
 /// Which round of the validity fixpoint minted something. Round 1 runs against the origin
@@ -299,10 +298,17 @@ pub fn prove_dead_branches(
 
 /// Condition 4: will this controller be substituted away in the rendered artifact?
 ///
-/// Mirrors `is_neutralised`'s compound arm — every `Simple` leaf under the controller must
-/// be neutralised — but resolves each leaf through the license PREDICATE rather than through
-/// its computed disposition. A controller with no command leaf under it answers `false` (it
-/// reproduces nothing; the run-it direction).
+/// Mirrors `is_neutralised`'s compound arm — every `Simple` leaf under the controller must be
+/// neutralised — but resolves each leaf through the license PREDICATE rather than through its
+/// computed disposition, so no outcome becomes a premise. A controller with no command leaf
+/// under it answers `false` (it reproduces nothing; the run-it direction).
+///
+/// The refusal check is `leaf_has_heredoc` and ONLY that, matching `is_neutralised`'s
+/// `Replace` arm exactly. `leaf_has_blocking_output_redirect` is deliberately absent: it is
+/// the GUARD tier's refusal, and a controller here is REPLACED, not guarded — its redirect is
+/// span-elided along with the command that binds it, so it suppresses nothing. Including it
+/// would not be merely conservative; `cmd >/dev/null 2>&1 || mutator` is the ladder idiom, and
+/// refusing it would disable the fixpoint for the exact shape it exists to fix.
 fn controller_substitutes_away(
     ast: &Ast,
     cfg: &Cfg,
@@ -314,7 +320,7 @@ fn controller_substitutes_away(
 ) -> bool {
     let mut any_leaf = false;
     let all = subtree_leaves_all(ast, controller, &mut any_leaf, &mut |leaf| {
-        if leaf_has_heredoc(ast, leaf) || leaf_has_blocking_output_redirect(ast, leaf) {
+        if leaf_has_heredoc(ast, leaf) {
             return false;
         }
         let Some(Some(node)) = node_of_ast.get(&leaf).copied() else {
