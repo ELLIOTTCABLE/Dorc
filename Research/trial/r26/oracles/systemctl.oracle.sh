@@ -10,18 +10,20 @@
 # unit is an ordinary enableable one; an oracle written for strangers' books would compare the
 # printed state instead of leaning on the status.
 #
+# NB: `test`, not `[` — a bracket test silently voids every mark in this file (see ../README.md).
+#
 # Kind: r26.smoke.Service — throwaway, minted for this round only, NOT the stdlib's sm.dorc.*.
 
 systemctl__is_converged() {
    command -v systemctl >/dev/null 2>&1 || return 2
-   [ "$#" -ge 2 ] || return 2
+   test "$#" -ge 2 || return 2
    verb="$1"; shift
    now=no
    case "${1-}" in
    --now) now=yes; shift ;;
    esac
-   [ "$#" -eq 1 ] || return 2
-   case "${1-}" in -*) return 2 ;; esac
+   test "$#" -eq 1 || return 2
+   test "${1#-}" = "$1" || return 2
    svc : r26.smoke.Service = "$1"
    case "$verb" in
    enable)
@@ -47,8 +49,7 @@ systemctl__is_converged() {
       # A restart is an action, not a state: the unit being up right now says nothing about
       # whether it is running the configuration you just dropped beside it. There is no cell to
       # read back here, on any machine.
-      printf 'decline unsound %s: a restart leaves no converged state to read\n' "$verb" \
-         >>"${DREP_V1:-/dev/null}"
+      printf 'decline unsound %s: a restart leaves no converged state to read\n' "$verb" >>"${DREP_V1:-/dev/null}"
       return 2 ;;
    *) return 2 ;;
    esac

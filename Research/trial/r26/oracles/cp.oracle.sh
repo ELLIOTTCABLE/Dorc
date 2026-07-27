@@ -7,25 +7,21 @@
 #
 # The judgment behind the yes: plain `cp` (no -p, no -a) leaves an existing DST's mode and owner
 # alone, so once the bytes match, all that skipping costs is a fresh mtime. That is acceptable for
-# a config drop. It would not be acceptable for `cp -p`, for a copy into a directory, or for
-# anything recursive — each of which declines below.
+# a config drop. It would not be acceptable for `cp -p` or for anything recursive — both of which
+# decline on the leading-dash gate. `cp SRC DIR` establishes DIR/basename(SRC), a different cell
+# than this file models; it declines on its own, since cmp cannot read a directory and exits 2.
+#
+# NB: `test`, not `[` — a bracket test silently voids every mark in this file (see ../README.md).
 #
 # Kind: r26.smoke.File — throwaway, minted for this round only.
 
 cp__is_converged() {
    command -v cmp >/dev/null 2>&1 || return 2
-   [ "$#" -eq 2 ] || return 2
-   case "${1-}" in -*) return 2 ;; esac
-   case "${2-}" in -*) return 2 ;; esac
-   [ -f "$1" ] || return 2
+   test "$#" -eq 2 || return 2
+   test "${1#-}" = "$1" || return 2
+   test "${2#-}" = "$2" || return 2
+   test -f "$1" || return 2
    dst : r26.smoke.File = "$2"
-   if [ -d "$dst" ]; then
-      # `cp SRC DIR` establishes DIR/basename(SRC) — a different cell than the one below, and one
-      # this file has not modelled.
-      printf 'decline unmodeled %s: copy-into-directory is a different question\n' "$dst" \
-         >>"${DREP_V1:-/dev/null}"
-      return 2
-   fi
-   [ -e "$dst" ] || return 1
+   test -e "$dst" || return 1
    cmp -s -- "$1" "$dst"   : r26.smoke.File:"$dst"@content
 }
