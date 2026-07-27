@@ -67,14 +67,17 @@ local linters = new Mapping<String, Step> {
 // (and therefore `mise run check`, and therefore every gate) reuse. Tests belong to the gates;
 // what belongs here is the subset a commit's own staged paths make relevant.
 local corpora = new Mapping<String, Step> {
-    ["looms"] {
+    ["loom-hygiene"] {
         glob = List("spike/crates/*/tests/*.loom", "spike/crates/*/tests/*/*.loom")
-        // The whole loom corpus is sub-second, so scoping it would cost more than it saves.
+        // The hygiene tier and nothing more: parse, same-slug, render fixpoint. A whole-product
+        // loom's transcript is proven by EXECUTING it, which is the `e2e` step below — so this
+        // step's name may not promise the word "looms". The whole loom corpus is sub-second, so
+        // scoping it would cost more than it saves.
         check = "cargo test -q -p dorc-cli --test looms --manifest-path spike/Cargo.toml"
         output_summary = "combined"
     }
     ["e2e"] {
-        // Dir-shaped cases only. A single-file `.loom` is the `looms` step's business, and
+        // Dir-shaped cases only. A single-file `.loom` is the `loom-hygiene` step's business, and
         // feeding one here would trip the runner's no-match floor unless it happened to be a
         // whole-product case.
         glob = "spike/crates/*/tests/*/**"
@@ -96,7 +99,7 @@ hooks {
         fix = true
         stash = "git"
         steps = (linters) {
-            ["looms"] = corpora["looms"]
+            ["loom-hygiene"] = corpora["loom-hygiene"]
             ["e2e"] = corpora["e2e"]
         }
     }
