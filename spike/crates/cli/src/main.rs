@@ -5790,7 +5790,8 @@ fn facts_from_sites(
             ));
         }
         // Source 2 — a CROSS-site conflict: two sites on one cell disagree ⇒ the meet ⊤s the channel.
-        *sites_per_fact.entry(check.fact).or_default() += 1;
+        let per_fact = sites_per_fact.entry(check.fact).or_default();
+        *per_fact = per_fact.saturating_add(1);
         if let Some(prior) = by_fact.get(&check.fact).copied() {
             if prior != obs {
                 let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);

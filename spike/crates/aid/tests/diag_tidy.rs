@@ -179,6 +179,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "effect-kind-disagreement",
     "predict-out-of-dialect",
     "predict-unterminated",
+    "oracle-role-fn-unlifted",
     "munge-name-invalid",
     "munge-name-collision",
     "reserved-namespace-squat",
@@ -213,6 +214,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "resolver-conflict",
     "resolver-provider-collision",
     "dangling-reference",
+    "shared-cell-measurements-disagree",
     "reaches-conflict",
     "reaches-provider-collision",
     "wrapper-entry-incoherent",
@@ -291,6 +293,9 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "RecordsLateLine",
     "HostEvidenceAdmissionRefused",
     // cli/main.rs — whole-stream/whole-plan verdicts with no single source point.
+    // cli/main.rs — a shared CELL is a cross-site coordinate: no one line is its location, and
+    // pointing the caret at one would blame it for a collapse every site on the cell shares.
+    "SharedCellMeasurementsDisagree",
     "DanglingReference", // the dangling coord's book-origin site is not in the emit scope (deferred, not synthesized)
     "EscalationPolicy",
     // plan/whylog.rs + cli/main.rs — `--last` reader refusals: about the durable FILE ⇒ spanless.
