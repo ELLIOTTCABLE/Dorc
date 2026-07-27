@@ -2883,11 +2883,9 @@ fn main() {
                 Selection::Unknown => unknown.push(name),
             }
         }
-        // The discovery floor, applied to scoping. Selecting by path and running nothing must not
-        // exit GREEN in silence — that is the one way a hook reports success for work it never ran
-        // — but the two ways it happens are not the same failure. A name no case root answers to is
-        // a caller bug and aborts; a name that is really there and simply mints no trial in THIS
-        // runner is honest, and says so in a line.
+        // The discovery floor, applied to scoping: selecting by path and running nothing must
+        // never be SILENT, because that is how a hook reports success for work it never ran. The
+        // two ways it happens differ in who is wrong, so they differ in what they cost.
         if !unknown.is_empty() {
             eprintln!(
                 "FATAL  path selection names no case: {} — no `crates/*/tests/` entry answers to it (a typo, a stale path, or a collection that moved).",
