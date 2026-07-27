@@ -18,7 +18,8 @@
 //! string (`inv-kfail`, both directions: nothing ships, nothing elides).
 
 use super::ast::{
-    AndOr, AndOrOp, Annotation, Command, MarkKind, Pattern, Predict, Stmt, Test, TestOp, Word,
+    AndOr, AndOrItem, AndOrOp, Annotation, Command, MarkKind, Pattern, Predict, Stmt, Test, TestOp,
+    Word,
 };
 use dorc_core::{Span, Symbol};
 use dorc_syntax::sem::{self, UnsetPolicy};
@@ -148,6 +149,16 @@ pub enum TopReason {
     /// permanently: which items run depends on rcs the tracer does not have, and a fallback item
     /// resolves a DIFFERENT coordinate than the item that actually ran.
     AndOrChain,
+    /// The selected path reached an explicit `return` — the author DECLINED to model this argv
+    /// (role-menu: "`return 2` = whole-shape decline"), whatever the code. A predict is not a
+    /// verdict and has no sense to read a code against; what matters is that the body exits
+    /// having measured nothing, so there is no probe and no resolution ⇒ the site runs.
+    ///
+    /// Until this existed the tracer walked straight PAST a reached `return`, recording it as a
+    /// probe span and resolving whatever followed — safe only by luck, because the shipped body
+    /// really does return and the rc ≥ 2 reads back can't-say. Modelling it makes the static
+    /// answer agree with the shipped bytes instead of relying on that.
+    Declined,
 }
 
 impl TopReason {
@@ -172,7 +183,89 @@ impl TopReason {
             TopReason::AndOrChain => {
                 "selected path reached an and-or chain (out of dialect => runs)"
             }
+            TopReason::Declined => "the check declined this argv (explicit `return`) => runs",
         }
+    }
+}
+
+/// A SUPPORTED gate: `<left> <op> return N` — the two closed forms the dialect models, and
+/// nothing else. Every other and-or shape degrades.
+///
+/// `N ≥ 2` is load-bearing, not a style rule. The tracer assumes the gate did not fire and walks
+/// on; that assumption is re-checked ON THE HOST, because the shipped probe/guard is the whole
+/// stripped funcdef and runs these same bytes. When the assumption is wrong the body returns `N`,
+/// and only `N ≥ 2` lands in the rc-partition's flat can't-say sink ⇒ the site runs. A `return 0`
+/// would forge a PASS on the gate's failure path (the `hz-refusepath` vacuous-pass — `R2-ORTRUE`'s
+/// `|| true` in numeric clothing); a `return 1` would forge the COMPLEMENT, asserting divergence
+/// on the evidence of a failed precondition. Both are wrong *yes*es, in opposite directions.
+pub(crate) struct Gate<'a> {
+    /// The left operand, whose outcome decides whether the gate fires.
+    pub left: &'a AndOrItem,
+    /// `OrElse` fires the `return` when the left FAILS; `AndThen` when it succeeds.
+    pub op: AndOrOp,
+    /// The literal, `≥ 2` return code.
+    pub code: i32,
+    /// The `return N` command's span — the precise declining arm, for attribution.
+    pub return_span: Span,
+}
+
+/// Recognize the closed forms; `None` for every other list.
+///
+/// A TEST-led left is supported under BOTH operators: it is decided statically from the argv, so
+/// nothing is assumed at all. A COMMAND-led left is supported under `||` ONLY — there the assumed
+/// world is the expected one (the precondition held), where `cmd && return N` would have the
+/// tracer walk on through a world in which the left FAILED, which no contract idiom asks for.
+pub(crate) fn recognize_gate(list: &AndOr) -> Option<Gate<'_>> {
+    let [link] = list.rest.as_slice() else {
+        return None;
+    };
+    let AndOrItem::Command(ret) = &link.item else {
+        return None;
+    };
+    let [Word::Literal(verb), Word::Literal(arg)] = ret.words.as_slice() else {
+        return None;
+    };
+    let code = (verb == "return" && !ret.pipeline)
+        .then(|| arg.parse::<i32>().ok())
+        .flatten()
+        .filter(|c| *c >= 2)?;
+    let supported = match (&list.first, link.op) {
+        (AndOrItem::Test(_), AndOrOp::OrElse | AndOrOp::AndThen) => true,
+        (AndOrItem::Command(c), AndOrOp::OrElse) => !c.pipeline && !is_rc_forging_head(c),
+        _ => false,
+    };
+    supported.then_some(Gate {
+        left: &list.first,
+        op: link.op,
+        code,
+        return_span: ret.span,
+    })
+}
+
+/// Is this command an explicit `return`? The author's whole-shape decline, not a measurement.
+pub(crate) fn is_return_head(cmd: &Command) -> bool {
+    matches!(
+        cmd.words.first(),
+        Some(Word::Literal(w) | Word::SingleQuotedLiteral(w)) if w == "return"
+    )
+}
+
+/// Is this left operand a command whose rc says nothing about the world — a fixed-rc builtin, or
+/// another `return`? Such a gate measures nothing, so it is not one.
+fn is_rc_forging_head(cmd: &Command) -> bool {
+    matches!(
+        cmd.words.first(),
+        Some(Word::Literal(w) | Word::SingleQuotedLiteral(w))
+            if w == "return" || w == "true" || w == "false" || w == ":"
+    )
+}
+
+/// Does a recognized gate FIRE (run its `return`) when its left operand produced `left_held`?
+pub(crate) const fn gate_fires(op: AndOrOp, left_held: bool) -> bool {
+    match op {
+        AndOrOp::OrElse => !left_held,
+        AndOrOp::AndThen => left_held,
+        AndOrOp::Async => false,
     }
 }
 
@@ -328,6 +421,9 @@ impl Evaluator {
                 if cmd.pipeline {
                     return Flow::Top(TopReason::Pipeline);
                 }
+                if is_return_head(cmd) {
+                    return Flow::Top(TopReason::Declined);
+                }
                 // a probe body on the selected path: record its verbatim span (we run
                 // statically — the span ships into the probe artifact, C-1). A trailing
                 // effect mark (`cmd.mark`) does not change what the probe command DOES, so
@@ -354,8 +450,29 @@ impl Evaluator {
                 self.last_stdout = Some(stage_stdout_of(cmd));
                 Flow::Normal
             }
-            // Degrades BEFORE any item is walked: no span may enter `probe_body` from a list.
-            Stmt::AndOr(list) => Flow::Top(and_or_reason(list)),
+            Stmt::AndOr(list) => self.run_and_or(list),
+        }
+    }
+
+    /// Walk an and-or list. Only the closed forms ([`recognize_gate`]) survive; everything else
+    /// degrades BEFORE any item is walked, so no unreachable item's span can enter `probe_body`.
+    fn run_and_or(&mut self, list: &AndOr) -> Flow {
+        let Some(gate) = recognize_gate(list) else {
+            return Flow::Top(and_or_reason(list));
+        };
+        match gate.left {
+            // Statically decided: the argv answers the test, so the tracer KNOWS which side runs.
+            AndOrItem::Test(test) => match self.eval_test(test) {
+                Ok(held) if gate_fires(gate.op, held) => Flow::Top(TopReason::Declined),
+                Ok(_) => Flow::Normal,
+                Err(reason) => Flow::Top(reason),
+            },
+            // Assumed: the precondition held. A gate that may not have fired promises no bytes.
+            AndOrItem::Command(_) => {
+                self.probe_body.push(list.span);
+                self.last_stdout = Some(StageStdout::Declined);
+                Flow::Normal
+            }
         }
     }
 
@@ -704,12 +821,14 @@ mod and_or_degrade_tests {
         resolve_argv(body, &["q"])
     }
 
-    /// The contract's gate degrades, and says OR-LIST — not "pipeline", which describes a construct
-    /// the author did not write.
+    /// A general `A || B` — a FALLBACK probe, whose right side is a command rather than a
+    /// `return` — degrades, and says OR-LIST rather than "pipeline", which names a construct the
+    /// author did not write. This shape stays ⊤ permanently: whichever side ran resolves a
+    /// different coordinate, and the tracer has no rc to say which.
     #[test]
-    fn an_or_list_degrades_as_an_or_list() {
+    fn a_fallback_or_list_degrades_as_an_or_list() {
         assert_eq!(
-            resolve("command -v w >/dev/null 2>&1 || return 2"),
+            resolve("w query \"$1\" || w sync \"$1\""),
             Resolution::Top(TopReason::OrList)
         );
     }
@@ -779,5 +898,234 @@ mod and_or_degrade_tests {
             panic!("the `;` spelling resolves");
         };
         assert_eq!(r.entity, ResolvedEntity::Operand("beta".to_owned()));
+    }
+}
+
+#[cfg(test)]
+mod closed_form_gate_tests {
+    //! The two supported gates, in a PREDICT body: `[ … ] ||/&& return N` (statically decided) and
+    //! `cmd || return N` (decline-or-continue). The negative half of this module is the load-bearing
+    //! half — every neighbouring shape must stay ⊤, or the fence leaks.
+    use super::{Resolution, ResolvedEntity, TopReason, evaluate};
+    use crate::predict::lift_predicts;
+    use dorc_core::Interner;
+
+    /// Lift a body and resolve it over `argv`. The body always binds and probes, so a resolution
+    /// means "the walk got past the gate" and a ⊤ means "it did not".
+    fn gated(gate: &str, argv: &[&str]) -> Resolution {
+        let src = format!(
+            "w__predict() {{\n   {gate}\n   thing : sm.dorc.Thing = \"$1\"\n   w query \"$thing\" : sm.dorc.Thing:\"$thing\"@present\n}}"
+        );
+        let mut i = Interner::default();
+        let out = lift_predicts(&mut i, &src);
+        assert!(
+            out.diags.is_empty(),
+            "clean lift of `{gate}`: {:?}",
+            out.diags
+        );
+        let p = i.intern("w");
+        evaluate(out.value.get(p).expect("a check for w"), argv)
+    }
+
+    /// What two DIFFERENT spellings must agree on: the coordinate, the verb, and the probe bytes
+    /// each would ship. Raw spans cannot be compared — the same probe sits at different offsets in
+    /// different source text — so the spans are resolved to their TEXT, which is the stronger
+    /// claim anyway (the two spellings ship the same bytes, not merely the same shape).
+    fn outcome(
+        gate: &str,
+        argv: &[&str],
+    ) -> Result<(String, ResolvedEntity, Option<String>, Vec<String>), TopReason> {
+        let src = format!(
+            "w__predict() {{\n   {gate}\n   thing : sm.dorc.Thing = \"$1\"\n   w query \"$thing\" : sm.dorc.Thing:\"$thing\"@present\n}}"
+        );
+        match gated(gate, argv) {
+            Resolution::Top(reason) => Err(reason),
+            Resolution::Resolved(r) => Ok((
+                r.kind,
+                r.entity,
+                r.verb,
+                r.probe_body
+                    .iter()
+                    .map(|s| src[s.lo.0 as usize..s.hi.0 as usize].to_owned())
+                    .collect(),
+            )),
+        }
+    }
+
+    fn entity_of(r: &Resolution) -> Option<&str> {
+        match r {
+            Resolution::Resolved(res) => match &res.entity {
+                ResolvedEntity::Operand(e) => Some(e),
+                ResolvedEntity::Singleton => None,
+            },
+            Resolution::Top(_) => None,
+        }
+    }
+
+    /// THE EQUIVALENCE PIN, both polarities. `[ A = B ] || return N` runs its `return` when the
+    /// test is FALSE, so its `if` twin carries the FLIPPED operator; `[ A != B ] || return N`
+    /// flips back. The dialect's only test operators are `=` and `!=`, so the flip is exact and
+    /// total, and these must agree argv for argv.
+    #[test]
+    fn an_or_gate_equals_its_flipped_if_spelling() {
+        for argv in [
+            vec!["alpha"],
+            vec!["alpha", "beta"],
+            vec!["alpha", "beta", "gamma"],
+        ] {
+            assert_eq!(
+                outcome("[ \"${2-}\" = \"\" ] || return 2", &argv),
+                outcome("if [ \"${2-}\" != \"\" ]; then return 2; fi", &argv),
+                "`[ x = y ] || return 2` ≡ `if [ x != y ]; then return 2; fi` for {argv:?}"
+            );
+            assert_eq!(
+                outcome("[ \"${2-}\" != \"\" ] || return 2", &argv),
+                outcome("if [ \"${2-}\" = \"\" ]; then return 2; fi", &argv),
+                "and the same with the operator flipped, for {argv:?}"
+            );
+        }
+    }
+
+    /// The `&&` gate's twin is the DIRECT `if`, unflipped — it fires when the test HOLDS.
+    #[test]
+    fn an_and_gate_equals_its_direct_if_spelling() {
+        for argv in [vec!["alpha"], vec!["alpha", "beta"]] {
+            assert_eq!(
+                outcome("[ \"${2-}\" != \"\" ] && return 2", &argv),
+                outcome("if [ \"${2-}\" != \"\" ]; then return 2; fi", &argv),
+                "`[ x != y ] && return 2` ≡ `if [ x != y ]; then return 2; fi` for {argv:?}"
+            );
+        }
+    }
+
+    /// R2-MULTIOP end to end, in the spelling the quality bar actually prescribes: a body binding
+    /// ONE operand gates on there being no second. Two operands must NOT resolve to the first
+    /// alone — that is the priority-1 under-execute the rule exists to prevent.
+    #[test]
+    fn the_arity_gate_declines_a_multi_operand_argv() {
+        let one = gated("[ \"${2-}\" = \"\" ] || return 2", &["nginx"]);
+        assert_eq!(
+            entity_of(&one),
+            Some("nginx"),
+            "one operand clears the gate"
+        );
+        assert_eq!(
+            gated("[ \"${2-}\" = \"\" ] || return 2", &["nginx", "curl"]),
+            Resolution::Top(TopReason::Declined),
+            "a second operand trips the gate ⇒ decline ⇒ the site runs"
+        );
+    }
+
+    /// Form (b): the oracle-contract's own existence gate. The left rc is unknowable, so the walk
+    /// takes the fall-through and resolves — safe because the SHIPPED body runs these same bytes,
+    /// and a gate that fires there returns 2 ⇒ can't-say ⇒ the site runs anyway.
+    #[test]
+    fn the_contracts_existence_gate_resolves_down_the_fall_through() {
+        let got = gated("command -v w >/dev/null 2>&1 || return 2", &["nginx"]);
+        assert_eq!(entity_of(&got), Some("nginx"));
+    }
+
+    /// THE N-LADDER. Only `N ≥ 2` is a decline; `0` forges a pass and `1` forges the complement,
+    /// and a code the tracer cannot read is no code at all. Every rejected rung stays ⊤.
+    #[test]
+    fn only_a_literal_code_of_two_or_more_is_a_gate() {
+        for good in ["return 2", "return 3", "return 127"] {
+            assert!(
+                entity_of(&gated(
+                    &format!("command -v w >/dev/null 2>&1 || {good}"),
+                    &["nginx"]
+                ))
+                .is_some(),
+                "`{good}` is a decline ⇒ the gate is supported"
+            );
+        }
+        for bad in [
+            "return 0",
+            "return 1",
+            "return $?",
+            "return",
+            "return 2 junk",
+            "return \"$1\"",
+        ] {
+            assert_eq!(
+                gated(
+                    &format!("command -v w >/dev/null 2>&1 || {bad}"),
+                    &["nginx"]
+                ),
+                Resolution::Top(TopReason::OrList),
+                "`{bad}` is not a readable ≥2 decline ⇒ the list stays ⊤"
+            );
+        }
+    }
+
+    /// R2-ORTRUE, in a predict body: an errexit-masked tail is not a gate. `|| true` and its
+    /// friends forge the rc rather than declining, so the list never becomes supported.
+    #[test]
+    fn an_rc_masking_tail_is_never_a_gate() {
+        for masked in ["|| true", "|| :", "|| false", "|| w fallback"] {
+            assert_eq!(
+                gated(
+                    &format!("command -v w >/dev/null 2>&1 {masked}"),
+                    &["nginx"]
+                ),
+                Resolution::Top(TopReason::OrList),
+                "`{masked}` masks rather than declines ⇒ ⊤"
+            );
+        }
+    }
+
+    /// `cmd && return N` is DECLINED support, loudly and by name: its fall-through world is one
+    /// where the left FAILED, which no contract idiom asks the tracer to walk.
+    #[test]
+    fn a_command_led_and_gate_stays_top() {
+        assert_eq!(
+            gated("command -v w >/dev/null 2>&1 && return 2", &["nginx"]),
+            Resolution::Top(TopReason::AndList)
+        );
+    }
+
+    /// Chains stay ⊤ whatever their operators, even when every link looks like a gate.
+    #[test]
+    fn a_chain_of_gates_is_still_a_chain() {
+        for chain in [
+            "command -v w >/dev/null 2>&1 || return 2 || return 3",
+            "[ \"${2-}\" = \"\" ] || w probe || return 2",
+        ] {
+            assert_eq!(
+                gated(chain, &["nginx"]),
+                Resolution::Top(TopReason::AndOrChain),
+                "{chain}"
+            );
+        }
+    }
+
+    /// A left operand whose own rc is forged is not a gate either — `true || return 2` measures
+    /// nothing, so it may not license the walk past it.
+    #[test]
+    fn a_fixed_rc_left_operand_is_not_a_gate() {
+        for inert in ["true", "false", "return 2"] {
+            assert_eq!(
+                gated(&format!("{inert} || return 2"), &["nginx"]),
+                Resolution::Top(TopReason::OrList),
+                "`{inert}` measures nothing ⇒ not a gate"
+            );
+        }
+    }
+
+    /// `rid-predict-must-model-return`: a reached explicit `return` ENDS the walk, whatever the
+    /// code. Before this, the tracer walked straight past it and resolved what followed — safe
+    /// only because the shipped body really does return and its rc ≥ 2 reads back can't-say.
+    #[test]
+    fn a_reached_return_declines_the_whole_shape() {
+        for code in ["return 0", "return 1", "return 2", "return $?"] {
+            assert_eq!(
+                gated(
+                    &format!("if [ \"${{1-}}\" = \"nginx\" ]; then {code}; fi"),
+                    &["nginx"]
+                ),
+                Resolution::Top(TopReason::Declined),
+                "a reached `{code}` declines"
+            );
+        }
     }
 }
