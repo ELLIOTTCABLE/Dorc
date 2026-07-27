@@ -3641,13 +3641,25 @@ impl FirstWallHint {
     /// The `dorc why` detail row for the wall's own site (the reasoning behind the plan-mode nag).
     /// Registry-homed like every other why-surface string (`28G` §0), and stated in admin-English:
     /// the engine's `elide` never reaches a render.
+    ///
+    /// TWO sentence forms, keyed by occurrence, because there are two: with a recovery clause and
+    /// without. The one-row shape fed the recovery slot an EMPTY value when nothing was recoverable
+    /// — a seat defect under `28H` ruling 1, since a value that renders as nothing is a value the
+    /// span map cannot carry and a human cannot edit around. Occurrence 0 has no value at all; the
+    /// registry's occurrence discriminator is exactly for one thing said two ways
+    /// (`why-operand-position` is the precedent).
     fn why_said(&self) -> Said {
-        let recovery = if self.unwall == 0 {
-            Said::Value(String::new())
-        } else {
-            Said::words("why-reason-first-wall-unwall", &[&self.unwall.to_string()])
-        };
-        Said::sentence("why-reason-first-wall", None, vec![recovery])
+        if self.unwall == 0 {
+            return Said::words_at("why-reason-first-wall", Some(0), &[]);
+        }
+        Said::sentence(
+            "why-reason-first-wall",
+            Some(1),
+            vec![Said::words(
+                "why-reason-first-wall-unwall",
+                &[&self.unwall.to_string()],
+            )],
+        )
     }
 }
 
@@ -8944,6 +8956,11 @@ mod first_wall_tests {
         assert!(
             without.len() < with_count.len(),
             "the count-free form is the shorter one (the clause was dropped, not blanked)"
+        );
+        assert!(
+            !without.contains("  "),
+            "the count-free occurrence renders no gap where the dropped clause used to sit: \
+             {without}"
         );
     }
 
