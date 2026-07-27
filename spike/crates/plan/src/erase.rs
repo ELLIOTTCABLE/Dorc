@@ -344,6 +344,207 @@ fn controller_substitutes_away(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dorc_core::{Interner, Verdict};
+
+    /// A query oracle (`:?`, the guard) and a mutator oracle (`:`, the `||`-RHS) — the two
+    /// halves of the `USER_STORY` stage-3 ladder idiom this fixpoint exists to make cascade.
+    const LADDER_ORACLE: &str = r#"
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+"#;
+
+    struct Model {
+        ast: Ast,
+        cfg: Cfg,
+        classes: Vec<(CfgNodeId, SkipClass)>,
+        invalidators: BTreeSet<CfgNodeId>,
+    }
+
+    /// Parse + classify `book` against [`LADDER_ORACLE`] — the origin model, nothing erased.
+    fn model(book: &str) -> Model {
+        let mut i = Interner::default();
+        let idx = dorc_oracle::lift(&mut i, &[LADDER_ORACLE]).value;
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, LADDER_ORACLE).value];
+        let parsed = dorc_syntax::parse(book);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let (classified, _why, _kills, _coords, _backings, _narrative, invalidators) =
+            dorc_analysis::effect::classify_with_why_diags(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &dorc_oracle::verdict::VerdictIndex::default(),
+                &BTreeMap::new(),
+                &dorc_analysis::erase::ErasedSites::none(),
+                &mut i,
+                &mut dorc_core::ProvArena::new(),
+                &mut BTreeMap::new(),
+                &mut BTreeSet::new(),
+            );
+        Model {
+            ast: parsed.value,
+            cfg,
+            classes: classified.value,
+            invalidators,
+        }
+    }
+
+    /// Answer every Query cell with a measured `rc`, every other cell ⊤ — the shape
+    /// `facts_from_sites` produces for a valid, non-conflicted guard record.
+    fn measured(model: &Model, rc: i32) -> impl Fn(FactKey) -> Observable + '_ {
+        let queries: BTreeSet<FactKey> = model
+            .classes
+            .iter()
+            .filter_map(|(_, class)| match class {
+                SkipClass::QueryResolvable { fact, .. } => Some(*fact),
+                _ => None,
+            })
+            .collect();
+        move |f: FactKey| Observable {
+            effect: Verdict::Converged,
+            status: if queries.contains(&f) {
+                Predicted::Value(Rc(rc))
+            } else {
+                Predicted::Top
+            },
+            stdout: Predicted::Top,
+            stderr: Predicted::Top,
+        }
+    }
+
+    fn proofs_for(model: &Model, rc: i32) -> Vec<DeadBranchProof> {
+        prove_dead_branches(
+            &model.ast,
+            &model.cfg,
+            &model.classes,
+            &model.invalidators,
+            measured(model, rc),
+        )
+    }
+
+    #[test]
+    fn a_measured_guard_proves_its_or_right_dead() {
+        // THE transform, positive direction: `query >/dev/null 2>&1 || mutate` with the guard
+        // measured rc 0 ⇒ the `||`-right cannot run ⇒ its invalidator-hood is erasable.
+        let m = model("dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n");
+        let proofs = proofs_for(&m, 0);
+        assert_eq!(proofs.len(), 1, "exactly the install is proven dead");
+        assert_eq!(
+            proofs[0].controller_rc(),
+            Rc(0),
+            "on the guard's measured rc"
+        );
+    }
+
+    #[test]
+    fn a_failing_guard_proves_nothing_dead() {
+        // The `||` fires ⇒ the mutator RUNS ⇒ nothing may be erased. The direction that keeps
+        // the cascade honest: a guard reporting `absent` stops it exactly here.
+        let m = model("dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n");
+        assert!(
+            proofs_for(&m, 1).is_empty(),
+            "rc 1 left of `||` ⇒ the right operand is LIVE"
+        );
+    }
+
+    #[test]
+    fn an_unmeasured_guard_proves_nothing_dead() {
+        // `inv-kfail`: a ⊤ controller folds nothing. Here NO cell is measured, so the guard's
+        // status is ⊤ and the mutator stays live — an unreliable oracle can never erase.
+        let m = model("dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n");
+        let proofs = prove_dead_branches(
+            &m.ast,
+            &m.cfg,
+            &m.classes,
+            &m.invalidators,
+            |_f: FactKey| Observable::verdict_only(Verdict::Converged),
+        );
+        assert!(proofs.is_empty(), "a ⊤ guard licenses no erasure");
+    }
+
+    #[test]
+    fn a_heredoc_controller_proves_nothing_dead() {
+        // THE wrong-yes fence (condition 4). A heredoc-bearing guard is render-REFUSED, so the
+        // artifact keeps it live and keeps the dead body verbatim BEHIND it — the body may still
+        // run. Erasing it would license downstream elisions off a mutator that executes.
+        // Same book as `a_measured_guard_proves_its_or_right_dead` bar the heredoc.
+        let m = model(
+            "dpkg -s alpha <<EOF >/dev/null 2>&1 || apt-get install -y alpha\npayload\nEOF\n",
+        );
+        assert!(
+            proofs_for(&m, 0).is_empty(),
+            "a render-refused controller erases nothing, however dead the fold says its body is"
+        );
+    }
+
+    #[test]
+    fn a_statically_known_controller_proves_nothing_dead() {
+        // `dec-records-grounded-only`: a bare assignment is rc 0 in the fold, so the fold DOES
+        // prove the `||`-right dead — but that is a static fact, not a MEASUREMENT, and the
+        // ledger's name promises records. Those branches keep today's behaviour.
+        let m = model("FOO=bar || apt-get install -y alpha\n");
+        assert!(
+            proofs_for(&m, 0).is_empty(),
+            "deadness with no measurement behind it is not a records-proven derivation"
+        );
+    }
+
+    #[test]
+    fn an_in_loop_site_proves_nothing_dead() {
+        // Condition 3: the line-granular render cannot elide one iteration, so an in-loop leaf
+        // is floored to Run — and a site that RUNS must keep invalidating.
+        let m = model(
+            "for p in a b; do dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha; done\n",
+        );
+        assert!(
+            proofs_for(&m, 0).is_empty(),
+            "an in-loop site runs despite the fold, so it may not be erased"
+        );
+    }
+
+    #[test]
+    fn a_pure_site_is_never_recorded() {
+        // Condition 2: only a site that actually gens into reach is worth erasing. `echo` is
+        // Pure, so even dead it mints no entry — otherwise monotone-growth counts nothing real.
+        let m = model("dpkg -s alpha >/dev/null 2>&1 || echo nothing\n");
+        assert!(
+            proofs_for(&m, 0).is_empty(),
+            "a dead non-invalidator is not ledger material"
+        );
+    }
+
+    #[test]
+    fn proofs_are_deterministic_and_site_ordered() {
+        // `inv-determinism`: the mint is a pure function of its inputs, and its output order is
+        // site order — the property the whole fixpoint's byte-identity rests on.
+        let m = model(
+            "dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n\
+             dpkg -s beta >/dev/null 2>&1 || apt-get install -y beta\n",
+        );
+        let once = proofs_for(&m, 0);
+        let twice = proofs_for(&m, 0);
+        assert_eq!(once, twice, "same inputs, same proofs");
+        let sites: Vec<u32> = once.iter().map(|p| p.site().0).collect();
+        let mut sorted = sites.clone();
+        sorted.sort_unstable();
+        assert_eq!(sites, sorted, "proofs come out in site order");
+    }
 
     #[test]
     fn a_ledger_records_one_entry_per_site_keeping_the_first_round() {
