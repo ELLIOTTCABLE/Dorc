@@ -18,12 +18,11 @@
 - [ ] also owed: local-exec as an explicitly-supported mode; zero tests for this right now.
 - [ ] "embedded-transparency" hygiene: need to encode somewhere all the design-rules that keep dorc as a happy-sibling / happy-child; know when to keep stdout quiet, why-log to a file when correct, and so on.
 - [ ] I need to catch up on the cmdsub/219 material; there's a question buried in there (probe-captured stdout: ordinary observation or a new claim-type?)
-- [ ] the `--trust-footprints` needs renaming to an *outcome*-centric naming; there may be other behaviour gated behind the single flag. (what the user is *actually* ack'ing: *unattributable under-exexution*, the 'everybody did everything right in their local frame of reference, and your book *still* failed-bad in a Dorc-caused direction' class of error, but where risking that yields great/desirable/most-of-the value.)
 
 ## Spike-3 code/impl stuff
 
 - [ ] phased CLI (not TUI); actual plan/apply as-driven-by-a-user
-- [ ] *just* the streaming-updates part of the TUI;
+- [ ] *just* the streaming-updates part of the TUI (currently deferred as residue, was planned in r26, still deferred as of r30)
 
 # Preparation-for-agentic-implementation 🤢 phase
 
@@ -33,9 +32,5 @@
   - I do not trust a single agent on this; I think probably a pass to decide *which* components; then a pass per-component to extratct-and-pointer-back; then finally a pass to break into implementation-phases (spike/soon/need/defer?)
 - [ ] agentic meta-pass on "how best to structure this codebase so agents can work on it", some nightmare-slop bullshit.
   - most importantly I'm guessing deterministic triggers per-component, if possible. point agents entering certain dirs/components to authoritative design-documents for that component, so when they 'cross boundaries' to chase a fix/feature, they hit Correct Context to make it intelligently?
-
-# Small implementation details
-
-- [ ] probe-bodies *also* need to be proved non-mutable w/ effect analysis
 
 *(Machine-dropped items live in `TODO-ADDTL.md`, which is agent-maintained and unstable; this file stays human-voice only.)*
