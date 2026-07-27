@@ -103,7 +103,6 @@ impl FnRole {
 /// function names cannot contain `-`, so the mapping is the only way to name a
 /// hyphenated command, and hyphenated commands vastly outnumber underscored ones).
 /// A future wiring task may revisit; see this module's tests and the build report.
-#[must_use]
 pub fn lift_predicts(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::Predict)
 }
@@ -112,7 +111,6 @@ pub fn lift_predicts(interner: &mut Interner, src: &str) -> Carrier<PredictSet> 
 /// (the disturbs funcdefs reuse the predict body dialect). Same fail-soft / deterministic
 /// contract as [`lift_predicts`]; only the scanned name-suffix differs. The at-most footprint
 /// LIFT (`crate::touches`) walks these bodies to collect the entity-coordinates each verb emits.
-#[must_use]
 pub(crate) fn lift_touches(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::Disturbs)
 }
@@ -123,7 +121,6 @@ pub(crate) fn lift_touches(interner: &mut Interner, src: &str) -> Carrier<Predic
 /// [`lift_predicts`]; only the scanned name-suffix differs. The static consumer
 /// ([`crate::verdict`]) traces these bodies to decide whether a site's argv reaches a vouching
 /// path; the guard emitter ships the STRIPPED body ([`super::strip_verdict`]).
-#[must_use]
 pub(crate) fn lift_verdicts_converged(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::IsConverged)
 }
@@ -133,7 +130,6 @@ pub(crate) fn lift_verdicts_converged(interner: &mut Interner, src: &str) -> Car
 /// contract as [`lift_predicts`]; only the scanned name-suffix differs. KIND-keyed: the lifted
 /// symbol is the kind's forward-munge (`flag-forward-munge-keying`), which the lookup side matches
 /// by munging the coordinate's kind identically. Host-run only; emitter is [`super::strip_resolve`].
-#[must_use]
 pub(crate) fn lift_resolvers(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::Resolve)
 }
@@ -143,7 +139,6 @@ pub(crate) fn lift_resolvers(interner: &mut Interner, src: &str) -> Carrier<Pred
 /// pipelines-may-carry-a-mark carve-out ([`FnRole::DisturbanceReachesOnly`], applied in
 /// [`Parser::parse_command`]). KIND-keyed (forward-munge). The consumer ([`crate::reaches`])
 /// walks these bodies arm-by-arm; the dynamic-arm guard emitter ships the arm body strip-only.
-#[must_use]
 pub(crate) fn lift_reaches(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::DisturbanceReachesOnly)
 }
@@ -151,7 +146,6 @@ pub(crate) fn lift_reaches(interner: &mut Interner, src: &str) -> Carrier<Predic
 /// Lift every `<munge(kind)>__state_stored_only_in` funcdef in `src` (the substrate/invariance
 /// member — `277` §4e). Reuses the predict body dialect. KIND-keyed (forward-munge). Recognized-
 /// but-INERT at this stage: lifted for the reservation lint, never semantically consumed.
-#[must_use]
 pub(crate) fn lift_state_stored_only_in(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::StateStoredOnlyIn)
 }
@@ -161,7 +155,6 @@ pub(crate) fn lift_state_stored_only_in(interner: &mut Interner, src: &str) -> C
 /// contract as [`lift_predicts`]; only the scanned name-suffix differs. COMMAND-keyed (the
 /// underscore↔hyphen provider mapping, like `predict`). The consumer ([`crate::wrapper`]) reads
 /// the per-dimension lend entries off each body.
-#[must_use]
 pub(crate) fn lift_lend_maps(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::LendMap)
 }
@@ -171,7 +164,6 @@ pub(crate) fn lift_lend_maps(interner: &mut Interner, src: &str) -> Carrier<Pred
 /// only the scanned name-suffix differs. COMMAND-keyed (the underscore↔hyphen provider mapping, like
 /// `predict`/`lend_map`). The consumer ([`crate::entry`]) reads the entry head + its
 /// non-interactivity off each body.
-#[must_use]
 pub(crate) fn lift_enters(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::Enter)
 }

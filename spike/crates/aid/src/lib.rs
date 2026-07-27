@@ -60,6 +60,9 @@ pub use narrative::{CollapseKind, CollapseNarrative, Knowability, SpeechAct};
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.
 /// Stages never throw; malformed input yields a degraded `value` plus `Error`
 /// diagnostics, so downstream stages still run and surface *unrelated* problems.
+/// Dropping one drops its DIAGNOSTICS — silently, and they are the whole reason the type exists
+/// (`inv-no-throw`: errors are data, so an unread carrier is an unreported error).
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct Carrier<T> {
     pub value: T,
@@ -68,7 +71,6 @@ pub struct Carrier<T> {
 
 impl<T> Carrier<T> {
     /// A clean result with no diagnostics.
-    #[must_use]
     pub fn pure(value: T) -> Self {
         Self {
             value,
@@ -76,13 +78,11 @@ impl<T> Carrier<T> {
         }
     }
 
-    #[must_use]
     pub fn new(value: T, diags: Vec<Diag>) -> Self {
         Self { value, diags }
     }
 
     /// Transform the carried value, preserving diagnostics.
-    #[must_use]
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Carrier<U> {
         Carrier {
             value: f(self.value),
@@ -91,7 +91,6 @@ impl<T> Carrier<T> {
     }
 
     /// Sequence a stage, concatenating its diagnostics after `self`'s.
-    #[must_use]
     pub fn and_then<U>(mut self, f: impl FnOnce(T) -> Carrier<U>) -> Carrier<U> {
         let mut next = f(self.value);
         self.diags.append(&mut next.diags);

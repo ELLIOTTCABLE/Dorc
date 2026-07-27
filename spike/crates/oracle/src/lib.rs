@@ -326,7 +326,6 @@ pub fn to_funcname_segment(name: &str) -> String {
 /// cli reports check diagnostics separately), not a crash. Deterministic
 /// (`inv-determinism`): sources are walked in argument order, the index is
 /// `BTreeMap`-backed, and nothing here touches clock/RNG/IO.
-#[must_use]
 pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindIndex> {
     let mut out = Carrier::pure(KindIndex::default());
     for src in oracle_sources {

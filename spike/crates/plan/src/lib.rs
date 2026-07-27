@@ -1291,7 +1291,6 @@ fn resolve_vouch_operands(
 /// absence. Fail-soft ([`Carrier`]): the verdict-lift diagnostics ride out for the caller to
 /// surface (the cli's gate-3 error-floor; the DSTs drop them). `inv-referent-agnostic`: the kind
 /// label + operands are resolved for the invocation/attribution, never decoded (the 24A §1b fence).
-#[must_use]
 #[expect(
     clippy::too_many_lines,
     reason = "the ONE composition every driver shares (vouch lift + decline-narrative mint); \

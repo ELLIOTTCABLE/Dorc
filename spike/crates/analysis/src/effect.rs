@@ -1263,7 +1263,6 @@ fn resolve_node_effects(
 ///
 /// This is the thin wrapper over [`classify_with_why_diags`] for the 13 callers that do not
 /// consume the typed why-lens diags (the cli's stage-3 disclosure is the one that does).
-#[must_use]
 #[expect(
     clippy::too_many_arguments,
     reason = "the typeless-floor seam (`24L` §7) threads the verdict-provider set through the \
@@ -1324,7 +1323,6 @@ pub type BackingMap = BTreeMap<FactKey, FactBacking>;
 /// modeled mutators, fd10). The phased caller threads this set to
 /// [`dorc_plan::build_plan_walled`] so the wall predicate can see kills; the pure kernel stays
 /// phase-agnostic (`inv-superposition`). Deterministic (`BTreeSet`, `inv-determinism`).
-#[must_use]
 #[expect(
     clippy::type_complexity,
     clippy::too_many_arguments,
