@@ -43,7 +43,10 @@ Research/trial/apply/apply-run.sh apply-run 140.82.10.231 <plan.sh>
 
 Keys (controller-local, reused from r25 — the box carries the r25 pubkey, injected by
 `vultr.sh` via cloud-init): private `~/.ssh/dorc-r25`, public `~/.ssh/dorc-r25.pub`
-(ed25519, passphrase-less by construction). The Vultr API key lives in `~/.temp/vultr.env` as
+(ed25519, passphrase-less by construction). That private key is mode 0644, which git-bash's
+OpenSSH tolerates but a real Linux controller will not — a WSL or container-side agent must
+copy it into its own filesystem and `chmod 600` first, since `/mnt/c` permissions do not
+respond to `chmod` under a default drvfs mount. The Vultr API key lives in `~/.temp/vultr.env` as
 `VULTR_API_KEY` — sourced into env by `vultr.sh` only, never printed. It authenticated on the
 r25-vintage credential; no rotation was needed.
 
