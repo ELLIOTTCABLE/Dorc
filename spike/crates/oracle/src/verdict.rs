@@ -47,10 +47,12 @@
 //! code ⇒ [`VerdictResolution::Declined`] (conservative: no vouch ⇒ run, kFAIL-perform).
 //!
 //! **Scope note (ru-26 churn-avoidance):** `return` still parses as a plain command (the dialect
-//! has no `Stmt::Return`), caught HERE in the tracer, not at parse. An and-or list now PARSES
-//! ([`crate::predict::AndOr`]) but no supported form covers one yet, so every list ⊤s
-//! ([`VerdictTop::AndOrList`]) — including the test-led `[ … ] || return N` arity-refuse, which a
-//! verdict function still spells in-dialect as `if [ … ]; then return N; fi`.
+//! has no `Stmt::Return`), caught HERE in the tracer, not at parse. An and-or list parses into
+//! [`crate::predict::AndOr`], and exactly two GATE forms are modeled
+//! ([`crate::predict::recognize_gate`]): `[ … ] ||/&& return N` and `cmd || return N`, both with a
+//! LITERAL `N ≥ 2`. Everything else ⊤s ([`VerdictTop::AndOrList`]). A gate's test-led left is
+//! argparse and never vouches; a command-led left may, because `|| return N≥2` leaves the body's rc
+//! an honest verdict where `|| true` and `|| return 0` forge one.
 //!
 //! `inv-referent-agnostic`: the tracer never decodes the entity's text — it reuses the predict
 //! argparse primitives ([`resolve_word`]/[`eval_test`]/[`pattern_matches`]) to find the reached
@@ -66,8 +68,9 @@ use dorc_syntax::sem::UnsetPolicy;
 use crate::report::recognized_class;
 
 use crate::predict::{
-    CaseArm, Command, Predict, PredictSet, Stmt, Test, TopReason, Word, eval_test,
-    lift_verdicts_converged, map_provider_name, pattern_matches, resolve_word,
+    AndOr, AndOrItem, CaseArm, Command, Predict, PredictSet, Stmt, Test, TopReason, Word,
+    eval_test, gate_fires, lift_verdicts_converged, map_provider_name, pattern_matches,
+    recognize_gate, resolve_word,
 };
 
 /// The set of providers bearing a `<provider>__is_converged` verdict function, keyed the way
@@ -430,7 +433,7 @@ impl Tracer {
             },
             // The vouch signal: an authored check command RAN on the reached path.
             Stmt::Command(cmd) => self.run_command(cmd),
-            Stmt::AndOr(_) => Flow::Top(VerdictTop::AndOrList),
+            Stmt::AndOr(list) => self.run_and_or(list),
             // An annotation desugars to a binding (as in touches); a bare mark is a no-op. Neither
             // is a "check command", so neither vouches on its own.
             Stmt::Annotation(anno) => {
@@ -441,6 +444,31 @@ impl Tracer {
                 }
                 Flow::Normal
             }
+        }
+    }
+
+    /// Walk an and-or list. Only the closed forms ([`recognize_gate`]) survive; everything else ⊤s.
+    ///
+    /// A gate's TEST-led left is argparse, never a measurement, so it cannot vouch — it decides
+    /// statically which side runs and nothing more. A COMMAND-led left MAY vouch: its rc still
+    /// reaches the function unmasked when it succeeds, and the `|| return N≥2` routes its failure
+    /// into the rc-partition's flat can't-say sink rather than forging a pass. That is exactly the
+    /// property `R2-ORTRUE` demands ("a lifted guard's rc is a verdict only if the analyzer can
+    /// prove it unmasked") and exactly what `|| true` / `|| return 0` lack.
+    fn run_and_or(&mut self, list: &AndOr) -> Flow {
+        let Some(gate) = recognize_gate(list) else {
+            return Flow::Top(VerdictTop::AndOrList);
+        };
+        match gate.left {
+            AndOrItem::Test(test) => match eval_test(test, &self.positionals, &self.vars) {
+                Ok(held) if gate_fires(gate.op, held) => {
+                    self.decline_span = Some(gate.return_span);
+                    Flow::Returned(Rc(gate.code))
+                }
+                Ok(_) => Flow::Normal,
+                Err(reason) => Flow::Top(top_from_word(reason)),
+            },
+            AndOrItem::Command(cmd) => self.run_command(cmd),
         }
     }
 
@@ -1122,6 +1150,96 @@ foo__is_converged() {
             ),
             VerdictResolution::Vouched,
         );
+    }
+
+    /// The SUPPORTED gate, and the discriminator that makes the whole design hold: `|| return 2`
+    /// vouches where `|| true` and `|| return 0` never can. All three have a left operand whose rc
+    /// is consumed by a `||`; only the `≥ 2` tail leaves the body's rc an honest verdict, because
+    /// it routes the gate's failure into the can't-say sink instead of forging a pass.
+    #[test]
+    fn a_declining_gate_vouches_where_a_masking_tail_cannot() {
+        let gated = "\
+x__is_converged() {
+   command -v dpkg-query >/dev/null 2>&1 || return 2
+   dpkg-query -W \"$1\"
+}
+";
+        assert_eq!(trace(gated, &["nginx"]), VerdictResolution::Vouched);
+        for masked in ["|| true", "|| return 0", "|| return 1"] {
+            let src = gated.replace("|| return 2", masked);
+            assert!(
+                !matches!(trace(&src, &["nginx"]), VerdictResolution::Vouched),
+                "`{masked}` is not a decline ⇒ no vouch"
+            );
+        }
+    }
+
+    /// The test-led arity gate, now spellable inline. It must agree with the `if` spelling the
+    /// dialect has always had — same argv, same verdict — and its DECLINE must point at the
+    /// `return` itself, not the funcdef (the C7 precise arm span).
+    #[test]
+    fn an_inline_arity_gate_matches_its_if_spelling() {
+        let inline = "\
+apt_get__is_converged() {
+   verb=$1; shift
+   [ \"${2-}\" = \"\" ] || return 2
+   case $verb in install) dpkg-query -W \"$1\" >/dev/null 2>&1 ;; esac
+}
+";
+        let spelled = "\
+apt_get__is_converged() {
+   verb=$1; shift
+   if [ \"${2-}\" != \"\" ]; then return 2; fi
+   case $verb in install) dpkg-query -W \"$1\" >/dev/null 2>&1 ;; esac
+}
+";
+        for argv in [
+            vec!["install", "nginx"],
+            vec!["install", "nginx", "curl"],
+            vec!["restart", "nginx"],
+        ] {
+            assert_eq!(
+                trace(inline, &argv),
+                trace(spelled, &argv),
+                "the two spellings agree for {argv:?}"
+            );
+        }
+        assert_eq!(
+            decline_arm_text(inline, &["install", "nginx", "curl"]),
+            Some("return 2"),
+            "the decline points at the gate's own `return`"
+        );
+    }
+
+    /// Note A, documented as AUTHOR-OWNED JUDGMENT rather than an engine property: a body that is
+    /// ONLY a gate vouches on the gate's success — but it vouches identically WITHOUT the
+    /// `|| return N`, because a reached `command -v` is a reached command either way. The gate adds
+    /// no license; whether an existence check is an adequate verdict is the author's call, and the
+    /// contract's §5a wrong-yes attribution puts it on them. Pinned so nobody later reads the gate
+    /// as the thing that granted the vouch.
+    #[test]
+    fn a_gate_only_body_vouches_identically_with_and_without_its_gate() {
+        let with = "x__is_converged() {\n   command -v x >/dev/null 2>&1 || return 2\n}\n";
+        let without = "x__is_converged() {\n   command -v x >/dev/null 2>&1\n}\n";
+        assert_eq!(trace(with, &["nginx"]), trace(without, &["nginx"]));
+        assert_eq!(trace(with, &["nginx"]), VerdictResolution::Vouched);
+    }
+
+    /// Chains and the `&&` command-led form stay ⊤ in a verdict body too — the fence is one
+    /// recognizer, shared with the predict tracer, so neither can drift from the other.
+    #[test]
+    fn unsupported_list_shapes_still_top_in_a_verdict_body() {
+        for body in [
+            "dpkg-query -W \"$1\" && return 2",
+            "dpkg-query -W \"$1\" || return 2 || return 3",
+            "dpkg-query -W \"$1\" || dpkg-query -W other",
+        ] {
+            let src = format!("x__is_converged() {{\n   {body}\n}}\n");
+            assert!(
+                matches!(trace(&src, &["nginx"]), VerdictResolution::Top(_)),
+                "`{body}` is not a supported gate ⇒ ⊤"
+            );
+        }
     }
 
     #[test]
