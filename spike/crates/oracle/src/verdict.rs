@@ -1317,6 +1317,40 @@ foo__is_converged() {
         );
     }
 
+    /// The verdict half of `26I:fnd-state-builtins-silently-mis-key`. A reached check vouches for
+    /// the coordinate the tracer resolved, so a head that rebinds the positionals between the bind
+    /// and the check makes the vouch name one referent while the guard — which re-runs this body
+    /// live — measures another. Loose `!matches!` deliberately: a later reclassification of these
+    /// away from ⊤ must not silently re-bless them as vouches.
+    #[test]
+    fn a_state_mutating_builtin_never_vouches() {
+        for head in [
+            "set --",
+            "unset pkg",
+            "eval \"pkg=x\"",
+            "cd /tmp",
+            "read pkg",
+        ] {
+            let src = format!("x__is_converged() {{\n   {head}\n   dpkg-query -W \"$1\"\n}}\n");
+            assert!(
+                !matches!(trace(&src, &["nginx"]), VerdictResolution::Vouched),
+                "`{head}` diverges the traced positionals from the shipped body ⇒ never vouches"
+            );
+        }
+    }
+
+    /// The fence-not-blanket half: the same body without the mutating head still vouches, and a
+    /// modeled `shift` still both vouches and consumes.
+    #[test]
+    fn the_unmutated_spellings_still_vouch() {
+        for src in [
+            "x__is_converged() {\n   dpkg-query -W \"$1\"\n}\n",
+            "x__is_converged() {\n   shift\n   dpkg-query -W \"$1\"\n}\n",
+        ] {
+            assert_eq!(trace(src, &["nginx", "curl"]), VerdictResolution::Vouched);
+        }
+    }
+
     /// `fnd-ortrue-vouches-today` — the SOUNDNESS pin. The tracer had no list guard, so an
     /// or-list's LEFT operand read as a reached authored check and `check || true` VOUCHED. The
     /// guard that vouch licenses re-runs this body live, where `|| true` forces rc 0 on every
