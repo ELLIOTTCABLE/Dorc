@@ -77,27 +77,73 @@ top of the book is predicted to cost this kit **all eight** of its elisions. Tha
 the line exists to teach, and it is why the live run should be done twice: once as written, once with
 L1 commented out. Confidence **~SUSPECT** on the exact count, **+SURE** on the direction.
 
+> Measured afterwards: the direction held, the count did not — the real ceiling is **1** elide, not
+> 8, for a reason this prediction did not anticipate (§4 m-3). Left standing as written.
+
 ## §3. What `dorc plan` actually said (hermetic, hand-fed records)
 
-Filled in after the fact; renders under `renders/`.
+Renders under `renders/`. Engine tallies count **sites**, not book lines — the four guarded-install
+lines carry two sites each, so 11 tool-lines is 16 sites.
 
 | # | predicted (pristine / converged) | actual (pristine / converged) | match? |
 |---|---|---|---|
-| L1 | run / run | | |
-| L2 | run / run | | |
-| L3 | run / run | | |
-| L4 | run / run | | |
-| L5 | run / run | | |
-| L6 | guard / guard | | |
-| L7 | guard / guard | | |
-| L8 | guard / guard | | |
-| L9 | guard / guard | | |
-| L10 | run / run | | |
-| L11 | run / run | | |
+| L1 | run / run | run / run | ✓ |
+| L2 | run / run | run / run | ✓ |
+| L3 | run / run | run / run | ✓ |
+| L4 | run / run | run / run | ✓ |
+| L5 | run / run | run / run | ✓ |
+| L6 | guard / guard | run / **run** | ✗ (m-2) |
+| L7 | guard / guard | **run** / guard | ✗ pristine (m-1) |
+| L8 | guard / guard | run / **run** | ✗ (m-2) |
+| L9 | guard / guard | **run** / guard | ✗ pristine (m-1) |
+| L10 | run / run | run / run | ✓ |
+| L11 | run / run | run / run | ✓ |
+
+Engine summaries, verbatim:
+
+- pristine — `sites=16 elide=0 omit=0 guard=0 run=16`
+- converged — `sites=16 elide=0 omit=0 guard=2 run=14`
+- ceiling (L1 deleted, converged) — `sites=15 elide=1 omit=1 guard=2 run=11`
+
+**The headline prediction held: `elide=0` in both worlds of the book as written.** The bare
+`apt-get update` does cost the book every elision, exactly as §1 said and for the reason §1 gave.
+Everything else about the shape was wrong in three distinct ways.
 
 ## §4. Mismatches and findings
 
-To be written against §3, honestly, including anything that makes the kit look worse than predicted.
+**m-1 — a guard is a converged-world artifact, not a pessimistic wrapper.** Predicted L6–L9 would
+guard in *both* worlds; they guard only where the probe actually vouched `holds`. In the pristine
+world those cells do not hold, so the sites simply run. This was my misreading of the vocabulary,
+not an engine surprise: the guard exists to let a *vouched* line re-verify cheaply at apply, so
+there is nothing for it to do when the vouch already says diverged. Harmless, and the safe
+direction.
+
+**m-2 — two sites of one command collide onto one synthesized cell, and at most one is licensed.**
+Predicted four guards in the converged world; got two. An `is_converged` site is keyed
+`dorc-auto:<command>@converged` — the engine synthesizes that coordinate and does **not** read the
+`: KIND:ENTITY@SELECTOR` mark in the verdict body (confirmed against the in-repo fixtures: the `kp`
+oracle carries a full coordinate mark and still keys `dorc-auto:kp@converged`). So this book's two
+`cp` sites share one cell, as do its two `systemctl` sites, and only the later of each pair is
+attributed the guard. Directly demonstrated: flipping one `cp` record to `absent` while leaving the
+other `holds` makes **neither** guard — the two records meet to ⊤ on the shared cell. No fixture in
+the corpus has two `is_converged` sites of the same command, so this is untested territory rather
+than a known limitation. It caps any real book hard: books drop many files with `cp`.
+
+**m-3 — only guards above the first mutator site can fold, so the ceiling is ~1, not 8.** Predicted
+the L1-less converged book would elide eight lines. It elides **one**: the `ca-certificates` guard,
+the only one sitting above every mutator site in the book. The engine's own hint names the next
+line's `apt-get install -y curl` as "the first wall". A guarded install's rc is usable for the fold
+only while no mutator site precedes it — and each guarded-install line contributes a mutator site of
+its own, whether or not that branch turns out dead. So in a run of N `dpkg -s x || apt-get install x`
+lines, at most the **first** can elide, and this holds even though every guard reported `holds`.
+This is the same firewall the `headline-guarded-realistic` fixture documents ("below mutators ⇒
+INVALID ⇒ its rc is withheld"); what is new is how sharply it caps the idiom the `USER_STORY`
+leans on. My §2 ceiling was wrong by a factor of eight, and in the direction that matters.
+
+Net honest read: the kit demonstrates the *disposition spectrum* well (declines with classes and
+attributed file:line, honest walls, guards, one real elision) and demonstrates *elision volume*
+badly. The three mismatches are all engine-shape findings, and m-2 and m-3 are worth more to r26
+than the elision count would have been.
 
 ## §5. Standing caveats
 

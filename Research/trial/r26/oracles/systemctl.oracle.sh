@@ -16,6 +16,14 @@
 # unit is an ordinary enableable one; an oracle written for strangers' books would compare the
 # printed state instead of leaning on the status.
 #
+# Second, sharper limitation: systemd's exit vocabulary is NOT ours. `is-active` answers 3 for an
+# inactive unit and `is-enabled` answers 4 for a unit that does not exist, where our table wants 1
+# for "the complement holds". The contract says to translate such a vocabulary with `case $?` — but
+# a body that inspects `$?` cannot be resolved to a coordinate at all by this engine, so no probe
+# ships and nothing elides (../README.md §4). The untranslated form is chosen deliberately: it is
+# SAFE, because everything at 2-and-up already means cannot-say and runs the line. The only cost is
+# precision on the negative path — a stopped unit reports "cannot say" rather than "diverged".
+#
 # Kind: r26.smoke.Service — throwaway, minted for this round only, NOT the stdlib's sm.dorc.*.
 
 systemctl__is_converged() {

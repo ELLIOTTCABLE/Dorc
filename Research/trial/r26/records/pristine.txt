@@ -1,0 +1,31 @@
+# HAND-AUTHORED probe records — the PRISTINE world (the box as `26E` §3 describes it, immediately
+# post-provision). Nothing was executed to produce this file; it is the world asserted by hand so
+# `dorc plan` can be exercised hermetically.
+#
+# Headerless (legacy-tolerant) framing: a stream with no terminal token is read leniently, which is
+# what keeps hand-authored fixtures free of a matching nonce/book-digest. Comments must stand on
+# their OWN line — a trailing `#` after a record parses as a record field and the stream is refused.
+#
+# Only sites that RESOLVE to a probe appear. The other eight sites (apt-get update, the four
+# apt-get install right-hand sides, curl, logger) have no oracle vouch, so no record exists and
+# nothing could be said about them anyway.
+#
+# Debian 12 cloud image: ca-certificates present; curl/jq/nginx absent; no nginx unit; /etc/motd
+# exists but is the stock Debian one; /etc/nginx/conf.d/r26-smoke.conf does not exist.
+
+# site 2 -- dpkg -s ca-certificates: shipped on the image
+site 2 effect=holds rc=0
+# site 4 -- dpkg -s curl: not installed
+site 4 effect=absent rc=1
+# site 6 -- dpkg -s jq: not installed
+site 6 effect=absent rc=1
+# site 8 -- dpkg -s nginx: not installed
+site 8 effect=absent rc=1
+# site 10 -- cp r26-smoke.conf: dest missing, so cmp exits 2
+site 10 effect=cant-tell rc=2
+# site 11 -- cp r26-motd /etc/motd: dest exists but is the stock file
+site 11 effect=absent rc=1
+# site 12 -- systemctl is-enabled nginx: no such unit yet (systemd's 4)
+site 12 effect=cant-tell rc=4
+# site 13 -- systemctl is-active nginx: not active (systemd's 3)
+site 13 effect=cant-tell rc=3
