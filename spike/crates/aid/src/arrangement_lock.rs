@@ -427,9 +427,16 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
     },
     ArrangementEntry {
         slug: "why-reason-first-wall",
-        occurrence: None,
-        when_used: "The ANALYSIS row attached to the FIRST unmodeled wall in book order. Value: the count of downstream sites an oracle for it would recover, or the empty string when none.",
-        why: "USER_STORY stage 3 upcoming-firstwall-hint: the pull-surface detail behind the plan-mode nag. The nag-loop drives the whole gradual-enhancement curve, so the count is the offer.",
+        occurrence: Some(0),
+        when_used: "The ANALYSIS row attached to the FIRST unmodeled wall in book order, when nothing downstream would be recovered by describing it. No value.",
+        why: "USER_STORY stage 3 upcoming-firstwall-hint: the pull-surface detail behind the plan-mode nag. Split from occurrence 1 under 28H ruling 1: the one-row form fed its recovery slot an empty value, and a value that renders as nothing carries no span a human could edit.",
+        words: Words::Migrated(&["this is the first wall in book order -- an oracle vouching its convergence would let dorc remove it once converged"]),
+    },
+    ArrangementEntry {
+        slug: "why-reason-first-wall",
+        occurrence: Some(1),
+        when_used: "As occurrence 0, when describing the wall would also recover downstream sites. Value: the recovery clause (why-reason-first-wall-unwall).",
+        why: "As occurrence 0. The nag-loop drives the whole gradual-enhancement curve, so the count is the offer.",
         words: Words::Migrated(&["this is the first wall in book order -- an oracle vouching its convergence would let dorc remove it once converged", ""]),
     },
     ArrangementEntry {
