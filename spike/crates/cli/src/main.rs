@@ -63,12 +63,14 @@ use std::process::ExitCode;
 mod source_match;
 mod whylog_store;
 
+use dorc_aid::chain::{ChainLink, ChainModel, Excerpt};
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete,
     Diag, DiagCode, EscalationPolicy, FootprintIncoherent, ReachesConflict,
     ReachesProviderCollision, ResolverConflict, ResolverProviderCollision, TouchesEscalated,
     WrappedSiteAdoptionHint,
 };
+use dorc_aid::said::{Said, WHY_SOURCE_CAP, WHY_VALUE_CAP};
 use dorc_aid::weave::Face;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
@@ -3306,9 +3308,24 @@ fn emit_why_lens(
     src: &str,
     _collapse_narrative: &[CollapseNarrative],
 ) {
-    for line in why_lens_lines(why_diags, arena, src) {
-        eprintln!("why: {line}");
+    for reason in why_lens_reasons(why_diags, arena, src) {
+        eprintln!("why: {}", why_lens_line(&reason));
     }
+}
+
+/// The stderr lens's render seat: one reason's fragments, stamped as runs and concatenated.
+///
+/// It stamps the SAME runs the `dorc why` report hands weft (`Said::runs`), and then throws the
+/// attribution away, because a bare stderr line has no span map to carry it. Going through the
+/// stamp anyway is what keeps the two surfaces from drifting — every fragment is classed once, so
+/// the book's own bytes are encoded here for the same reason they are there
+/// (`ask-why-lens-stderr-unencoded`).
+fn why_lens_line(reason: &Said) -> String {
+    reason
+        .runs("why-lens")
+        .iter()
+        .map(|run| run.text.as_str())
+        .collect()
 }
 
 /// Stage 2 attribution (TC-3 / rul24-divergence-is-the-game): emit, on the why-lens stderr
@@ -3484,17 +3501,6 @@ fn oracle_locus(
     let (path, src) = (oracle_paths.get(i)?, oracle_srcs.get(i)?);
     let (line, _col) = dorc_aid::diag::line_col(src, span.lo.0 as usize);
     Some(format!("{path}:{line}"))
-}
-
-/// A speaker's own source, inlined beneath their row: the file it came from, the numbered lines,
-/// and whether a middle was cut out of them.
-struct Excerpt {
-    path: String,
-    head: Vec<(usize, String)>,
-    /// The retained tail, when a middle was cut. Empty when the excerpt is contiguous.
-    tail: Vec<(usize, String)>,
-    /// How many lines the cut dropped. Zero when the excerpt is contiguous.
-    elided: usize,
 }
 
 /// The most lines of an author's arm the surface will inline before cutting a middle out of it.
@@ -3901,39 +3907,13 @@ fn foil_word(disposition: &dorc_plan::Disposition) -> String {
 /// user-facing string the triptych prints comes through here or through [`verb_word`] /
 /// [`outcome_word`], never from a `format!` literal (`28G` §0).
 fn why_words(slug: &str, values: &[&str]) -> String {
-    why_words_at(slug, None, values)
+    dorc_aid::said::words_text(slug, None, values)
 }
 
 /// [`why_words`] for a registry row whose words are keyed by occurrence.
-///
-/// This is the ONE seat that interleaves a computed value into a registry line, and therefore the
-/// one place a value carrying bytes we did not write can enter our own words. The registry words
-/// are never encoded — they are ours, and encoding them twice would be a defect — while every
-/// value passes the display seat first (`sinv-sink-encoding`). A chrome line renders as ONE span
-/// (`a-chrome-line-is-one-span`), so the value cannot carry its own foreign-text span here and
-/// must instead arrive already safe.
 fn why_words_at(slug: &str, occurrence: Option<usize>, values: &[&str]) -> String {
-    let encoded: Vec<String> = values
-        .iter()
-        .map(|value| dorc_aid::display::encode_foreign(value, WHY_VALUE_CAP))
-        .collect();
-    let borrowed: Vec<&str> = encoded.iter().map(String::as_str).collect();
-    dorc_aid::arrangement::arrangement_sentence(
-        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-        slug,
-        occurrence,
-        &borrowed,
-    )
+    dorc_aid::said::words_text(slug, occurrence, values)
 }
-
-/// The display budget for one computed value on the why surface: a coordinate, an address, a
-/// speaker, a `N|command` reference. Generous enough that nothing the corpus produces is touched,
-/// bounded so a pathological book word cannot own the whole render.
-const WHY_VALUE_CAP: usize = 240;
-
-/// The display budget for one quoted line of somebody else's source. Wider than a value's because
-/// a wrapped-off source line is a worse lie than a long one, and still bounded.
-const WHY_SOURCE_CAP: usize = 512;
 
 /// The gutter glyph a chain row wears in the DEFAULT render (`28E` §7
 /// adapt-two-rank-default-render, sharpened by §8 `rul-danger-axis-is-completion-class`). ASCII
@@ -3945,76 +3925,6 @@ const fn rank_glyph(rank: Knowability) -> &'static str {
     match rank {
         Knowability::Witnessed => "*",
         Knowability::CoversUnmeasured => "!",
-    }
-}
-
-/// One quoted-speakers row of a `dorc why <addr>` ANALYSIS panel (`28E` §8 quoted-speakers, ADOPTED):
-/// speaker first, the tier word as the sentence's verb, the payload as the speaker's own quoted
-/// words. Dorc asserts no world-fact in its own voice — it QUOTES speakers, and vouches only for the
-/// run record and for its own derivations (which is why an engine row's payload is unquoted).
-struct ChainLink {
-    tier: SpeechAct,
-    /// Who is speaking: an oracle `file:line`, a book site's `N|command`, or the engine. `None` when
-    /// the model does not carry a locus for this speaker (rendered as an empty column, never faked).
-    speaker: Option<String>,
-    /// The payload's own words, and the registry row they came from — so the render can stamp the
-    /// span with the entry an edit would rewrite rather than with the seat that assembled it.
-    payload: Said,
-    /// Whether the payload is the speaker's own words (quoted) or dorc's narration of them (bare).
-    quoted: bool,
-    /// Metadata about the SPEAKING rather than the thing said — when a check ran and what it
-    /// exited with (`28G` strawman `a-fire-morning`'s `(ran 01:59:52, rc 0)`). It renders OUTSIDE
-    /// the quotation, because attributing the circumstances to the speaker puts words in their
-    /// mouth. `None` throughout today: the run clock and the stored rcs are the narration lane's,
-    /// and a fabricated timestamp is worse than an absent one.
-    event: Option<Said>,
-    /// The indented paragraph carried below the quote — today only the at-most claim's
-    /// covers-unmeasured disclosure.
-    explanation: Option<Said>,
-    /// The speaker's own source, inlined beneath the explanation: the arm plus the author's
-    /// adjacent comment (`27W:rul-report-surface-massaging`). Not our bytes.
-    excerpt: Option<Excerpt>,
-}
-
-/// A rendered fragment of the why surface, and where its bytes came from.
-///
-/// Carrying the origin past composition is what keeps `28G` §0 honest: the bytes reach weft already
-/// interleaved (`a-chrome-line-is-one-span`), so without this the span map would name the seat that
-/// assembled a line rather than the entry an edit has to rewrite. It also keeps the two classes
-/// apart — registry words are rephrasable, a computed value is not, and rewriting one would be
-/// lying about the world.
-#[derive(Clone)]
-enum Said {
-    /// One registry-sourced line, with the arrangement slug it was composed from.
-    Words(&'static str, String),
-    /// A value the engine computed: a coordinate, an address, a count.
-    Value(String),
-    /// Prose the why-lens flattened to a string before this seat could see its parts — the standing
-    /// `289:seam-whylens-render-seat`. It is not editable and cannot yet name the row it came from;
-    /// giving it a real seat is `28G` Phase W4's.
-    Lens(String),
-}
-
-impl Said {
-    /// One registry line, its values interleaved.
-    fn words(slug: &'static str, values: &[&str]) -> Self {
-        Said::Words(slug, why_words(slug, values))
-    }
-
-    fn text(&self) -> &str {
-        match self {
-            Said::Words(_, text) | Said::Value(text) | Said::Lens(text) => text,
-        }
-    }
-
-    /// The fragment as an attributed run. `part` names the seat for anything with no registry
-    /// entry of its own to point at.
-    fn run(&self, part: &'static str) -> Run<Face> {
-        match self {
-            Said::Words(slug, text) => dorc_aid::weave::words(text.clone(), slug),
-            Said::Value(text) => dorc_aid::weave::value(text, part, "value", WHY_VALUE_CAP),
-            Said::Lens(text) => dorc_aid::weave::value(text, "why-lens", "reason", WHY_SOURCE_CAP),
-        }
     }
 }
 
@@ -4071,19 +3981,33 @@ struct NextSteps {
     rows: Vec<StepRow>,
 }
 
+/// What a survived elision spent to survive: the `N|command` references of every wall it was kept
+/// past, and the provider whose at-most claim licensed that.
+///
+/// Only a SURVIVAL carries one. A guard spends nothing — it re-asks the question live — and a
+/// declined line was never skipped at all, so neither belongs in the aggregate's TRUST SPENT panel
+/// ("skips resting on a human claim, not proof"). Before this was optional, every chain reached
+/// that panel and the two that had spent nothing rendered a claimant-less possessive over an empty
+/// wall list, telling the reader their guarded and their declined line had been skipped on
+/// somebody's word.
+struct TrustSpent {
+    crossed: String,
+    claimant: String,
+}
+
 /// A `dorc why <addr>` triptych (`28G` Phase W1): the contrastive OUTCOME, the quoted-speakers
 /// ANALYSIS, and the structural NEXT STEPS. Content + structure are the law; wording and arrangement
 /// ride `27V:rul-output-form-unwelded` — transcripts re-bless freely on churn here.
 struct ChainRender {
-    /// The `N|command` references of every wall this line was kept past, and the provider whose
-    /// at-most claim licensed that — what the aggregate's TRUST SPENT item names.
-    crossed: String,
-    claimant: String,
+    /// What this line's skip SPENT, when it spent anything at all — see [`TrustSpent`].
+    trust: Option<TrustSpent>,
     outcome: Said,
     /// The ANALYSIS opener, then the speaker rows, then the numberless join restatement
-    /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all).
+    /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all). The rows
+    /// and the restatement are the [`ChainModel`]: what the walk derived, and what this render
+    /// selected out of it.
     analysis_opener: Said,
-    links: Vec<ChainLink>,
+    chain: ChainModel,
     /// Every book line this answer names, in source order — the participating-lines block
     /// (`28E` §8 presence-complete, density-selected).
     ///
@@ -4099,7 +4023,6 @@ struct ChainRender {
     /// (`28G` strawman `b-wide-guarded`). Not our bytes: the oracle author wrote the check and the
     /// admin wrote the command it fronts.
     shipped: Option<String>,
-    join: Option<Said>,
     next_steps: NextSteps,
 }
 
@@ -4148,7 +4071,7 @@ fn survival_chain(
     let backing = render_coord(witness.backing(), interner);
     let outcome = outcome_word(disposition);
     let reported = license.derivation().probe.and_then(|p| p.reported);
-    let mut links = vec![ChainLink {
+    let report = ChainLink {
         tier: SpeechAct::Measured,
         speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
         payload: Said::Value(dorc_plan::fact_label(interner, license.fact())),
@@ -4156,9 +4079,9 @@ fn survival_chain(
         event: reported.map(reported_event),
         explanation: None,
         excerpt: None,
-    }];
-    if license.derivation().establish_vouches.is_empty() {
-        links.push(ChainLink {
+    };
+    let vouches: Vec<ChainLink> = if license.derivation().establish_vouches.is_empty() {
+        vec![ChainLink {
             tier: SpeechAct::Vouched,
             speaker: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
             payload: Said::words("why-vouch-payload-site", &[&backing]),
@@ -4166,7 +4089,7 @@ fn survival_chain(
             event: None,
             explanation: None,
             excerpt: None,
-        });
+        }]
     } else {
         let mut by_speaker: Vec<(Option<String>, Vec<String>)> = Vec::new();
         for receipt in &license.derivation().establish_vouches {
@@ -4177,19 +4100,23 @@ fn survival_chain(
                 None => by_speaker.push((speaker, vec![label])),
             }
         }
-        links.extend(by_speaker.into_iter().map(|(speaker, labels)| ChainLink {
-            tier: SpeechAct::Vouched,
-            speaker,
-            payload: Said::words("why-vouch-payload-establish", &[&brace_selectors(&labels)]),
-            quoted: true,
-            event: None,
-            explanation: None,
-            excerpt: None,
-        }));
-    }
+        by_speaker
+            .into_iter()
+            .map(|(speaker, labels)| ChainLink {
+                tier: SpeechAct::Vouched,
+                speaker,
+                payload: Said::words("why-vouch-payload-establish", &[&brace_selectors(&labels)]),
+                quoted: true,
+                event: None,
+                explanation: None,
+                excerpt: None,
+            })
+            .collect()
+    };
     let mut wall_refs: Vec<String> = Vec::new();
     let mut claimants: Vec<String> = Vec::new();
     let mut leverage: Option<String> = None;
+    let mut claims: Vec<ChainLink> = Vec::new();
     for c in witness.crossings() {
         let provider = interner.resolve(c.provider()).to_owned();
         claimants.push(provider.clone());
@@ -4206,7 +4133,7 @@ fn survival_chain(
             .collect();
         let locus = oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs);
         leverage = leverage.or_else(|| locus.clone());
-        links.push(ChainLink {
+        claims.push(ChainLink {
             tier: SpeechAct::Claimed,
             speaker: locus,
             payload: Said::words("why-claims-payload", &[&provider, &coords.join(" ")]),
@@ -4216,7 +4143,7 @@ fn survival_chain(
             excerpt: oracle_excerpt(c.footprint_span(), oracle_paths, oracle_srcs),
         });
     }
-    links.push(ChainLink {
+    let derivation = ChainLink {
         tier: SpeechAct::Derived,
         speaker: Some(ENGINE_SPEAKER.to_owned()),
         payload: Said::words("why-derives-payload-disjoint", &[&backing]),
@@ -4224,7 +4151,8 @@ fn survival_chain(
         event: None,
         explanation: None,
         excerpt: None,
-    });
+    };
+    let links = survival_row_order(report, vouches, claims, derivation);
 
     let joined_walls = wall_refs.join(", ");
     let unmeasured = links
@@ -4269,8 +4197,10 @@ fn survival_chain(
         alternative: false,
     });
     Some(ChainRender {
-        crossed: joined_walls.clone(),
-        claimant: claimants.join(", "),
+        trust: Some(TrustSpent {
+            crossed: joined_walls.clone(),
+            claimant: claimants.join(", "),
+        }),
         outcome: Said::words(
             "why-outcome-contrastive",
             &[
@@ -4284,15 +4214,38 @@ fn survival_chain(
             ],
         ),
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
-        links,
+        chain: ChainModel::all_selected(
+            links,
+            Some(Said::words("why-analysis-join", &[&joined_walls, &backing])),
+        ),
         participants: Vec::new(),
         shipped: None,
-        join: Some(Said::words("why-analysis-join", &[&joined_walls, &backing])),
         next_steps: NextSteps {
             opener: Said::words("why-next-steps-opener", &[reference]),
             rows,
         },
     })
+}
+
+/// The DEFAULT order of a survival chain's ANALYSIS rows: what was measured, who vouched, whose
+/// at-most claim was spent, and what dorc derived from all of it.
+///
+/// This is a RENDER DEFAULT and nothing more (`28E:lean-ordering-is-a-seam`). The order carries no
+/// semantics — it is not causal, not temporal, and not a ranking — so it lives in ONE named seat
+/// rather than implicitly in the sequence of `push` calls, which is what a later
+/// distrust-ordered-or-otherwise-arranged render would otherwise have to reverse-engineer out of
+/// straight-line code. No ordering machinery: the seat is the affordance.
+fn survival_row_order(
+    report: ChainLink,
+    vouches: Vec<ChainLink>,
+    claims: Vec<ChainLink>,
+    derivation: ChainLink,
+) -> Vec<ChainLink> {
+    let mut links = vec![report];
+    links.extend(vouches);
+    links.extend(claims);
+    links.push(derivation);
+    links
 }
 
 /// Build the HEALTHY-GUARD triptych (`28G` strawmen `b-wide-guarded` and `d-guard-fell-through`):
@@ -4389,8 +4342,7 @@ fn guard_chain(
         ]
     };
     ChainRender {
-        crossed: joined_walls.clone(),
-        claimant: String::new(),
+        trust: None,
         outcome: Said::words(
             "why-outcome-contrastive",
             &[
@@ -4401,10 +4353,12 @@ fn guard_chain(
             ],
         ),
         analysis_opener: Said::words("why-analysis-opener-guarded", &[]),
-        links,
+        chain: ChainModel::all_selected(
+            links,
+            Some(Said::words("why-analysis-join-guarded", &[reference])),
+        ),
         participants: Vec::new(),
         shipped: Some(license.insert().display_line(original)),
-        join: Some(Said::words("why-analysis-join-guarded", &[reference])),
         next_steps: NextSteps {
             opener: Said::words("why-next-steps-opener-guarded", &[]),
             rows,
@@ -4619,8 +4573,7 @@ fn decline_chain(
         },
     ];
     ChainRender {
-        crossed: String::new(),
-        claimant: String::new(),
+        trust: None,
         outcome: Said::words(
             "why-outcome-contrastive",
             &[
@@ -4631,13 +4584,15 @@ fn decline_chain(
             ],
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
-        links,
+        chain: ChainModel::all_selected(
+            links,
+            Some(Said::Words(
+                "why-declines-join",
+                class_words("why-declines-join"),
+            )),
+        ),
         participants: Vec::new(),
         shipped: None,
-        join: Some(Said::Words(
-            "why-declines-join",
-            class_words("why-declines-join"),
-        )),
         next_steps: NextSteps {
             opener: Said::Words(
                 "why-declines-next-steps-opener",
@@ -4730,7 +4685,7 @@ fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
 /// One attributed fragment as a paragraph.
 fn paragraph(said: &Said, part: &'static str) -> Node<Face> {
     Node::new(NodeKind::Prose(Paragraph {
-        runs: vec![said.run(part)],
+        runs: said.runs(part),
     }))
 }
 
@@ -4753,7 +4708,7 @@ fn panel(header: &'static str, body: Vec<Node<Face>>) -> Node<Face> {
 /// verb, and their own words quoted. The rows are adjacent siblings, so weft resolves them as one
 /// table and every payload starts in one column — a `claims` row's covers-unmeasured paragraph and
 /// its `as-written:` excerpt hang below the quote without breaking the run.
-fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
+fn chain_rows(links: &[&ChainLink]) -> Vec<Node<Face>> {
     links
         .iter()
         .map(|link| {
@@ -4786,11 +4741,11 @@ fn chain_rows(links: &[ChainLink]) -> Vec<Node<Face>> {
                     } else {
                         Quoting::Bare
                     },
-                    runs: vec![link.payload.run("why-chain-row")],
+                    runs: link.payload.runs("why-chain-row"),
                     trailer: link
                         .event
                         .iter()
-                        .map(|event| event.run("why-chain-event"))
+                        .flat_map(|event| event.runs("why-chain-event"))
                         .collect(),
                 },
                 attachments,
@@ -4876,7 +4831,7 @@ fn step_row(row: &StepRow) -> Node<Face> {
             row.label.word(),
             "why-next-step-label",
         )],
-        body: vec![row.body.run("why-next-step")],
+        body: row.body.runs("why-next-step"),
         attachments: Vec::new(),
     }))
 }
@@ -4930,18 +4885,23 @@ fn step_nodes(steps: &NextSteps) -> Vec<Node<Face>> {
 /// The contrastive OUTCOME, the quoted-speakers ANALYSIS closed by its numberless join
 /// restatement, and the structural NEXT STEPS — which is OMITTED whole when the question has no
 /// next step, the question-relative floor `28G` strawman `e-skipped-quiet` demonstrates.
-fn chain_nodes(chain: &ChainRender) -> Vec<Node<Face>> {
+///
+/// `exhaustive` is the reader's `--all`: the default render shows the model's SELECTED links, and
+/// `--all` shows every link the walk derived, which is what the printed pointer promises
+/// (`ask-all-flag-promises-exhaustive`). Today every walker selects everything, so the two agree —
+/// the flag is wired to the model rather than to a second render path so that stays true.
+fn chain_nodes(chain: &ChainRender, exhaustive: bool) -> Vec<Node<Face>> {
     let mut out = vec![panel(
         "why-outcome-heading",
         vec![paragraph(&chain.outcome, "why-outcome")],
     )];
-    if chain.links.is_empty() {
+    let links = chain.chain.rendered(exhaustive);
+    if links.is_empty() {
         return out;
     }
     let mut analysis = vec![paragraph(&chain.analysis_opener, "why-analysis-opener")];
-    analysis.extend(chain_rows(&chain.links));
-    if chain
-        .links
+    analysis.extend(chain_rows(&links));
+    if links
         .iter()
         .any(|link| link.tier.knowability() == Knowability::CoversUnmeasured)
     {
@@ -4949,7 +4909,8 @@ fn chain_nodes(chain: &ChainRender) -> Vec<Node<Face>> {
     }
     analysis.extend(
         chain
-            .join
+            .chain
+            .conclusion
             .iter()
             .map(|join| paragraph(join, "why-analysis-join")),
     );
@@ -5159,7 +5120,7 @@ fn emit_why_report(
                             }),
                         )
                     } else if let Some(reason) = top_run_reason(span, why_diags, arena, book_src) {
-                        (vec![Said::Lens(reason)], AggregateClass::Quiet, None)
+                        (vec![reason], AggregateClass::Quiet, None)
                     } else if probe.unresolvable.contains(&step.leaf)
                         && !is_structurally_unprobeable(&command)
                     {
@@ -5237,7 +5198,15 @@ fn emit_why_report(
     }
 
     if let Some(addr) = address {
-        emit_why_triptych(addr, &sites, &chains, filename, book_src, &unnarrated);
+        emit_why_triptych(
+            addr,
+            &sites,
+            &chains,
+            filename,
+            book_src,
+            &unnarrated,
+            receipt.deepest_tier,
+        );
     } else {
         emit_why_aggregate(&sites, &chains, filename, first_wall, receipt);
     }
@@ -5259,6 +5228,7 @@ fn emit_why_triptych(
     filename: &str,
     book_src: &str,
     unnarrated: &[String],
+    exhaustive: bool,
 ) {
     let matched: Vec<&WhySite> = match parse_line_address(address) {
         Some(n) if address_names_book(address, filename) => {
@@ -5289,7 +5259,7 @@ fn emit_why_triptych(
             chain.participants.clone()
         };
         nodes.extend(participating_block(&participants, filename, book_src));
-        nodes.extend(chain_nodes(chain));
+        nodes.extend(chain_nodes(chain, exhaustive));
     }
     nodes.extend(
         unnarrated
@@ -5312,36 +5282,41 @@ fn emit_why_triptych(
 /// fixed). NEXT STEPS is likewise omitted, the triptych-collapse `28G` strawman `e-skipped-quiet`
 /// demonstrates. The richer per-disposition panels — a guarded line naming its wall, a declined line
 /// showing the author's arm — are the narration lane's.
+///
+/// SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): the because-clause is a VALUE
+/// interleaved into the outcome row, so a multi-fragment reason is FLATTENED here and its
+/// fragments' own registry rows get no face in the transcript. The bytes are right — every
+/// fragment is already encoded, and the flattened value is what the row has always carried — but
+/// until a chrome line can hold interleaved value fragments (the transport half of `28G` Phase
+/// W4), an edit to one of those rows has to be made in the lock rather than at the transcript.
 fn plain_chain(site: &WhySite) -> ChainRender {
     let (because, rest) = site
         .reasons
         .split_first()
-        .map_or((String::new(), &[][..]), |(head, tail)| {
-            (head.text().to_owned(), tail)
-        });
+        .map_or((String::new(), &[][..]), |(head, tail)| (head.text(), tail));
     ChainRender {
-        crossed: String::new(),
-        claimant: String::new(),
+        trust: None,
         outcome: Said::words(
             "why-outcome-contrastive",
             &[&site.reference(), &site.outcome, &site.foil, &because],
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[&site.reference()]),
-        links: rest
-            .iter()
-            .map(|reason| ChainLink {
-                tier: SpeechAct::Derived,
-                speaker: Some(ENGINE_SPEAKER.to_owned()),
-                payload: reason.clone(),
-                quoted: false,
-                event: None,
-                explanation: None,
-                excerpt: None,
-            })
-            .collect(),
+        chain: ChainModel::all_selected(
+            rest.iter()
+                .map(|reason| ChainLink {
+                    tier: SpeechAct::Derived,
+                    speaker: Some(ENGINE_SPEAKER.to_owned()),
+                    payload: reason.clone(),
+                    quoted: false,
+                    event: None,
+                    explanation: None,
+                    excerpt: None,
+                })
+                .collect(),
+            None,
+        ),
         participants: Vec::new(),
         shipped: None,
-        join: None,
         next_steps: NextSteps {
             opener: Said::Value(String::new()),
             rows: Vec::new(),
@@ -5373,7 +5348,11 @@ fn emit_why_aggregate(
         .iter()
         .filter(|s| s.class == AggregateClass::Improvement)
         .collect();
-    if chains.is_empty() && surprises.is_empty() && improvements.is_empty() {
+    let spent: Vec<(usize, &TrustSpent)> = chains
+        .iter()
+        .filter_map(|(line, chain)| Some((*line, chain.trust.as_ref()?)))
+        .collect();
+    if spent.is_empty() && surprises.is_empty() && improvements.is_empty() {
         print_document(vec![receipt_banner(receipt)], 0);
         println!();
         println!("{}", why_words("why-nothing-to-report", &[filename]));
@@ -5381,14 +5360,14 @@ fn emit_why_aggregate(
     }
 
     let mut nodes: Vec<Node<Face>> = vec![receipt_banner(receipt)];
-    if !chains.is_empty() {
-        let items = chains
+    if !spent.is_empty() {
+        let items = spent
             .iter()
-            .filter_map(|(line, chain)| {
+            .filter_map(|(line, trust)| {
                 let site = sites.iter().find(|s| s.line == *line)?;
                 let reason = Said::words(
                     "why-trust-spent-item-reason",
-                    &[&chain.crossed, &chain.claimant],
+                    &[&trust.crossed, &trust.claimant],
                 );
                 Some(aggregate_item(site, filename, &[&reason]))
             })
@@ -5488,7 +5467,7 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
         if !runs.is_empty() {
             runs.push(dorc_aid::weave::mark(" ", "why-item-reason-gap"));
         }
-        runs.push(reason.run("why-item-reason"));
+        runs.extend(reason.runs("why-item-reason"));
     }
     Node::new(NodeKind::Banner(Banner {
         headline: vec![
@@ -5663,7 +5642,7 @@ fn receipt_row(said: &Said) -> Node<Face> {
     Node::new(NodeKind::Labeled(LabeledRow {
         table: Some(Face::Table(RECEIPT_TABLE.to_owned())),
         label: Vec::new(),
-        body: vec![said.run("why-receipt")],
+        body: said.runs("why-receipt"),
         attachments: Vec::new(),
     }))
 }
@@ -5677,11 +5656,11 @@ fn top_run_reason(
     why_diags: &[Diag],
     arena: &ProvArena,
     book_src: &str,
-) -> Option<String> {
+) -> Option<Said> {
     why_diags.iter().find_map(|d| {
         let psp = d.primary.span()?;
         (psp.lo.0 >= span.lo.0 && psp.lo.0 < span.hi.0)
-            .then(|| dorc_aid::diag::why(d, arena, book_src).map(|e| e.reason))
+            .then(|| dorc_aid::diag::why(d, arena, book_src).map(|e| Said::Parts(e.parts)))
             .flatten()
     })
 }
@@ -5733,9 +5712,9 @@ fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
     format!("{kind}:{entity}")
 }
 
-/// The why-lens render + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so
-/// the dedup is unit-testable (`x2-fd1`). For each caused-⊤ diag it renders the "why did this run"
-/// line via [`dorc_aid::diag::why`], showing a given cause-SITE once.
+/// The why-lens reasons + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so
+/// the dedup is unit-testable (`x2-fd1`). For each caused-⊤ diag it takes the "why did this run"
+/// reason from [`dorc_aid::diag::why`], showing a given cause-SITE once.
 ///
 /// stage-4 DEDUP KEY = `(cause, site)`, NOT the cause [`dorc_core::ProvId`] alone (`x2-fd1` fix,
 /// `224` §10): under function inlining two call-sites splice the SAME body `AstId` (`inv-leaf-seam`)
@@ -5746,9 +5725,9 @@ fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
 /// first-occurrences — `ProvId` is `!Ord` (no `BTreeSet`) and the diags arrive in node order, so
 /// first-seen order is deterministic (`inv-determinism`). The only suppression built (no general
 /// subsystem — `22D` §1 stage-4).
-fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<String> {
+fn why_lens_reasons(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Said> {
     let mut shown: Vec<(dorc_core::ProvId, dorc_aid::diag::SiteId)> = Vec::new();
-    let mut lines = Vec::new();
+    let mut reasons = Vec::new();
     for diag in why_diags {
         if let Some(key) = cmdsub_cause_site(diag) {
             if shown.contains(&key) {
@@ -5757,10 +5736,10 @@ fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Strin
             shown.push(key);
         }
         if let Some(explanation) = dorc_aid::diag::why(diag, arena, src) {
-            lines.push(explanation.reason);
+            reasons.push(Said::Parts(explanation.parts));
         }
     }
-    lines
+    reasons
 }
 
 /// The stage-4 render-dedup key a why-lens diag carries, if any: `(⊤-cause, site)`. Only a
@@ -5870,7 +5849,7 @@ mod why_lens_dedup_tests {
             cmdsub_top(&mut arena, 3, body),
             cmdsub_top(&mut arena, 7, body),
         ];
-        let lines = super::why_lens_lines(&diags, &arena, "apt_install \"$(curl a)\"");
+        let lines = super::why_lens_reasons(&diags, &arena, "apt_install \"$(curl a)\"");
         assert_eq!(
             lines.len(),
             2,
@@ -5888,7 +5867,7 @@ mod why_lens_dedup_tests {
             cmdsub_top(&mut arena, 3, body),
             cmdsub_top(&mut arena, 3, body),
         ];
-        let lines = super::why_lens_lines(&diags, &arena, "apt-get install \"$(date)\"");
+        let lines = super::why_lens_reasons(&diags, &arena, "apt-get install \"$(date)\"");
         assert_eq!(
             lines.len(),
             1,
@@ -9370,6 +9349,18 @@ mod not_ours_bytes_tests {
     /// in a render is exactly where the seat that emitted it put it.
     const SOURCE_MARK: &str = "source-mark-9137";
 
+    /// A cause-explanation's own shape, driven with hostile bytes: our coordinate, our quotes, and
+    /// somebody else's line between them ([`dorc_aid::diag::why`]'s parts). The composite is the
+    /// one fragment whose runs are classed INDIVIDUALLY, so the sweep has to see one.
+    fn cause_shaped_parts() -> Said {
+        Said::Parts(vec![
+            Said::Value(hostile_line(5)),
+            Said::Mark("why-cause-quote", " `".to_owned()),
+            Said::foreign(&hostile_line(4), "sweep.book.sh"),
+            Said::Mark("why-cause-quote", "`".to_owned()),
+        ])
+    }
+
     /// One hostile sample folded into a line of somebody else's source.
     fn hostile_line(index: usize) -> String {
         let sample = HOSTILE_SAMPLES
@@ -9397,8 +9388,10 @@ mod not_ours_bytes_tests {
             elided: 78,
         };
         let chain = ChainRender {
-            crossed: hostile_line(5),
-            claimant: hostile_line(0),
+            trust: Some(TrustSpent {
+                crossed: hostile_line(5),
+                claimant: hostile_line(0),
+            }),
             outcome: Said::words(
                 "why-outcome-contrastive",
                 &[
@@ -9408,21 +9401,23 @@ mod not_ours_bytes_tests {
                     &hostile_line(4),
                 ],
             ),
-            analysis_opener: Said::Lens(hostile_line(5)),
-            links: vec![ChainLink {
-                tier: SpeechAct::Claimed,
-                speaker: Some(hostile_line(0)),
-                payload: Said::Value(hostile_line(1)),
-                quoted: true,
-                event: Some(Said::words("why-chain-event-rc-only", &[&hostile_line(2)])),
-                explanation: Some(Said::Lens(hostile_line(3))),
-                excerpt: Some(excerpt),
-            }],
+            analysis_opener: cause_shaped_parts(),
+            chain: ChainModel::all_selected(
+                vec![ChainLink {
+                    tier: SpeechAct::Claimed,
+                    speaker: Some(hostile_line(0)),
+                    payload: Said::Value(hostile_line(1)),
+                    quoted: true,
+                    event: Some(Said::words("why-chain-event-rc-only", &[&hostile_line(2)])),
+                    explanation: Some(Said::foreign(&hostile_line(3), "sweep.oracle.sh")),
+                    excerpt: Some(excerpt),
+                }],
+                Some(Said::Value(hostile_line(5))),
+            ),
             participants: vec![2, 3],
             shipped: Some(hostile_line(4)),
-            join: Some(Said::Value(hostile_line(5))),
             next_steps: NextSteps {
-                opener: Said::Lens(hostile_line(0)),
+                opener: Said::Value(hostile_line(0)),
                 rows: vec![
                     StepRow {
                         label: StepLabel::Fix,
@@ -9445,7 +9440,7 @@ mod not_ours_bytes_tests {
             foil: foil_word(&dorc_plan::Disposition::Run),
             reasons: vec![Said::Value(hostile_line(5))],
             class: AggregateClass::Improvement,
-            improvement: Some(Said::Lens(hostile_line(0))),
+            improvement: Some(Said::foreign(&hostile_line(0), "sweep.oracle.sh")),
         };
         let receipt = Receipt {
             at: None,
@@ -9474,13 +9469,13 @@ mod not_ours_bytes_tests {
             &format!("{SOURCE_MARK}.book.sh"),
             &book,
         ));
-        nodes.extend(chain_nodes(&chain));
+        nodes.extend(chain_nodes(&chain, true));
         nodes.push(aggregate_item(
             &site,
             &format!("{SOURCE_MARK}.book.sh"),
-            &[&Said::Lens(hostile_line(1))],
+            &[&cause_shaped_parts()],
         ));
-        nodes.extend(chain_nodes(&plain_chain(&site)));
+        nodes.extend(chain_nodes(&plain_chain(&site), false));
         nodes
     }
 

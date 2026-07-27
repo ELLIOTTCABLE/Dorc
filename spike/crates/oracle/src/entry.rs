@@ -139,7 +139,6 @@ fn first_entry_command(body: &[Stmt]) -> Option<&crate::predict::Command> {
 /// Lift every `<provider>__enter` in `src` into a [`PredictSet`] (COMMAND-keyed like the wrapper's
 /// `predict`/`lend_map`). The consumer calls [`detect_entry_form`] per body. Same fail-soft contract as
 /// `lift_predicts`.
-#[must_use]
 pub fn lift_entry_set(interner: &mut Interner, src: &str) -> dorc_aid::Carrier<PredictSet> {
     crate::predict::lift_enters(interner, src)
 }

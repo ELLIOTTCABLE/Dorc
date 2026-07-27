@@ -67,7 +67,6 @@ impl ReachesSet {
     /// Lift every `<kind>__disturbance_reaches_only` funcdef in `src`. Fail-soft (`inv-no-throw`)
     /// and deterministic (`inv-determinism`) — the same contract as [`crate::predict::lift_predicts`],
     /// routed through the shared role-parametrized parser.
-    #[must_use]
     pub fn lift(interner: &mut Interner, src: &str) -> Carrier<Self> {
         lift_reaches(interner, src).map(Self)
     }

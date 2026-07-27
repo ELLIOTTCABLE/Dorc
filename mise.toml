@@ -308,7 +308,7 @@ description = "Install hk's git hooks: the pre-commit lint gate AND the commit-m
 run = "hk install --mise"
 
 [tasks.bless]
-description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
+description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. Trailing case substrings SCOPE it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless"
 

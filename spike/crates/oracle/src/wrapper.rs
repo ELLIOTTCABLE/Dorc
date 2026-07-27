@@ -399,7 +399,6 @@ fn is_colon_line(cmd: &Command) -> bool {
 /// Lift every `<provider>__lend_map` in `src` into a [`PredictSet`] (COMMAND-keyed like the
 /// wrapper's predict). The consumer calls [`derive_lend_map`] per body. Same fail-soft contract
 /// as `lift_predicts`.
-#[must_use]
 pub fn lift_lend_map_set(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_lend_maps(interner, src)
 }

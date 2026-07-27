@@ -45,7 +45,6 @@ use crate::predict::{
 /// (`dash -n`-clean). Pure and total (`inv-no-throw`): a non-char-boundary span is skipped rather
 /// than panicking. Deterministic (`inv-determinism`): role funcdefs are collected in source order
 /// and edits applied back-to-front, so the output is a byte-stable function of the input.
-#[must_use]
 pub fn strip_file(interner: &mut Interner, src: &str) -> Carrier<String> {
     // Marker-gated: an unmarked file (plain sh, or an already-stripped off-ramp artifact) is
     // returned byte-identical — idempotence + the identity-on-plain-sh half of dorc-sh's contract.
@@ -75,7 +74,6 @@ pub struct StripMapped {
 /// from the SAME edits, so it can never disagree with the bytes. An unmarked file is the identity
 /// (no edits, no shifts) — the uniform path that lets external tools remap marked and unmarked
 /// files alike (`27R` §4 "unmarked files pass through strip unchanged by construction").
-#[must_use]
 pub fn strip_file_with_map(interner: &mut Interner, src: &str) -> Carrier<StripMapped> {
     if !has_marker(src) {
         return Carrier::pure(StripMapped {

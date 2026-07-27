@@ -28,6 +28,7 @@
 //!   cli's `RecordKey`).
 
 use crate::Severity;
+use crate::said::Said;
 use dorc_core::{ProvId, Span, TopCause};
 
 // ===========================================================================
@@ -418,16 +419,26 @@ pub enum OperandPosition {
 }
 
 impl OperandPosition {
-    /// The fact-plane prose for this position (`the command word` / `operand N`). Pure, no
-    /// allocation beyond the formatted operand index.
+    /// The words for this position (`the command word` / `operand N`), from the arrangement
+    /// registry: one occurrence per form, the index interleaved as the seat's value.
+    ///
+    /// User-facing prose in a fact-plane type was the second, unnoticed instance of
+    /// `289:finding-reason-opener-still-hardcoded` — every string a person reads is
+    /// registry-homed (`288` §1), and a `describe()` on an enum is not an exemption.
     #[must_use]
     pub fn describe(self) -> String {
         match self {
-            OperandPosition::CommandWord => "the command word".to_owned(),
-            OperandPosition::Operand(n) => format!("operand {n}"),
+            OperandPosition::CommandWord => crate::said::words_text(POSITION_WORDS, Some(0), &[]),
+            OperandPosition::Operand(n) => {
+                crate::said::words_text(POSITION_WORDS, Some(1), &[&n.to_string()])
+            }
         }
     }
 }
+
+/// The registry slug holding the ⊤ position's two forms (occurrence 0 = the command word,
+/// occurrence 1 = a 1-based operand index).
+const POSITION_WORDS: &str = "why-operand-position";
 
 /// The command-word name a diagnostic carries for its `{command}` template param (`282` §12
 /// item-6): a value-flow-derived, three-state name so a message can speak the command in the
@@ -2689,12 +2700,24 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
 /// render-plane only (`dir-soundiness-ux`: frontload the unsoundness where the operator reads, at
 /// the decision point); it reaches no artifact and (ru-11 WELD) drives no decision — it is pure
 /// OUTPUT explanation, on the `Exempt::Explanation` plane.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Explanation {
-    /// The cause-derived reason this command was forced to run ("ran because …, ⊤ originated …").
-    pub reason: String,
+    /// The cause-derived reason this command was forced to run, as the ordered fragments it is
+    /// composed of: registry words, the computed cause coordinate, the book's own bytes, and the
+    /// remediation hint. PARTS AT BIRTH (`28G` Phase W4) — a reason that arrives as one flattened
+    /// string can never tell a surface which registry row an edit would rewrite, and the two why
+    /// surfaces then disagree about what the bytes even are.
+    pub parts: Vec<Said>,
     /// Which user action clears the forced run (ru-6; PROPOSED per code — `tc-whylens-remediation`).
     pub remediation: RemediationClass,
+}
+
+impl Explanation {
+    /// The whole reason as bytes — for a seat with no span map to hand the parts to.
+    #[must_use]
+    pub fn text(&self) -> String {
+        self.parts.iter().map(Said::text).collect()
+    }
 }
 
 /// The why-lens primitive (`22D` stage-2): read a [`Diag`]'s ⊤-cause + the [`ProvArena`] →
@@ -2727,38 +2750,23 @@ pub fn why(diag: &Diag, arena: &dorc_core::ProvArena, src: &str) -> Option<Expla
     // cause or an unresolvable id yields no explanation — the why-lens never fabricates a why.
     let cause = payload.cause?;
     let origin = arena.node(cause)?;
-    // The cause-site, shown once (minimal-witness): the give-up origin's source span, resolved
-    // for orientation. A site-less origin (the defensive fallback cause) degrades to "(no site)".
-    let where_top = match origin.site {
-        Some(span) => render_span(span, src),
-        None => "(no source site)".to_owned(),
-    };
     let remediation = remediation_for(&diag.code);
     // ack-4 (vocabulary): plain unambiguous English on this user-facing line — "couldn't be
     // resolved" / "to stay safe" instead of the "⊤"/"kFAIL-perform" jargon (which stays in
-    // code/comments/corpus). The `ran because … command-substitution` opener + the remediation
-    // hint's `[…]` tag are UNCHANGED (the `expected-why` needles substring-match them).
-    //
-    // SPIKE CUT (churn-avoidance-disclosure): the hint reads as plain TEXT, not an
-    // `ArrangementWords` span — this reason is a FRAGMENT (`dorc why` embeds it mid-line), so it
-    // cannot own the trailing computed layout that keeps a render from ending inside an editable
-    // span (`a-registry-row-need-not-mint-a-span`). The opener stays hardcoded: it is the parked
-    // class-prose register (`288` §6), not this storage move.
-    let reason = format!(
-        "ran because {} is a command-substitution `$(...)` or runtime-dynamic value -- its value \
-         couldn't be resolved (first seen at {where_top}); so dorc runs it, to stay safe (when \
-         unsure, run). {}",
-        payload.position.describe(),
-        crate::arrangement::arrangement_text(
-            &crate::arrangement::CONST_ARRANGEMENTS,
-            remediation_hint_slug(remediation),
-            None,
-        ),
-    );
-    Some(Explanation {
-        reason,
-        remediation,
-    })
+    // code/comments/corpus).
+    let mut parts = vec![Said::words(
+        "why-reason-cmdsub-opener",
+        &[&payload.position.describe()],
+    )];
+    // The cause-site, shown once (minimal-witness): the give-up origin's source span, resolved for
+    // orientation. A site-less origin (the defensive fallback cause) says so in its place.
+    match origin.site {
+        Some(span) => parts.extend(cause_locus(span, src)),
+        None => parts.push(Said::words("why-reason-cmdsub-locus-absent", &[])),
+    }
+    parts.push(Said::words("why-reason-cmdsub-closer", &[]));
+    parts.push(Said::words(remediation_hint_slug(remediation), &[]));
+    Some(Explanation { parts, remediation })
 }
 
 /// The remediation class for a code — now the [`registry`] column (ru-27; gap-4), replacing the old
@@ -2841,17 +2849,32 @@ fn remediation_tag(class: RemediationClass) -> &'static str {
     }
 }
 
-/// Render a span as the simple no-caret region form `<lo>:<hi>` followed by the resolved source
-/// excerpt when it is in range (the drop-A fix — the span reaches the user). Referent-agnostic:
-/// the source text is shown for orientation, never decoded.
-fn render_span(span: Span, src: &str) -> String {
+/// A ⊤-cause site as the fragments it renders from: the no-caret region form `<lo>:<hi>`, then the
+/// book's own bytes quoted, when the span is in range (the drop-A fix — the span reaches the user).
+/// Referent-agnostic: the source text is shown for orientation, never decoded.
+///
+/// The split is the point (`ask-why-lens-stderr-unencoded`): the coordinate is ours and computed,
+/// the excerpt is the BOOK's, so it enters as a foreign fragment and is encoded at that mint —
+/// which is what makes the stderr lens as safe as the weft-rendered report, rather than safe only
+/// where somebody remembered.
+fn cause_locus(span: Span, src: &str) -> Vec<Said> {
     let lo = span.lo.0 as usize;
     let hi = span.hi.0 as usize;
+    let coordinate = Said::Value(format!("{}:{}", span.lo.0, span.hi.0));
     match src.get(lo..hi) {
-        Some(text) => format!("{}:{} `{}`", span.lo.0, span.hi.0, text),
-        None => format!("{}:{}", span.lo.0, span.hi.0),
+        Some(text) => vec![
+            coordinate,
+            Said::Mark(CAUSE_QUOTE, " `".to_owned()),
+            Said::foreign(text, "the book"),
+            Said::Mark(CAUSE_QUOTE, "`".to_owned()),
+        ],
+        None => vec![coordinate],
     }
 }
+
+/// The seat name the quotes around a cause excerpt wear in the span map. Punctuation, not words
+/// (`layout-is-not-a-word`).
+const CAUSE_QUOTE: &str = "why-cause-quote";
 
 /// The 1-based `(line, column)` of a byte offset in `src` — the ack-8 `file:line:col` regions'
 /// coordinate primitive, feeding **rul24-lineno-identity**: the ONE line-number space is the
@@ -3460,31 +3483,92 @@ mod tests {
         );
         let src = "apt-get install $(date)";
         let exp = why(&d, &arena, src).expect("a caused-⊤ has a why-lens explanation");
+        let reason = exp.text();
         assert_eq!(
             exp.remediation,
             RemediationClass::ResolveDynamism,
             "the ru-27 HOW class for a dynamic-operand forced run (registry column)"
         );
         assert!(
-            exp.reason.contains("operand 1"),
-            "names the ⊤ position: {}",
-            exp.reason
+            reason.contains("operand 1"),
+            "names the ⊤ position: {reason}"
         );
         assert!(
-            exp.reason.contains("first seen at"),
-            "names the cause-site (the receipt the why-lens READS): {}",
-            exp.reason
+            reason.contains("first seen at"),
+            "names the cause-site (the receipt the why-lens READS): {reason}"
         );
         assert!(
-            exp.reason.contains("to stay safe"),
-            "the why-lens explains the RUN in plain English (ack-4), never licenses a skip: {}",
-            exp.reason
+            reason.contains("to stay safe"),
+            "the why-lens explains the RUN in plain English (ack-4), never licenses a skip: {reason}"
         );
         assert!(
-            exp.reason.contains("[resolve-dynamism]"),
-            "the remediation hint addresses the right user (admin): {}",
-            exp.reason
+            reason.contains("[resolve-dynamism]"),
+            "the remediation hint addresses the right user (admin): {reason}"
         );
+    }
+
+    /// The reason's BYTES, whole. Its sentence now comes from four registry rows with a coordinate
+    /// and a book excerpt between them, and the migration that put them there was required to move
+    /// nothing (`28G` Phase W4's churn contract): substring assertions cannot see a doubled space
+    /// or a lost one at a fragment boundary, and this is the surface the e2e needles read.
+    #[test]
+    fn a_reason_reads_exactly_as_the_hardcoded_sentence_did() {
+        let mut arena = dorc_core::ProvArena::new();
+        let cause = arena.leaf(dorc_core::OriginKind::TopCause, Some(span(11, 20)));
+        let d = Diag::new(
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
+            span(0, 20),
+        );
+        let exp = why(&d, &arena, "apt-get install $(date)").expect("a caused-⊤ explains");
+        assert_eq!(
+            exp.text(),
+            "ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- \
+             its value couldn't be resolved (first seen at 11:20 `tall $(da`); so dorc runs it, to \
+             stay safe (when unsure, run). to skip it, make the operand a literal Dorc can \
+             resolve+probe [resolve-dynamism]"
+        );
+        // The site-less cause: the same sentence, saying so where the locus would be. Nothing else
+        // reaches this row, and an unrendered row is one nobody can tell is wrong.
+        let siteless = arena.leaf(dorc_core::OriginKind::TopCause, None);
+        let bare = Diag::new(
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, Some(siteless))),
+            span(0, 4),
+        );
+        assert_eq!(
+            why(&bare, &arena, "date")
+                .expect("a caused-⊤ explains")
+                .text(),
+            "ran because the command word is a command-substitution `$(...)` or runtime-dynamic \
+             value -- its value couldn't be resolved (first seen at (no source site)); so dorc \
+             runs it, to stay safe (when unsure, run). to skip it, make the operand a literal \
+             Dorc can resolve+probe [resolve-dynamism]"
+        );
+    }
+
+    /// The cause locus arrives as PARTS, and the book's own bytes wear the not-ours class inside
+    /// them — which is what makes the plan-stderr lens as safe as the weft-rendered report, since
+    /// both read the same fragments (`ask-why-lens-stderr-unencoded`).
+    #[test]
+    fn the_book_bytes_in_a_reason_are_a_foreign_fragment_encoded_at_mint() {
+        let mut arena = dorc_core::ProvArena::new();
+        let cause = arena.leaf(dorc_core::OriginKind::TopCause, Some(span(0, 8)));
+        let d = Diag::new(
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
+            span(0, 8),
+        );
+        let exp = why(&d, &arena, "run \u{1b}[31m x").expect("a caused-⊤ explains");
+        let foreign: Vec<&Said> = exp
+            .parts
+            .iter()
+            .filter(|part| matches!(part, Said::Foreign { .. }))
+            .collect();
+        assert_eq!(foreign.len(), 1, "the excerpt is the one not-ours fragment");
+        assert_eq!(
+            foreign[0].text(),
+            "run \\x1b[31",
+            "the escape is already encoded in the fragment, not at some later seat"
+        );
+        assert!(exp.text().is_ascii());
     }
 
     /// STAGE-2 honesty (fd-G): the why-lens covers CAUSED ⊤s ONLY. A code with no cause field
@@ -3503,9 +3587,8 @@ mod tests {
             }),
             span(0, 12),
         );
-        assert_eq!(
-            why(&unresolvable, &arena, src),
-            None,
+        assert!(
+            why(&unresolvable, &arena, src).is_none(),
             "a code with no ⊤-cause must NOT get a fabricated why (fd-G honesty)"
         );
         // A CmdsubOperandTop with cause: None ⇒ no fabrication either.
@@ -3513,9 +3596,8 @@ mod tests {
             DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, None)),
             span(0, 5),
         );
-        assert_eq!(
-            why(&causeless_top, &arena, src),
-            None,
+        assert!(
+            why(&causeless_top, &arena, src).is_none(),
             "a cause: None CmdsubOperandTop yields no why (no fabrication)"
         );
     }
