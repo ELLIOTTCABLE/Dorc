@@ -689,6 +689,24 @@ pub fn auto_fact(interner: &mut Interner, provider: &str) -> FactKey {
 /// as may-touch, never a distinct canonical (`fence-no-disjoint`, `survival::disjoint`). A prefix
 /// check is sound because no authored kind can carry the `:` (`277` §4b) — this is a namespace
 /// membership test, not a decode of oracle meaning (`inv-referent-agnostic` is unbroken).
+///
+/// # The whole consumer set (audited 2026-07-27; keep this list exhaustive)
+///
+/// The two fences answer to DIFFERENT questions and only one of them is really about the kind:
+///
+/// * WHICH-BODY-SHIPS — `cli`'s `ship_auto` closure gates on this predicate, and `compile_probe`
+///   reads a `Some` from it as "ship the stripped verdict body under the `__is_converged` name".
+///   The question it is really asking is *"is this provider verdict-borne with no predict to
+///   ship"*, and the kind is only today's proxy for that, sound only while the auto-cell is the
+///   sole cell a verdict-only provider can carry. A verdict-marked site keying an AUTHORED
+///   coordinate would fall through to the predict lane, find nothing, and run — so a keying
+///   change must move this discriminator off the kind, not reuse it.
+/// * FENCE-NO-DISJOINT — `plan::survival::disjoint`, via `Resolutions::is_auto`, fed by
+///   `add_auto_kind` at the `cli` edge for every verdict-provider. This one IS about the kind:
+///   the synthetic singleton must never manufacture separation, whatever else changes.
+///
+/// Nothing else reads it. [`auto_fact`] is the sole mint ([`AUTO_KIND_PREFIX`]/[`AUTO_SELECTOR`]
+/// have no other callers), and `analysis::effect::auto_or_opaque` is its sole production caller.
 #[must_use]
 pub fn is_auto_kind(interner: &Interner, kind: KindId) -> bool {
     interner.resolve(kind.0).starts_with(AUTO_KIND_PREFIX)
