@@ -649,3 +649,102 @@ fn vars_replay_reads_only_the_named_materialized_case() {
         ]
     );
 }
+
+/// The two chains a case travels — `DorcConsumer::replay` (the EDIT chain, which `compile` and
+/// `promote` drive) and `CaseRenderer::render_case` (the FIXPOINT chain, which the looms runner
+/// drives) — must claim exactly the same invocations.
+///
+/// This is the guard `28F` bought with a real divergence. Nothing structural relates the two arms:
+/// a shape only ONE answers is a case that render-fixpoints green and refuses every edit, or edits
+/// cleanly and then fails its own fixpoint. The table IS the relation.
+///
+/// The third column is the byte relation, and it is deliberately NOT uniform. A DIAGNOSTIC render
+/// is word-wrapped to the corpus width by the fixpoint chain and left raw by the edit chain (the
+/// binary's `unreflow` is what closes the loop), so those two rows are honestly different bytes. A
+/// laid-out surface — an arrangement page, this lane's drifted receipt — is reflowed by neither, so
+/// its two chains must be byte-identical or a committed transcript and the bytes an edit compiles
+/// against would silently disagree.
+#[test]
+fn both_replay_chains_claim_the_same_invocation_shapes() {
+    let fixtures = concat!(
+        "-- book.sh --\n#!/bin/sh\nprintf '%s\\n' current\n\n",
+        "-- oracle.sh --\n# dorc-lang/v0.1\nfoo__predict() { pkg : sm.dorc.Package = \"$1\"; }\n\n",
+        "-- .whylog --\n",
+        "dorc-whylog/2 nonce=dorc attempt=0 host=web1 target=width-one generation=width-one",
+        " mode=whylog-replay started=1784944837000 @@dorc@@\n",
+        "book digest=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        " path=book.sh @@dorc@@\n",
+        "argv value=dorc @@dorc@@\n",
+        "digest decision=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb @@dorc@@\n",
+        "apply leaf=0 disposition=run predicted=1 @@dorc@@\n",
+        "results bytes=0 @@dorc@@\n",
+        "dorc-whylog-end/2 @@dorc@@\n\n",
+    );
+
+    // (invocation, both chains claim it, and their bytes are identical)
+    let shapes = [
+        ("dorc why --last --whylog=.whylog", true, true),
+        ("dorc why book.sh:5 --last --whylog=.whylog", true, true),
+        ("dorc --help", true, true),
+        ("dorc lint oracle.sh --no-tools", true, true),
+        // Diagnostic renders: the fixpoint chain wraps, the edit chain does not.
+        ("dorc why --last --whylog=absent.whylog", true, false),
+        (
+            "dorc why book.sh:5 --last --whylog=absent.whylog",
+            false,
+            false,
+        ),
+        ("dorc why --last --whylog=../escape", false, false),
+        ("dorc plan --book=book.sh", false, false),
+        ("dorc wombat --hork", false, false),
+    ];
+
+    for (command, claimed, same_bytes) in shapes {
+        let case = Case::parse(&format!(
+            "---\n---\n{fixtures}-- replay --\n$ {command}\nold\n"
+        ))
+        .expect("case parses");
+        let consumer = DorcConsumer::new();
+
+        let declined = RefCell::new(false);
+        let edit_chain = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
+            *declined.borrow_mut() = true;
+            Ok(ReplayResult::bytes(String::from("fallback\n")))
+        })
+        .expect("replays route")
+        .pop()
+        .expect("one replay");
+        let edit_claims = !declined.into_inner();
+        let fixpoint_chain = consumer.render_case(&case);
+
+        assert_eq!(
+            edit_claims,
+            fixpoint_chain.is_ok(),
+            "`{command}`: one chain claims it and the other does not, so a case on this shape \
+             would edit and fixpoint against different answers"
+        );
+        assert_eq!(edit_claims, claimed, "`{command}`: unexpected claim");
+        if !claimed {
+            continue;
+        }
+        let rendered = Case::parse(&fixpoint_chain.expect("claimed"))
+            .expect("regenerated case parses")
+            .replay()
+            .blocks()
+            .first()
+            .expect("one block")
+            .output()
+            .to_owned();
+        assert_eq!(
+            rendered == edit_chain.output(),
+            same_bytes,
+            "`{command}`: the two chains' byte relation moved\n  fixpoint: {rendered:?}\n  edit:     \
+             {:?}",
+            edit_chain.output()
+        );
+        assert!(
+            edit_chain.editable_render().is_some(),
+            "`{command}`: a claimed shape carries edit provenance"
+        );
+    }
+}
