@@ -200,10 +200,10 @@ pub struct Framing {
     /// The session's `HostId` (`262` §2 — the partition law's wire tripwire).
     host: String,
     /// A digest binding the stream to the exact analyzed book bytes (`262` §2 `book=`;
-    /// discharges `tc-probe-no-digest`). SPIKE NOTE: the spec says sha256; the kernel stays
-    /// dependency-clean (`inv-determinism`), so the cli edge supplies a hand-rolled
-    /// deterministic digest — the mismatch-detection semantics are identical, the crypto
-    /// strength is not (no adversary-forged-book in the model). Documented scope-cut.
+    /// discharges `tc-probe-no-digest`). SHA-256, hand-rolled to keep the kernel
+    /// dependency-clean (`inv-determinism`) — see [`crate::invocation::book_digest`], which
+    /// is the one substitution point. It answers "are these the same bytes", not "did someone
+    /// authorized produce them": still not a keyed MAC and not a signature.
     book_digest: String,
 }
 
