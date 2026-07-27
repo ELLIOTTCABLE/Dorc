@@ -23,6 +23,13 @@ is the human's; untouched.
   for the human as a resource where genuinely valuable, act autonomously otherwise.
 - `plans/288` and `plans/286` remain live inputs, bits possibly superseded; updating
   `plans/` as appropriate is in-remit for this conductor.
+- (human-typed, resurrected from the prior sitting, re-typed this arc)
+  **render-surface-instability**: much of the render surface is UNSTABLE — the
+  current looms will be heavily rewritten, rearranged, merged, added-to, over
+  and over. The arc's effort is correct COMPONENTS and correct PLAYERS doing
+  correct JOBS; byte-specific perfect output is wasted effort. Do not
+  loom-comb; there is much left that isn't loom-combing. (Sharpens
+  `27V:rul-output-form-unwelded` into a conduct directive binding every lane.)
 - (added mid-arc, human-typed) **product-vs-internal-carve** for ALL loom-infra
   work: errorloom is a product too — per change, ask "genuine quality-of-life
   for any errorloom user, or Dorc-specific bloat?"; Dorc-specifics live in
@@ -424,6 +431,38 @@ is the human's; untouched.
   mistake — wants compile-time refusal) · `unreflow` now demonstrably
   unnecessary for weft-rendered surfaces · editable-text-welded-to-output
   bites harder (the absorption/collapse pair exists because of it).
+- **ask-shared-lexical-rulebook ADJUDICATED** (human intuition, 2026-07-26:
+  errorloom/weft may need a shared lexer, or at least a shared class of lexing
+  rules, for word/whitespace/boundary judgments; "protect us from me").
+  Conductor: **ACK the CLASS, NACK the immediate build, with a discipline
+  landing now.** The bug class is real and counted — five whitespace/boundary
+  families surfaced in THIS arc alone (leading-space drop · trailing-newline
+  trap · the absorption/collapse pair forced by editable-text-welded-to-output
+  · zero-width-run divergence between the catalog and weft paths · the
+  transcript-edit trailing `\n`), across THREE independent judgment seats
+  (weft's wrap tokenizer: where text MAY BREAK · errorloom's word model: what
+  a token IS for diff-identity · dorc-loom's significance rules: which
+  whitespace is authored vs layout). Two skepticism notes against building
+  now: (1) a single shared LEXER is ~SUSPECT a false unification — the three
+  jobs are genuinely different (break-opportunity ≠ diff-identity ≠
+  significance); the correct shared object is a lexical RULEBOOK (named
+  primitive judgments each seat composes), and even that couples two
+  potentially-independently-published crates; (2) the render surface is
+  human-declared UNSTABLE and the rules are days old — consolidating churning
+  rules locks them early, and the fixpoint gates mean today's divergence
+  fails SAFE (refusals and entry-churn, never corruption), which caps the
+  urgency. DISPOSITION: (a) STANDING BRIEF LINE from here on — no new
+  word/whitespace/boundary judgment lands ad-hoc inside a parsing function:
+  it lands NAMED, one place per crate, flagged in the report; (b) the
+  loom-UX lane gains a first-class deliverable: the lexical-judgment
+  INVENTORY across weft/errorloom/dorc-loom (every rule, its seat, its
+  owner, its divergences) — the needs-inventory-before-building precedent
+  (`28E:rul-tree-render-is-a-firewalled-crate`) applied to rules instead of
+  libraries; (c) the consolidation decision (rulebook module vs shared lexer
+  vs documented-divergence) is made AGAINST that inventory once the render
+  surface stabilizes — likely r30. The human's instinct that the bag must
+  not grow buried and divergent is adopted as law NOW; the machinery waits
+  for the inventory.
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
