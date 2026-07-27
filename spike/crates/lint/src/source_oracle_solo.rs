@@ -282,6 +282,32 @@ sysctl__is_converged() {
         );
     }
 
+    /// The marks-lost BACKSTOP reaches the same lane, and reaches it under `NoToolsRunner` — the
+    /// discriminator that matters. Before it, the only signal on a voided body was shellcheck's
+    /// incidental SC2154 ("`p` is referenced but not assigned") at the now-unrecognized bind, so
+    /// the whole class vanished wherever shellcheck was absent. This body binds nothing afterwards
+    /// and no external tool runs, and dorc still names the funcdef it lost.
+    #[test]
+    fn the_marks_lost_backstop_fires_without_any_external_tool() {
+        let voided =
+            "# dorc-lang/v0.2\nfoo__predict() {\n   [ -n \"$1\" ] || return 2\n   foo q\n}\n";
+        let report = lint(
+            &[],
+            &[oracle("foo.oracle.sh", voided)],
+            LintOptions::default(),
+            &NoToolsRunner,
+            Some(&["oracle-validate".to_owned()]),
+        );
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.code == "oracle-role-fn-unlifted"),
+            "the backstop reaches the oracle-solo lane with no tools: {:?}",
+            report.findings
+        );
+    }
+
     #[test]
     fn oracle_validate_only_diagnoses_marks_at_parsed_carriers() {
         let ordinary_shell = r#"# dorc-lang/v0.2

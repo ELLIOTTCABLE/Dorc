@@ -305,7 +305,15 @@ impl Parser<'_> {
                 break;
             }
             if let Some(name_info) = self.at_predict_funcdef() {
-                self.parse_predict_funcdef(name_info);
+                // Recorded BEFORE the body is attempted: whatever happens next — a give-up, a
+                // resync, a drop path nobody has hit yet — the file DECLARED this funcdef, and
+                // `PredictSet::unlifted` is what notices when it then fails to appear.
+                self.out.value.detected.push(super::ast::DetectedFn {
+                    name: name_info.name.clone(),
+                    provider: name_info.provider,
+                    name_span: name_info.name_span,
+                });
+                self.parse_predict_funcdef(&name_info);
             } else {
                 // Not a check definition — skip this one top-level item. We do not
                 // diagnose (the file legitimately holds bare assignments / other
@@ -367,16 +375,18 @@ impl Parser<'_> {
             return None;
         }
         let name_span = self.peek_span()?;
+        let name = format!("{provider_name}{}", self.role.mangled_suffix());
         let provider = self.interner.intern(&provider_name);
         Some(PredictHeader {
             provider,
             name_span,
+            name,
         })
     }
 
     /// Parse `<name>__predict ( ) { BODY }`. On any out-of-dialect construct in the
     /// body, emit a diagnostic, drop the whole check, and resync past `}`.
-    fn parse_predict_funcdef(&mut self, header: PredictHeader) {
+    fn parse_predict_funcdef(&mut self, header: &PredictHeader) {
         self.bump(); // the name word
         // `(` `)`
         if !self.expect(&Tok::LParen) || !self.expect(&Tok::RParen) {
@@ -1177,10 +1187,13 @@ impl Parser<'_> {
 }
 
 /// Header info for a recognized `<name>__predict` function.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct PredictHeader {
     provider: Symbol,
     name_span: Span,
+    /// The funcdef name as the file spells it — carried for the marks-lost backstop's diagnostic,
+    /// which must name a function the author can find by grepping their own file.
+    name: String,
 }
 
 /// Classification of the current token inside [`Parser::parse_command`], computed

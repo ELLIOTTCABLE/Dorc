@@ -12,6 +12,21 @@ use dorc_core::{Span, Symbol};
 #[derive(Debug, Clone, Default)]
 pub struct PredictSet {
     pub(super) checks: std::collections::BTreeMap<Symbol, Predict>,
+    pub(super) detected: Vec<DetectedFn>,
+}
+
+/// A role-funcdef header the parse RECOGNIZED, recorded BEFORE its body is attempted — so a
+/// header present here but absent from `checks` is a funcdef the file declared and the lift lost.
+/// That difference is the whole input to the marks-lost backstop (`crate::validate`); nothing
+/// else reads it, and it steers no lift decision.
+#[derive(Debug, Clone)]
+pub struct DetectedFn {
+    /// The funcdef name exactly as the file spells it (`wombat__is_converged`).
+    pub name: String,
+    /// The provider/kind symbol the header keys — the same key `checks` would use.
+    pub provider: Symbol,
+    /// The name token's span, so a diagnostic's caret lands on the declaration.
+    pub name_span: Span,
 }
 
 impl PredictSet {
@@ -19,6 +34,14 @@ impl PredictSet {
     #[must_use]
     pub fn get(&self, provider: Symbol) -> Option<&Predict> {
         self.checks.get(&provider)
+    }
+
+    /// The role-funcdefs the file DECLARED whose bodies never reached [`checks`](PredictSet::get)
+    /// — a declared-but-lost funcdef, whatever lost it. Source order (`inv-determinism`).
+    pub fn unlifted(&self) -> impl Iterator<Item = &DetectedFn> + '_ {
+        self.detected
+            .iter()
+            .filter(|d| !self.checks.contains_key(&d.provider))
     }
 
     #[must_use]

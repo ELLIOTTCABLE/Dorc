@@ -67,6 +67,7 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
         if !src.contains("__") {
             diags.extend(crate::predict::lint_mark_subset(src));
         }
+        diags.extend(unlifted_role_fns(interner, src));
         if !diags.is_empty() {
             stages.push(StageDiags {
                 stage: "check",
@@ -206,6 +207,50 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
     (diags, incoherent)
 }
 
+/// The MARKS-LOST BACKSTOP (`26G:haz-silence-is-the-common-cause`): every role a marked file can
+/// declare is lifted, and any funcdef the parse RECOGNIZED but the lift did not produce is warned
+/// about by name. Deliberately cause-AGNOSTIC — it compares declared against lifted and says only
+/// that the difference exists, so it catches drop paths and unrouted roles that do not exist yet.
+/// That is the point: every `26G` diagnostic finding was a body going inert while `dorc lint`
+/// called the file clean, and each was found by a HUMAN doing this comparison by hand.
+///
+/// It fires ALONGSIDE a cause-bearing diagnostic rather than deferring to one, and that is
+/// deliberate: `predict-out-of-dialect` names the offending LINE, this names the FUNCTION the line
+/// took down with it, and the r26 authors read the first without drawing the second. Only the
+/// six roles whose lift diags reach no surface at all can be lost silently today, but nothing here
+/// depends on knowing which six — that list is exactly what drifts.
+///
+/// An UNMARKED file is skipped: role-NAME recognition works there (`marker-and-names`), but
+/// dialect syntax does not, so its funcdefs are not expected to lift and warning about them would
+/// fire on every ordinary shell file holding a `__`-shaped name.
+fn unlifted_role_fns(interner: &mut Interner, src: &str) -> Vec<Diag> {
+    if !crate::marker::has_marker(src) {
+        return Vec::new();
+    }
+    let roles: [fn(&mut Interner, &str) -> dorc_aid::Carrier<crate::predict::PredictSet>; 8] = [
+        crate::predict::lift_predicts,
+        crate::predict::lift_verdicts_converged,
+        crate::predict::lift_touches,
+        crate::predict::lift_reaches,
+        crate::predict::lift_resolvers,
+        crate::predict::lift_state_stored_only_in,
+        crate::predict::lift_lend_maps,
+        crate::predict::lift_enters,
+    ];
+    let mut diags = Vec::new();
+    for lift in roles {
+        for lost in lift(interner, src).value.unlifted() {
+            diags.push(Diag::new(
+                DiagCode::OracleRoleFnUnlifted(dorc_aid::diag::OracleRoleFnUnlifted {
+                    funcname: lost.name.clone(),
+                }),
+                lost.name_span,
+            ));
+        }
+    }
+    diags
+}
+
 #[cfg(test)]
 mod check_stage_tests {
     use super::validate;
@@ -253,5 +298,78 @@ mod check_stage_tests {
     #[test]
     fn a_clean_oracle_mints_no_giveup() {
         assert_eq!(giveup_file(CLEAN), None);
+    }
+}
+
+#[cfg(test)]
+mod marks_lost_backstop_tests {
+    //! The cause-agnostic backstop (`26G:haz-silence-is-the-common-cause`). Every case here is a
+    //! whole oracle file run through `validate`, because the backstop's whole claim is about what
+    //! a FILE declares versus what the lift produced.
+    use super::validate;
+    use dorc_aid::diag::DiagCode;
+    use dorc_core::Interner;
+
+    /// The funcnames the backstop reports lost, in emission order.
+    fn lost(src: &str) -> Vec<String> {
+        let mut i = Interner::default();
+        validate(&mut i, &[src])
+            .stages
+            .into_iter()
+            .flat_map(|s| s.diags)
+            .filter_map(|d| match d.code {
+                DiagCode::OracleRoleFnUnlifted(p) => Some(p.funcname),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// The three `26G` F3 constructs, each in its own file: a bracket test in statement position, a
+    /// `case` arm with a glob pattern, and a continuation into a redirection. Each takes its whole
+    /// funcdef down — which is the fact the authors missed while reading a per-LINE complaint.
+    #[test]
+    fn each_voiding_construct_names_the_funcdef_it_took_down() {
+        let bracket = "# dorc-lang/v0.2\nw__predict() {\n   [ -n \"$1\" ] || return 2\n   thing : sm.dorc.Thing = \"$1\"\n   w q \"$thing\"\n}\n";
+        let case_arm = "# dorc-lang/v0.2\nw__predict() {\n   case \"$1\" in -*) return 2 ;; esac\n   thing : sm.dorc.Thing = \"$1\"\n   w q \"$thing\"\n}\n";
+        let continuation =
+            "# dorc-lang/v0.2\nw__predict() {\n   w q \"$1\" \\\n      >/dev/null 2>&1\n}\n";
+        for src in [bracket, case_arm, continuation] {
+            assert_eq!(lost(src), vec!["w__predict".to_owned()], "{src}");
+        }
+    }
+
+    /// A role whose give-up diagnostics reach NO surface — the class the backstop exists for. A
+    /// `__lend_map` body is lifted by `crate::wrapper` and its lift diags are dropped there, so
+    /// before this backstop a voided lend-map was invisible from every surface dorc has.
+    #[test]
+    fn an_unrouted_roles_loss_is_reported_too() {
+        let src = "# dorc-lang/v0.2\nsudo__lend_map() {\n   [ -n \"$1\" ] || return 2\n   printf '%s\\n' \"$1\" : lends user\n}\n";
+        assert_eq!(lost(src), vec!["sudo__lend_map".to_owned()]);
+    }
+
+    /// NEGATIVE PIN — a legitimately markless oracle stays silent. It declares a funcdef and
+    /// carries no binds or marks at all; nothing was lost, so nothing is said. Without this the
+    /// backstop could "pass" by warning about every oracle in the corpus.
+    #[test]
+    fn a_markless_oracle_stays_silent() {
+        let src = "# dorc-lang/v0.2\nw__is_converged() {\n   w q \"$1\"\n}\n";
+        assert!(lost(src).is_empty());
+    }
+
+    /// NEGATIVE PIN — the bare `*)` arm the r26 trial reports working must stay quiet. It is the
+    /// discriminator against a naive "any case arm voids the body" over-trigger; the glob arm above
+    /// fires and this one does not, so the backstop is tracking the lift, not the syntax.
+    #[test]
+    fn a_bare_default_case_arm_stays_silent() {
+        let src = "# dorc-lang/v0.2\nw__predict() {\n   case \"$1\" in *) ;; esac\n   thing : sm.dorc.Thing = \"$1\"\n   w q \"$thing\"\n}\n";
+        assert!(lost(src).is_empty(), "{:?}", lost(src));
+    }
+
+    /// NEGATIVE PIN — an UNMARKED file is out of scope. `__role` names are recognized without the
+    /// marker but dialect syntax is not, so its funcdefs are not expected to lift.
+    #[test]
+    fn an_unmarked_file_is_out_of_scope() {
+        let src = "w__predict() {\n   [ -n \"$1\" ] || return 2\n   w q \"$1\"\n}\n";
+        assert!(lost(src).is_empty());
     }
 }
