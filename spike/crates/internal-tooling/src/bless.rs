@@ -14,9 +14,14 @@
 use std::path::Path;
 use std::process::{Command, ExitCode, Stdio};
 
-/// `internal-tooling bless [--dry]`.
+/// `internal-tooling bless [--dry] [<case substring>...]`.
 pub(crate) fn run(args: &[String]) -> ExitCode {
     let dry = args.iter().any(|a| a == "--dry");
+    let cases: Vec<String> = args
+        .iter()
+        .filter(|arg| !arg.starts_with('-'))
+        .cloned()
+        .collect();
     let spike = internal_tooling::repo_root().join("spike");
 
     // Both of these have bitten under WSL, and both bite EXPENSIVELY without a pre-flight:
@@ -34,6 +39,18 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         }
     }
 
+    // ORDER. Unscoped, the gate comes first: never re-bless from a tree you have not verified.
+    // SCOPED, it cannot — a named case is being re-blessed precisely because it is red on
+    // purpose (a sanctioned transcript drift), so a gate-first run fails on the very drift it was
+    // asked to accept. The verification still happens, over the WHOLE tree, immediately after.
+    let scoped = !cases.is_empty();
+    let mut blessed = None;
+    if scoped && !dry {
+        let Some(out) = bless_pass(&spike, &cases) else {
+            return ExitCode::FAILURE;
+        };
+        blessed = Some(out);
+    }
     let Some(gate) = step(
         &spike,
         "gate:full-quiet",
@@ -41,20 +58,12 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     ) else {
         return ExitCode::FAILURE;
     };
-
-    let blessed = if dry {
-        None
-    } else {
-        let mut command = Command::new("mise");
-        command.args([
-            "exec", "--", "cargo", "test", "-p", "dorc-cli", "--test", "e2e",
-        ]);
-        command.env("BLESS", "1").env("DORC_E2E_QUIET", "1");
-        let Some(out) = step(&spike, "e2e --bless", &mut command) else {
+    if !scoped && !dry {
+        let Some(out) = bless_pass(&spike, &cases) else {
             return ExitCode::FAILURE;
         };
-        Some(out)
-    };
+        blessed = Some(out);
+    }
 
     let suite = passed(&gate).unwrap_or_else(|| "?".to_owned());
     let e2e = blessed.as_deref().and_then(passed).map_or_else(
@@ -77,6 +86,23 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         ])
         .status();
     ExitCode::SUCCESS
+}
+
+/// The `BLESS=1` e2e pass, over every case or only the ones whose names match `cases`.
+///
+/// The filter is the RUNNER's ordinary trial filter, so a scoped pass leaves every other golden
+/// byte-identical — which is how one sanctioned drift stops carrying an unrelated one in with it.
+fn bless_pass(spike: &Path, cases: &[String]) -> Option<String> {
+    let mut command = Command::new("mise");
+    command.args([
+        "exec", "--", "cargo", "test", "-p", "dorc-cli", "--test", "e2e",
+    ]);
+    if !cases.is_empty() {
+        command.arg("--");
+        command.args(cases);
+    }
+    command.env("BLESS", "1").env("DORC_E2E_QUIET", "1");
+    step(spike, "e2e --bless", &mut command)
 }
 
 /// Run a labelled step, capturing combined output. On failure print the label and the

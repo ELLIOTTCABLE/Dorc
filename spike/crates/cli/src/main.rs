@@ -3981,14 +3981,26 @@ struct NextSteps {
     rows: Vec<StepRow>,
 }
 
+/// What a survived elision spent to survive: the `N|command` references of every wall it was kept
+/// past, and the provider whose at-most claim licensed that.
+///
+/// Only a SURVIVAL carries one. A guard spends nothing — it re-asks the question live — and a
+/// declined line was never skipped at all, so neither belongs in the aggregate's TRUST SPENT panel
+/// ("skips resting on a human claim, not proof"). Before this was optional, every chain reached
+/// that panel and the two that had spent nothing rendered a claimant-less possessive over an empty
+/// wall list, telling the reader their guarded and their declined line had been skipped on
+/// somebody's word.
+struct TrustSpent {
+    crossed: String,
+    claimant: String,
+}
+
 /// A `dorc why <addr>` triptych (`28G` Phase W1): the contrastive OUTCOME, the quoted-speakers
 /// ANALYSIS, and the structural NEXT STEPS. Content + structure are the law; wording and arrangement
 /// ride `27V:rul-output-form-unwelded` — transcripts re-bless freely on churn here.
 struct ChainRender {
-    /// The `N|command` references of every wall this line was kept past, and the provider whose
-    /// at-most claim licensed that — what the aggregate's TRUST SPENT item names.
-    crossed: String,
-    claimant: String,
+    /// What this line's skip SPENT, when it spent anything at all — see [`TrustSpent`].
+    trust: Option<TrustSpent>,
     outcome: Said,
     /// The ANALYSIS opener, then the speaker rows, then the numberless join restatement
     /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all). The rows
@@ -4185,8 +4197,10 @@ fn survival_chain(
         alternative: false,
     });
     Some(ChainRender {
-        crossed: joined_walls.clone(),
-        claimant: claimants.join(", "),
+        trust: Some(TrustSpent {
+            crossed: joined_walls.clone(),
+            claimant: claimants.join(", "),
+        }),
         outcome: Said::words(
             "why-outcome-contrastive",
             &[
@@ -4328,8 +4342,7 @@ fn guard_chain(
         ]
     };
     ChainRender {
-        crossed: joined_walls.clone(),
-        claimant: String::new(),
+        trust: None,
         outcome: Said::words(
             "why-outcome-contrastive",
             &[
@@ -4560,8 +4573,7 @@ fn decline_chain(
         },
     ];
     ChainRender {
-        crossed: String::new(),
-        claimant: String::new(),
+        trust: None,
         outcome: Said::words(
             "why-outcome-contrastive",
             &[
@@ -5276,8 +5288,7 @@ fn plain_chain(site: &WhySite) -> ChainRender {
         .split_first()
         .map_or((String::new(), &[][..]), |(head, tail)| (head.text(), tail));
     ChainRender {
-        crossed: String::new(),
-        claimant: String::new(),
+        trust: None,
         outcome: Said::words(
             "why-outcome-contrastive",
             &[&site.reference(), &site.outcome, &site.foil, &because],
@@ -5330,7 +5341,11 @@ fn emit_why_aggregate(
         .iter()
         .filter(|s| s.class == AggregateClass::Improvement)
         .collect();
-    if chains.is_empty() && surprises.is_empty() && improvements.is_empty() {
+    let spent: Vec<(usize, &TrustSpent)> = chains
+        .iter()
+        .filter_map(|(line, chain)| Some((*line, chain.trust.as_ref()?)))
+        .collect();
+    if spent.is_empty() && surprises.is_empty() && improvements.is_empty() {
         print_document(vec![receipt_banner(receipt)], 0);
         println!();
         println!("{}", why_words("why-nothing-to-report", &[filename]));
@@ -5338,14 +5353,14 @@ fn emit_why_aggregate(
     }
 
     let mut nodes: Vec<Node<Face>> = vec![receipt_banner(receipt)];
-    if !chains.is_empty() {
-        let items = chains
+    if !spent.is_empty() {
+        let items = spent
             .iter()
-            .filter_map(|(line, chain)| {
+            .filter_map(|(line, trust)| {
                 let site = sites.iter().find(|s| s.line == *line)?;
                 let reason = Said::words(
                     "why-trust-spent-item-reason",
-                    &[&chain.crossed, &chain.claimant],
+                    &[&trust.crossed, &trust.claimant],
                 );
                 Some(aggregate_item(site, filename, &[&reason]))
             })
@@ -9366,8 +9381,10 @@ mod not_ours_bytes_tests {
             elided: 78,
         };
         let chain = ChainRender {
-            crossed: hostile_line(5),
-            claimant: hostile_line(0),
+            trust: Some(TrustSpent {
+                crossed: hostile_line(5),
+                claimant: hostile_line(0),
+            }),
             outcome: Said::words(
                 "why-outcome-contrastive",
                 &[
