@@ -210,3 +210,54 @@ The corpus does not catch del-authored-coordinate-voids-guard: `794c0e41` pinned
 with two `.loom` prose cases and no whole-product case, and no e2e case in the collection pairs an
 `is_converged` oracle carrying an authored coordinate with records that vouch it. `test:e2e` is
 green at 109 cases with this defect live. That gap is the finding worth more than the number.
+
+> **Re-measured afterwards: the guard loss is real, but the coordinate mark does not cause it.**
+> Left standing as written above; the corrected cause is `fnd-classed-decline-unwalls-guard-tier`
+> in §7. The strip-the-mark A/B was confounded — see below.
+
+## §7. `fnd-classed-decline-unwalls-guard-tier` — what actually costs the guards
+
+Bisected on the merged r26 tip, holding the records fixed at all-`holds`. Two `cp`-shaped drops
+below one upstream site, varying only what the upstream site is:
+
+| upstream site | drops' class | guards |
+|---|---|---|
+| unmodeled (no oracle) ⇒ `Opaque` | `EstablishWritten` | **2** |
+| bears a verdict fn that DECLINES this argv | `EstablishAmbient` | **0** |
+| bears a verdict fn that authors a coordinate | `EstablishAmbient` | **0** |
+
+The mark is not in that table, because it is not the variable. An unmodeled command is `Opaque`
+and therefore WALLS; anything bearing a verdict function establishes a cell of its own instead
+(`analysis::effect::verdict_cell_or_auto` rows 1 and 2) and stops walling. The drops below it
+then classify `EstablishAmbient` rather than `EstablishWritten`.
+
+That reclassification is what costs the guard, because the two tiers are asymmetric. The upstream
+site still RUNS — it declined, so nothing vouches it — so the drops sit below a live mutator and
+their *elision* is correctly refused. But the *guard* tier, whose entire purpose is "the world may
+have moved, so re-check live", is keyed to `EstablishWritten` and is unreachable from
+`EstablishAmbient`. Neither tier applies and the mutating drops ship verbatim, carrying evidence
+— a reached vouch and a `holds` record on their own authored cell — that is byte-identical to the
+evidence that guards them in the walled case.
+
+So the inversion the §6 note reported is real and worse than stated: it is not about coordinates
+at all. **Classing an honest decline — precisely what the contract asks an author to do, and what
+turns an anonymous wall into an attributed one — yields a strictly worse plan than shipping no
+oracle whatsoever**, for every vouched site below it.
+
+Why the strip-the-mark A/B pointed the wrong way: removing the mark collapses both `cp` sites onto
+the shared `dorc-auto:cp@converged` auto-cell, so the second site is stomped by the first and
+classifies `EstablishWritten` on that account — recovering one guard (`guard=1`) through an
+accidental wall rather than through anything the markless spelling got right. Splitting the cells
+removed that accident. The authored coordinate is doing its job; §6 measured the accident's
+removal and attributed it to the split.
+
+Mint and consumption agree on cell identity throughout: `build_vouches` and `disposition_for` read
+the same `SkipClass` fact, and both cases above emit a byte-identical probe artifact and differ
+only in the apply. There is no keying asymmetry to repair.
+
+Pinned as a whole-product pair, which also closes the §6 corpus gap:
+`guard26-unmodeled-wall-guards-below` (control, two guards) and
+`guard26-classed-decline-demotes-guard` (defect, two mutating drops ship). Their books and
+`wombat` oracle match; the defect case only adds a decline-classing `hork.oracle.sh`. The repair
+is a licensing-tier change — which class may reach the guard mint — and is deliberately left
+unmade: it widens what guards, so it wants a human ruling, not an overnight patch.
