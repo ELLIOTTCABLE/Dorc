@@ -179,36 +179,77 @@ incoming facts re-analyze and mutate ongoing analysis. The bounded, same-records
 deterministic iteration below is a degenerate special case of that ruled direction, NOT the r26
 reactive machinery (no new probing is minted; nothing streams).
 
-Shape — the caller owns the loop; `analysis` stays records-blind (`inv-superposition`
-preserved: the kernel gains one phase-agnostic INPUT, "sites proven not-to-execute", as data;
-it never learns why):
+Shape — RE-CUT 2026-07-28 at human direction, superseding the earlier mask-parameter design
+(a `proven_dead` set threaded into classify was REJECTED: a flag every present and future
+consumer must remember to consult is the composition footgun; absence cannot be forgotten).
+The ruled shape is **analyzer-model erasure**, per the human-ACKED overlay model (typed
+2026-07-28, verbatim-tier):
 
-1. `classify` (and the reach solve feeding it) accepts `proven_dead: &BTreeSet<CfgNodeId>`
-   (default empty = today, byte-identical). A proven-dead site's effects are treated as `Pure`
-   in the reach transfer and excluded from the pristine/invalidating set. It does NOT change
-   reachability/CFG (the site still exists, still renders, still walls NOTHING because it will
-   not run).
-2. `build_plan` (or the fold layer) exposes the RECORDS-PROVEN-DEAD set: exactly the sites
-   whose enclosing branch a folded, valid, non-conflicted query rc proved dead
-   (`Predicted::Value` substituted into the errexit/`||` doors). NEVER derived from
-   `Disposition` (omitted-for-any-reason is NOT dead — `26G`'s naive-fix hazard; a site is
-   removed from the invalidating set only on positive records-proof).
-3. The cli driver iterates: solve+classify(proven_dead) → compile the fold with the records in
-   hand → collect newly-proven-dead → loop while the set GREW. Monotone (masking effects only
-   ever makes more queries valid ⇒ more folds ⇒ more dead), bound = site count, hard cap +
-   loud diagnostic if hit (never silent partial). Deterministic iteration (BTree order); the
-   final plan is a pure function of (book, oracles, records) — byte-identical across runs.
-   No re-probe: v-no-reprobe-needed (invalid queries' rcs are already measured, only withheld).
-4. Probe-compile is NOT in the loop at v1: the probe ships once with validity as computed at
-   ship time; the fixpoint runs at PLAN construction where records exist. (A future refinement
-   — recomputing validity for probe-emission itself — is the r26 reactive lane's business.)
-5. Tests: N-ladder (N≥3), unmodeled RHS, all-holds ⇒ all N fold (today 1); middle guard
+> 1. the analyzer handles a MODEL of the code, mapped back to the authoritative
+>    storage-for-all-global-non-analysis-purposes (span-map etc.);
+> 2. the analyzer-model can SHRINK, to omit things PERMANENTLY that we explicitly disallow
+>    to future analysis passes;
+> 3. shrinking elements in the analyzer-model type-provably MUST mint information in the
+>    global model showing what shrank and why.
+
+Mechanism:
+
+1. **The frozen origin.** The input model — book bytes, CFG, spans, leaf identity, the
+   as-lifted effects, oracle lifts, admitted records, vouches — is NEVER mutated by the loop.
+   Rebuild-from-origin is always possible (§4¾).
+2. **The erasure ledger** — the loop's SOLE cross-round accumulator. Grow-only within a
+   record-world; entries are `(site, erased-effect, proof, round)` where `proof` is a
+   records-proven-dead derivation and nothing else: a measured, valid, non-conflicted query
+   rc (`Predicted::Value`), folded through sh control-flow semantics (the errexit/`||`
+   doors), showing the branch containing the site cannot be reached. NEVER derived from
+   `Disposition` — omitted-for-any-reason is not dead (`26G`'s naive-fix hazard). Type-gated
+   both ways: the entry constructor DEMANDS the proof (no entry without derivation), and the
+   erasure function CONSUMES an entry (no shrink without a ledger record) — this is the
+   overlay model's point 3 made structural, and it discharges §4.6's mint half by
+   construction. Round-tagged for the why-chain.
+3. **The residual model** — derived each round from origin + ledger. Identity planes
+   (CfgNodeId, LeafId, spans, render presence, record keying) are IDENTICAL to the origin —
+   `ref-erase-effects-never-identity`: erasure operates on the effect/invalidator plane
+   ONLY; a renumbered or dropped site would shear record keying (`inv-site-keyed-results`),
+   the byte-honest render, and `dorc why` addresses. What is absent from the residual is the
+   erased sites' MUTATOR-HOOD: to every analysis consumer, an erased site is
+   indistinguishable from one that never mutated (uniformity is the safety property — no
+   consumer can mishandle a flag that does not exist), while the ledger keeps the
+   distinction fully recoverable for provenance. The concrete spelling (an erased-typed
+   effect variant vs Pure-with-ledger-backing) is the builder's map-then-execute proposal;
+   the reviewer holds it to the uniformity + recoverability pair above.
+4. **The loop**, driver-owned: round k derives the residual from origin + ledger → solve +
+   classify the residual (validity recomputed naturally — erased mutators simply do not
+   exist to invalidate) → fold with the frozen records → new proofs append to the ledger →
+   round k+1; terminate when a round appends nothing. Monotone (erasure only removes
+   invalidators ⇒ more queries valid ⇒ more folds ⇒ more proofs; pinned by test, not
+   argument alone), bound = site count, hard iteration cap + LOUD diagnostic (never silent
+   partial). Deterministic (BTree order throughout); the final artifacts are a pure function
+   of (origin, records) — byte-identical across runs and under record-arrival shuffle.
+5. **No re-probe** (`§0:v-no-reprobe-needed`): invalid-Query checks ship and their rcs are
+   measured, only withheld; the loop consumes measurements already in hand. Probe EMISSION
+   is untouched at v1 — a scope cut, not an invariant (`seam-wc-fixpoint-meets-reactive-
+   probing`, §4¾).
+6. **Concentrated danger, by design**: representation-level un-undo-ability protects against
+   consumer drift but cannot protect against a bug in the ONE transform (fold-proof →
+   ledger entry → erasure). That function is where W-C can be wrong, and concentrating the
+   risk there is intentional — the conductor's triple-check reads it line-by-line against
+   the proof definition above, and its tests are the review's center of gravity.
+7. Tests: N-ladder (N≥3), unmodeled RHS, all-holds ⇒ all N fold (today 1); middle guard
    `absent` ⇒ cascade stops exactly there (above folds, it and below run/guard); modeled-RHS
    ladder unchanged (today's passing case — regression); a live (non-dead) Opaque still
    invalidates everything below — THE case that keeps it honest; iteration determinism
    (same inputs ⇒ byte-identical, shuffle record arrival order); a cyclic/loop shape pinning
    termination + the in-loop-body structural floor untouched; empty-world byte-identical.
-6. ATTRIBUTION IS A HARD REQUIREMENT, not polish (added at human challenge, 2026-07-28):
+   PLUS the erasure-model pins: no ledger entry constructible without a proof (compile-time
+   where achievable); no shrink without an entry; identity planes byte-stable across rounds
+   (spans/ids/render of an erased site unchanged); ledger round-tags reach the why-chain;
+   the rebuild-from-origin contract exercised as a unit test of the API (a mutated
+   record-set input ⇒ ledger discarded, full recompute — unreachable in v1 production paths,
+   pinned so the contract survives until the reactive round makes it reachable).
+8. ATTRIBUTION IS A HARD REQUIREMENT, not polish (added at human challenge, 2026-07-28;
+   mint-half now discharged structurally by the type-gated ledger — the RENDER half below
+   remains an explicit deliverable the types do not discharge):
    every proven-dead site and every round-2+ validity flip mints its witness/narrative link,
    and the why-chain for a cascaded elision renders the full derivation ("trusted because
    line N's mutator was proven dead by line N's measured rc, round k"). An unattributable
@@ -232,31 +273,57 @@ compose unintuitively). The loop's law, enforced structurally by where data live
   statuses · dispositions · the plan. Round k = F(frozen inputs, dead-set_k). Meets stay
   honest BY recomputation — they can neither linger past their justification nor be
   forgotten while it stands. Any cross-round incremental mutation of these is a defect.
-- THE ONE ACCUMULATOR (actively maintained, grow-only): the proven-dead set. Its
-  monotonicity is CONDITIONAL — scoped to a fixed record-set (below).
+- THE ONE ACCUMULATOR (actively maintained, grow-only): the ERASURE LEDGER (§4.2 — né the
+  proven-dead set; same content, now typed with its proof and mint-gated). Its monotonicity
+  is CONDITIONAL — scoped to a fixed record-set (below). The residual model derived from
+  origin + ledger is NOT state: it is a per-round pure derivation and is rebuilt, never
+  patched.
 - NEVER-SURVIVES (discarded intermediate outputs): every non-final round's plan, render,
   narratives, origins. Only the FINAL round's artifacts reach any surface (user, whylog,
   why-lens). A round-1 "substitution refused" narrative is FALSE in round 2 and must not
   reach the whylog. Sole deliberate exception: the §4.6 round-tagged derivation links,
   durable by design so the why-chain can render the cascade.
 
-The reactive-era bridge (human correction adopted: "probe emission decided once" is
-TEMPORARILY true — current-pipeline happenstance, not a documented invariant; `26B` owes a
-reactive architecture with many probing waves before the single consent moment):
+### seam-wc-fixpoint-meets-reactive-probing (NAMED SEAM — the reactive round MUST consume
+and discharge this before wiring the two loops together; human correction adopted: "probe
+emission decided once" is TEMPORARILY true — current-pipeline happenstance, not a documented
+invariant; `26B` owes a reactive architecture with many parallel probing waves before the
+single consent moment that fixes and freezes the plan)
 
-- brg-dead-set-resets-on-record-world-change — the dead-set's grow-only property holds only
-  while the record-set is FIXED. Any record-set change (new arrival, retry/supersession,
-  conflict) invalidates the accumulator ENTIRELY: reset to ∅, recompute the whole fixpoint
-  against the new record-world. Compute-wasteful and correct (analysis is cheap; the network
-  is not); makes the `26B` confluence target (final answer = pure function of the FINAL
-  record-set, wave-structure-independent) hold trivially. Carrying the accumulator across
-  record-worlds is the exact composition mistake this section exists to forbid.
-- brg-emission-exclusion-is-v1-scoping — §7½'s "no feedback into probe emission" is a v1
-  SCOPE CUT, not an invariant: the reactive round may legitimately rule that proven-deadness
-  informs probe minting (e.g. no probes into dead branches). That ruling — and the standing
-  reactive termination/monotonicity questions — belong to the reactive round; W-C hands it a
-  precisely-stated conditional monotonicity instead of a silent assumption, and must not
-  document the exclusion as permanent anywhere user- or builder-facing.
+What W-C GUARANTEES (conditional, local, documented): erasure-ledger monotonicity within a
+FIXED record-set; rebuild-from-origin on any record-set change; intermediate rounds
+unobservable (never rendered, never whylogged); final artifacts a pure function of the final
+record-set.
+
+- brg-ledger-resets-on-record-world-change — grow-only holds only while the record-set is
+  FIXED. Any record-set change (new arrival, retry/supersession, conflict resolution)
+  invalidates the ledger ENTIRELY: discard, rebuild the residual from the frozen origin,
+  recompute the whole fixpoint against the new record-world. Compute-wasteful and correct
+  (analysis is cheap; the network is not); makes the `26B` confluence target (final answer =
+  pure function of the FINAL record-set, wave-structure-independent) hold trivially.
+  Carrying the ledger across record-worlds is the exact composition mistake §4¾ exists to
+  forbid — an erasure "permanent" within its record-world is NOT permanent across them.
+  HUMAN-DIRECTED (2026-07-28): whether the record-set can even shift in the validating
+  direction is UNSETTLED — this concern stays LIVE, never settled/closed/assumed-safe, until
+  the reactive round rules on it.
+- brg-emission-exclusion-is-v1-scoping — "no feedback into probe emission" is a v1 SCOPE
+  CUT, not an invariant: the reactive round may legitimately rule that proven-deadness
+  informs probe minting (e.g. no probes into dead branches). Must not be documented as
+  permanent anywhere user- or builder-facing.
+- brg-half-remembered-rules-not-relied-upon — the human half-recalls a foreseen rule
+  ("reactive probing only ever adds probes/information, never rescinds" and/or "late
+  information cannot add elisions, only remove them"). The corpus digests suggest
+  (~SUSPECT, unread-in-full) these echo `26C`'s cancellation package (demotion-only ·
+  cancellation-finality · quiescence-witness). PER HUMAN DIRECTION: none of this is relied
+  upon here — it may need to change; W-C's correctness stands on its own conditional
+  guarantees alone.
+- Handed-forward questions the reactive round must answer at this seam: does
+  rebuild-from-origin (which can produce FEWER elisions under more records) compose with a
+  demotion-only DISPLAY law once intermediate states become observable? (trivially safe at
+  v1 solely because intermediates are unobservable) · does record supersession even exist
+  under the eventual attempt model, or are record-worlds append-only? · termination and
+  monotonicity under interleaved probe-waves and fixpoint re-runs (the standing open
+  questions the human names) · whether erasure may inform wave-k+1 probe minting.
 
 ## §5. Rulings owed the human (collect at plan review or at triple-check; none blocks W-A)
 
@@ -266,10 +333,11 @@ reactive architecture with many probing waves before the single consent moment):
   (each addition is a deliberate `inv-top-reject` ⊤-shrink, its own purity argument). The
   oracle-contract's own §3 gate idiom stays broken-but-LOUD until then; a doc-side interim
   note is the human's call (docs are their voice).
-- R-2-dead-set-kernel-input (W-C): ratify that `proven_dead` as a classify input preserves
-  `inv-superposition`/records-blindness (phase-agnostic data, caller-derived). The scout's
-  argument: the kernel already takes caller-threaded world-knowledge (`verdict_providers`,
-  `24L` §7); this is the same shape.
+- R-2-dead-set-kernel-input — DISCHARGED BY ACK (human-typed 2026-07-28, the three-point
+  overlay-model restatement in §4): the kernel analyzes a MODEL; the model may be residual;
+  shrinkage mint-gates provenance into the global model. The old mask-parameter question it
+  answered is moot (that design is rejected). Residual: the builder's concrete spelling of
+  erasure still lands under conductor review per §6.
 - R-3-fact-keyed-reservation (W-B): `inv-site-keyed-results`'s parenthetical reserves
   fact-keyed verdict shapes to "a conscious orchestrator+human decision". `26G` §fnd-shared…
   §2 reads the auto-cell collapse as that reserved decision taken for the MARKLESS floor and
@@ -279,10 +347,13 @@ reactive architecture with many probing waves before the single consent moment):
   wrapper-incoherent vs `260`'s unreachable-host reservation) — listed here only so the
   morning sweep sees one queue.
 
-## §6. Execution protocol (binds the rewound conductor)
+## §6. Execution protocol (RE-CUT 2026-07-28, human-typed: NO pre-execution rewind — the
+seated conductor executes W-A→W-B→W-C with its full standing context and triple-checks each
+landing; the rewind happens AFTER the correctness-critical work is done and reviewed)
 
-- One builder per workstream (fresh Opus each; W-A may be one builder; W-B and W-C MUST be
-  separate dispatches with a conductor checkpoint between). Worktrees off the current r26
+- One builder per workstream (W-A may be the resumed findings-diagnostician — it holds the
+  deepest root-cause context; W-B and W-C MUST be separate dispatches with a conductor
+  checkpoint between). Worktrees off the current r26
   integration tip (rebase `ai/r26-analyzer-findings` forward or branch fresh; conductor's
   call at dispatch time). Map-then-execute-split applies: each builder proposes its concrete
   diff-plan (files, signatures, test list) BEFORE writing code; conductor reviews against
@@ -307,8 +378,9 @@ the class the project has long treated as maximally dangerous; the rewound condu
 the build against EVERY row)
 
 - risk-license-laundering — outputs-as-premises chains. Account: the only cross-round carrier
-  is records-proven-branch-deadness (measured rc + CFG structure); dispositions/verdicts/
-  licenses are recomputed outputs and NEVER re-enter (§4.2; `pin-no-outcome-as-generator`).
+  is records-proven-branch-deadness — now the typed, proof-demanding erasure ledger (§4.2);
+  dispositions/verdicts/licenses are recomputed outputs and NEVER re-enter
+  (`pin-no-outcome-as-generator`). The ledger's constructor is the enforcement point.
 - risk-self-consistent-fantasy — a fixpoint settling on an internally-consistent elide-all
   fiction (cf. the self_reach doc-comment's own argument). Account: well-founded layering —
   round-1 deadness uses only unconditionally-pristine queries; each layer rests on strictly
