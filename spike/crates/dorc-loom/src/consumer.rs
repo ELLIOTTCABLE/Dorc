@@ -511,6 +511,11 @@ impl DorcConsumer {
             let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
+        if parse_direct_remote_apply(&tokens) {
+            let diag = Self::world_of(case).ok()?.0;
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &Interner::default());
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         let plan = parse_direct_plan(&tokens)?;
         let interner = Interner::default();
         // World-as-payload, the branch `render_direct_replay` has always had. Without it the
@@ -926,6 +931,14 @@ struct DirectPlan<'a> {
     machine: bool,
 }
 
+/// `dorc apply --host <dest> --plan <path>`: recognized ONLY to reach the world-as-payload floor.
+///
+/// A remote apply's outcome has no in-process world to drive — this driver opens no sockets — so
+/// there is nothing to execute, only prose to pin against a canonical payload.
+fn parse_direct_remote_apply(words: &[&str]) -> bool {
+    matches!(words, ["dorc", "apply", "--host", _, "--plan", _])
+}
+
 fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
     if words.get(..2) != Some(["dorc", "plan"].as_slice()) {
         return None;
@@ -940,6 +953,11 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
             if book.replace(path).is_some() || !case_relative_path(path) {
                 return None;
             }
+        } else if *word == "--host" {
+            // Accepted so a transport case's transcript can show the command that really produces
+            // it. The destination is never contacted — these cases land on world-as-payload.
+            index = index.saturating_add(1);
+            words.get(index)?;
         } else if *word == "--verbose" {
             if verbose {
                 return None;
@@ -1134,6 +1152,11 @@ impl DorcConsumer {
         if let Some(diag) = fire_invocation_error(case, &words) {
             let interner = Interner::default();
             let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
+        }
+        if parse_direct_remote_apply(&words) {
+            let diag = Self::world_of(case)?.0;
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &Interner::default());
             return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
         }
         let plan =
