@@ -17,13 +17,13 @@ use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_templ
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
     CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
-    TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted, TransportSessionLost,
     Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
     HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
     LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
     LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, WhylogUnwritten, WrapperPeelIncoherent, render_cli_parts,
-    render_cli_with, render_staged_cli_parts,
+    SiteUnresolvable, SyntaxUnsupported, TransportApplyFailed, TransportCrlfRefused,
+    TransportNotAttempted, TransportSessionLost, WhylogUnwritten, WrapperPeelIncoherent,
+    render_cli_parts, render_cli_with, render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{

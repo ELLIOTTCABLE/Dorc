@@ -241,7 +241,10 @@ mod tests {
             .map(|a| a.to_string_lossy().into_owned())
             .collect();
         let at = argv.iter().position(|a| a == "-p").expect("-p present");
-        assert_eq!(argv.get(at.saturating_add(1)).map(String::as_str), Some("2222"));
+        assert_eq!(
+            argv.get(at.saturating_add(1)).map(String::as_str),
+            Some("2222")
+        );
         assert!(
             argv.iter().any(|a| a == "localhost"),
             "the destination must be the bare host: `localhost:2222` in destination position \

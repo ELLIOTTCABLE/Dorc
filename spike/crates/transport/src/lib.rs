@@ -150,15 +150,13 @@ fn split_port(host: &str) -> Result<(&str, Option<u16>), HostIdRejected> {
             None => Err(HostIdRejected::PortNotAPort),
         };
     }
-    match host.matches(':').count() {
-        0 => Ok((host, None)),
-        1 => {
-            let at = host.find(':').unwrap_or_default();
-            let port = host.get(at.saturating_add(1)..).unwrap_or_default();
-            Ok((host.get(..at).unwrap_or_default(), Some(parse_port(port)?)))
-        }
-        _ => Ok((host, None)),
+    if host.matches(':').count() == 1 {
+        let at = host.find(':').unwrap_or_default();
+        let port = host.get(at.saturating_add(1)..).unwrap_or_default();
+        return Ok((host.get(..at).unwrap_or_default(), Some(parse_port(port)?)));
     }
+    // No colon means no port; two or more means a bare IPv6 address, whose colons are its own.
+    Ok((host, None))
 }
 
 /// A port is 1..=65535; zero is not a destination.

@@ -5,3 +5,4 @@ why: 260 dec-26-crlf. A CRLF shebang is an exec failure the remote kernel raises
 ---
 -- replay --
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
+error[transport-crlf-refused]: [unwritten: transport-crlf-refused]

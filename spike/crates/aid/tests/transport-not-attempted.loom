@@ -5,3 +5,4 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar. The one transport outcome li
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh
+error[transport-not-attempted]: [unwritten: transport-not-attempted]

@@ -5,3 +5,4 @@ why: law-lane-discipline. The third world state in the transport family and the 
 ---
 -- replay --
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
+error[transport-apply-failed]: [unwritten: transport-apply-failed]

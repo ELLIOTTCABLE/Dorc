@@ -5,3 +5,4 @@ why: 26A stop-2 plus rul-integrity-failure-withholds-mutation. Absence of output
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh
+error[transport-session-lost]: [unwritten: transport-session-lost]
