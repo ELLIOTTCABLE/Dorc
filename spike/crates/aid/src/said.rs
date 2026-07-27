@@ -178,9 +178,8 @@ fn interleaved_values(values: &[Said]) -> Vec<String> {
 fn sentence_runs(slug: &'static str, occurrence: Option<usize>, values: &[Said]) -> Vec<Run<Face>> {
     let interleaved = interleaved_values(values);
     let Some(words) = sentence_words(&CONST_ARRANGEMENTS, slug, occurrence, values.len()) else {
-        // The placeholder is COMPUTED (`28F:rul-placeholders-are-computed`), but it still wears
-        // its row's face: seeding an unwritten row by editing its placeholder is the ordinary
-        // way a chrome slug acquires words at the loom surface.
+        // The placeholder is COMPUTED (`28F:rul-placeholders-are-computed`) but still wears its
+        // row's face: editing it is how an unwritten chrome slug acquires words at the loom.
         return vec![crate::weave::words(
             unwritten_placeholder(slug),
             slug,

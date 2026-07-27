@@ -175,15 +175,12 @@ pub fn compile_section_edits(
             .strip_prefix(&unedited)
             .filter(|remaining| remaining.starts_with(&anchor))
         {
-            // An UNCHANGED section delimits itself exactly. Trying this first is what keeps a
-            // renderer-inserted line break inside one section from making its neighbours
-            // ambiguous — the anchor scan below cannot tell that break from the one that ends
-            // the section, and a laid-out chrome line absorbs exactly such breaks.
+            // An UNCHANGED section delimits itself exactly, which is what keeps a line break
+            // ABSORBED into one chrome line from making its neighbours ambiguous below.
             rest = remaining;
             unedited.as_str()
         } else if last_section {
-            // Nothing editable follows, so the trailing immutable text is an exact suffix and
-            // the scan has nothing to be ambiguous about.
+            // Nothing editable follows, so the trailing immutable text is an exact suffix.
             let interior = rest
                 .strip_suffix(&anchor)
                 .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
