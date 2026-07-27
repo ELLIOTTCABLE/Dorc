@@ -742,7 +742,6 @@ impl LendResolver {
                         }
                     }
                 }
-                // A list's items carry no `lends` mark, so no mapping can be read off one.
                 Stmt::Annotation(_) | Stmt::AndOr(_) => {}
             }
         }
