@@ -1,0 +1,29 @@
+# HAND-AUTHORED probe records — the CONVERGED world (the same box after one successful run of
+# `smoke-book.sh`). Nothing was executed to produce this file.
+#
+# Every vouched cell holds: all four packages installed, both dropped files byte-identical to their
+# sources in this directory, nginx enabled and active.
+#
+# The eight unvouched sites are unchanged and still absent from this file — `apt-get update`, the
+# four install right-hand sides, the curl check and the logger line have no oracle that could speak
+# for them in either world. That is the point of the two honest walls at the tail.
+#
+# Comments must stand on their OWN line: a trailing `#` after a record parses as a record field and
+# the whole stream is refused.
+
+# site 2 -- dpkg -s ca-certificates
+site 2 effect=holds rc=0
+# site 4 -- dpkg -s curl
+site 4 effect=holds rc=0
+# site 6 -- dpkg -s jq
+site 6 effect=holds rc=0
+# site 8 -- dpkg -s nginx
+site 8 effect=holds rc=0
+# site 10 -- cp r26-smoke.conf: content already identical
+site 10 effect=holds rc=0
+# site 11 -- cp r26-motd /etc/motd: content already identical
+site 11 effect=holds rc=0
+# site 12 -- systemctl is-enabled nginx: enabled
+site 12 effect=holds rc=0
+# site 13 -- systemctl is-active nginx: active
+site 13 effect=holds rc=0
