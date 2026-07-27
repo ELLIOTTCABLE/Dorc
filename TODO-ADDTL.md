@@ -8,13 +8,15 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 > Notes by me, the human, in >-blockquote.
 
-## Stands between Dorc and live use
+## Stands between Dorc and *useful* live use
 
-* [ ] **ssh-executor-pipe-completeness** — `dorc` must itself do the ssh'ing (`dorc apply host.tld <plan.sh`): host argument + system-`ssh` spawn at the `cli` edge, timeout-wrapped, captured stdout fed into the existing `dorc-records/1` admission path. Mechanize-ssh/executorless is settled law (`142:Resolution`), and `260` §5 (+`26A`) is THE adjudicated transport spec, consumable at N=1 (completion sentinel · config layering · host-key posture · timeouts); the single-channel whole-artifact cut is its sanctioned degenerate start (`260:dec-26-wire-v1`); proven shell at `Research/trial/apply/apply-run.sh`. Riders: real host/nonce/attempt into the records `Expect` (spike constants today — `plan/src/records.rs`); never silently weaken host-key verification; NB the usekeychain scar — composing with `~/.ssh/config` breaks on THIS Windows controller (`notes/26D` §4). Full seed: `notes/26D`.
+*(The 2026-07-27 trio — ssh executor, live-acceptance gate, CRLF gate — is BUILT and folded on `ai/r26-unify`; Dorc has now run for real against a VPS and a container. What stands now:)*
 
-* [ ] **live-acceptance-gate** — the closed loop (captured *real* probe output → `--results` → apply build) exists nowhere, even test-only: the e2e runner executes probe and apply separately, both against authored fixtures. Wire a bless/gate-tier (never hot-loop) real-ssh exercise — probe→records→plan→apply→verify against a local target. Substrate facts 2026-07-27: WSL2 Ubuntu present (real dash + apt-get); docker absent both sides (installing it is a human decision). WSL-sshd target first; container/throwaway-VPS tier opt-in later (`Research/trial/vultr.sh` is salvageable lifecycle tooling).
+* [ ] **guard-tier-class-ruling (`fnd-classed-decline-unwalls-guard-tier`)** — a verdict-bearing site stops walling even when it DECLINES, and downstream vouched sites can then reach neither elide nor guard (the guard tier is keyed `EstablishWritten` only): an honestly-classed decline yields a strictly WORSE plan than shipping no oracle at all, inverting the contract's monotonicity promise. Repair widens which class may mint guards = a licensing ruling, human-owned. Absorbs the W-B ambient-past-wall banked item (same root; USER_STORY st.2 under-promise). Evidence + pinned case pair → `trial/r26/predictions.md` §7, `guard26-*` cases, `notes/26F`.
 
-* [ ] **crlf-refuse-gate** — a Windows-authored book shipped to a Debian target dies on the kernel shebang exec (un-guardable at runtime); the ruled behaviour is refuse-loudly-with-the-one-line-fix, NEVER silent normalization (`260:dec-26-crlf`; `139` §5), re-checked on shipped bytes at apply time. Unbuilt; cheap; this exact authoring workflow (Windows checkout → Linux host) is live today.
+* [ ] **model-`local` in the tracers** — the builtin-deny (`26J`) now ⊤-degrades `local`, but the ruled dialect is "POSIX + `local`": any realistic oracle body using it walls its site. Safe, but caps value the moment real oracles get written; modeling local-assignment is the obvious small next increment. Second-order kin: book-side `set --` sub-form (`26J` residue).
+
+* [ ] **live-surface polish (sharp edges handed over)** — all transport diagnostics render `[unwritten:]` (prose = human W5 queue) · `--host` absent from `--help` (loom-editable chrome) · CRLF refusal names no line number · `--results`/`--help` grammar mismatch stands. None blocks usage; every one is a first-contributor papercut catalogued in the CONTRIBUTING draft + `notes/26F`.
 
 ## Demoted (real; does not block live testing)
 
