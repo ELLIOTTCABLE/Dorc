@@ -187,6 +187,7 @@ dependencies = [
  "dorc-plan",
  "dorc-syntax",
  "errorloom",
+ "weft",
 ]
 
 [[package]]

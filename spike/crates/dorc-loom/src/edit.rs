@@ -155,16 +155,39 @@ pub fn compile_section_edits(
                 .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
             continue;
         };
-        let anchor: String = components
+        let after = components
             .get(index.saturating_add(1)..)
-            .unwrap_or_default()
+            .unwrap_or_default();
+        let anchor: String = after
             .iter()
             .take_while(|component| !matches!(component, RenderComponent::EditableSection(_)))
             .map(component_text)
             .collect();
+        let unedited = component_text(component);
+        let last_section = !after
+            .iter()
+            .any(|component| matches!(component, RenderComponent::EditableSection(_)));
         let interior = if anchor.is_empty() {
             let interior = rest;
             rest = "";
+            interior
+        } else if let Some(remaining) = rest
+            .strip_prefix(&unedited)
+            .filter(|remaining| remaining.starts_with(&anchor))
+        {
+            // An UNCHANGED section delimits itself exactly. Trying this first is what keeps a
+            // renderer-inserted line break inside one section from making its neighbours
+            // ambiguous — the anchor scan below cannot tell that break from the one that ends
+            // the section, and a laid-out chrome line absorbs exactly such breaks.
+            rest = remaining;
+            unedited.as_str()
+        } else if last_section {
+            // Nothing editable follows, so the trailing immutable text is an exact suffix and
+            // the scan has nothing to be ambiguous about.
+            let interior = rest
+                .strip_suffix(&anchor)
+                .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
+            rest = &rest[interior.len()..];
             interior
         } else {
             let first = rest
@@ -177,7 +200,7 @@ pub fn compile_section_edits(
             rest = remaining;
             interior
         };
-        if interior == component_text(component) {
+        if interior == unedited {
             continue;
         }
         let section_baseline = baseline
