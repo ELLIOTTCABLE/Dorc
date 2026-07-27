@@ -2506,14 +2506,29 @@ fn part_with_text(part: &crate::tagged::RenderPart, text: String) -> crate::tagg
             param,
             instance: *instance,
         },
-        RenderPart::ForeignText { param, .. } => RenderPart::ForeignText { text, param },
+        RenderPart::ForeignText { source, .. } => RenderPart::ForeignText {
+            text,
+            source: source.clone(),
+        },
         RenderPart::Arrangement { slug, .. } => RenderPart::Arrangement { text, slug },
+        RenderPart::ArrangementPage { slug, .. } => RenderPart::ArrangementPage { text, slug },
         RenderPart::ArrangementWords {
             slug, occurrence, ..
         } => RenderPart::ArrangementWords {
             text,
             slug,
             occurrence: *occurrence,
+        },
+        RenderPart::ArrangementValue {
+            slug,
+            occurrence,
+            index,
+            ..
+        } => RenderPart::ArrangementValue {
+            text,
+            slug,
+            occurrence: *occurrence,
+            index: *index,
         },
     }
 }

@@ -203,18 +203,11 @@ pub fn arrangement_text(
 /// alternating `words[0] values[0] words[1] …` — the shape a sentence with interpolated counts
 /// needs, and the reason entries are sequences rather than flat strings.
 ///
-/// The whole line renders as ONE span, so a value never splits a chrome line into fragments the
-/// edit transport has to re-anchor between (short computed runs — a bare digit, an empty plural
-/// suffix — are not anchors, and fragmenting on them breaks attribution for every OTHER prose
-/// section in the same render). The price, stated: a multi-word entry cannot be edited back from a
-/// transcript yet, because nothing re-splits an edited line at its value boundaries — the edit path
-/// refuses loudly rather than guessing (`DorcApplyRefusal::ArrangementIsSequenceStructured`).
-///
-/// An arity disagreement between a WRITTEN entry and its seat is a wiring defect, not a resting
-/// state, and it is LOUD: the debug assertion names the row and both counts. In release the render
-/// still degrades to the greppable placeholder rather than a mangled line — but a degradation
-/// nothing announces is invisible to every check except a transcript that happens to cover the
-/// seat, which is how a word-boundary slip once reached a lock (`28F` loom-cleanup A1).
+/// The whole line is ONE editable SECTION, never several: a value may sit INSIDE it, but nothing
+/// splits one chrome line across sections (`28H` ruling 3, amending the older one-span rule). This
+/// seat CONCATENATES, for callers that only want the bytes; a caller that wants an editable face
+/// stamps the pieces separately and lets the transport re-split them
+/// ([`sentence_words`] is the shared arity seat both go through).
 #[must_use]
 pub fn arrangement_sentence(
     lookup: &dyn ArrangementLookup,
@@ -222,20 +215,9 @@ pub fn arrangement_sentence(
     occurrence: Option<usize>,
     values: &[&str],
 ) -> String {
-    let Some(words) = lookup.words(slug, occurrence) else {
-        return format!("[unwritten: {slug}]");
+    let Some(words) = sentence_words(lookup, slug, occurrence, values.len()) else {
+        return unwritten_placeholder(slug);
     };
-    if words.len() != values.len().saturating_add(1) {
-        debug_assert!(
-            false,
-            "arrangement `{slug}` occurrence {occurrence:?}: {} words cannot serve a seat passing \
-             {} values (a sentence needs values + 1 words); the render degrades to \
-             `[unwritten: {slug}]`",
-            words.len(),
-            values.len()
-        );
-        return format!("[unwritten: {slug}]");
-    }
     let mut out = String::new();
     for (index, word) in words.iter().enumerate() {
         out.push_str(word);
@@ -246,10 +228,50 @@ pub fn arrangement_sentence(
     out
 }
 
-/// Push one registry-sourced arrangement span onto a part stream — the ONE seat that mints an
-/// editable chrome span. A span minted here is an EDIT REGION precisely because its bytes came
-/// out of the registry; chrome computed inline stays [`RenderPart::Arrangement`] (immutable
-/// structure), so a transcript edit can never rewrite a registry entry the render does not read.
+/// The greppable placeholder a row with no words yet renders as. COMPUTED, never a registry row
+/// of its own (`28F:rul-placeholders-are-computed`).
+#[must_use]
+pub fn unwritten_placeholder(slug: &str) -> String {
+    format!("[unwritten: {slug}]")
+}
+
+/// The ORDERED WORDS serving `(slug, occurrence)` for a seat passing `value_count` values, or
+/// `None` when the row is unwritten or cannot serve that arity.
+///
+/// The ONE seat that rules the `words == values + 1` arity, so a renderer that interleaves the
+/// values itself and one that concatenates them agree about which rows are serviceable
+/// ([`arrangement_sentence`] is the concatenating caller). An arity disagreement between a
+/// WRITTEN entry and its seat is a wiring defect, not a resting state, and it is LOUD: the debug
+/// assertion names the row and both counts. In release the render still degrades to the greppable
+/// placeholder rather than a mangled line — but a degradation nothing announces is invisible to
+/// every check except a transcript that happens to cover the seat, which is how a word-boundary
+/// slip once reached a lock (`28F` loom-cleanup A1).
+#[must_use]
+pub fn sentence_words<'a>(
+    lookup: &'a dyn ArrangementLookup,
+    slug: &str,
+    occurrence: Option<usize>,
+    value_count: usize,
+) -> Option<Vec<&'a str>> {
+    let words = lookup.words(slug, occurrence)?;
+    if words.len() != value_count.saturating_add(1) {
+        debug_assert!(
+            false,
+            "arrangement `{slug}` occurrence {occurrence:?}: {} words cannot serve a seat passing \
+             {value_count} values (a sentence needs values + 1 words); the render degrades to \
+             `[unwritten: {slug}]`",
+            words.len(),
+        );
+        return None;
+    }
+    Some(words)
+}
+
+/// Push one registry-sourced chrome LINE onto a part stream — the ONE direct seat that mints an
+/// editable chrome span (the weft bridge is the other, over a laid-out render). A span minted
+/// here is an EDIT REGION precisely because its bytes came out of the registry; chrome computed
+/// inline stays [`RenderPart::Arrangement`] (immutable structure), so a transcript edit can never
+/// rewrite a registry entry the render does not read.
 pub fn push_arrangement_words(
     parts: &mut RenderParts,
     lookup: &dyn ArrangementLookup,
@@ -259,7 +281,11 @@ pub fn push_arrangement_words(
     push_arrangement_sentence(parts, lookup, slug, occurrence, &[]);
 }
 
-/// [`push_arrangement_words`] for a line carrying computed values (see [`arrangement_sentence`]).
+/// [`push_arrangement_words`] for a line carrying computed values.
+///
+/// The line is stamped PIECE BY PIECE — `words[0]`, `values[0]`, `words[1]`, … — so the
+/// transport can re-split an edited line at exactly the boundaries the render placed. The bytes
+/// are [`arrangement_sentence`]'s by construction; only the attribution differs.
 pub fn push_arrangement_sentence(
     parts: &mut RenderParts,
     lookup: &dyn ArrangementLookup,
@@ -267,14 +293,33 @@ pub fn push_arrangement_sentence(
     occurrence: Option<usize>,
     values: &[&str],
 ) {
-    parts.push(RenderPart::ArrangementWords {
-        text: arrangement_sentence(lookup, slug, occurrence, values),
-        slug,
-        occurrence,
-    });
+    let Some(words) = sentence_words(lookup, slug, occurrence, values.len()) else {
+        parts.push(RenderPart::ArrangementWords {
+            text: unwritten_placeholder(slug),
+            slug,
+            occurrence,
+        });
+        return;
+    };
+    for (index, word) in words.iter().enumerate() {
+        parts.push(RenderPart::ArrangementWords {
+            text: (*word).to_owned(),
+            slug,
+            occurrence,
+        });
+        if let Some(value) = values.get(index) {
+            parts.push(RenderPart::ArrangementValue {
+                text: (*value).to_owned(),
+                slug,
+                occurrence,
+                index,
+            });
+        }
+    }
 }
 
-/// The whole rendered page/line for one arrangement key, as a one-span part stream.
+/// The whole rendered PAGE for one arrangement key, as a one-span part stream — an invocation
+/// whose entire output is one entry, laid out by its author (`288:rul-help-text-is-loomable`).
 #[must_use]
 pub fn arrangement_parts(
     lookup: &dyn ArrangementLookup,
@@ -282,7 +327,10 @@ pub fn arrangement_parts(
     occurrence: Option<usize>,
 ) -> RenderParts {
     let mut parts = RenderParts::new();
-    push_arrangement_words(&mut parts, lookup, slug, occurrence);
+    parts.push(RenderPart::ArrangementPage {
+        text: arrangement_text(lookup, slug, occurrence),
+        slug,
+    });
     parts
 }
 

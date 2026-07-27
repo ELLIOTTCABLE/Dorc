@@ -14,7 +14,9 @@
 //! classes apart — registry words are rephrasable, a computed value is not, and rewriting one
 //! would be lying about the world.
 
-use crate::arrangement::{CONST_ARRANGEMENTS, arrangement_sentence};
+use crate::arrangement::{
+    CONST_ARRANGEMENTS, arrangement_sentence, sentence_words, unwritten_placeholder,
+};
 use crate::display::encode_foreign;
 use crate::weave::Face;
 use weft::Run;
@@ -31,8 +33,20 @@ pub const WHY_SOURCE_CAP: usize = 512;
 /// A rendered fragment of the why surface, and where its bytes came from.
 #[derive(Clone, Debug)]
 pub enum Said {
-    /// One registry-sourced line, with the arrangement slug it was composed from.
-    Words(&'static str, String),
+    /// One registry-sourced line: the row it came from, the occurrence the seat keyed it at, and
+    /// the values interleaved between its words.
+    ///
+    /// The values are kept UNCOMPOSED so the line can be stamped piece by piece
+    /// ([`Said::runs`]): flattening it here is what left every value-bearing chrome line
+    /// un-editable, since nothing downstream could recover where the words re-divide.
+    Words {
+        /// The arrangement-registry slug.
+        slug: &'static str,
+        /// The occurrence the seat resolved, or `None` for the whole-slug entry.
+        occurrence: Option<usize>,
+        /// What goes between the entry's words, in order.
+        values: Vec<Said>,
+    },
     /// A value the engine computed: a coordinate, an address, a count.
     Value(String),
     /// Punctuation the CONSUMER computed — the quotes around an inlined excerpt, the space
@@ -59,13 +73,36 @@ impl Said {
     /// One registry line, its values interleaved.
     #[must_use]
     pub fn words(slug: &'static str, values: &[&str]) -> Self {
-        Said::Words(slug, words_text(slug, None, values))
+        Said::words_at(slug, None, values)
     }
 
     /// [`Said::words`] for a registry row whose words are keyed by occurrence.
     #[must_use]
     pub fn words_at(slug: &'static str, occurrence: Option<usize>, values: &[&str]) -> Self {
-        Said::Words(slug, words_text(slug, occurrence, values))
+        Said::sentence(
+            slug,
+            occurrence,
+            values
+                .iter()
+                .map(|value| Said::Value((*value).to_owned()))
+                .collect(),
+        )
+    }
+
+    /// One registry line whose values are themselves composed fragments — a because-clause that
+    /// is a whole sub-sentence, a payload that quotes somebody else's bytes.
+    ///
+    /// The distinction is a budget, not a shape: a RAW [`Said::Value`] is encoded and capped at
+    /// [`WHY_VALUE_CAP`] on the way in, while a composed value arrived already encoded and
+    /// already capped fragment by fragment, so re-capping it would truncate OUR OWN words
+    /// (`28H:ask-because-clause-truncates-at-two-forty`).
+    #[must_use]
+    pub fn sentence(slug: &'static str, occurrence: Option<usize>, values: Vec<Said>) -> Self {
+        Said::Words {
+            slug,
+            occurrence,
+            values,
+        }
     }
 
     /// Somebody else's bytes, encoded HERE so no later seat can forget to.
@@ -82,10 +119,16 @@ impl Said {
     #[must_use]
     pub fn text(&self) -> String {
         match self {
-            Said::Words(_, text)
-            | Said::Value(text)
-            | Said::Mark(_, text)
-            | Said::Foreign { text, .. } => text.clone(),
+            Said::Words {
+                slug,
+                occurrence,
+                values,
+            } => {
+                let interleaved = interleaved_values(values);
+                let borrowed: Vec<&str> = interleaved.iter().map(String::as_str).collect();
+                arrangement_sentence(&CONST_ARRANGEMENTS, slug, *occurrence, &borrowed)
+            }
+            Said::Value(text) | Said::Mark(_, text) | Said::Foreign { text, .. } => text.clone(),
             Said::Parts(parts) => parts.iter().map(Said::text).collect(),
         }
     }
@@ -99,8 +142,12 @@ impl Said {
     #[must_use]
     pub fn runs(&self, part: &'static str) -> Vec<Run<Face>> {
         match self {
-            Said::Words(slug, text) => vec![crate::weave::words(text.clone(), slug)],
-            Said::Value(text) => vec![crate::weave::value(text, part, "value", WHY_VALUE_CAP)],
+            Said::Words {
+                slug,
+                occurrence,
+                values,
+            } => sentence_runs(slug, *occurrence, values),
+            Said::Value(text) => vec![crate::weave::value(text, part, WHY_VALUE_CAP)],
             Said::Mark(mark, text) => vec![crate::weave::mark(text.clone(), mark)],
             Said::Foreign { text, source } => {
                 vec![crate::weave::foreign(text, source.clone(), WHY_SOURCE_CAP)]
@@ -110,14 +157,66 @@ impl Said {
     }
 }
 
+/// One value's bytes as they enter a line: encoded at its own budget (see [`Said::sentence`]).
+fn interleaved_value(said: &Said) -> String {
+    match said {
+        Said::Value(text) => encode_foreign(text, WHY_VALUE_CAP),
+        composed => composed.text(),
+    }
+}
+
+fn interleaved_values(values: &[Said]) -> Vec<String> {
+    values.iter().map(interleaved_value).collect()
+}
+
+/// A registry line stamped PIECE BY PIECE: `words[0]`, `values[0]`, `words[1]`, … each its own
+/// run, so the span map names the row an edit has to rewrite and the value boundaries the
+/// transport has to preserve.
+///
+/// Byte-identical to [`arrangement_sentence`] by construction — runs carry their own spacing and
+/// weft inserts nothing between them — so giving a line a face never moves a rendered byte.
+fn sentence_runs(slug: &'static str, occurrence: Option<usize>, values: &[Said]) -> Vec<Run<Face>> {
+    let interleaved = interleaved_values(values);
+    let Some(words) = sentence_words(&CONST_ARRANGEMENTS, slug, occurrence, values.len()) else {
+        // The placeholder is COMPUTED (`28F:rul-placeholders-are-computed`), but it still wears
+        // its row's face: seeding an unwritten row by editing its placeholder is the ordinary
+        // way a chrome slug acquires words at the loom surface.
+        return vec![crate::weave::words(
+            unwritten_placeholder(slug),
+            slug,
+            occurrence,
+        )];
+    };
+    let mut runs = Vec::new();
+    for (index, word) in words.iter().enumerate() {
+        runs.push(crate::weave::words((*word).to_owned(), slug, occurrence));
+        if let (Some(value), Some(text)) = (values.get(index), interleaved.get(index)) {
+            runs.push(crate::weave::sentence_value(
+                text,
+                slug,
+                occurrence,
+                index,
+                value_cap(value),
+            ));
+        }
+    }
+    runs
+}
+
+/// A raw value is capped; a composed one is not (see [`Said::sentence`]).
+fn value_cap(said: &Said) -> usize {
+    match said {
+        Said::Value(_) => WHY_VALUE_CAP,
+        _ => usize::MAX,
+    }
+}
+
 /// One registry-sourced why-surface line, values interleaved between the entry's words.
 ///
-/// This is the ONE seat that interleaves a computed value into a registry line, and therefore the
-/// one place a value carrying bytes we did not write can enter our own words. The registry words
-/// are never encoded — they are ours, and encoding them twice would be a defect — while every
-/// value passes the display seat first (`sinv-sink-encoding`). A chrome line renders as ONE span
-/// (`a-chrome-line-is-one-span`), so the value cannot carry its own foreign-text span here and
-/// must instead arrive already safe.
+/// The FLAT seat, for callers that want only the bytes — [`Said::sentence`] is the attributing
+/// one. The registry words are never encoded — they are ours, and encoding them twice would be a
+/// defect — while every value passes the display seat first (`sinv-sink-encoding`), so a value
+/// carrying bytes we did not write is already safe before it enters our own words.
 #[must_use]
 pub fn words_text(slug: &str, occurrence: Option<usize>, values: &[&str]) -> String {
     let encoded: Vec<String> = values

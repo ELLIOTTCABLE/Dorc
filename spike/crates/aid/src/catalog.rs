@@ -219,7 +219,10 @@ pub fn fill_template_parts(
                 };
                 let text = String::from(value);
                 if is_foreign_param(param) {
-                    parts.push(RenderPart::ForeignText { text, param });
+                    parts.push(RenderPart::ForeignText {
+                        text,
+                        source: String::from(param),
+                    });
                 } else {
                     parts.push(RenderPart::ParamValue {
                         text,

@@ -211,10 +211,20 @@ fn compile_transport(
     })
 }
 
+/// A catalog register split across several sections cannot be owned by one edit: rewriting one
+/// segment would leave the rest of the register saying the old thing.
+///
+/// A chrome LINE is exempt, and the exemption is the point of its separate field: several
+/// sections keyed to one line are several RENDERINGS of one registry entry — the same words
+/// printed at two chain rows — and each is complete on its own, so an edit to either rewrites the
+/// whole entry (`28H` ruling 3).
 fn refuse_split_field(
     render: &EditableRender<SectionKey, SectionVariableId>,
     selected: &SectionKey,
 ) -> Result<(), DorcSectionEditRefusal> {
+    if selected.field == crate::ARRANGEMENT_LINE_FIELD {
+        return Ok(());
+    }
     let segments = render
         .components()
         .iter()
