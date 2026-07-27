@@ -673,3 +673,70 @@ The or-list degrade now reports as itself (`TopReason::OrList`) instead of borro
 reason — a mis-attribution outranks silence, and "reached a command pipeline" is what an author
 who wrote the contract's own `|| return 2` would have been told. Behaviour is pinned identical:
 both shapes still degrade to ⊤, and the accept/degrade decision is untouched.
+
+---
+
+# §FINDING-andand-resolves-a-wrong-coordinate (appended 2026-07-27, during the W-A second half)
+
+DIAGNOSIS ONLY — nothing was fixed, per the dispatch's checkpoint gate. This is a **soundness**
+finding (a wrong *yes*), unlike all four original `26G` findings, so it does not inherit
+`haz-safety-direction-holds-everywhere`. It was found while discharging the bounded `&&`
+investigation the or-list correction handed forward (`§CORRECTION-orlist-not-command-v` row 6
+recorded `&&` as "RESOLVES" without asking whether it resolves *correctly*).
+
+## The mechanism
+
+`&` is not a metacharacter in the predict lexer (`oracle/src/predict/lexer.rs` `run`: `b'|'` gets
+`Tok::Pipe`, `b'&'` falls through to the `_ => self.word()` arm). So `a && b` lexes as the three
+WORDS `a`, `&&`, `b`, and `parse_command` folds them into ONE `Command` whose `words` are
+`[a, &&, b]` and whose span covers the whole line. Every statement to the right of `&&` is
+therefore invisible to the tracer — while the byte-exact shipped probe still executes it on the
+host. The or-list is the mirror image and is safe: `||` lexes as two adjacent `Tok::Pipe`s, raises
+`pipeline`, and degrades to `TopReason::OrList` (⊤ ⇒ the site runs).
+
+## The repro (pure static; `dorc_oracle::predict::{lift_predicts, evaluate}`, nothing executed)
+
+```sh
+# dorc-lang/v0.2
+w__predict() {
+   w precheck && shift
+   thing : sm.dorc.Thing = "$1"
+   w query "$thing" : sm.dorc.Thing:"$thing"@present
+}
+```
+
+`evaluate(check, ["alpha", "beta"])`, one variable changed per row:
+
+| separator before `shift` | resolution |
+|---|---|
+| `;` (`w precheck; shift`) | `Resolved{ entity: Operand("beta") }` — the tracer models the shift |
+| `&&` | **`Resolved{ entity: Operand("alpha") }`** — the shift is swallowed as a word |
+| `\|\|` | `Top(OrList)` — degrades, safe |
+
+`dorc lint` reports nothing on any row.
+
+## Why it has teeth
+
+The `&&` row is not a degrade, it is a WRONG resolution. `Resolved::probe_body` for that row
+carries the `w precheck && shift` span, so the shipped probe DOES shift at runtime: the host
+measures `sm.dorc.Thing:beta@present` and the engine files the record under
+`sm.dorc.Thing:alpha@present`. A converged `holds` about beta then licenses eliding a mutator on
+alpha — the priority-1 under-execute, and the exact "a *wrong* `Resolved` is the disaster class"
+the evaluator's own doc-comment (`eval.rs`, `Resolution`) says it biases every ambiguity away
+from. `inv-top-reject` ("bias every parser ambiguity toward ⊤-reject-with-diagnostic") is violated
+in the direction that costs correctness rather than precision.
+
+Per-statement severity of what `&&` hides, since not every swallowed statement is unsafe:
+`shift` ⇒ WRONG entity (above). An assignment (`… && verb=modern`) ⇒ the variable stays unbound ⇒
+a later use degrades to ⊤ ⇒ safe. `return N` ⇒ the tracer over-resolves a path the host declines,
+but the host's rc ≥ 2 reads back `cant-tell` ⇒ safe. So the exposure is narrow but real, and it is
+positional-argv-shaped — the one thing the coordinate is built out of.
+
+## Not fixed here, and why the obvious fix is not W-A's
+
+Lexing `&&` as a token so the and-list degrades like the or-list is a ⊤-*grow* (sites that resolve
+today would stop resolving), which moves dispositions — outside W-A's "diagnostics only, zero
+elision movement" tripwire. It needs a conductor checkpoint and its own re-bless. Scope note for
+whoever takes it: a single `&` (background/`a & b`) rides the same `_ => self.word()` arm and wants
+the same exclusion-check; the corpus's `&`-bearing text is all inside redirects (`2>&1`), which the
+`redirect()` lexer already consumes before the word arm sees it.
