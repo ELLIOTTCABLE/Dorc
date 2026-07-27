@@ -14,6 +14,32 @@
 
 ---
 
+## THE r26 KERNEL ARC (2026-07-27/28 overnight — CLOSED; branch `ai/r26-analyzer-findings` @ `02ccf6e1`)
+
+Human-escalated mid-round: four analyzer findings from the live-execution prep became a
+checkpointed kernel-fix arc under Fable-conductor protocol (findings-only diagnosis →
+by-hand scout+plan → map-then-execute per workstream → conductor bless/inspection each).
+THE durables: **`notes/26G`** (adjudication + THREE appended corrections — read only WITH
+them) · **`notes/26H`** (plan-of-record; its header stamps the closing status) · the conduct
+detail in the session scratchpad ledger (temp-durable). LANDED, each both-legs green:
+loud-degrades (W-A) · and-or lists (W-D — THREE wrong-yes defects closed: `&&`-swallow,
+lone-`&`, `||`-true forged-vouch; `[T]||return N` + `cmd||return N` closed forms per human
+ack) · verdict-mark keying (W-B — authored coordinates split cells; registry law in
+core/analysis/plan CLAUDE.mds) · validity fixpoint via erasure (W-C — ladders cascade;
+type-gated ledger; cap-degrades-to-origin). **ADVERSARIAL REVIEW (authorized single
+Fable pass): `notes/26I-adversarial-kernel-review.md` on `ai/r26-adversarial-review`
+@ `ef8b47fa`** — headline: `26I:fnd-state-builtins-silently-mis-key`, a LIVE
+wrong-yes-capable hole (oracle-body `set --`/`unset`/`eval` ship-but-don't-model at the
+plain-command fallthrough; same family as the arc's three; conductor-verified at the
+committed-evidence tier; cheap fix sketched in the note) — **the successor's first kernel
+item** — plus the unpinned W-C-monotonicity⇄merge-⊤-paranoia coupling (wants registry
+bullets + an agreeing-sibling tripwire case) and three lesser findings; nine suspicions
+cleared with evidence, incl. the erasure-fence/render weld under directed attack.
+Adjudicate all of it under standing maximum-skepticism law; single-pass, no neutral
+corroboration. r26 LIVE-EXECUTION state (executor landed, box up, acceptance lane held,
+CONTRIBUTING deliverable pending) is in the scratchpad ledger + `notes/26E`; the human
+resumes it in a fresh window.
+
 ## ROUND 26 — MINTED 2026-07-27: live execution (the next round; planning pending)
 
 **The human's re-cut (typed 2026-07-27):** two months in, the tool has never run against a
