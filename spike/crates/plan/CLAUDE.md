@@ -43,6 +43,13 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   (`StatusRelaxable` substitutes an exact known rc, ⊤ blocks; `StatusInvariant`
   never blocks, still recorded, mark-union — any other blocking mark wins;
   `StatusIterated` blocks unconditionally).
+- **ship-seam-reads-the-lane-not-the-kind** (`26H` §3.5) — `compile_probe` takes TWO ship
+  closures, and the verdict-body one is gated on the caller's per-SITE verdict-lane set:
+  never on the fact's kind, never on try-order. It must keep PRECEDING the predict lane —
+  a verdict-lane site can also carry a resolvable predict, and shipping that would measure
+  a different cell than the record keys. The vouch gate stays on the verdict branch alone
+  (the verdict IS the probe, so a declined argv has nothing to measure and must ship no
+  record — `guard23-refusepath-rc0-never-passes`).
 
 ## Law — guards
 

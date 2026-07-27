@@ -55,6 +55,23 @@ discipline: one rule per bullet, slugged; append to the matching section.
   transitions on one kind), still ⊤-conservative on lookup miss.
 - **no-strong-update-v1** — `Kill` accumulates; "probably unique" may only DEMOTE
   (the 231 fence); the uniqueness bit is a reserved seam, never inferred hot.
+- **verdict-lane-is-site-keyed** (`26H` §3) — `command_effect` reaches the verdict lane
+  from TWO fallbacks (nothing resolved this argv; something RESOLVED but declared no cells
+  for its verb) and answers with the author's coordinate when the reached path carries
+  exactly one fully-resolved verdict mark, else the `24L` §2 auto-cell, else `Opaque`. It
+  reports the lane as a per-SITE out-param, because the second fallback leaves a shippable
+  predict on a site whose cell the VERDICT body owns — try-order over the ship closures
+  would measure the wrong cell. Selection is narrow on purpose: kind+entity from the
+  reached BIND (never the mark's own entity text — `identity-declared-never-inferred`),
+  selector from the mark, verdict marks only (an observe widens, never keys), and TWO
+  marks on one path key NOTHING (one rc witnesses one cell — `281` §7 rc-arity).
+- **verdict-minted-facts-thread-their-family** — a verdict-lane fact carries
+  `family = Some(provider)` EXACTLY. `build_dialect` mints only from predict-derived cells,
+  so a verdict-minted selector sits outside the sparing dialect and COLLIDES (the disclosed
+  conservative fallback; registering them is its own future dispatch). Leaving the family
+  to `sole_family`'s reverse lookup would hand this fact some PREDICT family's dialect and
+  spare a cell no verdict mark ever minted a token for — the one sparing leak this lane
+  must not open.
 
 ## Seams — watch and report, don't resolve
 

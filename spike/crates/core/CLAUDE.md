@@ -57,6 +57,14 @@ new entries to the matching section.
   canonicalization at v1, but the fence must stay MOVABLE (the parked co-reference
   mechanism lands against it; keep `CanonicalCoord` extensible toward a
   kind-carrying canonical).
+- **auto-cell-is-the-markless-floor** — `auto_fact` mints the typeless floor's
+  per-provider singleton (`24L` §2/§3) and `is_auto_kind` recognizes it. Since `26H` §3 a
+  verdict body that AUTHORS a coordinate keys that cell instead, so the auto-cell is the
+  RESIDUAL markless case, not every verdict-only site. Two consumers, and only one is
+  about the kind: `fence-no-disjoint` (the synthetic singleton must never manufacture
+  separation) reads it and must keep doing so; which-body-ships does NOT — an authored
+  verdict cell is an ordinary kind, indistinguishable from a predict-minted one, so that
+  discriminator is site-keyed in `analysis`. Never re-derive a lane from a kind test.
 
 ## Seams — reserve representation room, build NOTHING (`277` §5)
 
