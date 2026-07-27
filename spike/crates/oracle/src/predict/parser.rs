@@ -793,6 +793,10 @@ impl Parser<'_> {
         // 24E §14: once a `|` is seen, this list-item is a PIPELINE — everything to the
         // list-item end folds into one span-covering, byte-exact-shipping Command the tracers ⊤ on.
         let mut pipeline = false;
+        // `||` lexes as two ADJACENT one-byte pipes, so an or-list is a pipeline whose two `|`
+        // spans touch. Reason-only (the degrade is unchanged); see `Command::or_list`.
+        let mut or_list = false;
+        let mut last_pipe_hi = None;
         // §2 stdout DECLINE (`271:rul-only-oracle-bytes-ship` rider 1): whether a redirect voids
         // fd 1. Consumed only by the composed-probe coverage rule; the strip ships the verbatim span.
         let mut stdout_void = false;
@@ -875,8 +879,11 @@ impl Parser<'_> {
                 // span-covering Command. `words` keeps only the first stage's words (never
                 // interpreted — the tracers ⊤ on `pipeline`). Parse-permissively; trace-conservatively.
                 CmdTok::Pipe => {
+                    let pipe_span = self.peek_span().unwrap_or(end_span);
+                    or_list = or_list || last_pipe_hi == Some(pipe_span.lo);
+                    last_pipe_hi = Some(pipe_span.hi);
                     pipeline = true;
-                    end_span = self.peek_span().unwrap_or(end_span);
+                    end_span = pipe_span;
                     self.bump();
                 }
                 CmdTok::Error(msg) => {
@@ -907,6 +914,7 @@ impl Parser<'_> {
             span,
             mark,
             pipeline,
+            or_list,
             stdout_void,
             report_sink,
         }))

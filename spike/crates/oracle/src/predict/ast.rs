@@ -203,6 +203,14 @@ pub struct Annotation {
 
 /// A plain command in a probe body, with its verbatim source span preserved.
 #[derive(Debug, Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "`or_list` refines `pipeline` for REPORTING only. Folding the pair into one enum is \
+              the cleaner shape but rewrites all eleven `cmd.pipeline` consumers — six of them \
+              outside `predict/` (carry/entry/evaler/reaches/touches/wrapper) — turning a \
+              reason-only change into a cross-module one. Left as a flag pair so every degrade \
+              decision stays byte-identical."
+)]
 pub struct Command {
     /// The command words (`[dpkg-query, -W, "$pkg"]`), each a [`Word`]. Kept so the
     /// evaluator can confirm the command is well-formed dialect; the *shipped* form
@@ -228,6 +236,13 @@ pub struct Command {
     /// pipeline can't-resolve ⇒ the site RUNS, the safe degrade). `words` holds only the FIRST
     /// stage's words (never interpreted for a pipeline — the ⊤ fires first).
     pub pipeline: bool,
+    /// Whether the [`pipeline`](Command::pipeline) flag was raised by an OR-LIST (`a || b`) rather
+    /// than a real pipe (`a | b`). `||` lexes as two adjacent one-byte [`super::lexer::Tok::Pipe`]s,
+    /// so both shapes fold into the same accepted-then-⊤ Command; this bit changes only WHICH
+    /// [`super::eval::TopReason`] the trace reports, never whether it degrades. Telling an author
+    /// who wrote the oracle-contract's own `|| return 2` gate that their body "reached a command
+    /// pipeline" is a mis-attribution, which outranks silence in the sin ordering.
+    pub or_list: bool,
     /// Whether a redirect on this command sends fd 1 (stdout) away from where it would
     /// otherwise flow (`>/dev/null`, `>&2`, `1>file`) — the §2 per-channel STDOUT DECLINE
     /// (`271:rul-only-oracle-bytes-ship` rider 1). Load-bearing ONLY for the composed-probe

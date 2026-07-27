@@ -128,6 +128,12 @@ pub enum TopReason {
     /// `kFAIL-perform`). Parse-permissively; trace-conservatively. (A `touches()` pipeline instead
     /// ESCALATES — see `touches::TouchesTop::NonPrintfCommand`.)
     Pipeline,
+    /// The selected path reached an OR-LIST (`a || b`) — the SAME accept-then-⊤ degrade as
+    /// [`Pipeline`](TopReason::Pipeline) (`||` lexes as two adjacent one-byte pipes), reported apart
+    /// because the two read nothing alike to an author. This is the shape the oracle-contract's own
+    /// existence gate (`command -v tool >/dev/null 2>&1 || return 2`) is written in, so it is the
+    /// degrade authors hit most; `command -v` itself models fine, and an `if [ … ]` gate resolves.
+    OrList,
 }
 
 impl TopReason {
@@ -146,6 +152,7 @@ impl TopReason {
             TopReason::Pipeline => {
                 "selected path reached a command pipeline (out of dialect => runs)"
             }
+            TopReason::OrList => "selected path reached an or-list (out of dialect => runs)",
         }
     }
 }
@@ -287,7 +294,11 @@ impl Evaluator {
                 // degrade, `kFAIL-perform`). Parse-permissively (it lifted, ships byte-exact);
                 // trace-conservatively (⊤ here). Checked BEFORE recording a probe span.
                 if cmd.pipeline {
-                    return Flow::Top(TopReason::Pipeline);
+                    return Flow::Top(if cmd.or_list {
+                        TopReason::OrList
+                    } else {
+                        TopReason::Pipeline
+                    });
                 }
                 // a probe body on the selected path: record its verbatim span (we run
                 // statically — the span ships into the probe artifact, C-1). A trailing
@@ -638,5 +649,55 @@ mod stage_stdout_tests {
             StageStdout::Declined,
             "an argv the arms do not select reaches no producer ⇒ declined"
         );
+    }
+}
+
+#[cfg(test)]
+mod or_list_degrade_tests {
+    //! `||` and `|` both fold into one accepted-then-⊤ Command; these pin that splitting the
+    //! REPORTED reason moved no decision. The or-list shape is the oracle-contract's own
+    //! existence-gate idiom, so its cause line is the one authors actually read.
+    use super::{Resolution, TopReason, evaluate};
+    use crate::predict::lift_predicts;
+    use dorc_core::Interner;
+
+    fn resolve(body: &str) -> Resolution {
+        let src = format!("w__predict() {{ {body} }}");
+        let mut i = Interner::default();
+        let out = lift_predicts(&mut i, &src);
+        assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
+        let p = i.intern("w");
+        evaluate(out.value.get(p).expect("a check for w"), &["q"])
+    }
+
+    /// The contract's gate degrades, and says OR-LIST — not "pipeline", which describes a construct
+    /// the author did not write.
+    #[test]
+    fn an_or_list_degrades_as_an_or_list() {
+        assert_eq!(
+            resolve("command -v w >/dev/null 2>&1 || return 2"),
+            Resolution::Top(TopReason::OrList)
+        );
+    }
+
+    /// A REAL pipe keeps the pipeline reason — the split discriminates, it does not rename.
+    #[test]
+    fn a_real_pipe_still_degrades_as_a_pipeline() {
+        assert_eq!(
+            resolve("w list | w count"),
+            Resolution::Top(TopReason::Pipeline)
+        );
+    }
+
+    /// BEHAVIOR PRESERVATION: both shapes still degrade to ⊤. The split changes the reason carried
+    /// out, never whether the site resolves — so no disposition anywhere can move.
+    #[test]
+    fn both_shapes_still_degrade_to_top() {
+        for body in [
+            "command -v w >/dev/null 2>&1 || return 2",
+            "w list | w count",
+        ] {
+            assert!(matches!(resolve(body), Resolution::Top(_)), "{body}");
+        }
     }
 }
