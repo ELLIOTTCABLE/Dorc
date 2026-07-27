@@ -1,5 +1,24 @@
 # 26H — the kernel fix plan: keying, validity, and loud degrades
 
+> **CLOSING STATUS (2026-07-28, conductor):** ALL FOUR WORKSTREAMS LANDED on
+> `ai/r26-analyzer-findings` @ `9765d961`, each conductor-checkpointed, each both-legs green
+> (final: 1562 Windows / 1572-passed WSL at tip). W-A loud degrades (two halves; tip of first
+> half `a524798b`) · W-D and-or lists (18 commits; THREE wrong-yes defects closed:
+> `&&`-swallow, lone-`&` twin, `||`-true forged-rc vouch; closed forms `[T]||return N` +
+> `cmd||return N` landed per the human's typed ack) · W-B verdict-mark keying (authored
+> coordinates split cells; ship-seam site-keyed; family threading; registry law in the three
+> crate CLAUDE.mds) · W-C validity fixpoint (erasure ledger; ladder cascades 1→3;
+> cap-degrades-to-origin + narrative; two tripwire e2e cases). `26G` carries THREE appended
+> corrections (or-list not command-v · ortrue-vouches · gens-into-Reach) — read it only
+> WITH them. Open residue banked in the conduct ledger + §5's surviving rulings queue:
+> R-1 re-posed (or-lists WERE the answer; residual question is `test`/unary-support scope),
+> R-4 exit-code collision, ambient-past-wall guard-tier gap (product-value priority),
+> gate-5 guard||install pinning constraint, merge-advisory e2e witness, cascade prose
+> `[unwritten:]` (W5 queue). A clean-context Fable adversarial review of the kernel was
+> dispatched at close per the human's authorization; its report lands at
+> `Research/notes/26I-adversarial-kernel-review.md` on `ai/r26-adversarial-review` and is
+> adjudicated under standing maximum-skepticism law.
+
 AI-authored (Fable conductor, by-hand scout), 2026-07-27/28 overnight. THE plan-of-record for
 fixing the four `26G` findings, minted under the human's kernel-fix protocol (typed this
 session): (1) findings-only diagnosis (`notes/26G`, verified) → (2) this Fable in-window scout
