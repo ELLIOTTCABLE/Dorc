@@ -95,25 +95,30 @@ crate's charter) · `notes/287` (errorloom as-built).
   verbatim into product bytes, so an in-band marker would make a migration a visible product
   change. `authored_words_are_case_owned` is the gate (the `message_registers_are_sm_or_unwritten`
   twin).
-- **arrangement-words-are-a-sequence-nothing-splits** (`289:rider-arrangement-home-anticipates-chains`)
-  — entries store ORDERED WORDS: a chrome line with interpolated counts stores its fixed runs and
-  the seat interleaves the computed values (`arrangement_sentence`), which also leaves room for a
-  future chain narration. An edit against a multi-word entry REFUSES
-  (`DorcApplyRefusal::ArrangementIsSequenceStructured`) — nothing re-splits an edited line at its
-  value boundaries. Do not build word-boundary inference.
-- **a-chrome-line-is-one-span** — a value-bearing chrome line renders as ONE `ArrangementWords`
-  span, never as word-spans fenced by computed ones. The edit transport anchors sections on the
-  immutable text BETWEEN them, and a bare digit or an empty plural suffix is not an anchor:
-  fragmenting one line that way broke attribution for every OTHER prose section in the same render
-  (observed, 2026-07-24). Layout — a line's trailing newline included — stays computed, so a render
-  never ends inside an editable span.
+- **arrangement-words-are-a-sequence-nothing-splits** (`289:rider-arrangement-home-anticipates-chains`;
+  re-cut at the W4 span fold, `28H`) — entries store ORDERED WORDS: a chrome line with interpolated
+  values stores its fixed runs and the seat interleaves the computed values
+  (`arrangement::sentence_words`, the one arity seat). Nothing ever splits one chrome line across
+  SECTIONS — but WITHIN its one section, the LINE-field path re-splits an edit on the compiled
+  `Text | Variable` fragment series (`apply_arrangement_line_edit`): the value sequence must equal
+  the stamped `v0…v{n-1}`, by name, in order; reorder/drop/duplicate is a narrow refusal. The PAGE
+  path (`apply_arrangement_page_edit`) keeps the verbatim no-re-split contract and
+  `ArrangementIsSequenceStructured`. Word-boundary INFERENCE stays unbuilt — the fragment series is
+  stamped provenance, never guessed.
+- **a-chrome-line-is-one-section** (né a-chrome-line-is-one-span; amended at the W4 span fold per
+  the `28H` adjudication) — a value-bearing chrome line renders as ONE editable SECTION, which may
+  hold interleaved `ArrangementWords` + `ArrangementValue` fragments; it is never fragmented into
+  SEPARATE sections fenced by computed runs. The 2026-07-24 lesson stands in that form: the
+  transport anchors sections on the immutable text BETWEEN them, and a bare digit is not an anchor
+  — many-SECTIONS was the breakage, one-section-many-fragments is the landed fix. Layout — a
+  line's trailing newline included — stays computed, so a render never ends inside an editable
+  span.
 - **a-registry-row-need-not-mint-a-span** — a seat may read registry words as PLAIN TEXT
-  (`arrangement_text`) instead of stamping an `ArrangementWords` span, and two do:
-  `dorc_cli::usage_text`, and the why-lens remediation hint, whose reason is a FRAGMENT (`dorc why`
-  embeds it mid-line) and so cannot own the trailing computed layout that keeps a render from
-  ending inside an editable span (`a-chrome-line-is-one-span`). Such a row is storage-homed but
-  faceless: its edit-home is the lock until a seat renders it into a transcript. Do not "fix" one
-  by stamping a span the transport cannot anchor.
+  (`arrangement_text`/`words_text`) instead of stamping spans, and `dorc_cli::usage_text` does.
+  Facelessness is PER-SEAT, not global: the why-reason rows render span-stamped through the weft
+  bridge in the why report while the plan-stderr lens reads the same rows as plain text —
+  edit-home is wherever a DRIVEN transcript stamps them, the lock otherwise. Do not "fix" a
+  plain-text seat by stamping a span its surface's transport cannot anchor.
 - **error-slugs-are-semantic** (`288:rul-error-slugs-are-semantic`) — code slugs are
   user-facing surface that becomes a real compat surface at publication. Mint them
   semantic-first, never as a file-naming decision.
@@ -127,6 +132,22 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **render-form-unwelded** (`27V:rul-output-form-unwelded`) — wording, numbering,
   connectives, and arrangement shape are unstable-and-improving. Goldens pin content +
   structure and re-bless freely; never treat a current render as contract.
+- **said-is-the-parts-vocabulary** (W4; `28H`) — `said.rs` (`Said::{Words, Value, Mark,
+  Foreign, Parts}`) is the one parts vocabulary between seats and weave; `chain.rs`
+  (`ChainModel`/`LinkSelection`/`Relevance`/`LinkRef`) is the kTASTE type room — links ALL
+  retained, selection edges by `LinkRef` never a sorted position, `Relevance` never a bool,
+  residue stored as parts. `Said::Foreign` ENCODES AT MINT; **`Said::Mark` carries
+  glyphs/punctuation ONLY, never English words** (a worded Mark dodges the
+  every-string-is-a-row law).
+- **arrangement-key-third-axis-reserved** (`28H` ruling) — the registry key is
+  `(slug, occurrence)` and occurrence is SPENT on position/arity discriminators; a future
+  kTASTE register axis is a THIRD key axis — a cheap lock reshape under
+  `rul-strawman-formats-no-compat`. Never overload occurrence with register.
+- **selection-is-goal-derived-here** — default renders curate toward a typed, inspectable,
+  DERIVED user-goal (`AID-NEEDS:law-selection-is-goal-derived`): derive the goal first,
+  select backwards from it, per-item because-values; curating WRONG is the failure mode,
+  density is a tuning (spike-era posture: generous). Binds the first real selection
+  machinery; the as-built kTASTE types are its reserved room.
 
 ## Law — engineering substrate
 

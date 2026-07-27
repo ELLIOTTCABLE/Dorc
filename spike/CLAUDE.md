@@ -800,7 +800,9 @@ ordering that are easy to get subtly wrong, and they run from anywhere in the tr
 mise run build            # cargo build --workspace
 mise run test             # unit + the e2e corpus + the loom corpus
 mise run test:e2e         # the e2e corpus alone: dash -n gate + exec-under-mocks
-mise run test:looms       # the loom corpus alone: parse + hygiene + render fixpoint
+mise run test:looms       # the loom corpus alone: parse + hygiene + render fixpoint WHERE OWNED
+                          #   (a `run:` loom's transcript proof belongs to test:e2e —
+                          #    one-fixpoint-authority-per-case; the hk step is `loom-hygiene`)
 mise run clippy           # workspace clippy, -D warnings
 mise run check            # all four lint gates, check-only
 mise run gate             # check + a fresh build + the whole suite (the pre-commit set)

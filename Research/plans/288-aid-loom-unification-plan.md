@@ -327,10 +327,12 @@ seat-appended entry. Three fences held in the build: the migrated marker is TYPE
 (`Words::Migrated`), never the catalog's in-band `sm ` prefix, because chrome renders verbatim
 into product bytes; artifact-plane strings (every `plan/src/render.rs` emitter) stay hardcoded
 under the byte floor; and layout is not a word (indents, line breaks, punctuation frames stay
-computed). A value-bearing chrome line renders as ONE span — fragmenting it into word-spans
-fenced by computed ones breaks the edit transport's anchoring for every other prose section in
-the same render — which leaves multi-word entries render-only until something re-splits an
-edited line at its value boundaries.
+computed). A value-bearing chrome line renders as ONE editable SECTION holding interleaved word/value
+fragments — never split ACROSS sections, whose computed fences would break the transport's
+anchoring for every other prose section in the same render (the 2026-07-24 lesson, preserved).
+The line-field path re-splits an edit on the STAMPED fragment series (landed at the W4 span
+lane; `28H`, `aid/CLAUDE.md` a-chrome-line-is-one-section), so multi-word entries are
+transcript-editable wherever a driven replay stamps them; the page path stays verbatim.
 
 ## §8 — Phases (each one lane; granular; gates green; atomic where marked)
 
