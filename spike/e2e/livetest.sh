@@ -214,14 +214,22 @@ expect_summary() {
    got=$1
    want=$2
    which=$3
-   if [ "$got" != "$want" ]; then
-      printf 'livetest: FAILED — %s plan does not match its hermetic baseline\n' "$which" >&2
-      printf '  baseline: %s\n' "$want" >&2
-      printf '  live:     %s\n' "$got" >&2
-      printf '  artifacts: %s\n' "$RUNDIR" >&2
-      exit 1
+   if [ "$got" = "$want" ]; then
+      say "$which plan matches baseline ($got)"
+      return 0
    fi
-   say "$which plan matches baseline ($got)"
+   printf 'livetest: FAILED — %s plan does not match its hermetic baseline\n' "$which" >&2
+   printf '  baseline: %s\n' "$want" >&2
+   printf '  live:     %s\n' "$got" >&2
+   # The single most likely way to get here on purpose: pointing `remote` at a host the book has
+   # already been applied to. Saying so beats making someone diff two count strings to find out.
+   if [ "$which" = pristine ] && [ "$got" = "$BASELINE_CONVERGED" ]; then
+      printf '  This host is ALREADY CONVERGED — that is the converged baseline, exactly.\n' >&2
+      printf '  `remote` expects a host this book has not been applied to. Use a fresh one,\n' >&2
+      printf '  or run `mise run livetest` for a throwaway container.\n' >&2
+   fi
+   printf '  artifacts: %s\n' "$RUNDIR" >&2
+   exit 1
 }
 
 plan_into() {
