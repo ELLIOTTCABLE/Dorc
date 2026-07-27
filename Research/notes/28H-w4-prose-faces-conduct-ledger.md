@@ -305,6 +305,24 @@ is the human's; untouched.
   forcibly after-the-fact) · `friction-hand-seeded-row-has-no-reach-gate`
   banked (nothing asserts a seat reaches a hand-seeded slug until a transcript
   covers it; the span lane's why-case shape is the closure).
+- **rul-selection-is-goal-derived RULED** (human-typed 2026-07-26, in-chat; now
+  `AID-NEEDS:law-selection-is-goal-derived`, with `law-pull-runs-wide-open`
+  reglossed to match and the `28E` §8 matrix annotated vibe→RULED). The three
+  answers given: (1) tracks — one-model/surfaces-as-consent×goal was already
+  durable (`28E` §4, AID-NEEDS surfaces block); (2) conductor agrees — the
+  static-policy alternative cannot reach "deeply effective" across contexts,
+  and the labeled `--all` floor makes curation failures visible-and-recoverable;
+  reservations voiced: the derived goal must be inspectable DATA (a new
+  mis-curation surface otherwise), and the wants-relation stays code-shape, not
+  a catalog; (3) encoding was PARTIAL — the matrix was vibe-tier, the curation
+  dichotomy implicit-only, the goal-driven backwards construction absent; now
+  fixed durable. `ask-aggregate-owes-declines-and-guards-a-section` ANSWERED
+  within it: decline stays quiet at default WHEN other content exists; the
+  calculus is receipt-dynamic (an otherwise-quiet receipt may make quiet
+  classes the story). Architecture consequence banked for W5/r30 selection
+  work + the aid/CLAUDE.md doc batch: selection code derives a typed
+  inspectable goal first, selects backwards from it, and can narrate it; the
+  kTASTE `Relevance` room grows goal-conditioned variants, never a bool.
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
