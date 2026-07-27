@@ -67,6 +67,17 @@ impl SshOptions {
             "ForwardAgent=no".to_owned(),
             "LogLevel=ERROR".to_owned(),
             "IgnoreUnknown=UseKeychain".to_owned(),
+            // No connection multiplexing, both halves pinned. A session must ride a channel this
+            // invocation opened: a shared master is a pre-existing socket at a path the user's
+            // config chose, so one attempt can silently inherit another's channel and neither the
+            // host nor the attempt a record is attributed to stays the controller's own fact.
+            // Also concretely broken on Windows, which is how this surfaced — a `ControlPath`
+            // expanding `%p` writes a colon into the socket path, and the connection fails.
+            // `ControlMaster=no` refuses to create or reuse one; `ControlPath=none` holds even
+            // where a config sets a path unconditionally. A command-line `-o` is obtained before
+            // any config file's value, so neither can be argued back.
+            "ControlMaster=no".to_owned(),
+            "ControlPath=none".to_owned(),
         ] {
             args.push("-o".into());
             args.push(option.into());
@@ -143,6 +154,8 @@ mod tests {
             "ClearAllForwardings=yes",
             "ForwardAgent=no",
             "LogLevel=ERROR",
+            "ControlMaster=no",
+            "ControlPath=none",
         ] {
             assert!(argv.iter().any(|a| a == required), "missing {required}");
         }
@@ -150,6 +163,33 @@ mod tests {
             argv.iter().any(|a| a == "-T"),
             "a pty cooks and merges the streams the records lane rides on"
         );
+    }
+
+    #[test]
+    fn multiplexing_stays_off_under_every_option_combination() {
+        // Both halves, on every posture: a session may only ride a channel this invocation
+        // opened. `-F` does not cover it — that is opt-in and the default composes with a user
+        // config that may set `ControlPath` unconditionally.
+        for driver in [
+            SshDriver::default(),
+            SshDriver::new(SshOptions {
+                accept_new_host_key: true,
+                ..SshOptions::default()
+            }),
+            SshDriver::new(SshOptions {
+                config_file: Some(PathBuf::from("/tmp/dorc-ssh-config")),
+                ..SshOptions::default()
+            }),
+        ] {
+            let argv = argv_strings(&driver, "web1");
+            assert!(argv.iter().any(|a| a == "ControlMaster=no"));
+            assert!(argv.iter().any(|a| a == "ControlPath=none"));
+            // A pinned `none` that some other option re-opened would read as pinned and not be.
+            assert!(
+                !argv.iter().any(|a| a.starts_with("ControlPersist")),
+                "ControlPersist revives a master the pin exists to refuse"
+            );
+        }
     }
 
     #[test]

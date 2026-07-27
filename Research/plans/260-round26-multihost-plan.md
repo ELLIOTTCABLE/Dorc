@@ -349,8 +349,17 @@ with the 142 migration.
   config carrying only its non-negotiables and *includes nothing secret*:
   `BatchMode yes` (never prompt mid-fleet), `ConnectTimeout`, `ServerAlive*` (§3 s3-6),
   `ClearAllForwardings yes` + `ForwardAgent no` (law-security-floor), `LogLevel ERROR`,
-  and — on non-Windows where it works — `ControlMaster auto` + `ControlPersist 60s` +
-  `ControlPath` under the run-dir (probe→apply→verify reuse; `plans/072` footgun-7). It is
+  and `ControlMaster=no` + `ControlPath=none`. Multiplexing is pinned OFF, both halves, on
+  every platform — reversing this bullet's earlier `ControlMaster auto` + `ControlPersist 60s`
+  proposal. Two reasons, and the second outlives the first: (a) it is broken on Windows —
+  `trial/r26/live-evidence`'s `fnd-controlpath-defeats-the-transport` isolated a live failure
+  where a user config's `ControlPath` expands `%p` into a colon the filesystem cannot hold,
+  surfacing only as the information-free `transport-session-lost`; and (b) a shared master is
+  a pre-existing socket at a path the USER's config chose, so an attempt can inherit a channel
+  this invocation never opened, and the host and attempt a record is attributed to stop being
+  the controller's own facts. The probe→apply→verify reuse `plans/072` footgun-7 wants is still
+  worth having, but it has to be re-earned by a controller-owned per-run channel rather than
+  inherited from ambient config; the handshake cost stands until then. It is
   passed via `-F` ONLY when the user asks for hermetic mode; the DEFAULT composes with the
   user's own `~/.ssh/config` (aliases, ProxyJump, keys are *their* config — Dorc must not
   bypass it the way the trial did) by passing these as `-o` options instead. (§9
