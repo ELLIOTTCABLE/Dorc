@@ -180,6 +180,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "predict-out-of-dialect",
     "predict-unterminated",
     "oracle-role-fn-unlifted",
+    "mark-on-and-or-list",
     "munge-name-invalid",
     "munge-name-collision",
     "reserved-namespace-squat",

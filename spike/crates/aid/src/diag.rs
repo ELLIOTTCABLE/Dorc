@@ -118,6 +118,9 @@ pub enum DiagCode {
     /// silence-is-the-common-cause class). Cause-AGNOSTIC by design: it reports the LOSS, never a
     /// reason, so it catches drop paths and unrouted roles nobody has found yet.
     OracleRoleFnUnlifted(OracleRoleFnUnlifted),
+    /// A trailing effect mark rode an item of an and-or list, where the rc it claims to read is
+    /// the LIST's rather than the command's — so the mark is refused and the cell unminted.
+    MarkOnAndOrList(MarkOnAndOrList),
 
     // ── oracle/reserved.rs (munge-reservation lint) ─────────────────────────
     /// An emitted `<munged>__<role>` funcname is not a legal sh NAME (leading digit / dot /
@@ -340,6 +343,7 @@ impl DiagCode {
             DiagCode::PredictOutOfDialect(_) => "predict-out-of-dialect",
             DiagCode::PredictUnterminated(_) => "predict-unterminated",
             DiagCode::OracleRoleFnUnlifted(_) => "oracle-role-fn-unlifted",
+            DiagCode::MarkOnAndOrList(_) => "mark-on-and-or-list",
             DiagCode::MungeNameInvalid(_) => "munge-name-invalid",
             DiagCode::MungeNameCollision(_) => "munge-name-collision",
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
@@ -653,6 +657,11 @@ pub struct OracleRoleFnUnlifted {
     /// The funcdef name as the file spells it (`{funcname}`, e.g. `wombat__is_converged`).
     pub funcname: String,
 }
+
+/// Payload of [`DiagCode::MarkOnAndOrList`]: none. Spanned at the refused mark, which is the whole
+/// remediation — the author moves the marked command onto its own line.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkOnAndOrList;
 
 // ===========================================================================
 // Sweep payload structs — oracle-lane (reserved / marker / entry / wrapper / carry / derive)
@@ -1668,6 +1677,11 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
+        DiagCode::MarkOnAndOrList(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         // ── sweep: severities preserve each emit site's CURRENT classification exactly.
         // Floor rule (as elsewhere): Error ⇒ WarnOrDeny (a refusal must not silence below Warning);
         // Warning/Note disclosures ⇒ None.
@@ -2169,6 +2183,7 @@ fn params_of_raw(code: &DiagCode) -> Vec<(&'static str, String)> {
         DiagCode::PredictOutOfDialect(p) => vec![("detail", p.detail.clone())],
         DiagCode::PredictUnterminated(p) => vec![("detail", p.detail.clone())],
         DiagCode::OracleRoleFnUnlifted(p) => vec![("funcname", p.funcname.clone())],
+        DiagCode::MarkOnAndOrList(_) => vec![],
         DiagCode::FootprintIncoherent(p) => vec![("detail", p.detail.clone())],
         DiagCode::EscalationPolicy(p) => vec![("detail", p.detail.clone())],
         DiagCode::CarriedAcrossSubstrateAxis(p) => vec![("detail", p.detail.clone())],
