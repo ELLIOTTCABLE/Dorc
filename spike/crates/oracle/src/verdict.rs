@@ -58,7 +58,7 @@
 //! argparse primitives ([`resolve_word`]/[`eval_test`]/[`pattern_matches`]) to find the reached
 //! path, then asks only "did an authored command run there", never what the command *means*.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use dorc_aid::Carrier;
 use dorc_aid::narrative::{DeclineClass, DeclineGate};
@@ -68,30 +68,83 @@ use dorc_syntax::sem::UnsetPolicy;
 use crate::report::recognized_class;
 
 use crate::predict::{
-    AndOr, AndOrItem, CaseArm, Command, Predict, PredictSet, Stmt, Test, TopReason, Word,
-    eval_test, gate_fires, lift_verdicts_converged, map_provider_name, pattern_matches,
-    recognize_gate, resolve_word,
+    AndOr, AndOrItem, CaseArm, Command, MarkKind, Predict, PredictSet, ResolvedEntity, Stmt, Test,
+    TopReason, Word, brace_tokens, eval_test, gate_fires, lift_verdicts_converged,
+    map_provider_name, pattern_matches, recognize_gate, resolve_word,
 };
 
-/// The set of providers bearing a `<provider>__is_converged` verdict function, keyed the way
+/// The verdict funcdefs of a whole oracle set, keyed the way
 /// `dorc_analysis::effect::command_effect` keys a book command word ([`map_provider_name`] then
 /// intern). The typeless-floor seam (`24L` §7): the analyzer kernel is **verdict-unaware by
-/// design** (`inv-determinism` — no oracle lift inside the kernel), so a driver computes this set
-/// from the oracle sources and threads it INTO `classify` as DATA — the auto-cell mint reads it to
-/// decide, at a would-be-Opaque site, whether the provider earned the synthetic establish-cell.
-/// Diags are DROPPED here (`crate::validate` lifts the same role per-file and surfaces them once,
-/// framed into their own source, for gate-3); this is a pure membership query.
-#[must_use]
-pub fn verdict_providers(interner: &mut Interner, srcs: &[&str]) -> BTreeSet<ProviderId> {
-    let mut set = BTreeSet::new();
-    for src in srcs {
-        let providers: Vec<Symbol> = VerdictSet::lift(interner, src).value.providers().collect();
-        for p in providers {
-            let mapped = map_provider_name(interner.resolve(p));
-            set.insert(ProviderId(interner.intern(&mapped)));
-        }
+/// design** (`inv-determinism` — no oracle lift inside the kernel), so a driver lifts the verdict
+/// role at the edge and threads the result INTO `classify` as DATA.
+///
+/// This is the `24L` §7 seam widened from membership to EVALUABLE data (`26H` §3.1): the kernel
+/// asks not only "did this provider earn the synthetic auto-cell" ([`contains`](Self::contains))
+/// but "does its verdict body author a coordinate for THIS argv" ([`get`](Self::get) +
+/// [`evaluate_verdict_coord`]). One seam, so a membership answer and a body answer can never drift
+/// apart. Owning (funcdefs are cloned in) so the three drivers need no lifetime surgery — the
+/// bodies are small and the analysis side of this tool is never the constraint (`perf-doctrine`).
+#[derive(Debug, Clone, Default)]
+pub struct VerdictIndex {
+    by_provider: BTreeMap<ProviderId, Predict>,
+}
+
+impl VerdictIndex {
+    /// Lift the verdict role from each source and key it by mapped provider. Diags are DROPPED
+    /// (`crate::validate` lifts the same role per-file and surfaces them once, framed into their
+    /// own source, for gate-3).
+    #[must_use]
+    pub fn of(interner: &mut Interner, srcs: &[&str]) -> Self {
+        let sets: Vec<VerdictSet> = srcs
+            .iter()
+            .map(|src| VerdictSet::lift(interner, src).value)
+            .collect();
+        Self::from_sets(interner, &sets)
     }
-    set
+
+    /// Key already-lifted [`VerdictSet`]s, for a driver that holds them for other reasons (the cli
+    /// pre-lifts them for the probe ship-closure) — one lift, not two.
+    ///
+    /// A provider authored by TWO files keeps the FIRST (source order), matching the
+    /// first-in-file-order rule `command_effect` applies to competing predict checks.
+    #[must_use]
+    pub fn from_sets(interner: &mut Interner, sets: &[VerdictSet]) -> Self {
+        let mut by_provider = BTreeMap::new();
+        for set in sets {
+            let providers: Vec<Symbol> = set.providers().collect();
+            for p in providers {
+                let mapped = map_provider_name(interner.resolve(p));
+                let key = ProviderId(interner.intern(&mapped));
+                if let Some(verdict) = set.get(p) {
+                    by_provider.entry(key).or_insert_with(|| verdict.clone());
+                }
+            }
+        }
+        Self { by_provider }
+    }
+
+    /// Does this provider bear a verdict funcdef? The `24L` §2 auto-cell mint's own gate.
+    #[must_use]
+    pub fn contains(&self, provider: ProviderId) -> bool {
+        self.by_provider.contains_key(&provider)
+    }
+
+    /// This provider's verdict funcdef, for tracing over a site argv.
+    #[must_use]
+    pub fn get(&self, provider: ProviderId) -> Option<&Predict> {
+        self.by_provider.get(&provider)
+    }
+
+    /// The keyed providers, in deterministic order (`inv-determinism`).
+    pub fn providers(&self) -> impl Iterator<Item = ProviderId> + '_ {
+        self.by_provider.keys().copied()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.by_provider.is_empty()
+    }
 }
 
 /// The mangled funcname suffix a verdict body strips to (`crate::predict::strip_verdict`) and the
@@ -197,18 +250,7 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
     if argv.is_empty() {
         return VerdictResolution::Top(VerdictTop::EmptyArgv);
     }
-    let budget = argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT);
-    let mut tr = Tracer {
-        positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
-        vars: BTreeMap::new(),
-        reached_command: false,
-        reached_inert: false,
-        decline_span: None,
-        emission: None,
-        vouch_span: None,
-        budget,
-        steps: 0,
-    };
+    let mut tr = Tracer::over(argv);
     match tr.run_block(&verdict.body) {
         Flow::Normal => {
             if tr.reached_command {
@@ -267,24 +309,101 @@ pub fn vouch_site(verdict: &Predict, argv: &[&str]) -> Option<Span> {
     if argv.is_empty() {
         return None;
     }
-    let budget = argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT);
-    let mut tr = Tracer {
-        positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
-        vars: BTreeMap::new(),
-        reached_command: false,
-        reached_inert: false,
-        decline_span: None,
-        emission: None,
-        vouch_span: None,
-        budget,
-        steps: 0,
-    };
+    let mut tr = Tracer::over(argv);
     match tr.run_block(&verdict.body) {
         // A `return 0` vouch reaches no check ⇒ `vouch_span` is `None` (name_span fallback).
         Flow::Normal if tr.reached_command => tr.vouch_span,
         Flow::Returned(code) if code.0 == 0 => tr.vouch_span,
         _ => None, // a decline / ⊤ — no vouch
     }
+}
+
+/// The **authored coordinate** a verdict body keys for `argv` (`26H` §3 — the W-B fix for
+/// `26G:fnd-shared-auto-cell-collides`). `Some` iff the trace VOUCHES *and* the reached path
+/// authored exactly one fully-resolved verdict coordinate; `None` sends the site to the `24L` §2
+/// auto-cell, which is the founding markless floor and the safe answer for every other shape.
+///
+/// # Why this exists (oracle-contract §4)
+///
+/// "Verdict and observe marks mint selector tokens into the kind's vocabulary, and attach facts to
+/// the one line that measured them." Before this, a verdict body's authored coordinate was never
+/// read for keying, so every site of one command shared a per-provider singleton and a sibling that
+/// merely failed to report de-licensed the rest. The `24L` §3 singleton coarseness was priced for
+/// the MARKLESS body it was written for; a body that authored a coordinate is outside that pricing.
+///
+/// # The selection rule, and why each half of it is narrow
+///
+/// The coordinate comes ONLY from a VERDICT mark (`asserts`/`refutes`) on the reached path —
+/// never an observe, never a bind alone. Polarity does NOT change the cell (the sense lives in the
+/// vouch and the guard's glue, not the key). The kind and entity come from the reached inline BIND
+/// exactly as [`crate::predict::evaluate`] resolves them, and the mark's own entity fragment is
+/// never parsed: `identity-declared-never-inferred` gives the oracle's argparse sole authority
+/// over identity, so the engine resolves the author's declared bind and nothing else. The selector
+/// comes from the mark. A body that reaches TWO verdict marks keys NOTHING: one exit status can
+/// witness exactly one cell (`281` §7 rc-arity), and guessing which is the disaster class.
+///
+/// Pure + total (`inv-determinism`/`inv-no-throw`), and re-traces rather than widening
+/// [`evaluate_verdict`]'s hot path (the [`classify_decline`] precedent).
+#[must_use]
+pub fn evaluate_verdict_coord(verdict: &Predict, argv: &[&str]) -> Option<VerdictCoord> {
+    if argv.is_empty() {
+        return None;
+    }
+    let mut tr = Tracer::over(argv);
+    let vouched = match tr.run_block(&verdict.body) {
+        Flow::Normal => tr.reached_command,
+        Flow::Returned(code) => code.0 == 0,
+        Flow::Declined | Flow::Top(_) => false,
+    };
+    if !vouched {
+        return None;
+    }
+    let [(mark_kind, mark_selector)] = tr.verdict_marks.as_slice() else {
+        return None; // markless, or two marks the single rc cannot both witness
+    };
+    // `28A:rul-singleton-bind-drops`: a body with no bind may still key, when the mark's own
+    // coordinate is entity-LESS (`sm.dorc.PkgIndex@fresh`) — kind from the mark, entity Singleton.
+    // A mark naming an entity with no bind to resolve it keys nothing (never a garbage key).
+    let (kind, entity) = tr.annotation.clone().or_else(|| {
+        (mark_kind.entity_is_empty && !mark_kind.kind.is_empty())
+            .then(|| (mark_kind.kind.clone(), ResolvedEntity::Singleton))
+    })?;
+    let selector = mark_selector.clone()?;
+    // A brace-alternation selector on a VERDICT is single-cell-illegal (`277` §4c) — it mints no
+    // cell, exactly as `derive_predict` refuses it on the predict side.
+    if brace_tokens(&selector).is_some() {
+        return None;
+    }
+    Some(VerdictCoord {
+        kind,
+        entity,
+        selector,
+        observed: tr.observed,
+    })
+}
+
+/// The coordinate a verdict body authored for one site's argv ([`evaluate_verdict_coord`]) — the
+/// cell the site's establish keys, plus the observe cells the same reached path read.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerdictCoord {
+    /// The reverse-DNS kind, opaque (`inv-referent-agnostic` — never decoded).
+    pub kind: String,
+    /// The entity the reached bind resolved to, or the Singleton for an entity-less coordinate.
+    pub entity: ResolvedEntity,
+    /// The verdict mark's selector.
+    pub selector: String,
+    /// The `:?` observe selectors the reached path also carried (`277` §5
+    /// observe-backing-widening): each widens the established fact's backing with a sibling cell,
+    /// so the kill-surface only GROWS (`inv-kfail`, apply). Deduped, source order.
+    pub observed: Vec<String>,
+}
+
+/// A verdict mark's own coordinate fragments, as the tracer collected them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct MarkCoord {
+    kind: String,
+    /// Whether the mark named NO entity (or an explicitly empty one) — the Singleton re-point's gate.
+    entity_is_empty: bool,
 }
 
 /// The [`DeclineGate`] a verdict trace decline took (C5). Thin wrapper over [`classify_decline`].
@@ -308,18 +427,7 @@ pub fn classify_decline(verdict: &Predict, argv: &[&str]) -> Option<DeclineInfo>
     if argv.is_empty() {
         return None; // empty argv ⇒ ⊤ (not a decline)
     }
-    let budget = argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT);
-    let mut tr = Tracer {
-        positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
-        vars: BTreeMap::new(),
-        reached_command: false,
-        reached_inert: false,
-        decline_span: None,
-        emission: None,
-        vouch_span: None,
-        budget,
-        steps: 0,
-    };
+    let mut tr = Tracer::over(argv);
     let gate = match tr.run_block(&verdict.body) {
         Flow::Normal if tr.reached_command => return None, // Vouched
         Flow::Normal if tr.reached_inert => DeclineGate::InertBuiltin,
@@ -369,6 +477,17 @@ struct Tracer {
     /// for [`vouch_site`], surfaced as `file:line` at the guard attribution render. Display tier
     /// only; never read by the decision (the vouch signal is `reached_command`).
     vouch_span: Option<Span>,
+    /// The first inline BIND reached, resolved to (kind, entity) — the same first-annotation-wins
+    /// identity [`crate::predict::evaluate`] resolves, traced through the same value-flow so a
+    /// verdict body's coordinate can never disagree with a predict body's over one argv.
+    /// Keying tier ([`evaluate_verdict_coord`]); never read by the vouch decision.
+    annotation: Option<(String, ResolvedEntity)>,
+    /// Every VERDICT mark (`asserts`/`refutes`) reached on the selected path, in source order. A
+    /// Vec rather than a first-wins Option deliberately: TWO reached verdict marks must key
+    /// NOTHING (one rc witnesses one cell — `281` §7), and that is only visible from the count.
+    verdict_marks: Vec<(MarkCoord, Option<String>)>,
+    /// The `:?` observe selectors reached on the selected path (`277` §5 backing-widening).
+    observed: Vec<String>,
     budget: usize,
     steps: usize,
 }
@@ -386,6 +505,26 @@ enum Flow {
 }
 
 impl Tracer {
+    /// A fresh tracer over a concrete `argv` — the ONE constructor every entry point shares, so a
+    /// new collection field cannot reach one trace and miss another. Callers have already ruled
+    /// out an empty argv. Budget mirrors the predict/touches evaluators.
+    fn over(argv: &[&str]) -> Self {
+        Tracer {
+            positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
+            vars: BTreeMap::new(),
+            reached_command: false,
+            reached_inert: false,
+            decline_span: None,
+            emission: None,
+            vouch_span: None,
+            annotation: None,
+            verdict_marks: Vec::new(),
+            observed: Vec::new(),
+            budget: argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT),
+            steps: 0,
+        }
+    }
+
     fn tick(&mut self) -> Result<(), VerdictTop> {
         self.steps = self.steps.saturating_add(1);
         if self.steps > self.budget {
@@ -437,10 +576,25 @@ impl Tracer {
             // An annotation desugars to a binding (as in touches); a bare mark is a no-op. Neither
             // is a "check command", so neither vouches on its own.
             Stmt::Annotation(anno) => {
-                if let Some(value) = &anno.value
-                    && let Ok(v) = self.resolve(value)
+                // A value-less bind is the nullary/Singleton form; a valued one resolves the
+                // operand. First bind wins, as on the predict side. An UNRESOLVABLE value records
+                // nothing and — deliberately — does NOT degrade the trace: predict ⊤s there, but
+                // the vouch decision predates this collector and must not move, so the site simply
+                // keys no coordinate and falls to the auto-cell (`26H` §3.3).
+                let entity = match &anno.value {
+                    None => Some(ResolvedEntity::Singleton),
+                    Some(value) => match self.resolve(value) {
+                        Ok(v) => {
+                            self.vars.insert(anno.name, v.clone());
+                            Some(ResolvedEntity::Operand(v))
+                        }
+                        Err(_) => None,
+                    },
+                };
+                if let Some(entity) = entity
+                    && self.annotation.is_none()
                 {
-                    self.vars.insert(anno.name, v);
+                    self.annotation = Some((anno.kind.clone(), entity));
                 }
                 Flow::Normal
             }
@@ -568,6 +722,7 @@ impl Tracer {
                 if self.vouch_span.is_none() {
                     self.vouch_span = Some(cmd.span);
                 }
+                self.collect_mark(cmd);
                 Flow::Normal
             }
         }
@@ -596,6 +751,36 @@ impl Tracer {
                 Err(_) => Flow::Declined,
             },
             None => Flow::Declined,
+        }
+    }
+
+    /// Record a reached CHECK's trailing mark for [`evaluate_verdict_coord`]. A verdict mark
+    /// (`asserts`/`refutes`) is a candidate KEY — polarity is not part of the cell, so both land in
+    /// one list. An observe (`reads`) only WIDENS the backing and can never key. Meta-plane verbs
+    /// (`safe-across`, `stored-in`, …) ride other members and are ignored here. Collection tier
+    /// only: nothing in this function reaches the vouch decision.
+    fn collect_mark(&mut self, cmd: &Command) {
+        let Some(mark) = &cmd.mark else { return };
+        match mark.kind {
+            MarkKind::Asserts | MarkKind::Refutes => self.verdict_marks.push((
+                MarkCoord {
+                    kind: mark.target.kind.clone(),
+                    entity_is_empty: mark.target.entity.as_deref().unwrap_or("").is_empty(),
+                },
+                mark.target.prop.clone(),
+            )),
+            MarkKind::Reads => {
+                if let Some(selector) = &mark.target.prop
+                    && !self.observed.iter().any(|s| s == selector)
+                {
+                    self.observed.push(selector.clone());
+                }
+            }
+            MarkKind::SafeAcross
+            | MarkKind::Disturbs
+            | MarkKind::Lends
+            | MarkKind::StoredIn
+            | MarkKind::Undivided => {}
         }
     }
 
@@ -1240,6 +1425,153 @@ apt_get__is_converged() {
                 "`{body}` is not a supported gate ⇒ ⊤"
             );
         }
+    }
+
+    /// Lift the sole verdict funcdef and resolve its authored coordinate over `argv`.
+    fn coord(src: &str, argv: &[&str]) -> Option<VerdictCoord> {
+        let mut i = Interner::default();
+        let set = VerdictSet::lift(&mut i, src);
+        assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
+        let provider = set.value.providers().next().expect("one verdict funcdef");
+        let verdict = set.value.get(provider).expect("the verdict funcdef");
+        evaluate_verdict_coord(verdict, argv)
+    }
+
+    /// The `cp`-shaped body the r26 smoke kit exercises, and the whole point of W-B: two sites of
+    /// ONE command whose authored coordinates name DIFFERENT entities must resolve to different
+    /// cells. Before this they shared `dorc-auto:cp@converged`, so a sibling that merely failed to
+    /// report de-licensed every other site (`26G:fnd-shared-auto-cell-collides`).
+    const DROP: &str = "\
+x__is_converged() {
+   dst : sm.dorc.File = \"$2\"
+   x cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@content
+}
+";
+
+    #[test]
+    fn two_sites_of_one_command_key_their_own_authored_entities() {
+        let a = coord(DROP, &["a.conf", "/etc/a.conf"]).expect("a resolved coordinate");
+        let b = coord(DROP, &["b.conf", "/etc/b.conf"]).expect("a resolved coordinate");
+        assert_eq!(a.kind, "sm.dorc.File");
+        assert_eq!(a.selector, "content");
+        assert_eq!(a.entity, ResolvedEntity::Operand("/etc/a.conf".to_owned()));
+        assert_eq!(b.entity, ResolvedEntity::Operand("/etc/b.conf".to_owned()));
+        assert_ne!(a, b, "different destinations are different cells");
+        // The SAME destination twice must still land on ONE cell: `an-written-stale` rests on
+        // same-state sites COLLIDING, and only an authored coordinate may ever split them
+        // (`26H` §3.4 — the forbidden per-site-synthetic-cell hack, stated as a pin).
+        assert_eq!(
+            coord(DROP, &["a.conf", "/etc/a.conf"]),
+            coord(DROP, &["z.conf", "/etc/a.conf"]),
+            "one destination is one cell, whatever the source"
+        );
+    }
+
+    #[test]
+    fn polarity_does_not_change_the_cell() {
+        // `:!` (refutes) inverts how the rc READS, not which cell it is about — the sense lives in
+        // the vouch and the guard's glue. A `refutes` body must key the same coordinate a
+        // structurally identical `asserts` body keys.
+        let refutes = DROP.replace("   : sm.dorc.File", "   :! sm.dorc.File");
+        assert_eq!(
+            coord(&refutes, &["a.conf", "/etc/a.conf"]),
+            coord(DROP, &["a.conf", "/etc/a.conf"]),
+        );
+    }
+
+    #[test]
+    fn only_a_verdict_mark_keys_and_an_observe_only_widens() {
+        // The selection rule's other half: an observe (`:?`) can never BE the key, but it does
+        // widen the fact's backing (`277` §5) — kill-surface only grows, the safe direction.
+        let observed_too = "\
+x__is_converged() {
+   dst : sm.dorc.File = \"$2\"
+   x stat -- \"$dst\"   :? sm.dorc.File:\"$dst\"@mode
+   x cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@content
+}
+";
+        let c = coord(observed_too, &["a.conf", "/etc/a.conf"]).expect("a coordinate");
+        assert_eq!(c.selector, "content", "the VERDICT mark keys the cell");
+        assert_eq!(c.observed, vec!["mode".to_owned()], "the observe widens");
+
+        let observe_only = "\
+x__is_converged() {
+   dst : sm.dorc.File = \"$2\"
+   x stat -- \"$dst\"   :? sm.dorc.File:\"$dst\"@mode
+}
+";
+        assert_eq!(
+            coord(observe_only, &["a.conf", "/etc/a.conf"]),
+            None,
+            "an observe-only body authors no key ⇒ the auto-cell floor"
+        );
+    }
+
+    #[test]
+    fn every_unkeyable_shape_falls_to_the_auto_cell() {
+        // `26H` §3.3 is EXHAUSTIVE: anything not a reached, single, fully-resolved verdict
+        // coordinate keys nothing and takes the `24L` §2 floor. Never a garbage key, never Opaque.
+        let cases: &[(&str, &str, &[&str])] = &[
+            (
+                "markless (the 24L §2 founding shape)",
+                "x__is_converged() { x cmp -- \"$1\" \"$2\" ;}",
+                &["a.conf", "/etc/a.conf"],
+            ),
+            (
+                "no selector on the mark (the corpus `kp` shape)",
+                "x__is_converged() {\n   dst : sm.dorc.File = \"$2\"\n   x cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"\n}\n",
+                &["a.conf", "/etc/a.conf"],
+            ),
+            (
+                "a mark naming an entity with no bind to resolve it",
+                "x__is_converged() {\n   x cmp -- \"$1\" \"$2\"   : sm.dorc.File:\"$2\"@content\n}\n",
+                &["a.conf", "/etc/a.conf"],
+            ),
+            (
+                "the bind's value does not resolve on this argv",
+                "x__is_converged() {\n   dst : sm.dorc.File = \"$7\"\n   x cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@content\n}\n",
+                &["a.conf", "/etc/a.conf"],
+            ),
+            (
+                "brace-alternation on a verdict (`277` §4c single-cell law)",
+                "x__is_converged() {\n   dst : sm.dorc.File = \"$2\"\n   x cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@{content,mode}\n}\n",
+                &["a.conf", "/etc/a.conf"],
+            ),
+            (
+                "two verdict marks — one rc cannot witness two cells (`281` §7)",
+                "x__is_converged() {\n   dst : sm.dorc.File = \"$2\"\n   x cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@content\n   x stat -- \"$dst\"   : sm.dorc.File:\"$dst\"@mode\n}\n",
+                &["a.conf", "/etc/a.conf"],
+            ),
+            (
+                "the argv reaches a DECLINE — the author refused this shape",
+                "x__is_converged() {\n   case $1 in\n   put) dst : sm.dorc.File = \"$2\"\n        x cmp -- \"$2\" \"$dst\"   : sm.dorc.File:\"$dst\"@content ;;\n   *) return 2 ;;\n   esac\n}\n",
+                &["yank", "/etc/a.conf"],
+            ),
+            (
+                "the reached path ⊤s before the mark (an unsupported and-or list)",
+                "x__is_converged() {\n   dst : sm.dorc.File = \"$2\"\n   x probe -- \"$dst\" || x probe other\n   x cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@content\n}\n",
+                &["a.conf", "/etc/a.conf"],
+            ),
+        ];
+        for (why, src, argv) in cases {
+            assert_eq!(coord(src, argv), None, "{why} must key nothing");
+        }
+    }
+
+    #[test]
+    fn an_entity_less_coordinate_keys_the_singleton() {
+        // `28A:rul-singleton-bind-drops`: a nullary verb drops its bind and the coordinate names
+        // the kind directly. The predict evaluator does exactly this re-point; the verdict lane
+        // must agree, or one spelling would key and the other would not.
+        let nullary = "\
+x__is_converged() {
+   x freshness   : sm.dorc.PkgIndex@fresh
+}
+";
+        let c = coord(nullary, &["update"]).expect("a coordinate");
+        assert_eq!(c.kind, "sm.dorc.PkgIndex");
+        assert_eq!(c.entity, ResolvedEntity::Singleton);
+        assert_eq!(c.selector, "fresh");
     }
 
     #[test]
