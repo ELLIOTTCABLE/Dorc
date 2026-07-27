@@ -1476,24 +1476,16 @@ pub fn classify_with_why_diags(
         verdict_lane,
     );
 
-    // THE erasure seam (`26H` §4 — the analyzer-model shrink, applied ONCE). Everything
-    // below derives from `effects`, so shrinking it here is what makes the residual model
-    // uniform: no reach state, class, kill, backing, or ⊤-cause downstream can tell an
-    // erased site from one that never mutated, and none of them is handed the overlay to
-    // consult. `Pure` is the spelling deliberately — a new `Erased` variant would manufacture
-    // exactly the every-consumer-must-remember surface the overlay model exists to abolish.
+    // THE erasure seam (`26H` §4), applied ONCE. `Pure` deliberately: an `Erased` variant would
+    // recreate the every-consumer-must-remember surface the overlay model exists to abolish.
     for site in erased.iter() {
         if let Some(cells) = effects.get_mut(site.index()) {
             *cells = vec![CommandEffect::Pure];
         }
     }
 
-    // The invalidator set: sites that gen into the reaching-defs (an oracled MUTATOR — any
-    // Establish/Kill — or an Opaque), computed from the RESIDUAL model, so an already-erased
-    // site is no longer one. `plan::erase` requires membership before a site may enter the
-    // ledger: erasing a non-invalidator changes nothing, and admitting it would make the
-    // fixpoint's monotone-growth pin vacuous. `SkipClass` cannot answer this — a Kill, an
-    // Opaque, and a blessed pure builtin all classify `MustRun`.
+    // From the RESIDUAL model, so an erased site is no longer one; `SkipClass` cannot answer
+    // this (a Kill, an Opaque, and a pure builtin all say `MustRun`).
     let invalidators: BTreeSet<CfgNodeId> = effects
         .iter()
         .enumerate()

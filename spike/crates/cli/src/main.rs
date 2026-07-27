@@ -845,8 +845,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `26H` §3.5 — sites whose establish came from the VERDICT lane, so their probe ships the
     // verdict body. Site-keyed: nothing about the FACT distinguishes an authored verdict cell.
     let mut verdict_lane = BTreeSet::new();
-    // Round 1: the ORIGIN model. The frozen phase-1 artifacts are built from THIS round;
-    // the plan side takes the round the fixpoint below settles on.
     let frozen = FrozenModel {
         cfg: &cfg.value,
         value: &value,

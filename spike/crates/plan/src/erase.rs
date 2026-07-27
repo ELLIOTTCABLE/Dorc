@@ -247,10 +247,8 @@ pub fn prove_dead_branches(
     let leaf_fact = leaf_facts(cfg, classes);
     let fold = crate::fold::fold(ast, |leaf| leaf_fact.get(&leaf).map(|f| observe(*f)));
 
-    // AstId → the ONE CFG node that owns it. Under function inlining the map is
-    // non-injective AstId-ward (`inv-leaf-seam`), and an ambiguous leaf is dropped rather
-    // than guessed: two nodes sharing a span are two execution sites, and erasing on the
-    // strength of one of them would be a coin-flip.
+    // Under inlining this map is non-injective AstId-ward (`inv-leaf-seam`); an ambiguous leaf
+    // is DROPPED, never guessed — two nodes sharing a span are two execution sites.
     let mut node_of_ast: BTreeMap<AstId, Option<CfgNodeId>> = BTreeMap::new();
     for (node, _) in classes {
         node_of_ast
@@ -440,8 +438,6 @@ apt_get__predict() {
 
     #[test]
     fn a_measured_guard_proves_its_or_right_dead() {
-        // THE transform, positive direction: `query >/dev/null 2>&1 || mutate` with the guard
-        // measured rc 0 ⇒ the `||`-right cannot run ⇒ its invalidator-hood is erasable.
         let m = model("dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n");
         let proofs = proofs_for(&m, 0);
         assert_eq!(proofs.len(), 1, "exactly the install is proven dead");
@@ -454,8 +450,6 @@ apt_get__predict() {
 
     #[test]
     fn a_failing_guard_proves_nothing_dead() {
-        // The `||` fires ⇒ the mutator RUNS ⇒ nothing may be erased. The direction that keeps
-        // the cascade honest: a guard reporting `absent` stops it exactly here.
         let m = model("dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n");
         assert!(
             proofs_for(&m, 1).is_empty(),
@@ -465,8 +459,6 @@ apt_get__predict() {
 
     #[test]
     fn an_unmeasured_guard_proves_nothing_dead() {
-        // `inv-kfail`: a ⊤ controller folds nothing. Here NO cell is measured, so the guard's
-        // status is ⊤ and the mutator stays live — an unreliable oracle can never erase.
         let m = model("dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n");
         let proofs = prove_dead_branches(
             &m.ast,
@@ -480,10 +472,8 @@ apt_get__predict() {
 
     #[test]
     fn a_heredoc_controller_proves_nothing_dead() {
-        // THE wrong-yes fence (condition 4). A heredoc-bearing guard is render-REFUSED, so the
-        // artifact keeps it live and keeps the dead body verbatim BEHIND it — the body may still
-        // run. Erasing it would license downstream elisions off a mutator that executes.
-        // Same book as `a_measured_guard_proves_its_or_right_dead` bar the heredoc.
+        // THE wrong-yes fence: a render-REFUSED guard keeps its dead body verbatim BEHIND it, so
+        // that body may still run. Same book as the positive case bar the heredoc.
         let m = model(
             "dpkg -s alpha <<EOF >/dev/null 2>&1 || apt-get install -y alpha\npayload\nEOF\n",
         );
@@ -495,9 +485,7 @@ apt_get__predict() {
 
     #[test]
     fn a_statically_known_controller_proves_nothing_dead() {
-        // `dec-records-grounded-only`: a bare assignment is rc 0 in the fold, so the fold DOES
-        // prove the `||`-right dead — but that is a static fact, not a MEASUREMENT, and the
-        // ledger's name promises records. Those branches keep today's behaviour.
+        // The fold DOES prove this dead, but off a static rc rather than a measurement.
         let m = model("FOO=bar || apt-get install -y alpha\n");
         assert!(
             proofs_for(&m, 0).is_empty(),
@@ -507,8 +495,6 @@ apt_get__predict() {
 
     #[test]
     fn an_in_loop_site_proves_nothing_dead() {
-        // Condition 3: the line-granular render cannot elide one iteration, so an in-loop leaf
-        // is floored to Run — and a site that RUNS must keep invalidating.
         let m = model(
             "for p in a b; do dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha; done\n",
         );
@@ -520,8 +506,6 @@ apt_get__predict() {
 
     #[test]
     fn a_pure_site_is_never_recorded() {
-        // Condition 2: only a site that actually gens into reach is worth erasing. `echo` is
-        // Pure, so even dead it mints no entry — otherwise monotone-growth counts nothing real.
         let m = model("dpkg -s alpha >/dev/null 2>&1 || echo nothing\n");
         assert!(
             proofs_for(&m, 0).is_empty(),
@@ -531,8 +515,6 @@ apt_get__predict() {
 
     #[test]
     fn proofs_are_deterministic_and_site_ordered() {
-        // `inv-determinism`: the mint is a pure function of its inputs, and its output order is
-        // site order — the property the whole fixpoint's byte-identity rests on.
         let m = model(
             "dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n\
              dpkg -s beta >/dev/null 2>&1 || apt-get install -y beta\n",
@@ -585,10 +567,6 @@ apt_get__predict() {
 
     #[test]
     fn rebuild_from_origin_discards_every_erasure() {
-        // `brg-ledger-resets-on-record-world-change`: grow-only holds only while the
-        // record-set is FIXED. Unreachable in v1 production paths (admission runs once,
-        // records frozen before the loop) — pinned so the contract survives until the
-        // reactive round makes it reachable.
         let mut ledger = ErasureLedger::new();
         ledger.record(
             DeadBranchProof {
@@ -606,11 +584,7 @@ apt_get__predict() {
 
     #[test]
     fn licence_mint_has_exactly_one_caller() {
-        // The acked weak seam's fence (`26H` §4 ask-weak-seam-at-core-boundary): `analysis`
-        // cannot depend on `plan`, so `ErasureLicense::for_site` must be public and the type
-        // system cannot prove every licence traces to a proof. This census does instead — it
-        // fails if ANY second caller appears anywhere in the workspace. A new caller is not a
-        // refactor; it is a second, unproven route to shrinking the analyzer model.
+        // A second caller is not a refactor; it is an unproven route to shrinking the model.
         let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .expect("crates dir");
