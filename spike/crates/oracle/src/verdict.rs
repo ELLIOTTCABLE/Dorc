@@ -70,7 +70,7 @@ use crate::report::recognized_class;
 use crate::predict::{
     AndOr, AndOrItem, CaseArm, Command, MarkKind, Predict, PredictSet, ResolvedEntity, Stmt, Test,
     TopReason, Word, brace_tokens, eval_test, gate_fires, lift_verdicts_converged,
-    map_provider_name, pattern_matches, recognize_gate, resolve_word,
+    map_provider_name, pattern_matches, recognize_gate, resolve_word, state_mutating_builtin,
 };
 
 /// The verdict funcdefs of a whole oracle set, keyed the way
@@ -224,6 +224,14 @@ pub enum VerdictTop {
     /// the world says (`23H` §9.4's disaster shape; the errexit-masked rc `R2-ORTRUE` forbids as a
     /// verdict). `|| return 0` vouched identically.
     AndOrList,
+    /// The reached path contains a state-mutating builtin
+    /// ([`state_mutating_builtin`](crate::predict::state_mutating_builtin)) ⇒ no witness ⇒ run.
+    ///
+    /// The verdict twin of the predict lane's [`TopReason::StateMutatingBuiltin`]. A reached check
+    /// vouches for the coordinate the tracer resolved, so a head that rebinds the tracer's
+    /// positionals or vars between the bind and the check makes the vouch name a different
+    /// referent than the guard will re-measure live (`26I`, `26J`).
+    StateMutatingBuiltin(&'static str),
 }
 
 impl VerdictTop {
@@ -235,6 +243,10 @@ impl VerdictTop {
             VerdictTop::NonConcreteWord(w) => w,
             VerdictTop::BudgetExceeded => "iteration budget exceeded",
             VerdictTop::AndOrList => "reached an and-or list (out of dialect => runs)",
+            // One table for both lanes: a head denied here reads exactly as it does in a predict.
+            VerdictTop::StateMutatingBuiltin(head) => {
+                TopReason::StateMutatingBuiltin(head).as_str()
+            }
         }
     }
 }
@@ -701,6 +713,12 @@ impl Tracer {
             if let Err(reason) = self.resolve(w) {
                 return Flow::Top(top_from_word(reason));
             }
+        }
+        // Ahead of the idiom read: a denied head is neither a decline nor a check, and letting it
+        // set `reached_command` would vouch for a coordinate the shipped guard re-measures under
+        // different positionals (`26I`, `26J`).
+        if let Some(head) = state_mutating_builtin(cmd) {
+            return Flow::Top(VerdictTop::StateMutatingBuiltin(head));
         }
         match decline_idiom(cmd.words.first()) {
             // `return N` exits the function with the author's explicit verdict code (sense-read).

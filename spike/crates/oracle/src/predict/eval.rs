@@ -159,6 +159,13 @@ pub enum TopReason {
     /// really does return and the rc ≥ 2 reads back can't-say. Modelling it makes the static
     /// answer agree with the shipped bytes instead of relying on that.
     Declined,
+    /// The selected path reached a state-mutating builtin ([`state_mutating_builtin`]) the tracer
+    /// does not model. Carries the head word. Before this the walk continued with its own
+    /// positionals/vars unchanged while the shipped body really did apply the effect, so the cell
+    /// the engine keyed and the referent the host measured diverged in silence — a wrong
+    /// `Resolved` (`26I:fnd-state-builtins-silently-mis-key`, `26J`). DENY, not model: the site
+    /// runs, which costs only the elision it never safely had.
+    StateMutatingBuiltin(&'static str),
 }
 
 impl TopReason {
@@ -184,6 +191,7 @@ impl TopReason {
                 "selected path reached an and-or chain (out of dialect => runs)"
             }
             TopReason::Declined => "the check declined this argv (explicit `return`) => runs",
+            TopReason::StateMutatingBuiltin(head) => denied_head_reason(head),
         }
     }
 }
@@ -248,6 +256,147 @@ pub(crate) fn is_return_head(cmd: &Command) -> bool {
         cmd.words.first(),
         Some(Word::Literal(w) | Word::SingleQuotedLiteral(w)) if w == "return"
     )
+}
+
+/// The head word of a command, under either quoting. `'shift'` is a `SingleQuotedLiteral` that
+/// sh still runs as the builtin, so both forms must read alike here (`26I`).
+fn head_word(cmd: &Command) -> Option<&str> {
+    match cmd.words.first() {
+        Some(Word::Literal(w) | Word::SingleQuotedLiteral(w)) => Some(w),
+        _ => None,
+    }
+}
+
+/// Does this plain-command head MUTATE state the tracer models, or make the statement sequence the
+/// tracer walks differ from the one the host runs? If so, the walk may not continue: the tracer
+/// would ship these bytes and then key the measurement off its own now-stale positionals/vars —
+/// a *wrong* `Resolved`, the disaster class (`26I:fnd-state-builtins-silently-mis-key`, which
+/// demonstrated `set --`, `unset`, and `eval` shipping a body that measured a different referent
+/// than the cell it was filed under). Returns the head for the diagnostic; `None` ⇒ walk on.
+///
+/// This is NOT `analysis::effect::is_target_state_pure_builtin` and must never be folded into it.
+/// That list answers "does this touch the managed remote-host state?" — `set --` genuinely does
+/// not, and belongs on it. This one answers "does this diverge the tracer from the bytes it
+/// ships?" A head can honestly be on both. See `26J` for the per-head adjudication.
+///
+/// Heads deliberately absent, because the tracer already models them or they are inert against
+/// everything it models: keyword-`shift` (a `Stmt::Shift`, never reaching this arm — the quoted
+/// spelling that DOES reach it is denied), `return` ([`is_return_head`]), `:` (the mark carrier,
+/// not a no-op), `true`/`false`, `command` (the oracle-contract's own existence gate), `test`/`[`,
+/// `printf`/`echo`, and `wait`/`times`/`jobs`/`pwd`/`type`/`getconf`.
+pub(crate) fn state_mutating_builtin(cmd: &Command) -> Option<&'static str> {
+    let head = head_word(cmd)?;
+    DENIED_HEADS
+        .iter()
+        .find(|(denied, _)| *denied == head)
+        .map(|(denied, _)| *denied)
+}
+
+/// Every denied head paired with the reason its degrade reports — one table, so a head can never
+/// be denied without a message nor messaged without being denied. The first block diverges the
+/// tracer's own positionals/vars or its notion of which statements run; the second leaves the
+/// coordinate right but undermines the claim that the shipped bytes measure it (`26J`).
+const DENIED_HEADS: &[(&str, &str)] = &[
+    (
+        "set",
+        "selected path reached `set` (rewrites the positionals => runs)",
+    ),
+    (
+        "unset",
+        "selected path reached `unset` (unbinds a resolved variable => runs)",
+    ),
+    (
+        "export",
+        "selected path reached `export` (may bind a variable => runs)",
+    ),
+    (
+        "readonly",
+        "selected path reached `readonly` (may bind a variable => runs)",
+    ),
+    (
+        "local",
+        "selected path reached `local` (may bind a variable => runs)",
+    ),
+    (
+        "read",
+        "selected path reached `read` (rebinds a variable from stdin => runs)",
+    ),
+    (
+        "getopts",
+        "selected path reached `getopts` (consumes args, binds variables => runs)",
+    ),
+    (
+        ".",
+        "selected path reached `.` (sources unmodeled code => runs)",
+    ),
+    (
+        "source",
+        "selected path reached `source` (sources unmodeled code => runs)",
+    ),
+    (
+        "eval",
+        "selected path reached `eval` (executes constructed code => runs)",
+    ),
+    (
+        "exec",
+        "selected path reached `exec` (replaces the shell image => runs)",
+    ),
+    (
+        "exit",
+        "selected path reached `exit` (ends the body early => runs)",
+    ),
+    (
+        "break",
+        "selected path reached `break` (leaves a loop the tracer keeps walking => runs)",
+    ),
+    (
+        "continue",
+        "selected path reached `continue` (skips body the tracer keeps walking => runs)",
+    ),
+    (
+        "shift",
+        "selected path reached a quoted `shift` (consumes positionals => runs)",
+    ),
+    (
+        "cd",
+        "selected path reached `cd` (moves the working directory => runs)",
+    ),
+    (
+        "trap",
+        "selected path reached `trap` (installs an unmodeled handler => runs)",
+    ),
+    (
+        "umask",
+        "selected path reached `umask` (changes creation modes => runs)",
+    ),
+    (
+        "ulimit",
+        "selected path reached `ulimit` (changes resource limits => runs)",
+    ),
+    (
+        "alias",
+        "selected path reached `alias` (changes command resolution => runs)",
+    ),
+    (
+        "unalias",
+        "selected path reached `unalias` (changes command resolution => runs)",
+    ),
+    (
+        "hash",
+        "selected path reached `hash` (changes the PATH lookup cache => runs)",
+    ),
+];
+
+/// The degrade message for a denied head. Unreachable with an undenied head — the payload is only
+/// ever minted from [`state_mutating_builtin`]'s own table lookup.
+fn denied_head_reason(head: &str) -> &'static str {
+    DENIED_HEADS
+        .iter()
+        .find(|(denied, _)| *denied == head)
+        .map_or(
+            "selected path reached a state-mutating builtin => runs",
+            |(_, why)| *why,
+        )
 }
 
 /// Is this left operand a command whose rc says nothing about the world — a fixed-rc builtin, or
@@ -423,6 +572,12 @@ impl Evaluator {
                 }
                 if is_return_head(cmd) {
                     return Flow::Top(TopReason::Declined);
+                }
+                // Checked with the guards above and for the same reason: walking on would leave
+                // the tracer's positionals/vars behind the bytes it is about to ship, and key the
+                // measurement off the stale ones (`26I`, `26J`).
+                if let Some(head) = state_mutating_builtin(cmd) {
+                    return Flow::Top(TopReason::StateMutatingBuiltin(head));
                 }
                 // a probe body on the selected path: record its verbatim span (we run
                 // statically — the span ships into the probe artifact, C-1). A trailing
@@ -898,6 +1053,132 @@ mod and_or_degrade_tests {
             panic!("the `;` spelling resolves");
         };
         assert_eq!(r.entity, ResolvedEntity::Operand("beta".to_owned()));
+    }
+}
+
+#[cfg(test)]
+mod state_mutating_builtin_tests {
+    //! The deny-list at the plain-command head (`26I:fnd-state-builtins-silently-mis-key`, `26J`).
+    //! These heads used to fall through as ordinary probe commands: the tracer shipped their bytes
+    //! and walked on with its OWN positionals and vars untouched, so the cell it keyed and the
+    //! referent the host measured diverged in silence.
+    use super::{DENIED_HEADS, Resolution, ResolvedEntity, TopReason, evaluate};
+    use crate::predict::lift_predicts;
+    use dorc_core::Interner;
+
+    fn resolve_argv(body: &str, argv: &[&str]) -> Resolution {
+        let src = format!("w__predict() {{ {body} }}");
+        let mut i = Interner::default();
+        let out = lift_predicts(&mut i, &src);
+        let p = i.intern("w");
+        evaluate(out.value.get(p).expect("a check for w"), argv)
+    }
+
+    /// `26I`'s committed evidence case, verbatim in shape: the body binds from `$1`, then `set --`
+    /// rebinds the positionals before the probe runs. The engine keyed the SITE's entity
+    /// (`install`) while the shipped body measured `alpha` — a converged `holds` about alpha then
+    /// licensed folding a guard on install. The ⊤ is the fix; the negative assertion is the point.
+    #[test]
+    fn the_evidence_case_can_no_longer_ship_a_wrong_coordinate() {
+        let body = "set -- alpha\n   pkg : sm.dorc.X = \"$1\"\n   dpkg-query -W \"$pkg\" : sm.dorc.X:\"$pkg\"@present";
+        let got = resolve_argv(body, &["install"]);
+        assert_eq!(got, Resolution::Top(TopReason::StateMutatingBuiltin("set")));
+        assert!(
+            !matches!(&got, Resolution::Resolved(r) if r.entity == ResolvedEntity::Operand("install".to_owned())),
+            "the site's entity must never key a cell the shipped body re-points"
+        );
+    }
+
+    /// `unset` and `eval`, `26I`'s other two demonstrated members: same bind, same divergence
+    /// (the host probes the empty string / the re-assigned value).
+    #[test]
+    fn the_other_demonstrated_members_degrade_too() {
+        for (head, stmt) in [("unset", "unset pkg"), ("eval", "eval \"pkg=other\"")] {
+            let body = format!(
+                "pkg : sm.dorc.X = \"$1\"\n   {stmt}\n   dpkg-query -W \"$pkg\" : sm.dorc.X:\"$pkg\"@present"
+            );
+            assert_eq!(
+                resolve_argv(&body, &["install"]),
+                Resolution::Top(TopReason::StateMutatingBuiltin(head)),
+            );
+        }
+    }
+
+    /// Every denied head ⊤s from command position — the per-builtin pin, driven off the table so a
+    /// head added to it without a test is impossible.
+    #[test]
+    fn every_denied_head_tops_the_walk() {
+        for (head, _) in DENIED_HEADS {
+            // A quoted `shift` is the only way that head reaches the command arm at all; the bare
+            // spelling is a modeled `Stmt::Shift` and must stay one (asserted below).
+            let spelling = if *head == "shift" { "'shift'" } else { head };
+            let body = format!(
+                "pkg : sm.dorc.X = \"$1\"\n   {spelling}\n   dpkg-query -W \"$pkg\" : sm.dorc.X:\"$pkg\"@present"
+            );
+            assert_eq!(
+                resolve_argv(&body, &["install"]),
+                Resolution::Top(TopReason::StateMutatingBuiltin(head)),
+                "`{head}` must degrade the walk",
+            );
+        }
+    }
+
+    /// The fence-not-blanket half. Keyword-`shift` is modeled and still consumes; the mark-carrier
+    /// `:` is not a denied no-op; and the oracle-contract's own `command -v` gate still resolves.
+    #[test]
+    fn the_modeled_and_inert_heads_still_resolve() {
+        for body in [
+            "shift\n   pkg : sm.dorc.X = \"$1\"\n   dpkg-query -W \"$pkg\" : sm.dorc.X:\"$pkg\"@present",
+            "command -v dpkg-query >/dev/null 2>&1\n   pkg : sm.dorc.X = \"$1\"\n   dpkg-query -W \"$pkg\" : sm.dorc.X:\"$pkg\"@present",
+            "true\n   pkg : sm.dorc.X = \"$1\"\n   dpkg-query -W \"$pkg\" : sm.dorc.X:\"$pkg\"@present",
+        ] {
+            let Resolution::Resolved(r) = resolve_argv(body, &["install", "alpha"]) else {
+                panic!("`{body}` must still resolve");
+            };
+            assert_eq!(r.kind, "sm.dorc.X");
+        }
+    }
+
+    /// The pathological door `26I` named: `at_keyword` requires an UNQUOTED word, so `'shift'`
+    /// skipped the modeled arm and rode the plain-command path — while sh ran the builtin and
+    /// consumed a positional the tracer still held.
+    #[test]
+    fn a_quoted_shift_no_longer_slips_past_the_keyword_check() {
+        let body = "'shift'\n   pkg : sm.dorc.X = \"$1\"\n   dpkg-query -W \"$pkg\" : sm.dorc.X:\"$pkg\"@present";
+        let got = resolve_argv(body, &["install", "alpha"]);
+        assert_eq!(
+            got,
+            Resolution::Top(TopReason::StateMutatingBuiltin("shift"))
+        );
+        assert!(
+            !matches!(&got, Resolution::Resolved(r) if r.entity == ResolvedEntity::Operand("install".to_owned())),
+            "the unconsumed argv must never key the cell"
+        );
+    }
+
+    /// Each denied head reports ITSELF, not a borrowed neighbour's reason — the mis-attribution
+    /// `26G`'s or-list correction was written to stop.
+    #[test]
+    fn each_denied_head_names_itself() {
+        for (head, why) in DENIED_HEADS {
+            assert_eq!(TopReason::StateMutatingBuiltin(head).as_str(), *why);
+            assert!(why.contains(head), "`{head}`'s reason must name it: {why}");
+        }
+    }
+
+    /// The heads the tracer models or is honestly inert against must never join the table — the
+    /// `:` row is load-bearing (it is the mark carrier, not a no-op: denying it would silently
+    /// delete `state_stored_only_in`, `lend_map`, and every `safe-across` vouch in the corpus).
+    #[test]
+    fn the_modeled_and_inert_heads_are_never_denied() {
+        for head in [
+            ":", "true", "false", "return", "command", "test", "[", "printf", "echo",
+        ] {
+            assert!(
+                !DENIED_HEADS.iter().any(|(denied, _)| *denied == head),
+                "`{head}` must never be denied",
+            );
+        }
     }
 }
 

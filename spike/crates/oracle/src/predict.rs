@@ -55,7 +55,9 @@ pub use parser::lift_predicts;
 // travel the exact value-flow predict does (the vocabulary fence). Re-exported `pub(crate)`
 // for that sibling module — these are internal to the oracle crate, not public API.
 pub(crate) use ast::{AndOr, AndOrItem, CaseArm, Command, Pattern, Test, Word};
-pub(crate) use eval::{eval_test, gate_fires, pattern_matches, recognize_gate, resolve_word};
+pub(crate) use eval::{
+    eval_test, gate_fires, pattern_matches, recognize_gate, resolve_word, state_mutating_builtin,
+};
 pub(crate) use parser::{
     brace_tokens, lift_enters, lift_lend_maps, lift_reaches, lift_resolvers,
     lift_state_stored_only_in, lift_touches, lift_verdicts_converged, lint_mark_subset,
