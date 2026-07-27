@@ -208,6 +208,13 @@ it never learns why):
    invalidates everything below — THE case that keeps it honest; iteration determinism
    (same inputs ⇒ byte-identical, shuffle record arrival order); a cyclic/loop shape pinning
    termination + the in-loop-body structural floor untouched; empty-world byte-identical.
+6. ATTRIBUTION IS A HARD REQUIREMENT, not polish (added at human challenge, 2026-07-28):
+   every proven-dead site and every round-2+ validity flip mints its witness/narrative link,
+   and the why-chain for a cascaded elision renders the full derivation ("trusted because
+   line N's mutator was proven dead by line N's measured rc, round k"). An unattributable
+   cascaded elision is the second-worst sin (`271:rul-sin-ordering`) built into the flagship
+   fix — a W-C build that passes §4.5's behavior tests but cannot answer `dorc why` with the
+   chain is INCOMPLETE and does not land.
 
 ## §5. Rulings owed the human (collect at plan review or at triple-check; none blocks W-A)
 
@@ -252,6 +259,40 @@ it never learns why):
   (four crates); W-C days, heaviest (pass structure). Do not compress W-B/W-C into one
   overnight push; the protocol exists because rushed kernel work here converts precision
   bugs into soundness bugs.
+
+## §7½. The feedback-risk inventory (human-demanded, 2026-07-28 — W-C is results-fed-back-in,
+the class the project has long treated as maximally dangerous; the rewound conductor re-checks
+the build against EVERY row)
+
+- risk-license-laundering — outputs-as-premises chains. Account: the only cross-round carrier
+  is records-proven-branch-deadness (measured rc + CFG structure); dispositions/verdicts/
+  licenses are recomputed outputs and NEVER re-enter (§4.2; `pin-no-outcome-as-generator`).
+- risk-self-consistent-fantasy — a fixpoint settling on an internally-consistent elide-all
+  fiction (cf. the self_reach doc-comment's own argument). Account: well-founded layering —
+  round-1 deadness uses only unconditionally-pristine queries; each layer rests on strictly
+  earlier layers + one more measurement; nothing proves itself.
+- risk-error-amplification — the honest cost: one wrong/stale rc today under-executes one
+  line; cascaded, it can un-run N, and depth-N elisions rest on an N-conjunction of
+  measurements. Claim (~SUSPECT, triple-check target): no new CLASS of exposure — line 1 of
+  every ladder already elides on this logic; probe→apply staleness is the priced stage-3
+  bargain; `toctou-scope` excludes unattributed-drift machinery. Quantity changes, kind does
+  not; say so in any user-facing account.
+- risk-nontermination — monotone growing set, bound = site count, hard cap + LOUD diagnostic
+  (never silent partial); monotonicity pinned by test, not argument alone.
+- risk-nondeterminism — degenerate confluence (all records pre-loop, BTree order, pure
+  function of inputs); arrival-shuffle byte-identity pinned (`26B` confluence target).
+- risk-superposition-breach — kernel stays records-blind: one opaque phase-agnostic input
+  ("sites proven not to execute"), caller-derived, `verdict_providers`-shaped; ruling R-2.
+- risk-by-exclusion (three adjacent feedbacks NOT built, and the build must not drift into
+  them): no feedback into probe EMISSION (nothing new ever executes on a host because of the
+  loop — §4.4); no cross-RUN re-ingestion (rec-5; within-run, same-records only); no
+  aid-plane leakage (two-plane law; narratives stay decision-inert).
+- risk-untrusted-reach — a host-forged rc gains cross-site reach within its own plan.
+  Account: bounded admission + conflicted-rc-withheld stand; a host could already lie its
+  own lines into elision (self-harm-only at N=1); any second host / saved result triggers
+  the standing kSTATE/host-as-adversary riders BEFORE reuse.
+- risk-unattributed-cascade — closed by §4.6 (hard requirement; found at the human's
+  challenge — the original plan pinned behavior but not attributability).
 
 ## §7. Cold trails carried (do not silently forget)
 
