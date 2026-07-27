@@ -3507,6 +3507,42 @@ mod tests {
         );
     }
 
+    /// The reason's BYTES, whole. Its sentence now comes from four registry rows with a coordinate
+    /// and a book excerpt between them, and the migration that put them there was required to move
+    /// nothing (`28G` Phase W4's churn contract): substring assertions cannot see a doubled space
+    /// or a lost one at a fragment boundary, and this is the surface the e2e needles read.
+    #[test]
+    fn a_reason_reads_exactly_as_the_hardcoded_sentence_did() {
+        let mut arena = dorc_core::ProvArena::new();
+        let cause = arena.leaf(dorc_core::OriginKind::TopCause, Some(span(11, 20)));
+        let d = Diag::new(
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
+            span(0, 20),
+        );
+        let exp = why(&d, &arena, "apt-get install $(date)").expect("a caused-⊤ explains");
+        assert_eq!(
+            exp.text(),
+            "ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- \
+             its value couldn't be resolved (first seen at 11:20 `tall $(da`); so dorc runs it, to \
+             stay safe (when unsure, run). to skip it, make the operand a literal Dorc can \
+             resolve+probe [resolve-dynamism]"
+        );
+        // The site-less cause: the same sentence, saying so where the locus would be. Nothing else
+        // reaches this row, and an unrendered row is one nobody can tell is wrong.
+        let siteless = arena.leaf(dorc_core::OriginKind::TopCause, None);
+        let bare = Diag::new(
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, Some(siteless))),
+            span(0, 4),
+        );
+        assert_eq!(
+            why(&bare, &arena, "date").expect("a caused-⊤ explains").text(),
+            "ran because the command word is a command-substitution `$(...)` or runtime-dynamic \
+             value -- its value couldn't be resolved (first seen at (no source site)); so dorc \
+             runs it, to stay safe (when unsure, run). to skip it, make the operand a literal \
+             Dorc can resolve+probe [resolve-dynamism]"
+        );
+    }
+
     /// The cause locus arrives as PARTS, and the book's own bytes wear the not-ours class inside
     /// them — which is what makes the plan-stderr lens as safe as the weft-rendered report, since
     /// both read the same fragments (`ask-why-lens-stderr-unencoded`).
