@@ -73,6 +73,11 @@ fn collect(body: &[Stmt], out: &mut Vec<ArmReport>) {
                 collect(else_body, out);
             }
             Stmt::While { body, .. } => collect(body, out),
+            Stmt::AndOr(list) => {
+                for c in list.commands().filter(|c| c.report_sink) {
+                    out.push(read_emission(c));
+                }
+            }
             Stmt::Command(_) | Stmt::Assign { .. } | Stmt::Shift { .. } | Stmt::Annotation(_) => {}
         }
     }

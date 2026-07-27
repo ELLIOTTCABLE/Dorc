@@ -200,9 +200,10 @@ fn leading_shifts_before_guest(body: &[Stmt]) -> Option<usize> {
             // Assigns, annotations, and non-guest COMMANDS (a `printf` mapped-lend line, a colon-line
             // mark) consume NO positionals — skip them, counting only `shift`s.
             Stmt::Assign { .. } | Stmt::Annotation(_) | Stmt::Command(_) => {}
-            // Control-flow before the guest (a flag-strip `while`, a `case`) may consume argv
-            // unpredictably ⇒ un-comparable ⇒ conservatively skip the whole check (`None`).
-            Stmt::While { .. } | Stmt::Case { .. } | Stmt::If { .. } => return None,
+            // Control-flow before the guest may consume argv unpredictably ⇒ un-comparable.
+            Stmt::While { .. } | Stmt::Case { .. } | Stmt::If { .. } | Stmt::AndOr(_) => {
+                return None;
+            }
         }
     }
     None

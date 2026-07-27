@@ -253,6 +253,9 @@ pub enum RejectReason {
     UnmodeledWord,
     /// A pipeline (`cmd | cmd`) — an external composition whose rc the pass cannot trace.
     Pipeline,
+    /// An and-or list (`cmd && cmd`, `cmd || cmd`) — like a pipeline, a composition whose rc the
+    /// pass cannot trace, and whose items' marks are refused, so it declares nothing either.
+    AndOrList,
     /// A [`Word::Var`] reference to a variable NOT bound to a clean value earlier in the body — an
     /// ambient ENV read (`$HOME`, `$USER`).
     AmbientVar,
@@ -346,6 +349,7 @@ impl ClosureWalk {
                 Ok(())
             }
             Stmt::Command(cmd) => self.command(cmd),
+            Stmt::AndOr(list) => Err(reject(RejectReason::AndOrList, Some(list.span))),
         }
     }
 

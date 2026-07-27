@@ -211,6 +211,12 @@ impl Walk {
                 self.run_block(else_body);
             }
             Stmt::While { body, .. } => self.run_block(body),
+            // Every item, like every `case` arm above: over-emission widens, the safe direction.
+            Stmt::AndOr(list) => {
+                for cmd in list.commands() {
+                    self.run_command(cmd);
+                }
+            }
             Stmt::Annotation(a) => {
                 if let Some(value) = &a.value
                     && let Ok(v) = self.resolve(value)

@@ -132,6 +132,11 @@ pub enum TouchesTop {
     MalformedCoordinate,
     /// The iteration budget was exhausted (a loop did not terminate within bound).
     BudgetExceeded,
+    /// The reached path contains an and-or list (`a && b`, `a || b`, `a & b`) — unmodeled, so the
+    /// footprint is untrusted. Reported apart from
+    /// [`NonPrintfCommand`](TouchesTop::NonPrintfCommand) because a list may well be all printfs;
+    /// what the tracer cannot say is WHICH of them ran.
+    AndOrList,
 }
 
 impl TouchesTop {
@@ -146,6 +151,7 @@ impl TouchesTop {
             TouchesTop::ArgCountMismatch => "printf %s count disagreed with argument count",
             TouchesTop::MalformedCoordinate => "emitted line is not a kind:entity coordinate",
             TouchesTop::BudgetExceeded => "iteration budget exceeded",
+            TouchesTop::AndOrList => "touches body reached an and-or list",
         }
     }
 }
@@ -272,6 +278,7 @@ impl Emitter {
                 Err(reason) => Flow::Top(top_from_word(reason)),
             },
             Stmt::Command(cmd) => self.run_command(cmd),
+            Stmt::AndOr(_) => Flow::Top(TouchesTop::AndOrList),
             // An annotation in a touches body desugars to `name=value` (the strip's own
             // rule); treat it as a binding (unresolvable value ⇒ leave unbound). A bare
             // mark is a no-op. Neither emits a coordinate.

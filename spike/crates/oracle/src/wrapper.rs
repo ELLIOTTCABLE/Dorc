@@ -548,6 +548,12 @@ impl PeelTracer {
             match stmt {
                 Stmt::Command(c) if peel_head(c).is_some() => return PeelFlow::Reached,
                 Stmt::Command(_) | Stmt::Annotation(_) => {}
+                // A conditional peel head is not the unconditional exec a peel requires.
+                Stmt::AndOr(list) => {
+                    if list.commands().any(|c| peel_head(c).is_some()) {
+                        return PeelFlow::Top;
+                    }
+                }
                 Stmt::Assign { name, value } => {
                     if let Ok(v) = resolve_word(
                         value,
@@ -736,7 +742,8 @@ impl LendResolver {
                         }
                     }
                 }
-                Stmt::Annotation(_) => {}
+                // A list's items carry no `lends` mark, so no mapping can be read off one.
+                Stmt::Annotation(_) | Stmt::AndOr(_) => {}
             }
         }
     }
