@@ -533,6 +533,10 @@ is the human's; untouched.
   `ask-aggregate-owes-declines` (answered in principle; render change unowned).
   Opaque-review: standing human deferral (typed 2026-07-24, prior arc) — gate
   non-functional; deferred without re-asking, per the standing order.
+  FINAL BLESS GREEN @ `747ab48d`: `gates ok | suite 1482 | e2e 104 blessed`,
+  tree clean (zero golden drift — the arc's zero-churn contracts held to the
+  end). THE ARC IS CLOSED at this tip; awaiting the human's fold of
+  `ai/r28-unify`.
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
