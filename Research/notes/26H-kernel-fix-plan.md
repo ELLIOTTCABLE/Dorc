@@ -55,16 +55,52 @@ Trial-claim corrections adopted from `26G` (independently spot-checked where che
 the `kp` mark was a read-set declaration, not effect-coordinate evidence; sibling-`cant-tell`
 (not just conflict) collapses a shared cell.
 
-## §1. Scope and sequencing (three workstreams, strict order)
+## §1. Scope and sequencing (four workstreams, strict order; W-D minted 2026-07-28)
 
-W-A (loud degrades) → W-B (verdict-mark keying) → W-C (validity fixpoint). W-B and W-C are
-COUPLED in the dangerous direction (`26G:haz-fixing-keying-changes-fold-inputs`: distinct
-coordinates change the invalidating set W-C computes from): land separately, re-bless
-separately, never measure one while the other is in flight. W-A first because it is
-semantics-free, needs no ruling, and its diagnostics then witness W-B/W-C's effects during
-their own builds. Nothing here changes the fail-toward-run bias anywhere; any diff that makes
-MORE elide without a pinned law argument is presumptively wrong (`26G:haz-safety-direction-
-holds-everywhere` — no finding was a soundness bug; do not create one fixing them).
+W-A (loud degrades; LANDED whole — tip `f9e7f4a7`, both halves, zero disposition movement) →
+**W-D (and-or lists: the R-5 safety fix + the closed-form support)** → W-B (verdict-mark
+keying) → W-C (validity fixpoint). W-D precedes W-B because more/fewer resolving bodies is
+upstream input to the keying work (same coupling logic as
+`26G:haz-fixing-keying-changes-fold-inputs`); every workstream lands separately, re-blesses
+separately, never measured while another is in flight. The safety-direction law now carries
+ONE exception: `26G:§FINDING-andand-resolves-a-wrong-coordinate` (found by W-A2's bounded
+investigation) IS a wrong-yes-capable soundness defect — the only one known — and W-D
+phase 1 exists to close it. Everywhere else the standing rule holds: any diff that makes
+MORE elide without a pinned law argument is presumptively wrong.
+
+## §1½. W-D — and-or lists in oracle bodies (minted 2026-07-28; provenance: the human's
+in-chat demand that `|| return` is critical-path to oracle code and the dialect cut
+contradicts the corpus's own mandated idioms (R2-MULTIOP's arity gate, the oracle-contract §3
+standard gate, USER_STORY stage 3's own oracle) — direction human-demanded; scope ACKED
+(human-typed 2026-07-28: "Acked, reasonable… I was just making sure `return 2` was handled,
+that one is critical. Can't be typing a three-line gate around every single command when a
+dozen+ possible paths might need active refusals in a new/careful/defensive oracle." —
+phase 2 form (b) `cmd || return N` is therefore REQUIRED-tier, the workstream's center))
+
+Phase 1 — SAFETY (closes R-5; resolutions may only DISAPPEAR): lex `||`, `&&` (and lone `&`)
+as real tokens in the predict/verdict dialect lexer; and-or shapes parse structurally; every
+shape not supported by phase 2 degrades to loud-⊤ with the and-or/or-list reason (W-A's
+threading renders it). Kills the wrong-coordinate hole: `a && b` can never again lex as three
+words with everything right of `&&` invisible-but-shipped. Golden movement expected ONLY in
+the fail-safe direction (wrong-Resolved → ⊤/run); every diff inspected at bless.
+
+Phase 2 — SUPPORT (the closed forms; restores the critical-path idioms): static support for
+exactly (a) `[ … ] || return N` — left side statically evaluable by the existing eval_test
+machinery; semantically identical to the blessed `if ! …`-free spelling (`if [ … ]; then
+return N; fi` equivalence, differential-tested); and (b) `cmd || return N` with LITERAL N —
+decline-or-continue: the left rc is unknowable but the right branch is a decline, and a
+maybe-decline is always safe under the rc-partition (≥2 ⇒ can't-say ⇒ run), so the walk
+resolves down the fall-through path. `&&` closed forms (`[ … ] && return N` etc.) ONLY if
+the map shows them equally clean (the fall-through path there is left-FAILED, whose tracing
+state is murkier) — else they stay loud-⊤ and are named in the landing report. General
+`A || B` with a non-return right side (fallback probing — coordinate ambiguity, the real
+footgun) stays loud-⊤, permanently until separately designed.
+
+Fences: no keying changes, no validity changes (W-B/W-C territory); differential tests vs
+the floor shells for every supported form (the tracer must agree with dash/posh on which
+path runs, incl. the `||`-left errexit-exemption agreeing with book-side law); the contract
+doc is NOT edited (phase 2 makes it TRUE again); empty-world byte-identical; map-then-execute
+with a conductor checkpoint between map and code, and between phase 1 and phase 2.
 
 ## §2. W-A — every silent ⊤-degrade gets a span and a reason (fnd-three-constructs-void-marks +
 fnd-existence-gate-darkens-oracle(a) + the shared-cell silence)
