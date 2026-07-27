@@ -6051,8 +6051,7 @@ fn settle_validity_fixpoint(
             let validity = validity_view(&round.classes);
             let (by_fact, mut merge_narrative, collapsed) =
                 facts_from_sites(probe, results, &validity);
-            // Withdrawing licensed elisions is a safety-narrowing like any other, so it narrates
-            // (`law-collapse-mints-narrative`). Decision-inert; unrendered today by design.
+            // Withdrawing licensed elisions is a safety-narrowing like any other, so it narrates.
             merge_narrative.push(CollapseNarrative::new(
                 SpeechAct::Derived,
                 CollapseKind::FixpointCapDegrade {

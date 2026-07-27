@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT shim for `apt-get` — rung 2's install RUNS here (its guard reported absent), which is
+# the whole point: a live mutator still walls the guard below it. Rungs 1 and 3 must not appear.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

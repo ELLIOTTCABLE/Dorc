@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT shim for `dpkg-query` — the install-establish probe, consistent with the guard host:
+# alpha and gamma installed, beta absent.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case $2 in
+  beta) exit 1 ;;
+  *) exit 0 ;;
+esac

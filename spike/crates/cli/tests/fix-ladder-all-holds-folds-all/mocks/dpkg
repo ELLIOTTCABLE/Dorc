@@ -1,0 +1,10 @@
+#!/bin/sh
+# INERT shim for `dpkg` — the pkgstate guard, run both as the probe's stripped check
+# (`dpkg -s -- <pkg>`) and, in the BARE book, as the admin's own guard. All three entities are
+# installed on this host, so every guard exits 0 ⇒ every `||` install is dead-in-fact.
+. "${0%/*}/.log"; _dorc_logged "$@"
+pkg=$2; [ "$pkg" = "--" ] && pkg=$3
+case $pkg in
+  alpha|beta|gamma) exit 0 ;;
+  *) exit 1 ;;
+esac

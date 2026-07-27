@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT shim for `dpkg-query` — the package kind's install-establish probe. Consistent with the
+# guard host: all three installed. The installs are OMITTED by the fold regardless (the fold
+# reads the GUARD's rc), but the probe still ships these checks, so gate-1 parity needs them.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

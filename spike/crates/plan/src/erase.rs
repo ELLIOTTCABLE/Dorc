@@ -247,8 +247,7 @@ pub fn prove_dead_branches(
     let leaf_fact = leaf_facts(cfg, classes);
     let fold = crate::fold::fold(ast, |leaf| leaf_fact.get(&leaf).map(|f| observe(*f)));
 
-    // Under inlining this map is non-injective AstId-ward (`inv-leaf-seam`); an ambiguous leaf
-    // is DROPPED, never guessed — two nodes sharing a span are two execution sites.
+    // Non-injective AstId-ward under inlining (`inv-leaf-seam`): an ambiguous leaf is DROPPED.
     let mut node_of_ast: BTreeMap<AstId, Option<CfgNodeId>> = BTreeMap::new();
     for (node, _) in classes {
         node_of_ast
@@ -472,7 +471,7 @@ apt_get__predict() {
 
     #[test]
     fn a_heredoc_controller_proves_nothing_dead() {
-        // THE wrong-yes fence: a render-REFUSED guard keeps its dead body verbatim BEHIND it, so
+        // THE wrong-yes fence: a render-REFUSED guard keeps its dead body verbatim behind it, so
         // that body may still run. Same book as the positive case bar the heredoc.
         let m = model(
             "dpkg -s alpha <<EOF >/dev/null 2>&1 || apt-get install -y alpha\npayload\nEOF\n",

@@ -1,0 +1,9 @@
+#!/bin/sh
+# INERT shim for `dpkg` — the pkgstate guard. alpha and gamma are installed, beta is NOT: the
+# middle guard fails, so rung 2's install is genuinely live and must invalidate rung 3 below it.
+. "${0%/*}/.log"; _dorc_logged "$@"
+pkg=$2; [ "$pkg" = "--" ] && pkg=$3
+case $pkg in
+  alpha|gamma) exit 0 ;;
+  *) exit 1 ;;
+esac

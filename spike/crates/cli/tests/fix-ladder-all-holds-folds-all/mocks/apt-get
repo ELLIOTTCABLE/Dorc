@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT shim for `apt-get` — the three mutators. Every one is fold-dead on this host, so NONE
+# may appear in the apply run-set; each logs only if it wrongly runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

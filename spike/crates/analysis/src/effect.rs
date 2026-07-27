@@ -1484,8 +1484,8 @@ pub fn classify_with_why_diags(
         }
     }
 
-    // From the RESIDUAL model, so an erased site is no longer one; `SkipClass` cannot answer
-    // this (a Kill, an Opaque, and a pure builtin all say `MustRun`).
+    // From the RESIDUAL model; `SkipClass` cannot answer this (a Kill, an Opaque, and a pure
+    // builtin all say `MustRun`).
     let invalidators: BTreeSet<CfgNodeId> = effects
         .iter()
         .enumerate()

@@ -1,0 +1,11 @@
+# probe-results (`26H` §4 W-C). Sites 1/3/5 are the pkgstate Query guards — all VALID at round 1
+# only for site 1; sites 3 and 5 become valid once the fixpoint erases the installs above them,
+# at which point their already-measured rcs (recorded here, never re-probed) become fold-usable.
+# Sites 2/4/6 are the package install establishes (effect-only; rc firewalled from the fold).
+# `set -e` is site 0 (MustRun, no record).
+site 1 effect=holds rc=0
+site 2 effect=holds
+site 3 effect=holds rc=0
+site 4 effect=holds
+site 5 effect=holds rc=0
+site 6 effect=holds
