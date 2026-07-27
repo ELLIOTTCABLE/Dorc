@@ -329,10 +329,22 @@ record-set.
 
 - R-1-model-command-v (from `26G` fnd-existence-gate §2, ambiguous-needs-human): should the
   tracer model `command -v` (and how far does the modeled-statement set go — `test`, `[`,
-  `case $?`)? RECOMMEND: defer; let W-A's diagnostics accumulate real-author evidence first
-  (each addition is a deliberate `inv-top-reject` ⊤-shrink, its own purity argument). The
-  oracle-contract's own §3 gate idiom stays broken-but-LOUD until then; a doc-side interim
-  note is the human's call (docs are their voice).
+  `case $?`)? WRONGLY POSED — `command -v` already models; the real question is OR-LISTS in
+  oracle bodies (`26G:§CORRECTION-orlist-not-command-v`), weighed against the oracle-contract
+  teaching an existence gate that is currently unusable. RECOMMEND still defer: let W-A's
+  diagnostics accumulate real-author evidence first (each addition is a deliberate
+  `inv-top-reject` ⊤-shrink, its own purity argument). The gate idiom is now broken-but-LOUD
+  (`TopReason::OrList` reaches the `site-unresolvable` note); a doc-side interim note is the
+  human's call (docs are their voice).
+- R-5-andlist-resolves-wrong — NOT a precision question like its siblings: `&` is not a
+  predict-lexer metacharacter, so `a && b` lexes as three WORDS and every statement right of
+  `&&` is invisible to the tracer while the byte-exact shipped probe still runs it. A swallowed
+  `shift` therefore resolves a coordinate off the UNSHIFTED argv while the host measures the
+  shifted one — a wrong `Resolved`, the disaster class, not a ⊤. Full repro + the per-statement
+  severity breakdown: `26G:§FINDING-andand-resolves-a-wrong-coordinate`. The fix (lex `&&` so
+  the and-list degrades like the or-list) GROWS ⊤ and moves dispositions, so it needs its own
+  dispatch and re-bless — it is not W-A's, which changes no elision anywhere. Ranks ABOVE
+  R-1/R-3 in the queue: it is the only open item that can produce a wrong yes.
 - R-2-dead-set-kernel-input — DISCHARGED BY ACK (human-typed 2026-07-28, the three-point
   overlay-model restatement in §4): the kernel analyzes a MODEL; the model may be residual;
   shrinkage mint-gates provenance into the global model. The old mask-parameter question it
