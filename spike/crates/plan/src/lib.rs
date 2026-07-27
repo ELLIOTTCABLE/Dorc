@@ -87,6 +87,8 @@ pub use fold::{AbstractRc, FoldResult};
 
 pub mod erasability;
 
+pub mod erase;
+
 pub mod records;
 
 pub mod whylog;
@@ -588,17 +590,7 @@ impl ReplaceLicense {
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
     ) -> Option<ReplaceLicense> {
-        if !valid {
-            return None;
-        }
-        // The guard needs a concrete probe-sourced rc to reproduce — a ⊤ status forbids
-        // the mint (`inv-probe-sourced-values`: never fabricate rc-0). This also covers
-        // the "branch-decision fully resolved" gate (Build 5): a known rc is exactly
-        // what lets the fold resolve the `&&`/`||` AND lets the stand-in reproduce it.
-        if matches!(status, Predicted::Top) {
-            return None;
-        }
-        consumption_ok(consumed, status).then_some(ReplaceLicense {
+        query_substitutes(valid, consumed, status).then_some(ReplaceLicense {
             fact,
             derivation: Derivation {
                 fact,
@@ -855,6 +847,28 @@ impl ReplaceLicense {
 ///
 /// Sound in BOTH phases; only what a blocked leaf *becomes* is phase-keyed (the
 /// caller's collapse, `inv-superposition`).
+/// THE definition of "this Query guard's probed rc substitutes for the guard" — one seat,
+/// two readers (`26H` §4 `dec-no-duplicated-license-logic`).
+///
+/// [`ReplaceLicense::prove_query_replaceable`] mints the substitution license from it, and
+/// [`crate::erase::prove_dead_branches`] requires it of every leaf under a fold controller
+/// before that controller may back an erasure. The second reader is why this is factored:
+/// the erasure ledger must know the controller will really be substituted away, and
+/// re-deriving that rule beside the original would be exactly the drift that turns a
+/// precision fix into a wrong-elision.
+///
+/// The three conjuncts: the guard is VALID (rule-query-validity — no mutator/opaque reached
+/// it, else its resting rc is stale); its rc is a KNOWN probe-sourced value, never a
+/// fabricated rc-0 (`inv-probe-sourced-values`), which is also what lets the fold resolve
+/// the `&&`/`||` at all; and the consumption gates pass.
+pub(crate) fn query_substitutes(
+    valid: bool,
+    consumed: &May<Powerset<Channel>>,
+    status: Predicted<Rc>,
+) -> bool {
+    valid && !matches!(status, Predicted::Top) && consumption_ok(consumed, status)
+}
+
 fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> bool {
     let May(consumed) = consumed;
     if consumed.contains(&Channel::Stdout) || consumed.contains(&Channel::Stderr) {
@@ -3257,28 +3271,7 @@ pub fn build_plan_walled(
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
-    // Map each classified leaf's AstId → its fact (establish + query classes carry
-    // one). The fold reaches over the AST and needs each leaf's observed status keyed
-    // by AstId, so it asks this map, then the injected `observe`. A Query guard's fact
-    // is included so the fold can read its (probe-sourced) Status channel — the rc that
-    // resolves the `&&`/`||` branch (task-D2).
-    let leaf_fact: BTreeMap<AstId, FactKey> = classes
-        .iter()
-        .filter_map(|(node, class)| {
-            let fact = match class {
-                SkipClass::EstablishAmbient(f)
-                | SkipClass::EstablishWritten(f)
-                | SkipClass::QueryResolvable { fact: f, .. } => *f,
-                // An in-loop Members site, and an inlined CALL (arch-2), are never fold
-                // controllers (a Members body is render-floored; a CALL is an aggregate whose
-                // own rc is ⊤), so neither carries a fold status.
-                SkipClass::EstablishMembers { .. }
-                | SkipClass::InlineCall { .. }
-                | SkipClass::MustRun => return None,
-            };
-            Some((cfg.node(*node).ast, fact))
-        })
-        .collect();
+    let leaf_fact = leaf_facts(cfg, classes);
 
     // Run the apply fold. A leaf's fold-status is its injected observation; a leaf
     // with no fact (MustRun / opaque / query without an oracle effect) is ⊤ ⇒ no fold
@@ -3829,6 +3822,38 @@ fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
 /// Does this CFG node have a top (`Top`) node among its successors? Top-containment
 /// (16G hole-5): a leaf whose own statement is top-contaminated — e.g. `cmd &`,
 /// lowered as the leaf followed by a `Top` — is not safely replaceable.
+/// Map each classified leaf's `AstId` → its fact (establish + query classes carry one).
+///
+/// The fold reaches over the AST and needs each leaf's observed status keyed by `AstId`, so
+/// it asks this map, then the injected `observe`. A Query guard's fact is included so the
+/// fold can read its (probe-sourced) Status channel — the rc that resolves the `&&`/`||`
+/// branch (task-D2). An in-loop Members site, and an inlined CALL (arch-2), are never fold
+/// controllers (a Members body is render-floored; a CALL is an aggregate whose own rc is ⊤),
+/// so neither carries a fold status.
+///
+/// Factored because [`crate::erase::prove_dead_branches`] folds over the SAME mapping: if the
+/// ledger's fold saw different observations than the plan's, a site could be erased on a
+/// deadness the artifact never renders.
+pub(crate) fn leaf_facts(
+    cfg: &Cfg,
+    classes: &[(CfgNodeId, SkipClass)],
+) -> BTreeMap<AstId, FactKey> {
+    classes
+        .iter()
+        .filter_map(|(node, class)| {
+            let fact = match class {
+                SkipClass::EstablishAmbient(f)
+                | SkipClass::EstablishWritten(f)
+                | SkipClass::QueryResolvable { fact: f, .. } => *f,
+                SkipClass::EstablishMembers { .. }
+                | SkipClass::InlineCall { .. }
+                | SkipClass::MustRun => return None,
+            };
+            Some((cfg.node(*node).ast, fact))
+        })
+        .collect()
+}
+
 fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
     cfg.succ_ids(node)
         .any(|s| cfg.node(s).kind == CfgNodeKind::Top)
