@@ -1,0 +1,4 @@
+# Both drops report converged: the inert `wombat` mock answers rc 0 for the `cmp` delegation, so
+# each site vouches `holds` on its OWN authored cell (/etc/a.conf and /etc/b.conf, not a shared one).
+site 1 effect=holds rc=0
+site 2 effect=holds rc=0

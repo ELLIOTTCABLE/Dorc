@@ -1,0 +1,3 @@
+ran: hork provision
+ran: wombat cmp -- a.conf /etc/a.conf
+ran: wombat cmp -- b.conf /etc/b.conf
