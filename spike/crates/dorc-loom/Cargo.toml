@@ -31,5 +31,11 @@ dorc-lint = { path = "../lint", version = "0.0.0" }
 # there is no cycle.
 dorc-cli = { path = "../cli", version = "0.0.0" }
 
+[dev-dependencies]
+# The chrome-LINE round-trip proves the WHOLE chain (`28H` ruling 3): a laid-out render, its span
+# map, the part stream, the section, the edit, the entry. Driving the real layout engine is the
+# only way to exercise the wrap the transport has to survive.
+weft = { path = "../weft", version = "0.0.0" }
+
 [lints]
 workspace = true

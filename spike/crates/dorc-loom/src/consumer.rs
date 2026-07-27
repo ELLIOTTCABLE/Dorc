@@ -116,14 +116,27 @@ pub enum DorcApplyRefusal {
     MissingArrangement(String),
     /// The selected section is neither a catalog prose field nor the arrangement register.
     IllegalField(&'static str),
-    /// An arrangement edit carried a `{{name}}` variable; registry entries store WORDS, never
-    /// templates (`289` §2o: the registry never grows grammar machinery).
+    /// An edit to a whole-PAGE arrangement carried a `{{name}}` variable, or the entry it lands
+    /// on holds a word SEQUENCE. A page is one entry, laid out by its author; neither a template
+    /// hole nor a re-split has any meaning there (`289` §2o: the registry never grows grammar
+    /// machinery).
     ArrangementTakesNoVariables(String),
-    /// The edited entry holds a WORD SEQUENCE, and nothing re-splits an edited string back into
-    /// its words. Storage stays sequence-shaped for a future chain narration
-    /// (`289:rider-arrangement-home-anticipates-chains`); the edit path refuses rather than
-    /// guessing, because nothing chain-shaped is built yet.
+    /// The edited entry holds a WORD SEQUENCE where the page path expects one word.
     ArrangementIsSequenceStructured(String),
+    /// A chrome-line edit moved, dropped or duplicated a value the render placed.
+    ///
+    /// The narrow half of what the old blanket sequence refusal covered: an edit may rephrase
+    /// every word around a value, but the values are the render's own account of the world and
+    /// their ORDER is the only thing that says which word goes where. `expected` and `found` are
+    /// the positional variable sequences, so the refusal can say what moved.
+    ArrangementValueSequenceChanged {
+        /// The row the edit landed on.
+        slug: String,
+        /// The sequence the render stamped: `v0, v1, …`.
+        expected: Vec<String>,
+        /// The sequence the edit compiled to.
+        found: Vec<String>,
+    },
 }
 
 impl Default for DorcConsumer {
@@ -199,7 +212,10 @@ impl DorcConsumer {
         compiled: &crate::CompiledSection,
     ) -> Result<(), DorcApplyRefusal> {
         if key.field == crate::ARRANGEMENT_FIELD {
-            return self.apply_arrangement_edit(key, compiled);
+            return self.apply_arrangement_page_edit(key, compiled);
+        }
+        if key.field == crate::ARRANGEMENT_LINE_FIELD {
+            return self.apply_arrangement_line_edit(key, compiled);
         }
         if !matches!(key.field, "message" | "help") {
             return Err(DorcApplyRefusal::IllegalField(key.field));
@@ -240,14 +256,11 @@ impl DorcConsumer {
         Ok(())
     }
 
-    /// Apply one compiled arrangement section to the registry mirror — the chrome twin of the
-    /// catalog path above, and the whole of "an arrangement-word edit in a transcript flows to
-    /// its registry entry exactly as catalog prose does" (`289` §2o).
+    /// Apply one compiled whole-PAGE arrangement section to the registry mirror.
     ///
-    /// The edit lands on the entry the RENDER read: the occurrence's own entry when it has one,
-    /// else the whole-slug entry — so an edit to any one occurrence of shared chrome updates the
-    /// shared words, which is the truth of a shared entry.
-    fn apply_arrangement_edit(
+    /// A page is one entry laid out by its author, so it takes no values and its bytes survive
+    /// verbatim: no whitespace normalization, no re-split (`28H` ruling 7).
+    fn apply_arrangement_page_edit(
         &mut self,
         key: &SectionKey,
         compiled: &crate::CompiledSection,
@@ -263,12 +276,7 @@ impl DorcConsumer {
                 }
             }
         }
-        let index = arrangement_index(&self.arrangements, &key.owner, key.instance)
-            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
-        let entry = self
-            .arrangements
-            .get_mut(index)
-            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        let entry = self.arrangement_entry(key)?;
         if entry.words.words().is_some_and(|current| current.len() > 1) {
             return Err(DorcApplyRefusal::ArrangementIsSequenceStructured(
                 key.owner.clone(),
@@ -276,6 +284,71 @@ impl DorcConsumer {
         }
         entry.words = OwnedWords::Authored(vec![words.concat()]);
         Ok(())
+    }
+
+    /// Apply one compiled chrome-LINE section to the registry mirror — the whole of "a
+    /// value-interleaved chrome line edits back from a transcript exactly as catalog prose
+    /// does" (`_w4-map-DRAFT:prop-one-section-many-fragments`).
+    ///
+    /// The compiled fragment series IS the re-split: a `Text` fragment is a word, a `Variable`
+    /// fragment is a boundary. Two things are checked rather than guessed. The variable sequence
+    /// must be the one the render stamped, in order — reorder, drop or duplicate means the edit
+    /// moved a value, which no rephrasing does. And a WRITTEN entry's arity must survive, because
+    /// its seat interleaves a fixed number of values and a line that no longer accepts them
+    /// renders as the unwritten placeholder instead.
+    ///
+    /// Whitespace runs collapse to one space on the way in: a laid-out line's inter-word
+    /// whitespace is the RENDERER's — a wrap it chose at this width — so storing it would freeze
+    /// one width into the entry (`282` §3's read-in normalization, and why the page path above is
+    /// a separate function rather than a flag).
+    fn apply_arrangement_line_edit(
+        &mut self,
+        key: &SectionKey,
+        compiled: &crate::CompiledSection,
+    ) -> Result<(), DorcApplyRefusal> {
+        let mut words = vec![String::new()];
+        let mut found = Vec::new();
+        for fragment in compiled.fragments() {
+            match fragment {
+                crate::CompiledFragment::Text(text) => {
+                    if let Some(last) = words.last_mut() {
+                        last.push_str(text);
+                    }
+                }
+                crate::CompiledFragment::Variable(name) => {
+                    found.push(name.0.clone());
+                    words.push(String::new());
+                }
+            }
+        }
+        let entry = self.arrangement_entry(key)?;
+        let arity = entry.words.words().map_or(words.len(), <[String]>::len);
+        let expected: Vec<String> = (0..arity.saturating_sub(1))
+            .map(|index| crate::arrangement_variable(index).0)
+            .collect();
+        if found != expected {
+            return Err(DorcApplyRefusal::ArrangementValueSequenceChanged {
+                slug: key.owner.clone(),
+                expected,
+                found,
+            });
+        }
+        entry.words = OwnedWords::Authored(words.iter().map(|word| collapse_runs(word)).collect());
+        Ok(())
+    }
+
+    /// The registry entry the RENDER read: the occurrence's own entry when it has one, else the
+    /// whole-slug entry — so an edit to any one occurrence of shared chrome updates the shared
+    /// words, which is the truth of a shared entry.
+    fn arrangement_entry(
+        &mut self,
+        key: &SectionKey,
+    ) -> Result<&mut OwnedArrangement, DorcApplyRefusal> {
+        let index = arrangement_index(&self.arrangements, &key.owner, key.instance)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        self.arrangements
+            .get_mut(index)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))
     }
 
     /// Re-render a case corpus from the current in-memory mirror.
@@ -594,6 +667,27 @@ fn arrangement_page_slug(case: &Case, words: &[&str]) -> Option<&'static str> {
         Some(declared) if declared != slug => None,
         _ => Some(slug),
     }
+}
+
+/// Whitespace runs to one space. A laid-out line's inter-word whitespace is the RENDERER's, so
+/// storing the wrap it chose at one width would freeze that width into the entry (`282` §3's
+/// read-in normalization). Collapse, never TRIM: a word's own leading or trailing space is what
+/// separates it from the value beside it.
+fn collapse_runs(word: &str) -> String {
+    let mut out = String::with_capacity(word.len());
+    let mut spacing = false;
+    for character in word.chars() {
+        if character.is_whitespace() {
+            if !spacing {
+                out.push(' ');
+            }
+            spacing = true;
+        } else {
+            out.push(character);
+            spacing = false;
+        }
+    }
+    out
 }
 
 /// The registry index serving `(slug, occurrence)`: the occurrence's own entry when it has one,

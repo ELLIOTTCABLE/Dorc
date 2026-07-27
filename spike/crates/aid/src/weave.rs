@@ -3,11 +3,12 @@
 //! Weft is generic over an opaque key and knows nothing about Dorc
 //! (`28E:rul-tree-render-is-a-firewalled-crate`). This module supplies the key —
 //! which is exactly this crate's render-part identity, since that is what the
-//! spans have to name for a round-trip to mean anything — plus the three run
-//! constructors a describe-plane render needs. It composes no document: the why
-//! surface's composition needs `dorc_plan` types this crate may never depend on
-//! (`aid-is-the-describe-plane`), so the tree is built at the cli edge out of
-//! runs minted here.
+//! spans have to name for a round-trip to mean anything — plus the run
+//! constructors a describe-plane render needs, plus the bridge that turns weft's
+//! span map back into a [`RenderParts`] stream the loom transport understands.
+//! It composes no document: the why surface's composition needs `dorc_plan`
+//! types this crate may never depend on (`aid-is-the-describe-plane`), so the
+//! tree is built at the cli edge out of runs minted here.
 //!
 //! The division of labour is the one law that matters:
 //! **weft self-mints WORDLESS geometry only** (`28F:rul-weft-geometry-vs-words`).
@@ -16,7 +17,9 @@
 //! arrives as a run from here, backed by a registry row (`28G` §0). A `format!`
 //! literal reaching a render is the failure this exists to prevent.
 
-use weft::{Instance, Provenance, Run};
+use weft::{Instance, Provenance, Rendered, Run, Span};
+
+use crate::tagged::{RenderPart, RenderParts};
 
 /// The identity a rendered run carries into weft's span map.
 ///
@@ -25,8 +28,20 @@ use weft::{Instance, Provenance, Run};
 /// namespaces straight is the consumer's job.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Face {
-    /// An arrangement-registry row, named by its slug.
-    Row(&'static str),
+    /// An arrangement-registry row, named by its slug and by the occurrence the
+    /// seat resolved it at.
+    ///
+    /// The occurrence rides HERE rather than being resolved and dropped at the
+    /// seat, because a registry key is `(slug, occurrence)` and sixteen reached
+    /// rows are occurrence-keyed: without it the transport would key an edit by
+    /// RENDER POSITION and quietly rewrite a different entry
+    /// (`_w4-map-DRAFT:gap-occurrence-lost-at-the-weave-seat`).
+    Row {
+        /// The registry slug.
+        slug: &'static str,
+        /// The occurrence the seat resolved, or `None` for the whole-slug entry.
+        occurrence: Option<usize>,
+    },
     /// A named part of a row — the parameter a computed value filled.
     Part(&'static str),
     /// Bytes that are NOT ours, named by where they were taken from.
@@ -37,41 +52,68 @@ pub enum Face {
     Table(String),
 }
 
-/// A whole registry-sourced line, as one run.
+/// The [`RenderPart::Arrangement`] slug for weft's own layout: indentation, padding, line
+/// breaks, column separators. Renderer-computed and never an edit region.
+pub const WEFT_LAYOUT: &str = "weft-layout";
+
+/// The [`RenderPart::Arrangement`] slug for a span whose key shape the bridge does not model.
+/// Unreachable from the why surface's own vocabulary; present so the bridge is total rather
+/// than panicking on a key namespace somebody later adds.
+pub const WEFT_UNKEYED: &str = "weft-unkeyed";
+
+/// One run of a registry-sourced line.
 ///
-/// One span per chrome line, never word-spans fenced by computed ones
-/// (`a-chrome-line-is-one-span`): the edit transport anchors sections on the
-/// immutable text between them, and a bare digit is not an anchor.
+/// A chrome line is ONE editable SECTION, never one span: the seat interleaves
+/// its computed values between the entry's words and each piece arrives here
+/// separately, so the transport can re-split an edited line at the boundaries
+/// the render actually stamped (`28H` ruling 3).
 #[must_use]
-pub fn words(text: impl Into<String>, slug: &'static str) -> Run<Face> {
+pub fn words(text: impl Into<String>, slug: &'static str, occurrence: Option<usize>) -> Run<Face> {
     Run::new(
         text,
         Provenance::Arrangement {
-            key: Some(Face::Row(slug)),
+            key: Some(Face::Row { slug, occurrence }),
         },
     )
 }
 
-/// A computed value: a coordinate, an address, a count. Never editable —
-/// rewriting one would be lying about the world rather than rephrasing a
-/// sentence.
+/// A computed value INTERLEAVED into a registry line, at its positional index.
 ///
-/// Encoded on the way in, at `cap` bytes. Many of these values are ENGINE-shaped and the encoding
-/// is a no-op on them, but several are not — an oracle's coordinate text, a speaker's `file:line`,
-/// a book site's `N|command` — and a value seat that encoded only the ones it believed were
-/// foreign would be one audit away from wrong. The registry WORDS a value is interleaved with are
-/// never encoded (see [`words`]); only the value is.
+/// Never editable — rewriting one would be lying about the world rather than rephrasing a
+/// sentence — but it lives INSIDE its row's section, so an edit to the words around it keeps
+/// its identity.
+///
+/// Encoded on the way in, at `cap` bytes. Many of these values are ENGINE-shaped and the
+/// encoding is a no-op on them, but several are not — an oracle's coordinate text, a speaker's
+/// `file:line`, a book site's `N|command` — and a value seat that encoded only the ones it
+/// believed were foreign would be one audit away from wrong. The registry WORDS a value is
+/// interleaved with are never encoded (see [`words`]); only the value is.
 #[must_use]
-pub fn value(
+pub fn sentence_value(
     text: impl AsRef<str>,
     slug: &'static str,
-    part: &'static str,
+    occurrence: Option<usize>,
+    index: usize,
     cap: usize,
 ) -> Run<Face> {
     Run::param(
         crate::display::encode_foreign(text.as_ref(), cap),
-        Face::Row(slug),
+        Face::Row { slug, occurrence },
+        Face::Part("value"),
+        Instance(u32::try_from(index).unwrap_or(u32::MAX)),
+    )
+}
+
+/// A computed value standing on its OWN — a speaker column, a gutter line number, an address.
+///
+/// Keyed by its seat rather than by a registry row, because there is no sentence for it to sit
+/// inside; the transport therefore reads it as immutable structure.
+#[must_use]
+pub fn value(text: impl AsRef<str>, part: &'static str, cap: usize) -> Run<Face> {
+    Run::param(
+        crate::display::encode_foreign(text.as_ref(), cap),
         Face::Part(part),
+        Face::Part("value"),
         Instance(0),
     )
 }
@@ -115,11 +157,181 @@ pub fn foreign(text: &str, source: impl Into<String>, cap: usize) -> Run<Face> {
     )
 }
 
+/// What one stretch of rendered output IS, for transport purposes — the bridge's working
+/// vocabulary between weft's span map and the loom's part stream.
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum Facet {
+    Words {
+        slug: &'static str,
+        occurrence: Option<usize>,
+    },
+    Value {
+        slug: &'static str,
+        occurrence: Option<usize>,
+        index: usize,
+    },
+    Foreign(String),
+    Computed(&'static str),
+    Layout,
+}
+
+impl Facet {
+    /// The registry row this stretch belongs to, if any. Two stretches of one row are what the
+    /// whitespace-absorption rule looks for.
+    fn row(&self) -> Option<(&'static str, Option<usize>)> {
+        match self {
+            Facet::Words { slug, occurrence }
+            | Facet::Value {
+                slug, occurrence, ..
+            } => Some((*slug, *occurrence)),
+            _ => None,
+        }
+    }
+}
+
+fn facet_of(provenance: &Provenance<Face>) -> Facet {
+    match provenance {
+        Provenance::Arrangement {
+            key: Some(Face::Row { slug, occurrence }),
+        } => Facet::Words {
+            slug,
+            occurrence: *occurrence,
+        },
+        Provenance::Param {
+            key: Face::Row { slug, occurrence },
+            instance,
+            ..
+        } => Facet::Value {
+            slug,
+            occurrence: *occurrence,
+            index: instance.0 as usize,
+        },
+        Provenance::Foreign {
+            key: Face::Source(source),
+        } => Facet::Foreign(source.clone()),
+        Provenance::Arrangement {
+            key: Some(Face::Part(part)),
+        }
+        | Provenance::Param {
+            key: Face::Part(part),
+            ..
+        } => Facet::Computed(part),
+        Provenance::Arrangement { key: None } => Facet::Layout,
+        _ => Facet::Computed(WEFT_UNKEYED),
+    }
+}
+
+/// Map a weft render back to the loom's part stream — the bridge that gives the why surface an
+/// editable face (`_w4-map-DRAFT:gap-no-weft-to-parts-bridge`).
+///
+/// Two rules do the work beyond the flat key mapping, and both exist because weft WRAPS:
+///
+/// - a run is tokenized before wrapping, so one chrome line arrives as many spans sharing one
+///   provenance; adjacent equal facets coalesce back into one part.
+/// - at a break weft drops the whitespace token and mints its own newline+pad
+///   (`Arrangement { key: None }`). A pure-whitespace layout stretch lying BETWEEN two stretches
+///   of the SAME registry row is that row's own inter-word space wearing the renderer's clothes,
+///   so it is absorbed into the row rather than splitting it. Compile-back collapses whitespace
+///   runs to one space, which is what makes the absorption lossless (`28H` ruling 7).
+#[must_use]
+pub fn to_render_parts(rendered: &Rendered<Face>) -> RenderParts {
+    let text = rendered.text();
+    let spans = rendered.spans();
+    let mut facets: Vec<Facet> = spans
+        .iter()
+        .map(|span| facet_of(&span.provenance))
+        .collect();
+    for index in 0..facets.len() {
+        if !matches!(facets.get(index), Some(Facet::Layout))
+            || !span_text(text, spans, index)
+                .is_some_and(|bytes| !bytes.is_empty() && bytes.chars().all(char::is_whitespace))
+        {
+            continue;
+        }
+        let before = index.checked_sub(1).and_then(|before| facets.get(before));
+        let after = facets.get(index.saturating_add(1));
+        let (Some(before), Some(after)) = (before, after) else {
+            continue;
+        };
+        let (Some(row), Some(next_row)) = (before.row(), after.row()) else {
+            continue;
+        };
+        if row != next_row {
+            continue;
+        }
+        // Inside ONE value the absorbed break belongs to that value; across a word/value
+        // boundary it is the row's own inter-word space.
+        let absorbed = if before == after {
+            before.clone()
+        } else {
+            Facet::Words {
+                slug: row.0,
+                occurrence: row.1,
+            }
+        };
+        if let Some(slot) = facets.get_mut(index) {
+            *slot = absorbed;
+        }
+    }
+
+    let mut parts = RenderParts::new();
+    let mut open: Option<(Facet, String)> = None;
+    for (index, facet) in facets.into_iter().enumerate() {
+        let Some(bytes) = span_text(text, spans, index) else {
+            continue;
+        };
+        match &mut open {
+            Some((current, accumulated)) if *current == facet => accumulated.push_str(bytes),
+            _ => {
+                if let Some((current, accumulated)) = open.take() {
+                    parts.push(part_of(current, accumulated));
+                }
+                open = Some((facet, bytes.to_owned()));
+            }
+        }
+    }
+    if let Some((current, accumulated)) = open {
+        parts.push(part_of(current, accumulated));
+    }
+    parts
+}
+
+fn span_text<'a>(text: &'a str, spans: &[Span<Face>], index: usize) -> Option<&'a str> {
+    let span = spans.get(index)?;
+    text.get(span.start..span.end())
+}
+
+fn part_of(facet: Facet, text: String) -> RenderPart {
+    match facet {
+        Facet::Words { slug, occurrence } => RenderPart::ArrangementWords {
+            text,
+            slug,
+            occurrence,
+        },
+        Facet::Value {
+            slug,
+            occurrence,
+            index,
+        } => RenderPart::ArrangementValue {
+            text,
+            slug,
+            occurrence,
+            index,
+        },
+        Facet::Foreign(source) => RenderPart::ForeignText { text, source },
+        Facet::Computed(slug) => RenderPart::Arrangement { text, slug },
+        Facet::Layout => RenderPart::Arrangement {
+            text,
+            slug: WEFT_LAYOUT,
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use weft::{
-        CodeBlock, CodeCell, CodeLine, Document, Literalness, Node, NodeKind, Span, render,
+        CodeBlock, CodeCell, CodeLine, Document, Literalness, Node, NodeKind, Paragraph, render,
     };
 
     /// The tagging is load-bearing, not decorative: an edge must be able to find
@@ -132,7 +344,7 @@ mod tests {
             mode: Literalness::Literal,
             locus: None,
             lines: vec![CodeLine {
-                gutter: Some(value("31", "excerpt", "line", 32)),
+                gutter: Some(value("31", "excerpt-line", 32)),
                 cells: vec![CodeCell::new(vec![foreign(
                     "push)\tprintf 'x'\u{7}",
                     "certsync.oracle.sh",
@@ -159,5 +371,55 @@ mod tests {
             .get(foreign_spans[0].start..foreign_spans[0].end())
             .expect("the span lies within the render");
         assert_eq!(bytes, "push)\\x09printf 'x'\\x07");
+    }
+
+    fn sentence(runs: Vec<Run<Face>>) -> Document<Face> {
+        Document::new(vec![Node::new(NodeKind::Prose(Paragraph { runs }))])
+    }
+
+    /// The bridge's whole promise: the bytes it re-attributes are the bytes weft printed.
+    #[test]
+    fn the_part_stream_reproduces_the_render() {
+        let document = sentence(vec![
+            words("ran because operand ", "why-reason", Some(1)),
+            sentence_value("3", "why-reason", Some(1), 0, 240),
+            words(
+                " is a command-substitution nothing could be said about",
+                "why-reason",
+                Some(1),
+            ),
+        ]);
+        let rendered = render(&document, 40);
+        assert_eq!(to_render_parts(&rendered).text(), rendered.text());
+    }
+
+    /// A wrapped chrome line is still ONE row: the newline+pad weft mints where it dropped the
+    /// row's own space is absorbed back into the row, so the line does not fragment into
+    /// sections the transport would have to re-anchor between.
+    #[test]
+    fn a_wrap_inside_a_chrome_line_stays_one_row() {
+        let document = sentence(vec![
+            words("ran because operand ", "why-reason", Some(1)),
+            sentence_value("3", "why-reason", Some(1), 0, 240),
+            words(
+                " is a command-substitution nothing could be said about",
+                "why-reason",
+                Some(1),
+            ),
+        ]);
+        let rendered = render(&document, 40);
+        assert!(
+            rendered.text().contains('\n'),
+            "the fixture must actually wrap or it proves nothing"
+        );
+        let parts = to_render_parts(&rendered);
+        let split = parts.parts().windows(2).any(|pair| {
+            matches!(pair.first(), Some(RenderPart::Arrangement { slug, .. }) if *slug == WEFT_LAYOUT)
+                && matches!(
+                    pair.last(),
+                    Some(RenderPart::ArrangementWords { .. } | RenderPart::ArrangementValue { .. })
+                )
+        });
+        assert!(!split, "no layout byte splits the row: {parts:?}");
     }
 }

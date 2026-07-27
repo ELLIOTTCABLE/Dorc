@@ -39,12 +39,15 @@ pub enum RenderPart {
         /// The occurrence of this `(code, field)` within the render.
         instance: usize,
     },
-    /// Foreign payload text from a passthrough hole.
+    /// Foreign payload text: bytes that are not ours, and never an edit region.
     ForeignText {
         /// Rendered bytes, which may be empty.
         text: String,
-        /// The declared param name the hole interpolated.
-        param: &'static str,
+        /// Where the bytes came from — the declared param name on the catalog path, the file
+        /// they were quoted out of on the weft path. Runtime-owned because the weft path's
+        /// answer is a path a book named, not a name a catalog row declared
+        /// (`_w4-map-DRAFT:friction-foreign-key-shape-mismatch`).
+        source: String,
     },
     /// Render-owned structure around catalog fields: bytes the renderer computed itself, and
     /// therefore never an edit region.
@@ -54,10 +57,23 @@ pub enum RenderPart {
         /// What structure this run is.
         slug: &'static str,
     },
-    /// Prose the renderer pulled from the ARRANGEMENT REGISTRY
+    /// A WHOLE PAGE pulled from the arrangement registry: an invocation whose entire output is
+    /// one entry (`288:rul-help-text-is-loomable`).
+    ///
+    /// Kept apart from [`RenderPart::ArrangementWords`] because the whitespace means different
+    /// things: a page's alignment and blank lines are the AUTHOR's and compile back verbatim,
+    /// while a laid-out line's whitespace is the renderer's (`28H` ruling 7).
+    ArrangementPage {
+        /// Rendered bytes.
+        text: String,
+        /// The registry key's arrangement slug.
+        slug: &'static str,
+    },
+    /// One run of a chrome LINE the renderer pulled from the ARRANGEMENT REGISTRY
     /// (`289:rul-arrangement-home-is-registry-plus-transcripts`) — chrome with an editable
-    /// face. Only [`crate::arrangement::push_arrangement_words`] mints this, so the bytes and
-    /// the registry entry can never disagree.
+    /// face. Only [`crate::arrangement::push_arrangement_sentence`] and the weft bridge
+    /// (`crate::weave::to_render_parts`) mint this, so the bytes and the registry entry can
+    /// never disagree.
     ArrangementWords {
         /// Rendered bytes.
         text: String,
@@ -67,6 +83,23 @@ pub enum RenderPart {
         /// once and wants per-position entries. `None` ⇒ one entry serves every occurrence.
         /// The stamping is ALL-OR-NOTHING per slug within one render.
         occurrence: Option<usize>,
+    },
+    /// A computed value interleaved INSIDE a chrome line, at its positional index within that
+    /// line's `words[0] values[0] words[1] …` sentence.
+    ///
+    /// Unlike [`RenderPart::Arrangement`] it does NOT close the section it sits in: a chrome
+    /// line is one editable SECTION whose fragments alternate prose and value, and nothing
+    /// splits one line across sections (`28H` ruling 3). Never editable itself — rewriting a
+    /// value would be lying about the world rather than rephrasing a sentence.
+    ArrangementValue {
+        /// Rendered bytes.
+        text: String,
+        /// The registry key's arrangement slug — the row this value was interleaved into.
+        slug: &'static str,
+        /// The occurrence of `slug` this value's line is.
+        occurrence: Option<usize>,
+        /// The value's position in the line: `values[index]`.
+        index: usize,
     },
 }
 
@@ -79,7 +112,9 @@ impl RenderPart {
             | RenderPart::ParamValue { text, .. }
             | RenderPart::ForeignText { text, .. }
             | RenderPart::Arrangement { text, .. }
-            | RenderPart::ArrangementWords { text, .. } => text,
+            | RenderPart::ArrangementPage { text, .. }
+            | RenderPart::ArrangementWords { text, .. }
+            | RenderPart::ArrangementValue { text, .. } => text,
         }
     }
 }

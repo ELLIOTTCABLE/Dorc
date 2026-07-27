@@ -340,6 +340,29 @@ fn an_over_wide_word_overruns_rather_than_being_split() {
     );
 }
 
+/// A word assembled from several runs is still ONE word. A consumer that
+/// interleaves a computed value into a line of its own prose hands the wrapper
+/// three runs where the reader sees one token, and a break at that seam would be
+/// a line-break the consumer never wrote.
+#[test]
+fn a_word_assembled_from_several_runs_never_breaks_at_a_seam() {
+    for width in SWEEP {
+        let document = Document::new(vec![prose(vec![
+            text("the site at "),
+            text("book.sh:"),
+            value("142"),
+            text(":cmdsub"),
+            text(" ran because nothing could be said about it"),
+        ])]);
+        let rendered = render(&document, width);
+        assert!(
+            rendered.text().contains("book.sh:142:cmdsub"),
+            "a run boundary is not a break point at width {width}: {:?}",
+            rendered.text()
+        );
+    }
+}
+
 #[test]
 fn literal_code_lines_stay_byte_honest() {
     let line = "ufw status verbose | grep -q \"$1\"  : org.ufw.Firewall:\"$1\"@allowed";

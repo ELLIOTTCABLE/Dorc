@@ -3689,13 +3689,13 @@ impl FirstWallHint {
     /// The `dorc why` detail row for the wall's own site (the reasoning behind the plan-mode nag).
     /// Registry-homed like every other why-surface string (`28G` §0), and stated in admin-English:
     /// the engine's `elide` never reaches a render.
-    fn why_detail(&self) -> String {
+    fn why_said(&self) -> Said {
         let recovery = if self.unwall == 0 {
-            String::new()
+            Said::Value(String::new())
         } else {
-            why_words("why-reason-first-wall-unwall", &[&self.unwall.to_string()])
+            Said::words("why-reason-first-wall-unwall", &[&self.unwall.to_string()])
         };
-        why_words("why-reason-first-wall", &[&recovery])
+        Said::sentence("why-reason-first-wall", None, vec![recovery])
     }
 }
 
@@ -3824,7 +3824,7 @@ fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
 /// the tier SET is the law, the words ride `27V:rul-output-form-unwelded`. `28E` §8 fixes the
 /// grammar they must obey — the tier word is the sentence's VERB, past tense for run events
 /// (`reported`, `ran`) and present for standing text (`vouches`, `claims`, `derives`).
-fn verb_word(tier: SpeechAct) -> String {
+fn verb_said(tier: SpeechAct) -> Said {
     let occurrence = match tier {
         SpeechAct::Measured => 0,
         SpeechAct::Vouched => 1,
@@ -3834,11 +3834,7 @@ fn verb_word(tier: SpeechAct) -> String {
         SpeechAct::Consented => 5,
         SpeechAct::Declined => 6,
     };
-    dorc_aid::arrangement::arrangement_text(
-        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-        "why-tier-word",
-        Some(occurrence),
-    )
+    Said::words_at("why-tier-word", Some(occurrence), &[])
 }
 
 /// What happened to a line, in the ADMIN's terms rather than the engine's — the typed twin of
@@ -3883,11 +3879,7 @@ impl OutcomeKind {
             OutcomeKind::Ran => 2,
             OutcomeKind::Dropped => 3,
         };
-        dorc_aid::arrangement::arrangement_text(
-            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-            "why-outcome-word",
-            Some(occurrence),
-        )
+        Said::words_at("why-outcome-word", Some(occurrence), &[]).text()
     }
 }
 
@@ -3908,11 +3900,6 @@ fn foil_word(disposition: &dorc_plan::Disposition) -> String {
 /// [`outcome_word`], never from a `format!` literal (`28G` §0).
 fn why_words(slug: &str, values: &[&str]) -> String {
     dorc_aid::said::words_text(slug, None, values)
-}
-
-/// [`why_words`] for a registry row whose words are keyed by occurrence.
-fn why_words_at(slug: &str, occurrence: Option<usize>, values: &[&str]) -> String {
-    dorc_aid::said::words_text(slug, occurrence, values)
 }
 
 /// The gutter glyph a chain row wears in the DEFAULT render (`28E` §7
@@ -3943,7 +3930,7 @@ enum StepLabel {
 }
 
 impl StepLabel {
-    fn word(self) -> String {
+    fn said(self) -> Said {
         let occurrence = match self {
             StepLabel::Suspect => 0,
             StepLabel::Fix => 1,
@@ -3951,11 +3938,7 @@ impl StepLabel {
             StepLabel::Review => 3,
             StepLabel::Describe => 4,
         };
-        dorc_aid::arrangement::arrangement_text(
-            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-            "why-next-step-label",
-            Some(occurrence),
-        )
+        Said::words_at("why-next-step-label", Some(occurrence), &[])
     }
 }
 
@@ -4201,17 +4184,14 @@ fn survival_chain(
             crossed: joined_walls.clone(),
             claimant: claimants.join(", "),
         }),
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[
-                reference,
-                &outcome,
-                &foil_word(disposition),
-                &why_words(
-                    "why-outcome-because-survived",
-                    &[&joined_walls, CONSENT_FLAG],
-                ),
-            ],
+        outcome: contrastive(
+            reference,
+            &outcome,
+            &foil_word(disposition),
+            Said::words(
+                "why-outcome-because-survived",
+                &[&joined_walls, CONSENT_FLAG],
+            ),
         ),
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
         chain: ChainModel::all_selected(
@@ -4294,14 +4274,7 @@ fn guard_chain(
     links.extend(walls_above.iter().map(|wall| ChainLink {
         tier: SpeechAct::Ran,
         speaker: Some(format!("{}|{}", wall.line, wall.word)),
-        payload: Said::Words(
-            "why-wall-payload",
-            dorc_aid::arrangement::arrangement_text(
-                &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-                "why-wall-payload",
-                Some(wall.role.occurrence()),
-            ),
-        ),
+        payload: Said::words_at("why-wall-payload", Some(wall.role.occurrence()), &[]),
         quoted: false,
         event: None,
         explanation: None,
@@ -4324,13 +4297,10 @@ fn guard_chain(
         vec![
             StepRow {
                 label: StepLabel::Describe,
-                body: Said::Words(
+                body: Said::words_at(
                     "why-next-step-describe-walls",
-                    why_words_at(
-                        "why-next-step-describe-walls",
-                        Some(usize::from(describable.len() > 1)),
-                        &[&describable.join(", ")],
-                    ),
+                    Some(usize::from(describable.len() > 1)),
+                    &[&describable.join(", ")],
                 ),
                 alternative: false,
             },
@@ -4343,14 +4313,11 @@ fn guard_chain(
     };
     ChainRender {
         trust: None,
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[
-                reference,
-                &OutcomeKind::Guarded.word(),
-                &OutcomeKind::Guarded.foil().word(),
-                &why_words("why-outcome-because-guarded", &[&joined_walls]),
-            ],
+        outcome: contrastive(
+            reference,
+            &OutcomeKind::Guarded.word(),
+            &OutcomeKind::Guarded.foil().word(),
+            Said::words("why-outcome-because-guarded", &[&joined_walls]),
         ),
         analysis_opener: Said::words("why-analysis-opener-guarded", &[]),
         chain: ChainModel::all_selected(
@@ -4467,8 +4434,7 @@ fn participating_block(lines: &[usize], filename: &str, book_src: &str) -> Vec<N
             Some(CodeLine {
                 gutter: Some(dorc_aid::weave::value(
                     number.to_string(),
-                    "why-participating-lines",
-                    "line",
+                    "why-participating-lines-gutter",
                     WHY_VALUE_CAP,
                 )),
                 cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
@@ -4486,10 +4452,10 @@ fn participating_block(lines: &[usize], filename: &str, book_src: &str) -> Vec<N
         Node::new(NodeKind::Code(CodeBlock {
             table: Some(Face::Table(format!("participating:{filename}"))),
             mode: Literalness::Literal,
-            locus: Some(vec![dorc_aid::weave::words(
-                why_words("why-participating-lines-locus", &[filename]),
-                "why-participating-lines-locus",
-            )]),
+            locus: Some(
+                Said::words("why-participating-lines-locus", &[filename])
+                    .runs("why-participating-lines"),
+            ),
             lines: rows,
         })),
         registry_paragraph("why-participating-lines-closure"),
@@ -4542,13 +4508,7 @@ fn decline_chain(
     let class = reason.class;
     let occurrence = Some(class.occurrence());
     let arm = Some((reason.arm.0, reason.arm_file));
-    let class_words = |slug: &str| {
-        dorc_aid::arrangement::arrangement_text(
-            &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-            slug,
-            occurrence,
-        )
-    };
+    let class_said = |slug: &'static str| Said::words_at(slug, occurrence, &[]);
     let links = vec![
         ChainLink {
             tier: SpeechAct::Declined,
@@ -4556,10 +4516,7 @@ fn decline_chain(
             payload: Said::words("why-declines-payload", &[class.token()]),
             quoted: true,
             event: None,
-            explanation: Some(Said::Words(
-                "why-declines-explanation",
-                class_words("why-declines-explanation"),
-            )),
+            explanation: Some(class_said("why-declines-explanation")),
             excerpt: oracle_excerpt(arm, oracle_paths, oracle_srcs),
         },
         ChainLink {
@@ -4574,30 +4531,18 @@ fn decline_chain(
     ];
     ChainRender {
         trust: None,
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[
-                reference,
-                &OutcomeKind::Ran.word(),
-                &OutcomeKind::Ran.foil().word(),
-                &why_words("why-outcome-because-declined", &[word]),
-            ],
+        outcome: contrastive(
+            reference,
+            &OutcomeKind::Ran.word(),
+            &OutcomeKind::Ran.foil().word(),
+            Said::words("why-outcome-because-declined", &[word]),
         ),
         analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
-        chain: ChainModel::all_selected(
-            links,
-            Some(Said::Words(
-                "why-declines-join",
-                class_words("why-declines-join"),
-            )),
-        ),
+        chain: ChainModel::all_selected(links, Some(class_said("why-declines-join"))),
         participants: Vec::new(),
         shipped: None,
         next_steps: NextSteps {
-            opener: Said::Words(
-                "why-declines-next-steps-opener",
-                class_words("why-declines-next-steps-opener"),
-            ),
+            opener: class_said("why-declines-next-steps-opener"),
             rows: vec![StepRow {
                 label: StepLabel::Review,
                 body: Said::words("why-next-step-review", &[address]),
@@ -4673,13 +4618,42 @@ const STEPS_TABLE: &str = "why-next-steps";
 /// The table the receipt header's record lines join — one block, degrading as a unit.
 const RECEIPT_TABLE: &str = "why-receipt";
 
-/// Render a marked tree at `inset` and print it. The ONE seat where the why surface becomes bytes.
-fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
+/// Lay a marked tree out at `inset` and re-attribute it — the ONE seat where the why surface
+/// becomes bytes, and the span map's production consumer.
+///
+/// The render happens ONCE and the span map is carried, not dropped: the printed bytes come out
+/// of the part stream, so every transcript the corpus drives proves the bridge total and
+/// byte-exact (`_w4-map-DRAFT:gap-span-map-unconsumed`). Nothing here is `dorc why`-specific — a
+/// loom driver re-renders the same tree through the same seat and gets a stream it can attribute
+/// an edit against.
+fn why_parts(nodes: Vec<Node<Face>>, inset: usize) -> dorc_aid::tagged::RenderParts {
     let frame = weft::Frame::of_width(weft::Width::new(WHY_WIDTH)).inset(inset);
-    print!(
-        "{}",
-        weft::render_framed(&Document::new(nodes), &frame).text()
-    );
+    dorc_aid::weave::to_render_parts(&weft::render_framed(&Document::new(nodes), &frame))
+}
+
+/// [`why_parts`], printed.
+fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
+    print!("{}", why_parts(nodes, inset).text());
+}
+
+/// The OUTCOME panel's one contrastive sentence, from all four chain walkers.
+///
+/// The because-clause arrives as a composed fragment rather than a flattened string, which is
+/// what un-truncates it: a raw value is capped at [`WHY_VALUE_CAP`] because a pathological book
+/// word must not own the render, but a because-clause is OUR OWN registry words with their own
+/// already-capped values inside, and capping it a second time cut a 281-byte reason at 240
+/// (`28H:ask-because-clause-truncates-at-two-forty`).
+fn contrastive(reference: &str, outcome: &str, foil: &str, because: Said) -> Said {
+    Said::sentence(
+        "why-outcome-contrastive",
+        None,
+        vec![
+            Said::Value(reference.to_owned()),
+            Said::Value(outcome.to_owned()),
+            Said::Value(foil.to_owned()),
+            because,
+        ],
+    )
 }
 
 /// One attributed fragment as a paragraph.
@@ -4698,7 +4672,7 @@ fn registry_paragraph(slug: &'static str) -> Node<Face> {
 /// nothing else (`28F:rul-weft-geometry-vs-words`).
 fn panel(header: &'static str, body: Vec<Node<Face>>) -> Node<Face> {
     Node::new(NodeKind::Section(Section {
-        header: vec![dorc_aid::weave::words(why_words(header, &[]), header)],
+        header: Said::words(header, &[]).runs(header),
         counts: None,
         body,
     }))
@@ -4727,14 +4701,9 @@ fn chain_rows(links: &[&ChainLink]) -> Vec<Node<Face>> {
                 speaker: link
                     .speaker
                     .iter()
-                    .map(|who| {
-                        dorc_aid::weave::value(who, "why-chain-row", "speaker", WHY_VALUE_CAP)
-                    })
+                    .map(|who| dorc_aid::weave::value(who, "why-chain-row-speaker", WHY_VALUE_CAP))
                     .collect(),
-                verb: Some(vec![dorc_aid::weave::words(
-                    verb_word(link.tier),
-                    "why-tier-word",
-                )]),
+                verb: Some(verb_said(link.tier).runs("why-chain-row")),
                 payload: Payload {
                     quoting: if link.quoted {
                         Quoting::Quoted
@@ -4765,18 +4734,14 @@ fn excerpt_nodes(excerpt: &Excerpt) -> Vec<Node<Face>> {
             table: table.clone(),
             mode: Literalness::Literal,
             locus: locus.then(|| {
-                vec![dorc_aid::weave::words(
-                    why_words("why-as-written-locus", &[&excerpt.path]),
-                    "why-as-written-locus",
-                )]
+                Said::words("why-as-written-locus", &[&excerpt.path]).runs("why-as-written")
             }),
             lines: lines
                 .iter()
                 .map(|(number, text)| CodeLine {
                     gutter: Some(dorc_aid::weave::value(
                         number.to_string(),
-                        "why-as-written",
-                        "line",
+                        "why-as-written-gutter",
                         WHY_VALUE_CAP,
                     )),
                     cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
@@ -4791,10 +4756,8 @@ fn excerpt_nodes(excerpt: &Excerpt) -> Vec<Node<Face>> {
     let mut out = vec![block(&excerpt.head, true)];
     if excerpt.elided > 0 {
         out.push(Node::new(NodeKind::Truncation(Truncation {
-            note: vec![dorc_aid::weave::words(
-                why_words("why-as-written-elided", &[&excerpt.elided.to_string()]),
-                "why-as-written-elided",
-            )],
+            note: Said::words("why-as-written-elided", &[&excerpt.elided.to_string()])
+                .runs("why-as-written"),
         })));
         out.push(block(&excerpt.tail, false));
     }
@@ -4827,10 +4790,7 @@ fn shipped_block(sh: &str) -> Node<Face> {
 fn step_row(row: &StepRow) -> Node<Face> {
     Node::new(NodeKind::Labeled(LabeledRow {
         table: Some(Face::Table(STEPS_TABLE.to_owned())),
-        label: vec![dorc_aid::weave::words(
-            row.label.word(),
-            "why-next-step-label",
-        )],
+        label: row.label.said().runs("why-next-step"),
         body: row.body.runs("why-next-step"),
         attachments: Vec::new(),
     }))
@@ -4862,10 +4822,7 @@ fn step_nodes(steps: &NextSteps) -> Vec<Node<Face>> {
                 .enumerate()
                 .map(|(position, row)| Branch {
                     connective: (position > 0).then(|| {
-                        vec![dorc_aid::weave::words(
-                            why_words("why-alternative-connective", &[]),
-                            "why-alternative-connective",
-                        )]
+                        Said::words("why-alternative-connective", &[]).runs("why-next-step")
                     }),
                     nodes: vec![step_row(row)],
                 })
@@ -5128,7 +5085,7 @@ fn emit_why_report(
                         // upcoming-firstwall-hint: the FIRST unmodeled wall carries the forward
                         // reasoning here — the pull detail behind the plan-mode `hint:` nag.
                         if let Some(fw) = first_wall.filter(|fw| fw.leaf == step.leaf) {
-                            reasons.push(Said::Words("why-reason-first-wall", fw.why_detail()));
+                            reasons.push(fw.why_said());
                         }
                         (
                             reasons,
@@ -5283,23 +5240,22 @@ fn emit_why_triptych(
 /// demonstrates. The richer per-disposition panels — a guarded line naming its wall, a declined line
 /// showing the author's arm — are the narration lane's.
 ///
-/// SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): the because-clause is a VALUE
-/// interleaved into the outcome row, so a multi-fragment reason is FLATTENED here and its
-/// fragments' own registry rows get no face in the transcript. The bytes are right — every
-/// fragment is already encoded, and the flattened value is what the row has always carried — but
-/// until a chrome line can hold interleaved value fragments (the transport half of `28G` Phase
-/// W4), an edit to one of those rows has to be made in the lock rather than at the transcript.
+/// RESIDUAL SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): a multi-fragment
+/// reason still renders as ONE value of the outcome row, so its own fragments' registry rows get
+/// no face of their own in the transcript — nesting them would split the outcome line across
+/// sections, which is exactly what `28H` ruling 3 forbids. What DID change is the budget: a
+/// composed reason is no longer re-capped as if it were raw foreign bytes, so a long
+/// because-clause reads in full.
 fn plain_chain(site: &WhySite) -> ChainRender {
     let (because, rest) = site
         .reasons
         .split_first()
-        .map_or((String::new(), &[][..]), |(head, tail)| (head.text(), tail));
+        .map_or((Said::Value(String::new()), &[][..]), |(head, tail)| {
+            (head.clone(), tail)
+        });
     ChainRender {
         trust: None,
-        outcome: Said::words(
-            "why-outcome-contrastive",
-            &[&site.reference(), &site.outcome, &site.foil, &because],
-        ),
+        outcome: contrastive(&site.reference(), &site.outcome, &site.foil, because),
         analysis_opener: Said::words("why-analysis-opener-plain", &[&site.reference()]),
         chain: ChainModel::all_selected(
             rest.iter()
@@ -5471,7 +5427,7 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
     }
     Node::new(NodeKind::Banner(Banner {
         headline: vec![
-            dorc_aid::weave::value(&address, "why-item", "address", WHY_VALUE_CAP),
+            dorc_aid::weave::value(&address, "why-item-address", WHY_VALUE_CAP),
             dorc_aid::weave::mark(" | ", "why-item-gutter"),
             dorc_aid::weave::foreign(&site.command, filename, WHY_SOURCE_CAP),
         ],
@@ -5479,10 +5435,7 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
             Node::new(NodeKind::Prose(Paragraph { runs })),
             Node::new(NodeKind::Pointer(PointerLine {
                 placement: weft::Placement::Standalone,
-                target: vec![dorc_aid::weave::words(
-                    why_words("why-item-pointer", &[&address]),
-                    "why-item-pointer",
-                )],
+                target: Said::words("why-item-pointer", &[&address]).runs("why-item"),
             })),
         ],
     }))
@@ -5560,18 +5513,18 @@ impl PlanTally {
 /// go wrong the first time someone rewrote one.
 fn receipt_banner(receipt: &Receipt) -> Node<Face> {
     let when = match (receipt.at, receipt.replayed) {
-        (Some(at), false) => why_words(
+        (Some(at), false) => Said::words(
             "why-receipt-when-live",
             &[&dorc_aid::instant::date_time_text(at)],
         ),
-        (Some(at), true) => why_words(
+        (Some(at), true) => Said::words(
             "why-receipt-when-replayed",
             &[&dorc_aid::instant::date_time_text(at)],
         ),
-        (None, _) => why_words("why-receipt-when-undated", &[]),
+        (None, _) => Said::words("why-receipt-when-undated", &[]),
     };
     let tally = match receipt.tally {
-        PlanTally::Derived(counts) if counts.elide_by_trusted_claim == 0 => why_words(
+        PlanTally::Derived(counts) if counts.elide_by_trusted_claim == 0 => Said::words(
             "why-receipt-plan-tally-by-proof",
             &[
                 &counts.run.to_string(),
@@ -5580,7 +5533,7 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
                 &counts.elide_by_proof.to_string(),
             ],
         ),
-        PlanTally::Derived(counts) => why_words(
+        PlanTally::Derived(counts) => Said::words(
             "why-receipt-plan-tally",
             &[
                 &counts.run.to_string(),
@@ -5590,14 +5543,14 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
                 &counts.elide_by_trusted_claim.to_string(),
             ],
         ),
-        PlanTally::DriftedUnsplit { run, guard, elide } => why_words(
+        PlanTally::DriftedUnsplit { run, guard, elide } => Said::words(
             "why-receipt-plan-tally-unsplit",
             &[&run.to_string(), &guard.to_string(), &elide.to_string()],
         ),
     };
     let risk = receipt.risk_profile.map_or_else(
-        || why_words("why-receipt-risk-profile-none", &[]),
-        str::to_owned,
+        || Said::words("why-receipt-risk-profile-none", &[]),
+        |profile| Said::Value(profile.to_owned()),
     );
     // Replaces the digest row rather than joining it: exact-or-absent, never a third shape.
     let book_row = match &receipt.at_head {
@@ -5617,18 +5570,24 @@ fn receipt_banner(receipt: &Receipt) -> Node<Face> {
             "why-receipt-oracles",
             &[&receipt.oracles.join(", ")],
         )),
-        receipt_row(&Said::words("why-receipt-risk-profile", &[&risk])),
-        receipt_row(&Said::Words("why-receipt-plan-tally", tally)),
+        receipt_row(&Said::sentence(
+            "why-receipt-risk-profile",
+            None,
+            vec![risk],
+        )),
+        receipt_row(&tally),
         // `tc-apply-report-is-prediction`: no apply executor exists, so saying so IS the whole
         // replayed-voice obligation — never let a reader take a prediction for an outcome.
         receipt_row(&Said::words("why-receipt-dispositions-predicted", &[])),
         receipt_row(&Said::words("why-addressability-line", &[])),
     ]);
     Node::new(NodeKind::Banner(Banner {
-        headline: vec![dorc_aid::weave::words(
-            why_words("why-receipt-header", &[&when, &receipt.host]),
+        headline: Said::sentence(
             "why-receipt-header",
-        )],
+            None,
+            vec![when, Said::Value(receipt.host.clone())],
+        )
+        .runs("why-receipt"),
         body,
     }))
 }
@@ -5750,6 +5709,63 @@ fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_aid::diag::
     match &diag.code {
         DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod because_clause_tests {
+    use super::{Said, WHY_VALUE_CAP, contrastive};
+
+    /// The full cmdsub reason, as `dorc_aid::diag::why` composes it: our opener row, our locus
+    /// value, the book's own bytes, our remediation row. 281 bytes at the shape that motivated
+    /// the fix.
+    fn composed_reason() -> Said {
+        Said::Parts(vec![
+            Said::words("why-reason-cmdsub-opener", &["operand 3"]),
+            Said::Value("6:20".to_owned()),
+            Said::Mark("why-cause-quote", " `".to_owned()),
+            Said::foreign("apt-get install -y \"$(resolve-dynamism)\"", "book.sh"),
+            Said::Mark("why-cause-quote", "`".to_owned()),
+            Said::words("why-reason-cmdsub-closer", &[]),
+            Said::words("why-remediation-resolve-dynamism", &[]),
+        ])
+    }
+
+    /// A because-clause is OUR words with their own already-capped values inside, so the display
+    /// budget that stops a pathological book word owning the render must not apply to it a second
+    /// time (`28H:ask-because-clause-truncates-at-two-forty`). It used to, and cut the reason at
+    /// 240 bytes mid-sentence.
+    #[test]
+    fn a_composed_because_clause_renders_whole() {
+        let reason = composed_reason();
+        let whole = reason.text();
+        assert!(
+            whole.len() > WHY_VALUE_CAP,
+            "the fixture must exceed the raw-value budget or it proves nothing: {} bytes",
+            whole.len()
+        );
+        let rendered = contrastive("14|apt-get", "ran", "skipped", reason).text();
+        assert!(
+            rendered.contains(&whole),
+            "the whole clause survives, so nothing was truncated: {rendered}"
+        );
+    }
+
+    /// The budget still binds where it was FOR: a raw value is somebody else's bytes, and one
+    /// pathological book word may not own the render.
+    #[test]
+    fn a_raw_because_clause_is_still_capped() {
+        let rendered = contrastive(
+            "14|apt-get",
+            "ran",
+            "skipped",
+            Said::Value("z".repeat(WHY_VALUE_CAP * 2)),
+        )
+        .text();
+        assert!(
+            rendered.contains("..."),
+            "a raw value is capped: {rendered}"
+        );
     }
 }
 
@@ -9211,12 +9227,12 @@ mod first_wall_tests {
     /// rule keeps free — and would re-break on every prose pass.
     #[test]
     fn why_detail_carries_the_unwall_count() {
-        let with_count = hint(1, 0).why_detail();
+        let with_count = hint(1, 0).why_said().text();
         assert!(
             with_count.contains('1'),
             "the recovery count must reach the reader: {with_count}"
         );
-        let without = hint(0, 0).why_detail();
+        let without = hint(0, 0).why_said().text();
         assert!(
             !without.contains('0'),
             "a zero count is dropped, never rendered as `0 sites`: {without}"
@@ -9248,7 +9264,7 @@ mod first_wall_tests {
         }
         assert!(checked > 0, "the why-surface registry rows must be reached");
         assert!(hint(1, 1).body().is_ascii());
-        assert!(hint(1, 1).why_detail().is_ascii());
+        assert!(hint(1, 1).why_said().text().is_ascii());
     }
 
     /// A synthetic oracle whose `disturbs` arm is preceded by the author's comment and followed by
@@ -9565,10 +9581,7 @@ mod not_ours_bytes_tests {
                     elided: 0,
                 };
                 Node::new(NodeKind::Section(Section {
-                    header: vec![dorc_aid::weave::words(
-                        why_words("why-analysis-heading", &[]),
-                        "why-analysis-heading",
-                    )],
+                    header: Said::words("why-analysis-heading", &[]).runs("why-analysis-heading"),
                     counts: None,
                     body: excerpt_nodes(&excerpt),
                 }))
