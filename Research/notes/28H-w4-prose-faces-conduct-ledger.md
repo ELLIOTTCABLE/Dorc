@@ -323,6 +323,33 @@ is the human's; untouched.
   work + the aid/CLAUDE.md doc batch: selection code derives a typed
   inspectable goal first, selects backwards from it, and can narrate it; the
   kTASTE `Relevance` room grows goal-conditioned variants, never a bool.
+- **lane-precommit-loom-honesty LANDED + FOLDED** @ merge `0d0b5a58` (5 commits,
+  tip `2c806075`; own-hand gate at fold). The glob hole closed
+  (`spike/crates/cli/tests/*.loom` joins the e2e step; warm single-loom hook
+  measured 1.40–1.50s, INSIDE the 3s law, cheaper than the dir-case it joins);
+  hk step `looms` → `loom-hygiene` (three references, all in hk.pkl); the
+  no-match floor is a three-way triage (`Runs`/`NoTrial`/`Unknown`) with both
+  directions pinned in preflight; `step_globs` battery asserts
+  seen/seen/unseen for the three representative paths (the cost-scoping
+  decision pinned, not just coverage); `mise run both test:hooks` + `both
+  gate:full-quiet` green. BONUS: a pre-existing false-failure found + fixed —
+  the dir glob already reached weft `golden/` + dorc-loom `fixtures/`
+  (`.rs`-fixture space), panicking the pre-commit e2e step on any commit
+  touching them; now benign-with-note through the real hook.
+- **Conductor rulings on the honesty flags:** `tc-unknown-name-always-fatal`
+  ACCEPTED (loud is the safe direction for a harness; the staged-deletion
+  measurement licenses it — noted dependency: if hk ever includes staged
+  deletions in `{{files}}`, this becomes a false failure) ·
+  `tc-benign-means-filesystem-presence` ACCEPTED (discovery-coupling refused;
+  the `e2e.rs`-as-filter cost case is exotic and still prints the note) ·
+  `tc-pin-is-the-decision-not-the-exit-code` ACCEPTED (process-level pin =
+  self-spawn tax; hand-verified transcripts + the real-hook end-to-end proof
+  are proportionate) · the `looms`-cargo-target residual naming collision
+  ACCEPTED as residual (renaming churns `mise run test:looms` + docs for
+  little; the step rename removed the collision that actually hid the hole).
+  Frictions banked: `loom-hygiene`'s glob reaches dorc-loom fixtures (whole-
+  corpus run on a fixture edit; sub-second, harmless, noted) · WSL env note:
+  `wsl -- mise trust --all` where plain `mise trust` fails config parse.
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
