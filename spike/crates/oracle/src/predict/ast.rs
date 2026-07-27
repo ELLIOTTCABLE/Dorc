@@ -112,6 +112,96 @@ pub enum Stmt {
     /// invariance colon-lines of `state_stored_only_in` (`277` §4e) are ALSO plain
     /// commands: the sh no-op `:` carrying a trailing `: <token>` mark.
     Command(Command),
+    /// An AND-OR list (`a && b`, `a || b`, `a & b`) — see [`AndOr`].
+    AndOr(AndOr),
+}
+
+/// An and-or list: a first item plus a run of operator-joined items. FLAT, not left-nested — sh's
+/// and-or operators share one precedence and associate left, so a tree would encode structure the
+/// grammar does not have.
+///
+/// ACCEPTED at parse and degraded at TRACE, the same posture a pipeline gets, for a concrete
+/// reason: the corpus's one and-or list is in a `sm_dorc_Package__resolve()` body, and a resolver
+/// is host-run strip-only — a parse rejection would delete a working resolver over a construct
+/// nothing traces.
+#[derive(Debug, Clone)]
+pub struct AndOr {
+    /// The list's first item.
+    pub first: AndOrItem,
+    /// The operator-joined remainder, in source order. Never empty (a list with no operator is
+    /// just a statement).
+    pub rest: Vec<AndOrLink>,
+    /// VERBATIM span of the whole list, first item through last — what ships, byte-exact.
+    pub span: Span,
+    /// Trailing effect marks REFUSED off this list's items, kept ONLY so [`crate::strip`] can
+    /// still erase their bytes; no semantic consumer can reach them from here.
+    ///
+    /// A verdict mark claims "THIS command's rc establishes the property", but a list's rc is the
+    /// LIST's: in `probe : k:e@sel || return 2` the marked cell's complement sense (rc 1) can never
+    /// occur, and in `probe : k:e@sel || true` the rc is forged 0 always (the `R2-ORTRUE`
+    /// masked-verdict shape). Refusing forces the unmasked spelling that law already demands, and
+    /// `281` §7's one-verdict-per-line rc-arity says the same from the grammar side.
+    pub refused_marks: Vec<RefusedMark>,
+}
+
+impl AndOr {
+    /// The list's items, in source order.
+    pub fn items(&self) -> impl Iterator<Item = &AndOrItem> + '_ {
+        std::iter::once(&self.first).chain(self.rest.iter().map(|l| &l.item))
+    }
+
+    /// The list's COMMAND items, in source order — the walkers' usual need (a
+    /// [`Test`](AndOrItem::Test) item carries no words, marks, or redirects to visit).
+    pub fn commands(&self) -> impl Iterator<Item = &Command> + '_ {
+        self.items().filter_map(|i| match i {
+            AndOrItem::Command(c) => Some(c),
+            AndOrItem::Test(_) => None,
+        })
+    }
+}
+
+/// One operator-joined item of an [`AndOr`].
+#[derive(Debug, Clone)]
+pub struct AndOrLink {
+    /// The operator joining this item to what precedes it.
+    pub op: AndOrOp,
+    /// The operator token's own span (diagnostics point here).
+    pub op_span: Span,
+    /// The item to the operator's right.
+    pub item: AndOrItem,
+}
+
+/// An [`AndOr`] list operator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AndOrOp {
+    /// `&&` — the right item runs only if the left SUCCEEDED.
+    AndThen,
+    /// `||` — the right item runs only if the left FAILED.
+    OrElse,
+    /// `&` — background the LEFT item and continue. A separator, not a conjunction; it rides this
+    /// enum so a backgrounded item lands in the one node that permanently degrades instead of
+    /// needing a second unmodeled-statement shape. No supported form ever admits it.
+    Async,
+}
+
+/// One item of an [`AndOr`] list.
+#[derive(Debug, Clone)]
+pub enum AndOrItem {
+    /// A simple command — the ordinary item.
+    Command(Command),
+    /// A `[ … ]` bracket test in list position. Produced ONLY inside a list (a bare test statement
+    /// stays out of dialect), which is what lets a tracer decide such a list statically.
+    Test(Test),
+}
+
+/// A trailing mark refused off an [`AndOr`] item, carrying its host command's span so the strip
+/// deletes exactly the `[host.hi .. mark.span.hi]` region it deletes for any marked command.
+#[derive(Debug, Clone)]
+pub struct RefusedMark {
+    /// The host command's verbatim span; erasure begins at its end.
+    pub host: Span,
+    /// The refused mark.
+    pub mark: Mark,
 }
 
 /// A parsed inline-dialect mark (`277` §4a/§4d): an effect / observe / emission
@@ -226,14 +316,6 @@ pub struct Annotation {
 
 /// A plain command in a probe body, with its verbatim source span preserved.
 #[derive(Debug, Clone)]
-#[expect(
-    clippy::struct_excessive_bools,
-    reason = "`or_list` refines `pipeline` for REPORTING only. Folding the pair into one enum is \
-              the cleaner shape but rewrites all eleven `cmd.pipeline` consumers — six of them \
-              outside `predict/` (carry/entry/evaler/reaches/touches/wrapper) — turning a \
-              reason-only change into a cross-module one. Left as a flag pair so every degrade \
-              decision stays byte-identical."
-)]
 pub struct Command {
     /// The command words (`[dpkg-query, -W, "$pkg"]`), each a [`Word`]. Kept so the
     /// evaluator can confirm the command is well-formed dialect; the *shipped* form
@@ -259,13 +341,6 @@ pub struct Command {
     /// pipeline can't-resolve ⇒ the site RUNS, the safe degrade). `words` holds only the FIRST
     /// stage's words (never interpreted for a pipeline — the ⊤ fires first).
     pub pipeline: bool,
-    /// Whether the [`pipeline`](Command::pipeline) flag was raised by an OR-LIST (`a || b`) rather
-    /// than a real pipe (`a | b`). `||` lexes as two adjacent one-byte [`super::lexer::Tok::Pipe`]s,
-    /// so both shapes fold into the same accepted-then-⊤ Command; this bit changes only WHICH
-    /// [`super::eval::TopReason`] the trace reports, never whether it degrades. Telling an author
-    /// who wrote the oracle-contract's own `|| return 2` gate that their body "reached a command
-    /// pipeline" is a mis-attribution, which outranks silence in the sin ordering.
-    pub or_list: bool,
     /// Whether a redirect on this command sends fd 1 (stdout) away from where it would
     /// otherwise flow (`>/dev/null`, `>&2`, `1>file`) — the §2 per-channel STDOUT DECLINE
     /// (`271:rul-only-oracle-bytes-ship` rider 1). Load-bearing ONLY for the composed-probe
