@@ -3187,8 +3187,6 @@ fn unresolvable_diagnostics(
 
     // The aggregate: name every real command (backtick-wrapped), point at `dorc why`. The frame's
     // caret lands on the first as a representative (its source_excerpt is that first command).
-    // A site whose oracle check gave up for a reason the tracer can name carries that reason; the
-    // rest (a kill, a `MustRun`, a resolved check with no shippable body) have none to carry.
     let names: Vec<String> = real
         .iter()
         .map(|(leaf, _, t)| match probe.unresolvable_causes.get(leaf) {
