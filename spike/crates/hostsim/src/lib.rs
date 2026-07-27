@@ -769,7 +769,7 @@ apt_get__predict() {
             ast,
             idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             i,
             &mut arena,
         )
@@ -1137,7 +1137,7 @@ apt_get__predict() {
                 &parsed.value,
                 &idx,
                 &checks,
-                &BTreeSet::new(),
+                &dorc_oracle::verdict::VerdictIndex::default(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
             )
@@ -1261,7 +1261,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &[dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value],
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -1430,7 +1430,7 @@ grep__predict() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )

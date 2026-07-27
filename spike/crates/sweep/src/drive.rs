@@ -58,7 +58,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         .collect();
     // Typeless-floor verdict-provider set (`24L` §7 — mirror the cli seam so the differential net
     // exercises any auto-cell the corpus oracle mints).
-    let verdict_providers = dorc_oracle::verdict::verdict_providers(i, &oracle_refs);
+    let verdicts = dorc_oracle::verdict::VerdictIndex::of(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
     let (classified, _why, kills, _kill_coords, fact_backings, _collapse_narrative) =
@@ -68,11 +68,12 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &parsed.value,
             &idx,
             &checks,
-            &verdict_providers,
+            &verdicts,
             &std::collections::BTreeMap::new(),
             i,
             &mut arena,
             &mut std::collections::BTreeMap::new(),
+            &mut BTreeSet::new(),
         );
     let classes = classified.value;
 

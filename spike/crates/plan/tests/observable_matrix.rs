@@ -141,7 +141,7 @@ fn classify_value(
         ast,
         idx,
         &checks,
-        &std::collections::BTreeSet::new(),
+        &dorc_oracle::verdict::VerdictIndex::default(),
         i,
         &mut arena,
     )
@@ -839,7 +839,7 @@ fn plan_query_and_ast(
         &parsed.value,
         &idx,
         &checks,
-        &std::collections::BTreeSet::new(),
+        &dorc_oracle::verdict::VerdictIndex::default(),
         &mut i,
         &mut arena,
     )
@@ -1484,7 +1484,7 @@ fn inline_call_emits_site_n_m_probe_records() {
         &parsed.value,
         &idx,
         &checks,
-        &std::collections::BTreeSet::new(),
+        &dorc_oracle::verdict::VerdictIndex::default(),
         &mut i,
         &mut dorc_core::ProvArena::new(),
     )
@@ -1545,7 +1545,7 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &parsed.value,
         &idx,
         &[dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value],
-        &std::collections::BTreeSet::new(),
+        &dorc_oracle::verdict::VerdictIndex::default(),
         &mut i,
         &mut dorc_core::ProvArena::new(),
     )

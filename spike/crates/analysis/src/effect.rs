@@ -36,6 +36,7 @@ use dorc_core::{
     Span,
 };
 use dorc_oracle::predict::{self, PredictSet, ResolvedEntity, TopReason};
+use dorc_oracle::verdict::VerdictIndex;
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -230,40 +231,88 @@ fn finalize_cmdsub_tops(
 /// `site-unresolvable` note can name a CAUSE and not just a site. Nothing branches on it —
 /// the `Opaque` it accompanies is minted identically whether the slot is read or dropped, and
 /// every caller that does not want it passes a throwaway.
-/// The typeless-floor decision at a concrete-argv site that declared no marked effect
-/// (`24L` §2/§3): a provider bearing a verdict function gets the synthetic **auto-cell**
-/// (`dorc_core::auto_fact` — a private per-provider singleton establish), so its own-line
-/// elision/guard tier lights up; every other provider degrades to `Opaque` (`inv-top-reject`,
-/// the honest floor). Reached ONLY after the argv is confirmed fully concrete — a ⊤ command
-/// word or operand returned `Opaque` earlier (never an auto-cell over a non-per-site-resolvable
-/// argv). The auto-kind is keyed by the MAPPED provider name so `apt-get`/`apt_get` share one
-/// cell (the same normalization `build_vouches` and the probe funcname use).
-fn auto_or_opaque(
-    verdict_providers: &BTreeSet<ProviderId>,
+/// The VERDICT-LANE decision at a concrete-argv site whose predict declared no marked effect: what
+/// cell does a verdict-bearing provider's site establish? Three answers, in decreasing precision.
+///
+/// 1. The verdict body authored a coordinate for THIS argv (`26H` §3 / `evaluate_verdict_coord`)
+///    ⇒ that AUTHORED cell. oracle-contract §4: "attach facts to the one line that measured them."
+/// 2. It bears a verdict function but authored no usable coordinate here ⇒ the synthetic
+///    **auto-cell** (`dorc_core::auto_fact` — a per-provider singleton), the `24L` §2/§3 typeless
+///    floor: enough to light up the site's own elision/guard tier, and nothing more.
+/// 3. No verdict function at all ⇒ `Opaque` (`inv-top-reject`, the honest floor).
+///
+/// Row 2 is the founding shape and stays byte-identical: `24L` §3 priced the singleton's coarseness
+/// ("more same-cell staleness ⇒ more forced runs, never fewer") for the MARKLESS body it was
+/// written for, and a body that authored nothing is still exactly that body. Row 1 is outside that
+/// pricing — the author named the cell, so the engine stops pretending every site of one command
+/// touches one thing (`26G:fnd-shared-auto-cell-collides`). What row 1 must NEVER do is split cells
+/// the author did not split: two sites resolving the SAME coordinate share one cell and still
+/// ⊤-merge on disagreement, because `an-written-stale` rests on same-state sites COLLIDING
+/// (`26H` §3.4 — per-site synthetic cells are forbidden for exactly this reason).
+///
+/// Reached ONLY after the argv is confirmed fully concrete — a ⊤ command word or operand returned
+/// `Opaque` earlier (never a cell over a non-per-site-resolvable argv). The auto-kind is keyed by
+/// the MAPPED provider name so `apt-get`/`apt_get` share one cell (the same normalization
+/// `build_vouches` and the probe funcname use).
+///
+/// `verdict_keyed` is set on rows 1 and 2 — the site's establish came from the verdict lane, so its
+/// probe must ship the VERDICT body (there is no predict to answer this cell). That signal is
+/// site-keyed and threaded out rather than re-derived downstream from the fact's KIND: a row-1 cell
+/// is an ordinary authored kind, indistinguishable from a predict-minted one, so a kind test would
+/// silently route it to the predict lane and the site would run (`26H` §3.5's likeliest breakage).
+///
+/// The backing's minting family is threaded EXACTLY (`Some(provider)`), never left for
+/// `sole_family` to recover: an authored verdict coordinate is not in the sparing dialect
+/// (`build_dialect` mints from predict-derived cells only), so a recovered family could hand this
+/// fact some OTHER family's dialect and spare a cell the verdict never minted a token for. Threading
+/// keeps it colliding, which is `sparing-algebra`'s answer for an unminted token.
+fn verdict_cell_or_auto(
+    verdicts: &VerdictIndex,
     provider: ProviderId,
+    arg_refs: &[&str],
     interner: &mut Interner,
+    backings: &mut BTreeMap<FactKey, FactBacking>,
+    verdict_keyed: &mut bool,
 ) -> Vec<CommandEffect> {
-    if verdict_providers.contains(&provider) {
+    let Some(verdict) = verdicts.get(provider) else {
+        return vec![CommandEffect::Opaque];
+    };
+    *verdict_keyed = true;
+    let Some(coord) = dorc_oracle::verdict::evaluate_verdict_coord(verdict, arg_refs) else {
         let pname = interner.resolve(provider.0).to_owned();
-        vec![CommandEffect::Establishes(dorc_core::auto_fact(
+        return vec![CommandEffect::Establishes(dorc_core::auto_fact(
             interner, &pname,
-        ))]
-    } else {
-        vec![CommandEffect::Opaque]
-    }
+        ))];
+    };
+    let kind = KindId(interner.intern(&coord.kind));
+    let entity = match &coord.entity {
+        ResolvedEntity::Operand(text) => EntityRef::Operand(OpaqueToken(interner.intern(text))),
+        ResolvedEntity::Singleton => EntityRef::Singleton,
+    };
+    let selector = SelectorId(interner.intern(&coord.selector));
+    let fact = FactKey::cell(kind, entity, selector);
+    // observe-backing-widening (`277` §5): the `:?` cells the same reached path read widen this
+    // fact's backing SET. Kill-surface only grows (`inv-kfail`, apply) — the safe direction.
+    let observed: BTreeSet<SelectorId> = coord
+        .observed
+        .iter()
+        .map(|s| SelectorId(interner.intern(s)))
+        .collect();
+    record_backing(backings, fact, provider, &observed);
+    vec![CommandEffect::Establishes(fact)]
 }
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "the typeless-floor seam (`24L` §7) threads the verdict-provider set alongside the \
+    reason = "the typeless-floor seam (`24L` §7) threads the verdict index alongside the \
               existing effect-map/checks/argv/interner/diag inputs; each is a distinct kernel \
-              input, not a bundle-able struct. `degrade` is the reason channel, on the same \
-              out-param footing as `diags`/`cmdsub_tops`/`backings`"
+              input, not a bundle-able struct. `degrade` and `verdict_keyed` are the reason and \
+              lane channels, on the same out-param footing as `diags`/`cmdsub_tops`/`backings`"
 )]
 pub fn command_effect(
     idx: &KindIndex,
     checks: &[PredictSet],
-    verdict_providers: &BTreeSet<ProviderId>,
+    verdicts: &VerdictIndex,
     argv: &[ValueOf],
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
@@ -271,6 +320,7 @@ pub fn command_effect(
     site: Option<DiagSite>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrade: &mut Option<TopReason>,
+    verdict_keyed: &mut bool,
 ) -> Vec<CommandEffect> {
     // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
     // system-state effect (value::analyze yields `[]` for words.is_empty()).
@@ -360,32 +410,38 @@ pub fn command_effect(
                 None
             }
         });
-    let Some(resolved) = resolved else {
-        // No check resolved this site (no check for the provider, or every candidate
-        // degraded to ⊤). ⊤ ⇒ Opaque (`inv-top-reject`) — UNLESS the provider bears a
-        // verdict function, in which case the typeless-floor auto-cell mints (`24L` §2:
-        // a markless verdict-only oracle, the founding-one-liner shape). We do NOT fall
-        // back to a verb-by-position lookup — that was the deleted engine-side argparse sin.
-        return auto_or_opaque(verdict_providers, provider, interner);
-    };
-
     // The verb key: the check's derived verb, or the ε-verb when the check binds none
     // (`useradd`, `command -v` — 202 §2 / task-W §4). `evaluate`'s verb is compared
     // against the effect-map's verb through the SAME `Interner` (204 seam #2).
-    let verb_key = match &resolved.verb {
-        Some(v) => interner.intern(v),
-        None => empty_verb(interner),
+    let keyed = resolved.and_then(|r| {
+        let verb_key = match &r.verb {
+            Some(v) => interner.intern(v),
+            None => empty_verb(interner),
+        };
+        (!idx.effect_of(provider, verb_key).is_empty()).then_some((r, verb_key))
+    });
+    // TWO ways to arrive with no declared cell, and both hand the site to the VERDICT LANE (its
+    // authored coordinate, else the `24L` §2 typeless floor; no verdict function ⇒ Opaque, the
+    // `inv-top-reject` honest floor). Neither ever falls back to a verb-by-position lookup —
+    // that was the deleted engine-side argparse sin.
+    //
+    // (a) no check resolved this argv (no check for the provider, or every candidate ⊤'d); or
+    // (b) one RESOLVED and the effect-map declared no cells for its verb — a predict with no
+    //     marked effect is the same inert shape as a markless verdict-only body. Note what (b)
+    //     leaves behind: a perfectly shippable predict body attached to a site whose cell the
+    //     verdict body owns. That is why the lane is threaded out as a fact about the SITE and
+    //     never re-derived downstream by trying the two ship closures in order.
+    let Some((resolved, verb_key)) = keyed else {
+        return verdict_cell_or_auto(
+            verdicts,
+            provider,
+            &arg_refs,
+            interner,
+            backings,
+            verdict_keyed,
+        );
     };
     let cells = idx.effect_of(provider, verb_key);
-    if cells.is_empty() {
-        // The check resolved an identity, but no oracle declared an effect for this
-        // (provider, verb). ⊤ (runs) — UNLESS the provider bears a verdict function, in
-        // which case the typeless-floor auto-cell mints (`24L` §2: a predict with no
-        // marked effect is the same inert-at-HEAD shape as a markless verdict-only body).
-        // A read-only guard whose check declares an Observe (`:?`) mark lands as `Queries`
-        // below; only an un-declared guard falls through here (task-D2, 202 §2).
-        return auto_or_opaque(verdict_providers, provider, interner);
-    }
 
     // The cell's kind comes from the annotation (the declared identity, 204 §6); the
     // effect-map supplies selector + polarity per (provider, verb). Kind-agreement
@@ -475,12 +531,12 @@ fn member_family(
     }
     let members = value.member_argv(id)?;
     let mut family = Vec::with_capacity(members.len());
-    // A loop member NEVER forms a typeless-floor auto-cell: the in-loop floor runs every
-    // member regardless (`disposition_for`), so an auto-cell member would only ship wasted
-    // per-member verdict probes. An empty verdict-provider set keeps `command_effect` on the
-    // Opaque floor for members; a verdict-only site in a loop falls to the single-cell path
-    // (its per-iteration ⊤ operand keeps it Opaque ⇒ MustRun ⇒ Run — the safe direction).
-    let no_auto_in_members: BTreeSet<ProviderId> = BTreeSet::new();
+    // A loop member NEVER forms a verdict-lane cell (auto or authored): the in-loop floor runs
+    // every member regardless (`disposition_for`), so such a member would only ship wasted
+    // per-member verdict probes. An EMPTY verdict index keeps `command_effect` on the Opaque
+    // floor for members; a verdict-only site in a loop falls to the single-cell path (its
+    // per-iteration ⊤ operand keeps it Opaque ⇒ MustRun ⇒ Run — the safe direction).
+    let no_verdict_lane_in_members = VerdictIndex::default();
     for argv in members {
         // Each member is a concrete-or-⊤ argv; resolve it through the oracle check. All-or-nothing:
         // ANY non-single-establish member kills the whole family. `site: None` is a LIVE dedup
@@ -499,7 +555,7 @@ fn member_family(
         match command_effect(
             idx,
             checks,
-            &no_auto_in_members,
+            &no_verdict_lane_in_members,
             argv,
             interner,
             diags,
@@ -509,6 +565,8 @@ fn member_family(
             // A member's degrade never reaches a surface: the whole family collapses to the
             // single-cell path below, which re-runs `command_effect` and records the reason there.
             &mut None,
+            // Likewise its lane: the empty index above makes this unreachable-by-construction.
+            &mut false,
         )
         .as_slice()
         {
@@ -925,12 +983,13 @@ fn node_effects(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
-    verdict_providers: &BTreeSet<ProviderId>,
+    verdicts: &VerdictIndex,
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
+    verdict_lane: &mut BTreeSet<CfgNodeId>,
 ) -> Vec<CommandEffect> {
     if let Some(family) = member_family {
         return family
@@ -956,10 +1015,11 @@ fn node_effects(
             let argv = value.argv_values(id);
             let before = cmdsub_tops.len();
             let mut degrade = None;
+            let mut keyed_by_verdict = false;
             let effect = command_effect(
                 idx,
                 checks,
-                verdict_providers,
+                verdicts,
                 &argv,
                 interner,
                 diags,
@@ -967,9 +1027,13 @@ fn node_effects(
                 Some(site),
                 backings,
                 &mut degrade,
+                &mut keyed_by_verdict,
             );
             if let Some(reason) = degrade {
                 degrades.insert(id, reason);
+            }
+            if keyed_by_verdict {
+                verdict_lane.insert(id);
             }
             narrow_cmdsub_spans_to_operand(&mut cmdsub_tops[before..], cfg, ast, id);
             effect
@@ -1141,20 +1205,22 @@ fn peeled_node_effects(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
-    verdict_providers: &BTreeSet<ProviderId>,
+    verdicts: &VerdictIndex,
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
+    verdict_lane: &mut BTreeSet<CfgNodeId>,
 ) -> Vec<CommandEffect> {
     let diag_site = DiagSite::of(ast.node(cfg.node(id).ast).span, id);
     let mut local: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
     let mut degrade = None;
+    let mut keyed_by_verdict = false;
     let raw = command_effect(
         idx,
         checks,
-        verdict_providers,
+        verdicts,
         &site.inner_argv,
         interner,
         diags,
@@ -1162,9 +1228,13 @@ fn peeled_node_effects(
         Some(diag_site),
         &mut local,
         &mut degrade,
+        &mut keyed_by_verdict,
     );
     if let Some(reason) = degrade {
         degrades.insert(id, reason);
+    }
+    if keyed_by_verdict {
+        verdict_lane.insert(id);
     }
     for (fact, backing) in local {
         backings.insert(fact.in_context(site.context), backing);
@@ -1204,11 +1274,12 @@ fn resolve_node_effects(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
-    verdict_providers: &BTreeSet<ProviderId>,
+    verdicts: &VerdictIndex,
     peeled: &BTreeMap<CfgNodeId, PeeledSite>,
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
+    verdict_lane: &mut BTreeSet<CfgNodeId>,
 ) -> (
     Vec<Option<Vec<FactKey>>>,
     Vec<Vec<CommandEffect>>,
@@ -1246,12 +1317,13 @@ fn resolve_node_effects(
                     ast,
                     idx,
                     checks,
-                    verdict_providers,
+                    verdicts,
                     interner,
                     diags,
                     &mut cmdsub_tops,
                     &mut backings,
                     degrades,
+                    verdict_lane,
                 );
             }
             node_effects(
@@ -1262,12 +1334,13 @@ fn resolve_node_effects(
                 ast,
                 idx,
                 checks,
-                verdict_providers,
+                verdicts,
                 interner,
                 diags,
                 &mut cmdsub_tops,
                 &mut backings,
                 degrades,
+                verdict_lane,
             )
         })
         .collect();
@@ -1308,7 +1381,7 @@ pub fn classify(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
-    verdict_providers: &BTreeSet<ProviderId>,
+    verdicts: &VerdictIndex,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
@@ -1318,11 +1391,12 @@ pub fn classify(
         ast,
         idx,
         checks,
-        verdict_providers,
+        verdicts,
         &BTreeMap::new(),
         interner,
         arena,
         &mut BTreeMap::new(),
+        &mut BTreeSet::new(),
     )
     .0
 }
@@ -1379,11 +1453,12 @@ pub fn classify_with_why_diags(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
-    verdict_providers: &BTreeSet<ProviderId>,
+    verdicts: &VerdictIndex,
     peeled: &BTreeMap<CfgNodeId, PeeledSite>,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
+    verdict_lane: &mut BTreeSet<CfgNodeId>,
 ) -> (
     Carrier<Vec<(CfgNodeId, SkipClass)>>,
     Vec<Diag>,
@@ -1403,11 +1478,12 @@ pub fn classify_with_why_diags(
         ast,
         idx,
         checks,
-        verdict_providers,
+        verdicts,
         peeled,
         interner,
         &mut diags,
         degrades,
+        verdict_lane,
     );
 
     // arch-1 `Top(cause)`: mint a give-up origin per Opaque-bearing node (+ a fallback),
@@ -1710,7 +1786,7 @@ command__predict() {
             &parsed.value,
             idx,
             &checks,
-            &BTreeSet::new(),
+            &VerdictIndex::default(),
             interner,
             &mut arena,
         )
@@ -1734,7 +1810,7 @@ command__predict() {
             &parsed.value,
             idx,
             &checks,
-            &BTreeSet::new(),
+            &VerdictIndex::default(),
             interner,
             &mut arena,
         )
@@ -1796,11 +1872,12 @@ command__predict() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &VerdictIndex::default(),
             &BTreeMap::new(),
             &mut i,
             &mut arena,
             &mut BTreeMap::new(),
+            &mut BTreeSet::new(),
         );
         assert_eq!(kills.len(), 1, "the purge is the sole kill node");
         let node = *kills.iter().next().expect("one kill node");
@@ -1830,11 +1907,12 @@ command__predict() {
                 &parsed.value,
                 &idx,
                 &checks,
-                &BTreeSet::new(),
+                &VerdictIndex::default(),
                 &BTreeMap::new(),
                 i,
                 &mut arena,
                 &mut BTreeMap::new(),
+                &mut BTreeSet::new(),
             )
             .5
         };
@@ -2194,7 +2272,7 @@ command__predict() {
             command_effect(
                 idx,
                 &checks,
-                &BTreeSet::new(),
+                &VerdictIndex::default(),
                 &value.argv_values(node),
                 i,
                 &mut diags,
@@ -2202,6 +2280,7 @@ command__predict() {
                 None,
                 &mut backings,
                 &mut None,
+                &mut false,
             )
         }
         let (mut i, idx, s) = package_setup();
@@ -2264,62 +2343,179 @@ command__predict() {
         );
     }
 
+    /// One command site's `command_effect` outcome under [`verdict_lane_effects`].
+    #[derive(Debug, PartialEq, Eq)]
+    struct LaneSite {
+        cells: Vec<CommandEffect>,
+        /// Did this site's establish come from the VERDICT lane (authored cell or auto-cell)?
+        keyed: bool,
+    }
+
+    /// A whole book's worth of [`LaneSite`]s, sharing ONE interner.
+    struct LaneRun {
+        sites: Vec<LaneSite>,
+        backings: BTreeMap<FactKey, FactBacking>,
+        interner: Interner,
+    }
+
+    /// Run `command_effect` over EVERY command site of `book` in ONE interner.
+    ///
+    /// One interner is load-bearing, not tidiness: two `FactKey`s minted in separate interners
+    /// carry separate symbol spaces, so comparing them across runs answers nothing (they collide
+    /// whenever the intern ORDER matches, which for two structurally identical runs it always
+    /// does). Every cross-site assertion below therefore shares this one.
+    fn verdict_lane_effects(book: &str, oracle: Option<&str>) -> LaneRun {
+        let mut interner = Interner::default();
+        let parsed = dorc_syntax::parse(book);
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut interner);
+        let verdicts = match oracle {
+            Some(src) => VerdictIndex::of(&mut interner, &[src]),
+            None => VerdictIndex::default(),
+        };
+        let nodes: Vec<CfgNodeId> = built
+            .value
+            .iter()
+            .filter(|(_, n)| n.kind == CfgNodeKind::Command)
+            .map(|(id, _)| id)
+            .collect();
+        let mut backings = BTreeMap::new();
+        let mut sites = Vec::new();
+        for node in nodes {
+            let argv = value.argv_values(node);
+            let mut keyed = false;
+            let cells = command_effect(
+                &KindIndex::default(),
+                &[],
+                &verdicts,
+                &argv,
+                &mut interner,
+                &mut Vec::new(),
+                &mut Vec::new(),
+                None,
+                &mut backings,
+                &mut None,
+                &mut keyed,
+            );
+            sites.push(LaneSite { cells, keyed });
+        }
+        LaneRun {
+            sites,
+            backings,
+            interner,
+        }
+    }
+
+    /// [`verdict_lane_effects`] for a single-site book.
+    fn verdict_lane_effect(book: &str, oracle: Option<&str>) -> LaneRun {
+        let run = verdict_lane_effects(book, oracle);
+        assert_eq!(run.sites.len(), 1, "a single-site book");
+        run
+    }
+
     #[test]
     fn typeless_floor_auto_cell_mints_only_for_verdict_bearing_providers() {
         // `24L` §2/§7: a would-be-Opaque site (here `foobar` — absent from the checks, so no check
         // resolves) mints the private per-provider auto-cell IFF the provider bears a verdict
-        // function. The verdict-provider set enters as DATA (the cli seam); the kernel never lifts
-        // it. Empty set ⇒ the honest Opaque floor (byte-identical to no-oracle).
-        let mut i = Interner::default();
-        let parsed = dorc_syntax::parse("foobar sync\n");
-        let built = cfg::build(&parsed.value);
-        let value = analyze(&built.value, &parsed.value, &mut i);
-        let idx = KindIndex::default();
-        let checks: Vec<PredictSet> = Vec::new();
-        let node = built
-            .value
-            .iter()
-            .find(|(_, n)| n.kind == CfgNodeKind::Command)
-            .map(|(id, _)| id)
-            .expect("the `foobar sync` command node");
-        let argv = value.argv_values(node);
-        let mut diags = Vec::new();
-        let mut tops = Vec::new();
-        let mut backings = BTreeMap::new();
+        // function. The verdict role enters as DATA (the cli seam); the kernel never lifts it.
+        // Empty index ⇒ the honest Opaque floor (byte-identical to no-oracle).
+        let bare = verdict_lane_effect("foobar sync\n", None);
         assert_eq!(
-            command_effect(
-                &idx,
-                &checks,
-                &BTreeSet::new(),
-                &argv,
-                &mut i,
-                &mut diags,
-                &mut tops,
-                None,
-                &mut backings,
-                &mut None
-            ),
+            bare.sites[0].cells,
             vec![CommandEffect::Opaque],
             "no verdict function ⇒ the honest floor (Opaque ⇒ run)"
         );
-        let foobar = ProviderId(i.intern(&predict::map_provider_name("foobar")));
-        let verdict_providers: BTreeSet<ProviderId> = std::iter::once(foobar).collect();
-        let expect = dorc_core::auto_fact(&mut i, "foobar");
+        assert!(
+            !bare.sites[0].keyed,
+            "an Opaque site never claims the verdict lane"
+        );
+
+        // A MARKLESS verdict body is the founding `24L` §2 shape and must stay byte-identical:
+        // the per-provider singleton, not an authored cell.
+        let markless = "foobar__is_converged() { foobar status -- \"$2\" ;}\n";
+        let mut run = verdict_lane_effect("foobar sync\n", Some(markless));
+        let expect = dorc_core::auto_fact(&mut run.interner, "foobar");
         assert_eq!(
-            command_effect(
-                &idx,
-                &checks,
-                &verdict_providers,
-                &argv,
-                &mut i,
-                &mut diags,
-                &mut tops,
-                None,
-                &mut backings,
-                &mut None
-            ),
+            run.sites[0].cells,
             vec![CommandEffect::Establishes(expect)],
-            "a verdict-bearing provider mints the per-provider auto-cell (§2)"
+            "a markless verdict-bearing provider mints the per-provider auto-cell (§2)"
+        );
+        assert!(
+            run.sites[0].keyed,
+            "the auto-cell site ships its verdict body ⇒ the lane"
+        );
+    }
+
+    #[test]
+    fn an_authored_verdict_coordinate_keys_its_own_cell_and_threads_its_family() {
+        // `26H` §3 — the W-B fix. A verdict body that authored a coordinate keys THAT cell, not
+        // the per-provider singleton, so two sites of one command stop sharing a fact
+        // (`26G:fnd-shared-auto-cell-collides`). Still the verdict LANE: there is no predict
+        // answering this cell, so the site's probe must ship the verdict body.
+        let oracle = "\
+# dorc-lang/v0.2
+foobar__is_converged() {
+   dst : sm.dorc.File = \"$2\"
+   foobar cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@content
+}
+";
+        let mut run = verdict_lane_effect("foobar a.conf /etc/a.conf\n", Some(oracle));
+        let expect = FactKey::cell(
+            KindId(run.interner.intern("sm.dorc.File")),
+            EntityRef::Operand(OpaqueToken(run.interner.intern("/etc/a.conf"))),
+            SelectorId(run.interner.intern("content")),
+        );
+        assert_eq!(run.sites[0].cells, vec![CommandEffect::Establishes(expect)]);
+        assert!(
+            run.sites[0].keyed,
+            "an authored verdict cell is still the verdict lane"
+        );
+        assert!(
+            !dorc_core::is_auto_kind(&run.interner, expect.kind),
+            "the authored kind is an ordinary kind — which is exactly why the ship \
+             discriminator cannot be a kind test"
+        );
+        // `26H` §3.5 / sparing-algebra: the minting family is threaded EXACTLY. Left to
+        // `sole_family`'s reverse lookup, a PREDICT family that happened to mint this
+        // (kind, selector) would lend this fact its dialect and spare a cell no verdict mark
+        // ever minted a token for.
+        let foobar = ProviderId(run.interner.intern(&predict::map_provider_name("foobar")));
+        assert_eq!(
+            run.backings.get(&expect).and_then(|b| b.family),
+            Some(foobar),
+            "the verdict-minted fact carries its own family, never a recovered one"
+        );
+    }
+
+    #[test]
+    fn a_second_site_of_one_command_keys_a_different_authored_cell() {
+        // The whole point, stated as a cell inequality: same command, same oracle, different
+        // authored destination ⇒ different facts. Under the auto-cell all three sites were
+        // `dorc-auto:foobar@converged`, so any one site's `cant-tell` de-licensed the rest.
+        let oracle = "\
+# dorc-lang/v0.2
+foobar__is_converged() {
+   dst : sm.dorc.File = \"$2\"
+   foobar cmp -- \"$1\" \"$dst\"   : sm.dorc.File:\"$dst\"@content
+}
+";
+        let run = verdict_lane_effects(
+            "foobar a.conf /etc/a.conf\nfoobar b.conf /etc/b.conf\nfoobar z.conf /etc/a.conf\n",
+            Some(oracle),
+        );
+        let [a, b, a_again] = run.sites.as_slice() else {
+            panic!("three command sites");
+        };
+        assert_ne!(
+            a.cells, b.cells,
+            "distinct authored destinations are distinct cells"
+        );
+        // …and the same destination twice is still ONE cell: `an-written-stale` rests on
+        // same-state sites COLLIDING, and only an AUTHORED coordinate may split them
+        // (`26H` §3.4 — per-site synthetic cells stay forbidden).
+        assert_eq!(
+            a.cells, a_again.cells,
+            "one destination is one cell, whatever the source"
         );
     }
 
@@ -2392,7 +2588,7 @@ command__predict() {
         let effects = command_effect(
             &KindIndex::default(),
             checks,
-            &BTreeSet::new(),
+            &VerdictIndex::default(),
             &value.argv_values(node),
             i,
             &mut Vec::new(),
@@ -2400,6 +2596,7 @@ command__predict() {
             None,
             &mut BTreeMap::new(),
             &mut reason,
+            &mut false,
         );
         (effects, reason)
     }
@@ -2680,7 +2877,7 @@ command__predict() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &VerdictIndex::default(),
             &mut i,
             &mut arena,
         )
@@ -3253,11 +3450,12 @@ command__predict() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &VerdictIndex::default(),
             &BTreeMap::new(),
             &mut i,
             &mut diags,
             &mut BTreeMap::new(),
+            &mut BTreeSet::new(),
         );
         let mut arena = dorc_core::ProvArena::new();
         let (top_causes, fallback) =
@@ -3407,7 +3605,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &VerdictIndex::default(),
             &mut i,
             &mut arena,
         )

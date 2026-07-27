@@ -481,7 +481,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .collect();
     // Typeless-floor verdict-provider set (`24L` §7 — mirror the cli seam so the dashboard sees
     // the same auto-cell elisions the honest baseline does).
-    let verdict_providers = dorc_oracle::verdict::verdict_providers(&mut interner, inputs.oracles);
+    let verdicts = dorc_oracle::verdict::VerdictIndex::of(&mut interner, inputs.oracles);
 
     let parsed = dorc_syntax::parse(inputs.book);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
@@ -497,11 +497,12 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             &parsed.value,
             &idx,
             &checks,
-            &verdict_providers,
+            &verdicts,
             &BTreeMap::new(),
             &mut interner,
             &mut arena,
             &mut BTreeMap::new(),
+            &mut std::collections::BTreeSet::new(),
         );
     let classes = classified.value;
 

@@ -88,7 +88,7 @@ fn classify_with(
         ast,
         idx,
         &checks,
-        &std::collections::BTreeSet::new(),
+        &dorc_oracle::verdict::VerdictIndex::default(),
         i,
         &mut arena,
     )

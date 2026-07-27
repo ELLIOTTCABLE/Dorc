@@ -708,18 +708,19 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
         .collect();
 
-    // The typeless-floor verdict-provider set (`24L` §7 — THE kernel seam): the analyzer kernel is
-    // verdict-unaware by design (`inv-determinism`), so the cli edge lifts which providers bear an
-    // `is_converged` verdict function and threads that set INTO `classify` as DATA. The auto-cell
-    // mint reads it to light up a markless verdict-only oracle's guard/elide tier (`24L` §2).
-    let verdict_providers = dorc_oracle::verdict::verdict_providers(&mut interner, &oracle_refs);
     // Pre-lift each file's verdict funcdefs so the (immutable-interner) probe ship-closure can
-    // strip the auto-cell's verdict body without a mutating re-lift (`24L` §2 probe emission). Diags
+    // strip a verdict-lane site's body without a mutating re-lift (`24L` §2 probe emission). Diags
     // drop here — `validate` surfaces them once, per-file, for gate-3.
     let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
         .iter()
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
         .collect();
+    // The verdict INDEX (`24L` §7 — THE kernel seam, widened by `26H` §3): the analyzer kernel is
+    // verdict-unaware by design (`inv-determinism`), so the cli edge keys the lifted verdict role
+    // by provider and threads it INTO `classify` as DATA. The kernel asks it both "did this
+    // provider earn the synthetic auto-cell" and "does its body author a coordinate for this argv".
+    // Built from the sets above, so the run lifts the verdict role ONCE.
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
 
     // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
     // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
@@ -844,6 +845,11 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `degrades` (`26G:fnd-existence-gate-darkens-oracle`): why each ⊤-degrading site's oracle
     // check gave up. Diagnostics only — it reaches the `site-unresolvable` note and nothing else.
     let mut degrades = BTreeMap::new();
+    // `26H` §3.5 — the sites whose establish came from the VERDICT lane (an authored verdict
+    // coordinate, or the `24L` §2 auto-cell). These have no predict to answer their cell, so their
+    // probe ships the verdict body; site-keyed because an authored verdict cell is an ordinary
+    // kind and nothing about the FACT can distinguish it from a predict-minted one.
+    let mut verdict_lane = BTreeSet::new();
     let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
@@ -851,11 +857,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &parsed.value,
             &idx,
             &checks,
-            &verdict_providers,
+            &verdicts,
             &peeled_sites,
             &mut interner,
             &mut arena,
             &mut degrades,
+            &mut verdict_lane,
         );
     report_at(advisory, "classify", book_source, &classified.diags);
     let classes = classified.value;
@@ -894,17 +901,27 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
     // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
     let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
-    // `24L` §2 — the typeless-floor auto-cell ships its stripped VERDICT body (the probe IS the
-    // verdict). `Some` ONLY for an auto-cell fact (keyed on the reserved auto-kind), so `compile_probe`
-    // reads a `Some` as the auto-cell signal. rul-only-oracle-bytes-ship: the shipped bytes are the
-    // oracle's OWN authored `is_converged` funcdef, strip-only; the admin's argv flows as arguments.
-    let ship_auto =
-        |fact: dorc_core::FactKey, p: Symbol, _a: &[Symbol]| -> Option<dorc_plan::ShippedCheck> {
-            if !dorc_core::is_auto_kind(&interner, fact.kind) {
-                return None;
-            }
-            ship_verdict_body(&oracle_srcs, &verdict_sets, &interner, p)
-        };
+    // `24L` §2 — a VERDICT-LANE site ships its stripped verdict body (the probe IS the verdict).
+    // `Some` ONLY for a site classify keyed through that lane, so `compile_probe` reads a `Some`
+    // as the verdict-lane signal. rul-only-oracle-bytes-ship: the shipped bytes are the oracle's
+    // OWN authored `is_converged` funcdef, strip-only; the admin's argv flows as arguments.
+    //
+    // The discriminator is the SITE's lane, not its fact's KIND (`26H` §3.5). A verdict body that
+    // authored a coordinate keys an ordinary kind — indistinguishable from a predict-minted one —
+    // so `is_auto_kind` would send it to the predict lane, find no predict, and run the site. Nor
+    // can try-order stand in for the lane: `command_effect` reaches the verdict lane from TWO
+    // fallbacks, and the second (a predict that RESOLVED but declared no effect cells) leaves a
+    // perfectly shippable predict body attached to a site whose cell the verdict body owns —
+    // shipping it would answer a different question than the one the fact records.
+    let ship_auto = |node: dorc_analysis::cfg::CfgNodeId,
+                     p: Symbol,
+                     _a: &[Symbol]|
+     -> Option<dorc_plan::ShippedCheck> {
+        if !verdict_lane.contains(&node) {
+            return None;
+        }
+        ship_verdict_body(&oracle_srcs, &verdict_sets, &interner, p)
+    };
     let probe = dorc_plan::compile_probe(
         &parsed.value,
         &cfg.value,
@@ -1236,8 +1253,16 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // tier reads an auto coordinate as may-touch (`survival::disjoint`). The plan is interner-free,
     // so this resolution happens here (the edge holds the interner) and rides the Resolutions the
     // walk already threads. Re-interning `dorc-auto:<provider>` returns the KindId classify minted.
-    for provider in &verdict_providers {
-        let name = interner.resolve(provider.0).to_owned();
+    //
+    // Still per-PROVIDER, deliberately, now that a verdict body can also key an authored cell: the
+    // fence guards the synthetic singleton, and every provider that could mint one must keep it.
+    // A provider whose sites all keyed authored cells simply has no auto coordinate in the plan,
+    // so its registration is inert — the residual auto-cells stay fenced un-weakened (`26H` §3.5).
+    let verdict_names: Vec<String> = verdicts
+        .providers()
+        .map(|p| interner.resolve(p.0).to_owned())
+        .collect();
+    for name in verdict_names {
         let kind = dorc_core::auto_fact(&mut interner, &name).kind;
         resolutions.add_auto_kind(kind);
     }
@@ -8763,7 +8788,7 @@ mod tests {
             &parsed.value,
             &idx,
             &[],
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut interner,
             &mut arena,
         );
@@ -9509,7 +9534,7 @@ mod not_ours_bytes_tests {
             &parsed.value,
             &idx,
             &[],
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut interner,
             &mut arena,
         );

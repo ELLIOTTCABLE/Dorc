@@ -7,7 +7,7 @@
 //! fires the diagnostic — the marker pilot). Phase 4 lands the payload path; the pipeline arm is the
 //! marker-version-unrecognized pilot.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::fs;
 
@@ -1495,7 +1495,7 @@ fn fire_book_analysis(
         &parsed.value,
         &idx,
         &[],
-        &BTreeSet::new(),
+        &dorc_oracle::verdict::VerdictIndex::default(),
         &mut interner,
         &mut arena,
     )

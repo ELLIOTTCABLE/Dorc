@@ -2740,9 +2740,9 @@ fn ship_stage_for_argv(
     clippy::too_many_lines,
     reason = "the probe compiler threads the whole compiled context (ast/cfg/value/classes/connected) \
               plus the `27N` wrapped-site decisions plus THREE ship seams — the predict body, the \
-              `24L` §2 auto-cell verdict body, and the vouch predicate; each is a distinct \
-              caller-supplied input. The auto-cell ship arm pushes the body just over the line cap; \
-              the per-class dispatch is irreducibly flat"
+              `24L` §2 verdict-lane body, and the vouch predicate; each is a distinct \
+              caller-supplied input. The verdict-lane ship arm pushes the body just over the line \
+              cap; the per-class dispatch is irreducibly flat"
 )]
 pub fn compile_probe(
     ast: &Ast,
@@ -2752,7 +2752,7 @@ pub fn compile_probe(
     wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
     ship_body: impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
-    ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_auto: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
     is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
     let mut checks = Vec::new();
@@ -2906,19 +2906,23 @@ pub fn compile_probe(
             }
             continue;
         }
-        // `24L` §2 — the typeless-floor auto-cell: the shipped probe is the STRIPPED VERDICT BODY
-        // itself (a markless oracle has no `predict`), invoked with the site argv; its rc maps to
+        // `24L` §2 — a VERDICT-LANE site: the shipped probe is the STRIPPED VERDICT BODY itself
+        // (there is no predict answering this cell), invoked with the site argv; its rc maps to
         // the Effect verdict through the record scaffold's existing rc-partition (0=holds, 1=absent,
-        // else=cant-tell — the verdict rc-partition). `ship_auto` returns `Some` ONLY for an
-        // auto-cell fact (the edge closure keys on the reserved auto-kind), so a `Some` here IS the
-        // auto-cell signal. Establish-class only (a Query is never an auto-cell). GATED on the
-        // vouch: the verdict IS the probe, so a DECLINED verdict (a refuse path — `return 2`, the
-        // R2-MULTIOP arity gate) has nothing to measure and must not ship a record; the site runs
+        // else=cant-tell — the verdict rc-partition). `ship_auto` returns `Some` ONLY for a site
+        // classify keyed through that lane, so a `Some` here IS the signal. Establish-class only
+        // (a Query never keys through the verdict lane). GATED on the vouch: the verdict IS the
+        // probe, so a DECLINED verdict (a refuse path — `return 2`, the R2-MULTIOP arity gate) has
+        // nothing to measure and must not ship a record; the site runs
         // (`guard23-refusepath-rc0-never-passes`: a declined verdict never licenses, and never probes).
+        //
+        // This branch precedes the predict lane below and MUST keep doing so: a verdict-lane site
+        // can also carry a resolvable predict (`command_effect`'s no-effect-cells fallback), and
+        // shipping that predict would measure a different cell than the one this record keys.
         if matches!(site_kind, ProbeSiteKind::Establish)
             && is_vouched(node)
             && let Some((provider, argv, shipped)) =
-                ship_auto_for_argv(&value.argv_values(node), fact, &ship_auto)
+                ship_auto_for_argv(&value.argv_values(node), node, &ship_auto)
         {
             checks.push(ProbePredict {
                 site,
@@ -2972,17 +2976,21 @@ pub fn compile_probe(
 /// (`kFAIL-perform`). `ship_body` maps (provider-word, args) to the stripped funcdef; it
 /// is the caller's seam onto the oracle sources + check-set, so `plan` needs no oracle
 /// lift of its own. A provider whose check does not resolve this argv also yields `None`.
-/// `24L` §2 — resolve the (provider, argv, stripped VERDICT body) an auto-cell site ships. Mirrors
-/// [`ship_for_argv`] but hands the resolved `fact` to `ship_auto`, which returns the stripped
-/// `<provider>__is_converged` body ONLY when `fact` is an auto-cell (the edge closure keys on the
-/// reserved auto-kind). A ⊤ command word or operand ⇒ no concrete invocation ⇒ `None` (unshippable).
+/// `24L` §2 — resolve the (provider, argv, stripped VERDICT body) a verdict-lane site ships.
+/// Mirrors [`ship_for_argv`] but hands the SITE to `ship_auto`, which returns the stripped
+/// `<provider>__is_converged` body ONLY for a site classify keyed through the verdict lane.
+/// A ⊤ command word or operand ⇒ no concrete invocation ⇒ `None` (unshippable).
+///
+/// Site-keyed, not fact-keyed (`26H` §3.5): the lane is a property of how THIS site's cell was
+/// decided, and one fact can be reached by both lanes across a book (one oracle's predict minting
+/// the cell at one site, another provider's verdict body naming it at another).
 fn ship_auto_for_argv(
     argv: &[ValueOf],
-    fact: FactKey,
-    ship_auto: &impl Fn(FactKey, Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    node: CfgNodeId,
+    ship_auto: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) -> Option<(Symbol, Vec<Symbol>, ShippedCheck)> {
     let (provider, operands) = literal_invocation(argv)?;
-    let shipped = ship_auto(fact, provider, &operands)?;
+    let shipped = ship_auto(node, provider, &operands)?;
     Some((provider, operands, shipped))
 }
 
@@ -5087,7 +5095,7 @@ apt_get__is_converged() { return 0; }
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -5211,7 +5219,7 @@ apt_get__is_converged() { return 0; }
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -5294,11 +5302,12 @@ apt_get__is_converged() { return 0; }
                 &parsed.value,
                 &idx,
                 &checks,
-                &BTreeSet::new(),
+                &dorc_oracle::verdict::VerdictIndex::default(),
                 &BTreeMap::new(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
                 &mut BTreeMap::new(),
+                &mut BTreeSet::new(),
             );
         let classes = classes.value;
         let derivations = compile_derivations(
@@ -5633,7 +5642,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -5938,7 +5947,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -5984,7 +5993,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -6025,7 +6034,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -6079,7 +6088,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -6232,7 +6241,7 @@ apt_get__is_converged() {
                 &parsed.value,
                 &idx,
                 &checks,
-                &BTreeSet::new(),
+                &dorc_oracle::verdict::VerdictIndex::default(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
             )
@@ -6387,11 +6396,12 @@ apt_get__is_converged() {
                 &parsed.value,
                 &idx,
                 &checks,
-                &BTreeSet::new(),
+                &dorc_oracle::verdict::VerdictIndex::default(),
                 &BTreeMap::new(),
                 &mut i,
                 &mut arena,
                 &mut BTreeMap::new(),
+                &mut BTreeSet::new(),
             );
         let classes = classified.value;
         let kills = if walled { kills_found } else { BTreeSet::new() };
@@ -6520,7 +6530,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut arena,
         )
@@ -6630,7 +6640,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut arena,
         )
@@ -7157,7 +7167,7 @@ apt_get__is_converged() {
             &parsed.value,
             &idx,
             &checks,
-            &BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )

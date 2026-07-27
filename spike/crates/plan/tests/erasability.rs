@@ -223,7 +223,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &parsed.value,
         &idx,
         &checks,
-        &std::collections::BTreeSet::new(),
+        &dorc_oracle::verdict::VerdictIndex::default(),
         &mut i,
         &mut arena,
     );
@@ -402,7 +402,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &parsed.value,
             &idx,
             &checks,
-            &std::collections::BTreeSet::new(),
+            &dorc_oracle::verdict::VerdictIndex::default(),
             i,
             &mut arena,
         )
