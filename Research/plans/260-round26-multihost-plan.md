@@ -447,10 +447,11 @@ dropped; freeform capture may be truncated with an explicit `[truncated at N byt
 - **`dorc why … --host <id>`** (stage 4): host-scopes the existing why surface; unscoped with
   multiple hosts = per-host sections, unreached hosts first.
 - **Exit codes (extends the `c6774dc` family additively; §9 dec-26-exit-codes):** existing
-  0/2/10 unchanged; NEW `11` = plan completed with ≥1 unreachable/unprobed host (plans still
-  emitted); `12` = apply partial failure (≥1 FailedApply/UnknownAfterLoss; detail per-host).
-  `DORC_EXIT=<n>` marker convention carries the new codes; `run.sh` crash-guard learns them
-  (additive).
+  0/2/10/11 unchanged — `11` is `EXIT_WRAPPER_INCOHERENT` and was never free. `12` = ingress
+  refused (records admission or a drifted receipt); NEW `13` = host not reached (no session
+  created, destination provably untouched); `14` = session lost (ran, never reported, world
+  UNKNOWN); `15` = apply ran and exited non-zero. `DORC_EXIT=<n>` marker convention carries the
+  new codes; `run.sh` crash-guard learns them (additive).
 - **Words:** the render vocabulary for host cells uses §3 s3-4's names verbatim (`unreachable`,
   `probed-partial`, `unknown after transport loss`, `apply failed (rc N)`) — never "skipped",
   never "offline≈ok".
@@ -552,7 +553,7 @@ tripwire firing) · the stage's own named acceptance pins green.
   host-identity measures (§5) are in the spec above and MUST land within this stage — no
   apply fan-out ships classifying severs by rc-heuristics or without host-key continuity.
   Concurrent apply shipping, per-host capture (file-backed), sentinel-absent →
-  UnknownAfterLoss, rc 12, aggregate ordering, `DORC_EXIT` extension. Acceptance:
+  UnknownAfterLoss, rc 14, aggregate ordering, `DORC_EXIT` extension. Acceptance:
   acc-retry-is-reprobe, acc-forged-verdict-contained, the apply e2e case.
 - **stage-26-4 — the read-back + polish.** `--verify` re-probe convergence report; `dorc why
   --host`; unreached-first render ordering; transport-error diagnosis table. Acceptance: a
@@ -618,9 +619,12 @@ kWINLOCAL stand as registered). These are the plan-level calls beneath them:
 - **dec-26-hosts-spelling** — hosts are invocation-plane only (`-H` + `--hosts FILE`,
   ssh-destination strings consumed verbatim); no in-book host metadata (kOOB redline), no
   inventory system (consume, don't build — `plans/064`). Groups/patterns deferred.
-- **dec-26-exit-codes** — 11 (plan, partial-unreachable) and 12 (apply, partial-failure)
-  extend the existing 0/2/10 family; builder verifies non-collision and updates the crash-guard
-  contract additively.
+- **dec-26-exit-codes** — SETTLED at N=1 (`r26-unify`): the reservation of 11 collided with the
+  landed `EXIT_WRAPPER_INCOHERENT`, so the transport family renumbered to 13/14/15 and 12 kept
+  its ingress meaning. One code per transport world-state, matching the diag plane's cut
+  (`AID-NEEDS:law-codes-vary-by-world-not-grammar`): not-reached and session-lost stay separate
+  because a caller may safely retry the first and must never blind-retry the second. The fleet
+  aggregate (≥1 host in a state) reuses these same codes when it lands.
 - **dec-26-probe-retry** — transient transport failure during probe = bounded auto-retry (×2,
   backoff) because probes are read-only by contract; apply NEVER auto-retries. (The asymmetry
   is the kFAIL phase-keying spelled at the transport.) Retry hygiene (26A

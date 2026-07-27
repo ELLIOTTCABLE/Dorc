@@ -99,6 +99,22 @@ const EXIT_BOOK_UNMODELED: u8 = 10;
 /// (`rul-proven-mutation-fails-fast` posture). The artifact still ships (the fail-fast is loud,
 /// not a crash); the exit stops a `dorc … && deploy` chain. Second of the 10..=19 range.
 const EXIT_WRAPPER_INCOHERENT: u8 = 11;
+/// Evidence offered to the pipeline failed admission — host records the framing refused, or a
+/// receipt whose book has drifted. Nothing was measured, so no artifact is honest. Third of the
+/// 10..=19 range.
+const EXIT_INGRESS_REFUSED: u8 = 12;
+/// No session process was ever created, so the destination was never contacted. The one transport
+/// exit licensed to claim the host is untouched, which is what makes a bare retry safe.
+const EXIT_HOST_NOT_REACHED: u8 = 13;
+/// A session ran and never reported completion: whether the remote artifact ran is UNKNOWN
+/// (`rul-integrity-failure-withholds-mutation`). Deliberately NOT folded into
+/// [`EXIT_HOST_NOT_REACHED`] — the caller's remedy differs, and a caller that retries this one
+/// blindly may re-apply a mutation that already landed.
+const EXIT_SESSION_LOST: u8 = 14;
+/// A remote apply ran to completion and its artifact exited non-zero. The one KNOWN transport
+/// outcome; the remote status is reported in the diagnostic, never reproduced as our own exit
+/// (a plan exiting 13 must not be read as our "host not reached").
+const EXIT_APPLY_FAILED: u8 = 15;
 
 /// `dorc lint`: findings AT OR ABOVE the `--fail-on` threshold were reported (`27R` §5 exit
 /// trichotomy). Distinct from clean (0) and from operational (below); shares linter convention.
@@ -128,8 +144,15 @@ enum RunOutcome {
     /// A wrapper oracle's `__predict`/`__lend_map` peels are dual-peel incoherent (`273` §5) ⇒ the
     /// artifact shipped, but exit [`EXIT_WRAPPER_INCOHERENT`] (fail-fast).
     WrapperIncoherent,
-    /// Host evidence failed admission before any decision artifact could be built.
+    /// Evidence offered to the pipeline failed admission — refused host records, or a drifted
+    /// receipt — so no honest artifact could be built.
     IngressRefused,
+    /// No session process was created ⇒ the destination is provably untouched.
+    HostNotReached,
+    /// A session ran without reporting completion ⇒ the world's state is unknown.
+    SessionLost,
+    /// A remote apply completed and its artifact exited non-zero.
+    ApplyFailed,
 }
 
 fn main() -> ExitCode {
@@ -155,7 +178,10 @@ fn main() -> ExitCode {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
-            Ok(RunOutcome::IngressRefused) => ExitCode::from(12),
+            Ok(RunOutcome::IngressRefused) => ExitCode::from(EXIT_INGRESS_REFUSED),
+            Ok(RunOutcome::HostNotReached) => ExitCode::from(EXIT_HOST_NOT_REACHED),
+            Ok(RunOutcome::SessionLost) => ExitCode::from(EXIT_SESSION_LOST),
+            Ok(RunOutcome::ApplyFailed) => ExitCode::from(EXIT_APPLY_FAILED),
             Err(diag) => {
                 report_invocation_error(&diag);
                 ExitCode::from(EXIT_USAGE)
@@ -1138,7 +1164,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                         None,
                         &[transport_edge::session_lost(raw, attempts, &diagnosis)],
                     );
-                    return Ok(RunOutcome::IngressRefused);
+                    return Ok(RunOutcome::SessionLost);
                 }
                 transport_edge::ProbeShipment::NotAttempted { reason } => {
                     report_at(
@@ -1147,7 +1173,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                         None,
                         &[transport_edge::not_attempted(raw, &reason)],
                     );
-                    return Ok(RunOutcome::IngressRefused);
+                    return Ok(RunOutcome::HostNotReached);
                 }
             }
         }
@@ -6436,7 +6462,7 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
                     None,
                     &[transport_edge::apply_failed(host, status)],
                 );
-                Ok(RunOutcome::IngressRefused)
+                Ok(RunOutcome::ApplyFailed)
             }
         }
         transport_edge::AppliedOutcome::Unknown { diagnosis } => {
@@ -6446,7 +6472,7 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
                 None,
                 &[transport_edge::session_lost(host, 1, &diagnosis)],
             );
-            Ok(RunOutcome::IngressRefused)
+            Ok(RunOutcome::SessionLost)
         }
         transport_edge::AppliedOutcome::NotAttempted { reason } => {
             report_at(
@@ -6455,7 +6481,7 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
                 None,
                 &[transport_edge::not_attempted(host, &reason)],
             );
-            Ok(RunOutcome::IngressRefused)
+            Ok(RunOutcome::HostNotReached)
         }
     }
 }
