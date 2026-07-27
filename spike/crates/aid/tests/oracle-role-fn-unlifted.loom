@@ -6,7 +6,7 @@ why: 26G:haz-silence-is-the-common-cause - three of the four r26 analyzer findin
 -- oracle.sh --
 # dorc-lang/v0.2
 wombat__predict() {
-   [ -n "$1" ] || return 2
+   case "$1" in -*) return 2 ;; esac
    thing : sm.dorc.Thing = "$1"
    wombat query "$thing"
 }
@@ -21,10 +21,10 @@ oracle.sh:
    |
  2 | wombat__predict() {
    | \_____________/
-  error[predict-out-of-dialect]: sm statement does not start with a word
-   --> oracle.sh:3:4
+  error[predict-out-of-dialect]: sm only literal and `*` case patterns are in dialect
+   --> oracle.sh:3:19
    |
- 3 |    [ -n "$1" ] || return 2
-   |    ^
+ 3 |    case "$1" in -*) return 2 ;; esac
+   |                   ^
 
 dorc lint: 1 error, 1 warning, 0 infos across 1 file.
