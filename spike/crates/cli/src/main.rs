@@ -845,23 +845,27 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `26H` §3.5 — sites whose establish came from the VERDICT lane, so their probe ships the
     // verdict body. Site-keyed: nothing about the FACT distinguishes an authored verdict cell.
     let mut verdict_lane = BTreeSet::new();
-    let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative, _inval) =
-        dorc_analysis::effect::classify_with_why_diags(
-            &cfg.value,
-            &value,
-            &parsed.value,
-            &idx,
-            &checks,
-            &verdicts,
-            &peeled_sites,
-            &dorc_analysis::erase::ErasedSites::none(),
-            &mut interner,
-            &mut arena,
-            &mut degrades,
-            &mut verdict_lane,
-        );
-    report_at(advisory, "classify", book_source, &classified.diags);
-    let classes = classified.value;
+    // Round 1: the ORIGIN model. The frozen phase-1 artifacts are built from THIS round;
+    // the plan side takes the round the fixpoint below settles on.
+    let frozen = FrozenModel {
+        cfg: &cfg.value,
+        value: &value,
+        ast: &parsed.value,
+        idx: &idx,
+        checks: &checks,
+        verdicts: &verdicts,
+        peeled: &peeled_sites,
+    };
+    let origin = classify_round(
+        &frozen,
+        &dorc_analysis::erase::ErasedSites::none(),
+        &mut interner,
+        &mut arena,
+        &mut degrades,
+        &mut verdict_lane,
+    );
+    let classes = origin.classes.clone();
+    let kills = origin.kills.clone();
 
     // The per-site guard VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c) —
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
@@ -1156,7 +1160,27 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let (by_fact, merge_narrative, collapsed_cells) = facts_from_sites(&probe, results);
+    let settled =
+        settle_validity_fixpoint(&frozen, &probe, results, origin, &mut interner, &mut arena);
+    let round = settled.round;
+    let classes = round.classes;
+    let kills = round.kills;
+    let kill_coords = round.kill_coords;
+    let fact_backings = round.fact_backings;
+    let why_diags = round.why_diags;
+    let classify_narrative = round.classify_narrative;
+    let round_diags = round.diags;
+    let (by_fact, merge_narrative, collapsed_cells) =
+        (settled.by_fact, settled.merge_narrative, settled.collapsed);
+    let cascades = attribute_cascades(
+        &cfg.value,
+        &parsed.value,
+        &book_src,
+        &classes,
+        &settled.ledger,
+        &settled.origin_validity,
+    );
+    report_at(advisory, "classify", book_source, &round_diags);
     // The shared-cell collapse reaches a surface (`26G:fnd-shared-auto-cell-collides`): sites that
     // reported cleanly lose their licence because a SIBLING on the same cell disagreed or could not
     // answer, and until now the only trace was an unconsumed narrative. Spanless — the cell is a
@@ -1394,8 +1418,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", book_source, &refusals);
 
-    let identity_diags: Vec<Diag> = classified
-        .diags
+    let identity_diags: Vec<Diag> = round_diags
         .iter()
         .cloned()
         .chain(refusals.iter().cloned())
@@ -1466,6 +1489,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &oracle_paths,
             &oracle_srcs,
             &collapse_narrative,
+            &cascades,
             &receipt,
         );
         std::io::stdout().flush().ok();
@@ -4929,6 +4953,7 @@ fn emit_why_report(
     oracle_paths: &[String],
     oracle_srcs: &[String],
     narrative: &[CollapseNarrative],
+    cascades: &BTreeMap<dorc_plan::LeafId, CascadeAttribution>,
     receipt: &Receipt,
 ) {
     use dorc_plan::Disposition;
@@ -5074,6 +5099,21 @@ fn emit_why_report(
                         "why-reason-skipped-converged",
                         &[&dorc_plan::fact_label(interner, license.fact())],
                     )];
+                    if let Some(cascade) = cascades.get(&step.leaf) {
+                        reasons.push(Said::words(
+                            "why-reason-elide-cascaded",
+                            &[
+                                &cascade
+                                    .erased_lines
+                                    .iter()
+                                    .map(usize::to_string)
+                                    .collect::<Vec<_>>()
+                                    .join(", "),
+                                &cascade.controller_line.to_string(),
+                                &cascade.round.to_string(),
+                            ],
+                        ));
+                    }
                     if refused {
                         reasons.push(Said::words("why-reason-render-refused", &[]));
                         (reasons, AggregateClass::Surprise, None)
@@ -5702,13 +5742,328 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
 /// only safe resolution of a self-contradicting host. [`merge_observable`] does the join.
 /// The third product is the SHARED-CELL COLLAPSE readout (`26G:fnd-shared-auto-cell-collides`):
 /// each cell whose cross-site merge above degraded a channel, with how many sites measured it.
+/// `validity` is the PER-ROUND validity view (`26H` §4): the probe is the frozen origin
+/// artifact and its baked `valid` bits are round 1's, so once an erasure removes an upstream
+/// invalidator this view is what makes the guard's already-measured rc fold-usable. It is the
+/// only thing that moves between rounds — an erased site keeps contributing its measurement,
+/// because the deadness of the line that measured the world does not un-measure the world. An
+/// EMPTY view means "use the baked bit", which is exactly round-1 semantics.
+///
 /// Decision-inert and cell-keyed, so the caller renders ONE line per cell rather than one per
 /// disagreeing pair — the collapse is a property of the cell, and an admin who sees it per-pair
 /// reads N unrelated problems instead of one shared one. It exists because this de-licenses sites
 /// that reported perfectly well, and until now said nothing at all.
+/// The FROZEN inputs of the validity fixpoint (`26H` §4¾): carried verbatim across every
+/// round, never re-derived and never re-admitted. Book, CFG, spans, value-flow, the effect
+/// map, the oracle lifts. The admitted records and the compiled probe are frozen too, and
+/// ride beside this rather than in it — they belong to the intake edge, not the model.
+struct FrozenModel<'a> {
+    cfg: &'a dorc_analysis::cfg::Cfg,
+    value: &'a dorc_analysis::value::ValueFlow,
+    ast: &'a dorc_syntax::ast::Ast,
+    idx: &'a dorc_oracle::KindIndex,
+    checks: &'a [dorc_oracle::predict::PredictSet],
+    verdicts: &'a dorc_oracle::verdict::VerdictIndex,
+    peeled: &'a BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::PeeledSite>,
+}
+
+/// One round's PURE DERIVATION from (frozen inputs, erasure ledger) — recomputed from
+/// scratch every round, never incrementally patched (`26H` §4¾). Every field here is a
+/// function of the residual model alone.
+struct ClassifiedRound {
+    classes: Vec<(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )>,
+    diags: Vec<Diag>,
+    why_diags: Vec<Diag>,
+    kills: BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    kill_coords: BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
+    fact_backings: BTreeMap<dorc_core::FactKey, dorc_core::FactBacking>,
+    classify_narrative: Vec<CollapseNarrative>,
+    invalidators: BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+}
+
+/// What the fixpoint settled on: the FINAL round's model and observations, plus the ledger
+/// that produced it. Nothing from any earlier round is here — earlier rounds construct only
+/// a classification and a fold, never a plan, a narrative surface, or a render.
+struct SettledFixpoint {
+    round: ClassifiedRound,
+    by_fact: BTreeMap<dorc_core::FactKey, Observable>,
+    merge_narrative: Vec<CollapseNarrative>,
+    collapsed: BTreeMap<dorc_core::FactKey, u32>,
+    ledger: dorc_plan::erase::ErasureLedger,
+    /// Round 1's validity bits — the ORIGIN model's answer, kept so the why-chain can tell a
+    /// site that was always trustworthy from one whose guard only became trustworthy because
+    /// something upstream was proven dead. The latter is the cascade `26H` §4.6 requires be
+    /// renderable, and it is the only reason any round-1 quantity outlives its round.
+    origin_validity: BTreeMap<dorc_plan::LeafId, bool>,
+}
+
+/// Why one site's guard became trustworthy only after the fixpoint ran (`26H` §4.6 —
+/// ATTRIBUTION IS A HARD REQUIREMENT). Decision-inert: the aid plane reads it, nothing else.
+struct CascadeAttribution {
+    /// Source lines of the erased mutators that had to be proven dead first, in book order.
+    erased_lines: Vec<usize>,
+    /// The line whose measured rc proved the last of them dead.
+    controller_line: usize,
+    /// The round that proof landed in.
+    round: u32,
+}
+
+/// Attribute every round-2+ validity flip to the erasures that caused it.
+///
+/// A guard becomes valid exactly when every invalidator reaching it has been erased, so the
+/// cause of site `L`'s flip is precisely the ledger entries whose sites REACH `L` in the
+/// control-flow graph. Computed once, after quiescence, over the frozen CFG — forward
+/// reachability from each erased site, which is exact and cheap next to the network this
+/// whole engine exists to avoid.
+fn attribute_cascades(
+    cfg: &dorc_analysis::cfg::Cfg,
+    ast: &dorc_syntax::ast::Ast,
+    book_src: &str,
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    ledger: &dorc_plan::erase::ErasureLedger,
+    origin_validity: &BTreeMap<dorc_plan::LeafId, bool>,
+) -> BTreeMap<dorc_plan::LeafId, CascadeAttribution> {
+    let line_of_node = |node: dorc_analysis::cfg::CfgNodeId| {
+        let lo = ast.node(cfg.node(node).ast).span.lo.0 as usize;
+        dorc_aid::diag::line_col(book_src, lo).0
+    };
+    let mut out = BTreeMap::new();
+    for (leaf, (node, class)) in classes.iter().enumerate() {
+        let Ok(leaf) = u32::try_from(leaf) else {
+            continue;
+        };
+        let leaf = dorc_plan::LeafId(leaf);
+        if !matches!(
+            class,
+            dorc_analysis::effect::SkipClass::QueryResolvable { valid: true, .. }
+        ) || origin_validity.get(&leaf) != Some(&false)
+        {
+            continue;
+        }
+        let causes: Vec<&dorc_plan::erase::ErasureEntry> = ledger
+            .entries()
+            .filter(|entry| reaches(cfg, entry.site(), *node))
+            .collect();
+        let Some(last) = causes.iter().max_by_key(|entry| entry.round()) else {
+            continue;
+        };
+        out.insert(
+            leaf,
+            CascadeAttribution {
+                erased_lines: causes.iter().map(|e| line_of_node(e.site())).collect(),
+                controller_line: dorc_aid::diag::line_col(
+                    book_src,
+                    ast.node(last.proof().controller()).span.lo.0 as usize,
+                )
+                .0,
+                round: last.round().0,
+            },
+        );
+    }
+    out
+}
+
+/// Is `to` reachable from `from` in the CFG? A plain forward walk over the frozen graph.
+fn reaches(
+    cfg: &dorc_analysis::cfg::Cfg,
+    from: dorc_analysis::cfg::CfgNodeId,
+    to: dorc_analysis::cfg::CfgNodeId,
+) -> bool {
+    use dorc_analysis::solve::Graph as _;
+    let mut seen = vec![false; cfg.node_count()];
+    let mut stack = vec![from];
+    while let Some(node) = stack.pop() {
+        for next in cfg.succ_ids(node) {
+            if next == to {
+                return true;
+            }
+            if seen.get(next.index()) == Some(&false) {
+                if let Some(slot) = seen.get_mut(next.index()) {
+                    *slot = true;
+                }
+                stack.push(next);
+            }
+        }
+    }
+    false
+}
+
+/// Classify the residual model named by `erased` (round 1 passes the empty overlay).
+fn classify_round(
+    frozen: &FrozenModel<'_>,
+    erased: &dorc_analysis::erase::ErasedSites,
+    interner: &mut Interner,
+    arena: &mut ProvArena,
+    degrades: &mut BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_oracle::predict::TopReason>,
+    verdict_lane: &mut BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+) -> ClassifiedRound {
+    let (
+        classified,
+        why_diags,
+        kills,
+        kill_coords,
+        fact_backings,
+        classify_narrative,
+        invalidators,
+    ) = dorc_analysis::effect::classify_with_why_diags(
+        frozen.cfg,
+        frozen.value,
+        frozen.ast,
+        frozen.idx,
+        frozen.checks,
+        frozen.verdicts,
+        frozen.peeled,
+        erased,
+        interner,
+        arena,
+        degrades,
+        verdict_lane,
+    );
+    ClassifiedRound {
+        classes: classified.value,
+        diags: classified.diags,
+        why_diags,
+        kills,
+        kill_coords,
+        fact_backings,
+        classify_narrative,
+        invalidators,
+    }
+}
+
+/// The per-round VALIDITY VIEW: each Query leaf's `valid` bit, as this round's residual model
+/// computes it. `classes` is leaf-ordered (the positional assignment `build_plan` and
+/// `build_vouches` share), so the index IS the site's [`dorc_plan::LeafId`].
+///
+/// Round 1's view necessarily equals the bits baked into the frozen probe, which is what
+/// keeps a world with nothing to erase byte-identical.
+fn validity_view(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+) -> BTreeMap<dorc_plan::LeafId, bool> {
+    classes
+        .iter()
+        .enumerate()
+        .filter_map(|(leaf, (_, class))| match class {
+            dorc_analysis::effect::SkipClass::QueryResolvable { valid, .. } => {
+                Some((dorc_plan::LeafId(u32::try_from(leaf).ok()?), *valid))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// Run the validity fixpoint to quiescence (`26H` §4 — W-C, the flagship fix).
+///
+/// Round k derives the residual model from origin + ledger, re-folds the FROZEN records
+/// through it, and appends every newly-proven-dead site; the loop ends when a round proves
+/// nothing new. Monotone by construction (erasure only ever REMOVES invalidators, so a
+/// query can only become valid, so a fold can only find more deadness) and bounded by the
+/// site count, since every growing round adds at least one of finitely many sites. The cap
+/// is therefore unreachable; it exists so a monotonicity regression cannot become a hang.
+/// Hitting it DISCARDS the whole ledger and re-derives from the origin, so the run's answer is
+/// exactly the pre-W-C one: no elision rests on a half-settled state nobody reasoned about, and
+/// there is no partial fixpoint to be silent about. A `debug_assert` makes it loud in dev and
+/// under DST — the same bargain `solve` strikes for its own unenforceable termination.
+///
+/// NO RE-PROBE (`26H` §0 v-no-reprobe-needed): invalid-Query checks already ship and their
+/// rcs are already measured, merely withheld. This consumes measurements in hand; it never
+/// asks a host anything, and `probe` is the frozen origin artifact throughout.
+fn settle_validity_fixpoint(
+    frozen: &FrozenModel<'_>,
+    probe: &dorc_plan::ProbePlan,
+    results: &SiteResults,
+    origin: ClassifiedRound,
+    interner: &mut Interner,
+    arena: &mut ProvArena,
+) -> SettledFixpoint {
+    let cap = u32::try_from(origin.classes.len())
+        .unwrap_or(u32::MAX)
+        .max(1);
+    let mut ledger = dorc_plan::erase::ErasureLedger::new();
+    let origin_validity = validity_view(&origin.classes);
+    let mut round = origin;
+    let mut number = 1u32;
+    loop {
+        let validity = validity_view(&round.classes);
+        let (by_fact, merge_narrative, collapsed) = facts_from_sites(probe, results, &validity);
+        let observe = |f: dorc_core::FactKey| {
+            by_fact
+                .get(&f)
+                .copied()
+                .unwrap_or(Observable::verdict_only(Verdict::Unknown))
+        };
+        let proofs = dorc_plan::erase::prove_dead_branches(
+            frozen.ast,
+            frozen.cfg,
+            &round.classes,
+            &round.invalidators,
+            observe,
+        );
+        let before = ledger.len();
+        for proof in proofs {
+            ledger.record(proof, dorc_plan::erase::RoundId(number));
+        }
+        let grew = ledger.len() > before;
+        if !grew {
+            return SettledFixpoint {
+                round,
+                by_fact,
+                merge_narrative,
+                collapsed,
+                ledger,
+                origin_validity,
+            };
+        }
+        debug_assert!(
+            number < cap,
+            "validity fixpoint hit its {cap}-round cap — erasure stopped being monotone"
+        );
+        if number >= cap {
+            ledger.rebuild_from_origin();
+            let round = classify_round(
+                frozen,
+                &ledger.overlay(),
+                interner,
+                arena,
+                &mut BTreeMap::new(),
+                &mut BTreeSet::new(),
+            );
+            let validity = validity_view(&round.classes);
+            let (by_fact, merge_narrative, collapsed) = facts_from_sites(probe, results, &validity);
+            return SettledFixpoint {
+                round,
+                by_fact,
+                merge_narrative,
+                collapsed,
+                ledger,
+                origin_validity,
+            };
+        }
+        number = number.saturating_add(1);
+        round = classify_round(
+            frozen,
+            &ledger.overlay(),
+            interner,
+            arena,
+            &mut BTreeMap::new(),
+            &mut BTreeSet::new(),
+        );
+    }
+}
+
 fn facts_from_sites(
     probe: &dorc_plan::ProbePlan,
     results: &SiteResults,
+    validity: &BTreeMap<dorc_plan::LeafId, bool>,
 ) -> (
     BTreeMap<dorc_core::FactKey, Observable>,
     Vec<CollapseNarrative>,
@@ -5734,10 +6089,16 @@ fn facts_from_sites(
             member: check.member,
         });
         let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
+        let site_kind = match check.site_kind {
+            ProbeSiteKind::Query { valid } => ProbeSiteKind::Query {
+                valid: validity.get(&check.site).copied().unwrap_or(valid),
+            },
+            ProbeSiteKind::Establish => ProbeSiteKind::Establish,
+        };
         // The firewall: only a VALID Query site's rc is fold-usable as Status — and only when
         // the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell,
         // so it must not substitute into the control-flow fold).
-        let status = match check.site_kind {
+        let status = match site_kind {
             ProbeSiteKind::Query { valid: true } => record.map_or(Predicted::Top, |r| {
                 if r.conflicted {
                     Predicted::Top
@@ -5764,7 +6125,7 @@ fn facts_from_sites(
         };
         // Source 1 — a WITHIN-site conflict: a valid Query whose parse-merged record contradicts
         // itself (`r.conflicted`), so its fold-usable rc is withheld to ⊤ above.
-        if matches!(check.site_kind, ProbeSiteKind::Query { valid: true })
+        if matches!(site_kind, ProbeSiteKind::Query { valid: true })
             && record.is_some_and(|r| r.conflicted)
         {
             collapse_narrative.push(measured_merge_disagreement(site_id, &[site_id]));
@@ -5772,7 +6133,7 @@ fn facts_from_sites(
         // C5 substitution refusal. tc-substitution-refusal-scope: minted ONLY for the invalid-Query
         // withhold (a genuine consumed-channel refusal), NOT the establish withhold (firewall-by-
         // design; it elides via Effect). Flagged UP — a scoping judgment (`inv-superposition`).
-        if matches!(check.site_kind, ProbeSiteKind::Query { valid: false }) {
+        if matches!(site_kind, ProbeSiteKind::Query { valid: false }) {
             collapse_narrative.push(CollapseNarrative::new(
                 SpeechAct::Derived,
                 CollapseKind::SubstitutionRefusal {
@@ -7941,7 +8302,7 @@ mod tests {
         let fact = tool(&mut i, "nginx");
         let entry_probe = probe1_entry(fact, ProbeSiteKind::Query { valid: true });
         let tag = |records: &str, i: &mut Interner| -> Option<EntryFailureTag> {
-            facts_from_sites(&entry_probe, &parse_str(records, i))
+            facts_from_sites(&entry_probe, &parse_str(records, i), &BTreeMap::new())
                 .1
                 .into_iter()
                 .find_map(|e| match e.kind() {
@@ -7967,7 +8328,7 @@ mod tests {
         let plain = probe1(fact, ProbeSiteKind::Query { valid: true });
         let results = parse_str("site 0 effect=cant-tell rc=127\n", &mut i);
         assert!(
-            !facts_from_sites(&plain, &results)
+            !facts_from_sites(&plain, &results, &BTreeMap::new())
                 .1
                 .iter()
                 .any(|e| matches!(e.kind(), CollapseKind::EntryFailure { .. })),
@@ -8254,8 +8615,8 @@ mod tests {
             "site 1 effect=cant-tell rc=3\nsite 0 effect=holds rc=0\n",
             &mut i,
         );
-        let (f_facts, f_narrative, _) = facts_from_sites(&probe, &forward);
-        let (r_facts, r_narrative, _) = facts_from_sites(&probe, &reversed);
+        let (f_facts, f_narrative, _) = facts_from_sites(&probe, &forward, &BTreeMap::new());
+        let (r_facts, r_narrative, _) = facts_from_sites(&probe, &reversed, &BTreeMap::new());
         assert_eq!(
             f_facts, r_facts,
             "the fold is a pure function of the records, not of their arrival order"
@@ -8288,7 +8649,7 @@ mod tests {
         let fact = pkg(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Establish);
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
-        let obs = facts_from_sites(&probe, &results)
+        let obs = facts_from_sites(&probe, &results, &BTreeMap::new())
             .0
             .get(&fact)
             .copied()
@@ -8310,7 +8671,7 @@ mod tests {
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: true });
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
-        let obs = facts_from_sites(&probe, &results)
+        let obs = facts_from_sites(&probe, &results, &BTreeMap::new())
             .0
             .get(&fact)
             .copied()
@@ -8322,7 +8683,7 @@ mod tests {
         );
         // A non-zero guard rc (nginx absent) carries through identically (Exit(n) path).
         let results = parse_str("site 0 effect=absent rc=1\n", &mut i);
-        let obs = facts_from_sites(&probe, &results)
+        let obs = facts_from_sites(&probe, &results, &BTreeMap::new())
             .0
             .get(&fact)
             .copied()
@@ -8341,7 +8702,7 @@ mod tests {
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: false });
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
-        let obs = facts_from_sites(&probe, &results)
+        let obs = facts_from_sites(&probe, &results, &BTreeMap::new())
             .0
             .get(&fact)
             .copied()
@@ -8362,7 +8723,7 @@ mod tests {
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
 
         let invalid = probe1(fact, ProbeSiteKind::Query { valid: false });
-        let (_facts, evidence, _collapsed) = facts_from_sites(&invalid, &results);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&invalid, &results, &BTreeMap::new());
         assert_eq!(
             evidence
                 .iter()
@@ -8373,7 +8734,7 @@ mod tests {
         );
 
         let valid = probe1(fact, ProbeSiteKind::Query { valid: true });
-        let (_facts, evidence, _collapsed) = facts_from_sites(&valid, &results);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&valid, &results, &BTreeMap::new());
         assert!(
             !evidence
                 .iter()
@@ -8567,7 +8928,7 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
             &mut i,
         );
-        let obs = facts_from_sites(&probe, &results)
+        let obs = facts_from_sites(&probe, &results, &BTreeMap::new())
             .0
             .get(&fact)
             .copied()
@@ -8591,7 +8952,7 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
             &mut i,
         );
-        let obs = facts_from_sites(&probe, &results)
+        let obs = facts_from_sites(&probe, &results, &BTreeMap::new())
             .0
             .get(&fact)
             .copied()
@@ -8615,7 +8976,7 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
             &mut i,
         );
-        let (_facts, evidence, _collapsed) = facts_from_sites(&probe, &conflict);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&probe, &conflict, &BTreeMap::new());
         assert_eq!(
             evidence.len(),
             1,
@@ -8631,7 +8992,7 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
             &mut i,
         );
-        let (_facts, evidence, _collapsed) = facts_from_sites(&probe, &agree);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&probe, &agree, &BTreeMap::new());
         assert!(evidence.is_empty(), "agreeing records mint no disagreement");
     }
 
@@ -8652,7 +9013,7 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\nsite 2 effect=cant-tell rc=2\n",
             &mut i,
         );
-        let (_facts, _evidence, collapsed) = facts_from_sites(&probe, &records);
+        let (_facts, _evidence, collapsed) = facts_from_sites(&probe, &records, &BTreeMap::new());
         assert_eq!(
             collapsed.len(),
             1,
@@ -8676,7 +9037,11 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
             &mut i,
         );
-        assert!(facts_from_sites(&probe, &agree).2.is_empty());
+        assert!(
+            facts_from_sites(&probe, &agree, &BTreeMap::new())
+                .2
+                .is_empty()
+        );
     }
 
     /// Build + deframe a FRAMED stream (the framed regime) for a set of inner records, then
@@ -8766,8 +9131,8 @@ mod tests {
             &mut i,
         );
         assert_eq!(
-            facts_from_sites(&probe, &book).0,
-            facts_from_sites(&probe, &rev).0,
+            facts_from_sites(&probe, &book, &BTreeMap::new()).0,
+            facts_from_sites(&probe, &rev, &BTreeMap::new()).0,
             "record arrival order never changes the fold (leafid-keyed)"
         );
     }
@@ -8785,8 +9150,8 @@ mod tests {
         let unframed = parse_str(&format!("{}\n{}\n", inners[0], inners[1]), &mut i);
         let framed = parse_framed(2, &inners, &mut i);
         assert_eq!(
-            facts_from_sites(&probe, &unframed).0,
-            facts_from_sites(&probe, &framed).0,
+            facts_from_sites(&probe, &unframed, &BTreeMap::new()).0,
+            facts_from_sites(&probe, &framed, &BTreeMap::new()).0,
             "the framing lines are fold-invisible — the plan is unchanged"
         );
     }
@@ -8831,7 +9196,7 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=1\n",
             &mut i,
         );
-        let obs = facts_from_sites(&probe, &results)
+        let obs = facts_from_sites(&probe, &results, &BTreeMap::new())
             .0
             .get(&fact)
             .copied()
