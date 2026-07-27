@@ -61,6 +61,7 @@ use std::io::Write;
 use std::process::ExitCode;
 
 mod source_match;
+mod transport_edge;
 mod whylog_store;
 
 use dorc_aid::chain::{ChainLink, ChainModel, Excerpt};
@@ -108,6 +109,13 @@ const EXIT_LINT_FINDINGS: u8 = 1;
 /// Numbered 3 (tc-lint-operational-exit-code — golangci-lint uses 3=Failure, shellcheck 3=bad-invoke;
 /// the conservative lean, flagged for the human).
 const EXIT_LINT_OPERATIONAL: u8 = 3;
+
+/// Wall-clock ceiling on a probe session, in seconds (`260` s3-6).
+///
+/// Bounded by default because a probe is read-only by contract, so the worst a ceiling can cost
+/// is a re-probe. An apply has no default ceiling for the mirror-image reason: killing one does
+/// not fail it, it mints Unknown, so the caller must opt in with `--apply-timeout`.
+const DEFAULT_PROBE_TIMEOUT_SECS: u64 = 120;
 
 /// The outcome of a completed analysis run — the process exit code (ack-1). `Complete` is the
 /// ordinary success; `BookUnmodeled` still emitted the artifact but the book carried an
@@ -643,6 +651,14 @@ impl RunClock {
     reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
 )]
 fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
+    // Before the pipeline, so building and applying in one breath is unreachable rather than
+    // merely unwritten.
+    if args.mode == Mode::Apply
+        && let Some(host) = args.host.as_deref()
+    {
+        return ship_consented_apply(args, host);
+    }
+
     let mut interner = Interner::default();
     let mode = args.mode;
     // rec-1 advisory routing: `plan` and the legacy round-trip overlay the FULL advisory plane
@@ -1038,13 +1054,19 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // spike fixed defaults (deterministic goldens; a real fleet mints per-attempt/per-host);
     // `book=` binds the stream to the exact analyzed book bytes. The end-sentinel follows the
     // final record lane (`records::sentinel_line`); the drain keys on it, never on EOF.
+    // A function of the framing because `attempt=` is baked into these bytes: a retry must
+    // RE-RENDER, never re-send (`26A` amend-retry-hygiene).
+    let render_probe_artifact = |f: &dorc_plan::records::Framing| -> String {
+        let mut out = probe.render_sh(f, &interner);
+        out.push_str(&derivations.render_sh(f.nonce(), &interner)); // 24E §2: SAME phase-1 block
+        out.push_str(&resolvers.render_sh(f.nonce())); // 24F §3: SAME phase-1 block
+        out.push_str(&reaches_plan.render_sh(f.nonce())); // 24G §4: SAME phase-1 block
+        out.push_str(&dorc_plan::records::sentinel_line(f.nonce()));
+        out
+    };
     let framing = dorc_plan::records::Framing::spike(book_digest(&book_src));
     if mode == Mode::Probe {
-        print!("{}", probe.render_sh(&framing, &interner));
-        print!("{}", derivations.render_sh(framing.nonce(), &interner)); // 24E §2: SAME phase-1 block
-        print!("{}", resolvers.render_sh(framing.nonce())); // 24F §3: SAME phase-1 block
-        print!("{}", reaches_plan.render_sh(framing.nonce())); // 24G §4: SAME phase-1 block
-        print!("{}", dorc_plan::records::sentinel_line(framing.nonce()));
+        print!("{}", render_probe_artifact(&framing));
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
     }
@@ -1053,13 +1075,72 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // after stdin EOF — the e2e harness splits the two on the `#!/bin/sh` shebang. `plan`
     // and `apply` emit ONLY the apply artifact (the probe is an internal compile there).
     if mode == Mode::RoundTrip {
-        print!("{}", probe.render_sh(&framing, &interner));
-        print!("{}", derivations.render_sh(framing.nonce(), &interner)); // 24E §2: SAME phase-1 block
-        print!("{}", resolvers.render_sh(framing.nonce())); // 24F §3: SAME phase-1 block
-        print!("{}", reaches_plan.render_sh(framing.nonce())); // 24G §4: SAME phase-1 block
-        print!("{}", dorc_plan::records::sentinel_line(framing.nonce()));
+        print!("{}", render_probe_artifact(&framing));
         std::io::stdout().flush().ok();
     }
+
+    // The framing returned is the WINNING attempt's, so admission checks records against the
+    // attempt that produced them. Hostless, none of this runs — the byte-identity fence.
+    let (framing, shipped_evidence) = match args.host.as_deref() {
+        None => (framing, None),
+        Some(raw) => {
+            let host =
+                dorc_transport::HostId::new(raw).map_err(|_| transport_edge::host_rejected(raw))?;
+            if let Some(line) = transport_edge::first_carriage_return(book_src.as_bytes()) {
+                return Err(transport_edge::crlf_refusal(book_name, line));
+            }
+            let nonce = transport_edge::mint_nonce();
+            let mut driver = transport_edge::driver_for_invocation(
+                args.connect_timeout,
+                args.accept_new,
+                args.ssh_config.as_deref(),
+            );
+            let timeout = Some(std::time::Duration::from_secs(
+                args.probe_timeout.unwrap_or(DEFAULT_PROBE_TIMEOUT_SECS),
+            ));
+            match transport_edge::ship_probe(
+                driver.as_mut(),
+                &host,
+                &nonce,
+                &book_digest(&book_src),
+                timeout,
+                &render_probe_artifact,
+            ) {
+                transport_edge::ProbeShipment::Captured {
+                    stdout,
+                    framing,
+                    stderr,
+                } => {
+                    transport_edge::echo_host_stderr(&stderr);
+                    (framing, Some(stdout))
+                }
+                // NOT the analysis fail-direction (unsure ⇒ run): not knowing whether we still
+                // talk to the world we think we do is no fact about it
+                // (`rul-integrity-failure-withholds-mutation`).
+                transport_edge::ProbeShipment::Lost {
+                    diagnosis,
+                    attempts,
+                } => {
+                    report_at(
+                        advisory,
+                        "transport",
+                        None,
+                        &[transport_edge::session_lost(raw, attempts, &diagnosis)],
+                    );
+                    return Ok(RunOutcome::IngressRefused);
+                }
+                transport_edge::ProbeShipment::NotAttempted { reason } => {
+                    report_at(
+                        advisory,
+                        "transport",
+                        None,
+                        &[transport_edge::not_attempted(raw, &reason)],
+                    );
+                    return Ok(RunOutcome::IngressRefused);
+                }
+            }
+        }
+    };
 
     // read the (simulated) probe results — the site-keyed records the rendered probe would emit
     // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
@@ -1082,7 +1163,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         );
         (None, ScopedHostEvidence::new(scope, results), false)
     } else {
-        let evidence = if let Some(path) = &args.results {
+        let evidence = if let Some(captured) = shipped_evidence.as_deref() {
+            dorc_plan::records::read_host_evidence(
+                std::io::Cursor::new(captured),
+                dorc_plan::records::HostEvidenceLimits::spike_default(),
+            )
+        } else if let Some(path) = &args.results {
             let file =
                 std::fs::File::open(path).map_err(|e| humane_read_error("results", path, &e))?;
             dorc_plan::records::read_host_evidence(
@@ -5860,6 +5946,76 @@ fn merge_observable(a: Observable, b: Observable) -> Observable {
         } else {
             Predicted::Top
         },
+    }
+}
+
+/// Ship an already-rendered plan to a host and report how it ended.
+///
+/// The one path in this binary that runs a mutating artifact somewhere. Three properties are
+/// load-bearing and each is visible in the shape below: the artifact arrives already rendered
+/// (nothing here can build one); it is shipped exactly ONCE, with no loop and no retry parameter
+/// (`law-no-double-apply`); and a lost session reports Unknown rather than a failure, because the
+/// remote may have done everything, nothing, or half of it.
+#[expect(
+    clippy::result_large_err,
+    reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
+)]
+fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
+    let artifact = if let Some(path) = args.plan.as_deref() {
+        std::fs::read(path).map_err(|e| humane_read_error("plan", path, &e))?
+    } else {
+        let mut bytes = Vec::new();
+        std::io::Read::read_to_end(&mut std::io::stdin(), &mut bytes)
+            .map_err(|e| humane_read_error("plan", "<stdin>", &e))?;
+        bytes
+    };
+    let destination =
+        dorc_transport::HostId::new(host).map_err(|_| transport_edge::host_rejected(host))?;
+    let mut driver = transport_edge::driver_for_invocation(
+        args.connect_timeout,
+        args.accept_new,
+        args.ssh_config.as_deref(),
+    );
+    let timeout = args.apply_timeout.map(std::time::Duration::from_secs);
+
+    match transport_edge::apply_to_host(
+        driver.as_mut(),
+        &destination,
+        &transport_edge::mint_nonce(),
+        &artifact,
+        timeout,
+    )? {
+        transport_edge::AppliedOutcome::Ran { status } => {
+            if status == 0 {
+                Ok(RunOutcome::Complete)
+            } else {
+                report_at(
+                    true,
+                    "apply",
+                    None,
+                    &[transport_edge::apply_failed(host, status)],
+                );
+                Ok(RunOutcome::IngressRefused)
+            }
+        }
+        transport_edge::AppliedOutcome::Unknown { diagnosis } => {
+            report_at(
+                true,
+                "apply",
+                None,
+                &[transport_edge::session_lost(host, 1, &diagnosis)],
+            );
+            Ok(RunOutcome::IngressRefused)
+        }
+        transport_edge::AppliedOutcome::NotAttempted { reason } => {
+            report_at(
+                true,
+                "apply",
+                None,
+                &[transport_edge::not_attempted(host, &reason)],
+            );
+            Ok(RunOutcome::IngressRefused)
+        }
     }
 }
 

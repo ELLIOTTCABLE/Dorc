@@ -251,6 +251,10 @@ const MIGRATED_SLUGS: &[&str] = &[
     "dorc-sh-usage",
     "dorc-sh-script-unreadable",
     "dorc-sh-exec-failed",
+    "transport-crlf-refused",
+    "transport-session-lost",
+    "transport-not-attempted",
+    "transport-apply-failed",
 ];
 
 /// Deliberately RETIRED/RENAMED slugs (`27V`): the `dq-` prefix drop on the five value-plane
@@ -329,6 +333,12 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "DorcShUsage",
     "DorcShScriptUnreadable",
     "DorcShExecFailed",
+    // transport — about a SESSION, not about bytes we parsed. The CRLF refusal can fire on a
+    // rendered plan no parser of ours saw, so its line is a payload value, not an AST span.
+    "TransportCrlfRefused",
+    "TransportSessionLost",
+    "TransportNotAttempted",
+    "TransportApplyFailed",
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `aid`

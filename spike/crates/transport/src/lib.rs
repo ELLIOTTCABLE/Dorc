@@ -55,8 +55,13 @@ use std::time::Duration;
 /// The one thing rejected is a string that could be read as an option rather than a
 /// destination. A leading `-` would let a destination smuggle ssh flags into the invocation, so
 /// it refuses at construction rather than at the argv boundary.
+/// Accepts `[user@]host`, `[user@]host:port`, and the bracketed IPv6 forms `[::1]` and
+/// `[::1]:2222`. A published container port (`localhost:2222`) is a first-class destination.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct HostId(String);
+pub struct HostId {
+    destination: String,
+    port: Option<u16>,
+}
 
 /// Why a destination string was refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,13 +72,20 @@ pub enum HostIdRejected {
     LeadingDash,
     /// Carries whitespace or a control byte.
     NotOneWord,
+    /// A `:port` that is not a number in 1..=65535.
+    PortNotAPort,
+    /// A `[` with no closing `]`.
+    BracketUnclosed,
+    /// Nothing left to connect to once user and port were removed.
+    NoHost,
 }
 
 impl HostId {
     /// Accept a destination string.
     ///
     /// # Errors
-    /// [`HostIdRejected`] when the string is empty, option-shaped, or not a single word.
+    /// [`HostIdRejected`] when the string is empty, option-shaped, not a single word, or carries
+    /// a malformed port or bracket.
     pub fn new(raw: &str) -> Result<Self, HostIdRejected> {
         if raw.is_empty() {
             return Err(HostIdRejected::Empty);
@@ -84,13 +96,76 @@ impl HostId {
         if raw.chars().any(|c| c.is_whitespace() || c.is_control()) {
             return Err(HostIdRejected::NotOneWord);
         }
-        Ok(Self(raw.to_owned()))
+
+        // ssh splits the user off at the LAST `@`, so a `@` inside a user name resolves here
+        // exactly as it will there.
+        let (user, host) = match raw.rfind('@') {
+            Some(at) => (
+                raw.get(..=at).unwrap_or_default(),
+                raw.get(at.saturating_add(1)..).unwrap_or_default(),
+            ),
+            None => ("", raw),
+        };
+
+        let (bare, port) = split_port(host)?;
+        if bare.is_empty() {
+            return Err(HostIdRejected::NoHost);
+        }
+        Ok(Self {
+            destination: format!("{user}{bare}"),
+            port,
+        })
     }
 
-    /// The destination as ssh will receive it.
+    /// The destination as ssh will receive it — user included, port excluded.
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.destination
+    }
+
+    /// The port, when one was given.
+    ///
+    /// Passed as `-p`, never glued back onto the destination: ssh takes a port as an option, and
+    /// `host:port` in destination position would be resolved as a hostname.
+    #[must_use]
+    pub fn port(&self) -> Option<u16> {
+        self.port
+    }
+}
+
+/// Split a host part into its address and optional port.
+///
+/// Bare IPv6 is why this cannot just split on the last colon: `::1` is an address and
+/// `localhost:22` is a port, and no shape rule separates them. The universal answer is the
+/// bracket — an unbracketed host carrying more than one colon IS an address, and a port beside
+/// IPv6 must be written `[::1]:22`.
+fn split_port(host: &str) -> Result<(&str, Option<u16>), HostIdRejected> {
+    if let Some(rest) = host.strip_prefix('[') {
+        let close = rest.find(']').ok_or(HostIdRejected::BracketUnclosed)?;
+        let inner = rest.get(..close).unwrap_or_default();
+        let tail = rest.get(close.saturating_add(1)..).unwrap_or_default();
+        return match tail.strip_prefix(':') {
+            Some(port) => Ok((inner, Some(parse_port(port)?))),
+            None if tail.is_empty() => Ok((inner, None)),
+            None => Err(HostIdRejected::PortNotAPort),
+        };
+    }
+    match host.matches(':').count() {
+        0 => Ok((host, None)),
+        1 => {
+            let at = host.find(':').unwrap_or_default();
+            let port = host.get(at.saturating_add(1)..).unwrap_or_default();
+            Ok((host.get(..at).unwrap_or_default(), Some(parse_port(port)?)))
+        }
+        _ => Ok((host, None)),
+    }
+}
+
+/// A port is 1..=65535; zero is not a destination.
+fn parse_port(raw: &str) -> Result<u16, HostIdRejected> {
+    match raw.parse::<u16>() {
+        Ok(port) if port > 0 => Ok(port),
+        _ => Err(HostIdRejected::PortNotAPort),
     }
 }
 

@@ -17,6 +17,7 @@ use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_templ
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
     CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
+    TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted, TransportSessionLost,
     Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
     HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
     LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
@@ -1425,6 +1426,26 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         }),
         "dorc-sh-exec-failed" => DiagCode::DorcShExecFailed(DorcShExecFailed {
             detail: "No such file or directory (os error 2)".to_owned(),
+        }),
+        // The transport family, for the same reason as the I/O failures above: an honest trigger
+        // needs a real host and a really severed connection, and this corpus may not open a
+        // socket at all.
+        "transport-crlf-refused" => DiagCode::TransportCrlfRefused(TransportCrlfRefused {
+            which: "webhost.dorc-plan.sh".to_owned(),
+            line: "1".to_owned(),
+        }),
+        "transport-session-lost" => DiagCode::TransportSessionLost(TransportSessionLost {
+            host: "web1.example.net".to_owned(),
+            attempts: "3".to_owned(),
+            diagnosis: "the session ended without a status".to_owned(),
+        }),
+        "transport-not-attempted" => DiagCode::TransportNotAttempted(TransportNotAttempted {
+            host: "web1.example.net".to_owned(),
+            detail: "program not found".to_owned(),
+        }),
+        "transport-apply-failed" => DiagCode::TransportApplyFailed(TransportApplyFailed {
+            host: "web1.example.net".to_owned(),
+            status: "2".to_owned(),
         }),
         _ => return None,
     };

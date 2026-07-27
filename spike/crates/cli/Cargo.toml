@@ -39,6 +39,10 @@ dorc-oracle = { path = "../oracle", version = "0.0.0" }
 dorc-plan = { path = "../plan", version = "0.0.0" }
 dorc-lint = { path = "../lint", version = "0.0.0" }
 
+# The controller<->host session edge (`260` §2). Depends on std alone, so nothing about
+# reaching a host can leak a dependency inward past this crate.
+dorc-transport = { path = "../transport", version = "0.0.0" }
+
 # The layout engine the why surface renders through. It sits RENDER-side of the firewall
 # (`28E:rul-tree-render-is-a-firewalled-crate`): this edge and `dorc-aid` may depend on it, and
 # `core`/`analysis`/`plan` may never — a decision must not be able to learn what its output looks

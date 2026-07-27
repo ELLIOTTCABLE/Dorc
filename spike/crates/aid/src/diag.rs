@@ -303,6 +303,14 @@ pub enum DiagCode {
     DorcShExecFailed(DorcShExecFailed),
     /// The per-run PATH shim directory could not be created or written.
     CliShimDirUnwritable(CliShimDirUnwritable),
+    /// Bytes about to be shipped to a host carry a carriage return.
+    TransportCrlfRefused(TransportCrlfRefused),
+    /// A session ran and never reported completion, so the host's state is unknown.
+    TransportSessionLost(TransportSessionLost),
+    /// No session process could be created, so the host was never contacted.
+    TransportNotAttempted(TransportNotAttempted),
+    /// A remote apply ran to completion and its artifact exited non-zero.
+    TransportApplyFailed(TransportApplyFailed),
 }
 
 impl DiagCode {
@@ -402,6 +410,10 @@ impl DiagCode {
             DiagCode::DorcShScriptUnreadable(_) => "dorc-sh-script-unreadable",
             DiagCode::DorcShExecFailed(_) => "dorc-sh-exec-failed",
             DiagCode::CliShimDirUnwritable(_) => "cli-shim-dir-unwritable",
+            DiagCode::TransportCrlfRefused(_) => "transport-crlf-refused",
+            DiagCode::TransportSessionLost(_) => "transport-session-lost",
+            DiagCode::TransportNotAttempted(_) => "transport-not-attempted",
+            DiagCode::TransportApplyFailed(_) => "transport-apply-failed",
         }
     }
 }
@@ -1253,6 +1265,66 @@ pub struct CliShimDirUnwritable {
     pub detail: String,
 }
 
+/// Payload of [`DiagCode::TransportCrlfRefused`]: bytes bound for a host are not LF-only.
+///
+/// A CRLF shebang is an exec failure the remote kernel reports before any shell of ours exists,
+/// so no guard, oracle or diagnostic can catch it there (`plans/139` §5) — which is why this
+/// refuses on the controller instead, before anything is shipped. It refuses rather than
+/// repairs: silently rewriting bytes someone is about to run on a server would trade a loud
+/// one-line fix for an invisible edit (`260` dec-26-crlf).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TransportCrlfRefused {
+    /// Which artifact carried it (`{which}`).
+    pub which: String,
+    /// The 1-based line the first carriage return sits on (`{line}`).
+    pub line: String,
+}
+
+/// Payload of [`DiagCode::TransportSessionLost`]: a session produced no completion marker.
+///
+/// The world's state is UNKNOWN, which is neither "clean" nor "failed"
+/// (`rul-integrity-failure-withholds-mutation`). It is deliberately NOT a sibling of
+/// [`TransportNotAttempted`] by grammar but by WORLD STATE
+/// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`): there, nothing ran and the remedy is to fix
+/// the invocation; here, something may have run and the remedy is to re-probe.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TransportSessionLost {
+    /// The destination (`{host}`).
+    pub host: String,
+    /// How many attempts were made (`{attempts}`).
+    pub attempts: String,
+    /// A best-effort reading of what severed it — decision-inert (`{diagnosis}`).
+    pub diagnosis: String,
+}
+
+/// Payload of [`DiagCode::TransportNotAttempted`]: no session process was ever created.
+///
+/// The one transport outcome licensed to say the host was untouched, because the failure is
+/// local: the controller could not spawn a child at all.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TransportNotAttempted {
+    /// The destination that went uncontacted (`{host}`).
+    pub host: String,
+    /// The spawn failure (`{detail}`).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::TransportApplyFailed`]: a remote apply completed with a non-zero status.
+///
+/// The third world state in this family, and the only one that is KNOWN: the artifact ran, it
+/// finished, and it exited non-zero. The status is reproduced, never interpreted — Dorc measures
+/// a tool's status and passes it through, it does not decide what one means
+/// (`law-lane-discipline`). Note that a zero here is equally not a health claim: a plan exiting 0
+/// does not prove the services it touched are well (`plans/252` §8), which is what a verify
+/// re-probe is for.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TransportApplyFailed {
+    /// The destination (`{host}`).
+    pub host: String,
+    /// The status the artifact exited with (`{status}`).
+    pub status: String,
+}
+
 // ===========================================================================
 // First-class site identity (type-sketch-5) — the slot, not the fleet machinery
 // ===========================================================================
@@ -1918,6 +1990,10 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         | DiagCode::DorcShUsage(_)
         | DiagCode::DorcShScriptUnreadable(_)
         | DiagCode::DorcShExecFailed(_)
+        | DiagCode::TransportCrlfRefused(_)
+        | DiagCode::TransportSessionLost(_)
+        | DiagCode::TransportNotAttempted(_)
+        | DiagCode::TransportApplyFailed(_)
         | DiagCode::CliShimDirUnwritable(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::None,
@@ -2201,6 +2277,20 @@ fn params_of_raw(code: &DiagCode) -> Vec<(&'static str, String)> {
         DiagCode::DorcShExecFailed(p) => vec![("detail", p.detail.clone())],
         DiagCode::CliShimDirUnwritable(p) => {
             vec![("path", p.path.clone()), ("detail", p.detail.clone())]
+        }
+        DiagCode::TransportCrlfRefused(p) => {
+            vec![("which", p.which.clone()), ("line", p.line.clone())]
+        }
+        DiagCode::TransportSessionLost(p) => vec![
+            ("host", p.host.clone()),
+            ("attempts", p.attempts.clone()),
+            ("diagnosis", p.diagnosis.clone()),
+        ],
+        DiagCode::TransportNotAttempted(p) => {
+            vec![("host", p.host.clone()), ("detail", p.detail.clone())]
+        }
+        DiagCode::TransportApplyFailed(p) => {
+            vec![("host", p.host.clone()), ("status", p.status.clone())]
         }
         DiagCode::LintToolFailedWithoutFindings(p) => {
             vec![("tool", p.tool.clone()), ("rc", p.rc.to_string())]
@@ -3138,6 +3228,37 @@ mod tests {
             detail: "x".to_owned(),
         });
         assert_eq!(registry(&unresolvable).floor, Floor::None);
+    }
+
+    #[test]
+    fn the_transport_family_renders_the_unwritten_placeholder_and_never_panics() {
+        let codes = [
+            DiagCode::TransportCrlfRefused(TransportCrlfRefused {
+                which: "book.sh".to_owned(),
+                line: "3".to_owned(),
+            }),
+            DiagCode::TransportSessionLost(TransportSessionLost {
+                host: "web1".to_owned(),
+                attempts: "3".to_owned(),
+                diagnosis: "timed out after 120s".to_owned(),
+            }),
+            DiagCode::TransportNotAttempted(TransportNotAttempted {
+                host: "web1".to_owned(),
+                detail: "program not found".to_owned(),
+            }),
+            DiagCode::TransportApplyFailed(TransportApplyFailed {
+                host: "web1".to_owned(),
+                status: "2".to_owned(),
+            }),
+        ];
+        for code in codes {
+            let slug = code.slug();
+            assert_eq!(registry(&code).severity, Severity::Error);
+            assert_eq!(
+                render_body(&Diag::new_spanless_site(code), &Interner::default()),
+                format!("[unwritten: {slug}]")
+            );
+        }
     }
 
     #[test]

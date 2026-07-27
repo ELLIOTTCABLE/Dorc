@@ -14,6 +14,14 @@ use std::time::{Duration, Instant};
 /// round-trip, large enough not to spin.
 const POLL_INTERVAL: Duration = Duration::from_millis(10);
 
+/// Ceiling on ONE captured stream (`260` §5 backpressure floor).
+///
+/// A managed host controls how much it writes, so an unbounded read is a memory-growth path the
+/// host itself chooses. This bound needs no failure rule of its own: a capture that hits it is by
+/// definition missing its completion marker, so it classifies as a loss and the run mints
+/// Unknown — the safe direction, reached through the ordinary path.
+const CAPTURE_CAP: u64 = 8 * 1024 * 1024;
+
 /// Spawn `command`, feed it the artifact, capture both streams, and classify by the marker.
 ///
 /// Total by construction (`inv-no-throw`): a failure to spawn is
@@ -67,10 +75,10 @@ pub fn run(mut command: Command, request: &SessionRequest<'_>) -> SessionOutcome
 
 /// Read a pipe to end on its own thread, so a child that fills one stream while we read the
 /// other cannot deadlock us.
-fn drain<R: Read + Send + 'static>(mut source: R) -> std::thread::JoinHandle<Vec<u8>> {
+fn drain<R: Read + Send + 'static>(source: R) -> std::thread::JoinHandle<Vec<u8>> {
     std::thread::spawn(move || {
         let mut buffer = Vec::new();
-        let _ = source.read_to_end(&mut buffer);
+        let _ = source.take(CAPTURE_CAP).read_to_end(&mut buffer);
         buffer
     })
 }

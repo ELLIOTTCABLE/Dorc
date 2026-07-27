@@ -99,6 +99,10 @@ impl SshDriver {
     #[must_use]
     pub fn argv(&self, host: &HostId, marker: &crate::SessionMarker) -> Vec<OsString> {
         let mut argv = self.options.args();
+        if let Some(port) = host.port() {
+            argv.push("-p".into());
+            argv.push(port.to_string().into());
+        }
         argv.push(host.as_str().into());
         argv.push(marker.remote_command(&self.options.remote_sh).into());
         argv
@@ -202,6 +206,62 @@ mod tests {
             argv.last().is_some_and(|last| last.contains("sh -s")),
             "the artifact is read from stdin so its own bytes are never touched"
         );
+    }
+
+    #[test]
+    fn a_destination_splits_into_user_host_and_port_the_way_ssh_will_read_it() {
+        for (raw, destination, port) in [
+            ("web1", "web1", None),
+            ("root@web1", "root@web1", None),
+            ("localhost:2222", "localhost", Some(2222)),
+            ("root@localhost:2222", "root@localhost", Some(2222)),
+            ("192.0.2.7:22", "192.0.2.7", Some(22)),
+            // Unbracketed IPv6 is an ADDRESS, never a port: its colons are part of it.
+            ("::1", "::1", None),
+            ("fe80::1", "fe80::1", None),
+            ("root@fe80::1", "root@fe80::1", None),
+            // A port beside IPv6 needs the bracket, which is the only thing that disambiguates.
+            ("[::1]:2222", "::1", Some(2222)),
+            ("[fe80::1]", "fe80::1", None),
+            ("deploy@[::1]:2222", "deploy@::1", Some(2222)),
+        ] {
+            let host = HostId::new(raw).unwrap_or_else(|e| panic!("{raw} rejected: {e:?}"));
+            assert_eq!(host.as_str(), destination, "destination of {raw}");
+            assert_eq!(host.port(), port, "port of {raw}");
+        }
+    }
+
+    #[test]
+    fn a_port_reaches_ssh_as_an_option_never_glued_to_the_destination() {
+        let host = HostId::new("localhost:2222").expect("valid destination");
+        let marker = SessionMarker::new("n1", 1).expect("valid nonce");
+        let argv: Vec<String> = SshDriver::default()
+            .argv(&host, &marker)
+            .into_iter()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
+        let at = argv.iter().position(|a| a == "-p").expect("-p present");
+        assert_eq!(argv.get(at.saturating_add(1)).map(String::as_str), Some("2222"));
+        assert!(
+            argv.iter().any(|a| a == "localhost"),
+            "the destination must be the bare host: `localhost:2222` in destination position \
+             would be resolved as a hostname"
+        );
+        assert!(!argv.iter().any(|a| a == "localhost:2222"));
+    }
+
+    #[test]
+    fn a_malformed_port_or_bracket_is_refused_rather_than_guessed() {
+        for (raw, why) in [
+            ("web1:", crate::HostIdRejected::PortNotAPort),
+            ("web1:0", crate::HostIdRejected::PortNotAPort),
+            ("web1:99999", crate::HostIdRejected::PortNotAPort),
+            ("web1:ssh", crate::HostIdRejected::PortNotAPort),
+            ("[::1", crate::HostIdRejected::BracketUnclosed),
+            (":2222", crate::HostIdRejected::NoHost),
+        ] {
+            assert_eq!(HostId::new(raw), Err(why), "{raw}");
+        }
     }
 
     #[test]
