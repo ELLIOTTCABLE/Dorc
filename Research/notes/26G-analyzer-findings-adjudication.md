@@ -238,7 +238,12 @@ recorded `holds`), planned read-only against a one-oracle dir:
 
 - when the RHS mutator is **modeled** (a `wombat sync` covered by the same oracle):
   `sites=7 elide=3 omit=3 guard=0 run=1` — **all three lines fold**. The cap does not exist.
-- when the RHS mutator is **unmodeled** (`hork sync`, no oracle):
+  <!-- /* superceded by `§CORRECTION-the-variable-is-gens-into-reach` (appended 2026-07-27,
+       during the W-C build). These NUMBERS reproduce exactly — but only against a NON-MUTATING
+       RHS, not a modeled mutator. A modeled mutator caps at one rung exactly like an unmodeled
+       opaque, because validity is an empty-SET test both populate. Do not carry "modeled RHS ⇒
+       the cap does not exist" forward. The finding is unaffected, and broader than this row
+       claims. */ -->
   `sites=7 elide=1 omit=1 guard=0 run=5`, with the engine's own hint reading
   "'hork' (line 4) is unmodeled: it is the first wall".
 
@@ -806,3 +811,77 @@ Row 4 is ⊤ during phase 1 and is restored by phase 2's `cmd || return N≥2` c
 sound for the reason rows 2–3 are not: `N ≥ 2` routes the failure branch into the rc-partition's
 flat can't-say sink rather than forging a pass. `seam-verdict-bang-and-ortrue-flattening` keeps
 its name minus its or-list half; the `!` half stays unbuilt.
+
+---
+
+# §CORRECTION-the-variable-is-gens-into-reach (appended 2026-07-27, during the W-C build)
+
+Appended, not merged: the original text stands and carries an inline superseded-marker at the
+affected row. This is the note's own `haz-trial-claims-need-independent-check` firing on it for the
+THIRD time — and, like the first two, it was found by pulling on the note's own threads rather than
+by doubting it. The W-C dispatch required re-measuring F2 before building on it.
+
+## What is wrong
+
+`fnd-dead-branch-still-invalidates` §1 frames its discriminating experiment as **modeled vs
+unmodeled RHS**, and concludes that with a modeled RHS "all three lines fold. The cap does not
+exist." Both halves are wrong: the variable is mis-named, and the modeled arm does not behave as
+reported.
+
+## The corrected mechanism
+
+Validity is `reach.states[i].is_pristine()` (`effect.rs:1548`), and `is_pristine` is
+`matches!(self, Reach::Facts(s) if s.is_empty())` (`:787-789`) — an **empty-set** test, not a
+per-cell one. `reach_transfer` (`:928-945`) gens for `Establishes` *and* `Kills`, and joins ⊤ for
+`Opaque`. So an oracled mutator and an unmodeled opaque invalidate a downstream guard **exactly
+alike**; only `Pure`/`Queries` gen nothing. The discriminating variable is
+**gens-into-reach vs does-not**, which is not the same cut as modeled-vs-unmodeled and does not
+even correlate with it: a *modeled* mutator invalidates, and a *modeled* read does not.
+
+Four arms, N=3, three distinct entities, every guard recorded `holds rc=0`, planned read-only at
+`b7096fdb` (the W-D + W-B integration tip):
+
+| arm | RHS of each rung | measured |
+|---|---|---|
+| unmodeled mutator | `hork install X` (no oracle ⇒ Opaque) | `sites=7 elide=1 omit=1 guard=0 run=5` |
+| **modeled mutator** | `apt-get install -y X` (oracled ⇒ Establishes) | **`sites=7 elide=1 omit=1 guard=0 run=5`** |
+| modeled mutator, SAME cell as the guard | `wombat sync X`, one oracle, one cell | `sites=7 elide=0 omit=0 guard=0 run=7` |
+| **modeled READ** (observe-marked, distinct cell) | `wombat sync X` marked `:?` | **`sites=7 elide=3 omit=3 guard=0 run=1`** |
+
+Row 1 reproduces the original's unmodeled arm byte-for-byte, hint included. Row 4 reproduces the
+original's *modeled* arm byte-for-byte — but its RHS is a **read**, not a mutator. So the original's
+"modeled RHS" fixture (~SUSPECT; it was never committed and cannot be inspected) was observe-marked:
+a ladder of guarded *queries*, which nothing invalidates, rather than guarded *installs*.
+
+Row 3 is a bonus find the original had no arm for: when the guard and the mutator key the SAME cell,
+`merge_observable` ⊤s the Status channel and the ladder folds *nothing at all*. That is a distinct
+mechanism from validity, and it is where W-B genuinely touches F2.
+
+## What still stands, and what gets stronger
+
+Everything load-bearing. The root cause (query-validity is records-blind and never re-runs), the law
+verdict (`USER_STORY:299`'s promise is violated by the second poisoning mechanism), the fix
+direction (a bounded same-records fixpoint), the naive-fix hazard (omitted ≠ dead), and
+`haz-two-poisoning-mechanisms-one-law` are all unaffected. The defect is **broader** than measured:
+it was framed as costing elisions only where an oracle is missing, and it costs them wherever ANY
+mutator sits above a guard — including a fully-oracled book, which is the case the product is
+supposed to be best at.
+
+## Knock-on for `26H`
+
+`26G:haz-fixing-keying-changes-fold-inputs` predicted that fixing the keying (W-B) would "silently
+move F2's numbers". For the **validity bit** that is false, and provably so: `is_pristine` cannot
+see the difference between `Opaque` and `Establishes(authored cell)`, so shifting sites between them
+moves nothing. `git log -L` over both the validity computation and the gen line confirms neither has
+changed since `8bf8beb6` (task-D2), long predating this arc. The hazard's *conclusion* — do not
+measure one fix while the other is in flight — stands anyway, by row 3: W-B splits cells that were
+colliding, and a collided cell ⊤s the Status the fold needs. The coupling is real; it runs through
+the MERGE, not through validity.
+
+## Landed under W-C
+
+The fixpoint erases a records-proven-dead site's invalidator-hood from the analyzer model and
+re-derives until quiescence. Both mutator arms above now read `elide=3 omit=3 guard=0 run=1`; the
+live-opaque and same-cell arms are unchanged; a middle guard reporting `absent` stops the cascade at
+exactly that rung. The two committed whole-product cases are `fix-ladder-all-holds-folds-all` and
+`fix-ladder-middle-absent-stops-cascade`.
