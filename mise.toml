@@ -347,3 +347,32 @@ run = "cargo run -q -p internal-tooling -- coverage"
 description = "INSTRUMENT, never a gate: the strawman24 elision-frequency table. KNOWN-BROKEN — reports NO-SUMMARY for every case (its invocation drifted from the records-lane framing); the failure is loud, not yours. A number here is meaningless unless test:e2e is green anyway."
 dir = "spike"
 run = "sh e2e/yardstick.sh"
+
+# ── livetest ─────────────────────────────────────────────────────────────────────────────────
+# NEVER a gate. These four are the only way to reach `spike/e2e/livetest.sh`, and nothing in
+# `gate:*`, `bless` or pre-commit reaches them: the lane needs a container runtime, a network, and
+# real `apt-get` on a real machine. Routed through `internal-tooling` rather than `sh <script>`
+# because a mise task cannot assume a POSIX shell on PATH (see the header note above).
+
+[tasks.livetest]
+description = "LIVE ACCEPTANCE, never a gate: provisions a throwaway Debian container with sshd, drives dorc's real plan/apply/re-plan/re-apply loop over real ssh against it, asserts both plan summaries against the hermetic baselines in Research/trial/r26/renders/, and tears it down. ~35s, needs a container runtime (docker/podman/nerdctl/wslc; override with DORC_CONTAINER_CLI). LIVETEST_KEEP=1 leaves the container and the run directory up; a failed run keeps its artifacts either way."
+dir = "spike"
+depends = ["build"]
+run = "cargo run -q -p internal-tooling -- livetest run"
+
+[tasks."livetest:target"]
+description = "Provision the same container livetest uses and LEAVE IT RUNNING, printing the ssh destination, the per-run key, and a ready-to-paste dorc invocation. The shortcut for poking at a real endpoint by hand; `livetest:clean` removes it."
+dir = "spike"
+depends = ["build"]
+run = "cargo run -q -p internal-tooling -- livetest target"
+
+[tasks."livetest:clean"]
+description = "Remove every container livetest created, and its run directories. Safe to run at any time; touches nothing it did not create."
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- livetest clean"
+
+[tasks."livetest:remote"]
+description = "Drive the livetest loop against a destination YOU supply -- `mise run livetest:remote -- root@host` (or `root@host:2222`). Provisions nothing and tears down nothing, so it will really mutate whatever you point it at. LIVETEST_SSH_KEY names an identity file if your ssh config does not already reach the host."
+dir = "spike"
+depends = ["build"]
+run = "cargo run -q -p internal-tooling -- livetest remote"

@@ -63,5 +63,16 @@ DORC=$dorc "$here/frame-records.sh" "$work/ceiling-book.sh" "$kit/oracles" \
 render 'CONVERGED world, CEILING VARIANT (the book minus its bare `apt-get update`)' \
    "$work/ceiling-book.sh" "$work/ceiling.framed.txt" plan-ceiling-converged.txt
 
+# `container-book.sh` — what `mise run livetest` drives. These two are the baselines the live loop
+# asserts its summary COUNTS against, so they are the ones that must stay re-derivable.
+"$here/frame-records.sh" "$kit/container-book.sh" "$kit/oracles" \
+   "$kit/records/container-pristine.txt" >"$here/records/container-pristine.framed.txt"
+"$here/frame-records.sh" "$kit/container-book.sh" "$kit/oracles" \
+   "$kit/records/container-converged.txt" >"$here/records/container-converged.framed.txt"
+render 'CONTAINER book, PRISTINE world (the livetest baseline for plan 1)' \
+   "$kit/container-book.sh" "$kit/records/container-pristine.framed.txt" plan-container-pristine.txt
+render 'CONTAINER book, CONVERGED world (the livetest baseline for plan 2)' \
+   "$kit/container-book.sh" "$kit/records/container-converged.framed.txt" plan-container-converged.txt
+
 printf 'renders refreshed:\n' >&2
 grep -h 'plan-summary' "$here"/renders/*.txt >&2
