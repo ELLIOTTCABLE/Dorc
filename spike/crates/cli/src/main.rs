@@ -5282,6 +5282,13 @@ fn emit_why_triptych(
 /// fixed). NEXT STEPS is likewise omitted, the triptych-collapse `28G` strawman `e-skipped-quiet`
 /// demonstrates. The richer per-disposition panels — a guarded line naming its wall, a declined line
 /// showing the author's arm — are the narration lane's.
+///
+/// SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): the because-clause is a VALUE
+/// interleaved into the outcome row, so a multi-fragment reason is FLATTENED here and its
+/// fragments' own registry rows get no face in the transcript. The bytes are right — every
+/// fragment is already encoded, and the flattened value is what the row has always carried — but
+/// until a chrome line can hold interleaved value fragments (the transport half of `28G` Phase
+/// W4), an edit to one of those rows has to be made in the lock rather than at the transcript.
 fn plain_chain(site: &WhySite) -> ChainRender {
     let (because, rest) = site
         .reasons
