@@ -76,8 +76,8 @@ use crate::predict::{
 /// design** (`inv-determinism` — no oracle lift inside the kernel), so a driver computes this set
 /// from the oracle sources and threads it INTO `classify` as DATA — the auto-cell mint reads it to
 /// decide, at a would-be-Opaque site, whether the provider earned the synthetic establish-cell.
-/// Diags are DROPPED here (the verdict lift is re-run in `dorc_plan::build_vouches`, which surfaces
-/// them once for gate-3); this is a pure membership query.
+/// Diags are DROPPED here (`crate::validate` lifts the same role per-file and surfaces them once,
+/// framed into their own source, for gate-3); this is a pure membership query.
 #[must_use]
 pub fn verdict_providers(interner: &mut Interner, srcs: &[&str]) -> BTreeSet<ProviderId> {
     let mut set = BTreeSet::new();

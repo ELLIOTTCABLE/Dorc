@@ -57,9 +57,13 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
     });
 
     // The per-file check-dialect lift (stage `check`): a check body using a construct outside the
-    // check dialect is a lift failure that frames into THIS oracle's source.
+    // check dialect is a lift failure that frames into THIS oracle's source. BOTH role-lifts run
+    // here: a verdict body abandons its funcdef exactly as a predict body does (one `parse_block`
+    // give-up), so routing only the predict lift left every verdict-body give-up silent — the file
+    // parsed, `dorc lint` said clean, and the body's binds/marks were inert (`26G` F3).
     for (i, src) in oracles.iter().enumerate() {
         let mut diags = crate::predict::lift_predicts(interner, src).diags;
+        diags.extend(crate::predict::lift_verdicts_converged(interner, src).diags);
         if !src.contains("__") {
             diags.extend(crate::predict::lint_mark_subset(src));
         }
@@ -200,4 +204,54 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
 
     let incoherent = !diags.is_empty();
     (diags, incoherent)
+}
+
+#[cfg(test)]
+mod check_stage_tests {
+    use super::validate;
+    use dorc_aid::diag::DiagCode;
+    use dorc_core::Interner;
+
+    const VERDICT_GIVEUP: &str =
+        "# dorc-lang/v0.2\nw__is_converged() {\n   [ -n \"$1\" ] || return 2\n   w q \"$1\"\n}\n";
+    const PREDICT_GIVEUP: &str =
+        "# dorc-lang/v0.2\nw__predict() {\n   [ -n \"$1\" ] || return 2\n   w q \"$1\"\n}\n";
+    const CLEAN: &str = "# dorc-lang/v0.2\nw__is_converged() {\n   w q \"$1\"\n}\n";
+
+    /// The per-file index of the `check` stage carrying an out-of-dialect give-up, if any.
+    fn giveup_file(src: &str) -> Option<usize> {
+        let mut i = Interner::default();
+        validate(&mut i, &[src])
+            .stages
+            .into_iter()
+            .find(|s| {
+                s.stage == "check"
+                    && s.diags
+                        .iter()
+                        .any(|d| matches!(d.code, DiagCode::PredictOutOfDialect(_)))
+            })
+            .and_then(|s| s.file)
+    }
+
+    /// A VERDICT body's out-of-dialect give-up reaches the `check` stage framed into its own file.
+    /// The per-file index is the whole point: it is what lets every consumer — the cli's plan lane
+    /// and the lint rung-oracle-solo lane alike — resolve `(path, src)` and render a real span.
+    /// Reporting this through a fileless lane instead framed verdict give-ups at `1:1`, sourceless.
+    #[test]
+    fn a_verdict_body_giveup_is_a_per_file_check_stage() {
+        assert_eq!(giveup_file(VERDICT_GIVEUP), Some(0));
+    }
+
+    /// Role PARITY: the identical construct in a predict body lands the same way. Both roles abandon
+    /// their funcdef through one `parse_block` give-up, so one stage must carry both.
+    #[test]
+    fn predict_and_verdict_giveups_land_identically() {
+        assert_eq!(giveup_file(PREDICT_GIVEUP), giveup_file(VERDICT_GIVEUP));
+    }
+
+    /// The negative pin: an in-dialect oracle mints no give-up at all.
+    #[test]
+    fn a_clean_oracle_mints_no_giveup() {
+        assert_eq!(giveup_file(CLEAN), None);
+    }
 }

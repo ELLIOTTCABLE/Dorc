@@ -259,6 +259,29 @@ sysctl__is_converged() {
         );
     }
 
+    /// The same give-up in a VERDICT body reaches the same lane (`26G` F3): a bracket test in
+    /// statement position abandons the funcdef, voiding every bind and mark in it, and the file
+    /// still parses — so `dorc lint` called this clean while the annotations were inert.
+    #[test]
+    fn oracle_validate_surfaces_a_verdict_dialect_giveup() {
+        let out_of_dialect = "# dorc-lang/v0.2\nfoo__is_converged() {\n   [ -n \"$1\" ] || return 2\n   foo q \"$1\"\n}\n";
+        let report = lint(
+            &[],
+            &[oracle("foo.oracle.sh", out_of_dialect)],
+            LintOptions::default(),
+            &NoToolsRunner,
+            Some(&["oracle-validate".to_owned()]),
+        );
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.code == "predict-out-of-dialect"),
+            "the verdict-role lift reaches the oracle-solo lane: {:?}",
+            report.findings
+        );
+    }
+
     #[test]
     fn oracle_validate_only_diagnoses_marks_at_parsed_carriers() {
         let ordinary_shell = r#"# dorc-lang/v0.2

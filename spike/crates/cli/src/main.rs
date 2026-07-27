@@ -715,7 +715,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let verdict_providers = dorc_oracle::verdict::verdict_providers(&mut interner, &oracle_refs);
     // Pre-lift each file's verdict funcdefs so the (immutable-interner) probe ship-closure can
     // strip the auto-cell's verdict body without a mutating re-lift (`24L` §2 probe emission). Diags
-    // drop here — `build_vouches` re-lifts and surfaces them once for gate-3.
+    // drop here — `validate` surfaces them once, per-file, for gate-3.
     let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
         .iter()
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
@@ -860,8 +860,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
     // the verdict) and, converged, mints a `Disposition::Guard`.
+    // Lift diags drop here: `validate` above surfaces them per-file. This lane could only report
+    // them sourceless, which framed every verdict give-up at a fileless `1:1`.
     let vouch_lift = build_vouches(&oracle_refs, &classes, &value, &mut interner);
-    report_at(advisory, "verdict", None, &vouch_lift.diags);
     let (mut vouches, decline_narrative) = vouch_lift.value;
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
