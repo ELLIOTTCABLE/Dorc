@@ -1,0 +1,15 @@
+probe: note[site-unresolvable]: sm 7 sites run unprobed (no read-only check could be shipped): `apt-get update`, `apt-get install -y ca-certificates`, `apt-get install -y curl`, `apt-get install -y jq`, `apt-get install -y nginx`, `curl -fsS -o /dev/null http://127.0.0.1:8088/r26`, `logger -t dorc-r26 "r26 smoke book applied"` -- run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)   = note: site runs `apt-get update`
+   --> smoke-book.sh:27:1
+   |
+27 | apt-get update
+   | \____________/
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:17) -- a deliberate decline the author classed, so the site runs
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unmodeled] (at oracles\apt-get.oracle.sh:24) -- a deliberate decline the author classed, so the site runs
+why: author declines [unsound] (at oracles\logger.oracle.sh:11) -- a deliberate decline the author classed, so the site runs
+hint: 'apt-get' (line 27) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 6 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why smoke-book.sh:N` to query a source line
+dorc: plan-summary sites=16 elide=0 omit=0 guard=0 run=16 may-alias=0
+dorc: decision-digest d46ffdbf87758ca1

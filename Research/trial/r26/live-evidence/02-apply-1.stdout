@@ -1,0 +1,40 @@
+Hit:1 https://deb.debian.org/debian bookworm InRelease
+Hit:2 https://deb.debian.org/debian-security bookworm-security InRelease
+Hit:3 https://deb.debian.org/debian bookworm-updates InRelease
+Hit:4 https://debian.mirror.constant.com bookworm InRelease
+Hit:5 https://apprepo.vultr.com/debian universal InRelease
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  nginx-common
+Suggested packages:
+  fcgiwrap nginx-doc ssl-cert
+The following NEW packages will be installed:
+  nginx nginx-common
+0 upgraded, 2 newly installed, 0 to remove and 2 not upgraded.
+Need to get 644 kB of archives.
+After this operation, 1,703 kB of additional disk space will be used.
+Get:1 https://deb.debian.org/debian bookworm/main amd64 nginx-common all 1.22.1-9+deb12u9 [115 kB]
+Get:2 https://deb.debian.org/debian bookworm/main amd64 nginx amd64 1.22.1-9+deb12u9 [530 kB]
+Fetched 644 kB in 0s (6,269 kB/s)
+Selecting previously unselected package nginx-common.
+(Reading database ...  (Reading database ... 5% (Reading database ... 10% (Reading database ... 15% (Reading database ... 20% (Reading database ... 25% (Reading database ... 30% (Reading database ... 35% (Reading database ... 40% (Reading database ... 45% (Reading database ... 50% (Reading database ... 55% (Reading database ... 60% (Reading database ... 65% (Reading database ... 70% (Reading database ... 75% (Reading database ... 80% (Reading database ... 85% (Reading database ... 90% (Reading database ... 95% (Reading database ... 100% (Reading database ... 70110 files and directories currently installed.)
+Preparing to unpack .../nginx-common_1.22.1-9+deb12u9_all.deb ...
+Unpacking nginx-common (1.22.1-9+deb12u9) ...
+Selecting previously unselected package nginx.
+Preparing to unpack .../nginx_1.22.1-9+deb12u9_amd64.deb ...
+Unpacking nginx (1.22.1-9+deb12u9) ...
+Setting up nginx-common (1.22.1-9+deb12u9) ...
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+Created symlink /etc/systemd/system/multi-user.target.wants/nginx.service → /lib/systemd/system/nginx.service. 
+Setting up nginx (1.22.1-9+deb12u9) ...
+Upgrading binary: nginx.
+Processing triggers for man-db (2.11.2-2) ...
+Processing triggers for ufw (0.36.2-1) ...
