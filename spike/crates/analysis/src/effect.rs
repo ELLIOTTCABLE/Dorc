@@ -291,8 +291,6 @@ fn verdict_cell_or_auto(
     };
     let selector = SelectorId(interner.intern(&coord.selector));
     let fact = FactKey::cell(kind, entity, selector);
-    // observe-backing-widening (`277` §5): the `:?` cells the same reached path read widen this
-    // fact's backing SET. Kill-surface only grows (`inv-kfail`, apply) — the safe direction.
     let observed: BTreeSet<SelectorId> = coord
         .observed
         .iter()
@@ -420,17 +418,10 @@ pub fn command_effect(
         };
         (!idx.effect_of(provider, verb_key).is_empty()).then_some((r, verb_key))
     });
-    // TWO ways to arrive with no declared cell, and both hand the site to the VERDICT LANE (its
-    // authored coordinate, else the `24L` §2 typeless floor; no verdict function ⇒ Opaque, the
-    // `inv-top-reject` honest floor). Neither ever falls back to a verb-by-position lookup —
-    // that was the deleted engine-side argparse sin.
-    //
-    // (a) no check resolved this argv (no check for the provider, or every candidate ⊤'d); or
-    // (b) one RESOLVED and the effect-map declared no cells for its verb — a predict with no
-    //     marked effect is the same inert shape as a markless verdict-only body. Note what (b)
-    //     leaves behind: a perfectly shippable predict body attached to a site whose cell the
-    //     verdict body owns. That is why the lane is threaded out as a fact about the SITE and
-    //     never re-derived downstream by trying the two ship closures in order.
+    // TWO ways to arrive with no declared cell — (a) nothing resolved this argv, (b) something
+    // RESOLVED but declared no cells for its verb — both handed to the VERDICT LANE (never a
+    // verb-by-position fallback: the deleted engine-side argparse sin). (b) is why the lane is a
+    // fact about the SITE, not re-derived by try-order: it leaves a shippable predict behind.
     let Some((resolved, verb_key)) = keyed else {
         return verdict_cell_or_auto(
             verdicts,
@@ -531,11 +522,8 @@ fn member_family(
     }
     let members = value.member_argv(id)?;
     let mut family = Vec::with_capacity(members.len());
-    // A loop member NEVER forms a verdict-lane cell (auto or authored): the in-loop floor runs
-    // every member regardless (`disposition_for`), so such a member would only ship wasted
-    // per-member verdict probes. An EMPTY verdict index keeps `command_effect` on the Opaque
-    // floor for members; a verdict-only site in a loop falls to the single-cell path (its
-    // per-iteration ⊤ operand keeps it Opaque ⇒ MustRun ⇒ Run — the safe direction).
+    // A loop member NEVER forms a verdict-lane cell: the in-loop floor runs every member anyway
+    // (`disposition_for`), so an EMPTY index keeps them Opaque ⇒ MustRun ⇒ Run (safe direction).
     let no_verdict_lane_in_members = VerdictIndex::default();
     for argv in members {
         // Each member is a concrete-or-⊤ argv; resolve it through the oracle check. All-or-nothing:
@@ -565,7 +553,6 @@ fn member_family(
             // A member's degrade never reaches a surface: the whole family collapses to the
             // single-cell path below, which re-runs `command_effect` and records the reason there.
             &mut None,
-            // Likewise its lane: the empty index above makes this unreachable-by-construction.
             &mut false,
         )
         .as_slice()
@@ -2415,10 +2402,8 @@ command__predict() {
 
     #[test]
     fn typeless_floor_auto_cell_mints_only_for_verdict_bearing_providers() {
-        // `24L` §2/§7: a would-be-Opaque site (here `foobar` — absent from the checks, so no check
-        // resolves) mints the private per-provider auto-cell IFF the provider bears a verdict
-        // function. The verdict role enters as DATA (the cli seam); the kernel never lifts it.
-        // Empty index ⇒ the honest Opaque floor (byte-identical to no-oracle).
+        // `24L` §2/§7: a would-be-Opaque site mints the auto-cell IFF the provider bears a verdict
+        // function; empty index ⇒ the honest Opaque floor (byte-identical to no-oracle).
         let bare = verdict_lane_effect("foobar sync\n", None);
         assert_eq!(
             bare.sites[0].cells,
@@ -2430,8 +2415,6 @@ command__predict() {
             "an Opaque site never claims the verdict lane"
         );
 
-        // A MARKLESS verdict body is the founding `24L` §2 shape and must stay byte-identical:
-        // the per-provider singleton, not an authored cell.
         let markless = "foobar__is_converged() { foobar status -- \"$2\" ;}\n";
         let mut run = verdict_lane_effect("foobar sync\n", Some(markless));
         let expect = dorc_core::auto_fact(&mut run.interner, "foobar");
@@ -2448,10 +2431,8 @@ command__predict() {
 
     #[test]
     fn an_authored_verdict_coordinate_keys_its_own_cell_and_threads_its_family() {
-        // `26H` §3 — the W-B fix. A verdict body that authored a coordinate keys THAT cell, not
-        // the per-provider singleton, so two sites of one command stop sharing a fact
-        // (`26G:fnd-shared-auto-cell-collides`). Still the verdict LANE: there is no predict
-        // answering this cell, so the site's probe must ship the verdict body.
+        // `26H` §3 — the W-B fix: an authored coordinate keys THAT cell, so two sites of one
+        // command stop sharing a fact. Still the verdict LANE — no predict answers this cell.
         let oracle = "\
 # dorc-lang/v0.2
 foobar__is_converged() {
@@ -2475,10 +2456,6 @@ foobar__is_converged() {
             "the authored kind is an ordinary kind — which is exactly why the ship \
              discriminator cannot be a kind test"
         );
-        // `26H` §3.5 / sparing-algebra: the minting family is threaded EXACTLY. Left to
-        // `sole_family`'s reverse lookup, a PREDICT family that happened to mint this
-        // (kind, selector) would lend this fact its dialect and spare a cell no verdict mark
-        // ever minted a token for.
         let foobar = ProviderId(run.interner.intern(&predict::map_provider_name("foobar")));
         assert_eq!(
             run.backings.get(&expect).and_then(|b| b.family),
@@ -2489,9 +2466,8 @@ foobar__is_converged() {
 
     #[test]
     fn a_second_site_of_one_command_keys_a_different_authored_cell() {
-        // The whole point, stated as a cell inequality: same command, same oracle, different
-        // authored destination ⇒ different facts. Under the auto-cell all three sites were
-        // `dorc-auto:foobar@converged`, so any one site's `cant-tell` de-licensed the rest.
+        // Under the auto-cell all three sites were one cell, so any one `cant-tell` de-licensed
+        // the rest.
         let oracle = "\
 # dorc-lang/v0.2
 foobar__is_converged() {
@@ -2510,9 +2486,7 @@ foobar__is_converged() {
             a.cells, b.cells,
             "distinct authored destinations are distinct cells"
         );
-        // …and the same destination twice is still ONE cell: `an-written-stale` rests on
-        // same-state sites COLLIDING, and only an AUTHORED coordinate may split them
-        // (`26H` §3.4 — per-site synthetic cells stay forbidden).
+        // …and one destination is still ONE cell (`26H` §3.4 — `an-written-stale` rests on it).
         assert_eq!(
             a.cells, a_again.cells,
             "one destination is one cell, whatever the source"

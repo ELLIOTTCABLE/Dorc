@@ -1,0 +1,87 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# verdict-coord-same-entity-shares-one-cell (`26H` §3.4) — the fence on the sibling case, and the
+# reason per-site synthetic cells are FORBIDDEN rather than merely unused.
+#
+# Two sites of one command dropping DIFFERENT sources onto the SAME destination. Their authored
+# coordinates are equal, so they share `sm.dorc.File:/etc/shared.conf@content` and the cross-site
+# merge still ⊤s the channel when they disagree — both run. That collapse is CORRECT: it is what
+# `an-written-stale` rests on (`purge X; … install X` — a resting probe taken before an upstream
+# site rewrote the same state is not authoritative), and only an AUTHORED coordinate may ever
+# split two sites, because only the author knows they touch different state.
+#
+# Splitting on SITE identity instead would silently license the second drop off the first drop's
+# measurement. That is why the fix keys on what the oracle wrote and never on where it was called.
+wombat a.conf /etc/shared.conf
+wombat b.conf /etc/shared.conf
+
+-- wombat.oracle.sh --
+# dorc-lang/v0.2
+# Identical to the splitting case's oracle — the difference is entirely in the book's argv, which
+# is the point: the ENGINE splits nothing, the author's coordinate does.
+wombat__is_converged() {
+   dst : sm.dorc.File = "$2"
+   wombat cmp -- "$1" "$dst"   : sm.dorc.File:"$dst"@content
+}
+
+-- probe-results.txt --
+# Both sites measure the ONE shared cell and disagree: site 0 says the destination already holds
+# its bytes, site 1 says it does not. Two sites on one cell disagreeing ⇒ the meet ⊤s the channel
+# ⇒ neither site is licensed ⇒ both RUN. (They cannot both be right, and the engine does not get
+# to pick.)
+site 0 effect=holds rc=0
+site 1 effect=absent rc=1
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock: stands in for both the verdict body's `wombat cmp` probe and the book's own drop.
+# Mutates nothing. The rc answers the probe the way the authored records say the world is — and
+# here that world is one where the two sites genuinely CONTRADICT each other about one cell, which
+# is only possible because the destination is shared.
+. "${0%/*}/.log"; _dorc_logged "$@"
+if [ "$1" = "cmp" ]; then
+   case "$3" in
+   a.conf) exit 0 ;;   # /etc/shared.conf holds a.conf's bytes ⇒ holds
+   *) exit 1 ;;        # …and therefore not b.conf's ⇒ absent
+   esac
+fi
+exit 0
+
+-- expected.ran --
+ran: wombat a.conf /etc/shared.conf
+ran: wombat b.conf /etc/shared.conf
+
+-- replay --
+$ dorc --book=book.sh -o wombat.oracle.sh < probe-results.txt

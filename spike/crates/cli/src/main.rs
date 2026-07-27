@@ -715,11 +715,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .iter()
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
         .collect();
-    // The verdict INDEX (`24L` §7 — THE kernel seam, widened by `26H` §3): the analyzer kernel is
-    // verdict-unaware by design (`inv-determinism`), so the cli edge keys the lifted verdict role
-    // by provider and threads it INTO `classify` as DATA. The kernel asks it both "did this
-    // provider earn the synthetic auto-cell" and "does its body author a coordinate for this argv".
-    // Built from the sets above, so the run lifts the verdict role ONCE.
+    // The `24L` §7 kernel seam, widened by `26H` §3: the kernel stays verdict-unaware, so the edge
+    // keys the role by provider and threads it in as DATA. From the sets above ⇒ ONE lift.
     let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
 
     // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
@@ -845,10 +842,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `degrades` (`26G:fnd-existence-gate-darkens-oracle`): why each ⊤-degrading site's oracle
     // check gave up. Diagnostics only — it reaches the `site-unresolvable` note and nothing else.
     let mut degrades = BTreeMap::new();
-    // `26H` §3.5 — the sites whose establish came from the VERDICT lane (an authored verdict
-    // coordinate, or the `24L` §2 auto-cell). These have no predict to answer their cell, so their
-    // probe ships the verdict body; site-keyed because an authored verdict cell is an ordinary
-    // kind and nothing about the FACT can distinguish it from a predict-minted one.
+    // `26H` §3.5 — sites whose establish came from the VERDICT lane, so their probe ships the
+    // verdict body. Site-keyed: nothing about the FACT distinguishes an authored verdict cell.
     let mut verdict_lane = BTreeSet::new();
     let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative) =
         dorc_analysis::effect::classify_with_why_diags(
@@ -901,18 +896,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
     // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
     let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
-    // `24L` §2 — a VERDICT-LANE site ships its stripped verdict body (the probe IS the verdict).
-    // `Some` ONLY for a site classify keyed through that lane, so `compile_probe` reads a `Some`
-    // as the verdict-lane signal. rul-only-oracle-bytes-ship: the shipped bytes are the oracle's
-    // OWN authored `is_converged` funcdef, strip-only; the admin's argv flows as arguments.
-    //
-    // The discriminator is the SITE's lane, not its fact's KIND (`26H` §3.5). A verdict body that
-    // authored a coordinate keys an ordinary kind — indistinguishable from a predict-minted one —
-    // so `is_auto_kind` would send it to the predict lane, find no predict, and run the site. Nor
-    // can try-order stand in for the lane: `command_effect` reaches the verdict lane from TWO
-    // fallbacks, and the second (a predict that RESOLVED but declared no effect cells) leaves a
-    // perfectly shippable predict body attached to a site whose cell the verdict body owns —
-    // shipping it would answer a different question than the one the fact records.
+    // `24L` §2 — a VERDICT-LANE site ships the oracle.s own `is_converged` funcdef, strip-only
+    // (rul-only-oracle-bytes-ship). Keyed on the SITE.s lane, never its fact.s KIND (`26H` §3.5):
+    // an authored verdict cell is an ordinary kind, so `is_auto_kind` would route it to the
+    // predict lane, find nothing, and run the site. Try-order cannot stand in either —
+    // `command_effect` reaches this lane from two fallbacks, and the second leaves a shippable
+    // predict on a site whose cell the verdict body owns.
     let ship_auto = |node: dorc_analysis::cfg::CfgNodeId,
                      p: Symbol,
                      _a: &[Symbol]|
@@ -1254,10 +1243,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // so this resolution happens here (the edge holds the interner) and rides the Resolutions the
     // walk already threads. Re-interning `dorc-auto:<provider>` returns the KindId classify minted.
     //
-    // Still per-PROVIDER, deliberately, now that a verdict body can also key an authored cell: the
-    // fence guards the synthetic singleton, and every provider that could mint one must keep it.
-    // A provider whose sites all keyed authored cells simply has no auto coordinate in the plan,
-    // so its registration is inert — the residual auto-cells stay fenced un-weakened (`26H` §3.5).
+    // Still per-PROVIDER now that a verdict body can also key an authored cell: the fence guards
+    // the synthetic singleton, so every provider that could mint one keeps it.
     let verdict_names: Vec<String> = verdicts
         .providers()
         .map(|p| interner.resolve(p.0).to_owned())
@@ -8199,6 +8186,95 @@ mod tests {
         // The Effect/Status path is unaffected by the reserved keys' presence.
         assert_eq!(rec.verdict, Verdict::Converged);
         assert_eq!(rec.rc, Rc(0));
+    }
+
+    /// Two same-command sites on DISTINCT authored cells fold independently, and the fold does not
+    /// care what order their records arrived in (`26H` §3.6).
+    ///
+    /// This is the behavioural close of `26G`'s cold trail. Before W-B both sites shared the
+    /// per-provider auto-cell, and which of the pair kept a disposition depended on their relative
+    /// POSITION (the later site read as written-upstream by its own sibling). Distinct keys remove
+    /// the coupling at the root, so there is no order left to depend on — and this pins that
+    /// directly rather than quoting the mechanism it retired.
+    #[test]
+    fn distinct_authored_cells_fold_independently_whatever_the_record_order() {
+        let mut i = Interner::default();
+        let file = KindId(i.intern("sm.dorc.File"));
+        let content = SelectorId(i.intern("content"));
+        let cell = |i: &mut Interner, path: &str| {
+            FactKey::cell(
+                file,
+                EntityRef::Operand(OpaqueToken(i.intern(path))),
+                content,
+            )
+        };
+        let a = cell(&mut i, "/etc/a.conf");
+        let b = cell(&mut i, "/etc/b.conf");
+        let probe = ProbePlan {
+            checks: vec![
+                ProbePredict {
+                    site: LeafId(0),
+                    member: None,
+                    fact: a,
+                    site_kind: ProbeSiteKind::Establish,
+                    provider: file.0,
+                    argv: vec![],
+                    sh: "{ :; }".to_string(),
+                    defining_span: None,
+                    connected: None,
+                    verdict: true,
+                    emits_report: false,
+                    entry: None,
+                },
+                ProbePredict {
+                    site: LeafId(1),
+                    member: None,
+                    fact: b,
+                    site_kind: ProbeSiteKind::Establish,
+                    provider: file.0,
+                    argv: vec![],
+                    sh: "{ :; }".to_string(),
+                    defining_span: None,
+                    connected: None,
+                    verdict: true,
+                    emits_report: false,
+                    entry: None,
+                },
+            ],
+            unresolvable: vec![],
+            unresolvable_causes: BTreeMap::new(),
+        };
+        // The finding's own amplification world: one site converged, its sibling unreadable.
+        let forward = parse_str(
+            "site 0 effect=holds rc=0\nsite 1 effect=cant-tell rc=3\n",
+            &mut i,
+        );
+        let reversed = parse_str(
+            "site 1 effect=cant-tell rc=3\nsite 0 effect=holds rc=0\n",
+            &mut i,
+        );
+        let (f_facts, f_narrative, _) = facts_from_sites(&probe, &forward);
+        let (r_facts, r_narrative, _) = facts_from_sites(&probe, &reversed);
+        assert_eq!(
+            f_facts, r_facts,
+            "the fold is a pure function of the records, not of their arrival order"
+        );
+        assert_eq!(f_narrative.len(), r_narrative.len());
+        assert_eq!(
+            f_facts.get(&a).map(|o| o.effect),
+            Some(Verdict::Converged),
+            "the converged site keeps its own answer — a sibling that could not report is not \
+             evidence about THIS cell (oracle-contract §4)"
+        );
+        assert_eq!(
+            f_facts.get(&b).map(|o| o.effect),
+            Some(Verdict::Unknown),
+            "the unreadable site is unknown ⇒ its own line runs, and only its own line"
+        );
+        assert!(
+            f_narrative.is_empty(),
+            "distinct cells never collided, so nothing was merged and nothing is announced"
+        );
     }
 
     #[test]

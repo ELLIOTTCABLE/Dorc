@@ -1,0 +1,85 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# verdict-coord-splits-sibling-cells (`26H` §3 — the W-B fix for
+# `26G:fnd-shared-auto-cell-collides`). Two sites of ONE command, each dropping a DIFFERENT file.
+# The verdict body authors a coordinate, so they key `sm.dorc.File:/etc/a.conf@content` and
+# `…:/etc/b.conf@content` — two cells, licensed independently.
+#
+# The record world is the finding's own amplification case: site 0 reports converged, site 1 could
+# not be read at all (`cant-tell`). Under the `24L` §2 auto-cell BOTH sites shared
+# `dorc-auto:wombat@converged`, so site 1's silence poisoned the shared cell and site 0 ran too —
+# "one unreadable destination de-licenses every other drop in the book". Site 0 now elides on its
+# own measurement, which is what oracle-contract §4 means by attaching a fact to the one line that
+# measured it. No `set -e`, so the ambient rc is unconsumed and the elide tier is reachable.
+wombat a.conf /etc/a.conf
+wombat b.conf /etc/b.conf
+
+-- wombat.oracle.sh --
+# dorc-lang/v0.2
+# The two-operand drop: converged when the destination already holds the source's bytes. The bind
+# names the entity (the engine parses no argv — `identity-declared-never-inferred`), the trailing
+# verdict mark names the cell the exit status witnesses.
+wombat__is_converged() {
+   dst : sm.dorc.File = "$2"
+   wombat cmp -- "$1" "$dst"   : sm.dorc.File:"$dst"@content
+}
+
+-- probe-results.txt --
+# site 0 = the /etc/a.conf drop: its own verdict body ran and reported converged ⇒ site 0 ELIDES.
+# site 1 = the /etc/b.conf drop: unreadable (the `cant-tell` any unanswerable probe defaults to)
+# ⇒ site 1 RUNS. The two are independent because the cells are, which is the whole case.
+site 0 effect=holds rc=0
+site 1 effect=cant-tell rc=3
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock: stands in for both the verdict body's `wombat cmp` probe and the book's own drop.
+# Mutates nothing. The rc answers the probe only, and answers it the way the authored records
+# above say the world is — a fixture whose mock and whose records disagree describes no world at
+# all, and gate-1 refuses it.
+. "${0%/*}/.log"; _dorc_logged "$@"
+if [ "$1" = "cmp" ]; then
+   case "$3" in
+   a.conf) exit 0 ;;   # /etc/a.conf already holds these bytes ⇒ holds
+   *) exit 3 ;;        # /etc/b.conf is unreadable ⇒ can't-say (the amplification's silent sibling)
+   esac
+fi
+exit 0
+
+-- expected.ran --
+ran: wombat b.conf /etc/b.conf
+
+-- replay --
+$ dorc --book=book.sh -o wombat.oracle.sh < probe-results.txt

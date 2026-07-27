@@ -361,16 +361,14 @@ pub fn evaluate_verdict_coord(verdict: &Predict, argv: &[&str]) -> Option<Verdic
     let [(mark_kind, mark_selector)] = tr.verdict_marks.as_slice() else {
         return None; // markless, or two marks the single rc cannot both witness
     };
-    // `28A:rul-singleton-bind-drops`: a body with no bind may still key, when the mark's own
-    // coordinate is entity-LESS (`sm.dorc.PkgIndex@fresh`) — kind from the mark, entity Singleton.
-    // A mark naming an entity with no bind to resolve it keys nothing (never a garbage key).
+    // `28A:rul-singleton-bind-drops`: no bind still keys an entity-LESS mark; a mark NAMING an
+    // entity with no bind to resolve it keys nothing (never a garbage key).
     let (kind, entity) = tr.annotation.clone().or_else(|| {
         (mark_kind.entity_is_empty && !mark_kind.kind.is_empty())
             .then(|| (mark_kind.kind.clone(), ResolvedEntity::Singleton))
     })?;
     let selector = mark_selector.clone()?;
-    // A brace-alternation selector on a VERDICT is single-cell-illegal (`277` §4c) — it mints no
-    // cell, exactly as `derive_predict` refuses it on the predict side.
+    // Brace-alternation on a VERDICT is single-cell-illegal (`277` §4c), as on the predict side.
     if brace_tokens(&selector).is_some() {
         return None;
     }
@@ -576,11 +574,9 @@ impl Tracer {
             // An annotation desugars to a binding (as in touches); a bare mark is a no-op. Neither
             // is a "check command", so neither vouches on its own.
             Stmt::Annotation(anno) => {
-                // A value-less bind is the nullary/Singleton form; a valued one resolves the
-                // operand. First bind wins, as on the predict side. An UNRESOLVABLE value records
-                // nothing and — deliberately — does NOT degrade the trace: predict ⊤s there, but
-                // the vouch decision predates this collector and must not move, so the site simply
-                // keys no coordinate and falls to the auto-cell (`26H` §3.3).
+                // First bind wins, as on the predict side. An UNRESOLVABLE value deliberately does
+                // NOT degrade the trace — the vouch decision predates this collector and must not
+                // move — so the site simply keys nothing (`26H` §3.3).
                 let entity = match &anno.value {
                     None => Some(ResolvedEntity::Singleton),
                     Some(value) => match self.resolve(value) {
@@ -1457,9 +1453,7 @@ x__is_converged() {
         assert_eq!(a.entity, ResolvedEntity::Operand("/etc/a.conf".to_owned()));
         assert_eq!(b.entity, ResolvedEntity::Operand("/etc/b.conf".to_owned()));
         assert_ne!(a, b, "different destinations are different cells");
-        // The SAME destination twice must still land on ONE cell: `an-written-stale` rests on
-        // same-state sites COLLIDING, and only an authored coordinate may ever split them
-        // (`26H` §3.4 — the forbidden per-site-synthetic-cell hack, stated as a pin).
+        // One destination is ONE cell (`26H` §3.4 — `an-written-stale` rests on it).
         assert_eq!(
             coord(DROP, &["a.conf", "/etc/a.conf"]),
             coord(DROP, &["z.conf", "/etc/a.conf"]),
@@ -1469,9 +1463,6 @@ x__is_converged() {
 
     #[test]
     fn polarity_does_not_change_the_cell() {
-        // `:!` (refutes) inverts how the rc READS, not which cell it is about — the sense lives in
-        // the vouch and the guard's glue. A `refutes` body must key the same coordinate a
-        // structurally identical `asserts` body keys.
         let refutes = DROP.replace("   : sm.dorc.File", "   :! sm.dorc.File");
         assert_eq!(
             coord(&refutes, &["a.conf", "/etc/a.conf"]),
@@ -1481,8 +1472,6 @@ x__is_converged() {
 
     #[test]
     fn only_a_verdict_mark_keys_and_an_observe_only_widens() {
-        // The selection rule's other half: an observe (`:?`) can never BE the key, but it does
-        // widen the fact's backing (`277` §5) — kill-surface only grows, the safe direction.
         let observed_too = "\
 x__is_converged() {
    dst : sm.dorc.File = \"$2\"
@@ -1509,8 +1498,7 @@ x__is_converged() {
 
     #[test]
     fn every_unkeyable_shape_falls_to_the_auto_cell() {
-        // `26H` §3.3 is EXHAUSTIVE: anything not a reached, single, fully-resolved verdict
-        // coordinate keys nothing and takes the `24L` §2 floor. Never a garbage key, never Opaque.
+        // `26H` §3.3 is EXHAUSTIVE: anything else takes the `24L` §2 floor, never a garbage key.
         let cases: &[(&str, &str, &[&str])] = &[
             (
                 "markless (the 24L §2 founding shape)",
@@ -1560,9 +1548,7 @@ x__is_converged() {
 
     #[test]
     fn an_entity_less_coordinate_keys_the_singleton() {
-        // `28A:rul-singleton-bind-drops`: a nullary verb drops its bind and the coordinate names
-        // the kind directly. The predict evaluator does exactly this re-point; the verdict lane
-        // must agree, or one spelling would key and the other would not.
+        // `28A:rul-singleton-bind-drops`: predict re-points identically; the two must agree.
         let nullary = "\
 x__is_converged() {
    x freshness   : sm.dorc.PkgIndex@fresh

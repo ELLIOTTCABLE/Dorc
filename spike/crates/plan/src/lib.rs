@@ -2915,10 +2915,8 @@ pub fn compile_probe(
         // probe, so a DECLINED verdict (a refuse path — `return 2`, the R2-MULTIOP arity gate) has
         // nothing to measure and must not ship a record; the site runs
         // (`guard23-refusepath-rc0-never-passes`: a declined verdict never licenses, and never probes).
-        //
-        // This branch precedes the predict lane below and MUST keep doing so: a verdict-lane site
-        // can also carry a resolvable predict (`command_effect`'s no-effect-cells fallback), and
-        // shipping that predict would measure a different cell than the one this record keys.
+        // Precedes the predict lane below and MUST: a verdict-lane site can also carry a
+        // resolvable predict, which would measure a different cell than this record keys.
         if matches!(site_kind, ProbeSiteKind::Establish)
             && is_vouched(node)
             && let Some((provider, argv, shipped)) =
