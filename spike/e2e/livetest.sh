@@ -32,7 +32,13 @@ here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 spike=$(CDPATH= cd -- "$here/.." && pwd)
 root=$(CDPATH= cd -- "$spike/.." && pwd)
 kit=$root/Research/trial/r26
-dorc=${DORC:-$spike/target/debug/dorc}
+# Built by a native-Windows cargo, this is `dorc.exe`; everywhere else it is `dorc`. Probed rather
+# than branched on uname, because the shell running this may be git's while the build was MSVC's.
+dorc=${DORC:-}
+if [ "$dorc" = "" ]; then
+   dorc=$spike/target/debug/dorc
+   [ -x "$dorc" ] || [ ! -x "$dorc.exe" ] || dorc=$dorc.exe
+fi
 
 IMAGE=debian:12-slim
 BOOK=$kit/container-book.sh
