@@ -150,8 +150,8 @@ fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>, diags: &m
                 walk(else_body, ctx.clone(), effects, diags);
             }
             Stmt::While { body, .. } => walk(body, ctx.clone(), effects, diags),
-            // Assign/Shift key no cell.
-            Stmt::Assign { .. } | Stmt::Shift { .. } => {}
+            // Assign/Shift key no cell; a list's marks were refused (`AndOr::refused_marks`).
+            Stmt::AndOr(_) | Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
     }
 }

@@ -17,7 +17,9 @@
 //! module bakes no phase. Anything non-concrete ⇒ [`Resolution::Top`] with a reason
 //! string (`inv-kfail`, both directions: nothing ships, nothing elides).
 
-use super::ast::{Annotation, Command, MarkKind, Pattern, Predict, Stmt, Test, TestOp, Word};
+use super::ast::{
+    AndOr, AndOrOp, Annotation, Command, MarkKind, Pattern, Predict, Stmt, Test, TestOp, Word,
+};
 use dorc_core::{Span, Symbol};
 use dorc_syntax::sem::{self, UnsetPolicy};
 use std::collections::BTreeMap;
@@ -128,12 +130,24 @@ pub enum TopReason {
     /// `kFAIL-perform`). Parse-permissively; trace-conservatively. (A `touches()` pipeline instead
     /// ESCALATES — see `touches::TouchesTop::NonPrintfCommand`.)
     Pipeline,
-    /// The selected path reached an OR-LIST (`a || b`) — the SAME accept-then-⊤ degrade as
-    /// [`Pipeline`](TopReason::Pipeline) (`||` lexes as two adjacent one-byte pipes), reported apart
-    /// because the two read nothing alike to an author. This is the shape the oracle-contract's own
-    /// existence gate (`command -v tool >/dev/null 2>&1 || return 2`) is written in, so it is the
-    /// degrade authors hit most; `command -v` itself models fine, and an `if [ … ]` gate resolves.
+    /// The selected path reached an OR-LIST (`a || b`) the tracer does not model — the same
+    /// accept-then-⊤ degrade as [`Pipeline`](TopReason::Pipeline), reported apart because the two
+    /// read nothing alike to an author. This is the shape the oracle-contract's own existence gate
+    /// (`command -v tool >/dev/null 2>&1 || return 2`) is written in, so it is the degrade authors
+    /// hit most; `command -v` itself models fine, and an `if [ … ]` gate resolves.
     OrList,
+    /// The selected path reached an AND-LIST (`a && b`). Before `&&` was lexed this shape did not
+    /// degrade at all: it scanned as three WORDS, so a swallowed `shift` resolved a coordinate off
+    /// the UNSHIFTED argv while the byte-exact shipped body ran the shift on the host — a wrong
+    /// `Resolved`, the disaster class (`26G:§FINDING-andand-resolves-a-wrong-coordinate`).
+    AndList,
+    /// The selected path BACKGROUNDS a command (`a & b`) — the `&` twin of
+    /// [`AndList`](TopReason::AndList), which swallowed the same way for the same reason.
+    AsyncList,
+    /// The selected path reached an and-or CHAIN (`a || b || c`, `a && b || c`). Chains stay ⊤
+    /// permanently: which items run depends on rcs the tracer does not have, and a fallback item
+    /// resolves a DIFFERENT coordinate than the item that actually ran.
+    AndOrChain,
 }
 
 impl TopReason {
@@ -153,7 +167,25 @@ impl TopReason {
                 "selected path reached a command pipeline (out of dialect => runs)"
             }
             TopReason::OrList => "selected path reached an or-list (out of dialect => runs)",
+            TopReason::AndList => "selected path reached an and-list (out of dialect => runs)",
+            TopReason::AsyncList => "selected path backgrounds a command (out of dialect => runs)",
+            TopReason::AndOrChain => {
+                "selected path reached an and-or chain (out of dialect => runs)"
+            }
         }
+    }
+}
+
+/// The degrade reason an unsupported and-or list reports, keyed on its shape: a chain is a chain
+/// whatever its operators, and a single-operator list reports that operator.
+pub(crate) fn and_or_reason(list: &AndOr) -> TopReason {
+    match list.rest.as_slice() {
+        [link] => match link.op {
+            AndOrOp::OrElse => TopReason::OrList,
+            AndOrOp::AndThen => TopReason::AndList,
+            AndOrOp::Async => TopReason::AsyncList,
+        },
+        _ => TopReason::AndOrChain,
     }
 }
 
@@ -294,11 +326,7 @@ impl Evaluator {
                 // degrade, `kFAIL-perform`). Parse-permissively (it lifted, ships byte-exact);
                 // trace-conservatively (⊤ here). Checked BEFORE recording a probe span.
                 if cmd.pipeline {
-                    return Flow::Top(if cmd.or_list {
-                        TopReason::OrList
-                    } else {
-                        TopReason::Pipeline
-                    });
+                    return Flow::Top(TopReason::Pipeline);
                 }
                 // a probe body on the selected path: record its verbatim span (we run
                 // statically — the span ships into the probe artifact, C-1). A trailing
@@ -326,6 +354,8 @@ impl Evaluator {
                 self.last_stdout = Some(stage_stdout_of(cmd));
                 Flow::Normal
             }
+            // Degrades BEFORE any item is walked: no span may enter `probe_body` from a list.
+            Stmt::AndOr(list) => Flow::Top(and_or_reason(list)),
         }
     }
 
@@ -653,21 +683,25 @@ mod stage_stdout_tests {
 }
 
 #[cfg(test)]
-mod or_list_degrade_tests {
-    //! `||` and `|` both fold into one accepted-then-⊤ Command; these pin that splitting the
-    //! REPORTED reason moved no decision. The or-list shape is the oracle-contract's own
-    //! existence-gate idiom, so its cause line is the one authors actually read.
-    use super::{Resolution, TopReason, evaluate};
+mod and_or_degrade_tests {
+    //! Every and-or shape degrades, and says which shape it was. The `&&` and `&` cases are the
+    //! SOUNDNESS half: before those operators were lexed, the statements right of them were
+    //! invisible to this tracer while the byte-exact shipped body ran them.
+    use super::{Resolution, ResolvedEntity, TopReason, evaluate};
     use crate::predict::lift_predicts;
     use dorc_core::Interner;
 
-    fn resolve(body: &str) -> Resolution {
+    fn resolve_argv(body: &str, argv: &[&str]) -> Resolution {
         let src = format!("w__predict() {{ {body} }}");
         let mut i = Interner::default();
         let out = lift_predicts(&mut i, &src);
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let p = i.intern("w");
-        evaluate(out.value.get(p).expect("a check for w"), &["q"])
+        evaluate(out.value.get(p).expect("a check for w"), argv)
+    }
+
+    fn resolve(body: &str) -> Resolution {
+        resolve_argv(body, &["q"])
     }
 
     /// The contract's gate degrades, and says OR-LIST — not "pipeline", which describes a construct
@@ -680,7 +714,7 @@ mod or_list_degrade_tests {
         );
     }
 
-    /// A REAL pipe keeps the pipeline reason — the split discriminates, it does not rename.
+    /// A REAL pipe keeps the pipeline reason — lexing `||` discriminates, it does not rename.
     #[test]
     fn a_real_pipe_still_degrades_as_a_pipeline() {
         assert_eq!(
@@ -689,15 +723,61 @@ mod or_list_degrade_tests {
         );
     }
 
-    /// BEHAVIOR PRESERVATION: both shapes still degrade to ⊤. The split changes the reason carried
-    /// out, never whether the site resolves — so no disposition anywhere can move.
+    /// `a && b` and `a & b` degrade, each as itself. A chain degrades whatever its operators.
     #[test]
-    fn both_shapes_still_degrade_to_top() {
-        for body in [
-            "command -v w >/dev/null 2>&1 || return 2",
-            "w list | w count",
-        ] {
-            assert!(matches!(resolve(body), Resolution::Top(_)), "{body}");
-        }
+    fn each_and_or_shape_reports_its_own_reason() {
+        assert_eq!(
+            resolve("w precheck && w probe"),
+            Resolution::Top(TopReason::AndList)
+        );
+        assert_eq!(
+            resolve("w precheck & w probe"),
+            Resolution::Top(TopReason::AsyncList)
+        );
+        assert_eq!(
+            resolve("w a || w b || w c"),
+            Resolution::Top(TopReason::AndOrChain)
+        );
+        assert_eq!(
+            resolve("w a && w b || w c"),
+            Resolution::Top(TopReason::AndOrChain)
+        );
+    }
+
+    /// THE R-5 REGRESSION (`26G:§FINDING-andand-resolves-a-wrong-coordinate`). `w precheck && shift`
+    /// once scanned as three WORDS, so the `shift` was invisible here while the shipped probe ran
+    /// it: the host measured `beta` and the engine filed the record under `alpha`. A converged
+    /// `holds` about beta then licensed eliding a mutator on alpha — the priority-1 under-execute.
+    /// The list must degrade, and in particular must NEVER resolve to `alpha`.
+    #[test]
+    fn a_swallowed_shift_can_no_longer_resolve_a_wrong_coordinate() {
+        let body = "w precheck && shift\n   thing : sm.dorc.Thing = \"$1\"\n   w query \"$thing\" : sm.dorc.Thing:\"$thing\"@present";
+        let got = resolve_argv(body, &["alpha", "beta"]);
+        assert_eq!(got, Resolution::Top(TopReason::AndList));
+        assert!(
+            !matches!(&got, Resolution::Resolved(r) if r.entity == ResolvedEntity::Operand("alpha".to_owned())),
+            "the unshifted argv must never key the cell"
+        );
+    }
+
+    /// The `&` twin of the above: a lone `&` rode the same word arm and swallowed identically.
+    #[test]
+    fn a_backgrounded_statement_can_no_longer_swallow_a_shift() {
+        let body = "w precheck & shift\n   thing : sm.dorc.Thing = \"$1\"\n   w query \"$thing\" : sm.dorc.Thing:\"$thing\"@present";
+        assert_eq!(
+            resolve_argv(body, &["alpha", "beta"]),
+            Resolution::Top(TopReason::AsyncList)
+        );
+    }
+
+    /// The `;` spelling of the same body still resolves — the fix bit the LIST operators, not the
+    /// `shift` modelling, so the discriminator that found R-5 still discriminates.
+    #[test]
+    fn the_semicolon_spelling_still_resolves_the_shifted_operand() {
+        let body = "w precheck; shift\n   thing : sm.dorc.Thing = \"$1\"\n   w query \"$thing\" : sm.dorc.Thing:\"$thing\"@present";
+        let Resolution::Resolved(r) = resolve_argv(body, &["alpha", "beta"]) else {
+            panic!("the `;` spelling resolves");
+        };
+        assert_eq!(r.entity, ResolvedEntity::Operand("beta".to_owned()));
     }
 }
