@@ -41,7 +41,6 @@ use dorc_aid::Carrier;
 /// constructs become [`NodeKind::Unsupported`] nodes plus `Error` diagnostics, so
 /// downstream stages can still surface *unrelated* problems. Pure and deterministic
 /// (`inv-determinism`): same bytes in ⇒ same arena + diagnostics out, no I/O.
-#[must_use]
 pub fn parse(src: &str) -> Carrier<Ast> {
     parser::parse(src)
 }

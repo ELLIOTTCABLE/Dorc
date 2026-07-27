@@ -42,7 +42,7 @@ fn adapter_preserves_bytes_and_sections_around_foreign_data() {
         literal("a"),
         RenderPart::ForeignText {
             text: String::new(),
-            param: "detail",
+            source: String::from("detail"),
         },
         literal("b"),
         RenderPart::Arrangement {

@@ -7,13 +7,17 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Law
 
-- **lib-target-is-a-loom-seam** (`289:rul-worldless-route-honest-trigger`) — `src/lib.rs` is the
-  INTERNAL invocation surface (usage text, `Args`/`LintArgs`/`Mode`, the parsers,
-  `humane_read_error`) and exists for exactly one reason: `dorc-loom` fires the REAL parser over a
-  defining case's own argv, so an invocation-error case is honest rather than decorative. It is
+- **lib-target-is-a-loom-seam** (`289:rul-worldless-route-honest-trigger`; widened at the W4
+  drifted-driver fold, `28H`) — `src/lib.rs` is the INTERNAL invocation-and-render surface: usage
+  text, `Args`/`LintArgs`/`Mode`, the parsers, `humane_read_error`, and the drifted-why render
+  seat (`drifted_why_parts` + its pure closure — `Receipt`/`PlanTally`/`DriftedReceipt`/
+  `receipt_banner`/`why_parts`/`SourceMatch`-as-data). It exists so `dorc-loom` can drive REAL
+  invocations in-process — an invocation-error or why case is honest rather than decorative. It is
   NEVER a public API — `publish = false`, and nothing outside `dorc-loom` and the two bins may
-  depend on it. Every I/O edge stays in `main.rs`; if something in the lib starts wanting a clock,
-  a file, or an env read, it is on the wrong side of the seam.
+  depend on it. Every I/O edge stays in `main.rs`: VALUES cross the seam, QUERIES do not (the
+  `SourceMatch` precedent — the struct crossed as pure data; `resolve`/git stayed behind). If
+  something in the lib starts wanting a clock, a file, or an env read, it is on the wrong side of
+  the seam.
 - **invocation-errors-are-registry-codes** (`288` §6) — the parsers return typed `Diag`s, never
   strings. The `dorc: ` / `dorc: lint: ` / `dorc-sh: ` prefixes and the usage synopsis are print-seat
   CHROME the three report seats own, never catalog prose. Exit codes are unchanged and never read

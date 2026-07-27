@@ -31,16 +31,10 @@ use std::process::Command;
 /// the line without a repository existing at all.
 const FIXTURE_ENV: &str = "DORC_FIXTURE_SOURCE_MATCH";
 
-/// The book is byte-identical to the same path at this commit. Pure data by the time it is held.
-///
-/// The nondeterminism (a subprocess, a filesystem, a repository that may not exist) is spent in
-/// [`resolve`] at the cli edge and never travels: what crosses into the render is this string, in
-/// exactly the way `RunClock` spends a clock read and passes a `RunInstant` inward.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SourceMatch {
-    /// The short commit the book is at.
-    pub(crate) commit: String,
-}
+/// The ANSWER this module resolves. It lives across the loom seam (`dorc_cli`) because the render
+/// holds it and the render is drivable there; the QUERY — [`resolve`] and the git subprocess below
+/// — stays here at the I/O edge (`lib-target-is-a-loom-seam`).
+pub(crate) use dorc_cli::SourceMatch;
 
 /// The narrow read this needs from a repository. One impl asks git; tests supply their own.
 pub(crate) trait SourceRepository {

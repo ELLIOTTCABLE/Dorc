@@ -287,7 +287,7 @@ run = [
 ]
 
 [tasks."test:hooks"]
-description = "Self-test for the commit-msg gate hk runs. Cheap; rides `gate` because that check fails OPEN — a broken matcher stops refusing and says nothing. The hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
+description = "Self-tests for the hooks hk runs: the commit-msg gate's matchers, and whether pre-commit's `e2e` step still SEES each shape a whole-product case comes in. Cheap; rides `gate` because both checks fail OPEN — a broken matcher stops refusing, and a glob that matches nothing is skipped in silence. The commit-msg hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- hook-selftest"
 
@@ -308,7 +308,7 @@ description = "Install hk's git hooks: the pre-commit lint gate AND the commit-m
 run = "hk install --mise"
 
 [tasks.bless]
-description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
+description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. Trailing case substrings SCOPE it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless"
 

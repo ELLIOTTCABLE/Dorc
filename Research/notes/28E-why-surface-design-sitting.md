@@ -432,7 +432,9 @@ RULED/BANKED this round:
   present for standing text (`vouches`, `claims`, `declines`); dorc asserts no
   world-fact in its own voice — it quotes speakers and vouches only for the run
   record and its own derivations.
-- **the goals/consent/format matrix** (human vibe, not ruled) — one world of
+- **the goals/consent/format matrix** (human vibe, not ruled)
+  <!-- /* superseded 2026-07-26: RULED — the matrix + goal-derived selection are
+  now law, AID-NEEDS:law-selection-is-goal-derived (banked 28H) */ --> — one world of
   facts; verbs state GOALS and imply consent+format defaults, both tweakable
   within the verb. `why --probe` is TEACHING (the consent you could have given);
   `plan --why` is REMEDIATION (re-measures under plan's standing consent,

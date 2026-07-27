@@ -1,0 +1,27 @@
+---
+arrangement: why-drift-address-unanswerable
+when-used: The whole `dorc why <addr>` render on a drifted replay. Value: the address as given.
+why: 28F rul-drift-replay-d1: an address is a SOURCE line, and the source that ran is not on disk, so the query is answered by saying why it cannot be answered rather than by naming lines of a file the run never saw.
+---
+-- book.sh --
+#!/bin/sh
+# The book AS IT IS NOW — not the bytes the durable below was keyed on. Line 5 exists in THIS
+# file; whether it existed in the analyzed one is exactly what nobody can say.
+apt-get install -y nginx
+systemctl enable nginx
+
+-- .whylog --
+dorc-whylog/2 nonce=dorc attempt=0 host=web1 target=width-one generation=width-one mode=whylog-replay started=1784944837000 @@dorc@@
+book digest=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa path=book.sh @@dorc@@
+argv value=dorc @@dorc@@
+argv value=plan @@dorc@@
+argv value=book.sh @@dorc@@
+digest decision=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb @@dorc@@
+apply leaf=0 disposition=run predicted=1 @@dorc@@
+apply leaf=1 disposition=guard predicted=1 @@dorc@@
+results bytes=0 @@dorc@@
+dorc-whylog-end/2 @@dorc@@
+
+-- replay --
+$ dorc why book.sh:5 --last --whylog=.whylog
+[unwritten: why-drift-address-unanswerable]

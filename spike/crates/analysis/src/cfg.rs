@@ -334,7 +334,6 @@ impl crate::solve::Graph for Cfg {
 /// aborts *unconditionally*, not via `set -e` — see note 166 follow-up); `pipefail`
 /// interaction; cross-call errexit into function bodies (find-7) —
 /// `fork-errexit-semantics` (note 160 §9).
-#[must_use]
 pub fn build(ast: &Ast) -> Carrier<Cfg> {
     let mut b = Builder::new(ast);
     let entry = b.fresh(ast.root(), CfgNodeKind::Entry);

@@ -69,6 +69,37 @@ ceremony · the why/loom prose tails (all gently held, below).
   ai/r28-errorloom-phase2 · ai/spike3-r23 · ai/spike3-r25 (r25's content confirmed
   in-mainline at `Research/trial/`, merge `2d5176dd`).
 
+## R28 residuals - THE W4 ARC — PROSE FACES FOR THE WHY SURFACE (EXECUTED — closed 2026-07-26)
+
+**BUILD COMPLETE on `ai/r28-unify` (awaiting the human's fold).** THE durable is
+**`notes/28H`** (every ruling); the human's W5 worklist home is **`notes/28J`**;
+the red-line distillation `notes/28I`. Five execute lanes + two probe/inventory
+lanes, each conductor-verified at fold: **map** (counted: 0/111 why rows
+editable, 80% of sentences transport-blocked → the `28G` §2 transport deferral
+PULLED IN) · **carrier** (26 print sites → `Carrier`; `advisory` retreats to
+three edge seats; libtest red-frames dead) · **parts** (`Said` hoisted,
+`Said::Lens` dead, `Explanation`-as-parts, kTASTE `ChainModel` room, `--all`
+honestly exhaustive, the webhost trust-spent bug fixed as a type) · **span**
+(THE crux: one-section-many-fragments transport landed DORC-SIDE — errorloom
+untouched, glued case green; occurrence threading; the weft→parts bridge with a
+corpus-wide byte-identity proof; the 240-byte truncation dead) ·
+**drifted-driver** (~285-line lib extraction; the drifted-receipt replay arm in
+BOTH chains + a mechanical agreement guard; the FIRST TWO why-faced looms,
+`why-drift-*.loom`; the edit loop PROVEN end-to-end; divergent-edit last-wins →
+refuse). Also this seat: the hk `HK=0` master-killswitch found + fixed
+(env-side; commit-msg gate live); the pre-commit loom glob hole closed
+(`loom-hygiene` rename; three-way runner-floor triage); scoped bless works
+(`mise run bless -- <substring>`). RULED: `AID-NEEDS:law-selection-is-goal-
+derived` (+ the pull-register regloss + the spike-era tune-high posture) · the
+one-section law (`aid/CLAUDE.md` a-chrome-line-is-one-section) ·
+render-surface-instability as conduct law · the shared-lexical-rulebook ask
+(discipline now, inventory then decide). **W5 authoring UNDERWAY** (human, loom
+surface; start = the 7 `[unwritten:]` catalog looms, `28J`). **r30 charters
+banked in `28H`**: the loom-UX lane (top item: the const-vs-mirror why-render
+lag making why-row loom-edits two-step) · the full-driver extraction (chain-row
+faces; `ask-full-driver-this-arc-or-r30` open with the human) · the
+lexical-judgment inventory · levers/retention (unchanged from `28G` §2).
+
 ## R28 (CLOSED as an arc — compressed; the durables carry everything)
 
 Five sub-arcs, all BUILT and conductor-cold-verified: **the `280` charter** (errorloom the

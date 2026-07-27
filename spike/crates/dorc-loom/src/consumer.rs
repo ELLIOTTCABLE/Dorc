@@ -116,14 +116,42 @@ pub enum DorcApplyRefusal {
     MissingArrangement(String),
     /// The selected section is neither a catalog prose field nor the arrangement register.
     IllegalField(&'static str),
-    /// An arrangement edit carried a `{{name}}` variable; registry entries store WORDS, never
-    /// templates (`289` §2o: the registry never grows grammar machinery).
+    /// An edit to a whole-PAGE arrangement carried a `{{name}}` variable, or the entry it lands
+    /// on holds a word SEQUENCE. A page is one entry, laid out by its author; neither a template
+    /// hole nor a re-split has any meaning there (`289` §2o: the registry never grows grammar
+    /// machinery).
     ArrangementTakesNoVariables(String),
-    /// The edited entry holds a WORD SEQUENCE, and nothing re-splits an edited string back into
-    /// its words. Storage stays sequence-shaped for a future chain narration
-    /// (`289:rider-arrangement-home-anticipates-chains`); the edit path refuses rather than
-    /// guessing, because nothing chain-shaped is built yet.
+    /// The edited entry holds a WORD SEQUENCE where the page path expects one word.
     ArrangementIsSequenceStructured(String),
+    /// Two sections of ONE render edited the SAME registry entry to different words.
+    ///
+    /// Repeated chrome is one entry rendered twice (`28H` ruling 3), so either span is a complete
+    /// rendering of it and an edit to either rewrites the whole entry. Two DIFFERENT edits are a
+    /// contradiction, and applying them in order would silently keep the last: the author would
+    /// see one of their two rewrites vanish with nothing said. Refusing is the only honest answer,
+    /// because nothing here can know which one they meant.
+    ArrangementEntryEditedTwice {
+        /// The row both edits landed on.
+        slug: String,
+        /// The words the first section compiled to.
+        first: Vec<String>,
+        /// The words the second compiled to.
+        second: Vec<String>,
+    },
+    /// A chrome-line edit moved, dropped or duplicated a value the render placed.
+    ///
+    /// The narrow half of what the old blanket sequence refusal covered: an edit may rephrase
+    /// every word around a value, but the values are the render's own account of the world and
+    /// their ORDER is the only thing that says which word goes where. `expected` and `found` are
+    /// the positional variable sequences, so the refusal can say what moved.
+    ArrangementValueSequenceChanged {
+        /// The row the edit landed on.
+        slug: String,
+        /// The sequence the render stamped: `v0, v1, …`.
+        expected: Vec<String>,
+        /// The sequence the edit compiled to.
+        found: Vec<String>,
+    },
 }
 
 impl Default for DorcConsumer {
@@ -187,8 +215,46 @@ impl DorcConsumer {
         &mut self,
         preview: &crate::CompilePreview,
     ) -> Result<(), DorcApplyRefusal> {
+        self.refuse_divergent_entry_edits(preview)?;
         for section in preview.sections() {
             self.apply_compiled_section(&section.section, &section.compiled)?;
+        }
+        Ok(())
+    }
+
+    /// Refuse BEFORE the first write when two sections of one preview land on ONE registry entry
+    /// with different words (see [`DorcApplyRefusal::ArrangementEntryEditedTwice`]).
+    ///
+    /// A whole pre-pass rather than a check inside the applier, because the mirror must be
+    /// untouched when it refuses: a partially-applied preview is a mirror nobody asked for. Two
+    /// sections compiling to the SAME words are the ordinary case — a human rewriting repeated
+    /// chrome consistently — and pass.
+    fn refuse_divergent_entry_edits(
+        &self,
+        preview: &crate::CompilePreview,
+    ) -> Result<(), DorcApplyRefusal> {
+        let mut landed: BTreeMap<usize, Vec<String>> = BTreeMap::new();
+        for section in preview.sections() {
+            let key = &section.section;
+            let (Some(words), Some(index)) = (
+                stored_words(key.field, &section.compiled),
+                arrangement_index(&self.arrangements, &key.owner, key.instance),
+            ) else {
+                continue;
+            };
+            match landed.entry(index) {
+                std::collections::btree_map::Entry::Vacant(slot) => {
+                    slot.insert(words);
+                }
+                std::collections::btree_map::Entry::Occupied(seen) if *seen.get() != words => {
+                    return Err(DorcApplyRefusal::ArrangementEntryEditedTwice {
+                        slug: key.owner.clone(),
+                        first: seen.get().clone(),
+                        second: words,
+                    });
+                }
+                std::collections::btree_map::Entry::Occupied(_) => {}
+            }
         }
         Ok(())
     }
@@ -199,7 +265,10 @@ impl DorcConsumer {
         compiled: &crate::CompiledSection,
     ) -> Result<(), DorcApplyRefusal> {
         if key.field == crate::ARRANGEMENT_FIELD {
-            return self.apply_arrangement_edit(key, compiled);
+            return self.apply_arrangement_page_edit(key, compiled);
+        }
+        if key.field == crate::ARRANGEMENT_LINE_FIELD {
+            return self.apply_arrangement_line_edit(key, compiled);
         }
         if !matches!(key.field, "message" | "help") {
             return Err(DorcApplyRefusal::IllegalField(key.field));
@@ -240,42 +309,92 @@ impl DorcConsumer {
         Ok(())
     }
 
-    /// Apply one compiled arrangement section to the registry mirror — the chrome twin of the
-    /// catalog path above, and the whole of "an arrangement-word edit in a transcript flows to
-    /// its registry entry exactly as catalog prose does" (`289` §2o).
+    /// Apply one compiled whole-PAGE arrangement section to the registry mirror.
     ///
-    /// The edit lands on the entry the RENDER read: the occurrence's own entry when it has one,
-    /// else the whole-slug entry — so an edit to any one occurrence of shared chrome updates the
-    /// shared words, which is the truth of a shared entry.
-    fn apply_arrangement_edit(
+    /// A page is one entry laid out by its author, so it takes no values and its bytes survive
+    /// verbatim: no whitespace normalization, no re-split (`28H` ruling 7).
+    fn apply_arrangement_page_edit(
         &mut self,
         key: &SectionKey,
         compiled: &crate::CompiledSection,
     ) -> Result<(), DorcApplyRefusal> {
-        let mut words = Vec::new();
-        for fragment in compiled.fragments() {
-            match fragment {
-                crate::CompiledFragment::Text(text) => words.push(text.clone()),
-                crate::CompiledFragment::Variable(_) => {
-                    return Err(DorcApplyRefusal::ArrangementTakesNoVariables(
-                        key.owner.clone(),
-                    ));
-                }
-            }
+        if compiled
+            .fragments()
+            .iter()
+            .any(|fragment| matches!(fragment, crate::CompiledFragment::Variable(_)))
+        {
+            return Err(DorcApplyRefusal::ArrangementTakesNoVariables(
+                key.owner.clone(),
+            ));
         }
-        let index = arrangement_index(&self.arrangements, &key.owner, key.instance)
-            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
-        let entry = self
-            .arrangements
-            .get_mut(index)
-            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        let words = page_words(compiled);
+        let entry = self.arrangement_entry(key)?;
         if entry.words.words().is_some_and(|current| current.len() > 1) {
             return Err(DorcApplyRefusal::ArrangementIsSequenceStructured(
                 key.owner.clone(),
             ));
         }
-        entry.words = OwnedWords::Authored(vec![words.concat()]);
+        entry.words = OwnedWords::Authored(words);
         Ok(())
+    }
+
+    /// Apply one compiled chrome-LINE section to the registry mirror — the whole of "a
+    /// value-interleaved chrome line edits back from a transcript exactly as catalog prose
+    /// does" (`_w4-map-DRAFT:prop-one-section-many-fragments`).
+    ///
+    /// The compiled fragment series IS the re-split: a `Text` fragment is a word, a `Variable`
+    /// fragment is a boundary. Two things are checked rather than guessed. The variable sequence
+    /// must be the one the render stamped, in order — reorder, drop or duplicate means the edit
+    /// moved a value, which no rephrasing does. And a WRITTEN entry's arity must survive, because
+    /// its seat interleaves a fixed number of values and a line that no longer accepts them
+    /// renders as the unwritten placeholder instead.
+    ///
+    /// Whitespace runs collapse to one space on the way in: a laid-out line's inter-word
+    /// whitespace is the RENDERER's — a wrap it chose at this width — so storing it would freeze
+    /// one width into the entry (`282` §3's read-in normalization, and why the page path above is
+    /// a separate function rather than a flag).
+    fn apply_arrangement_line_edit(
+        &mut self,
+        key: &SectionKey,
+        compiled: &crate::CompiledSection,
+    ) -> Result<(), DorcApplyRefusal> {
+        let words = line_words(compiled);
+        let found: Vec<String> = compiled
+            .fragments()
+            .iter()
+            .filter_map(|fragment| match fragment {
+                crate::CompiledFragment::Variable(name) => Some(name.0.clone()),
+                crate::CompiledFragment::Text(_) => None,
+            })
+            .collect();
+        let entry = self.arrangement_entry(key)?;
+        let arity = entry.words.words().map_or(words.len(), <[String]>::len);
+        let expected: Vec<String> = (0..arity.saturating_sub(1))
+            .map(|index| crate::arrangement_variable(index).0)
+            .collect();
+        if found != expected {
+            return Err(DorcApplyRefusal::ArrangementValueSequenceChanged {
+                slug: key.owner.clone(),
+                expected,
+                found,
+            });
+        }
+        entry.words = OwnedWords::Authored(words);
+        Ok(())
+    }
+
+    /// The registry entry the RENDER read: the occurrence's own entry when it has one, else the
+    /// whole-slug entry — so an edit to any one occurrence of shared chrome updates the shared
+    /// words, which is the truth of a shared entry.
+    fn arrangement_entry(
+        &mut self,
+        key: &SectionKey,
+    ) -> Result<&mut OwnedArrangement, DorcApplyRefusal> {
+        let index = arrangement_index(&self.arrangements, &key.owner, key.instance)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))?;
+        self.arrangements
+            .get_mut(index)
+            .ok_or_else(|| DorcApplyRefusal::MissingArrangement(key.owner.clone()))
     }
 
     /// Re-render a case corpus from the current in-memory mirror.
@@ -348,12 +467,22 @@ impl DorcConsumer {
             }
             return Some(ReplayResult::bytes(output));
         }
-        if let Some(path) = parse_direct_why(&tokens) {
-            let raw = context.materialized_input(path);
+        if let Some(why) = parse_direct_why(&tokens) {
+            let raw = context.materialized_input(why.whylog);
+            if let Some(parts) = raw.and_then(|whylog| {
+                drifted_why_parts(whylog, why.address, |path| {
+                    materialized_source(case, context, path)
+                })
+            }) {
+                return Some(ReplayResult::editable(to_editable_render(&parts)));
+            }
+            if why.address.is_some() {
+                return None;
+            }
             let book = materialized_source(case, context, "book.sh");
             let inspected = dorc_plan::whylog::inspect(
                 raw,
-                path,
+                why.whylog,
                 book.as_deref()
                     .map(|book| dorc_plan::whylog::WhylogCurrent {
                         book: Some(book),
@@ -415,9 +544,13 @@ impl DorcConsumer {
         render: EditableRender<SectionKey, SectionVariableId>,
     ) -> Result<DorcEditableBaseline, String> {
         let variables = editable_variables(&render)?;
-        // An arrangement case has no diagnostic and no payload: registry entries store WORDS, so
-        // the variable inventory is empty by construction rather than absent by failure.
-        if case.frontmatter().scalar("arrangement").is_some() {
+        // A case that declares no diagnostic has no payload: an arrangement page and a chrome-line
+        // REPORT (the drifted receipt) are both built out of registry entries, which store WORDS.
+        // The inventory is empty by construction rather than absent by failure — and a report case
+        // must not inherit one from whatever diagnostic its durable happens to also provoke.
+        if case.frontmatter().scalar("arrangement").is_some()
+            || case.frontmatter().scalar("code").is_none()
+        {
             return Ok(DorcEditableBaseline {
                 render,
                 variables,
@@ -550,12 +683,11 @@ impl DorcConsumer {
             .map(errorloom::ReplayBlock::command)
             .ok_or_else(|| "case has no replay".to_owned())?;
         let words = exact_words(command).ok_or_else(|| "unsupported whylog replay".to_owned())?;
-        let path =
-            parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
+        let why = parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
         let raw = case
             .sections()
             .iter()
-            .find(|section| section.name() == path)
+            .find(|section| section.name() == why.whylog)
             .map(errorloom::Section::content);
         let book = case
             .sections()
@@ -564,7 +696,7 @@ impl DorcConsumer {
             .map(errorloom::Section::content);
         dorc_plan::whylog::inspect(
             raw,
-            path,
+            why.whylog,
             book.map(|book| dorc_plan::whylog::WhylogCurrent {
                 book: Some(book),
                 oracles: &[],
@@ -596,6 +728,69 @@ fn arrangement_page_slug(case: &Case, words: &[&str]) -> Option<&'static str> {
     }
 }
 
+/// The words a compiled arrangement section would STORE, or `None` for a catalog register.
+///
+/// The ONE derivation, shared by the appliers and by the divergence pre-pass, so the pre-pass can
+/// never disagree with the write it is guarding about what an edit lands as.
+fn stored_words(field: &str, compiled: &crate::CompiledSection) -> Option<Vec<String>> {
+    if field == crate::ARRANGEMENT_LINE_FIELD {
+        return Some(line_words(compiled));
+    }
+    (field == crate::ARRANGEMENT_FIELD).then(|| page_words(compiled))
+}
+
+/// A PAGE's one word: its author's bytes, verbatim (`28H` ruling 7).
+fn page_words(compiled: &crate::CompiledSection) -> Vec<String> {
+    vec![
+        compiled
+            .fragments()
+            .iter()
+            .filter_map(|fragment| match fragment {
+                crate::CompiledFragment::Text(text) => Some(text.as_str()),
+                crate::CompiledFragment::Variable(_) => None,
+            })
+            .collect(),
+    ]
+}
+
+/// A chrome LINE's word sequence: the compiled fragment series IS the re-split — a `Text` fragment
+/// extends the current word, a `Variable` fragment closes it and opens the next.
+fn line_words(compiled: &crate::CompiledSection) -> Vec<String> {
+    let mut words = vec![String::new()];
+    for fragment in compiled.fragments() {
+        match fragment {
+            crate::CompiledFragment::Text(text) => {
+                if let Some(last) = words.last_mut() {
+                    last.push_str(text);
+                }
+            }
+            crate::CompiledFragment::Variable(_) => words.push(String::new()),
+        }
+    }
+    words.iter().map(|word| collapse_runs(word)).collect()
+}
+
+/// Whitespace runs to one space. A laid-out line's inter-word whitespace is the RENDERER's, so
+/// storing the wrap it chose at one width would freeze that width into the entry (`282` §3's
+/// read-in normalization). Collapse, never TRIM: a word's own leading or trailing space is what
+/// separates it from the value beside it.
+fn collapse_runs(word: &str) -> String {
+    let mut out = String::with_capacity(word.len());
+    let mut spacing = false;
+    for character in word.chars() {
+        if character.is_whitespace() {
+            if !spacing {
+                out.push(' ');
+            }
+            spacing = true;
+        } else {
+            out.push(character);
+            spacing = false;
+        }
+    }
+    out
+}
+
 /// The registry index serving `(slug, occurrence)`: the occurrence's own entry when it has one,
 /// else the whole-slug entry. The mutable-mirror twin of
 /// [`ArrangementLookup::words`](dorc_aid::arrangement::ArrangementLookup::words) — kept in step
@@ -615,12 +810,62 @@ fn arrangement_index(
         })
 }
 
-fn parse_direct_why<'a>(words: &[&'a str]) -> Option<&'a str> {
-    let ["dorc", "why", "--last", whylog] = words else {
-        return None;
+/// One `dorc why --last --whylog=<file>` replay: which durable, and which question of it.
+struct DirectWhy<'a> {
+    /// The `book.sh:N` positional, when the case asked about a line rather than the whole run.
+    /// LEADING only — the parser also takes it after a flag (`289:rider-why-last-address-order`),
+    /// but a case's replay line is written by hand and the canonical spelling is the leading one.
+    address: Option<&'a str>,
+    /// The case-relative durable to replay.
+    whylog: &'a str,
+}
+
+fn parse_direct_why<'a>(words: &[&'a str]) -> Option<DirectWhy<'a>> {
+    let (address, whylog) = match words {
+        ["dorc", "why", "--last", whylog] => (None, whylog),
+        ["dorc", "why", address, "--last", whylog] if !address.starts_with('-') => {
+            (Some(*address), whylog)
+        }
+        _ => return None,
     };
     let path = whylog.strip_prefix("--whylog=")?;
-    case_relative_path(path).then_some(path)
+    case_relative_path(path).then_some(DirectWhy {
+        address,
+        whylog: path,
+    })
+}
+
+/// The DEGRADED `dorc why --last` receipt, rendered in-process over a committed durable
+/// (`28F:rul-drift-replay-d1`; `28H:prop-drifted-why-is-the-thin-driver`).
+///
+/// The ONE seat both replay chains go through, which is what keeps them from disagreeing: the two
+/// differ only in where a case's bytes come from, so that is the only thing `source` supplies.
+///
+/// `None` — falling through to the refusal-diagnostic route — for anything that is not a drifted
+/// v2 durable: an unadmissible durable, a durable naming a book the case does not carry, or a book
+/// that still digests to what the run recorded. Drift is the ONLY state this route answers, because
+/// it is the only one whose answer is a report rather than a diagnostic.
+fn drifted_why_parts(
+    whylog: &str,
+    address: Option<&str>,
+    source: impl Fn(&str) -> Option<String>,
+) -> Option<dorc_aid::tagged::RenderParts> {
+    let dorc_plan::records::Admission::Admitted(envelope) =
+        dorc_plan::whylog::admit_unscoped_whylog(
+            whylog.as_bytes(),
+            dorc_plan::whylog::WhylogLimits::spike_default(),
+        )
+    else {
+        return None;
+    };
+    let book = source(envelope.recorded_book_path().as_str())?;
+    if dorc_plan::invocation::book_digest(&book) == envelope.claims().book_digest() {
+        return None;
+    }
+    Some(dorc_cli::drifted_why_parts(
+        address,
+        &dorc_cli::drifted_receipt(&envelope),
+    ))
 }
 
 /// The HONEST-TRIGGER invocation route (`289:rul-worldless-route-honest-trigger`; `291` §5a W2).
@@ -744,6 +989,19 @@ fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> 
     fs::read_to_string(context.cwd().join(path)).ok()
 }
 
+/// [`materialized_source`]'s twin for the re-render chain, which has no materialized directory:
+/// the case's own section bytes, under the same case-relative path rule.
+fn section_source<'a>(case: &'a Case, path: &str) -> Option<&'a str> {
+    case_relative_path(path)
+        .then(|| {
+            case.sections()
+                .iter()
+                .find(|section| section.name() == path)
+                .map(errorloom::Section::content)
+        })
+        .flatten()
+}
+
 fn materialized_input(case: &Case, context: &ReplayContext<'_>, path: &str) -> Option<String> {
     if !materialized_file(case, context, path) {
         return None;
@@ -851,33 +1109,8 @@ impl DorcConsumer {
         if let Some(slug) = arrangement_page_slug(case, &words) {
             return Ok(self.arrangement_page(slug)?.text());
         }
-        if let Some(path) = parse_direct_why(&words) {
-            let raw = case
-                .sections()
-                .iter()
-                .find(|section| section.name() == path)
-                .map(errorloom::Section::content);
-            let book = case
-                .sections()
-                .iter()
-                .find(|section| section.name() == "book.sh")
-                .map(errorloom::Section::content);
-            let inspected = dorc_plan::whylog::inspect(
-                raw,
-                path,
-                book.map(|book| dorc_plan::whylog::WhylogCurrent {
-                    book: Some(book),
-                    oracles: &[],
-                }),
-            );
-            let diag = inspected
-                .diagnostics
-                .into_iter()
-                .next()
-                .ok_or_else(|| format!("unsupported replay {command:?}"))?;
-            let interner = Interner::default();
-            let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
-            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
+        if let Some(why) = parse_direct_why(&words) {
+            return self.render_direct_why(case, &why, command);
         }
         if let Some(path) = parse_direct_lint(&words) {
             let source = case
@@ -946,6 +1179,44 @@ impl DorcConsumer {
             &filename,
             &interner,
         )))
+    }
+
+    /// The re-render half of the `dorc why --last` route: the degraded RECEIPT when the case's
+    /// durable drifted from its book, else the refusal diagnostic. Split out of
+    /// [`Self::render_direct_replay`] so the two answers stay one arm rather than two.
+    fn render_direct_why(
+        &self,
+        case: &Case,
+        why: &DirectWhy<'_>,
+        command: &str,
+    ) -> Result<String, String> {
+        let raw = section_source(case, why.whylog);
+        if let Some(parts) = raw.and_then(|whylog| {
+            drifted_why_parts(whylog, why.address, |path| {
+                section_source(case, path).map(str::to_owned)
+            })
+        }) {
+            return Ok(parts.text());
+        }
+        if why.address.is_some() {
+            return Err(format!("unsupported replay {command:?}"));
+        }
+        let book = section_source(case, "book.sh");
+        let diag = dorc_plan::whylog::inspect(
+            raw,
+            why.whylog,
+            book.map(|book| dorc_plan::whylog::WhylogCurrent {
+                book: Some(book),
+                oracles: &[],
+            }),
+        )
+        .diagnostics
+        .into_iter()
+        .next()
+        .ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        let interner = Interner::default();
+        let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
+        Ok(format!("{}\n", reflow_to_canonical(&parts.text())))
     }
 }
 
@@ -1890,6 +2161,72 @@ mod tests {
             Err(DorcApplyRefusal::IllegalField("when_fires"))
         );
         assert_eq!(consumer.mirror(), before);
+    }
+
+    /// `28H` ruling 3's CONDITION, and the reason the split-field relaxation is safe for chrome
+    /// lines: several sections may share one registry entry, so two edits in ONE transcript must
+    /// agree or the apply refuses. Last-wins is the failure this pins against — it drops one of
+    /// the author's two rewrites silently, and nothing downstream would ever say so. The
+    /// same-words case is the ordinary one (repeated chrome, rewritten consistently) and must
+    /// still land, or consistent editing would become impossible.
+    #[test]
+    fn two_edits_to_one_shared_entry_must_agree() {
+        let shared = |segment: usize| SectionKey {
+            owner: String::from("why-receipt-book-drifted"),
+            field: crate::ARRANGEMENT_LINE_FIELD,
+            instance: 0,
+            segment,
+        };
+        let compiled = |text: &str| {
+            compile_fragments(
+                &[EditableFragment::Text(String::from(text))],
+                &BTreeMap::new(),
+            )
+            .unwrap_or_else(|error| panic!("{error:?}"))
+        };
+        let preview = |first: &str, second: &str| crate::CompilePreview {
+            sections: vec![
+                crate::SectionPreview {
+                    section: shared(0),
+                    compiled: compiled(first),
+                    used_bindings: Vec::new(),
+                },
+                crate::SectionPreview {
+                    section: shared(4),
+                    compiled: compiled(second),
+                    used_bindings: Vec::new(),
+                },
+            ],
+            concrete: String::new(),
+        };
+
+        let mut consumer = DorcConsumer::new();
+        let before = consumer.arrangements().to_vec();
+        assert_eq!(
+            consumer.apply_preview(&preview("one thing", "another thing")),
+            Err(DorcApplyRefusal::ArrangementEntryEditedTwice {
+                slug: String::from("why-receipt-book-drifted"),
+                first: vec![String::from("one thing")],
+                second: vec![String::from("another thing")],
+            })
+        );
+        assert_eq!(
+            consumer.arrangements(),
+            before,
+            "a refusal writes nothing: the pre-pass runs before the first apply"
+        );
+
+        consumer
+            .apply_preview(&preview("agreed words", "agreed words"))
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(
+            consumer
+                .arrangements()
+                .iter()
+                .find(|entry| entry.slug == "why-receipt-book-drifted")
+                .map(|entry| entry.words.clone()),
+            Some(OwnedWords::Authored(vec![String::from("agreed words")])),
+        );
     }
 
     #[test]

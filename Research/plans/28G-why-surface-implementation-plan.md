@@ -113,11 +113,15 @@ Consumes already-minted data; still pre-parts-model; same-or-next lane:
   / implied-by) — both registers computable from one model. No register
   machinery built yet; the type room is what W4 must not foreclose.
 
-### Phase W5 — prose burn-down (HELD; human ack required, unchanged)
+### Phase W5 — prose burn-down (UNDERWAY at the loom surface, 2026-07-26)
 
-The standing phase-8: the Fable prose pass over `sm `/`[unwritten:]` + the
-arrangement `Migrated` rows — sequenced AFTER W1/W2 so the words aren't wet
-cement. Entry point: `spike/_prose-worklist.sh`. Still gated on the human's ack.
+The standing phase-8: the prose pass over `sm `/`[unwritten:]` + the arrangement
+`Migrated` rows, authored at the loom surface per the looms-sacrosanct law
+(`288:rul-prose-authorship-follows-looms-sacrosanct`). Entry point:
+`spike/_prose-worklist.sh`. Runs in parallel with W4: the editable-today half
+(the 7 `[unwritten:]` catalog codes, the 40 loom-faced `sm ` codes) needs no W4;
+the why-surface rows (0 loom-editable today) wait on W4's span coverage +
+transport work for faces.
 
 ## §2 — Deferred, with re-entry pointers (build NONE of these now)
 
@@ -138,10 +142,13 @@ cement. Entry point: `spike/_prose-worklist.sh`. Still gated on the human's ack.
   r30 opener, alongside…
 - **The retention design** (`28D:must-retention-is-one-decision`): ONE design
   preceding the whole forensic tier (fleet diff, trends, stdout capture). r30.
-- **Transport enrichment** (span-boundary tokenization in errorloom; multi-word
-  re-splitting; glued-params): after the W1–W4 render shapes settle, so the
-  word-model is cut against real needs (`289:steer-errorloom-best-to-use`
-  lifts the compat objection).
+- **Transport enrichment** — PULLED INTO W4 (conductor adjudication, `28H` §2:
+  class (c) measured at 80% of the why surface's sentence-bearing rows): the
+  dorc-side one-section-many-fragments shape first (`_w4-map-DRAFT.md` §C5),
+  proof-first at the leg-A checkpoint incl. a glued-boundary case; errorloom
+  touched only if a refusal class demands it (`289:steer-errorloom-best-to-use`
+  lifts the compat objection). The residual enrichment family (the v2 paragraph
+  model `286` needs) stays deferred.
 - `why --probe` (question-scoped live consent) · the durable-question float ·
   `sworn` and the deep-register tier table · the `__describe` cell-gloss member
   (execute-vs-static precondition first) · `dorc teach` rename (rides `286`'s
@@ -158,9 +165,14 @@ durable-derivable, so drifted receipts carry header/tally/drift-line only,
 honestly). The formatting-engine SKELETON (`spike/crates/weft`) was
 human-pulled-forward into the arc (§2's first entry). W5 remains HELD on the
 human's ack, its queue grown (the drift rows; the jargon glyphs). **W4 is
-the r30 opener** (structural, cross-crate, map-then-execute), alongside the
-levers/retention pair, the whylog drifted-wording walk, and the
-desync-transition machinery.
+EXECUTED** (closed 2026-07-26; conduct record `notes/28H`; worklist home
+`notes/28J`): the transport pull-in landed dorc-side (errorloom untouched), the
+bridge carries every why render, the first two why-faced looms exist and the
+edit loop is proven end-to-end. Banked r30 openers (`28H`): the loom-UX lane
+(const-vs-mirror render lag · structure-bless · blast-radius dirty gate · the
+lexical-judgment inventory) · the full-driver extraction (chain-row faces).
+Still r30 from before: the levers/retention pair, the whylog drifted-wording
+walk, the desync-transition machinery.
 
 ## §4 — Acceptance, stated once
 

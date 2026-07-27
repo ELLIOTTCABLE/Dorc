@@ -41,7 +41,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libtest_mimic::{Arguments, Failed, Trial};
 
-use support::{E2eCase, E2eKind, LoomCase, case_roots, discover_e2e, discover_looms, spike_root};
+use support::{
+    E2eCase, E2eKind, LoomCase, case_root_names, case_roots, discover_e2e, discover_looms,
+    spike_root,
+};
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
 /// the pre-flight batteries resolve their specimens against.
@@ -2518,6 +2521,41 @@ fn guard_shape_selftest() -> Vec<String> {
     fails
 }
 
+/// Drive the path-selection floor on FABRICATED name sets, proving it screams for a name no case
+/// root answers to and stays quiet for one that is really there.
+///
+/// Both directions are load-bearing and they pull against each other. Screaming is what stops a
+/// mistyped or stale hook path from buying a green no-op; staying quiet is what stops a commit
+/// touching a real non-case path under `tests/` — an `.rs` test's fixture dir, an `aid` catalog
+/// loom — from aborting a hook that had nothing to do. Collapsing either into the other is the
+/// bug this battery exists to catch. The `.loom` mapping is here too, because the hook's
+/// single-file-loom glob rides on it.
+fn selection_floor_selftest() -> Vec<String> {
+    let mut fails = Vec::new();
+    let present: BTreeSet<String> = ["headline-partial", "cli-help-page", "golden"]
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect();
+    let minted: BTreeSet<&str> = ["headline-partial"].into_iter().collect();
+
+    if case_from_path("spike/crates/cli/tests/whygallery-webhost-whole.loom").as_deref()
+        != Some("whygallery-webhost-whole")
+    {
+        fails.push("sf-0 (a single-file loom path does not resolve to its slug)".to_owned());
+    }
+    for (name, want) in [
+        ("headline-partial", Selection::Runs),
+        ("cli-help-page", Selection::NoTrial),
+        ("does-not-exist", Selection::Unknown),
+    ] {
+        let got = resolve_selection(name, &minted, &present);
+        if got != want {
+            fails.push(format!("sf-{name} (want {want:?}, got {got:?})"));
+        }
+    }
+    fails
+}
+
 /// The `DORC_FLAGS` plumbing confound: run the flagship with and without
 /// `--risk-faultless-skips` and assert the elision count DIFFERS. If it matches, the flag is
 /// inert and a flagged survival case's gate-6 attribution would lie.
@@ -2682,6 +2720,13 @@ fn preflight(harness: &Harness, discovered: usize) {
             shape.join("\n  ")
         ));
     }
+    let selection = selection_floor_selftest();
+    if !selection.is_empty() {
+        fatal.push(format!(
+            "FATAL  selection_floor_selftest FAILED — path selection does not sort real paths from absent ones:\n  {}",
+            selection.join("\n  ")
+        ));
+    }
     if let Some(message) = dorc_flags_selftest(harness) {
         fatal.push(format!("FATAL  {message}"));
     }
@@ -2709,6 +2754,31 @@ fn case_from_path(argument: &str) -> Option<String> {
     let segment = normalized.split_once("/tests/")?.1.split('/').next()?;
     let case = segment.strip_suffix(".loom").unwrap_or(segment);
     (!case.is_empty()).then(|| case.to_owned())
+}
+
+/// What one path-selected case name resolves to in this run.
+#[derive(PartialEq, Eq, Debug)]
+enum Selection {
+    /// A trial of this run answers to the name.
+    Runs,
+    /// Something under a case root answers to the name, but this runner mints no trial for it:
+    /// an `aid` catalog loom (no `run:` key), an `.rs` test's fixture dir, a lane that is off.
+    /// Benign — the caller named a real path and there is honestly nothing here to run.
+    NoTrial,
+    /// Nothing under any case root answers to the name at all: a typo, a stale path, or a
+    /// collection that moved. A caller bug, and silence is its failure mode.
+    Unknown,
+}
+
+/// Resolve one path-selected case name against the run set and the case roots' own vocabulary.
+fn resolve_selection(name: &str, minted: &BTreeSet<&str>, present: &BTreeSet<String>) -> Selection {
+    if minted.contains(name) {
+        Selection::Runs
+    } else if present.contains(name) {
+        Selection::NoTrial
+    } else {
+        Selection::Unknown
+    }
 }
 
 /// Split argv into libtest's own arguments and the case paths a caller wants scoped.
@@ -2802,14 +2872,35 @@ fn main() {
 
     if !changed.is_empty() {
         trials.retain(|trial| changed.contains(trial.name()));
-        // The discovery floor, applied to scoping: selecting by path and matching nothing would
-        // otherwise exit GREEN, which is the one way a hook can report success for work it never
-        // ran. A path naming no case is a caller bug, and silence is the failure mode.
-        assert!(
-            !trials.is_empty(),
-            "path selection matched no case: {}",
-            changed.iter().cloned().collect::<Vec<_>>().join(", ")
-        );
+        let minted: BTreeSet<&str> = trials.iter().map(Trial::name).collect();
+        let present = case_root_names(&case_roots());
+        let mut no_trial: Vec<&str> = Vec::new();
+        let mut unknown: Vec<&str> = Vec::new();
+        for name in &changed {
+            match resolve_selection(name, &minted, &present) {
+                Selection::Runs => {}
+                Selection::NoTrial => no_trial.push(name),
+                Selection::Unknown => unknown.push(name),
+            }
+        }
+        // The discovery floor, applied to scoping: selecting by path and running nothing must
+        // never be SILENT, because that is how a hook reports success for work it never ran. The
+        // two ways it happens differ in who is wrong, so they differ in what they cost.
+        if !unknown.is_empty() {
+            eprintln!(
+                "FATAL  path selection names no case: {} — no `crates/*/tests/` entry answers to it (a typo, a stale path, or a collection that moved).",
+                unknown.join(", ")
+            );
+            eprintln!("aborting.");
+            std::process::exit(3);
+        }
+        if trials.is_empty() {
+            eprintln!(
+                "no trial here for: {} — a path this runner drives nothing for (no `run:` key, or an `.rs` test's fixture space).",
+                no_trial.join(", ")
+            );
+            return;
+        }
     }
     libtest_mimic::run(&args, trials).exit();
 }

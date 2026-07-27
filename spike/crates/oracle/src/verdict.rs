@@ -108,7 +108,6 @@ impl VerdictSet {
     /// Lift every `<provider>__is_converged` funcdef in `src`. Fail-soft (`inv-no-throw`) and
     /// deterministic (`inv-determinism`) — the same contract as [`crate::predict::lift_predicts`],
     /// routed through the shared role-parametrized parser.
-    #[must_use]
     pub fn lift(interner: &mut Interner, src: &str) -> Carrier<Self> {
         lift_verdicts_converged(interner, src).map(|converged| Self { converged })
     }

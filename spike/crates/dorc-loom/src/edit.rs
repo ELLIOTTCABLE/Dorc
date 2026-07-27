@@ -155,16 +155,36 @@ pub fn compile_section_edits(
                 .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
             continue;
         };
-        let anchor: String = components
+        let after = components
             .get(index.saturating_add(1)..)
-            .unwrap_or_default()
+            .unwrap_or_default();
+        let anchor: String = after
             .iter()
             .take_while(|component| !matches!(component, RenderComponent::EditableSection(_)))
             .map(component_text)
             .collect();
+        let unedited = component_text(component);
+        let last_section = !after
+            .iter()
+            .any(|component| matches!(component, RenderComponent::EditableSection(_)));
         let interior = if anchor.is_empty() {
             let interior = rest;
             rest = "";
+            interior
+        } else if let Some(remaining) = rest
+            .strip_prefix(&unedited)
+            .filter(|remaining| remaining.starts_with(&anchor))
+        {
+            // An UNCHANGED section delimits itself exactly, which is what keeps a line break
+            // ABSORBED into one chrome line from making its neighbours ambiguous below.
+            rest = remaining;
+            unedited.as_str()
+        } else if last_section {
+            // Nothing editable follows, so the trailing immutable text is an exact suffix.
+            let interior = rest
+                .strip_suffix(&anchor)
+                .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
+            rest = &rest[interior.len()..];
             interior
         } else {
             let first = rest
@@ -177,7 +197,7 @@ pub fn compile_section_edits(
             rest = remaining;
             interior
         };
-        if interior == component_text(component) {
+        if interior == unedited {
             continue;
         }
         let section_baseline = baseline
@@ -211,10 +231,20 @@ fn compile_transport(
     })
 }
 
+/// A catalog register split across several sections cannot be owned by one edit: rewriting one
+/// segment would leave the rest of the register saying the old thing.
+///
+/// A chrome LINE is exempt, and the exemption is the point of its separate field: several
+/// sections keyed to one line are several RENDERINGS of one registry entry — the same words
+/// printed at two chain rows — and each is complete on its own, so an edit to either rewrites the
+/// whole entry (`28H` ruling 3).
 fn refuse_split_field(
     render: &EditableRender<SectionKey, SectionVariableId>,
     selected: &SectionKey,
 ) -> Result<(), DorcSectionEditRefusal> {
+    if selected.field == crate::ARRANGEMENT_LINE_FIELD {
+        return Ok(());
+    }
     let segments = render
         .components()
         .iter()

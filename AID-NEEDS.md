@@ -92,9 +92,41 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   all render particulars stay unwelded pending implementation (`KNOBS:kFLOW`;
   `27V:rul-output-form-unwelded`). Mis-attribution is the worst aid failure
   (`271:rul-sin-ordering`); where certainty runs out, say so rather than rounding up.
-- **law-pull-runs-wide-open** — on pull surfaces the user asked: derivability governs,
-  answer maximally. On push surfaces selection is ruthless and root-cause-only
-  (AGENTS fail-fast; `(cause, site)`-keyed dedup; stay-in-pure-propagation — `22E`).
+- **law-pull-runs-wide-open** — on pull surfaces the user asked: DERIVABILITY runs
+  wide-open (everything the engine holds is reachable; the exhaustive tier is one
+  LABELED step away, `--all`), and the REGISTER is maximal — any pull answer is
+  generous next to the jealously-meted, in-your-way push surfaces; that
+  pull-vs-push contrast is this law's original content and stands. WITHIN a pull
+  surface, the default is curated per law-selection-is-goal-derived — and curation
+  is a TUNING, not a minimalism mandate: "carefully" does not mean "minimally",
+  curating maximally is legal; curating WRONG is the one forbidden thing. On push
+  surfaces selection stays ruthless and root-cause-only (AGENTS fail-fast;
+  `(cause, site)`-keyed dedup; stay-in-pure-propagation — `22E`).
+- **law-selection-is-goal-derived** (human-typed 2026-07-26; banked `28H`) — there
+  is ONE global fact/derivation model; user-facing surfaces drive only CONSENT and
+  GOAL (`why` = understanding · `why --probe` = understanding + consent-to-live-
+  probe · `plan --why` = preparing-to-reconcile, tuned toward understanding; the
+  `28E` §8 goals/consent matrix is thereby RULED, no longer vibe). What a default
+  render shows is derived BACKWARDS from the derived user-goal under the
+  receipt/address/world state — dynamic, never a static dump of what is at hand.
+  Curation is either DEEPLY EFFECTIVE or ENTIRELY ABSENT (the dag-explanation-ux
+  round: verbosity tastes good and hurts task success; mis-curation was the worst
+  failure mode): `--all` is the absent-curation tier, labeled; every curated
+  default must be conscious of what it shows and why. The dichotomy governs
+  curation CORRECTNESS, never density — density is tunable within the goal.
+  ERA POSTURE (human-typed, same sitting): during the spike the concern is THE
+  ARCHITECTURE TO TUNE prosody/verbosity, far more than where it is tuned —
+  generate more, better, extra, noisy output data, because that forces the
+  architecture to track it; tuning down later is cheap, tuning up is very hard
+  (the kWARN tune-high posture, generalized). The goal-derivation FORM is the
+  requirement; its present setting leans generous. The typings and
+  output-construction follow the form "<goal> leaves-user-wanting-of <info-piece>
+  when world is in <state>" — as architecture shape and internal narration (the
+  derived goal is inspectable DATA the render can name), explicitly NOT a
+  prose-style catalog/register (refused as overengineering). Worked consequence:
+  an authored decline is noise at default verbosity unless the asked question
+  implicates it — and the calculus flips with receipt state (in an
+  otherwise-quiet receipt, the quiet classes may BE the interesting thing).
 - **law-aid-adds-no-consent-moments** (`26B:rul-one-attention-moment`) — aid never adds
   interaction moments; everything front-loads into the one presented plan or waits to be
   pulled.

@@ -42,9 +42,9 @@ prompt you write:
   mocks under `PATH=mocks-only`) — never real mutators. Real-command strawmen
   in the repo are frozen evidence; they must never be executed. The only
   sanctioned executor of fixture material is the central e2e runner,
-  `cargo test -p dorc-cli --test e2e` (syntax-checks, and execs only under
+  `mise run test:e2e` (syntax-checks, and execs only under
   inert mocks, in a scrubbed environment with a throwaway-sandbox cwd). It
-  rides `cargo test --workspace`, so the ordinary suite IS the executor —
+  rides `mise run test`, so the ordinary suite IS the executor —
   never hand-run a book, a mock, or a rendered artifact yourself.
 - Perpetuate this block, verbatim, to the top of every subagent prompt.
 
@@ -800,7 +800,9 @@ ordering that are easy to get subtly wrong, and they run from anywhere in the tr
 mise run build            # cargo build --workspace
 mise run test             # unit + the e2e corpus + the loom corpus
 mise run test:e2e         # the e2e corpus alone: dash -n gate + exec-under-mocks
-mise run test:looms       # the loom corpus alone: parse + hygiene + render fixpoint
+mise run test:looms       # the loom corpus alone: parse + hygiene + render fixpoint WHERE OWNED
+                          #   (a `run:` loom's transcript proof belongs to test:e2e —
+                          #    one-fixpoint-authority-per-case; the hk step is `loom-hygiene`)
 mise run clippy           # workspace clippy, -D warnings
 mise run check            # all four lint gates, check-only
 mise run gate             # check + a fresh build + the whole suite (the pre-commit set)
