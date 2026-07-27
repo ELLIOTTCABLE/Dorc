@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# dorc-r25 Vultr substrate (P1) — throwaway round-25 field-trial tooling.
+# dorc-r26 Vultr substrate — throwaway field-trial tooling (born in round 25).
 #
 # Contract C-vps (plans/252 §2):  provision -> {id,ip,host}  ·  snapshot <id>
 #   ·  restore <snapshot-id>  ·  destroy <id>   (+ status, destroy-all, run).
 #
 # Guardrail (plans/252 §5.1, BINDING):
-#   1 isolation   every resource carries the `dorc-r25` tag + name prefix
-#   2 spend       cheapest tier (PLAN default); <=3 concurrent; <$10/day
+#   1 isolation   every resource carries the `dorc-r26` tag + name prefix
+#   2 spend       cheapest tier clearing the round's floor (PLAN); <=3 concurrent; <$10/day
 #   3 teardown    `run` always tears down; `provision` tears down its own failures
 #   4 key         sourced from ~/.temp/vultr.env into env ONLY; never printed/logged
 #   6 observe     `status` = live instances + snapshots + rough accrued spend
@@ -21,8 +21,10 @@ set -euo pipefail
 # A traced shell (`bash -x`) would echo the key while sourcing the env-file. Refuse.
 case $- in *x*) echo "vultr.sh: refusing to run under 'set -x' (would leak VULTR_API_KEY)" >&2; exit 1 ;; esac
 
-TAG="dorc-r25"                                  # isolation tag AND name prefix — never widen
-PLAN="${PLAN:-vc2-1c-1gb}"                       # cheapest broadly-available IPv4 tier (~$0.007/hr)
+TAG="dorc-r26"                                  # isolation tag AND name prefix — never widen
+# 2GB is a floor, not a taste: the acceptance book installs grafana+prometheus+HA
+# (255 §8), which the 1GB tier OOMs. Cheapest 2GB plan offered in REGION.
+PLAN="${PLAN:-vc2-1c-2gb}"                       # 1 vCPU / 2GB / 55GB (~$0.0137/hr)
 REGION="${REGION:-ewr}"
 OS_ID="${OS_ID:-2136}"                           # Debian 12 x64 (bookworm)
 SSHKEY="${SSHKEY:-}"                             # optional pubkey path, injected via cloud-init
@@ -70,7 +72,7 @@ _instance_json(){                                # echo the instance object, or 
 }
 
 # C-vps spells this destroy(host); accept an id OR an IPv4. An IPv4 resolves only
-# among dorc-r25 boxes — a non-dorc-r25 IP resolves to nothing and falls through
+# among $TAG boxes — an untagged IP resolves to nothing and falls through
 # as a bogus id (-> "not found" no-op), so it can never target the human's box.
 _resolve_id(){
    case "$1" in
@@ -88,7 +90,7 @@ _assert_tagged(){
       local tags label
       tags="$(printf '%s' "$obj" | jq -rc '.tags // []')"
       label="$(printf '%s' "$obj" | jq -r '.label // "?"')"
-      die "REFUSING to touch instance $id — tag '$TAG' NOT present (tags=$tags label=$label). Not a dorc-r25 resource."
+      die "REFUSING to touch instance $id — tag '$TAG' NOT present (tags=$tags label=$label). Not a $TAG resource."
    fi
 }
 
@@ -217,7 +219,7 @@ cmd_destroy(){
    id="$(_resolve_id "${1:?usage: destroy <instance-id|ip>}")"
    obj="$(_instance_json "$id")"
    if [ -z "$obj" ]; then log "instance $id not found — already gone"; return 0; fi
-   _assert_tagged "$obj" "$id"                   # dies unless dorc-r25-tagged
+   _assert_tagged "$obj" "$id"                   # dies unless $TAG-tagged
    log "destroying $id (tag '$TAG' verified) label=$(printf '%s' "$obj" | jq -r .label)"
    vc instance delete "$id"
    sleep 3
@@ -247,7 +249,7 @@ cmd_status(){
         [ $inst.instances[]  | select(.tags|index($t)) ]              as $mine
       | [ $snaps.snapshots[] | select(.description|startswith($t)) ]  as $snap
       | ($mine | map( ($cost[.plan]//0)/730 * ((now-((.date_created[0:19]+"Z")|fromdateiso8601))/3600) ) | add // 0) as $spend
-      | "== dorc-r25 status ==",
+      | "== \($t) status ==",
         "instances (\($mine|length), cap 3):",
         ( if ($mine|length)==0 then "  (none)"
           else ($mine[] | "  \(.id)  \(.label)  \(.main_ip)  \(.status)  \(.plan)  \(.region)  created=\(.date_created)")
@@ -282,12 +284,12 @@ case "${1:-}" in
    run)          shift; cmd_run "$@" ;;
    ""|-h|--help)
       cat >&2 <<EOF
-dorc-r25 Vultr substrate (P1).  All resources tagged/prefixed '$TAG'.
+$TAG Vultr substrate.  All resources tagged/prefixed '$TAG'.
   provision                 create cheapest Debian-12 box -> {id,ip,host} JSON
-  snapshot <id|ip>          snapshot a dorc-r25 box -> snapshot-id
-  restore  <snapshot-id>    new box from a dorc-r25 snapshot -> {id,ip,host}
-  destroy  <id|ip>          delete (REFUSES anything not dorc-r25-tagged)
-  destroy-all               reap every dorc-r25 instance + snapshot
+  snapshot <id|ip>          snapshot a $TAG box -> snapshot-id
+  restore  <snapshot-id>    new box from a $TAG snapshot -> {id,ip,host}
+  destroy  <id|ip>          delete (REFUSES anything not $TAG-tagged)
+  destroy-all               reap every $TAG instance + snapshot
   status                    live instances + snapshots + rough spend
   run -- <cmd...>           provision, run cmd (DORC_IP/ID/HOST in env), ALWAYS destroy
 Env: PLAN=$PLAN REGION=$REGION OS_ID=$OS_ID SSHKEY=<pubkey> KEEP_ON_FAIL=0
