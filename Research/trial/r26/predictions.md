@@ -181,31 +181,32 @@ same site ids, same book digest. Only dispositions changed.
 
 Three deltas, each with a cause:
 
-**d-1 — the ladder now cascades: the ceiling's elisions went 1 → 4.** §4 m-3 measured that only the
-guard above the first mutator site could fold, capping a run of `dpkg -s x || apt-get install -y x`
-lines at one elision. `70039fb8` iterates classify-and-fold to a fixpoint, so proving the first
-line's install branch dead removes the mutator that was blocking the second, and so on down the
-ladder. All four guarded installs now elide in the ceiling variant. m-3's cap is lifted; its
+**del-guarded-ladder-now-cascades — the ceiling's elisions went 1 → 4.** §4's cap (nee m-3: only the
+guard sitting above the first mutator site can fold, so a run of `dpkg -s x || apt-get install -y x`
+lines yields at most one elision) has lifted. `70039fb8` iterates classify-and-fold to a fixpoint,
+so proving the first line's install branch dead removes the mutator that was blocking the second,
+and so on down the ladder. All four guarded installs now elide in the ceiling variant. That cap's
 description of the mechanism was right and its permanence was wrong.
 
-**d-2 — sibling `is_converged` cells now split, so m-2 is fixed.** `d6758c3d`/`4483f530` key a
+**del-sibling-verdict-cells-split — two `cp` sites no longer collide.** `d6758c3d`/`4483f530` key a
 verdict-marked site on the coordinate its author wrote rather than on a synthesized
 `dorc-auto:<cmd>@converged`. The probe artifact now reports
 `r26.smoke.File:/etc/nginx/conf.d/r26-smoke.conf@content` and `r26.smoke.File:/etc/motd@content` as
-distinct cells, where it previously collapsed both onto one. §4 m-2's "two `cp` sites share one
-cell" no longer holds.
+distinct cells, where it previously collapsed both onto one. §4's collision finding (nee m-2: an
+`is_converged` site keys a synthesized per-command coordinate, so two sites of one command share a
+cell and only one can be licensed) no longer holds.
 
-**d-3 — and yet the guards went 2 → 0, which is a defect, not a win.** Splitting the cells should
-have taken the converged world from two guards to four. It took it to none: every `cp` and
-`systemctl` site now runs verbatim. The split is happening on the probe side only — the vouch that
-comes back keys the authored coordinate, and nothing on the licensing side asks for that cell, so a
-correct `holds` buys nothing. Demonstrated directly: strip the trailing
+**del-authored-coordinate-voids-guard — and yet the guards went 2 → 0, which is a defect, not a
+win.** Splitting the cells should have taken the converged world from two guards to four. It took it
+to none: every `cp` and `systemctl` site now runs verbatim. The split is happening on the probe side
+only — the vouch that comes back keys the authored coordinate, and nothing on the licensing side
+asks for that cell, so a correct `holds` buys nothing. Demonstrated directly: strip the trailing
 `: r26.smoke.File:"$dst"@content` mark from `cp.oracle.sh` and the two sites collapse back onto
 `dorc-auto:cp@converged` and one guard reappears (`guard=1`). **An authored coordinate on an
 `is_converged` verdict is currently strictly worse than no coordinate at all** — which is the
 opposite of what the contract asks authors to write.
 
-The corpus does not catch d-3: `794c0e41` pinned the keying change with two `.loom` prose cases and
-no whole-product case, and no e2e case in the collection pairs an `is_converged` oracle carrying an
-authored coordinate with records that vouch it. `test:e2e` is green at 109 cases with this defect
-live. That gap is the finding worth more than the number.
+The corpus does not catch del-authored-coordinate-voids-guard: `794c0e41` pinned the keying change
+with two `.loom` prose cases and no whole-product case, and no e2e case in the collection pairs an
+`is_converged` oracle carrying an authored coordinate with records that vouch it. `test:e2e` is
+green at 109 cases with this defect live. That gap is the finding worth more than the number.
