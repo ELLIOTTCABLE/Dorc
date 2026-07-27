@@ -497,6 +497,30 @@ sm_dorc_Package__state_stored_only_in() {\n\
         );
     }
 
+    /// Every SUPPORTED gate strips byte-exact too. A modeled construct is still author bytes — the
+    /// strip erases annotations, never something it merely happens to understand.
+    #[test]
+    fn a_supported_gate_strips_byte_exact() {
+        for gate in [
+            "[ \"${2-}\" = \"\" ] || return 2",
+            "[ \"${2-}\" != \"\" ] && return 2",
+            "command -v w >/dev/null 2>&1 || return 2",
+        ] {
+            let src = format!(
+                "# dorc-lang/v0.2\nw__predict() {{\n   {gate}\n   thing : sm.dorc.Thing = \"$1\"\n   w q \"$thing\"\n}}\n"
+            );
+            let out = strip(&src);
+            assert!(
+                out.contains(&format!("   {gate}\n")),
+                "`{gate}` survives verbatim:\n{out}"
+            );
+            assert!(
+                out.contains("   thing=\"$1\"\n"),
+                "the bind still strips:\n{out}"
+            );
+        }
+    }
+
     /// A REFUSED mark still erases. The list is not a mark host any more, but its bytes are still
     /// dialect text, and an off-ramp artifact that shipped one would not be dialect-free.
     #[test]

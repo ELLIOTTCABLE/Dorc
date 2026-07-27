@@ -2325,9 +2325,11 @@ command__predict() {
 
     /// The degrade reason survives to the caller instead of dying at the `Resolution::Top(_) => None`
     /// that used to discard it — `26G:fnd-existence-gate-darkens-oracle`'s "make it loud" half.
+    /// Fixtured on a FALLBACK or-list, which stays ⊤ permanently: the contract's `|| return 2` gate
+    /// this once used is a supported form now, so it resolves (see the sibling below).
     #[test]
     fn a_degrading_check_reports_its_reason() {
-        let src = "# dorc-lang/v0.2\nwombat__predict() {\n   command -v wombat >/dev/null 2>&1 || return 2\n   thing : sm.dorc.Thing = \"$1\"\n   wombat query \"$thing\" : sm.dorc.Thing:\"$thing\"@present\n}\n";
+        let src = "# dorc-lang/v0.2\nwombat__predict() {\n   thing : sm.dorc.Thing = \"$1\"\n   wombat query \"$thing\" || wombat sync \"$thing\"\n}\n";
         let mut i = Interner::default();
         let checks = vec![lift_predicts(&mut i, src).value];
         let (effects, reason) = degrade_of("wombat sync\n", &checks, &mut i);
@@ -2335,12 +2337,32 @@ command__predict() {
         assert_eq!(reason, Some(TopReason::OrList));
     }
 
+    /// The other half of `26G:fnd-existence-gate-darkens-oracle`: the contract's own existence gate
+    /// no longer darkens the oracle at all. The whole finding was that this exact body — the idiom
+    /// `oracle-contract.md:103-104` prescribes by name — silently converted a working oracle into a
+    /// non-oracle. It resolves now, and the site is probed rather than run blind.
+    #[test]
+    fn the_contracts_existence_gate_no_longer_darkens_the_oracle() {
+        let gated = "# dorc-lang/v0.2\nwombat__predict() {\n   command -v wombat >/dev/null 2>&1 || return 2\n   thing : sm.dorc.Thing = \"$1\"\n   wombat query \"$thing\" : sm.dorc.Thing:\"$thing\"@present\n}\n";
+        let bare = "# dorc-lang/v0.2\nwombat__predict() {\n   thing : sm.dorc.Thing = \"$1\"\n   wombat query \"$thing\" : sm.dorc.Thing:\"$thing\"@present\n}\n";
+        let mut i = Interner::default();
+        let with = vec![lift_predicts(&mut i, gated).value];
+        let without = vec![lift_predicts(&mut i, bare).value];
+        let (_, gated_reason) = degrade_of("wombat query thing\n", &with, &mut i);
+        assert_eq!(gated_reason, None, "the gate no longer degrades the check");
+        assert_eq!(
+            degrade_of("wombat query thing\n", &with, &mut i),
+            degrade_of("wombat query thing\n", &without, &mut i),
+            "the gated body behaves exactly as the same body without its gate"
+        );
+    }
+
     /// Two candidate checks for one provider, each degrading for a DIFFERENT reason: the FIRST in
     /// file order wins, matching the first-resolves-wins rule the resolution scan already uses. The
     /// note renders one cause, so which one it is must be pinned rather than incidental.
     #[test]
     fn the_first_candidate_checks_reason_is_the_one_reported() {
-        let or_list = "# dorc-lang/v0.2\nwombat__predict() {\n   command -v wombat >/dev/null 2>&1 || return 2\n}\n";
+        let or_list = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat query \"$1\" || wombat sync \"$1\"\n}\n";
         let pipeline = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat list | wombat count\n}\n";
         let mut i = Interner::default();
         let a = lift_predicts(&mut i, or_list).value;
