@@ -216,6 +216,48 @@ it never learns why):
    fix — a W-C build that passes §4.5's behavior tests but cannot answer `dorc why` with the
    chain is INCOMPLETE and does not land.
 
+## §4¾. W-C cross-round state law + the reactive-era bridge (human-driven sharpening,
+2026-07-28 — the composition-across-reruns footgun, named and closed)
+
+Different quantities have DIFFERENT re-run semantics, and mixing them is the catastrophe
+class (human-typed: verbatim-carried vs actively-maintained vs meet-to-⊤ vs never-survives
+compose unintuitively). The loop's law, enforced structurally by where data lives:
+
+- FROZEN INPUTS (carried verbatim, never re-derived, never re-admitted): book/CFG/spans ·
+  oracle lifts · the ADMITTED records (admission runs ONCE; a Refused stream gets no second
+  chance in round 2; no re-measure, no re-merge) · vouches (records-independent; frozen to
+  prevent dependence creep).
+- PER-ROUND PURE DERIVATIONS (recomputed from scratch each round; NEVER incrementally
+  patched): reach states · classifications · `valid` bits · fact views + their meets ·
+  statuses · dispositions · the plan. Round k = F(frozen inputs, dead-set_k). Meets stay
+  honest BY recomputation — they can neither linger past their justification nor be
+  forgotten while it stands. Any cross-round incremental mutation of these is a defect.
+- THE ONE ACCUMULATOR (actively maintained, grow-only): the proven-dead set. Its
+  monotonicity is CONDITIONAL — scoped to a fixed record-set (below).
+- NEVER-SURVIVES (discarded intermediate outputs): every non-final round's plan, render,
+  narratives, origins. Only the FINAL round's artifacts reach any surface (user, whylog,
+  why-lens). A round-1 "substitution refused" narrative is FALSE in round 2 and must not
+  reach the whylog. Sole deliberate exception: the §4.6 round-tagged derivation links,
+  durable by design so the why-chain can render the cascade.
+
+The reactive-era bridge (human correction adopted: "probe emission decided once" is
+TEMPORARILY true — current-pipeline happenstance, not a documented invariant; `26B` owes a
+reactive architecture with many probing waves before the single consent moment):
+
+- brg-dead-set-resets-on-record-world-change — the dead-set's grow-only property holds only
+  while the record-set is FIXED. Any record-set change (new arrival, retry/supersession,
+  conflict) invalidates the accumulator ENTIRELY: reset to ∅, recompute the whole fixpoint
+  against the new record-world. Compute-wasteful and correct (analysis is cheap; the network
+  is not); makes the `26B` confluence target (final answer = pure function of the FINAL
+  record-set, wave-structure-independent) hold trivially. Carrying the accumulator across
+  record-worlds is the exact composition mistake this section exists to forbid.
+- brg-emission-exclusion-is-v1-scoping — §7½'s "no feedback into probe emission" is a v1
+  SCOPE CUT, not an invariant: the reactive round may legitimately rule that proven-deadness
+  informs probe minting (e.g. no probes into dead branches). That ruling — and the standing
+  reactive termination/monotonicity questions — belong to the reactive round; W-C hands it a
+  precisely-stated conditional monotonicity instead of a silent assumption, and must not
+  document the exclusion as permanent anywhere user- or builder-facing.
+
 ## §5. Rulings owed the human (collect at plan review or at triple-check; none blocks W-A)
 
 - R-1-model-command-v (from `26G` fnd-existence-gate §2, ambiguous-needs-human): should the
