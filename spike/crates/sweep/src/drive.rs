@@ -61,7 +61,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let verdicts = dorc_oracle::verdict::VerdictIndex::of(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
-    let (classified, _why, kills, _kill_coords, fact_backings, _collapse_narrative) =
+    let (classified, _why, kills, _kill_coords, fact_backings, _narrative, _invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
             &value,
@@ -70,6 +70,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &checks,
             &verdicts,
             &std::collections::BTreeMap::new(),
+            &dorc_analysis::erase::ErasedSites::none(),
             i,
             &mut arena,
             &mut std::collections::BTreeMap::new(),

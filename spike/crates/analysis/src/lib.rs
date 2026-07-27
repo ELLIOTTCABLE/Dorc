@@ -25,6 +25,7 @@
 
 pub mod cfg;
 pub mod effect;
+pub mod erase;
 pub mod lattice;
 pub mod solve;
 pub mod value;

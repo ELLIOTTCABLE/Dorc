@@ -5293,7 +5293,7 @@ apt_get__is_converged() { return 0; }
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let (classes, _why, kills, _kill_coords, _fact_backings, _collapse_narrative) =
+        let (classes, _why, kills, _kill_coords, _fact_backings, _narrative, _invalidators) =
             dorc_analysis::effect::classify_with_why_diags(
                 &cfg,
                 &value,
@@ -5302,6 +5302,7 @@ apt_get__is_converged() { return 0; }
                 &checks,
                 &dorc_oracle::verdict::VerdictIndex::default(),
                 &BTreeMap::new(),
+                &dorc_analysis::erase::ErasedSites::none(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
                 &mut BTreeMap::new(),
@@ -6387,20 +6388,28 @@ apt_get__is_converged() {
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (classified, _why, kills_found, _kill_coords, _fact_backings, _collapse_narrative) =
-            dorc_analysis::effect::classify_with_why_diags(
-                &cfg,
-                &value,
-                &parsed.value,
-                &idx,
-                &checks,
-                &dorc_oracle::verdict::VerdictIndex::default(),
-                &BTreeMap::new(),
-                &mut i,
-                &mut arena,
-                &mut BTreeMap::new(),
-                &mut BTreeSet::new(),
-            );
+        let (
+            classified,
+            _why,
+            kills_found,
+            _kill_coords,
+            _fact_backings,
+            _narrative,
+            _invalidators,
+        ) = dorc_analysis::effect::classify_with_why_diags(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &dorc_oracle::verdict::VerdictIndex::default(),
+            &BTreeMap::new(),
+            &dorc_analysis::erase::ErasedSites::none(),
+            &mut i,
+            &mut arena,
+            &mut BTreeMap::new(),
+            &mut BTreeSet::new(),
+        );
         let classes = classified.value;
         let kills = if walled { kills_found } else { BTreeSet::new() };
         let observe = |f: FactKey| {

@@ -1380,6 +1380,7 @@ pub fn classify(
         checks,
         verdicts,
         &BTreeMap::new(),
+        &crate::erase::ErasedSites::none(),
         interner,
         arena,
         &mut BTreeMap::new(),
@@ -1442,6 +1443,7 @@ pub fn classify_with_why_diags(
     checks: &[PredictSet],
     verdicts: &VerdictIndex,
     peeled: &BTreeMap<CfgNodeId, PeeledSite>,
+    erased: &crate::erase::ErasedSites,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
@@ -1453,13 +1455,14 @@ pub fn classify_with_why_diags(
     BTreeMap<CfgNodeId, FactKey>,
     BTreeMap<FactKey, FactBacking>,
     Vec<dorc_aid::CollapseNarrative>,
+    BTreeSet<CfgNodeId>,
 ) {
     let mut diags: Vec<Diag> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
     // disclosures (stage-1) and the `277` §5 survival-backing provenance. Extracted so this fn
     // stays under the line cap. `27N`: a wrapped BOOK site (`peeled`) resolves its INNER command
     // and re-keys the fact into the composed context.
-    let (member_families, effects, cmdsub_tops, backings) = resolve_node_effects(
+    let (member_families, mut effects, cmdsub_tops, backings) = resolve_node_effects(
         cfg,
         value,
         ast,
@@ -1472,6 +1475,31 @@ pub fn classify_with_why_diags(
         degrades,
         verdict_lane,
     );
+
+    // THE erasure seam (`26H` §4 — the analyzer-model shrink, applied ONCE). Everything
+    // below derives from `effects`, so shrinking it here is what makes the residual model
+    // uniform: no reach state, class, kill, backing, or ⊤-cause downstream can tell an
+    // erased site from one that never mutated, and none of them is handed the overlay to
+    // consult. `Pure` is the spelling deliberately — a new `Erased` variant would manufacture
+    // exactly the every-consumer-must-remember surface the overlay model exists to abolish.
+    for site in erased.iter() {
+        if let Some(cells) = effects.get_mut(site.index()) {
+            *cells = vec![CommandEffect::Pure];
+        }
+    }
+
+    // The invalidator set: sites that gen into the reaching-defs (an oracled MUTATOR — any
+    // Establish/Kill — or an Opaque), computed from the RESIDUAL model, so an already-erased
+    // site is no longer one. `plan::erase` requires membership before a site may enter the
+    // ledger: erasing a non-invalidator changes nothing, and admitting it would make the
+    // fixpoint's monotone-growth pin vacuous. `SkipClass` cannot answer this — a Kill, an
+    // Opaque, and a blessed pure builtin all classify `MustRun`.
+    let invalidators: BTreeSet<CfgNodeId> = effects
+        .iter()
+        .enumerate()
+        .filter(|(_, cells)| cells.iter().any(gens_into_reach))
+        .map(|(i, _)| CfgNodeId(i as u32))
+        .collect();
 
     // arch-1 `Top(cause)`: mint a give-up origin per Opaque-bearing node (+ a fallback),
     // keyed on source spans, so the ⊤-poison cascade is attributable. The cause is EXEMPT
@@ -1637,7 +1665,22 @@ pub fn classify_with_why_diags(
         kill_coords,
         backings,
         collapse_narrative,
+        invalidators,
     )
+}
+
+/// Does this effect cell gen into the reaching-defs — i.e. is it INVALIDATING?
+///
+/// The gen-side of rule-query-validity, stated once so `reach_transfer` and the
+/// invalidator set cannot drift: an `Establishes`/`Kills` gens its fact, an `Opaque`
+/// joins ⊤, and `Pure`/`Queries` gen nothing. `is_pristine` is an EMPTY-SET test, so a
+/// modeled mutator and an unmodeled opaque invalidate a downstream guard exactly alike —
+/// the re-measured `26G` premise (`26H` §4 `lad-modeled-mutating-rhs`).
+fn gens_into_reach(cell: &CommandEffect) -> bool {
+    match cell {
+        CommandEffect::Establishes(_) | CommandEffect::Kills(_) | CommandEffect::Opaque => true,
+        CommandEffect::Pure | CommandEffect::Queries(_) => false,
+    }
 }
 
 /// The killed coordinate of a command's effects (24E §7): `Some(f)` IFF there is EXACTLY one `Kills`
@@ -1853,19 +1896,21 @@ command__predict() {
         let value = analyze(&built.value, &parsed.value, &mut i);
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (_classes, _why, kills, kill_coords, _backings, _narrative) = classify_with_why_diags(
-            &built.value,
-            &value,
-            &parsed.value,
-            &idx,
-            &checks,
-            &VerdictIndex::default(),
-            &BTreeMap::new(),
-            &mut i,
-            &mut arena,
-            &mut BTreeMap::new(),
-            &mut BTreeSet::new(),
-        );
+        let (_classes, _why, kills, kill_coords, _backings, _narrative, _invalidators) =
+            classify_with_why_diags(
+                &built.value,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &VerdictIndex::default(),
+                &BTreeMap::new(),
+                &crate::erase::ErasedSites::none(),
+                &mut i,
+                &mut arena,
+                &mut BTreeMap::new(),
+                &mut BTreeSet::new(),
+            );
         assert_eq!(kills.len(), 1, "the purge is the sole kill node");
         let node = *kills.iter().next().expect("one kill node");
         let killed = pkg_installed(&mut i, &s, "nginx");
@@ -1896,6 +1941,7 @@ command__predict() {
                 &checks,
                 &VerdictIndex::default(),
                 &BTreeMap::new(),
+                &crate::erase::ErasedSites::none(),
                 i,
                 &mut arena,
                 &mut BTreeMap::new(),

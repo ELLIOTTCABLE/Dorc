@@ -845,7 +845,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `26H` §3.5 — sites whose establish came from the VERDICT lane, so their probe ships the
     // verdict body. Site-keyed: nothing about the FACT distinguishes an authored verdict cell.
     let mut verdict_lane = BTreeSet::new();
-    let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative) =
+    let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative, _inval) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
             &value,
@@ -854,6 +854,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &checks,
             &verdicts,
             &peeled_sites,
+            &dorc_analysis::erase::ErasedSites::none(),
             &mut interner,
             &mut arena,
             &mut degrades,
