@@ -48,7 +48,9 @@ and carries the license-contamination map.
 - **Does it run on Windows / odd targets?** — `plans/139` (`kLANG` weld; sh-precondition
   tier-A/B targets; CRLF policy).
 - **How does the controller talk to hosts?** — `plans/142` (executorless-OOB transport;
-  read its Resolution — it supersedes the doc's earlier "My read" lean).
+  read its Resolution — it supersedes the doc's earlier "My read" lean); the adjudicated
+  ssh-transport spec, consumable single-host, is `plans/260` §5 (+`26A`); the round-26
+  live-execution seed (executor + acceptance loop + salvage map) is **`notes/26D`**.
 - **Where do the plans break / what wastes effort?** — `notes/151` (the adversarial
   convergence: the named-kind oracle contract was the unspelled hinge — since answered by
   rounds 17/23/24).
@@ -64,10 +66,13 @@ and carries the license-contamination map.
   **`plans/281`** (THE spec — supersedes `notes/277` §4's worked minimum; takes over
   the grammar `278` §6 deferred) · the one-page reference `notes/278` (DRAFT —
   assembles, never rules).
-- **What's actually BUILT, and its residue** — `notes/24C` (the per-landing ledger) +
-  `LIVING_STATUS.md`; spike-1 history in `plans/16P`/`16Q`.
-- **The first real-machine field trial** — `plans/252` (THE protocol) + `notes/254`
-  (adjudication + retrospective ledger) + `notes/255-*` (book + dry-run + predictions).
+- **What's actually BUILT, and its residue** — `LIVING_STATUS.md` + the arc ledgers
+  (`notes/28F` · `289` · `287` · `28A` · `27U` · `27D`; the r24-era per-landing ledger is
+  `notes/24C`); spike-1 history in `plans/16P`/`16Q`.
+- **The first real-machine field trial** — `plans/252` (THE protocol — SUPERSEDED as
+  ceremony 2026-07-27, see `notes/26D`; the tooling survives at `Research/trial/`) +
+  `notes/254` (adjudication + retrospective ledger) + `notes/255-*` (book + dry-run +
+  predictions — still the live-run instrument).
 - **Multi-host & read-concurrency** — `plans/262` (build spine) + `plans/260`/`261`,
   adjudicated `notes/26A` (round 26, branch `ai/spike3-r26`); joined out-of-order by
   `notes/26B` (reactive plan-construction direction + the capture-fold deferral,
@@ -223,8 +228,22 @@ and carries the license-contamination map.
   (catalog case-derived, promote-v2, roster retired) + phase-5 case backport;
   docs/steering re-synthesis. De-passthrough KILLED (opaque sibling lane owns the
   taint work). Deferred (human-owned, `28A`): the `sm `-prose Fable pass · catalog
-  canonicalization · glued-param seam · errorloom LICENSE/publish. Pending-ruling
-  riders: `TODO-ADDTL.md` tail.
+  canonicalization · glued-param seam · errorloom LICENSE/publish. The post-charter
+  arcs (errorloom phase-three `notes/287` · the aid/loom unification `plans/288` →
+  `notes/289` · the why-surface design `notes/28E`/`plans/28G` + its W1→W4 build
+  `notes/28F`/`28H` · the `weft` formatting crate) are compressed in
+  `LIVING_STATUS.md`'s R28 section; their human queues ride `28F`/`28H`.
+
+- **r29** — a quarantined lane (`Research/quarantine-DO-NOT-READ/`); off-limits.
+
+- **r26 (MINTED 2026-07-27; planning pending)** — live execution: the ssh executor
+  (pipe-completeness — `dorc apply host <plan.sh` does its own ssh'ing), the
+  gate/bless-tier live-acceptance loop (real ssh / real apt, never hot-loop), the
+  Vultr experimentation kit; skeleton-tier by remit. THE seed: **`notes/26D`**
+  (settled law `142:Resolution` + `260` §5 at N=1 · as-built gaps incl. the
+  never-closed probe→results→apply chain · `Research/trial/` salvage · first-run
+  sharp edges · open human decisions). Stdlib, multi-host, and the why/loom prose
+  tails are gently held — `LIVING_STATUS.md`.
 
 ## Vendor/ (full-history clones)
 

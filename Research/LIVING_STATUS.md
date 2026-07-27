@@ -14,198 +14,79 @@
 
 ---
 
-## THE WHY-SURFACE IMPLEMENTATION ARC (W1→W3+tails EXECUTED — closed 2026-07-26)
+## ROUND 26 — MINTED 2026-07-27: live execution (the next round; planning pending)
 
-**BUILD COMPLETE on `ai/r28-unify` (the conduct mainline; awaiting the human's fold).**
-THE durable is **`notes/28F`** (every ruling, landing, flag disposition, friction
-bank). Eleven lanes + the opaque W25 stage, all conductor-cold-verified on Windows
-AND (post-discovery) the WSL unix leg — which drew first blood on its first run
-(a Linux-only path-canonicalization panic, fixed same day). What landed: **W1**
-honest words (reported-never-measured · admin-English · `*`/`!` marks ·
-quoted-speakers · triptych · TRUST-SPENT-first · file-qualified addresses) ·
-**weft** (`spike/crates/weft` — the firewalled box-model formatting engine;
-named-table cross-box alignment; total-cover provenance spans; own `CLAUDE.md`) ·
-**W2** data+adapter+narrations (predict spans · DI clock · tool-rc · receipt
-header with the by-proof/by-trusted-claim split · decline anti-nag ·
-wall links · `as-written:` foreign excerpts · `[unnarrated:]` · participating
-lines · whylog instant line-kind) · **W3 aim-high** (human-redirected mid-arc:
-DEFAULT-ON whylog, per-user state root, full hardening bill, SHA-256 digests,
-receipt-first `why`, git matches-HEAD line, the `--risk-faultless-skips` rename
-EXECUTED, D1 drift-disclosed degraded receipts) · the **ASCII sweeps** (locks +
-emitters; corpus-level guard; `solve.rs` committed-mojibake repaired) · the
-**loom-cleanup pass** (ceiling 4096→65536 + true-size refusals · LCS divergence
-reporter · loud arity gate · promote reachability + actionable failures ·
-`DORC_LOOM_DUMP`) · renames: `TrustTier`→`SpeechAct` (unordered kinds) +
-`Knowability` (the one ordered projection). **Human queue (in `28F`)**: W5
-prose (the drift rows + `sm ` corpus + jargon glyphs `⊤`/`⊄`) · the
-`Consented`-knowability first-render ruling · `--no-whylog` spelling taste ·
-`ask-munge-byte-render` · D1 cousins (deleted book; oracle-digest mismatch) ·
-`finding-caseless-example-drift` (closes via ratchet burn-down). **r30**: W4
-(parts-at-birth/carrier/span-coverage → loom-round-trippable why) + the
-emergency-distrust levers + retention design + whylog drifted-wording walk +
-desync-transition machinery.
+**The human's re-cut (typed 2026-07-27):** two months in, the tool has never run against a
+real machine; that ends now. r26 = everything to do with piping things *through operating
+systems* — the ssh executor (pipe-completeness: `dorc apply host.tld <plan.sh` does its own
+ssh'ing, probe side included), the gate/bless-tier live-acceptance loop (real ssh, eventually
+real apt-get; never hot-loop), and the Vultr experimentation kit — at SKELETON-TIER
+completeness. **THE seed is `notes/26D`**: remit · the settled law to compose
+(`142:Resolution` mechanize-ssh + `plans/260` §5 as the adjudicated transport spec, consumed
+at N=1) · the as-built inventory (the probe→results→apply chain has NEVER been closed, even
+test-only; records `Expect` identity is spike-constants) · the `Research/trial/` salvage map
+(`apply-run.sh` · `vultr.sh` · the usekeychain scar on this Windows controller) · first-run
+sharp edges (the `255` host-guard elide=0 finding; CRLF) · the open human decisions d1–d5.
+A fresh conductor charters from it. Explicitly OUT of r26: stdlib · multi-host · the r25
+ceremony · the why/loom prose tails (all gently held, below).
 
-## THE WHY-SURFACE DESIGN SITTING (closed 2026-07-25) → THE `28G` IMPLEMENTATION QUEUE
+## GENTLY HELD (live work, deliberately waiting on the human's live experimentation)
 
-**Design CLOSED, implementation PENDING a fresh conductor.** The record is
-**`notes/28E`** (rulings §0/§8 · the mint/carry/compose/render synthesis · the
-prior-art adjudication §7); the phased plan-of-record is **`plans/28G`** — read
-BOTH before any why/render/aid work. The strawman corpus of record (design
-targets, human-marked): **`notes/28G-why-strawmen-v2/`** (five cases; the human
-is still working them over slowly — expect further markup layers; `292` is
-superseded). Sibling inputs: `notes/28D` (firefight needs + the opaque-approve
-gates, human-marked) · `.claude/research/dag-explanation-ux/` (100 graded
-sources). New knob: `KNOBS:kTASTE` (delightful ↔ productive; deliberately
-permanent). Headline rulings a successor must not re-derive: reported-never-
-measured · quoted-speakers rows · completion-class danger axis (`*`/`!`) ·
-never-a-dinna-do-it-layer (negatives only on engine-proved derivations) ·
-trust-spent-first · renderer-owns-layout · ASCII-forever · everything
-rendering-assembled-from-editable-spans (`28G` §0 — the living goal). Sizing
-recc (`28G` §3): ONE more r28 implementation-conductor for phases W1→W2(→W3);
-r30 for W4 + levers/retention. Phase W5 (= the held phase-8 prose pass) still
-awaits the human's ack. First-blooding is slightly BLOCKED on W1/W2 per the
-human ("the reports and errors ARE the product").
+- **block-stdlib** — zero non-fixture oracles exist; human-ruled 2026-07-27 pending-NOT-
+  blocking ("stdlib, multihost, and the r25-first-blood protocols have mostly stood in the
+  way of actually experimenting"; scrappy hand-oracles are part of the experiment itself).
+  On-ramp when revived: `notes/27Q` (§2 preconditions discharged); prioritization `27Yb`.
+- **the why/loom prose tails** — W5 (the `sm `-corpus burn-down; worklist `28J`, 47/209 rows
+  transcript-editable at last count) + the `28F`/`28H` human queues (drift-row prose · jargon
+  glyphs · `Consented`-knowability at first render · `--no-whylog` spelling · the loom-UX
+  friction bank) + the small-sittings ruling queue (floors-ratification `27U` §7 ·
+  decline-class starter-set `27W` §0 · C8 operand display `27U` §7 · prose-register schema
+  `282` §10 — W4 landed, so that sitting now has transcript faces · lint tc-leans `27S`
+  §5/`27T`). All live; none blocks r26.
+- **r26 reactive/capture + multi-host revival** — `26B`/`26C` + `260`/`261`/`262`; revival
+  conditions `270` §5. NB r26 consumes `260` §5/§2 transport law at N=1 WITHOUT building the
+  fleet kernel; the revival inherits whatever SessionDriver seam r26 lands.
+- **r25** — the first-blood *protocol* is superseded (the human runs an informal live session
+  instead); the tooling is salvage at `Research/trial/` (`notes/26D` §4); the `255` book +
+  prediction ledger remain the best live-run instrument (NB `255` §5.1: as-written the book
+  measures elide=0 — the `$(hostname)` host-guard walls everything).
 
-## THE AID/LOOM UNIFICATION ARC (`plans/288` EXECUTED WHOLE — closed 2026-07-24)
+## BRANCH / FOLD STATE (measured 2026-07-27 — re-verify before minting r26 branches)
 
-**BUILD COMPLETE, awaiting the human's fold of `ai/r28-unify` and the HELD phase-8
-prose pass.** One sitting, ten lanes, all conductor-cold-verified (final:
-`unit 1200 | e2e 98 | looms 73 | gates ok`). THE durable is **`notes/289`** (rulings,
-landings, seams, the phase-8 package); the specs it executed: `plans/288` (+ maps
-`notes/290`/`291`). What landed: `crates/aid` extracted (describe plane;
-Narrative rename; two-plane seal intact) · the mint-seam + `dorc-loom scaffold` +
-the mint-hardening gate package (caught a never-minted collapse class day one) ·
-lint findings + ~21 CLI/dorc-sh errors as registry codes (all `sm `-migrated) ·
-the flat test tree + central Rust runners (`run.sh` RETIRED; sanctioned-executor
-law re-worded) · e2e→loom convergence machinery (closed normalizer vocabulary;
-catalog-validated needles — which caught a rounds-dead fixture) · the arrangement
-registry + help-page pilot (17 chrome rows loom-editable; artifact-plane fenced
-OUT) · the disturbs-family def↔invocation LIVE BUG fixed + pinned · cross-platform
-gate repairs (a never-type-checked `#[cfg(unix)]` path; WSL git≥2.48 wall;
-conduct-bless pre-flights). Research banked: `.claude/research/loom-harness-
-alternatives/` (errorloom publish-narrow lean; mock-stub crate candidate).
-**Human queue:** the phase-8 prose pass (catalog `sm `/6-unwritten + 17 arrangement
-rows; two transport seams pair with it) · WSL git upgrade + mise activation ·
-SyncThing-writes-into-`.git` (4 conflict refs surfaced) · three dirty worktrees
-(incl. uncommitted 279a/b Sol-N reports) · errorloom LICENSE/publish forks.
+- **Merged into `ai/main`:** the W1–W3 why-surface lanes (w1-voice · w2-data · w2a-adapter ·
+  w2b-narrations · w3-fold) · weft-skeleton · ascii-emitters/-sweep · loom-cleanup ·
+  opaque-w25 · speechact-rename · d1-drift · r28-impl · r29-catchup · spike3-r26 · spike3-r27.
+- **UNMERGED: `ai/r28-unify`** — carries the W4 arc (parts-at-birth/carrier/span-coverage →
+  loom-round-trippable why; lanes w4-carrier/-map/-parts/-span/-drifted-driver;
+  conductor-blessed @ `747ab48d` per the r28-unify worktree's copy of this file, which stays
+  the richer one until the fold). Pre-banked fold conflict: the human's `f4f48316` webhost
+  redline (`28H:item-webhost-redline-orphaned`); `28H`/`28I`/`28J` are worktree-resident
+  notes until folded. Also unmerged: r28-declined-rerank · r28-precommit-honesty (small
+  lanes; disposition with the human) · xcheck/report/relic branches · three
+  `*.sync-conflict-*-PHNHRER` twins (SyncThing incursions; `.stignore` repair human-owned,
+  `27U` §2).
+- **Pruned (measured absence; content presumed folded):** ai/r27-aid · ai/r28-phase3-close ·
+  ai/r28-errorloom-phase2 · ai/spike3-r23 · ai/spike3-r25 (r25's content confirmed
+  in-mainline at `Research/trial/`, merge `2d5176dd`).
 
-## ERRORLOOM TEMPLATE COMPILER (post-round-28; phase-three CLOSED 2026-07-23)
+## R28 (CLOSED as an arc — compressed; the durables carry everything)
 
-**MERGE:** the round-29 ingress `ai/main`@`b6fde355` is folded into `ai/r28-phase3-close`
-(merge `5d74bfcc`), awaiting human review; `ai/main` was live-advancing at merge time —
-re-verify before fold. Host-evidence catalog surface was bootstrapped into the case-owned
-lock (case frontmatter + generated entry); r29's whylog bounded-admission flow was taken
-whole and the `--whylog=` single-file selection woven in front of it.
-
-**PHASE THREE UNITS 1–3 COMPLETE on `ai/r28-phase3-close` (unfolded).** The durable
-transcript-case prose pipeline is built end-to-end: the committed transcript CASE is
-the authoring surface and the generated `catalog_lock.rs` is DERIVED from it. As-built
-ledger: **`notes/287`** (re-homed from the `28A` rewrite; the historical `28A` conduct
-ledger is restored in place). Design authority: `plans/282`.
-
-- **Unit 1** (inherited, `3e980b86`): consumer-neutral replay-driver/result seam +
-  reusable generic executor; Dorc exact-shape in-process dispatch + explicit generic
-  fallback; read-only `compile`/`vars` inspection over exact replay-result provenance.
-- **Unit 2** (inherited, `a3dcc3d0`): content-bound plain-text receipt (exact case +
-  catalog bytes + typed inspection); promote re-runs the inspection and requires exact
-  packet equality; git touched-set gate (prose-only; dirty generated catalog refuses).
-- **Unit 3** (`ai/r28-phase3-close`): the case-first lock generator (`dorc_loom::generate`
-  `generate_catalog_lock`) + `core::catalog` `LockRow`/`serialize_lock` (the old
-  catalog-first `serialize`/`promote_catalog_source`/`schematic_example` retired). Case
-  frontmatter bootstrapped with `when-fires`/`why` (22 case-owned + 35 ratcheted = 57).
-  `catalog_lock.rs` regenerated WHOLE (`#[rustfmt::skip]`, single-line, no dividers;
-  case-owned `example` = concrete payload render). `promote` computes the whole candidate
-  set (lock + touched cases) + BOTH fixpoints before any write, then publishes lock-first
-  + affected cases in lexical order by per-target temp-file-and-rename. `DORC_CATALOG_PROMOTE`
-  and every env-gated/splicing promote path are gone. Second fixpoint gate
-  (`generated_lock_reproduces_the_committed_bytes`) added.
-
-**DOGFOOD PROVEN + REVERTED:** `{{command}}` inserted through the flagship
-`cmdsub-operand-top` transcript alone regenerated the lock (params/message/example) and
-re-rendered the case, both fixpoints green (proof `25e1bee7`, reverted `b2d9261a`).
-
-**DEFERRED (documented, `287` §11):** the committed `dorc-loom vars --used CASE` blocks in
-case files (additive editor-aid; needs `render_direct_replay` + whylog `editable_baseline`
-generalization) · adjacent/glued markers (`282:phase-adjacent-fragment-followup`; the
-dogfood used a standalone marker).
-
-**NEXT (human):** fold `ai/r28-phase3-close`; the prose-quality pass over `[unwritten:]`/`sm `
-text; the deferred `vars --used` blocks + adjacent-marker phase.
-
-## ROUND 28 (seeded 2026-07-19 — the current view)
-
-**BUILD COMPLETE (2026-07-20) — awaiting the human's fold of `ai/r28-impl` @ `77ebd8e`.**
-The human-directed flagship render-polish (`282` §12 / `28A` §2z-post-2) is FOLDED at
-`77ebd8e` (2-parent merge of `ai/r28-flagship-polish`), conductor-cold-verified
-(cargo clean → build → cold-clippy-0 → workspace tests → fmt → e2e 97/97); its
-builder-flagged deferrals + two conduct loose ends (the trailer commits, the offered
-`commit-msg` hook) are banked in `28A` §2z-post-2.
-The whole `280` charter landed on the conductor stack, each lane conductor-cold-verified
-(the incremental-clippy-serves-stale finding `28A:finding-incremental-clippy-serves-stale`
-made cold verification mandatory): **errorloom** the standalone crate (d1 transport + d2
-runner/orchestration/CLI + the `285` DeepSeek review → last-polish pass); the **syntax v0.2
-respell** (the `281` mark-grammar cutover — `@` selectors, word verbs, `safe-across`/
-`undivided-by-transit-across`, unified `disturbs`, `#:` carrier, `# dorc-lang/v0.2`); and the
-**errorloom→workflow integration** (the `282` generation flip: catalog case-derived,
-promote-v2, roster retired, + phase-5 backport of all covered codes; de-passthrough KILLED,
-handed to the opaque sibling lane). Docs/steering/registry re-synthesized to v0.2. The ONE
-durable ledger is **`notes/28A`** (all rulings, the ack-ledger, the deferred-queue). Sibling
-durables: `28B` (respell map) · `28C` (janitor sweep) · `283` (gen-flip map) · `285a–d`
-(errorloom review + adjudication) · `284` (taint hand-off, quarantine). **Human queue
-(all banked in `28A`, none blocking):** the Fable `sm `-prose pass (the `[unwritten:]`
-+ `sm ` codes) · the catalog canonicalization · the glued-param re-hole seam · the
-`covered()⊆case-owned` drift guard (cheap) · the errorloom LICENSE/publish + Cargo metadata
-+ the non_exhaustive-error-enum publish-taste fork. Opaque-review NOT run this round
-(human-typed exemption, `28A` §4b). Root-doc v0.2 spelling: human-done.
-
-**Where we are:** the user-aid build phase is COMPLETE (below), and round 28 opens
-on two seed documents. **`plans/281`** (the annotation mark-grammar — THE spec of
-the line-annotation surface: one-intro+sugar grammar, the word-verb vocabulary,
-the `@` selector, the `#:` comment carrier, rc-arity, the salience design-goal;
-supersedes `notes/277` §4's worked minimum, takes over the grammar `278` §6
-deferred; its closing grep-map drives the corpus respell, which must land BEFORE
-block-stdlib stamps prior spellings into the seed corpus). And **`plans/282`**
-(the transcript-case prose pipeline, working name `wordloom`): user-facing prose
-is authored at the *transcript* surface — executable case files showing exactly
-what a user sees — and the compiled catalog is DERIVED from them
-(txtar+frontmatter cases · words-and-paragraphs prose model · tagged-render +
-word-diff transport · prose-bless/structure-bless exclusivity · git-gated
-promote · type-gated passthrough), reversing the aid phase's catalog-first
-as-built. **`plans/280` (the charter) is MINTED and human-acked (2026-07-19):**
-`lane-errorloom-crate` ∥ `lane-syntax-unification-respell`, then the serial
-`lane-errorloom-unify`; block-stdlib waits on the respell at minimum; the `#:`
-carrier is acked and `KNOBS:kSALIENCE` registered (`7851eeb`, ai/main); the
-pending-ruling riders are banked at `TODO-ADDTL.md`'s tail (blockers-only
-discipline: the charter names none).
-
-**The aid build phase (CLOSED 2026-07-19; the ONE durable = `notes/27U`):** the
-`27V` plan executed whole across seven serial dispatches on **`ai/r27-aid`** (base
-`380f2fa`, off `ai/main`): legacy-`Diagnostic` killed → the one catalog
-(`core/src/catalog.rs`; three-state prose protocol; defining-case ratchet 17/52) →
-sealed evidence plane (all nine collapse classes; minting-line/file:line
-attribution — the `27Q` §2 stdlib precondition DISCHARGED) → whylog durable +
-`dorc why --last` replay → the `27W` report lane (all three tiers) → the
-arrangement walker + THE FLAGSHIP GREEN (`survivebite27-naked-trust-chain`, live
-AND replayed) → lint absorption + rung-oracle-solo → caret plumbing → docs/skill
-refresh. 958 unit / 97 e2e / four gates, conductor-verified at every advance.
-Registry + law: root `AID-NEEDS.md` · `spike/CLAUDE.md` User-aid block · design
-notes `27V`/`27W`. Incidents + protocol verdict: `27U` §2/§4 (worktree-file-access
-law candidates in §5). NOTE: `282` supersedes-in-part the catalog-pipeline shape
-described in `27V` §3 and built by `27U` d1/d4b — read `282` §0/§8 for what changes.
-
-**Open human queue:** (1) the fold of `ai/r27-aid` (one command; carries the aid
-phase + the round-28 seed) · (2) the **rider dump at `TODO-ADDTL.md`'s tail**
-(2026-07-19, thirteen slugged items: floors, ratchet, soft-acks, flag rename,
-prose registers, lint tc-* leans, small fixes, SyncThing) — to be dug into with a
-fresh conductor, interactively; none blocks the 280 lanes.
-
-**Round-28 read-first:** root docs AT HEAD → `spike/CLAUDE.md` (steering law; the
-User-aid block; NB the authored-surface block still teaches the pre-`281` mark
-spellings until the respell lands) → **`plans/280`** (the charter: lanes, bless
-discipline, horizon) → **`plans/281`** + **`plans/282`** (the seed specs) →
-`notes/27U` (the aid as-built) → for block-stdlib: `notes/27Q` (preconditions;
-read §2 before ANY oracle is authored) → per-task pointers via
-`Research/README.md`'s topic index.
+Five sub-arcs, all BUILT and conductor-cold-verified: **the `280` charter** (errorloom the
+standalone crate · the `281` mark-grammar v0.2 corpus respell · the `282` generation flip) —
+ledger `notes/28A`; **errorloom phase-three** (the transcript-case prose pipeline end-to-end;
+case-first lock generation; durable promote) — ledger `notes/287`; **the aid/loom
+unification** (`plans/288` executed whole: `crates/aid` extracted · flat test tree + central
+runners · CLI/dorc-sh/lint errors as registry codes · the arrangement registry + help-page
+pilot) — ledger `notes/289` (+ maps `290`/`291`); **the why-surface design sitting**
+(`notes/28E` rulings · `plans/28G` phased plan · the `28G-why-strawmen-v2/` target corpus ·
+`KNOBS:kTASTE`) and **its build, W1→W3** (honest words · the `weft` firewalled box-model
+formatting crate · data+narrations · DEFAULT-ON whylog + hardening + SHA-256 · receipt-first
+`dorc why` · the `--risk-faultless-skips` rename · D1 drift-disclosed receipts · ASCII
+sweeps · loom-cleanup) — ledger `notes/28F`; and **W4** — worktree-resident ledger `28H`,
+inside the unfolded `ai/r28-unify` (above). r29 is a quarantined lane
+(`quarantine-DO-NOT-READ/`; off-limits, do not ask). r26+ tails beyond the live-execution
+remit, banked: emergency-distrust levers · retention design · whylog drifted-wording walk ·
+desync-transition machinery (`28G` §2).
 
 **Conduct fences (standing; bind any successor):** repo-durable conduct law lives
 in `spike/CLAUDE.md` (Boundaries · Spawning-subagents · Build/test/run) — read it
@@ -224,21 +105,6 @@ entry naming who ran it (`27Xf` §4) · naming discipline (`270` §1, HIGH): hyp
 full-word slugs; `docID:slug` cross-refs; subscript old labels once ("nee P5") ·
 the deferred-work ledger lives in `23O` §5; residue in `24C`.
 
-**Branch map:** **`ai/r28-phase3-close`** = phase-three CLOSE (units 1–3; the durable
-promote loop + generated-lock cutover; unfolded, awaiting the human's fold) · based on
-`ai/r28-phase3-unit3-lock` @ `2cdfdfbc` · `ai/r28-phase3-unit1-cli` / `-unit2-receipt` /
-`-unit3-lock` = the superseded per-unit lanes, folded into the close · `ai/r28-errorloom-phase2`
-= accepted transport/template-compiler base ·
-**`ai/r27-aid`** = the older conduct stack — the whole aid phase +
-the round-28 seed (`281`/`282`/this trim); awaiting the human's single fold ·
-`ai/main` = the human's integration playground; carries everything through
-`a651fe8` (2026-07-18) plus their interleaved commits; residual `main`-vs-`ai/main`
-topology is theirs · `ai/r27-aid-*` + `ai/r27-lint*` = lane branches, contained in
-the stack · `ai/spike3-r23` = the old r24–r27 lineage (historical) ·
-`ai/spike3-r27` = FROZEN ref at `1aecaa3` (human's) · `ai/spike3-r25` (field-trial
-tooling) + `ai/spike3-r26` (multi-host plans; revival bank `26B`/`26C`) = dormant,
-revival conditions at `270` §5.
-
 ---
 
 ## R27 (CLOSED as an arc 2026-07-18 — compressed; evidence in git + the named durables)
@@ -253,15 +119,10 @@ context-entry + shim materialization, pure-predicate carry; **`plans/27C`** = TH
 kept-current wrapper/context spec) · **read-value/capture** STRUCK to the r26
 revival (`26B` reactive plan-construction + `26C` fixpoint semantics; secrets-seam
 deadline moved to `26B:need-scrub-before-freeze`) · **`dorc lint`** landed
-(`27R`/`27S`/`27T`; opt-in real-tools lane; advisory-only by construction) · **the
-user-aid design sitting** minted root `AID-NEEDS.md` + `27V`/`27W` + USER_STORY's
-"Recovery" section · **human-facing docs** (`spike/docs/` +
-`spike/skills/author-oracle/`) minted 2026-07-18 · the human merged the whole r27
-stack into `ai/main` at `a651fe8`, conductor-verified. **NEXT per `270` §2 (as
-amended):** block-stdlib under a NEW human-led conductor (on-ramp `notes/27Q`),
-then yardstick-measurement, then the r25 field-trial revival
-(+ `26B:ask-trial-counts-capture-walls`), then the r26 resumption — subject to
-re-sequencing by the pending `plans/280` charter.
+(`27R`/`27S`/`27T`) · **the user-aid design sitting** minted root `AID-NEEDS.md` +
+`27V`/`27W` + USER_STORY's "Recovery" section, then the aid build phase executed
+whole (`notes/27U` = the as-built ledger) · **human-facing docs** (`spike/docs/` +
+`spike/skills/author-oracle/`) minted 2026-07-18.
 
 ## Older
 
