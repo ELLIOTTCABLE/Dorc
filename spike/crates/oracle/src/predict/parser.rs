@@ -8,14 +8,14 @@
 //! assignments, helper functions) are ignored — this module owns only the checks.
 
 use super::ast::{
-    Annotation, CaseArm, Command, Mark, MarkKind, MarkTarget, Pattern, Predict, PredictSet, Stmt,
-    Test, TestOp, Word,
+    AndOr, AndOrItem, AndOrLink, AndOrOp, Annotation, CaseArm, Command, Mark, MarkKind, MarkTarget,
+    Pattern, Predict, PredictSet, RefusedMark, Stmt, Test, TestOp, Word,
 };
 use super::lexer::{Tok, Token, lex};
 use super::{VERB_BINDING, lift_failure};
 use dorc_aid::diag::{
-    DiagCode, MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer,
-    MarkUnknownVerb,
+    DiagCode, MarkHashcolonMalformed, MarkOnAndOrList, MarkRcArityExceeded,
+    MarkStandaloneRcConsumer, MarkUnknownVerb,
 };
 use dorc_aid::{Carrier, Diag};
 use dorc_core::{Interner, Span, Symbol};
@@ -486,7 +486,88 @@ impl Parser<'_> {
         }
         // Otherwise it is a word-led line: an assignment, an annotation, or a plain
         // command. Decide by looking at the word shape and what follows.
-        self.parse_word_led()
+        let stmt = self.parse_word_led()?;
+        match (self.and_or_op(), stmt) {
+            (Some(_), Stmt::Command(first)) => self.parse_and_or_tail(AndOrItem::Command(first)),
+            (Some(_), _) => Err(self.fail_here("an and-or list must be led by a command")),
+            (None, stmt) => Ok(stmt),
+        }
+    }
+
+    /// The and-or operator at the cursor, if any.
+    fn and_or_op(&self) -> Option<AndOrOp> {
+        match self.peek()? {
+            Tok::DAmp => Some(AndOrOp::AndThen),
+            Tok::DPipe => Some(AndOrOp::OrElse),
+            Tok::Amp => Some(AndOrOp::Async),
+            _ => None,
+        }
+    }
+
+    /// Assemble an [`Stmt::AndOr`] from an already-parsed first item and the operator run that
+    /// follows it. Each item parses by the SAME `parse_command` the standalone form uses, so a
+    /// list ships byte-exact and its items keep their redirect/pipeline/sink analysis.
+    fn parse_and_or_tail(&mut self, first: AndOrItem) -> Result<Stmt, bool> {
+        let start = item_span(&first);
+        let mut end = start;
+        let mut rest: Vec<AndOrLink> = Vec::new();
+        let guard = self.toks.len().saturating_add(1);
+        let mut steps = 0usize;
+        while let Some(op) = self.and_or_op() {
+            steps = steps.saturating_add(1);
+            if steps > guard {
+                return Err(false); // termination guard
+            }
+            let op_span = self.peek_span().unwrap_or(end);
+            self.bump();
+            self.skip_newlines(); // sh continues a list across a newline after its operator
+
+            let Stmt::Command(cmd) = self.parse_word_led()? else {
+                return Err(self.fail_here("an and-or list item must be a command"));
+            };
+            end = cmd.span;
+            rest.push(AndOrLink {
+                op,
+                op_span,
+                item: AndOrItem::Command(cmd),
+            });
+        }
+        let mut list = AndOr {
+            first,
+            rest,
+            span: start.to(end),
+            refused_marks: Vec::new(),
+        };
+        self.refuse_item_marks(&mut list);
+        Ok(Stmt::AndOr(list))
+    }
+
+    /// Strip every trailing mark off an and-or list's items into
+    /// [`AndOr::refused_marks`](super::ast::AndOr::refused_marks), one loud diagnostic each. See
+    /// that field for why a list may not carry one; the bytes still erase, so `strip` is unaffected.
+    fn refuse_item_marks(&mut self, list: &mut AndOr) {
+        let mut refused = Vec::new();
+        let items =
+            std::iter::once(&mut list.first).chain(list.rest.iter_mut().map(|l| &mut l.item));
+        for item in items {
+            let AndOrItem::Command(cmd) = item else {
+                continue;
+            };
+            let Some(mark) = cmd.mark.take() else {
+                continue;
+            };
+            refused.push(RefusedMark {
+                host: cmd.span,
+                mark,
+            });
+        }
+        for r in &refused {
+            self.out.push(Diag::new(
+                DiagCode::MarkOnAndOrList(MarkOnAndOrList),
+                r.mark.span,
+            ));
+        }
+        list.refused_marks = refused;
     }
 
     fn parse_while(&mut self) -> Result<Stmt, bool> {
@@ -767,7 +848,16 @@ impl Parser<'_> {
     /// pipe folds the list-item into a byte-exact pipeline; a subshell/metachar is out-of-dialect.
     fn classify_cmd_tok(&self) -> CmdTok {
         match self.peek() {
-            None | Some(Tok::Newline | Tok::Semi | Tok::DSemi | Tok::RBrace) => CmdTok::End,
+            None
+            | Some(
+                Tok::Newline
+                | Tok::Semi
+                | Tok::DSemi
+                | Tok::RBrace
+                | Tok::DPipe
+                | Tok::DAmp
+                | Tok::Amp,
+            ) => CmdTok::End,
             Some(Tok::Word {
                 lexeme,
                 single_quoted: false,
@@ -803,10 +893,6 @@ impl Parser<'_> {
         // 24E §14: once a `|` is seen, this list-item is a PIPELINE — everything to the
         // list-item end folds into one span-covering, byte-exact-shipping Command the tracers ⊤ on.
         let mut pipeline = false;
-        // `||` lexes as two ADJACENT one-byte pipes, so an or-list is a pipeline whose two `|`
-        // spans touch. Reason-only (the degrade is unchanged); see `Command::or_list`.
-        let mut or_list = false;
-        let mut last_pipe_hi = None;
         // §2 stdout DECLINE (`271:rul-only-oracle-bytes-ship` rider 1): whether a redirect voids
         // fd 1. Consumed only by the composed-probe coverage rule; the strip ships the verbatim span.
         let mut stdout_void = false;
@@ -889,11 +975,8 @@ impl Parser<'_> {
                 // span-covering Command. `words` keeps only the first stage's words (never
                 // interpreted — the tracers ⊤ on `pipeline`). Parse-permissively; trace-conservatively.
                 CmdTok::Pipe => {
-                    let pipe_span = self.peek_span().unwrap_or(end_span);
-                    or_list = or_list || last_pipe_hi == Some(pipe_span.lo);
-                    last_pipe_hi = Some(pipe_span.hi);
                     pipeline = true;
-                    end_span = pipe_span;
+                    end_span = self.peek_span().unwrap_or(end_span);
                     self.bump();
                 }
                 CmdTok::Error(msg) => {
@@ -924,7 +1007,6 @@ impl Parser<'_> {
             span,
             mark,
             pipeline,
-            or_list,
             stdout_void,
             report_sink,
         }))
@@ -1194,6 +1276,14 @@ struct PredictHeader {
     /// The funcdef name as the file spells it — carried for the marks-lost backstop's diagnostic,
     /// which must name a function the author can find by grepping their own file.
     name: String,
+}
+
+/// The verbatim span of an and-or list item.
+fn item_span(item: &AndOrItem) -> Span {
+    match item {
+        AndOrItem::Command(c) => c.span,
+        AndOrItem::Test(t) => t.span,
+    }
 }
 
 /// Classification of the current token inside [`Parser::parse_command`], computed
@@ -1767,7 +1857,7 @@ mod dialect_tests {
     //! The `277` §4 inline-mark dialect. These tests reach the internal AST (Marks aren't
     //! re-exported), so they live here. Every ambiguity ⊤-rejects (`inv-top-reject` bias); a lift
     //! failure is a diagnostic, never a panic (`inv-no-throw`).
-    use super::{Interner, Mark, MarkKind, Stmt, lift_predicts};
+    use super::{AndOrOp, Interner, Mark, MarkKind, Stmt, Word, lift_predicts};
 
     /// Lift `src`, assert exactly one check, and return its body statements.
     fn body_of(src: &str) -> Vec<Stmt> {
@@ -1820,6 +1910,122 @@ mod dialect_tests {
             None
         }
         walk(body)
+    }
+
+    /// Every and-or shape ACCEPTS at parse and degrades at trace — never a lift failure. Load-
+    /// bearing, not stylistic: the corpus's one and-or list lives in a `sm_dorc_Package__resolve()`
+    /// body, and a resolver is host-run strip-only, so a parse rejection would delete a working
+    /// resolver over a construct nothing traces.
+    #[test]
+    fn every_and_or_shape_lifts_rather_than_killing_the_funcdef() {
+        for body in [
+            "dpkg-query -W -f '${Package}\\n' -- \"$1\" 2>/dev/null || printf '%s\\n' \"$1\"",
+            "w precheck && w probe",
+            "w precheck & w probe",
+            "w a || w b || w c",
+        ] {
+            let mut i = Interner::default();
+            let out = lift_predicts(&mut i, &format!("w__predict() {{ {body} }}"));
+            assert!(out.diags.is_empty(), "{body} lifts clean: {:?}", out.diags);
+            assert_eq!(out.value.len(), 1, "{body} keeps its funcdef");
+        }
+    }
+
+    /// An and-or list parses as ONE statement holding its items — not as N statements, and not as
+    /// one command with the operator folded in as a WORD (which is how `&&` used to scan).
+    #[test]
+    fn an_and_or_list_is_one_statement_holding_its_items() {
+        let body = body_of("w__predict() { w precheck && shift }");
+        assert_eq!(body.len(), 1, "one statement: {body:?}");
+        let Stmt::AndOr(list) = &body[0] else {
+            panic!("an and-or list: {body:?}");
+        };
+        assert_eq!(list.rest.len(), 1);
+        assert_eq!(list.rest[0].op, AndOrOp::AndThen);
+        assert_eq!(list.commands().count(), 2, "both items are visible");
+        for cmd in list.commands() {
+            assert!(
+                !cmd.words
+                    .iter()
+                    .any(|w| matches!(w, Word::Literal(l) if l == "&&" || l == "||" || l == "&")),
+                "no operator survives as a command word: {cmd:?}"
+            );
+        }
+    }
+
+    /// Making `&` a metacharacter must not disturb the redirect forms that carry one: `redirect()`
+    /// consumes their `&` before the word arm ever sees the byte.
+    #[test]
+    fn ampersand_bearing_redirects_are_untouched() {
+        for body in [
+            "w q \"$1\" >/dev/null 2>&1",
+            "w q \"$1\" 2>&1",
+            "w q \"$1\" >&2",
+        ] {
+            let stmts = body_of(&format!("w__predict() {{ {body} ;}}"));
+            assert_eq!(stmts.len(), 1, "{body} is one command: {stmts:?}");
+            assert!(
+                matches!(&stmts[0], Stmt::Command(_)),
+                "{body} stays a plain command, not a list: {stmts:?}"
+            );
+        }
+    }
+
+    /// A TRAILING `&` (`cmd &`, backgrounding with nothing after it) has no right-hand item, so it
+    /// is a lift failure rather than a list — loud, and funcdef-wide. It used to scan as a stray
+    /// `&` WORD appended to the command's argv, which is the mis-modelling this lexing closes; a
+    /// lift failure is the ⊤-ward and louder direction, and the shape is absent from the corpus.
+    #[test]
+    fn a_trailing_background_operator_is_a_loud_lift_failure() {
+        let mut i = Interner::default();
+        let out = lift_predicts(&mut i, "w__predict() {\n   w precheck &\n}\n");
+        assert!(!out.diags.is_empty(), "the give-up is loud");
+        assert!(out.value.is_empty(), "the funcdef does not lift");
+    }
+
+    /// A quoted `&` is ordinary word text — quoting is resolved before the metacharacter set
+    /// applies, so a printf format keeps its ampersand.
+    #[test]
+    fn a_quoted_ampersand_stays_inside_its_word() {
+        let stmts = body_of("w__predict() { printf 'a & b\\n' }");
+        let Stmt::Command(c) = &stmts[0] else {
+            panic!("a plain command: {stmts:?}");
+        };
+        assert!(
+            matches!(c.words.get(1), Some(Word::SingleQuotedLiteral(s)) if s.contains('&')),
+            "the quoted `&` rides its word: {:?}",
+            c.words
+        );
+    }
+
+    /// A mark on a list item is REFUSED — loudly, and off the item, so no mark-consumer can reach
+    /// it. See `AndOr::refused_marks` for why a list may not carry one.
+    #[test]
+    fn a_mark_on_an_and_or_item_is_refused_loudly() {
+        let mut i = Interner::default();
+        let out = lift_predicts(
+            &mut i,
+            "w__predict() {\n   thing : sm.dorc.Thing = \"$1\"\n   w q \"$thing\" : sm.dorc.Thing:\"$thing\"@present || return 2\n}",
+        );
+        assert_eq!(out.diags.len(), 1, "exactly one complaint: {:?}", out.diags);
+        assert_eq!(out.diags[0].code.slug(), "mark-on-and-or-list");
+        assert_eq!(out.diags[0].severity(), dorc_aid::Severity::Warning);
+        let check = out
+            .value
+            .get(i.intern("w"))
+            .expect("the funcdef still lifts");
+        let Some(Stmt::AndOr(list)) = check.body.last() else {
+            panic!("the list is the last statement: {:?}", check.body);
+        };
+        assert_eq!(
+            list.refused_marks.len(),
+            1,
+            "the mark is held for the strip"
+        );
+        assert!(
+            list.commands().all(|c| c.mark.is_none()),
+            "no item keeps the mark"
+        );
     }
 
     #[test]
