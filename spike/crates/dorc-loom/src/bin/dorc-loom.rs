@@ -725,12 +725,24 @@ fn case_name(path: &Path) -> Result<String, String> {
         .ok_or_else(|| format!("{}: case file has no UTF-8 filename", path.display()))
 }
 
-// case files wrap prose; core tags do not
+/// Undo `reflow_to_canonical` on a committed transcript, so an edit is compiled against the bytes
+/// the renderer actually produced. It must be that function's EXACT inverse: a render it never
+/// touched must come back verbatim, or a surface that was already laid out gets un-laid-out.
+///
+/// The title-line rule carries the `]: ` condition for that reason. `reflow_to_canonical` wraps
+/// line 0 only when it holds a diagnostic's `[<code>]: ` marker; a weft-rendered REPORT has no
+/// marker and its indented rows are the RENDERER's own structure, so joining them here glued a
+/// whole receipt banner onto one line and refused every edit as
+/// `MarkerOutsideEditableSection` (`28H:friction-unreflow-is-diagnostic-shaped`).
 fn unreflow(render: &str) -> String {
     let mut lines = render.lines().peekable();
     let mut out = Vec::new();
     if let Some(first) = lines.next() {
-        out.push(join_continuations(first, &mut lines, "   "));
+        if first.contains("]: ") {
+            out.push(join_continuations(first, &mut lines, "   "));
+        } else {
+            out.push(normalize_layout(first));
+        }
     }
     while let Some(line) = lines.next() {
         if line.trim_start().starts_with("= ") {
