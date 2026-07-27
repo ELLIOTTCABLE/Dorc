@@ -22,6 +22,7 @@
     reason = "one shared module, two harness binaries: the looms runner uses only its own half, so `expect` would go unfulfilled in the e2e binary that uses all of it"
 )]
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 /// The `spike/` workspace root (this crate lives at `spike/crates/cli`).
@@ -51,6 +52,20 @@ pub(crate) fn case_roots() -> Vec<PathBuf> {
         .collect();
     roots.sort();
     roots
+}
+
+/// Every entry name directly under `roots`, `.loom` stripped — the vocabulary a caller's case
+/// path may name. Deliberately WIDER than either walker: a name here that neither walker claims
+/// is an `.rs` test's fixture space (the table above's last row), which is a path the runners
+/// drive no trial for rather than a path that is not there. Telling those two apart is what lets
+/// a scoped runner report honestly instead of aborting.
+#[must_use]
+pub(crate) fn case_root_names(roots: &[PathBuf]) -> BTreeSet<String> {
+    roots
+        .iter()
+        .flat_map(|root| sorted_entries(root))
+        .map(|(name, _)| name.strip_suffix(".loom").unwrap_or(&name).to_owned())
+        .collect()
 }
 
 /// What a discovered dir-form case is driven as.

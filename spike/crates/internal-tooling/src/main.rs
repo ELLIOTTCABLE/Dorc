@@ -10,11 +10,14 @@ use std::process::ExitCode;
 mod bless;
 mod coverage;
 mod hook_selftest;
+mod step_globs;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
-        Some("hook-selftest") => hook_selftest::run(),
+        // Both batteries always run, and the worse verdict wins: each guards a hook failure the
+        // other cannot see, so stopping at the first would hide the second's answer.
+        Some("hook-selftest") => ExitCode::from(hook_selftest::run().max(step_globs::run())),
         Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
         Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
         other => {

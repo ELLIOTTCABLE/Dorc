@@ -287,7 +287,7 @@ run = [
 ]
 
 [tasks."test:hooks"]
-description = "Self-test for the commit-msg gate hk runs. Cheap; rides `gate` because that check fails OPEN — a broken matcher stops refusing and says nothing. The hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
+description = "Self-tests for the hooks hk runs: the commit-msg gate's matchers, and whether pre-commit's `e2e` step still SEES each shape a whole-product case comes in. Cheap; rides `gate` because both checks fail OPEN — a broken matcher stops refusing, and a glob that matches nothing is skipped in silence. The commit-msg hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- hook-selftest"
 
