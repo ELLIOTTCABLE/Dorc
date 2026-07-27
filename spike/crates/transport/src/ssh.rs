@@ -67,15 +67,12 @@ impl SshOptions {
             "ForwardAgent=no".to_owned(),
             "LogLevel=ERROR".to_owned(),
             "IgnoreUnknown=UseKeychain".to_owned(),
-            // No connection multiplexing, both halves pinned. A session must ride a channel this
-            // invocation opened: a shared master is a pre-existing socket at a path the user's
-            // config chose, so one attempt can silently inherit another's channel and neither the
-            // host nor the attempt a record is attributed to stays the controller's own fact.
-            // Also concretely broken on Windows, which is how this surfaced — a `ControlPath`
-            // expanding `%p` writes a colon into the socket path, and the connection fails.
-            // `ControlMaster=no` refuses to create or reuse one; `ControlPath=none` holds even
-            // where a config sets a path unconditionally. A command-line `-o` is obtained before
-            // any config file's value, so neither can be argued back.
+            // No multiplexing, both halves, every platform: a session must ride a channel THIS
+            // invocation opened. A shared master is a pre-existing socket at a path the user's
+            // config chose, so an attempt can inherit a channel it never opened and the host it
+            // is attributed to stops being the controller's own fact. It is also simply broken on
+            // Windows, which is how this surfaced: `ControlPath`'s `%p` puts a colon in the socket
+            // name. Pinned here rather than in the `-F` config because that is opt-in.
             "ControlMaster=no".to_owned(),
             "ControlPath=none".to_owned(),
         ] {

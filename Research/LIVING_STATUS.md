@@ -35,6 +35,32 @@ before the pipeline, so the remote-apply path never reaches `write_whylog`, and
 STILL OPEN: deleting the superseded `ai/r26-executor-blocked` (@ `4acd4543`) is human-gated
 by the branch-deletion hook.
 
+**CLOSING LANE (branch `ai/r26-guard-fix`, off `ai/r26-unify` @ `bcd685a6`).** Folded
+`ai/r26-livetest` in — clean, no conflicts (its stamps live in `trial/r26/`, not here). Both legs
+green (Win 1605 / WSL 1601, 1 skipped), `bless:dry` clean, `mise run livetest` green in 33 s with
+both container baselines matched. The 22-head builtin-deny and the r26 smoke-kit do NOT interact:
+re-deriving the kit's hermetic baselines under the deny moves no disposition (its oracles use no
+denied head; `shift` stays a modeled keyword). Also landed: `ControlMaster=no` + `ControlPath=none`
+pinned into the ssh driver's non-negotiables (`260` §5 rewritten — it had proposed the opposite),
+and a `livetest:baselines` task so the renders are re-derivable in one command.
+
+**`del-authored-coordinate-voids-guard` IS MISDIAGNOSED — do not fix it as reported.** The
+authored coordinate is innocent and W-B's keying is symmetric (mint and consumption read the same
+`SkipClass` fact; the two cases below emit byte-identical probe artifacts and differ only in the
+apply). The real defect is **`fnd-classed-decline-unwalls-guard-tier`**, bisected and written up in
+`trial/r26/predictions.md` §7: an unmodeled command is `Opaque` and WALLS, but one bearing a verdict
+function establishes a cell instead (`effect::verdict_cell_or_auto` rows 1/2) and stops walling, so
+vouched drops below it fall from `EstablishWritten` to `EstablishAmbient`. They still sit below a
+live mutator, so elision is correctly refused — but the guard tier, whose whole purpose is that
+case, is keyed to `EstablishWritten` and unreachable. So **classing an honest decline yields a
+strictly worse plan than shipping no oracle at all**, for every vouched site below it. The §6
+strip-the-mark A/B was confounded: removing the mark collapses both sites onto the shared auto-cell,
+so the second is stomped by the first and recovers a guard through an accidental wall. Pinned as a
+whole-product pair (`guard26-unmodeled-wall-guards-below` control, two guards ·
+`guard26-classed-decline-demotes-guard` defect, two mutating drops ship), which also closes §6's
+corpus gap. The repair is a licensing-tier change — which class may reach the guard mint — so it
+WIDENS what guards and is deliberately unmade: it wants a human ruling, not an overnight patch.
+
 ## THE r26 KERNEL ARC (2026-07-27/28 overnight — CLOSED; branch `ai/r26-analyzer-findings` @ `02ccf6e1`)
 
 Human-escalated mid-round: four analyzer findings from the live-execution prep became a
