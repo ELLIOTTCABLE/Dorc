@@ -14,6 +14,21 @@
 
 ---
 
+## r26 LIVE-EXECUTION — ROUND CLOSED (2026-07-29; branch `ai/r26-unify` @ `2248a1ba`, conductor-blessed `gates ok | suite 1605 | e2e 112 blessed`)
+
+Dorc ran against a real machine for the first time, and the numbers held: real-ssh probe
+(~1s) → real apply (nginx installed on the r26 Vultr box) → converged re-plan byte-identical
+to prediction → ceiling `elide=4` matching the hermetic baseline EXACTLY. `mise run
+livetest` = the containerized acceptance loop (green ~32s; wslc/docker-generic seam);
+`livetest:remote` = the same loop vs any host. Conduct ledger + full pointer index:
+**`notes/26F`**. THE open human ruling: **`fnd-classed-decline-unwalls-guard-tier`**
+(`trial/r26/predictions.md` §7; `guard26-*` case pair) — guard-tier class-widening,
+licensing-tier, absorbs the W-B ambient-past-wall bank. Morning queue: the uncommitted
+`CONTRIBUTING.md` draft in the primary checkout (voice + snippet-vs-inline) · `git branch
+-D ai/r26-executor-blocked` (hook-reserved) · `model-local` next increment ·
+`TODO-ADDTL.md` top section re-cut. The box idles at `140.82.10.231` (~$0.0137/hr,
+teardown human-ack-only, `26E`).
+
 ## r26 UNIFIED (branch `ai/r26-unify`, off `ai/r28-unify` @ `9050248e`)
 
 All four r26 lanes folded onto one branch, both legs green (Win 1592 / WSL 1588, 1 skipped
