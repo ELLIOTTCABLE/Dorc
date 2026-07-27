@@ -91,3 +91,17 @@ safety holds.
   cannot be handed to `--ssh-config` as-is; this run used a copy with an `IdentityFile` line added.
 - The `26E` usekeychain scar does not bite Dorc: the ssh driver already passes
   `-o IgnoreUnknown=UseKeychain` in its default posture. It still bites raw `ssh` for provisioning.
+
+**fnd-controlpath-defeats-the-transport.** A `ControlPath` in the ssh config `dorc --host` composes
+with kills the session on Windows, at any `ControlMaster` setting, and the failure is the
+information-free `[unwritten: transport-session-lost]` (exit 14). Isolated against a live container:
+identical invocations pass with a config carrying no `ControlPath` and fail with one that does, with
+the container proven alive by a control run between each pair. The mechanism is visible in raw ssh's
+own words — `unix_listener: cannot bind to path .../root@localhost:22398.sock...` — the `%p`
+expansion puts a colon in the socket filename, and Windows filesystems cannot hold one.
+
+This is worth a product decision rather than a doc note. The driver already pins its
+non-negotiables (`BatchMode=yes`, `ClearAllForwardings=yes`, `ForwardAgent=no`) as `-o` flags that
+layer over the user's config precisely so their config cannot break the run; connection
+multiplexing looks like it belongs in that list. Not changed here — the transport is another lane's
+code, and this lane's job was to find out.
