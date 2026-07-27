@@ -20,9 +20,9 @@ use dorc_aid::diag::{
     Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
     HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
     LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
-    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, WhylogUnwritten, WrapperPeelIncoherent, render_cli_parts,
-    render_cli_with, render_staged_cli_parts,
+    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
+    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported, WhylogUnwritten,
+    WrapperPeelIncoherent, render_cli_parts, render_cli_with, render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{
@@ -1367,6 +1367,14 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         "dangling-reference" => DiagCode::DanglingReference(DanglingReference {
             coord: "sm.dorc.Package:nginx".to_owned(),
         }),
+        // World-as-payload by necessity: this one is read back from a RECORDS stream, and replay
+        // drives no host and admits no records.
+        "shared-cell-measurements-disagree" => {
+            DiagCode::SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree {
+                cell: "dorc-auto:cp@converged".to_owned(),
+                sites: 2,
+            })
+        }
         // The external-linter trio: world-as-payload by necessity — replay never runs a foreign
         // tool (`tools_enabled: false`).
         "lint-tool-absent" => DiagCode::LintToolAbsent(LintToolAbsent {

@@ -1149,7 +1149,27 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let (by_fact, merge_narrative) = facts_from_sites(&probe, results);
+    let (by_fact, merge_narrative, collapsed_cells) = facts_from_sites(&probe, results);
+    // The shared-cell collapse reaches a surface (`26G:fnd-shared-auto-cell-collides`): sites that
+    // reported cleanly lose their licence because a SIBLING on the same cell disagreed or could not
+    // answer, and until now the only trace was an unconsumed narrative. Spanless — the cell is a
+    // cross-site coordinate, so blaming any one line's caret would misattribute a shared collapse.
+    report_at(
+        advisory,
+        "records",
+        None,
+        &collapsed_cells
+            .iter()
+            .map(|(fact, sites)| {
+                Diag::new_spanless_site(DiagCode::SharedCellMeasurementsDisagree(
+                    dorc_aid::diag::SharedCellMeasurementsDisagree {
+                        cell: dorc_plan::fact_label(&interner, *fact),
+                        sites: *sites,
+                    },
+                ))
+            })
+            .collect::<Vec<_>>(),
+    );
     let probe_origins = probe_origins(&probe, results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
@@ -5669,15 +5689,24 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
 /// is a defensive floor: it cannot be argued the two records "must agree" (a forged or
 /// flaky host could disagree), and the conservative ⊤ folds to run (`kFAIL-perform`) — the
 /// only safe resolution of a self-contradicting host. [`merge_observable`] does the join.
+/// The third product is the SHARED-CELL COLLAPSE readout (`26G:fnd-shared-auto-cell-collides`):
+/// each cell whose cross-site merge above degraded a channel, with how many sites measured it.
+/// Decision-inert and cell-keyed, so the caller renders ONE line per cell rather than one per
+/// disagreeing pair — the collapse is a property of the cell, and an admin who sees it per-pair
+/// reads N unrelated problems instead of one shared one. It exists because this de-licenses sites
+/// that reported perfectly well, and until now said nothing at all.
 fn facts_from_sites(
     probe: &dorc_plan::ProbePlan,
     results: &SiteResults,
 ) -> (
     BTreeMap<dorc_core::FactKey, Observable>,
     Vec<CollapseNarrative>,
+    BTreeMap<dorc_core::FactKey, u32>,
 ) {
     use dorc_plan::ProbeSiteKind;
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
+    let mut sites_per_fact: BTreeMap<dorc_core::FactKey, u32> = BTreeMap::new();
+    let mut collapsed: BTreeSet<dorc_core::FactKey> = BTreeSet::new();
     // C4 (`27V` Lane A): the `Measured` fact-merge narrative minted beside the ⊤-fold. `first_site`
     // remembers each cell's first establisher so a cross-site conflict names both operands.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
@@ -5761,11 +5790,13 @@ fn facts_from_sites(
             ));
         }
         // Source 2 — a CROSS-site conflict: two sites on one cell disagree ⇒ the meet ⊤s the channel.
+        *sites_per_fact.entry(check.fact).or_default() += 1;
         if let Some(prior) = by_fact.get(&check.fact).copied() {
             if prior != obs {
                 let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);
                 collapse_narrative
                     .push(measured_merge_disagreement(site_id, &[prior_site, site_id]));
+                collapsed.insert(check.fact);
             }
             by_fact.insert(check.fact, merge_observable(prior, obs));
         } else {
@@ -5773,7 +5804,11 @@ fn facts_from_sites(
             by_fact.insert(check.fact, obs);
         }
     }
-    (by_fact, collapse_narrative)
+    let collapsed = collapsed
+        .into_iter()
+        .map(|fact| (fact, sites_per_fact.get(&fact).copied().unwrap_or_default()))
+        .collect();
+    (by_fact, collapse_narrative, collapsed)
 }
 
 /// C6 (`27V` Lane A · `OriginKind::ProbeResult`): mint one probe-result origin per received record
@@ -8226,7 +8261,7 @@ mod tests {
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
 
         let invalid = probe1(fact, ProbeSiteKind::Query { valid: false });
-        let (_facts, evidence) = facts_from_sites(&invalid, &results);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&invalid, &results);
         assert_eq!(
             evidence
                 .iter()
@@ -8237,7 +8272,7 @@ mod tests {
         );
 
         let valid = probe1(fact, ProbeSiteKind::Query { valid: true });
-        let (_facts, evidence) = facts_from_sites(&valid, &results);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&valid, &results);
         assert!(
             !evidence
                 .iter()
@@ -8479,7 +8514,7 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
             &mut i,
         );
-        let (_facts, evidence) = facts_from_sites(&probe, &conflict);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&probe, &conflict);
         assert_eq!(
             evidence.len(),
             1,
@@ -8495,8 +8530,52 @@ mod tests {
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
             &mut i,
         );
-        let (_facts, evidence) = facts_from_sites(&probe, &agree);
+        let (_facts, evidence, _collapsed) = facts_from_sites(&probe, &agree);
         assert!(evidence.is_empty(), "agreeing records mint no disagreement");
+    }
+
+    /// The shared-cell readout is CELL-keyed, not pair-keyed (`26G:fnd-shared-auto-cell-collides`):
+    /// three sites on one cell disagreeing pairwise is ONE collapse an admin can act on, and three
+    /// lines would read as three unrelated problems. The count travels so the line can say how wide
+    /// the collapse is.
+    #[test]
+    fn a_shared_cell_collapse_reports_once_however_many_sites_disagree() {
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let mut probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
+        let mut third = probe.checks[0].clone();
+        third.site = LeafId(2);
+        probe.checks.push(third);
+
+        let records = parse_str(
+            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\nsite 2 effect=cant-tell rc=2\n",
+            &mut i,
+        );
+        let (_facts, _evidence, collapsed) = facts_from_sites(&probe, &records);
+        assert_eq!(
+            collapsed.len(),
+            1,
+            "one entry, not one per pair: {collapsed:?}"
+        );
+        assert_eq!(
+            collapsed.get(&fact),
+            Some(&3),
+            "and it counts every site on the cell, including the ones that agreed"
+        );
+    }
+
+    /// The negative pin: sites that AGREE on a shared cell produce no readout. A shared cell is
+    /// ordinary and common; only its collapse is worth a line.
+    #[test]
+    fn an_agreeing_shared_cell_reports_nothing() {
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
+        let agree = parse_str(
+            "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
+            &mut i,
+        );
+        assert!(facts_from_sites(&probe, &agree).2.is_empty());
     }
 
     /// Build + deframe a FRAMED stream (the framed regime) for a set of inner records, then
