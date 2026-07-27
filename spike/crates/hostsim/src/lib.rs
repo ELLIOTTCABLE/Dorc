@@ -1544,7 +1544,7 @@ grep__predict() {
         use std::io::Cursor;
 
         let framing = Framing::spike("bk".to_owned());
-        let nonce = &framing.nonce.0;
+        let nonce = &framing.nonce().0;
         // A clean framed stream: two site records + a space-bearing deriv coord + its family close.
         let clean = format!(
             "dorc-records/1 nonce={nonce} attempt=1 host=localhost book=bk sites=2 {TERMINAL_TOKEN}\n\

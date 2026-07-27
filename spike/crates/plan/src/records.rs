@@ -76,8 +76,14 @@ impl Nonce {
 }
 
 impl Framing {
-    /// The spike default framing for round-trip emission and non-round-trip renders
-    /// (`canonical_decision`, tests): fixed nonce/host/attempt + the supplied book digest.
+    /// The FIXTURE framing: fixed nonce/host/attempt + the supplied book digest.
+    ///
+    /// Deterministic, and therefore usable only where determinism is worth more than identity —
+    /// goldens, unit fixtures, and the hostless local run whose bytes those goldens pin. It is
+    /// structurally unable to reach a managed host because reaching one requires a
+    /// [`RemoteIdentity`], which this constructor does not produce and cannot be turned into
+    /// (`rul-fixture-identity-never-production`: the fence is the absent constructor, not a
+    /// comment). `spike_identity_is_not_reachable_from_transport` pins that lexically as well.
     #[must_use]
     pub fn spike(book_digest: String) -> Self {
         Self {
@@ -86,6 +92,47 @@ impl Framing {
             host: DEFAULT_HOST.to_owned(),
             book_digest,
         }
+    }
+
+    /// The framing for a run that will really contact `identity`'s host.
+    ///
+    /// Every key here is minted from immutable controller-owned invocation context — the
+    /// destination the admin typed, a per-process nonce, and an attempt counter this edge owns
+    /// (`rul-attribution-is-controller-minted`). That is what gives [`Expect`] something to
+    /// check: while all three were compile-time constants, a `host=` comparison was a constant
+    /// against itself and the partition law had no wire tripwire at all.
+    #[must_use]
+    pub fn for_remote(identity: &RemoteIdentity, book_digest: String) -> Self {
+        Self {
+            nonce: identity.nonce.clone(),
+            attempt: identity.attempt,
+            host: identity.host.clone(),
+            book_digest,
+        }
+    }
+
+    /// The run nonce.
+    #[must_use]
+    pub fn nonce(&self) -> &Nonce {
+        &self.nonce
+    }
+
+    /// Which attempt at this artifact this is.
+    #[must_use]
+    pub fn attempt(&self) -> u32 {
+        self.attempt
+    }
+
+    /// The session's destination.
+    #[must_use]
+    pub fn host(&self) -> &str {
+        &self.host
+    }
+
+    /// The digest binding this stream to the analyzed book bytes.
+    #[must_use]
+    pub fn book_digest(&self) -> &str {
+        &self.book_digest
     }
 
     /// The [`Expect`] a deframer checks incoming records against — the SAME edge values this
@@ -101,24 +148,63 @@ impl Framing {
     }
 }
 
+/// The controller-owned identity of one attempt against one real host.
+///
+/// Exists to be the thing a fixture cannot forge its way into: [`Framing::for_remote`] is the
+/// only route to a framing that names a real destination, and it consumes one of these. Minted
+/// at the cli edge from the invocation, never from anything a host said
+/// (`rul-attribution-is-controller-minted`).
+#[derive(Debug, Clone)]
+pub struct RemoteIdentity {
+    nonce: Nonce,
+    attempt: u32,
+    host: String,
+}
+
+impl RemoteIdentity {
+    /// Mint the identity for one attempt against `host`.
+    #[must_use]
+    pub fn new(nonce: Nonce, attempt: u32, host: String) -> Self {
+        Self {
+            nonce,
+            attempt,
+            host,
+        }
+    }
+
+    /// The run nonce, which the transport marker must agree with.
+    #[must_use]
+    pub fn nonce(&self) -> &Nonce {
+        &self.nonce
+    }
+
+    /// Which attempt this is.
+    #[must_use]
+    pub fn attempt(&self) -> u32 {
+        self.attempt
+    }
+}
+
 /// The framing the emission bakes into the probe artifact (`262` §2). `sites` (the fact-lane
 /// census) is derived at emit from the site-record count, not carried here.
+///
+/// Fields are private: a framing is minted by [`Framing::spike`] (deterministic, hostless) or
+/// [`Framing::for_remote`] (controller-minted, host-bound), and there is deliberately no third
+/// way to assemble one field by field.
 #[derive(Debug, Clone)]
 pub struct Framing {
-    pub nonce: Nonce,
-    /// Per-attempt keying (`26A` amend-retry-hygiene): a retry re-mints; the width-1 serial
-    /// spike never retries, so this is 1 — the MECHANISM (a stale attempt's records refuse)
-    /// is DST-exercised.
-    pub attempt: u32,
-    /// The session's `HostId` (`262` §2 — the partition law's wire tripwire). Single-host
-    /// width-1: a fixed default.
-    pub host: String,
+    nonce: Nonce,
+    /// Per-attempt keying (`26A` amend-retry-hygiene): a retry re-mints, so a killed attempt's
+    /// zombie writer cannot fold into its successor.
+    attempt: u32,
+    /// The session's `HostId` (`262` §2 — the partition law's wire tripwire).
+    host: String,
     /// A digest binding the stream to the exact analyzed book bytes (`262` §2 `book=`;
     /// discharges `tc-probe-no-digest`). SPIKE NOTE: the spec says sha256; the kernel stays
     /// dependency-clean (`inv-determinism`), so the cli edge supplies a hand-rolled
     /// deterministic digest — the mismatch-detection semantics are identical, the crypto
     /// strength is not (no adversary-forged-book in the model). Documented scope-cut.
-    pub book_digest: String,
+    book_digest: String,
 }
 
 /// What the deframer expects the incoming framed stream to declare (`262` §2 integrity keys).

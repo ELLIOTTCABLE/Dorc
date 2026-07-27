@@ -1,0 +1,19 @@
+[package]
+name = "dorc-transport"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The controller<->host edge (`260` §2). This is the ONE crate that spawns a process to
+# reach a managed host, and it is deliberately dependency-free: std only, no crate deps,
+# no external deps. Two consequences worth the constraint. First, `inv-determinism` is
+# checkable by inspection — the analyzer kernel cannot acquire a transitive path to a
+# socket or a clock through here, because there is nothing to acquire it through.
+# Second, `executorless`/`kAGENTLESS` (`142:Resolution`) stays welded by construction:
+# reaching a host means the system `ssh` binary, so no ssh library can creep in as a
+# convenience. A dependency added here is a design change, not a build detail.
+[dependencies]
+
+[lints]
+workspace = true

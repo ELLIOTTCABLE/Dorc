@@ -130,6 +130,7 @@ dependencies = [
  "dorc-oracle",
  "dorc-plan",
  "dorc-syntax",
+ "dorc-transport",
  "errorloom",
  "internal-tooling",
  "libtest-mimic",
@@ -230,6 +231,10 @@ dependencies = [
  "dorc-aid",
  "dorc-core",
 ]
+
+[[package]]
+name = "dorc-transport"
+version = "0.0.0"
 
 [[package]]
 name = "errorloom"

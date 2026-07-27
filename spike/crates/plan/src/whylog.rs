@@ -777,10 +777,10 @@ pub fn admit_unscoped_whylog_replay(
     expected: &Framing,
     inner_limits: HostEvidenceLimits,
 ) -> Admission<AdmittedUnscopedWhylogReplay> {
-    if envelope.claims.nonce != expected.nonce.0
-        || envelope.claims.attempt != expected.attempt
-        || envelope.claims.host != expected.host
-        || envelope.claims.book_digest != expected.book_digest
+    if envelope.claims.nonce != expected.nonce().0
+        || envelope.claims.attempt != expected.attempt()
+        || envelope.claims.host != expected.host()
+        || envelope.claims.book_digest != expected.book_digest()
     {
         return Admission::Refused(AdmissionRefusal::Framing);
     }

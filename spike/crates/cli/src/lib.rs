@@ -61,7 +61,11 @@ pub fn help_text() -> String {
 #[derive(Debug)]
 pub enum Invocation {
     /// A normal analysis run with the parsed [`Args`].
-    Analyze(Args),
+    ///
+    /// Boxed because [`Args`] is one field per flag by design and dwarfs every other variant;
+    /// this enum is built and matched once per process, so the indirection is free and the
+    /// alternative is every invocation carrying the analysis surface's footprint.
+    Analyze(Box<Args>),
     /// `-h`/`--help`: print [`help_text`] to stdout, exit 0.
     Help,
     /// `--version`: print the version to stdout, exit 0.
@@ -177,6 +181,38 @@ pub struct Args {
     /// footer's fuller promise — every link, unselected, exhaustive — is not yet built, since the
     /// render does no link SELECTION to undo.
     pub all: bool,
+    /// `--host DEST`: the ssh destination this run really contacts (`260` §6, at N=1).
+    ///
+    /// Absent, nothing is shipped anywhere and behaviour is exactly what it was before a
+    /// transport existed — probe results arrive on stdin or via `--results`, and the emitted
+    /// bytes are byte-identical. That is a standing regression fence, not a transitional state:
+    /// the hostless path is what the golden corpus pins.
+    ///
+    /// Present, this is the sole source of the run's host identity. It is consumed VERBATIM as
+    /// an ssh destination — an alias from the user's own ssh config is first-class, and Dorc
+    /// never parses it (`260` §2).
+    pub host: Option<String>,
+    /// `--plan PATH`: the already-rendered artifact `apply --host` ships. Default: stdin.
+    ///
+    /// Deliberately not the book positional. A remote apply consumes a PLAN the user has already
+    /// read and consented to; letting it take a book would put build-and-apply in one breath,
+    /// which is the one thing the plan→apply consent cut exists to prevent.
+    pub plan: Option<String>,
+    /// `--accept-new`: accept an unknown host key on first contact. Off by default; the default
+    /// defers to OpenSSH's own `known_hosts` enforcement.
+    pub accept_new: bool,
+    /// `--ssh-config PATH`: ignore the user's ssh config and read only this file. Off by
+    /// default, because bypassing their aliases, jump hosts and keys is the wrong default.
+    pub ssh_config: Option<String>,
+    /// `--connect-timeout SECS`: ceiling on establishing the connection (default 15).
+    pub connect_timeout: Option<u64>,
+    /// `--probe-timeout SECS`: wall-clock ceiling on a probe session (default 120). A probe is
+    /// read-only, so bounding it costs nothing but a re-probe.
+    pub probe_timeout: Option<u64>,
+    /// `--apply-timeout SECS`: wall-clock ceiling on an apply session. UNSET by default and
+    /// deliberately so — an apply is the user's real work, and killing one does not fail it, it
+    /// mints Unknown. Opting in means accepting that outcome.
+    pub apply_timeout: Option<u64>,
     /// `--shim-dir=DIR` (`274` §5 / `27L` task-14 — the shim-materialization edge): DIR into which
     /// the entry-composed probe's per-run PATH shim files are written (the session-establishment I/O
     /// that lets a `sudo -n <inner-check>` resolve its guest across the exec boundary). A pure
@@ -267,6 +303,13 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut no_whylog = false;
     let mut all = false;
     let mut shim_dir: Option<String> = None;
+    let mut host: Option<String> = None;
+    let mut plan: Option<String> = None;
+    let mut accept_new = false;
+    let mut ssh_config: Option<String> = None;
+    let mut connect_timeout: Option<u64> = None;
+    let mut probe_timeout: Option<u64> = None;
+    let mut apply_timeout: Option<u64> = None;
     let mut it = raw.into_iter().peekable();
 
     // A leading bare word (no `-` prefix) selects the mode. A near-miss (`pln`, `aply`) is a
@@ -382,6 +425,50 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 it.next()
                     .ok_or_else(|| flag_needs_value("--shim-dir", "a directory"))?,
             );
+        } else if let Some(h) = arg.strip_prefix("--host=") {
+            host = Some(h.to_string());
+        } else if arg == "--host" {
+            host = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--host", "an ssh destination"))?,
+            );
+        } else if let Some(p) = arg.strip_prefix("--plan=") {
+            plan = Some(p.to_string());
+        } else if arg == "--plan" {
+            plan = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--plan", "a path"))?,
+            );
+        } else if arg == "--accept-new" {
+            accept_new = true;
+        } else if let Some(p) = arg.strip_prefix("--ssh-config=") {
+            ssh_config = Some(p.to_string());
+        } else if arg == "--ssh-config" {
+            ssh_config = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--ssh-config", "a path"))?,
+            );
+        } else if let Some(v) = arg.strip_prefix("--connect-timeout=") {
+            connect_timeout = Some(seconds_value("--connect-timeout", v)?);
+        } else if arg == "--connect-timeout" {
+            let v = it
+                .next()
+                .ok_or_else(|| flag_needs_value("--connect-timeout", "seconds"))?;
+            connect_timeout = Some(seconds_value("--connect-timeout", &v)?);
+        } else if let Some(v) = arg.strip_prefix("--probe-timeout=") {
+            probe_timeout = Some(seconds_value("--probe-timeout", v)?);
+        } else if arg == "--probe-timeout" {
+            let v = it
+                .next()
+                .ok_or_else(|| flag_needs_value("--probe-timeout", "seconds"))?;
+            probe_timeout = Some(seconds_value("--probe-timeout", &v)?);
+        } else if let Some(v) = arg.strip_prefix("--apply-timeout=") {
+            apply_timeout = Some(seconds_value("--apply-timeout", v)?);
+        } else if arg == "--apply-timeout" {
+            let v = it
+                .next()
+                .ok_or_else(|| flag_needs_value("--apply-timeout", "seconds"))?;
+            apply_timeout = Some(seconds_value("--apply-timeout", &v)?);
         } else if arg.starts_with('-') {
             // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
             // "unexpected argument" (the recon's missing-suggestion hazard).
@@ -402,6 +489,13 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--last",
                 "--all",
                 "--shim-dir",
+                "--host",
+                "--plan",
+                "--accept-new",
+                "--ssh-config",
+                "--connect-timeout",
+                "--probe-timeout",
+                "--apply-timeout",
                 "--help",
                 "--version",
             ];
@@ -426,9 +520,37 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             books.push(arg);
         }
     }
-    if books.is_empty() && !reads_the_receipt(mode, last, results.is_some()) {
+    let ships_a_rendered_plan = mode == Mode::Apply && host.is_some();
+    if books.is_empty()
+        && !ships_a_rendered_plan
+        && !reads_the_receipt(mode, last, results.is_some())
+    {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
+        )));
+    }
+    if results.is_some() && host.is_some() {
+        return Err(Diag::new_spanless_site(
+            DiagCode::CliFlagsMutuallyExclusive(dorc_aid::diag::CliFlagsMutuallyExclusive {
+                first: "--results",
+                second: "--host",
+            }),
+        ));
+    }
+    if host.is_some() && !matches!(mode, Mode::Plan | Mode::Apply) {
+        return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+            dorc_aid::diag::CliFlagRequiresMode {
+                flag: "--host",
+                mode: "dorc plan or dorc apply",
+            },
+        )));
+    }
+    if plan.is_some() && !ships_a_rendered_plan {
+        return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+            dorc_aid::diag::CliFlagRequiresMode {
+                flag: "--plan",
+                mode: "dorc apply --host",
+            },
         )));
     }
     if whylog.is_some() && whylog_dir.is_some() {
@@ -447,7 +569,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             },
         )));
     }
-    Ok(Invocation::Analyze(Args {
+    Ok(Invocation::Analyze(Box::new(Args {
         mode,
         books,
         oracles,
@@ -463,8 +585,31 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         whylog,
         last,
         all,
+        host,
+        plan,
+        accept_new,
+        ssh_config,
+        connect_timeout,
+        probe_timeout,
+        apply_timeout,
         shim_dir,
-    }))
+    })))
+}
+
+/// A flag whose value is a whole number of seconds.
+#[expect(
+    clippy::result_large_err,
+    reason = "cold invocation path; see parse_args_from"
+)]
+fn seconds_value(flag: &str, v: &str) -> Result<u64, InvocationError> {
+    v.parse::<u64>().map_err(|_| {
+        Diag::new_spanless_site(DiagCode::CliFlagValueNotANumber(
+            dorc_aid::diag::CliFlagValueNotANumber {
+                flag: flag.to_owned(),
+                got: v.to_owned(),
+            },
+        ))
+    })
 }
 /// A tiny did-you-mean: the nearest `candidate` to `word` within edit-distance 2 (a typo, not a
 /// wholly different word), or `None`. Case-sensitive; ASCII. Used for mode + flag suggestions.
@@ -1102,7 +1247,7 @@ mod tests {
 
     fn analyzed(words: &[&str]) -> Args {
         match parse(words) {
-            Invocation::Analyze(args) => args,
+            Invocation::Analyze(args) => *args,
             other => panic!("expected an analysis invocation, got {other:?}"),
         }
     }

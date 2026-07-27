@@ -21,8 +21,10 @@ use dorc_aid::diag::{
     HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
     LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
     LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
-    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported, WhylogUnwritten,
-    WrapperPeelIncoherent, render_cli_parts, render_cli_with, render_staged_cli_parts,
+    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
+    TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted, TransportSessionLost,
+    WhylogUnwritten, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
+    render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{
@@ -510,6 +512,11 @@ impl DorcConsumer {
             let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
+        if parse_direct_remote_apply(&tokens) {
+            let diag = Self::world_of(case).ok()?.0;
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &Interner::default());
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         let plan = parse_direct_plan(&tokens)?;
         let interner = Interner::default();
         // World-as-payload, the branch `render_direct_replay` has always had. Without it the
@@ -925,6 +932,14 @@ struct DirectPlan<'a> {
     machine: bool,
 }
 
+/// `dorc apply --host <dest> --plan <path>`: recognized ONLY to reach the world-as-payload floor.
+///
+/// A remote apply's outcome has no in-process world to drive — this driver opens no sockets — so
+/// there is nothing to execute, only prose to pin against a canonical payload.
+fn parse_direct_remote_apply(words: &[&str]) -> bool {
+    matches!(words, ["dorc", "apply", "--host", _, "--plan", _])
+}
+
 fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
     if words.get(..2) != Some(["dorc", "plan"].as_slice()) {
         return None;
@@ -939,6 +954,9 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
             if book.replace(path).is_some() || !case_relative_path(path) {
                 return None;
             }
+        } else if *word == "--host" {
+            index = index.saturating_add(1);
+            words.get(index)?;
         } else if *word == "--verbose" {
             if verbose {
                 return None;
@@ -1133,6 +1151,11 @@ impl DorcConsumer {
         if let Some(diag) = fire_invocation_error(case, &words) {
             let interner = Interner::default();
             let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
+        }
+        if parse_direct_remote_apply(&words) {
+            let diag = Self::world_of(case)?.0;
+            let parts = render_cli_parts(&self.mirror, &diag, "", "", &Interner::default());
             return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
         }
         let plan =
@@ -1433,6 +1456,23 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         }),
         "dorc-sh-exec-failed" => DiagCode::DorcShExecFailed(DorcShExecFailed {
             detail: "No such file or directory (os error 2)".to_owned(),
+        }),
+        "transport-crlf-refused" => DiagCode::TransportCrlfRefused(TransportCrlfRefused {
+            which: "webhost.dorc-plan.sh".to_owned(),
+            line: "1".to_owned(),
+        }),
+        "transport-session-lost" => DiagCode::TransportSessionLost(TransportSessionLost {
+            host: "web1.example.net".to_owned(),
+            attempts: "3".to_owned(),
+            diagnosis: "the session ended without a status".to_owned(),
+        }),
+        "transport-not-attempted" => DiagCode::TransportNotAttempted(TransportNotAttempted {
+            host: "web1.example.net".to_owned(),
+            detail: "program not found".to_owned(),
+        }),
+        "transport-apply-failed" => DiagCode::TransportApplyFailed(TransportApplyFailed {
+            host: "web1.example.net".to_owned(),
+            status: "2".to_owned(),
         }),
         _ => return None,
     };

@@ -1,0 +1,16 @@
+# Line endings. Dorc's product IS sh, and a CRLF shebang is an exec failure the remote kernel
+# raises before any shell exists — unguardable by anything we could ship (`plans/139` §5). So the
+# repository must not be able to accrete CRLF by accident, and that guarantee cannot live in each
+# contributor's `core.autocrlf`: that is per-machine config, and a checkout without it commits
+# CRLF unopposed.
+#
+# `eol=lf` (not bare `text=auto`) also forces LF in the WINDOWS working tree. That is right here:
+# the Windows toolchain is git-bash/dash and the acceptance corpus executes the sh it renders, so
+# a CRLF working tree would be hostile to the thing this repo does.
+* text=auto eol=lf
+
+# ...except fixture material that carries the wrong ending ON PURPOSE, so the CRLF refusal has
+# something real to refuse. Pinned by EXTENSION rather than by directory, so the exemption cannot
+# silently widen to cover real source; `binary` additionally stops an editor or a diff view
+# "helpfully" normalising the one file whose entire purpose is to be wrong.
+*.crlf binary

@@ -254,6 +254,10 @@ const MIGRATED_SLUGS: &[&str] = &[
     "dorc-sh-usage",
     "dorc-sh-script-unreadable",
     "dorc-sh-exec-failed",
+    "transport-crlf-refused",
+    "transport-session-lost",
+    "transport-not-attempted",
+    "transport-apply-failed",
 ];
 
 /// Deliberately RETIRED/RENAMED slugs (`27V`): the `dq-` prefix drop on the five value-plane
@@ -335,6 +339,12 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "DorcShUsage",
     "DorcShScriptUnreadable",
     "DorcShExecFailed",
+    // transport — about a SESSION, not about bytes we parsed. The CRLF refusal can fire on a
+    // rendered plan no parser of ours saw, so its line is a payload value, not an AST span.
+    "TransportCrlfRefused",
+    "TransportSessionLost",
+    "TransportNotAttempted",
+    "TransportApplyFailed",
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `aid`
@@ -515,6 +525,33 @@ fn every_migrated_payload_name_is_a_real_variant() {
         assert!(
             diag_src.contains(&format!("\"{slug}\"")),
             "migrated slug `{slug}` is not present in diag.rs (slug-vs-enum drift)"
+        );
+    }
+}
+
+/// The other direction, and a separate test on purpose: the retire-guard reads `HEAD`, so it
+/// cannot see a slug ADDED to `diag.rs` without a matching `MIGRATED_SLUGS` entry until that change
+/// is already committed — it goes green on the offending commit and red on the next unrelated run,
+/// which reads as a spurious failure in whatever landed after.
+///
+/// This reads the WORKING TREE, so a desync fails on the change that caused it. It cannot replace
+/// the retire-guard: working-tree-vs-list catches ADDITIONS, and only committed-vs-current catches
+/// a DELETION — a slug dropped from both the file and the list vanishes from a working-tree scan
+/// entirely, which is the tautology the retire-guard was rewritten to escape.
+#[test]
+fn every_working_tree_slug_is_listed() {
+    let diag = std::fs::read_to_string(crates_dir().join("aid/src/diag.rs")).expect("read diag.rs");
+    let slugs = committed_slug_arms(&diag);
+    assert!(
+        !slugs.is_empty(),
+        "the `slug()` shape-scan matched nothing in the working tree — fix the scan rather than \
+         letting this pass vacuously"
+    );
+    for slug in slugs {
+        assert!(
+            MIGRATED_SLUGS.contains(&slug.as_str()) || RETIRED_SLUGS.contains(&slug.as_str()),
+            "`{slug}` is in `DiagCode::slug()` but not in MIGRATED_SLUGS — that list is documented \
+             as kept in sync with it, and the retire-guard cannot report it until the next commit."
         );
     }
 }
