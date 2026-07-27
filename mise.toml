@@ -360,6 +360,12 @@ dir = "spike"
 depends = ["build"]
 run = "cargo run -q -p internal-tooling -- livetest run"
 
+[tasks."livetest:baselines"]
+description = "Re-derive Research/trial/r26/renders/ — the hermetic baselines `livetest` asserts its live plan summaries against — from the current engine, and print the resulting plan-summary lines. Runs `dorc probe`/`dorc plan` only; executes no book and no oracle bytes. A moved summary is a real engine change: register it in the kit's predictions.md rather than committing it bare."
+dir = "spike"
+depends = ["build"]
+run = "cargo run -q -p internal-tooling -- baselines"
+
 [tasks."livetest:target"]
 description = "Provision the same container livetest uses and LEAVE IT RUNNING, printing the ssh destination, the per-run key, and a ready-to-paste dorc invocation. The shortcut for poking at a real endpoint by hand; `livetest:clean` removes it."
 dir = "spike"

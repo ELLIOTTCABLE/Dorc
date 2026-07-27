@@ -11,6 +11,7 @@ mod bless;
 mod coverage;
 mod hook_selftest;
 mod livetest;
+mod posix_script;
 mod step_globs;
 
 fn main() -> ExitCode {
@@ -22,12 +23,13 @@ fn main() -> ExitCode {
         Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
         Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
         Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
+        Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
         other => {
             eprintln!(
                 "internal-tooling: unknown task {:?}",
                 other.unwrap_or("<none>")
             );
-            eprintln!("tasks: hook-selftest, coverage, bless, livetest");
+            eprintln!("tasks: hook-selftest, coverage, bless, livetest, baselines");
             ExitCode::from(2)
         }
     }
