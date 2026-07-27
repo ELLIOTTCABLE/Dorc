@@ -788,4 +788,22 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: None,
     },
+    CatalogEntry {
+        slug: "oracle-role-fn-unlifted",
+        when_fires: "a `# dorc-lang/v0.2`-marked oracle declares a `<name>__<role>` funcdef that the lift did not produce, so every bind and mark inside it is inert while the file still parses. oracle/validate.rs unlifted_role_fns, comparing the role-funcdefs the parse RECOGNIZED against the ones the lifted sets hold. `{funcname}` = the declaration, spanned at its own name.",
+        why: "26G:haz-silence-is-the-common-cause - three of the four r26 analyzer findings were one defect class, a safety-correct degrade that nothing announced, and each was found by a human diffing declared against lifted by hand. Cause-AGNOSTIC on purpose: it reports the LOSS and never a reason, so it also catches roles whose own give-up diagnostics reach no surface (`__lend_map`, `__enter`, `__resolve` and the rest) and drop paths nobody has hit yet. Warn-tier, never a refusal: the constructs that void a body are legal POSIX and stay accepted (parse-permissively/trace-conservatively), and an unlifted funcdef vouches for nothing - it only stops helping. Fires alongside a cause-bearing error rather than deferring to one: `predict-out-of-dialect` names the offending LINE, this names the FUNCTION that line took down, and the r26 authors read the first without drawing the second. Remediation register (help) wanted: point at the funcdef, say its binds and marks are not in effect, and note that the file parsing clean is not evidence it lifted.",
+        params: &[],
+        example: "[unwritten: oracle-role-fn-unlifted]",
+        message: None,
+        help: None,
+    },
+    CatalogEntry {
+        slug: "shared-cell-measurements-disagree",
+        when_fires: "two or more probe sites resolved to ONE cell and their records did not agree, so the cross-site meet degraded the cell to unknown and de-licensed every site on it - including sites that reported cleanly. cli/main.rs facts_from_sites, read back at the plan stderr advisory tier. `{cell}` = the shared coordinate, `{sites}` = how many sites measure it.",
+        why: "26G:fnd-shared-auto-cell-collides - a verdict-only oracle's sites all key one synthesized per-provider cell, so a book that copies six files with one `cp` puts all six on one coordinate. One unreadable destination then de-licenses the other five, and a sibling that merely failed to report does it as readily as one that disagreed, because cant-tell is the default for any site the probe could not answer. The collapse is safety-correct (every site runs) and was entirely silent: the merge minted a decision-inert narrative that no surface consumed. Cell-keyed, ONE line however many sites disagree - the collapse is a property of the cell, and per-pair lines read as N unrelated problems. Spanless: a cell is a cross-site coordinate, and pointing the caret at any one line would blame it for a shared collapse. Remediation register (help) wanted: name the sibling sites, and point at authoring a verdict coordinate as what splits the cell.",
+        params: &[],
+        example: "[unwritten: shared-cell-measurements-disagree]",
+        message: None,
+        help: None,
+    },
 ];
