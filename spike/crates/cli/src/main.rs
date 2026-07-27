@@ -75,13 +75,16 @@ use dorc_aid::weave::Face;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Knowability, Severity, SpeechAct};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
 use weft::{
-    Banner, Branch, CodeBlock, CodeCell, CodeLine, Document, Join, LabeledRow, Literalness, Node,
-    NodeKind, Paragraph, Payload, PointerLine, Quoting, Run, Section, SpeakerRow, Truncation,
+    Banner, Branch, CodeBlock, CodeCell, CodeLine, Join, LabeledRow, Literalness, Node, NodeKind,
+    Paragraph, Payload, PointerLine, Quoting, Run, Section, SpeakerRow, Truncation,
 };
 
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
-use dorc_cli::{Args, Invocation, LintArgs, LintFormat, Mode, humane_read_error, parse_args_from};
+use dorc_cli::{
+    Args, CONSENT_FLAG, DriftedReceipt, Invocation, LintArgs, LintFormat, Mode, PlanTally, Receipt,
+    humane_read_error, paragraph, parse_args_from, receipt_banner, registry_paragraph, why_parts,
+};
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
 const EXIT_USAGE: u8 = 2;
@@ -1480,30 +1483,6 @@ struct Replay {
     records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
 }
 
-/// Everything a drifted receipt renders, and NOTHING that came from the current filesystem.
-///
-/// `28F:rul-drift-replay-d1`. Once the recorded book digest disagrees with the file at the recorded
-/// path, every downstream read of that file is a read of somebody else's book: the kernel would
-/// re-derive a chain for lines the run never saw, and naming them would be `271:rul-sin-ordering`'s
-/// pope-sin — a mis-attribution — rather than a missing answer. So the drifted path collects the
-/// durable's own scalars HERE and the render is structurally unable to reach anything else.
-///
-/// D2 (storing the chain so a drifted receipt could still name lines) is REJECTED: the thin durable
-/// never carries book structure, and the git line cannot rescue line-naming under the
-/// annotation-tier fence.
-struct DriftedReceipt {
-    host: String,
-    book_path: String,
-    /// The digest the RUN was keyed on — not the file's digest now.
-    book_digest: String,
-    oracle_paths: Vec<String>,
-    /// The consent flag as the ORIGINAL invocation spelled it, read back off the recorded argv.
-    risk_profile: Option<&'static str>,
-    started_at: Option<dorc_core::RunInstant>,
-    /// The per-leaf predicted dispositions the durable stored, folded to a tally.
-    tally: PlanTally,
-}
-
 enum ReplayLoad {
     Admitted(Replay),
     NoObservation(Replay),
@@ -1599,19 +1578,7 @@ fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
     // a dead end. The diag still fires: drift loud on the report lane, receipt on stdout.
     if envelope.claims().book_digest() != scope.book.1 {
         return Ok(Carrier::new(
-            ReplayLoad::Drifted(Box::new(DriftedReceipt {
-                host: envelope.claims().host().to_owned(),
-                book_digest: envelope.claims().book_digest().to_owned(),
-                risk_profile: envelope
-                    .argv()
-                    .iter()
-                    .any(|word| word == CONSENT_FLAG)
-                    .then_some(CONSENT_FLAG),
-                started_at: envelope.claims().started_at(),
-                tally: recorded_tally(envelope.apply()),
-                book_path,
-                oracle_paths,
-            })),
+            ReplayLoad::Drifted(Box::new(dorc_cli::drifted_receipt(&envelope))),
             vec![Diag::new_spanless_site(DiagCode::WhylogBookDesync(
                 dorc_aid::diag::WhylogBookDesync {
                     which: "book".to_owned(),
@@ -1696,21 +1663,6 @@ fn read_replay_source(path: impl AsRef<std::path::Path>) -> Result<String, ()> {
         return Err(());
     }
     Ok(source)
-}
-
-/// Fold a durable's recorded apply report into the tally a drifted receipt may state.
-///
-/// Keyed on the stored WORD, which is the only shape the durable has — the typed `Disposition` it
-/// came from is unreachable here (re-deriving it needs the book). An unrecognized word is counted
-/// nowhere rather than guessed into a bucket: the tally under-reports instead of mis-reporting
-/// (`271:rul-sin-ordering`), and the parser's own `disposition_valid` already refuses the case.
-fn recorded_tally(apply: &[dorc_plan::whylog::ApplyLine]) -> PlanTally {
-    let count = |tag: &str| apply.iter().filter(|line| line.disposition == tag).count();
-    PlanTally::DriftedUnsplit {
-        run: count("run"),
-        guard: count("guard"),
-        elide: count("replace"),
-    }
 }
 
 fn refuse_replay(reason: dorc_plan::records::AdmissionRefusal) -> Carrier<ReplayLoad> {
@@ -4009,13 +3961,6 @@ struct ChainRender {
     next_steps: NextSteps,
 }
 
-/// The consent flag as the BINARY spells it. The corpus names this lever
-/// `--risk-faultless-skips` (`spike/CLAUDE.md` survive-license, `271:rul-flag-is-razor-residue`); the
-/// cli implements `--risk-faultless-skips`. A why-surface pointer must be copy-paste-true (`28E` §7
-/// held-placement-reread), so the render prints what the parser accepts and the rename is flagged
-/// upward rather than papered over here.
-const CONSENT_FLAG: &str = "--risk-faultless-skips";
-
 /// The engine's own name in the speaker column — the only row dorc speaks in its own voice, and it
 /// speaks only about its own derivations (`28E` §8 quoted-speakers).
 const ENGINE_SPEAKER: &str = "dorc";
@@ -4600,13 +4545,6 @@ fn predict_speaker(reference: &str) -> String {
     )
 }
 
-/// The canonical render width. Layout is the RENDERER's, never the semantics engine's
-/// (`28E` §8 `rul-renderer-owns-layout`): every seat below hands `weft` a MARKED tree, and weft
-/// rules columns, wrapping and blocks. The doc-algebra reflow engine that will replace its filler
-/// is still deferred (`28G` §2), so the surface renders at ONE fixed width and transcripts pin
-/// there.
-const WHY_WIDTH: usize = 92;
-
 /// The indent the whole `dorc why <addr>` triptych sits at.
 const TRIPTYCH_INSET: usize = 3;
 
@@ -4614,22 +4552,6 @@ const TRIPTYCH_INSET: usize = 3;
 /// repair join to the steps around them, which no structural rule can do — and the table then
 /// hangs or stacks as a unit (`28F:rul-table-degrades-whole`).
 const STEPS_TABLE: &str = "why-next-steps";
-
-/// The table the receipt header's record lines join — one block, degrading as a unit.
-const RECEIPT_TABLE: &str = "why-receipt";
-
-/// Lay a marked tree out at `inset` and re-attribute it — the ONE seat where the why surface
-/// becomes bytes, and the span map's production consumer.
-///
-/// The render happens ONCE and the span map is carried, not dropped: the printed bytes come out
-/// of the part stream, so every transcript the corpus drives proves the bridge total and
-/// byte-exact (`_w4-map-DRAFT:gap-span-map-unconsumed`). Nothing here is `dorc why`-specific — a
-/// loom driver re-renders the same tree through the same seat and gets a stream it can attribute
-/// an edit against.
-fn why_parts(nodes: Vec<Node<Face>>, inset: usize) -> dorc_aid::tagged::RenderParts {
-    let frame = weft::Frame::of_width(weft::Width::new(WHY_WIDTH)).inset(inset);
-    dorc_aid::weave::to_render_parts(&weft::render_framed(&Document::new(nodes), &frame))
-}
 
 /// [`why_parts`], printed.
 fn print_document(nodes: Vec<Node<Face>>, inset: usize) {
@@ -4654,18 +4576,6 @@ fn contrastive(reference: &str, outcome: &str, foil: &str, because: Said) -> Sai
             because,
         ],
     )
-}
-
-/// One attributed fragment as a paragraph.
-fn paragraph(said: &Said, part: &'static str) -> Node<Face> {
-    Node::new(NodeKind::Prose(Paragraph {
-        runs: said.runs(part),
-    }))
-}
-
-/// A whole registry line as a paragraph.
-fn registry_paragraph(slug: &'static str) -> Node<Face> {
-    paragraph(&Said::words(slug, &[]), slug)
 }
 
 /// A titled panel. The header WORDS come from the registry; weft mints the rule around them and
@@ -5363,52 +5273,11 @@ fn emit_why_aggregate(
     print_document(nodes, 0);
 }
 
-/// The DEGRADED `dorc why` render for a replay whose book has drifted (`28F:rul-drift-replay-d1`).
-///
-/// The bad morning's worst case is the admin who edited the book before asking why, and the answer
-/// they used to get was a refusal with nothing behind it. The receipt itself survives drift — it is
-/// header, inventory and tally, all minted by the controller and stored — so it renders, with the
-/// drift stated in it. What cannot survive is everything keyed to SOURCE: the chain re-derives
-/// through the kernel from the book, and leaf-to-line needs the AST, so ANALYSIS and every chain
-/// are suppressed and say so in their place.
-///
-/// An ADDRESSED query gets only the explanation, matching the un-drifted addressed form, which also
-/// renders no banner: the reader asked about a line, and the honest answer names no line at all.
-/// No footer either — its "filtered for presumed relevance" is a claim about selection, and nothing
-/// here was selected.
+/// [`dorc_cli::drifted_why_parts`], printed — the whole of this edge's share of the degraded
+/// report (`28H:prop-drifted-why-is-the-thin-driver`). The composition lives across the seam so a
+/// loom case can drive the same render and carry an editable transcript of it.
 fn emit_drifted_why(address: Option<&str>, drifted: &DriftedReceipt) {
-    if let Some(address) = address {
-        print_document(
-            vec![paragraph(
-                &Said::words("why-drift-address-unanswerable", &[address]),
-                "why-drift-address-unanswerable",
-            )],
-            0,
-        );
-        return;
-    }
-    let receipt = Receipt {
-        at: drifted.started_at,
-        replayed: true,
-        host: drifted.host.clone(),
-        book: drifted.book_path.clone(),
-        book_digest: drifted.book_digest.clone(),
-        // Never resolved under drift: the git line answers for the file on disk, and saying that
-        // file matches HEAD would attach a provenance claim to bytes the run never read.
-        at_head: None,
-        oracles: drifted.oracle_paths.clone(),
-        risk_profile: drifted.risk_profile,
-        tally: drifted.tally,
-        deepest_tier: false,
-        narratable: false,
-    };
-    print_document(
-        vec![
-            receipt_banner(&receipt),
-            registry_paragraph("why-drift-analysis-suppressed"),
-        ],
-        0,
-    );
+    print!("{}", dorc_cli::drifted_why_parts(address, drifted).text());
 }
 
 /// One aggregate item: the `file:N | command` headline, its reason beneath, and the
@@ -5438,171 +5307,6 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
                 target: Said::words("why-item-pointer", &[&address]).runs("why-item"),
             })),
         ],
-    }))
-}
-
-/// The invocation record the zero-argument `dorc why` opens with (`28D:need-exact-input-identity`;
-/// `28G` strawman `a-fire-morning` lines 33–38): which run this is, on which host, over which
-/// bytes, under which consent, and what it decided.
-///
-/// Every field is CONTROLLER-minted (`rul-attribution-is-controller-minted`) — the host contributes
-/// none of it, including the instant (`28F:rul-probe-instants-host-says-no-times`, human-typed).
-struct Receipt {
-    /// The durable's own start instant on a `--last` replay, this invocation's on a live one, and
-    /// `None` when the edge had no clock. A replay carries the ORIGINAL run's instant, never this
-    /// moment's — reading a replay's clock here would date the receipt to when it was read.
-    at: Option<dorc_core::RunInstant>,
-    /// Whether this report replays a durable rather than reporting the run that just happened.
-    replayed: bool,
-    host: String,
-    book: String,
-    book_digest: String,
-    /// The commit the book sits at, when it sits at one exactly (`28E:lean-git-source-tracking-
-    /// secondary`). Already-resolved pure data: the subprocess that answered it was spent at the
-    /// edge, and a `None` here is indistinguishable from "no repository", by design.
-    at_head: Option<source_match::SourceMatch>,
-    /// The loaded oracles, in argv order.
-    oracles: Vec<String>,
-    /// The consent flag in force, or `None` for a flagless run.
-    risk_profile: Option<&'static str>,
-    tally: PlanTally,
-    /// `--all`: the reader asked for the deepest pull tier.
-    deepest_tier: bool,
-    /// Whether the `[unnarrated:]` census may be asserted over this report at all — the version
-    /// coupling (`28E:prop-unnarrated-is-visible`'s caveat). False when a replayed durable's
-    /// record stream is not the one this binary's narrative plane was built against.
-    narratable: bool,
-}
-
-/// How much of the plan tally a receipt can honestly state.
-///
-/// The skipped-count SPLIT is the line the reader needs most — an `elide_by_trusted_claim` skip
-/// rests on an author's at-most claim rather than on anything measured, and the two carry different
-/// risk — but it is a LICENSE-plane derivation, re-derived through the kernel from the book. A
-/// drifted replay (`28F:rul-drift-replay-d1`) has no kernel run behind it: the thin durable stores
-/// one disposition word per leaf and nothing else, so there the split is not zero, it is unknown,
-/// and rendering the two alike would put a proof-claim on a receipt that holds none.
-/// The two states are also the receipt's drift state, deliberately: the split is missing for
-/// exactly the reason the chain is, so nothing can set one without the other. D2 — storing the
-/// chain so a drifted receipt could still name lines — is REJECTED, which is what makes the
-/// coupling permanent rather than a convenience.
-#[derive(Clone, Copy)]
-enum PlanTally {
-    /// A live run or a clean replay: the counts the plan itself produced.
-    Derived(dorc_plan::DispositionCounts),
-    /// A drifted replay: the durable's own per-leaf dispositions, split unknown.
-    DriftedUnsplit {
-        run: usize,
-        guard: usize,
-        elide: usize,
-    },
-}
-
-impl PlanTally {
-    /// Whether this receipt reports on a run whose book is no longer the file at its path.
-    const fn is_drifted(self) -> bool {
-        matches!(self, PlanTally::DriftedUnsplit { .. })
-    }
-}
-
-/// The receipt header as one banner: the run's identity, then the indented record of what it read
-/// and what it decided.
-///
-/// The plan tally counts the TYPED disposition, never the rendered word: the words are registry
-/// prose meant to churn (`27V:rul-output-form-unwelded`), so a tally keyed on them would silently
-/// go wrong the first time someone rewrote one.
-fn receipt_banner(receipt: &Receipt) -> Node<Face> {
-    let when = match (receipt.at, receipt.replayed) {
-        (Some(at), false) => Said::words(
-            "why-receipt-when-live",
-            &[&dorc_aid::instant::date_time_text(at)],
-        ),
-        (Some(at), true) => Said::words(
-            "why-receipt-when-replayed",
-            &[&dorc_aid::instant::date_time_text(at)],
-        ),
-        (None, _) => Said::words("why-receipt-when-undated", &[]),
-    };
-    let tally = match receipt.tally {
-        PlanTally::Derived(counts) if counts.elide_by_trusted_claim == 0 => Said::words(
-            "why-receipt-plan-tally-by-proof",
-            &[
-                &counts.run.to_string(),
-                &counts.guard.to_string(),
-                &counts.elide.to_string(),
-                &counts.elide_by_proof.to_string(),
-            ],
-        ),
-        PlanTally::Derived(counts) => Said::words(
-            "why-receipt-plan-tally",
-            &[
-                &counts.run.to_string(),
-                &counts.guard.to_string(),
-                &counts.elide.to_string(),
-                &counts.elide_by_proof.to_string(),
-                &counts.elide_by_trusted_claim.to_string(),
-            ],
-        ),
-        PlanTally::DriftedUnsplit { run, guard, elide } => Said::words(
-            "why-receipt-plan-tally-unsplit",
-            &[&run.to_string(), &guard.to_string(), &elide.to_string()],
-        ),
-    };
-    let risk = receipt.risk_profile.map_or_else(
-        || Said::words("why-receipt-risk-profile-none", &[]),
-        |profile| Said::Value(profile.to_owned()),
-    );
-    // Replaces the digest row rather than joining it: exact-or-absent, never a third shape.
-    let book_row = match &receipt.at_head {
-        Some(matched) => Said::words(
-            "why-receipt-book-at-head",
-            &[&receipt.book, &matched.commit],
-        ),
-        None => Said::words("why-receipt-book", &[&receipt.book, &receipt.book_digest]),
-    };
-    let mut body = vec![receipt_row(&book_row)];
-    if receipt.tally.is_drifted() {
-        // Adjacent to the row it qualifies: the digest above is the RUN's, not the file's now.
-        body.push(receipt_row(&Said::words("why-receipt-book-drifted", &[])));
-    }
-    body.extend([
-        receipt_row(&Said::words(
-            "why-receipt-oracles",
-            &[&receipt.oracles.join(", ")],
-        )),
-        receipt_row(&Said::sentence(
-            "why-receipt-risk-profile",
-            None,
-            vec![risk],
-        )),
-        receipt_row(&tally),
-        // `tc-apply-report-is-prediction`: no apply executor exists, so saying so IS the whole
-        // replayed-voice obligation — never let a reader take a prediction for an outcome.
-        receipt_row(&Said::words("why-receipt-dispositions-predicted", &[])),
-        receipt_row(&Said::words("why-addressability-line", &[])),
-    ]);
-    Node::new(NodeKind::Banner(Banner {
-        headline: Said::sentence(
-            "why-receipt-header",
-            None,
-            vec![when, Said::Value(receipt.host.clone())],
-        )
-        .runs("why-receipt"),
-        body,
-    }))
-}
-
-/// One line of the receipt header's indented record.
-///
-/// A labelled row rather than a paragraph, because the six lines are ONE block: weft keeps a run of
-/// like rows tight and puts a blank line between unlike things, and a receipt broken up by blank
-/// lines reads as six separate remarks rather than one identity.
-fn receipt_row(said: &Said) -> Node<Face> {
-    Node::new(NodeKind::Labeled(LabeledRow {
-        table: Some(Face::Table(RECEIPT_TABLE.to_owned())),
-        label: Vec::new(),
-        body: said.runs("why-receipt"),
-        attachments: Vec::new(),
     }))
 }
 
@@ -8124,7 +7828,7 @@ mod tests {
             disposition: disposition.to_owned(),
             predicted: true,
         };
-        let tally = recorded_tally(&[
+        let tally = dorc_cli::recorded_tally(&[
             line(0, "run"),
             line(1, "replace"),
             line(2, "replace"),
@@ -9388,8 +9092,9 @@ mod not_ours_bytes_tests {
 
     /// Render a why-surface node list the way the surface itself does, and hand back the span map.
     fn swept(nodes: Vec<Node<Face>>) -> weft::Rendered<Face> {
-        let frame = weft::Frame::of_width(weft::Width::new(WHY_WIDTH)).inset(TRIPTYCH_INSET);
-        weft::render_framed(&Document::new(nodes), &frame)
+        let frame =
+            weft::Frame::of_width(weft::Width::new(dorc_cli::WHY_WIDTH)).inset(TRIPTYCH_INSET);
+        weft::render_framed(&weft::Document::new(nodes), &frame)
     }
 
     /// Every seat of the why surface, driven with bytes we did not write in every slot that takes
