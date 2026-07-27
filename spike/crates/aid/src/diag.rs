@@ -3535,7 +3535,9 @@ mod tests {
             span(0, 4),
         );
         assert_eq!(
-            why(&bare, &arena, "date").expect("a caused-⊤ explains").text(),
+            why(&bare, &arena, "date")
+                .expect("a caused-⊤ explains")
+                .text(),
             "ran because the command word is a command-substitution `$(...)` or runtime-dynamic \
              value -- its value couldn't be resolved (first seen at (no source site)); so dorc \
              runs it, to stay safe (when unsure, run). to skip it, make the operand a literal \
