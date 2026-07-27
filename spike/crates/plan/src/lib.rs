@@ -1891,6 +1891,14 @@ pub struct ProbePlan {
     pub checks: Vec<ProbePredict>,
     /// The un-resolvable sites' ids (rendered as `unresolvable-no-probe` comments).
     pub unresolvable: Vec<LeafId>,
+    /// Why an un-resolvable site's oracle check gave up, where the tracer had a reason to give
+    /// (`26G:fnd-existence-gate-darkens-oracle`, the "say so" half of `inv-top-reject`). A
+    /// DIAGNOSTICS-ONLY channel beside [`unresolvable`](ProbePlan::unresolvable): it feeds the
+    /// stderr `site-unresolvable` note and nothing else. Nothing may branch on it for licensing or
+    /// verdicts, and the rendered probe/apply artifacts are byte-identical with it empty — a site
+    /// is un-resolvable for reasons the reason-map cannot see (a kill, a `MustRun`, a resolved
+    /// check with no shippable body), so a missing entry is ordinary, never a signal.
+    pub unresolvable_causes: BTreeMap<LeafId, dorc_oracle::predict::TopReason>,
 }
 
 /// The check-function name for a probed site's provider: `<provider>__predict` (R3 /
@@ -1928,6 +1936,33 @@ fn verdict_fn_name(interner: &Interner, provider: Symbol) -> String {
 }
 
 impl ProbePlan {
+    /// Attach classify's per-node give-up reasons to the un-resolvable sites
+    /// ([`unresolvable_causes`](ProbePlan::unresolvable_causes)) — the DIAGNOSTICS-ONLY join, kept
+    /// out of [`compile_probe`] because no compilation decision reads it and every caller but the
+    /// cli renders no causes. `ast`/`cfg`/`classes` must be the SAME three the plan was compiled
+    /// from: the join re-derives the site ordering, so a mismatched triple would mis-key reasons
+    /// onto sites (harmless to the artifacts — nothing branches on them — but a wrong cause is a
+    /// worse diagnostic than none).
+    #[must_use]
+    pub fn with_unresolvable_causes(
+        mut self,
+        ast: &Ast,
+        cfg: &Cfg,
+        classes: &[(CfgNodeId, SkipClass)],
+        degrades: &BTreeMap<CfgNodeId, dorc_oracle::predict::TopReason>,
+    ) -> Self {
+        let node_of: BTreeMap<LeafId, CfgNodeId> = site_order(ast, cfg, classes)
+            .into_iter()
+            .map(|(site, node, _)| (site, node))
+            .collect();
+        self.unresolvable_causes = self
+            .unresolvable
+            .iter()
+            .filter_map(|site| Some((*site, *degrades.get(node_of.get(site)?)?)))
+            .collect();
+        self
+    }
+
     /// Render the probe as a shippable, read-only, **self-reporting** shell-script
     /// (the sanitised projection shipped to gather facts — DESIGN). The artifact, WHEN
     /// RUN, emits one results-record per resolvable site on stdout — the round-trip's
@@ -2695,6 +2730,10 @@ fn ship_stage_for_argv(
 /// real `A | F`"); every non-last MEMBER is SUBSUMED (ships no separate record — a lone `grep -q`
 /// has no independent fact, silence-is-wall). Off the connected path (`ConnectedPipes::default()`)
 /// this is byte-identical to before.
+///
+/// The compiled plan's [`unresolvable_causes`](ProbePlan::unresolvable_causes) starts EMPTY; the
+/// one caller that renders causes attaches them with
+/// [`with_unresolvable_causes`](ProbePlan::with_unresolvable_causes).
 #[must_use]
 #[expect(
     clippy::too_many_arguments,
@@ -2921,6 +2960,7 @@ pub fn compile_probe(
     ProbePlan {
         checks,
         unresolvable,
+        unresolvable_causes: BTreeMap::new(),
     }
 }
 
@@ -5258,6 +5298,7 @@ apt_get__is_converged() { return 0; }
                 &BTreeMap::new(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
+                &mut BTreeMap::new(),
             );
         let classes = classes.value;
         let derivations = compile_derivations(
@@ -6350,6 +6391,7 @@ apt_get__is_converged() {
                 &BTreeMap::new(),
                 &mut i,
                 &mut arena,
+                &mut BTreeMap::new(),
             );
         let classes = classified.value;
         let kills = if walled { kills_found } else { BTreeSet::new() };
@@ -7623,6 +7665,7 @@ apt_get__is_converged() {
                 entry: None,
             }],
             unresolvable: Vec::new(),
+            unresolvable_causes: BTreeMap::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
@@ -7725,6 +7768,7 @@ apt_get__is_converged() {
         let plan = ProbePlan {
             checks: vec![auto_cell_check(&mut i, true)],
             unresolvable: Vec::new(),
+            unresolvable_causes: BTreeMap::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
 
@@ -7794,6 +7838,7 @@ apt_get__is_converged() {
         let plan = ProbePlan {
             checks: vec![auto_cell_check(&mut i, false)],
             unresolvable: Vec::new(),
+            unresolvable_causes: BTreeMap::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
         for absent in [
@@ -7864,6 +7909,7 @@ apt_get__is_converged() {
                 }),
             }],
             unresolvable: Vec::new(),
+            unresolvable_causes: BTreeMap::new(),
         };
         let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
@@ -7908,6 +7954,7 @@ apt_get__is_converged() {
                 entry,
             }],
             unresolvable: Vec::new(),
+            unresolvable_causes: BTreeMap::new(),
         }
     }
 

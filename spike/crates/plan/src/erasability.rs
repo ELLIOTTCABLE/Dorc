@@ -299,6 +299,11 @@ fn canon_probe(probe: &ProbePlan) -> String {
     let ProbePlan {
         checks,
         unresolvable,
+        // EXEMPT (Exempt::Explanation): WHY a site could not be probed. `unresolvable` above is the
+        // identity — the same sites, the same `unresolvable-no-probe` comments — and the cause is
+        // read only by the stderr note. Digesting it would make a reason-wording change read as an
+        // artifact change, the inverse of what this canon exists to prove.
+        unresolvable_causes: _,
     } = probe;
     let mut out = String::new();
     for c in checks {

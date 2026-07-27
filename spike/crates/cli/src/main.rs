@@ -841,6 +841,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let carried_attribution = wrapped_analysis.carried;
     let entry_narrative = wrapped_analysis.collapse_narrative;
     report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
+    // `degrades` (`26G:fnd-existence-gate-darkens-oracle`): why each ⊤-degrading site's oracle
+    // check gave up. Diagnostics only — it reaches the `site-unresolvable` note and nothing else.
+    let mut degrades = BTreeMap::new();
     let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
@@ -852,6 +855,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &peeled_sites,
             &mut interner,
             &mut arena,
+            &mut degrades,
         );
     report_at(advisory, "classify", book_source, &classified.diags);
     let classes = classified.value;
@@ -911,7 +915,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         ship,
         ship_auto,
         |node| vouches.contains_site(node),
-    );
+    )
+    .with_unresolvable_causes(&parsed.value, &cfg.value, &classes, &degrades);
 
     // Shim-materialization edge (`274` §5 / `27L` task-14): `--shim-dir` writes the entry-composed
     // probe's per-run PATH shim files (a pure side-effect at the cli edge; stdout unchanged).
@@ -3133,7 +3138,9 @@ fn unresolvable_diagnostics(
     let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
         plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
 
-    // The REAL (worth-disclosing) unresolvable sites, in the probe's site order.
+    // The REAL (worth-disclosing) unresolvable sites, in the probe's site order — each with the
+    // tracer's give-up reason where one exists (`26G:fnd-existence-gate-darkens-oracle`: naming the
+    // site without the cause is what let a `|| return 2` gate darken a whole oracle in silence).
     let mut real: Vec<(dorc_plan::LeafId, dorc_core::Span, String)> = Vec::new();
     for &leaf in &probe.unresolvable {
         let Some(&id) = ast_of_leaf.get(&leaf) else {
@@ -3160,7 +3167,15 @@ fn unresolvable_diagnostics(
 
     // The aggregate: name every real command (backtick-wrapped), point at `dorc why`. The frame's
     // caret lands on the first as a representative (its source_excerpt is that first command).
-    let names: Vec<String> = real.iter().map(|(_, _, t)| format!("`{t}`")).collect();
+    // A site whose oracle check gave up for a reason the tracer can name carries that reason; the
+    // rest (a kill, a `MustRun`, a resolved check with no shippable body) have none to carry.
+    let names: Vec<String> = real
+        .iter()
+        .map(|(leaf, _, t)| match probe.unresolvable_causes.get(leaf) {
+            Some(cause) => format!("`{t}` ({})", cause.as_str()),
+            None => format!("`{t}`"),
+        })
+        .collect();
     let plural = if real.len() == 1 { "" } else { "s" };
     let label = format!(
         "{} site{plural} run unprobed (no read-only check could be shipped): {} -- \
@@ -7655,6 +7670,7 @@ mod tests {
                 entry: None,
             }],
             unresolvable: vec![],
+            unresolvable_causes: BTreeMap::new(),
         }
     }
 
@@ -8396,6 +8412,7 @@ mod tests {
                 },
             ],
             unresolvable: vec![],
+            unresolvable_causes: BTreeMap::new(),
         }
     }
 
@@ -8613,6 +8630,7 @@ mod tests {
         ProbePlan {
             checks: vec![mk(0, f0), mk(1, f1)],
             unresolvable: vec![],
+            unresolvable_causes: BTreeMap::new(),
         }
     }
 

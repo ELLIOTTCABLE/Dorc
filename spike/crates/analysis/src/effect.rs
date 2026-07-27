@@ -35,7 +35,7 @@ use dorc_core::{
     Context, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken, ProviderId, SelectorId,
     Span,
 };
-use dorc_oracle::predict::{self, PredictSet, ResolvedEntity};
+use dorc_oracle::predict::{self, PredictSet, ResolvedEntity, TopReason};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -224,6 +224,12 @@ fn finalize_cmdsub_tops(
 /// `inv-superposition`: the cells are phase-/orientation-agnostic facts; this
 /// classifies, it decides nothing. Diagnostics (kind-disagreement) accumulate in
 /// `diags`.
+///
+/// `degrade` is the DIAGNOSTICS-ONLY reason channel (`inv-top-reject`'s "say so" half): the
+/// [`predict::TopReason`] of the first candidate check that degraded, so the probe-side
+/// `site-unresolvable` note can name a CAUSE and not just a site. Nothing branches on it —
+/// the `Opaque` it accompanies is minted identically whether the slot is read or dropped, and
+/// every caller that does not want it passes a throwaway.
 /// The typeless-floor decision at a concrete-argv site that declared no marked effect
 /// (`24L` §2/§3): a provider bearing a verdict function gets the synthetic **auto-cell**
 /// (`dorc_core::auto_fact` — a private per-provider singleton establish), so its own-line
@@ -251,7 +257,8 @@ fn auto_or_opaque(
     clippy::too_many_arguments,
     reason = "the typeless-floor seam (`24L` §7) threads the verdict-provider set alongside the \
               existing effect-map/checks/argv/interner/diag inputs; each is a distinct kernel \
-              input, not a bundle-able struct"
+              input, not a bundle-able struct. `degrade` is the reason channel, on the same \
+              out-param footing as `diags`/`cmdsub_tops`/`backings`"
 )]
 pub fn command_effect(
     idx: &KindIndex,
@@ -263,6 +270,7 @@ pub fn command_effect(
     cmdsub_tops: &mut Vec<CmdsubTop>,
     site: Option<DiagSite>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
+    degrade: &mut Option<TopReason>,
 ) -> Vec<CommandEffect> {
     // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
     // system-state effect (value::analyze yields `[]` for words.is_empty()).
@@ -344,7 +352,13 @@ pub fn command_effect(
         .filter_map(|cs| cs.get(provider.0))
         .find_map(|c| match predict::evaluate(c, &arg_refs) {
             predict::Resolution::Resolved(r) => Some(r),
-            predict::Resolution::Top(_) => None,
+            // The reason used to die here, which is why an unresolvable site could name itself but
+            // never its cause. FIRST candidate wins, mirroring the first-resolves-wins rule above:
+            // several checks may degrade for several reasons and only one line gets rendered.
+            predict::Resolution::Top(reason) => {
+                degrade.get_or_insert(reason);
+                None
+            }
         });
     let Some(resolved) = resolved else {
         // No check resolved this site (no check for the provider, or every candidate
@@ -492,6 +506,9 @@ fn member_family(
             &mut suppressed,
             None,
             &mut member_backings,
+            // A member's degrade never reaches a surface: the whole family collapses to the
+            // single-cell path below, which re-runs `command_effect` and records the reason there.
+            &mut None,
         )
         .as_slice()
         {
@@ -913,6 +930,7 @@ fn node_effects(
     diags: &mut Vec<Diag>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
+    degrades: &mut BTreeMap<CfgNodeId, TopReason>,
 ) -> Vec<CommandEffect> {
     if let Some(family) = member_family {
         return family
@@ -937,6 +955,7 @@ fn node_effects(
         CfgNodeKind::Command => {
             let argv = value.argv_values(id);
             let before = cmdsub_tops.len();
+            let mut degrade = None;
             let effect = command_effect(
                 idx,
                 checks,
@@ -947,7 +966,11 @@ fn node_effects(
                 cmdsub_tops,
                 Some(site),
                 backings,
+                &mut degrade,
             );
+            if let Some(reason) = degrade {
+                degrades.insert(id, reason);
+            }
             narrow_cmdsub_spans_to_operand(&mut cmdsub_tops[before..], cfg, ast, id);
             effect
         }
@@ -1109,7 +1132,7 @@ pub struct PeeledSite {
 /// now context-qualified) and never transport (`compare` answers `Unknown` across the gap).
 #[expect(
     clippy::too_many_arguments,
-    reason = "mirrors node_effects: per-node effect resolution threads the whole compiled context (id/site/cfg/ast/idx/checks/verdict-providers/interner/diags/cmdsub-tops/backings); each a distinct input, not a bundle"
+    reason = "mirrors node_effects: per-node effect resolution threads the whole compiled context (id/site/cfg/ast/idx/checks/verdict-providers/interner/diags/cmdsub-tops/backings/degrades); each a distinct input, not a bundle"
 )]
 fn peeled_node_effects(
     id: CfgNodeId,
@@ -1123,9 +1146,11 @@ fn peeled_node_effects(
     diags: &mut Vec<Diag>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
+    degrades: &mut BTreeMap<CfgNodeId, TopReason>,
 ) -> Vec<CommandEffect> {
     let diag_site = DiagSite::of(ast.node(cfg.node(id).ast).span, id);
     let mut local: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
+    let mut degrade = None;
     let raw = command_effect(
         idx,
         checks,
@@ -1136,7 +1161,11 @@ fn peeled_node_effects(
         cmdsub_tops,
         Some(diag_site),
         &mut local,
+        &mut degrade,
     );
+    if let Some(reason) = degrade {
+        degrades.insert(id, reason);
+    }
     for (fact, backing) in local {
         backings.insert(fact.in_context(site.context), backing);
     }
@@ -1163,10 +1192,11 @@ fn peeled_node_effects(
 #[expect(
     clippy::type_complexity,
     clippy::too_many_arguments,
-    reason = "the three precomputed parallel-by-node products (member families, effect cells, \
-              deferred cmdsub-⊤ records) are returned as one tuple so classify stays under the \
-              line cap; naming a struct for a single-call-site internal helper buys nothing. The \
-              verdict-provider set (`24L` §7 seam) is one more distinct kernel input"
+    reason = "the parallel-by-node products (member families, effect cells, deferred cmdsub-⊤ \
+              records, backings) are returned as one tuple so classify stays under the line cap; \
+              naming a struct for a single-call-site internal helper buys nothing. The \
+              verdict-provider set (`24L` §7 seam) is one more distinct kernel input, and the \
+              degrade-reason map rides in as an out-param beside `diags`"
 )]
 fn resolve_node_effects(
     cfg: &Cfg,
@@ -1178,6 +1208,7 @@ fn resolve_node_effects(
     peeled: &BTreeMap<CfgNodeId, PeeledSite>,
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
+    degrades: &mut BTreeMap<CfgNodeId, TopReason>,
 ) -> (
     Vec<Option<Vec<FactKey>>>,
     Vec<Vec<CommandEffect>>,
@@ -1220,6 +1251,7 @@ fn resolve_node_effects(
                     diags,
                     &mut cmdsub_tops,
                     &mut backings,
+                    degrades,
                 );
             }
             node_effects(
@@ -1235,6 +1267,7 @@ fn resolve_node_effects(
                 diags,
                 &mut cmdsub_tops,
                 &mut backings,
+                degrades,
             )
         })
         .collect();
@@ -1289,6 +1322,7 @@ pub fn classify(
         &BTreeMap::new(),
         interner,
         arena,
+        &mut BTreeMap::new(),
     )
     .0
 }
@@ -1306,7 +1340,12 @@ pub type BackingMap = BTreeMap<FactKey, FactBacking>;
 /// `cause` off them (`to_legacy` drops it — [`dorc_aid::diag::why`] needs the typed value).
 ///
 /// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags, kill-node-set,
-/// kill-coords, backing-map, collapse-narrative)`. The last element is the C3 aid plane
+/// kill-coords, backing-map, collapse-narrative)`. `degrades` is an OUT-PARAM rather than a
+/// seventh product, on the same footing as `diags`: the diagnostics-only per-node
+/// [`predict::TopReason`] map (`command_effect`'s `degrade` channel) that the probe-side
+/// `site-unresolvable` note renders as a CAUSE. Nothing branches on it — a site's `Opaque` is
+/// minted identically whether a caller keeps the map or throws it away.
+/// The collapse-narrative element is the C3 aid plane
 /// (`27V` Lane A): one `Derived`-tier [`dorc_aid::CollapseKind::FactMergeDisagreement`] per
 /// Opaque-bearing node ([`mint_merge_narrative`]), decision-inert (`two-plane-aid-law`) and threaded
 /// to the why-lens seam. The typed diags are a subset-by-construction of the lowered ones
@@ -1344,6 +1383,7 @@ pub fn classify_with_why_diags(
     peeled: &BTreeMap<CfgNodeId, PeeledSite>,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
+    degrades: &mut BTreeMap<CfgNodeId, TopReason>,
 ) -> (
     Carrier<Vec<(CfgNodeId, SkipClass)>>,
     Vec<Diag>,
@@ -1367,6 +1407,7 @@ pub fn classify_with_why_diags(
         peeled,
         interner,
         &mut diags,
+        degrades,
     );
 
     // arch-1 `Top(cause)`: mint a give-up origin per Opaque-bearing node (+ a fallback),
@@ -1759,6 +1800,7 @@ command__predict() {
             &BTreeMap::new(),
             &mut i,
             &mut arena,
+            &mut BTreeMap::new(),
         );
         assert_eq!(kills.len(), 1, "the purge is the sole kill node");
         let node = *kills.iter().next().expect("one kill node");
@@ -1792,6 +1834,7 @@ command__predict() {
                 &BTreeMap::new(),
                 i,
                 &mut arena,
+                &mut BTreeMap::new(),
             )
             .5
         };
@@ -2158,6 +2201,7 @@ command__predict() {
                 &mut cmdsub_tops,
                 None,
                 &mut backings,
+                &mut None,
             )
         }
         let (mut i, idx, s) = package_setup();
@@ -2252,7 +2296,8 @@ command__predict() {
                 &mut diags,
                 &mut tops,
                 None,
-                &mut backings
+                &mut backings,
+                &mut None
             ),
             vec![CommandEffect::Opaque],
             "no verdict function ⇒ the honest floor (Opaque ⇒ run)"
@@ -2270,11 +2315,71 @@ command__predict() {
                 &mut diags,
                 &mut tops,
                 None,
-                &mut backings
+                &mut backings,
+                &mut None
             ),
             vec![CommandEffect::Establishes(expect)],
             "a verdict-bearing provider mints the per-provider auto-cell (§2)"
         );
+    }
+
+    /// The degrade reason survives to the caller instead of dying at the `Resolution::Top(_) => None`
+    /// that used to discard it — `26G:fnd-existence-gate-darkens-oracle`'s "make it loud" half.
+    #[test]
+    fn a_degrading_check_reports_its_reason() {
+        let src = "# dorc-lang/v0.2\nwombat__predict() {\n   command -v wombat >/dev/null 2>&1 || return 2\n   thing : sm.dorc.Thing = \"$1\"\n   wombat query \"$thing\" : sm.dorc.Thing:\"$thing\"@present\n}\n";
+        let mut i = Interner::default();
+        let checks = vec![lift_predicts(&mut i, src).value];
+        let (effects, reason) = degrade_of("wombat sync\n", &checks, &mut i);
+        assert_eq!(effects, vec![CommandEffect::Opaque], "unchanged: still ⊤");
+        assert_eq!(reason, Some(TopReason::OrList));
+    }
+
+    /// Two candidate checks for one provider, each degrading for a DIFFERENT reason: the FIRST in
+    /// file order wins, matching the first-resolves-wins rule the resolution scan already uses. The
+    /// note renders one cause, so which one it is must be pinned rather than incidental.
+    #[test]
+    fn the_first_candidate_checks_reason_is_the_one_reported() {
+        let or_list = "# dorc-lang/v0.2\nwombat__predict() {\n   command -v wombat >/dev/null 2>&1 || return 2\n}\n";
+        let pipeline = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat list | wombat count\n}\n";
+        let mut i = Interner::default();
+        let a = lift_predicts(&mut i, or_list).value;
+        let b = lift_predicts(&mut i, pipeline).value;
+        let (_, or_first) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
+        let (_, pipe_first) = degrade_of("wombat sync\n", &[b, a], &mut i);
+        assert_eq!(or_first, Some(TopReason::OrList));
+        assert_eq!(pipe_first, Some(TopReason::Pipeline));
+    }
+
+    /// Run `command_effect` over a one-command book; return its effects plus the degrade reason.
+    fn degrade_of(
+        src: &str,
+        checks: &[PredictSet],
+        i: &mut Interner,
+    ) -> (Vec<CommandEffect>, Option<TopReason>) {
+        let parsed = dorc_syntax::parse(src);
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, i);
+        let node = built
+            .value
+            .iter()
+            .find(|(_, n)| n.kind == CfgNodeKind::Command)
+            .map(|(id, _)| id)
+            .expect("the book's one command node");
+        let mut reason = None;
+        let effects = command_effect(
+            &KindIndex::default(),
+            checks,
+            &BTreeSet::new(),
+            &value.argv_values(node),
+            i,
+            &mut Vec::new(),
+            &mut Vec::new(),
+            None,
+            &mut BTreeMap::new(),
+            &mut reason,
+        );
+        (effects, reason)
     }
 
     #[test]
@@ -3130,6 +3235,7 @@ command__predict() {
             &BTreeMap::new(),
             &mut i,
             &mut diags,
+            &mut BTreeMap::new(),
         );
         let mut arena = dorc_core::ProvArena::new();
         let (top_causes, fallback) =

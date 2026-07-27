@@ -501,6 +501,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             &BTreeMap::new(),
             &mut interner,
             &mut arena,
+            &mut BTreeMap::new(),
         );
     let classes = classified.value;
 
