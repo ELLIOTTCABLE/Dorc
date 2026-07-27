@@ -22,6 +22,17 @@ Two worlds:
 - **converged** — the same box after one successful run of `smoke-book.sh`: four packages present,
   both config files byte-identical to their sources, `nginx` enabled and active.
 
+## §0. One re-registration, disclosed
+
+The ledger below is the **second** registration. The first (commit `d8831bf7`) predicted a
+10-line book whose L8 was `systemctl enable --now nginx`. Between then and the first `dorc plan`
+run, that line was split into `systemctl enable nginx` + `systemctl start nginx`, because the engine
+cannot model a body that inspects a command's exit status, and `enable --now` establishes two cells
+that one exit status cannot witness (`README.md` §4). The oracle now declines `--now` outright.
+
+This re-registration still precedes any look at plan output. The original L8 prediction —
+guard/guard — is preserved here rather than deleted; it now applies to L8 and L9 jointly.
+
 ## §1. The predicted ledger
 
 | # | book line | pristine | converged | reason |
@@ -33,11 +44,12 @@ Two worlds:
 | L5 | `dpkg -s nginx \|\| apt-get install -y nginx` | run | run | same; below-wall guard |
 | L6 | `cp ./r26-smoke.conf /etc/nginx/conf.d/…` | guard | guard | `cp__is_converged` vouches by content, but below the wall a vouch buys a guard, not an elision |
 | L7 | `cp ./r26-motd /etc/motd` | guard | guard | same |
-| L8 | `systemctl enable --now nginx` | guard | guard | `systemctl__is_converged` vouches @active, disclosing the @enabled read; below-wall ⇒ guard |
-| L9 | `curl -fsS -o /dev/null http://127.0.0.1:8088/r26` | run | run | honestly unmodeled — no oracle at all; an anonymous wall |
-| L10 | `logger -t dorc-r26 "…"` | run | run | modeled, and deliberately declined `unsound`: an append-only log has no state to compare; an *attributed* wall |
+| L8 | `systemctl enable nginx` | guard | guard | `systemctl__is_converged` vouches @enabled; below-wall ⇒ guard |
+| L9 | `systemctl start nginx` | guard | guard | vouches @active; below-wall ⇒ guard |
+| L10 | `curl -fsS -o /dev/null http://127.0.0.1:8088/r26` | run | run | honestly unmodeled — no oracle at all; an anonymous wall |
+| L11 | `logger -t dorc-r26 "…"` | run | run | modeled, and deliberately declined `unsound`: an append-only log has no state to compare; an *attributed* wall |
 
-**Predicted tally, both worlds: 0 elided, 3 guarded, 7 run** (of 10 tool-lines).
+**Predicted tally, both worlds: 0 elided, 4 guarded, 7 run** (of 11 tool-lines).
 Confidence: the L1 decline and the L9/L10 walls are **+SURE**. The claim that a *running, unvouched*
 L1 caps every site below it to guard-or-run is **~SUSPECT** — it is the `255` §2 stage-B/stage-5
 mechanism applied to this book, not something re-measured here.
@@ -55,12 +67,13 @@ quietly dropping: what the same book is worth with its single bare index-refresh
 | L5 | nginx guard | run (below L3's wall) | **elide** |
 | L6 | conf drop | guard | **elide** |
 | L7 | motd drop | guard | **elide** |
-| L8 | `enable --now` | guard | **elide** |
-| L9 | curl check | run | run (wall) |
-| L10 | logger | run | run (wall) |
+| L8 | `systemctl enable nginx` | guard | **elide** |
+| L9 | `systemctl start nginx` | guard | **elide** |
+| L10 | curl check | run | run (wall) |
+| L11 | logger | run | run (wall) |
 
-**Predicted ceiling, converged: 7 elided, 0 guarded, 2 run** — i.e. one bare `apt-get update` at the
-top of the book is predicted to cost this kit **all seven** of its elisions. That is the whole lesson
+**Predicted ceiling, converged: 8 elided, 0 guarded, 2 run** — i.e. one bare `apt-get update` at the
+top of the book is predicted to cost this kit **all eight** of its elisions. That is the whole lesson
 the line exists to teach, and it is why the live run should be done twice: once as written, once with
 L1 commented out. Confidence **~SUSPECT** on the exact count, **+SURE** on the direction.
 
@@ -78,8 +91,9 @@ Filled in after the fact; renders under `renders/`.
 | L6 | guard / guard | | |
 | L7 | guard / guard | | |
 | L8 | guard / guard | | |
-| L9 | run / run | | |
+| L9 | guard / guard | | |
 | L10 | run / run | | |
+| L11 | run / run | | |
 
 ## §4. Mismatches and findings
 
