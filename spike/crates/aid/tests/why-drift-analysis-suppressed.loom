@@ -1,6 +1,7 @@
 ---
-arrangement-when-used: The whole degraded `dorc why --last` report, when the recorded book digest no longer matches the file at the recorded path. The receipt banner survives (header, inventory, tally — all controller-minted and stored); everything keyed to SOURCE is suppressed, and this row is what says so.
-arrangement-why: 28F rul-drift-replay-d1 — the 03:40 morning where the admin edited the book before asking why. The answer used to be a bare refusal; the durable's own scalars still answer, so they render with the drift stated in them, and the chain says in its place that it cannot.
+arrangement: why-drift-analysis-suppressed
+when-used: Stands in for the whole body of the zero-argument `dorc why` aggregate on a drifted replay -- the TRUST SPENT / SURPRISES / IMPROVEMENTS sections and every chain.
+why: 28F rul-drift-replay-d1: those sections are re-derived through the kernel from the current book, so a drifted replay must suppress them rather than answer about the wrong bytes, and must say that it did.
 ---
 -- book.sh --
 #!/bin/sh

@@ -498,9 +498,13 @@ impl DorcConsumer {
         render: EditableRender<SectionKey, SectionVariableId>,
     ) -> Result<DorcEditableBaseline, String> {
         let variables = editable_variables(&render)?;
-        // An arrangement case has no diagnostic and no payload: registry entries store WORDS, so
-        // the variable inventory is empty by construction rather than absent by failure.
-        if case.frontmatter().scalar("arrangement").is_some() {
+        // A case that declares no diagnostic has no payload: an arrangement page and a chrome-line
+        // REPORT (the drifted receipt) are both built out of registry entries, which store WORDS.
+        // The inventory is empty by construction rather than absent by failure — and a report case
+        // must not inherit one from whatever diagnostic its durable happens to also provoke.
+        if case.frontmatter().scalar("arrangement").is_some()
+            || case.frontmatter().scalar("code").is_none()
+        {
             return Ok(DorcEditableBaseline {
                 render,
                 variables,

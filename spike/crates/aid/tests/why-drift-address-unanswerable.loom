@@ -1,6 +1,7 @@
 ---
-arrangement-when-used: `dorc why <book.sh:N> --last` over a durable whose recorded book digest no longer matches the file at the recorded path. The reader asked about a LINE; the run's line numbers belong to bytes this durable never carried, so the whole answer is this one row.
-arrangement-why: 28F rul-drift-replay-d1 + 271 rul-sin-ordering — naming a line here would be a mis-attribution (pope-sin), which is worse than a missing answer. No banner and no footer either: the banner answers about the run, and the footer claims a selection nothing here selected.
+arrangement: why-drift-address-unanswerable
+when-used: The whole `dorc why <addr>` render on a drifted replay. Value: the address as given.
+why: 28F rul-drift-replay-d1: an address is a SOURCE line, and the source that ran is not on disk, so the query is answered by saying why it cannot be answered rather than by naming lines of a file the run never saw.
 ---
 -- book.sh --
 #!/bin/sh
