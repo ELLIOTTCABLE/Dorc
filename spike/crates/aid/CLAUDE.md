@@ -184,7 +184,11 @@ crate's charter) · `notes/287` (errorloom as-built).
   `.rs` tests. That siting is deliberate — it makes THIS file the registry that fires on
   every loom edit (`288:rul-claudemd-fires-per-directory`). Cargo compiles only `tests/*.rs`,
   so the data files are inert here; the runners that drive them are
-  `crates/cli/tests/{e2e,looms}.rs`.
+  `crates/cli/tests/{e2e,looms}.rs`. The first why-faced REPORT cases are the
+  `why-drift-*.loom` pair (W4): each declares `arrangement: <its own slug>` — a BORROWED
+  page key (the report-case key design is open — `28H`) — and owns exactly its namesake
+  row (`is_case_owned` is a filename match; a foreign row edited through a multi-row
+  render refuses via `authored_words_are_case_owned`).
 - **paths-are-manifest-relative** — the case lookup (`is_case_owned`, in both `catalog.rs`
   and `catalog_defining_cases.rs`) is now manifest-LOCAL — `CARGO_MANIFEST_DIR/tests/
   <slug>.loom` — so it survives a crate move. What still reaches ACROSS is `dorc-loom`:

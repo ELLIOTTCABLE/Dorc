@@ -165,10 +165,14 @@ durable-derivable, so drifted receipts carry header/tally/drift-line only,
 honestly). The formatting-engine SKELETON (`spike/crates/weft`) was
 human-pulled-forward into the arc (§2's first entry). W5 remains HELD on the
 human's ack, its queue grown (the drift rows; the jargon glyphs). **W4 is
-EXECUTING** (2026-07-26, the `28H` conductor: map folded @ `86522ca2` with the
-class-(c) measurement + the adjudicated lane cut carrier → parts → span;
-transport work pulled in, §2's entry). Still r30: the levers/retention pair, the
-whylog drifted-wording walk, the desync-transition machinery.
+EXECUTED** (closed 2026-07-26; conduct record `notes/28H`; worklist home
+`notes/28J`): the transport pull-in landed dorc-side (errorloom untouched), the
+bridge carries every why render, the first two why-faced looms exist and the
+edit loop is proven end-to-end. Banked r30 openers (`28H`): the loom-UX lane
+(const-vs-mirror render lag · structure-bless · blast-radius dirty gate · the
+lexical-judgment inventory) · the full-driver extraction (chain-row faces).
+Still r30 from before: the levers/retention pair, the whylog drifted-wording
+walk, the desync-transition machinery.
 
 ## §4 — Acceptance, stated once
 

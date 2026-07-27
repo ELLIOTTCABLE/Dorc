@@ -519,6 +519,20 @@ is the human's; untouched.
   Conductor doc-edits owed at close: `cli/CLAUDE.md` lib-seam bullet
   under-describes (the drifted-why render seat joined) · `aid/CLAUDE.md`
   cases-live-here names the why-drift cases.
+- **ARC CLOSE (2026-07-26)** — all lanes folded and conductor-verified
+  (map/carrier/parts/span/drifted-driver + onramp/gate-probe/pre-commit-honesty);
+  the close batch landed (LIVING_STATUS · `28G` §3 · TODO-ADDTL interlock ·
+  cli/aid CLAUDE.md bullets); dead agent worktrees removed (branches preserve
+  everything); final `mise run bless` pending as the last act. r30 charters
+  banked ABOVE: loom-UX (const-vs-mirror · structure-bless · blast-radius gate
+  · lexical inventory · breadth-vs-first-failure · seed-with-arity ·
+  fixpoint-executed visibility · ownership-declaration lean) · the full-driver
+  extraction · ran-log retirement (optional tail, unspent). OPEN with the
+  human: `ask-full-driver-this-arc-or-r30` · `ask-why-carries-risk-flag-or-
+  reads-receipt` · `ask-apply-header-vs-byte-floor` ·
+  `ask-aggregate-owes-declines` (answered in principle; render change unowned).
+  Opaque-review: standing human deferral (typed 2026-07-24, prior arc) — gate
+  non-functional; deferred without re-asking, per the standing order.
 - (seat) **watch: the 288 §7b one-span fence is the W4 crux** — value-bearing lines
   render as ONE span; multi-word value-interleaved entries are render-only under the
   current transport. The why-chain speaker rows are exactly that shape. The map lane
