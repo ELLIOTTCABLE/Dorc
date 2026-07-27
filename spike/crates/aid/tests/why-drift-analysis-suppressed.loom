@@ -1,0 +1,52 @@
+---
+arrangement-when-used: The whole degraded `dorc why --last` report, when the recorded book digest no longer matches the file at the recorded path. The receipt banner survives (header, inventory, tally — all controller-minted and stored); everything keyed to SOURCE is suppressed, and this row is what says so.
+arrangement-why: 28F rul-drift-replay-d1 — the 03:40 morning where the admin edited the book before asking why. The answer used to be a bare refusal; the durable's own scalars still answer, so they render with the drift stated in them, and the chain says in its place that it cannot.
+---
+-- book.sh --
+#!/bin/sh
+# The book AS IT IS NOW. Its digest is not the one the durable below recorded, which is the
+# whole fixture: every source-keyed section of the report is answering about somebody else's
+# bytes, so it is suppressed rather than re-derived.
+apt-get install -y nginx
+systemctl enable nginx
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# Present only so the receipt has a real oracle INVENTORY to state: the degraded render reads the
+# recorded oracle PATHS off the durable and never opens them.
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+-- .whylog --
+dorc-whylog/2 nonce=dorc attempt=0 host=web1 target=width-one generation=width-one mode=whylog-replay started=1784944837000 @@dorc@@
+book digest=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa path=book.sh @@dorc@@
+oracle ordinal=0 digest=cccccccccccccccccccccccccccccccc path=firewall.oracle.sh @@dorc@@
+argv value=dorc @@dorc@@
+argv value=plan @@dorc@@
+argv value=book.sh @@dorc@@
+argv value=--risk-faultless-skips @@dorc@@
+digest decision=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb @@dorc@@
+apply leaf=0 disposition=run predicted=1 @@dorc@@
+apply leaf=1 disposition=replace predicted=1 @@dorc@@
+apply leaf=2 disposition=guard predicted=1 @@dorc@@
+results bytes=0 @@dorc@@
+dorc-whylog-end/2 @@dorc@@
+
+-- replay --
+$ dorc why --last --whylog=.whylog
+receipt: [unwritten: why-receipt-when-replayed], host web1
+   book book.sh (digest aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)
+   [unwritten: why-receipt-book-drifted]
+   oracles: firewall.oracle.sh
+   risk-profile: --risk-faultless-skips
+   plan: 1 ran, 1 guarded, 1 skipped
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+[unwritten: why-drift-analysis-suppressed]

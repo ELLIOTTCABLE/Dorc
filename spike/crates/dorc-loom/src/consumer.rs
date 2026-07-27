@@ -421,12 +421,22 @@ impl DorcConsumer {
             }
             return Some(ReplayResult::bytes(output));
         }
-        if let Some(path) = parse_direct_why(&tokens) {
-            let raw = context.materialized_input(path);
+        if let Some(why) = parse_direct_why(&tokens) {
+            let raw = context.materialized_input(why.whylog);
+            if let Some(parts) = raw.and_then(|whylog| {
+                drifted_why_parts(whylog, why.address, |path| {
+                    materialized_source(case, context, path)
+                })
+            }) {
+                return Some(ReplayResult::editable(to_editable_render(&parts)));
+            }
+            if why.address.is_some() {
+                return None;
+            }
             let book = materialized_source(case, context, "book.sh");
             let inspected = dorc_plan::whylog::inspect(
                 raw,
-                path,
+                why.whylog,
                 book.as_deref()
                     .map(|book| dorc_plan::whylog::WhylogCurrent {
                         book: Some(book),
@@ -623,12 +633,11 @@ impl DorcConsumer {
             .map(errorloom::ReplayBlock::command)
             .ok_or_else(|| "case has no replay".to_owned())?;
         let words = exact_words(command).ok_or_else(|| "unsupported whylog replay".to_owned())?;
-        let path =
-            parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
+        let why = parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
         let raw = case
             .sections()
             .iter()
-            .find(|section| section.name() == path)
+            .find(|section| section.name() == why.whylog)
             .map(errorloom::Section::content);
         let book = case
             .sections()
@@ -637,7 +646,7 @@ impl DorcConsumer {
             .map(errorloom::Section::content);
         dorc_plan::whylog::inspect(
             raw,
-            path,
+            why.whylog,
             book.map(|book| dorc_plan::whylog::WhylogCurrent {
                 book: Some(book),
                 oracles: &[],
@@ -709,12 +718,62 @@ fn arrangement_index(
         })
 }
 
-fn parse_direct_why<'a>(words: &[&'a str]) -> Option<&'a str> {
-    let ["dorc", "why", "--last", whylog] = words else {
-        return None;
+/// One `dorc why --last --whylog=<file>` replay: which durable, and which question of it.
+struct DirectWhy<'a> {
+    /// The `book.sh:N` positional, when the case asked about a line rather than the whole run.
+    /// LEADING only — the parser also takes it after a flag (`289:rider-why-last-address-order`),
+    /// but a case's replay line is written by hand and the canonical spelling is the leading one.
+    address: Option<&'a str>,
+    /// The case-relative durable to replay.
+    whylog: &'a str,
+}
+
+fn parse_direct_why<'a>(words: &[&'a str]) -> Option<DirectWhy<'a>> {
+    let (address, whylog) = match words {
+        ["dorc", "why", "--last", whylog] => (None, whylog),
+        ["dorc", "why", address, "--last", whylog] if !address.starts_with('-') => {
+            (Some(*address), whylog)
+        }
+        _ => return None,
     };
     let path = whylog.strip_prefix("--whylog=")?;
-    case_relative_path(path).then_some(path)
+    case_relative_path(path).then_some(DirectWhy {
+        address,
+        whylog: path,
+    })
+}
+
+/// The DEGRADED `dorc why --last` receipt, rendered in-process over a committed durable
+/// (`28F:rul-drift-replay-d1`; `28H:prop-drifted-why-is-the-thin-driver`).
+///
+/// The ONE seat both replay chains go through, which is what keeps them from disagreeing: the two
+/// differ only in where a case's bytes come from, so that is the only thing `source` supplies.
+///
+/// `None` — falling through to the refusal-diagnostic route — for anything that is not a drifted
+/// v2 durable: an unadmissible durable, a durable naming a book the case does not carry, or a book
+/// that still digests to what the run recorded. Drift is the ONLY state this route answers, because
+/// it is the only one whose answer is a report rather than a diagnostic.
+fn drifted_why_parts(
+    whylog: &str,
+    address: Option<&str>,
+    source: impl Fn(&str) -> Option<String>,
+) -> Option<dorc_aid::tagged::RenderParts> {
+    let dorc_plan::records::Admission::Admitted(envelope) =
+        dorc_plan::whylog::admit_unscoped_whylog(
+            whylog.as_bytes(),
+            dorc_plan::whylog::WhylogLimits::spike_default(),
+        )
+    else {
+        return None;
+    };
+    let book = source(envelope.recorded_book_path().as_str())?;
+    if dorc_plan::invocation::book_digest(&book) == envelope.claims().book_digest() {
+        return None;
+    }
+    Some(dorc_cli::drifted_why_parts(
+        address,
+        &dorc_cli::drifted_receipt(&envelope),
+    ))
 }
 
 /// The HONEST-TRIGGER invocation route (`289:rul-worldless-route-honest-trigger`; `291` §5a W2).
@@ -838,6 +897,19 @@ fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> 
     fs::read_to_string(context.cwd().join(path)).ok()
 }
 
+/// [`materialized_source`]'s twin for the re-render chain, which has no materialized directory:
+/// the case's own section bytes, under the same case-relative path rule.
+fn section_source<'a>(case: &'a Case, path: &str) -> Option<&'a str> {
+    case_relative_path(path)
+        .then(|| {
+            case.sections()
+                .iter()
+                .find(|section| section.name() == path)
+                .map(errorloom::Section::content)
+        })
+        .flatten()
+}
+
 fn materialized_input(case: &Case, context: &ReplayContext<'_>, path: &str) -> Option<String> {
     if !materialized_file(case, context, path) {
         return None;
@@ -945,33 +1017,8 @@ impl DorcConsumer {
         if let Some(slug) = arrangement_page_slug(case, &words) {
             return Ok(self.arrangement_page(slug)?.text());
         }
-        if let Some(path) = parse_direct_why(&words) {
-            let raw = case
-                .sections()
-                .iter()
-                .find(|section| section.name() == path)
-                .map(errorloom::Section::content);
-            let book = case
-                .sections()
-                .iter()
-                .find(|section| section.name() == "book.sh")
-                .map(errorloom::Section::content);
-            let inspected = dorc_plan::whylog::inspect(
-                raw,
-                path,
-                book.map(|book| dorc_plan::whylog::WhylogCurrent {
-                    book: Some(book),
-                    oracles: &[],
-                }),
-            );
-            let diag = inspected
-                .diagnostics
-                .into_iter()
-                .next()
-                .ok_or_else(|| format!("unsupported replay {command:?}"))?;
-            let interner = Interner::default();
-            let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
-            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
+        if let Some(why) = parse_direct_why(&words) {
+            return self.render_direct_why(case, &why, command);
         }
         if let Some(path) = parse_direct_lint(&words) {
             let source = case
@@ -1040,6 +1087,44 @@ impl DorcConsumer {
             &filename,
             &interner,
         )))
+    }
+
+    /// The re-render half of the `dorc why --last` route: the degraded RECEIPT when the case's
+    /// durable drifted from its book, else the refusal diagnostic. Split out of
+    /// [`Self::render_direct_replay`] so the two answers stay one arm rather than two.
+    fn render_direct_why(
+        &self,
+        case: &Case,
+        why: &DirectWhy<'_>,
+        command: &str,
+    ) -> Result<String, String> {
+        let raw = section_source(case, why.whylog);
+        if let Some(parts) = raw.and_then(|whylog| {
+            drifted_why_parts(whylog, why.address, |path| {
+                section_source(case, path).map(str::to_owned)
+            })
+        }) {
+            return Ok(parts.text());
+        }
+        if why.address.is_some() {
+            return Err(format!("unsupported replay {command:?}"));
+        }
+        let book = section_source(case, "book.sh");
+        let diag = dorc_plan::whylog::inspect(
+            raw,
+            why.whylog,
+            book.map(|book| dorc_plan::whylog::WhylogCurrent {
+                book: Some(book),
+                oracles: &[],
+            }),
+        )
+        .diagnostics
+        .into_iter()
+        .next()
+        .ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        let interner = Interner::default();
+        let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
+        Ok(format!("{}\n", reflow_to_canonical(&parts.text())))
     }
 }
 
