@@ -1,0 +1,4 @@
+dorc r26 live-smoke target.
+
+Throwaway box. Provisioned for one round of live-execution experiments and destroyed
+afterwards; nothing here is durable. See Research/notes/26E-live-target.md.
