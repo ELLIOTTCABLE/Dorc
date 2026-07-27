@@ -484,6 +484,10 @@ impl Parser<'_> {
         if self.at_keyword("shift") {
             return self.parse_shift();
         }
+        if self.at_test_led_list() {
+            let test = self.parse_bracket_test()?;
+            return self.parse_and_or_tail(AndOrItem::Test(test));
+        }
         // Otherwise it is a word-led line: an assignment, an annotation, or a plain
         // command. Decide by looking at the word shape and what follows.
         let stmt = self.parse_word_led()?;
@@ -492,6 +496,34 @@ impl Parser<'_> {
             (Some(_), _) => Err(self.fail_here("an and-or list must be led by a command")),
             (None, stmt) => Ok(stmt),
         }
+    }
+
+    /// Does an IN-DIALECT bracket test lead an and-or list here — `[ W = W ] &&`/`||`?
+    ///
+    /// A `[ … ]` test is a statement ONLY in this position (`281`-era dialect: a bare test
+    /// statement stays out of dialect, so the tracers never meet a rc they cannot place). Decided
+    /// by LOOKAHEAD, in the shape [`parse_word_led`](Self::parse_word_led) already uses to tell an
+    /// annotation from a command: anything that is not exactly this closed form is left to the
+    /// word-led path and its diagnostic, so opening this form moves no other input's give-up.
+    fn at_test_led_list(&self) -> bool {
+        if !matches!(self.peek(), Some(Tok::LBracket)) {
+            return false;
+        }
+        let kind = |at: usize| self.toks.get(at).map(|t| &t.kind);
+        let is_op = matches!(
+            kind(self.pos.saturating_add(2)),
+            Some(Tok::Word { lexeme, single_quoted: false, .. }) if lexeme == "=" || lexeme == "!="
+        );
+        let closes = matches!(kind(self.pos.saturating_add(4)), Some(Tok::RBracket));
+        let joins = matches!(
+            kind(self.pos.saturating_add(5)),
+            Some(Tok::DAmp | Tok::DPipe)
+        );
+        matches!(kind(self.pos.saturating_add(1)), Some(Tok::Word { .. }))
+            && is_op
+            && matches!(kind(self.pos.saturating_add(3)), Some(Tok::Word { .. }))
+            && closes
+            && joins
     }
 
     /// The and-or operator at the cursor, if any.
