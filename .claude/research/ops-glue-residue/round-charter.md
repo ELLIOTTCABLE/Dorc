@@ -2,8 +2,49 @@
 
 > ROUND CLOSED: all four deliverables LANDED (KNOBS:kBOOT · root SIBLINGS.md ·
 > notes/26K synthesis · notes/r26-glue-strawmen/). The human-sittings queue
-> lives in 26K §5. This charter is now the round's historical adjudication
-> ledger; nothing here needs further maintenance.
+> lives in 26K §5. This charter is the round's adjudication ledger; see the
+> post-close addendum at the bottom for the human's follow-up directives.
+
+## Post-close addendum (human, 2026-07-28; rewrites HELD pending directives)
+
+- nack-hashcolon-population (human, conductor CONCURS with a strengthening):
+  the raw-source face does NOT motivate the `#:` carrier — every
+  Dorc-mediated delivery strips en route, and the parse-vs-execute
+  distinction covers raw runs: colon-marks misbehave only when the annotated
+  line EXECUTES, and marks live in `__role` bodies a raw run never calls.
+  sit-kty-annot-carrier-population DOWNGRADED to residue: (a) watch for
+  book-line annotations that would execute raw (~SUSPECT rare); (b) the
+  `#cloud-boothook`-first-line vs shebang/marker formatting nit.
+- rul-os-release-wall-and-lint (human lean, banked): `. /etc/os-release`
+  stays a WALL; no engine special-case (identity-declared-never-inferred
+  holds); lint/hint toward a POSIX-sh-written, oracle-able read idiom
+  (strawman: a stdlib `os_release() { sed -n "s/^$1=//p" … }` helper).
+  Contingent on field research: does real content break the KV shape; does
+  the idiom read acceptably. sit-os-release-contracted-parse REFRAMED so.
+- ack-sh-as-true-cfg (human): the pyinfra saga's dodge is credited to
+  sh-as-the-artifact; keep as evidence framing.
+- lock-step explained (conductor): pyinfra = implicit global barrier after
+  EVERY op fleet-wide (requires precomputed op list = the prepare pass); the
+  sh spelling is explicit per-dependency waits (`ssh other-host check`) —
+  finer, no global knowledge, per-line failure policy; oracle-y territory;
+  FIFTH arrival at the scope/context-lowering seam. Caution stands: never
+  re-import the implicit barrier.
+- note-emergency-floor-equals-gradual-enhancement (human): same thesis,
+  different spelling; keep the floor version for citability (incumbents' own
+  docs name it).
+- PENDING REWRITE DIRECTIVES (held): SIBLINGS → ONE unified table (all
+  products × features/concepts/limitations; possibly re-awaken the three
+  builders — still resumable — for per-product fill-in + online verification)
+  · 26K moves to plans/-tier as THE kBOOT / parent-child-sibling plan.
+- NEW DELIVERABLE (spec banked; write on directive):
+  **deliverable-implementation-plan**, three phases — (1) easy-wins-now:
+  correctness-only items doable immediately, EXCLUSIVE of anything
+  analysis-kernel-touching (sacred ground); (2) tests round: which glue
+  capabilities get baked early and how they stay pinned through unrelated
+  work (mechanizing splice-floor damage-watch); (3) a careful, LIGHTWEIGHT
+  kernel round — epoch coordinates at minimum plus at most a couple of
+  critical touches, explicitly NOT a grab-bag of pending kernel changes
+  (sit-redirect-routing = consider-and-probably-defer there, never smuggled).
 
 Conductor-maintained. Session: `research-ops-glue-residue`. Topic: making Dorc more
 useful for the ops "glue phase" — coverage of territory larger ops tools can't,
