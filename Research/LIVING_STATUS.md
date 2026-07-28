@@ -146,6 +146,22 @@ ceremony · the why/loom prose tails (all gently held, below).
   decline-class starter-set `27W` §0 · C8 operand display `27U` §7 · prose-register schema
   `282` §10 — W4 landed, so that sitting now has transcript faces · lint tc-leans `27S`
   §5/`27T`). All live; none blocks r26.
+- **`28J`'s "7 unwritten catalog codes, all loom-editable today" is WRONG** (+SURE, all 7
+  spot-checked 2026-07-27: `marker-version-unrecognized` · `mark-unknown-verb` ·
+  `mark-rc-arity-exceeded` · `mark-standalone-rc-consumer` · `mark-hashcolon-malformed` ·
+  `host-evidence-admission-refused` · `whylog-unwritten`, all refuse `MarkerOutsideEditableSection`
+  identically; `transport-session-lost`, same shape, matches too). Root cause: catalog
+  `message: None` renders `[unwritten: <slug>]` as chrome (`push_arrangement_part` →
+  `RenderComponent::Structure`, `aid/diag.rs:2786-2790`), never a catalog `EditableSection` —
+  -GUESS `28J`'s author conflated this with the ARRANGEMENT registry's same-spelled but
+  structurally opposite `Words::Unwritten` (genuinely editable, `28H` span ruling 4). Separate
+  friction on the WRITTEN side: `unreflow`'s `join_continuations` (`dorc-loom.rs:796-811`)
+  excludes only `-->` caret-frame lines from its title-join, not `= help:`/`= note:`, so revising
+  an already-`Some` message with no caret frame before its help block also refuses — ~SUSPECT hits
+  4 of the 5 case-owned written entries (all `whylog-*`; only `whylog-absent` directly
+  reproduced). Only confirmed-working shape: written message WITH a caret frame separating it
+  from help (`cmdsub-operand-top`, `compile`-clean, not promoted). W5-as-scoped needs a re-audit
+  before more human time goes into "type over the placeholder" on the unwritten codes.
 - **r26 reactive/capture + multi-host revival** — `26B`/`26C` + `260`/`261`/`262`; revival
   conditions `270` §5. NB r26 consumes `260` §5/§2 transport law at N=1 WITHOUT building the
   fleet kernel; the revival inherits whatever SessionDriver seam r26 lands.
