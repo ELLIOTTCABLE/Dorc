@@ -1,0 +1,91 @@
+#=========================== FROZEN EVIDENCE ==============================
+# STRAWMAN - imagination-tier.  Features referenced here MAY NOT EXIST.
+# NOT deployable and must NEVER be applied to any cluster, by any human or
+# agent.  It is a design-target written to be read.  No format-compat
+# promises: pre-user, every Dorc-side spelling here is rename-in-place.
+#==========================================================================
+#
+# The manifest half of k8s-initcontainer-pv-seed.sh.  Real Kubernetes
+# fields throughout (kubernetes.io v1.36, accessed 2026-07-28); the only
+# imaginary things are the two Dorc-flavoured lines, both flagged inline.
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tiles-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 200Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tileserv
+spec:
+  replicas: 1
+  # ReadWriteOnce plus a writing init container: never let two pods overlap.
+  # This is the primary answer to concurrency; the lock in the script is the
+  # belt-and-braces for the eviction window, because access modes are NOT a
+  # write lock ("Volume access modes do not enforce write protection once the
+  # storage has been mounted").
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: tileserv }
+  template:
+    metadata:
+      labels: { app: tileserv }
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 2000
+        # 200 GiB of recursive chown on every pod start is a real startup
+        # tax; OnRootMismatch skips it once the root dir already matches.
+        fsGroupChangePolicy: OnRootMismatch
+      initContainers:
+        - name: seed-tiles
+          image: registry.example.net/tileserv-seed:1.9.3
+          # No command: the image ENTRYPOINT is /usr/local/bin/seed-tiles.sh,
+          # whose shebang is `#!/usr/bin/env dorc-run`.  The kernel honours
+          # it; the container runtime is not involved; Kubernetes is not
+          # asked for anything.  Same mechanism as chezmoi's run-scripts.
+          env:
+            - name: TILESET_VERSION
+              value: "2026-06"
+            # STRAWMAN (Dorc): the why-log sink.  emptyDir, so the app
+            # container and a debug pod can read it, and so nothing of ours
+            # lands on the user's data volume.  It dies with the pod - see
+            # the note's "no dorc why --last in this seat".
+            - name: DORC_WHYLOG
+              value: /var/log/dorc/seed.whylog
+          volumeMounts:
+            - { name: tiles, mountPath: /var/lib/tiles }
+            - { name: dorc-log, mountPath: /var/log/dorc }
+          # The effective-init-request rule is max-not-sum against the app
+          # containers, and it is reserved for the Pod's whole life - so a
+          # fat init request is a standing scheduling cost, not a burst.
+          resources:
+            requests: { cpu: "1", memory: 512Mi }
+          #
+          # NOT ABSENT BY CHOICE: there is no readinessProbe here because
+          # Kubernetes will not accept one.  "Kubernetes prohibits
+          # readinessProbe from being used because init containers cannot
+          # define readiness distinct from completion. This is enforced
+          # during validation."  Nor lifecycle, livenessProbe, startupProbe.
+          # The seat's entire convergence signal is this script's exit code.
+          # That is the hole this book is standing in.
+      containers:
+        - name: tileserv
+          image: registry.example.net/tileserv:1.9.3
+          volumeMounts:
+            - { name: tiles, mountPath: /var/lib/tiles, readOnly: true }
+            - { name: dorc-log, mountPath: /var/log/dorc, readOnly: true }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+      volumes:
+        - name: tiles
+          persistentVolumeClaim: { claimName: tiles-data }
+        - name: dorc-log
+          emptyDir: {}
