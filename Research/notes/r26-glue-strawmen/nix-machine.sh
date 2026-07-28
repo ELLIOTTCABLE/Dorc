@@ -70,22 +70,41 @@ fi
 
 if [ "$MACHINE_CLASS" = foreign ]; then
 
-   # The guard everyone writes, and the reason it is not `command -v nix`:
-   # the upstream installer puts nix under /nix/var/nix/profiles/default and
-   # arranges for PATH via a profile script that a non-login, non-interactive
-   # shell never sources. `command -v nix` says "absent" on a box where nix
-   # is perfectly well installed. Test for the daemon profile, not the name.
-   if [ ! -e /nix/var/nix/profiles/default/bin/nix ]; then
+   # The guard everyone writes, and the reason it is NOT `command -v nix`:
+   # a multi-user install puts nix under /nix/var/nix/profiles/default and
+   # arranges PATH by appending a `. …/nix-daemon.sh` snippet to /etc/bashrc,
+   # /etc/profile.d/nix.sh, /etc/zshrc and friends — none of which a
+   # non-login, non-interactive shell sources. `command -v nix` says "absent"
+   # on a box where nix is perfectly well installed.
+   #
+   # So the guard tests the exact file the next line sources. One fact, one
+   # guard, no gap between what was proven and what is used.
+   NIX_PROFILE_SH=/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+
+   if [ ! -e "$NIX_PROFILE_SH" ]; then
+      # Download-then-exec rather than `curl | sh`, for the reason five of
+      # six comparable tools give: the script keeps its own stdin, so an
+      # interior prompt cannot eat the script's remaining bytes.
+      #
+      # And it is the Determinate installer rather than upstream's for two
+      # boring reasons that both matter to a book: flakes are enabled at
+      # install time (upstream still ships them off, and formally
+      # experimental), and it is the only one of the two with an automated
+      # uninstall — upstream's uninstall path is literally commented out in
+      # install-multi-user.sh, which instead PRINTS a multi-step runbook.
+      # A tool with no uninstall is a tool a book cannot converge backwards.
       curl -fsSL https://install.determinate.systems/nix >/tmp/nix-installer.sh
       $SUDO sh /tmp/nix-installer.sh install --no-confirm
    fi
 
-   # ... and the wart the guard above exists to survive: even immediately
-   # after a successful install, THIS shell has no nix on PATH. Sourcing the
-   # profile script is not optional and is not idempotence-relevant; it is
-   # how the next line finds the binary at all.
+   # ... and the wart the guard above exists around, in the installer's own
+   # words: "Nix won't work in active shell sessions until you restart them."
+   # Sourcing is not optional and is not idempotence-relevant; it is how the
+   # next line finds the binary at all. Everyone writing this script for the
+   # first time gets bitten here, and no amount of guard-lifting helps —
+   # this line is not a mutation and has nothing to converge.
    # shellcheck source=/dev/null
-   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+   . "$NIX_PROFILE_SH"
 
 fi
 
@@ -126,8 +145,13 @@ esac
 
 # (a) An imperative daemon enrolment. `services.tailscale.enable` declares
 #     the daemon; the node's membership in a tailnet is remote, mutable,
-#     authenticated state that no local closure can describe. The admin's
-#     own guard is the honest one: ask the daemon.
+#     authenticated state that no local closure can describe. NixOS closes
+#     part of the gap — set `authKeyFile` and the module generates a
+#     `tailscaled-autoconnect.service` that runs `tailscale up` for you —
+#     but the module's own option documentation states the residue outright
+#     for the routing features: "you will still need to call
+#     `sudo tailscale up` with the relevant flags". That sentence, in the
+#     incumbent's own docs, is the whole thesis of this book in one line.
 if ! tailscale status >/dev/null 2>&1; then
    $SUDO tailscale up --ssh --accept-routes
 fi
@@ -183,33 +207,73 @@ $SUDO nix-collect-garbage --delete-older-than 30d
 # it is not a convergence verb, and we say so by not using it.
 
 nixos_rebuild__is_converged() {
-   while [ "${1#-}" != "$1" ]; do shift; done
-   verb=$1; shift
+   verb=${1:-}; shift 2>/dev/null || :
+
+   # Walk the flags we care about. The argparse IS the type-checker of the
+   # vouch, so what it refuses matters as much as what it parses.
+   flakeref=/etc/nixos
+   while [ $# -gt 0 ]; do
+      case $1 in
+      --flake) flakeref=${2:-}; shift 2 || break ;;
+      --flake=*) flakeref=${1#--flake=}; shift ;;
+
+      # THE decline that matters. `--target-host` and `--build-host` move
+      # the work to another machine over ssh. Our whole check reads
+      # /run/current-system and /nix/var/nix/profiles/system — on the
+      # machine the check runs on. Under --target-host those are the
+      # CONTROLLER's, and answering with them would be a measurement of a
+      # different machine than the one the line acts on: the wrong-world
+      # verdict, which is the cardinal-sin shape.
+      #
+      # Worth noticing what this is, structurally: an incumbent shipping a
+      # second host-scope inside one command, in a book that otherwise
+      # addresses one machine. That is the attribution-scope re-entry
+      # trigger arriving from a direction nobody was watching.
+      --target-host|--build-host)
+         printf 'decline nixos-rebuild %s (second host scope)\n' "$1" \
+            >>"${DREP_V1:-/dev/null}"
+         return 2 ;;
+      --target-host=*|--build-host=*)
+         printf 'decline nixos-rebuild second host scope\n' >>"${DREP_V1:-/dev/null}"
+         return 2 ;;
+
+      # Anything that makes the evaluation non-reproducible.
+      --override-input|--impure|--recreate-lock-file|--no-write-lock-file|--upgrade|--upgrade-all|--rollback)
+         printf 'decline nixos-rebuild %s (unpinned evaluation)\n' "$1" \
+            >>"${DREP_V1:-/dev/null}"
+         return 2 ;;
+
+      *) shift ;;
+      esac
+   done
 
    case $verb in
    switch)
-      # Two halves. Half one is free: is the running system also the boot
-      # default? A `readlink` each. This is what separates switch from test.
+      # Half one is nearly free, and it is the entire difference between
+      # `switch` and `test`: is the running system ALSO the boot default?
+      # `nixos-rebuild` advances /nix/var/nix/profiles/system for switch and
+      # boot only — never for test — so after a `test` these two symlinks
+      # disagree, and a book that elided `switch` on the strength of
+      # yesterday's `test` would leave a machine that reverts on reboot.
       cur=$(readlink -f /run/current-system) || return 2
-      boot=$(readlink -f /nix/var/nix/profiles/system) || return 2
-      [ "$cur" = "$boot" ] || return 1
+      bootdef=$(readlink -f /nix/var/nix/profiles/system) || return 2
+      [ "$cur" = "$bootdef" ] || return 1
 
-      # Half two: is that closure the one this flake evaluates to? Two rungs,
-      # cheap first.
-      flakeref=${1:-}
+      # Half two: is that closure the one this flake evaluates to?
       _nixos_rebuild_expected "$flakeref"
       ;;
-   boot|test|dry-activate|dry-build|build)
-      # `boot` and `test` each satisfy exactly one half of what our check
-      # measures, and we have not authored the halves separately. Declining
-      # is ordinary control flow, and a decline runs the line.
-      return 2
-      ;;
+   boot|test)
+      # Each satisfies exactly one half of what we measure. We have not
+      # authored the halves separately, so we decline rather than answer a
+      # narrower question with a wider check. Declining is ordinary control
+      # flow, and a decline runs the line.
+      return 2 ;;
+   dry-activate|dry-build|build|build-vm|build-vm-with-bootloader|list-generations|edit|repl)
+      return 2 ;;
    *)
       printf 'decline unmodeled nixos-rebuild verb: %s\n' "$verb" \
          >>"${DREP_V1:-/dev/null}"
-      return 2
-      ;;
+      return 2 ;;
    esac
 }
 
@@ -222,10 +286,24 @@ nixos_rebuild__is_converged() {
 # meaningless, and we decline rather than guess.
 #
 # Rung two: evaluate the closure and compare store paths outright. Slower
-# (a NixOS closure evaluation, seconds), total, and the soundest convergence
-# check any incumbent offers — a nix store path is a complete function of the
-# evaluated inputs, so path equality is not a heuristic about the system, it
-# IS the system's identity.
+# (a NixOS closure evaluation, seconds and climbing — nixpkgs eval time is a
+# known, tracked, worsening cost), total, and the soundest convergence check
+# any incumbent offers.
+#
+# PRECISION, because the loose version of this claim is wrong and would
+# embarrass us: nix is INPUT-addressed by default, not content-addressed. An
+# ordinary derivation's store path is a hash over the derivation's inputs —
+# the recipe — not over the bytes it produced. (Content-addressed store
+# objects exist, but only for fixed-output derivations and for the
+# still-experimental `ca-derivations` feature.) That is FINE for us, and in
+# one respect better: input-addressing is precisely a statement about the
+# recipe, and "was this system built from this recipe" is exactly the
+# question a convergence check should ask. But we must not say
+# "content-addressed"; the tool's own glossary is explicit and someone will
+# check.
+#
+# Either way the property we want holds: path equality is not a heuristic
+# about the system, it IS the system's identity.
 #
 # The hermeticity precondition is `flake.lock`, and it is why the local-path
 # gate below is not fussiness: a remote flakeref (`github:me/cfg#host`)
@@ -236,7 +314,7 @@ nixos_rebuild__is_converged() {
 
 _nixos_rebuild_expected() {
    dir=${1%%#*}
-   attr=${1#*#}
+   case $1 in *#*) attr=${1#*#} ;; *) attr=$(hostname) ;; esac
 
    case $dir in
    /*|./*|../*|.) : ;;
@@ -272,24 +350,45 @@ _nixos_rebuild_expected() {
 #
 # Same shape, one half instead of two: home-manager has no bootloader, so
 # "activated" is the whole story. The current generation is a profile
-# symlink, exactly as the system profile is.
+# symlink, exactly as the system profile is — but it is NOT the profile
+# most people think of. Home Manager keeps two: the PACKAGE profile
+# (`~/.nix-profile`, or `/etc/profiles/per-user/<u>` under the NixOS module)
+# and the GENERATION profile, `$XDG_STATE_HOME/nix/profiles/home-manager`,
+# which is the one `writeBoundary` advances and therefore the only one that
+# answers "which configuration is live". Reading the wrong one gives a
+# confident answer to a different question.
 #
-# The `switch`-only vouch is not laziness. `home-manager build` produces a
-# result symlink and activates nothing; `home-manager expire-generations`
-# and `remove-generations` destroy state whose absence is not evidence of
-# anything (the purge asymmetry from USER_STORY stage 4). Neither gets a
-# yes from us, ever.
+# The `switch`-only vouch is not laziness. `build` activates nothing;
+# `expire-generations` and `remove-generations` destroy state whose absence
+# is not evidence of anything (the purge asymmetry). And `test` is a live
+# footgun worth declining loudly rather than silently: Home Manager's CLI
+# ACCEPTS `test` in its argument parser and then rejects it at dispatch with
+# a generic "Unknown command" — the implementation is commented out. A tool
+# that parses a verb it will not run is exactly why capability-probing has
+# to probe behaviour rather than names.
 
 home_manager__is_converged() {
-   while [ "${1#-}" != "$1" ]; do shift; done
-   verb=$1; shift
+   verb=${1:-}; shift 2>/dev/null || :
 
    case $verb in
    switch)
       hmprofile=${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager
+      [ -e "$hmprofile" ] || hmprofile=/nix/var/nix/profiles/per-user/$(id -un)/home-manager
       [ -e "$hmprofile" ] || return 1
-      dir=${1%%#*}
-      attr=${1#*#}
+
+      flakeref=
+      while [ $# -gt 0 ]; do
+         case $1 in
+         --flake) flakeref=${2:-}; shift 2 || break ;;
+         --flake=*) flakeref=${1#--flake=}; shift ;;
+         -n|--dry-run) return 2 ;;
+         *) shift ;;
+         esac
+      done
+      [ -n "$flakeref" ] || return 2
+
+      dir=${flakeref%%#*}
+      case $flakeref in *#*) attr=${flakeref#*#} ;; *) return 2 ;; esac
       case $dir in /*|./*|../*|.) : ;; *) return 2 ;; esac
       [ -f "$dir/flake.lock" ] || return 2
 
@@ -298,7 +397,7 @@ home_manager__is_converged() {
       [ "$(readlink -f "$hmprofile")" = "$want" ]
       #: org.nixos.HomeGeneration:"$attr"@activated reads org.nixos.FlakeLock:"$dir"@current
       ;;
-   news|generations|build|expire-generations|remove-generations|uninstall)
+   news|generations|build|test|rollback|expire-generations|remove-generations|uninstall)
       return 2 ;;
    *)
       printf 'decline unmodeled home-manager verb: %s\n' "$verb" \
