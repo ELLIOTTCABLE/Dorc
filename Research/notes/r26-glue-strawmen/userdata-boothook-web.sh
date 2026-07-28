@@ -85,7 +85,8 @@ SEED=https://dist.example.net/web1-docroot.tar.gz
 #   - freq=always writes a sem file it will never read.
 
 cloud_init_per__lend_map() {
-   case ${1-} in -h|--help) return 2 ;; esac
+   [ $# -ge 3 ] || return 2
+   case $1 in -h|--help) return 2 ;; esac
    shift 2                                   # <freq> <name>
    : lends user                              # no setuid, no su, no chroot
    : lends fsview
@@ -94,8 +95,8 @@ cloud_init_per__lend_map() {
 }
 
 cloud_init_per__predict() {
-   case ${1-} in -h|--help) return 2 ;; esac
-   case ${1-} in once|instance|always) ;; *) return 2 ;; esac
+   [ $# -ge 3 ] || return 2
+   case $1 in once|instance|always) ;; *) return 2 ;; esac
    [ "$(id -u)" = 0 ] || return 2            # it would refuse; say so, do not guess
    shift 2
    "$@"                                      # peel: the inner command answers

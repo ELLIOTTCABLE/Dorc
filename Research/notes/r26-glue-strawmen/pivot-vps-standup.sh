@@ -62,6 +62,7 @@ SSH="ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-ne
 doctl__predict() {
    [ "${1-}" = compute ] || return 2
    [ "${2-}" = droplet ] || return 2
+   [ -n "${4-}" ] || return 2
    case ${3-} in
    create)
       : transits epoch          # a new machine is a new epoch of everything
@@ -78,6 +79,7 @@ doctl__predict() {
 doctl__is_converged() {
    [ "${1-}" = compute ] || return 2
    [ "${2-}" = droplet ] || return 2
+   [ -n "${4-}" ] || return 2
    case ${3-} in
    create)
       n=$(doctl compute droplet list "$4" --format Name --no-header 2>/dev/null | wc -l)
@@ -123,6 +125,7 @@ ssh__lend_map() {
       *) break ;;
       esac
    done
+   [ -n "${1-}" ] || return 2
    printf '%s\n' "$1" : lends scope
    shift
    "$@"
@@ -137,10 +140,11 @@ ssh__predict() {
       *) break ;;
       esac
    done
+   [ -n "${1-}" ] || return 2
    dest=$1; shift
    case ${1-} in
    true|:)
-      ssh -o BatchMode=yes -o ConnectTimeout=5 -- "$dest" true \
+      ssh -o BatchMode=yes -o ConnectTimeout=5 "$dest" true \
          : sm.dorc.SshEndpoint:"$dest"@reachable
       ;;
    *) "$@" ;;
@@ -221,7 +225,18 @@ if ! $SSH "root@$FQDN" true; then
    # controller: whether a host is reachable is definitionally not observable
    # from inside that host. Every iteration is a fresh handshake, which is why
    # every OTHER wait in this pair of books lives inside the payload.
-   until $SSH "root@$FQDN" true; do sleep 5; done
+   #
+   # Bounded the long way round on purpose. `for i in {1..60}` is the shape
+   # everybody reaches for — including the k3s installer and the Kubernetes
+   # docs' own init-container example — and under a POSIX shell it iterates
+   # exactly once with `i` set to the literal string `{1..60}`. A retry cap
+   # that does not cap is worse than no cap.
+   tries=0
+   until $SSH "root@$FQDN" true; do
+      tries=$((tries + 1))
+      [ "$tries" -lt 60 ] || exit 1
+      sleep 5
+   done
 
    # cloud-init's own wait verb: one connection, not a poll loop. Bounded from
    # out here because it has no bound of its own — a failing bootcmd leaves the
