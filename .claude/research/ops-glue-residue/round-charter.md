@@ -1017,6 +1017,31 @@ depend on book progress.
   deck) graded low-value. Conductor pre-writing reads confirmed: the
   archived 805 comment thread + the v3 deploy-process doc, before knob/note.
 
+## Audit errata (2026-07-28, post-integration; supersede earlier charter text where they conflict)
+
+- **err-cdist-upstream-is-live**: code.ungleich.ch is a LIVE Gitea (forge
+  migration; the dead URL was the legacy one) — founder commits as recent as
+  2026-06; what stands: no release since 7.0.0 (2022-07-31), Debian orphaned
+  (#947641), GitHub mirror stale at 6.0.4. Retires the human-as-debugger item;
+  turn-D's "no readable source for 7.0.0" retired (173 types at 7.0.0,
+  contract unchanged; turn-B/D gradings upgrade accordingly).
+- **err-pyinfra-rebuild-count**: "rebuilt the ordering engine three times" is
+  unsupported — TWO documented rewrites (v2.0 parallel generation, v3.0
+  runtime execution) atop 0.x ordering-guidance churn; the seven-year span is
+  2015-2022; v3 DID fix runtime command generation — the declared-architectural
+  remainder is fact-staleness (turn-E adjudication stands with this nuance).
+- **err-azure-imds-narrowing**: Azure custom-data is deliberately NOT
+  IMDS-surfaced (Azure's separate user-data field is; EC2 user-data remains
+  instance-attribute-readable). rul-no-secrets-in-payload STANDS; citation
+  narrowed.
+- **err-cloudinit-degraded-done**: "reports done when broken" is stale —
+  current cloud-init reports `degraded done` + exit 2; the surviving (better)
+  claim: REPORTING is not REPAIRING, and the repair gap is Dorc's cell.
+- SIBLINGS integration LANDED: ff-fold at `9fb7a972` + two conductor prose
+  fixes (the degraded-done line; cdist regret→named-cost); 27 footnotes, all
+  URLs audit-verified; 100% ASCII; the four audits live at
+  `notes/r26-glue-strawmen/SIBLINGS-audit-*.md`.
+
 ## OpenWrt as eventual borderline-livetest (human-typed 2026-07-28)
 
 Human: openwrt belongs as a borderline livetest case eventually — "an important

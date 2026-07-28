@@ -143,8 +143,9 @@ everyone's payload arrives, ours included.
 
 - The proof that sh-native configuration management has an audience, and the
   closest kin to our oracle idea (its "types" emit sh). Its remote-interrogation
-  model pays one connection per explorer per object -- its own manual's stated
-  regret, and the pain one-artifact-per-phase exists to avoid.
+  model pays one connection per explorer per object -- a cost its own manual
+  names (with connection-multiplexing as the prescribed mitigation), and the
+  pain one-artifact-per-phase exists to avoid.
 - Its PreOS feature answers first-boot by manufacturing the ssh precondition (a
   bootable image with your key baked in); we answer it by compiling convergence
   into the payload. Both coherent.
@@ -238,9 +239,10 @@ everyone's payload arrives, ours included.
   re-provision; the config produces "the machine specified or no machine at
   all." Where you can truly re-provision on every change, take their axiom --
   it is better than ours. Three coherent positions on one axis: Ignition
-  refuses a half-machine, cloud-init produces one and reports done, Dorc
-  produces one, names what is missing, and finishes next run. Talos (no shell
-  at all) is fully, permanently conceded.
+  refuses a half-machine; cloud-init produces one and nowadays labels it
+  honestly (`degraded done`) but leaves it half-made; Dorc produces one, names
+  what is missing, and finishes next run. Talos (no shell at all) is fully,
+  permanently conceded.
 
 ---
 
