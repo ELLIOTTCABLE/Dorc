@@ -778,5 +778,18 @@
     "sha256": "017f322f4be24c024c2b7bf3ce7edd885c6f52c585db89b224d3956149cbb48b",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: [pasting large config into serial console router lost characters line by line delay])"
+  },
+  "A-linux-n-tty-buf-size-2026": {
+    "url": "https://raw.githubusercontent.com/torvalds/linux/master/drivers/tty/n_tty.c",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: the Linux tty line discipline implementation itself at master, read at the definition site; when the question is what the canonical-mode line buffer actually is, the constant in the driver is the fact and every man page or forum answer is a report of it",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "verifies a subagent-sourced constraint against primary: #define N_TTY_BUF_SIZE 4096 in drivers/tty/n_tty.c, so a console-delivered artifact must keep every LINE under ~4095 bytes in canonical mode or the line discipline silently discards the overflow - a per-line cap, distinct from and independent of any per-payload cap",
+    "graded-by": "top-level-agent",
+    "published": "2026",
+    "retrieved": "2026-07-28",
+    "sha256": "5f33bf3bca249d246c2bbf85f7852e77dd65dc14e57a135a83fa03adb9dda0a9",
+    "acquired": "url",
+    "via": "mcp__github__search_code(query: N_TTY_BUF_SIZE repo:torvalds/linux path:drivers/tty)"
   }
 }
