@@ -61,12 +61,20 @@ fi
 
 
 # ── 2. nix itself ──────────────────────────────────────────────────────────
-# On NixOS, nix is the OS and this whole region is dead by construction —
-# the admin's own outer guard says so, and Dorc folds the region with an
-# `omit` (a value-flow proof that the branch cannot run), not an elision.
-# No per-line vouches are consumed inside an omitted region, and an omitted
-# region casts no walls. That matters here more than anywhere: install
-# regions sit at the TOP of books, the worst possible wall real-estate.
+# On NixOS this whole region is dead: nix IS the OS. The admin's own outer
+# guard says so, and what we WANT here is an `omit` — a value-flow proof
+# that the branch cannot run, which consumes no per-line vouches inside the
+# region and casts no walls. That matters more here than almost anywhere,
+# because install regions sit at the TOP of books, the worst possible wall
+# real-estate.
+#
+# HONEST CAVEAT, and it is a chafe-point rather than a claim (see the
+# companion note, flag-os-release-sourcing-is-the-densest-wall): omitting
+# this region requires `$ID` to be a probe-sourced value, and `$ID` arrives
+# by DOT-SOURCING a host file. Nothing in this exhibit establishes that Dorc
+# can follow that. If it cannot, the region does not omit — it guards, which
+# still works and still runs correctly, just without the wall-freedom above.
+# The book is written at the honest floor and would merely get better.
 
 if [ "$MACHINE_CLASS" = foreign ]; then
 
@@ -128,12 +136,27 @@ git -C "$FLAKE_DIR" pull --ff-only
 # oracle below does not model what a nixos-rebuild does; it asks two
 # questions that nix answers exactly, and vouches on the pair.
 
+HM_TARGET="$FLAKE_DIR#$(id -un)@$(hostname)"
+
 case "$MACHINE_CLASS" in
 nixos)
    $SUDO nixos-rebuild switch --flake "$FLAKE_DIR#$(hostname)"
    ;;
 foreign)
-   nix run home-manager/master -- switch --flake "$FLAKE_DIR#$(id -un)@$(hostname)"
+   # Standalone home-manager bootstraps itself: the documented first run is
+   # `nix run home-manager/master -- switch …`, after which the tool is in
+   # your own profile and you call it by name. Splitting the bootstrap out
+   # is not tidiness — `nix run <ref> -- <cmd> <args>` is a PEELING WRAPPER
+   # (it parses a prefix of its own argv and execs the remainder), so left
+   # inline it would need a `nix` wrapper-family oracle before the
+   # home-manager oracle below could ever reach the site. Two lines instead,
+   # and the second one is an ordinary command with an ordinary oracle.
+   # (The wrapper shape is real and worth an oracle eventually; it is not
+   # worth inventing one inside a book about something else.)
+   command -v home-manager >/dev/null 2>&1 \
+      || nix run home-manager/master -- switch --flake "$HM_TARGET"
+
+   home-manager switch --flake "$HM_TARGET"
    ;;
 esac
 
