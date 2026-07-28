@@ -32,7 +32,10 @@ prize is early design-choices/seams with high retrofit cost that stretch coverag
   for honest "if you're doing X, just go use Y" README advice. SCOPE FENCE
   (conductor): per-feature effort-allocation ONLY, never product-viability
   relitigation — go/no-go stays welded GO (AGENTS.md market-value-hole
-  fence); the brief must exclude "should Dorc exist". PENDING, after turn C.
+  fence); the brief must exclude "should Dorc exist". PENDING — human standing
+  order 2026-07-28: dispatch AUTONOMOUSLY once turn C is synthesized; then
+  STOP — the writing phase (Opus strawman-writers, knob entry, synthesis note)
+  waits on explicit human ack.
 
 ## Strawman-book candidates (accreting; land at Research/notes/r26-glue-strawmen/)
 
@@ -49,6 +52,11 @@ prize is early design-choices/seams with high retrofit cost that stretch coverag
   ansible-decline story — nix's convergence verb is content-addressed
   (current-system store path vs expected closure), the SOUNDEST delegation
   check any incumbent offers.
+- INSIDE candidates (post-turn-C verdicts; writing-phase ack pending): the
+  k8s initContainer-writing-to-a-PV book (the structurally-ALIVE headliner
+  seat; possibly the API-shaped/plugin face) and/or the systemd ExecStartPre
+  multi-line-prep book on a pet box. Devcontainer seat alive but low-stakes —
+  mention in the note, no book.
 
 ## Lane: dorc-INSIDE adjudication (human-added 2026-07-28; tiny, kill-friendly)
 
@@ -433,6 +441,93 @@ actually useful (incl. their own future k8s usage) — never toward fiction.
 - cdist first-party sources: human confirmed the site is fully down (no
   render, no access) — stays blocked; archive.org at writing time if needed;
   the 2016-fork grading stands disclosed.
+
+## Turn C adjudication (conductor, 2026-07-28; evidence = turn03 notes, committed 736ae26b; harness security-banner reviewed — transient classifier error, commit scope verified clean)
+
+- HEADLINE, wait-placement cut — agent marked ~SUSPECT, conductor UPGRADES to
+  doctrine-decided: a controller-side wait-loop is O(retries) CONNECTIONS (each
+  `until ssh` iteration a fresh handshake; nixos-anywhere runs four such loops
+  per invocation); an in-artifact wait is one connection. Existing perf-law
+  already rules this ("never let a network boundary participate in
+  iteration"): compile waits INTO the artifact wherever the awaited fact is
+  observable from inside the host; the pivot's own waits (host
+  existence/reachability — definitionally unobservable from within) are the
+  sanctioned controller-side exception. Crosses dir-until-loop-glue-priority ×
+  ack-pivot-must-support.
+- Lint gem, no elision machinery needed: k3s's `#!/bin/sh` installer AND the
+  k8s docs both ship `{1..N}` brace-ranges under POSIX sh — dash-verified: the
+  loop runs ONCE ("this loop does not loop"). A bounded-retry shape-recognizer
+  is a pure kWARN-rich diagnostic payoff. First-party wait verbs exist across
+  mature tools (`pg_ctl -w`, helm `--wait`, devcontainer `waitFor`) =
+  delegation-oracle targets; cloud-init's EIGHT-valued status separates
+  `degraded done` from `done` (an incumbent shipping wrong-but-not-broken as
+  first-class).
+- Wild confirmations: port-open≠login-works hit by an author in comments
+  (adequacy rider, reachable≠provisioned) · the stdin-consumption hazard has a
+  LIVE specimen (heredoc-to-login-shell with interior sudo) · heredoc-with-
+  controller-interpolation is the median multi-host shape (env-marshalling
+  answer and bug in one) · terraform states copy-then-exec is for CONTEXT
+  PRESERVATION, not perf (family now 5-to-1 vs pipe) · terraform's
+  controller/target mktemp limitation is an asymmetry in Dorc's FAVOR
+  (ship-one-artifact ⇒ host's own mktemp+trap work; k3s does exactly this).
+- Privilege trichotomy = the shape the sudo gap must model: three independent
+  tools compute root/`sudo`/`doas` ONCE into a `$SUDO` prefix var and thread
+  it through every mutating line — an EARLY-BOUND HOST FACT, not a per-line
+  decision. And nixos-anywhere's `get-facts.sh` is a hand-rolled Dorc probe
+  artifact (20 lines POSIX sh, one connection, key=value out) — strongest
+  single validation of the round.
+- dorc-INSIDE verdicts (full table in turn03 notes): ALIVE-narrow = k8s
+  initContainer-on-PV (STRUCTURAL: k8s mandates idempotence by doc and
+  REJECTS readinessProbe at validation exactly where setup scripts live —
+  headliner answered in k8s's own words) · k8s Job/CronJob-on-PV (weaker) ·
+  systemd ExecStartPre multi-line prep (unit-level gates never reach lines) ·
+  devcontainer lifecycle (low-stakes). THIN = terraform null_resource (alive
+  exactly where HashiCorp says don't go) · helm hooks (payload is argv-on-
+  image, not raw sh). DEAD = CI runners (fresh workspace by design; GitLab/
+  Jenkins verify folded to turn D) · docker-entrypoint-initdb.d (gated on
+  empty datadir, verified). Caveat kept: ALIVE cells' typical content is
+  SMALL (init-container population dominated by wait-loops); the live cell is
+  "init container that WRITES to a PV". Cross-cutting: mandate-idempotence-
+  assist-nothing is now a SIX-member ecosystem norm; THREE incompatible
+  tri-state "nothing to do" rc conventions exist in the wild (systemd
+  ExecCondition / GCP OS-policy / rinstall) — the missing shared primitive IS
+  the oracle rc contract (strong hole-filling argument for the note).
+- PIVOT findings, all design-bending: identity churn is the pivot's DEFINING
+  property — every incumbent PUNTS host keys (`StrictHostKeyChecking=no` +
+  known_hosts=/dev/null hardcoded; terraform disables validation by default).
+  OPPORTUNITY note for the knob/synthesis: the controller MINTED the machine
+  — identity could be bound at creation instead of punted (nobody does this).
+  Facts do NOT survive the pivot (nixos-anywhere re-imports facts post-kexec)
+  ⇒ scope-typing needs host×EPOCH, not host; pre-pivot connection facts are
+  invalidated by the pivot. New wait shape: INVERSE wait (wait-for-
+  UNREACHABLE, then wait-back, then re-probe) — reboot-shaped pivots. And the
+  pivot is where nixos-anywhere independently invents sentinel-over-channel-rc
+  (`|| true` + grep a teed log) — second external validation of `26A` stop-2,
+  at the exact case that forces it.
+- rul-capability-probing-per-feature GROUNDED (adequately, honestly short of
+  the homelab-inventory claim): community.openwrt exists BECAUSE one fleet
+  member can't run the incumbent's payload language (ash modules; per-host
+  gather_facts toggles; per-FEATURE requirements rows); three newer≠more-
+  capable instances (DNF5 < DNF3 config-manager; busybox setsid w/o --wait;
+  Alpine timeout w/o -t). Behaviour-probing-not-name-probing is the wild
+  idiom too (`setsid --wait true` test-run; wait-for-it greps timeout's usage
+  text).
+- Radman's list TESTED: the real gap is the CHANGE-DETECTING rc (k3s
+  hand-rolls PRE/POST_INSTALL_HASHES sha256-compare = "converged: content
+  match" hand-written in a first-tier installer); partial-apply-by-STATE vs
+  hand-declared phase flags (k3s ~20 SKIP_* knobs; nixos-anywhere --phases) =
+  the clearest value claim of the turn; staging REFUTED for ship-one-artifact;
+  caveat banked: the real-world norm assumes TARGET-SIDE EGRESS (curl-in-
+  everything), which the self-contained offline artifact deliberately does
+  not. Splice hygiene wrapper has first-party precedent (three canonical
+  installers wrap against partial download; tailscale says why in a comment).
+- Ordinal frequencies (lower-bound code-search, ordering only): branch-on-
+  facts ≫ generic retry/wait ≫ port-probe waits ≫ multi-host ssh loops ≫
+  until-ssh — with the standing caveat that until-ssh is rare-but-critical-
+  path (frequency is the wrong priority signal for the pivot).
+- Gaps folded into turn D: cloud-init phone-home (the REVERSE pivot — target
+  announces readiness; nothing else covers that direction) · GitLab/Jenkins
+  custom-shell verification of the DEAD verdicts.
 
 ## Settled asks
 
