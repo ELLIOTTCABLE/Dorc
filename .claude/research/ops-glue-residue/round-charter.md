@@ -139,6 +139,11 @@ actually useful (incl. their own future k8s usage) — never toward fiction.
   docs for the respective tool/feature — a realistic design-target that handles
   a reasonable number of the warts of that siting. Not fiction-tier channel
   sketches.
+- CONDUCT RULE (human-typed 2026-07-28, after turn B ran three Opus
+  sub-gatherers): research turn-agents do their work IN-SCOPE THEMSELVES — no
+  sub-researcher dispatch, hard clamp in every research brief. The SOLE
+  exception is the final strawman-WRITERS, who may spawn Sonnet doc-readers
+  (each carrying the no-further-spawning clamp).
 
 ## Deliverables (human-set, 2026-07-28)
 
@@ -271,6 +276,108 @@ actually useful (incl. their own future k8s usage) — never toward fiction.
   spelling-agnostic.
 - Readiness-waits (until-ssh-up loops) sit on the pivot's critical path — links
   turn-c's until-loop evidence to the pivot requirement.
+
+## Turn B adjudication (conductor, 2026-07-28; evidence = turn02 notes + sources/, committed 9718604f)
+
+- ESCALATION, out-of-round, engine-relevant (flagged to human in-chat):
+  **artifact-on-stdin has a documented stdin-consumption hazard.** The shipped
+  invocation (`260` §5: `… '<remote-sh>' -s < artifact`) means any interior
+  book command that reads stdin (a prompting apt-get on a drifted day, any
+  filter run bare) consumes ARTIFACT BYTES — sh reads its script from fd0
+  incrementally, so this corrupts parsing, not just the command. Prior art
+  split 4-to-1 against pipe-by-default (cdist/judo/drist/remotely copy-then-
+  exec; only rset pipes, for confidentiality, and grew `-t` for exactly this;
+  judo closes fd0 as doctrine). The one-connection fix exists
+  (`cat - >tmp && exec sh tmp` shape, keeps stdin free, no scp dependency).
+  Candidate `260` §5 amendment — human-owned, NOT this round's to decide.
+- STANDING RULE minted for dir-offline-compile-guard-artifact (Chef's grave):
+  chef-solo died of a TWO-CODE-PATH split (`if Chef::Config[:solo]` forks in
+  recipes; local-mode's stated win = "one less code path"). Rule:
+  **offline/compile mode may NARROW (compile-time refusals) but must never
+  FORK semantics** — same book, same meaning, different delivery; no
+  offline-only dialect, no behavior keyed on delivery mode. Applies equally to
+  any future fragment/splice render.
+- THE KNOB THESIS, assembled (entry's spine, evidence-grade):
+  - adbd's source contains the capability lattice as a literal 2×2 (PTY/raw ×
+    protocol/no-protocol): rc-visibility and stream-separation are INDEPENDENT
+    capabilities; a PTY forecloses separation even with framing. Docker states
+    the same law inversely (separation only via 8-byte framing, lost under
+    TTY). Dorc's floor triple = one coherent lattice cell.
+  - adb shell-v1 and k8s exec-v1 BOTH lost the exit code and bolted framed
+    side-channels on in v2; Docker never fixed it (rc needs a second
+    exec-inspect request). Dorc's in-band sentinel = the v2 move made in v1.
+    Azure classic run-command reports NO exit code at all ⇒ on that channel
+    the sentinel is REQUIRED, not defensive (best single validation of `26A`
+    stop-2).
+  - Ansible's pipelining cell IS Dorc's floor triple — and Ansible ships it
+    DISABLED because sudo/requiretty conflicts with stdin-fed payloads.
+    Reframe pole A: not "we assume SSH" but "we assume the pipelining cell";
+    named hazard: privilege escalation is what historically breaks stdin-fed
+    payloads (intersects the open sudo/privilege gap + 27C context entry).
+  - Floor is ASYMMETRIC: byte-clean stdin outbound, but no incumbent promises
+    a byte-clean RETURN path (ansible raw advises base64; SSM is UTF-8-only).
+    NB engine intake law (rul-host-bytes-bounded-before-admission) already
+    treats return bytes as bounded untrusted raw — the design was ahead here.
+  - RR-class truncation is a sentinel PLACEMENT constraint and the clouds
+    disagree on which end survives: AWS keeps HEAD (24K stdout/8K stderr),
+    Azure classic keeps TAIL (4096 bytes). GCP has no real primitive (1024-
+    char inline cap; rc redefined as compliance tristate where exiting 0 is
+    an ERROR). SSM Session Manager is a proven hard non-target (stdin and
+    stream-separation are mutually exclusive at agent source). Proxmox/qga is
+    the best-behaved RR member (rc+signal+truncation flags+file pair; stdin
+    cap 1MiB-CLI vs 64KiB-REST inconsistency noted).
+- LANE-SURVIVAL (the Q5 table lives in turn02 notes; four consequences):
+  (1) the REPORT lane breaks first under degradation, not apply — RR caps are
+  sized for human output, not drains; RR needs an explicit overflow story
+  (independently arrived at the aws_ssm-needs-S3 shape); (2) probe survives
+  wherever ANY return path exists — the OS class boundary is exactly where
+  turn A put it; (3) only `142`'s live topology genuinely needs DP+F, and the
+  DP→DP+F bridge is prior art (`dd`-over-exec; adb/k8s in-band framing);
+  (4) the FIFO fast-lane loses its point on DP — degradation paths exist all
+  the way down.
+- VALIDATIONS (cheap citations for the synthesis note): pyinfra ships
+  probe/plan/apply and documents the staleness trap + `_if=` runtime-guard
+  answer ⇒ the elide-vs-guard cut is ARCHITECTURE-FORCED, not a Dorc quirk ·
+  cdist's own stated regret is CONNECTION COUNT (one remote_exec per explorer;
+  ControlMaster bolted on; MaxSessions ceiling) ⇒ one-artifact-per-phase is
+  the evidenced differentiator vs closest prior art · Mitogen retires
+  "lower the floor" (payload IS python) while proving pipe-sufficiency and
+  via=-chaining · incumbents' emergency floor (ansible `raw`, salt-ssh `-r`)
+  = Dorc's NORMAL mode (framing gift) · Ansible answers capability-poor
+  channels three ways: synthesize OOB (aws_ssm S3, CONFIRMED + stronger than
+  suspected — even module .py transit rides S3), RELOCATE to controller
+  (`_remote_is_local` for network gear — incumbent-shipped precedent for
+  pivot-style "run this on the controller instead"), or synthesize files from
+  the pipe (`ssh_transfer_method: piped` = dd if/of).
+- SCOPE/PIVOT prior art: `delegate_facts` — Ansible grew an explicit
+  fact-attribution opt-in THE MOMENT one play addressed two hosts (facts
+  default-assign to inventory_hostname, not the producing host): direct
+  incumbent hit on the attribution-scope re-entry trigger. DeHaan's 2012
+  announcement names push's irreducible advantage in ack-pivot-must-support's
+  exact shape ("do THIS here, hop over there, do THAT… where pull breaks
+  down") and names the bootstrap-over-ssh regime. Fabric's own pitch for its
+  task-major model is that it IS shell-script logic ⇒ the natural inline-ssh
+  spelling competes against nothing better.
+- Cautions kept: no prior art found for REFUSING to trust channel rc (weak
+  evidence in both directions; report as neither novelty nor error) · the
+  books-reading-stdin question flagged, not answered (rset -t vs judo
+  fd0-close doctrine) · cdist first-party sources blocked (code.ungleich.ch
+  HTTP 500; graded from 2016 fork snapshot) — human-as-debugger candidate ·
+  GCP exec output cap contradicted between two primaries (100K vs 512K).
+- Conductor pre-writing reading list (before knob entry firms): Radman's
+  "Minimalist scripted configuration" deck (argues against the naive
+  `ssh host < script` form and lands on a refined one; his rinstall(1)
+  change-detecting rc convention = the guard-shaped primitive) · the adb
+  2×2 source · rset's sibling transports · aws_ssm plugin doc. All archived
+  under sources/.
+- Turn C brief additions from B: test Radman's enumerated naive-form failures
+  against real glue scripts (don't re-derive) · wait-loops gained SECOND
+  independent support (every RR channel is poll-based ⇒ in-artifact until-
+  loops are the only waiting seat there) · pyinfra `_if=` = the shipping
+  baseline for branch-on-facts comparison · read inline-ssh sequencing
+  evidence against delegate_facts + the DeHaan framing.
+- Label ruling applied: research-doc commits are `(AI dsn new/re)`; `rsr` was
+  a stray (agents warned by hook, allowed; no history rewrite).
 
 ## Settled asks
 
