@@ -27,8 +27,8 @@
 | Converges continuously with nobody present | N | N | N | N | N | Y | N | N |
 | Remembers what it built; delete by un-declaring | N | N | N | N | Y | Y | Y | ~ |
 | Fleet: inventory, groups, per-host data | N | Y | Y | ~ | Y | Y | ~ | N/A |
-| Secrets management story | N | Y | N | N | ~ | Y | N | N |
-| Privilege escalation built in | N[^d2] | Y | Y | ~ | N/A | N/A | ~ | N/A |
+| Secrets management story | NYI[^d2] | Y | N | N | ~ | Y | N | N |
+| Privilege escalation built in | NYI[^d2] | Y | Y | ~ | N/A | N/A | ~ | N/A |
 | Whole-system rollback | N | N | N | N | ~ | ~ | Y | N |
 | Creates infrastructure (VMs, DNS, networks) | ~ | ~ | ~ | N | Y | ~ | N | N |
 | Templating / config-file generation | N[^d1] | Y | Y | ~ | Y | ~ | Y | ~ |
@@ -49,7 +49,7 @@
 
 [^na]: N/A: outside that tool's layer or model; the cell neither wins nor concedes.
 [^d5]: The defining no. Books are ordered, imperative sh, on purpose -- and most of the table's opening block follows from that choice.
-[^d2]: Not yet, honestly: a book runs as whoever the connection resolved to. An open, acknowledged gap.
+[^d2]: Not yet; these are musts before I call Dorc ship-able, but there's no completed, coherent, locked-in plan.
 [^d1]: By design, not omission: heredocs are the templating, and branching on probed facts is the inventory.
 [^d3]: As a compiled, guards-only payload shipped down the channel's own formats -- safety travels; elision waits for day N.
 [^d4]: Unchanged also means undescribed: an unannotated script gains safety floor and a plan surface, nothing more. Value accrues only as guards and oracles describe it.
