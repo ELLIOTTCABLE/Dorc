@@ -145,8 +145,11 @@ dpkg -s unattended-upgrades >/dev/null 2>&1 || $APT install -y unattended-upgrad
 # ── 3. firewall ────────────────────────────────────────────────────────────
 #
 # Before the service, so a half-applied boot never exposes an unconfigured
-# nginx. Half-applied is the NORMAL case in this channel: a boothook that dies
-# is caught, logged, and swallowed — cloud-init still reports `done`.
+# nginx. Half-applied is an ordinary outcome in this channel: a boothook that
+# dies is caught, logged and swallowed rather than failing the boot. Modern
+# cloud-init does not hide it — since the recoverable-error work it reports
+# `degraded done` and exits 2 — but reporting is not repairing, and nothing
+# re-runs the half that did not land except the next boot.
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable

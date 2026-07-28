@@ -173,12 +173,20 @@ believes it. So does chezmoi's `run_onchange_` content hash; so does Ansible's
 documentation and assist none of it.
 
 The failure this produces is documented at both ends. Upstream disclaims
-re-running its own payload — "may be destructive and must never be done on a
-production system" (<https://docs.cloud-init.io/en/latest/howto/rerun_cloud_init.html>)
-— while the boothook handler catches, logs and swallows a failing payload and
-cloud-init still reports `done`. A half-applied instance that claims success and
-has no supported way to finish is the normal case, by design, in the most widely
-deployed provisioning tool on earth.
+re-running its own payload — "Making cloud-init run again may be destructive and
+must never be done on a production system"
+(<https://docs.cloud-init.io/en/latest/howto/rerun_cloud_init.html>) — while the
+boothook handler catches, logs and swallows a failing payload rather than
+failing the boot
+(<https://github.com/canonical/cloud-init/blob/26.1/cloudinit/handlers/boot_hook.py>).
+
+Give cloud-init its due here: it no longer hides that. The recoverable-error
+work added `degraded done` / `degraded running` as first-class statuses and an
+exit code of 2, so a half-applied instance now *says* it is half-applied
+(<https://docs.cloud-init.io/en/latest/howto/status.html>). What has not changed
+is that reporting is not repairing: the machine is in a known-partial state, the
+tool disclaims re-running, and nothing will apply the rest. That gap — not
+dishonesty about it — is the cell Dorc occupies.
 
 Dorc's rationing is a measurement of the world. That difference is the entire
 value of putting a Dorc artifact in this cell, and it is architectural on both
@@ -206,7 +214,7 @@ conditional, branch-on-what-you-find work that people currently write as a
 > handling errors was 'log errors, but proceed'. Exiting on failure conditions
 > doesn't make sense when that may prevent one from accessing the system to
 > debug it."
-> — cloud-init return-codes doc, via r26 turn-01 `[A-cloudinit-return-codes-2026]`
+> — <https://docs.cloud-init.io/en/latest/explanation/return_codes.html>
 
 That is a near-verbatim restatement of Dorc's own rule that fail-fast means fail
 on human timescales, not stop in the frame that failed. Worth a row precisely
