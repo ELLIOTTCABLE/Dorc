@@ -64,9 +64,11 @@ prize is early design-choices/seams with high retrofit cost that stretch coverag
   curl|sh nix install → clone flake → `nixos-rebuild switch`/`home-manager
   switch` delegation → residue lines. Strongest all-in-one exhibit (nix's own
   bootstrap glue is README-shaped); delegation-oracle bookend to the
-  ansible-decline story — nix's convergence verb is content-addressed
-  (current-system store path vs expected closure), the SOUNDEST delegation
-  check any incumbent offers.
+  ansible-decline story — nix's convergence verb is INPUT-addressed
+  (current-system store path vs expected closure; B2 correction 2026-07-28 —
+  "content-addressed" was wrong, and input-addressing is the STRONGER ground:
+  it answers "was this built from this recipe", the question a convergence
+  check should ask), the SOUNDEST delegation check any incumbent offers.
 - INSIDE candidates (post-turn-C verdicts; writing-phase ack pending): the
   k8s initContainer-writing-to-a-PV book (the structurally-ALIVE headliner
   seat; possibly the API-shaped/plugin face) and/or the systemd ExecStartPre
@@ -749,6 +751,104 @@ depend on book progress.
 - Writing-phase resources: shallow clones of pyinfra + cdist sit in the
   session scratchpad for grepping; cdist source readable only to 6.0.4
   (mirror) vs 7.0.0 live — grading disclosed throughout turn04.
+
+## Builder landings (batched; B1 cloud + B3 k8s still in flight)
+
+- **B2 os-install+nix LANDED** (lane `ai/r26-strawmen-osnix` @ `df388368`, six
+  commits; fold deferred until all builders land). Books:
+  installer-latecommand-base (autoinstall picked over preseed — versioned
+  schema, first-party `sh -c` semantics) · nix-machine · the hm splice face
+  (shape-B `.nix` module + fragment) · SIBLINGS-fragment-osnix. NO
+  escalations; the palette sufficed. Grounding corrections ACCEPTED: nix is
+  INPUT-addressed (fixed in place above) · subiquity is NOT busybox (a snap
+  in a full casper live env; d-i genuinely is busybox — turn-A's attribution
+  corrected; the dialect-floor claim itself unaffected since the artifact
+  must also drop into preseed territory). Keeper findings: offline-vs-live
+  regime differences are observable as ORDINARY HOST FACTS
+  (`[ -d /run/systemd/system ]`) ⇒ the no-semantic-fork rule costs nothing ·
+  the nix delegation oracle needs TWO readlinks (`test` activates without
+  advancing the system profile) · kBOOT wording rider: `late-commands`
+  legitimately CONSUMES the artifact's rc — never-trust-CHANNEL-rc must not
+  read as never-PRODUCE-meaningful-rc · `nixos-rebuild --target-host` = the
+  second-scope trigger arriving via an ordinary flag (oracle declines) ·
+  pin-hermeticity-is-a-shape (lockfile-pinnedness is readable from the
+  admin's own argv; generalizes: `--frozen-lockfile`, `--locked`) ·
+  admin-side gradual-enhancement rung exists (`system.configurationRevision`
+  — the hint machinery may have a SECOND audience; USER_STORY's curve is
+  engineer-side throughout) · `#:`-carrier population = every book that runs
+  BEFORE its tool exists (kTYANNOT delta, human-owned) · sharpest chafe,
+  human-owned: os-release DOT-SOURCING walls the densest idiom in the wild;
+  candidate answer = contracted-parse of a SPECIFIED format, not arbitrary
+  source · autoinstall user-data has NO documented size cap (never inherit
+  the cloud ledger) · HM's idempotence mandate + `home.emptyActivationPath`
+  now first-party-sourced (joins the assist-nothing tally; makes shape B the
+  only CORRECT splice spelling, not merely idiomatic).
+
+## Turn E adjudication (conductor mapping against the BLIND inventory; evidence turn05 notes @ dc6369f2)
+
+- Lens verdict: **H1 CONFIRMED-AND-SHARPENED · H2 REFUTED, instructively ·
+  H3 SUPPORTED as secondary.**
+- H1 sharpened: every large pyinfra reversal traces to deriving a plan by
+  EXECUTING an imperative meta-language while presenting it as declarative.
+  The v0.5→0.7→0.8 ordering triple-rebuild (`state.when` guidance → AST
+  compiler that invalidated the guidance → runtime DAG that replaced both) is
+  "how do I extract a stable operation ORDER from Python control flow" — a
+  problem class that CANNOT EXIST for Dorc: the book's source order IS the
+  order (no-reorder-ever), and there is no meta-language above it. The two
+  AST retreats (v0.7 compile, v1.5 config extraction) are the
+  inspect-user-code-as-heuristic-layer hazard; Dorc's analogue
+  (analyzer-view vs dash-view divergence) was bought off UP FRONT by the
+  kWHICHSH two-binary executable floor + kVERIFY-calibrate differential
+  discipline. DODGED structurally; mitigation is discipline, not immunity.
+- H2 refuted, and the concerning signal DISSOLVES: pyinfra never HAD a
+  plan-artifact to abandon (pickling blocked it — 688/805); their pain came
+  from hidden two-phase execution WITHOUT a materialized, consented plan, and
+  v3 moved further FROM artifact-hood, not away from artifacts they had.
+  Nobody in the sibling record abandoned what Dorc keeps. HONESTY RIDER:
+  nobody has proven Dorc's cell either — their lessons transfer, their
+  exoneration doesn't.
+- The staleness physics is INHERITED and PROVEN UNFIXABLE by their arc: v3's
+  own docs keep the per-host prepare pass; facts branched in deploy code
+  still reflect pre-deploy state; every v2 "Limitation" survives under a
+  softer v3 heading; the changelog claimed "a thing of the past" while the
+  docs admit otherwise (maintainer silent on the contradiction for months).
+  Dorc inherits the SAME probe-time≠apply-time physics with the OPPOSITE
+  posture: the plan is a consent artifact (stale-and-SHOWN, never
+  stale-and-hidden), guards are the DEFAULT degradation (their
+  `_if=…did_change` is opt-in and user-remembered), divergence is
+  proceed-and-flag. The sibling record now EVIDENCES the round's positioning:
+  the gap is physics; honesty about it is the differentiator
+  (pearl-around-the-sand-grain, externally grounded).
+- WHY they kept the prepare pass: cross-host LOCK-STEP ordering — the one
+  thing the maintainer defended to the end, and precisely what forbids
+  running the deploy file straight through per host. Dorc promises NO
+  cross-host ordering (per-host books, embarrassingly parallel). CAUTION
+  banked against dir-fleet-book: lock-step is the feature that forced
+  pyinfra's hybrid; the controller-book spelling dissolves cross-host
+  sequence into explicit source-order lines — never re-import lock-step as
+  an engine promise.
+- H3 secondary, two faces of one disease: pyinfra's peripheral-face rot
+  (@winrm celebrated v1.4 → evicted v3 → successor plugin "NOT ready for
+  production" two years on; @ansible removed as broken; @hook broken v0.5,
+  deprecated v0.13) binds our offline/fragment faces to the one-pipeline
+  no-fork rule (already law); cdist's PERMANENT BETA (install ~8y, inventory
+  ~5y behind `--beta` at project death) is the other face — land or park
+  EXPLICITLY, never ship indefinitely-beta. (The project's PARKED/weld
+  discipline is the right antibody; keep it.)
+- Lessons the lens wasn't looking for (the blind remit earning its keep):
+  **churn-under-contract vs accretion-without-contract** as the two death
+  modes — validates the stability-ledger's carve exactly (permanent `__role`
+  surface vs disowned-unstable verdicts; plan-as-API the named
+  failure-mode); the flip-moment of rul-strawman-formats-no-compat at
+  PUBLICATION is the discipline moment (cdist 2.1/2.2's untested-`sed`
+  migration advice is the horror specimen); semantic change inside a MINOR
+  (v1.1 yum version-join) as a catalog/golden-discipline caution; forge/bus-
+  factor risk (the 5.0.0 forge migration plausibly the most expensive single
+  decision — the project is unreadable at death).
+- No re-wake needed: the blind inventory answered the lens questions;
+  remaining blocked items (cdist googlegroups announcements, the LinuxTag
+  deck) graded low-value. Conductor pre-writing reads confirmed: the
+  archived 805 comment thread + the v3 deploy-process doc, before knob/note.
 
 ## OpenWrt as eventual borderline-livetest (human-typed 2026-07-28)
 
