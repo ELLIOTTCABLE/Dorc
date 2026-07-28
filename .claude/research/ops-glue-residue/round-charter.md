@@ -37,18 +37,20 @@ prize is early design-choices/seams with high retrofit cost that stretch coverag
   STOP — the writing phase (Opus strawman-writers, knob entry, synthesis note)
   waits on explicit human ack.
 
-- turn-e-sibling-hard-lessons (human-proposed 2026-07-28, conductor-acked,
-  DISPATCHED concurrent with the builders) — focused: WHY did pyinfra spend a
-  major version (v3) abandoning pre-generated commands, the very capability
-  Dorc keeps (plan-as-artifact)? Map every v3 motivation onto Dorc's
-  architecture: DODGED / INHERITED / N-A. Secondary: the hard-lessons ledger
-  from both close siblings (pyinfra majors, cdist regrets beyond
-  connection-count). Competing hypotheses posed, not pre-answered: H1
-  two-language parse-time staleness (Dorc dodges — the book IS the artifact);
-  H2 plan-artifacts inherently mismatched to imperative ops (Dorc INHERITS —
-  the concerning signal); H3 dual-codepath maintenance (chef-solo kin — binds
-  our own plan/apply + online/offline faces). Token-frugal: starts from the
-  archived 688/805 sources + the scratchpad repo clones.
+- turn-e-sibling-hard-lessons (human-proposed 2026-07-28; remit DE-PREJUDICED
+  by human before dispatch: open-ended around LARGE, EXPENSIVE mistakes —
+  never name which mistake) — for pyinfra + cdist: minimum-but-not-sufficient,
+  a complete inventory of every breaking-change/major-version: what it BOUGHT
+  users, why it was BREAKING/major-costly; beyond that, maintainer
+  retrospectives, abandoned directions, reversals, mea-culpas. The researcher
+  is deliberately kept UNPRIMED: no round-charter read this turn, no
+  conductor findings fed in, no Dorc-mapping task. CONDUCTOR-SIDE synthesis
+  lens (never shown to the researcher): does the evidence say the v3-class
+  reversal was two-language parse-time staleness (Dorc dodges), plan-artifacts
+  inherently mismatched to imperative ops (Dorc INHERITS — the concerning
+  signal), or dual-codepath maintenance (chef-solo kin, binds our own
+  plan/apply + online/offline faces)? Mapping DODGED/INHERITED/N-A happens at
+  conductor synthesis, against whatever the blind inventory surfaces.
 
 ## Strawman-book candidates (accreting; land at Research/notes/r26-glue-strawmen/)
 
