@@ -112,9 +112,9 @@ $ dorc compile userdata-boothook-web.sh >build/ud-web1.txt
 compiled: 5 guards inserted, 3 oracle bodies inlined, 0 lines elided (offline: no probe)
           6.1 KiB   (target channel cap is yours to know: DO 64 KiB · EC2 16 KiB raw)
 note:  6 sites were already guarded by the book's own author and were left alone
-warn:  'cat' (line 160) writes through a redirect: unmodeled, runs unguarded
-warn:  'tar' (line 190) is unmodeled: runs unguarded
-warn:  'curl' (line 189) is unmodeled: the book's own guard is what rations it
+warn:  'cat' (line 161) writes through a redirect: unmodeled, runs unguarded
+warn:  'tar' (line 191) is unmodeled: runs unguarded
+warn:  'curl' (line 190) is unmodeled: the book's own guard is what rations it
 ```
 
 Excerpt of the emitted bytes:
@@ -171,7 +171,7 @@ dpkg -s unattended-upgrades >/dev/null 2>&1 || $APT install -y unattended-upgrad
 
 Three things to read off that.
 
-1. **The admin's own guards are untouched.** Lines 137, 138, 158, 170 and 189 already
+1. **The admin's own guards are untouched.** Lines 138, 139, 159, 171 and 190 already
    check before they act; the compiler recognises them and inserts nothing. Their
    guard *is* the mechanism. Five inserted guards, six left alone.
 2. **The inserted checks are somebody else's tested sh**, resolved argv and all
@@ -191,59 +191,59 @@ $ dorc plan --verbose userdata-boothook-web.sh web1.example.net
  57  : "${INSTANCE_ID:=unknown}"
  59  SITE=web1.example.net
  60  DOCROOT=/srv/www
-121  until getent hosts deb.debian.org …; do sleep 1; done  # runs: wait, casts no wall
-128  # if command -v fuser >/dev/null 2>&1; then            # omitted: branch dead
-129  #    while fuser /var/lib/dpkg/lock-frontend …         #   ('fuser' not on PATH)
-130  # fi
-134  APT="apt-get -o DPkg::Lock::Timeout=120"
-136  # $APT update                                          # converged: package index fresh
-137  # dpkg -s nginx >/dev/null 2>&1 \
-137  #    || $APT install -y nginx                          # converged: your guard holds (rc 0)
-138  # dpkg -s unattended-upgrades … || …                   # converged: your guard holds (rc 0)
-146  # ufw allow 80/tcp                                     # converged: rule present
-147  # ufw allow 443/tcp                                     # converged: rule present
-148  # ufw --force enable                                   # converged: active
-158  # [ -d "$DOCROOT" ] || install -d -m 755 "$DOCROOT"    # converged: your guard holds (rc 0)
-160  cat >/run/web1.conf.new <<EOF                          # runs: unmodeled (writes via redirect)
-170  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard re-checks live
-                                                            #   (past line 160)
-179  ( systemctl_check enable --now nginx ) \
-179     || systemctl enable --now nginx                     # verify: converged, but past 'cat' (line 160)
-189  [ -f /opt/web1-docroot.tar.gz ] || curl … "$SEED"      # runs: your own guard re-checks live
-                                                            #   (past line 160)
-190  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
+122  until getent hosts deb.debian.org …; do sleep 1; done  # runs: wait, casts no wall
+129  # if command -v fuser >/dev/null 2>&1; then            # omitted: branch dead
+130  #    while fuser /var/lib/dpkg/lock-frontend …         #   ('fuser' not on PATH)
+131  # fi
+135  APT="apt-get -o DPkg::Lock::Timeout=120"
+137  # $APT update                                          # converged: package index fresh
+138  # dpkg -s nginx >/dev/null 2>&1 \
+138  #    || $APT install -y nginx                          # converged: your guard holds (rc 0)
+139  # dpkg -s unattended-upgrades … || …                   # converged: your guard holds (rc 0)
+147  # ufw allow 80/tcp                                     # converged: rule present
+148  # ufw allow 443/tcp                                     # converged: rule present
+149  # ufw --force enable                                   # converged: active
+159  # [ -d "$DOCROOT" ] || install -d -m 755 "$DOCROOT"    # converged: your guard holds (rc 0)
+161  cat >/run/web1.conf.new <<EOF                          # runs: unmodeled (writes via redirect)
+171  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard re-checks live
+                                                            #   (past line 161)
+180  ( systemctl_check enable --now nginx ) \
+180     || systemctl enable --now nginx                     # verify: converged, but past 'cat' (line 161)
+190  [ -f /opt/web1-docroot.tar.gz ] || curl … "$SEED"      # runs: your own guard re-checks live
+                                                            #   (past line 161)
+191  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
 plan: 5 to run, 1 to verify (8 skipped)
 ```
 
-Line 160 costs the bottom third of the book its shape, and it is worth being angry
+Line 161 costs the bottom third of the book its shape, and it is worth being angry
 about — see finding-1. With the derived redirect footprint that finding proposes,
 and the admin's typed consent:
 
 ```
 $ dorc plan --verbose --risk-faultless-skips userdata-boothook-web.sh web1.example.net
 …
-160  cat >/run/web1.conf.new <<EOF                          # runs: writes sm.dorc.File:/run/web1.conf.new
-170  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard reads line 160's file
-179  # systemctl enable --now nginx                         # converged: enabled+active;
-                                                            #   survives line 160 (footprint disjoint)
-189  # [ -f /opt/web1-docroot.tar.gz ] || curl … "$SEED"    # converged: your guard holds;
-                                                            #   survives line 160 (footprint disjoint)
-190  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
+161  cat >/run/web1.conf.new <<EOF                          # runs: writes sm.dorc.File:/run/web1.conf.new
+171  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard reads line 161's file
+180  # systemctl enable --now nginx                         # converged: enabled+active;
+                                                            #   survives line 161 (footprint disjoint)
+190  # [ -f /opt/web1-docroot.tar.gz ] || curl … "$SEED"    # converged: your guard holds;
+                                                            #   survives line 161 (footprint disjoint)
+191  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
 plan: 3 to run (11 skipped)
 ```
 
-Note that line 170 correctly does *not* survive: its guard reads exactly the file
-line 160 writes. The footprint machinery gets the interesting case right, which is
+Note that line 171 correctly does *not* survive: its guard reads exactly the file
+line 161 writes. The footprint machinery gets the interesting case right, which is
 the whole reason it is worth the trust it costs.
 
 Default render, steady state, with consent typed:
 
 ```
 $ dorc plan --risk-faultless-skips userdata-boothook-web.sh web1.example.net
-121  until getent hosts deb.debian.org …; do sleep 1; done  # runs: wait, casts no wall
-160  cat >/run/web1.conf.new <<EOF                          # runs: writes sm.dorc.File:/run/web1.conf.new
-170  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard reads line 160's file
-190  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
+122  until getent hosts deb.debian.org …; do sleep 1; done  # runs: wait, casts no wall
+161  cat >/run/web1.conf.new <<EOF                          # runs: writes sm.dorc.File:/run/web1.conf.new
+171  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard reads line 161's file
+191  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
 plan: 3 to run (11 skipped)
 ```
 
@@ -255,23 +255,23 @@ nginx config was hand-edited on the box.
 ```
 $ dorc plan --verbose userdata-boothook-web.sh web1.example.net
 …
-136  # $APT update                                          # converged: package index fresh
-137  # dpkg -s nginx … || $APT install -y nginx             # converged: your guard holds (rc 0)
-146  ufw allow 80/tcp                                       # runs: diverged (rule absent)
-147  ufw allow 443/tcp                                      # runs: diverged (rule absent)
-148  ufw --force enable                                     # runs: diverged (inactive)
-158  # [ -d "$DOCROOT" ] || install -d …                    # converged: your guard holds (rc 0)
-160  cat >/run/web1.conf.new <<EOF                          # runs: unmodeled (writes via redirect)
-170  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard re-checks live
-179  ( systemctl_check enable --now nginx ) || …            # verify: converged, but past 'cat' (line 160)
-189  [ -f /opt/web1-docroot.tar.gz ] || curl … "$SEED"      # runs: your own guard re-checks live
-190  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
+137  # $APT update                                          # converged: package index fresh
+138  # dpkg -s nginx … || $APT install -y nginx             # converged: your guard holds (rc 0)
+147  ufw allow 80/tcp                                       # runs: diverged (rule absent)
+148  ufw allow 443/tcp                                      # runs: diverged (rule absent)
+149  ufw --force enable                                     # runs: diverged (inactive)
+159  # [ -d "$DOCROOT" ] || install -d …                    # converged: your guard holds (rc 0)
+161  cat >/run/web1.conf.new <<EOF                          # runs: unmodeled (writes via redirect)
+171  cmp -s /run/web1.conf.new "$CONF" || { … }             # runs: your own guard re-checks live
+180  ( systemctl_check enable --now nginx ) || …            # verify: converged, but past 'cat' (line 161)
+190  [ -f /opt/web1-docroot.tar.gz ] || curl … "$SEED"      # runs: your own guard re-checks live
+191  cloud-init-per instance seed-docroot tar -xzf …        # runs: unmodeled ('tar')
 plan: 8 to run, 1 to verify (5 skipped)
 ```
 
 The firewall drift is caught and named *at plan time*, before anything is touched.
 The config drift is not, and cannot be: the comparison that detects it is the
-admin's own runtime `cmp`, and its input does not exist until line 160 runs. So the
+admin's own runtime `cmp`, and its input does not exist until line 161 runs. So the
 plan says "these three lines will restore your firewall" and stays silent about the
 config until the apply. That is exactly what bare sh does — no worse — but it is a
 real asymmetry, and it is caused by the same thing finding-1 is about.
@@ -305,9 +305,9 @@ reasons it is not a doctrine breach:
   and walls everything; this makes an unmodeled command *with a redirect* wall only
   what its redirect touches, and leaves the rest of its ⊤-ness intact.
 
-What it does not do: license eliding line 160. Content-matching a heredoc against a
+What it does not do: license eliding line 161. Content-matching a heredoc against a
 file is a value-prediction requiring a real read, and the admin already wrote that
-read — it is line 170.
+read — it is line 171.
 
 Without this, the write-if-changed idiom **self-walls**: you write a candidate file,
 and the act of writing it poisons every fact below. That idiom is not exotic. It is
@@ -316,14 +316,14 @@ because I could not find a more honest way to write the same thing.
 
 ### chafe-loops-must-be-wall-transparent
 
-Same chafe as `pivot-vps-standup.note.md` names, and it bites harder here: line 121
+Same chafe as `pivot-vps-standup.note.md` names, and it bites harder here: line 122
 is the book's **first executable line**. A `StatusIterated` condition blocks
 unconditionally today, so if a wait loop also *walls*, this book degrades from line
-121 onward and the whole exercise is pointless. The narrowing needed is the same:
+122 onward and the whole exercise is pointless. The narrowing needed is the same:
 a loop whose body is pure-delay and whose condition is an oracle-modeled read never
 elides and casts no wall.
 
-Note that line 121's condition is `getent hosts`, which is the canonical
+Note that line 122's condition is `getent hosts`, which is the canonical
 *non-hermetic* read — live DNS, warm caches. That is fine and, I think,
 clarifying: the loop condition must NOT license anything (it cannot, and
 `hermeticity-precondition` says so), it only needs to be recognised as read-only so

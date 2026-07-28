@@ -53,7 +53,7 @@ invocation cannot express the standup at all, because there is no idiom in sh fo
 the no-host form ("the target is the machine you are sitting at"); the pivot needs
 it.
 
-**The guard is the admin's, and it is wide on purpose.** Line 188 folds nine lines
+**The guard is the admin's, and it is wide on purpose.** Line 192 folds nine lines
 dead on the strength of one narrow fact. That fact — an sshd answered a
 `BatchMode=yes` login — licenses precisely one cell. It does not say the droplet is
 the *right* droplet, that cloud-init finished, that the DNS record points here, or
@@ -96,32 +96,32 @@ $ dorc plan --verbose pivot-vps-standup.sh
  38  DROPLET=web1
  40  FQDN=web1.example.net
  48  SSH="ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new"
-188  if ! ssh … "root@$FQDN" true; then                # runs: not reachable (measured 08:14:02)
-190     doctl compute droplet create "$DROPLET" \
-190        --region … --user-data-file ./build/ud-web1.txt --wait
-190                                                    # runs: diverged (0 droplets named 'web1')
-202     IP=$(doctl compute droplet get "$DROPLET" --format PublicIPv4 --no-header)
-202                                                    # runs
-204     doctl compute domain records list "$DOMAIN" … \
-204        || doctl compute domain records create …    # runs: unmodeled ('doctl' verb 'domain')
-217     ssh-keygen -R "$FQDN" >/dev/null 2>&1 || true  # runs: unmodeled ('ssh-keygen')
-218     ssh-keygen -R "$IP"   >/dev/null 2>&1 || true  # runs: unmodeled ('ssh-keygen')
-224     until ssh … "root@$FQDN" true; do sleep 5; done
-224                                                    # runs: wait (a loop never elides)
-229     timeout 600 ssh … cloud-init status --wait || true
-229                                                    # runs: unmodeled ('timeout')
-230  fi
-240  ssh … certbot certonly … -d "$FQDN"               # runs: new epoch (line 190)
-242  ssh … systemctl enable --now certbot.timer        # runs: new epoch (line 190)
-243  ssh … systemctl enable --now unattended-upgrades  # runs: new epoch (line 190)
-252  ssh … install -m 600 -D /dev/stdin /etc/restic/repo.pass
-252                                                    # runs: new epoch (line 190)
-261  curl -fsS -o /dev/null "https://$FQDN/"           # runs: unmodeled ('curl')
+192  if ! ssh … "root@$FQDN" true; then                # runs: not reachable (measured 08:14:02)
+194     doctl compute droplet create "$DROPLET" \
+194        --region … --user-data-file ./build/ud-web1.txt --wait
+194                                                    # runs: diverged (0 droplets named 'web1')
+206     IP=$(doctl compute droplet get "$DROPLET" --format PublicIPv4 --no-header)
+206                                                    # runs
+208     doctl compute domain records list "$DOMAIN" … \
+208        || doctl compute domain records create …    # runs: unmodeled ('doctl' verb 'domain')
+221     ssh-keygen -R "$FQDN" >/dev/null 2>&1 || true  # runs: unmodeled ('ssh-keygen')
+222     ssh-keygen -R "$IP"   >/dev/null 2>&1 || true  # runs: unmodeled ('ssh-keygen')
+235     until ssh … "root@$FQDN" true; do sleep 5; done
+235                                                    # runs: wait (a loop never elides)
+244     timeout 600 ssh … cloud-init status --wait || true
+244                                                    # runs: unmodeled ('timeout')
+245  fi
+255  ssh … certbot certonly … -d "$FQDN"               # runs: new epoch (line 194)
+257  ssh … systemctl enable --now certbot.timer        # runs: new epoch (line 194)
+258  ssh … systemctl enable --now unattended-upgrades  # runs: new epoch (line 194)
+267  ssh … install -m 600 -D /dev/stdin /etc/restic/repo.pass
+267                                                    # runs: new epoch (line 194)
+276  curl -fsS -o /dev/null "https://$FQDN/"           # runs: unmodeled ('curl')
 plan: 12 to run (0 skipped)
 
-hint: 'timeout' (line 229) is unmodeled: it is a peeling wrapper and it walls
+hint: 'timeout' (line 244) is unmodeled: it is a peeling wrapper and it walls
       1 downstream site; a wrapper oracle for it would recover them
-hint: 'ssh-keygen' (lines 217, 218) is unmodeled: it degrades 6 downstream sites
+hint: 'ssh-keygen' (lines 221, 222) is unmodeled: it degrades 6 downstream sites
 ```
 
 Day zero is the honest floor and it should look like this: nothing measurable,
@@ -137,22 +137,22 @@ $ dorc plan --verbose pivot-vps-standup.sh
  38  DROPLET=web1
  40  FQDN=web1.example.net
  48  SSH="ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new"
-188  # if ! ssh … "root@$FQDN" true; then             # omitted: branch dead
-190  #    doctl compute droplet create …              #   (sm.dorc.SshEndpoint:
-202  #    IP=$(doctl compute droplet get …)           #    root@web1.example.net@reachable)
-204  #    doctl compute domain records list … || …
-217  #    ssh-keygen -R "$FQDN" …
-218  #    ssh-keygen -R "$IP" …
-224  #    until ssh … true; do sleep 5; done
-229  #    timeout 600 ssh … cloud-init status --wait
-230  # fi
-240  # ssh … certbot certonly … -d "$FQDN"            # converged: lineage present
-                                                      #   (certbot__is_converged, book:161)
-242  # ssh … systemctl enable --now certbot.timer     # converged: enabled+active
-243  # ssh … systemctl enable --now unattended-upgrades  # converged: enabled+active
-252  ssh … install -m 600 -D /dev/stdin /etc/restic/repo.pass
-252                                                   # runs: unmodeled ('install' reading stdin)
-261  curl -fsS -o /dev/null "https://$FQDN/"          # runs: unmodeled ('curl')
+192  # if ! ssh … "root@$FQDN" true; then             # omitted: branch dead
+194  #    doctl compute droplet create …              #   (sm.dorc.SshEndpoint:
+206  #    IP=$(doctl compute droplet get …)           #    root@web1.example.net@reachable)
+208  #    doctl compute domain records list … || …
+221  #    ssh-keygen -R "$FQDN" …
+222  #    ssh-keygen -R "$IP" …
+235  #    until ssh … true; do sleep 5; done
+244  #    timeout 600 ssh … cloud-init status --wait
+245  # fi
+255  # ssh … certbot certonly … -d "$FQDN"            # converged: lineage present
+                                                      #   (certbot__is_converged, book:165)
+257  # ssh … systemctl enable --now certbot.timer     # converged: enabled+active
+258  # ssh … systemctl enable --now unattended-upgrades  # converged: enabled+active
+267  ssh … install -m 600 -D /dev/stdin /etc/restic/repo.pass
+267                                                   # runs: unmodeled ('install' reading stdin)
+276  curl -fsS -o /dev/null "https://$FQDN/"          # runs: unmodeled ('curl')
 plan: 2 to run (8 omitted, 3 skipped)
 ```
 
@@ -160,9 +160,9 @@ And the default, non-verbose render — the attention product:
 
 ```
 $ dorc plan pivot-vps-standup.sh
-252  ssh … install -m 600 -D /dev/stdin /etc/restic/repo.pass
-252                                                   # runs: unmodeled ('install' reading stdin)
-261  curl -fsS -o /dev/null "https://$FQDN/"          # runs: unmodeled ('curl')
+267  ssh … install -m 600 -D /dev/stdin /etc/restic/repo.pass
+267                                                   # runs: unmodeled ('install' reading stdin)
+276  curl -fsS -o /dev/null "https://$FQDN/"          # runs: unmodeled ('curl')
 plan: 2 to run (8 omitted, 3 skipped)
 ```
 
@@ -175,7 +175,7 @@ the worst possible wall real-estate.
 
 The trade, stated plainly: on a day the machine answers, **nothing inside the region
 is checked**. If somebody hand-deleted the DNS A record, the book will not notice
-until `curl` fails at line 261. That is not a regression — it is exactly what the
+until `curl` fails at line 276. That is not a regression — it is exactly what the
 admin's bare-sh version did — but it is not drift-healing either, and calling it
 drift-healing would be a lie. Finer oracles inside the region do not fix it; the
 region is not *entered*. Only a narrower guard would, and writing one is the admin's
@@ -190,23 +190,23 @@ The admin rebuilt the droplet by hand (`doctl compute droplet-action rebuild <id
 $ dorc plan --verbose pivot-vps-standup.sh
  36  set -eu
  48  SSH="ssh -o … -o StrictHostKeyChecking=accept-new"
-188  if ! ssh … "root@$FQDN" true; then               # runs: not reachable
+192  if ! ssh … "root@$FQDN" true; then               # runs: not reachable
                                                       #   (host key verification failed —
                                                       #    accept-new does not re-pin a CHANGED key)
-190  #    doctl compute droplet create "$DROPLET" …   # converged: sm.doctl.Droplet:web1@exists
+194  #    doctl compute droplet create "$DROPLET" …   # converged: sm.doctl.Droplet:web1@exists
                                                       #   → transit does not fire; no epoch boundary
-202     IP=$(doctl compute droplet get … )            # runs
-204     doctl compute domain records list … || …      # runs: unmodeled ('doctl' verb 'domain')
-217     ssh-keygen -R "$FQDN" … || true               # runs: unmodeled ('ssh-keygen')
-218     ssh-keygen -R "$IP" … || true                 # runs: unmodeled ('ssh-keygen')
-224     until ssh … "root@$FQDN" true; do sleep 5; done   # runs: wait
-229     timeout 600 ssh … cloud-init status --wait    # runs: unmodeled ('timeout')
-230  fi
-240  ssh … certbot certonly … -d "$FQDN"              # runs: scope unmeasurable at plan time
-242  ssh … systemctl enable --now certbot.timer       # runs: scope unmeasurable at plan time
-243  ssh … systemctl enable --now unattended-upgrades # runs: scope unmeasurable at plan time
-252  ssh … install -m 600 -D /dev/stdin …             # runs: scope unmeasurable at plan time
-261  curl -fsS -o /dev/null "https://$FQDN/"          # runs: unmodeled ('curl')
+206     IP=$(doctl compute droplet get … )            # runs
+208     doctl compute domain records list … || …      # runs: unmodeled ('doctl' verb 'domain')
+221     ssh-keygen -R "$FQDN" … || true               # runs: unmodeled ('ssh-keygen')
+222     ssh-keygen -R "$IP" … || true                 # runs: unmodeled ('ssh-keygen')
+235     until ssh … "root@$FQDN" true; do sleep 5; done   # runs: wait
+244     timeout 600 ssh … cloud-init status --wait    # runs: unmodeled ('timeout')
+245  fi
+255  ssh … certbot certonly … -d "$FQDN"              # runs: scope unmeasurable at plan time
+257  ssh … systemctl enable --now certbot.timer       # runs: scope unmeasurable at plan time
+258  ssh … systemctl enable --now unattended-upgrades # runs: scope unmeasurable at plan time
+267  ssh … install -m 600 -D /dev/stdin …             # runs: scope unmeasurable at plan time
+276  curl -fsS -o /dev/null "https://$FQDN/"          # runs: unmodeled ('curl')
 plan: 11 to run, 1 skipped
 ```
 
@@ -265,7 +265,7 @@ and it is not free.
 
 ### chafe-book-lines-consume-the-artifact-channel
 
-Line 252 pushes a secret by redirecting a controller-local file into an `ssh` site's
+Line 267 pushes a secret by redirecting a controller-local file into an `ssh` site's
 stdin. Under the shipped invocation shape (`ssh host 'sh' -s < artifact`) a book line
 that itself reads stdin eats artifact bytes. Turn B flagged this as an
 engine-relevant escalation with a live specimen; here is a second one, and it is not
@@ -280,7 +280,7 @@ will hit this on its first useful line.
 
 ### chafe-loops-never-elide-but-should-not-wall
 
-`until ssh … true; do sleep 5; done` (line 224) is a `StatusIterated` condition,
+`until ssh … true; do sleep 5; done` (line 235) is a `StatusIterated` condition,
 which blocks unconditionally today — correctly, since no single rc reproduces a
 per-iteration sequence. But the *consequence* the book needs is narrower than the
 rule delivers: the loop must always run (never elide — a host reachable at probe
@@ -358,4 +358,4 @@ non-droplet verbs, until somebody describes them.
 **Spent:** roughly 120 lines of oracle for three tools, of which the `doctl` and
 `ssh` ones are stdlib-shaped (written once, reused by everyone) and only the
 `certbot` judgment is genuinely local. Plus one plan-time ssh round trip per run,
-which the bare-sh version also paid — it just called it line 188.
+which the bare-sh version also paid — it just called it line 192.
