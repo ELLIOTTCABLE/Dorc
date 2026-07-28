@@ -173,10 +173,16 @@ $SUDO apt-get install -y --no-install-recommends ufw unattended-upgrades chrony
 # ── 5. firewall ────────────────────────────────────────────────────────────
 #
 # `ufw` writes rule files; the kernel state it wants only exists on a booted
-# machine. `--dry-run` is not offered a vouch anywhere in this file (see the
-# oracle), so these lines guard rather than elide when they cannot be proven.
+# machine, so the oracle declines in the chroot and these lines run there.
+#
+# Note what is deliberately NOT here: `ufw --force reset`. It is a common
+# opening line in real base-machine scripts and it is poison for a book —
+# it destroys state unconditionally every run, so it can never converge,
+# and everything after it is measured against a firewall this book just
+# emptied. A book gets most of its value from lines an author could have
+# written either way; this is one of them, and the convergent spelling is
+# also the safer one.
 
-$SUDO ufw --force reset >/dev/null
 $SUDO ufw default deny incoming
 $SUDO ufw allow 22/tcp
 if [ "$INIT_LIVE" = yes ]; then
