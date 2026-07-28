@@ -214,8 +214,7 @@ $SUDO hork enroll --site edge >>/var/log/hork.log 2>&1
 sshd__is_converged() {
    case ${1:-} in
    -t|-T)
-      sshd -t
-      #: sm.dorc.File:/etc/ssh/sshd_config@valid
+      sshd -t   #: sm.dorc.File:/etc/ssh/sshd_config@valid
       ;;
    *) return 2 ;;
    esac
@@ -239,22 +238,16 @@ systemctl__is_converged() {
 
    case $verb in
    enable)
-      systemctl is-enabled --quiet -- "$unit"
-      #: sm.dorc.Service:"$unit"@enabled
+      systemctl is-enabled --quiet -- "$unit"   #: sm.dorc.Service:"$unit"@enabled
       ;;
-   start|restart|reload|stop)
+   start)
       [ -d /run/systemd/system ] || {
-         printf 'decline no-manager systemctl %s\n' "$verb" >>"${DREP_V1:-/dev/null}"
+         printf 'decline no-manager systemctl start\n' >>"${DREP_V1:-/dev/null}"
          return 2
       }
-      case $verb in
-      start)
-         systemctl is-active --quiet -- "$unit"
-         #: sm.dorc.Service:"$unit"@active
-         ;;
-      *) return 2 ;;
-      esac
+      systemctl is-active --quiet -- "$unit"   #: sm.dorc.Service:"$unit"@active
       ;;
+   restart|reload|stop|disable) return 2 ;;
    *) return 2 ;;
    esac
 }
@@ -269,14 +262,20 @@ systemctl__is_converged() {
 ufw__is_converged() {
    [ -d /run/systemd/system ] || return 2
    verb=${1:-}; shift 2>/dev/null || :
+
+   # `| grep -q` is the sigpipe-flap class: grep exits on its first match and
+   # the producer takes a SIGPIPE, which under pipefail lands rc 141 in the
+   # flat sink and flaps run-to-run. Here that is survivable — a 141 is >=2,
+   # so it can't-says and the line runs — but it is the shape to recognize,
+   # and the full-read form is what a careful author reaches for when the
+   # producer is expensive.
    case $verb in
    allow|deny|limit)
-      ufw status | grep -qF -- "${1:-}"
-      #: sm.dorc.FirewallRule:"$1"@present
+      rule=${1:-}
+      ufw status | grep -qF -- "$rule"   #: sm.dorc.FirewallRule:"$rule"@present
       ;;
    enable)
-      ufw status | grep -q '^Status: active'
-      #: sm.dorc.Firewall:local@active
+      ufw status | grep -q '^Status: active'   #: sm.dorc.Firewall:local@active
       ;;
    reset|disable) return 2 ;;
    *) return 2 ;;
@@ -297,12 +296,17 @@ ufw__is_converged() {
 # rank at the top of any describability priority list: an unmodeled,
 # unguarded transit walls every single day and kills the book.
 
+# INVENTED VOCABULARY, flagged as such: `transits` is a strawman mark verb
+# for classing a command as an epoch boundary. It stands alone rather than
+# trailing a statement, because there is nothing runnable to bind to — the
+# claim is about the verb, not about an rc.
+
 curtin__predict() {
    case ${1:-} in
    install)
       #: transits epoch
       return 2 ;;
-   in-target) return 2 ;;
+   in-target|hook|net-meta) return 2 ;;
    *) return 2 ;;
    esac
 }

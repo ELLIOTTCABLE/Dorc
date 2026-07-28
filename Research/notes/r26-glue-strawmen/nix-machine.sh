@@ -327,22 +327,31 @@ _nixos_rebuild_expected() {
       return 2
    }
 
-   # rung one
-   if rev=$(nixos-version --configuration-revision 2>/dev/null) \
-      && [ -n "$rev" ] \
-      && [ -z "$(git -C "$dir" status --porcelain 2>/dev/null)" ] \
-      && head=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
-   then
-      [ "$rev" = "$head" ]
-      #: org.nixos.SystemClosure:"$attr"@activated reads org.nixos.FlakeLock:"$dir"@current
-      return $?
-   fi
+   # The rc partition, used as a control-flow primitive rather than
+   # described: rung one answers 0 or 1 authoritatively when it can, and 2
+   # when it cannot. Only a 2 falls through to the expensive rung. An author
+   # who wrote `_rev_match || <rung two>` would have thrown away the
+   # difference between "diverged" and "cannot say", and rung two would run
+   # every time the revisions honestly differed.
+   _nixos_rebuild_rev_match "$dir"; rung1=$?
+   [ "$rung1" -ge 2 ] || return "$rung1"
 
-   # rung two
    want=$(nix eval --raw "$dir#nixosConfigurations.$attr.config.system.build.toplevel") \
       || return 2
-   [ "$(readlink -f /run/current-system)" = "$want" ]
-   #: org.nixos.SystemClosure:"$attr"@activated reads org.nixos.FlakeLock:"$dir"@current
+   [ "$(readlink -f /run/current-system)" = "$want" ]   #: org.nixos.SystemClosure:"$attr"@activated reads org.nixos.FlakeLock:"$dir"@current
+}
+
+# Rung one, factored out so its last statement is the marked one — the strip
+# law wants the author's last substantive command to stay the last
+# status-affecting statement, and a mark that has to reach around a `return`
+# is a sign the function wanted splitting anyway.
+_nixos_rebuild_rev_match() {
+   dir=$1
+   rev=$(nixos-version --configuration-revision 2>/dev/null) || return 2
+   [ -n "$rev" ] || return 2
+   [ -z "$(git -C "$dir" status --porcelain 2>/dev/null)" ] || return 2
+   head=$(git -C "$dir" rev-parse HEAD 2>/dev/null) || return 2
+   [ "$rev" = "$head" ]   #: org.nixos.SystemClosure:@activated reads org.nixos.FlakeLock:"$dir"@current
 }
 
 
@@ -394,8 +403,7 @@ home_manager__is_converged() {
 
       want=$(nix eval --raw "$dir#homeConfigurations.\"$attr\".activationPackage") \
          || return 2
-      [ "$(readlink -f "$hmprofile")" = "$want" ]
-      #: org.nixos.HomeGeneration:"$attr"@activated reads org.nixos.FlakeLock:"$dir"@current
+      [ "$(readlink -f "$hmprofile")" = "$want" ]   #: org.nixos.HomeGeneration:"$attr"@activated reads org.nixos.FlakeLock:"$dir"@current
       ;;
    news|generations|build|test|rollback|expire-generations|remove-generations|uninstall)
       return 2 ;;
@@ -425,21 +433,18 @@ home_manager__is_converged() {
 # describing somebody else's whole-system activation.
 
 nixos_rebuild__disturbs() {
-   while [ "${1#-}" != "$1" ]; do shift; done
-   case $1 in
+   case ${1:-} in
    switch|boot|test)
-      printf '%s\n' "$(hostname)"
-      #: disturbs {org.nixos.SystemClosure,sm.dorc.Service,sm.dorc.File}
+      host=$(hostname)
+      printf '%s\n' "$host"   #: disturbs {org.nixos.SystemClosure,sm.dorc.Service,sm.dorc.File}
       ;;
    esac
 }
 
 home_manager__disturbs() {
-   while [ "${1#-}" != "$1" ]; do shift; done
-   case $1 in
+   case ${1:-} in
    switch)
-      printf '%s\n' "$HOME"
-      #: disturbs {org.nixos.HomeGeneration,sm.dorc.File}
+      printf '%s\n' "$HOME"   #: disturbs {org.nixos.HomeGeneration,sm.dorc.File}
       ;;
    esac
 }
@@ -463,16 +468,19 @@ tailscale__is_converged() {
    up)
       for a in "$@"; do
          case $a in
-         --authkey=*|--auth-key=*)
+         --authkey=*|--auth-key=*|--auth-key)
             printf 'decline authkey-bearing tailscale up\n' >>"${DREP_V1:-/dev/null}"
             return 2 ;;
          esac
       done
-      tailscale status --json >/dev/null 2>&1
-      #: org.tailscale.Node:"$(hostname)"@joined
+      # Bound to a variable rather than written inline: a coordinate's
+      # entity is resolved through value-flow, never expanded, so a bare
+      # `$(hostname)` in entity position is not something the analyzer can
+      # follow. The bind is where the value gets a name.
+      node=$(hostname)
+      tailscale status --json >/dev/null 2>&1   #: org.tailscale.Node:"$node"@joined
       ;;
-   status|version) return 2 ;;
-   down|logout) return 2 ;;
+   status|version|down|logout) return 2 ;;
    *) return 2 ;;
    esac
 }

@@ -128,6 +128,53 @@ Three properties fall out, and all three are things every *other* splice target 
 
 **The one hard interface is PATH**, and it is worth stating as a general finding rather than a nix detail: *nix's entire value proposition is that nothing resolves by name; sh's entire idiom is that everything does.* A fragment that says `/nix/store/…-git-2.51.0/bin/git` is no longer a book — it does not run on the laptop with no nix, and the off-ramp is the product. So the dependency declaration has to move **up**, to the nix layer, where closure-completeness is expressible, and the fragment stays name-resolving sh. That is what `dorc.activation.<name>.path = [ pkgs.git ]` is for.
 
+## §mark-carrier-choice — the day-zero book is the `#:` carrier's population
+
+`kTYANNOT` is directional with both poles shipping: the salient colon form is
+the default, and the `#:` comment carrier is "OFFERED for raw-exec-inertness".
+This book is a live argument for who that offer is *for*, and I think it is
+sharper than the knob entry currently states.
+
+The book's headline property is that it runs bare — `curl … | sh` on a naked
+laptop, before nix exists, before Dorc exists, before there is anything to
+strip it with. The colon form is not inert under a stock shell: a mark
+executes, and a colon-form bind on an assignment fails harder still (the
+shell reads `:=` as an unknown command). An unstripped colon-form book is not
+a runnable book.
+
+So the population is not "authors who prefer comments to salience". It is
+**every book whose value proposition includes running before its tool
+exists** — day-zero bootstrap books, offline artifacts pre-compilation, and
+anything a person might `curl`. For those, the carrier is not a taste choice;
+it is the only one that preserves the property the book was written for.
+
+Two costs, met in practice while writing this:
+
+- **Highlight demotion is real and it is worse in an oracle than a book.**
+  A `#:` mark greys out in every renderer, and the marks in an oracle are the
+  correctness-critical part. `rul-attention-honesty` is a source-side rule
+  too, and greying the load-bearing line is the FlowType-annotations failure
+  mode the knob explicitly names. In a *book* this barely matters (books
+  carry few marks); in an *oracle* it is the whole surface.
+- **rc-consuming marks cannot stand alone**, which constrains layout more
+  than I expected. `asserts`/`refutes` bind to a statement's exit code, so
+  the mark must trail on the same physical line. That is fine until the
+  statement and the coordinate are both long — and coordinates with a kind,
+  a quoted entity, a selector, and a `reads` clause are long. Twice while
+  writing these oracles the honest fix was to **split the function** so the
+  marked test was its last statement, rather than to fight the line. That is
+  a good outcome and probably a lint hint worth having, but it is a real
+  authoring pressure the knob entry does not currently mention.
+
+**Suggested delta for whoever owns `kTYANNOT`:** the pole choice may not be
+per-author taste at all. It looks like it wants to be **per-file, decided by
+whether the file is ever executed unstripped** — books that bootstrap take
+`#:`, oracles shipped for stripping take the salient form, and a file that is
+both (as this one is) has a genuine tension that the current framing does not
+name. This book resolves it by taking `#:` throughout and paying the greying
+cost on its oracles, because runs-bare is load-bearing and salience is not.
+I am not confident that is the right general answer.
+
 ## §9 — Escalations and flagged questions (conductor)
 
 None of these stopped a book; all are things I declined to decide.
@@ -137,3 +184,4 @@ None of these stopped a book; all are things I declined to decide.
 - **flag-pin-hermeticity-is-a-shape** — §5's observation that "does this invocation pin its inputs" is an argv-answerable question across many ecosystems. Possible knob-entry or synthesis material; possibly deserves a name.
 - **flag-second-host-scope-inside-one-command** — `nixos-rebuild --target-host` puts a second host scope inside a single book line. That is `rul-attribution-is-controller-minted`'s named re-entry trigger ("any second scope becoming representable") arriving from a direction the round was not watching: not a pivot, not a fleet book, just a flag on an ordinary command. The oracle declines it, which is correct and cheap, but the existence of the shape is worth the synthesis note.
 - **flag-admin-side-gradual-enhancement-rung** — §6's `system.configurationRevision` rung is bought by the *admin*, not the oracle author. USER_STORY's curve is engineer-side throughout. If admin-side rungs are a real category, the hint machinery has a second audience.
+- **flag-mark-carrier-may-be-per-file-not-per-taste** — §mark-carrier-choice. `kTYANNOT`'s pole choice looks like it may be determined by whether a file is ever executed unstripped, rather than by author preference; and a file that is both a bootstrap book and an oracle host has a tension the knob does not name. Possible `KNOBS.md` delta, human-owned.
