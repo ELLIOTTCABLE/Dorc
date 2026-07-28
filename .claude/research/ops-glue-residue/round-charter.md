@@ -25,6 +25,14 @@ prize is early design-choices/seams with high retrofit cost that stretch coverag
   (ssh → kexec installer → reboot, host keys churning) — documented pain there
   is direct evidence for scope-typing + connection-dance requirements; also
   nix-bootstrap glue idioms in the wild (install-nix + apply-flake scripts).
+- turn-d-incumbent-featureset-comparison (human-proposed 2026-07-28,
+  conductor-ACKED) — deep design/featureset comparison vs cdist + pyinfra:
+  where Dorc is positioned; which contemplated value-adds are genuinely
+  valueless to build because an incumbent has them locked down; candidates
+  for honest "if you're doing X, just go use Y" README advice. SCOPE FENCE
+  (conductor): per-feature effort-allocation ONLY, never product-viability
+  relitigation — go/no-go stays welded GO (AGENTS.md market-value-hole
+  fence); the brief must exclude "should Dorc exist". PENDING, after turn C.
 
 ## Strawman-book candidates (accreting; land at Research/notes/r26-glue-strawmen/)
 
@@ -378,6 +386,53 @@ actually useful (incl. their own future k8s usage) — never toward fiction.
   evidence against delegate_facts + the DeHaan framing.
 - Label ruling applied: research-doc commits are `(AI dsn new/re)`; `rsr` was
   a stray (agents warned by hook, allowed; no history rewrite).
+
+## Rulings batch (human-typed 2026-07-28, post-turn-B synthesis)
+
+- ack-splice-floor-framing — the splice-vector theorization ACCEPTED, with the
+  human's own sharpening: **"splice is the floor"** trumps "paste is the
+  floor" because splice is STRICTLY HARDER — paste needs copy-friendliness and
+  shortness but no purity/safety/defensive compilation; splice ADDS mechanism
+  and safety while ALSO needing paste-ish properties (offramp; readable/
+  durable inside the host's format). Never the core target; instantly a FLOOR
+  TO MAINTAIN — watch how other work damages it; easy to make
+  borderline-impossible via output-channel assumptions. Human will personally
+  work it into a DESIGN footer (their edit, not ours). Consequences kept from
+  the theorization: dir-splice-vector-fragment-mode joins the round's
+  directions; fragment-grade render = the same embeddable-output posture as
+  paste-block + offline artifact (ONE discipline, three consumers); its
+  constraint set (hygiene wrapper · compile-time `exit` refusal ·
+  errexit-robustness [already holds] · self-contained lanes [already holds] ·
+  embedding provenance/source-map [the one real machinery ask, kin to `111`'s
+  locator DAG]); shapes A (splice compiled text) and B (splice a store-path
+  invocation line — nix-idiomatic, full local probe/plan/apply); the
+  chef-solo NO-SEMANTIC-FORK rule binds all of it. Nix strawman book gains an
+  hm-inside face (shape B).
+- ack-stdin-hygiene-banked-aside — the stdin-consumption escalation is REAL
+  but SET ASIDE (potential standalone r26 dig, human-owned timing). Sketches
+  banked verbatim-tier: close-stdin-early as OPTIONAL hygiene
+  (gradual-enhancement ⇒ lint-tier, or a CLI flag rolled into a `--strict`
+  bundle); keep supporting pipe; possible default = "pipe to US, we collect
+  and ship as an artifact when possible, flag-off for pure pipe";
+  confidentiality (rset's write-nothing-remote rationale) noted as possibly
+  important, undecided.
+- ack-lane-survival-defer — lane-survival machinery is critical and needs
+  deeper digging ("transport effectively needs a v2") but GENTLY DEFERRED:
+  the FLOOR assumptions are the high-lock-in part to determine NOW; the
+  mechanisms that reach the floor consistently/safely are low-lock-in and
+  deferrable.
+- **rul-capability-probing-per-feature** (human-typed, bank EARLY — shapes the
+  knob entry directly): capability-probing is DORC's job, per-feature,
+  per-host — never the oracles'. No gradual-enhancement through
+  tiers/layers/ladders of transport capability: match each FEATURE to its
+  MIN-CAPABILITIES and provide the full set of features each host's
+  capability-set licenses, across a weird, heterogeneous, NON-MONOTONIC target
+  population (the web's feature-detection-not-user-agent-sniffing lesson).
+  Kills any "degradation ladder" model in the knob entry; the lattice is a
+  per-feature requirements table, not a ranked ladder.
+- cdist first-party sources: human confirmed the site is fully down (no
+  render, no access) — stays blocked; archive.org at writing time if needed;
+  the 2016-fork grading stands disclosed.
 
 ## Settled asks
 
