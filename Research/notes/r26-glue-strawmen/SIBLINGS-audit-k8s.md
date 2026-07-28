@@ -30,8 +30,10 @@ Included despite being near-obvious because it is the row Dorc most conspicuousl
 Footnote: *remembers in etcd, and cascade-deletes owned dependents via `ownerReferences`; but removing an object from your manifests deletes nothing by itself — that needs `--prune` or a pruning GitOps reconciler.*
 <https://kubernetes.io/docs/concepts/architecture/garbage-collection/>
 Verbatim: *"Many objects in Kubernetes link to each other through owner references. Owner references tell the control plane which objects are dependent on others. Kubernetes uses owner references to give the control plane, and other API clients, the opportunity to clean up related resources before deleting an object. In most cases, Kubernetes manages owner references automatically."*
-Supporting the prune half: `kubectl diff` itself carries `--prune` and `--prune-allowlist` flags (*"Include resources that would be deleted by pruning"*), which is direct evidence that pruning is an opt-in mode rather than what `apply` does by default —
-<https://kubernetes.io/docs/reference/kubectl/generated/kubectl_diff/>
+The prune half is weaker than I first wrote, and the evidence is worth stating in full because it drives CH-6. <https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/>
+Verbatim: *"In Kubernetes 1.36, there are two pruning modes available in kubectl apply: Allowlist-based pruning: This mode has existed since kubectl v1.5 but is still in alpha... The ApplySet-based mode is designed to replace it. ApplySet-based pruning: ...This mode was introduced in alpha in kubectl v1.27 as a replacement for allowlist-based pruning."*
+**Both modes are still alpha** — FEATURE STATE `v1.5 [alpha]` and `v1.27 [alpha]` respectively; the intended replacement has not graduated either. From <https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/>: *"Alpha Disclaimer: the --prune functionality is not yet complete. Do not use unless you are aware of what the current state is."* And the operational warning: *"Especially if flag values are changed between invocations, this can lead to objects being unexpectedly deleted or retained."*
+So: delete-by-un-declaring in bare `kubectl` has been alpha for roughly a decade on the original route and three years on its replacement. In practice the capability is real but it is delivered by GitOps reconcilers (Argo, Flux), which are add-ons rather than Kubernetes.
 
 **C3 · "Secrets management story" · Kubernetes = Y** — *the eyebrow cell; see CH-1.*
 Footnote: *the most complete story in the table — first-class object, encryption-at-rest, RBAC, KMS and CSI provider integration, short-lived ServiceAccount tokens — but unencrypted in etcd by default, and the ability to create a Pod in a namespace implies read access to every Secret in it.*
@@ -39,26 +41,32 @@ Footnote: *the most complete story in the table — first-class object, encrypti
 Verbatim (the page's own Caution box): *"Kubernetes Secrets are, by default, stored unencrypted in the API server's underlying data store (etcd). Anyone with API access can retrieve or modify a Secret, and so can anyone with access to etcd. Additionally, anyone who is authorized to create a Pod in a namespace can use that access to read any Secret in that namespace; this includes indirect access such as the ability to create a Deployment."*
 
 **C4 · "Whole-system rollback" · Kubernetes = ~**
-Footnote: *rollback is per-workload (`kubectl rollout undo`), bounded by `revisionHistoryLimit`; there is no cluster-wide rollback primitive.*
+Footnote: *rollback is per-workload (`kubectl rollout undo deployment/<name>`, optionally `--to-revision`), bounded by `revisionHistoryLimit` (default 10 old ReplicaSets).*
 <https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-back-a-deployment>
+Verbatim: *"Alternatively, you can rollback to a specific revision by specifying it with --to-revision"*; *".spec.revisionHistoryLimit is an optional field that specifies the number of old ReplicaSets to retain to allow rollback... By default, 10 old ReplicaSets will be kept."*
+**Honesty correction:** my first draft of this footnote ended "there is no cluster-wide rollback primitive." No primary page states that negative. It is an inference from every `kubectl rollout` example operating on a single named workload — sound, but it is absence-of-evidence, so the footnote should assert the positive (per-workload scope) and let the reader draw the rest. Corrected above.
 
 **C5 · "Creates infrastructure (VMs, DNS, networks)" · Kubernetes = ~**
 Footnote: *creates real cloud objects as a side effect of workload objects — load balancers and routes via the cloud-controller-manager, disks via StorageClass dynamic provisioning — but does not describe or own infrastructure as such; node creation is an add-on (autoscaler / Cluster API), not core.*
 <https://kubernetes.io/docs/concepts/architecture/cloud-controller/>
 Verbatim: *"The cloud-controller-manager is a Kubernetes control plane component that embeds cloud-specific control logic. The cloud controller manager lets you link your cluster into your cloud provider's API, and separates out the components that interact with that cloud platform from components that only interact with your cluster."*
 <https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/>
+Verbatim, the two controllers that do the creating — route controller: *"The route controller is responsible for configuring routes in the cloud appropriately so that containers on different nodes in your Kubernetes cluster can communicate with each other."* Service controller: *"The service controller interacts with your cloud provider's APIs to set up load balancers and other infrastructure components when you declare a Service resource that requires them."* And dynamic provisioning: *"Dynamic volume provisioning allows storage volumes to be created on-demand."*
 Corroborating the "side effect of workload objects" framing, the GC page lists among the things Kubernetes cleans up: *"Dynamically provisioned PersistentVolumes with a StorageClass reclaim policy of Delete"* and Nodes deleted *"On a cloud when the cluster uses a cloud controller manager"* — creation and deletion of real cloud resources, driven entirely by cluster-object lifecycle.
+Nuance surfaced in verification, worth not overstating the `~`: the cloud-controller-manager's node controller holds `create` on `v1/Node` in its RBAC, so it is not purely an updater. That is creating Node *objects* during registration flows, not creating *machines* — the footnote's "node creation is an add-on" claim is about machines and stands, but do not let the row's prose harden into "the CCM only touches routes and load balancers."
 
 **C6 · "Templating / config-file generation" · Kubernetes = ~**
-Footnote: *kustomize ships inside kubectl (`kubectl kustomize`, `apply -k`) and does overlays and patches, not templating; text templating is Helm's, and Helm is not Kubernetes.*
+Footnote: *`kubectl` has supported kustomization files since 1.14 (`kubectl kustomize`, `apply -k`) — no separate binary needed — and kustomize does overlays and patches, not text templating; templating is Helm's, and Helm is not Kubernetes.*
 <https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/>
-Verbatim: *"Since 1.14, kubectl also supports the management of Kubernetes objects using a kustomization file"*, via `kubectl kustomize <dir>` and `kubectl apply -k <dir>`.
+Verbatim: *"Kustomize is a standalone tool to customize Kubernetes objects through a kustomization file. Since 1.14, kubectl also supports the management of Kubernetes objects using a kustomization file."*, via `kubectl kustomize <dir>` and `kubectl apply -k <dir>`.
+Wording correction: I originally wrote "kustomize ships inside kubectl." The docs say kubectl *supports* kustomization files and describe kustomize as "a standalone tool"; functionally there is no separate binary to install, but "ships inside" is my phrasing, not theirs. Softened above.
 
 **C7 · "Preview before mutating (plan / dry-run / diff)" · Kubernetes = Y**
 Footnote: *`kubectl diff` compares your would-be-applied configuration against the live cluster, server-side — so the preview runs the real admission chain rather than simulating it.*
 <https://kubernetes.io/docs/reference/kubectl/generated/kubectl_diff/>
 Verbatim: *"Diff configurations specified by file name or stdin between the current online configuration, and the configuration as it would be if applied."*
-Worth the footnote because Dorc also claims Y on this row and the two Ys are not the same object: Kubernetes previews a declarative object diff; Dorc previews the executable text.
+The "runs the real admission chain" half is backed directly — <https://kubernetes.io/docs/reference/using-api/api-concepts/#dry-run> (FEATURE STATE `v1.19 [stable]`): *"Dry run mode helps to evaluate a request through the typical request stages (admission chain, validation, merge conflicts) up until persisting objects to storage... Kubernetes guarantees that dry-run requests will not be persisted in storage or have any other side effects."* Note that page documents the API-level `dryRun` parameter; the kubectl flag spelling lives at <https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/>: *"--dry-run string[="unchanged"] Default: "none" | Must be "none", "server", or "client"."*
+Worth the footnote because Dorc also claims Y on this row and the two Ys are not the same object: Kubernetes previews a declarative object diff; Dorc previews the executable text. Kubernetes' preview is in one respect *stronger* than anything Dorc will have — a server-side dry-run is evaluated by the same admission chain that would admit the real request, so the preview and the apply share machinery rather than merely agreeing by construction.
 
 > **Bonus find, for the round's tri-state-rc collection.** `kubectl diff` documents:
 > *"Exit status: 0 No differences were found. 1 Differences were found. >1 Kubectl or diff
@@ -103,7 +111,9 @@ prose and each now has a resolving home.
 
 **P1 · the init-container idempotence mandate** — <https://kubernetes.io/docs/concepts/workloads/pods/init-containers/> (quote at C8).
 
-**P2 · readinessProbe refused at validation** — same page (quote at C8), plus the API reference wording: <https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/> — *"Init containers may not have Lifecycle actions, Readiness probes, Liveness probes, or Startup probes."*
+**P2 · readinessProbe refused at validation** — same page (quote at C8), plus the API reference: <https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/>
+Verbatim, from the `initContainers` field of PodSpec: *"Init containers are executed in order prior to containers being started. If any init container fails, the pod is considered to have failed and is handled according to its restartPolicy. The name for an init container or normal container must be unique among all containers. Init containers may not have Lifecycle actions, Readiness probes, Liveness probes, or Startup probes."*
+Precision note worth keeping: the API reference says *"may not have"* (a schema-level restriction) while the concept page says *"This is enforced during validation."* Same substance, two registers. Prose that wants to claim an enforced refusal should cite the concept page; prose that wants the field-level rule should cite this one.
 
 **P3 · the sidecar contrast that makes P2 deliberate rather than incidental** — <https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/>. An init container with `restartPolicy: Always` is a sidecar and *does* support the probes. Kubernetes knows how to attach a readiness predicate to an init-position container; it declines for run-to-completion ones specifically. Cite this wherever the prose claims the hole is by design — it is the difference between an argument and an assertion.
 
@@ -120,7 +130,8 @@ Verbatim (current): *"--wait WaitStrategy[=watcher] — wait until resources are
 So `--wait` is no longer a bare boolean: it is a strategy-valued flag defaulting to `hookOnly`. Any prose that says "pass `--wait`" is still correct; any prose that implies it is on/off is not. Also from the hooks page: *"This is a blocking operation, so the Helm client will pause while the Job is run."*
 
 **P8 · Helm release state** — <https://helm.sh/docs/topics/advanced/>
-Verbatim: the backend is selected by `HELM_DRIVER`, *"It can be set to one of the values: `[configmap, secret, sql]`"*, with Secrets the default (the page's migration instructions read *"If you want to switch from the default backend to the ConfigMap backend"* and retrieve existing state via `kubectl get secret --all-namespaces -l "owner=helm"`).
+Verbatim: *"By default, release information is stored in Secrets in the namespace of the release."* Backend selection is via `HELM_DRIVER`: *"It can be set to one of the values: `[configmap, secret, sql]`."*
+**CORRECTION AGAINST MY OWN EARLIER FRAGMENT — action needed.** My SIBLINGS Helm section wrote the release-state row as *"**Y** (`helm.sh/release.v1` Secrets)"*. That type string is **not first-party documented anywhere** — not on this page, not in the Helm API docs, and the 2019 `helm-3-preview-pt4` blog post that gets cited for it is a pre-release design preview that does not match the shipped model. It is well-attested only in community sources (`kubectl describe secret` output in gists and blog posts). **Recommendation: drop the type string from the row and say "in-cluster Secrets, by default", which is quotable.** If the precise string is wanted anywhere, it must be labelled community-sourced.
 **Caveat — this page carries a banner: *"This page has not yet been updated for Helm 4. Some of the content might be inaccurate or not applicable to Helm 4."*** Cite it, but cite it knowing that. See §1c.
 
 **P8b · Helm rollback is release-scoped** — <https://helm.sh/docs/helm/helm_rollback/>. Helm 4 additionally grew `--rollback-on-failure` on `upgrade` (*"if set, Helm will rollback the upgrade to previous success release upon failure"*), which strengthens the Helm rollback row rather than weakening it.
@@ -129,9 +140,12 @@ Verbatim: the backend is selected by `HELM_DRIVER`, *"It can be set to one of th
 Verbatim: *"Kubelets are limited to reading their own Node objects"* (`v1.34 [stable]`); identity is `system:node:<nodeName>` in group `system:nodes`. Backs the node book's security argument for the node-local guard.
 
 **P10 · ReadWriteOnce, and access modes are not a write lock** — <https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes>
-Verbatim: *"ReadWriteOnce access mode still can allow multiple pods to access (read from or write to) that volume when the pods are running on the same node."* and *"Volume access modes do not enforce write protection once the storage has been mounted."* Backs the init-container book's lock.
+Verbatim: *"ReadWriteOnce: the volume can be mounted as read-write by a single node. ReadWriteOnce access mode still can allow multiple pods to access (read from or write to) that volume when the pods are running on the same node. For single pod access, please see ReadWriteOncePod."* And: *"Volume access modes do not enforce write protection once the storage has been mounted. Even if the access modes are specified as ReadWriteOnce, ReadOnlyMany, or ReadWriteMany, they don't set any constraints on the volume. For example, even if a PersistentVolume is created as ReadOnlyMany, it is no guarantee that it will be read-only."*
+Backs the init-container book's lock — and the second quote is stronger than I had it: the docs say access modes place *no constraints at all*, which means the `readOnly: true` on the app container's mount in that book's manifest is a container-level protection, not a volume-level one.
 
-**P11 · `gitRepo` removed, init container named as the replacement** — <https://kubernetes.io/docs/concepts/storage/volumes/>. The strongest single citation in the whole fragment: Kubernetes deleted a declarative feature and pointed users at a shell script in an init container. Cite it wherever the prose states the residue thesis, because it is the incumbent conceding the point in its own reference docs.
+**P11 · `gitRepo` removed, init container named as the replacement** — <https://kubernetes.io/docs/concepts/storage/volumes/>, section heading `gitRepo (disabled)`.
+Verbatim: *"Kubernetes 1.36 does not include the gitRepo volume driver. The last version that provided a way to use this driver was Kubernetes v1.35, and it has been deprecated since the v1.11 minor release."* Replacement, verbatim: *"To provision a Pod that has a Git repository mounted, you can mount an emptyDir volume into an init container that clones the repo using Git, then mount the EmptyDir into the Pod's container."*
+The strongest single citation in the whole fragment: Kubernetes removed a declarative feature and pointed users at a shell script in an init container — the residue thesis, conceded by the incumbent in its own reference docs. Cite the *release numbers* carefully: removed as of the 1.36 docs, last shipped in v1.35, deprecated since v1.11.
 
 ### 1c. Currency caveat: Helm 4 shipped, and my fragment was written against Helm 3
 
@@ -165,57 +179,65 @@ What actually bears on the SIBLINGS Helm material:
   are processed (they now flow through post-renderers), so the GC behaviour deserves a
   re-check before anyone leans on it hard. `~SUSPECT` it still holds; not verified.
 
-**Recommendation:** the Helm rows and prose stand as written *except* the `--wait` shape,
-which should be corrected. The rest is disclosure, not repair. My earlier fragment's
-"helm.sh v3" framing should be updated to v4 wherever it appears.
+**Important softening, from the verification pass:** Helm 3 is *still maintained in parallel*
+(3.21.x, per the Helm-4-GA announcement), and in Helm 3 `--wait` and `--dry-run` genuinely
+are plain booleans. So this is not "our claims went stale" — it is **"our claims did not say
+which major they described."** That is a smaller sin and a different repair: the fix is to
+name the version, not to rewrite the substance.
+
+**Recommendation:** the Helm rows and prose stand *except* the `--wait` shape, which should
+either be corrected to the Helm 4 spelling or explicitly labelled as Helm 3. Everything else
+here is disclosure. Whichever way it goes, the Helm section should state the major version it
+describes — a comparison table that silently straddles two majors of the same tool is the
+kind of thing that reads fine for a year and then embarrasses everyone.
 
 ### 1d. Verification ledger
 
-The brief said verify every URL resolves. Stating exactly what I did, because "verified" is
-a claim and an audit that fudges it is worse than no audit.
+The brief said verify every URL resolves. Stating exactly what happened, because "verified"
+is a claim and an audit that fudges it is worse than no audit.
 
-**Fetched by me during this audit, resolving, with the quoted text read in place:**
-`concepts/configuration/secret/` · `reference/access-authn-authz/extensible-admission-controllers/` ·
-`concepts/architecture/controller/` · `concepts/architecture/garbage-collection/` ·
-`concepts/architecture/cloud-controller/` · `reference/kubectl/generated/kubectl_diff/` ·
-`tasks/manage-kubernetes-objects/kustomization/` · `concepts/workloads/controllers/deployment/` ·
-`concepts/storage/persistent-volumes/` · `helm.sh/docs/overview/` ·
-`helm.sh/docs/topics/advanced/` · `helm.sh/docs/helm/helm_upgrade/`
+**All 20 URLs cited in this document resolve (HTTP 200, real content), confirmed 2026-07-28.**
+Every verbatim quotation above was read in place. Verification was split two ways:
 
-**Fetched by me in the earlier book-writing pass, resolving, quotes read in place:**
-`concepts/workloads/pods/init-containers/` · `reference/kubectl/generated/kubectl_wait/` ·
-`reference/access-authn-authz/node/` · `reference/node/node-status/` ·
-`helm.sh/docs/topics/charts_hooks/`
+- **Read first-hand by me** (this pass or the earlier book-writing pass):
+  `concepts/configuration/secret/` · `reference/access-authn-authz/extensible-admission-controllers/` ·
+  `concepts/architecture/controller/` · `concepts/architecture/garbage-collection/` ·
+  `concepts/architecture/cloud-controller/` · `reference/kubectl/generated/kubectl_diff/` ·
+  `tasks/manage-kubernetes-objects/kustomization/` · `concepts/workloads/controllers/deployment/` ·
+  `concepts/storage/persistent-volumes/` · `concepts/workloads/pods/init-containers/` ·
+  `reference/kubectl/generated/kubectl_wait/` · `reference/access-authn-authz/node/` ·
+  `reference/node/node-status/` · `helm.sh/docs/overview/` · `helm.sh/docs/topics/advanced/` ·
+  `helm.sh/docs/helm/helm_upgrade/` · `helm.sh/docs/topics/charts_hooks/`
+- **Read by a clamped doc-verifier, quotes returned verbatim with resolution confirmed**:
+  `tasks/manage-kubernetes-objects/declarative-config/` · `reference/kubectl/generated/kubectl_apply/` ·
+  `reference/using-api/api-concepts/` · `reference/kubernetes-api/workload-resources/pod-v1/` ·
+  `concepts/storage/volumes/` · `concepts/storage/dynamic-provisioning/` ·
+  `reference/access-authn-authz/admission-controllers/` · `helm.sh/docs/helm/helm_rollback/`
 
-**Cited on a doc-reader's extraction, base page confirmed real by me, exact quote NOT
-re-read by me in this pass** — treat the wording as `~SUSPECT`-tier until someone re-reads
-it: the two access-mode sentences at `persistent-volumes/#access-modes` (P10); the
-`gitRepo`-removal wording at `concepts/storage/volumes/` (P11); the init-container probe
-sentence at `reference/kubernetes-api/workload-resources/pod-v1/` (P2's API-reference half —
-note the *concept*-page half of P2 is first-hand and is the stronger citation anyway).
+**Two URLs I had cited were wrong or weak and are now fixed**, both caught by verification:
+`api-concepts/#dry-run` documents the API-level `dryRun` parameter, *not* the kubectl flag —
+the flag spelling lives on `kubectl_apply/`, now cited alongside it (C7); and
+`helm.sh/docs/topics/advanced/` does not document the `helm.sh/release.v1` type string my
+earlier fragment asserted (P8).
 
-**Asserted URL shape, page family confirmed, specific section not opened:**
-`concepts/workloads/controllers/deployment/#rolling-back-a-deployment` (C4) — page confirmed,
-anchor conventional, `kubectl rollout undo` spelling not re-read this pass;
-`tasks/manage-kubernetes-objects/declarative-config/` (C2's prune half) — I substituted
-first-hand evidence from `kubectl diff`'s own `--prune` flags rather than lean on it;
-`reference/using-api/api-concepts/#dry-run` (C7) — dropped from the citation above in favour
-of the first-hand `kubectl diff` synopsis;
-`concepts/storage/dynamic-provisioning/`, `tasks/configure-pod-container/security-context/`,
-`concepts/workloads/pods/sidecar-containers/`, `helm.sh/docs/helm/helm_rollback/` — standard
-stable paths, not opened this pass.
+**Deliberately NOT verified, and flagged as such:** whether the Helm hook-GC behaviour (P5)
+still holds under Helm 4's reprocessing of hooks through post-renderers. The sentence is
+present on the live page today, so the citation is honest; the *behaviour* is `~SUSPECT`.
+Someone should re-check before the claim carries weight. See §1c.
 
-Net: every cell footnote in §1a that carries a *verbatim quotation* is first-hand. The
-unverified residue is confined to supporting links and to three quotes explicitly marked
-above.
+**One claim demoted from assertion to inference:** "no cluster-wide rollback primitive" (C4)
+has no supporting sentence in primary docs. Corrected in place.
 
 ---
 
 ## 2. Row-chafe
 
-Six items. One cuts against my own column (CH-1) and one cuts toward it (CH-4); the rest
-are wording or footnote repairs. Conductor decides; opposite pulls from other columns mean
-the row is an honest "ehhhh" and should stay.
+Seven items. Three cut against my own column (CH-1, CH-6, CH-7) and one cuts toward it
+(CH-4); the rest are wording or footnote repairs. Conductor decides; opposite pulls from
+other columns mean the row is an honest "ehhhh" and should stay.
+
+Two are **factual corrections requiring action** rather than judgement calls: CH-2 (a
+footnote that is wrong today) and CH-7 (an unsourceable string in my own earlier fragment).
 
 ### CH-1 — `Secrets management story` / Kubernetes = Y · **CHAFE-WORDING** (cuts against k8s)
 - **Current:** bare `Y`, no footnote.
@@ -281,16 +303,46 @@ the row is an honest "ehhhh" and should stay.
 - **Proposed:** keep `N/A`, add the C10 footnote. That asymmetry is precisely the shape of
   the Dorc `Y` sitting beside it, and one clause makes the row informative instead of empty.
 
-### CH-6 — row `Remembers what it built; delete by un-declaring` / Kubernetes = Y · **CHAFE-WORDING**
-- **Why it chafes:** the row is two claims and Kubernetes scores differently on each.
-  *Remembers what it built*: unambiguous `Y` (etcd, plus `ownerReferences` cascade-deleting
-  dependents). *Delete by un-declaring*: bare `kubectl apply` deletes nothing when you remove
-  an object from your manifests — that needs `--prune`/ApplySet or a GitOps reconciler
-  configured to prune, which is a deliberate opt-in precisely because it is dangerous.
-- **Proposed:** keep `Y` (the row's spirit is "the tool has a memory that makes deletion
-  expressible", which Kubernetes does) and add the C2 footnote naming the prune caveat.
+### CH-6 — row `Remembers what it built; delete by un-declaring` / Kubernetes = Y · **CHAFE-WORDING, upgraded after verification** (cuts against k8s)
+- **Why it chafes:** the row is two claims and Kubernetes scores very differently on each.
+  *Remembers what it built*: unambiguous `Y` — etcd holds every object, and `ownerReferences`
+  give real cascading deletion (foreground and background both documented).
+  *Delete by un-declaring*: bare `kubectl apply` deletes nothing when you remove an object
+  from your manifests.
+- **The evidence is stronger than I expected and it moved my recommendation.** Both pruning
+  modes are **still alpha in the 1.36 docs** — allowlist-based `--prune` (`v1.5 [alpha]`,
+  carrying *"Alpha Disclaimer: the --prune functionality is not yet complete. Do not use
+  unless you are aware of what the current state is."*) and the ApplySet-based mode intended
+  to replace it (`v1.27 [alpha]`, *"backwards incompatible changes might be introduced"*).
+  Ten years on the first route, three on its replacement, neither graduated. In practice the
+  capability is delivered by Argo or Flux — which are add-ons, not Kubernetes.
+- **Proposed, and I have changed my mind here:** `~`, not `Y`. Elsewhere in my column I
+  marked "creates infrastructure" as `~` precisely because node creation is add-on territory;
+  applying that same standard, delete-by-un-declaring is add-on territory too. Terraform and
+  nix earn `Y` on this row by doing it in the core tool as ordinary behaviour. If the
+  conductor prefers to keep `Y` on the strength of the remembering half, the C2 footnote is
+  mandatory rather than optional.
 - **URLs:** <https://kubernetes.io/docs/concepts/architecture/garbage-collection/> ·
-  <https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/>
+  <https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/> ·
+  <https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/>
+
+### CH-7 — Helm prose: `helm.sh/release.v1` is not first-party sourceable · **CHAFE-WRONG** (my own fragment; cuts against my column)
+- **Current:** my SIBLINGS Helm section writes the release-state row as
+  *"**Y** (`helm.sh/release.v1` Secrets)"*.
+- **Why it chafes:** the type string appears in no first-party Helm documentation. The
+  verification pass checked `topics/advanced/`, the Helm API docs, and the 2019
+  `helm-3-preview-pt4` blog post that usually gets cited for it — that post is a pre-release
+  design preview that does not match the shipped model. The string is attested only in
+  community artifacts (`kubectl describe secret` output in gists).
+- **Proposed:** drop the string. The quotable first-party claim is
+  *"By default, release information is stored in Secrets in the namespace of the release"*,
+  which says everything the row needs. If the exact type string is wanted, label it
+  community-sourced.
+- **Severity note:** the *claim* (Helm keeps release state in cluster Secrets) is correct and
+  well-sourced; only the parenthetical identifier is unsourceable. Tagged WRONG rather than
+  WORDING because a precise-looking identifier in a comparison table reads as verified, and
+  this one is not.
+- **URL:** <https://helm.sh/docs/topics/advanced/>
 
 ---
 
