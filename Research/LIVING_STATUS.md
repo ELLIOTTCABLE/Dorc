@@ -19,9 +19,12 @@
 Direction-setting round on the glue phase (pre-ssh lifecycle  /  transport reach  / 
 pivot/topology  /  dorc-inside). Deliverables LANDED: **`KNOBS.md:kBOOT`** (transport
 floor; capability-probing-per-feature human-ruled)  /  root **`SIBLINGS.md`**
-(three-posture framing table, human-review-in-place)  /  **`notes/26K`** = THE
-synthesis (conclusions, limitations, stretch, and the §5 human-sittings queue --
-nine items, none blocking)  /  six imagination-tier books at
+(three-posture framing table, audit-hardened by four column-advocates,
+human-review-in-place)  /  **`plans/26K`** = THE plan + synthesis (its §0 is
+the actionable head: the fruit arc; then THE kernel sitting -- titular =
+local-exec-as-supported-mode, FIRST because local-exec needs epochs, one
+design+build batch rolling in scope-typing and wait-loops; stdin-amendment
+banked design-first)  /  six imagination-tier books at
 `notes/r26-glue-strawmen/` (frozen evidence, never execute). Full adjudication
 ledger + 183-source base: `.claude/research/ops-glue-residue/round-charter.md`.
 Headline rulings (human-typed): pivot must-support  /  splice-is-the-floor  / 

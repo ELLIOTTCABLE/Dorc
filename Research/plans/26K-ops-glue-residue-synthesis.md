@@ -1,4 +1,102 @@
-# 26K -- ops-glue-residue: round synthesis (direction-setting)
+# 26K -- ops-glue-residue: implementation plan + round synthesis
+
+> Promoted notes->plans 2026-07-28 (human-directed): this is THE kBOOT /
+> parent-child-sibling plan. §0 (the implementation plan) leads and is the
+> actionable head; §1-§6 are the round synthesis it rests on. Ahistorical:
+> rewrite in place as things land.
+
+## §0 -- The implementation plan (human-ruled cuts, 2026-07-28)
+
+Two lanes. The boundary law binding lane one (human-typed): lint/warns EMITTED
+by existing analysis are fine -- zero new machinery, no new or changed
+analysis/walking, "the moral equivalent of adding a printf", pure aid/render
+planes only. Anything more belongs to the kernel-builder.
+
+### §0a -- The fruit arc (one conductor-arc, unstaged; correctness-only)
+
+- fruit-emit-hygiene-paste-rules -- renderer law on durable/paste-facing
+  emissions: no physical line approaching the 4095-byte canonical-tty cap; no
+  line beginning `~` (SOL/ssh-serial escape). Render-side only; pins ride in
+  the render corpus. (This IS the first splice-floor damage-watch pin.)
+- fruit-oracle-matched-zero-sites -- aid-plane warning aggregated from
+  EXISTING verdict-provider results: an oracle that loaded and matched zero
+  sites is announced (the silent-decline value-evaporation detector, B3's
+  find; kWARN-rich tune-high era). Test: loaded-but-never-matching case.
+- fruit-loop-does-not-loop-lint -- flag `for i in {1..N}` (brace-range as a
+  literal word) under a plain-sh file: the loop runs once (k3s + the k8s docs
+  both ship it). GATED by the boundary law: ships in this arc only if it is a
+  pure lint-crate rule over existing parse output; if it needs any new
+  walking, it moves to the kernel batch instead. Test: lint case.
+- fruit-doc-no-secrets-payload -- one authoring-doc paragraph siting
+  rul-no-secrets-in-payload (user-data is instance-readable on the major
+  clouds; payloads carry code and probe-shaped reads, never credentials).
+- Explicitly OUT: anything touching analysis/effect/plan kernel crates;
+  CRLF-line-number and the rest of the pre-round polish queue (r26's own).
+
+### §0b -- THE kernel sitting (FIRST in the important lane; design AND build, one batch, human-led, next context-window)
+
+Titular entry, the big must: **local-exec as a supported, user-facing, tested
+mode** -- TODO-owed, the pivot prerequisite, and the reason this sitting goes
+first: local-exec needs epochs/scopes (the controller-as-target is itself a
+second scope). One batch of machinery: epoch/pivot scope typing plus the
+simple loops/waits that roll in naturally. This plan supplies needs, timings,
+and consumer contexts; the invariant-snaking and sharp-edge-finding belong to
+the sitting itself.
+
+Needs-and-timings (feature -> first consumer -> when it must land):
+- scope/generation slot (host x epoch; controller-minted; thin presence in
+  coordinate/record, forced by invariance-carry attribution) -> local-exec
+  itself -> AT the sitting, first.
+- until/wait wall-transparency (pure-delay body + modeled condition: never
+  elides, casts no wall; licensing untouched) -> the pivot's and boothook's
+  first executable lines; every RR channel -> IN the batch (ratification of
+  sit-wall-transparent-delay-loops happens in-sitting).
+- epoch-transit classing (a `transits`-shaped mark; converged transit elides
+  and casts no boundary -- the transit-relative law) -> pivot books' day-N
+  fold -> the slot at the sitting; the SPELLING may land with transit-verb
+  oracles later.
+- inverse wait (wait-unreachable -> wait-back -> re-probe) -> reboot-shaped
+  transits -> a later increment; design-note it now.
+- connection-dance oracle facts (ssh-family; reachable != provisioned rider)
+  -> the pivot's outer guard -> after local-exec, with stdlib revival.
+- scope-ownership design (sit-scope-ownership; split-books stands meanwhile)
+  -> FOLDS INTO this sitting's design half (its four arrivals are the
+  agenda: host x epoch, --target-host, delegate_facts, NodeRestriction).
+- no-tty-refuses-survival (B3's kHALVES-collapse candidate) -> cheap to rule
+  during this sitting's design half; rides the agenda, not the batch.
+
+Consumer contexts the batch must not foreclose (one line each; details §2):
+pivot day-N region-fold behind the reachability guard · the boothook's three
+faces under no-semantic-fork · headless initContainer (guard==elide there) ·
+hm shape-B store-path splice · relay topologies (capability = meet of legs;
+relay host may be a managed target in the same book) · `nixos-rebuild
+--target-host` declines · identity churn at pivots (everyone punts host keys;
+phone_home is the unauthenticated prior art).
+
+Explicitly NOT in the batch: redirect-routing (own sitting, after), os-release
+(research-gated own sitting), anything survival-tier.
+
+### §0c -- Banked prominently, design-first, NOT build-yet
+
+- sit-stdin-copy-exec-amendment: the artifact-on-stdin hazard (two live wild
+  specimens; family split 4-to-1 toward copy-then-exec; rset's
+  confidentiality counter; judo's fd0 doctrine) wants a DESIGN SITTING before
+  any `260` §5 change -- the human holds suspicions about the downsides
+  (host-disk writes vs rul-probe-writes-only-what-it-owns adjacency;
+  confidentiality; cleanup). No build scheduled.
+
+### §0d -- The rest, ranked
+
+- Human-any-time: the DESIGN.md footers (splice-floor; four-posture billing;
+  agentless-vs-Big-Boys) · the remaining §5 sittings not folded above
+  (redirect-routing AFTER the kernel sitting; os-release after field
+  research; kTYANNOT carrier item stands DOWNGRADED to residue per the
+  firewall weld).
+- Tests posture: pins ride their lanes (no separate tests phase). The fruit
+  arc carries the today-pinnable render pins; the kernel batch carries its
+  own; fragment-render pins arrive with any future `compile`.
+- Strawmen books: REMAIN AS-IS (human-ruled: historical, explicitly
+  imagination-tier; any recut waits until they are borderline functional).
 
 AI-authored (Fable conductor, human-directed throughout; written LAST per the
 round charter, 2026-07-28). The round: make Dorc more useful for the ops "glue
