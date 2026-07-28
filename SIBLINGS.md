@@ -24,27 +24,27 @@
 | Capability | Dorc | Ansible | pyinfra | cdist | Terraform | Kubernetes | nix/NixOS | cloud-init |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | You declare the end state; the tool owns the steps | N[^d5] | ~ | ~ | ~ | Y | Y | Y | ~ |
-| A control loop reconciles drift with nobody present | N | N | N | N | N | Y | N | N |
-| Remembers what it built; delete by un-declaring | N | N | N | N | Y | Y | Y | ~ |
-| Fleet: inventory, groups, per-host data | N | Y | Y | ~ | Y | Y | ~ | N/A |
-| Secrets management story | NYI[^d2] | Y | N | N | ~ | Y | N | N |
+| A control loop reconciles drift with nobody present | N | N | N | N | N | Y | N[^n2] | N |
+| Remembers what it built; delete by un-declaring | N | N | N | N | Y | ~[^k2] | Y | N |
+| Fleet: inventory, groups, per-host data | N | Y | Y | ~ | ~[^t1] | Y | ~[^n3] | N/A |
+| Secrets management story | NYI[^d2] | Y | N | N | ~ | Y[^k3] | N | N |
 | Acquires privilege on the target (sudo / become / doas) | NYI[^d2] | Y | Y | ~ | N/A | N/A | ~ | N/A |
 | Whole-system rollback | N | N | N | N | ~ | ~ | Y | N |
-| Creates infrastructure (provisions cloud/provider resources) | ~ | Y | ~ | N | Y | ~ | N | N |
+| Creates infrastructure (provisions cloud/provider resources) | ~ | Y | ~[^p3] | N | Y | ~[^k4] | N | N |
 | Templating / config-file generation | N[^d1] | Y | Y | ~ | Y | ~ | Y | ~ |
-| Check-then-converge inside its own units | N/A | Y | Y | Y | Y | Y | Y | N |
+| Check-then-converge inside its own units | N/A | Y | Y | Y | Y | Y | Y | ~[^ci2] |
 | Preview before mutating (plan / dry-run / diff) | Y | ~ | ~ | ~ | Y | Y | ~ | N |
-| Re-measures inside the managed machine, every run | Y | Y | Y | Y | N/A | ~ | N | N |
-| Convergence machinery for raw shell content | Y | N | N | N | N | N | N | N |
-| What you approved is exactly what executes | Y | N | N | N | N | N | Y | ~ |
-| What executes is the text you wrote, in the language you wrote it | Y | N | N | N | N | Y | N | ~ |
-| Skips explained with queryable provenance | Y | N | N[^p1] | N | N/A | N/A | N/A | N |
+| Re-measures inside the managed machine, every run | Y | Y | Y | Y | N/A | ~[^k5] | N | N |
+| Convergence machinery for raw shell content | Y | ~[^a2] | N | N | N | N | N | N |
+| What you approved is exactly what executes | Y | N | N | N | N | N[^k1] | Y[^n1] | ~[^ci1] |
+| What executes is the text you wrote, in the language you wrote it | Y | N | N | N[^cd1] | N | Y[^k1] | N[^n1] | ~[^ci1] |
+| Skips explained with queryable provenance | Y | N | N[^p1] | N | N/A | N/A[^k6] | N/A | ~[^ci3] |
 | Chooses which parts of your program to run by measuring the machine, not just which hosts | Y | N | N | N | Y | Y | ~ | N |
 | Plan artifact runs without the tool installed | Y | N | N[^p2] | N | N | N | N | N/A |
 | Off-ramp: stop using it, keep working artifacts | Y | N | N | N | N | N | N | ~ |
 | Leaves nothing resident on the managed machine | Y | Y[^a1] | Y | Y | Y | N | N | N |
-| Works before ssh exists (the first-boot seat) | ~[^d3] | N | N | ~ | N | N | N | Y |
-| Existing scripts run unchanged (the adoption floor) | Y[^d4] | ~ | ~ | N | N/A | N/A | N | Y |
+| Works before ssh exists (the first-boot seat) | ~[^d3] | ~[^a3] | N | ~ | N | N | N | Y |
+| Existing scripts run unchanged (the adoption floor) | Y[^d4] | Y[^a2] | ~ | N | ~[^t2] | N/A[^k1] | N | Y |
 | Full value without learning an authoring layer | N[^d6] | N | N | N | N | N | N | ~ |
 | Authored in the target's own language (plain sh) | Y | N | N | ~[^cd1] | N | N | N | ~ |
 
@@ -55,10 +55,27 @@
 [^d3]: As a compiled, guards-only payload shipped down the channel's own formats -- safety travels; elision waits for day N.
 [^d4]: Unchanged also means undescribed: an unannotated script gains safety floor and a plan surface, nothing more. Value accrues only as guards and oracles describe it.
 [^d6]: The ceiling costs real learning here too: oracle authorship in a typed sh dialect, plus its invariants. Only Dorc's floor is free, not its full value.
-[^a1]: Needs Python on the target; its own docs offer `raw` as the no-Python emergency floor.
-[^cd1]: Manifests look like sh but execute through a Python emulation layer -- the aesthetic without the off-ramp.
-[^p1]: Skips are announced in prose at `-v`; there is no queryable record of why.
-[^p2]: Structural, not backlog: deploy code is live Python, and its own author's plan-file design has been blocked on serializing it since 2021.
+[^a1]: Nothing stays: module files are shipped, run, and deleted. Python on the target is a prerequisite, not a residency, and `raw` is its own no-Python floor. <https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/raw_module.html>
+[^a2]: `script:`/`shell:` hand your bytes over unread; `creates:`/`removes:` are first-party guards on them, but the author declares the guard -- nothing derives it from the script. <https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/script_module.html>
+[^a3]: `ansible-pull`, wired up by cloud-init's own `cc_ansible`, needs no inbound ssh -- at the price of Python and egress on a machine that had neither. <https://docs.ansible.com/projects/ansible/latest/cli/ansible-pull.html>
+[^p1]: Skips are announced in prose at `-v`; there is no queryable record of why. <https://docs.pyinfra.com/en/3.x/cli.html>
+[^p2]: Structural, not backlog: deploy code is live Python, and its own author's plan-file design has been blocked on serializing it since 2021. <https://github.com/pyinfra-dev/pyinfra/issues/688>
+[^p3]: Containers and their local resources only (`docker.*`, `lxd.container`, `vzctl`); its `terraform` and `vagrant` entries are inventory sources, never provisioners. <https://docs.pyinfra.com/en/3.x/operations/lxd.html>
+[^cd1]: Manifests look like sh but resolve through PATH-planted emulator symlinks into Python -- the nearest miss in the table, and the aesthetic without the off-ramp. <https://www.cdi.st/manual/latest/cdist-type.html>
+[^t1]: Resource multiplicity via `for_each`, parameterisation via variables; HashiCorp unifies none of it as inventory, and steers away from workspaces as an environment boundary. <https://developer.hashicorp.com/terraform/cli/workspaces>
+[^t2]: `remote-exec`'s `script`/`scripts` copy and execute a local file you already have -- at create time only, from a feature its own docs tell you to exhaust the alternatives before using. <https://developer.hashicorp.com/terraform/language/block/resource>
+[^k1]: The API server defaults unset fields, records `managedFields`, and mutating webhooks may rewrite the object before it is stored; nothing is transpiled, though, and a `command:` argv reaches the container verbatim inside an image you built for it. <https://kubernetes.io/docs/reference/using-api/server-side-apply/>
+[^k2]: Both `kubectl apply` pruning modes are still alpha -- the allowlist since v1.5, carrying its own "do not use", and the ApplySet replacement since v1.27; in practice Argo or Flux delivers this, and they are add-ons. <https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/>
+[^k3]: The most complete story in the table, and its own docs open with the Caution: Secrets sit unencrypted in etcd by default, and anyone who can create a Pod in a namespace can read every Secret in it. <https://kubernetes.io/docs/concepts/configuration/secret/>
+[^k4]: Real cloud objects, as a side effect of workload objects -- load balancers and routes via the cloud-controller-manager, disks via dynamic provisioning; machines are an add-on (autoscaler, Cluster API). <https://kubernetes.io/docs/concepts/architecture/cloud-controller/>
+[^k5]: A closed vocabulary of node and pod facts, plus `exec` probes running arbitrary commands inside containers it manages -- and nothing else about the host. <https://kubernetes.io/docs/reference/node/node-status/>
+[^k6]: Explains failures to act richly -- Events, condition `reason` and `message` -- and decisions not to act not at all. <https://kubernetes.io/docs/reference/node/node-status/>
+[^n1]: `nixos-rebuild build` yields a store path that `switch` then activates bit-identically; what executes is a generated activation script, not the expression you wrote. <https://github.com/NixOS/nixpkgs/blob/5074d8679cc7f41dd035bff04ed8549c9b5e9d10/pkgs/by-name/ni/nixos-rebuild-ng/nixos-rebuild.8.scd>
+[^n2]: `system.autoUpgrade` ships a daily `nixos-rebuild switch --upgrade` timer: periodic re-application, not a loop watching for drift. <https://github.com/NixOS/nixpkgs/blob/5074d8679cc7f41dd035bff04ed8549c9b5e9d10/nixos/modules/tasks/auto-upgrade.nix>
+[^n3]: `nixosConfigurations.<host>` over shared modules genuinely is inventory, groups and per-host data; the orchestration half is one host per invocation, and fleets are third-party. <https://github.com/NixOS/nixpkgs/blob/5074d8679cc7f41dd035bff04ed8549c9b5e9d10/pkgs/by-name/ni/nixos-rebuild-ng/nixos-rebuild.8.scd>
+[^ci1]: No review surface exists at all; but the script formats execute the authored bytes, minus the stripped header line. <https://github.com/canonical/cloud-init/blob/26.1/cloudinit/handlers/boot_hook.py>
+[^ci2]: Modules do read before they act (`cc_growpart` dry-runs before resizing, `add_user` returns early on a user that exists, at release 26.1); what rations the payload as a whole is a frequency gate, not a state check.
+[^ci3]: A frequency-gated skip is recorded, with its own "previously ran" description, in the event stream `cloud-init analyze` parses; there is no provenance chain and no why-verb.
 
 ---
 
