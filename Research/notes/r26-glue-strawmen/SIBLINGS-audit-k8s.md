@@ -84,7 +84,7 @@ Footnote: *by design, and stated in its own docs: init-container code "should be
 Verbatim: *"Because init containers can be restarted, retried, or re-executed, init container code should be idempotent. In particular, code that writes into any `emptyDir` volume should be prepared for the possibility that an output file already exists."* and *"Kubernetes prohibits `readinessProbe` from being used because init containers cannot define readiness distinct from completion. This is enforced during validation."*
 This is the row the whole Kubernetes prose section rests on; it should not be uncited.
 
-**C9 · "The reviewed text is byte-for-byte what executes" · Kubernetes = ~** — *existing footnote is wrong; see CH-2.*
+**C9 · "The reviewed text is byte-for-byte what executes" · Kubernetes = ~** — *existing footnote is wrong; see CH-2. **If this row splits, see §4a, which supersedes this cell with two: Row A = `N`, Row B = `Y`.***
 Replacement footnote: *the API server defaults unset fields and mutating admission webhooks may rewrite the submitted object before it is stored — sidecar injection adds containers the author never wrote; embedded shell is reviewed as an opaque string.*
 <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/>
 Verbatim: *"Mutating admission webhooks are invoked first, and can modify objects sent to the API server to enforce custom defaults."* and *"Admission webhooks that need to guarantee they see the final state of the object in order to enforce policy should use a validating admission webhook, since objects can be modified after being seen by mutating webhooks."*
@@ -372,7 +372,127 @@ beyond what I already held. Ignore any that cost more to check than they are wor
 
 ---
 
-## 4. Housekeeping flag (not audit content)
+## 4. Addendum — the two prospective row changes (conductor request, mid-audit)
+
+Researched against the candidate shapes rather than the shipped ones, so the footnotes land
+on whichever rows survive.
+
+### 4a. The byte-for-byte split — both candidate cells, Kubernetes
+
+**Row A, artifact identity — "What you approved is exactly what executes" → `N`.**
+
+Not `~`. And the strong evidence is *not* the admission webhooks — it is server-side
+defaulting and field management, which happen to **every object on every cluster with no
+webhooks installed at all**. <https://kubernetes.io/docs/reference/using-api/server-side-apply/>
+(`v1.22 [stable]`):
+
+- *"A fully specified intent is a partial object that only includes the fields and values
+  for which the user has an opinion. That intent either creates a new object (using default
+  values for unspecified fields), or is combined, by the API server, with the existing
+  object."*
+- *"The Kubernetes API server tracks managed fields for all newly created objects."* …
+  *"Field management details are stored in a `managedFields` field that is part of an
+  object's `metadata`."*
+- *"If you remove a field from a manifest and apply that manifest, Server-Side Apply checks
+  if there are any other field managers that also own the field. If the field is not owned by
+  any other field managers, it is either deleted from the live object or reset to its default
+  value, if it has one."*
+
+The stored object therefore always carries fields its author never wrote — `managedFields`,
+`uid`, `resourceVersion`, `creationTimestamp`, plus every defaulted spec field. Mutating
+admission webhooks (already cited at C9) then stack on top. A neat corroborating detail: the
+legacy `kubectl.kubernetes.io/last-applied-configuration` annotation exists *because* kubectl
+had to stash a private copy of what you actually applied — the live object could not be
+relied on to be it.
+
+Proposed footnote: *the API server defaults unspecified fields, records `managedFields`, and
+may have the object rewritten by mutating admission webhooks before it is stored; the object
+the cluster acts on is never byte-identical to the manifest you approved.*
+
+**Row B, no generated intermediary — "What executes is the text you wrote, in the language
+you wrote it" → `Y`.**
+
+Kubernetes does not transpile. There is no generated artifact in a second language standing
+between author and execution: the API object *is* the author's document (defaulted), and
+controllers act on it directly. Where Kubernetes actually executes text — `command:` /
+`args:` — the argv reaches the container verbatim, which is precisely the mechanism the
+init-container book in this directory relies on.
+
+This is the row that makes the split earn its keep, because it discriminates hard elsewhere:
+cdist's manifests look like sh and run via Python emulation; Ansible generates Python modules
+and ships them; pyinfra v3 generates commands at runtime. Kubernetes does none of that.
+
+**Why the split is right, from my lane — and one thing it must not carry over.** The old
+single `~` was averaging an `N` and a `Y`, which is the worst possible summary. And the old
+footnote's second clause, *"embedded shell reviewed as opaque string"*, belongs to **neither**
+new row — that claim is already carried by "Convergence machinery for raw shell content = N".
+Carrying it into Row A or Row B would double-count Dorc's win. Recommend it be dropped at the
+split rather than inherited.
+
+**Fairness caution for the conductor, offered against my own column's interest:** under a
+strict bit-identity reading almost nothing scores `Y` on Row A, which would make the row
+non-discriminating. Kubernetes is `N` under any reading, so my cell is safe either way — but
+if Row A is to earn its place, the shipped nix `Y` deserves a look (a Nix expression is
+evaluated into a derivation, which is a generated intermediary and arguably fails *both* new
+rows). Out of my lane; flagging because the split is what surfaces it.
+
+### 4b. "Re-measures INSIDE the managed machine" — where the boundary actually sits
+
+Under that rewording the Kubernetes cell weakens from `Y` to **`~`**, and the one-line
+statement is:
+
+> Kubernetes continuously measures a **closed, fixed vocabulary** of facts about its own
+> objects and its nodes, plus **arbitrary commands inside containers it manages** — and
+> nothing else about the host.
+
+Three citations fix the boundary:
+
+- **Node facts are an enumeration, not a query surface.** A Node's status contains exactly
+  Addresses, Conditions, Capacity/Allocatable, Info, and Declared features, with Conditions a
+  fixed list (`Ready`, `DiskPressure`, `MemoryPressure`, `PIDPressure`, `NetworkUnavailable`).
+  <https://kubernetes.io/docs/reference/node/node-status/> — genuinely inside the machine
+  (disk, memory, PIDs), and genuinely closed: you cannot ask it a new question about the host.
+- **Pod facts likewise enumerated** — `PodScheduled`, `PodReadyToStartContainers`,
+  `ContainersReady`, `Initialized`, `Ready`, `DisruptionTarget`, `PodResizePending`,
+  `PodResizeInProgress`. <https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/>
+  The only extension path is `readinessGates`, and that works by letting the *application*
+  patch its own status — Kubernetes still measures nothing new.
+- **The one open-ended inside-measurement is the probe.** An `exec` probe runs an arbitrary
+  command inside a container and keys on its exit status — which is Dorc-oracle-shaped, and
+  is the closest thing the incumbent world has to a convergence check. It is scoped to
+  containers Kubernetes manages, never the host, and — the point the whole Kubernetes prose
+  section turns on — **never to init containers.**
+  (Documented in pod-lifecycle's "Container probes" section; mechanism confirmed on-page, the
+  probe-method sentence not extracted verbatim in this pass.)
+
+**Recommendation:** `~` under the reworded row, `Y` under the current one. Both are honest;
+the rewording is what makes the difference visible, and it is a fair fix — the same rewording
+that helps Terraform correctly costs Kubernetes something.
+
+### 4c. Spillover: a v1.36 restart path my init-container note missed
+
+Found while chasing 4b, and it belongs in `k8s-initcontainer-pv-seed.note.md` rather than
+here. `restartPolicyRules` plus the `RestartAllContainers` action
+(`Kubernetes v1.36 [beta]`, gate `RestartAllContainersOnContainerExits`) restarts the entire
+Pod in place when a container's exit matches a rule. Verbatim: *"**Init containers are
+re-run** in order."* And it *preserves* *"All volumes, including `emptyDir` and mounted
+volumes"*.
+
+This is a restart path absent from the init-containers page's own "Pod restart reasons" list,
+and it lands exactly on the book's scenario: the seed script re-runs against a PV that still
+holds everything from the previous run. It **strengthens** the idempotence mandate. Two
+smaller notes ride along: `restartPolicyRules` keys actions on **exit codes**
+(`operator: In, values: [42]`) — a fifth exit-code-semantics convention for the round's
+collection, and the first one that is a *policy language* rather than a return convention;
+and the docs concede the whole mechanism is best-effort — *"the kubelet restarts, container
+runtime garbage collection, intermitted connectivity issues with the control plane may cause
+the state loss and containers may be re-run even when you expect a container not to be
+restarted."* That sentence is arguably the single best citation in the whole domain for why
+init-script idempotence cannot be optional.
+
+---
+
+## 5. Housekeeping flag (not audit content)
 
 A SyncThing conflict file appeared in this worktree during the audit:
 `Research/notes/r26-glue-strawmen/k8s-node-standup.sync-conflict-20260728-121725-PHNHRER.sh`.
