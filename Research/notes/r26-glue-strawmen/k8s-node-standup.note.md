@@ -302,6 +302,17 @@ Ordered by how much they hurt.
   law this suggests: **a delegating predict arm must be scoped to resource classes the
   author surveyed, and "it's read-only" is not the same claim as "it is safe to put in a
   report."** New, I think, and it is not currently anywhere in the corpus.
+- **`chafe-silent-decline-on-argparse-miss`** — found by writing the oracle wrong, which is
+  the useful way to find it. My first `kubectl__predict` tested `[ "$1" = get ]`, and `$1`
+  is `--kubeconfig=/etc/kubernetes/kubelet.conf`, because kubectl takes global flags *before*
+  the verb (as do `git`, `docker`, `systemctl`, `apt-get`). The oracle therefore declined on
+  every invocation in the book. Note the failure mode: declining is the *safe* direction, so
+  nothing breaks, nothing warns, and the entire value of the oracle silently evaporates.
+  Every site just runs. An oracle can be 100% wrong and 100% safe at once, and the only
+  symptom is a plan that never gets shorter. This is the strongest argument I have met for
+  `kWARN-rich` during the spike — the `UNK` breadcrumb lane is not a nicety here, it is the
+  only thing standing between a broken oracle and a silent one. A lint that notices "this
+  family's arms never matched anything in this book" would have caught it in a second.
 - **`chafe-pipeline-rc-everywhere`** — `printf | tee`, `curl | gpg`, `containerd config dump
   | grep -q`. The privilege idiom *forces* pipelines (you cannot `$SUDO printf >file`; the
   redirect happens unprivileged in the calling shell), so the sudo gap and the pipefail law
@@ -491,12 +502,14 @@ confirmed by tool output in community threads, not by reference docs.
   everything) is *correct without a probe*. That is a useful existence proof — a book whose
   day-zero offline behaviour needs no compile-time narrowing because its own guard already
   degrades right.
-- **26K synthesis** — three items I think are new: (a) *the interior guards are the safety
+- **26K synthesis** — four items I think are new: (a) *the interior guards are the safety
   net under the outer guard's can't-tell*, which is the missing argument for spending on
   interior oracles in coarse-guard books; (b) *delegation is the only honest predict body
   for tools with embedded query sublanguages in argv*, with kubectl/jq/psql as the class;
   (c) *a delegating predict arm is an exfiltration surface* — read-only ≠ safe-to-report —
-  which I believe is not stated anywhere in the corpus.
+  which I believe is not stated anywhere in the corpus; (d) *a mis-argparsed oracle fails
+  safe and silent*, which converts `kWARN-rich` from a spike-era convenience into the only
+  detector for a whole class of broken-but-harmless oracles.
 - **Scope-typing seam** — §6 gives it two doc-forced Kubernetes cases, one of them a
   *mutating* line the target is structurally forbidden to perform. That is a stronger
   motivator than the read-only pivot case and worth carrying.

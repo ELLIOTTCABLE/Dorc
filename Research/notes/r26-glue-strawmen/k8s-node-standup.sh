@@ -118,8 +118,19 @@ fi
 # client would cheerfully ship `kubectl get secret -o yaml` into the probe
 # readback.  An oracle vouches for what it surveyed; this one surveyed nodes.
 kubectl__predict() {
-   [ "${1-}" = get ] || return 2
-   case "${2-}" in
+   # kubectl takes global flags BEFORE the verb, so the verb is not "$1".
+   # Find it without consuming argv - the delegation below has to re-run the
+   # caller's invocation intact, --kubeconfig and all.  A separated global
+   # (--kubeconfig PATH) leaves a bare path where we look for a verb, we fail
+   # to match, and we decline: the safe direction, but a silent one.
+   verb=; noun=
+   for a in "$@"; do
+      case "$a" in -*) continue ;; esac
+      if [ -z "$verb" ]; then verb=$a; else noun=$a; break; fi
+   done
+
+   [ "$verb" = get ] || return 2
+   case "$noun" in
    node|nodes|no) kubectl "$@" ;;
    *) return 2 ;;
    esac
@@ -130,10 +141,17 @@ kubectl__predict() {
 # don't wait".  Answering it is what lets a converged apply drop the wait
 # instead of re-polling a fact that already holds.
 kubectl__is_converged() {
-   [ "${1-}" = wait ] || return 2
-   shift
-   # Rebuild argv without the caller's deadline - we are asking whether the
-   # condition holds now, not agreeing to wait for it.
+   verb=
+   for a in "$@"; do
+      case "$a" in -*) continue ;; esac
+      verb=$a; break
+   done
+   [ "$verb" = wait ] || return 2
+
+   # Re-run the caller's own invocation, whole, with exactly one substitution:
+   # their deadline for ours.  Rebuilding argv to drop a flag costs eight lines
+   # of rotation in POSIX sh, and that cost is the honest price of an oracle
+   # that argparse-walks instead of pattern-matching a command line.
    n=$#
    while [ "$n" -gt 0 ]; do
       arg=$1; shift
@@ -143,5 +161,5 @@ kubectl__is_converged() {
       esac
       n=$((n - 1))
    done
-   kubectl wait "$@" --timeout=0s >/dev/null 2>&1
+   kubectl "$@" --timeout=0s >/dev/null 2>&1
 }
