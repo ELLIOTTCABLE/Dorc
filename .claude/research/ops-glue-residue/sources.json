@@ -791,5 +791,18 @@
     "sha256": "5f33bf3bca249d246c2bbf85f7852e77dd65dc14e57a135a83fa03adb9dda0a9",
     "acquired": "url",
     "via": "mcp__github__search_code(query: N_TTY_BUF_SIZE repo:torvalds/linux path:drivers/tty)"
+  },
+  "B-redhat-kickstart-post-2011": {
+    "url": "https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/6/html/installation_guide/s1-kickstart2-postinstallconfig",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "not A: first-party Red Hat and read in full, but it is the RHEL 6 edition and therefore carries real version-rot risk against current anaconda; not C because the three option semantics it states (--nochroot, --interpreter, --log) are corroborated by the current pykickstart option surface and the chroot/DHCP caveats are long-standing anaconda behaviour",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Q3 kickstart cell: %post runs inside a chroot by default (--nochroot puts the target at /mnt/sysimage), --interpreter names the interpreter outright so a plain-sh payload has a first-class seat, and under DHCP resolv.conf is unpopulated so the network works but DNS does not - a guard that resolves a hostname fails there",
+    "graded-by": "top-level-agent",
+    "published": "2011",
+    "retrieved": "2026-07-28",
+    "sha256": "35390a17f6a3382d9f290e44a6264029b73d6fd69cdc8f142ed372006ac31630",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [kickstart %post chroot nochroot network interpreter documentation])"
   }
 }
