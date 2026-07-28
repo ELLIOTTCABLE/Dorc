@@ -529,6 +529,31 @@ actually useful (incl. their own future k8s usage) — never toward fiction.
   announces readiness; nothing else covers that direction) · GitLab/Jenkins
   custom-shell verification of the DEAD verdicts.
 
+## Relay topologies — head-node class (banked 2026-07-28; feeds the knob entry + the scope-typing seam)
+
+Channels where an intermediary host relays the control path because it holds a
+channel-capability the controller lacks (an address, a protocol stack, a
+physical attachment). Canonical examples to carry in all channel lists:
+
+- **HPC login/head node** — compute nodes have no external addresses; all
+  control flows through the cluster's front host. Thoroughly documented,
+  topology-motivated.
+- **Hypervisor as relay** — controller → hypervisor host → guest
+  (qemu-guest-agent / virsh): the guest may have no network stack at all yet
+  (day-zero adjacent).
+- **Container host / k8s apiserver** — `ssh dockerhost docker exec …` relays
+  into namespaces that don't route; `kubectl exec` is structurally
+  controller → apiserver → kubelet → container, two relay legs in a tool
+  everyone already uses.
+
+Engineering constraints this class presents (mechanism kin already banked:
+Mitogen `via=` chaining, turn B): effective channel capability is the MEET of
+the legs · quoting/env-marshalling pain compounds per hop · framing and the
+completion sentinel must survive relay · facts become three-party
+(minted-where vs about-whom — the scope-typing seam again) · the relay host
+may itself be a managed target IN THE SAME BOOK, making channel-availability
+depend on book progress.
+
 ## Settled asks
 
 - knob name (human 2026-07-28: not kTRANSPORT — "transport" stays unreserved;
