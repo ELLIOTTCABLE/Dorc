@@ -59,9 +59,37 @@ prize is early design-choices/seams with high retrofit cost that stretch coverag
 - Readiness-waits (until-ssh-up loops) sit on the pivot's critical path — links
   turn-c's until-loop evidence to the pivot requirement.
 
-## Open asks to the human
+## Settled asks
 
-- ask-knob-name-pick: candidate knob slugs proposed in-conversation
-  (kTRANSPORT recommended; kCHANNEL alternate); human picks/edits before the
-  entry is written.
-- ask-strawmen-dir-name: `Research/notes/<noteID>-strawmen/` proposed.
+- knob name (human 2026-07-28: not kTRANSPORT — "transport" stays unreserved;
+  offered kINIT/kBOOT/or-something): conductor lean **kBOOT**, poles
+  `kBOOT-ssh-assumed ↔ kBOOT-any-byte-pipe`; entry prose must state scope
+  explicitly (the axis also covers degraded channels on MATURE machines —
+  container-exec, SSM — not only literal boot). Awaiting cheap typed ack.
+- strawmen dir (human-typed 2026-07-28): `Research/notes/r26-glue-strawmen/`.
+
+## Grounding: r26 as-built state relevant to this round (read 2026-07-28)
+
+- The transport seam is ALREADY channel-shaped, not ssh-shaped: `SessionDriver`
+  = ship-one-artifact-to-one-host-once (stdin-fed bytes, stdout/stderr back,
+  timeout); three drivers exist (ssh-subprocess, local-subprocess, sim) plus
+  the livetest container-CLI seam (`DORC_CONTAINER_CLI`, docker-generic).
+- The completion sentinel (`26A` stop-2) rides IN-BAND on stdout carrying `$?`
+  — the channel's own rc is never trusted. Consequence: rc-visibility is NOT
+  an assumed channel capability; today's real floor is {byte-clean stdin,
+  separate stderr, non-echoing}. Container-exec passes that floor today;
+  serial/paste does not (echo + merged streams). This weakens the feared
+  "SSH-isms baking in" retrofit risk considerably.
+- The one channel-capability-heavy commitment still ahead: `142:Resolution`'s
+  eventual live topology (per-leaf diagnostic files, FIFO fast-lane) assumes a
+  file-ish side-channel; single-channel whole-artifact collected-after is the
+  sanctioned degenerate start and is what's built.
+- Known current limitations that bound near-term glue claims (for the synthesis
+  note's limitations half): N=1 only, no fleet kernel; local-exec owed as an
+  explicitly-supported user-facing mode (TODO.md — and it is a PREREQUISITE of
+  ack-pivot-must-support's first half, book-lines-running-on-controller);
+  privilege/sudo unresolved (firstboot payloads typically run as root, day-N
+  as a user — an asymmetry the offline-artifact story must address); guard-tier
+  class ruling open (`fnd-classed-decline-unwalls-guard-tier`); streaming/TUI
+  deferred; whylog holds unsanitized host metadata; CRLF gate live at plan and
+  apply intake.

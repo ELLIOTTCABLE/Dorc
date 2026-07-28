@@ -726,5 +726,57 @@
     "sha256": "0ddcfacc8e359da23816f7d09709cbfe015476604f020aca1ac62e307c3c677b",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: [cloud-init runcmd failure not detected exit code ignored])"
+  },
+  "B-ser2net-manpage-2026": {
+    "url": "https://man.archlinux.org/man/extra/ser2net/ser2net.8.en",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: a distro rendering of the upstream manpage and it defers all the interesting configuration detail to ser2net.yaml(5), which was not read; not C: it is the maintainers own reference text verbatim, complete for the daemon surface, and the serial-parameter semantics it states are normative",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Q3 - ser2net is the saner byte-pipe answer for physical serial: it exposes a serial port (or an IPMI SOL interface directly) as a raw TCP or telnet/RFC2217 socket, so a payload can be pushed with nc/socat instead of a GUI paste, and setportconfig exposes XONXOFF and RTSCTS as explicit toggles; the load-bearing caveat is stated flatly - setting serial options this way DOES NOT WORK ON SOL, SOL has fixed N81 - so over SOL there is no flow-control knob to turn at all",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-07-28",
+    "sha256": "2f93a062ba861e10c2ee994ce12f00c65d12a9f91d3ff3738827152be2d6fa3c",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [ser2net documentation serial over network telnet])"
+  },
+  "C-ipmitool-manpage-sol-2026": {
+    "url": "https://www.mankier.com/1/ipmitool",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: read only the general-options, shell and sol sections of a very long manpage rather than the whole thing, so read-depth is deliberately partial and claims outside those sections are not supported by this read; not D: it is the tools own reference documentation and the sections that were read are complete and normative",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Q3 mechanics for the SOL leg: sol set exposes character-accumulate-level (5ms units), character-send-threshold, retry-count and retry-interval (10ms units) - i.e. the BMC batches and RETRANSMITS SOL packets, so the network leg is reliable-ish while the BMC-to-UART leg is not; sol activate puts the LOCAL terminal in raw mode; escape sequences ~. ~B ~~ are recognised ONLY IMMEDIATELY AFTER A NEWLINE, which is precisely where a pasted script puts its bytes, and -e exists to move the escape char off ~ because it collides with ssh",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-07-28",
+    "sha256": "20bc464868d068fcc841251058e783eab0167d0aa23d9aac8abc9e9085acf69d",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [ipmitool sol activate expect script automate console commands])"
+  },
+  "B-devcontainers-features-spec-2026": {
+    "url": "https://raw.githubusercontent.com/devcontainers/spec/main/docs/specs/devcontainer-features.md",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "not A: read only through the Execution and Installation-order sections before truncation, so read-depth is partial on a long spec, and the certainty is downgraded to SUSPECT to reflect that a later section could carry an idempotence clause I did not see; not C: it is the normative upstream specification under the devcontainers org, versioned in-repo, and the sections read are the ones that govern script execution",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Q6 NEGATIVE evidence stated by omission and Q7 positive: the spec mandates install.sh be run AS ROOT DURING A CONTAINER IMAGE BUILD and says applications should default to /bin/sh when the Feature does not declare otherwise, but across the sections read it imposes NO idempotence, re-entrancy or convergence requirement whatsoever - the contract is exactly-once-at-build; it also gives an ordering model (dependsOn hard deps, installsAfter soft deps, overrideFeatureInstallOrder) which is dependency sequencing, not convergence",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-07-28",
+    "sha256": "c054b4fd79c3f88673e6254c67d485f910fc464bd8c1785be6db48e1ffdc9f3a",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [devcontainer features specification install.sh idempotent build script])"
+  },
+  "D-tabby-line-send-delay-2023": {
+    "url": "https://github.com/Eugeny/tabby/issues/7823",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not C: a two-sentence feature request from one user, no reproduction, no measurement, and the only supporting artifact is a screenshot of a competing products settings dialog; not F: it is a dated, attributable report against a named product with a named symptom and a named commercial workaround, and it corroborates a mechanism several higher-graded sources establish",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "the scope-widening datapoint for Q1: the reporter is losing large pastes into Cisco devices OVER SSH, not over serial - devices freeze when they get too much text at once - which means paste-rate fragility is a property of the RECEIVING END, not of the serial medium, and it survives a reliable byte-stream; also names SecureCRTs Line Send Delay as the commercial answer; SUSPECT because it is unverified and n-of-1",
+    "graded-by": "subagent",
+    "published": "2023-01",
+    "retrieved": "2026-07-28",
+    "sha256": "017f322f4be24c024c2b7bf3ce7edd885c6f52c585db89b224d3956149cbb48b",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [pasting large config into serial console router lost characters line by line delay])"
   }
 }
