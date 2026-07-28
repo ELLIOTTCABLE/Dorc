@@ -24,24 +24,25 @@
 | Capability | Dorc | Ansible | pyinfra | cdist | Terraform | Kubernetes | nix/NixOS | cloud-init |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | You declare the end state; the tool owns the steps | N[^d5] | ~ | ~ | ~ | Y | Y | Y | ~ |
-| Converges continuously with nobody present | N | N | N | N | N | Y | N | N |
+| A control loop reconciles drift with nobody present | N | N | N | N | N | Y | N | N |
 | Remembers what it built; delete by un-declaring | N | N | N | N | Y | Y | Y | ~ |
 | Fleet: inventory, groups, per-host data | N | Y | Y | ~ | Y | Y | ~ | N/A |
 | Secrets management story | NYI[^d2] | Y | N | N | ~ | Y | N | N |
-| Privilege escalation built in | NYI[^d2] | Y | Y | ~ | N/A | N/A | ~ | N/A |
+| Acquires privilege on the target (sudo / become / doas) | NYI[^d2] | Y | Y | ~ | N/A | N/A | ~ | N/A |
 | Whole-system rollback | N | N | N | N | ~ | ~ | Y | N |
-| Creates infrastructure (VMs, DNS, networks) | ~ | ~ | ~ | N | Y | ~ | N | N |
+| Creates infrastructure (provisions cloud/provider resources) | ~ | Y | ~ | N | Y | ~ | N | N |
 | Templating / config-file generation | N[^d1] | Y | Y | ~ | Y | ~ | Y | ~ |
 | Check-then-converge inside its own units | N/A | Y | Y | Y | Y | Y | Y | N |
 | Preview before mutating (plan / dry-run / diff) | Y | ~ | ~ | ~ | Y | Y | ~ | N |
-| Re-measures the live system every run | Y | Y | Y | Y | ~ | Y | N | N |
+| Re-measures inside the managed machine, every run | Y | Y | Y | Y | N/A | ~ | N | N |
 | Convergence machinery for raw shell content | Y | N | N | N | N | N | N | N |
-| The reviewed text is byte-for-byte what executes | Y | N | N | N | N | ~[^k1] | Y | N |
+| What you approved is exactly what executes | Y | N | N | N | N | N | Y | ~ |
+| What executes is the text you wrote, in the language you wrote it | Y | N | N | N | N | Y | N | ~ |
 | Skips explained with queryable provenance | Y | N | N[^p1] | N | N/A | N/A | N/A | N |
-| Partial work chosen by measuring the machine | Y | N | N | ~ | Y | Y | ~ | N |
+| Chooses which parts of your program to run by measuring the machine, not just which hosts | Y | N | N | N | Y | Y | ~ | N |
 | Plan artifact runs without the tool installed | Y | N | N[^p2] | N | N | N | N | N/A |
 | Off-ramp: stop using it, keep working artifacts | Y | N | N | N | N | N | N | ~ |
-| No resident software on the managed machine | Y | ~[^a1] | Y | Y | Y | N | N | N |
+| Leaves nothing resident on the managed machine | Y | Y[^a1] | Y | Y | Y | N | N | N |
 | Works before ssh exists (the first-boot seat) | ~[^d3] | N | N | ~ | N | N | N | Y |
 | Existing scripts run unchanged (the adoption floor) | Y[^d4] | ~ | ~ | N | N/A | N/A | N | Y |
 | Full value without learning an authoring layer | N[^d6] | N | N | N | N | N | N | ~ |
@@ -56,7 +57,6 @@
 [^d6]: The ceiling costs real learning here too: oracle authorship in a typed sh dialect, plus its invariants. Only Dorc's floor is free, not its full value.
 [^a1]: Needs Python on the target; its own docs offer `raw` as the no-Python emergency floor.
 [^cd1]: Manifests look like sh but execute through a Python emulation layer -- the aesthetic without the off-ramp.
-[^k1]: True for its own objects; the shell embedded in init containers and hooks is reviewed as an opaque string.
 [^p1]: Skips are announced in prose at `-v`; there is no queryable record of why.
 [^p2]: Structural, not backlog: deploy code is live Python, and its own author's plan-file design has been blocked on serializing it since 2021.
 
