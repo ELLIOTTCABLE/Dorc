@@ -244,6 +244,26 @@ modeled well enough that the plan can say what it is waiting for. The controller
 exception is reserved for facts definitionally unobservable from within (host existence,
 first reachability) — which is the pivot book's territory, not this one's.
 
+The poll-loop shape is not a straw man, incidentally: `kubectl wait`'s own reference page
+ships `until kubectl wait pod/busybox1 --for=condition=Ready --timeout=1s 2>/dev/null || ...
+do echo "Checking conditions..."; sleep 1; done` as a documented example. It is the right
+shape *in-host* and the wrong one across a network, and nothing in the doc distinguishes
+those cases because nothing in the doc has to.
+
+**`kubectl wait --timeout=0s` is a general-purpose first-party convergence predicate, and
+that is a bigger deal than this book uses.** The flag's documentation is unambiguous —
+*"Zero means check once and don't wait"* — and `--for` accepts not only
+`condition=<name>[=<value>]` but arbitrary `jsonpath='{...}'=value`. So Kubernetes ships a
+verb that answers "is this arbitrary predicate over this object's status true right now",
+read-only, for every resource type in the cluster. That is the single strongest delegation
+target I found in the domain: an oracle arm for it is near-pure delegation and it covers a
+class, not a command. It also means this book's own top guard could have been spelled
+`kubectl wait --for='jsonpath={.status.conditions[?(@.type=="Ready")].status}=True'
+node/"$NODE_NAME" --timeout=0s`. I kept the `[ "$(...)" != True ]` test form because it is
+what admins actually write and because the whole point of the render is lifting *the
+admin's own guard* — but the delegation spelling is the better engineering, and a hint
+pointing at it is exactly the kind of thing the hint machinery is for.
+
 **Where the all-in-one thesis actually lands here.** Not "one file instead of a
 `kubeadm`-file plus a prep script" — kubeadm has no file. It is: one file instead of
 *prose*. The non-Dorc artifact for this task is a runbook a human executes, whose
@@ -447,6 +467,12 @@ All accessed **2026-07-28**; kubernetes.io docs were serving **v1.36**.
   your Pods can communicate with each other."*
 - `kubeadm token`: <https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-token/> —
   `--ttl` default `24h0m0s`; `--print-join-command`.
+- `kubectl wait`: <https://kubernetes.io/docs/reference/kubectl/generated/kubectl_wait/> —
+  *"--timeout duration Default: 30s — The length of time to wait before giving up. Zero
+  means check once and don't wait, negative means wait for a week."* `--for` accepts
+  `create`, `delete`, `condition=<name>[=<value>]`, and `jsonpath='{...}'=value`; multiple
+  `--for` flags are ANDed. The page's own example of waiting on either of two conditions is
+  a `until kubectl wait ... --timeout=1s ...; sleep 1; done` poll loop.
 
 **UNCONFIRMED, carried honestly:** no primary page states "the Ready condition stays False
 until a CNI plugin is installed" in those words; the mechanism is real (kubelet reports
