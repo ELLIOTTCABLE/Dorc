@@ -9,9 +9,10 @@
 >
 > Companion round: the CLI-inputs sitting (branch `ai/r28-cli-inputs`; its round-note is
 > being renumbered and is deliberately not cited by ID here). Its §5 handoff — "two
-> definitions of one role function" — is the question this plan answers. Its phases 1–2
-> (flag retirement, load-inert check, in-book lift, per-file provenance) are standing
-> context, not re-planned here.
+> definitions of one role function" — is the question this plan answers; and since that
+> note is being re-sited with its loading material removed, every loading-relevant ruling
+> it carried is reproduced durably in §2a. Its phases 1–2 remain that round's build work,
+> not re-planned here.
 
 ## §0. The problem, and the shape of the answer
 
@@ -95,22 +96,82 @@ coherence debt against the first.
   evaluated over the abstract environment ("did a cross-unit override occur without an
   intervening unset of that name"), never as syntactic guard-pattern-recognition around
   load sites (`271:rul-net-quality-u-curve`: imperfect mechanical nets are the footgun).
-- **rul-selection-env-is-end-of-load** [PROPOSED — the one rule the dialogue did not
-  cover; flagged loudly] — for *licensure* (which family answers a tool site), the
-  environment is the one standing after the book's straight-line load sequence completes,
-  not the positional prefix at the site; subshell-scoped sources override regionally
-  within their extent. Forced by USER_STORY stage 3: the oracle appended at the *bottom*
-  of the book must cover sites above it. This is sound because tool sites never invoke
-  the oracle at runtime — there is no runtime binding at a tool site for a positional
-  model to stay faithful to — and the two places a role name IS invoked at runtime are
-  covered elsewhere: guard calls are emission-pinned (§4), and a book's own direct calls
-  of a role function are ordinary positional sh, analyzed as such. Top-level conditional
-  definitions and mid-book loads whose end-state is statically undecidable: ⊤, refuse.
-- Interaction with the CLI-inputs round: CLI-named files and `-I` include-dirs load as
-  the ambient prefix ("before line 1", in command-line order); the book's own text
-  executes after. `rul-marked-file-is-load-inert` [TYPED, that round] makes marked-file
-  sourcing side-effect-free by construction, which is precisely what keeps both the
-  abstract load total *and* the subshell re-source idiom safe to execute for real.
+- **rul-visibility-follows-native-observability** [TYPED direction 2026-07-28; wording
+  PROPOSED] — the hoisting question, settled by one test: *does a native-sh load-order
+  apply to the consuming act at all?* If yes, follow it exactly; ambience is permitted
+  only where sh is silent.
+  - *Positional regime* — anything that is, or stands in for, text in the book's
+    execution stream follows sh execution order. Guard eligibility above all: the naive
+    mental model to preserve is Dorc as a "stupid guard-inserter" that just writes
+    `apt_get__is_converged … || ` in front of the line, and text inserted there cannot
+    see a definition loaded below it. Also positional: the book's own direct calls of
+    role functions, and the env constructs themselves (`.`, `unset -f`, `command -v`,
+    subshell scopes).
+  - *Ambient regime* (JS-hoisting-like) — consuming acts with no runtime referent read
+    the completed load of the innermost enclosing scope (sh's own last-wins end-state;
+    a subshell re-source region governs within its extent): probe composition, elision
+    licensure, disturbs/footprint claims, kind-owner families, binds and marks.
+  - Ambience is no invention where it principally applies: marked files are load-inert
+    (§2a), and sh resolves a function body's callees at *call* time, so a
+    definitions-only file's internal order is unobservable to any shell — ambient
+    reading is native-sh-indistinguishable there. Order is observable exactly where raw
+    commands interleave with definitions — books — which is exactly where the
+    positional regime binds.
+  - Named, accepted consequence (consistency and predictability trump aesthetics,
+    human-typed): a definition introduced late in a book — the stage-3 bottom-appended
+    oracle — licenses elision at sites above itself but backs guards only below itself;
+    an above-site that cannot elide runs unguarded. USER_STORY's renders are unaffected
+    (every guard shown there comes from ambient-loaded libraries). Top-level
+    conditional definitions and loads whose end-state is statically undecidable stay ⊤
+    in both regimes.
+- CLI-named files and `-I` include-dirs load as the ambient prefix ("before line 1", in
+  command-line order); the book's own text executes after. The input surface's standing
+  rulings are glossed in §2a.
+
+## §2a. The input surface (imported)
+
+The CLI-inputs round-note is being re-sited with its loading material removed; these
+rulings are durable here now.
+
+- **rul-named-files-are-positional** [TYPED, CLI-inputs round] — named input files are
+  bare positionals (a shell glob is the many-file spelling); `--book=`/`--book`,
+  `-o`/`--oracle` are deleted, not deprecated (`rul-strawman-formats-no-compat`).
+  Positionals classify by *marker content*, never filename convention: marked ⇒
+  oracle-input (dorc-lang), unmarked ⇒ book-input — an upstream junk-repo will not
+  honor our naming, and a marked file is self-describing and provably inert to load.
+- **rul-include-dir-is-flat-by-default** [TYPED, CLI-inputs round] — the bulk-load
+  argument is `-I`/`--include-dir`, FLAT, one level; `--include-recursive` is a
+  separate opt-in. Grounding (U-shape law: match a convention fully or break loudly,
+  never a confusingly-similar middle): every surveyed include/library-path convention
+  (GCC `-I`, `ld -L`, rustc, javac, GHC, protoc, shellcheck, ansible-lint, Puppet,
+  Make) is a flat, name-driven, one-level lookup and none recurses; the audience's one
+  ingrained drop-in-directory model is the `*.d`/run-parts idiom, unanimously
+  single-level; and the shell world spells definition-directories as env vars
+  (`FPATH`-family), never flags — so an env twin, if ever wanted, is `<NOUN>PATH`-
+  shaped, and `-L`/`-p` spellings are rejected as category errors. Unmarked `.sh`
+  under an include dir is walked past and named in the loaded-source inventory.
+- **rul-marked-file-is-load-inert** [TYPED, CLI-inputs round] — a marker-carrying file
+  must be provably no-op to load: top level holds function definitions and bare
+  assignments only (file-global constants are a must-have), never commands — including
+  command substitution or arithmetic inside an assignment value (`CERTS=$(hostname)`
+  is a command in disguise); `export`/`readonly` stay rejected for now
+  (`271:rul-posix-in-spirit-defaults`). Load-bearing in this plan twice: it keeps the
+  abstract load total, and it is what makes the subshell re-source idiom safe to
+  execute for real.
+- **In-book lift** [TYPED, CLI-inputs round] — every input file, book included, feeds
+  the role lifts (membership by name-construction, never file or author) — the stage-3
+  rung made real. Books stay plain sh always (`rul-book-is-plain-sh-always`); dialect
+  syntax lives only in marked files, so an in-book role function is bare-POSIX,
+  recognized by name alone.
+- **Provenance** [TYPED, CLI-inputs round] — one `SourceFileId` space over every
+  input, book and oracle, per-file line numbers (`AID-NEEDS:law-lineno-identity`); the
+  pinned-definition emission (§4) and the shadow-refusal diagnostics cite through it.
+- **Open, carried with the filename surface** — `dorc why`'s optional address
+  positional collides with bare-word input files (`dorc why webhost.sh cp.oracle.sh`
+  reads the book as an address); candidate resolutions (first-bare-word stands, or
+  `why` takes no file positionals and answers from the receipt, with a story owed for
+  `why --results=FILE`) belong to the CLI round; carried here only so the question
+  survives the note's re-siting.
 
 ## §3. Naming, defaults, and the admin's selection vocabulary
 
@@ -265,10 +326,11 @@ produced by the *general* shadow-refusal rather than a bespoke door-4 rule (its 
 inlined definition shadows the loaded oracle's, unblessed ⇒ family unlicensed ⇒ verbatim
 run, no guard accretion; if ever blessed, the no-double-guard recognition governs the
 guard-shaped line). The CLI-round's phase-two ordering rationale ("book sorts last so a
-colliding book function stays inert under first-match") is superseded: under
-rul-selection-env-is-end-of-load a book definition *wins* its family — in-book is the
-most-local, admin-authored act — with the shadow-refusal as the consent gate when it
-collides with a loaded unit.
+colliding book function stays inert under first-match") is superseded: a book definition
+wins its family in the *ambient* regime (in-book is the most-local, admin-authored act),
+the positional regime agrees wherever the definition precedes the guard-shaped line (as
+the reingest fixture's inlined preamble does), and the shadow-refusal is the consent gate
+when it collides with a loaded unit.
 
 ## §8. Interactions and honest residue
 
@@ -305,8 +367,10 @@ collides with a loaded unit.
    consequence. Richer vocabulary only on field evidence.
 3. **rat-fallthrough-dead-on-principle** — §6's rejection is principled, not
    evidence-pending; nothing rebuilds toward it.
-4. **rat-end-of-load-environment** — §2's selection-environment rule (the one fresh,
-   undiscussed piece; stage-3 forces its direction, but the exact rule deserves eyes).
+4. **rat-two-regime-wording** — §2's visibility rule: the direction is typed
+   (hoisting only where no native-sh load-order applies; guards follow the
+   stupid-guard-inserter model), but the wording, the consumer allocation between the
+   regimes, and the accepted elide-only-above-a-late-definition cell deserve eyes.
 5. **rat-two-kind-respell** — §7's ruling and its fixture consequences.
 
 ## §10. Build shape (minimal; no phase ceremony)
