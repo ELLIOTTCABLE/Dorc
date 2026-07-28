@@ -15,19 +15,24 @@
 # ONE FILE, THREE DELIVERIES — and the same meaning in all three.
 #
 #   day zero, no Dorc anywhere
-#       hcloud server create … --user-data-from-file userdata-boothook-web.sh
+#       doctl compute droplet create web1 … --user-data-file userdata-boothook-web.sh
 #       cloud-init strips line 1, writes the remainder 0700 under
 #       /var/lib/cloud/instances/<iid>/boothooks/, and execs it directly —
 #       honouring line 2's shebang — EVERY BOOT. It works with no Dorc in
 #       sight: every mutation below is hand-guarded, in plain sh.
 #
 #   day zero, compiled
-#       dorc compile userdata-boothook-web.sh >ud.txt  # → --user-data-from-file
-#       Same book. No probe phase exists (there is no host yet), so nothing
-#       elides; every modeled site gains its oracle's own check in front of
-#       the untouched original bytes, with the oracle bodies inlined so the
-#       artifact stays self-contained. Guards only. Headless. Why-log to file.
-#       Offline may NARROW (compile-time refusals); it never FORKS meaning.
+#       dorc compile userdata-boothook-web.sh >build/ud-web1.txt
+#       …which is exactly the file pivot-vps-standup.sh hands to
+#       `--user-data-file`. Same book. No probe phase exists (there is no host
+#       yet), so nothing elides; every modeled site gains its oracle's own
+#       check in front of the untouched original bytes, with the oracle bodies
+#       inlined so the artifact stays self-contained. Guards only. Headless.
+#       Why-log to file. Offline may NARROW (compile-time refusals); it never
+#       FORKS meaning — the chef-solo two-code-path grave is right there.
+#       Budget: DigitalOcean documents 64 KiB for user-data, Azure 64 KB,
+#       GCP 256 KB, and EC2 16 KB raw. Size against the channel you are
+#       actually shipping down, not against folklore.
 #
 #   day N, from the controller
 #       dorc plan userdata-boothook-web.sh web1.example.net

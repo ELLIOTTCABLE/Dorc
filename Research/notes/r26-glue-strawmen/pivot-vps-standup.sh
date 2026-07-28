@@ -44,7 +44,7 @@ IMAGE=debian-13-x64
 SSHKEY=laptop-2026            # pre-registered; `doctl compute ssh-key list`
 
 # `accept-new` rather than the ecosystem's reflexive `StrictHostKeyChecking=no`
-# — see §3 for why the difference is affordable here and nowhere else.
+# — see §1 for why the difference is affordable here and nowhere else.
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new"
 
 
@@ -230,24 +230,32 @@ if ! $SSH "root@$FQDN" true; then
 fi
 
 
-# ── 2. the residue user-data cannot carry ──────────────────────────────────
+# ── 2. in-host convergence, in the entered scope ───────────────────────────
+#
+# From here the book is ordinary. Each `$SSH root@… <cmd>` is a wrapper site;
+# a contiguous run of them denoting one scope is one artifact on one
+# connection, whatever the line count says. Certbot lives here rather than in
+# the boothook for a reason no oracle could have worked out: ACME needs the A
+# record to already point at this box, and §1 is where that became true.
+$SSH "root@$FQDN" certbot certonly --nginx -n --agree-tos \
+   -m ops@example.net -d "$FQDN"
+$SSH "root@$FQDN" systemctl enable --now certbot.timer
+$SSH "root@$FQDN" systemctl enable --now unattended-upgrades
+
+
+# ── 3. the residue user-data cannot carry ──────────────────────────────────
 #
 # User-data is an instance attribute, readable back through IMDS by every
 # process on the box for the life of the machine. Key material therefore
 # travels this way instead: controller → ssh → the box, once, over a channel
-# nothing later can replay.
-$SSH "root@$FQDN" install -m 600 -D /dev/stdin /etc/ssl/private/web1.key \
-   <./secrets/web1.key
-
-$SSH "root@$FQDN" certbot certonly --nginx -n --agree-tos \
-   -m ops@example.net -d "$FQDN"
+# nothing later can replay. Last, so its unavoidable wall costs nothing.
+$SSH "root@$FQDN" install -m 600 -D /dev/stdin /etc/restic/repo.pass \
+   <./secrets/web1-restic.pass
 
 
-# ── 3. in-host convergence, in the entered scope ───────────────────────────
+# ── 4. the question the admin actually has ─────────────────────────────────
 #
-# From here the book is ordinary. Each `$SSH root@… <cmd>` is a wrapper site;
-# a contiguous run of them targeting one scope is one artifact on one
-# connection, whatever the line count says.
-$SSH "root@$FQDN" systemctl enable --now certbot.timer
-$SSH "root@$FQDN" nginx -t
-$SSH "root@$FQDN" systemctl reload nginx
+# Controller-side on purpose: a box can be perfectly converged from the inside
+# and unreachable from the world. This line should run every single time, and
+# it is not a defect that it does.
+curl -fsS -o /dev/null "https://$FQDN/"
