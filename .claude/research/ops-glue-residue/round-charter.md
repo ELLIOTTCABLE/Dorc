@@ -1,4 +1,9 @@
-# Round charter: ops-glue-residue (started 2026-07-28)
+# Round charter: ops-glue-residue (started 2026-07-28 — CLOSED 2026-07-28)
+
+> ROUND CLOSED: all four deliverables LANDED (KNOBS:kBOOT · root SIBLINGS.md ·
+> notes/26K synthesis · notes/r26-glue-strawmen/). The human-sittings queue
+> lives in 26K §5. This charter is now the round's historical adjudication
+> ledger; nothing here needs further maintenance.
 
 Conductor-maintained. Session: `research-ops-glue-residue`. Topic: making Dorc more
 useful for the ops "glue phase" — coverage of territory larger ops tools can't,
