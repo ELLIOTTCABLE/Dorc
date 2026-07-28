@@ -674,5 +674,57 @@
     "sha256": "0378baa798171e603dd7a6d846143ad31869de5a17fa2ceb8c0ce51d3dfa6ce1",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: [base64 uuencode transfer file over serial console no zmodem])"
+  },
+  "A-azure-serial-console-linux-2026": {
+    "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/linux/serial-console-linux",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: first-party Microsoft reference for its own service, read in full, current, and it states the paste cap as a NUMBER in its own Known Issues table rather than leaving it to folklore; there is no higher source for Azure Serial Console behaviour",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "the best-evidenced answer to Q2 anywhere in this set: Azure documents a HARD 2048-CHARACTER cap on strings pasted into the serial console, stated as deliberate (to prevent overloading the serial port bandwidth) - a vendor-imposed ceiling, not an emergent flow-control failure; also Q3 negative - access is portal-only (though the same page inconsistently references an az serial-console CLI), and Q1-adjacent: no RFC1073 window-size negotiation, second connector silently evicts the first WITHOUT logging them out, and EVERYTHING typed is written to boot-diagnostics logs",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-07-28",
+    "sha256": "9959348b174ebd6019b542ce4d85606e49a5af8858b8a27226b4d074985e394e",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [Azure serial console documentation limitations])"
+  },
+  "B-gnu-screen-paste-manual-2026": {
+    "url": "https://www.gnu.org/software/screen/manual/html_node/Paste.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: it is one node of the manual covering a handful of commands, so it is thin and gives the mechanism without any measured threshold or root-cause analysis; not C: it is the canonical GNU upstream manual for the tool, and every restatement of the slowpaste advice found elsewhere is a verbatim copy of this text",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "the upstream primary for the slowpaste mitigation named in Q1: nonzero slowpaste makes screen write the paste CHARACTER BY CHARACTER with an msec pause after each, and the manual itself scopes it to when your underlying system exposes flow control problems while pasting large amounts of text - upstream conceding the hazard is real; also stuff as the low-overhead sibling that explicitly CANNOT paste large buffers, and readreg/paste as a file-to-console path",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-07-28",
+    "sha256": "07b8d463cdec7fd9055fd28d07ec9b2891d364c29177a8b8b20b82c0682b30d9",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [GNU screen slowpaste defslowpaste manual flow control paste])"
+  },
+  "D-superuser-paste-delay-per-line-2024": {
+    "url": "https://superuser.com/questions/1859090/how-to-set-a-paste-delay-per-line-with-telnet-or-equivalent",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not C: an unanswered question from a single pseudonymous user with no outbound references and no reproduction beyond a screenshot - nothing about it is independently checkable; not F: it is a specific, coherent, first-hand account of a named failure with a named working mitigation in a named tool, not noise, and it corroborates a mechanism established elsewhere in this set",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "practitioner voice for Q1 and the cleanest statement of the APPLICATION-BUSY loss mode, distinct from wire-level overrun: the device executes the first pasted command and the lines arriving while it is busy are simply gone; the fix is a per-line paste delay, which TeraTerm exposes and neither telnet nor PuTTY does; SUSPECT because the account is n-of-1 on an embedded UART console and unverifiable",
+    "graded-by": "subagent",
+    "published": "2024",
+    "retrieved": "2026-07-28",
+    "sha256": "3af1c7033cb0e24e95a27b9fecb509342748c5b5ffd7057556bdd990d7fde368",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [pasting large config into serial console router lost characters line by line delay])"
+  },
+  "A-cloudinit-return-codes-2026": {
+    "url": "https://docs.cloud-init.io/en/latest/explanation/return_codes.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: upstream explanation page, read in full, in which the project states its own historical error-handling paradigm and enumerates the failure classes it used to report as done; a project confessing its own pain points is primary in a way no external audit could be",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Q8 systemic root: the paradigm for handling errors was log errors, but proceed, and until 23.4 cloud-init reported done when the config was invalid, when the environment failed, and when cloud-init itself errored - partially-applied firstboot is the designed-for normal case, which is precisely the state a re-runnable convergence artifact heals",
+    "graded-by": "top-level-agent",
+    "published": "2026",
+    "retrieved": "2026-07-28",
+    "sha256": "0ddcfacc8e359da23816f7d09709cbfe015476604f020aca1ac62e307c3c677b",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: [cloud-init runcmd failure not detected exit code ignored])"
   }
 }
