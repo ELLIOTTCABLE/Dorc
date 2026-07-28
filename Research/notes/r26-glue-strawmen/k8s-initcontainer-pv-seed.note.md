@@ -328,6 +328,43 @@ feature to invent, and §4 states it.
 
 ---
 
+## 6b. Honest ledger
+
+- **Spent:** one shebang line, and `dorc-run` in the init image (or nothing at all, on the
+  compile face — §4). Two oracle arms, written once by whoever ships `tileserv-migrate`,
+  amortised across every book that seeds this data. No manifest changes beyond one env var.
+  No controller, no operator, no CRD, no cluster-side anything.
+- **Gained, restart-storm day (the common one):** honestly, **near-zero over a
+  well-written hand-rolled script.** Both do nothing. The delta is the why-log. Render B
+  says this out loud and the synthesis note should too — this is the render that looks
+  most impressive and means least.
+- **Gained, partial-seed day:** the guards were separate questions, so a kill between the
+  payload landing and the pointer flip costs one symlink instead of a 40 GiB re-download.
+  Again: an attentive author writes that themselves. Dorc's contribution is that the fold
+  is *reported* instead of silent.
+- **Gained, failure day (render D):** the whole purchase. "Site 46 failed; the guard above
+  it measured X, which is why the fetch was entered; nothing downstream ran; `current` is
+  unchanged." Nothing in this seat produces that today, and the seat's only forensics is a
+  log you read after something broke.
+- **Gained, structurally:** the idempotence Kubernetes mandates becomes *machinery* rather
+  than author-discipline — the same sentence USER_STORY's chezmoi story earns, from the
+  sixth ecosystem to make the same demand and offer the same nothing.
+- **Gained at review time:** on the compile face, a rendered guard-shape in the PR, in the
+  one place a Kubernetes shop actually spends attention.
+- **Not gained: the attention product.** There is no reader, no plan, no consent moment.
+  Dorc's third priority is structurally absent from this seat. What is left is correctness
+  and the report lane, and pretending otherwise would be the single easiest way to oversell
+  dorc-inside.
+- **Not gained: a durable `dorc why`.** The container is gone; §4.
+- **Not gained: anything for the median init container.** `until nslookup mydb; do sleep 2;
+  done` needs none of this. The live cell is specifically the one that writes to persistent
+  storage, and turn C's caveat that these cells' content is typically small stands.
+- **Not gained, and correctly so:** anything about the workload. Restart policy, backoff,
+  scheduling, readiness, rollout — Kubernetes owns all of it and owns it well. This book
+  touches the inside of one container's script and nothing else.
+
+---
+
 ## 7. Citations
 
 All accessed **2026-07-28**; kubernetes.io serving **v1.36**.
