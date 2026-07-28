@@ -99,8 +99,11 @@ everyone's payload arrives, ours included.
 
 - The module model is genuinely good: a well-written module already does,
   internally, what a Dorc guard does. Dorc adds nothing to it -- the overlap is
-  only the escape hatches (`shell:`/`script:` tasks), which check-mode can't see
-  and `changed_when` annotations describe on the honor system.
+  only the escape hatches (`shell:`/`script:` tasks), whose [check-mode support
+  is declared "partial"](https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/shell_module.html)
+  because the command "cannot be subject to the check mode semantics", with
+  `creates`/`removes` offered as the workaround and `changed_when` annotations
+  describing the rest on the honor system.
 - If a mature module exists for everything you touch and your team lives in its
   YAML happily: use Ansible. Dorc's compatible offer is a `dorc-run` shebang
   inside the `script:` files you already have -- composition, not competition.
@@ -108,8 +111,12 @@ everyone's payload arrives, ours included.
   and can't do (where a channel lacks file transfer, Ansible synthesizes it --
   the SSM plugin requires an S3 bucket just to move files). We design to the
   floor that map reveals.
-- One wart worth knowing when embedding: ssh `script:` tasks force a TTY, which
-  merges stderr into stdout before any payload sees it.
+- One wart worth knowing when embedding, and the [script module's own
+  Notes](https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/script_module.html)
+  say it outright: the ssh connection plugin "will force pseudo-tty allocation
+  via `-tt` when scripts are executed", and "pseudo-ttys do not have a stderr
+  channel and all stderr is sent to stdout" -- so the merge happens before any
+  payload sees it.
 
 ## pyinfra
 
@@ -120,10 +127,13 @@ everyone's payload arrives, ours included.
   an excellent tool and the right call.
 - Its history is generous with lessons: facts are gathered before execution, so
   code that branches on them sees pre-deploy state -- a gap its maintainer
-  worked seven years, rebuilt the ordering engine three times over, and finally
-  declared architectural. Dorc has the same physics and the opposite posture:
-  the staleness is shown (the plan you consent to), and the default fallback is
-  a runtime guard rather than an opt-in flag.
+  worked from 2015 to 2022, through two documented engine rewrites (v2.0's
+  parallel operation generation, v3.0's move to executing at runtime) on top of
+  the 0.x ordering-guidance churn. v3 fixed the command-generation half; what
+  survives it, and what is declared architectural, is the fact staleness. Dorc
+  has the same physics and the opposite posture: the staleness is shown (the
+  plan you consent to), and the runtime guard is the default rather than an
+  opt-in flag at each call site (their `_if`).
 - It also chose fleet-wide lock-step ordering (every host finishes step 1
   before any host starts step 2) -- powerful for control-node/worker dances,
   and the very thing that forces its two-phase machinery. Dorc promises no
@@ -138,9 +148,14 @@ everyone's payload arrives, ours included.
 - Its PreOS feature answers first-boot by manufacturing the ssh precondition (a
   bootable image with your key baked in); we answer it by compiling convergence
   into the payload. Both coherent.
-- Status, said plainly and kindly: upstream is unreachable, the Debian package
-  is orphaned, and the public mirror lags the last release. Hard to recommend
-  today for non-architectural reasons.
+- Status, said plainly and kindly: upstream is alive but slow. The repo lives
+  on a [Gitea instance](https://code.ungleich.ch/ungleich-public/cdist) now --
+  which is why an earlier read of the old forge URL looked like lights-out --
+  and its founder still commits, most recently June 2026; but there has been no
+  release since 7.0.0 in July 2022, the [Debian package is
+  orphaned](https://bugs.debian.org/947641), and the GitHub mirror sits four
+  releases back at 6.0.4. An architecture to learn from rather than a moving
+  competitor.
 
 ## Terraform
 
@@ -185,9 +200,11 @@ everyone's payload arrives, ours included.
 - It is also a genuine sibling deployer (`nixos-rebuild --target-host` pushes
   over ssh) -- and its convergence question has the cleanest delegation answer
   of any tool here: compare the running system's store path to the built one.
-  Our oracle consumes their soundness. (Their `dry-activate` self-documents as
-  incomplete; a tool can have a sound convergence check and an unsound dry-run
-  -- different questions.)
+  Our oracle consumes their soundness. (`nix build` plus a store-path
+  comparison is a complete preview of the artifact; only activation is
+  previewed incompletely, and their `dry-activate` self-documents as such. A
+  tool can have a sound convergence check and an unsound dry-run -- different
+  questions.)
 - What it structurally declines: machines it doesn't wholly own, incremental
   adoption, imperative fix-this-now, and secrets in the description (the store
   is world-readable; their manual says read secrets from the filesystem at
