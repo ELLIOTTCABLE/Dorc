@@ -784,6 +784,127 @@ depend on book progress.
   now first-party-sourced (joins the assist-nothing tally; makes shape B the
   only CORRECT splice spelling, not merely idiomatic).
 
+- **B1 cloud-lifecycle LANDED** (lane `ai/r26-strawmen-cloud` @ `4c7e7af7`,
+  six commits; no ESCALATION blocked a book; three chafes want rulings).
+  Books: pivot-vps-standup (doctl over hcloud — DO first-party-documents the
+  two pivot warts: rebuild retains IP + churns host key; `--wait` tracks the
+  create action not cloud-init) · userdata-boothook-web (THREE deliveries,
+  not two: raw-source, compiled, day-N probed) · SIBLINGS-fragment-cloud
+  (Terraform + cloud-init + an Ignition/Talos column). Load-bearing shape
+  decision: the pivot book takes NO host argument — the controller is the
+  target and ssh is scope-entry.
+  Conductor dispositions on the chafes:
+  - chafe-ssh-lends-scope: conductor concurs with the builder's reading 3 —
+    ssh is SCOPE-ENTRY, not a dimension-lending wrapper; a fifth
+    `: lends scope` dimension is the wrong shape (drags host identity into
+    the within-host dimension algebra). Strawman keeps the candidate
+    spellings; the WELD is human-owned and is the same 27C-meets-scope-typing
+    seam this round keeps arriving at (host×epoch, --target-host,
+    delegate_facts).
+  - finding-redirect-writes-live-outside-argv (HIGH-value): the argv-keyed
+    oracle contract structurally cannot describe sh's most common mutation
+    idiom (redirect targets never reach argv); the write-if-changed idiom
+    self-walls. Conductor REFRAME that dissolves most doctrinal worry:
+    redirects are CHANNEL ROUTING, which is language semantics the engine
+    already owns (inv-one-observable's channels; enclosing contexts consume
+    channels) — an oracle claims per-channel BEHAVIOR (printf: stdout=X),
+    the engine owns ROUTING (stdout→f), and the composition mints the File
+    coordinate; the fs KIND-owner owns "stdout routed to p establishes
+    File:p@content". Never an engine completeness claim about the COMMAND
+    (frame problem stands); composition only completes effects of
+    otherwise-fully-modeled commands. Human sitting wanted; candidate name:
+    redirect-routing-composes-oracle-channels.
+  - chafe-loops-must-be-wall-transparent: conductor ADOPTS as the
+    recommended FIRST INCREMENT for until-loop modeling
+    (dir-until-loop-glue-priority): a loop with pure-delay body and
+    oracle-modeled condition NEVER ELIDES and CASTS NO WALL —
+    wall-transparency deliberately separated from licensing (the getent
+    condition is canonically non-hermetic: it may never license, yet
+    disturbs nothing; kVOLATILES untouched). Human ratification wanted.
+  - Parked: cloud-init-per is a GATING wrapper (may not exec its argument at
+    all) — wrapper-law has no cell; eliding one silently supersedes the
+    tool's own rationing (arguably an upgrade, should be ruled not
+    emergent) · day-zero-root/day-N-user asymmetry (already banked) ·
+    `dorc compile --max-bytes` as ADMIN-TYPED size budget (no cloud
+    database — matches leans).
+  Keeper findings: **no-semantic-fork earns a THIRD face — raw-source
+  delivery** ("paste the unstripped source into --user-data-file and the
+  machine still comes up"), which constrains mark placement hard and is the
+  strongest argument yet FOR the `#:` carrier: there is NO STRIP PASS in the
+  cloud's boot sequence — NB converges with B2's independent
+  books-that-predate-their-tool population insight; two builders hit the
+  same kTYANNOT delta from opposite directions (human-owned knob) · offline
+  artifact's honest value is SAFETY-shaped, small, real (5 inserted guards
+  vs 6 admin-authored in a well-written boothook) — never pitch it on
+  attention · Terraform concedes the residue IN WRITING ("cannot predictably
+  model provisioner behaviors"; README use-Y line available verbatim) ·
+  Ignition's fail-closed axis position locates our honesty claim: partial
+  result NAMEABLE AND RESUMABLE (vs Ignition's no-machine-at-all, vs
+  cloud-init's always-up) · stdlib holes cluster at pivot walls: timeout,
+  ssh-keygen, curl, getent · stdin-consumption hazard SECOND live specimen
+  (`ssh host 'install /dev/stdin …' <secret` is the CORRECT secret-push
+  idiom and collides with artifact-on-stdin — copy-then-exec is
+  load-bearing for pivot books, not optional).
+
+- **B3 kubernetes LANDED** (lane `ai/r26-strawmen-k8s` @ `3234c452`, eight
+  commits; books tracked non-executable). Books: k8s-node-standup (19 sites
+  behind ONE node-local `kubectl get node -o jsonpath` self-read; whole
+  region omits on Ready days; the join token never expands, sitting right of
+  an `||`) · k8s-initcontainer-pv-seed + manifest (baked-not-ConfigMap — the
+  shebang needs the binary in-image regardless; SIGKILL-sweep, mkdir-lock,
+  atomic rename, bounded concurrent-seed wait) · SIBLINGS-fragment-k8s (11
+  N-Dorc/Y-k8s rows · 6 Dorc-strength rows each PRICED as the cost of a k8s
+  capability · Helm block: the hook inside-seat is THIN-not-dead, one level
+  down inside the hook's image).
+  Doc catches: br_netfilter recipe REMOVED from current k8s docs (every
+  tutorial stale; book attributes to the CNI) · containerd renamed the
+  cgroup plugin key across majors (the canonical `sed` silently no-ops ⇒
+  behavior-probing guard instead) · `kubectl wait --for=jsonpath
+  --timeout=0s` is a SHIPPED general read-only convergence predicate (the
+  domain's strongest delegation target; own SIBLINGS row) · k8s docs ship
+  the `{1..100}`-under-sh bug independently of k3s · gitRepo volume removal:
+  the docs' recommended replacement IS an init-container shell script (the
+  incumbent ships the residue thesis).
+  Flag-hardest (conductor-endorsed to human):
+  1. **inside-seat-collapses-kHALVES**: headless + same-machine ⇒ elide and
+     guard are EQUAL on attention and wall-clock, and guard is strictly
+     safer ⇒ the survival tier buys NOTHING in the inside seat — the
+     design's SAFEST cell, not its most compromised. Candidate human ruling:
+     a no-TTY dorc-run REFUSES `kSURVIVAL-trusted` by construction.
+  2. **silent-decline-value-evaporation**: a mis-argparsed oracle (kubectl
+     puts globals before the verb) declined everywhere — safe, silent, all
+     value gone. Converts the kWARN-rich weld from spike-convenience into
+     the ONLY detector for the class; concrete warning candidate:
+     oracle-matched-zero-sites.
+  3. Interior guards are the SAFETY NET under a coarse outer guard's
+     can't-tell — the missing argument for interior oracles in coarse-guard
+     books (answers the drift-healing trade banked earlier).
+  4. Delegation is the only honest predict body for query-sublanguage argv
+     (jsonpath, jq, find-predicates, psql -c); MUTATING such tools have no
+     escape at all; and **a delegating predict arm is an exfiltration
+     surface** — read-only ≠ safe-to-report (ties
+     AID-NEEDS:law-whylog-is-sensitive; secrets round).
+  5. compile-as-primary-k8s-face flagged (no binary in image, artifact
+     reviewable in the PR, no-fork trivial, and per finding 1 the
+     guards-only narrowing costs nothing) — the conductor's brief had pinned
+     dorc-run; inversion noted for the note.
+  ESCALATION disposition (`esc-controller-scoped-line-in-a-target-book`;
+  builder delivered rather than blocked — conductor ACCEPTS that judgment):
+  two doc-forced specimens need a target-book line to run ELSEWHERE
+  (duplicate-Node-name preflight is controller-only on day zero; the worker
+  role label is FORBIDDEN to the node by NodeRestriction — a mutation the
+  target may not perform on itself). Conductor ruling at strawman tier:
+  **split books today** — a book has ONE scope; the unified spelling belongs
+  to the scope-typing seam (now its FOURTH arrival: host×epoch ·
+  --target-host · delegate_facts · NodeRestriction). Oracle-DECLARED
+  execution-scope REJECTED, concurring with the builder: claim-authors must
+  never gain the power to relocate someone else's mutations (kin
+  rul-argv-flows-bytes-do-not; no attribution story). Line-said vs
+  engine-derived: left to the human sitting.
+  kBOOT existence proof banked: the node book is the same file as day-N ssh
+  book AND day-zero user-data with NO compile-time narrowing — the guard
+  self-degrades offline (kubectl absent ⇒ empty ⇒ run everything).
+
 ## Turn E adjudication (conductor mapping against the BLIND inventory; evidence turn05 notes @ dc6369f2)
 
 - Lens verdict: **H1 CONFIRMED-AND-SHARPENED · H2 REFUTED, instructively ·
