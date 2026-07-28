@@ -215,7 +215,7 @@ shorter. Only proof does that, and past an opaque command there is no proof to b
   wall-formers.
 
 
-### Stage 3 — two minutes of engineering: the minimal foobar oracle
+### Stage 3 — two minutes, in the book: name the check you'd write anyway
 
 The hint has sharpened (it knows the topology now):
 
@@ -224,54 +224,37 @@ hint: 'foobar' (line 8) is unmodeled: it is the first wall - an oracle vouching 
       convergence would elide it when converged, and un-wall 1 downstream site
 ```
 
-Annoyed, our admin puts on the engineer hat for exactly the length of a coffee. `foobar`
-already has a status query (most tools do). They drop a small sibling file next to the book
-(the book itself stays plain sh, always; dorc-lang and its marker live only in oracle files,
-which Dorc strips and applies alongside the book):
+No new hat, and no new file. This is the stage-1 habit -- the hand-written guard -- taken
+one step further: `foobar` already has a status query (most tools do), so the admin writes
+the check they would have written anyway, as a function, in the book, right next to the
+line that keeps showing up in the plan -- and gives it the one name Dorc recognizes:
 
 ```sh
-# foobar.oracle.sh
-# dorc-lang/v0.2
 foobar__is_converged() {
-   verb="$1"; shift
-   case "$verb" in
-   sync-certs)
-      dest : org.foob.Certs = "$1"
-      [ "$2" = "" ] || return 2
-      foobar status --certs-current -- "$dest"    : org.foob.Certs:"$dest"@synced
-      ;;
-   *) return 2 ;;
-   esac
+   [ "$1" = sync-certs ] && [ $# -eq 2 ] || return 2
+   foobar status --certs-current -- "$2"
 }
 ```
 
-11 lines, one verb, one probe, one gate — and the function's *name* is the license. In order:
+Three lines of plain POSIX sh, inside the book itself. No dialect, no annotations, nothing
+to learn -- an in-book oracle is always this simple kind, and the function's *name* is the
+entire opt-in. It is also a contract: by writing a function that answers "is it converged,"
+the author licenses Dorc to act on its yes -- so its yes must mean "re-running this is
+noise I accept," not merely "some state holds." (A dpkg-'installed' package with an upgrade
+pending is exactly the gap: whether that counts as a yes is the author's judgment, and only
+theirs.) The plan attributes every elision and guard to the function that answered, by
+name; when the answer is wrong, there is a person to be wrong.
 
-- `foobar__is_converged()` declares "this body answers, for `foobar` invocations, the
-  question in its name." The `__role` name is the opt-in semaphore — and it is already a
-  plain POSIX function-name any shell can run (strip erases binds and marks only; it never
-  rewrites a name). And the name is a *contract*: by writing a
-  function that answers "is it converged," the author licenses Dorc to act on its yes — so
-  its yes must mean "re-running this is noise I accept," not merely "some state holds." (A
-  dpkg-'installed' package with an upgrade pending is exactly the gap: whether that counts
-  as a yes is the author's judgment, and only theirs.) The plan attributes every elision
-  and guard to the function that answered, by name; when the answer is wrong, there is a
-  person to be wrong.
-- `dest : org.foob.Certs = "$1"` binds the operand as the entity, in a kind this author just
-  minted. Nobody approves kind names; there is no registry. It only has to agree with
-  itself. (At the call-site that operand was `"$CERTS"` — the analyzer resolves plain
-  variable-flow to the constant before binding; ordinary shell habits don't defeat it.)
-- `[ "$2" = "" ] || return 2` is the arity gate: a two-operand invocation (`foobar
-  sync-certs A B`) declines instead of quietly probing only the first operand — without
-  it, a half-converged host would under-execute the second one.
-- The trailing `: org.foob.Certs:"$dest"@synced` says: this probe's exit code *establishes*
-  that cell (`#` introduces the selector — which aspect of the entity this line measures).
-  The engine never interprets what "synced" means — it is an opaque token bound to the
-  author's probe.
-- `*) return 2` is the native *decline*. The exit-status partition is fixed and blessed:
-  0 = the named sense holds; 1 = its complement; anything ≥2 = "can't say," and can't-say
-  always runs. Paths the author won't answer for simply answer 2 — declining is ordinary
-  control-flow, not an annotation.
+Two plain-sh details are doing quiet work:
+
+- The first line is a *decline*, spelled as ordinary control-flow. The exit-status
+  partition is fixed and blessed: 0 = the named sense holds; 1 = its complement; anything
+  >=2 = "can't say," and can't-say always runs. A verb this function wasn't written for, or
+  a second operand it never considered (`foobar sync-certs A B`), answers 2 and the site
+  simply runs -- declining costs one `return 2`, not an annotation.
+- The probe body is the author's own sh, and Dorc hands it the site's own argv: the
+  `"$CERTS"` at the call-site resolves through ordinary variable-flow before it arrives
+  here as `"$2"`. Ordinary shell habits don't defeat the lift.
 
 Steady state, after two minutes of work:
 
@@ -285,7 +268,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  6  # dpkg -s nginx >/dev/null 2>&1 \
  6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
  7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
- 8  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs@synced
+ 8  # foobar sync-certs "$CERTS"                       # converged: your oracle holds (foobar__is_converged rc 0)
  9  # systemctl enable --now nginx                     # converged: service enabled+active
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
@@ -315,7 +298,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  6  # dpkg -s nginx >/dev/null 2>&1 \
  6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
  7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
- 8  foobar sync-certs "$CERTS"                         # runs: diverged (org.foob.Certs not synced)
+ 8  foobar sync-certs "$CERTS"                         # runs: diverged (foobar__is_converged rc 1)
  9  ( systemctl_check enable --now nginx ) \
  9     || systemctl enable --now nginx                 # verify: converged, but past 'foobar' (line 8)
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
@@ -332,22 +315,34 @@ proceed-and-flag, never a mid-apply question") is not.
 And a plan-time can't-tell — probe timeout, weird rc — is not quietly rounded to converged:
 no verdict, no guard, no elision; the site runs. Everything fails toward run.
 
-- Spent: ~15 minutes skimming docs, 11 lines of sh, zero new languages, zero config formats.
+- Spent: two minutes and three lines of sh, in the file they already own. Zero new
+  languages, zero new files, zero annotations.
 - Gained, steady state: seven tool-sites of attention down to two; foobar's re-sync mutation
-  avoided.
-- Gained, structurally: the certs state is now *described* — future books that touch it
-  inherit the coverage for free.
+  avoided; the downstream un-walling, for free.
+- Gained, structurally: nothing shareable yet -- this answer lives in this book and speaks
+  only for this book. That is the right size for most tools and most users: this stage is
+  where most Dorc use is meant to stop. Everything past this point in the walkthrough is
+  the minority path.
 - Not gained: anything about `hork`. Walls fall one tool at a time, each by its own author.
 
 
-### Stage 4 — the battle-ready oracle: breadth, honesty, publication
+### Stage 4 — the engineer hat: the annotation language, breadth, publication
 
-Weeks later, with time to spare, the engineer hat comes back on — not to improve this book's
-steady-state plan (it is already two lines; there is nothing left to buy here), but to make
-the oracle *worth publishing*: correct for colleagues' books, other verbs, other days, other
-argv shapes. The enriched oracle:
+Weeks later, a different itch -- and now, for the first time, a different hat. The
+one-liner answers for *this* book only: a colleague spells the same operation `foobar renew
+/srv/certs`, their book doesn't contain the function, and nothing anywhere says that both
+commands touch *the same certs*. Sharing the work -- and naming the state it is about -- is
+the genuine engineering step, and it is deliberately the minority path: stage 3 already
+bought this book's steady-state plan down to two lines, and most users rightly never come
+further than this.
+
+The oracle moves out of the book into a sibling dorc-lang file (the book stays plain sh,
+always; the dialect and its marker live only in oracle files, which Dorc strips and applies
+alongside any book that loads them):
 
 ```sh
+# foobar.oracle.sh
+# dorc-lang/v0.2
 foobar__is_converged() {
    verb="$1"; shift
    case "$verb" in
@@ -362,30 +357,44 @@ foobar__is_converged() {
 }
 ```
 
-What each addition buys — and refuses:
+What the move buys -- and refuses. The annotation language first, since this is where it
+enters the story:
 
+- `dest : org.foob.Certs = "$1"` binds the operand as an entity, in a kind this author just
+  minted. Nobody approves kind names; there is no registry; it only has to agree with
+  itself. This is the annotation surface earning its keep: the fact stops being "my
+  function said yes" and becomes a named cell of world-state that other oracles and other
+  books can refer to -- and the plan's reason sharpens from `your oracle holds` to
+  `converged: org.foob.Certs:/etc/nginx/certs@synced`.
+- The trailing `: org.foob.Certs:"$dest"@synced` says: this probe's exit code *establishes*
+  that cell (`@` introduces the selector -- which aspect of the entity this line measures).
+  The engine never interprets what "synced" means; it is an opaque token bound to the
+  author's probe.
 - Verb breadth: `renew` shares the arm, so the author's yes now covers it too; a colleague's
   `foobar renew /srv/certs` site guards-or-elides in *their* book.
-- `purge-certs` deliberately answers 2 — the author's asymmetric judgment, expressed as
+- `purge-certs` deliberately answers 2 -- the author's asymmetric judgment, expressed as
   ordinary control-flow: stale residue makes "looks absent" a bad reason to not-run a purge,
   and the author knows it. Can't-say, so purge sites always run. The engine did not decide
   that; the person who knows the tool did, by declining to answer. (If they ever want the
-  purge-side *fact* measured anyway — for the plan's display, not as a license — that
+  purge-side *fact* measured anyway -- for the plan's display, not as a license -- that
   belongs in the describing sibling, `foobar__predict()`: the lane that states what is true
   and predicts what would happen, and never licenses skipping a mutation.)
 - The arity gate grows a breadcrumb: a two-operand invocation now hits the loud `UNK`
-  refusal instead of stage 3's silent decline — and a refusal is just an answer-2 with a
+  refusal instead of stage 3's silent decline -- and a refusal is just an answer-2 with a
   breadcrumb: the report goes out-of-band, the site runs, the plan carries the reason.
-- The `*` arm: an unknown verb claims nothing, answers nothing, licenses nothing — a
+- The `*` arm: an unknown verb claims nothing, answers nothing, licenses nothing -- a
   colleague's `foobar frobnicate` is exactly as safe as it was with no oracle at all, plus a
   breadcrumb in the report.
-- Still just sh: stripped, it runs on any POSIX box with no Dorc in sight. Publishing it is
-  pushing a file to a repo. Adopting it is downloading one.
+- Still just sh: stripped (binds and marks erased; a function name is never rewritten), it
+  runs on any POSIX box with no Dorc in sight. Publishing it is pushing a file to a repo.
+  Adopting it is downloading one.
 
-- Spent: an hour or two, maybe, plus ownership — a published vouch is a standing judgment
-  with their name on it, and the attribution machinery will cite it.
+- Spent: an hour or two, the annotation surface genuinely learned, plus ownership -- a
+  published vouch is a standing judgment with their name on it, and the attribution
+  machinery will cite it.
 - Gained: every `foobar` site in every book on every host they (or anyone) run, forever;
-  honest refusals at the edges instead of quiet wrongness.
+  the certs state is now *described*, so future books that touch it inherit the coverage
+  for free; honest refusals at the edges instead of quiet wrongness.
 - Explicitly not gained, and never will be by this route: `hork`.
 
 
