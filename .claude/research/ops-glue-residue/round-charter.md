@@ -161,6 +161,89 @@ actually useful (incl. their own future k8s usage) — never toward fiction.
   exception is the final strawman-WRITERS, who may spawn Sonnet doc-readers
   (each carrying the no-further-spawning clamp).
 
+## Writing phase (ACKED 2026-07-28; step 1 → 2 → 3)
+
+- Step 1 (parallel, 3 Opus builders, worktree-isolated, 2 books each;
+  authorized: Sonnet doc-readers [clamped], Kagi, editing): B1
+  cloud-lifecycle (pivot book + boothook/user-data book) · B2 os-install/nix
+  (installer-hook book + nix-machine book w/ home-manager splice face) · B3
+  kubernetes (kubelet-check rung-zero book + initContainer-on-PV inside
+  book). Builder posture (human-typed): become a mild SME on $tool, then use
+  "imaginary, finished, better-Dorc" the way a $tool-user would BEST benefit;
+  $tool gets its best chance, Dorc its worst; surface design-chafe via
+  ESCALATION to conductor (who may invent features at will — builders never
+  invent silently, never backflip-paper holes); never pick a task Dorc is bad
+  at BY CONSTRUCTION. Books are especially-imagination-tier.
+- Step 2: conductor writes the kBOOT KNOBS entry. Step 3: conductor writes
+  the 26K synthesis note LAST, and merges the builders' SIBLINGS fragments
+  into root SIBLINGS.md, adding only what they missed (no pre-stancing
+  builders with conductor research — human directive).
+- Escalation protocol: a chafing builder STOPS that book, writes the
+  chafe-point precisely (what they tried, why Dorc can't say it), ends the
+  turn with an ESCALATION section; conductor replies with invented-feature
+  direction; builder continues.
+
+## Deliverable 4: SIBLINGS.md (human-added 2026-07-28)
+
+Root-level, LLM-authored/human-reviewed tier. A *friendly* (non-competitive)
+framing-table comparing Dorc against sibling and neighbor products: columns =
+product/project/language/ecosystem; rows = an accreting set of
+capabilities/strengths positioned against Dorc. Row discipline:
+ARCHITECTURE-tier only — fundamental decisions, lock-in/lock-out — never
+NYI/someday rows either side could fix with mild implementation work.
+Near-term priority rows: N-for-Dorc / Y-for-others (Dorc strengths welcome
+where already identified). Purpose (human): keep in-scope what we're NOT
+trying to own, what we CAN'T do well, and which users we intentionally push
+toward better choices. Structure carries the TWO-POSTURE cut (human-typed):
+sibling glue-tools (pyinfra/cdist/ansible — choosing between us is a
+legitimate user CHOICE) vs the Big Boys (k8s/Terraform/nix — NOT a choice:
+"no sane person should persistently choose Dorc over K8s, ever"; Dorc is for
+when-you-don't-know-it / haven't-yet / the residue around it; we
+constantly push users toward them). Builders write per-domain fragments
+(`Research/notes/r26-glue-strawmen/SIBLINGS-fragment-<domain>.md`) from their
+OWN research; conductor merges + adds missed columns (pyinfra/cdist/ansible
+from turns B/D) at step 3.
+
+## Rulings batch 2 (human-typed 2026-07-28, writing-phase kickoff)
+
+- nack-why-claim-rewording: the why/ownership claim was NEVER "we print
+  `# converged`" — it is "when we print it, we can be WRONG, and we OWN that
+  harder than anyone else" (pearl-around-the-sand-grain: ops is lying
+  machines, broken states, half-assed scripts, imperfect authors; navigating
+  that is the product). The turn-D reframe's mechanization phrasing
+  (interrogable chain, typed provenance, a why-verb) stands as the HOW; the
+  charter's earlier "claim weakened" wording is retracted — nothing weakened,
+  the claim was always wrongness-ownership (root docs carry it:
+  IMPLEMENTATION's refined ladder of sins; USER_STORY's Recovery section).
+- agentless-floor positioning CLARIFIED (feeds SIBLINGS + the note): the
+  floor claim positions against the GOOD incumbents, not the siblings —
+  declarative cannot pair with agentless at scale; the Big Boys' one
+  guaranteed cost is the agent; thus Dorc-and-the-residue. Vs siblings the
+  agentless floor is shared and undistinctive (turn D's fence stands).
+- verdict-vocabulary AMENDED (human pushback, conductor concurs): the OWNED
+  cell splits in two. **TABLESTAKES** — connectors/transports and privilege
+  escalation: cannot be skipped (an orchestrator without them isn't one);
+  build to ADEQUACY, never to distinction; Dorc's design job is making each
+  unit thin (a connector = byte-pipe + capability declaration under
+  rul-capability-probing-per-feature; priv-esc = 27C licensing + the
+  early-bound $SUDO fact, sudo+doas adequacy, never a mechanism zoo).
+  **TRUE-DON'T-BUILD** — templating and inventory/group-data: our answer is
+  different-by-design (heredocs are the templating; branch-on-probed-facts is
+  the inventory), not a lesser version of theirs.
+- pyinfra-as-engine-backend: DEAD, conductor-adjudicated with named reasons
+  (human suspected same): (1) the transferable artifact is
+  structurally impossible in their payload model (pickling, issues 688/805 —
+  their own author's five-year-unshipped design); (2) plan-as-your-own-bytes
+  impossible post-v3 (runtime command generation; our two-surfaces byte-floor
+  and attention-honesty need rendered user bytes); (3) facts-run-at-start
+  staleness is admitted and architectural — our probe/verdict split can't sit
+  on it; (4) rc-trust mismatch (they key success on channel rc; we refuse);
+  (5) a Python runtime inside the kernel violates inv-determinism/DST
+  discipline; (6) offramp dies (artifacts would need pyinfra installed).
+  KEPT: the MINING lane — their connector list is a channel roadmap; their
+  operation corpus is oracle-authoring intelligence; happy-sibling invocation
+  (a pyinfra oracle) remains ordinary.
+
 ## Deliverables (human-set, 2026-07-28)
 
 1. **deliverable-knob-transport-floor** — a new KNOBS.md entry for
