@@ -554,6 +554,117 @@ completion sentinel must survive relay · facts become three-party
 may itself be a managed target IN THE SAME BOOK, making channel-availability
 depend on book progress.
 
+## Epoch (host×epoch) — banked reasoning (2026-07-28; conductor + human check)
+
+- Epoch is a TEMPORAL COUSIN of the `27C` dimensions (user · fs-view · netns ·
+  ρ), not a fifth sibling: no entry form can exist (nothing site-shaped shifts
+  WHEN), so measure-in-denoted-context — the mechanism that defines the
+  dimension family — is structurally unavailable, and epoch must NOT join the
+  `lend_map` dimension vocabulary (else silence retroactively walls every
+  wrapper oracle on an axis no wrapper can touch; the engine grounds
+  "nothing lends time" once).
+- What lands in EXISTING vocabulary: per-kind epoch-invariance via the
+  kind-owner's `undivided-by-transit-across <axis>` line (hardware/arch kinds
+  survive; package/service kinds don't; silence walls = right default free) ·
+  pure-predicate carry applies unchanged (invariant backings + read-set-closed
+  body) · guards are EPOCH-PROOF by construction (in-sequence; everything
+  above has happened) · an unoracled reboot is already an unmodeled total
+  wall, so today's architecture is SAFE around epochs with zero additions.
+- Genuinely engine/controller-plane (cannot be in-oracle): epoch identity
+  minting (the reserved "generation identity" slot in
+  rul-attribution-is-controller-minted, arriving at its consumer) ·
+  cross-session UNPLANNED-churn detection (boot-id/host-key comparison;
+  oracles can't see across sessions) — and unplanned churn is verbatim
+  rul-integrity-failure-withholds-mutation's carve (withhold), while a PLANNED
+  transit is an analysis event (fail toward run) · the survival tier never
+  spans a firing transit · new mark verb for transit-classing commands
+  (`: transits <axis>`-shaped; oracle-authored, engine vocabulary).
+- **HUMAN CHECK (typed 2026-07-28; conductor's earlier "elision never crosses
+  an epoch boundary" was OVER-BROAD — corrected):** the law is
+  TRANSIT-RELATIVE. A boundary exists in a plan only where the transit WILL
+  ACTUALLY RUN in this apply. A converged transit elides/omits, and an elided
+  command casts no wall — epochal included: day-N pivot books probe the live
+  current epoch and get FULL elision downstream ("everything up to and
+  including epoch-creation converged ⇒ the post-pivot epoch gains all of
+  Dorc's features"). The firing-day restriction binds only machine-build days,
+  when downstream honestly guards/runs. LOAD-BEARING consequence: the
+  ENTRY-POINT'S PROBEABILITY is the requirement — transit verbs (reboot,
+  kexec-install, create-VM) rank at the TOP of stdlib/describability priority;
+  an unmodeled+unguarded transit walls every day and kills the pivot book.
+- tc-fork kept open for the synthesis note: epoch in the fact COORDINATE's
+  context slot vs attribution-scope only — a thin coordinate/record presence
+  is probably forced by invariance-carry attribution ("measured in epoch N,
+  carried by the kind-owner's invariance line").
+
+## Turn D adjudication (conductor, 2026-07-28; evidence = turn04 notes, committed 279c297f — scope verified clean; turn-d LANDED)
+
+- THE THESIS RESULT: architecture-half CONFIRMED, "everything-else" half
+  WRONG in the instructive direction — the language swap is not one change
+  among many; it is the enabling change. **pyinfra's author designed Dorc's
+  offline artifact and his own payload language blocked it**: issues 688/805
+  sketch `pyinfra plan … | pyinfra apply -` and a transferable diff file,
+  blocked on PICKLING python callbacks; five years, never shipped. And
+  cdist's manifests are sh-that-does-not-run (PATH-planted symlinks to a
+  Python emulator; zero off-ramp). dir-offline-compile-guard-artifact and the
+  splice vector are hereby grounded STRUCTURALLY (payload-language), not as
+  novelty claims.
+- Verdicts (full table in turn04 notes): OWNED-BY-INCUMBENT, stop building —
+  connector/transport breadth (pyinfra ships 10) · privilege-escalation
+  MECHANISM zoo (`_sudo`/`_su`/`_doas`/`_dzdo` — Dorc's angle stays
+  context-entry/licensing per 27C, never mechanism breadth) · templating
+  (jinja2; cdist's heredoc answer precedents Dorc's deliberate absence) ·
+  inventory/group-data · library breadth (182 ops/143 facts vs Dorc's zero).
+  DORC-DISTINCT with absence evidenced — plan-as-TRANSFERABLE-artifact ·
+  plan-as-your-own-source-text (pyinfra `--dry` CANNOT print commands since
+  v3's runtime generation) · partial-apply-by-STATE · the tri-state rc
+  convention. CONTESTED — probe model · who-vouches · staleness · extensibility
+  · day-zero.
+- Three reframes BINDING on the synthesis note: (1) `why` claim weakened to
+  the true form — pyinfra ships `host.noop("apt is already up to date")`
+  prose at ~108 sites; what nobody has is the explanation as an INTERROGABLE
+  CHAIN with typed provenance and a why-verb; (2) pyinfra HAS the vouch
+  vocabulary (`is_idempotent=False`, `idempotent_notice` on 57 ops) and wires
+  it to NOTHING but docs generation — "the vocabulary exists upstream; the
+  licensing doesn't"; (3) the poison wall is admitted verbatim in
+  server.shell's docstring (facts-run-at-start staleness) — named hazard,
+  zero machinery. Plus a wording fence: DO NOT claim the agentless floor
+  (all three sit on ssh+sh); Dorc's floor claim lives in kBOOT and must be
+  worded unmisreadably.
+- cdist PreOS answers day-zero by MANUFACTURING the ssh precondition
+  (debootstrap + key baked + PXE dir, then normal cdist) — strengthens turn
+  A's "empty of convergence machinery, not of channels" from a new direction;
+  its install mode ships turn C's inverse-wait pivot shape.
+- phone_home closed: PER_INSTANCE POST carrying instance-id/hostname/fqdn
+  PLUS all three ssh host public keys (10 tries, 3s, failure swallowed) — the
+  concrete primitive behind bind-identity-at-creation, but UNAUTHENTICATED
+  (relocates the StrictHostKeyChecking=no trust cell, doesn't close it).
+  Knob-entry material.
+- CI seats: GitLab DEAD confirmed (no per-job interpreter override). Jenkins
+  DEAD **refuted narrowly**: the official `sh` step documents an interpreter
+  selector (`#!/usr/bin/perl` example) — a first-party custom-interpreter
+  seat, ALIVE-narrow gated on agent longevity (pet agents yes, ephemeral
+  containers no); same shape as initContainer-on-PV; cheap second
+  inside-exhibit if wanted.
+- Flagged-not-asserted (agent, correctly): the maturity/community "use Y"
+  line is product-tier framing — belongs to the human's voice if anywhere,
+  not our deliverables; the per-feature "use Y" lines stand.
+- Writing-phase resources: shallow clones of pyinfra + cdist sit in the
+  session scratchpad for grepping; cdist source readable only to 6.0.4
+  (mirror) vs 7.0.0 live — grading disclosed throughout turn04.
+
+## OpenWrt as eventual borderline-livetest (human-typed 2026-07-28)
+
+Human: openwrt belongs as a borderline livetest case eventually — "an important
+floor-selector." Rationale banked: one box exercises every floor claim at once —
+busybox ash (the dialect floor past dash∩posh) · dropbear rather than OpenSSH
+(~SUSPECT no sftp-server by default ⇒ a live DP-class member, testing the
+DP-vs-DP+F cut on real hardware) · opkg (a package-oracle target outside the
+deb/rpm world) · tiny flash + tmpfs (report-lane scratch constraints). Under
+rul-capability-probing-per-feature it is the natural proof-target that
+per-feature capability matching works on a degraded-but-not-broken host.
+Livetest-tier, NOT this round's deliverable; goes in the synthesis note's
+stretch-goals half.
+
 ## Settled asks
 
 - knob name (human 2026-07-28: not kTRANSPORT — "transport" stays unreserved;
