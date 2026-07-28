@@ -225,12 +225,13 @@ hint: 'foobar' (line 8) is unmodeled: it is the first wall - an oracle vouching 
 ```
 
 Annoyed, our admin puts on the engineer hat for exactly the length of a coffee. `foobar`
-already has a status query (most tools do). They append to the book's own file — oracles and
-runbooks can share a file, once it carries the dialect marker (`# dorc-lang/v0.2`, near the
-top; an unmarked file always stays plain sh, and features requiring non-sh constructs
-require the marker):
+already has a status query (most tools do). They drop a small sibling file next to the book
+(the book itself stays plain sh, always; dorc-lang and its marker live only in oracle files,
+which Dorc strips and applies alongside the book):
 
 ```sh
+# foobar.oracle.sh
+# dorc-lang/v0.2
 foobar__is_converged() {
    verb="$1"; shift
    case "$verb" in

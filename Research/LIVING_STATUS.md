@@ -14,18 +14,18 @@
 
 ---
 
-## ops-glue-residue RESEARCH ROUND — CLOSED (2026-07-28, on `ai/main`; interactive, human-adjudicated throughout)
+## ops-glue-residue RESEARCH ROUND -- CLOSED (2026-07-28, on `ai/main`; interactive, human-adjudicated throughout)
 
-Direction-setting round on the glue phase (pre-ssh lifecycle · transport reach ·
-pivot/topology · dorc-inside). Deliverables LANDED: **`KNOBS.md:kBOOT`** (transport
-floor; capability-probing-per-feature human-ruled) · root **`SIBLINGS.md`**
-(three-posture framing table, human-review-in-place) · **`notes/26K`** = THE
-synthesis (conclusions, limitations, stretch, and the §5 human-sittings queue —
-nine items, none blocking) · six imagination-tier books at
+Direction-setting round on the glue phase (pre-ssh lifecycle  /  transport reach  / 
+pivot/topology  /  dorc-inside). Deliverables LANDED: **`KNOBS.md:kBOOT`** (transport
+floor; capability-probing-per-feature human-ruled)  /  root **`SIBLINGS.md`**
+(three-posture framing table, human-review-in-place)  /  **`notes/26K`** = THE
+synthesis (conclusions, limitations, stretch, and the §5 human-sittings queue --
+nine items, none blocking)  /  six imagination-tier books at
 `notes/r26-glue-strawmen/` (frozen evidence, never execute). Full adjudication
 ledger + 183-source base: `.claude/research/ops-glue-residue/round-charter.md`.
-Headline rulings (human-typed): pivot must-support · splice-is-the-floor ·
-paste-tier bottom rung · rung-zero paradigm-unification · transit-relative epoch
+Headline rulings (human-typed): pivot must-support  /  splice-is-the-floor  / 
+paste-tier bottom rung  /  rung-zero paradigm-unification  /  transit-relative epoch
 law (elision crosses CONVERGED transits). Strawman lanes folded and deletable
 (`ai/r26-strawmen-{cloud,osnix,k8s}`); opaque-review gate: standing deferral
 stands (human 2026-07-24). NB untracked `dorc-temp-key{,.pub}` +
