@@ -38,11 +38,14 @@
 #       dorc plan userdata-boothook-web.sh web1.example.net
 #       Full probe → the converged lines leave the plan entirely.
 #
-# WHAT THIS FILE MUST NEVER CONTAIN: credential material. On EC2 and Azure the
-# payload is an instance attribute readable back through IMDS by every process
-# on the box, and Azure states the rule outright ("We advise not to store
-# sensitive data in custom data"). Code and probe-shaped reads only. Anything
-# secret is pushed later, over ssh, by pivot-vps-standup.sh.
+# WHAT THIS FILE MUST NEVER CONTAIN: credential material. On EC2 the payload is
+# an instance attribute retrievable through IMDS by any process on the box for
+# the life of the instance. Azure is the careful counter-example worth knowing:
+# custom-data is deliberately NOT surfaced through IMDS, Azure user-data is —
+# and Azure advises against secrets in either ("We advise *not* to store
+# sensitive data in custom data"). Treat the whole channel as world-readable and
+# the per-cloud detail as a bonus you did not earn. Code and probe-shaped reads
+# only; anything secret is pushed later, over ssh, by pivot-vps-standup.sh.
 #
 # AND ONE STRUCTURAL RULE THAT FALLS OUT OF DELIVERY #1: every Dorc mark in
 # this file sits inside a function body the raw delivery never calls. A bare

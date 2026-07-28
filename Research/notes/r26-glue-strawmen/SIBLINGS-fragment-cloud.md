@@ -222,11 +222,16 @@ readiness as a boolean anywhere, and cloud-init is the citation for why.
 ### `row-payload-is-world-readable`
 **cloud-init: N, irreducibly. Dorc: N too, and must say so.**
 
-User-data is an instance attribute retrievable from inside the box over IMDS for
-the machine's lifetime, unauthenticated (cloud-init's own EC2 datasource doc
-shows the bare `GET http://169.254.169.254/2009-04-04/user-data`). Azure states
-the rule outright — "We advise *not* to store sensitive data in custom data",
-Azure custom-data docs, via r26 turn-01 `[A-azure-custom-data-2026]`. This is a property of the
+On EC2, "User data is an instance attribute" and retrieving it "using instance
+metadata" is a documented, unauthenticated read from inside the box
+(<https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html>). Azure is
+the careful counter-example and the exception that proves the rule: custom-data
+is deliberately *not* surfaced through IMDS while Azure's separate user-data
+feature is, and Azure advises against secrets in either — "We advise *not* to
+store sensitive data in custom data"
+(<https://learn.microsoft.com/en-us/azure/virtual-machines/custom-data>). The
+safe posture is to treat the channel as world-readable everywhere and take
+per-cloud hardening as a bonus. This is a property of the
 delivery channel, not of any payload format, so a Dorc compiled artifact
 inherits it exactly. The architectural consequence for Dorc is a standing law
 rather than a feature: **the offline guard-artifact carries code and
