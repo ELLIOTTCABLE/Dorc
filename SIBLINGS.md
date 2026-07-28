@@ -3,21 +3,27 @@
 > AI-written (r26 glue round), human-reviewed in place. This is a friendly map,
 > not a scorecard: a Y under Dorc is a choice you may or may not want, and a Y
 > under anyone else is a strength worth having -- usually bought with a cost
-> that is also in the table. Its standing job is to keep three things visible
-> while we work: what we are not trying to own, what we cannot do well, and
-> which users we should push toward a better tool for them.
+> that is also in the table. One asymmetry to hold while reading it: every
+> other column is shipping software, and Dorc's column describes the design as
+> specified and spiked, not something you can install. Its standing job is to
+> keep three things visible while we work: what we are not trying to own, what
+> we cannot do well, and which users we should push toward a better tool for
+> them.
 >
 > Rows are architecture -- fundamental decisions and their lock-in/lock-out --
-> never gaps either side could close with ordinary implementation work. Rows
-> are sorted by what professional ops work actually demands, which is why the
-> table opens with things Dorc does not do; Dorc's strengths come after, and
-> the adoption/bootstrap rows sit at the end. Library size and maturity are
-> deliberately absent (Dorc's answer today is "young and nearly empty"; that
-> sentence belongs to the README's own voice, not a table).
+> never gaps either side could close with ordinary implementation work. The one
+> exception is deliberate and Dorc-only: an NYI cell is a ship-blocker we owe
+> and have not designed, kept in view on purpose rather than dropped for
+> failing that rule. Rows are sorted by what professional ops work actually
+> demands, which is why the table opens with things Dorc does not do; Dorc's
+> strengths come after, and the adoption/bootstrap rows sit at the end. Library
+> size and maturity are deliberately absent (Dorc's answer today is "young and
+> nearly empty"; that sentence belongs to the README's own voice, not a table).
 >
 > Legend: Y yes, as a fundamental capability. N no, as an architectural
-> decision. ~ partly, see that tool's notes. N/A[^na] outside that tool's
-> layer. Long-form evidence: `Research/notes/r26-glue-strawmen/
+> decision. ~ partly, see that tool's notes. NYI owed, unbuilt, and Dorc-only.
+> N/A outside that tool's layer or model -- the cell neither wins nor concedes.
+> Long-form evidence: `Research/notes/r26-glue-strawmen/
 > SIBLINGS-fragment-*.md` and the round ledger under
 > `.claude/research/ops-glue-residue/`.
 
@@ -48,7 +54,6 @@
 | Full value without learning an authoring layer | N[^d6] | N | N | N | N | N | N | ~ |
 | Authored in the target's own language (plain sh) | Y | N | N | ~[^cd1] | N | N | N | ~ |
 
-[^na]: N/A: outside that tool's layer or model; the cell neither wins nor concedes.
 [^d5]: The defining no. Books are ordered, imperative sh, on purpose -- and most of the table's opening block follows from that choice.
 [^d2]: Not yet; these are musts before I call Dorc ship-able, but there's no completed, coherent, locked-in plan.
 [^d1]: By design, not omission: heredocs are the templating, and branching on probed facts is the inventory.
