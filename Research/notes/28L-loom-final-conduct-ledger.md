@@ -157,3 +157,40 @@ lanes thread by fresh census, never by the map's count.
   say so and it becomes a ledger row (blocked-on: that lane) instead.
 
 ## §5 — Landings (accretes)
+
+- **amendment-width-is-a-render-parameter** (human-typed 2026-07-29) — production output
+  must wrap to window width; hard-fixed production width is unacceptable for weft
+  surfaces. `rul-wrap-inside-the-render-seat` is AMENDED: the seat takes width as an
+  input; ONE canonical const governs only the committed transcripts (and the
+  deterministic no-TTY fallback); the enforcement gate pins transcript == render AT the
+  canonical width; terminal-width detection is an I/O-edge concern, never in aid/kernel.
+- **rul-diagnostic-surface-renders-through-weft** (conductor, 2026-07-29, after
+  first-hand absorption of `weft/CLAUDE.md` + `tree.rs`/`measure.rs`/`provenance.rs`/
+  `aid/weave.rs`; supersedes the D1 brief's wrap-engine latitude — the human gated the
+  restart on this understanding) — the boundary weld routes the diagnostic surface
+  through a weft `Document` via the sanctioned `aid::weave` adapter, exactly as the why
+  surface: message/help prose as Template-keyed runs (`(code, field, instance)`), params
+  as Param-keyed runs, caret/source frames as `CodeBlock` nodes (gutters become weft
+  geometry — `is_caret_gutter` dies as a consequence, not by deletion alone),
+  severity/connective chrome stays computed (`Face::Part`-keyed; NO new registry rows in
+  the weld lane). The `weave` bridge grows the Template facet arm
+  (`facet_of` currently drops `Provenance::Template` to `WEFT_UNKEYED`). Grounds:
+  `weft-pure-layout` is already (tree, width); `weft-total-cover-spans` is already the
+  transport's attribution authority; one wrap-judgment engine
+  (`28H:ask-shared-lexical-rulebook` discipline); the why-surface precedent (the map's
+  §0.4 argument 1, now verified at source level).
+- **macro-soft-tune banked** (human-typed 2026-07-29) — hold the no-macro line; no
+  builder tuned toward macros; end-of-arc chafe checkpoint reads the reviewer-gate +
+  rehearsal reports against the human's ~90-hold/~10-sugar-macro lean; the question
+  surfaces to the human only if the macro-free shapes genuinely chafed. Their call.
+- **ask-de-passthrough-lane-ownership RESOLVED** — `284` located: it IS behind the fence
+  (`28A`:664 records the hand-off written to `quarantine-DO-NOT-READ/284`; the human's
+  recollection differed). Human ruling: the work is ours. x2-de-passthrough is IN,
+  designed from `plans/282` §8's core (sealed user-sourced-text type; `detail` payload
+  audit; world-variant siblings); the human may optionally skim the fenced notes and
+  relay anything load-bearing. Conductor process note: a broad `Research/` grep brushed
+  two content lines from fenced files before the dir was excluded — minimal exposure,
+  unused; future sweeps carry an explicit quarantine exclusion.
+- **D1 restart** — the first D1 dispatch was stopped by the human before the weft
+  absorption (zero commits; tree clean at `599e90ed`); relaunched with the weft-directed
+  brief at this commit.
