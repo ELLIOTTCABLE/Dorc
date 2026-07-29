@@ -65,13 +65,13 @@ pub fn flatten_ws(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Resolve a threaded oracle `(Span, OracleFileId)` to a `path:line` locus (C7 `file:line`;
+/// Resolve a threaded oracle `(Span, SourceFileId)` to a `path:line` locus (C7 `file:line`;
 /// `law-lineno-identity` — the file id disambiguates WHICH oracle's line-number space, since a
 /// bare span is file-ambiguous once >1 oracle is loaded). `None` when the vouch/claim was
 /// unthreaded, or the id is out of range (the render omits the locus — never fabricates one).
 #[must_use]
 pub fn oracle_locus(
-    defining: Option<(dorc_core::Span, dorc_core::OracleFileId)>,
+    defining: Option<(dorc_core::Span, dorc_core::SourceFileId)>,
     oracle_paths: &[String],
     oracle_srcs: &[String],
 ) -> Option<String> {
@@ -98,7 +98,7 @@ const EXCERPT_COMMENT_LINES: usize = 4;
 /// `None` when the span was unthreaded or its file is out of range: an absent excerpt is an
 /// omission, never a fabrication.
 fn oracle_excerpt(
-    defining: Option<(dorc_core::Span, dorc_core::OracleFileId)>,
+    defining: Option<(dorc_core::Span, dorc_core::SourceFileId)>,
     oracle_paths: &[String],
     oracle_srcs: &[String],
 ) -> Option<Excerpt> {
@@ -2500,7 +2500,7 @@ mod first_wall_tests {
         oracle_excerpt(
             Some((
                 dorc_core::Span::new(dorc_core::BytePos(lo), dorc_core::BytePos(hi)),
-                dorc_core::OracleFileId(0),
+                dorc_core::SourceFileId(0),
             )),
             &["certsync.oracle.sh".to_owned()],
             &[ARM_SOURCE.to_owned()],

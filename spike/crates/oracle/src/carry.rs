@@ -35,7 +35,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::{CarryNetnsOnNetKernelForbidden, Diag, DiagCode};
-use dorc_core::{Interner, OracleFileId, Span, Symbol};
+use dorc_core::{Interner, SourceFileId, Span, Symbol};
 
 use crate::predict::{Command, MarkKind, Predict, Stmt, Word};
 use crate::wrapper::Dimension;
@@ -72,10 +72,10 @@ const PURE_BUILTINS: &[&str] = &[":", "true", "false", "return", "[", "test", "p
 #[derive(Debug, Clone, Default)]
 pub struct InvarianceIndex {
     /// Per kind, each invariant [`Dimension`] mapped to its `undivided-by-transit-across <axis>` line's defining
-    /// `(Span, OracleFileId)` (`tc-disturbs-span-threading`'s sibling — `27V:mech-minting-line-
+    /// `(Span, SourceFileId)` (`tc-disturbs-span-threading`'s sibling — `27V:mech-minting-line-
     /// threading`), so a carry's attribution renders the kind-owner's line as `file:line` (render 3/3;
     /// `27C` §9). The span is the mark's own command line; the file id disambiguates which oracle.
-    per_kind: BTreeMap<String, BTreeMap<Dimension, (Span, OracleFileId)>>,
+    per_kind: BTreeMap<String, BTreeMap<Dimension, (Span, SourceFileId)>>,
 }
 
 impl InvarianceIndex {
@@ -88,11 +88,11 @@ impl InvarianceIndex {
     /// deterministic (`inv-determinism`); reads marks + structure only (`inv-referent-agnostic`).
     #[must_use]
     pub fn lift(interner: &mut Interner, srcs: &[&str]) -> (Self, Vec<Diag>) {
-        let mut per_kind: BTreeMap<String, BTreeMap<Dimension, (Span, OracleFileId)>> =
+        let mut per_kind: BTreeMap<String, BTreeMap<Dimension, (Span, SourceFileId)>> =
             BTreeMap::new();
         let mut diags = Vec::new();
         for (idx, src) in srcs.iter().enumerate() {
-            let file = OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX));
+            let file = SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX));
             let set = crate::predict::lift_state_stored_only_in(interner, src);
             for provider in set.value.providers() {
                 let Some(body) = set.value.get(provider) else {
@@ -132,11 +132,11 @@ impl InvarianceIndex {
             .is_some_and(|dims| dims.contains_key(&dim))
     }
 
-    /// The `undivided-by-transit-across <dim>` line's defining `(Span, OracleFileId)` for `kind` (render 3/3, `27C` §9):
+    /// The `undivided-by-transit-across <dim>` line's defining `(Span, SourceFileId)` for `kind` (render 3/3, `27C` §9):
     /// the kind-owner's attributable line the carry attribution renders as `file:line`. `None` when
     /// the kind carries no such line (`silence-licenses-nothing`).
     #[must_use]
-    pub fn invariant_span(&self, kind: &str, dim: Dimension) -> Option<(Span, OracleFileId)> {
+    pub fn invariant_span(&self, kind: &str, dim: Dimension) -> Option<(Span, SourceFileId)> {
         self.per_kind
             .get(&crate::to_funcname_segment(kind))
             .and_then(|dims| dims.get(&dim).copied())

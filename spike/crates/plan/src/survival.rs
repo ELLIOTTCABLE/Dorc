@@ -34,8 +34,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::CfgNodeId;
 use dorc_core::{
-    Coord, Dialect, EntityRef, EntityResolution, FactKey, KindId, OracleFileId, ProviderId,
-    Relation, SelectorId, Span, Symbol, compare,
+    Coord, Dialect, EntityRef, EntityResolution, FactKey, KindId, ProviderId, Relation, SelectorId,
+    SourceFileId, Span, Symbol, compare,
 };
 
 use crate::LeafId;
@@ -312,11 +312,11 @@ pub struct Footprint {
     /// selectors keeps the last — no corpus body does this.
     selectors: BTreeMap<EntityCoord, SelectorId>,
     /// `27V:mech-minting-line-threading` (`tc-disturbs-span-threading`) — the `disturbs` funcdef's
-    /// defining `(Span, OracleFileId)`, so a survival's `claimed` chain-link renders the leverage
+    /// defining `(Span, SourceFileId)`, so a survival's `claimed` chain-link renders the leverage
     /// point (`<file>:<line> is the line to widen` — `USER_STORY` Recovery's product moment). The
     /// funcdef `name_span` is the honest coarsest-true span; arm-precision is a deferred refinement.
     /// `None` for a derived footprint (its span is the host-derivation call, not an authored line).
-    defining: Option<(Span, OracleFileId)>,
+    defining: Option<(Span, SourceFileId)>,
 }
 
 impl Footprint {
@@ -357,11 +357,11 @@ impl Footprint {
         })
     }
 
-    /// Attach the `disturbs` funcdef's defining `(Span, OracleFileId)` (`tc-disturbs-span-threading`)
+    /// Attach the `disturbs` funcdef's defining `(Span, SourceFileId)` (`tc-disturbs-span-threading`)
     /// — builder-chained after [`authored`](Footprint::authored), so a survival's `claimed` link can
     /// render the leverage point. `None` is a no-op (the derived lane has no authored line).
     #[must_use]
-    pub fn with_defining(mut self, defining: Option<(Span, OracleFileId)>) -> Self {
+    pub fn with_defining(mut self, defining: Option<(Span, SourceFileId)>) -> Self {
         self.defining = defining;
         self
     }
@@ -409,10 +409,10 @@ impl Footprint {
         self.provider
     }
 
-    /// The `disturbs` funcdef's defining `(Span, OracleFileId)` (`tc-disturbs-span-threading`), or
+    /// The `disturbs` funcdef's defining `(Span, SourceFileId)` (`tc-disturbs-span-threading`), or
     /// `None` (derived footprint / unthreaded). Carried onto a [`Crossing`] for the leverage-point render.
     #[must_use]
-    pub fn defining(&self) -> Option<(Span, OracleFileId)> {
+    pub fn defining(&self) -> Option<(Span, SourceFileId)> {
         self.defining
     }
 
@@ -725,10 +725,10 @@ pub struct Crossing {
     /// `<kind>.resolve()` canonicalization"). `None` for a resolver-less kind (plain token-equality
     /// disjointness — no resolver to name).
     via_resolver: Option<KindId>,
-    /// `tc-disturbs-span-threading` — the `disturbs` funcdef's defining `(Span, OracleFileId)`, so the
+    /// `tc-disturbs-span-threading` — the `disturbs` funcdef's defining `(Span, SourceFileId)`, so the
     /// survival chain's `claimed` link renders the leverage point (the line to widen). Carried from the
     /// crossed wall's [`Footprint`]. `None` for a derived footprint or an unthreaded lift.
-    footprint_span: Option<(Span, OracleFileId)>,
+    footprint_span: Option<(Span, SourceFileId)>,
 }
 
 impl Crossing {
@@ -771,10 +771,10 @@ impl Crossing {
         self.proof
     }
 
-    /// The `disturbs` funcdef's defining `(Span, OracleFileId)` (`tc-disturbs-span-threading`) — the
+    /// The `disturbs` funcdef's defining `(Span, SourceFileId)` (`tc-disturbs-span-threading`) — the
     /// survival chain's leverage point. `None` for a derived footprint or an unthreaded lift.
     #[must_use]
-    pub fn footprint_span(&self) -> Option<(Span, OracleFileId)> {
+    pub fn footprint_span(&self) -> Option<(Span, SourceFileId)> {
         self.footprint_span
     }
 

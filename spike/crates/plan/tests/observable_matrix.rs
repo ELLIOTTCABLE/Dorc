@@ -114,7 +114,7 @@ fn ship_corpus(
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(dorc_plan::ShippedCheck::predict(
                     strip_predict(CORPUS_PREDICT_SRC, check, interner),
-                    Some((check.name_span, dorc_core::OracleFileId(0))),
+                    Some((check.name_span, dorc_core::SourceFileId(0))),
                 ));
             }
         }

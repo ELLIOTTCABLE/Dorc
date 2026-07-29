@@ -867,6 +867,6 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &[],
         example: "[unwritten: oracle-file-not-load-inert]",
         message: None,
-        help: None,
+        help: HelpRegister::Absent,
     },
 ];

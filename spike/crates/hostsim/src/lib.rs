@@ -742,7 +742,7 @@ apt_get__predict() {
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                     return Some(dorc_plan::ShippedCheck::predict(
                         strip_predict(CORPUS_PREDICT_SRC, check, interner),
-                        Some((check.name_span, dorc_core::OracleFileId(0))),
+                        Some((check.name_span, dorc_core::SourceFileId(0))),
                     ));
                 }
             }
@@ -1398,7 +1398,7 @@ grep__predict() {
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                     return Some(dorc_plan::ShippedCheck::predict(
                         strip_predict(src, check, interner),
-                        Some((check.name_span, dorc_core::OracleFileId(0))),
+                        Some((check.name_span, dorc_core::SourceFileId(0))),
                     ));
                 }
             }

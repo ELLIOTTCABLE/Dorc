@@ -251,7 +251,7 @@ fn ship_predict_body(
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(dorc_plan::ShippedCheck::predict(
                     strip_predict(oracle_src, check, interner),
-                    Some((check.name_span, dorc_core::OracleFileId(0))),
+                    Some((check.name_span, dorc_core::SourceFileId(0))),
                 ));
             }
         }

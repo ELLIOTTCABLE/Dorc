@@ -412,7 +412,7 @@ fn ship_predict_body(
                     strip_predict(src, check, interner),
                     Some((
                         check.name_span,
-                        dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
+                        dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
                     )),
                 ));
             }

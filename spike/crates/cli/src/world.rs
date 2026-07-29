@@ -444,8 +444,8 @@ impl WhyWorld {
 }
 
 /// The loaded-oracle index a threaded span belongs to (`law-lineno-identity`).
-fn oracle_file_id(idx: usize) -> dorc_core::OracleFileId {
-    dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX))
+pub fn source_file_id(idx: usize) -> dorc_core::SourceFileId {
+    dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX))
 }
 
 /// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.
@@ -473,7 +473,7 @@ pub fn ship_predict_body(
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(dorc_plan::ShippedCheck::predict(
                     strip_predict(src, check, interner),
-                    Some((check.name_span, oracle_file_id(idx))),
+                    Some((check.name_span, source_file_id(idx))),
                 ));
             }
         }
@@ -500,7 +500,7 @@ pub fn ship_verdict_body(
             let emits_report = dorc_oracle::report::emits_report(verdict);
             return Some(dorc_plan::ShippedCheck::verdict(
                 strip_verdict(src, verdict, interner),
-                Some((verdict.name_span, oracle_file_id(idx))),
+                Some((verdict.name_span, source_file_id(idx))),
                 emits_report,
             ));
         }

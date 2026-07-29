@@ -50,7 +50,7 @@
 //! Nothing in THIS module iterates a fixpoint, so its own `Eq` is free.
 
 use dorc_core::SiteId;
-use dorc_core::{Channel, JOIN_PARENT_CAP, LeafId, OracleFileId, OutBytes, Span};
+use dorc_core::{Channel, JOIN_PARENT_CAP, LeafId, OutBytes, SourceFileId, Span};
 
 /// The typed speech-act kind of a rendered link (`27V:mech-trust-tier-typed`;
 /// `AID-NEEDS:law-trust-tier-is-syntax`). Rendered UNIFORMLY by arrangement code (d4) — prose
@@ -337,7 +337,7 @@ pub struct AuthoredReason {
     /// Which oracle file `arm` indexes into (`tc-oracle-file-identity`): the arm span crosses out
     /// of its owning file's context to the render, so it carries the same file id the vouch span
     /// does — a bare span is ambiguous once >1 oracle is loaded.
-    pub arm_file: OracleFileId,
+    pub arm_file: SourceFileId,
 }
 
 /// Which channel-coverage failure formed a wall (`rul-only-oracle-bytes-ship` per-channel
@@ -431,7 +431,7 @@ pub enum CollapseKind {
     VerdictDecline {
         site: SiteId,
         arm: MintSpan,
-        arm_file: OracleFileId,
+        arm_file: SourceFileId,
         gate: DeclineGate,
         authored_reason: Option<AuthoredReason>,
     },
@@ -588,7 +588,7 @@ mod tests {
 
     /// A fixed non-zero oracle-file id for the tests (the id disambiguates >1 loaded oracle; a
     /// single-file test just needs a stable value).
-    const F: OracleFileId = OracleFileId(1);
+    const F: SourceFileId = SourceFileId(1);
 
     fn span(lo: u32, hi: u32) -> Span {
         Span::new(BytePos(lo), BytePos(hi))

@@ -149,7 +149,7 @@ type FootprintCoord = (dorc_plan::EntityCoord, Option<dorc_core::SelectorId>);
 type ResolvedFootprint = (
     Symbol,
     Vec<FootprintCoord>,
-    Option<(dorc_core::Span, dorc_core::OracleFileId)>,
+    Option<(dorc_core::Span, dorc_core::SourceFileId)>,
 );
 
 /// Resolve one wall-candidate site's authored `disturbs()` footprint (see the type doc above).
@@ -189,7 +189,7 @@ pub fn resolve_touches_footprint(
                         arm.map(|span| {
                             (
                                 span,
-                                dorc_core::OracleFileId(u32::try_from(index).unwrap_or(u32::MAX)),
+                                dorc_core::SourceFileId(u32::try_from(index).unwrap_or(u32::MAX)),
                             )
                         }),
                     )),
@@ -221,7 +221,7 @@ pub fn resolve_touches_footprint(
     Some((*provider, entity_coords, arm))
 }
 
-/// The `disturbs` funcdef's defining `(Span, OracleFileId)` for a provider (`tc-disturbs-span-
+/// The `disturbs` funcdef's defining `(Span, SourceFileId)` for a provider (`tc-disturbs-span-
 /// threading`; `27V:mech-minting-line-threading`) — a NAME-keyed lookup (no argv trace): the touches
 /// funcdef's `name_span` is the leverage point a survival's `claimed` link points at ("the line to
 /// widen"). The funcdef `name_span` is the honest coarsest-true span; per-arm precision is deferred.
@@ -230,7 +230,7 @@ fn touches_defining_span(
     provider: Symbol,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &Interner,
-) -> Option<(dorc_core::Span, dorc_core::OracleFileId)> {
+) -> Option<(dorc_core::Span, dorc_core::SourceFileId)> {
     use dorc_oracle::predict::map_provider_name;
     let want = map_provider_name(interner.resolve(provider));
     touches_sets.iter().enumerate().find_map(|(idx, set)| {
@@ -240,7 +240,7 @@ fn touches_defining_span(
             .map(|t| {
                 (
                     t.name_span,
-                    dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
+                    dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
                 )
             })
     })

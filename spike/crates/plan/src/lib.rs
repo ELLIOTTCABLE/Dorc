@@ -76,7 +76,7 @@ use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
     AstId, ByVouch, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId, Observable,
-    OracleFileId, Predicted, Rc, Rung, Symbol, Verdict,
+    Predicted, Rc, Rung, SourceFileId, Symbol, Verdict,
 };
 use dorc_oracle::touches::DISTURBS_SUFFIX;
 use dorc_oracle::verdict::VERDICT_SUFFIX;
@@ -303,7 +303,7 @@ pub struct Derivation {
     /// provenance — EXEMPT from the erasability identity comparison (like [`witness`]/[`survival`]):
     /// a vouch informs a license and never becomes a fact (TC-tier-3), and this reaches only the
     /// why-lens render, never the byte-floored artifact.
-    pub vouch_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub vouch_span: Option<(dorc_core::Span, SourceFileId)>,
     /// Ordered attribution for every establish erased by an aggregate replacement.
     pub establish_vouches: Vec<EstablishVouchReceipt>,
     /// The REPORTED half of the chain, beside `vouch_span`'s VOUCHED half: which record measured
@@ -332,7 +332,7 @@ pub struct ReportedObservation {
     /// The defining span (+ oracle file) of the funcdef whose body produced this observation —
     /// `ProbePredict::defining_span` carried through. `None` when the shipped body had no single
     /// defining funcdef (entry-composed, connected pipes).
-    pub predict_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub predict_span: Option<(dorc_core::Span, SourceFileId)>,
 }
 
 /// The probe-side provenance for one fact: its receipt origin plus, when a single record reported
@@ -356,7 +356,7 @@ pub struct ProbeAttribution {
 pub struct EstablishVouchReceipt {
     pub site: CfgNodeId,
     pub fact: FactKey,
-    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub defining_span: Option<(dorc_core::Span, SourceFileId)>,
 }
 
 #[derive(Debug, Clone)]
@@ -984,7 +984,7 @@ pub struct VerdictVouch {
     /// `file:line`. `None` when the caller did not thread it (the DST/test constructors) or the
     /// vouch located no check (an explicit `return 0` — the render falls back to no locus). Display
     /// tier only — decision-inert (a vouch informs a license and never becomes a fact, TC-tier-3).
-    defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    defining_span: Option<(dorc_core::Span, SourceFileId)>,
 }
 
 impl VerdictVouch {
@@ -1016,14 +1016,14 @@ impl VerdictVouch {
     /// `build_vouches` (which holds the oracle-file index) calls it; every other constructor leaves
     /// it `None` and the render omits the locus.
     #[must_use]
-    pub fn with_defining_span(mut self, arm: dorc_core::Span, file: OracleFileId) -> Self {
+    pub fn with_defining_span(mut self, arm: dorc_core::Span, file: SourceFileId) -> Self {
         self.defining_span = Some((arm, file));
         self
     }
 
     /// The vouch's defining span + oracle-file id (C7), if threaded — the guard render's `file:line`.
     #[must_use]
-    pub fn defining_span(&self) -> Option<(dorc_core::Span, OracleFileId)> {
+    pub fn defining_span(&self) -> Option<(dorc_core::Span, SourceFileId)> {
         self.defining_span
     }
 }
@@ -1055,7 +1055,7 @@ impl GuardInsert {
 
     /// The vouch's defining span + oracle-file id (C7 `file:line`), if the plan driver threaded it.
     #[must_use]
-    pub fn defining_span(&self) -> Option<(dorc_core::Span, OracleFileId)> {
+    pub fn defining_span(&self) -> Option<(dorc_core::Span, SourceFileId)> {
         self.vouch.defining_span()
     }
 
@@ -1391,7 +1391,7 @@ pub fn build_vouches(
         let Some((file_idx, src, verdict)) = found else {
             continue;
         };
-        let arm_file = OracleFileId(u32::try_from(file_idx).unwrap_or(u32::MAX));
+        let arm_file = SourceFileId(u32::try_from(file_idx).unwrap_or(u32::MAX));
         // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
         // (unhandled path / an inert builtin / a non-converged `return` — hz-refusepath) or ⊤ ⇒ no
         // vouch ⇒ run.
@@ -1712,7 +1712,7 @@ pub struct ShippedCheck {
     /// The stripped funcdef the site ships (strip-only — `271:rul-only-oracle-bytes-ship`).
     pub sh: String,
     /// The funcdef's defining span + which loaded oracle it indexes into; `None` when unthreaded.
-    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub defining_span: Option<(dorc_core::Span, SourceFileId)>,
     /// `27W` §3 tier-3: the shipped body emits report-lane lines. Only the auto-cell verdict seam
     /// ever sets this (a `__predict` model never emits reports).
     pub emits_report: bool,
@@ -1721,7 +1721,7 @@ pub struct ShippedCheck {
 impl ShippedCheck {
     /// A `<provider>__predict` body — never report-emitting (`27W` §3 scopes tier-3 to auto-cell).
     #[must_use]
-    pub fn predict(sh: String, defining_span: Option<(dorc_core::Span, OracleFileId)>) -> Self {
+    pub fn predict(sh: String, defining_span: Option<(dorc_core::Span, SourceFileId)>) -> Self {
         Self {
             sh,
             defining_span,
@@ -1733,7 +1733,7 @@ impl ShippedCheck {
     #[must_use]
     pub fn verdict(
         sh: String,
-        defining_span: Option<(dorc_core::Span, OracleFileId)>,
+        defining_span: Option<(dorc_core::Span, SourceFileId)>,
         emits_report: bool,
     ) -> Self {
         Self {
@@ -1819,7 +1819,7 @@ pub struct ProbePredict {
     /// provenance: the erasability gate exempts it, so two plans differing only here digest
     /// identically. `None` for a body with no single defining funcdef (entry-composed, connected
     /// pipes) — absence is typed, never guessed.
-    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub defining_span: Option<(dorc_core::Span, SourceFileId)>,
     /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
     /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
     /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
@@ -4889,7 +4889,7 @@ apt_get__is_converged() { return 0; }
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                     return Some(ShippedCheck::predict(
                         strip_predict(CORPUS_PREDICT_SRC, check, interner),
-                        Some((check.name_span, OracleFileId(0))),
+                        Some((check.name_span, SourceFileId(0))),
                     ));
                 }
             }

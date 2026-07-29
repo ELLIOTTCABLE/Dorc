@@ -86,14 +86,20 @@ impl SiteId {
     }
 }
 
-/// Which loaded oracle file a [`Span`] indexes into (`27V:mech-minting-line-threading`,
-/// `tc-oracle-file-identity`). A [`Span`] is a bare byte-range with no file identity, so an
-/// oracle-lift span (a vouch/decline arm, a claim mark) is ambiguous once more than one oracle is
-/// loaded. This is the index into the driver's ordered oracle-source list — the ONE disambiguator
-/// `law-lineno-identity` presupposed. The book's own spans need no such id (there is exactly one
-/// book); only spans crossing OUT of an oracle file's context carry it.
+/// Which loaded INPUT file a [`Span`] indexes into — book or oracle, one id space over the whole
+/// unit (`28K` §2a Provenance; `27V:mech-minting-line-threading`; `tc-oracle-file-identity`). A
+/// [`Span`] is a bare byte-range with no file identity, so a lift span (a vouch/decline arm, a
+/// claim mark, a definition being pinned) is ambiguous the moment more than one file is loaded.
+/// This is the index into the driver's ordered source list — the ONE disambiguator
+/// `AID-NEEDS:law-lineno-identity` presupposed.
+///
+/// ONE space, deliberately: `28K` makes books first-class definition sources (an in-book role
+/// function is an ordinary oracle, recognized by name alone), so "the book" stopped being the
+/// single implicit file whose spans needed no id. Ordering is load order — CLI-named sources
+/// first, in command-line order, then the book(s) — which is also the ambient-prefix order the
+/// function environment reads, so an id comparison IS a load-order comparison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct OracleFileId(pub u32);
+pub struct SourceFileId(pub u32);
 
 // ===========================================================================
 // Source positions

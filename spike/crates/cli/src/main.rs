@@ -81,7 +81,7 @@ use dorc_cli::survival::{
     collect_resolver_coords, dangling_diagnostics, entity_text_of, expand_footprints_via_reaches,
     lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
-use dorc_cli::world::{ship_predict_body, ship_verdict_body};
+use dorc_cli::world::{ship_predict_body, ship_verdict_body, source_file_id};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
@@ -749,6 +749,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     };
     let book_src = read_books(books)?;
     let book_name = books.first().map_or("book.sh", String::as_str);
+    let (source_paths, source_srcs) =
+        source_table(&oracle_paths, &oracle_srcs, book_name, &book_src);
     // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
     report_at(
         advisory,
@@ -1449,20 +1451,20 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         emit_sigpipe_race_notes(results);
         emit_report_lane_notes(results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
         // `27W` §3 tier-2 STATIC decline classes at plan time, with the emitting arm's file:line.
-        emit_static_decline_notes(&collapse_narrative, &oracle_paths, &oracle_srcs);
+        emit_static_decline_notes(&collapse_narrative, &source_paths, &source_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
         // a wrong footprint silently under-executes someone else's line, so the render surface
         // must always say whose footprint you trusted. Empty when unflagged (no survivals).
-        emit_survival_attribution(&plan, &interner, &oracle_paths, &oracle_srcs);
+        emit_survival_attribution(&plan, &interner, &source_paths, &source_srcs);
         // 24G Part B: every converged elision a reaches() expansion DEMOTED names the reach-function
         // (the cross-author demote); empty when no reach expansion poisoned an elision.
         emit_reach_poisonings(&plan, &interner);
         // Stage 3 (rul-guard-license / X-why): every GUARDED site names, on the same lane, the
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
-        emit_guard_attribution(&plan, &parsed.value, &interner, &oracle_paths, &oracle_srcs);
+        emit_guard_attribution(&plan, &parsed.value, &interner, &source_paths, &source_srcs);
         // `27C` §4(a): every pure-predicate-CARRY elision names its cross-context attribution chain
         // on this same lane (the crossed substrate axes, each backing kind's owner `invariant:` line,
         // the read-set-closure proof). Empty when no site carried.
@@ -1570,8 +1572,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                     book_src: &book_src,
                     filename: book_name,
                     interner: &interner,
-                    oracle_paths: &oracle_paths,
-                    oracle_srcs: &oracle_srcs,
+                    oracle_paths: &source_paths,
+                    oracle_srcs: &source_srcs,
                     narrative: &collapse_narrative,
                     cascades: &cascades,
                     receipt: &receipt,
@@ -1944,6 +1946,36 @@ fn assemble_whylog_metadata(
             .collect(),
         apply,
     }
+}
+
+/// The ONE `SourceFileId` space over every input (`28K` §2a Provenance) as parallel path/source
+/// vectors a [`dorc_core::SourceFileId`] indexes directly.
+///
+/// Order is LOAD order and that is load-bearing twice: CLI-named oracles first — so every id
+/// already minted keeps its value, and the book joining the space moves no existing span — then
+/// the book, which is exactly the order the function environment reads (`28K` §2: CLI files are
+/// the ambient prefix "before line 1", the book's own text executes after). An id comparison is
+/// therefore a load-order comparison, which is what the cross-unit shadow refusal needs.
+///
+/// The lift/ship lanes deliberately keep the ORACLE-ONLY vectors: they zip per-file lifted sets
+/// positionally, and the book is not one of those.
+fn source_table(
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+    book_name: &str,
+    book_src: &str,
+) -> (Vec<String>, Vec<String>) {
+    let paths = oracle_paths
+        .iter()
+        .cloned()
+        .chain(std::iter::once(book_name.to_owned()))
+        .collect();
+    let srcs = oracle_srcs
+        .iter()
+        .cloned()
+        .chain(std::iter::once(book_src.to_owned()))
+        .collect();
+    (paths, srcs)
 }
 
 /// Resolve a connected pipe STAGE's stripped `<provider>__predict` body PLUS its STDOUT coverage
@@ -2600,6 +2632,61 @@ fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_aid::diag::
     }
 }
 
+#[cfg(test)]
+mod source_table_tests {
+    use super::{oracle_locus, source_file_id, source_table};
+
+    fn table() -> (Vec<String>, Vec<String>) {
+        source_table(
+            &["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()],
+            &["# a\n".to_owned(), "# b\nsecond\n".to_owned()],
+            "webhost.sh",
+            "# book\n",
+        )
+    }
+
+    /// The load-order property the whole space rests on (`28K` §2a): oracles keep their positions,
+    /// so joining the book to the id space cannot move a span any already-minted id points at.
+    /// A future edit that sorted the book first would silently re-point every threaded oracle
+    /// span at the wrong file — the failure this pins is unreadable from any golden.
+    #[test]
+    fn oracle_ids_are_unmoved_by_the_book_joining_the_space() {
+        let (paths, srcs) = table();
+        assert_eq!(paths[0], "a.oracle.sh");
+        assert_eq!(paths[1], "b.oracle.sh");
+        assert_eq!(srcs[0], "# a\n");
+        assert_eq!(srcs[1], "# b\nsecond\n");
+    }
+
+    /// The book sorts last, which is also the order the function environment reads (CLI files are
+    /// the ambient prefix, the book's text executes after), so an id comparison IS a load-order
+    /// comparison.
+    #[test]
+    fn the_book_sorts_after_every_oracle() {
+        let (paths, srcs) = table();
+        assert_eq!(paths.len(), 3);
+        assert_eq!(paths[2], "webhost.sh");
+        assert_eq!(srcs[2], "# book\n");
+    }
+
+    /// A span threaded with the BOOK's id now resolves to a real locus. Before the space was
+    /// widened the book had no id at all, so a book-sited definition — which `28K` makes
+    /// first-class — could not be cited by the shadow refusal or by pinned-definition attribution.
+    #[test]
+    fn a_book_sited_span_resolves_to_a_locus() {
+        let (paths, srcs) = table();
+        let second_line = dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1));
+        assert_eq!(
+            oracle_locus(Some((second_line, source_file_id(2))), &paths, &srcs),
+            Some("webhost.sh:1".to_owned())
+        );
+        // And an out-of-range id still omits rather than fabricating a locus.
+        assert_eq!(
+            oracle_locus(Some((second_line, source_file_id(9))), &paths, &srcs),
+            None
+        );
+    }
+}
 #[cfg(test)]
 mod why_lens_dedup_tests {
     //! `x2-fd1` (`22E`, `224` §10): the stage-4 render-dedup must key on `(cause, site)`, not the
@@ -3683,7 +3770,7 @@ mod tests {
                         dorc_core::BytePos(4),
                         dorc_core::BytePos(9),
                     )),
-                    arm_file: dorc_core::OracleFileId(0),
+                    arm_file: dorc_core::SourceFileId(0),
                     gate: DeclineGate::Return,
                     authored_reason: reason,
                 },
@@ -3695,7 +3782,7 @@ mod tests {
                 dorc_core::BytePos(1),
                 dorc_core::BytePos(2),
             )),
-            arm_file: dorc_core::OracleFileId(0),
+            arm_file: dorc_core::SourceFileId(0),
         };
         let evidence = vec![
             decline(5, None), // site 5 — a dynamic-format decline (class unread statically)
@@ -4374,7 +4461,7 @@ mod tests {
         let fact = pkg(&mut i, "nginx");
         let mut probe = probe1(fact, ProbeSiteKind::Establish);
         let span = dorc_core::Span::new(dorc_core::BytePos(40), dorc_core::BytePos(52));
-        probe.checks[0].defining_span = Some((span, dorc_core::OracleFileId(3)));
+        probe.checks[0].defining_span = Some((span, dorc_core::SourceFileId(3)));
         let results = parse_str_clocked("site 0 effect=holds rc=7\n", 1_234, 0, &mut i);
         let mut arena = ProvArena::new();
         let origins = probe_origins(&probe, &results, &mut arena);
@@ -4385,7 +4472,7 @@ mod tests {
         assert_eq!(reported.tool_rc, Rc(7), "the rc is this record's, verbatim");
         assert_eq!(
             reported.predict_span,
-            Some((span, dorc_core::OracleFileId(3))),
+            Some((span, dorc_core::SourceFileId(3))),
             "the reporting line is the shipped check's own defining span, file-qualified"
         );
         assert_eq!(

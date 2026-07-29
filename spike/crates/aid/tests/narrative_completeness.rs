@@ -38,7 +38,7 @@ use dorc_aid::narrative::{
     ChannelCoverage, CollapseKind, DeclineGate, DemoteTag, EntryDegradeTag, EntryFailureTag,
     MintSpan, Operands, ValueOperand,
 };
-use dorc_core::{BytePos, Channel, LeafId, OracleFileId, SiteId, Span};
+use dorc_core::{BytePos, Channel, LeafId, SiteId, SourceFileId, Span};
 
 /// The crates that MINT (`288` §2e): the nine sites live in `analysis` (1), `plan` (3), `cli` (5).
 const MINT_CRATES: &[&str] = &["analysis", "plan", "cli"];
@@ -76,7 +76,7 @@ fn constructible_classes() -> Vec<CollapseKind> {
         CollapseKind::VerdictDecline {
             site: site(0),
             arm: MintSpan(Span::new(BytePos(0), BytePos(1))),
-            arm_file: OracleFileId(1),
+            arm_file: SourceFileId(1),
             gate: DeclineGate::Return,
             authored_reason: None,
         },
