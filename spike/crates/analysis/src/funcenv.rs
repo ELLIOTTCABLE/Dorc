@@ -461,11 +461,9 @@ pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> 
     if !env.converged() {
         return out;
     }
-    // PROVABILITY, both ends. A shadow is proven only when the environment can name the winner at
-    // the unit's exit: a CONDITIONAL definition joins to ⊤ there, so it shadowed nothing provably
-    // and must not complain (ruling (ii)) — while still licensing nothing, because ⊤ is withheld
-    // by rider 1. The write-side half (a DIFFERENT unit's definition provably in the same frame)
-    // is [`contest_at`]'s.
+    // PROVABILITY, read-side: only a shadow whose winner the environment can name at the unit's
+    // exit complains. A CONDITIONAL definition joins to ⊤ there — it provably shadowed nothing,
+    // and rider 1 withholds it anyway. The write-side half is [`contest_at`]'s.
     let at_exit = env.before(cfg.exit());
     let proven = |name: &str| matches!(at_exit.lookup(name), Flat::Elem(Binding::Defined(_)));
     // The ambient prefix loads inside the ENTRY transfer, so no CFG node witnesses it; walk the
@@ -496,9 +494,8 @@ pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> 
                 }
             }
             CfgNodeKind::Command => {
-                // A `.`-source binds its file's definitions in order, so the second of two
-                // same-name definitions in ONE file is a within-file redefinition, not a contest —
-                // which falls out of walking the running environment rather than the entry state.
+                // Walking the RUNNING environment (not the entry state) is what makes two
+                // same-name definitions in one sourced file read as a within-file redefinition.
                 for &def in sourced_definitions(defs, env, id) {
                     let Some(d) = defs.get(def) else { continue };
                     if proven(&d.name) {

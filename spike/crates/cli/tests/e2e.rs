@@ -2162,10 +2162,8 @@ fn scan_diagnostics(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<Str
             })
         })
         .collect();
-    // The declared-must-fire half reads the SLUG at any severity; only the undeclared-noise half
-    // below stays error-keyed. A declaration is an assertion about which code fired, and a code's
-    // severity is registry data the case does not restate — so pinning `warning[…]`/`note[…]`
-    // codes needs no second file and no free-text needle (`288:prop-structural-needles-only`).
+    // Declared-must-fire reads the SLUG at any severity (only the undeclared-noise half below
+    // stays error-keyed): severity is registry data a case does not restate.
     let fired = |slug: &str| {
         ["error", "warning", "note"]
             .iter()

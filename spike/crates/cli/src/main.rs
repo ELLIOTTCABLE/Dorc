@@ -692,10 +692,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .collect::<Result<_, _>>()?;
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
-    // The book is acquired HERE, above the lifts, because `28K` §2a's in-book lift makes it one of
-    // the definition sources: every input file, book included, feeds the role lifts (membership by
-    // name-construction, never file or author — the USER_STORY stage-3 rung made real). It sorts
-    // LAST in the id space, which is also its ambient-load position (`28K` §2).
+    // Acquired HERE, above the lifts, because `28K` §2a's in-book lift makes the book a definition
+    // source like any other — and it sorts LAST, which is also its ambient-load position.
     let replay_books: Vec<String>;
     let books: &[String] = match &replay {
         Some(r) => {
@@ -817,9 +815,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
 
     // ── `28K` §1/§2: the function environment, and the cross-unit shadow refusal ──
     //
-    // Computed ONCE from the ORIGIN model and joining the FROZEN set
-    // (`the-frozen-set-includes-the-function-environment`): the validity fixpoint's ratchet erases
-    // EFFECTS and holds no authority over BINDINGS, so no later round can un-contest a family.
+    // Computed ONCE from the ORIGIN model, joining the FROZEN set: the fixpoint's ratchet erases
+    // EFFECTS and holds no authority over BINDINGS (`the-frozen-set-includes-the-function-environment`).
     let definitions = definition_table(&oracle_paths, &source_refs, &parsed.value);
     let (shadows, unprovable) = {
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
@@ -829,11 +826,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit()),
         )
     };
-    // The license-plane fact is minted FIRST and the diagnostics derive FROM it, never the reverse
-    // (`two-plane-aid-law`). TWO sources feed it, and only the first complains: a PROVEN shadow
-    // (rul-silent-shadowing-refuses) and a ⊤ binding (rider 1 `⊤-licenses-nothing` — silent, since
-    // ⊤ never complains, and withheld all the same, since that is what lets the refusal under-fire
-    // soundly ahead of the decidable-condition fold).
+    // The license-plane fact is minted FIRST; the diagnostics derive FROM it, never the reverse
+    // (`two-plane-aid-law`). Two sources feed it and only the first complains: a PROVEN shadow,
+    // and a ⊤ binding (rider 1 `⊤-licenses-nothing`, silent — that is what lets it under-fire).
     let contested = dorc_core::ContestedFamilies::new(
         shadows
             .iter()

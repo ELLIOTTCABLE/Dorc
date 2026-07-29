@@ -2185,9 +2185,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::ProvideModel,
         },
-        // WARNING, not error: the refusal only ever WITHHOLDS — the family's sites run, the book
-        // still applies, and one `unset -f` line retires the complaint. Failing the run would
-        // punish an admin for a collision two upstream authors caused.
+        // WARNING, not error: the refusal only WITHHOLDS, and failing the run would punish an
+        // admin for a collision two upstream authors caused.
         DiagCode::RoleFamilyContested(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,

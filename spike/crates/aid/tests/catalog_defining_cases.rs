@@ -251,10 +251,9 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 16 = the prior 15 (`289:rul-unwritten-ceiling-one-bump`, which sized its headroom at
-    // 2 and has now spent both) + `28K`'s two loading refusals, which land unwritten because a
-    // builder authors ZERO user-facing prose (`27V:rul-error-authorship-tier`). The headroom is
-    // gone on purpose: the next unwritten code is another conscious bump, not a slack fit.
+    // Ceiling 16 = the prior 15 (`289:rul-unwritten-ceiling-one-bump`) plus `28K`'s two loading
+    // refusals, which land unwritten because a builder authors ZERO user-facing prose
+    // (`27V:rul-error-authorship-tier`). The headroom that bump reserved is now spent.
     assert!(
         unwritten.len() <= 16,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
