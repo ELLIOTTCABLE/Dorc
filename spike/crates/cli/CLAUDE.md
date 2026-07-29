@@ -79,6 +79,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (erasure is monotone, bound = site count) and DISCARDS the ledger to re-derive from origin
   rather than ship a partial fixpoint, so the degraded answer is exactly the pre-W-C one —
   `solve`'s own unenforceable-termination bargain, `debug_assert`-loud in dev and under DST.
+- **the-frozen-set-includes-the-function-environment** (`28K` §2) — env resolutions (both
+  visibility regimes) and the contested-family verdicts join the FROZEN set named above
+  (book/CFG/value-flow/admitted-records/vouches/probe): computed ONCE from the origin model,
+  before the loop. The fixpoint's ratchet erases EFFECTS; it has no authority over BINDINGS.
+  Named forbidden scenario: a records-proven-dead branch containing a funcdef must NOT re-run
+  env resolution and un-contest a family mid-run — a license once withheld is never regained by
+  a later round. Enforced lexically at both ends (`the_fixpoint_loop_body_calls_no_funcenv_entry_point`
+  here; `dorc_analysis::funcenv`'s `this_module_names_no_fixpoint_reachable_type` there), because
+  the property is "the loop body cannot even spell it", which no type bound expresses.
 - **speculate-and-intercept** — the probe model resolves probe-gated branches by
   running the read-only check for real (oracles intercept; not Ansible
   check-mode blindness).

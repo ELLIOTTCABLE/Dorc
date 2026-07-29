@@ -37,6 +37,28 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `plan` honors — no in-loop license).
 - **pure-kernel** — ordered collections only; no clock/RNG/fs/net, directly or
   transitively; that purity is what lets DST run with no DI ceremony.
+- **funcenv-reads-source-literal-plane-only** (`28K` §2) — the function-environment
+  domain consumes resolved values ONLY through `funcenv::SourceLiteralPlane`, which
+  admits a word solely when it is a literal graded `ValueGrade::ProgramText`. A
+  probe-provenance value may never site a load, resolve a `.`/`source` target, or
+  answer an env construct: which oracle answers a site would then depend on what a
+  HOST said, making oracle loading world-dependent and the plan unreproducible from
+  its inputs. Today the restriction is trivially total (every non-⊤ word is
+  `ProgramText` at this stage) — which is precisely why the door is closed NOW,
+  ahead of `core`'s `seam-re-bind` folding captured values back into the value plane.
+  Never widen the accessor; never read `ValueFlow` directly from that domain.
+- **funcenv-is-a-pre-pass-not-a-round** (`28K` §2; `cli/CLAUDE.md`
+  the-fixpoint-owns-the-rounds-and-builds-nothing-else) — env resolution is computed
+  ONCE from the ORIGIN model and joins the frozen set; the validity fixpoint's ratchet
+  erases EFFECTS and holds NO authority over BINDINGS. A records-proven-dead branch
+  containing a funcdef must never re-run resolution, and a license once withheld is
+  never regained by a later round. Enforced structurally at both ends, lexically:
+  `funcenv`'s own `this_module_names_no_fixpoint_reachable_type` (it cannot import a
+  records/effect/erasure/verdict type) and the cli's
+  `the_fixpoint_loop_body_calls_no_funcenv_entry_point`. Sh-dead definitions
+  (overridden unconditionals, unset names) are BINDING facts, value-flow-tier: they
+  never enter the erasure ledger, never spell `CommandEffect::Pure`, and never become
+  plan-line outcomes — a dead definition's book text ships verbatim and executes.
 
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 

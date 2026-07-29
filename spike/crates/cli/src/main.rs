@@ -2633,6 +2633,55 @@ fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_aid::diag::
 }
 
 #[cfg(test)]
+mod fixpoint_freezes_the_environment_tests {
+    /// The validity fixpoint must not reach the function environment (`28K` §2; `cli/CLAUDE.md`
+    /// the-fixpoint-owns-the-rounds-and-builds-nothing-else).
+    ///
+    /// Env resolution is computed ONCE from the ORIGIN model and joins the frozen set alongside
+    /// the book, the CFG, value-flow, the admitted records, the vouches, and the compiled probe.
+    /// The forbidden scenario is concrete: a records-proven-dead branch containing a funcdef must
+    /// not re-run resolution and un-contest a family mid-run. The fold's ratchet erases EFFECTS;
+    /// it holds no authority over BINDINGS, and a license once withheld is never regained by a
+    /// later round.
+    ///
+    /// Lexical, deliberately — the property is "the loop body cannot even spell it", which a type
+    /// bound cannot express (`dorc_plan::erase`'s `licence_mint_has_exactly_one_caller` is the
+    /// precedent). Its twin lives in `dorc_analysis::funcenv` and guards the other direction: that
+    /// module cannot name a fixpoint-reachable type either.
+    #[test]
+    fn the_fixpoint_loop_body_calls_no_funcenv_entry_point() {
+        let src = include_str!("main.rs");
+        // Column-0 anchored: this test lives in the file it scans, so an unanchored needle finds
+        // its own source text first (`aid/CLAUDE.md spanless-gate-is-lexical` warns of the same
+        // trap). The definition is the only occurrence at column 0.
+        let start = src
+            .find("\nfn settle_validity_fixpoint(")
+            .expect("the fixpoint driver is still a column-0 item of this name");
+        // To this function's own closing brace. `rustfmt` puts a top-level item's closer at
+        // column 0, so `\n}\n` is an exact bound — and the gate is worthless if the slice
+        // silently runs to end-of-file, so it asserts it found one.
+        let rest = &src[start..];
+        let end = rest
+            .find("\n}\n")
+            .expect("the fixpoint driver has a column-0 closing brace");
+        let body = &rest[..end];
+        for forbidden in [
+            "funcenv",
+            "FuncEnv",
+            "SourceLiteralPlane",
+            "DefinitionTable",
+        ] {
+            assert!(
+                !body.contains(forbidden),
+                "`{forbidden}` appears inside the validity fixpoint — env resolution is frozen \
+                 pre-loop, and re-deriving it per round would let a later round change which \
+                 definition was live"
+            );
+        }
+    }
+}
+
+#[cfg(test)]
 mod source_table_tests {
     use super::{oracle_locus, source_file_id, source_table};
 

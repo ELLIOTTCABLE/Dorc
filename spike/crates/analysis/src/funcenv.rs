@@ -728,4 +728,136 @@ mod tests {
         let scoped = EnvStack::Frames(vec![outer]).push();
         assert_eq!(scoped.lookup("f"), Flat::Elem(d));
     }
+
+    // =======================================================================
+    // Containment — the two parsers disagree only where nothing can ship
+    // =======================================================================
+
+    /// CELL (a), the ROLE-shaped weird name. `dorc_syntax` and the dialect parser disagree about
+    /// what a funcdef is: the dialect parser lifts `中pkg__predict` (which is why
+    /// `munge-name-invalid` fires at all) while `dorc_syntax` garbles it into three unrelated
+    /// items and says nothing. The containment is that `reserved.rs`'s charclass refusal rejects
+    /// exactly that class at Error severity — so for every name that can legally SHIP, the two
+    /// parsers agree.
+    ///
+    /// Pinned from this side: a charclass-refused name produces NO funcenv binding. The
+    /// environment and the lifts therefore cannot disagree about any name that ships — one holds
+    /// nothing, and the other is refused.
+    #[test]
+    fn a_charclass_refused_name_produces_no_binding() {
+        let book = "\u{4e2d}pkg__predict() { :; }\n";
+        assert!(
+            dorc_syntax::parse(book)
+                .value
+                .iter()
+                .all(|(_, n)| !matches!(&n.kind, NodeKind::FuncDef { .. })),
+            "the sh parser yields no FuncDef for a name it cannot lex — the premise of this pin"
+        );
+        let mut table = DefinitionTable::default();
+        let _ = add_def(&mut table, 0, "\u{4e2d}pkg__predict");
+        let (solved, exit) = solve_book(book, &table);
+        assert_eq!(
+            solved.binding_before(exit, "\u{4e2d}pkg__predict"),
+            Flat::Elem(Binding::Undefined),
+            "nothing bound it, so it reads Undefined — never a definition the lifts would then \
+             disagree with"
+        );
+    }
+
+    /// CELL (b), the NON-role weird funcdef in a book. No role machinery is implicated and
+    /// `reserved.rs` says nothing, so the only protection is that the silent mis-parse fails
+    /// conservative. `dorc_syntax` garbles it into a bare command plus an empty `Subshell` plus a
+    /// `Group`, and that phantom subshell injects a real (well-nested, meaningless) scope pair
+    /// into the CFG — which the frame stack must simply tolerate.
+    ///
+    /// ANTI-MASKING: this fails if the cell ever starts licensing. It asserts the name stays
+    /// UNBOUND, so no consumer can read a definition off garbage.
+    #[test]
+    fn a_garbled_non_role_funcdef_walls_and_its_phantom_scope_is_harmless() {
+        let book = "\u{4e2d}foo() { :; }\n";
+        let mut table = DefinitionTable::default();
+        let _ = add_def(&mut table, 0, "\u{4e2d}foo");
+        let (solved, exit) = solve_book(book, &table);
+        assert!(
+            solved.converged(),
+            "the phantom scope pair is well-nested, so the solve still reaches a fixed point"
+        );
+        assert_eq!(
+            solved.binding_before(exit, "\u{4e2d}foo"),
+            Flat::Elem(Binding::Undefined),
+            "a garbled definition binds NOTHING — if this ever reports a definition, the silent \
+             mis-parse has started licensing and the cell is no longer failing safe"
+        );
+        // And the phantom `ScopeEnter`/`ScopeExit` did not corrupt the stack: the exit state is a
+        // real frame stack, not the ⊤ a depth mismatch would have produced.
+        assert!(
+            matches!(solved.before(exit), EnvStack::Frames(_)),
+            "a meaningless-but-balanced scope pair must not collapse the environment to ⊤"
+        );
+    }
+
+    // =======================================================================
+    // Structural enforcement — the pre-pass property, made mechanical
+    // =======================================================================
+
+    /// SIGNATURE ENFORCEMENT: this module names no records / effect-vector / erasure / verdict
+    /// type, so a later fixpoint round has no channel by which to reach it.
+    ///
+    /// The environment is computed ONCE from the origin model and joins the frozen set. The
+    /// fixpoint's ratchet erases EFFECTS; it has no authority over BINDINGS, and a license once
+    /// withheld must never be regained by a later round. A lexical census rather than a type
+    /// bound because the property is "cannot even be spelled here" — the same reasoning
+    /// `licence_mint_has_exactly_one_caller` uses one crate over.
+    #[test]
+    fn this_module_names_no_fixpoint_reachable_type() {
+        let src = include_str!("funcenv.rs");
+        // Only the `use` block matters: a type this module cannot import, it cannot take.
+        let imports: String = src
+            .lines()
+            .take_while(|l| !l.starts_with("// ====="))
+            .filter(|l| l.trim_start().starts_with("use "))
+            .collect::<Vec<_>>()
+            .join("\n");
+        for forbidden in [
+            "records",
+            "SiteResults",
+            "erase",
+            "Erasure",
+            "verdict",
+            "Verdict",
+            "effect",
+            "SkipClass",
+            "Disposition",
+        ] {
+            assert!(
+                !imports.contains(forbidden),
+                "`{forbidden}` is reachable from funcenv's imports — the environment would stop \
+                 being a pre-pass, and a later round could re-decide which definition was live"
+            );
+        }
+    }
+
+    /// A records-proven-dead branch containing a funcdef must NOT re-run env resolution. Stated
+    /// as the property that makes it impossible: the environment is a pure function of
+    /// (ast, cfg, defs, source-literals), none of which the fixpoint mutates, so re-solving it
+    /// mid-run would be a no-op even if someone wired it — and the census above stops the wiring.
+    /// This test pins the determinism half: the same inputs give the same answer, every time.
+    #[test]
+    fn re_solving_the_same_inputs_is_stable() {
+        let book = "f__is_converged() { :; }\nunset -f f__is_converged\n";
+        let mut table = DefinitionTable::default();
+        let d = add_def(&mut table, 9, "f__is_converged");
+        table.set_book_site(first_funcdef(book), d);
+        let (first, exit) = solve_book(book, &table);
+        let (again, _) = solve_book(book, &table);
+        assert_eq!(
+            first.binding_before(exit, "f__is_converged"),
+            again.binding_before(exit, "f__is_converged")
+        );
+        assert_eq!(
+            first.binding_before(exit, "f__is_converged"),
+            Flat::Elem(Binding::Undefined),
+            "and `unset -f` really did retire the definition — otherwise this pins nothing"
+        );
+    }
 }
