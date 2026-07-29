@@ -29,7 +29,7 @@ use crate::diag::{
     LintToolOutputUnparsable, MarkHashcolonMalformed, MarkRcArityExceeded,
     MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker,
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
-    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
+    RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
     SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
     TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
     WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
@@ -137,6 +137,16 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "dangling-reference",
             DiagCode::DanglingReference(DanglingReference {
                 coord: "sm.dorc.Package:nginx".to_owned(),
+            }),
+        ),
+        // World-as-payload by necessity: the trigger is a whole LOADED UNIT (two files defining one
+        // role family), and a case materializes its world one source at a time.
+        (
+            "role-family-contested",
+            DiagCode::RoleFamilyContested(RoleFamilyContested {
+                family: "yum".to_owned(),
+                name: "yum__is_converged".to_owned(),
+                prior: "vendor/yum.oracle.sh:4".to_owned(),
             }),
         ),
         // Read back from a RECORDS stream: a replay drives no host and admits no records.

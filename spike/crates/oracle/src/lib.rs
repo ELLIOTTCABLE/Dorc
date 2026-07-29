@@ -285,6 +285,26 @@ impl KindIndex {
         static EMPTY: BTreeSet<SelectorId> = BTreeSet::new();
         self.widenings.get(&(provider, verb)).unwrap_or(&EMPTY)
     }
+
+    /// Drop every contested family's cells and widenings (`28K` §1 `rul-silent-shadowing-refuses`).
+    /// Belt-and-braces beside [`predict::PredictSet::withdrawing`] — a withdrawn provider's argparse
+    /// no longer resolves, so these cells are already unreachable — but leaving live cells behind a
+    /// withdrawn family is exactly the kind of half-withdrawal a later consumer would find.
+    #[must_use]
+    pub fn withdrawing(
+        mut self,
+        contested: &dorc_core::ContestedFamilies,
+        interner: &Interner,
+    ) -> Self {
+        if contested.is_empty() {
+            return self;
+        }
+        let withheld =
+            |p: ProviderId| contested.withholds(&to_funcname_segment(interner.resolve(p.0)));
+        self.effects.retain(|(p, _), _| !withheld(*p));
+        self.widenings.retain(|(p, _), _| !withheld(*p));
+        self
+    }
 }
 
 /// The ε-verb symbol: the effect-map key for a **verbless** provider (`useradd

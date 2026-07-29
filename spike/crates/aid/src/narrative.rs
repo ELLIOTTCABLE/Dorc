@@ -340,6 +340,17 @@ pub struct AuthoredReason {
     pub arm_file: SourceFileId,
 }
 
+/// One role-function DEFINITION, as a narrative operand: which input file authored it and where
+/// its name token sits (`28K` §2a Provenance — a bare [`Span`] is ambiguous once >1 file is
+/// loaded). Pure `Copy` scalars, per `operands-are-pure-and-capped`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DefinitionSite {
+    /// Which input the definition was authored in.
+    pub file: SourceFileId,
+    /// The function-name span within that input.
+    pub name: MintSpan,
+}
+
 /// Which channel-coverage failure formed a wall (`rul-only-oracle-bytes-ship` per-channel
 /// coverage): the compound consumed a channel the walled participant could not cover.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -464,6 +475,14 @@ pub enum CollapseKind {
     /// (`law-collapse-mints-narrative`), even though the path is unreachable while erasure stays
     /// monotone. Carries how many rounds ran and how many erasures were thrown away.
     FixpointCapDegrade { rounds: u32, discarded: u32 },
+    /// A role FAMILY's licenses were withheld because one unit's definition provably shadowed a
+    /// DIFFERENT unit's, unblessed by an intervening `unset -f` (`28K` §1
+    /// `rul-silent-shadowing-refuses`) ⇒ every site of that family runs. Carries BOTH definitions,
+    /// because the whole repair is choosing between them: neither one alone names the conflict.
+    RoleFamilyShadowed {
+        prior: DefinitionSite,
+        shadowing: DefinitionSite,
+    },
     /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
 }
@@ -496,6 +515,7 @@ impl CollapseKind {
             CollapseKind::Demotion { .. } => "Demotion",
             CollapseKind::RenderRefusal { .. } => "RenderRefusal",
             CollapseKind::FixpointCapDegrade { .. } => "FixpointCapDegrade",
+            CollapseKind::RoleFamilyShadowed { .. } => "RoleFamilyShadowed",
             CollapseKind::Cancellation(_) => "Cancellation",
         }
     }

@@ -35,8 +35,8 @@
 use std::path::{Path, PathBuf};
 
 use dorc_aid::narrative::{
-    ChannelCoverage, CollapseKind, DeclineGate, DemoteTag, EntryDegradeTag, EntryFailureTag,
-    MintSpan, Operands, ValueOperand,
+    ChannelCoverage, CollapseKind, DeclineGate, DefinitionSite, DemoteTag, EntryDegradeTag,
+    EntryFailureTag, MintSpan, Operands, ValueOperand,
 };
 use dorc_core::{BytePos, Channel, LeafId, SiteId, SourceFileId, Span};
 
@@ -57,12 +57,20 @@ fn census_marker(kind: &CollapseKind) -> &'static str {
         CollapseKind::Demotion { .. } => "CollapseKind::Demotion",
         CollapseKind::RenderRefusal { .. } => "CollapseKind::RenderRefusal",
         CollapseKind::FixpointCapDegrade { .. } => "CollapseKind::FixpointCapDegrade",
+        CollapseKind::RoleFamilyShadowed { .. } => "CollapseKind::RoleFamilyShadowed",
         CollapseKind::Cancellation(reserved) => match *reserved {},
     }
 }
 
 fn site(leaf: u32) -> SiteId {
     SiteId::leaf(LeafId(leaf))
+}
+
+fn definition(file: u32) -> DefinitionSite {
+    DefinitionSite {
+        file: SourceFileId(file),
+        name: MintSpan(Span::new(BytePos(0), BytePos(1))),
+    }
 }
 
 /// Every CONSTRUCTIBLE class, one value each. `Cancellation` is uninhabited and cannot appear here;
@@ -105,6 +113,10 @@ fn constructible_classes() -> Vec<CollapseKind> {
         CollapseKind::FixpointCapDegrade {
             rounds: 1,
             discarded: 0,
+        },
+        CollapseKind::RoleFamilyShadowed {
+            prior: definition(0),
+            shadowing: definition(1),
         },
     ]
 }

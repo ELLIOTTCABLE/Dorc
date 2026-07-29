@@ -164,6 +164,12 @@ pub enum DiagCode {
     /// `rul-marked-file-is-load-inert`). Spanned at the offending top-level item.
     OracleFileNotLoadInert(OracleFileNotLoadInert),
 
+    // ── cli (the cross-unit shadow refusal) ─────────────────────────────────
+    /// One unit's role definition overrode a family a DIFFERENT unit defined, with no intervening
+    /// `unset -f` (`28K` §1 `rul-silent-shadowing-refuses`). The family's licenses are withheld;
+    /// its sites run. Spanned at the shadowing definition's name.
+    RoleFamilyContested(RoleFamilyContested),
+
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
     ToleratesUnknownDimension(ToleratesUnknownDimension),
@@ -383,6 +389,7 @@ impl DiagCode {
             DiagCode::MungeNameCollision(_) => "munge-name-collision",
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
             DiagCode::OracleFileNotLoadInert(_) => "oracle-file-not-load-inert",
+            DiagCode::RoleFamilyContested(_) => "role-family-contested",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1040,6 +1047,20 @@ pub struct ReservedNamespaceSquat {
 /// claim is about the file, so per-item mints would be a correlated cascade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OracleFileNotLoadInert;
+
+/// Payload of [`DiagCode::RoleFamilyContested`] (TEMPLATIZED): the shadowed FAMILY, the role member
+/// whose two definitions collided, and where the overridden one lives. Spanned at the shadowing
+/// definition's name; `site()` returns `None` — a contest is about two DEFINITIONS, not about any
+/// command site that later runs because of it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RoleFamilyContested {
+    /// The munged family base whose licenses are withheld (`{family}`).
+    pub family: String,
+    /// The role function both definitions bind (`{name}`).
+    pub name: String,
+    /// Where the OVERRIDDEN definition was authored, `file:line`-shaped (`{prior}`).
+    pub prior: String,
+}
 
 /// Payload of [`DiagCode::MissingDialectMarker`] (static): the file-level marker refusal. The
 /// marker text is inline in the template. Spanned (the first dialect construct); `site()` = `None`.
@@ -2164,6 +2185,14 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::ProvideModel,
         },
+        // WARNING, not error: the refusal only ever WITHHOLDS — the family's sites run, the book
+        // still applies, and one `unset -f` line retires the complaint. Failing the run would
+        // punish an admin for a collision two upstream authors caused.
+        DiagCode::RoleFamilyContested(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -3003,6 +3032,15 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::ReachesProviderCollision(ReachesProviderCollision { name }) => {
             vec![ours("name", name.clone())]
         }
+        DiagCode::RoleFamilyContested(RoleFamilyContested {
+            family,
+            name,
+            prior,
+        }) => vec![
+            ours("family", family.clone()),
+            ours("name", name.clone()),
+            ours("prior", prior.clone()),
+        ],
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.
         DiagCode::RedirTargetTop(RedirTargetTop { site: _ })

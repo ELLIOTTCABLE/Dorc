@@ -4,7 +4,7 @@
 //! useradd §2.3, systemctl §2.5, the cross-oracle pair §2.4), not speculatively.
 //! Every node here is something one of those bodies contains; nothing else parses.
 
-use dorc_core::{Span, Symbol};
+use dorc_core::{ContestedFamilies, Interner, Span, Symbol};
 
 /// The set of `<provider>__predict` functions lifted from one oracle file. Keyed by
 /// the **provider** (the name before `__predict`, with the underscore↔hyphen mapping
@@ -57,6 +57,25 @@ impl PredictSet {
     /// Providers with a lifted check, in deterministic order.
     pub fn providers(&self) -> impl Iterator<Item = Symbol> + '_ {
         self.checks.keys().copied()
+    }
+
+    /// Drop every provider whose family `contested` withholds (`28K` §1
+    /// `rul-silent-shadowing-refuses`) — the family goes UNDESCRIBED, indistinguishable from one
+    /// nobody wrote an oracle for.
+    ///
+    /// `detected` is filtered alongside `checks`, deliberately: leaving the header behind would
+    /// make the marks-lost backstop (`crate::validate`) report a WITHDRAWN funcdef as a lift
+    /// failure, which points the author at the wrong repair (`271:rul-sin-ordering`).
+    #[must_use]
+    pub fn withdrawing(mut self, contested: &ContestedFamilies, interner: &Interner) -> Self {
+        if contested.is_empty() {
+            return self;
+        }
+        let withheld =
+            |p: Symbol| contested.withholds(&crate::to_funcname_segment(interner.resolve(p)));
+        self.checks.retain(|p, _| !withheld(*p));
+        self.detected.retain(|d| !withheld(d.provider));
+        self
     }
 }
 

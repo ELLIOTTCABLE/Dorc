@@ -181,6 +181,18 @@ impl VerdictSet {
         self.converged.providers()
     }
 
+    /// Withhold a contested family's verdict members ([`PredictSet::withdrawing`]).
+    #[must_use]
+    pub fn withdrawing(
+        self,
+        contested: &dorc_core::ContestedFamilies,
+        interner: &Interner,
+    ) -> Self {
+        Self {
+            converged: self.converged.withdrawing(contested, interner),
+        }
+    }
+
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.converged.is_empty()

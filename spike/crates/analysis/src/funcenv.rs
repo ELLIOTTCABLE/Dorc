@@ -117,6 +117,9 @@ pub struct Definition {
     pub name: String,
     /// The whole `name() { … }` span within that file.
     pub span: Span,
+    /// The name token's span — where a diagnostic's caret lands, and the operand a shadow
+    /// narrative carries (the whole-def span would frame a dozen lines to say one thing).
+    pub name_span: Span,
 }
 
 /// Every definition in the analysis unit, plus the load structure over them.
@@ -233,6 +236,23 @@ impl EnvStack {
         }
     }
 
+    /// What the INNERMOST frame alone says about `name` — ⊥ when it says nothing.
+    ///
+    /// The shadow refusal's whole scope rule (`28K` §1 `rul-scope-by-subshell-resource`): a write
+    /// lands in the innermost frame, so it REPLACES only what that frame already held. A binding
+    /// in an outer frame is not replaced but shadowed, bounded by the subshell — which is the
+    /// sanctioned regional-preference idiom and must never trip the refusal.
+    #[must_use]
+    pub fn innermost(&self, name: &str) -> Flat<Binding> {
+        match self {
+            EnvStack::Bottom => Flat::Bottom,
+            EnvStack::Top => Flat::Top,
+            EnvStack::Frames(frames) => frames
+                .last()
+                .map_or(Flat::Bottom, |frame| frame.get(&name.to_owned())),
+        }
+    }
+
     /// Bind `name` in the innermost frame.
     fn bind(&mut self, name: &str, to: Flat<Binding>) {
         if let EnvStack::Frames(frames) = self
@@ -310,6 +330,9 @@ pub struct FuncEnv {
     /// (`28K` §1 rul-unloadable-is-unlicensed). Reported by the caller; recorded here as data so
     /// the kernel mints no diagnostics of its own.
     unresolvable_loads: BTreeSet<CfgNodeId>,
+    /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
+    /// which definitions that statement bound without re-reading the value plane.
+    sourced_paths: BTreeMap<CfgNodeId, String>,
 }
 
 impl FuncEnv {
@@ -364,11 +387,12 @@ pub fn analyze(
             states: vec![EnvStack::Top; cfg.node_count()],
             converged: false,
             unresolvable_loads: BTreeSet::new(),
+            sourced_paths: BTreeMap::new(),
         };
     }
     // Its own pass: independent of the environment, so threading it would buy only interior
     // mutability in a kernel.
-    let unresolvable_loads = unresolvable_load_sites(cfg, defs, literals);
+    let (unresolvable_loads, sourced_paths) = load_sites(cfg, defs, literals);
     let solution = solve(cfg, Direction::Forward, |node, incoming: &EnvStack| {
         transfer(ast, cfg, defs, literals, &universe, node, incoming)
     });
@@ -376,19 +400,181 @@ pub fn analyze(
         states: solution.states,
         converged: solution.converged,
         unresolvable_loads,
+        sourced_paths,
     }
 }
 
-/// Every `.`/`source` site whose target this analysis cannot resolve to a loaded file — a dynamic
-/// path, a path the driver never read, or a target word carrying anything weaker than source-literal
-/// provenance. Each one havocs the environment (`28K` §1 rul-unloadable-is-unlicensed); the caller
-/// discloses them, since silence licenses nothing.
-fn unresolvable_load_sites(
+// ── The cross-unit shadow refusal (`28K` §1 rul-silent-shadowing-refuses) ──
+
+/// One PROVEN cross-unit shadow: `shadowing`'s definition replaced `prior`'s, in the same scope,
+/// with no intervening `unset -f` of the name.
+///
+/// "Same scope" is the whole subtlety, and it is why this is computed over the environment rather
+/// than over the text: a definition arriving in an INNER frame (the `( . better-yum.sh; … )`
+/// regional-preference idiom) shadows nothing — sh discards it at subshell exit, the outer unit's
+/// definition survives intact, and the boundedness IS the spelled intent (`28K` §1
+/// `rul-scope-by-subshell-resource`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Contest {
+    /// The role function name both definitions bind.
+    pub name: String,
+    /// The definition that was overridden.
+    pub prior: DefId,
+    /// The definition that overrode it.
+    pub shadowing: DefId,
+}
+
+/// Every role name whose live binding at the unit's exit is ⊤ — the environment cannot say which
+/// definition (if any) a shell would have.
+///
+/// **Rider 1, `⊤-licenses-nothing`.** This is the load-bearing half of ruling (ii)
+/// (`294:res-polyfill-binding-tops-pending-fold`): the shadow refusal is allowed to UNDER-fire
+/// only because an unprovable binding grants nothing either. A name here is withheld exactly as a
+/// contested one is — silently, since ⊤ never complains — so the two halves together mean a
+/// license requires a PROVEN, uncontested definition and nothing weaker.
+///
+/// Reached by the half-defining branch, the define-if-absent polyfill the domain cannot fold yet,
+/// an unequal-depth join, an unresolvable load, and a non-converged solve alike: they are one
+/// world-state ("we cannot say") with one consequence.
+#[must_use]
+pub fn unprovable(defs: &DefinitionTable, env: &FuncEnv, exit: CfgNodeId) -> BTreeSet<String> {
+    let at_exit = env.before(exit);
+    defs.names()
+        .into_iter()
+        .filter(|name| at_exit.lookup(name) == Flat::Top)
+        .collect()
+}
+
+/// Every proven cross-unit shadow in the unit, in a deterministic order (ambient prefix first,
+/// then CFG node order).
+///
+/// **Ruling (ii), the binding one** (`294:res-polyfill-binding-tops-pending-fold`): the refusal
+/// fires only on a PROVABLE shadow. A ⊤ prior binding — a half-defining branch, a guarded
+/// define-if-absent whose condition the domain cannot fold, a capped solve — complains NOT, and
+/// (this is the load-bearing half) licenses NOT either: ⊤ reaches no consumer as a definition, so
+/// under-firing here grants nothing. A same-file redefinition is NOT a contest: that is the
+/// pre-existing within-file refusal (`216` e-1), and minting a second code for it would
+/// mis-attribute one world-state to two remediations.
+#[must_use]
+pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> Vec<Contest> {
+    let mut out = Vec::new();
+    if !env.converged() {
+        return out;
+    }
+    // PROVABILITY, both ends. A shadow is proven only when the environment can name the winner at
+    // the unit's exit: a CONDITIONAL definition joins to ⊤ there, so it shadowed nothing provably
+    // and must not complain (ruling (ii)) — while still licensing nothing, because ⊤ is withheld
+    // by rider 1. The write-side half (a DIFFERENT unit's definition provably in the same frame)
+    // is [`contest_at`]'s.
+    let at_exit = env.before(cfg.exit());
+    let proven = |name: &str| matches!(at_exit.lookup(name), Flat::Elem(Binding::Defined(_)));
+    // The ambient prefix loads inside the ENTRY transfer, so no CFG node witnesses it; walk the
+    // same ordered list the transfer applies (`28K` §2: CLI files load "before line 1").
+    let mut ambient: BTreeMap<&str, DefId> = BTreeMap::new();
+    for &def in &defs.ambient {
+        let Some(d) = defs.get(def) else { continue };
+        if let Some(prior) = ambient.insert(d.name.as_str(), def)
+            && proven(&d.name)
+        {
+            record(&mut out, defs, &d.name, prior, def);
+        }
+    }
+    for node in 0..cfg.node_count() {
+        let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
+        let cfg_node = cfg.node(id);
+        let mut incoming = env.before(id);
+        match cfg_node.kind {
+            CfgNodeKind::Merge => {
+                let NodeKind::FuncDef { name, .. } = &ast.node(cfg_node.ast).kind else {
+                    continue;
+                };
+                let Some(&def) = defs.by_ast.get(&cfg_node.ast) else {
+                    continue;
+                };
+                if proven(name) {
+                    contest_at(&mut out, defs, &incoming, name, def);
+                }
+            }
+            CfgNodeKind::Command => {
+                // A `.`-source binds its file's definitions in order, so the second of two
+                // same-name definitions in ONE file is a within-file redefinition, not a contest —
+                // which falls out of walking the running environment rather than the entry state.
+                for &def in sourced_definitions(defs, env, id) {
+                    let Some(d) = defs.get(def) else { continue };
+                    if proven(&d.name) {
+                        contest_at(&mut out, defs, &incoming, &d.name, def);
+                    }
+                    incoming.bind(&d.name, Flat::Elem(Binding::Defined(def)));
+                }
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// The definitions a `.`/`source` command at `node` contributes, or empty for any other command.
+/// An unresolvable target contributes nothing HERE (it havocs the environment instead, so every
+/// name reads ⊤ afterwards and nothing downstream is provable).
+fn sourced_definitions<'a>(
+    defs: &'a DefinitionTable,
+    env: &FuncEnv,
+    node: CfgNodeId,
+) -> &'a [DefId] {
+    env.sourced_paths
+        .get(&node)
+        .and_then(|path| defs.definitions_of_path(path))
+        .unwrap_or(&[])
+}
+
+/// Record a contest iff the innermost frame provably held a DIFFERENT unit's definition.
+fn contest_at(
+    out: &mut Vec<Contest>,
+    defs: &DefinitionTable,
+    incoming: &EnvStack,
+    name: &str,
+    shadowing: DefId,
+) {
+    let Flat::Elem(Binding::Defined(prior)) = incoming.innermost(name) else {
+        return; // Undefined ⇒ a free slot (the `unset -f` blessing); ⊥ ⇒ an outer, bounded
+        // scope; ⊤ ⇒ unprovable, and ⊤ licenses nothing either.
+    };
+    record(out, defs, name, prior, shadowing);
+}
+
+fn record(
+    out: &mut Vec<Contest>,
+    defs: &DefinitionTable,
+    name: &str,
+    prior: DefId,
+    shadowing: DefId,
+) {
+    let (Some(a), Some(b)) = (defs.get(prior), defs.get(shadowing)) else {
+        return;
+    };
+    if a.file == b.file {
+        return; // the pre-existing within-file redefinition refusal owns this cell
+    }
+    out.push(Contest {
+        name: name.to_owned(),
+        prior,
+        shadowing,
+    });
+}
+
+/// Split every `.`/`source` site into the resolvable and the unresolvable.
+///
+/// Unresolvable — a dynamic path, a path the driver never read, or a target word carrying anything
+/// weaker than source-literal provenance — havocs the environment (`28K` §1
+/// rul-unloadable-is-unlicensed); the caller discloses them, since silence licenses nothing. The
+/// resolvable half is kept so the shadow pass can replay each statement's bindings.
+fn load_sites(
     cfg: &Cfg,
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
-) -> BTreeSet<CfgNodeId> {
-    let mut out = BTreeSet::new();
+) -> (BTreeSet<CfgNodeId>, BTreeMap<CfgNodeId, String>) {
+    let mut unresolvable = BTreeSet::new();
+    let mut resolved = BTreeMap::new();
     for node in 0..cfg.node_count() {
         let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
         if cfg.node(id).kind != CfgNodeKind::Command {
@@ -397,14 +583,15 @@ fn unresolvable_load_sites(
         if !matches!(literals.literal_text(id, 0), Some("." | "source")) {
             continue;
         }
-        let resolved = literals
+        match literals
             .literal_text(id, 1)
-            .is_some_and(|target| defs.definitions_of_path(target).is_some());
-        if !resolved {
-            out.insert(id);
+            .filter(|target| defs.definitions_of_path(target).is_some())
+        {
+            Some(target) => drop(resolved.insert(id, target.to_owned())),
+            None => drop(unresolvable.insert(id)),
         }
     }
-    out
+    (unresolvable, resolved)
 }
 
 /// The per-node transfer.
@@ -519,13 +706,14 @@ mod tests {
     use crate::lattice::{Flat, Lattice, MapL};
     use dorc_core::{BytePos, Interner, SourceFileId, Span};
     use dorc_syntax::ast::NodeKind;
-    use std::collections::BTreeSet;
+    use std::collections::{BTreeMap, BTreeSet};
 
     fn add_def(table: &mut DefinitionTable, file: u32, name: &str) -> DefId {
         table.add(Definition {
             file: SourceFileId(file),
             name: name.to_owned(),
             span: Span::new(BytePos(0), BytePos(1)),
+            name_span: Span::new(BytePos(0), BytePos(1)),
         })
     }
 
@@ -638,6 +826,7 @@ mod tests {
             states: vec![EnvStack::Frames(vec![frame])],
             converged: false,
             unresolvable_loads: BTreeSet::new(),
+            sourced_paths: BTreeMap::new(),
         };
         assert_eq!(solved.before(CfgNodeId(0)), EnvStack::Top);
         assert_eq!(solved.binding_before(CfgNodeId(0), "f"), Flat::Top);
@@ -825,6 +1014,184 @@ mod tests {
             first.binding_before(exit, "f__is_converged"),
             Flat::Elem(Binding::Undefined),
             "and `unset -f` really did retire the definition — otherwise this pins nothing"
+        );
+    }
+
+    // ── TABLE 3: the cross-unit shadow refusal's cells (`28K` §1) ──
+
+    const ROLE: &str = "yum__is_converged";
+
+    /// A unit shaped like a real run: one CLI-named oracle FILE (id 0) in the ambient prefix,
+    /// registered under its own path so a book's `. lib.sh` binds the same definition, plus the
+    /// book's own role funcdefs (id 1) keyed positionally by their `FuncDef` node.
+    fn unit(book: &str, oracle_names: &[&str]) -> (DefinitionTable, DefId) {
+        let mut table = DefinitionTable::default();
+        let ids: Vec<DefId> = oracle_names
+            .iter()
+            .map(|name| add_def(&mut table, 0, name))
+            .collect();
+        table.set_loadable("lib.sh".to_owned(), ids.clone());
+        table.extend_ambient(ids.iter().copied());
+        let loaded = ids[0];
+        for (id, node) in dorc_syntax::parse(book).value.iter() {
+            if let NodeKind::FuncDef { name, .. } = &node.kind {
+                let def = add_def(&mut table, 1, name);
+                table.set_book_site(id, def);
+            }
+        }
+        (table, loaded)
+    }
+
+    fn contests_of(book: &str, table: &DefinitionTable) -> Vec<super::Contest> {
+        let mut interner = Interner::default();
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = cfg::build(&ast).value;
+        let value = crate::value::analyze(&cfg, &ast, &mut interner);
+        let plane = SourceLiteralPlane::new(&value, &interner);
+        let env = analyze(&ast, &cfg, table, &plane);
+        super::contests(&ast, &cfg, table, &env)
+    }
+
+    /// CELL 1 — the unblessed cross-unit shadow: a book redefines a role the loaded oracle already
+    /// bound. This is the case the whole refusal exists for, and the corpus's live instance is
+    /// `guard23-reingest-collision-verbatim`.
+    #[test]
+    fn a_book_definition_shadowing_a_loaded_oracle_is_contested() {
+        let book = "yum__is_converged() { :; }\nyum install -y nginx\n";
+        let (table, loaded) = unit(book, &[ROLE]);
+        let found = contests_of(book, &table);
+        assert_eq!(found.len(), 1, "one shadow: {found:?}");
+        assert_eq!(found[0].name, ROLE);
+        assert_eq!(
+            found[0].prior, loaded,
+            "the OVERRIDDEN definition is the loaded oracle's, not the book's"
+        );
+    }
+
+    /// CELL 2 — blessed by an intervening `unset -f`, textually between the two definitions
+    /// (`28K` §9 rat-blessing-vocabulary-v0: that is the whole blessing set). The book's
+    /// definition lands in a free slot, so nothing was silently overridden and the family keeps
+    /// its licenses.
+    #[test]
+    fn an_intervening_unset_f_blesses_the_override() {
+        let book = "unset -f yum__is_converged\nyum__is_converged() { :; }\n";
+        let (table, _) = unit(book, &[ROLE]);
+        assert!(
+            contests_of(book, &table).is_empty(),
+            "`unset -f` between the definitions is the spelled intent"
+        );
+    }
+
+    /// CELL 3 — a guarded define-if-absent incoming definition draws NO complaint.
+    ///
+    /// Written against the OBSERVABLE, not the mechanism, deliberately: today the abstention is
+    /// join-⊤ (the domain cannot fold a `command -v` condition, so neither arm is proven and the
+    /// binding is ⊤, which never complains); when the decidable-condition fold lands the mechanism
+    /// becomes a PROVABLE exemption — the guard is dead, the loaded definition survives — with the
+    /// identical outcome, and this test must not move.
+    #[test]
+    fn a_guarded_define_if_absent_draws_no_complaint() {
+        let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\n";
+        let (table, _) = unit(book, &[ROLE]);
+        assert!(contests_of(book, &table).is_empty());
+    }
+
+    /// CELL 4 — two definitions of one name in ONE file are not a cross-unit shadow: that world
+    /// state has its own pre-existing refusal (`216` e-1) and its own remediation, and minting a
+    /// second code for it would point the author at the wrong repair (`271:rul-sin-ordering`).
+    #[test]
+    fn a_within_file_redefinition_is_not_this_refusals_business() {
+        let book = "yum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let first = add_def(&mut table, 0, ROLE);
+        let second = add_def(&mut table, 0, ROLE);
+        table.extend_ambient([first, second]);
+        assert!(contests_of(book, &table).is_empty());
+    }
+
+    /// CELL 5 — the sanctioned regional-preference idiom (`28K` §1
+    /// `rul-scope-by-subshell-resource`) does NOT trip the refusal. The re-source binds in an
+    /// INNER frame, so sh discards it at subshell exit and the outer unit's definition survives
+    /// untouched: the boundedness IS the spelled intent, and complaining about it would tax the
+    /// one selection idiom the design offers.
+    #[test]
+    fn a_subshell_scoped_re_source_does_not_trip_the_refusal() {
+        let book = "( . lib.sh; yum install -y nginx )\n";
+        let mut table = DefinitionTable::default();
+        let outer = add_def(&mut table, 0, ROLE);
+        table.extend_ambient([outer]);
+        let inner = add_def(&mut table, 1, ROLE);
+        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        assert!(contests_of(book, &table).is_empty());
+    }
+
+    /// CELL 6a — a TOP-LEVEL cross-unit shadow arriving by the book's own sourcing DOES trip: the
+    /// override is unbounded, so appending one `.`-source line would otherwise silently reassign
+    /// whose judgment governs the family (`28K` §6 rej-load-order-as-trust-adjudicator).
+    #[test]
+    fn a_top_level_re_source_trips_the_refusal() {
+        let book = ". lib.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let outer = add_def(&mut table, 0, ROLE);
+        table.extend_ambient([outer]);
+        let inner = add_def(&mut table, 1, ROLE);
+        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        let found = contests_of(book, &table);
+        assert_eq!(found.len(), 1, "the same collision, unbounded: {found:?}");
+        assert_eq!(found[0].prior, outer);
+        assert_eq!(found[0].shadowing, inner);
+    }
+
+    /// CELL 6b — and the same collision arriving by CLI LOAD ORDER, which no CFG node witnesses
+    /// (the ambient prefix loads inside the entry transfer). Two named oracle files describing one
+    /// family is exactly the plurality `28K` §3 refuses to resolve by the mere act of loading.
+    #[test]
+    fn two_cli_named_oracles_defining_one_family_trip_the_refusal() {
+        let book = "yum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let first = add_def(&mut table, 0, ROLE);
+        let second = add_def(&mut table, 1, ROLE);
+        table.extend_ambient([first, second]);
+        let found = contests_of(book, &table);
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert_eq!((found[0].prior, found[0].shadowing), (first, second));
+    }
+
+    /// RIDER 1, `⊤-licenses-nothing` — the load-bearing half of ruling (ii). A binding the
+    /// environment cannot prove is named as unprovable, so the driver withholds the family's
+    /// licenses; that is what makes the refusal's permitted UNDER-firing sound, since an
+    /// under-caught shadow can then grant nothing either.
+    ///
+    /// The negative half is on the same test on purpose: an ordinary, unconditional definition is
+    /// NOT unprovable, so the withholding cannot be vacuously总-on.
+    #[test]
+    fn an_unprovable_binding_is_named_and_a_proven_one_is_not() {
+        let guarded = "if [ -f /etc/x ]; then yum__is_converged() { :; }; fi\n";
+        let (table, _) = unit(guarded, &[ROLE]);
+        let mut interner = Interner::default();
+        let ast = dorc_syntax::parse(guarded).value;
+        let cfg = cfg::build(&ast).value;
+        let value = crate::value::analyze(&cfg, &ast, &mut interner);
+        let plane = SourceLiteralPlane::new(&value, &interner);
+        let env = analyze(&ast, &cfg, &table, &plane);
+        assert!(
+            super::unprovable(&table, &env, cfg.exit()).contains(ROLE),
+            "a half-defining branch leaves the binding ⊤, and ⊤ licenses nothing"
+        );
+
+        let plain = "yum install -y nginx\n";
+        let (plain_table, _) = unit(plain, &[ROLE]);
+        let mut i2 = Interner::default();
+        let ast2 = dorc_syntax::parse(plain).value;
+        let cfg2 = cfg::build(&ast2).value;
+        let value2 = crate::value::analyze(&cfg2, &ast2, &mut i2);
+        let plane2 = SourceLiteralPlane::new(&value2, &i2);
+        let env2 = analyze(&ast2, &cfg2, &plain_table, &plane2);
+        assert!(
+            super::unprovable(&plain_table, &env2, cfg2.exit()).is_empty(),
+            "an ambient, unconditional definition is provable — otherwise this withholds \
+             everything and pins nothing"
         );
     }
 }

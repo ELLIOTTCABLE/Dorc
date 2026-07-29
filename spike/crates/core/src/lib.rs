@@ -163,6 +163,9 @@ pub use room::{HintOnly, Invited, Room, RoomFact, RoomTag};
 pub mod escalation;
 pub use escalation::{Capability, EscalationDial};
 
+pub mod contested;
+pub use contested::ContestedFamilies;
+
 // ===========================================================================
 // String interning + the referent-agnostic opaque token (dn-4, W4)
 // ===========================================================================

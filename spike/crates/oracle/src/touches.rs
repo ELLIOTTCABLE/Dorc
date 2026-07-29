@@ -72,6 +72,18 @@ impl TouchesSet {
         self.0.providers()
     }
 
+    /// Withhold a contested family's footprint member ([`PredictSet::withdrawing`]). This one is
+    /// the sharpest of the three: a footprint licenses OTHER authors' sites to survive a wall, so
+    /// a contested family's `disturbs` must stop speaking for anyone, not merely for itself.
+    #[must_use]
+    pub fn withdrawing(
+        self,
+        contested: &dorc_core::ContestedFamilies,
+        interner: &Interner,
+    ) -> Self {
+        Self(self.0.withdrawing(contested, interner))
+    }
+
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
