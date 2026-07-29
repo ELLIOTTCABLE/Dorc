@@ -59,6 +59,20 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (overridden unconditionals, unset names) are BINDING facts, value-flow-tier: they
   never enter the erasure ledger, never spell `CommandEffect::Pure`, and never become
   plan-line outcomes — a dead definition's book text ships verbatim and executes.
+- **shadow-refusal-is-provable-at-both-ends** (`28K` §1 `rul-silent-shadowing-refuses`) —
+  `funcenv::contests` complains ONLY where both halves are proven: the WRITE side, that
+  the INNERMOST frame held a DIFFERENT unit's `Defined` (an outer-frame binding is a
+  bounded subshell shadow — the sanctioned regional-preference idiom — and `Undefined` is
+  the `unset -f` blessing); and the READ side, that the environment can name the winner at
+  the unit's exit (a conditional definition joins ⊤ there and provably shadowed nothing).
+  Never guard-SHAPE recognition around load sites (`28K` §2 `rul-conflict-pass-is-semantic`);
+  a same-FILE redefinition belongs to the pre-existing `216` e-1 refusal, not here.
+- **top-licenses-nothing** (rider 1; `294:res-polyfill-binding-tops-pending-fold`) —
+  `funcenv::unprovable` names every role name whose exit binding is ⊤, and the driver
+  withholds those families SILENTLY (⊤ never complains). Not decoration: it is the entire
+  reason the refusal may under-fire soundly, since an uncaught shadow can then grant
+  nothing either. Anything that lets a ⊤ binding license — a probe ship, a vouch, a guard,
+  an elide — breaks the soundness argument, not merely a test.
 
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 

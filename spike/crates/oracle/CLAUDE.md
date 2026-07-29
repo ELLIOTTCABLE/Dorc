@@ -30,6 +30,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   region rides the authored vouch; the check is never a completeness gate.
   vouch-scope-is-the-body-never-the-tool: a body-vouch mints no command-family
   fact.
+- **withdrawing-drops-detected-too** (`28K` §1) — `PredictSet::withdrawing` (and the
+  `VerdictSet`/`TouchesSet` forwarders) removes a contested family from `checks` AND
+  `detected`. Dropping only `checks` would leave the header behind, so the marks-lost
+  backstop (`crate::validate`) would report a WITHDRAWN funcdef as a lift failure and
+  point the author at the wrong repair (`271:rul-sin-ordering`).
 - **safe-across-vouch** (né tolerates-vouch; `27C` §2, mark spelled `: safe-across
   <dim>` per `281` §5) — per-function, per-dimension; asserts "this
   body's effects are read-only BY DESIGN, not by privilege-starvation"; gates

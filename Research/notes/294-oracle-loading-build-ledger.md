@@ -437,3 +437,120 @@ Untouched and out of scope: `read_books` still concatenates multiple books newli
 only the first path, so a multi-book unit's line numbers are offsets into the concatenation
 (`AID-NEEDS:law-lineno-identity`). Pre-existing, orthogonal to `28K`, and every corpus case is
 single-book. The per-book offset map belongs to the CLI-inputs round.
+
+## Stage E — the cross-unit shadow refusal (LANDED)
+
+Four commits: the mechanism, the generated catalog row, the cells, a comment-budget trim.
+Gate 1654/1654 green (from 1637 at the stage base). Golden churn: NONE outside the three new
+cells — `guard23-reingest-collision-verbatim`'s artifact bytes are byte-identical, and it now
+carries an `expected-diagnostics` declaring the general refusal that governs it, which is the
+pin that the bespoke route is gone.
+
+### dec-withdrawal-is-undescribed-not-unlicensed
+
+The design says a contested family's "licenses switch off". Two readings were live, and the
+narrower one loses. Withdrawing only the VOUCH (the seat both `ReplaceLicense` and
+`GuardLicense` demand by value) would indeed stop that family's own sites eliding or guarding —
+but a family's `__disturbs` licenses OTHER authors' sites to survive a wall, and its
+`__resolve` canonicalizes other authors' coordinates, so a vouch-only withdrawal leaves a
+contested family speaking for people who never loaded it.
+
+Ruled: a contested family goes UNDESCRIBED — removed from the lifted sets (`idx`, `checks`,
+`verdict_sets`) at the cli edge before `classify` sees them. Its sites fall to `Opaque` ⇒
+`MustRun`, which withdraws every seat at once, because `build_vouches` builds candidates from
+the establish-bearing CLASSES and a `MustRun` site is not one. That is the
+`erasure-is-applied-once-never-consulted` shape rather than a flag every consumer must
+remember, and it lands the family exactly where a family nobody described already sits
+(`silence-licenses-nothing`'s floor, so `28K` §8's "no worse than the max of the
+single-provider worlds" holds by construction).
+
+Cost, accepted and disclosed: an undescribed family's running site is a total wall, where a
+vouch-only withdrawal would have kept its effect model and let footprint-sparing work
+downstream. That is the conservative direction and it only fires where two authors collided.
+
+### fnd-conditional-definition-is-not-a-provable-shadow
+
+Caught by cell 3, not by reasoning. The first cut read the environment IMMEDIATELY BEFORE each
+definition site and complained whenever the innermost frame held a different unit's definition.
+On the taken branch of `if …; then f() { … }; fi` that state is the loaded oracle's definition,
+so a CONDITIONAL definition complained — which contradicts ruling (ii) outright and would have
+made the near-welded define-if-absent polyfill (`28K` §3) a warning on every use.
+
+The repair is a second, independent provability half: the exit binding must be `Defined(_)`. A
+conditional definition joins to ⊤ at the unit exit, so the environment cannot name a winner and
+nothing is proven. Both halves are now stated in
+`analysis/CLAUDE.md shadow-refusal-is-provable-at-both-ends`.
+
+Worth keeping because the cell caught a whole CLASS: "provable shadow" has a write-side and a
+read-side reading, and only writing the six cells first surfaced that one of them was missing.
+
+### dec-top-withholds-so-the-refusal-may-under-fire
+
+`res-polyfill-binding-tops-pending-fold` shipped option (ii) on the stated proviso that "a ⊤
+binding licenses nothing anywhere". At the stage base that proviso was NOT delivered: licensure
+read `live_source` (the last ordered source that defines the name), which happily answers "the
+book" for a guarded, provably-unresolvable definition. The environment was not a licensure
+input at all.
+
+So stage E wires the second half: `funcenv::unprovable` names every role name whose exit
+binding is ⊤, and those families join the withheld set — SILENTLY, since ⊤ never complains.
+Zero corpus churn (no existing case leaves a role binding ⊤), and it is what makes the
+permitted under-firing sound rather than merely convenient. Pinned end-to-end by
+`contest28-top-licenses-nothing`, whose condition is a live filesystem test on purpose so the
+cell survives the banked decidable-condition fold unchanged.
+
+### fnd-oracle-only-vectors-truncate-the-book-silently
+
+Stage B's `dec-lift-lanes-keep-the-oracle-only-vectors` is SUPERSEDED, and the way it failed is
+the reason it was worth writing down. With `checks`/`verdict_sets` widened to the source-wide
+list but the three ship closures still zipping against `oracle_srcs`, `zip` truncated the
+book's set away and the probe shipped the ORACLE's body for a site the BOOK's definition owned
+— a well-formed check, a well-formed record, the right site count, and the wrong body. No
+golden could show it; the blessed twin cell did, because its transcript prints the shipped
+bytes.
+
+The predict/verdict lift and ship lanes now consume `source_srcs`/`source_refs`/`source_paths`
+throughout, `build_wrapped_analysis` included. Oracle-only survives where it is genuinely about
+the oracle SET (the whylog/attempt-scope record of what was loaded). The survival lanes
+(`touches`, kind resolvers/reaches) stay oracle-only, coherently among themselves — an in-book
+`__disturbs` or `__resolve` does not lift yet, which is a scope cut, not a ruling.
+
+### dec-gate3-declared-must-fire-reads-any-severity
+
+The refusal is Warning-tier, and gate-3's declared-must-fire half only matched `error[<slug>]`,
+so a warning-tier code had no structural needle at all — only the free-text `expect-hint` lane,
+which `288:prop-structural-needles-only` exists to avoid. Widened to match the slug at any
+severity; the undeclared-NOISE half stays error-keyed, which is the half that is actually about
+severity. A declaration is an assertion about which code fired, and severity is registry data a
+case does not restate.
+
+### res-unwritten-ceiling-spent
+
+`unwritten_renders_are_greppable_and_pinned` went 15 → 16, a conscious bump: `28K`'s two
+loading refusals both land `message: None` because a builder authors zero user-facing prose.
+`289:rul-unwritten-ceiling-one-bump` sized 2 lines of headroom and both are now spent, so the
+next unwritten code is another deliberate bump.
+
+### res-in-book-survival-roles-not-lifted
+
+Named, not built: a book may define `foobar__disturbs` or `sm_dorc_Package__resolve` and it
+will not lift, because those lanes still read the oracle-only vectors. Safe (the family simply
+has no footprint/resolver, which walls), inconsistent with `28K` §2a's "every input file, book
+included, feeds the role lifts", and cheap to close once the survival lanes are threaded.
+
+### res-book-sourcing-walls-at-the-site
+
+`. lib.sh` at a book's top level is not a target-state-pure builtin, so it classifies `Opaque`
+and walls everything after it. The shadow refusal MODELS book-sourcing correctly (cell 6a pins
+it), but an e2e demonstration of that cell would be dominated by the wall rather than by the
+refusal, so the six cells' sourcing halves live in-memory. Whether `.` of a proven-load-inert
+file should be blessed pure is a real question and a separate one.
+
+### res-syncthing-conflicts-blocked-promote
+
+Mechanical, recorded so the next promote does not lose ten minutes to it: `dorc-loom promote`
+refuses on any dirty path outside the selected prose edits, and SyncThing conflict artifacts
+(`*.sync-conflict-*.rs` under `crates/*/src/`) are exactly that. They also land as `.rs` files
+the tidy gates' directory walkers read. Moved aside rather than deleted (conflict cleanup is
+not this lane's). Also: `mise run loom:promote -- <case>` does NOT scope — the task is a
+two-command array, so trailing args reach the `git diff`, not the promote. Run both bare.

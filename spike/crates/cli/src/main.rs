@@ -2008,8 +2008,13 @@ fn assemble_whylog_metadata(
 /// the ambient prefix "before line 1", the book's own text executes after). An id comparison is
 /// therefore a load-order comparison, which is what the cross-unit shadow refusal needs.
 ///
-/// The lift/ship lanes deliberately keep the ORACLE-ONLY vectors: they zip per-file lifted sets
-/// positionally, and the book is not one of those.
+/// The predict/verdict lift and ship lanes consume THESE vectors, not the oracle-only ones: the
+/// book is a definition source (`28K` §2a in-book lift), and those lanes zip per-file lifted sets
+/// POSITIONALLY — so feeding them an `oracle_srcs` shorter than `checks` would silently truncate
+/// the book's own definitions away rather than fail. The survival lanes (`touches`, the kind
+/// resolvers/reaches) stay oracle-only, coherently among themselves; widening them is its own
+/// dispatch. What genuinely stays oracle-keyed is the whylog/attempt-scope record of what was
+/// LOADED, which is about the oracle set as such.
 fn source_table(
     oracle_paths: &[String],
     oracle_srcs: &[String],

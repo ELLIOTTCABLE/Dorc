@@ -23,6 +23,15 @@ new entries to the matching section.
 - **vouch-never-a-fact** — a vouch informs a license and never enters the
   fact-plane; fact-plane exits ride `ByObservation`. Inadmissible in any other
   site's elide/poison reasoning.
+- **contested-is-write-once** (`28K` §1 `rul-silent-shadowing-refuses`) —
+  `ContestedFamilies` is the license-plane fact naming the role families whose licenses
+  are WITHHELD for a run: built once from the function environment's own answer, keyed by
+  the MUNGED family base (so `apt-get`/`apt_get` are one family and every `__role` member
+  is covered by one key), and read-only thereafter. There is no `un_contest`, no `remove`,
+  no `&mut` accessor, and there must never be one — the refusal is sound while shipping
+  ahead of the decidable-condition fold ONLY because it can under-fire but never
+  un-withhold. The DiagCode derives FROM the fact; licensure never reads a diagnostic
+  (`two-plane-aid-law`).
 
 ## Law — the coordinate (`notes/277` is THE spec; `plans/271` the rulings)
 
