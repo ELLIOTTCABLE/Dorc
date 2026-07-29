@@ -1,0 +1,104 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# contest28-top-licenses-nothing (`28K` rider-1 `⊤-licenses-nothing`) — the mechanical pin under
+# ruling (ii). A half-defining branch leaves the binding ⊤: the environment cannot say whether the
+# book's definition or the loaded oracle's is live, and an unprovable binding mints NO license at
+# any seat — no vouch, no guard, no elision, and no probe ship. The site simply runs.
+#
+# This is the whole soundness argument for letting the shadow refusal UNDER-fire (a shape it
+# cannot prove goes uncomplained-about): an under-caught shadow can grant nothing, because there
+# is nothing ⊤ grants. Nothing here complains, deliberately — ⊤ never complains.
+#
+# The condition is a live filesystem test on purpose, so the cell survives the decidable-condition
+# fold banked at `294:res-polyfill-binding-tops-pending-fold`: that fold folds decidable
+# `command -v` conditions, and this one stays undecidable forever.
+if [ -f /etc/dorc/prefer-local-foobar ]; then
+   foobar__is_converged() {
+      foobar status --certs-current -- "$2"
+   }
+fi
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# NO records: a ⊤ binding ships no check, so nothing measures. That absence IS the assertion.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: foobar sync-certs /etc/nginx/certs
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f412ff9f1ecec8ccf50ab16505429db2901cb5b619fb38119eb8156d11b8a9e0 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# contest28-top-licenses-nothing (`28K` rider-1 `⊤-licenses-nothing`) — the mechanical pin under
+# ruling (ii). A half-defining branch leaves the binding ⊤: the environment cannot say whether the
+# book's definition or the loaded oracle's is live, and an unprovable binding mints NO license at
+# any seat — no vouch, no guard, no elision, and no probe ship. The site simply runs.
+#
+# This is the whole soundness argument for letting the shadow refusal UNDER-fire (a shape it
+# cannot prove goes uncomplained-about): an under-caught shadow can grant nothing, because there
+# is nothing ⊤ grants. Nothing here complains, deliberately — ⊤ never complains.
+#
+# The condition is a live filesystem test on purpose, so the cell survives the decidable-condition
+# fold banked at `294:res-polyfill-binding-tops-pending-fold`: that fold folds decidable
+# `command -v` conditions, and this one stays undecidable forever.
+if [ -f /etc/dorc/prefer-local-foobar ]; then
+   foobar__is_converged() {
+      foobar status --certs-current -- "$2"
+   }
+fi
+foobar sync-certs /etc/nginx/certs

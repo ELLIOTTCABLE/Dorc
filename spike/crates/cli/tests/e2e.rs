@@ -2124,7 +2124,7 @@ fn dual_rail_check(
 /// gate-3: an undeclared error-severity diagnostic on dorc's stderr fails the case.
 ///
 /// `expected-diagnostics` is a list of code SLUGS, one per line
-/// (`288:prop-structural-needles-only`): the needle `error[<slug>]` is DERIVED, and every slug
+/// (`288:prop-structural-needles-only`): the needle `<severity>[<slug>]` is DERIVED, and every slug
 /// is validated against the generated catalog. That kills the two ways the old free-text form
 /// rotted — a needle carrying migrated `sm ` prose stops matching the moment phase 8 rewrites
 /// that prose, and a needle naming a deleted code silently declares nothing forever
@@ -2162,18 +2162,23 @@ fn scan_diagnostics(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<Str
             })
         })
         .collect();
+    // The declared-must-fire half reads the SLUG at any severity; only the undeclared-noise half
+    // below stays error-keyed. A declaration is an assertion about which code fired, and a code's
+    // severity is registry data the case does not restate — so pinning `warning[…]`/`note[…]`
+    // codes needs no second file and no free-text needle (`288:prop-structural-needles-only`).
+    let fired = |slug: &str| {
+        ["error", "warning", "note"]
+            .iter()
+            .any(|severity| stderr.contains(&format!("{severity}[{slug}]")))
+    };
     let unfired: Vec<String> = slugs
         .iter()
-        .filter(|slug| {
-            !errors
-                .iter()
-                .any(|line| line.contains(&format!("error[{slug}]")))
-        })
-        .map(|slug| format!("declared but never emitted: error[{slug}]"))
+        .filter(|slug| !fired(slug))
+        .map(|slug| format!("declared but never emitted: [{slug}]"))
         .collect();
     if !unfired.is_empty() {
         failures.push(format!(
-            "FAIL  {name}  [gate-3: a declared error-severity diagnostic did not fire — the declaration is an assertion, not a mute]\n{}",
+            "FAIL  {name}  [gate-3: a declared diagnostic did not fire — the declaration is an assertion, not a mute]\n{}",
             indent(&unfired)
         ));
     }
