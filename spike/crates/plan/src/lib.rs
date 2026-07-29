@@ -5143,6 +5143,111 @@ apt_get__is_converged() { return 0; }
         (probe, i)
     }
 
+    /// `ship-seam-reads-the-lane-not-the-kind` (`26H` §3.5): where a site is in the VERDICT lane
+    /// AND also carries a resolvable predict, the verdict body ships. The two closures are tried
+    /// in order and that order is load-bearing — a verdict-lane site's cell is owned by the
+    /// verdict body, so shipping the predict would MEASURE a different cell than the record KEYS.
+    ///
+    /// That failure is invisible to every golden in the corpus: the artifact still contains a
+    /// well-formed check and a well-formed record, the site count is unchanged, and only the
+    /// coordinate the measurement actually answers has moved. Nothing else pinned this ordering,
+    /// so the fixture-level evidence for it was zero (`28K` build; pin added before the
+    /// resolution rewiring touches these closures).
+    #[test]
+    fn a_verdict_lane_site_ships_the_verdict_body_over_a_resolvable_predict() {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse("apt-get install -y nginx\n");
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &dorc_oracle::verdict::VerdictIndex::default(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        // BOTH lanes answer this site: the predict resolves it (the corpus apt check), and the
+        // caller declares it verdict-lane. Distinguishable bodies, so the assertion cannot pass
+        // by accident.
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &BTreeMap::new(),
+            &ConnectedPipes::default(),
+            |_, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
+            |_, _, _| {
+                Some(ShippedCheck::verdict(
+                    "VERDICT_BODY".to_owned(),
+                    None,
+                    false,
+                ))
+            },
+            |_| true,
+        );
+        let shipped = probe
+            .checks
+            .iter()
+            .find(|c| c.site_kind == ProbeSiteKind::Establish)
+            .expect("the establish site ships a check");
+        assert!(
+            shipped.verdict,
+            "the verdict lane must win the try-order: {shipped:?}"
+        );
+        assert_eq!(shipped.sh, "VERDICT_BODY", "{shipped:?}");
+    }
+
+    /// The same seam's negative half, and what makes the pin above non-vacuous: with the site NOT
+    /// declared verdict-lane, the identical inputs ship the PREDICT. So the discriminator really is
+    /// the caller's per-SITE lane declaration (`verdict-lane-is-site-keyed`) — not the fact's kind,
+    /// and not which closure happens to answer first.
+    #[test]
+    fn the_same_site_ships_the_predict_when_it_is_not_verdict_lane() {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse("apt-get install -y nginx\n");
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &dorc_oracle::verdict::VerdictIndex::default(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &BTreeMap::new(),
+            &ConnectedPipes::default(),
+            |_, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
+            // The lane closure declines for every site — the site-keyed "not this lane" answer.
+            |_, _, _| None,
+            |_| true,
+        );
+        let shipped = probe
+            .checks
+            .iter()
+            .find(|c| c.site_kind == ProbeSiteKind::Establish)
+            .expect("the establish site ships a check");
+        assert!(!shipped.verdict, "{shipped:?}");
+        assert_eq!(shipped.sh, "PREDICT_BODY", "{shipped:?}");
+    }
+
     #[test]
     fn disposition_counts_tally_bucketing_and_sites_invariant() {
         // plans/240 Stage-1 yardstick: the plan-summary's per-disposition tally. Pin
