@@ -43,9 +43,7 @@ use crate::lattice::{Flat, Lattice, MapL};
 use crate::solve::{Direction, Graph, solve};
 use crate::value::{ValueFlow, ValueOf};
 
-// ===========================================================================
-// The value-plane seam — funcenv-reads-source-literal-plane-only
-// ===========================================================================
+// ── The value-plane seam: funcenv-reads-source-literal-plane-only ──
 
 /// The ONE window this module has onto resolved values, and it is deliberately narrow: a word
 /// counts only when it is a literal whose provenance is [`ValueGrade::ProgramText`] — program
@@ -102,9 +100,7 @@ impl<'a> SourceLiteralPlane<'a> {
     }
 }
 
-// ===========================================================================
-// Definitions, and the loaded unit
-// ===========================================================================
+// ── Definitions, and the loaded unit ──
 
 /// A function definition's identity: an index into the unit's [`DefinitionTable`]. Opaque and
 /// `Copy` so it can ride the lattice; the bytes it names are resolved by the caller for emission
@@ -182,9 +178,7 @@ impl DefinitionTable {
     }
 }
 
-// ===========================================================================
-// The domain
-// ===========================================================================
+// ── The domain ──
 
 /// What a name is bound to at a program point. `Undefined` is a first-class ELEMENT — see the
 /// module doc; encoding it as map-absence is a wrong-elision.
@@ -307,9 +301,7 @@ impl Lattice for EnvStack {
     }
 }
 
-// ===========================================================================
-// The analysis
-// ===========================================================================
+// ── The analysis ──
 
 /// The solved function environment: per program point, which definition each name is bound to.
 #[derive(Debug, Clone)]
@@ -568,9 +560,7 @@ mod tests {
             .expect("the book defines a function")
     }
 
-    // =======================================================================
-    // TABLE 1 — `Undefined` is an ELEMENT, never map-absence
-    // =======================================================================
+    // ── TABLE 1: `Undefined` is an ELEMENT, never map-absence ──
 
     /// The bare lattice statement, independent of any CFG, and the single most important test in
     /// this module: an explicit `Undefined` joined with a definition is ⊤, where an ABSENT key
@@ -641,9 +631,7 @@ mod tests {
         );
     }
 
-    // =======================================================================
-    // TABLE 2 — non-convergence folds to ⊤ everywhere
-    // =======================================================================
+    // ── TABLE 2: non-convergence folds to ⊤ everywhere ──
 
     /// The fold lives on the QUERY, not merely on the stored states, so a consumer that forgets to
     /// check `converged()` still cannot read a confident answer off a capped solve. An
@@ -673,9 +661,7 @@ mod tests {
         assert_eq!(solved.before(CfgNodeId(9999)), EnvStack::Top);
     }
 
-    // =======================================================================
-    // The frame stack
-    // =======================================================================
+    // ── The frame stack ──
 
     /// Depth mismatch is ⊤, never a pointwise guess: a merge across a scope boundary has no honest
     /// per-frame answer, so every family walls rather than one being invented.
@@ -724,9 +710,7 @@ mod tests {
         assert_eq!(scoped.lookup("f"), Flat::Elem(d));
     }
 
-    // =======================================================================
-    // Containment — the two parsers disagree only where nothing can ship
-    // =======================================================================
+    // ── Containment: the two parsers disagree only where nothing can ship ──
 
     /// CELL (a), the ROLE-shaped weird name. `dorc_syntax` and the dialect parser disagree about
     /// what a funcdef is: the dialect parser lifts `中pkg__predict` (which is why
@@ -791,9 +775,7 @@ mod tests {
         );
     }
 
-    // =======================================================================
-    // Structural enforcement — the pre-pass property, made mechanical
-    // =======================================================================
+    // ── Structural enforcement: the pre-pass property, made mechanical ──
 
     /// SIGNATURE ENFORCEMENT: this module names no records / effect-vector / erasure / verdict
     /// type, so a later fixpoint round has no channel by which to reach it.
