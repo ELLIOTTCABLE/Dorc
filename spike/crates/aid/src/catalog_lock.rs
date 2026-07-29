@@ -869,4 +869,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "role-family-contested",
+        when_fires: "one input unit's definition of a `<family>__<role>` function provably overrode a definition of the same name authored in a DIFFERENT input, in the SAME scope, with no `unset -f` of that name between them. cli/main.rs shadow_diagnostics, one mint per proven shadow, spanned at the SHADOWING definition's name and grouped under the file that holds it; `{prior}` carries the overridden definition's `path:line`, since one report seat threads one source. The whole FAMILY's licenses are withheld — every `__role` member, not just the colliding one — so its sites run.",
+        why: "`28K` §1 rul-silent-shadowing-refuses. sh silently lets the last definition win; a book or a second library can therefore reassign whose judgment governs a tool by appending one `.`-source line, and the admin would never see it (`28K` §6 rej-load-order-as-trust-adjudicator). Dorc changes no runtime behaviour here — it declines to LICENSE off a definition whose selection nobody spelled, which is the only lever that keeps trust exposure for a family at or below the max of the single-provider worlds (`28K` §8). WARNING, not error: the refusal only ever withholds, the book still applies, and one `unset -f` line between the definitions retires it. Evaluated over the abstract function environment, never by guard-shape pattern recognition (`28K` §2 rul-conflict-pass-is-semantic; `271:rul-net-quality-u-curve`), and only on a PROVABLE shadow — a ⊤ prior binding complains not, and licenses not either, which is what makes shipping ahead of the decidable-condition fold sound (`294:res-polyfill-binding-tops-pending-fold`). A same-FILE redefinition is a different world-state with a different remediation and keeps its own pre-existing refusal (`216` e-1).",
+        params: &[],
+        example: "[unwritten: role-family-contested]",
+        message: None,
+        help: None,
+    },
 ];
