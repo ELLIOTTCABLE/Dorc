@@ -278,6 +278,49 @@ NAMED, not chased: a shared-bind-before-case body with multi-kind arms still res
 the residual mechanism is unproven (suspected: the operand guard going undecidable for a nullary
 verb). Fixtures are authored in the canonical shape instead, so no corpus case depends on it.
 
+## Stage G — the two-kind respell (LANDED)
+
+Four dirs merged to one arm-local `apt_get__predict`; `pkgindex.oracle.sh` DELETED from each
+(it held nothing but the second definition — no kind-owner families, so nothing survives it).
+`guard23-reingest-collision-verbatim` is untouched: it is not a merge, it is the reingest pin,
+and its outcome changes at stage E or not at all.
+
+Blessed churn, inspected case-by-case: exactly the four edited dirs moved, 108 other cases
+untouched. Every site coordinate, invocation and `sites=` count is IDENTICAL. What moved is
+that the probe emits ONE definition where it re-emitted two — three in
+`headline-guarded-realistic`, one before each of sites 3/4/5. So `28K` §0's per-site
+redefinition, the emission that "is correct only under strictly-linear adjacent execution",
+retired itself as a side-effect of the fixture respell, before the emission work of stage F
+has been touched at all.
+
+### tbl-predicted-churn-for-d-and-e (re-stated before D starts; anything else moving is a FINDING)
+
+**Stage D — environment drives every lift. Predicted golden churn: NONE.**
+D replaces first-match/first-wins resolution with an environment query at five sites
+(`effect.rs` first-resolves · `VerdictIndex::from_sets` first-wins · `oracle::lift`'s merge ·
+the three cli ship closures · `build_vouches`'s `find_map`). Every corpus unit is now
+SINGLE-DEFINITION per role name, so "the first that resolves" and "the one sh would have live"
+are the same answer everywhere. That equality is exactly what stage G bought, and it is why a
+moved golden at D is a real defect rather than churn. Residue that is NOT churn but must be
+watched, per the conductor: the per-SITE verdict-lane out-param and the verdict-body-precedes-
+predict ship ordering (`ship-seam-reads-the-lane-not-the-kind`, `verdict-lane-is-site-keyed`) —
+a regression there measures the wrong cell while keying the record to the right one, which no
+existing golden catches; locate the pins or add them BEFORE touching the ship closures.
+
+**Stage E — cross-unit shadow refusal. Predicted churn: the six dedicated cells, plus one
+behaviour-bearing pin whose OUTCOME must not move.**
+New cells: unblessed cross-unit shadow · blessed by an intervening `unset -f` · guarded
+(define-if-absent) incoming definition, exempt by consequence · within-file redefinition
+(`216` e-1, unchanged) · subshell-scoped re-source override, which does NOT trip the refusal
+(`28K` §1/§3's sanctioned regional preference — the subshell's boundedness IS the spelled
+intent) · top-level cross-unit shadow, which DOES trip it whether it arrives by CLI load order
+or by the book's own top-level sourcing.
+`guard23-reingest-collision-verbatim` keeps refuse-and-run: its book's inlined
+`apt_get__predict` shadows the loaded oracle's, so the family goes unlicensed and the site runs
+verbatim with no guard accretion. The MECHANISM changes (the general refusal replaces today's
+route) and the OUTCOME must not. Its golden may move only if the diagnostic text changes; the
+artifact bytes must not.
+
 ### res-multi-book-concatenation-still-violates-lineno-identity
 
 Untouched and out of scope: `read_books` still concatenates multiple books newline-joined and keeps
