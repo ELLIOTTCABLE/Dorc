@@ -226,6 +226,12 @@ Corrects the earlier `Stmt::Annotation`-clobber reading: the m1-vs-m2 measuremen
 resolves `update`; case + ONE trailing bind does not) was real, but the mechanism was this, not an
 overwrite. Site 6 forbids the overwrite outright.
 
+**The stated principle already covers this face, which is what makes the fold sweep one rule rather
+than four patches**: a singleton coordinate LACKS NOTHING, so on that path the bind's value should
+never be resolved at all. Its resolution failure topping the check is ambient state filling a gap
+that does not exist — the same error as sites 2/4/5, wearing a different mechanism. Fix target for
+all four faces: ambient state is consulted only where a coordinate is genuinely incomplete.
+
 ### res-tripwire-had-no-target
 
 The commissioned loud-conservative tripwire was specified against the clobber shape. Site 6 shows
@@ -246,11 +252,25 @@ in dialect. Measured, one file, `dorc lint`:
 | `[ -n "$1" ] \|\| return 2` | VOIDS the funcdef |
 | `if [ -z "$1" ]; then return 2; fi` | VOIDS the funcdef |
 
-So there is NO doc-vs-engine conflict: every gate the docs actually prescribe lifts cleanly. What
-is out of dialect is the unary file/string test family (`-n`, `-z`, and by extension `-f`, `-x`),
-which is ordinary defensive sh an author will reach for unprompted. It fails LOUDLY — both
-`predict-out-of-dialect` (naming the operator) and the `26G` unlifted backstop (naming the funcdef
-it took down) fire — so this is a dialect-reach question for fold, not a silence bug.
+So there is NO doc-vs-engine conflict on the GATES: every gate the docs actually prescribe lifts
+cleanly. What is out of dialect is the unary file/string test family (`-n`, `-z`, and by extension
+`-f`, `-x`), which is ordinary defensive sh an author will reach for unprompted. It fails LOUDLY —
+both `predict-out-of-dialect` (naming the operator) and the `26G` unlifted backstop (naming the
+funcdef it took down) fire — so this is a dialect-REACH question, not a silence bug.
+
+**But it is a before-stdlib question, not a someday question.** `oracle/CLAUDE.md`'s R2-SHADOW
+quality bar demands that `command -v X` confirm X resolves to an executable FILE — functions,
+aliases and builtins shadow it, and Dorc's own sourced-oracle idiom is exactly such a shadower, so
+the bar exists because getting it wrong reports installed ⇒ elides the install ⇒ priority-1
+under-execute. Satisfying it requires precisely the unary file-test family (`-x`/`-f`) that the
+test grammar refuses. So the moment stdlib authoring starts, the quality bar collides with the
+dialect: an author cannot write an R2-SHADOW-clean existence check that also lifts.
+
+How the over-claim happened, kept because the failure mode generalizes: the `26G` F3 fixture
+differed from my own test bodies in TWO variables at once — gate-before-bind vs gate-after-bind,
+AND `-n` vs `=` — and I attributed the void to the first without varying the second. One
+counterexample, two uncontrolled variables, wrong cause. Vary one at a time before naming a
+mechanism.
 
 ### res-shared-bind-multi-kind-precision-limit
 
