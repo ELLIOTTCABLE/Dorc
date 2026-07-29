@@ -464,7 +464,7 @@ pub fn ship_predict_body(
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate() {
+    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate().rev() {
         for cp in cs.providers() {
             if map_provider_name(interner.resolve(cp)) != want {
                 continue;
@@ -491,7 +491,7 @@ pub fn ship_verdict_body(
 ) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     let want = map_provider_name(interner.resolve(provider));
-    for (idx, (src, set)) in oracle_srcs.iter().zip(verdict_sets).enumerate() {
+    for (idx, (src, set)) in oracle_srcs.iter().zip(verdict_sets).enumerate().rev() {
         for vp in set.providers() {
             if map_provider_name(interner.resolve(vp)) != want {
                 continue;

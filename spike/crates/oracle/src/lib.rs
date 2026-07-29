@@ -318,6 +318,30 @@ pub fn to_funcname_segment(name: &str) -> String {
     }
 }
 
+/// sh's last-definition-wins, over an ordered load: the index of the LAST source that defines a
+/// name, or `None` when none does (`28K` §1 rul-sh-loads-dorc-reads — the oracle answering a site
+/// is exactly the definition a shell would have live).
+///
+/// The ONE seat for that question, because the five resolution sites that ask it must agree: a
+/// disagreement between which body the analysis picks and which the probe ships measures one cell
+/// while keying the record to another. What this retires is two distinct expedients — first-in-
+/// load-order, and (in `analysis::effect`) first-that-RESOLVES, which was strictly worse: it could
+/// reach PAST a live definition into a shadowed one's arms when the live body declined the argv,
+/// answering from a body no shell would have called (`28K` §6 rej-resurrection-of-dead-definitions).
+/// Only sh's winner exists; a decline by the winner is a decline, full stop.
+#[must_use]
+pub fn live_source(count: usize, defines: impl Fn(usize) -> bool) -> Option<usize> {
+    (0..count).rev().find(|&i| defines(i))
+}
+
+/// [`live_source`] over a slice of per-file [`PredictSet`](predict::PredictSet)s, keyed by the
+/// provider symbol as each set spells it.
+fn dorc_oracle_live_source(sets: &[predict::PredictSet], provider: Symbol) -> Option<usize> {
+    live_source(sets.len(), |i| {
+        sets.get(i).is_some_and(|s| s.get(provider).is_some())
+    })
+}
+
 /// Lift a set of oracle sh sources into the kind index, interning kind/provider/verb
 /// names through the shared `interner` (so they match the names the book analysis
 /// interns). The effect-map is DERIVED from each oracle's `<provider>__predict` bodies
@@ -333,12 +357,22 @@ pub fn to_funcname_segment(name: &str) -> String {
 /// `BTreeMap`-backed, and nothing here touches clock/RNG/IO.
 pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindIndex> {
     let mut out = Carrier::pure(KindIndex::default());
-    for src in oracle_sources {
-        // The check-lift's own diagnostics are reported by the caller's separate
-        // `lift_predicts` pass (cli/coverage); here we consume only the parsed checks to
-        // derive the effect-map, so a malformed check contributes no cells (safe).
-        let checks = predict::lift_predicts(interner, src).value;
+    // The check-lift's own diagnostics are reported by the caller's separate `lift_predicts` pass
+    // (cli/coverage); here we consume only the parsed checks to derive the effect-map, so a
+    // malformed check contributes no cells (safe).
+    let per_source: Vec<predict::PredictSet> = oracle_sources
+        .iter()
+        .map(|src| predict::lift_predicts(interner, src).value)
+        .collect();
+    for (index, checks) in per_source.iter().enumerate() {
         for provider in checks.providers() {
+            // Only the LIVE definition contributes cells (`28K` §1 rul-sh-loads-dorc-reads). A
+            // provider defined in several sources previously had EVERY definition's cells merged
+            // into one index, so a shadowed body's arms stayed answerable through the effect-map
+            // even though no shell would have called them.
+            if dorc_oracle_live_source(&per_source, provider) != Some(index) {
+                continue;
+            }
             let Some(c) = checks.get(provider) else {
                 continue;
             };

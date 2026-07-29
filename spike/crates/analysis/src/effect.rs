@@ -387,22 +387,23 @@ pub fn command_effect(
     }
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
-    // Run the oracle's own argparse. Multiple oracle files may each declare a check
-    // for this provider (`apt-get` install/purge in one file, `apt-get update` in
-    // another — different kinds, different authors); try each and take the FIRST that
-    // resolves concretely. A check that does not handle this verb falls through to its
-    // own `Top` (no annotation reached / positional past end), so the partition is
-    // clean for the corpus. (tc-*: if two checks both resolve, first-in-file-order
-    // wins — flagged; no corpus case is ambiguous.) The `PredictSet` key is the same
-    // provider symbol (interning is idempotent; `ProviderId` wraps it).
-    let resolved = checks
-        .iter()
-        .filter_map(|cs| cs.get(provider.0))
-        .find_map(|c| match predict::evaluate(c, &arg_refs) {
+    // Run the oracle's own argparse — the LIVE definition's, and only its
+    // (`28K` §1 rul-sh-loads-dorc-reads via `dorc_oracle::live_source`). This retired a
+    // try-each-take-the-first-that-RESOLVES expedient that could answer from a definition sh had
+    // already shadowed, whenever the live one declined this argv
+    // (`28K` §6 rej-resurrection-of-dead-definitions). A decline by the winner is now a decline:
+    // the site is unresolved and runs. The `PredictSet` key is the same provider symbol
+    // (interning is idempotent; `ProviderId` wraps it).
+    let live = dorc_oracle::live_source(checks.len(), |i| {
+        checks.get(i).is_some_and(|cs| cs.get(provider.0).is_some())
+    });
+    let resolved = live
+        .and_then(|i| checks.get(i))
+        .and_then(|cs| cs.get(provider.0))
+        .and_then(|c| match predict::evaluate(c, &arg_refs) {
             predict::Resolution::Resolved(r) => Some(r),
             // The reason used to die here, which is why an unresolvable site could name itself but
-            // never its cause. FIRST candidate wins, mirroring the first-resolves-wins rule above:
-            // several checks may degrade for several reasons and only one line gets rendered.
+            // never its cause.
             predict::Resolution::Top(reason) => {
                 degrade.get_or_insert(reason);
                 None
@@ -2564,20 +2565,35 @@ foobar__is_converged() {
         );
     }
 
-    /// Two candidate checks for one provider, each degrading for a DIFFERENT reason: the FIRST in
-    /// file order wins, matching the first-resolves-wins rule the resolution scan already uses. The
-    /// note renders one cause, so which one it is must be pinned rather than incidental.
+    /// Two definitions of one provider, each degrading for a DIFFERENT reason: the reason reported
+    /// is the LIVE definition's — the LAST loaded — because under `28K` §1 rul-sh-loads-dorc-reads
+    /// the earlier one does not exist at this site at all. Its reason must never surface, or the
+    /// note would attribute a give-up to a body no shell would have called
+    /// (`271:rul-sin-ordering`: a mis-attributed cause outranks every other sin, and a why-note
+    /// pointing at sh-dead source is exactly that).
+    ///
+    /// The order-swap is the whole test: the same two definitions, loaded either way round, report
+    /// whichever is last. It previously pinned the opposite — first-in-file-order — which was the
+    /// resolution expedient this round retired.
     #[test]
-    fn the_first_candidate_checks_reason_is_the_one_reported() {
+    fn the_live_definitions_reason_is_the_one_reported() {
         let or_list = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat query \"$1\" || wombat sync \"$1\"\n}\n";
         let pipeline = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat list | wombat count\n}\n";
         let mut i = Interner::default();
         let a = lift_predicts(&mut i, or_list).value;
         let b = lift_predicts(&mut i, pipeline).value;
-        let (_, or_first) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
-        let (_, pipe_first) = degrade_of("wombat sync\n", &[b, a], &mut i);
-        assert_eq!(or_first, Some(TopReason::OrList));
-        assert_eq!(pipe_first, Some(TopReason::Pipeline));
+        let (_, pipeline_last) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
+        let (_, or_list_last) = degrade_of("wombat sync\n", &[b, a], &mut i);
+        assert_eq!(
+            pipeline_last,
+            Some(TopReason::Pipeline),
+            "the LAST definition is the live one"
+        );
+        assert_eq!(
+            or_list_last,
+            Some(TopReason::OrList),
+            "and swapping the load order swaps which body answers"
+        );
     }
 
     /// Run `command_effect` over a one-command book; return its effects plus the degrade reason.

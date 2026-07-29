@@ -10,18 +10,25 @@ apt-get install -y nginx
 -- package.oracle.sh --
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.2
-# minimal package oracle (apt/dpkg), lifted statically by dorc.
+# minimal apt-get oracle, lifted statically by dorc. ONE body per provider, spanning the package
+# and the package INDEX; binds arm-local (28K section 7).
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
-   pkg : sm.dorc.Package = "$1"
-   if [ "${2-}" = "" ]; then
-      case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
-      esac
-   fi
+   case $verb in
+      update) test -n fresh : sm.dorc.PkgIndex@fresh ;;
+      install)
+         pkg : sm.dorc.Package = "$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed
+         fi ;;
+      purge)
+         pkg : sm.dorc.Package = "$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed
+         fi ;;
+   esac
 }
 
 apt_get__is_converged() {
@@ -32,17 +39,6 @@ apt_get__is_converged() {
       install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
       update) test -n fresh ;;
       *) return 2 ;;
-   esac
-}
-
--- pkgindex.oracle.sh --
-#!/usr/bin/env dorc-sh
-# dorc-lang/v0.2
-# package-index freshness oracle (kind `pkgindex`), a nullary-verb Singleton: `apt-get
-apt_get__predict() {
-   verb=$1; shift
-   case $verb in
-      update) test -n fresh : sm.dorc.PkgIndex@fresh ;;
    esac
 }
 
@@ -97,7 +93,7 @@ exit 0
 
 
 -- replay --
-$ dorc --book=book.sh -o package.oracle.sh -o pkgindex.oracle.sh < probe-results.txt
+$ dorc --book=book.sh -o package.oracle.sh < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -108,25 +104,25 @@ $ dorc --book=book.sh -o package.oracle.sh -o pkgindex.oracle.sh < probe-results
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=6934089a806747a286a44298e68135a5fc009305274783daf15968e88ca72487 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.PkgIndex@fresh
 apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
       update) test -n fresh ;;
+      install)
+         pkg="$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1
+         fi ;;
+      purge)
+         pkg="$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1
+         fi ;;
    esac
 }
 apt_get__predict 'update'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Package:nginx@installed
-apt_get__predict() {
-   while [ "${1#-}" != "$1" ]; do shift; done
-   verb=$1; shift
-   while [ "${1#-}" != "$1" ]; do shift; done
-   pkg="$1"
-   if [ "${2-}" = "" ]; then
-      case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
-      esac
-   fi
-}
 apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh

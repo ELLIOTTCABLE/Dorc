@@ -106,8 +106,10 @@ impl VerdictIndex {
     /// Key already-lifted [`VerdictSet`]s, for a driver that holds them for other reasons (the cli
     /// pre-lifts them for the probe ship-closure) — one lift, not two.
     ///
-    /// A provider authored by TWO files keeps the FIRST (source order), matching the
-    /// first-in-file-order rule `command_effect` applies to competing predict checks.
+    /// A provider authored by TWO files keeps the LAST — sh's last-definition-wins
+    /// (`28K` §1 rul-sh-loads-dorc-reads), the same rule `command_effect` now applies to competing
+    /// predict checks. Overwriting rather than `or_insert` IS that rule: the earlier definition is
+    /// sh-dead and must never answer (`28K` §6 rej-resurrection-of-dead-definitions).
     #[must_use]
     pub fn from_sets(interner: &mut Interner, sets: &[VerdictSet]) -> Self {
         let mut by_provider = BTreeMap::new();
@@ -117,7 +119,7 @@ impl VerdictIndex {
                 let mapped = map_provider_name(interner.resolve(p));
                 let key = ProviderId(interner.intern(&mapped));
                 if let Some(verdict) = set.get(p) {
-                    by_provider.entry(key).or_insert_with(|| verdict.clone());
+                    by_provider.insert(key, verdict.clone());
                 }
             }
         }

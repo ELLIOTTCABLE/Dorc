@@ -2000,7 +2000,7 @@ fn ship_predict_stage(
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (src, cs) in oracle_srcs.iter().zip(checks) {
+    for (src, cs) in oracle_srcs.iter().zip(checks).rev() {
         for cp in cs.providers() {
             if map_provider_name(interner.resolve(cp)) != want {
                 continue;

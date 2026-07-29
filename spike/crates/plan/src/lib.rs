@@ -1376,18 +1376,21 @@ pub fn build_vouches(
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
         // The file INDEX rides along so an arm span crossing to the render carries its file
         // identity (`tc-oracle-file-identity`).
+        // The LIVE verdict definition, not the first-loaded one (`28K` §1 rul-sh-loads-dorc-reads):
+        // `.rev()` IS sh's last-definition-wins, and it must agree with every other resolution
+        // seat or the guard would ship a body the analysis did not choose.
         let want = map_provider_name(interner.resolve(*provider));
-        let found =
-            verdict_sets
-                .iter()
-                .zip(oracle_srcs)
-                .enumerate()
-                .find_map(|(idx, (set, src))| {
-                    set.providers()
-                        .find(|p| map_provider_name(interner.resolve(*p)) == want)
-                        .and_then(|p| set.get(p))
-                        .map(|verdict| (idx, *src, verdict))
-                });
+        let found = verdict_sets
+            .iter()
+            .zip(oracle_srcs)
+            .enumerate()
+            .rev()
+            .find_map(|(idx, (set, src))| {
+                set.providers()
+                    .find(|p| map_provider_name(interner.resolve(*p)) == want)
+                    .and_then(|p| set.get(p))
+                    .map(|verdict| (idx, *src, verdict))
+            });
         let Some((file_idx, src, verdict)) = found else {
             continue;
         };
