@@ -8,25 +8,25 @@
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=81fbd59718160203d86da588edd6fd449b80322a1c2ba80c1eff55eea7045d79 sites=6 @@dorc@@\n'
 # site 1: sm.dorc.PkgIndex@fresh
 apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
       update) test -n fresh ;;
+      install)
+         pkg="$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1
+         fi ;;
+      purge)
+         pkg="$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1
+         fi ;;
    esac
 }
 apt_get__predict 'update'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 2: sm.dorc.Package:nginx@installed
-apt_get__predict() {
-   while [ "${1#-}" != "$1" ]; do shift; done
-   verb=$1; shift
-   while [ "${1#-}" != "$1" ]; do shift; done
-   pkg="$1"
-   if [ "${2-}" = "" ]; then
-      case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
-      esac
-   fi
-}
 apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 3: sm.dorc.Firewall:80/tcp@allowed
 ufw__predict() {
