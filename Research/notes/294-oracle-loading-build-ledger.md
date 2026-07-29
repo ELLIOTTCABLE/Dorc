@@ -386,6 +386,51 @@ mismatch rather than blessing a transcript that showed one command while the gat
 And `bless` refuses to bless while the gate is red unless scoped, which is what surfaced the
 degrade-reason failure instead of letting it ride in under a broad re-bless.
 
+## Stage E — scoping decision, taken BEFORE the build
+
+### res-polyfill-binding-tops-pending-fold
+
+`28K` §2 `rul-conflict-pass-is-semantic` requires the shadow refusal to be evaluated over the
+abstract environment and FORBIDS deciding it by syntactic guard-pattern-recognition around load
+sites. But the documented default spelling — `28K` §3's near-welded define-if-absent polyfill —
+resolves to ⊤ in the domain as built, because `command -v` is a query and neither arm is folded.
+Measured on the C-v0 domain, book exit, solve converged:
+
+```sh
+if ! command -v yum__is_converged >/dev/null 2>&1; then
+   yum__is_converged() { :; }
+fi
+```
+⇒ `Top`.
+
+**Ruled: ship the refusal without the fold (option (ii)), and disclose the gap.** Sound because the
+refusal only ever WITHHOLDS: under-firing grants nothing, PROVIDED a ⊤ binding licenses nothing
+anywhere — which is pinned mechanically, not argued in prose (`⊤-licenses-nothing`).
+
+The gap has TWO halves and the second is the larger; recording both because the first alone
+understates it:
+
+1. **Under-complaint.** A cross-unit shadow we cannot prove goes uncaught — the pre-`28K` status
+   quo for that cell. Licensing is never wider than sh's own answer, so this is disclosure loss.
+2. **The sanctioned idiom goes INERT, and poisons conservatively.** A guarded definition joins to
+   ⊤ in every case: `join(Undefined, Defined(guard))` and `join(Defined(ambient), Defined(guard))`
+   are both ⊤. So a polyfill never takes effect — and the P1 shape, a guard loaded AFTER a real
+   oracle, degrades a family that previously RESOLVED down to ⊤/walls. The polite author's file
+   quietly poisons the family it deferred to. Conservative (walls, never wrong licenses) but
+   silent. `28K` §3's "the shell itself computes the specific-beats-default lattice; Dorc merely
+   reads it" is NOT delivered: this abstains from reading the lattice.
+
+**Fold item, routed to fold as its own commissioned work.** Spec sketch, deliberately on the right
+side of `rul-conflict-pass-is-semantic`: decidable-CONDITION folding — evaluate decidable
+`command -v` conditions against the solved environment, mask the dead edges, re-solve; monotone in
+the pruned-edge set and capped, so it terminates. Keyed on condition DECIDABILITY, never on guard
+SHAPE, which is what keeps it semantic. Likely lands best beside the value-return work, which also
+touches condition evaluation.
+
+~SUSPECT the human's `28K` §1 "guarded incoming definitions are exempt as a CONSEQUENCE, not a
+blessing" intended provable exemption via exactly this fold; (ii) reaches the same OUTCOME by
+abstention. The outcome contract is preserved; the binding value is not.
+
 ### res-multi-book-concatenation-still-violates-lineno-identity
 
 Untouched and out of scope: `read_books` still concatenates multiple books newline-joined and keeps
