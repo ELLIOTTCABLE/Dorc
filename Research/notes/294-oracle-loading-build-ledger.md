@@ -184,6 +184,74 @@ no ambient kind exists on its path. The awkward shape was the shared bind, not t
 NB the arms must use the `if` form, never a bare `[ … ] || return 2` in statement position —
 `26G` F3 records that voiding a whole funcdef.
 
+### tbl-ambient-annotation-sites (the fold item's specification; READING ONLY, no fixes)
+
+The principle each site is judged against: *a bind is an entity-identity channel — it resolves
+entity REFERENCES and kind-tags them for the book-site back-map. It is never a kind authority and
+never a cell authority. A mark's own coordinate is authoritative for its cell in full (kind,
+entity-arity, selector); ambient state may only fill what a coordinate genuinely lacks.*
+
+Complete enumeration — there is no third holder (`parser.rs`'s `annotation_*` are PARSE-shape
+helpers, not ambient state; `payload.rs`/`predict.rs` hits are test names).
+
+| # | site | kind | verdict against the principle |
+|---|---|---|---|
+| 1 | `derive.rs:88` `kind: None` init | write | OK — no ambient kind until one is authored |
+| 2 | `derive.rs:116` `Stmt::Annotation ⇒ ctx.kind = Some(..)` | write | SUSPECT — records a bind as a kind authority at all; harmless only because site 4 now demotes it to a fallback |
+| 3 | `derive.rs:134-136` `arm_ctx = ctx.clone()` | propagate | OK — by-value recursion isolates arms; this is what makes the canonical arm-local shape work |
+| 4 | `derive.rs:190` `.or_else(ctx.kind)` | read | FIXED — mark's coordinate first, ambient only when a coordinate parses kindless (no form does) |
+| 5 | `eval.rs:601` singleton re-point | write | FIXED — was gated on `annotation.is_none()`, so a bind suppressed an entity-less coordinate |
+| 6 | `eval.rs:716-717` `if annotation.is_none() { annotation = (anno.kind, entity) }` | write | OK, and NOT last-wins — the bind is FIRST-wins, so it cannot overwrite an established re-point |
+| 7 | `eval.rs:740` `match self.annotation` in `finish` | read | OK — reads whatever the path settled on |
+
+### fnd-unresolved-bind-value-tops-the-whole-check (NON-precedence; exit criterion tripped)
+
+`eval.rs:709-711`, in `run_annotation`:
+
+```rust
+Some(value) => match self.resolve(value) {
+    Ok(text) => ResolvedEntity::Operand(text),
+    Err(_) => return Flow::Top(TopReason::UnresolvedAnnotationValue),
+},
+```
+
+`resolve` runs `UnsetPolicy::Unresolved`, so an unset positional is non-concrete ⇒ `Err`. For a
+NULLARY verb (`apt-get update`) a shared bind `pkg : … = "$1"` therefore tops the ENTIRE check —
+even when the path's cell was already fully determined by an entity-less coordinate, and even
+though site 6 means the bind never overwrote anything. This is not a precedence question and no
+amount of precedence work reaches it; the sweep's exit criterion applies and the sweep-and-fix
+routes to fold unstarted.
+
+Corrects the earlier `Stmt::Annotation`-clobber reading: the m1-vs-m2 measurement (case-only body
+resolves `update`; case + ONE trailing bind does not) was real, but the mechanism was this, not an
+overwrite. Site 6 forbids the overwrite outright.
+
+### res-tripwire-had-no-target
+
+The commissioned loud-conservative tripwire was specified against the clobber shape. Site 6 shows
+that shape cannot occur, so the tripwire has nothing to guard and was not built. The genuine
+under-modeled shape is `fnd-unresolved-bind-value-tops-the-whole-check`, which already fails
+LOUD-conservative by construction (`Flow::Top` ⇒ decline ⇒ the site runs).
+
+### fnd-dialect-tests-admit-only-string-comparison
+
+CORRECTS an earlier over-claim of mine that `[ … ] || return 2` in statement position voids a
+funcdef. It does not. The real constraint is the test GRAMMAR: only `=`/`!=` string comparison is
+in dialect. Measured, one file, `dorc lint`:
+
+| spelling | outcome |
+|---|---|
+| `command -v tool >/dev/null 2>&1 \|\| return 2` (oracle-contract §3's standard gate) | CLEAN |
+| `[ "${2-}" = "" ] \|\| return 2` (`oracle/CLAUDE.md` R2-MULTIOP's arity gate) | CLEAN |
+| `[ -n "$1" ] \|\| return 2` | VOIDS the funcdef |
+| `if [ -z "$1" ]; then return 2; fi` | VOIDS the funcdef |
+
+So there is NO doc-vs-engine conflict: every gate the docs actually prescribe lifts cleanly. What
+is out of dialect is the unary file/string test family (`-n`, `-z`, and by extension `-f`, `-x`),
+which is ordinary defensive sh an author will reach for unprompted. It fails LOUDLY — both
+`predict-out-of-dialect` (naming the operator) and the `26G` unlifted backstop (naming the funcdef
+it took down) fire — so this is a dialect-reach question for fold, not a silence bug.
+
 ### res-shared-bind-multi-kind-precision-limit
 
 NAMED, not chased: a shared-bind-before-case body with multi-kind arms still resolves nothing, and
