@@ -141,6 +141,11 @@ pub mod reserved;
 /// trailing marks) in an UNMARKED file are a loud error; bare `__role` floor bodies work markerless.
 pub mod marker;
 
+/// The marked-file load-inertness gate (`28K` §2a `rul-marked-file-is-load-inert`): a marked
+/// file's top level holds definitions and bare assignments only, so both the abstract load
+/// (`28K` §2) and the executed subshell re-source (`28K` §3) are provably no-ops.
+pub mod load_inert;
+
 /// The book-free oracle-side validation surface (`27S:seam-oracle-validate-factoring`): the cli's
 /// inline oracle lints, factored into one entry the cli and the lint rung-oracle-solo lane share.
 pub mod validate;

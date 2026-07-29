@@ -29,6 +29,10 @@ oracle.sh:
         [ oracle.sh:2:1
      2 | eval "one"
        | \__/
+  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+        [ oracle.sh:2:1
+     2 | eval "one"
+       | \__/
   2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 2 unmodeled ⊤-walls in this book; the first is here. Downstream commands (~3 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
   error[cfg-top-node]: unsupported construct (unknown): un-probeable and
   un-skippable
@@ -40,4 +44,4 @@ oracle.sh:
      3 | eval "two"
        | \__/
 
-dorc lint: 4 errors, 0 warnings, 1 info across 1 file.
+dorc lint: 5 errors, 0 warnings, 1 info across 1 file.

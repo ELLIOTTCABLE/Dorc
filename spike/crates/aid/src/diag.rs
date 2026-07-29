@@ -158,6 +158,12 @@ pub enum DiagCode {
     /// version (distinct from a wholly-missing marker).
     MarkerVersionUnrecognized(MarkerVersionUnrecognized),
 
+    // ── oracle/load_inert.rs (the marked-file load-inertness gate) ──────────
+    /// A marker-carrying file's top level holds something other than a function definition or a
+    /// bare assignment, so LOADING it is not provably a no-op (`28K` §2a
+    /// `rul-marked-file-is-load-inert`). Spanned at the offending top-level item.
+    OracleFileNotLoadInert(OracleFileNotLoadInert),
+
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
     ToleratesUnknownDimension(ToleratesUnknownDimension),
@@ -376,6 +382,7 @@ impl DiagCode {
             DiagCode::MungeNameInvalid(_) => "munge-name-invalid",
             DiagCode::MungeNameCollision(_) => "munge-name-collision",
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
+            DiagCode::OracleFileNotLoadInert(_) => "oracle-file-not-load-inert",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1025,6 +1032,14 @@ pub struct ReservedNamespaceSquat {
     /// The reserved role suffix it collides with (`{role}`, twice in the template).
     pub role: String,
 }
+
+/// Payload of [`DiagCode::OracleFileNotLoadInert`] (static): none. The SPAN is the whole
+/// remediation — it lands on the FIRST top-level item that would run — and the shapes that trip it
+/// (a command; an assignment whose value expands one) are one world-state, not two, so they share
+/// one code (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Fires at most once per file: the
+/// claim is about the file, so per-item mints would be a correlated cascade.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleFileNotLoadInert;
 
 /// Payload of [`DiagCode::MissingDialectMarker`] (static): the file-level marker refusal. The
 /// marker text is inline in the template. Spanned (the first dialect construct); `site()` = `None`.
@@ -2142,6 +2157,14 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // A non-inert marked file makes the abstract load partial, and `28K` §2's function
+        // environment is only total over files that cannot run anything — so this refuses rather
+        // than degrades (`inv-top-reject`; `oracle/CLAUDE.md declarations-only-files`).
+        DiagCode::OracleFileNotLoadInert(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -2984,6 +3007,7 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.
         DiagCode::RedirTargetTop(RedirTargetTop { site: _ })
+        | DiagCode::OracleFileNotLoadInert(OracleFileNotLoadInert)
         | DiagCode::MissingDialectMarker(MissingDialectMarker)
         | DiagCode::ToleratesOverIdentityDependence(ToleratesOverIdentityDependence)
         | DiagCode::HeavyContextNoTolerance(HeavyContextNoTolerance)

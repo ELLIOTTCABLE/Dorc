@@ -171,6 +171,19 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
         }
     }
 
+    // The load-inertness gate, per file (stage `load`). Marker-gated inside, so an unmarked
+    // input contributes nothing and a clean corpus adds no stage at all.
+    for (i, src) in oracles.iter().enumerate() {
+        let diags = crate::load_inert::lint_load_inert(src);
+        if !diags.is_empty() {
+            stages.push(StageDiags {
+                stage: "load",
+                file: Some(i),
+                diags,
+            });
+        }
+    }
+
     OracleValidation {
         stages,
         wrapper_incoherent,

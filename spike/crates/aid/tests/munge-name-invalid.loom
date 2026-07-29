@@ -22,5 +22,9 @@ oracle.sh:
         [ oracle.sh:2:1
      2 | \xe4\xb8\xadpkg__predict() { :; }
        | \______________________/
+  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+        [ oracle.sh:2:1
+     2 | \xe4\xb8\xadpkg__predict() { :; }
+       | \______________________/
 
-dorc lint: 1 error, 0 warnings, 0 infos across 1 file.
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.

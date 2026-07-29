@@ -184,6 +184,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "munge-name-invalid",
     "munge-name-collision",
     "reserved-namespace-squat",
+    "oracle-file-not-load-inert",
     "missing-dialect-marker",
     "marker-version-unrecognized",
     "tolerates-unknown-dimension",
