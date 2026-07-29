@@ -116,6 +116,80 @@ The book's id has exactly one consumer today (a test). That is honest rather tha
 real consumers are the shadow-refusal citation (E) and pinned-definition attribution (F), both
 net-new code. No `book_source_id` helper was minted for a caller that does not exist yet.
 
+## Stage G prelude — the ambient-bind precedence bug (fix LANDED; one face open)
+
+`28K` §7 justifies the two-kind respell on "one body may mint cells of many kinds; marks are
+per-line, so nothing ties one function to one kind". The engine contradicted that. Found while
+attempting §7's "mechanical fixture edit", which is why the respell's stated COST was wrong.
+
+### fnd-ambient-bind-outranked-the-marks-own-coordinate
+
+An inline bind (`pkg : sm.dorc.Package = "$1"`) set the kind for everything reached after it, and
+a mark's own spelled coordinate was consulted only as a fallback. Measured, same binary, on a
+two-line book (`apt-get update` / `apt-get install -y nginx`):
+
+| oracle shape | sites |
+|---|---|
+| original PAIR (`package` + `pkgindex`) | 2 |
+| naive merge (update arm added to a shared-bind body) | 0 |
+
+Two corrections to the first reading of that table, both from bisection, both worth keeping
+because each cost a wrong hypothesis. `install` was never broken — the zero was `apt-get update`
+being the book's FIRST command, so an unmodeled `update` poison-walls every downstream site. And
+the original fixture collapses to 0 identically if `pkgindex.oracle.sh` is merely DROPPED, which is
+what proved the fault was un-modelled-update rather than the merge itself.
+
+The lift stays SILENT throughout: `dorc lint` reports clean while the body models nothing. That is
+the `26G` silence-is-the-common-cause class one layer below its backstop — the funcdef lifts, so
+`unlifted_role_fns` sees nothing to report. The precedence fix removes THIS instance, not the class.
+
+### dec-precedence-fix-in-two-commits
+
+Split so the flip could claim corpus-invisibility as its own property. Commit 1 respelled the last
+undotted bind kinds (`pkg : package` → `sm.dorc.Package`) and moved the five expectations that
+encoded the pre-respell world — verified green under the OLD precedence, since once bind-kind and
+mark-kind agree, precedence is moot. Commit 2 flipped precedence in `derive::push_effect` and
+removed the `self.annotation.is_none()` gate on the evaluator's singleton re-point (the same bug's
+second face: a reached bind suppressed an entity-less coordinate, so a singleton inherited both the
+bind's kind AND its operand). Commit 2 moved ZERO tests.
+
+Verified for the flip: no coordinate form parses kindless — a dotless payload lexes as a VERB
+(`281` §4's keystone) — so `ctx.kind` now survives only for the documented nullary-singleton path.
+
+### fnd-legacy-short-kinds-in-binds
+
+Counterexample to `oracle/CLAUDE.md grammar-is-v0.2`'s "the r28 cutover retired the old spellings
+corpus-wide; nothing left to convert": bind-POSITION kinds were missed. `spike/fixtures/package.oracle.sh`
+still bound the undotted `package` while its marks already spelled `sm.dorc.Package`, and five unit
+expectations asserted the undotted answer. They passed only because the bind outranked the mark.
+(That file's markerless-yet-dialect inconsistency, `293` §7, is a SEPARATE sibling item and was
+deliberately left alone.)
+
+### fnd-canonical-arm-local-shape-sidesteps-the-residue
+
+One face survives the fix: a bind ANYWHERE later on the path clobbers an established singleton
+re-point (`Stmt::Annotation` writes unconditionally), and a shared-bind-before-case body still fails
+for a not-yet-isolated reason. But the CANONICAL authoring idiom — verb-`case` first, binds
+ARM-LOCAL, as USER_STORY's `foobar` and the oracle-contract worked minimum both spell it — is
+correct on the landed code:
+
+| book | canonical merged body | original pair |
+|---|---|---|
+| `apt-get update` | 1 site | 1 site |
+| `apt-get install -y nginx` | 1 site | 1 site |
+| both | 2 sites, `sm.dorc.PkgIndex@fresh` + `sm.dorc.Package:nginx@installed` | identical |
+
+By-value `Ctx` recursion isolates each arm: update's arm carries no bind and no operand guard, so
+no ambient kind exists on its path. The awkward shape was the shared bind, not the multi-kind body.
+NB the arms must use the `if` form, never a bare `[ … ] || return 2` in statement position —
+`26G` F3 records that voiding a whole funcdef.
+
+### res-shared-bind-multi-kind-precision-limit
+
+NAMED, not chased: a shared-bind-before-case body with multi-kind arms still resolves nothing, and
+the residual mechanism is unproven (suspected: the operand guard going undecidable for a nullary
+verb). Fixtures are authored in the canonical shape instead, so no corpus case depends on it.
+
 ### res-multi-book-concatenation-still-violates-lineno-identity
 
 Untouched and out of scope: `read_books` still concatenates multiple books newline-joined and keeps
