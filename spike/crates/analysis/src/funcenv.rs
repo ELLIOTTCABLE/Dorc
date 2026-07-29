@@ -283,9 +283,8 @@ impl Lattice for EnvStack {
             (EnvStack::Bottom, x) | (x, EnvStack::Bottom) => x.clone(),
             (EnvStack::Top, _) | (_, EnvStack::Top) => EnvStack::Top,
             (EnvStack::Frames(a), EnvStack::Frames(b)) => {
-                // Well-nested scopes always meet at equal depth; unequal depth means the CFG
-                // merged across a scope boundary, and there is no honest pointwise answer — ⊤ is
-                // the safe one (every name can't-say ⇒ every family walls).
+                // Unequal depth = a merge across a scope boundary, which has no honest pointwise
+                // answer; ⊤ walls every family rather than inventing one.
                 if a.len() != b.len() {
                     return EnvStack::Top;
                 }
@@ -378,10 +377,8 @@ pub fn analyze(
             unresolvable_loads: BTreeSet::new(),
         };
     }
-    // Which loads cannot be resolved is a pure function of (cfg, literals, defs) — it does not
-    // depend on the environment at all — so it is its own pass rather than an out-param smuggled
-    // through the transfer. That keeps the transfer a plain `Fn` and the kernel free of interior
-    // mutability.
+    // Its own pass, not an out-param: this does not depend on the environment, so threading it
+    // through the transfer would buy only interior mutability in a kernel.
     let unresolvable_loads = unresolvable_load_sites(cfg, defs, literals);
     let solution = solve(cfg, Direction::Forward, |node, incoming: &EnvStack| {
         transfer(ast, cfg, defs, literals, &universe, node, incoming)
@@ -434,9 +431,8 @@ fn transfer(
     let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
     let cfg_node = cfg.node(id);
     match cfg_node.kind {
-        // The entry seeds the AMBIENT PREFIX: every name of the universe explicitly `Undefined`
-        // (see the module doc — absence would join as ⊥ and claim a definition on a path that
-        // never made one), then the CLI-named sources' definitions applied in load order.
+        // Every name explicitly `Undefined` (the module doc's first tripwire), then the ambient
+        // prefix applied in load order.
         CfgNodeKind::Entry => {
             let mut frame = Frame::default();
             for name in universe {
@@ -452,11 +448,11 @@ fn transfer(
         }
         CfgNodeKind::ScopeEnter => incoming.push(),
         CfgNodeKind::ScopeExit => incoming.pop(),
-        // A ⊤-rejected region is UNPARSED: its body may define, unset, or source anything,
-        // invisibly. Half-modeling it as a no-op is the DP-8 trap.
+        // Unparsed: the region may define, unset, or source anything invisibly. Half-modeling it
+        // as a no-op is the DP-8 trap.
         CfgNodeKind::Top => EnvStack::Top,
-        // `cfg::lower_funcdef` lowers the DEFINITION STATEMENT to a pass-through `Merge` carrying
-        // the `FuncDef`'s own AstId; that node is where the binding takes effect in the main flow.
+        // `cfg::lower_funcdef` lowers a definition STATEMENT to a pass-through `Merge` carrying
+        // the `FuncDef`'s AstId — the seat where the binding takes effect in the main flow.
         CfgNodeKind::Merge => match &ast.node(cfg_node.ast).kind {
             NodeKind::FuncDef { name, .. } => {
                 let mut env = incoming.clone();
@@ -499,9 +495,8 @@ fn command_transfer(
             let Some(target) = literals.literal_text(node, 1) else {
                 return EnvStack::Top;
             };
-            // A path the driver did not load: `28K` §1 rul-unloadable-is-unlicensed — the affected
-            // names are ⊤, and since we cannot know WHICH names such a file defines, the whole
-            // environment is. `unresolvable_load_sites` names these sites for disclosure.
+            // `28K` §1 rul-unloadable-is-unlicensed: we cannot know WHICH names an unloaded file
+            // defines, so the whole environment is ⊤. Disclosure via `unresolvable_load_sites`.
             let Some(contributed) = defs.definitions_of_path(target) else {
                 return EnvStack::Top;
             };

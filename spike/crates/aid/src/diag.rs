@@ -2157,9 +2157,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
-        // A non-inert marked file makes the abstract load partial, and `28K` §2's function
-        // environment is only total over files that cannot run anything — so this refuses rather
-        // than degrades (`inv-top-reject`; `oracle/CLAUDE.md declarations-only-files`).
+        // Refuses rather than degrades: a partial load is a WRONG environment, not a narrow one
+        // (`inv-top-reject`; `oracle/CLAUDE.md declarations-only-files`).
         DiagCode::OracleFileNotLoadInert(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,

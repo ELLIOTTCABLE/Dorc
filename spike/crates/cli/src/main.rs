@@ -2652,14 +2652,12 @@ mod fixpoint_freezes_the_environment_tests {
     fn the_fixpoint_loop_body_calls_no_funcenv_entry_point() {
         let src = include_str!("main.rs");
         // Column-0 anchored: this test lives in the file it scans, so an unanchored needle finds
-        // its own source text first (`aid/CLAUDE.md spanless-gate-is-lexical` warns of the same
-        // trap). The definition is the only occurrence at column 0.
+        // its own source first (`aid/CLAUDE.md spanless-gate-is-lexical`, same trap).
         let start = src
             .find("\nfn settle_validity_fixpoint(")
             .expect("the fixpoint driver is still a column-0 item of this name");
-        // To this function's own closing brace. `rustfmt` puts a top-level item's closer at
-        // column 0, so `\n}\n` is an exact bound — and the gate is worthless if the slice
-        // silently runs to end-of-file, so it asserts it found one.
+        // Bounded at this item's column-0 closer; a slice that silently ran to EOF would make the
+        // gate worthless, so finding one is asserted.
         let rest = &src[start..];
         let end = rest
             .find("\n}\n")
