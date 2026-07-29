@@ -71,7 +71,54 @@ lexer collapses EVERY operator form to one opaque `ParamComplex` and discards th
 `${x:-$(hostname)}` is indistinguishable from `${x:-lit}` at this layer, and accepting the shape
 would accept a hidden command substitution. Relaxing it needs the lexer to retain the body first.
 
+### res-syntax-owes-a-loud-unsupported-on-an-unlexable-funcdef-header
+
+OUT of this lane, routed as a follow-on; recorded here with the repro so it survives to fold.
+`syntax/CLAUDE.md top-reject-here` requires anything unmodeled to become an explicit `Unsupported`
+node plus a loud `Error`. A funcdef header the lexer cannot take as a NAME does neither. Repro,
+measured: `dorc_syntax::parse("# dorc-lang/v0.2\n\u{4e2d}pkg__predict() { :; }\n")` yields three
+top-level items — `Simple{words:[..]}`, `Subshell{}`, `Group{}` — and an EMPTY diagnostic list. The
+silent three-way garble is the bug; that it currently fails safe is luck, not design.
+
 ### res-oracle-claudemd-bullet-now-implemented
 
 `oracle/CLAUDE.md declarations-only-files` reads as unimplemented law; it is now enforced. The
 bullet is not wrong, so it is left alone — a conductor-tier sharpening, flagged rather than taken.
+
+## Stage B — one `SourceFileId` space over every input (LANDED)
+
+`28K` §2a Provenance. `core::OracleFileId` → `SourceFileId`, widened from "which loaded oracle" to
+"which loaded input, book or oracle". Rename in place, no alias
+(`rul-strawman-formats-no-compat`). Zero golden churn, and that was designed rather than lucky.
+
+### dec-load-order-is-the-id-order
+
+CLI-named oracles keep ids `0..n`; the book takes `n`. Two things fall out, and both are why the
+order is not arbitrary. Every id already minted keeps its value, so admitting the book to the space
+moves no threaded span and no golden — the alternative (book first) would silently re-point every
+threaded oracle span at the wrong file, a failure no golden can show. And the order IS `28K` §2's
+ambient-prefix order (CLI files "before line 1", the book's text after), so an id COMPARISON is a
+load-order comparison — which is exactly the primitive the cross-unit shadow refusal needs in
+stage E.
+
+### dec-lift-lanes-keep-the-oracle-only-vectors
+
+The combined table feeds the REPORTING seats only (`emit_static_decline_notes` /
+`emit_survival_attribution` / `emit_guard_attribution` / `emit_why_report`). The lift and ship
+lanes deliberately keep the oracle-only vectors: they zip per-file lifted sets POSITIONALLY, and
+the book is not one of those. Appending the book there would have "worked" via zip truncation —
+an implicit dependency on a silent length mismatch, which is the shape of bug this codebase is
+built to refuse.
+
+### res-book-span-consumers-arrive-in-stages-d-to-f
+
+The book's id has exactly one consumer today (a test). That is honest rather than speculative: the
+real consumers are the shadow-refusal citation (E) and pinned-definition attribution (F), both
+net-new code. No `book_source_id` helper was minted for a caller that does not exist yet.
+
+### res-multi-book-concatenation-still-violates-lineno-identity
+
+Untouched and out of scope: `read_books` still concatenates multiple books newline-joined and keeps
+only the first path, so a multi-book unit's line numbers are offsets into the concatenation
+(`AID-NEEDS:law-lineno-identity`). Pre-existing, orthogonal to `28K`, and every corpus case is
+single-book. The per-book offset map belongs to the CLI-inputs round.
