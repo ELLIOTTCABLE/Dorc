@@ -8,7 +8,7 @@
 //! ```sh
 //! apt_get__predict() {
 //!    verb=$1; shift
-//!    pkg : package = "$1"                                    # the kind annotation
+//!    pkg : sm.dorc.Package = "$1"                            # the kind annotation
 //!    case $verb in
 //!       install) dpkg-query -W "$pkg" : package:"$pkg"@installed ;;   # establish
 //!       purge)   dpkg-query -W "$pkg" : package:"$pkg"@installed! ;;  # inverted
@@ -428,7 +428,7 @@ mod tests {
     fn index_lookups_round_trip() {
         // Pins the hand-built index API the consumer relies on (independent of lift).
         let mut interner = Interner::default();
-        let package = KindId(interner.intern("package"));
+        let package = KindId(interner.intern("sm.dorc.Package"));
         let apt = ProviderId(interner.intern("apt_get"));
         let install = interner.intern("install");
         let installed = SelectorId(interner.intern("installed"));
@@ -456,7 +456,7 @@ mod tests {
         let mut i = Interner::default();
         let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
 
         let mut idx = KindIndex::default();
@@ -509,7 +509,7 @@ mod tests {
             out.diags
         );
 
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
 
         assert_eq!(
@@ -537,13 +537,13 @@ mod tests {
     fn multiple_sources_accumulate_deterministically() {
         // dn-1's whole point: many oracle files contribute to one index, in argument
         // order, with no cross-file interference. Two providers, same kind (the Seam).
-        let a = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+        let a = "apt_get__predict() { verb=$1; shift; pkg : sm.dorc.Package = \"$1\"; \
                  case $verb in install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;; esac; }";
-        let b = "yum__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+        let b = "yum__predict() { verb=$1; shift; pkg : sm.dorc.Package = \"$1\"; \
                  case $verb in install) rpm -q \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;; esac; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[a, b]);
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             effect(&out.value, &mut i, "apt_get", "install"),
@@ -559,12 +559,12 @@ mod tests {
     fn verbless_predict_keys_the_epsilon_verb() {
         // A verbless check (`command -v`) derives its effect on the ε-verb — the key the
         // wiring uses for a check that binds no verb (202 §2 / task-W §4).
-        let src = "command__predict() { case $1 in -v) shift ;; esac; tool : tool = \"$1\"; \
+        let src = "command__predict() { case $1 in -v) shift ;; esac; tool : sm.dorc.Tool = \"$1\"; \
                    command -v -- \"$tool\" >/dev/null 2>&1 :? sm.dorc.Tool:\"$tool\"@present; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         assert!(!out.value.is_empty(), "the verbless guard lifts a cell");
-        let tool = KindId(i.intern("tool"));
+        let tool = KindId(i.intern("sm.dorc.Tool"));
         let present = SelectorId(i.intern("present"));
         let eps = empty_verb(&mut i);
         let cells = out.value.effect_of(ProviderId(i.intern("command")), eps);
@@ -586,7 +586,7 @@ mod tests {
         // SELECTOR, NOT emitted as a `Queries` cell (a mixed establish+query slice at the book
         // site would fall to `MustRun`). Here `install` establishes `@installed` AND observes
         // `@indexed`: the effect map keeps ONLY the establish cell; `@indexed` is a widening.
-        let src = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+        let src = "apt_get__predict() { verb=$1; shift; pkg : sm.dorc.Package = \"$1\"; \
                    case $verb in install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed; \
                    dpkg-query -s \"$pkg\" :? sm.dorc.Package:\"$pkg\"@indexed ;; esac; }";
         let mut i = Interner::default();
@@ -594,7 +594,7 @@ mod tests {
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
         let indexed = SelectorId(i.intern("indexed"));
         // The effect map keeps only the establish cell (NOT a Query cell for @indexed).
@@ -619,13 +619,13 @@ mod tests {
         // The corpus reality: a verbless `:?` observe with NO co-occurring verdict is standalone
         // ⇒ it stays a `Queries` cell (its own row) and widens NOTHING (`277` §5). This is why the
         // whole corpus is byte-identical: every corpus observe is exactly this shape.
-        let src = "dpkg__predict() { case $1 in -s) shift ;; esac; pkg : package = \"$1\"; \
+        let src = "dpkg__predict() { case $1 in -s) shift ;; esac; pkg : sm.dorc.Package = \"$1\"; \
                    dpkg -s -- \"$pkg\" >/dev/null 2>&1 :? sm.dorc.Package:\"$pkg\"@installed; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         let dpkg = ProviderId(i.intern("dpkg"));
         let eps = empty_verb(&mut i);
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             out.value.effect_of(dpkg, eps),
