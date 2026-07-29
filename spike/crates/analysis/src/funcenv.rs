@@ -420,7 +420,6 @@ fn transfer(
     let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
     let cfg_node = cfg.node(id);
     match cfg_node.kind {
-        // Every name explicitly `Undefined` (the module doc), then the ambient prefix.
         CfgNodeKind::Entry => {
             let mut frame = Frame::default();
             for name in universe {

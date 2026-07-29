@@ -171,7 +171,6 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
         }
     }
 
-    // The load-inertness gate, per file (stage `load`); marker-gated inside.
     for (i, src) in oracles.iter().enumerate() {
         let diags = crate::load_inert::lint_load_inert(src);
         if !diags.is_empty() {

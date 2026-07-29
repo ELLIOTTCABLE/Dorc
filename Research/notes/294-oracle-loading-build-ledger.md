@@ -362,6 +362,21 @@ dirs and `.loom` txtar sections — or it silently under-counts. The flat-test-t
 (`spike/CLAUDE.md flat-test-tree-and-loom-placement`) classifies cases by SHAPE, so shape-blind
 surveys are a standing hazard, not a one-off slip.
 
+### strain-regex-is-the-wrong-tool-for-prose
+
+Collapsing multi-line comments with `perl -0pi` let `.` wildcards eat apostrophes (`caller's` →
+`caller.s`) — invisible to `typos`, and in COMMENT text so no gate could catch it. One instance,
+found by grepping the class I already knew was at risk, fixed by hand. `Edit` over regex for prose,
+always; the round-trips are cheaper than the class of damage.
+
+Closed by eye afterwards, not by more regex: every perl-touched hunk re-read in `git diff`, plus a
+mangle sweep over all seven touched files. Clean.
+
+Side-finding, NOT mine and not fixed in-lane: `ai/main` already carries the same damage in three
+`cli/src/main.rs` comments (`oracle.s own`, `SITE.s lane`, `fact.s KIND`, and two more around the
+whylog instant tests). Pre-existing at the lane's base commit, invisible to `typos`, unrelated to
+this work — routed to fold rather than swept in as drive-by churn.
+
 ### strain-two-gates-that-earned-their-keep
 
 Recorded because gates that demonstrably catch things are the argument for the next gate.

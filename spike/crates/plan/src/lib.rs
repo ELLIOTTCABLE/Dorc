@@ -5173,7 +5173,6 @@ apt_get__is_converged() { return 0; }
             &mut dorc_core::ProvArena::new(),
         )
         .value;
-        // BOTH lanes answer, with distinguishable bodies, so this cannot pass by accident.
         let probe = compile_probe(
             &parsed.value,
             &cfg,
