@@ -2651,13 +2651,11 @@ mod fixpoint_freezes_the_environment_tests {
     #[test]
     fn the_fixpoint_loop_body_calls_no_funcenv_entry_point() {
         let src = include_str!("main.rs");
-        // Column-0 anchored: this test lives in the file it scans, so an unanchored needle finds
-        // its own source first (`aid/CLAUDE.md spanless-gate-is-lexical`, same trap).
+        // Column-0 anchored: this test lives in the file it scans (`spanless-gate-is-lexical`).
         let start = src
             .find("\nfn settle_validity_fixpoint(")
             .expect("the fixpoint driver is still a column-0 item of this name");
-        // Bounded at this item's column-0 closer; a slice that silently ran to EOF would make the
-        // gate worthless, so finding one is asserted.
+        // Bounded at the column-0 closer; a slice running to EOF would make the gate worthless.
         let rest = &src[start..];
         let end = rest
             .find("\n}\n")
@@ -2727,7 +2725,6 @@ mod source_table_tests {
             oracle_locus(Some((second_line, source_file_id(2))), &paths, &srcs),
             Some("webhost.sh:1".to_owned())
         );
-        // And an out-of-range id still omits rather than fabricating a locus.
         assert_eq!(
             oracle_locus(Some((second_line, source_file_id(9))), &paths, &srcs),
             None

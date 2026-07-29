@@ -583,13 +583,10 @@ impl Evaluator {
                 // effect mark (`cmd.mark`) does not change what the probe command DOES, so
                 // evaluation ignores it — EXCEPT the Singleton re-point below.
                 self.probe_body.push(cmd.span);
-                // Singleton re-point (`28A:rul-singleton-bind-drops`): identity comes from a
-                // verdict/observe mark's entity-LESS coordinate (`sm.dorc.PkgIndex@fresh`) —
-                // kind = the coordinate kind, entity = Singleton. A singleton stays a singleton
-                // even where a bind WAS reached: an entity-less coordinate takes no entity from
-                // the ambient bind, and its own kind wins (the evaluator's face of the
-                // precedence fix in `derive::push_effect`; `28K` §7). A mark WITH an entity keeps
-                // reading the bind, which is the ordinary valued form and moves nothing.
+                // Singleton re-point (`28A:rul-singleton-bind-drops`), and a singleton stays one
+                // even where a bind WAS reached: an entity-less coordinate takes no entity and no
+                // kind from the ambient bind (the evaluator's face of `derive::push_effect`'s
+                // precedence). An entity-BEARING mark still reads the bind, and moves nothing.
                 if let Some(mark) = &cmd.mark
                     && matches!(
                         mark.kind,

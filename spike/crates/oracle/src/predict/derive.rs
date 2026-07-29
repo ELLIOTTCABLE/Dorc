@@ -178,13 +178,9 @@ fn push_effect(
         | MarkKind::StoredIn
         | MarkKind::Undivided => return,
     };
-    // A mark's OWN coordinate names its kind, and that beats the ambient bind (`281` §4's
-    // keystone; `28K` §7: marks are per-line, so nothing ties one body to one kind). `ctx.kind`
-    // is the fallback for a mark that parses with an EMPTY coordinate kind — no coordinate form
-    // does (a dotless payload lexes as a verb, not a kind), so in practice this is the
-    // value-less nullary Singleton path alone (`28A:rul-singleton-bind-drops`). The old
-    // precedence silently re-keyed a second kind under the first bind's, which resolved the
-    // whole check to nothing.
+    // A mark's OWN coordinate names its kind and outranks the ambient bind (`281` §4 keystone;
+    // `28K` §7). `ctx.kind` survives only for a coordinate parsing kindless — no form does, so in
+    // practice the nullary-Singleton path alone (`28A:rul-singleton-bind-drops`).
     let kind_str = (!target.kind.is_empty())
         .then(|| target.kind.clone())
         .or_else(|| ctx.kind.clone());

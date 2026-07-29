@@ -357,19 +357,15 @@ fn dorc_oracle_live_source(sets: &[predict::PredictSet], provider: Symbol) -> Op
 /// `BTreeMap`-backed, and nothing here touches clock/RNG/IO.
 pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindIndex> {
     let mut out = Carrier::pure(KindIndex::default());
-    // The check-lift's own diagnostics are reported by the caller's separate `lift_predicts` pass
-    // (cli/coverage); here we consume only the parsed checks to derive the effect-map, so a
-    // malformed check contributes no cells (safe).
+    // Lift diags belong to the caller's separate `lift_predicts` pass; a malformed check simply
+    // contributes no cells (safe).
     let per_source: Vec<predict::PredictSet> = oracle_sources
         .iter()
         .map(|src| predict::lift_predicts(interner, src).value)
         .collect();
     for (index, checks) in per_source.iter().enumerate() {
         for provider in checks.providers() {
-            // Only the LIVE definition contributes cells (`28K` §1 rul-sh-loads-dorc-reads). A
-            // provider defined in several sources previously had EVERY definition's cells merged
-            // into one index, so a shadowed body's arms stayed answerable through the effect-map
-            // even though no shell would have called them.
+            // Only the LIVE definition contributes cells (`28K` §1); every one used to merge in.
             if dorc_oracle_live_source(&per_source, provider) != Some(index) {
                 continue;
             }

@@ -1376,9 +1376,7 @@ pub fn build_vouches(
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
         // The file INDEX rides along so an arm span crossing to the render carries its file
         // identity (`tc-oracle-file-identity`).
-        // The LIVE verdict definition, not the first-loaded one (`28K` §1 rul-sh-loads-dorc-reads):
-        // `.rev()` IS sh's last-definition-wins, and it must agree with every other resolution
-        // seat or the guard would ship a body the analysis did not choose.
+        // The LIVE verdict definition (`28K` §1); must agree with every other resolution seat.
         let want = map_provider_name(interner.resolve(*provider));
         let found = verdict_sets
             .iter()
@@ -5175,9 +5173,7 @@ apt_get__is_converged() { return 0; }
             &mut dorc_core::ProvArena::new(),
         )
         .value;
-        // BOTH lanes answer this site: the predict resolves it (the corpus apt check), and the
-        // caller declares it verdict-lane. Distinguishable bodies, so the assertion cannot pass
-        // by accident.
+        // BOTH lanes answer, with distinguishable bodies, so this cannot pass by accident.
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -5238,7 +5234,6 @@ apt_get__is_converged() { return 0; }
             &BTreeMap::new(),
             &ConnectedPipes::default(),
             |_, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
-            // The lane closure declines for every site — the site-keyed "not this lane" answer.
             |_, _, _| None,
             |_| true,
         );

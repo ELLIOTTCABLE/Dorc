@@ -255,8 +255,7 @@ impl EnvStack {
 
     fn pop(&self) -> Self {
         match self {
-            // Popping the LAST frame would leave no seat to bind into; the outermost scope is the
-            // script itself and its exit is the program's, so this only guards a malformed pair.
+            // The outermost frame is the script itself; this only guards a malformed pair.
             EnvStack::Frames(frames) if frames.len() > 1 => {
                 let mut next = frames.clone();
                 next.pop();
@@ -277,8 +276,7 @@ impl Lattice for EnvStack {
             (EnvStack::Bottom, x) | (x, EnvStack::Bottom) => x.clone(),
             (EnvStack::Top, _) | (_, EnvStack::Top) => EnvStack::Top,
             (EnvStack::Frames(a), EnvStack::Frames(b)) => {
-                // Unequal depth = a merge across a scope boundary, which has no honest pointwise
-                // answer; ⊤ walls every family rather than inventing one.
+                // Unequal depth = a merge across a scope boundary: no honest pointwise answer.
                 if a.len() != b.len() {
                     return EnvStack::Top;
                 }
@@ -360,8 +358,7 @@ pub fn analyze(
     literals: &SourceLiteralPlane<'_>,
 ) -> FuncEnv {
     let universe = defs.names();
-    // A capped VALUE solve makes every word ⊤, so no load target and no `unset -f` operand could
-    // be read; rather than silently binding nothing, refuse the whole environment up front.
+    // A capped VALUE solve makes every word ⊤, so nothing could be read: refuse wholesale.
     if !literals.converged() {
         return FuncEnv {
             states: vec![EnvStack::Top; cfg.node_count()],
@@ -369,8 +366,8 @@ pub fn analyze(
             unresolvable_loads: BTreeSet::new(),
         };
     }
-    // Its own pass, not an out-param: this does not depend on the environment, so threading it
-    // through the transfer would buy only interior mutability in a kernel.
+    // Its own pass: independent of the environment, so threading it would buy only interior
+    // mutability in a kernel.
     let unresolvable_loads = unresolvable_load_sites(cfg, defs, literals);
     let solution = solve(cfg, Direction::Forward, |node, incoming: &EnvStack| {
         transfer(ast, cfg, defs, literals, &universe, node, incoming)
@@ -423,8 +420,7 @@ fn transfer(
     let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
     let cfg_node = cfg.node(id);
     match cfg_node.kind {
-        // Every name explicitly `Undefined` (the module doc's first tripwire), then the ambient
-        // prefix applied in load order.
+        // Every name explicitly `Undefined` (the module doc), then the ambient prefix.
         CfgNodeKind::Entry => {
             let mut frame = Frame::default();
             for name in universe {
@@ -440,8 +436,7 @@ fn transfer(
         }
         CfgNodeKind::ScopeEnter => incoming.push(),
         CfgNodeKind::ScopeExit => incoming.pop(),
-        // Unparsed: the region may define, unset, or source anything invisibly. Half-modeling it
-        // as a no-op is the DP-8 trap.
+        // Unparsed: may define/unset/source invisibly. Half-modeling it is the DP-8 trap.
         CfgNodeKind::Top => EnvStack::Top,
         // `cfg::lower_funcdef` lowers a definition STATEMENT to a pass-through `Merge` carrying
         // the `FuncDef`'s AstId — the seat where the binding takes effect in the main flow.
@@ -487,8 +482,7 @@ fn command_transfer(
             let Some(target) = literals.literal_text(node, 1) else {
                 return EnvStack::Top;
             };
-            // `28K` §1 rul-unloadable-is-unlicensed: we cannot know WHICH names an unloaded file
-            // defines, so the whole environment is ⊤. Disclosure via `unresolvable_load_sites`.
+            // `28K` §1: we cannot know WHICH names an unloaded file defines, so all of it is ⊤.
             let Some(contributed) = defs.definitions_of_path(target) else {
                 return EnvStack::Top;
             };
@@ -648,7 +642,6 @@ mod tests {
         };
         assert_eq!(solved.before(CfgNodeId(0)), EnvStack::Top);
         assert_eq!(solved.binding_before(CfgNodeId(0), "f"), Flat::Top);
-        // Out-of-range is ⊤ too, never a silent ⊥ that would read as "no information".
         assert_eq!(solved.binding_before(CfgNodeId(99), "f"), Flat::Top);
     }
 
@@ -767,8 +760,6 @@ mod tests {
             "a garbled definition binds NOTHING — if this ever reports a definition, the silent \
              mis-parse has started licensing and the cell is no longer failing safe"
         );
-        // And the phantom `ScopeEnter`/`ScopeExit` did not corrupt the stack: the exit state is a
-        // real frame stack, not the ⊤ a depth mismatch would have produced.
         assert!(
             matches!(solved.before(exit), EnvStack::Frames(_)),
             "a meaningless-but-balanced scope pair must not collapse the environment to ⊤"

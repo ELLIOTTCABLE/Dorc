@@ -387,13 +387,10 @@ pub fn command_effect(
     }
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
-    // Run the oracle's own argparse — the LIVE definition's, and only its
-    // (`28K` §1 rul-sh-loads-dorc-reads via `dorc_oracle::live_source`). This retired a
-    // try-each-take-the-first-that-RESOLVES expedient that could answer from a definition sh had
-    // already shadowed, whenever the live one declined this argv
-    // (`28K` §6 rej-resurrection-of-dead-definitions). A decline by the winner is now a decline:
-    // the site is unresolved and runs. The `PredictSet` key is the same provider symbol
-    // (interning is idempotent; `ProviderId` wraps it).
+    // The LIVE definition's argparse, and only its (`28K` §1). This retired a
+    // first-that-RESOLVES scan that answered from a shadowed body whenever the live one declined
+    // the argv (`28K` §6 rej-decline-fallthrough-cascade, live in-tree); a decline by the winner
+    // is now a decline.
     let live = dorc_oracle::live_source(checks.len(), |i| {
         checks.get(i).is_some_and(|cs| cs.get(provider.0).is_some())
     });
