@@ -321,6 +321,56 @@ verbatim with no guard accretion. The MECHANISM changes (the general refusal rep
 route) and the OUTCOME must not. Its golden may move only if the diagnostic text changes; the
 artifact bytes must not.
 
+## Stage D — every role lookup resolves through sh's last-definition-wins (LANDED)
+
+Five seats each carried their own tie-break; one `live_source` seat now answers "which definition
+is live" and all five consult it. ZERO goldens moved, which was the prediction: after the stage-G
+merge every unit is single-definition per role name, so first-resolves and sh-live are the same
+answer everywhere.
+
+### fnd-decline-fallthrough-was-live-in-tree
+
+The `effect.rs` seat was not merely first-in-load-order — it was first-that-RESOLVES. When the live
+definition DECLINED an argv it fell through to the next candidate, so a shadowed body's arms could
+answer a site. That is `28K` §6 `rej-decline-fallthrough-cascade` — "head declines ⇒ next definition
+answers, automatically" — **live in-tree, not hypothetical**. The §6 fence retroactively describes
+behaviour the engine actually had, and D retired it.
+
+This is the fence's first confirmed real-world instance and therefore direct evidence for
+`rat-fallthrough-dead-on-principle` at ratification: the construct §6 rejects on principle was not
+a speculative design temptation, it was already shipping, and it was reachable by exactly the route
+§6 names — a lower-quality author's body silently answering where a deliberate `return 2` declined.
+
+### dec-reason-pin-became-a-sin-ordering-pin
+
+`the_first_candidate_checks_reason_is_the_one_reported` pinned the retired rule in its NAME. Its
+failure under D was a clean inversion, i.e. last-wins working. Rewritten as
+`the_live_definitions_reason_is_the_one_reported`, and the replacement pins something stronger than
+mechanics: a shadowed body's give-up reason must never surface in a why-note, because attributing a
+cause to sh-dead source is `271:rul-sin-ordering`'s worst class (mis-attribution outranks every
+other sin). Mechanics pin → sin-ordering pin.
+
+### fnd-loom-cases-are-invisible-to-directory-surveys
+
+D exposed a FIFTH two-kind case, `exec-poison-wall-dead`, that stage G's merge missed. Cause: it
+carries its oracles as txtar SECTIONS inside a `.loom`, so a directory-shaped survey never sees
+them. My G inventory was dir-based and under-counted; `28K` §7's "five fixture dirs" undercounts for
+the identical reason.
+
+Standing lesson: **any which-fixtures-do-X sweep over this corpus must search BOTH shapes** — case
+dirs and `.loom` txtar sections — or it silently under-counts. The flat-test-tree design
+(`spike/CLAUDE.md flat-test-tree-and-loom-placement`) classifies cases by SHAPE, so shape-blind
+surveys are a standing hazard, not a one-off slip.
+
+### strain-two-gates-that-earned-their-keep
+
+Recorded because gates that demonstrably catch things are the argument for the next gate.
+The loom runner refused a transcript whose committed replay command no longer matched the driven
+invocation — I had deleted an oracle section but not the `-o` that named it, and it caught the
+mismatch rather than blessing a transcript that showed one command while the gates ran another.
+And `bless` refuses to bless while the gate is red unless scoped, which is what surfaced the
+degrade-reason failure instead of letting it ride in under a broad re-bless.
+
 ### res-multi-book-concatenation-still-violates-lineno-identity
 
 Untouched and out of scope: `read_books` still concatenates multiple books newline-joined and keeps
