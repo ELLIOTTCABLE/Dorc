@@ -860,4 +860,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "oracle-file-not-load-inert",
+        when_fires: "a `# dorc-lang/v0.2`-marked file's top level holds anything other than a function definition or a bare assignment whose value expands statically — a command, a pipeline, a conditional, a loop, a subshell, a redirection, or an assignment running a command substitution or arithmetic. oracle/load_inert.rs lint_load_inert, at most ONCE per file, spanned at the FIRST offending item (the claim is about the file, so per-item mints would be a correlated cascade). Marker-gated: an unmarked file is ordinary shell and is never checked.",
+        why: "`28K` §2a rul-marked-file-is-load-inert — a marked file must be provably no-op to LOAD, and two things rest on it. `28K` §2's function-environment domain models a `.`-source as \"apply this file's definitions here\", which is a total model only for a file that cannot also run something the domain would have to interpret; and `28K` §3's regional-preference idiom re-sources a file for real, inside a subshell, at apply time, so a top-level command there is a mutation nobody licensed. Error-tier rather than a degrade because a partial load is not a conservative load — the environment would be wrong, not merely narrow (inv-top-reject; this crate's standing declarations-only-files law, unimplemented until now). Conservative first per `271:rul-posix-in-spirit-defaults`: `export`/`readonly` and the operator forms of parameter expansion are refused rather than special-cased, and relaxing any of them later is cheap where re-tightening would not be.",
+        params: &[],
+        example: "[unwritten: oracle-file-not-load-inert]",
+        message: None,
+        help: None,
+    },
 ];
