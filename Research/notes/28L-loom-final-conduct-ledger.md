@@ -247,6 +247,50 @@ lanes thread by fresh census, never by the map's count.
   `layout_box(width, indent)` → absorbed by D2's `RenderCtx`. Housekeeping: D1
   relabelled its own commits (dsn misuse); `relabel-backup` branch awaits the human's
   hook-reserved delete.
+- **D3 LANDED** (`ai/r28-loom-d3` @ `6160cf25`; both legs green own-hand at its tip,
+  Win 1620 / WSL 1616; awaiting fold AFTER D2). The Rust-surface weld is TRUE:
+  the 29 dorc-loom stand-ins + `covered()`'s 23 hand-builds collapsed into ONE
+  fixture table at `aid/src/fixture.rs` (lexically fenced out of production;
+  `whylog_diagnostic` correctly tried before the payload floor — the lock fixpoint
+  caught the ordering); the §2f.2 re-walk now measures a rust-surface-ONLY edit set
+  with the params arm COMPILE-FORCED (E0027) — all 94 `params_of_raw` arms
+  destructure exhaustively, NO census backstop needed, macro line held; refusals
+  explain themselves via `dorc-loom/src/refusal.rs` (`UnknownParam` names the
+  vars command + the payload-struct path verbatim; `ArrangementValueSequenceChanged`
+  names the editable words); rustdoc teaches the loom-naive Rust dev (slug→payload
+  pointer; the spanless gate's path + lexical rule); ratchet 35 → 30 (5 honest-firing
+  cases; 4 `example` fields re-derived, everything else byte-identical);
+  `lint-clean-sentence` faced and proved editable. Tooling finds fixed in-lane:
+  `MAX_RECEIPT_CASES` 64 → 512 (the loop would have hard-blocked at case 65) and
+  `loom:compile`/`loom:promote` trailing-args were SILENTLY UNSCOPED (list went to
+  the trailing `git diff`; promote ran whole-corpus) — both tasks now template the
+  list. Byte floor held; artifact plane untouched; comment budget net −5.
+- **fnd-three-map-corrections** (D3, all +SURE, measured) — (1) the 8 `records-*`
+  codes + `records-fact-truncated` have NO production emitter (`records::deframe` is
+  called only under `#[cfg(test)]`; production intake is `read_host_evidence` +
+  `admit_unscoped_host_records`, emitting only `host-evidence-admission-refused`);
+  (2) `corroborate_tolerance_over_identity` + `hint_heavy_context_no_vouch` have zero
+  callers — their two codes are not lint-fireable; (3) the five "effect-plane,
+  fireable today" codes need ORACLE-LOADING (X2), and `reserved-namespace-squat`
+  fires only via `dorc plan`'s book lint, which no harness route runs.
+- **rul-no-emitter-codes-are-blocked-rows** (conductor) — a catalog code whose only
+  emitter is test-only/uncalled CANNOT have an honest defining case; forcing one
+  would fake the firing. Disposition: the 9 records codes → ledger row
+  "blocked-on-emitter-decision", FLAGGED TO THE HUMAN with the lean: if
+  `records::deframe` is superseded residue of the r26 transport re-cut, DELETE the
+  codes under no-compat; if the `262` records lane is still the intended intake, the
+  wiring belongs to the records/r26-revival arc, not this one. The 2 tolerance-lint
+  codes → X2 wires the two uncalled detectors into the validate path (kWARN-rich
+  sanctioned; oracle-lane adjacent) and cases follow. Ratchet residue 30 accounted:
+  ~6 lint-fireable-with-trigger-notes (mechanical; queued D4/X2) · 5 effect-plane +
+  7 oracle-loading + 1 book-lint-route (X2) · 9 records (blocked) · 2 tolerance (X2).
+- **Blocked-face verdicts** (D3 evidence) — `lint-fidelity-approximate/-raw`: only
+  mintable via the real-tools lane, which the sanctioned-executor law bars from loom
+  cases ⇒ LEDGER (lock-tier, law-cited). `lint-source-*` (8): the deliberate
+  plain-text seat; facing = moving the stderr-envelope render into the lib parts
+  stream ⇒ rides X2's driver extraction alongside `cli-usage-synopsis` + the
+  plan-stderr chrome trio (D3 correctly stopped — head-on collision with D2's
+  RenderCtx seats).
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
