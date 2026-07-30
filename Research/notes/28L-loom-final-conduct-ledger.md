@@ -430,6 +430,52 @@ lanes thread by fresh census, never by the map's count.
   wrap-chunk sections + refusal repair · metadata guard · usage-synopsis ·
   stderr-envelope key. Blind-reviewer round 1 + the conductor rehearsal fire at
   the post-D4 fold state (X1 surfaces are complete there).
+- **D4 LANDED + FOLDED** (`ai/r28-loom-final` @ `621c6030`; both legs green at its
+  tip, Win 1636 / WSL 1632). Landed: `loom:scaffold`/`vars`/`add-register`/`sections`
+  tasks with `raw = true` (the timed-output swallow was mise-level; refusals now
+  print) · `dorc-loom sections CASE` (the census/affordance command) ·
+  register read-in normalization + trailing trim in the ONE significance seat
+  (`edit.rs` beside `prose_line_breaks`; runs before the AddedLine count per spec;
+  zero corpus movement; one pre-existing test legitimately re-fixtured to a real
+  paragraph break) · blast-radius dirty gate (and closed a pre-existing gap: the
+  arrangement lock had NO clean-check at all) · arity refusal via `catch_unwind`
+  at dorc-loom's replay boundary — JUDGMENT ACCEPTED: `when_used` is free-form
+  prose, statically parsing it would breach `inv-referent-agnostic`; the render
+  seat's own debug-assert is the only true arity oracle; production untouched;
+  the wrapper dies the day aid grows a fallible words-arity query ·
+  `[deferred to e2e]` trial naming. VOCAB (human-typed): registry entries are
+  **prose-components** now, not "rows"; ownership = filename ALWAYS contributes
+  its implicit entry when it matches a slug, `owns:` needed only in
+  multi-component homes.
+- **rul-committed-inventory-retired** (conductor; SUPERSEDES
+  `282:rul-used-inventory-is-committed`; PENDING HUMAN VETO — flagged in-chat) —
+  D4 traced the committed `vars --used` block to a real architectural blocker:
+  the fixpoint chain resolves replay inputs from a case's txtar SECTIONS, and a
+  case cannot contain itself; landing it needs a bespoke self-reference rule in
+  both chains. Meanwhile the block duplicates derivable data into ~65 files and
+  re-churns every one of them on every future prose edit, forever — and the
+  discoverability it bought is now served by `dorc-loom sections`/`vars` (landed)
+  plus the in-file loop-hint key. RETIRED; the loop-hint's text includes the
+  `loom:vars` invocation. EMPIRICAL CHECK: blind-reviewer round 1 probes
+  variable discoverability with no committed inventory — if the naive reviewer
+  cannot find their variables, this ruling reverses and the self-reference rule
+  gets built instead.
+- **assignment-catch** — `rul-in-file-loop-hint-minted` fell between the D2/D4
+  briefs; x2d owns it (closed generated frontmatter key; names compile/promote
+  AND the vars invocation; hygiene-gate-read so the closed-vocabulary law holds).
+- **comment-clamp recalibrated** (D4 flagged the tension honestly) — the numeric
+  budget binds NON-DOC inline comments only; doc-comments on new public items and
+  test-rationale doc-comments follow crate law. Future briefs say so.
+- **Board after the D4 fold** — X2a rebasing over it (agent resumed); X2b
+  dispatched (oracle-loading widening + tolerance-detector wiring + the ~7
+  lint-fireable cases + the records-admission seam PROPOSAL, checkpointed —
+  builds nothing on that seam before conductor review); blind-reviewer round 1
+  fired at this tip (X1 surfaces complete): three remits — overtype a
+  placeholder, revise words + move/insert a variable, the full add-a-value-from-
+  Rust story — allowed surfaces per rul-rust-and-loom-are-the-only-edit-surfaces
+  (loom file, tool output/refusals, aid-crate rustdoc, mise task list),
+  forbidden: dorc-loom/errorloom source, both locks, Research/, every
+  CLAUDE.md/AGENTS.md, the quarantine.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
