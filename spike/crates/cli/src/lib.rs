@@ -28,7 +28,7 @@ use dorc_aid::RenderCtx;
 use dorc_aid::Severity;
 use dorc_aid::arrangement::arrangement_text;
 use dorc_aid::diag::{Diag, DiagCode};
-use dorc_aid::said::Said;
+use dorc_aid::said::{Said, WHY_VALUE_CAP};
 use dorc_aid::weave::Face;
 use weft::{Banner, Document, LabeledRow, Node, NodeKind, Paragraph};
 
@@ -59,6 +59,38 @@ pub fn usage_text(ctx: &RenderCtx<'_>) -> String {
 pub fn help_text(ctx: &RenderCtx<'_>) -> String {
     arrangement_text(ctx.arrangements(), HELP_ARRANGEMENT, None)
 }
+
+/// `dorc lint --list-sources` as a stamped part stream: one row per registered source, its name
+/// and rung computed, its one-line description read from the registry as WORDS.
+///
+/// It used to be a `println!` loop reading the same rows as flat text, which left all eight
+/// `lint-source-*` entries with no editable home — the row a reader can see and not change
+/// (`289:rul-arrangement-home-is-registry-plus-transcripts`). The listing is a weft table, so the
+/// column stop is measured rather than a hardcoded pad.
+#[must_use]
+pub fn lint_sources_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {
+    let rows = dorc_lint::list_sources()
+        .into_iter()
+        .map(|source| {
+            Node::new(NodeKind::Labeled(LabeledRow {
+                table: Some(Face::Table(LINT_SOURCES_TABLE.to_owned())),
+                label: vec![
+                    dorc_aid::weave::value(source.name, "lint-source-name", WHY_VALUE_CAP),
+                    dorc_aid::weave::mark(" [", "lint-source-rung-open"),
+                    dorc_aid::weave::value(source.rung, "lint-source-rung", WHY_VALUE_CAP),
+                    dorc_aid::weave::mark("]", "lint-source-rung-close"),
+                ],
+                body: Said::words(source.describe_arrangement, &[])
+                    .runs(ctx, source.describe_arrangement),
+                attachments: Vec::new(),
+            }))
+        })
+        .collect();
+    why_parts(rows, 0)
+}
+
+/// The table every `--list-sources` row joins, so the descriptions square up as a block.
+const LINT_SOURCES_TABLE: &str = "lint-sources";
 
 /// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
 /// are successes printed to stdout, ack-1 help-is-success — never a usage error).

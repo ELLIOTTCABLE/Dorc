@@ -555,6 +555,10 @@ impl DorcConsumer {
                 .vars_inventory(context.materialized_input(path)?, path, *mode == "--used")
                 .map(ReplayResult::bytes);
         }
+        if tokens.as_slice() == ["dorc", "lint", "--list-sources"] {
+            let parts = dorc_cli::lint_sources_parts(&self.render_ctx());
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         if let Some(why) = parse_direct_why_report(&tokens) {
             let parts = live_why_parts(&self.render_ctx(), &why, |path| {
                 materialized_source(case, context, path)
@@ -1342,6 +1346,9 @@ impl DorcConsumer {
             return section_source(case, path)
                 .and_then(|source| self.vars_inventory(source, path, *mode == "--used"))
                 .ok_or_else(|| format!("unsupported replay {command:?}"));
+        }
+        if words.as_slice() == ["dorc", "lint", "--list-sources"] {
+            return Ok(dorc_cli::lint_sources_parts(&self.render_ctx()).text());
         }
         if let Some(why) = parse_direct_why_report(&words) {
             return live_why_parts(&self.render_ctx(), &why, |path| {

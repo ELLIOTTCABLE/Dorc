@@ -1,0 +1,19 @@
+---
+arrangement: lint-source-analysis-diagnostics
+when-used: The `dorc lint --list-sources` line for the analysis-diagnostics source.
+why: 27R section 8 delta-named-sources-selectable: each source describes itself to the admin choosing a subset.
+---
+-- replay --
+$ dorc lint --list-sources
+analysis-diagnostics [book]              engine parse/cfg diagnostics over each file (no
+                                         world)
+unmodeled-inventory [book]               per-book ⊤-wall inventory (first wall +
+                                         downstream degradation)
+verdict-body [file]                      status-flattening in __is_converged bodies
+                                         (terminal pipeline)
+oracle-validate [oracle-solo]            book-free oracle-side validation
+                                         (lift/check/coherence/reserved/marker)
+oracle-declined-inventory [oracle-solo]  authored decline classes per verdict arm (tier-1,
+                                         oracle-solo)
+shellcheck [file]                        shellcheck -f json1 -s sh over each stripped file
+checkbashisms [file]                     checkbashisms --lint over each stripped file
