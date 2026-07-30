@@ -25,8 +25,7 @@ const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] 
 /// The `{{name}}` mechanism has no other trace: every committed case is fully rendered, so a
 /// reader who has only ever seen transcripts has no way to learn that a value can be typed at all.
 /// Both inventory surfaces say it, once, at the top.
-const VALUE_SYNTAX_NOTE: &str =
-    "type {{name}} in a sentence to insert or move one of these values; omitting one bakes it to \
+const VALUE_SYNTAX_NOTE: &str = "type {{name}} in a sentence to insert or move one of these values; omitting one bakes it to \
      literal text";
 
 fn main() -> ExitCode {
@@ -818,7 +817,10 @@ fn catalog_path() -> PathBuf {
 }
 
 fn arrangement_path() -> PathBuf {
-    crates_dir().join("aid").join("src").join("arrangement_lock.rs")
+    crates_dir()
+        .join("aid")
+        .join("src")
+        .join("arrangement_lock.rs")
 }
 
 fn spike_dir() -> Result<PathBuf, String> {
