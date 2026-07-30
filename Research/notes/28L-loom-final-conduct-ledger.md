@@ -291,6 +291,52 @@ lanes thread by fresh census, never by the map's count.
   stream ⇒ rides X2's driver extraction alongside `cli-usage-synopsis` + the
   plan-stderr chrome trio (D3 correctly stopped — head-on collision with D2's
   RenderCtx seats).
+- **D2 LANDED** (`ai/r28-loom-d2` @ `ea7dd76c`; both legs green own-hand foreground,
+  Win 1623/1 skipped · WSL 1619/1 skipped, cold clippy; folds FIRST). All six items:
+  the placeholder wears its register's face (ONE line: `message_parts`' `None` arm
+  mints `TemplateLiteral{code, Field::Message, ¶0}`; production bytes unchanged for
+  all 14, zero re-bless, gate green throughout) · attached markers LEGAL
+  (`AttachedMarker` + adjacency machinery deleted, net −24; the `282` §13 amendment
+  doc-edit is the conductor's at steering-sync) · `HelpRegister{Absent, Unwritten,
+  Written}` tri-state replaces `help: Option` · `dorc-loom add-register CASE help`
+  affordance + `AddedLine` refusal naming it verbatim · `RenderCtx` threaded by fresh
+  census (36 `main.rs` seats via one named production fn — accepted under
+  `lib-target-is-a-loom-seam`: no main.rs seat can ever legally receive a mirror) ·
+  `editable_baseline`-via-`replay` + shared `vars_inventory` (the 59-case committed
+  inventory regen is UNBLOCKED) · txtar-header typed refusal at the render seat.
+  Smoke: `add-register` proven end-to-end on `whylog-unwritten` and reverted — the
+  committed dogfood landing stays the conductor's rehearsal.
+- **Conductor ratifications on the D2 flags** — `tc-render-ctx-carries-the-catalog-too`
+  → RATIFIED as an amendment to rul-render-context-struct: `RenderCtx{catalog,
+  arrangements, frame}` — the mirror overrides BOTH tables or the author sees half
+  their edit; unrepresentable beats remembered · `tc-help-placeholder-suffix` →
+  RATIFIED: `[unwritten: <slug>.help]` (two identical placeholders in one render are
+  ambiguous for author and alignment; spelling rides render-form-unwelded) ·
+  **rul-a-laid-out-section-owns-no-line-breaks** (D2-proposed, conductor-RATIFIED as
+  an instance of rul-editability-is-stamped-never-re-derived): a section's edited
+  PROSE line-break count (Text fragments only; values belong to neither side) may not
+  exceed what the render stamped inside that section — both counts from stamped
+  provenance, never byte shapes; whole-PAGE sections exempt BY TYPE (their blank
+  lines are authored, `28H` ruling 7). Consistency check done: v1's
+  words-and-paragraphs model already excludes paragraph add/remove (`287` §8), so
+  refusing added breaks forecloses nothing v1 grants; the map's own line-terminator
+  proposal was measured broken post-weld (the render already ends in a stamped
+  newline; no addressing-layer fence exists that spares wrapped registers) ·
+  `tc-vars-drives-every-block-to-use-one` → accepted as-built; recursion is
+  mechanism-bounded, real guard owed only if inventories ever nest.
+- **tc-catalog-prose-is-not-normalized-at-read-in** (D2 flag) → ROUTED TO D4: catalog
+  registers must store the `282` §3 normalized form (whitespace runs → one space
+  within a paragraph) at compile read-in, in dorc-loom's ONE significance seat,
+  beside the trailing-`\n` trim. Interaction spec: normalization runs BEFORE the
+  AddedLine count, so a re-wrapped register normalizes to ≤ stamped breaks (the rule
+  can only relax, never trip); a genuinely-added paragraph break still refuses (v1).
+  Without this, wrapped-register edits store literal `\n` — width-coupled templates.
+- **D4 queue additions** (from both lanes): `loom:add-register` task ·
+  catalog-register read-in normalization (above) · the 59-case `vars --used`
+  regeneration (now unblocked) · the ~6 remaining lint-fireable ratchet cases
+  (trigger notes in hand). Worktree note: git-bash `mise` cannot see its trust
+  entries in these worktrees (`\\?\C:\` vs `C:\` paths) — invoke `mise` from
+  PowerShell; WSL needs one `mise trust`.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
