@@ -491,7 +491,7 @@ impl DorcConsumer {
         // The generation lag, stated before the driver can only shrug about it: a case naming a
         // slug with no committed row renders nothing, and the honest answer names the repair.
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
-            self.arrangement_page(slug)?;
+            Self::arrangement_row(slug)?;
         }
         let render = replay_case(case, self, &RunEnv::new(), |_command, _context| {
             Ok(ReplayResult::bytes(String::new()))
@@ -665,12 +665,15 @@ impl DorcConsumer {
         })
     }
 
-    /// One whole-page arrangement's part stream, resolved against the COMMITTED registry so the
-    /// span carries a stable slug. A case naming a slug with no row yet renders nothing: its row
-    /// arrives by promotion and the build sees it after a rebuild — the same generation lag the
-    /// catalog has, and the same assertion.
-    fn arrangement_page(&self, slug: &str) -> Result<dorc_aid::tagged::RenderParts, String> {
-        let stable = dorc_aid::arrangement::ARRANGEMENTS
+    /// The COMMITTED registry's own spelling of `slug`, so a span carries a stable one. A case
+    /// naming a slug with no row yet gets the repair: its row arrives by promotion and the build
+    /// sees it after a rebuild — the same generation lag the catalog has, and the same assertion.
+    ///
+    /// EXISTENCE only. A value-bearing chrome LINE has no whole-page render at all — laying one
+    /// out passes zero values to a seat that interleaves several — so the lag check cannot go
+    /// through [`Self::arrangement_page`].
+    fn arrangement_row(slug: &str) -> Result<&'static str, String> {
+        dorc_aid::arrangement::ARRANGEMENTS
             .iter()
             .find(|entry| entry.slug == slug)
             .map(|entry| entry.slug)
@@ -678,8 +681,16 @@ impl DorcConsumer {
                 format!(
                     "arrangement `{slug}` has no registry row yet -- promote the case, then rebuild"
                 )
-            })?;
-        Ok(arrangement_parts(&self.arrangements, stable, None))
+            })
+    }
+
+    /// One whole-page arrangement's part stream, resolved against the COMMITTED registry.
+    fn arrangement_page(&self, slug: &str) -> Result<dorc_aid::tagged::RenderParts, String> {
+        Ok(arrangement_parts(
+            &self.arrangements,
+            Self::arrangement_row(slug)?,
+            None,
+        ))
     }
 
     /// The defining replay's typed diagnostic for a case — the payload the generated `example` field

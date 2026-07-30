@@ -74,68 +74,6 @@ pub enum DorcSectionEditRefusal {
     },
 }
 
-impl DorcSectionEditRefusal {
-    /// The refusal as one actionable sentence naming `case`, the file the reader is holding
-    /// (`28L:rul-refusals-name-the-next-command`). Blunt is allowed; unactionable is not.
-    #[must_use]
-    pub fn explain(&self, case: &std::path::Path) -> String {
-        let case = case.display();
-        match self {
-            DorcSectionEditRefusal::Unchanged => format!(
-                "no transcript bytes changed in {case}; edit the prose between the render's own \
-                 chrome, then rerun"
-            ),
-            DorcSectionEditRefusal::Transport(refusal) => format!(
-                "the edit could not be attributed to one section of {case} ({refusal:?}); revert \
-                 {case} to its committed bytes and change prose only"
-            ),
-            DorcSectionEditRefusal::Template(refusal) => format!(
-                "a `{{{{name}}}}` marker in {case} is malformed ({refusal:?}); spell it as one \
-                 whole token, `{{{{name}}}}`"
-            ),
-            DorcSectionEditRefusal::UnknownVariable(name)
-            | DorcSectionEditRefusal::Compile(CompileRefusal::UnknownVariable(name)) => format!(
-                "no value `{}` on this diagnostic's payload; list the ones it carries with \
-                 `dorc-loom vars --all {case}`, or add the field to its payload struct and its \
-                 `params_of` arm in spike/crates/aid/src/diag.rs, then rebuild",
-                name.0
-            ),
-            DorcSectionEditRefusal::Compile(refusal) => format!(
-                "a marker in {case} did not compile ({refusal:?}); spell it as one whole token, \
-                 `{{{{name}}}}`, naming a value from `dorc-loom vars --all {case}`"
-            ),
-            DorcSectionEditRefusal::AmbiguousCandidate => format!(
-                "the edit in {case} reads as an edit to two different sections; revert {case} and \
-                 change one section at a time"
-            ),
-            DorcSectionEditRefusal::MarkerOutsideEditableSection => format!(
-                "a `{{{{name}}}}` marker in {case} sits outside the prose the render stamped as \
-                 editable; move it inside a message or help sentence"
-            ),
-            DorcSectionEditRefusal::CandidateMismatch => format!(
-                "the edit in {case} lands on a different section than its markers do; revert \
-                 {case} and change one section at a time"
-            ),
-            DorcSectionEditRefusal::SplitEditableField(section) => format!(
-                "the `{}` register of `{}` renders in more than one place in {case}, so one edit \
-                 cannot own it; report this case — the render, not the edit, is what has to change",
-                section.field, section.owner
-            ),
-            DorcSectionEditRefusal::AddedLine {
-                section,
-                laid_out,
-                edited,
-            } => format!(
-                "the edit adds a line the render did not lay out ({} laid out {laid_out}, the \
-                 edit has {edited}); a register holds words and the renderer owns where they \
-                 break. To add a help line, mint the register first: \
-                 `dorc-loom add-register {case} help`",
-                section.field
-            ),
-        }
-    }
-}
-
 /// Compile one dirty transcript edit through the generic transport.
 ///
 /// Ordinary edits retain generic variable identities. Explicit `{{name}}` markers are

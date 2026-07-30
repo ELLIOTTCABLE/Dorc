@@ -49,11 +49,22 @@ impl DorcSectionEditRefusal {
                  same sentence you edited, then: mise run loom:compile {case}"
             ),
             Self::SplitEditableField(key) => format!(
-                "`{}`'s {} register is rendered in several pieces here, so no single edit owns it \
-                 — rewriting one piece would leave the rest saying the old thing. Edit this \
-                 register from a transcript that renders it whole, then: mise run loom:compile \
-                 {case}",
+                "`{}`'s {} register renders in more than one place here, so no single edit owns \
+                 it — rewriting one piece would leave the rest saying the old thing. This is the \
+                 render's problem rather than the edit's: restore {case} to its committed bytes \
+                 and report the case.",
                 key.owner, key.field
+            ),
+            Self::AddedLine {
+                section,
+                laid_out,
+                edited,
+            } => format!(
+                "the edit adds a line the render did not lay out (`{}` laid out {laid_out}, the \
+                 edit has {edited}), and a register holds WORDS — the renderer owns where they \
+                 break, so an extra line is a request for a register that does not exist yet. To \
+                 add a help line, mint the register first: dorc-loom add-register {case} help",
+                section.field
             ),
         }
     }
@@ -161,12 +172,6 @@ fn compile_refusal(refusal: &CompileRefusal, case: &str) -> String {
     match refusal {
         CompileRefusal::Template(refusal) => template_refusal(refusal, case),
         CompileRefusal::UnknownVariable(name) => unknown_value(&name.0, case),
-        CompileRefusal::AttachedMarker(name) => format!(
-            "the marker for `{name}` is glued to the character beside it; it has to stand alone, \
-             with whitespace on both sides. Respell it that way in {case}, then: \
-             mise run loom:compile {case}",
-            name = name.0
-        ),
     }
 }
 
