@@ -52,9 +52,66 @@ pub struct CatalogEntry {
     /// placeholder, never a stored string. `{name}` holes are filled from the payload; `{{`/`}}`
     /// escape literal braces.
     pub message: Option<&'static str>,
-    /// The optional user-facing remediation/help register — same two legal states as
-    /// [`message`](Self::message), or `None` when the code carries no help.
-    pub help: Option<&'static str>,
+    /// The optional user-facing remediation/help register — the same prose states as
+    /// [`message`](Self::message), plus the fact that the code may carry no help register at all.
+    pub help: HelpRegister<&'static str>,
+}
+
+/// The three states of the optional HELP register.
+///
+/// [`CatalogEntry::message`] needs only two, so an `Option` holds it: every code has a message
+/// register, and `None` therefore MEANS unwritten. Help is optional, so "nobody has written it
+/// yet" and "this code carries no help register" are different facts, and collapsing them is what
+/// left an author with no way to ask for the register at all. A `help`-less code is COMPLETE, not
+/// in debt (`289` §2u), so [`Absent`](Self::Absent) is the resting state and
+/// [`Unwritten`](Self::Unwritten) is minted deliberately by `dorc-loom add-register`
+/// (`28L:rul-help-affordance-is-scaffold`) — after which the ordinary transcript loop fills it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HelpRegister<T> {
+    /// The code carries no help register.
+    Absent,
+    /// The register was added but no words are authored yet; the render shows the greppable
+    /// `[unwritten: <slug>.help]` placeholder, computed and never stored
+    /// (`28F:rul-placeholders-are-computed`).
+    Unwritten,
+    /// The authored template.
+    Written(T),
+}
+
+impl<T> HelpRegister<T> {
+    /// The authored template, or `None` in either unwritten state.
+    #[must_use]
+    pub fn written(&self) -> Option<&T> {
+        match self {
+            HelpRegister::Absent | HelpRegister::Unwritten => None,
+            HelpRegister::Written(template) => Some(template),
+        }
+    }
+
+    /// The same state over a borrowed template.
+    #[must_use]
+    pub fn as_deref(&self) -> HelpRegister<&str>
+    where
+        T: AsRef<str>,
+    {
+        match self {
+            HelpRegister::Absent => HelpRegister::Absent,
+            HelpRegister::Unwritten => HelpRegister::Unwritten,
+            HelpRegister::Written(template) => HelpRegister::Written(template.as_ref()),
+        }
+    }
+}
+
+impl HelpRegister<&str> {
+    /// The same state over an owned template.
+    #[must_use]
+    pub fn to_owned_register(self) -> HelpRegister<String> {
+        match self {
+            HelpRegister::Absent => HelpRegister::Absent,
+            HelpRegister::Unwritten => HelpRegister::Unwritten,
+            HelpRegister::Written(template) => HelpRegister::Written(template.to_owned()),
+        }
+    }
 }
 
 #[path = "catalog_lock.rs"]
@@ -80,8 +137,8 @@ pub fn entry(slug: &str) -> Option<&'static CatalogEntry> {
 pub trait CatalogLookup {
     /// The written message template for `slug`, or `None` to render the unwritten placeholder.
     fn message(&self, slug: &str) -> Option<&str>;
-    /// The help template for `slug`, or `None` when the code carries no help register.
-    fn help(&self, slug: &str) -> Option<&str>;
+    /// The help register's state for `slug`.
+    fn help(&self, slug: &str) -> HelpRegister<&str>;
 }
 
 /// The production [`CatalogLookup`]: the compiled-in [`CATALOG`] const. Every production render
@@ -97,8 +154,8 @@ impl CatalogLookup for ConstCatalog {
     fn message(&self, slug: &str) -> Option<&str> {
         entry(slug).and_then(|e| e.message)
     }
-    fn help(&self, slug: &str) -> Option<&str> {
-        entry(slug).and_then(|e| e.help)
+    fn help(&self, slug: &str) -> HelpRegister<&str> {
+        entry(slug).map_or(HelpRegister::Absent, |e| e.help.as_deref())
     }
 }
 
@@ -117,8 +174,8 @@ pub struct OwnedEntry {
     pub why: String,
     /// The primary message template, or `None` when unwritten.
     pub message: Option<String>,
-    /// The help register template, or `None` when the code carries no help.
-    pub help: Option<String>,
+    /// The help register's state.
+    pub help: HelpRegister<String>,
     /// Template holes in first-use order across message then help.
     pub params: Vec<String>,
 }
@@ -135,7 +192,7 @@ pub fn owned_catalog() -> Vec<OwnedEntry> {
             when_fires: e.when_fires.to_owned(),
             why: e.why.to_owned(),
             message: e.message.map(str::to_owned),
-            help: e.help.map(str::to_owned),
+            help: e.help.as_deref().to_owned_register(),
             params: e.params.iter().map(|param| (*param).to_owned()).collect(),
         })
         .collect()
@@ -147,10 +204,10 @@ impl CatalogLookup for Vec<OwnedEntry> {
             .find(|e| e.slug == slug)
             .and_then(|e| e.message.as_deref())
     }
-    fn help(&self, slug: &str) -> Option<&str> {
+    fn help(&self, slug: &str) -> HelpRegister<&str> {
         self.iter()
             .find(|e| e.slug == slug)
-            .and_then(|e| e.help.as_deref())
+            .map_or(HelpRegister::Absent, |e| e.help.as_deref())
     }
 }
 
@@ -353,8 +410,8 @@ pub struct LockRow {
     pub example: String,
     /// The primary message template, or `None` when unwritten.
     pub message: Option<String>,
-    /// The help register template, or `None` when the code carries no help.
-    pub help: Option<String>,
+    /// The help register's state.
+    pub help: HelpRegister<String>,
 }
 
 /// Serialize the wholly-generated `catalog_lock.rs` from ordered [`LockRow`]s
@@ -368,7 +425,7 @@ pub fn serialize_lock(rows: &[LockRow]) -> String {
     let mut out = String::from(
         "// @generated by dorc-loom; DO NOT EDIT.\n\
          // This whole file is overwritten by catalog promotion.\n\n\
-         use super::CatalogEntry;\n\n\
+         use super::{CatalogEntry, HelpRegister};\n\n\
          #[rustfmt::skip]\n\
          pub const CATALOG: &[CatalogEntry] = &[\n",
     );
@@ -393,10 +450,11 @@ pub fn serialize_lock(rows: &[LockRow]) -> String {
             None => out.push_str("        message: None,\n"),
         }
         match &r.help {
-            Some(h) => {
-                let _ = writeln!(out, "        help: Some({h:?}),");
+            HelpRegister::Absent => out.push_str("        help: HelpRegister::Absent,\n"),
+            HelpRegister::Unwritten => out.push_str("        help: HelpRegister::Unwritten,\n"),
+            HelpRegister::Written(h) => {
+                let _ = writeln!(out, "        help: HelpRegister::Written({h:?}),");
             }
-            None => out.push_str("        help: None,\n"),
         }
         out.push_str("    },\n");
     }
@@ -470,7 +528,7 @@ mod tests {
     #[test]
     fn template_holes_are_declared_params() {
         for e in CATALOG {
-            for template in e.message.into_iter().chain(e.help) {
+            for template in e.message.into_iter().chain(e.help.written().copied()) {
                 for hole in template_holes(template).expect("catalog template syntax") {
                     assert!(
                         e.params.contains(&hole.as_str()),
@@ -520,7 +578,7 @@ mod tests {
     #[test]
     fn message_registers_are_sm_or_unwritten() {
         for e in CATALOG {
-            for (field, text) in [("message", e.message), ("help", e.help)] {
+            for (field, text) in [("message", e.message), ("help", e.help.written().copied())] {
                 let Some(text) = text else { continue };
                 assert!(
                     text.starts_with("sm ") || is_case_owned(e.slug),
@@ -557,7 +615,7 @@ mod tests {
     #[test]
     fn promote_regenerates_params_byte_identical() {
         for e in CATALOG {
-            let refreshed = refreshed_params(e.message, e.help);
+            let refreshed = refreshed_params(e.message, e.help.written().copied());
             let refreshed: Vec<&str> = refreshed.iter().map(String::as_str).collect();
             assert_eq!(
                 refreshed, e.params,
@@ -572,7 +630,7 @@ mod tests {
     #[test]
     fn refreshed_params_dedups_repeated_holes() {
         let coll = entry("munge-name-collision").expect("collision entry");
-        let cp = refreshed_params(coll.message, coll.help);
+        let cp = refreshed_params(coll.message, coll.help.written().copied());
         assert_eq!(
             cp.iter().filter(|p| *p == "count").count(),
             1,
@@ -591,12 +649,12 @@ mod tests {
             params: vec!["a".to_owned()],
             example: "e".to_owned(),
             message: Some("m {{a}}".to_owned()),
-            help: None,
+            help: HelpRegister::Unwritten,
         }]);
         assert!(src.starts_with("// @generated by dorc-loom; DO NOT EDIT.\n"));
         assert!(src.contains("#[rustfmt::skip]\npub const CATALOG: &[CatalogEntry] = &[\n"));
         assert!(src.contains("        message: Some(\"m {{a}}\"),\n"));
-        assert!(src.contains("        help: None,\n"));
+        assert!(src.contains("        help: HelpRegister::Unwritten,\n"));
         assert!(src.trim_end().ends_with("];"));
     }
 }

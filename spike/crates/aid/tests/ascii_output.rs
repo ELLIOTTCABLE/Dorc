@@ -88,7 +88,7 @@ fn product_prose() -> Vec<(&'static str, &'static str, &'static str)> {
         if let Some(message) = entry.message {
             rows.push((entry.slug, "message", message));
         }
-        if let Some(help) = entry.help {
+        if let Some(help) = entry.help.written() {
             rows.push((entry.slug, "help", help));
         }
     }

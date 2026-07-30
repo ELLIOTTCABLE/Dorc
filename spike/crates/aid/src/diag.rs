@@ -2689,14 +2689,25 @@ pub fn render_body_with(
             .unwrap_or_else(|_| format!("[invalid catalog template: {slug}]")),
         None => format!("[unwritten: {slug}]"),
     };
-    if let Some(help) = lookup.help(slug) {
-        let _ = write!(
-            out,
-            "\n  = {}: {}",
-            help_connective(&diag.code),
-            crate::catalog::fill_template(help, &refs)
-                .unwrap_or_else(|_| format!("[invalid catalog template: {slug}]"))
-        );
+    match lookup.help(slug) {
+        crate::catalog::HelpRegister::Absent => {}
+        crate::catalog::HelpRegister::Unwritten => {
+            let _ = write!(
+                out,
+                "\n  = {}: {}",
+                help_connective(&diag.code),
+                unwritten_help_placeholder(slug)
+            );
+        }
+        crate::catalog::HelpRegister::Written(help) => {
+            let _ = write!(
+                out,
+                "\n  = {}: {}",
+                help_connective(&diag.code),
+                crate::catalog::fill_template(help, &refs)
+                    .unwrap_or_else(|_| format!("[invalid catalog template: {slug}]"))
+            );
+        }
     }
     // Authored children + suggestion: empty in production, exercised by the builder tests.
     for child in &diag.children {
@@ -2774,8 +2785,22 @@ fn message_parts(
     parts
 }
 
+/// The greppable placeholder a code renders while its help register is seeded but unwritten.
+///
+/// Suffixed, unlike the message's, because both registers can appear in ONE render and two
+/// identical placeholder strings would leave an author (and the edit transport) unable to say
+/// which one they meant.
+#[must_use]
+pub fn unwritten_help_placeholder(slug: &str) -> String {
+    format!("[unwritten: {slug}.help]")
+}
+
 /// The HELP register as parts, without its `= <connective>:` lead — the lead is the seat's chrome
 /// and belongs to whichever arrangement the seat puts the register in.
+///
+/// `None` is the code carrying no help register at all; a SEEDED-but-unwritten one renders the
+/// placeholder wearing the register's own face, exactly as the message does
+/// (`28L:rul-placeholder-wears-the-register-face`).
 fn help_parts(
     lookup: &dyn crate::catalog::CatalogLookup,
     diag: &Diag,
@@ -2787,15 +2812,34 @@ fn help_parts(
         .map(|(key, value)| (*key, value.as_str()))
         .collect();
     let code = diag.code.slug();
-    let help = lookup.help(code)?;
     let mut parts = crate::tagged::RenderParts::new();
-    match crate::catalog::fill_template_parts(help, &refs, code, crate::tagged::Field::Help, 0) {
-        Ok(field_parts) => parts.append(field_parts),
-        Err(_) => push_arrangement_part(
-            &mut parts,
-            format!("[invalid catalog template: {code}]"),
-            "invalid-template",
-        ),
+    match lookup.help(code) {
+        crate::catalog::HelpRegister::Absent => return None,
+        crate::catalog::HelpRegister::Unwritten => {
+            parts.push(crate::tagged::RenderPart::TemplateLiteral {
+                text: unwritten_help_placeholder(code),
+                code,
+                field: crate::tagged::Field::Help,
+                paragraph: 0,
+                instance: 0,
+            });
+        }
+        crate::catalog::HelpRegister::Written(help) => {
+            match crate::catalog::fill_template_parts(
+                help,
+                &refs,
+                code,
+                crate::tagged::Field::Help,
+                0,
+            ) {
+                Ok(field_parts) => parts.append(field_parts),
+                Err(_) => push_arrangement_part(
+                    &mut parts,
+                    format!("[invalid catalog template: {code}]"),
+                    "invalid-template",
+                ),
+            }
+        }
     }
     Some(parts)
 }
@@ -3343,7 +3387,7 @@ mod tests {
         let entry = crate::catalog::entry(code.slug()).expect("catalog entry");
         assert!(entry.params.is_empty());
         assert_eq!(entry.message, None);
-        assert_eq!(entry.help, None);
+        assert_eq!(entry.help, crate::catalog::HelpRegister::Absent);
         assert_eq!(
             render_body(&Diag::new_spanless_site(code), &Interner::default()),
             "[unwritten: host-evidence-admission-refused]"

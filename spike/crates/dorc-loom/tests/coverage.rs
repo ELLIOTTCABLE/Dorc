@@ -22,7 +22,10 @@ fn every_catalog_template_maps_through_render_parts() {
             .iter()
             .map(|(param, value)| (*param, value.as_str()))
             .collect();
-        for (field, template) in [(Field::Message, entry.message), (Field::Help, entry.help)] {
+        for (field, template) in [
+            (Field::Message, entry.message),
+            (Field::Help, entry.help.written().copied()),
+        ] {
             let Some(template) = template else { continue };
             let parts = fill_template_parts(template, &refs, entry.slug, field, 0)
                 .unwrap_or_else(|error| panic!("{}: {error:?}", entry.slug));

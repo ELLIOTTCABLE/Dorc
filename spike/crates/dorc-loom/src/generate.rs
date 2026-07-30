@@ -97,7 +97,7 @@ pub fn generate_catalog_lock(
     for entry in consumer.mirror() {
         let message = entry.message.clone();
         let help = entry.help.clone();
-        let params = refreshed_params(message.as_deref(), help.as_deref());
+        let params = refreshed_params(message.as_deref(), help.written().map(String::as_str));
         let (when_fires, why, example) = if let Some(case) = cases.get(&entry.slug) {
             (
                 frontmatter_scalar(case, "when-fires", &entry.slug)?,
@@ -138,7 +138,7 @@ pub fn generate_catalog_lock(
             params: refreshed_params(None, None),
             example: case_example(consumer, case, None, slug)?,
             message: None,
-            help: None,
+            help: dorc_aid::catalog::HelpRegister::Absent,
         });
     }
     Ok(serialize_lock(&rows))

@@ -291,12 +291,12 @@ impl DorcConsumer {
         if key.field == "message" {
             entry.message = Some(template);
         } else {
-            entry.help = Some(template);
+            entry.help = dorc_aid::catalog::HelpRegister::Written(template);
         }
         entry.params = entry
             .message
             .iter()
-            .chain(entry.help.iter())
+            .chain(entry.help.written())
             .flat_map(|template| parse_template(template).unwrap_or_default())
             .filter_map(|part| match part {
                 dorc_aid::catalog::TemplatePart::Hole(name) => Some(name),
