@@ -446,8 +446,10 @@ fn explicit_marker_can_introduce_an_unused_typed_payload_value() {
 
 #[test]
 fn payload_inventory_excludes_unknown_and_foreign_values() {
-    let cmdsub = Case::parse("---\ncode: cmdsub-operand-top\n---\n-- replay --\n$ dorc plan\n")
-        .expect("case parses");
+    let cmdsub = Case::parse(
+        "---\ncode: cmdsub-operand-top\n---\n-- replay --\n$ dorc plan --book=book.sh\n",
+    )
+    .expect("case parses");
     let baseline = DorcConsumer::new()
         .editable_baseline(&cmdsub)
         .expect("baseline renders");
@@ -520,8 +522,10 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
         Err(DorcSectionEditRefusal::UnknownVariable(_))
     ));
 
-    let foreign = Case::parse("---\ncode: site-unresolvable\n---\n-- replay --\n$ dorc plan\n")
-        .expect("case parses");
+    let foreign = Case::parse(
+        "---\ncode: site-unresolvable\n---\n-- replay --\n$ dorc plan --book=book.sh\n",
+    )
+    .expect("case parses");
     let baseline = DorcConsumer::new()
         .editable_baseline(&foreign)
         .expect("foreign baseline");
@@ -641,7 +645,8 @@ fn vars_replay_reads_only_the_named_materialized_case() {
          $ dorc-loom vars --all ../self.txt\nold\n\
          $ dorc-loom vars --all /self.txt\nold\n\
          $ dorc-loom vars --all self.txt extra\nold\n\
-         $ dorc-loom vars --all 'self.txt'\nold\n",
+         $ dorc-loom vars --all 'self.txt'\nold\n\
+         $ dorc plan --book=book.sh\nold\n",
     )
     .expect("outer case parses");
     let other = Case::parse(
@@ -668,7 +673,7 @@ fn vars_replay_reads_only_the_named_materialized_case() {
     assert!(results[0].output().contains("{{command}} = \"apt-get\""));
     assert!(results[1].output().contains("{{verb}} = \"elide\""));
     assert!(!results[1].output().contains("{{command}} = \"apt-get\""));
-    for result in &results[2..] {
+    for result in &results[2..7] {
         assert!(result.editable_render().is_none());
         assert!(result.output().starts_with("fallback: dorc-loom vars"));
     }

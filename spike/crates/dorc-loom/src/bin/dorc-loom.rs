@@ -639,12 +639,8 @@ fn inspect_cases(
         }
         if let Some((index, error, dirty)) = case_refusal {
             refused = refused.saturating_add(1);
-            writeln!(
-                body,
-                "refusal in replay {index}: {}",
-                error.explain(&path.display().to_string())
-            )
-            .map_err(|write| write.to_string())?;
+            writeln!(body, "refusal in replay {index}: {}", error.explain(path))
+                .map_err(|write| write.to_string())?;
             writeln!(body, "class: {error:?}").map_err(|write| write.to_string())?;
             writeln!(body, "baseline: exact renderer provenance")
                 .map_err(|write| write.to_string())?;

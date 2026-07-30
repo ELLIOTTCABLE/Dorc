@@ -78,7 +78,8 @@ impl DorcSectionEditRefusal {
     /// The refusal as one actionable sentence naming `case`, the file the reader is holding
     /// (`28L:rul-refusals-name-the-next-command`). Blunt is allowed; unactionable is not.
     #[must_use]
-    pub fn explain(&self, case: &str) -> String {
+    pub fn explain(&self, case: &std::path::Path) -> String {
+        let case = case.display();
         match self {
             DorcSectionEditRefusal::Unchanged => format!(
                 "no transcript bytes changed in {case}; edit the prose between the render's own \

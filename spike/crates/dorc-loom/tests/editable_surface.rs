@@ -128,10 +128,14 @@ fn added_help_line_refuses_and_names_the_command() {
     );
     assert!(
         refusal
-            .explain("crates/aid/tests/cli-no-book-given.loom")
+            .explain(std::path::Path::new(
+                "crates/aid/tests/cli-no-book-given.loom"
+            ))
             .contains("dorc-loom add-register crates/aid/tests/cli-no-book-given.loom help"),
         "the refusal must name the repair verbatim: {}",
-        refusal.explain("crates/aid/tests/cli-no-book-given.loom")
+        refusal.explain(std::path::Path::new(
+            "crates/aid/tests/cli-no-book-given.loom"
+        ))
     );
 }
 
@@ -245,6 +249,61 @@ fn one_step_why_row_edit() {
                 && entry.words.words() == Some(&["oracles: ", ""][..])),
         "the compiled-in table is untouched — nothing was rebuilt"
     );
+}
+
+/// `vars` reports the render an edit compiles against, for every committed case — including the
+/// whylog, lint and invocation-error shapes the old second world-derivation could not reach at all
+/// (`_loom-final-map` §2c). A floor, never a count: the corpus drifts.
+#[test]
+fn vars_answers_for_every_committed_case() {
+    let corpus = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests");
+    let consumer = DorcConsumer::new();
+    let mut answered = 0usize;
+    for entry in std::fs::read_dir(&corpus).expect("the corpus dir is readable") {
+        let path = entry.expect("a corpus entry").path();
+        if path.extension().is_none_or(|kind| kind != "loom") {
+            continue;
+        }
+        let case = Case::parse(&std::fs::read_to_string(&path).expect("case is readable"))
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let baseline = consumer
+            .editable_baseline(&case)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        assert!(
+            !baseline.render().components().is_empty(),
+            "{}: an inventory over an empty render says nothing",
+            path.display()
+        );
+        let _ = baseline.used_variables();
+        let _ = baseline.all_variables();
+        answered = answered.saturating_add(1);
+    }
+    assert!(
+        answered > 50,
+        "the corpus discovery floor: {answered} cases"
+    );
+}
+
+/// The four whylog cases specifically: their render is the STAGED one, which the retired
+/// second derivation had no arm for.
+#[test]
+fn vars_answers_the_whylog_cases() {
+    for text in [
+        include_str!("../../aid/tests/whylog-absent.loom"),
+        include_str!("../../aid/tests/whylog-corrupt.loom"),
+        include_str!("../../aid/tests/whylog-version-refused.loom"),
+        include_str!("../../aid/tests/whylog-book-desync.loom"),
+    ] {
+        let case = Case::parse(text).expect("case parses");
+        let baseline = DorcConsumer::new()
+            .editable_baseline(&case)
+            .expect("a whylog case has an inventory");
+        assert!(
+            baseline.render().text().starts_with("whylog: "),
+            "the inventory reads the STAGED render: {:?}",
+            baseline.render().text()
+        );
+    }
 }
 
 /// A placeholder long enough to WRAP is still one section: the break weft minted inside it is the

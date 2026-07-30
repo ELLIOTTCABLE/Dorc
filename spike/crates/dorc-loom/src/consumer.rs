@@ -483,29 +483,61 @@ impl DorcConsumer {
         )
     }
 
-    /// Render one case through the core part stream and map it to editable sections.
+    /// The editable baseline of a case's FIRST replay — what `dorc-loom vars` reports.
+    ///
+    /// It drives the case exactly as `compile` does rather than re-deriving a world of its own
+    /// (`_loom-final-map` §2c): a second derivation answered only for the plain diagnostic shape, so
+    /// a whylog, lint, or invocation-error case got a different render — or none — from the one an
+    /// edit actually compiles against, and an inventory that disagrees with the compiler is worse
+    /// than no inventory.
     ///
     /// # Errors
-    /// Returns the case-world materialization refusal.
+    /// Returns the replay refusal, or names the case whose first replay carries no editable prose.
     pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+        // The generation lag, stated before the driver can only shrug about it: a case naming a
+        // slug with no committed row renders nothing, and the honest answer names the repair.
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
-            return self.arrangement_baseline(slug);
+            self.arrangement_page(slug)?;
         }
-        let (diag, src, filename) = Self::world_of(case)?;
-        let interner = Interner::default();
-        let parts = self.cli_parts(&diag, &src, &filename);
-        let render = to_editable_render(&parts);
-        let variables = editable_variables(&render)?;
-        let all_variables = dorc_aid::diag::params_of(&self.render_ctx(), &diag.code, &interner)
-            .into_iter()
-            .filter(|(name, _)| !is_foreign_param(name))
-            .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
-            .collect();
-        Ok(DorcEditableBaseline {
-            render,
-            variables,
-            all_variables,
+        let render = replay_case(case, self, &RunEnv::new(), |_command, _context| {
+            Ok(ReplayResult::bytes(String::new()))
         })
+        .map_err(|error| error.to_string())?
+        .into_iter()
+        .find_map(|result| result.editable_render().cloned())
+        .ok_or_else(|| {
+            "no replay of this case renders editable prose; `vars` reports the render an edit \
+             compiles against, so a case whose replays are all bytes-only has no inventory"
+                .to_owned()
+        })?;
+        self.baseline_from_render(case, render)
+    }
+
+    /// The `dorc-loom vars` inventory for one case, as bytes.
+    ///
+    /// The ONE derivation both the driver and the re-render seat go through, so a committed
+    /// inventory block is a generator fixpoint rather than a second opinion
+    /// (`282:rul-used-inventory-is-committed`).
+    fn vars_inventory(&self, target_source: &str, path: &str, used: bool) -> Option<String> {
+        let target = Case::parse(target_source).ok()?;
+        let baseline = self.editable_baseline(&target).ok()?;
+        let mut output = String::new();
+        output.push_str("case: ");
+        output.push_str(path);
+        output.push('\n');
+        let values = if used {
+            baseline.used_variables()
+        } else {
+            baseline
+                .all_variables()
+                .iter()
+                .map(|(name, value)| (name.clone(), value.clone()))
+                .collect()
+        };
+        for (name, value) in values {
+            let _ = writeln!(output, "{{{{{}}}}} = {value:?}", name.0);
+        }
+        Some(output)
     }
 
     /// Drive only direct invocations whose replay inputs and rendering are exact.
@@ -525,25 +557,9 @@ impl DorcConsumer {
             && matches!(*mode, "--used" | "--all")
             && case_relative_path(path)
         {
-            let target = Case::parse(context.materialized_input(path)?).ok()?;
-            let baseline = self.editable_baseline(&target).ok()?;
-            let mut output = String::new();
-            output.push_str("case: ");
-            output.push_str(path);
-            output.push('\n');
-            let values = if *mode == "--used" {
-                baseline.used_variables()
-            } else {
-                baseline
-                    .all_variables()
-                    .iter()
-                    .map(|(name, value)| (name.clone(), value.clone()))
-                    .collect()
-            };
-            for (name, value) in values {
-                let _ = writeln!(output, "{{{{{}}}}} = {value:?}", name.0);
-            }
-            return Some(ReplayResult::bytes(output));
+            return self
+                .vars_inventory(context.materialized_input(path)?, path, *mode == "--used")
+                .map(ReplayResult::bytes);
         }
         if let Some(why) = parse_direct_why(&tokens) {
             let raw = context.materialized_input(why.whylog);
@@ -668,18 +684,6 @@ impl DorcConsumer {
                 )
             })?;
         Ok(arrangement_parts(&self.arrangements, stable, None))
-    }
-
-    /// The editable baseline of a whole-page arrangement case — the registry's own render, with
-    /// an empty payload inventory.
-    fn arrangement_baseline(&self, slug: &str) -> Result<DorcEditableBaseline, String> {
-        let render = to_editable_render(&self.arrangement_page(slug)?);
-        let variables = editable_variables(&render)?;
-        Ok(DorcEditableBaseline {
-            render,
-            variables,
-            all_variables: BTreeMap::new(),
-        })
     }
 
     /// The defining replay's typed diagnostic for a case — the payload the generated `example` field
@@ -1206,6 +1210,14 @@ impl DorcConsumer {
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
         if let Some(slug) = arrangement_page_slug(case, &words) {
             return Ok(self.arrangement_page(slug)?.text());
+        }
+        if let ["dorc-loom", "vars", mode, path] = words.as_slice()
+            && matches!(*mode, "--used" | "--all")
+            && case_relative_path(path)
+        {
+            return section_source(case, path)
+                .and_then(|source| self.vars_inventory(source, path, *mode == "--used"))
+                .ok_or_else(|| format!("unsupported replay {command:?}"));
         }
         if let Some(why) = parse_direct_why(&words) {
             return self.render_direct_why(case, &why, command);
