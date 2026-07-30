@@ -21,6 +21,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod why;
+
 use dorc_aid::RenderCtx;
 use dorc_aid::Severity;
 use dorc_aid::arrangement::arrangement_text;
