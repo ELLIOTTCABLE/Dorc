@@ -39,6 +39,55 @@ fn driven(text: &str) -> (Case, DorcConsumer, DorcEditableBaseline, String) {
     (case, consumer, baseline, transcript)
 }
 
+/// The primary collection, read at RUN time — see [`a_case_whose_register_is_empty`].
+fn corpus_dir() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
+}
+
+/// A committed, in-process-drivable case for a code whose `register` is still empty.
+///
+/// CHOSEN rather than named: a test that hardcodes "this case has no words yet" asserts a fact the
+/// sanctioned prose burn-down exists to falsify, and when it does the failure lands in a crate the
+/// author who wrote the words may not open. The mechanism under test is the EMPTY register, not any
+/// particular code, so the fixture is whichever code still has one.
+fn a_case_whose_register_is_empty(
+    consumer: &DorcConsumer,
+    register: &str,
+    empty: impl Fn(&dorc_aid::catalog::HelpRegister<String>, Option<&String>) -> bool,
+) -> (String, Case) {
+    let candidates: Vec<String> = consumer
+        .mirror()
+        .iter()
+        .filter(|entry| empty(&entry.help, entry.message.as_ref()))
+        .map(|entry| entry.slug.clone())
+        .collect();
+    for slug in &candidates {
+        let path = corpus_dir().join(format!("{slug}.loom"));
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(case) = Case::parse(&text) else {
+            continue;
+        };
+        let drivable = dorc_loom::replay_case(&case, consumer, &RunEnv::new(), |_, _| {
+            Err(errorloom::RunError::ShellNotConfigured)
+        })
+        .is_ok_and(|results| {
+            results
+                .first()
+                .is_some_and(|result| result.editable_render().is_some())
+        });
+        if drivable {
+            return (slug.clone(), case);
+        }
+    }
+    panic!(
+        "no committed case has an empty `{register}` register the in-process driver can reach \
+         (candidates: {candidates:?}). This test needs one; give it a fresh scaffolded case rather \
+         than deleting somebody's words."
+    )
+}
+
 fn help_of(consumer: &DorcConsumer, slug: &str) -> dorc_aid::catalog::HelpRegister<String> {
     consumer
         .mirror()
@@ -67,27 +116,18 @@ fn sections(baseline: &DorcEditableBaseline) -> Vec<(String, &'static str)> {
 /// no catalog hand-edit, no stored placeholder row.
 #[test]
 fn overtype_placeholder_mints_words() {
-    let (_, mut consumer, baseline, transcript) =
-        driven(include_str!("../../aid/tests/whylog-unwritten.loom"));
-    assert_eq!(
-        sections(&baseline),
-        vec![(String::from("whylog-unwritten"), "message")],
-        "the placeholder wears the message register's face"
-    );
-    assert_eq!(
-        consumer
-            .mirror()
-            .iter()
-            .find(|entry| entry.slug == "whylog-unwritten")
-            .and_then(|entry| entry.message.clone()),
-        None,
-        "nothing is stored before the edit"
+    let mut consumer = DorcConsumer::new();
+    let (slug, case) =
+        a_case_whose_register_is_empty(&consumer, "message", |_, message| message.is_none());
+    let (baseline, transcript) = drive(&consumer, &case);
+    assert!(
+        sections(&baseline).contains(&(slug.clone(), "message")),
+        "the placeholder wears the message register's face: {:?}",
+        sections(&baseline)
     );
 
-    let edited = transcript.replace(
-        "[unwritten: whylog-unwritten]",
-        "the run finished but its why durable did not land",
-    );
+    let words = "the run finished but its why durable did not land";
+    let edited = transcript.replace(&format!("[unwritten: {slug}]"), words);
     let edit = compile_section_edit(&baseline, &edited).expect("the overtype compiles");
     assert_eq!(edit.section().field, "message");
     consumer
@@ -97,11 +137,9 @@ fn overtype_placeholder_mints_words() {
         consumer
             .mirror()
             .iter()
-            .find(|entry| entry.slug == "whylog-unwritten")
+            .find(|entry| entry.slug == slug)
             .and_then(|entry| entry.message.clone()),
-        Some(String::from(
-            "the run finished but its why durable did not land"
-        ))
+        Some(String::from(words))
     );
 }
 
@@ -175,37 +213,62 @@ fn a_wrapping_register_grants_no_added_line_budget() {
     );
 }
 
+/// Typing over a value's TEXT is legal and destructive, and the two together are why it is
+/// DISCLOSED rather than refused: omission is how `282` §13 removes a variable, so refusing it
+/// would take the removal mechanism away — but an author who meant to reword has just frozen the
+/// world into the register, and the compile view is where they can still see it.
+#[test]
+fn overtyping_a_value_discloses_the_dropped_variable() {
+    let (_, _, baseline, transcript) = driven(include_str!(
+        "../../aid/tests/cli-unknown-flag-did-you-mean.loom"
+    ));
+    assert!(
+        transcript.contains("--wat"),
+        "the fixture must interpolate its flag value: {transcript:?}"
+    );
+    let preview = dorc_loom::compile_preview(&baseline, &transcript.replace("--wat", "--wut"))
+        .expect("overtyping a value is an ordinary edit");
+    let dropped: Vec<String> = preview
+        .sections()
+        .iter()
+        .flat_map(|section| section.dropped().iter().map(|name| name.0.clone()))
+        .collect();
+    assert_eq!(dropped, vec![String::from("flag")], "{preview:?}");
+    let rendered = dorc_loom::render_compile_preview(&preview);
+    assert!(
+        rendered.contains("DROPPED VARIABLES: {{flag}}") && rendered.contains("literal text"),
+        "the compile view must say so in full: {rendered}"
+    );
+}
+
 /// The affordance the refusal names: mint the register, and the ORDINARY loop fills it — the
 /// placeholder the render then grows is an edit region like any other.
 #[test]
 fn help_register_edit_round_trips() {
-    let case = Case::parse(include_str!("../../aid/tests/cli-no-book-given.loom")).expect("parses");
     let mut consumer = DorcConsumer::new();
-    assert_eq!(
-        help_of(&consumer, "cli-no-book-given"),
-        dorc_aid::catalog::HelpRegister::Absent
-    );
+    let (slug, case) = a_case_whose_register_is_empty(&consumer, "help", |help, _| {
+        matches!(help, dorc_aid::catalog::HelpRegister::Absent)
+    });
     consumer
-        .seed_help_register("cli-no-book-given")
+        .seed_help_register(&slug)
         .expect("the register is absent");
 
     let (baseline, transcript) = drive(&consumer, &case);
+    let placeholder = format!("[unwritten: {slug}.help]");
     assert!(
-        transcript.contains("= help:  [unwritten: cli-no-book-given.help]"),
+        transcript.contains(&format!("= help:  {placeholder}")),
         "the seeded register renders its own placeholder: {transcript:?}"
     );
-    let edited = transcript.replace(
-        "[unwritten: cli-no-book-given.help]",
-        "give a path, or --book=PATH",
-    );
-    let edit = compile_section_edit(&baseline, &edited).expect("the placeholder is editable");
+    let words = "give a path, or --book=PATH";
+    let edit = compile_section_edit(&baseline, &transcript.replace(&placeholder, words))
+        .expect("the placeholder is editable");
     assert_eq!(edit.section().field, "help");
     consumer
         .apply_section_edit(&edit)
         .expect("the mirror takes it");
     assert_eq!(
-        help_of(&consumer, "cli-no-book-given"),
-        dorc_aid::catalog::HelpRegister::Written(String::from("give a path, or --book=PATH"))
+        help_of(&consumer, &slug),
+        dorc_aid::catalog::HelpRegister::Written(String::from(words))
     );
 }
 
@@ -213,14 +276,13 @@ fn help_register_edit_round_trips() {
 #[test]
 fn seeding_an_existing_register_refuses() {
     let mut consumer = DorcConsumer::new();
-    consumer
-        .seed_help_register("cli-no-book-given")
-        .expect("absent");
+    let (slug, _) = a_case_whose_register_is_empty(&consumer, "help", |help, _| {
+        matches!(help, dorc_aid::catalog::HelpRegister::Absent)
+    });
+    consumer.seed_help_register(&slug).expect("absent");
     assert_eq!(
-        consumer.seed_help_register("cli-no-book-given"),
-        Err(dorc_loom::SeedRefusal::AlreadyPresent(String::from(
-            "cli-no-book-given"
-        )))
+        consumer.seed_help_register(&slug),
+        Err(dorc_loom::SeedRefusal::AlreadyPresent(slug.clone()))
     );
     assert_eq!(
         consumer.seed_help_register("no-such-code"),

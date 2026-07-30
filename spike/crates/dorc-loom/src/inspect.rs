@@ -48,6 +48,23 @@ fn section_text(preview: &SectionPreview) -> String {
         // lines to say nothing this view is for. The word-diff carries the prose.
         lines.push(String::from("  no variables"));
     }
+    // The one destructive edit that LOOKS like an ordinary reword: typing a value's text where its
+    // marker stood is legal (omission is how a variable is removed) and silent, so it is disclosed
+    // here rather than refused.
+    if !preview.dropped().is_empty() {
+        let names: Vec<String> = preview
+            .dropped()
+            .iter()
+            .map(|name| format!("{{{{{}}}}}", name.0))
+            .collect();
+        lines.push(format!(
+            "  DROPPED VARIABLES: {} — the value now appears only as literal text, frozen at what \
+             this render happened to say. Re-type it as {} to keep it interpolated; leave it out \
+             only if you meant to remove it.",
+            names.join(", "),
+            names.join(", "),
+        ));
+    }
     lines.join("\n")
 }
 

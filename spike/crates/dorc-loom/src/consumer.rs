@@ -2377,11 +2377,13 @@ mod tests {
                     section: shared(0),
                     compiled: compiled(first),
                     used_bindings: Vec::new(),
+                    dropped: Vec::new(),
                 },
                 crate::SectionPreview {
                     section: shared(4),
                     compiled: compiled(second),
                     used_bindings: Vec::new(),
+                    dropped: Vec::new(),
                 },
             ],
             concrete: String::new(),
