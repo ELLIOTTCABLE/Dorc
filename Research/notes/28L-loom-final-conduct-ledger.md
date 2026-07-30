@@ -519,6 +519,47 @@ lanes thread by fresh census, never by the map's count.
   vars header, usage) · lock-not-clean refusal gains its remedy · `loom:sections`
   semantics pinned and self-described · texts written for a reader with NO doc
   access.
+- **X2b LANDED** (`ai/r28-loom-x2b` @ `344f3c1b`, base `79032b57`; both legs green
+  own-hand, Win 1654 / WSL 1650; rebases over the X2a fold next). Oracle-loading in
+  the harness: `fire_book_analysis` runs the binary's whole book-side stage sequence
+  in the binary's own order, oracle sections thread both chains, and a
+  caret-source bug was caught and fixed in-lane (both replay seats were discarding
+  `world_of_source`'s returned source — oracle-side carets pointed into the book).
+  Second clean lib extraction: `cli/src/kinds.rs` (resolver/reaches machinery,
+  verbatim, one implementation). Tolerance detectors wired at `validate` (reaches
+  both consumers; zero corpus churn — NO existing fixture reads identity, so the
+  corpus lacks any safe-across exemplar, noted for the stdlib era). Two MORE wrong
+  trigger notes found + fixed (dropped `derive_lend_map` diags; carry diags gated
+  behind wrapper presence) — the map's "trivially-fireable 11" was wrong for 3.
+  Sixteen cases minted (`sm `-carried registers). Ratchet 30 → 12: 8 records
+  (blocked-on-emitter, human) + 4 survival-lane (`footprint-incoherent` ·
+  `touches-escalated` · `deriv-family-incomplete` · `wrapped-site-adoption-hint` —
+  need the flag-gated survival/derivation lane extraction; correctly judged
+  rebase-hostile while X2a moved 3000 lines of the same file).
+- **rul-records-seam-approved** (conductor; settles
+  tc-harness-records-vs-controller-scope) — X2b's `_x2b-records-seam-PROPOSAL.md`
+  reading is ACCEPTED: a loom run mints exactly ONE scope; what appears is a second
+  CONTROLLER (dorc-loom, of its own hermetic in-process run), not a second scope in
+  one world — the law's re-entry triggers (transport, concurrency, retry,
+  cross-host reuse, saved approval) are production multi-scope phenomena and none
+  becomes representable. The `Framing::spike` precedent is the ONE named
+  substitution point and the proposal builds on it: `admit_fixture_records(...)`
+  takes no identity/host/nonce/attempt, fields stay private, no field-wise
+  constructor, framed-form only, all three `Admission` arms honoured (`Refused`
+  refuses the case). TWO RIDERS: (a) the entry point's rustdoc carries the law
+  citation and this argument; (b) a lexical fence test in the `diag_tidy` family
+  pins `admit_fixture_records(` to dorc-loom/test surfaces only
+  (the fixture-payloads precedent). BUILD LICENSED — same lane continues: seam →
+  survival-lane extraction (post-rebase; the lib-seam pattern, third instance) →
+  the 4 survival cases. The ~35 records-gated why faces then become a final
+  face-sweep continuation of the X2a machinery.
+- **tc-cmdsub-inner-span-is-wrong** (X2b, +SURE symptom) — a PRODUCTION kernel bug,
+  out of arc scope: every `cmdsub-inner-nonleaf` span points at byte 0 (offset
+  body-relative, not rebased; width correct; suspect the AST node for
+  `$( … )`-internal commands, `effect.rs:1605`'s input). FLAGGED TO THE HUMAN /
+  next kernel arc; the committed case bakes today's render and re-blesses on the
+  fix. Sibling note: `tc-lint-route-shows-the-whole-report` (noisy exemplar for
+  wrapper oracles) rides render-form-unwelded, no action.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
