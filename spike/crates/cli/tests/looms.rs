@@ -39,6 +39,24 @@ use libtest_mimic::{Arguments, Failed, Trial};
 use dorc_loom::{DorcConsumer, replay_case};
 use support::{LoomCase, case_roots, discover_looms};
 
+/// A `run:`-bearing loom's transcript is proven by `e2e.rs` running the real binary, never by this
+/// runner's render fixpoint (`one-fixpoint-authority-per-case`, `crates/cli/CLAUDE.md`) — the
+/// suffix marks that up front, so a hygiene-only trial reads differently from a fixpointed one at a
+/// glance (`28L` friction §4 `fixpoint: executed` visibility marker). Best-effort: an unparseable
+/// case falls back to its bare name and fails inside [`run_case`] with the real diagnosis, exactly
+/// as before.
+fn trial_name(case: &LoomCase) -> String {
+    let deferred = std::fs::read_to_string(&case.path)
+        .ok()
+        .and_then(|text| Case::parse(&text).ok())
+        .is_some_and(|parsed| parsed.frontmatter().scalar("run").is_some());
+    if deferred {
+        format!("{} [deferred to e2e]", case.name)
+    } else {
+        case.name.clone()
+    }
+}
+
 /// Parse, hygiene-check, and render-fixpoint one committed case.
 fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let name = &case.name;
@@ -172,8 +190,9 @@ fn main() {
     let trials: Vec<Trial> = discovered
         .into_iter()
         .map(|case| {
+            let name = trial_name(&case);
             let case = Arc::new(case);
-            Trial::test(case.name.clone(), move || run_case(&case))
+            Trial::test(name, move || run_case(&case))
         })
         .collect();
     libtest_mimic::run(&args, trials).exit();
