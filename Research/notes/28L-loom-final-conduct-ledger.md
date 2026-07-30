@@ -337,6 +337,39 @@ lanes thread by fresh census, never by the map's count.
   (trigger notes in hand). Worktree note: git-bash `mise` cannot see its trust
   entries in these worktrees (`\\?\C:\` vs `C:\` paths) — invoke `mise` from
   PowerShell; WSL needs one `mise trust`.
+- **D3 REBASED + FOLDED** — `ai/r28-loom-final` @ `5eefc8b1` (ff; lane worktrees
+  loom-d2/loom-d3 removed, merged branches deleted). Five collisions, all resolved as
+  the union of both lanes' RULINGS: the 94 destructured `params_of_raw` arms under
+  D2's `RenderCtx` signature (one arm textually conflicted; E0027 forcing intact) ·
+  ONE refusal surface (`dorc-loom/src/refusal.rs`; D2's duplicate `explain` in
+  edit.rs deleted; variants unioned; the `AttachedMarker` variant deleted outright —
+  markers are legal now) · consumer bodies genuinely disjoint, whylog-before-the-
+  payload-floor ordering proven surviving by the lock fixpoint · the LOCK never
+  hand-merged: regenerated at the merged state, byte-identity fixpoints green,
+  unscoped promote reports corpus-at-fixpoint (only possible via the 512 cap).
+  **fnd-d2-arrangement-page-layout-panic** (real latent defect, D2's, caught by D3's
+  first value-bearing chrome-line case): `editable_baseline`'s generation-lag guard
+  LAID OUT `arrangement_page(slug)` — zero values into a 5-word sentence seat ⇒
+  debug panic; fixed by splitting `arrangement_row` (existence check, no layout).
+  NOTE for X2's chrome-face work: every `lint-source-*`/plan-stderr row is
+  value-bearing; this split is what makes their cases possible. Reconciled
+  `UnknownParam` text names the vars command + `params_of_raw` + the
+  now-true compile-error fact. Gates at the tip: both legs green TWICE (Win 1631 /
+  WSL 1627, 1 skipped each); byte floor held across the whole range. Spent backup
+  branches awaiting the human's force-delete: `relabel-backup` ·
+  `d3-prerebase-backup`.
+- **Routing adjustment** — the ~7 remaining lint-fireable ratchet cases (firing-world
+  authoring needs dialect judgment) move D4 → X2; D4 stays purely mechanical.
+- **D4 dispatched** (Sonnet churn, worktree loom-d4): `loom:scaffold`/`loom:vars`/
+  `loom:add-register` tasks (scoped-args template) + unswallowed compile output ·
+  `dorc-loom sections CASE` (the census/affordance/debug command;
+  rul-variable-surface-is-block-plus-sections' missing half) · catalog-register
+  read-in normalization + trailing-`\n` trim in the ONE significance seat (spec: runs
+  BEFORE the AddedLine count; paragraph breaks preserved; idempotent/fixpoint-stable)
+  · the committed `vars --used` regeneration across every code-owned case (the
+  sanctioned DORC_LOOM_DUMP flow — promote refuses structure changes by design) ·
+  blast-radius dirty-gate scoping · arrangement arity compile-time refusal (rides
+  D3's `arrangement_row` split) · `[deferred to e2e]` trial naming.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
