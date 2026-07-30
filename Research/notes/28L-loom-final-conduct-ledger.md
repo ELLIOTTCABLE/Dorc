@@ -476,6 +476,24 @@ lanes thread by fresh census, never by the map's count.
   (loom file, tool output/refusals, aid-crate rustdoc, mise task list),
   forbidden: dorc-loom/errorloom source, both locks, Research/, every
   CLAUDE.md/AGENTS.md, the quarantine.
+- **X2a FOLDED** — `ai/r28-loom-final` @ `271d7921` (ff; zero rebase conflicts;
+  every D4 interaction hand-verified by the lane — `catch_arity_panic` correctly
+  encloses the new why path; the two normalization seats stay separate by field;
+  both lock fixpoints + the byte gate re-proved across all 104 committed looms).
+  Gate at the tip: Win 1643 / WSL 1639, 1 skipped each. Conductor's own-hand gate
+  queued. Fresh-worktree note: WSL leg dies pre-compile without one `mise trust`.
+- **x2d DISPATCHED** (worktree loom-x2d, off `271d7921`) — the loom-machinery
+  closure lane: ownership-declaration key (filename-implicit + `owns:` only for
+  multi-component homes; one component one owner, conflicts refuse naming both
+  files) · wrap-chunk DIAGNOSIS then central fix (one section per prose-component
+  per render; a reword may move the wrap point; the mis-directed add-register
+  refusal replaced with the true next step) · metadata-regression guard
+  (absent-means-keep; present-and-different on an existing component gates
+  loudly; frontmatter quote normalization) · the in-file loop-hint key (names
+  compile/promote + the loom:vars invocation) · the invocation-error parts seat
+  (prefix + body + synopsis; ~25-transcript re-bless sanctioned;
+  `cli-usage-synopsis` faced) · the `envelope:`-style closed key + one case
+  facing the plan-stderr trio.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
