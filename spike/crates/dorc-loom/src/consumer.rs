@@ -671,7 +671,12 @@ impl DorcConsumer {
         let oracles: Vec<(String, String)> = plan
             .oracles
             .iter()
-            .map(|path| Some(((*path).to_owned(), materialized_source(case, context, path)?)))
+            .map(|path| {
+                Some((
+                    (*path).to_owned(),
+                    materialized_source(case, context, path)?,
+                ))
+            })
             .collect::<Option<_>>()?;
         let results = match plan.input {
             Some(input) => Some(materialized_input(case, context, input)?),
