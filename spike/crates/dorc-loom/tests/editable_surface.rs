@@ -327,6 +327,63 @@ fn a_rendered_section_header_lookalike_refuses_by_name() {
     );
 }
 
+/// The four things an author does to a value, on ONE committed case (`282` §13): move it by
+/// rephrasing around it, duplicate it, drop it, and introduce one the message did not use.
+#[test]
+fn variable_insert_move_delete_duplicate() {
+    let case =
+        Case::parse(include_str!("../../aid/tests/cmdsub-operand-top.loom")).expect("parses");
+    let consumer = DorcConsumer::new();
+    let replay = dorc_loom::replay_case(&case, &consumer, &RunEnv::new(), |command, _| {
+        panic!("the in-process driver must claim {command:?}")
+    })
+    .expect("case replays")
+    .swap_remove(0);
+    let transcript = replay.output().to_owned();
+    let baseline = consumer
+        .baseline_from_render(
+            &case,
+            replay.editable_render().cloned().expect("editable render"),
+        )
+        .expect("editable baseline");
+
+    let compiled_from = |edited: &str| {
+        assert_ne!(edited, transcript, "the probe must actually edit");
+        compile_section_edit(&baseline, edited)
+            .unwrap_or_else(|error| panic!("{error:?}"))
+            .compiled()
+            .clone()
+    };
+    let compiled = |from: &str, to: &str| compiled_from(&transcript.replace(from, to));
+
+    let moved = compiled_from(
+        &transcript
+            .replace("operand 3 is a", "the operand is a")
+            .replace("to check.", "to check ({{position}})."),
+    );
+    assert!(
+        moved.text().contains("to check (operand 3)."),
+        "a marker relocates a value within its own section"
+    );
+
+    let duplicated = compiled("operand 3 is a", "{{position}} and {{position}} are a");
+    assert!(duplicated.text().contains("operand 3 and operand 3 are a"));
+
+    let dropped = compiled("operand 3 is a", "the operand is a");
+    assert!(
+        !dropped
+            .used()
+            .contains(&dorc_loom::TemplateVariableName(String::from("position"))),
+        "omitting the value drops it from the used set"
+    );
+
+    let inserted = compiled("on the host", "on the host via {{command}}");
+    assert!(
+        inserted.text().contains("on the host via apt-get"),
+        "a value the message did not use is reachable from the payload inventory"
+    );
+}
+
 /// A placeholder long enough to WRAP is still one section: the break weft minted inside it is the
 /// register's own space wearing the renderer's clothes, and a second section here would leave half
 /// the placeholder unaddressable.
