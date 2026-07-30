@@ -265,20 +265,11 @@ fn prose_line_breaks(text: &str) -> usize {
     text.matches('\n').count()
 }
 
-/// Read-in normalization for catalog register prose (`282` §3, routed by `28L:tc-catalog-prose-
-/// is-not-normalized-at-read-in`): within a paragraph, every whitespace run — a single embedded
-/// newline included — collapses to one space; a run of two-plus newlines canonicalizes to exactly
-/// one paragraph break (`"\n\n"`, `282` §3: "nothing else exists"); trailing whitespace trims off
-/// the section's own tail. Lands beside [`prose_line_breaks`] — the sibling judgment this crate
-/// already names as its ONE seat for what a line break in prose is (`28H` standing law: no second
-/// one) — and runs BEFORE `refuse_added_lines` counts the result, so a re-wrapped register can only
-/// relax that check, never trip it: a genuinely added paragraph break still refuses. Idempotent —
-/// re-normalizing normalized bytes is a no-op — which is what makes it a generator fixpoint under
-/// the byte-identity gate.
-///
-/// Catalog fields only (`message`/`help`); arrangement chrome keeps its own, deliberately
-/// different, always-single-space rule with no paragraph concept (`collapse_runs`, consumer.rs) —
-/// a chrome LINE has no paragraphs to preserve.
+/// Read-in normalization for catalog prose (`282` §3): within a paragraph, whitespace runs
+/// (single newlines included) collapse to one space; two-plus newlines canonicalize to `"\n\n"`;
+/// trailing whitespace trims off the tail. Runs BEFORE `refuse_added_lines`, so a re-wrapped
+/// register only relaxes that check, never trips it. `message`/`help` only — arrangement chrome
+/// has its own always-single-space rule (`collapse_runs`, consumer.rs).
 fn normalize_register_prose(
     field: &'static str,
     fragments: &[EditableFragment<SectionVariableId>],
@@ -286,10 +277,7 @@ fn normalize_register_prose(
     if !matches!(field, "message" | "help") {
         return fragments.to_vec();
     }
-    // The section's own tail, never the last TEXT-typed fragment: a series that ends on a
-    // Variable (an untouched value at the register's end) has no trailing prose to trim at all —
-    // trimming the last Text fragment regardless of position ate the legitimate space in front of
-    // it (caught by `omission_removes_variable_and_its_surrounding_backticks`).
+    // last fragment only: a series ending on an untouched Variable has no trailing prose to trim.
     let trailing_index = fragments
         .len()
         .checked_sub(1)

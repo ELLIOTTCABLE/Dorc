@@ -151,11 +151,8 @@ impl Repository for GitRepository {
 /// differ, and only within raw replay-output islands. Replay provenance decides
 /// whether those islands are editable in the subsequent inspection pass.
 ///
-/// The refusal is BLAST-RADIUS scoped (`28L` friction §4 blast-radius-scoped dirty gate): only the
-/// `selected` cases and the two generated locks (`catalog`, `arrangement`) are this run's concern.
-/// Dirt anywhere else in the repository is none of its business and no longer refuses — a source
-/// edit in an unrelated crate used to make every `compile`/`promote` refuse, forcing a throwaway
-/// commit just to run the tool.
+/// The refusal is BLAST-RADIUS scoped: only `selected` and the two generated locks (`catalog`,
+/// `arrangement`) are this run's concern. Dirt elsewhere in the repository no longer refuses it.
 ///
 /// # Errors
 ///

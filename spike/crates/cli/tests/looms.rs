@@ -39,12 +39,9 @@ use libtest_mimic::{Arguments, Failed, Trial};
 use dorc_loom::{DorcConsumer, replay_case};
 use support::{LoomCase, case_roots, discover_looms};
 
-/// A `run:`-bearing loom's transcript is proven by `e2e.rs` running the real binary, never by this
-/// runner's render fixpoint (`one-fixpoint-authority-per-case`, `crates/cli/CLAUDE.md`) — the
-/// suffix marks that up front, so a hygiene-only trial reads differently from a fixpointed one at a
-/// glance (`28L` friction §4 `fixpoint: executed` visibility marker). Best-effort: an unparseable
-/// case falls back to its bare name and fails inside [`run_case`] with the real diagnosis, exactly
-/// as before.
+/// A `run:`-bearing loom's transcript is proven by `e2e.rs`, not this runner's render fixpoint
+/// (`one-fixpoint-authority-per-case`) — marks that up front so a hygiene-only trial reads
+/// differently from a fixpointed one.
 fn trial_name(case: &LoomCase) -> String {
     let deferred = std::fs::read_to_string(&case.path)
         .ok()

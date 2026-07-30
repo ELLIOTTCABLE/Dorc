@@ -580,17 +580,9 @@ fn drive_replays(
     })
 }
 
-/// A hand-seeded arrangement row whose word-run count disagrees with the values its seat
-/// interleaves is a wiring defect `dorc_aid::arrangement::sentence_words` already diagnoses
-/// precisely — by design, LOUDLY, as a `debug_assert!` naming the row and both counts
-/// (`an_arity_slip_names_the_row_and_both_counts`). Left alone that takes this whole process down
-/// the first time some case's render happens to reach the bad row; this traps exactly that panic at
-/// dorc-loom's own render-driving boundary and turns it into the same typed refusal every other
-/// generation-time defect gets (`28L` friction §4 arity-slip-compile-time-refusal; D3's
-/// `arrangement_row` existence-only split is the precedent this extends — a BEFORE-promote check,
-/// not a new analysis). The default panic hook is suppressed for the call's duration so the
-/// refusal is the only thing printed; nothing here mutates shared state across the unwind boundary
-/// (`consumer` is read-only through this whole path), so `AssertUnwindSafe` is sound.
+/// Traps a hand-seeded row's arity-mismatch panic (`dorc_aid::arrangement::sentence_words`'s
+/// `debug_assert!`) as a typed refusal instead of crashing the process. Hook suppressed for the
+/// call only; sound because `drive` is read-only.
 fn catch_arity_panic<T>(
     path: &Path,
     drive: impl FnOnce() -> Result<T, String> + std::panic::UnwindSafe,
@@ -846,12 +838,9 @@ fn print_variables(
     Ok(ExitCode::SUCCESS)
 }
 
-/// `dorc-loom sections CASE...` — the census/affordance/debug half of
-/// `28L:rul-variable-surface-is-block-plus-sections`: for every replay of a case, print each
-/// editable section's key and its ordered `Text | Variable` fragment series (names + current
-/// rendered values), alongside the computed (immutable) spans around it. A print surface only —
-/// it drives replays exactly as `vars`'s `editable_baseline` does, just without dropping every
-/// replay after the first.
+/// `dorc-loom sections CASE...` — per replay, print each editable section's key and its ordered
+/// `Text | Variable` fragment series plus the computed spans around it. Drives like `vars`, just
+/// without dropping every replay after the first.
 fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
     for path in cases {
