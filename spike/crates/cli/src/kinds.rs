@@ -294,7 +294,9 @@ pub fn build_kind_reaches(
 }
 
 /// Every confusability diagnostic an oracle SET raises on its own — the two kind-keyed families'
-/// conflict + provider-collision checks, in the order `run` reports them (resolvers, then reaches).
+/// conflict + provider-collision checks, in the order `run` reports them (resolvers, then reaches),
+/// each paired with the oracle-file index its caret frames against (`None` = the per-file lift's own
+/// diagnostics, which report sourceless).
 ///
 /// Book-free by construction: the checks read only the oracle sources and the already-lifted check
 /// sets, so this is the whole of what the four codes can say about a world with no probe records
@@ -307,13 +309,13 @@ pub fn confusability_diagnostics(
     checks: &[dorc_oracle::predict::PredictSet],
     oracle_srcs: &[&str],
     interner: &mut Interner,
-) -> Vec<Diag> {
+) -> Vec<(Option<usize>, Diag)> {
     let owned: Vec<String> = oracle_srcs.iter().map(|src| (*src).to_owned()).collect();
     let coord_kinds = BTreeSet::new();
     let mut out = Vec::new();
     for lift in [
-        build_kind_resolvers(&owned, checks, &[], &coord_kinds, interner).into_diags(),
-        build_kind_reaches(&owned, checks, &[], &coord_kinds, interner).into_diags(),
+        build_kind_resolvers(&owned, checks, &[], &coord_kinds, interner).into_framed_diags(),
+        build_kind_reaches(&owned, checks, &[], &coord_kinds, interner).into_framed_diags(),
     ] {
         out.extend(lift);
     }
@@ -321,11 +323,13 @@ pub fn confusability_diagnostics(
 }
 
 impl<T> KindLift<T> {
-    /// This lift's diagnostics in report order: the per-file lift's own, then the confusability
-    /// findings by oracle-file index.
-    fn into_diags(self) -> Vec<Diag> {
-        let mut out = self.lift;
-        out.extend(self.confusability.into_values().flatten());
+    /// This lift's diagnostics in report order, each carrying the oracle-file index it frames
+    /// against: the per-file lift's own (sourceless) first, then the confusability findings.
+    fn into_framed_diags(self) -> Vec<(Option<usize>, Diag)> {
+        let mut out: Vec<_> = self.lift.into_iter().map(|diag| (None, diag)).collect();
+        for (file, diags) in self.confusability {
+            out.extend(diags.into_iter().map(|diag| (Some(file), diag)));
+        }
         out
     }
 }

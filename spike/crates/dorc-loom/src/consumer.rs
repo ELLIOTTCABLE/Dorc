@@ -668,21 +668,23 @@ impl DorcConsumer {
             let parts = self.cli_parts(&diag, "", "");
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         };
-        let oracles: Vec<String> = plan
+        let oracles: Vec<(String, String)> = plan
             .oracles
             .iter()
-            .map(|path| materialized_source(case, context, path))
+            .map(|path| Some(((*path).to_owned(), materialized_source(case, context, path)?)))
             .collect::<Option<_>>()?;
         let results = match plan.input {
             Some(input) => Some(materialized_input(case, context, input)?),
             None => None,
         };
-        let (diag, _, filename) =
+        // The FRAME source is the world's, not the book's: an oracle-side diagnostic's caret points
+        // into the oracle file that raised it.
+        let (diag, framed, filename) =
             Self::world_of_source(case, plan.book, &source, &oracles, results.as_deref()).ok()?;
         if plan.machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }
-        let parts = self.cli_parts(&diag, &source, &filename);
+        let parts = self.cli_parts(&diag, &framed, &filename);
         let render = to_editable_render(&parts);
         Some(ReplayResult::editable(render))
     }
@@ -823,7 +825,7 @@ impl DorcConsumer {
         case: &Case,
         path: &str,
         source: &str,
-        oracles: &[String],
+        oracles: &[(String, String)],
         results: Option<&str>,
     ) -> Result<(Diag, String, String), String> {
         let slug = case
@@ -835,9 +837,9 @@ impl DorcConsumer {
             return Ok((diag, source.to_owned(), filename));
         }
         if path == "book.sh"
-            && let Ok((diag, _, filename)) = fire_book_analysis(slug, path, source, oracles)
+            && let Ok(world) = fire_book_analysis(slug, path, source, oracles)
         {
-            return Ok((diag, source.to_owned(), filename));
+            return Ok(world);
         }
         if let Some(results) = results
             && let Ok(diag) = fire_records_admission(slug, source, results)
@@ -1277,11 +1279,11 @@ fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> 
 
 /// Every `*.oracle.sh` section a case carries, in section order — the loaded set for a world
 /// derived without a command to name one ([`DorcConsumer::world_of`]).
-fn oracle_sections(case: &Case) -> Vec<String> {
+fn oracle_sections(case: &Case) -> Vec<(String, String)> {
     case.sections()
         .iter()
         .filter(|section| section.name().ends_with("oracle.sh"))
-        .map(|section| section.content().to_owned())
+        .map(|section| (section.name().to_owned(), section.content().to_owned()))
         .collect()
 }
 
@@ -1489,10 +1491,10 @@ impl DorcConsumer {
             }
             return Ok(self.cli_parts(&diag, "", "").text());
         };
-        let oracles: Vec<String> = plan
+        let oracles: Vec<(String, String)> = plan
             .oracles
             .iter()
-            .map(|path| section_source(case, path).map(str::to_owned))
+            .map(|path| Some(((*path).to_owned(), section_source(case, path)?.to_owned())))
             .collect::<Option<_>>()
             .ok_or_else(|| format!("unsupported replay {command:?}"))?;
         let results = match plan.input {
@@ -1502,12 +1504,12 @@ impl DorcConsumer {
             ),
             None => None,
         };
-        let (diag, _, filename) =
+        let (diag, framed, filename) =
             Self::world_of_source(case, plan.book, source, &oracles, results)?;
         if plan.machine {
             return Ok(render_diag_jsonl(&diag));
         }
-        Ok(self.cli_parts(&diag, source, &filename).text())
+        Ok(self.cli_parts(&diag, &framed, &filename).text())
     }
 
     /// The re-render half of the `dorc why --last` route: the degraded RECEIPT when the case's
@@ -1627,10 +1629,10 @@ fn fire_book_analysis(
     slug: &str,
     filename: &str,
     source: &str,
-    oracles: &[String],
+    oracles: &[(String, String)],
 ) -> Result<(Diag, String, String), String> {
     let mut interner = Interner::default();
-    let oracle_refs: Vec<&str> = oracles.iter().map(String::as_str).collect();
+    let oracle_refs: Vec<&str> = oracles.iter().map(|(_, src)| src.as_str()).collect();
     let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
     let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
         .iter()
@@ -1660,19 +1662,26 @@ fn fire_book_analysis(
     );
     // The oracle-side confusability lints are a run's own act over the SAME lifted sets
     // (`cli::kinds`), not a second implementation: a defining case for one of them therefore pins
-    // what an author's `dorc plan` really prints.
-    let kinds = dorc_cli::kinds::confusability_diagnostics(&checks, &oracle_refs, &mut interner);
-    let diag = parsed
+    // what an author's `dorc plan` really prints. Their carets point into an ORACLE, so they carry
+    // their own frame — resolving an oracle's span against the book's bytes drew a caret under
+    // whatever line happened to share the offset.
+    let framed = dorc_cli::kinds::confusability_diagnostics(&checks, &oracle_refs, &mut interner)
+        .into_iter()
+        .map(|(file, diag)| match file.and_then(|i| oracles.get(i)) {
+            Some((name, src)) => (diag, src.clone(), name.clone()),
+            None => (diag, String::new(), String::new()),
+        });
+    parsed
         .diags
         .into_iter()
         .chain(marker)
         .chain(reserved)
         .chain(cfg.diags)
         .chain(effect.diags)
-        .chain(kinds)
-        .find(|d| d.code.slug() == slug)
-        .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))?;
-    Ok((diag, source.to_owned(), filename.to_owned()))
+        .map(|diag| (diag, source.to_owned(), filename.to_owned()))
+        .chain(framed)
+        .find(|(diag, _, _)| diag.code.slug() == slug)
+        .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))
 }
 
 /// The `(book, results)` section bytes a case's own first replay declares through
