@@ -30,10 +30,13 @@ mod support;
 use std::fmt::Write as _;
 use std::sync::Arc;
 
-use errorloom::{Case, CaseFile, CaseRenderer as _, describe_divergence, fixpoint_check};
+use errorloom::{
+    Case, CaseFile, CaseRenderer as _, EditableRender, RunEnv, RunError, describe_divergence,
+    fixpoint_check,
+};
 use libtest_mimic::{Arguments, Failed, Trial};
 
-use dorc_loom::DorcConsumer;
+use dorc_loom::{DorcConsumer, replay_case};
 use support::{LoomCase, case_roots, discover_looms};
 
 /// Parse, hygiene-check, and render-fixpoint one committed case.
@@ -69,7 +72,7 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
 
     let file = CaseFile::new(format!("{name}.loom"), text.clone());
     if fixpoint_check(&DorcConsumer::new(), std::slice::from_ref(&file)).is_ok() {
-        return Ok(());
+        return transcript_bytes_equal_production_bytes(name, &parsed);
     }
     // `fixpoint_check` reports only WHICH case drifted, so re-render for the window: the
     // usual cause is a case authored in a layout the container does not canonicalize to,
@@ -83,6 +86,43 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         dump_candidate(name, &rendered)
     )
     .into())
+}
+
+/// The committed transcript is the bytes the render seat produced — for the PROVENANCE answer too,
+/// not only for the regeneration one.
+///
+/// The fixpoint above proves the transcript reproduces from `render_case`. This proves the OTHER
+/// arm: the stamped part stream an edit is attributed against says the same bytes. Two arms that
+/// agree case by case is the mechanical form of
+/// `28L:rul-editability-is-stamped-never-re-derived` — while they could differ, something had to
+/// convert one into the other, and every such converter re-derived structure by guessing at byte
+/// shapes. This gate is what stops one growing back.
+fn transcript_bytes_equal_production_bytes(name: &str, case: &Case) -> Result<(), Failed> {
+    let consumer = DorcConsumer::new();
+    // Declining is itself the failure: the fixpoint chain just reproduced this transcript, so a
+    // provenance chain that will not answer the same command is the two arms parting ways.
+    let routed = replay_case(case, &consumer, &RunEnv::new(), |_command, _context| {
+        Err(RunError::ShellNotConfigured)
+    })
+    .map_err(|error| {
+        format!("FAIL  {name}  [no stamped provenance for a reproduced transcript: {error}]")
+    })?;
+    for (block, result) in case.replay().blocks().iter().zip(&routed) {
+        let stamped = result
+            .editable_render()
+            .map_or_else(|| result.output().to_owned(), EditableRender::text);
+        if stamped != block.output() {
+            return Err(format!(
+                "FAIL  {name}  [`{}`: the committed transcript and the stamped part stream are \
+                 different bytes, so an edit would be attributed against something the reader \
+                 never saw]\n{}",
+                block.command(),
+                divergence(block.output(), &stamped)
+            )
+            .into());
+        }
+    }
+    Ok(())
 }
 
 /// `DORC_LOOM_DUMP=<dir>` — write each drifted case's CANDIDATE transcript there, so a render
