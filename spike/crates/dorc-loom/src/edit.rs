@@ -113,7 +113,8 @@ pub fn compile_section_edit(
         match transport_edit_allow_removal(&transformed, dirty) {
             Ok(EditTransport::Edited(edit)) if edit.section() == section.id() => {
                 let values = available_values(baseline, section.id());
-                match compile_fragments(edit.fragments(), &values) {
+                let fragments = normalize_register_prose(section.id().field, edit.fragments());
+                match compile_fragments(&fragments, &values) {
                     Ok(compiled) => {
                         refuse_split_field(baseline.render(), section.id())?;
                         refuse_added_lines(baseline.render(), section.id(), &compiled)?;
@@ -201,8 +202,9 @@ fn compile_transport(
         return Err(DorcSectionEditRefusal::Unchanged);
     };
     let values = available_values(baseline, edit.section());
+    let fragments = normalize_register_prose(edit.section().field, edit.fragments());
     let compiled =
-        compile_fragments(edit.fragments(), &values).map_err(DorcSectionEditRefusal::Compile)?;
+        compile_fragments(&fragments, &values).map_err(DorcSectionEditRefusal::Compile)?;
     refuse_split_field(baseline.render(), edit.section())?;
     refuse_added_lines(baseline.render(), edit.section(), &compiled)?;
     Ok(DorcSectionEdit {
@@ -261,6 +263,77 @@ fn refuse_added_lines(
 /// named-word-judgment law).
 fn prose_line_breaks(text: &str) -> usize {
     text.matches('\n').count()
+}
+
+/// Read-in normalization for catalog register prose (`282` §3, routed by `28L:tc-catalog-prose-
+/// is-not-normalized-at-read-in`): within a paragraph, every whitespace run — a single embedded
+/// newline included — collapses to one space; a run of two-plus newlines canonicalizes to exactly
+/// one paragraph break (`"\n\n"`, `282` §3: "nothing else exists"); trailing whitespace trims off
+/// the section's own tail. Lands beside [`prose_line_breaks`] — the sibling judgment this crate
+/// already names as its ONE seat for what a line break in prose is (`28H` standing law: no second
+/// one) — and runs BEFORE `refuse_added_lines` counts the result, so a re-wrapped register can only
+/// relax that check, never trip it: a genuinely added paragraph break still refuses. Idempotent —
+/// re-normalizing normalized bytes is a no-op — which is what makes it a generator fixpoint under
+/// the byte-identity gate.
+///
+/// Catalog fields only (`message`/`help`); arrangement chrome keeps its own, deliberately
+/// different, always-single-space rule with no paragraph concept (`collapse_runs`, consumer.rs) —
+/// a chrome LINE has no paragraphs to preserve.
+fn normalize_register_prose(
+    field: &'static str,
+    fragments: &[EditableFragment<SectionVariableId>],
+) -> Vec<EditableFragment<SectionVariableId>> {
+    if !matches!(field, "message" | "help") {
+        return fragments.to_vec();
+    }
+    // The section's own tail, never the last TEXT-typed fragment: a series that ends on a
+    // Variable (an untouched value at the register's end) has no trailing prose to trim at all —
+    // trimming the last Text fragment regardless of position ate the legitimate space in front of
+    // it (caught by `omission_removes_variable_and_its_surrounding_backticks`).
+    let trailing_index = fragments
+        .len()
+        .checked_sub(1)
+        .filter(|&index| matches!(fragments.get(index), Some(EditableFragment::Text(_))));
+    fragments
+        .iter()
+        .enumerate()
+        .map(|(index, fragment)| match fragment {
+            EditableFragment::Text(text) => {
+                let collapsed = collapse_paragraph_whitespace(text);
+                let text = if Some(index) == trailing_index {
+                    collapsed.trim_end().to_owned()
+                } else {
+                    collapsed
+                };
+                EditableFragment::Text(text)
+            }
+            variable @ EditableFragment::Variable { .. } => variable.clone(),
+        })
+        .collect()
+}
+
+/// One whitespace run collapses to a single space, unless it carries two or more newlines — a
+/// paragraph break — which canonicalizes to exactly `"\n\n"`.
+fn collapse_paragraph_whitespace(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut run_newlines: Option<usize> = None;
+    for character in text.chars() {
+        if character.is_whitespace() {
+            let newlines = run_newlines.get_or_insert(0);
+            if character == '\n' {
+                *newlines = newlines.saturating_add(1);
+            }
+            continue;
+        }
+        if let Some(newlines) = run_newlines.take() {
+            out.push_str(if newlines >= 2 { "\n\n" } else { " " });
+        }
+        out.push(character);
+    }
+    if let Some(newlines) = run_newlines {
+        out.push_str(if newlines >= 2 { "\n\n" } else { " " });
+    }
+    out
 }
 
 /// A catalog register split across several sections cannot be owned by one edit: rewriting one

@@ -1676,6 +1676,39 @@ mod tests {
         );
     }
 
+    /// Read-in normalization (`282` §3, `28L`): a single embedded newline inside a catalog
+    /// register is a soft wrap, not a paragraph break, so it collapses to a space and the
+    /// compiled template stores no literal `\n` — the relaxed half of the tension pinned by
+    /// `added_help_line_refuses_and_names_the_command` (`editable_surface.rs`), which keeps a
+    /// genuine two-newline paragraph break refusing.
+    #[test]
+    fn a_wrapped_register_edit_stores_no_literal_newline() {
+        let baseline = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key(0),
+                vec![EditableFragment::Text(String::from("run the thing now"))],
+            ),
+        )]);
+        let edit = compile_section_edit(&baseline, "run the\nthing now")
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(edit.compiled().text(), "run the thing now");
+    }
+
+    /// Read-in normalization trims trailing whitespace/newline off a compiled register — layout
+    /// is the renderer's, never the stored template's (`282` §3).
+    #[test]
+    fn trailing_whitespace_and_newline_trim_off_a_compiled_register() {
+        let baseline = baseline(vec![RenderComponent::EditableSection(
+            EditableSection::new(
+                key(0),
+                vec![EditableFragment::Text(String::from("run the thing"))],
+            ),
+        )]);
+        let edit = compile_section_edit(&baseline, "run the thing now  \n")
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(edit.compiled().text(), "run the thing now");
+    }
+
     #[test]
     fn explicit_markers_can_duplicate_and_replace_every_repeated_name() {
         let baseline = baseline(vec![RenderComponent::EditableSection(

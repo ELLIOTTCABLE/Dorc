@@ -108,11 +108,16 @@ fn overtype_placeholder_mints_words() {
 /// The silent-corruption path this pack closes: a `= help:` line the render never emitted used to
 /// be absorbed into the message register, rewriting somebody's sentence with somebody else's line.
 /// It refuses now, and the refusal names the command that mints the register instead.
+///
+/// A genuine BLANK line (two newlines), not one: read-in normalization (`28L`/`282` §3) collapses a
+/// single embedded newline to a space, so a soft rewrap can no longer trip this refusal — only a
+/// real paragraph break still reads as "a line the render never emitted"
+/// (`prose_re_wrap_compiles_with_no_stored_newline` pins the relaxed half).
 #[test]
 fn added_help_line_refuses_and_names_the_command() {
     let (_, _, baseline, transcript) =
         driven(include_str!("../../aid/tests/cli-no-book-given.loom"));
-    let edited = format!("{transcript}  = help: pass --book=PATH\n");
+    let edited = format!("{transcript}\n  = help: pass --book=PATH\n");
     let refusal =
         compile_section_edit(&baseline, &edited).expect_err("an added line is not a prose edit");
     assert!(
@@ -120,7 +125,7 @@ fn added_help_line_refuses_and_names_the_command() {
             refusal,
             DorcSectionEditRefusal::AddedLine {
                 laid_out: 0,
-                edited: 1,
+                edited: 2,
                 ..
             }
         ),
