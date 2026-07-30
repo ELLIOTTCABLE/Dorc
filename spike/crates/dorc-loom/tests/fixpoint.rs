@@ -484,12 +484,12 @@ fn lint_mark_diagnostics_require_their_defining_source_shape() {
 /// declares `when-fires`/`when-used`/`why` for a component that already carries committed metadata,
 /// the two say the same thing.
 ///
-/// Omitting a key means "keep the committed words" (`kept_or_declared`), so the only way to reach
-/// this gate is to have TYPED different words — and that is a metadata edit, which has to be seen
-/// rather than absorbed. One slug's several occurrences all read one case's frontmatter, so a
-/// single unseen edit reaches every one of them at once; that is what happened, and what naming
-/// both texts here is for. The repair is either direction: restore the committed words in the case,
-/// or promote the case so the lock takes the new ones.
+/// The BELT to promote's braces: `dorc-loom promote` refuses the same drift before it writes
+/// anything, and this catches the state promote never sees — a frontmatter edit sitting in the
+/// worktree that nobody has promoted, which is the shape an author leaves behind when they meant
+/// the prose edit and not the metadata one. Omitting a key means "keep the committed words"
+/// (`kept_or_declared`), so reaching either gate means somebody TYPED different words. The repair
+/// is either direction: restore the committed words, or promote with `--accept-metadata`.
 #[test]
 fn a_case_never_silently_rewrites_committed_metadata() {
     let arrangements = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");

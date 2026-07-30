@@ -55,6 +55,10 @@ impl DorcSectionEditRefusal {
                  and report the case.",
                 key.owner, key.field
             ),
+            Self::ForeignComponent { component, owner } => format!(
+                "`{component}` is authored in {owner} — edit it there; this case only renders it. \
+                 Undo the change here, make it in {owner}, then: mise run loom:compile {owner}"
+            ),
             Self::AddedLine {
                 section,
                 laid_out,

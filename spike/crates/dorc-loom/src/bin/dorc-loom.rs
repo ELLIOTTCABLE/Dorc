@@ -9,9 +9,9 @@ use dorc_loom::TemplateVariableName;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
     InspectedReplay, Repository, SectionKey, SectionVariableId, build_publication,
-    classify_prose_changes, compile_preview, compile_receipt, load_arrangement_corpus,
-    load_corpus_by_slug, promote_receipt, render_compile_preview, replay_case,
-    replay_case_with_inputs,
+    classify_prose_changes, compile_preview, compile_receipt, corpus_ownership,
+    load_arrangement_corpus, load_corpus_by_slug, promote_receipt, refuse_foreign_components,
+    render_compile_preview, replay_case, replay_case_with_inputs,
 };
 #[cfg(test)]
 use errorloom::EditableSection;
@@ -20,7 +20,7 @@ use errorloom::{
     execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values";
 
 /// The `{{name}}` mechanism has no other trace: every committed case is fully rendered, so a
 /// reader who has only ever seen transcripts has no way to learn that a value can be typed at all.
@@ -48,6 +48,7 @@ enum Command {
         cases: Vec<PathBuf>,
         env: RunEnv,
         quiet: bool,
+        accept_metadata: bool,
     },
     Vars {
         used: bool,
@@ -91,7 +92,12 @@ fn run() -> Result<ExitCode, String> {
         Command::Compile { cases, env, quiet } => {
             compile_cases(&cases, &env, quiet, &mut out, &mut err)
         }
-        Command::Promote { cases, env, quiet } => promote_cases(&cases, &env, quiet, &mut out),
+        Command::Promote {
+            cases,
+            env,
+            quiet,
+            accept_metadata,
+        } => promote_cases(&cases, &env, quiet, accept_metadata, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
         Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
@@ -143,12 +149,23 @@ fn parse_args() -> Result<Command, String> {
     let mut argv = argv.into_iter();
     match argv.next().as_deref() {
         Some("compile") => {
-            let (cases, env, quiet) = collect_compile_args(argv)?;
+            let (cases, env, quiet, accept_metadata) = collect_compile_args(argv)?;
+            if accept_metadata {
+                return Err(format!(
+                    "{ACCEPT_METADATA} is a promote-time acknowledgement; compile writes nothing \
+                     to acknowledge\n{USAGE}"
+                ));
+            }
             Ok(Command::Compile { cases, env, quiet })
         }
         Some("promote") => {
-            let (cases, env, quiet) = collect_compile_args(argv)?;
-            Ok(Command::Promote { cases, env, quiet })
+            let (cases, env, quiet, accept_metadata) = collect_compile_args(argv)?;
+            Ok(Command::Promote {
+                cases,
+                env,
+                quiet,
+                accept_metadata,
+            })
         }
         Some("vars") => {
             let mode = argv
@@ -312,10 +329,11 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
 
 fn collect_compile_args(
     mut argv: impl Iterator<Item = String>,
-) -> Result<(Vec<PathBuf>, RunEnv, bool), String> {
+) -> Result<(Vec<PathBuf>, RunEnv, bool, bool), String> {
     let mut env = RunEnv::new().path_dir(binary_dir()?);
     let mut cases = Vec::new();
     let mut quiet = false;
+    let mut accept_metadata = false;
     while let Some(arg) = argv.next() {
         if let Some(shell) = arg.strip_prefix("--shell=") {
             env = env.shell(shell);
@@ -327,6 +345,8 @@ fn collect_compile_args(
             env = env.path_dir(next_value(&mut argv, "--path")?);
         } else if arg == "--quiet" {
             quiet = true;
+        } else if arg == ACCEPT_METADATA {
+            accept_metadata = true;
         } else if arg.starts_with('-') {
             return Err(format!("unknown option {arg:?}\n{USAGE}"));
         } else {
@@ -334,9 +354,56 @@ fn collect_compile_args(
         }
     }
     if cases.is_empty() {
-        return Ok((corpus_cases()?, env, quiet));
+        return Ok((corpus_cases()?, env, quiet, accept_metadata));
     }
-    Ok((cases, env, quiet))
+    Ok((cases, env, quiet, accept_metadata))
+}
+
+/// The one acknowledgement `promote` takes: yes, replace the committed metadata.
+const ACCEPT_METADATA: &str = "--accept-metadata";
+
+/// Refuse a promote that would rewrite committed `when-fires`/`when-used`/`why` unless the caller
+/// said so (`28L:fnd-case-frontmatter-overwrites-lock-metadata`).
+///
+/// Before any write, not after: the suite gate that also holds this property only fires once the
+/// files are already rewritten, which turns an accident into a revert ceremony. Both texts are
+/// shown because the reader is holding the case and cannot see the entry.
+fn refuse_metadata_drift(accepted: bool, out: &mut impl Write) -> Result<(), String> {
+    let cases_dir = cases_dir();
+    let drift = dorc_loom::metadata_drift(
+        &load_corpus_by_slug(&cases_dir)?,
+        &load_arrangement_corpus(&cases_dir)?,
+    );
+    if drift.is_empty() {
+        return Ok(());
+    }
+    if accepted {
+        for item in &drift {
+            writeln!(
+                out,
+                "promote: `{}` {}: {:?} replaces {:?}",
+                item.slug, item.key, item.declared, item.committed
+            )
+            .map_err(|error| error.to_string())?;
+        }
+        return Ok(());
+    }
+    let listed: Vec<String> = drift
+        .iter()
+        .map(|item| {
+            format!(
+                "\n  `{}` {}:\n    case:      {:?}\n    committed: {:?}",
+                item.slug, item.key, item.declared, item.committed
+            )
+        })
+        .collect();
+    Err(format!(
+        "this promote would replace committed metadata that no prose edit asked it to. One slug's \
+         several registry entries all read one case's frontmatter, so an unnoticed edit reaches \
+         every one of them at once.{} \nOmit the key from the case to keep the committed words, \
+         or say you mean it: add {ACCEPT_METADATA} to this promote.",
+        listed.join("")
+    ))
 }
 
 fn next_value(argv: &mut impl Iterator<Item = String>, option: &str) -> Result<String, String> {
@@ -443,9 +510,11 @@ fn promote_cases(
     cases: &[PathBuf],
     env: &RunEnv,
     quiet: bool,
+    accept_metadata: bool,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
+    refuse_metadata_drift(accept_metadata, out)?;
     let gated = gate_touched_set(cases)?;
     let Inspected::Ready(inspection, consumer) = inspect_cases(&gated, env, quiet, out)? else {
         return Ok(ExitCode::from(1));
@@ -689,6 +758,7 @@ fn inspect_cases(
     out: &mut impl Write,
 ) -> Result<Inspected, String> {
     let (mut consumer, mut refused, mut selected) = (DorcConsumer::new(), 0usize, Vec::new());
+    let ownership = corpus_ownership(&cases_dir())?;
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in &gated.paths {
         let relative_path = relative_path.clone();
@@ -721,7 +791,9 @@ fn inspect_cases(
                     .baseline_from_render(&case, render)
                     .map_err(|error| format!("{}: {error}", path.display()))?;
                 if changed_from_head {
-                    match compile_preview(&baseline, &dirty) {
+                    match compile_preview(&baseline, &dirty).and_then(|preview| {
+                        refuse_foreign_components(&ownership, path, &preview).map(|()| preview)
+                    }) {
                         Ok(preview) => previews.push((index, preview)),
                         Err(error) => case_refusal = Some((index, error, dirty)),
                     }

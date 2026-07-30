@@ -14,8 +14,8 @@ mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod generate;
 pub use generate::{
-    Publication, build_publication, generate_arrangement_lock, generate_catalog_lock,
-    load_arrangement_corpus, load_corpus_by_slug,
+    MetadataDrift, Publication, build_publication, generate_arrangement_lock,
+    generate_catalog_lock, load_arrangement_corpus, load_corpus_by_slug, metadata_drift,
 };
 mod edit;
 pub use edit::{
@@ -26,7 +26,7 @@ pub use inspect::render_compile_preview;
 mod ownership;
 pub use ownership::{
     CaseOwnership, ComponentRef, EDIT_LOOP_KEY, ENVELOPE_KEY, ENVELOPE_STDERR, OWNS_KEY,
-    corpus_ownership, edit_loop_hint, is_registered_component,
+    corpus_ownership, edit_loop_hint, is_registered_component, refuse_foreign_components,
 };
 mod preview;
 mod refusal;

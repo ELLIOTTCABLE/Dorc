@@ -241,6 +241,56 @@ fn overtyping_a_value_discloses_the_dropped_variable() {
     );
 }
 
+/// One component, one home, per EDIT — not only per declaration. Eleven invocation-error cases
+/// render the usage synopsis; an edit through any of the ten that are not its home would rewrite an
+/// entry whose own case still shows the old words, and nothing would say so until somebody read two
+/// transcripts side by side.
+#[test]
+fn editing_a_component_another_case_owns_refuses_by_name() {
+    let borrowing = corpus_dir().join("cli-unknown-flag.loom");
+    let (_, _, baseline, transcript) =
+        driven(&std::fs::read_to_string(&borrowing).expect("read the borrowing case"));
+    assert!(
+        transcript.contains("usage: dorc "),
+        "the fixture must render the synopsis it does not own: {transcript:?}"
+    );
+    let preview = dorc_loom::compile_preview(
+        &baseline,
+        &transcript.replace("usage: dorc ", "invocation: dorc "),
+    )
+    .expect("the edit itself compiles");
+
+    let ownership = dorc_loom::corpus_ownership(&corpus_dir()).expect("the corpus resolves");
+    let refusal = dorc_loom::refuse_foreign_components(&ownership, &borrowing, &preview)
+        .expect_err("a foreign component refuses");
+    let explained = refusal.explain(&borrowing);
+    assert!(
+        explained.contains("cli-usage-synopsis") && explained.contains("cli-no-book-given.loom"),
+        "the refusal names the component AND its home: {explained}"
+    );
+    assert!(
+        explained.contains("mise run loom:compile"),
+        "every refusal ends in its next command: {explained}"
+    );
+}
+
+/// The mint path stays open: a component nobody owns is not foreign, or a freshly scaffolded case
+/// could never author its own first words.
+#[test]
+fn an_unowned_component_is_not_foreign() {
+    let case = corpus_dir().join("cli-no-book-given.loom");
+    let (_, _, baseline, transcript) =
+        driven(&std::fs::read_to_string(&case).expect("read the owning case"));
+    let preview = dorc_loom::compile_preview(
+        &baseline,
+        &transcript.replace("usage: dorc ", "invocation: dorc "),
+    )
+    .expect("the edit compiles");
+    let ownership = dorc_loom::corpus_ownership(&corpus_dir()).expect("the corpus resolves");
+    dorc_loom::refuse_foreign_components(&ownership, &case, &preview)
+        .expect("its own home may edit it");
+}
+
 /// The affordance the refusal names: mint the register, and the ORDINARY loop fills it — the
 /// placeholder the render then grows is an edit region like any other.
 #[test]

@@ -301,6 +301,70 @@ fn frontmatter_scalar(case: &Case, key: &str, slug: &str) -> Result<String, Stri
 /// committed words still hold", which is what a case written to face a component (rather than to
 /// define one) means. A component with no committed row still has to declare both keys: nothing
 /// exists to keep.
+/// One committed metadata value a case's frontmatter would REPLACE.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct MetadataDrift {
+    /// The component whose entry would change.
+    pub slug: String,
+    /// The frontmatter key.
+    pub key: &'static str,
+    /// What the case says now.
+    pub declared: String,
+    /// What the committed entry says.
+    pub committed: String,
+}
+
+/// Every committed `when-fires`/`when-used`/`why` a case's frontmatter would overwrite.
+///
+/// Promote refuses on a non-empty answer unless the caller acknowledges it. Absent keys never
+/// appear here (`kept_or_declared` keeps the committed words), so this is exactly the set an
+/// author TYPED differently — and one slug's several occurrences all read one case's frontmatter,
+/// so a single unnoticed edit reaches every one of them
+/// (`28L:fnd-case-frontmatter-overwrites-lock-metadata`).
+#[must_use]
+pub fn metadata_drift(
+    codes: &BTreeMap<String, Case>,
+    arrangements: &BTreeMap<String, Case>,
+) -> Vec<MetadataDrift> {
+    let mut drift = Vec::new();
+    for entry in ARRANGEMENTS {
+        let Some(case) = arrangements.get(entry.slug) else {
+            continue;
+        };
+        push_drift(&mut drift, entry.slug, case, "when-used", entry.when_used);
+        push_drift(&mut drift, entry.slug, case, "why", entry.why);
+    }
+    for entry in CATALOG {
+        let Some(case) = codes.get(entry.slug) else {
+            continue;
+        };
+        push_drift(&mut drift, entry.slug, case, "when-fires", entry.when_fires);
+        push_drift(&mut drift, entry.slug, case, "why", entry.why);
+    }
+    drift
+}
+
+fn push_drift(
+    drift: &mut Vec<MetadataDrift>,
+    slug: &str,
+    case: &Case,
+    key: &'static str,
+    committed: &str,
+) {
+    let Some(declared) = case.frontmatter().scalar(key) else {
+        return;
+    };
+    if declared == committed {
+        return;
+    }
+    drift.push(MetadataDrift {
+        slug: slug.to_owned(),
+        key,
+        declared: declared.to_owned(),
+        committed: committed.to_owned(),
+    });
+}
+
 fn kept_or_declared(
     case: &Case,
     key: &str,

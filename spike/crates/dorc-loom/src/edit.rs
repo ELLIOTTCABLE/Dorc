@@ -56,6 +56,18 @@ pub enum DorcSectionEditRefusal {
     CandidateMismatch,
     /// The selected field is split around immutable render components.
     SplitEditableField(SectionKey),
+    /// The edited section belongs to a prose-component another case is the authoring home of.
+    ///
+    /// One component, one owner (`28L:rul-ownership-declaration-adopted`). A component is often
+    /// RENDERED by many cases — every invocation error prints the usage synopsis — and an edit
+    /// through one of those rewrites an entry whose own case still shows the old words, so the
+    /// second case's transcript would be a lie until somebody re-blessed it.
+    ForeignComponent {
+        /// The component the edit landed on.
+        component: String,
+        /// The case that is its authoring home.
+        owner: String,
+    },
     /// The edit laid out MORE lines than the render did.
     ///
     /// A catalog register and a chrome line hold WORDS; where those words BREAK is the renderer's

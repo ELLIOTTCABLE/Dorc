@@ -122,6 +122,62 @@ impl CaseOwnership {
             })
             .map(|(_, path)| path.as_path())
     }
+
+    /// The case that owns `slug`, when it is NOT `editing` — the per-edit half of the one-home law.
+    ///
+    /// Scan-time uniqueness stops two cases CLAIMING one component; this stops a case that merely
+    /// RENDERS one from rewriting it. Eleven invocation-error cases print the usage synopsis, so
+    /// without this an edit through any of them lands on an entry whose own case still says the old
+    /// thing. A component nobody owns is NOT foreign — that is the mint path, and it stays open.
+    #[must_use]
+    pub fn foreign_owner(
+        &self,
+        slug: &str,
+        occurrence: Option<usize>,
+        editing: &Path,
+    ) -> Option<&Path> {
+        // Cases are flat in one collection, so the filename is the identity — and it is the only
+        // comparison that survives a caller who named the case by slug rather than by path.
+        self.owner(slug, occurrence)
+            .filter(|owner| owner.file_name() != editing.file_name())
+    }
+}
+
+/// Refuse a compiled edit that reaches a prose-component another case is the authoring home of.
+///
+/// The per-EDIT half of the one-home law; [`CaseOwnership::scan`] holds the corpus-wide half.
+/// A section's occurrence is meaningful only for chrome, where the registry key is
+/// `(slug, occurrence)`; a catalog register's `instance` counts render positions of one code, so
+/// it never narrows ownership.
+///
+/// # Errors
+/// Returns [`crate::DorcSectionEditRefusal::ForeignComponent`] naming the component and its home.
+pub fn refuse_foreign_components(
+    ownership: &CaseOwnership,
+    editing: &Path,
+    preview: &crate::CompilePreview,
+) -> Result<(), crate::DorcSectionEditRefusal> {
+    for section in preview.sections() {
+        let key = section.section();
+        let occurrence = matches!(
+            key.field,
+            crate::ARRANGEMENT_FIELD | crate::ARRANGEMENT_LINE_FIELD
+        )
+        .then_some(key.instance);
+        let Some(owner) = ownership.foreign_owner(&key.owner, occurrence, editing) else {
+            continue;
+        };
+        return Err(crate::DorcSectionEditRefusal::ForeignComponent {
+            component: key.owner.clone(),
+            // The FILENAME, which every case-taking verb resolves: a full path here would be
+            // sixty columns of worktree the reader already knows they are standing in.
+            owner: owner.file_name().map_or_else(
+                || owner.display().to_string(),
+                |name| name.to_string_lossy().into_owned(),
+            ),
+        });
+    }
+    Ok(())
 }
 
 /// Every component one case claims: its filename's implicit entry, plus each `owns:` entry.
