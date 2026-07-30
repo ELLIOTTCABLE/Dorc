@@ -158,7 +158,7 @@ enum RunOutcome {
 fn main() -> ExitCode {
     match parse_args() {
         Ok(Invocation::Help) => {
-            print!("{}", dorc_cli::help_text());
+            print!("{}", dorc_cli::help_text(&render_ctx()));
             std::io::stdout().flush().ok();
             ExitCode::SUCCESS
         }
@@ -234,17 +234,23 @@ fn report_lint_operational(diag: &Diag) {
     );
 }
 
+/// The tables and box every render seat in THIS file reads through
+/// (`28L:rul-render-context-struct`).
+///
+/// Always the compiled-in ones, and that is a fact about this file rather than a shortcut: `main.rs`
+/// is the I/O edge, and the loom drives `lib.rs` (`lib-target-is-a-loom-seam`), never anything here
+/// — so no seat in this file can ever be handed an editable mirror. Named ONCE all the same, so the
+/// day one can be, there is a single place that changes.
+fn render_ctx() -> dorc_aid::RenderCtx<'static> {
+    dorc_aid::RenderCtx::production()
+}
+
 /// One registry-sourced chrome line, its computed values interleaved between the entry's words
 /// (`289:rul-arrangement-home-is-registry-plus-transcripts`). These stderr lines have a registry
 /// HOME but not yet an editable face: no case drives them, so their words are edited in the lock
 /// until a page case exists for them.
 fn chrome(slug: &str, values: &[&str]) -> String {
-    dorc_aid::arrangement::arrangement_sentence(
-        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-        slug,
-        None,
-        values,
-    )
+    dorc_aid::arrangement::arrangement_sentence(render_ctx().arrangements(), slug, None, values)
 }
 
 fn report_invocation_error(diag: &Diag) {
@@ -252,7 +258,7 @@ fn report_invocation_error(diag: &Diag) {
         "dorc: {}",
         dorc_aid::diag::render_body(diag, &Interner::default())
     );
-    eprintln!("{}", dorc_cli::usage_text());
+    eprintln!("{}", dorc_cli::usage_text(&render_ctx()));
 }
 
 /// `dorc strip <path>` (`27D` rider-dorc-sh-unbuilt / `274` §13): read the file, erase every dorc
@@ -483,7 +489,7 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     match args.format {
         LintFormat::Human => print!(
             "{}",
-            dorc_lint::render::render_human_parts_at(&report, args.verbosity).text()
+            dorc_lint::render::render_human_parts_at(&render_ctx(), &report, args.verbosity).text()
         ),
         LintFormat::Jsonl => print!("{}", dorc_lint::render::render_jsonl(&report)),
     }
@@ -3465,7 +3471,7 @@ fn emit_why_lens(
 /// (`ask-why-lens-stderr-unencoded`).
 fn why_lens_line(reason: &Said) -> String {
     reason
-        .runs("why-lens")
+        .runs(&render_ctx(), "why-lens")
         .iter()
         .map(|run| run.text.as_str())
         .collect()
@@ -4034,7 +4040,7 @@ impl OutcomeKind {
             OutcomeKind::Ran => 2,
             OutcomeKind::Dropped => 3,
         };
-        Said::words_at("why-outcome-word", Some(occurrence), &[]).text()
+        Said::words_at("why-outcome-word", Some(occurrence), &[]).text(&render_ctx())
     }
 }
 
@@ -4054,7 +4060,7 @@ fn foil_word(disposition: &dorc_plan::Disposition) -> String {
 /// user-facing string the triptych prints comes through here or through [`verb_word`] /
 /// [`outcome_word`], never from a `format!` literal (`28G` §0).
 fn why_words(slug: &str, values: &[&str]) -> String {
-    dorc_aid::said::words_text(slug, None, values)
+    dorc_aid::said::words_text(&render_ctx(), slug, None, values)
 }
 
 /// The gutter glyph a chain row wears in the DEFAULT render (`28E` §7
@@ -4602,11 +4608,11 @@ fn participating_block(lines: &[usize], filename: &str, book_src: &str) -> Vec<N
             mode: Literalness::Literal,
             locus: Some(
                 Said::words("why-participating-lines-locus", &[filename])
-                    .runs("why-participating-lines"),
+                    .runs(&render_ctx(), "why-participating-lines"),
             ),
             lines: rows,
         })),
-        registry_paragraph("why-participating-lines-closure"),
+        registry_paragraph(&render_ctx(), "why-participating-lines-closure"),
     ]
 }
 
@@ -4785,7 +4791,7 @@ fn contrastive(reference: &str, outcome: &str, foil: &str, because: Said) -> Sai
 /// nothing else (`28F:rul-weft-geometry-vs-words`).
 fn panel(header: &'static str, body: Vec<Node<Face>>) -> Node<Face> {
     Node::new(NodeKind::Section(Section {
-        header: Said::words(header, &[]).runs(header),
+        header: Said::words(header, &[]).runs(&render_ctx(), header),
         counts: None,
         body,
     }))
@@ -4802,7 +4808,7 @@ fn chain_rows(links: &[&ChainLink]) -> Vec<Node<Face>> {
             let mut attachments: Vec<Node<Face>> = link
                 .explanation
                 .iter()
-                .map(|said| paragraph(said, "why-chain-explanation"))
+                .map(|said| paragraph(&render_ctx(), said, "why-chain-explanation"))
                 .collect();
             attachments.extend(link.excerpt.iter().flat_map(excerpt_nodes));
             Node::new(NodeKind::Speaker(SpeakerRow {
@@ -4816,18 +4822,18 @@ fn chain_rows(links: &[&ChainLink]) -> Vec<Node<Face>> {
                     .iter()
                     .map(|who| dorc_aid::weave::value(who, "why-chain-row-speaker", WHY_VALUE_CAP))
                     .collect(),
-                verb: Some(verb_said(link.tier).runs("why-chain-row")),
+                verb: Some(verb_said(link.tier).runs(&render_ctx(), "why-chain-row")),
                 payload: Payload {
                     quoting: if link.quoted {
                         Quoting::Quoted
                     } else {
                         Quoting::Bare
                     },
-                    runs: link.payload.runs("why-chain-row"),
+                    runs: link.payload.runs(&render_ctx(), "why-chain-row"),
                     trailer: link
                         .event
                         .iter()
-                        .flat_map(|event| event.runs("why-chain-event"))
+                        .flat_map(|event| event.runs(&render_ctx(), "why-chain-event"))
                         .collect(),
                 },
                 attachments,
@@ -4847,7 +4853,8 @@ fn excerpt_nodes(excerpt: &Excerpt) -> Vec<Node<Face>> {
             table: table.clone(),
             mode: Literalness::Literal,
             locus: locus.then(|| {
-                Said::words("why-as-written-locus", &[&excerpt.path]).runs("why-as-written")
+                Said::words("why-as-written-locus", &[&excerpt.path])
+                    .runs(&render_ctx(), "why-as-written")
             }),
             lines: lines
                 .iter()
@@ -4870,7 +4877,7 @@ fn excerpt_nodes(excerpt: &Excerpt) -> Vec<Node<Face>> {
     if excerpt.elided > 0 {
         out.push(Node::new(NodeKind::Truncation(Truncation {
             note: Said::words("why-as-written-elided", &[&excerpt.elided.to_string()])
-                .runs("why-as-written"),
+                .runs(&render_ctx(), "why-as-written"),
         })));
         out.push(block(&excerpt.tail, false));
     }
@@ -4903,8 +4910,8 @@ fn shipped_block(sh: &str) -> Node<Face> {
 fn step_row(row: &StepRow) -> Node<Face> {
     Node::new(NodeKind::Labeled(LabeledRow {
         table: Some(Face::Table(STEPS_TABLE.to_owned())),
-        label: row.label.said().runs("why-next-step"),
-        body: row.body.runs("why-next-step"),
+        label: row.label.said().runs(&render_ctx(), "why-next-step"),
+        body: row.body.runs(&render_ctx(), "why-next-step"),
         attachments: Vec::new(),
     }))
 }
@@ -4935,7 +4942,8 @@ fn step_nodes(steps: &NextSteps) -> Vec<Node<Face>> {
                 .enumerate()
                 .map(|(position, row)| Branch {
                     connective: (position > 0).then(|| {
-                        Said::words("why-alternative-connective", &[]).runs("why-next-step")
+                        Said::words("why-alternative-connective", &[])
+                            .runs(&render_ctx(), "why-next-step")
                     }),
                     nodes: vec![step_row(row)],
                 })
@@ -4963,32 +4971,40 @@ fn step_nodes(steps: &NextSteps) -> Vec<Node<Face>> {
 fn chain_nodes(chain: &ChainRender, exhaustive: bool) -> Vec<Node<Face>> {
     let mut out = vec![panel(
         "why-outcome-heading",
-        vec![paragraph(&chain.outcome, "why-outcome")],
+        vec![paragraph(&render_ctx(), &chain.outcome, "why-outcome")],
     )];
     let links = chain.chain.rendered(exhaustive);
     if links.is_empty() {
         return out;
     }
-    let mut analysis = vec![paragraph(&chain.analysis_opener, "why-analysis-opener")];
+    let mut analysis = vec![paragraph(
+        &render_ctx(),
+        &chain.analysis_opener,
+        "why-analysis-opener",
+    )];
     analysis.extend(chain_rows(&links));
     if links
         .iter()
         .any(|link| link.tier.knowability() == Knowability::CoversUnmeasured)
     {
-        analysis.push(registry_paragraph("why-mark-legend"));
+        analysis.push(registry_paragraph(&render_ctx(), "why-mark-legend"));
     }
     analysis.extend(
         chain
             .chain
             .conclusion
             .iter()
-            .map(|join| paragraph(join, "why-analysis-join")),
+            .map(|join| paragraph(&render_ctx(), join, "why-analysis-join")),
     );
     analysis.extend(chain.shipped.iter().map(|sh| shipped_block(sh)));
     out.push(panel("why-analysis-heading", analysis));
 
     if !chain.next_steps.rows.is_empty() {
-        let mut arc = vec![paragraph(&chain.next_steps.opener, "why-next-steps-opener")];
+        let mut arc = vec![paragraph(
+            &render_ctx(),
+            &chain.next_steps.opener,
+            "why-next-steps-opener",
+        )];
         arc.extend(step_nodes(&chain.next_steps));
         out.push(panel("why-next-steps-heading", arc));
     }
@@ -5347,14 +5363,19 @@ fn emit_why_triptych(
         nodes.extend(participating_block(&participants, filename, book_src));
         nodes.extend(chain_nodes(chain, exhaustive));
     }
-    nodes.extend(
-        unnarrated
-            .iter()
-            .map(|line| paragraph(&Said::Value(line.clone()), "why-unnarrated-class")),
-    );
+    nodes.extend(unnarrated.iter().map(|line| {
+        paragraph(
+            &render_ctx(),
+            &Said::Value(line.clone()),
+            "why-unnarrated-class",
+        )
+    }));
     print_document(nodes, TRIPTYCH_INSET);
     println!();
-    print_document(vec![registry_paragraph("why-receipt-footer")], 0);
+    print_document(
+        vec![registry_paragraph(&render_ctx(), "why-receipt-footer")],
+        0,
+    );
     println!();
 }
 
@@ -5438,13 +5459,13 @@ fn emit_why_aggregate(
         .filter_map(|(line, chain)| Some((*line, chain.trust.as_ref()?)))
         .collect();
     if spent.is_empty() && surprises.is_empty() && improvements.is_empty() {
-        print_document(vec![receipt_banner(receipt)], 0);
+        print_document(vec![receipt_banner(&render_ctx(), receipt)], 0);
         println!();
         println!("{}", why_words("why-nothing-to-report", &[filename]));
         return;
     }
 
-    let mut nodes: Vec<Node<Face>> = vec![receipt_banner(receipt)];
+    let mut nodes: Vec<Node<Face>> = vec![receipt_banner(&render_ctx(), receipt)];
     if !spent.is_empty() {
         let items = spent
             .iter()
@@ -5479,6 +5500,7 @@ fn emit_why_aggregate(
             .collect();
         if let Some(fw) = first_wall.filter(|fw| fw.unwall > 0) {
             items.push(paragraph(
+                &render_ctx(),
                 &Said::words(
                     "why-improvement-quantified",
                     &[&fw.word, &fw.unwall.to_string()],
@@ -5488,7 +5510,7 @@ fn emit_why_aggregate(
         }
         nodes.push(panel("why-improvements-heading", items));
     }
-    nodes.push(registry_paragraph("why-receipt-footer"));
+    nodes.push(registry_paragraph(&render_ctx(), "why-receipt-footer"));
     print_document(nodes, 0);
 }
 
@@ -5496,7 +5518,10 @@ fn emit_why_aggregate(
 /// report (`28H:prop-drifted-why-is-the-thin-driver`). The composition lives across the seam so a
 /// loom case can drive the same render and carry an editable transcript of it.
 fn emit_drifted_why(address: Option<&str>, drifted: &DriftedReceipt) {
-    print!("{}", dorc_cli::drifted_why_parts(address, drifted).text());
+    print!(
+        "{}",
+        dorc_cli::drifted_why_parts(&render_ctx(), address, drifted).text()
+    );
 }
 
 /// One aggregate item: the `file:N | command` headline, its reason beneath, and the
@@ -5511,7 +5536,7 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
         if !runs.is_empty() {
             runs.push(dorc_aid::weave::mark(" ", "why-item-reason-gap"));
         }
-        runs.extend(reason.runs("why-item-reason"));
+        runs.extend(reason.runs(&render_ctx(), "why-item-reason"));
     }
     Node::new(NodeKind::Banner(Banner {
         headline: vec![
@@ -5523,7 +5548,8 @@ fn aggregate_item(site: &WhySite, filename: &str, reasons: &[&Said]) -> Node<Fac
             Node::new(NodeKind::Prose(Paragraph { runs })),
             Node::new(NodeKind::Pointer(PointerLine {
                 placement: weft::Placement::Standalone,
-                target: Said::words("why-item-pointer", &[&address]).runs("why-item"),
+                target: Said::words("why-item-pointer", &[&address])
+                    .runs(&render_ctx(), "why-item"),
             })),
         ],
     }))
@@ -5542,7 +5568,9 @@ fn top_run_reason(
     why_diags.iter().find_map(|d| {
         let psp = d.primary.span()?;
         (psp.lo.0 >= span.lo.0 && psp.lo.0 < span.hi.0)
-            .then(|| dorc_aid::diag::why(d, arena, book_src).map(|e| Said::Parts(e.parts)))
+            .then(|| {
+                dorc_aid::diag::why(&render_ctx(), d, arena, book_src).map(|e| Said::Parts(e.parts))
+            })
             .flatten()
     })
 }
@@ -5617,7 +5645,7 @@ fn why_lens_reasons(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Sai
             }
             shown.push(key);
         }
-        if let Some(explanation) = dorc_aid::diag::why(diag, arena, src) {
+        if let Some(explanation) = dorc_aid::diag::why(&render_ctx(), diag, arena, src) {
             reasons.push(Said::Parts(explanation.parts));
         }
     }
@@ -5661,13 +5689,14 @@ mod because_clause_tests {
     #[test]
     fn a_composed_because_clause_renders_whole() {
         let reason = composed_reason();
-        let whole = reason.text();
+        let whole = reason.text(&super::render_ctx());
         assert!(
             whole.len() > WHY_VALUE_CAP,
             "the fixture must exceed the raw-value budget or it proves nothing: {} bytes",
             whole.len()
         );
-        let rendered = contrastive("14|apt-get", "ran", "skipped", reason).text();
+        let rendered =
+            contrastive("14|apt-get", "ran", "skipped", reason).text(&super::render_ctx());
         assert!(
             rendered.contains(&whole),
             "the whole clause survives, so nothing was truncated: {rendered}"
@@ -5684,7 +5713,7 @@ mod because_clause_tests {
             "skipped",
             Said::Value("z".repeat(WHY_VALUE_CAP * 2)),
         )
-        .text();
+        .text(&super::render_ctx());
         assert!(
             rendered.contains("..."),
             "a raw value is capped: {rendered}"
@@ -7852,12 +7881,11 @@ fn report(stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
         let (filename, src) = source.unwrap_or(("", ""));
         let rendered = dorc_aid::diag::render_staged_cli_parts(
             stage,
-            &dorc_aid::catalog::CONST_CATALOG,
+            &render_ctx(),
             d,
             src,
             filename,
             &interner,
-            dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
         )
         .text();
         let prefix = format!("{stage}: {word}");
@@ -9833,12 +9861,12 @@ mod first_wall_tests {
     /// rule keeps free — and would re-break on every prose pass.
     #[test]
     fn why_detail_carries_the_unwall_count() {
-        let with_count = hint(1, 0).why_said().text();
+        let with_count = hint(1, 0).why_said().text(&super::render_ctx());
         assert!(
             with_count.contains('1'),
             "the recovery count must reach the reader: {with_count}"
         );
-        let without = hint(0, 0).why_said().text();
+        let without = hint(0, 0).why_said().text(&super::render_ctx());
         assert!(
             !without.contains('0'),
             "a zero count is dropped, never rendered as `0 sites`: {without}"
@@ -9875,7 +9903,7 @@ mod first_wall_tests {
         }
         assert!(checked > 0, "the why-surface registry rows must be reached");
         assert!(hint(1, 1).body().is_ascii());
-        assert!(hint(1, 1).why_said().text().is_ascii());
+        assert!(hint(1, 1).why_said().text(&super::render_ctx()).is_ascii());
     }
 
     /// A synthetic oracle whose `disturbs` arm is preceded by the author's comment and followed by
@@ -10091,7 +10119,10 @@ mod not_ours_bytes_tests {
             deepest_tier: true,
             narratable: true,
         };
-        let mut nodes = vec![receipt_banner(&receipt), receipt_banner(&at_head(&receipt))];
+        let mut nodes = vec![
+            receipt_banner(&render_ctx(), &receipt),
+            receipt_banner(&render_ctx(), &at_head(&receipt)),
+        ];
         nodes.extend(participating_block(
             &[2, 3],
             &format!("{SOURCE_MARK}.book.sh"),
@@ -10193,7 +10224,8 @@ mod not_ours_bytes_tests {
                     elided: 0,
                 };
                 Node::new(NodeKind::Section(Section {
-                    header: Said::words("why-analysis-heading", &[]).runs("why-analysis-heading"),
+                    header: Said::words("why-analysis-heading", &[])
+                        .runs(&render_ctx(), "why-analysis-heading"),
                     counts: None,
                     body: excerpt_nodes(&excerpt),
                 }))

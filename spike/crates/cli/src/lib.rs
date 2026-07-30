@@ -21,8 +21,9 @@
 
 #![forbid(unsafe_code)]
 
+use dorc_aid::RenderCtx;
 use dorc_aid::Severity;
-use dorc_aid::arrangement::{CONST_ARRANGEMENTS, arrangement_text};
+use dorc_aid::arrangement::arrangement_text;
 use dorc_aid::diag::{Diag, DiagCode};
 use dorc_aid::said::Said;
 use dorc_aid::weave::Face;
@@ -45,15 +46,15 @@ pub const HELP_ARRANGEMENT: &str = "cli-help-page";
 
 /// The one-line usage synopsis, appended to argument errors by the print seats.
 #[must_use]
-pub fn usage_text() -> String {
-    arrangement_text(&CONST_ARRANGEMENTS, USAGE_ARRANGEMENT, None)
+pub fn usage_text(ctx: &RenderCtx<'_>) -> String {
+    arrangement_text(ctx.arrangements(), USAGE_ARRANGEMENT, None)
 }
 
 /// The long help (ack-1 + the cheap help-is-success item): `--help`/`-h` prints this to STDOUT
 /// and exits 0 (a help request is a success, not a usage error).
 #[must_use]
-pub fn help_text() -> String {
-    arrangement_text(&CONST_ARRANGEMENTS, HELP_ARRANGEMENT, None)
+pub fn help_text(ctx: &RenderCtx<'_>) -> String {
+    arrangement_text(ctx.arrangements(), HELP_ARRANGEMENT, None)
 }
 
 /// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
@@ -927,16 +928,16 @@ pub fn why_parts(nodes: Vec<Node<Face>>, inset: usize) -> dorc_aid::tagged::Rend
 
 /// One attributed fragment as a paragraph.
 #[must_use]
-pub fn paragraph(said: &Said, part: &'static str) -> Node<Face> {
+pub fn paragraph(ctx: &RenderCtx<'_>, said: &Said, part: &'static str) -> Node<Face> {
     Node::new(NodeKind::Prose(Paragraph {
-        runs: said.runs(part),
+        runs: said.runs(ctx, part),
     }))
 }
 
 /// A whole registry line as a paragraph.
 #[must_use]
-pub fn registry_paragraph(slug: &'static str) -> Node<Face> {
-    paragraph(&Said::words(slug, &[]), slug)
+pub fn registry_paragraph(ctx: &RenderCtx<'_>, slug: &'static str) -> Node<Face> {
+    paragraph(ctx, &Said::words(slug, &[]), slug)
 }
 
 /// The invocation record the zero-argument `dorc why` opens with (`28D:need-exact-input-identity`;
@@ -1019,7 +1020,7 @@ impl PlanTally {
 /// prose meant to churn (`27V:rul-output-form-unwelded`), so a tally keyed on them would silently
 /// go wrong the first time someone rewrote one.
 #[must_use]
-pub fn receipt_banner(receipt: &Receipt) -> Node<Face> {
+pub fn receipt_banner(ctx: &RenderCtx<'_>, receipt: &Receipt) -> Node<Face> {
     let when = match (receipt.at, receipt.replayed) {
         (Some(at), false) => Said::words(
             "why-receipt-when-live",
@@ -1068,26 +1069,28 @@ pub fn receipt_banner(receipt: &Receipt) -> Node<Face> {
         ),
         None => Said::words("why-receipt-book", &[&receipt.book, &receipt.book_digest]),
     };
-    let mut body = vec![receipt_row(&book_row)];
+    let mut body = vec![receipt_row(ctx, &book_row)];
     if receipt.tally.is_drifted() {
         // Adjacent to the row it qualifies: the digest above is the RUN's, not the file's now.
-        body.push(receipt_row(&Said::words("why-receipt-book-drifted", &[])));
+        body.push(receipt_row(
+            ctx,
+            &Said::words("why-receipt-book-drifted", &[]),
+        ));
     }
     body.extend([
-        receipt_row(&Said::words(
-            "why-receipt-oracles",
-            &[&receipt.oracles.join(", ")],
-        )),
-        receipt_row(&Said::sentence(
-            "why-receipt-risk-profile",
-            None,
-            vec![risk],
-        )),
-        receipt_row(&tally),
+        receipt_row(
+            ctx,
+            &Said::words("why-receipt-oracles", &[&receipt.oracles.join(", ")]),
+        ),
+        receipt_row(
+            ctx,
+            &Said::sentence("why-receipt-risk-profile", None, vec![risk]),
+        ),
+        receipt_row(ctx, &tally),
         // `tc-apply-report-is-prediction`: no apply executor exists, so saying so IS the whole
         // replayed-voice obligation — never let a reader take a prediction for an outcome.
-        receipt_row(&Said::words("why-receipt-dispositions-predicted", &[])),
-        receipt_row(&Said::words("why-addressability-line", &[])),
+        receipt_row(ctx, &Said::words("why-receipt-dispositions-predicted", &[])),
+        receipt_row(ctx, &Said::words("why-addressability-line", &[])),
     ]);
     Node::new(NodeKind::Banner(Banner {
         headline: Said::sentence(
@@ -1095,7 +1098,7 @@ pub fn receipt_banner(receipt: &Receipt) -> Node<Face> {
             None,
             vec![when, Said::Value(receipt.host.clone())],
         )
-        .runs("why-receipt"),
+        .runs(ctx, "why-receipt"),
         body,
     }))
 }
@@ -1106,11 +1109,11 @@ pub fn receipt_banner(receipt: &Receipt) -> Node<Face> {
 /// like rows tight and puts a blank line between unlike things, and a receipt broken up by blank
 /// lines reads as six separate remarks rather than one identity.
 #[must_use]
-pub fn receipt_row(said: &Said) -> Node<Face> {
+pub fn receipt_row(ctx: &RenderCtx<'_>, said: &Said) -> Node<Face> {
     Node::new(NodeKind::Labeled(LabeledRow {
         table: Some(Face::Table(RECEIPT_TABLE.to_owned())),
         label: Vec::new(),
-        body: said.runs("why-receipt"),
+        body: said.runs(ctx, "why-receipt"),
         attachments: Vec::new(),
     }))
 }
@@ -1200,12 +1203,14 @@ pub fn recorded_tally(apply: &[dorc_plan::whylog::ApplyLine]) -> PlanTally {
 /// here was selected.
 #[must_use]
 pub fn drifted_why_parts(
+    ctx: &RenderCtx<'_>,
     address: Option<&str>,
     drifted: &DriftedReceipt,
 ) -> dorc_aid::tagged::RenderParts {
     if let Some(address) = address {
         return why_parts(
             vec![paragraph(
+                ctx,
                 &Said::words("why-drift-address-unanswerable", &[address]),
                 "why-drift-address-unanswerable",
             )],
@@ -1229,8 +1234,8 @@ pub fn drifted_why_parts(
     };
     why_parts(
         vec![
-            receipt_banner(&receipt),
-            registry_paragraph("why-drift-analysis-suppressed"),
+            receipt_banner(ctx, &receipt),
+            registry_paragraph(ctx, "why-drift-analysis-suppressed"),
         ],
         0,
     )

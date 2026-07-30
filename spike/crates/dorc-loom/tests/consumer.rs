@@ -166,12 +166,11 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
             replay.output(),
             render_staged_cli_parts(
                 "whylog",
-                &dorc_aid::catalog::CONST_CATALOG,
+                &dorc_aid::RenderCtx::production(),
                 &diag,
                 "",
                 "",
                 &interner,
-                dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
             )
             .text()
         );

@@ -11,23 +11,22 @@ use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::fs;
 
-use dorc_aid::Severity;
 use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
 use dorc_aid::catalog::{
     HelpRegister, OwnedEntry, is_foreign_param, owned_catalog, parse_template,
 };
 use dorc_aid::diag::{
-    AidUnloadedSiblingOracle, CANONICAL_TRANSCRIPT_WIDTH, CarriedAcrossSubstrateAxis,
-    CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable, CliShimDirUnwritable,
-    CmdsubOperandTop, CommandName, DanglingReference, Diag, DiagCode, DorcShExecFailed,
-    DorcShScriptUnreadable, EscalationPolicy, HostEvidenceAdmissionRefused,
-    HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing,
-    LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable, OperandPosition,
-    RecordsFactTruncated, RenderHeredocRefused, SharedCellMeasurementsDisagree, SiteId,
-    SiteUnresolvable, SyntaxUnsupported, TransportApplyFailed, TransportCrlfRefused,
-    TransportNotAttempted, TransportSessionLost, WhylogUnwritten, WrapperPeelIncoherent,
-    render_cli_parts, render_staged_cli_parts,
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
+    CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
+    Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
+    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
+    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
+    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
+    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
+    TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted, TransportSessionLost,
+    WhylogUnwritten, WrapperPeelIncoherent, render_cli_parts, render_staged_cli_parts,
 };
+use dorc_aid::{RenderCtx, Severity};
 use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{
     Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
@@ -445,6 +444,17 @@ impl DorcConsumer {
         cases.iter().map(|case| self.render_case(case)).collect()
     }
 
+    /// This consumer's own EDITABLE tables, at the corpus's canonical width — the seat that makes
+    /// an edited row render before anyone rebuilds
+    /// (`28H:finding-why-render-reads-the-const-not-the-mirror`).
+    ///
+    /// BOTH mirrors, always: a render that read the edited catalog and the compiled-in chrome would
+    /// show an author half of their own edit, which is exactly the failure the one-context rule
+    /// exists to make unrepresentable (`28L:rul-render-context-struct`).
+    pub(crate) fn render_ctx(&self) -> RenderCtx<'_> {
+        RenderCtx::new(&self.mirror, &self.arrangements)
+    }
+
     /// One diagnostic's part stream at the corpus's canonical width.
     ///
     /// The ONE seat both answers come from — the provenance answer [`Self::replay`] hands the
@@ -453,12 +463,11 @@ impl DorcConsumer {
     /// (`28L:rul-editability-is-stamped-never-re-derived`).
     fn cli_parts(&self, diag: &Diag, src: &str, filename: &str) -> dorc_aid::tagged::RenderParts {
         render_cli_parts(
-            &self.mirror,
+            &self.render_ctx(),
             diag,
             src,
             filename,
             &Interner::default(),
-            CANONICAL_TRANSCRIPT_WIDTH,
         )
     }
 
@@ -466,12 +475,11 @@ impl DorcConsumer {
     fn staged_cli_parts(&self, stage: &str, diag: &Diag) -> dorc_aid::tagged::RenderParts {
         render_staged_cli_parts(
             stage,
-            &self.mirror,
+            &self.render_ctx(),
             diag,
             "",
             "",
             &Interner::default(),
-            CANONICAL_TRANSCRIPT_WIDTH,
         )
     }
 
@@ -488,7 +496,7 @@ impl DorcConsumer {
         let parts = self.cli_parts(&diag, &src, &filename);
         let render = to_editable_render(&parts);
         let variables = editable_variables(&render)?;
-        let all_variables = dorc_aid::diag::params_of(&diag.code, &interner)
+        let all_variables = dorc_aid::diag::params_of(&self.render_ctx(), &diag.code, &interner)
             .into_iter()
             .filter(|(name, _)| !is_foreign_param(name))
             .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
@@ -540,7 +548,7 @@ impl DorcConsumer {
         if let Some(why) = parse_direct_why(&tokens) {
             let raw = context.materialized_input(why.whylog);
             if let Some(parts) = raw.and_then(|whylog| {
-                drifted_why_parts(whylog, why.address, |path| {
+                drifted_why_parts(&self.render_ctx(), whylog, why.address, |path| {
                     materialized_source(case, context, path)
                 })
             }) {
@@ -633,7 +641,7 @@ impl DorcConsumer {
             .map(|(diag, _, _)| diag)
             .or_else(|_| Self::whylog_diagnostic(case))?;
         let interner = Interner::default();
-        let all_variables = dorc_aid::diag::params_of(&diag.code, &interner)
+        let all_variables = dorc_aid::diag::params_of(&self.render_ctx(), &diag.code, &interner)
             .into_iter()
             .filter(|(name, _)| !is_foreign_param(name))
             .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
@@ -918,6 +926,7 @@ fn parse_direct_why<'a>(words: &[&'a str]) -> Option<DirectWhy<'a>> {
 /// that still digests to what the run recorded. Drift is the ONLY state this route answers, because
 /// it is the only one whose answer is a report rather than a diagnostic.
 fn drifted_why_parts(
+    ctx: &RenderCtx<'_>,
     whylog: &str,
     address: Option<&str>,
     source: impl Fn(&str) -> Option<String>,
@@ -935,6 +944,7 @@ fn drifted_why_parts(
         return None;
     }
     Some(dorc_cli::drifted_why_parts(
+        ctx,
         address,
         &dorc_cli::drifted_receipt(&envelope),
     ))
@@ -1271,7 +1281,7 @@ impl DorcConsumer {
     ) -> Result<String, String> {
         let raw = section_source(case, why.whylog);
         if let Some(parts) = raw.and_then(|whylog| {
-            drifted_why_parts(whylog, why.address, |path| {
+            drifted_why_parts(&self.render_ctx(), whylog, why.address, |path| {
                 section_source(case, path).map(str::to_owned)
             })
         }) {

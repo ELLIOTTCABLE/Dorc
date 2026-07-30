@@ -14,9 +14,8 @@
 //! classes apart — registry words are rephrasable, a computed value is not, and rewriting one
 //! would be lying about the world.
 
-use crate::arrangement::{
-    CONST_ARRANGEMENTS, arrangement_sentence, sentence_words, unwritten_placeholder,
-};
+use crate::RenderCtx;
+use crate::arrangement::{arrangement_sentence, sentence_words, unwritten_placeholder};
 use crate::display::encode_foreign;
 use crate::weave::Face;
 use weft::Run;
@@ -117,19 +116,19 @@ impl Said {
     /// The bytes this fragment renders as. A [`Said::Parts`] stream renders as its fragments
     /// concatenated: runs carry their own spacing, so nothing is inserted between them.
     #[must_use]
-    pub fn text(&self) -> String {
+    pub fn text(&self, ctx: &RenderCtx<'_>) -> String {
         match self {
             Said::Words {
                 slug,
                 occurrence,
                 values,
             } => {
-                let interleaved = interleaved_values(values);
+                let interleaved = interleaved_values(ctx, values);
                 let borrowed: Vec<&str> = interleaved.iter().map(String::as_str).collect();
-                arrangement_sentence(&CONST_ARRANGEMENTS, slug, *occurrence, &borrowed)
+                arrangement_sentence(ctx.arrangements(), slug, *occurrence, &borrowed)
             }
             Said::Value(text) | Said::Mark(_, text) | Said::Foreign { text, .. } => text.clone(),
-            Said::Parts(parts) => parts.iter().map(Said::text).collect(),
+            Said::Parts(parts) => parts.iter().map(|said| said.text(ctx)).collect(),
         }
     }
 
@@ -140,33 +139,36 @@ impl Said {
     /// runs to weft, the stderr lens concatenates their text. Neither can drift from the other
     /// about what a fragment says or which class it wears.
     #[must_use]
-    pub fn runs(&self, part: &'static str) -> Vec<Run<Face>> {
+    pub fn runs(&self, ctx: &RenderCtx<'_>, part: &'static str) -> Vec<Run<Face>> {
         match self {
             Said::Words {
                 slug,
                 occurrence,
                 values,
-            } => sentence_runs(slug, *occurrence, values),
+            } => sentence_runs(ctx, slug, *occurrence, values),
             Said::Value(text) => vec![crate::weave::value(text, part, WHY_VALUE_CAP)],
             Said::Mark(mark, text) => vec![crate::weave::mark(text.clone(), mark)],
             Said::Foreign { text, source } => {
                 vec![crate::weave::foreign(text, source.clone(), WHY_SOURCE_CAP)]
             }
-            Said::Parts(parts) => parts.iter().flat_map(|said| said.runs(part)).collect(),
+            Said::Parts(parts) => parts.iter().flat_map(|said| said.runs(ctx, part)).collect(),
         }
     }
 }
 
 /// One value's bytes as they enter a line: encoded at its own budget (see [`Said::sentence`]).
-fn interleaved_value(said: &Said) -> String {
+fn interleaved_value(ctx: &RenderCtx<'_>, said: &Said) -> String {
     match said {
         Said::Value(text) => encode_foreign(text, WHY_VALUE_CAP),
-        composed => composed.text(),
+        composed => composed.text(ctx),
     }
 }
 
-fn interleaved_values(values: &[Said]) -> Vec<String> {
-    values.iter().map(interleaved_value).collect()
+fn interleaved_values(ctx: &RenderCtx<'_>, values: &[Said]) -> Vec<String> {
+    values
+        .iter()
+        .map(|said| interleaved_value(ctx, said))
+        .collect()
 }
 
 /// A registry line stamped PIECE BY PIECE: `words[0]`, `values[0]`, `words[1]`, … each its own
@@ -175,9 +177,14 @@ fn interleaved_values(values: &[Said]) -> Vec<String> {
 ///
 /// Byte-identical to [`arrangement_sentence`] by construction — runs carry their own spacing and
 /// weft inserts nothing between them — so giving a line a face never moves a rendered byte.
-fn sentence_runs(slug: &'static str, occurrence: Option<usize>, values: &[Said]) -> Vec<Run<Face>> {
-    let interleaved = interleaved_values(values);
-    let Some(words) = sentence_words(&CONST_ARRANGEMENTS, slug, occurrence, values.len()) else {
+fn sentence_runs(
+    ctx: &RenderCtx<'_>,
+    slug: &'static str,
+    occurrence: Option<usize>,
+    values: &[Said],
+) -> Vec<Run<Face>> {
+    let interleaved = interleaved_values(ctx, values);
+    let Some(words) = sentence_words(ctx.arrangements(), slug, occurrence, values.len()) else {
         // The placeholder is COMPUTED (`28F:rul-placeholders-are-computed`) but still wears its
         // row's face: editing it is how an unwritten chrome slug acquires words at the loom.
         return vec![crate::weave::words(
@@ -217,13 +224,18 @@ fn value_cap(said: &Said) -> usize {
 /// defect — while every value passes the display seat first (`sinv-sink-encoding`), so a value
 /// carrying bytes we did not write is already safe before it enters our own words.
 #[must_use]
-pub fn words_text(slug: &str, occurrence: Option<usize>, values: &[&str]) -> String {
+pub fn words_text(
+    ctx: &RenderCtx<'_>,
+    slug: &str,
+    occurrence: Option<usize>,
+    values: &[&str],
+) -> String {
     let encoded: Vec<String> = values
         .iter()
         .map(|value| encode_foreign(value, WHY_VALUE_CAP))
         .collect();
     let borrowed: Vec<&str> = encoded.iter().map(String::as_str).collect();
-    arrangement_sentence(&CONST_ARRANGEMENTS, slug, occurrence, &borrowed)
+    arrangement_sentence(ctx.arrangements(), slug, occurrence, &borrowed)
 }
 
 #[cfg(test)]
@@ -241,14 +253,17 @@ mod tests {
             Said::foreign("apt-get install -y \"$PKG\"", "book.sh"),
             Said::Mark("why-cause-quote", "`".to_owned()),
         ]);
-        assert_eq!(stream.text(), "6:20 `apt-get install -y \"$PKG\"`");
+        assert_eq!(
+            stream.text(&RenderCtx::production()),
+            "6:20 `apt-get install -y \"$PKG\"`"
+        );
         assert_eq!(
             stream
-                .runs("why-lens")
+                .runs(&RenderCtx::production(), "why-lens")
                 .iter()
                 .map(|run| run.text.clone())
                 .collect::<String>(),
-            stream.text(),
+            stream.text(&RenderCtx::production()),
             "the run seat and the text seat agree byte for byte"
         );
     }
@@ -258,7 +273,7 @@ mod tests {
     #[test]
     fn not_ours_bytes_are_encoded_before_any_surface_sees_them() {
         let said = Said::foreign("red \u{1b}[31m alert", "oracle.sh");
-        assert_eq!(said.text(), "red \\x1b[31m alert");
-        assert!(said.text().is_ascii());
+        assert_eq!(said.text(&RenderCtx::production()), "red \\x1b[31m alert");
+        assert!(said.text(&RenderCtx::production()).is_ascii());
     }
 }

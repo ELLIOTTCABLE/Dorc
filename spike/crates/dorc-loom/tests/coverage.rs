@@ -1,5 +1,6 @@
 //! `RenderParts` coverage for the editable adapter.
 
+use dorc_aid::RenderCtx;
 use dorc_aid::catalog::{CATALOG, fill_template, fill_template_parts};
 use dorc_aid::diag::{
     Diag, DiagCode, MissingDialectMarker, RenderHeredocRefused, SiteId, SiteUnresolvable,
@@ -60,27 +61,19 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
     ];
 
     for diag in &diagnostics {
-        let body = render_body_parts(diag, &interner);
-        let cli = render_cli_parts(
-            &dorc_aid::catalog::CONST_CATALOG,
-            diag,
-            src,
-            "book.sh",
-            &interner,
-            dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
-        );
+        let body = render_body_parts(&RenderCtx::production(), diag, &interner);
+        let cli = render_cli_parts(&RenderCtx::production(), diag, src, "book.sh", &interner);
         assert_eq!(body.text(), render_body(diag, &interner));
         assert_eq!(cli.text(), render_cli(diag, src, "book.sh", &interner));
         // The stage prefix occupies columns, so a staged render is laid out AROUND it rather than
         // being the unstaged bytes with a prefix glued on.
         let staged = render_staged_cli_parts(
             "whylog",
-            &dorc_aid::catalog::CONST_CATALOG,
+            &RenderCtx::production(),
             diag,
             src,
             "book.sh",
             &interner,
-            dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
         )
         .text();
         assert!(staged.starts_with("whylog: "), "{staged}");
@@ -92,7 +85,7 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
         assert_eq!(to_editable_render(&cli).text(), cli.text());
     }
 
-    let parts = render_body_parts(&diagnostics[0], &interner);
+    let parts = render_body_parts(&RenderCtx::production(), &diagnostics[0], &interner);
     let render = to_editable_render(&parts);
     assert!(render.components().iter().any(|component| matches!(
         component,

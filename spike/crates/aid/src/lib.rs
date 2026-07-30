@@ -50,6 +50,9 @@ pub use said::Said;
 
 pub mod tagged;
 
+pub mod render_ctx;
+pub use render_ctx::{CANONICAL_TRANSCRIPT_WIDTH, RenderCtx};
+
 pub mod weave;
 
 pub mod narrative;

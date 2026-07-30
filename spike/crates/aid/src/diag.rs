@@ -27,6 +27,7 @@
 //! * `inv-site-keyed-results` — [`SiteId`] preserves command-site keying (promoted from the
 //!   cli's `RecordKey`).
 
+use crate::RenderCtx;
 use crate::Severity;
 use crate::said::Said;
 use dorc_core::{ProvId, Span, TopCause};
@@ -453,11 +454,13 @@ impl OperandPosition {
     /// `289:finding-reason-opener-still-hardcoded` — every string a person reads is
     /// registry-homed (`288` §1), and a `describe()` on an enum is not an exemption.
     #[must_use]
-    pub fn describe(self) -> String {
+    pub fn describe(self, ctx: &RenderCtx<'_>) -> String {
         match self {
-            OperandPosition::CommandWord => crate::said::words_text(POSITION_WORDS, Some(0), &[]),
+            OperandPosition::CommandWord => {
+                crate::said::words_text(ctx, POSITION_WORDS, Some(0), &[])
+            }
             OperandPosition::Operand(n) => {
-                crate::said::words_text(POSITION_WORDS, Some(1), &[&n.to_string()])
+                crate::said::words_text(ctx, POSITION_WORDS, Some(1), &[&n.to_string()])
             }
         }
     }
@@ -2207,8 +2210,12 @@ impl Diag {
 /// `[]`. The `interner` is threaded for forward-compat (no payload resolves an interned handle at
 /// HEAD — the excerpt handles were retired into `detail` strings). Pure; `inv-no-throw`.
 #[must_use]
-pub fn params_of(code: &DiagCode, _interner: &dorc_core::Interner) -> Vec<(&'static str, String)> {
-    let raw = params_of_raw(code);
+pub fn params_of(
+    ctx: &RenderCtx<'_>,
+    code: &DiagCode,
+    _interner: &dorc_core::Interner,
+) -> Vec<(&'static str, String)> {
+    let raw = params_of_raw(ctx, code);
     raw.into_iter()
         .map(|(name, value)| {
             if crate::catalog::is_foreign_param(name) {
@@ -2236,10 +2243,10 @@ const FOREIGN_PARAM_CAP: usize = 2048;
     reason = "one arm PER CODE, like `registry` — merging the param-less arms by `|` would hide \
               which codes declare no holes, and the per-code shape is what makes the fn long"
 )]
-fn params_of_raw(code: &DiagCode) -> Vec<(&'static str, String)> {
+fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, String)> {
     match code {
         DiagCode::CmdsubOperandTop(p) => vec![
-            ("position", p.position.describe()),
+            ("position", p.position.describe(ctx)),
             ("cause", p.top_cause.describe().to_owned()),
             ("command", p.command.describe()),
         ],
@@ -2445,22 +2452,22 @@ fn help_connective(code: &DiagCode) -> &'static str {
 /// greppable `[unwritten: <slug>]` placeholder. Pure; `inv-no-throw`.
 #[must_use]
 pub fn render_message(code: &DiagCode, interner: &dorc_core::Interner) -> String {
-    render_message_with(&crate::catalog::CONST_CATALOG, code, interner)
+    render_message_with(&RenderCtx::production(), code, interner)
 }
 
-/// The [`render_message`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// The [`render_message`] seat parameterized by a [`RenderCtx`]
 /// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog; promote passes its
 /// mutable mirror so an edit renders before any rebuild. `None` from the lookup synthesizes the
 /// `[unwritten: <slug>]` placeholder (both "no entry" and "unwritten message" fold here).
 #[must_use]
 pub fn render_message_with(
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     code: &DiagCode,
     interner: &dorc_core::Interner,
 ) -> String {
-    let params = params_of(code, interner);
+    let params = params_of(ctx, code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    match lookup.message(code.slug()) {
+    match ctx.catalog().message(code.slug()) {
         Some(t) => crate::catalog::fill_template(t, &refs)
             .unwrap_or_else(|_| format!("[invalid catalog template: {}]", code.slug())),
         None => format!("[unwritten: {}]", code.slug()),
@@ -2483,25 +2490,10 @@ pub fn render_cli(
     filename: &str,
     interner: &dorc_core::Interner,
 ) -> String {
-    render_cli_parts(
-        &crate::catalog::CONST_CATALOG,
-        diag,
-        src,
-        filename,
-        interner,
-        CANONICAL_TRANSCRIPT_WIDTH,
-    )
-    .text()
+    render_cli_parts(&RenderCtx::production(), diag, src, filename, interner).text()
 }
 
-/// The width committed transcripts — and the deterministic no-terminal fallback — lay out at.
-///
-/// A width, not THE width: the render seat takes one as an input, so a surface that knows its own
-/// box passes that instead. Detecting a terminal's width is an I/O-edge concern and never reaches
-/// here (`inv-determinism`).
-pub const CANONICAL_TRANSCRIPT_WIDTH: usize = 80;
-
-/// The ordered-parts twin of [`render_cli`], laid out at `width`.
+/// The ordered-parts twin of [`render_cli`], laid out into `ctx`'s box from `ctx`'s tables.
 ///
 /// Layout happens INSIDE the part stream: the seat composes a document, the layout engine wraps
 /// it, and every wrapped run comes back stamped with the register it was born from
@@ -2509,38 +2501,14 @@ pub const CANONICAL_TRANSCRIPT_WIDTH: usize = 80;
 /// a word boundary, or a section from the SHAPE of these bytes.
 #[must_use]
 pub fn render_cli_parts(
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     src: &str,
     filename: &str,
     interner: &dorc_core::Interner,
-    width: usize,
 ) -> crate::tagged::RenderParts {
-    render_cli_parts_within(lookup, diag, src, filename, interner, &layout_box(width, 0))
-}
-
-/// The box a diagnostic lays out into: `width` columns, the leftmost `indent` of them spent.
-///
-/// A seat that already owns geometry — a lint report's indented finding list — hands one of these
-/// instead of a bare width, so the indent is laid out THROUGH the render rather than glued on in
-/// front of it. Bytes glued on in front are the ones a wrap cannot see.
-#[must_use]
-pub fn layout_box(width: usize, indent: usize) -> weft::Frame {
-    weft::Frame::of_width(width.into()).inset(indent)
-}
-
-/// [`render_cli_parts`] into a box the caller already owns.
-#[must_use]
-pub fn render_cli_parts_within(
-    lookup: &dyn crate::catalog::CatalogLookup,
-    diag: &Diag,
-    src: &str,
-    filename: &str,
-    interner: &dorc_core::Interner,
-    frame: &weft::Frame,
-) -> crate::tagged::RenderParts {
-    let document = diagnostic_document(None, lookup, diag, src, filename, interner);
-    crate::weave::to_render_parts(&weft::render_framed(&document, frame))
+    let document = diagnostic_document(None, ctx, diag, src, filename, interner);
+    crate::weave::to_render_parts(&weft::render_framed(&document, ctx.frame()))
 }
 
 /// Render a source-staged diagnostic (`282` §4). The stage prefix is a run INSIDE the document, so
@@ -2548,15 +2516,14 @@ pub fn render_cli_parts_within(
 #[must_use]
 pub fn render_staged_cli_parts(
     stage: &str,
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     src: &str,
     filename: &str,
     interner: &dorc_core::Interner,
-    width: usize,
 ) -> crate::tagged::RenderParts {
-    let document = diagnostic_document(Some(stage), lookup, diag, src, filename, interner);
-    crate::weave::to_render_parts(&weft::render(&document, width))
+    let document = diagnostic_document(Some(stage), ctx, diag, src, filename, interner);
+    crate::weave::to_render_parts(&weft::render_framed(&document, ctx.frame()))
 }
 
 /// The diagnostic as a laid-out document: the title-and-message paragraph, a source frame per
@@ -2567,7 +2534,7 @@ pub fn render_staged_cli_parts(
 /// are chrome this seat COMPUTED, so they are stamped immutable and no edit can reach them.
 fn diagnostic_document(
     stage: Option<&str>,
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     src: &str,
     filename: &str,
@@ -2588,7 +2555,7 @@ fn diagnostic_document(
         ),
         "cli-title",
     ));
-    headline.extend(to_runs(&message_parts(lookup, diag, interner)));
+    headline.extend(to_runs(&message_parts(ctx, diag, interner)));
 
     let mut body = Vec::new();
     if let Some(primary) = diag.primary.span() {
@@ -2616,7 +2583,7 @@ fn diagnostic_document(
             attachments: Vec::new(),
         })));
     };
-    if let Some(help) = help_parts(lookup, diag, interner) {
+    if let Some(help) = help_parts(ctx, diag, interner) {
         row(
             format!("= {}:", help_connective(&diag.code)),
             "cli-help-connective",
@@ -2668,28 +2635,28 @@ fn push_arrangement_part(parts: &mut crate::tagged::RenderParts, text: String, s
 /// `report()` split its first line onto the title and place the rest after the region. Pure.
 #[must_use]
 pub fn render_body(diag: &Diag, interner: &dorc_core::Interner) -> String {
-    render_body_with(&crate::catalog::CONST_CATALOG, diag, interner)
+    render_body_with(&RenderCtx::production(), diag, interner)
 }
 
-/// The [`render_body`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
+/// The [`render_body`] seat parameterized by a [`RenderCtx`]
 /// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
-/// Byte-identical to [`render_body`] under the const lookup (gate-pinned).
+/// Byte-identical to [`render_body`] under the production context (gate-pinned).
 #[must_use]
 pub fn render_body_with(
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     interner: &dorc_core::Interner,
 ) -> String {
     use std::fmt::Write;
-    let params = params_of(&diag.code, interner);
+    let params = params_of(ctx, &diag.code, interner);
     let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
     let slug = diag.code.slug();
-    let mut out = match lookup.message(slug) {
+    let mut out = match ctx.catalog().message(slug) {
         Some(t) => crate::catalog::fill_template(t, &refs)
             .unwrap_or_else(|_| format!("[invalid catalog template: {slug}]")),
         None => format!("[unwritten: {slug}]"),
     };
-    match lookup.help(slug) {
+    match ctx.catalog().help(slug) {
         crate::catalog::HelpRegister::Absent => {}
         crate::catalog::HelpRegister::Unwritten => {
             let _ = write!(
@@ -2734,10 +2701,11 @@ pub fn render_body_with(
 /// The ordered-parts twin of [`render_body`].
 #[must_use]
 pub fn render_body_parts(
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
-    render_body_parts_with(&crate::catalog::CONST_CATALOG, diag, interner)
+    render_body_parts_with(ctx, diag, interner)
 }
 
 /// The MESSAGE register as parts: the filled catalog template, or the greppable
@@ -2748,18 +2716,18 @@ pub fn render_body_parts(
 /// stamped with the key an authored message would carry, so the transport opens the message
 /// section over it and overtyping it is how a code acquires its first words.
 fn message_parts(
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
-    let params = params_of(&diag.code, interner);
+    let params = params_of(ctx, &diag.code, interner);
     let refs: Vec<(&'static str, &str)> = params
         .iter()
         .map(|(key, value)| (*key, value.as_str()))
         .collect();
     let code = diag.code.slug();
     let mut parts = crate::tagged::RenderParts::new();
-    match lookup.message(code) {
+    match ctx.catalog().message(code) {
         Some(template) => match crate::catalog::fill_template_parts(
             template,
             &refs,
@@ -2802,18 +2770,18 @@ pub fn unwritten_help_placeholder(slug: &str) -> String {
 /// placeholder wearing the register's own face, exactly as the message does
 /// (`28L:rul-placeholder-wears-the-register-face`).
 fn help_parts(
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     interner: &dorc_core::Interner,
 ) -> Option<crate::tagged::RenderParts> {
-    let params = params_of(&diag.code, interner);
+    let params = params_of(ctx, &diag.code, interner);
     let refs: Vec<(&'static str, &str)> = params
         .iter()
         .map(|(key, value)| (*key, value.as_str()))
         .collect();
     let code = diag.code.slug();
     let mut parts = crate::tagged::RenderParts::new();
-    match lookup.help(code) {
+    match ctx.catalog().help(code) {
         crate::catalog::HelpRegister::Absent => return None,
         crate::catalog::HelpRegister::Unwritten => {
             parts.push(crate::tagged::RenderPart::TemplateLiteral {
@@ -2845,12 +2813,12 @@ fn help_parts(
 }
 
 fn render_body_parts_with(
-    lookup: &dyn crate::catalog::CatalogLookup,
+    ctx: &RenderCtx<'_>,
     diag: &Diag,
     interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
-    let mut parts = message_parts(lookup, diag, interner);
-    if let Some(help) = help_parts(lookup, diag, interner) {
+    let mut parts = message_parts(ctx, diag, interner);
+    if let Some(help) = help_parts(ctx, diag, interner) {
         push_arrangement_part(
             &mut parts,
             format!("\n  = {}: ", help_connective(&diag.code)),
@@ -2939,8 +2907,8 @@ pub struct Explanation {
 impl Explanation {
     /// The whole reason as bytes — for a seat with no span map to hand the parts to.
     #[must_use]
-    pub fn text(&self) -> String {
-        self.parts.iter().map(Said::text).collect()
+    pub fn text(&self, ctx: &RenderCtx<'_>) -> String {
+        self.parts.iter().map(|said| said.text(ctx)).collect()
     }
 }
 
@@ -2964,7 +2932,12 @@ impl Explanation {
 /// `src` resolves the cause's origin span to source text for orientation (referent-agnostic —
 /// shown, never decoded).
 #[must_use]
-pub fn why(diag: &Diag, arena: &dorc_core::ProvArena, src: &str) -> Option<Explanation> {
+pub fn why(
+    ctx: &RenderCtx<'_>,
+    diag: &Diag,
+    arena: &dorc_core::ProvArena,
+    src: &str,
+) -> Option<Explanation> {
     // Only a CmdsubOperandTop carries a ⊤-cause at HEAD (stage-1). Other codes: no caused-⊤ to
     // read ⇒ no why-lens line (fd-G honesty — they keep their own message).
     let DiagCode::CmdsubOperandTop(payload) = &diag.code else {
@@ -2980,7 +2953,7 @@ pub fn why(diag: &Diag, arena: &dorc_core::ProvArena, src: &str) -> Option<Expla
     // code/comments/corpus).
     let mut parts = vec![Said::words(
         "why-reason-cmdsub-opener",
-        &[&payload.position.describe()],
+        &[&payload.position.describe(ctx)],
     )];
     // The cause-site, shown once (minimal-witness): the give-up origin's source span, resolved for
     // orientation. A site-less origin (the defensive fallback cause) says so in its place.
@@ -3383,7 +3356,7 @@ mod tests {
         assert_eq!(registry(&code).severity, Severity::Error);
         assert_eq!(registry(&code).floor, Floor::Pinned);
         assert_eq!(registry(&code).remediation, RemediationClass::Structural);
-        assert!(params_of(&code, &Interner::default()).is_empty());
+        assert!(params_of(&RenderCtx::production(), &code, &Interner::default()).is_empty());
         let entry = crate::catalog::entry(code.slug()).expect("catalog entry");
         assert!(entry.params.is_empty());
         assert_eq!(entry.message, None);
@@ -3586,7 +3559,7 @@ mod tests {
         let document = weft::Document::new(vec![weft::Node::new(weft::NodeKind::Code(
             frame_block(span, src, "book.sh", None, true),
         ))]);
-        weft::render(&document, CANONICAL_TRANSCRIPT_WIDTH)
+        weft::render(&document, crate::CANONICAL_TRANSCRIPT_WIDTH)
             .text()
             .to_owned()
     }
@@ -3714,8 +3687,14 @@ mod tests {
     /// the disclosure text is stable across the migration).
     #[test]
     fn operand_position_describe_matches_legacy_prose() {
-        assert_eq!(OperandPosition::CommandWord.describe(), "the command word");
-        assert_eq!(OperandPosition::Operand(2).describe(), "operand 2");
+        assert_eq!(
+            OperandPosition::CommandWord.describe(&RenderCtx::production()),
+            "the command word"
+        );
+        assert_eq!(
+            OperandPosition::Operand(2).describe(&RenderCtx::production()),
+            "operand 2"
+        );
     }
 
     /// The grouping keys (`type-sketch-5`): fine keys on (slug, site); coarse STUBS to fine
@@ -3752,8 +3731,9 @@ mod tests {
             span(0, 20),
         );
         let src = "apt-get install $(date)";
-        let exp = why(&d, &arena, src).expect("a caused-⊤ has a why-lens explanation");
-        let reason = exp.text();
+        let exp = why(&RenderCtx::production(), &d, &arena, src)
+            .expect("a caused-⊤ has a why-lens explanation");
+        let reason = exp.text(&RenderCtx::production());
         assert_eq!(
             exp.remediation,
             RemediationClass::ResolveDynamism,
@@ -3789,9 +3769,15 @@ mod tests {
             DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
             span(0, 20),
         );
-        let exp = why(&d, &arena, "apt-get install $(date)").expect("a caused-⊤ explains");
+        let exp = why(
+            &RenderCtx::production(),
+            &d,
+            &arena,
+            "apt-get install $(date)",
+        )
+        .expect("a caused-⊤ explains");
         assert_eq!(
-            exp.text(),
+            exp.text(&RenderCtx::production()),
             "ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- \
              its value couldn't be resolved (first seen at 11:20 `tall $(da`); so dorc runs it, to \
              stay safe (when unsure, run). to skip it, make the operand a literal Dorc can \
@@ -3805,9 +3791,9 @@ mod tests {
             span(0, 4),
         );
         assert_eq!(
-            why(&bare, &arena, "date")
+            why(&RenderCtx::production(), &bare, &arena, "date")
                 .expect("a caused-⊤ explains")
-                .text(),
+                .text(&RenderCtx::production()),
             "ran because the command word is a command-substitution `$(...)` or runtime-dynamic \
              value -- its value couldn't be resolved (first seen at (no source site)); so dorc \
              runs it, to stay safe (when unsure, run). to skip it, make the operand a literal \
@@ -3826,7 +3812,8 @@ mod tests {
             DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
             span(0, 8),
         );
-        let exp = why(&d, &arena, "run \u{1b}[31m x").expect("a caused-⊤ explains");
+        let exp = why(&RenderCtx::production(), &d, &arena, "run \u{1b}[31m x")
+            .expect("a caused-⊤ explains");
         let foreign: Vec<&Said> = exp
             .parts
             .iter()
@@ -3834,11 +3821,11 @@ mod tests {
             .collect();
         assert_eq!(foreign.len(), 1, "the excerpt is the one not-ours fragment");
         assert_eq!(
-            foreign[0].text(),
+            foreign[0].text(&RenderCtx::production()),
             "run \\x1b[31",
             "the escape is already encoded in the fragment, not at some later seat"
         );
-        assert!(exp.text().is_ascii());
+        assert!(exp.text(&RenderCtx::production()).is_ascii());
     }
 
     /// STAGE-2 honesty (fd-G): the why-lens covers CAUSED ⊤s ONLY. A code with no cause field
@@ -3858,7 +3845,7 @@ mod tests {
             span(0, 12),
         );
         assert!(
-            why(&unresolvable, &arena, src).is_none(),
+            why(&RenderCtx::production(), &unresolvable, &arena, src).is_none(),
             "a code with no ⊤-cause must NOT get a fabricated why (fd-G honesty)"
         );
         // A CmdsubOperandTop with cause: None ⇒ no fabrication either.
@@ -3867,7 +3854,7 @@ mod tests {
             span(0, 5),
         );
         assert!(
-            why(&causeless_top, &arena, src).is_none(),
+            why(&RenderCtx::production(), &causeless_top, &arena, src).is_none(),
             "a cause: None CmdsubOperandTop yields no why (no fabrication)"
         );
     }
@@ -3886,7 +3873,13 @@ mod tests {
         );
         // RENDER surface: the why-lens explains it.
         assert!(
-            why(&d, &arena, "apt-get install $(date)").is_some(),
+            why(
+                &RenderCtx::production(),
+                &d,
+                &arena,
+                "apt-get install $(date)"
+            )
+            .is_some(),
             "a caused-⊤ has a why-lens explanation (the render surface)"
         );
         // ARTIFACT surface: NO fact-plane comment for a CmdsubOperandTop ⇒ the cause/receipt
@@ -3913,7 +3906,7 @@ mod tests {
             span(0, 5),
         );
         let interner = Interner::default();
-        let parts = render_body_parts(&diag, &interner);
+        let parts = render_body_parts(&RenderCtx::production(), &diag, &interner);
         let mut foreign = 0_usize;
         for part in parts.parts() {
             let text = part.text();

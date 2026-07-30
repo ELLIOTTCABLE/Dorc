@@ -18,6 +18,7 @@
 //! the transitional twin of the dorc-loom `canonical_payload` constructors; ownership itself is tracked by
 //! the case files, never by membership in this list.
 
+use dorc_aid::RenderCtx;
 use dorc_aid::diag::{
     self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
     DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
@@ -409,21 +410,14 @@ fn defining_case_parts_match_product_renders() {
     for case in covered() {
         let diag = Diag::new((case.build)(), Span::new(BytePos(0), BytePos(4)));
         assert_eq!(
-            diag::render_body_parts(&diag, &interner).text(),
+            diag::render_body_parts(&RenderCtx::production(), &diag, &interner).text(),
             diag::render_body(&diag, &interner),
             "defining case `{}`: body parts drifted",
             case.slug
         );
         assert_eq!(
-            diag::render_cli_parts(
-                &dorc_aid::catalog::CONST_CATALOG,
-                &diag,
-                src,
-                "book.sh",
-                &interner,
-                diag::CANONICAL_TRANSCRIPT_WIDTH,
-            )
-            .text(),
+            diag::render_cli_parts(&RenderCtx::production(), &diag, src, "book.sh", &interner)
+                .text(),
             diag::render_cli(&diag, src, "book.sh", &interner),
             "defining case `{}`: cli parts drifted",
             case.slug
@@ -439,7 +433,7 @@ fn body_parts_keep_empty_parameter_identity() {
         }),
         Span::new(BytePos(0), BytePos(1)),
     );
-    let parts = diag::render_body_parts(&diag, &Interner::default());
+    let parts = diag::render_body_parts(&RenderCtx::production(), &diag, &Interner::default());
     assert_eq!(parts.text(), diag::render_body(&diag, &Interner::default()));
     assert!(parts.parts().iter().any(|part| matches!(
         part,

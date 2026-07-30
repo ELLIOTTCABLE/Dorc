@@ -30,7 +30,7 @@ const SHELL: &str = "---\narrangement: cli-help-page\nwhen-used: harness.\nwhy: 
 
 /// Lay one chrome line out at `width` and take it all the way to an editable baseline.
 fn laid_out(said: &Said, width: usize) -> (String, dorc_loom::DorcEditableBaseline) {
-    let runs: Vec<Run<Face>> = said.runs("harness");
+    let runs: Vec<Run<Face>> = said.runs(&dorc_aid::RenderCtx::production(), "harness");
     let document = Document::new(vec![Node::new(NodeKind::Prose(Paragraph { runs }))]);
     let rendered = render(&document, width);
     let parts = to_render_parts(&rendered);

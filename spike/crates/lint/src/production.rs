@@ -51,6 +51,6 @@ pub fn lint_materialized_source(
         &NoToolsRunner,
         None,
     );
-    let human = render::render_human_parts(&report);
+    let human = render::render_human_parts(&dorc_aid::RenderCtx::production(), &report);
     ProductionLintResult { report, human }
 }

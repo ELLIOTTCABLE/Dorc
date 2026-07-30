@@ -95,7 +95,7 @@ fn clean_book_is_silent_with_a_positive_sentence() {
         Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),
     );
     assert!(clean.findings.is_empty());
-    let human = render::render_human(&clean);
+    let human = render::render_human(&dorc_aid::RenderCtx::production(), &clean);
     assert!(
         human.contains("clean -- nothing found"),
         "positive clean sentence: {human}"
@@ -239,10 +239,15 @@ fn the_frame_split_is_a_policy_the_density_dial_moves() {
         &[file("book.sh", EVAL_BOOK)],
         Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),
     );
-    let default = render::render_human_parts_at(&report, render::Verbosity::Default).text();
+    let default = render::render_human_parts_at(
+        &dorc_aid::RenderCtx::production(),
+        &report,
+        render::Verbosity::Default,
+    )
+    .text();
     assert_eq!(
         default,
-        render::render_human(&report),
+        render::render_human(&dorc_aid::RenderCtx::production(), &report),
         "the dial's default IS the unparameterized render"
     );
     assert!(
@@ -254,7 +259,12 @@ fn the_frame_split_is_a_policy_the_density_dial_moves() {
         "the inventory finding stays compact by default:\n{default}"
     );
 
-    let terse = render::render_human_parts_at(&report, render::Verbosity::Terse).text();
+    let terse = render::render_human_parts_at(
+        &dorc_aid::RenderCtx::production(),
+        &report,
+        render::Verbosity::Terse,
+    )
+    .text();
     assert!(
         terse.contains("[analysis-diagnostics:syntax-unsupported]"),
         "--terse demotes the framed finding to the compact line:\n{terse}"
@@ -264,7 +274,12 @@ fn the_frame_split_is_a_policy_the_density_dial_moves() {
         "--terse keeps no frames:\n{terse}"
     );
 
-    let verbose = render::render_human_parts_at(&report, render::Verbosity::Verbose).text();
+    let verbose = render::render_human_parts_at(
+        &dorc_aid::RenderCtx::production(),
+        &report,
+        render::Verbosity::Verbose,
+    )
+    .text();
     assert!(
         verbose.contains("error[syntax-unsupported]"),
         "--verbose keeps the frames it already had:\n{verbose}"
@@ -276,7 +291,12 @@ fn the_frame_split_is_a_policy_the_density_dial_moves() {
 
     // A finding with no SOURCE bytes cannot be framed at any density: a caret needs bytes.
     let relays = run_native(&[file("book.sh", EVAL_BOOK)], None);
-    let relayed = render::render_human_parts_at(&relays, render::Verbosity::Verbose).text();
+    let relayed = render::render_human_parts_at(
+        &dorc_aid::RenderCtx::production(),
+        &relays,
+        render::Verbosity::Verbose,
+    )
+    .text();
     assert!(
         relayed.contains("[shellcheck:lint-tool-absent]"),
         "the source-less relay stays compact even at --verbose:\n{relayed}"

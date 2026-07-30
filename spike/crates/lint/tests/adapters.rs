@@ -145,9 +145,13 @@ fn shellcheck_unstructured_output_is_raw_passthrough() {
         .diag
         .code;
     assert!(
-        dorc_aid::diag::params_of(code, &dorc_core::Interner::default())
-            .iter()
-            .any(|(name, value)| *name == "output" && value.contains("no structure")),
+        dorc_aid::diag::params_of(
+            &dorc_aid::RenderCtx::production(),
+            code,
+            &dorc_core::Interner::default(),
+        )
+        .iter()
+        .any(|(name, value)| *name == "output" && value.contains("no structure")),
         "the unparsable tool output rides the payload: {code:?}"
     );
 }

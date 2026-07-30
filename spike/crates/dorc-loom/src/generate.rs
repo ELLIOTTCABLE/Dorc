@@ -276,7 +276,7 @@ fn case_example(
     };
     let diag = consumer.case_diag(case)?;
     let interner = Interner::default();
-    let payload = params_of(&diag.code, &interner);
+    let payload = params_of(&consumer.render_ctx(), &diag.code, &interner);
     let refs: Vec<(&str, &str)> = payload
         .iter()
         .map(|(key, value)| (*key, value.as_str()))
