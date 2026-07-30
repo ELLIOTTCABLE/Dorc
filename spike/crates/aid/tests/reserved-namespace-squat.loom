@@ -1,0 +1,22 @@
+---
+code: reserved-namespace-squat
+when-fires: a book funcdef coincidentally named `*__<role>` squats the reserved oracle namespace. oracle/reserved.rs lint_book_reserved_names. `{role}` twice.
+why: rul24M-bare-dorcism-names: accepted-not-prevented; the disclosure is loud (warnings tune high this era).
+---
+-- book.sh --
+#!/bin/sh
+# An ordinary book helper that happens to be named like the role an oracle would own.
+hork__predict() { hork --stub; }
+hork__predict
+
+-- replay --
+$ dorc plan --book=book.sh
+warning[reserved-namespace-squat]: sm book function `hork__predict` squats the
+reserved `__predict` oracle namespace (rul24M-bare-dorcism-names): if
+unintended, it coincidentally matches an emitted oracle function name -- it is
+treated as an ordinary opaque command here (run-verbatim), but a shipped oracle
+preamble of the same name would collide (last-writer-wins). Rename it to stay
+clear of `*__predict`.
+      [ book.sh:3:1
+   3 | hork__predict() { hork --stub; }
+     | \___________/

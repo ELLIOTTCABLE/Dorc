@@ -37,36 +37,12 @@ use dorc_core::{BytePos, Interner, Span};
 const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
     // ── analyzer give-ups: trigger via a small book/oracle through the pipeline ──
     (
-        "cmdsub-inner-nonleaf",
-        "book: an effect command inside `$(…)`, e.g. `x=$(id -u)`",
-    ),
-    (
-        "redir-target-top",
-        "book: a write-redirect to a dynamic target, `echo x >\"$f\"`",
-    ),
-    (
-        "cfg-top-node",
-        "book: an unsupported construct that lowers to a CFG ⊤ node",
-    ),
-    (
-        "cfg-errexit-unknown",
-        "book: `set -e` with an unmodeled command in the errexit region",
-    ),
-    (
-        "effect-kind-disagreement",
-        "oracle: a check annotation kind ≠ the effect-map kind for a verb",
-    ),
-    (
         "predict-unterminated",
         "oracle: a check `case` body missing its `esac`",
     ),
     (
         "munge-name-collision",
         "oracle: two source names munging to one sh funcname",
-    ),
-    (
-        "reserved-namespace-squat",
-        "book: a funcdef named `nginx__predict` squatting the role namespace",
     ),
     (
         "tolerates-over-identity-dependence",
@@ -103,22 +79,6 @@ const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
     (
         "wrapped-site-adoption-hint",
         "book: a `sudo`-wrapped site whose is_converged lacks tolerates",
-    ),
-    (
-        "resolver-conflict",
-        "oracle: two oracle files declaring one kind's resolver",
-    ),
-    (
-        "resolver-provider-collision",
-        "oracle: a resolver keyed to a known COMMAND provider name",
-    ),
-    (
-        "reaches-conflict",
-        "oracle: two oracle files declaring one kind's reach-function",
-    ),
-    (
-        "reaches-provider-collision",
-        "oracle: a reach-function keyed to a known COMMAND provider name",
     ),
     (
         "wrapper-entry-incoherent",

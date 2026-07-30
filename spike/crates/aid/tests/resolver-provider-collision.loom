@@ -1,0 +1,31 @@
+---
+code: resolver-provider-collision
+when-fires: a resolver is keyed to a name matching a known COMMAND provider. cli/main.rs. `{name}` = the colliding name.
+why: corr-kind-keying §10: resolvers are keyed by KIND, not command — a likely mis-key (kept; the warning surfaces the risk).
+---
+-- book.sh --
+#!/bin/sh
+hork install nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   pkg : sm.dorc.Package = "$1"
+   hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed
+}
+
+# Keyed by the COMMAND this file describes rather than by the kind it names entities of.
+hork__resolve() {
+   hork --canonical -- "$1"
+}
+
+-- replay --
+$ dorc plan --book=book.sh -o hork.oracle.sh
+warning[resolver-provider-collision]: sm resolver 'hork.resolve()' is keyed to a
+name matching a known COMMAND provider -- resolvers are keyed by KIND, not
+command (corr-kind-keying section 10); this mints identity for a kind no
+coordinate may use (a likely mis-key)
+      [ hork.oracle.sh:9:1
+   9 | hork__resolve() {
+     | \___________/

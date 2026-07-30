@@ -1,0 +1,18 @@
+---
+code: redir-target-top
+when-fires: a write-redirect (`>`/`>>`) to a dynamic/unresolved target joins ⊤. effect.rs classify Redir arm (né dq-redir-target-top).
+why: y-1 / 21F imp-1: the target is unresolvable so no per-path `file` cell can be keyed. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).
+---
+-- book.sh --
+#!/bin/sh
+# The redirect target comes from the environment, so no `file` cell names it.
+hork --emit >"$LOG_DEST"
+
+-- replay --
+$ dorc plan --book=book.sh
+note[redir-target-top]: sm write-redirect to a dynamic/unresolved target => no
+per-path `file` cell can be keyed, so the write joins ⊤ and the command runs
+(never elided)
+      [ book.sh:3:13
+   3 | hork --emit >"$LOG_DEST"
+     |             \__________/

@@ -1,0 +1,37 @@
+---
+code: resolver-conflict
+when-fires: two oracle files declare one kind's resolver. cli/main.rs. `{kind}` = the kind, `{count}` = the resolver count.
+why: 24F §3 at-most-one-resolver-per-kind: BOTH refused (never first-wins-silently); the kind keeps token-equality.
+---
+-- book.sh --
+#!/bin/sh
+hork install nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   pkg : sm.dorc.Package = "$1"
+   hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed
+}
+
+sm_dorc_Package__resolve() {
+   hork --canonical -- "$1"
+}
+
+-- wombat.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# A second author's take on the same kind's identity. One kind, one owner.
+sm_dorc_Package__resolve() {
+   wombat --canonical -- "$1"
+}
+
+-- replay --
+$ dorc plan --book=book.sh -o hork.oracle.sh -o wombat.oracle.sh
+error[resolver-conflict]: sm kind 'sm_dorc_Package' has 2 resolvers across
+oracle files -- at-most-one-resolver-per-kind (24F section 3): BOTH refused, the
+kind keeps token-equality (never first-wins-silently)
+      [ hork.oracle.sh:8:1
+   8 | sm_dorc_Package__resolve() {
+     | \______________________/

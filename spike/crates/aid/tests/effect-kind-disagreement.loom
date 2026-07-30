@@ -1,0 +1,29 @@
+---
+code: effect-kind-disagreement
+when-fires: a check's annotation kind disagrees with the effect-map kind for the same verb; the annotation wins. effect.rs (SPANLESS — mid-resolution, no leaf).
+why: 204 §6 open seam: declared identity wins. PASSTHROUGH — the disagreement rides `detail`.
+---
+-- book.sh --
+#!/bin/sh
+hork add nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The mark stands AHEAD of the bind, so the effect-map reads its kind off the coordinate while
+# argparse reads the declared identity off the bind below it. The two disagree.
+hork__predict() {
+   verb=$1; shift
+   case $verb in
+      add)
+         hork --query "$1" >/dev/null 2>&1 : sm.dorc.Service:"$1"@installed
+         pkg : sm.dorc.Package = "$1"
+         ;;
+   esac
+}
+
+-- replay --
+$ dorc plan --book=book.sh -o hork.oracle.sh
+warning[effect-kind-disagreement]: sm check annotation kind `sm.dorc.Package`
+disagrees with the effect-map kind `sm.dorc.Service` for this verb -- the
+annotation (declared identity) wins

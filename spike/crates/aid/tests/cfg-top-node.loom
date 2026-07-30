@@ -1,0 +1,18 @@
+---
+code: cfg-top-node
+when-fires: an `Unsupported` AST ⊤-node became a CFG `Top` node (an unsupported construct, or the CFG nesting bound). cfg.rs lower_top + fresh(Top).
+why: the conservative ⊤-absorbing semantics; any command after it may mutate anything. PASSTHROUGH — the CFG builder's reason rides `detail`. NOTE plain-language pass owed: slug carries top/⊤ wording (law-plain-language-surfaces, 24H ack-4).
+---
+-- book.sh --
+#!/bin/sh
+# `eval` executes constructed code, so the CFG cannot know what runs here.
+eval "hork --stub"
+hork --settle
+
+-- replay --
+$ dorc plan --book=book.sh
+error[cfg-top-node]: sm unsupported construct (⊤): un-probeable and
+un-skippable
+      [ book.sh:3:1
+   3 | eval "hork --stub"
+     | \__/

@@ -1,0 +1,19 @@
+---
+code: cmdsub-inner-nonleaf
+when-fires: an effect-bearing command runs inside a `$(…)` substitution body, so it has no independent leaf. effect.rs classify (né dq-cmdsub-inner-nonleaf).
+why: q-1.f silent-1/silent-4 disclosure; the inner command runs whenever its enclosing line runs. `{inner}` = the resolved inner argv.
+---
+-- book.sh --
+#!/bin/sh
+# `id -u` has no leaf of its own: it is part of evaluating the assignment.
+uid=$(id -u)
+hork --owner "$uid"
+
+-- replay --
+$ dorc plan --book=book.sh
+note[cmdsub-inner-nonleaf]: sm command `id -u` runs inside a `$(...)`
+substitution => effect-bearing but not independently elidable (it runs whenever
+its enclosing line runs)
+      [ book.sh:1:1
+   1 | #!/bin/sh
+     | \___/

@@ -1,0 +1,15 @@
+---
+code: cfg-errexit-unknown
+when-fires: the errexit-region pass hit an unknown/unmodeled command; the `set -e` failure-edge is conservatively assumed. cfg.rs (SPANLESS — spans a region).
+why: over-approximate, sound. PASSTHROUGH — the pass's description rides `detail`.
+---
+-- book.sh --
+#!/bin/sh
+# The option word is not a literal, so whether errexit is on from here is unknown.
+set "$SHELL_FLAGS"
+hork --settle
+
+-- replay --
+$ dorc plan --book=book.sh
+warning[cfg-errexit-unknown]: sm errexit state is ⊤ at one or more commands;
+failure-edges added conservatively (over-approximate, sound)

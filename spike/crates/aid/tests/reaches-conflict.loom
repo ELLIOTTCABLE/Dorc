@@ -1,0 +1,38 @@
+---
+code: reaches-conflict
+when-fires: two oracle files declare one kind's reach-function. cli/main.rs. `{kind}` = the kind, `{count}` = the reach-function count.
+why: 24G §4 at-most-one-reaches-per-kind: BOTH refused (never first-wins-silently); the kind's footprints do not expand.
+---
+-- book.sh --
+#!/bin/sh
+hork install nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   pkg : sm.dorc.Package = "$1"
+   hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed
+}
+
+sm_dorc_Package__disturbance_reaches_only() {
+   hork --contents -- "$1"    : disturbs sm.dorc.File
+}
+
+-- wombat.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# A second author's survey of the same kind's reach. `only` is a completeness contract, and two
+# of them cannot both be complete.
+sm_dorc_Package__disturbance_reaches_only() {
+   wombat --contents -- "$1"    : disturbs sm.dorc.File
+}
+
+-- replay --
+$ dorc plan --book=book.sh -o hork.oracle.sh -o wombat.oracle.sh
+error[reaches-conflict]: sm kind 'sm_dorc_Package' has 2 reach-functions across
+oracle files -- at-most-one-reaches-per-kind (24G section 4): BOTH refused, the
+kind's footprints do not expand (never first-wins-silently)
+      [ hork.oracle.sh:8:1
+   8 | sm_dorc_Package__disturbance_reaches_only() {
+     | \_______________________________________/
