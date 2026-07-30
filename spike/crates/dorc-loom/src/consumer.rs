@@ -618,10 +618,12 @@ impl DorcConsumer {
             let parts = self.cli_parts(&diag, "", "");
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         };
-        if let Some(input) = plan.input {
-            let _ = materialized_input(case, context, input)?;
-        }
-        let (diag, _, filename) = Self::world_of_source(case, plan.book, &source).ok()?;
+        let results = match plan.input {
+            Some(input) => Some(materialized_input(case, context, input)?),
+            None => None,
+        };
+        let (diag, _, filename) =
+            Self::world_of_source(case, plan.book, &source, results.as_deref()).ok()?;
         if plan.machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }
@@ -720,6 +722,11 @@ impl DorcConsumer {
         {
             return Ok(world);
         }
+        if let Some((book, results)) = declared_plan_inputs(case)
+            && let Ok(diag) = fire_records_admission(slug, book, results)
+        {
+            return Ok((diag, String::new(), String::new()));
+        }
         // Tried BEFORE the payload floor, so a code that can fire for real never settles for a
         // constructed stand-in (`289:rul-worldless-route-honest-trigger`).
         if let Some(diag) = case
@@ -740,6 +747,7 @@ impl DorcConsumer {
         case: &Case,
         path: &str,
         source: &str,
+        results: Option<&str>,
     ) -> Result<(Diag, String, String), String> {
         let slug = case
             .frontmatter()
@@ -753,6 +761,11 @@ impl DorcConsumer {
             && let Ok((diag, _, filename)) = fire_book_analysis(slug, path, source)
         {
             return Ok((diag, source.to_owned(), filename));
+        }
+        if let Some(results) = results
+            && let Ok(diag) = fire_records_admission(slug, source, results)
+        {
+            return Ok((diag, String::new(), String::new()));
         }
         let diag = canonical_payload(slug)
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
@@ -1276,17 +1289,14 @@ impl DorcConsumer {
             }
             return Ok(self.cli_parts(&diag, "", "").text());
         };
-        if let Some(input) = plan.input {
-            let has_input = case_relative_path(input)
-                && case
-                    .sections()
-                    .iter()
-                    .any(|section| section.name() == input);
-            if !has_input {
-                return Err(format!("unsupported replay {command:?}"));
-            }
-        }
-        let (diag, _, filename) = Self::world_of_source(case, plan.book, source)?;
+        let results = match plan.input {
+            Some(input) => Some(
+                section_source(case, input)
+                    .ok_or_else(|| format!("unsupported replay {command:?}"))?,
+            ),
+            None => None,
+        };
+        let (diag, _, filename) = Self::world_of_source(case, plan.book, source, results)?;
         if plan.machine {
             return Ok(render_diag_jsonl(&diag));
         }
@@ -1578,6 +1588,50 @@ fn fire_book_analysis(
         .find(|d| d.code.slug() == slug)
         .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))?;
     Ok((diag, source.to_owned(), filename.to_owned()))
+}
+
+/// The `(book, results)` section bytes a case's own first replay declares through
+/// `dorc plan --book=B < R`. The re-render chain has no materialized directory, so it reads the
+/// case's sections; the driven chain reads the materialized files. Both must answer the same world.
+fn declared_plan_inputs(case: &Case) -> Option<(&str, &str)> {
+    let block = case.replay().blocks().first()?;
+    let tokens = exact_words(block.command())?;
+    let plan = parse_direct_plan(&tokens)?;
+    Some((
+        section_source(case, plan.book)?,
+        section_source(case, plan.input?)?,
+    ))
+}
+
+/// World-as-pipeline for the intake edge: run the REAL bounded host-evidence admission over the
+/// case's declared `< results` bytes, framed exactly as a hostless `dorc plan` over `book` frames
+/// them. The refusal's own spanless diagnostic IS the world, which is what makes the `< file` in a
+/// replay command load-bearing rather than decorative.
+fn fire_records_admission(slug: &str, book: &str, results: &str) -> Result<Diag, String> {
+    use dorc_plan::records::{
+        Admission, Framing, HostEvidenceLimits, admit_unscoped_host_records, read_host_evidence,
+    };
+    let framing = Framing::spike(dorc_plan::invocation::book_digest(book));
+    let limits = HostEvidenceLimits::spike_default();
+    let admitted = match read_host_evidence(results.as_bytes(), limits) {
+        Admission::Admitted(bytes) => admit_unscoped_host_records(&bytes, &framing, limits),
+        Admission::NoObservation => Admission::NoObservation,
+        Admission::Refused(reason) => Admission::Refused(reason),
+    };
+    let Admission::Refused(reason) = admitted else {
+        return Err(format!(
+            "world-as-pipeline `{slug}`: the results stream was admitted, so intake fired nothing"
+        ));
+    };
+    let diag = reason.spanless_diagnostic();
+    if diag.code.slug() == slug {
+        Ok(diag)
+    } else {
+        Err(format!(
+            "world-as-pipeline `{slug}` fired `{}` instead",
+            diag.code.slug()
+        ))
+    }
 }
 
 fn editable_variables(
