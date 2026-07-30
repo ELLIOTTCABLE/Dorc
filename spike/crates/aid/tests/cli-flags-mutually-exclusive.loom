@@ -6,4 +6,4 @@ why: declarations-genuinely-contradict: a pre-network fail-fast rather than a pr
 -- replay --
 $ dorc why --last --whylog=run.whylog --whylog-dir=logs
 error[cli-flags-mutually-exclusive]: sm --whylog and --whylog-dir are mutually
-   exclusive
+exclusive

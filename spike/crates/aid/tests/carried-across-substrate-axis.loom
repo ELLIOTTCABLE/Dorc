@@ -6,5 +6,5 @@ why: 27C §9: every cross-context elision renders its attribution chain from day
 -- replay --
 $ dorc plan --book=book.sh
 note[carried-across-substrate-axis]: sm elision carried across the fs-view axis:
-   backing kind `sm_dorc_File` vouches `invariant:fs-view`; the verdict body is
-   read-set-closed
+backing kind `sm_dorc_File` vouches `invariant:fs-view`; the verdict body is
+read-set-closed

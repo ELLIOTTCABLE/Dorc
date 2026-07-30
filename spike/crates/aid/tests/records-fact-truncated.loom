@@ -6,4 +6,4 @@ why: plans/128 fc-2: a computable range, not a refusal — the unseen sites fold
 -- replay --
 $ dorc plan --book=book.sh < probe-results.txt
 note[records-fact-truncated]: sm fact lane truncated: 3 of 5 declared site
-   records received -- the 2 unseen site(s) fold Unknown (run)
+records received -- the 2 unseen site(s) fold Unknown (run)

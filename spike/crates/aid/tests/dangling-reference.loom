@@ -6,5 +6,5 @@ why: 24F §4: turns a third-party-typo from silent value-loss into a pointed hin
 -- replay --
 $ dorc plan --book=book.sh
 note[dangling-reference]: sm coordinate sm.dorc.Package:nginx resolved DANGLING
-   -- the kind's resolver reports no such entity (a likely typo / stale name);
-   it degrades to may-alias (the site runs)
+-- the kind's resolver reports no such entity (a likely typo / stale name); it
+degrades to may-alias (the site runs)

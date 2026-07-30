@@ -6,4 +6,4 @@ why: 27C axis-1 and 27R section 5: these vocabularies are engine-owned and close
 -- replay --
 $ dorc plan --probe-capability=wat --book=webhost.sh
 error[cli-flag-value-not-recognized]: sm unknown --probe-capability `wat`
-   (expected root|nopasswd|degraded)
+(expected root|nopasswd|degraded)

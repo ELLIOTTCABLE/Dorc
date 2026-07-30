@@ -13,9 +13,8 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 oracle.sh:
   warning[mark-hashcolon-malformed]: [unwritten: mark-hashcolon-malformed]
-   --> oracle.sh:2:1
-   |
- 2 | #: frobnicate
-   | \/
+        [ oracle.sh:2:1
+     2 | #: frobnicate
+       | \/
 
 dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

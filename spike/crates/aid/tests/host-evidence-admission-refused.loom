@@ -6,4 +6,4 @@ why: host evidence remains controller-owned and decision-inert until admission s
 -- replay --
 $ dorc plan --book=book.sh
 error[host-evidence-admission-refused]: [unwritten:
-   host-evidence-admission-refused]
+host-evidence-admission-refused]

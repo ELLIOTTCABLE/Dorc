@@ -6,4 +6,4 @@ why: the strip succeeded and the environment failed: distinguishing that from a 
 -- replay --
 $ dorc plan --book=webhost.sh
 error[dorc-sh-exec-failed]: sm cannot exec sh: No such file or directory (os
-   error 2)
+error 2)

@@ -14,9 +14,8 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 oracle.sh:
   error[marker-version-unrecognized]: [unwritten: marker-version-unrecognized]
-   --> oracle.sh:2:22
-   |
- 2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
-   |                      \__________________________/
+        [ oracle.sh:2:22
+     2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
+       |                      \__________________________/
 
 dorc lint: 1 error, 0 warnings, 0 infos across 1 file.

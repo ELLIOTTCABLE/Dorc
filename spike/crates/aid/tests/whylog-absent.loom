@@ -6,5 +6,5 @@ why: the durable is written only when a plan/apply/round-trip run was asked to (
 -- replay --
 $ dorc why --last --whylog=.whylog
 whylog: warning[whylog-absent]: no saved why-log to read back in `.whylog`
-   = help: a why-log is saved when a plan or apply runs with `--whylog-dir`; run
-      one first, or point `--whylog-dir` at the right directory
+   = help:  a why-log is saved when a plan or apply runs with `--whylog-dir`;
+            run one first, or point `--whylog-dir` at the right directory

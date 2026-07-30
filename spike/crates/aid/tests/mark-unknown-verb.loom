@@ -13,14 +13,12 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 oracle.sh:
   error[mark-unknown-verb]: [unwritten: mark-unknown-verb]
-   --> oracle.sh:2:24
-   |
- 2 | foo__predict() { foo : frobnicate sm.dorc.X; }
-   |                        \________/
+        [ oracle.sh:2:24
+     2 | foo__predict() { foo : frobnicate sm.dorc.X; }
+       |                        \________/
   warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
-   --> oracle.sh:2:1
-   |
- 2 | foo__predict() { foo : frobnicate sm.dorc.X; }
-   | \__________/
+        [ oracle.sh:2:1
+     2 | foo__predict() { foo : frobnicate sm.dorc.X; }
+       | \__________/
 
 dorc lint: 1 error, 1 warning, 0 infos across 1 file.

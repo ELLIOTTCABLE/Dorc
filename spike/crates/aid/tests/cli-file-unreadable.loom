@@ -6,4 +6,4 @@ why: the residual arm passes the platforms own words through, because there is n
 -- replay --
 $ dorc plan --book=webhost.sh
 error[cli-file-unreadable]: sm cannot read results `probe-results.txt`: Is a
-   directory (os error 21)
+directory (os error 21)

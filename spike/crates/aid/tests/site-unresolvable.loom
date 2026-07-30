@@ -6,4 +6,4 @@ why: kFAIL-perform: unsure ⇒ run. PASSTHROUGH — `detail` reproduces BOTH the
 -- replay --
 $ dorc plan --book=book.sh
 note[site-unresolvable]: sm 2 sites run unprobed (no read-only check could be
-   shipped): `make install`, `ldconfig`
+shipped): `make install`, `ldconfig`

@@ -6,4 +6,4 @@ why: 27R section 8b: --expect-files is a CI scope assertion, so a malformed coun
 -- replay --
 $ dorc lint --expect-files=many oracle.sh
 error[cli-flag-value-not-a-number]: sm --expect-files needs a non-negative
-   integer, got `many`
+integer, got `many`

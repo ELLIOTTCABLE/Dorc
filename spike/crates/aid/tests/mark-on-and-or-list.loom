@@ -16,9 +16,8 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 oracle.sh:
   warning[mark-on-and-or-list]: [unwritten: mark-on-and-or-list]
-   --> oracle.sh:4:26
-   |
- 4 |    wombat query "$thing" : sm.dorc.Thing:"$thing"@present || return 2
-   |                          \______________________________/
+        [ oracle.sh:4:26
+     4 |    wombat query "$thing" : sm.dorc.Thing:"$thing"@present || return 2
+       |                          \______________________________/
 
 dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

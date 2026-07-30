@@ -6,4 +6,4 @@ why: the read-error trichotomys second arm: the file is there, so the repair is 
 -- replay --
 $ dorc plan --book=webhost.sh
 error[cli-file-permission-denied]: sm cannot read oracle
-   `/etc/dorc/nginx.oracle.sh`: permission denied
+`/etc/dorc/nginx.oracle.sh`: permission denied

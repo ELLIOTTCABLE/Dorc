@@ -6,4 +6,4 @@ why: 27C §2: the disclosure varies by dial (default vs --escalate-any-probe). P
 -- replay --
 $ dorc plan --book=book.sh
 note[escalation-policy]: sm escalation policy: probe re-uses connection
-   authority for `tolerates:`-vouched functions only (default)
+authority for `tolerates:`-vouched functions only (default)

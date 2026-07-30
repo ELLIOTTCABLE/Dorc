@@ -6,4 +6,4 @@ why: 26G:fnd-shared-auto-cell-collides - a verdict-only oracle's sites all key o
 -- replay --
 $ dorc plan --book=book.sh
 note[shared-cell-measurements-disagree]: [unwritten:
-   shared-cell-measurements-disagree]
+shared-cell-measurements-disagree]

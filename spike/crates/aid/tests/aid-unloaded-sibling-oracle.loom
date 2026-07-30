@@ -6,7 +6,7 @@ why: 24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common
 -- replay --
 $ dorc plan --book=book.sh
 note[aid-unloaded-sibling-oracle]: sibling oracle files exist on disk but were
-   not loaded: 1 sibling oracle exists on disk but was not loaded:
-   `redis.oracle.sh`
-   = help: load them with `--oracle <file>` (or point `--oracle-dir` at their
-      directory); dorc never loads an oracle you did not name
+not loaded: 1 sibling oracle exists on disk but was not loaded:
+`redis.oracle.sh`
+   = help:  load them with `--oracle <file>` (or point `--oracle-dir` at their
+            directory); dorc never loads an oracle you did not name
