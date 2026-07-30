@@ -5,7 +5,8 @@ use std::collections::BTreeSet;
 use dorc_aid::catalog::{TemplatePart, TemplateRefusal, parse_template};
 use errorloom::{
     EditRefusal, EditRefusalClass, EditTransport, EditableFragment, EditableRender,
-    EditableSection, RenderComponent, transport_edit_allow_removal,
+    EditableSection, RenderComponent, SectionAddressRefusal, address_sections,
+    transport_edit_allow_removal,
 };
 
 use crate::{
@@ -144,69 +145,30 @@ pub fn compile_section_edits(
     baseline: &DorcEditableBaseline,
     dirty: &str,
 ) -> Result<Vec<DorcSectionEdit>, DorcSectionEditRefusal> {
-    let mut rest = dirty;
+    let ranges = address_sections(baseline.render(), dirty).map_err(|refusal| match refusal {
+        SectionAddressRefusal::Ambiguous => DorcSectionEditRefusal::AmbiguousCandidate,
+        _ => DorcSectionEditRefusal::MarkerOutsideEditableSection,
+    })?;
+    let sections = baseline
+        .render()
+        .components()
+        .iter()
+        .filter_map(|component| match component {
+            RenderComponent::EditableSection(section) => Some(section),
+            _ => None,
+        });
     let mut edits = Vec::new();
-    let components = baseline.render().components();
-    for (index, component) in components.iter().enumerate() {
-        let RenderComponent::EditableSection(section) = component else {
-            let text = component_text(component);
-            rest = rest
-                .strip_prefix(&text)
-                .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
-            continue;
+    for (section, range) in sections.zip(ranges) {
+        let Some(interior) = dirty.get(range) else {
+            return Err(DorcSectionEditRefusal::MarkerOutsideEditableSection);
         };
-        let after = components
-            .get(index.saturating_add(1)..)
-            .unwrap_or_default();
-        let anchor: String = after
-            .iter()
-            .take_while(|component| !matches!(component, RenderComponent::EditableSection(_)))
-            .map(component_text)
-            .collect();
-        let unedited = component_text(component);
-        let last_section = !after
-            .iter()
-            .any(|component| matches!(component, RenderComponent::EditableSection(_)));
-        let interior = if anchor.is_empty() {
-            let interior = rest;
-            rest = "";
-            interior
-        } else if let Some(remaining) = rest
-            .strip_prefix(&unedited)
-            .filter(|remaining| remaining.starts_with(&anchor))
-        {
-            // An UNCHANGED section delimits itself exactly, which is what keeps a line break
-            // ABSORBED into one chrome line from making its neighbours ambiguous below.
-            rest = remaining;
-            unedited.as_str()
-        } else if last_section {
-            // Nothing editable follows, so the trailing immutable text is an exact suffix.
-            let interior = rest
-                .strip_suffix(&anchor)
-                .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
-            rest = &rest[interior.len()..];
-            interior
-        } else {
-            let first = rest
-                .find(&anchor)
-                .ok_or(DorcSectionEditRefusal::MarkerOutsideEditableSection)?;
-            if rest[first.saturating_add(anchor.len())..].contains(&anchor) {
-                return Err(DorcSectionEditRefusal::AmbiguousCandidate);
-            }
-            let (interior, remaining) = rest.split_at(first);
-            rest = remaining;
-            interior
-        };
-        if interior == unedited {
+        if interior == section_text(section) {
             continue;
         }
         let section_baseline = baseline
             .section_baseline(section.id())
             .ok_or(DorcSectionEditRefusal::CandidateMismatch)?;
         edits.push(compile_section_edit(&section_baseline, interior)?);
-    }
-    if !rest.is_empty() {
-        return Err(DorcSectionEditRefusal::MarkerOutsideEditableSection);
     }
     if edits.is_empty() {
         return Err(DorcSectionEditRefusal::Unchanged);
@@ -374,6 +336,18 @@ fn available_values(
         values.extend(rendered.clone());
     }
     values
+}
+
+fn section_text(section: &EditableSection<SectionKey, SectionVariableId>) -> String {
+    section
+        .fragments()
+        .iter()
+        .map(|fragment| match fragment {
+            EditableFragment::Text(text) | EditableFragment::Variable { rendered: text, .. } => {
+                text.as_str()
+            }
+        })
+        .collect()
 }
 
 fn component_text(component: &RenderComponent<SectionKey, SectionVariableId>) -> String {

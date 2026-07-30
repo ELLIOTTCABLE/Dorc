@@ -347,10 +347,15 @@ fn facet_of(provenance: &Provenance<Face>) -> Facet {
 /// The inverse of [`to_render_parts`], and the two must stay inverses: a run this mints has to
 /// come back as the part it was born from, or an edit lands on the wrong register.
 ///
-/// Values are encoded on the way in. A laid-out surface measures bytes as columns and does not
-/// sanitise its input, so a control byte would corrupt the geometry as well as the terminal
-/// (`28D:must-encode-per-surface`); our OWN words — catalog literals, registry words, computed
-/// chrome — are never encoded, because encoding them twice would be a defect.
+/// Interpolated VALUES are encoded on the way in: a laid-out surface measures bytes as columns and
+/// does not sanitise its input, so a byte the engine did not choose would corrupt the geometry as
+/// well as the terminal (`28D:must-encode-per-surface`). Our own words — catalog literals, registry
+/// words, computed chrome — are never encoded, because encoding them twice would be a defect.
+///
+/// Passthrough text is the one class that arrives already encoded and is left alone. It is stamped
+/// foreign but is engine-composed prose today (`282` §8's type-gating is what will tell the two
+/// apart), and `params_of` has already made it safe to display; escaping it a second time would
+/// mangle sentences we wrote.
 #[must_use]
 pub fn to_runs(parts: &RenderParts) -> Vec<Run<Face>> {
     parts
@@ -388,7 +393,7 @@ pub fn to_runs(parts: &RenderParts) -> Vec<Run<Face>> {
                 Instance(u32::try_from(*instance).unwrap_or(u32::MAX)),
             ),
             RenderPart::ForeignText { text, source } => {
-                foreign(text, source.clone(), RENDER_VALUE_CAP)
+                Run::foreign(text.clone(), Face::Source(source.clone()))
             }
             RenderPart::Arrangement { text, slug } | RenderPart::ArrangementPage { text, slug } => {
                 mark(text.clone(), slug)

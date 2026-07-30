@@ -41,12 +41,16 @@
 
 use std::fmt::Debug;
 
+mod address;
 mod bless;
 mod container;
 mod diff;
 mod editable;
 mod runner;
 
+pub use crate::address::{
+    DEFAULT_ADDRESS_WORK_CEILING, SectionAddressRefusal, address_sections, address_sections_within,
+};
 pub use crate::diff::describe_divergence;
 
 pub use crate::bless::{

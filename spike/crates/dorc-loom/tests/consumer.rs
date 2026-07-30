@@ -55,7 +55,7 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
         "the unwritten render fires: {rendered}"
     );
     assert!(
-        rendered.contains("--> oracle.sh:2:"),
+        rendered.contains("oracle.sh:2:"),
         "a spanned caret frame from the real gate (not the spanless payload path): {rendered}"
     );
 }
@@ -316,6 +316,34 @@ fn structure_bless_regenerates_a_dorc_case() {
     );
 }
 
+/// The message register's rendered bytes, as the render laid them out.
+fn message_section_text(baseline: &dorc_loom::DorcEditableBaseline) -> String {
+    baseline
+        .render()
+        .components()
+        .iter()
+        .find_map(|component| match component {
+            errorloom::RenderComponent::EditableSection(section)
+                if section.id().field == "message" =>
+            {
+                Some(
+                    section
+                        .fragments()
+                        .iter()
+                        .map(|fragment| match fragment {
+                            errorloom::EditableFragment::Text(text)
+                            | errorloom::EditableFragment::Variable { rendered: text, .. } => {
+                                text.clone()
+                            }
+                        })
+                        .collect::<String>(),
+                )
+            }
+            _ => None,
+        })
+        .expect("message section")
+}
+
 #[test]
 fn applied_template_regenerates_complete_multi_replay_case() {
     let text = "---\ncode: dangling-reference\nwhen-fires: preserved frontmatter\n---\n\
@@ -328,10 +356,12 @@ fn applied_template_regenerates_complete_multi_replay_case() {
     let baseline = consumer
         .editable_baseline(&case)
         .expect("editable baseline");
-    let original = "sm coordinate sm.dorc.Package:nginx resolved DANGLING -- the kind's resolver reports no such entity (a likely typo / stale name); it degrades to may-alias (the site runs)";
-    assert!(baseline.render().text().contains(original));
+    // Taken from the render rather than spelled here: the seat owns the wrap, so a literal copy of
+    // the sentence would go stale the first time its layout moved.
+    let original = message_section_text(&baseline);
+    assert!(original.starts_with("sm coordinate sm.dorc.Package:nginx resolved DANGLING"));
     let dirty = baseline.render().text().replace(
-        original,
+        &original,
         "{{coord}} is dangling; inspect {{coord}} before applying",
     );
     let edit = compile_section_edit(&baseline, &dirty).expect("strict markers compile");
@@ -430,9 +460,13 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
                 String::from("operand 1")
             ),
             (
+                // A value long enough to cross the right edge carries the break the seat put in
+                // it: the inventory reports what the render PRINTED, not the payload's own
+                // spelling, so a wrap inside a value is visible here rather than silently
+                // collapsed (`28L:residue-a-wrap-can-fall-inside-a-value`).
                 TemplateVariableName(String::from("cause")),
                 String::from(
-                    "a command-substitution `$(...)` / arithmetic / operator-form expansion"
+                    "a command-substitution `$(...)` /\narithmetic / operator-form expansion"
                 ),
             ),
         ]
@@ -659,12 +693,10 @@ fn vars_replay_reads_only_the_named_materialized_case() {
 /// a shape only ONE answers is a case that render-fixpoints green and refuses every edit, or edits
 /// cleanly and then fails its own fixpoint. The table IS the relation.
 ///
-/// The third column is the byte relation, and it is deliberately NOT uniform. A DIAGNOSTIC render
-/// is word-wrapped to the corpus width by the fixpoint chain and left raw by the edit chain (the
-/// binary's `unreflow` is what closes the loop), so those two rows are honestly different bytes. A
-/// laid-out surface — an arrangement page, this lane's drifted receipt — is reflowed by neither, so
-/// its two chains must be byte-identical or a committed transcript and the bytes an edit compiles
-/// against would silently disagree.
+/// A claimed shape must ALSO answer with the same bytes on both arms. There is one render form —
+/// the committed transcript IS what the seat printed
+/// (`28L:rul-editability-is-stamped-never-re-derived`) — so a byte difference here means a
+/// transcript and the bytes an edit compiles against have silently parted ways again.
 #[test]
 fn both_replay_chains_claim_the_same_invocation_shapes() {
     let fixtures = concat!(
@@ -682,25 +714,20 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
         "dorc-whylog-end/2 @@dorc@@\n\n",
     );
 
-    // (invocation, both chains claim it, and their bytes are identical)
+    // (invocation, both chains claim it)
     let shapes = [
-        ("dorc why --last --whylog=.whylog", true, true),
-        ("dorc why book.sh:5 --last --whylog=.whylog", true, true),
-        ("dorc --help", true, true),
-        ("dorc lint oracle.sh --no-tools", true, true),
-        // Diagnostic renders: the fixpoint chain wraps, the edit chain does not.
-        ("dorc why --last --whylog=absent.whylog", true, false),
-        (
-            "dorc why book.sh:5 --last --whylog=absent.whylog",
-            false,
-            false,
-        ),
-        ("dorc why --last --whylog=../escape", false, false),
-        ("dorc plan --book=book.sh", false, false),
-        ("dorc wombat --hork", false, false),
+        ("dorc why --last --whylog=.whylog", true),
+        ("dorc why book.sh:5 --last --whylog=.whylog", true),
+        ("dorc --help", true),
+        ("dorc lint oracle.sh --no-tools", true),
+        ("dorc why --last --whylog=absent.whylog", true),
+        ("dorc why book.sh:5 --last --whylog=absent.whylog", false),
+        ("dorc why --last --whylog=../escape", false),
+        ("dorc plan --book=book.sh", false),
+        ("dorc wombat --hork", false),
     ];
 
-    for (command, claimed, same_bytes) in shapes {
+    for (command, claimed) in shapes {
         let case = Case::parse(&format!(
             "---\n---\n{fixtures}-- replay --\n$ {command}\nold\n"
         ))
@@ -737,11 +764,9 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
             .output()
             .to_owned();
         assert_eq!(
-            rendered == edit_chain.output(),
-            same_bytes,
-            "`{command}`: the two chains' byte relation moved\n  fixpoint: {rendered:?}\n  edit:     \
-             {:?}",
-            edit_chain.output()
+            rendered,
+            edit_chain.output(),
+            "`{command}`: the two chains printed different bytes"
         );
         assert!(
             edit_chain.editable_render().is_some(),

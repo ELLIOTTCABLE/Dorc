@@ -2551,7 +2551,7 @@ fn diagnostic_document(
     interner: &dorc_core::Interner,
 ) -> weft::Document<crate::weave::Face> {
     use crate::weave::{mark, to_runs};
-    use weft::{LabeledRow, Node, NodeKind, Paragraph};
+    use weft::{Banner, LabeledRow, Node, NodeKind};
 
     let mut headline = Vec::new();
     if let Some(stage) = stage {
@@ -2566,16 +2566,16 @@ fn diagnostic_document(
         "cli-title",
     ));
     headline.extend(to_runs(&message_parts(lookup, diag, interner)));
-    let mut nodes = vec![Node::new(NodeKind::Prose(Paragraph { runs: headline }))];
 
+    let mut body = Vec::new();
     if let Some(primary) = diag.primary.span() {
-        nodes.push(Node::new(NodeKind::Code(frame_block(
+        body.push(Node::new(NodeKind::Code(frame_block(
             primary, src, filename, None, true,
         ))));
     }
     for secondary in &diag.secondary {
         if let Some(span) = secondary.span() {
-            nodes.push(Node::new(NodeKind::Code(frame_block(
+            body.push(Node::new(NodeKind::Code(frame_block(
                 span,
                 src,
                 filename,
@@ -2585,11 +2585,11 @@ fn diagnostic_document(
         }
     }
 
-    let mut row = |lead: String, slug: &'static str, body: Vec<weft::Run<crate::weave::Face>>| {
-        nodes.push(Node::new(NodeKind::Labeled(LabeledRow {
+    let mut row = |lead: String, slug: &'static str, words: Vec<weft::Run<crate::weave::Face>>| {
+        body.push(Node::new(NodeKind::Labeled(LabeledRow {
             table: None,
             label: vec![mark(lead, slug)],
-            body,
+            body: words,
             attachments: Vec::new(),
         })));
     };
@@ -2630,7 +2630,7 @@ fn diagnostic_document(
             )],
         );
     }
-    weft::Document::new(nodes)
+    weft::Document::new(vec![Node::new(NodeKind::Banner(Banner { headline, body }))])
 }
 
 fn push_arrangement_part(parts: &mut crate::tagged::RenderParts, text: String, slug: &'static str) {
@@ -3211,13 +3211,20 @@ mod tests {
         );
         let i = Interner::default();
         let cli = render_cli(&d, "irrelevant source", "book.sh", &i);
-        assert!(!cli.contains("-->"), "no region line when spanless: {cli}");
+        assert!(
+            !cli.contains("book.sh:"),
+            "no source frame when spanless: {cli}"
+        );
         assert!(
             cli.starts_with("warning[cfg-errexit-unknown]: "),
             "title renders: {cli}"
         );
+        // The seat owns layout, so the words are asserted free of the wrap it chose.
         assert!(
-            cli.contains(&format!("sm {detail}")),
+            cli.split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .contains(&format!("sm {detail}")),
             "sm-prefixed detail: {cli}"
         );
     }
