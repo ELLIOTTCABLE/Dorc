@@ -12,3 +12,15 @@ hork__predict() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  warning[mark-brace-verdict-single-cell]: sm verdict and observe marks are
+  single-cell; brace alternation `@{a,b}` is claim-emission-only (`277` section
+  4c) -- this mark mints NO cell and the site will run. Split it into one marked
+  probe line per cell.
+        [ oracle.sh:4:38
+     4 |    hork --query "$1" >/dev/null 2>&1 : sm.dorc.Package:"$1"@{installed,pinned}
+       |                                      \_______________________________________/
+
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

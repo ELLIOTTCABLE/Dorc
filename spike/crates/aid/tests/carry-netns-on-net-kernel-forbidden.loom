@@ -14,3 +14,14 @@ sm_dorc_Route__state_stored_only_in() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  note[carry-netns-on-net-kernel-forbidden]: sm `invariant:netns` is forbidden
+  on the per-netns `net-kernel` store of `sm_dorc_Route` -- network kernel state
+  is namespaced, never netns-invariant
+        [ oracle.sh:4:1
+     4 | sm_dorc_Route__state_stored_only_in() {
+       | \_________________________________/
+
+dorc lint: 0 errors, 0 warnings, 1 info across 1 file.

@@ -10,3 +10,20 @@ hork__predict() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[syntax-malformed]: sm unterminated brace group `{` (no `}`)
+        [ oracle.sh:2:17
+     2 | hork__predict() {
+       |                 ^
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[predict-unterminated]: sm unterminated function body (expected `}`)
+        [ oracle.sh:4:1
+     4 | 
+       | ^
+
+dorc lint: 2 errors, 1 warning, 0 infos across 1 file.

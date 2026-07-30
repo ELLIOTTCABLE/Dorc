@@ -22,3 +22,27 @@ runas__enter() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[cfg-top-node]: sm unsupported construct (⊤): un-probeable and
+  un-skippable
+        [ oracle.sh:9:4
+     9 |    "$@"
+       |    \__/
+  error[syntax-unsupported]: sm dynamic command name (first word is not a fixed
+  literal)
+        [ oracle.sh:9:4
+     9 |    "$@"
+       |    \__/
+  9:4 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~2 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  error[wrapper-entry-incoherent]: sm wrapper `runas`: __enter and __lend_map
+  disagree on argv flow (entry consumes 1 leading arg(s), the lend-fold consumes
+  2) -- static incoherence (27C:rul-fold-entry-coherence-failfast,
+  declarations-genuinely-contradict). The entry form drops/transforms args the
+  fold relied on; make the entry pass the fold's guest verbatim.
+        [ oracle.sh:12:1
+     12 | runas__enter() {
+        | \__________/
+
+dorc lint: 3 errors, 0 warnings, 1 info across 1 file.

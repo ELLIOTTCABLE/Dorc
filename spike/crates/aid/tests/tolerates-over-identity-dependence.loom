@@ -12,3 +12,16 @@ hork__is_converged() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  warning[tolerates-over-identity-dependence]: sm this `is_converged` carries
+  `tolerates:user` but VISIBLY reads the caller's identity
+  (`id`/`$USER`/`$HOME`): are you sure the body is read-only under a user shift,
+  not just answer-varying? A shifted user must not make it MUTATE (`27C` section
+  2 corroboration).
+        [ oracle.sh:2:1
+     2 | hork__is_converged() {
+       | \________________/
+
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

@@ -11,3 +11,15 @@ hork__is_converged() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  note[heavy-context-no-tolerance]: sm this `is_converged` reads the caller's
+  identity but carries no tolerance vouch -- a wrapped site (`sudo ...`) will
+  run/guard instead of eliding. One line makes it context-shiftable: `:
+  safe-across user` (`27C` section 2).
+        [ oracle.sh:2:1
+     2 | hork__is_converged() {
+       | \________________/
+
+dorc lint: 0 errors, 0 warnings, 1 info across 1 file.

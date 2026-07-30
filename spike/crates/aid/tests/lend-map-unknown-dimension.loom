@@ -11,3 +11,15 @@ runas__lend_map() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  warning[lend-map-unknown-dimension]: sm `frobnicate` is not a known lend_map
+  dimension (expected one of user, fs-view, netns); the line mints no lend and
+  the dimension it meant to answer stays ⊤ (walls). Dimension marks are an
+  engine-owned closed vocabulary (`273` section 8).
+        [ oracle.sh:3:23
+     3 |    printf '%s\n' "$1" : lends frobnicate
+       |                       \________________/
+
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

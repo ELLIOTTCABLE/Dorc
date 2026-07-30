@@ -17,3 +17,24 @@ hork-tool__predict() {
 
 -- replay --
 $ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  error[munge-name-collision]: sm `hork.tool` munges to the sh function name
+  `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool)
+  -- REFUSED, never silently merged (the shipped artifact would carry 2
+  same-named funcdefs, last-writer-wins; align with the reingest-collision
+  floor: refuse-and-run)
+        [ oracle.sh:4:1
+     4 | hork.tool__predict() {
+       | \________________/
+  error[munge-name-collision]: sm `hork-tool` munges to the sh function name
+  `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool)
+  -- REFUSED, never silently merged (the shipped artifact would carry 2
+  same-named funcdefs, last-writer-wins; align with the reingest-collision
+  floor: refuse-and-run)
+        [ oracle.sh:8:1
+     8 | hork-tool__predict() {
+       | \________________/
+
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.
