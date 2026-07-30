@@ -1,7 +1,7 @@
 ---
 arrangement: why-improvement-ran-blind
-when-used: "The IMPROVEMENTS reason line for a command that ran because nothing could check it. Value: the command word."
-why: "28G strawman a-fire-morning: the recurring cost is named as a recurring cost (`as on every apply`), which is what makes the improvement worth buying. The strawman says `is undescribed`; this seat cannot yet tell an UNdescribed tool from one whose author deliberately DECLINED this invocation (the anti-nag case, 28G strawman c-declined-unsound), and asserting the wrong one is a mis-attribution (271 rul-sin-ordering), so it states only the engine's own position."
+when-used: The IMPROVEMENTS reason line for a command that ran because nothing could check it. Value: the command word.
+why: 28G strawman a-fire-morning: the recurring cost is named as a recurring cost (`as on every apply`), which is what makes the improvement worth buying. The strawman says `is undescribed`; this seat cannot yet tell an UNdescribed tool from one whose author deliberately DECLINED this invocation (the anti-nag case, 28G strawman c-declined-unsound), and asserting the wrong one is a mis-attribution (271 rul-sin-ordering), so it states only the engine's own position.
 ---
 -- book.sh --
 #!/bin/sh

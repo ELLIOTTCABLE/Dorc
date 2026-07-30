@@ -1,7 +1,7 @@
 ---
 arrangement: why-declines-payload
-when-used: "The quoted payload of a `declines` speaker row. Value: the author's decline class."
-why: "28G strawman c-declined-unsound quotes the class beside the author's own tail text; the tail is readable only from a RUNTIME report record, so the static tier quotes the class and lets the as-written excerpt carry the author's words."
+when-used: The quoted payload of a `declines` speaker row. Value: the author's decline class.
+why: 28G strawman c-declined-unsound quotes the class beside the author's own tail text; the tail is readable only from a RUNTIME report record, so the static tier quotes the class and lets the as-written excerpt carry the author's words.
 ---
 -- book.sh --
 #!/bin/sh

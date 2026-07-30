@@ -1,7 +1,7 @@
 ---
 arrangement: why-reason-run-not-elidable
 when-used: The ANALYSIS row for a site that ran for none of the more specific reasons.
-why: "The residual arm: a mutator with no converged report, an inert builtin, or a running wall above it. Named as a set because the render cannot yet say which member applies."
+why: The residual arm: a mutator with no converged report, an inert builtin, or a running wall above it. Named as a set because the render cannot yet say which member applies.
 ---
 -- book.sh --
 #!/bin/sh

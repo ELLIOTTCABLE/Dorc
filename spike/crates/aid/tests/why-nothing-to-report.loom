@@ -1,6 +1,6 @@
 ---
 arrangement: why-nothing-to-report
-when-used: "The whole zero-argument `dorc why` render when no trust was spent, nothing diverged, and nothing is improvable. Value: the book name."
+when-used: The whole zero-argument `dorc why` render when no trust was spent, nothing diverged, and nothing is improvable. Value: the book name.
 why: The quiet case still answers the question asked, rather than printing an empty set of section headings.
 ---
 -- book.sh --

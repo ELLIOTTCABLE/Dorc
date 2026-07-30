@@ -1,7 +1,7 @@
 ---
 arrangement: why-address-unmatched
-when-used: "The whole `dorc why <addr>` render when the address matched no analyzed command. Value: the address as given."
-why: "law-lineno-identity: the ONE line-number space is the source file's, so an unmatched address says so rather than silently reporting the wrong surface."
+when-used: The whole `dorc why <addr>` render when the address matched no analyzed command. Value: the address as given.
+why: law-lineno-identity: the ONE line-number space is the source file's, so an unmatched address says so rather than silently reporting the wrong surface.
 ---
 -- book.sh --
 #!/bin/sh
