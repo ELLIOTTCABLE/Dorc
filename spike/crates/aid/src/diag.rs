@@ -2731,6 +2731,11 @@ pub fn render_body_parts(
 
 /// The MESSAGE register as parts: the filled catalog template, or the greppable
 /// `[unwritten: <slug>]` placeholder when no words are authored yet.
+///
+/// The placeholder wears the REGISTER's face (`28L:rul-placeholder-wears-the-register-face`): its
+/// text stays computed and nothing is stored (`28F:rul-placeholders-are-computed`), but it is
+/// stamped with the key an authored message would carry, so the transport opens the message
+/// section over it and overtyping it is how a code acquires its first words.
 fn message_parts(
     lookup: &dyn crate::catalog::CatalogLookup,
     diag: &Diag,
@@ -2758,11 +2763,13 @@ fn message_parts(
                 "invalid-template",
             ),
         },
-        None => push_arrangement_part(
-            &mut parts,
-            format!("[unwritten: {code}]"),
-            "unwritten-placeholder",
-        ),
+        None => parts.push(crate::tagged::RenderPart::TemplateLiteral {
+            text: format!("[unwritten: {code}]"),
+            code,
+            field: crate::tagged::Field::Message,
+            paragraph: 0,
+            instance: 0,
+        }),
     }
     parts
 }
