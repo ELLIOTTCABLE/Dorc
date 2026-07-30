@@ -1545,6 +1545,10 @@ fn fire_lint_case(
 /// caret frame resolves against. The ⊤-operand disclosure fires before any oracle argparse, so an
 /// empty [`dorc_oracle::KindIndex`] suffices; the whole path is kernel-pure (`inv-determinism`).
 /// Refuses if the pipeline fired nothing matching the declared slug (honest-trigger coherence).
+///
+/// The search covers all three stages the run really reports — parse, CFG, and effect. Searching
+/// only the last discarded the two earlier stages' diagnostics, so every parse/CFG code was
+/// unreachable from a defining case and had to settle for a hand-built stand-in.
 fn fire_book_analysis(
     slug: &str,
     filename: &str,
@@ -1556,7 +1560,7 @@ fn fire_book_analysis(
     let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
     let idx = dorc_oracle::KindIndex::default();
     let mut arena = ProvArena::new();
-    let diag = dorc_analysis::effect::classify(
+    let effect = dorc_analysis::effect::classify(
         &cfg.value,
         &value,
         &parsed.value,
@@ -1565,11 +1569,14 @@ fn fire_book_analysis(
         &dorc_oracle::verdict::VerdictIndex::default(),
         &mut interner,
         &mut arena,
-    )
-    .diags
-    .into_iter()
-    .find(|d| d.code.slug() == slug)
-    .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))?;
+    );
+    let diag = parsed
+        .diags
+        .into_iter()
+        .chain(cfg.diags)
+        .chain(effect.diags)
+        .find(|d| d.code.slug() == slug)
+        .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))?;
     Ok((diag, source.to_owned(), filename.to_owned()))
 }
 
