@@ -1,0 +1,24 @@
+---
+code: wrapper-entry-incoherent
+when-fires: a wrapper's `__enter` and `__lend_map` disagree on argv flow. cli/main.rs. Spanned (the entry name_span).
+why: 27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a pre-network fail-fast. PASSTHROUGH — the refusal text rides `detail`.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+# The fold reads two leading arguments off the front; the entry form reads one, so the guest the
+# entry hands the tool starts at a different token than the fold measured.
+runas__lend_map() {
+   shift 2
+   printf '%s\n' root : lends user
+   : lends fs-view
+   : lends netns
+   "$@"
+}
+
+runas__enter() {
+   shift
+   runas -n "$@"
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools

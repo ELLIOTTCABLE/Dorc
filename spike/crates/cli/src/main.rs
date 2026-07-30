@@ -5074,10 +5074,11 @@ fn build_wrapped_analysis(
     }
 
     // (A) the authored axis-invariance index (`27C` §4(a) pure-predicate carry) — lifted once from
-    // every `state_stored_only_in()` body; its netns-caveat contradictions surface as hints. Empty
-    // when no invariance line is declared ⇒ carry never licenses (`silence-licenses-nothing`).
-    let (invariance, inv_diags) = dorc_oracle::carry::InvarianceIndex::lift(interner, oracle_refs);
-    out.hints.extend(inv_diags);
+    // every `state_stored_only_in()` body. Empty when no invariance line is declared ⇒ carry never
+    // licenses (`silence-licenses-nothing`). Its netns-caveat contradictions are `validate`'s to
+    // report: they are a property of the oracle file, and this walk never runs for a wrapper-free
+    // unit.
+    let (invariance, _) = dorc_oracle::carry::InvarianceIndex::lift(interner, oracle_refs);
 
     let command_nodes: Vec<CfgNodeId> = cfg
         .iter()

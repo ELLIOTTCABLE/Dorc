@@ -77,6 +77,73 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
         }
     }
 
+    // The tolerance CORROBORATION lints, per file (stage `tolerance`). Both directions of `27C` §6
+    // (a `safe-across user` over a body that visibly reads identity; a body that visibly reads
+    // identity with no vouch at all), recognize-never-license: neither blocks anything, both ask.
+    // They belong here rather than at either consumer because both consumers want them — the author
+    // hot loop through `dorc lint`, and the plan lane through `report_at`.
+    for (i, src) in oracles.iter().enumerate() {
+        let verdicts = crate::predict::lift_verdicts_converged(interner, src).value;
+        let mut diags = Vec::new();
+        for provider in verdicts.providers() {
+            let Some(verdict) = verdicts.get(provider) else {
+                continue;
+            };
+            // The lift's OWN diags are the lint lane's already; taking them again here would
+            // double-report every `safe-across` malformation on the oracle-solo rung.
+            let (vouch, _) = crate::entry::lift_tolerance(verdict);
+            diags.extend(crate::entry::corroborate_tolerance_over_identity(
+                &vouch,
+                verdict,
+                interner,
+                verdict.name_span,
+            ));
+            diags.extend(crate::entry::hint_heavy_context_no_vouch(
+                &vouch,
+                verdict,
+                interner,
+                verdict.name_span,
+            ));
+        }
+        if !diags.is_empty() {
+            stages.push(StageDiags {
+                stage: "tolerance",
+                file: Some(i),
+                diags,
+            });
+        }
+    }
+
+    // The lend-map dimension lint, per file (stage `lend`). `derive_lend_map`'s diags had no
+    // consumer at all: the wrapper index takes its VALUE and drops them, so an unknown dimension
+    // token silently walled the dimension it meant to answer.
+    for (i, src) in oracles.iter().enumerate() {
+        let lend_maps = crate::wrapper::lift_lend_map_set(interner, src).value;
+        let mut diags = Vec::new();
+        for provider in lend_maps.providers() {
+            if let Some(lend_map) = lend_maps.get(provider) {
+                diags.extend(crate::wrapper::derive_lend_map(lend_map).1);
+            }
+        }
+        if !diags.is_empty() {
+            stages.push(StageDiags {
+                stage: "lend",
+                file: Some(i),
+                diags,
+            });
+        }
+    }
+
+    // The authored axis-invariance index (stage `carry`): its netns contradiction. Lifted over the
+    // whole unit here rather than inside the wrapped-site walk, which returns early when no peeling
+    // wrapper is loaded — so a kind owner's false invariance line was silent until some OTHER file
+    // happened to declare a wrapper.
+    stages.push(StageDiags {
+        stage: "carry",
+        file: None,
+        diags: crate::carry::InvarianceIndex::lift(interner, oracles).1,
+    });
+
     // Dual-peel + fold-entry coherence (stage `wrapper`): the pre-network fail-fast.
     let (wrapper_diags, wrapper_incoherent) = peel_and_entry_coherence(interner, oracles);
     stages.push(StageDiags {

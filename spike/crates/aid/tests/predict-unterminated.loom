@@ -1,0 +1,12 @@
+---
+code: predict-unterminated
+when-fires: a check function body is structurally unterminated (missing `;;`/`esac`). oracle/predict.rs lift_failure.
+why: the check cannot be lifted. PASSTHROUGH — the check parser's description rides `detail`.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   hork --query "$1" >/dev/null 2>&1 : sm.dorc.Package:"$1"@installed
+
+-- replay --
+$ dorc lint oracle.sh --no-tools

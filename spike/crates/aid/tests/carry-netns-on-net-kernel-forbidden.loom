@@ -1,0 +1,16 @@
+---
+code: carry-netns-on-net-kernel-forbidden
+when-fires: a kind's per-netns `net-kernel` store claims `invariant:netns` (a contradiction). oracle/carry.rs lift. `{kind_munged}` = the munged kind.
+why: 27C §4(a): network kernel state is namespaced; the false invariance line is dropped.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+# The store is network kernel state, which every namespace holds its own copy of -- so the
+# invariance line below cannot be true of it.
+sm_dorc_Route__state_stored_only_in() {
+   printf '%s\n' "$1" : stored-in net-kernel
+   : undivided-by-transit-across netns
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools

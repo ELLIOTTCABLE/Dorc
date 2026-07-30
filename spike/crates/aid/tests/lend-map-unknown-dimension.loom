@@ -1,0 +1,13 @@
+---
+code: lend-map-unknown-dimension
+when-fires: an unknown lend_map dimension token appears on a `__lend_map` line. oracle/wrapper.rs walk_lend_body. `{expected}` = the known-dimension list.
+why: 273 §8: the line mints no lend and the dimension it meant to answer walls. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+runas__lend_map() {
+   printf '%s\n' "$1" : lends frobnicate
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools

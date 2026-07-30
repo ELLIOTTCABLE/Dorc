@@ -1,0 +1,14 @@
+---
+code: tolerates-over-identity-dependence
+when-fires: a `tolerates:user` vouch sits over a body that visibly reads identity (`id`/`$USER`/`$HOME`). oracle/entry.rs corroborate_tolerance_over_identity.
+why: 27C §6 corroboration (recognize-never-license): the ask never blocks. Static.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+hork__is_converged() {
+   : safe-across user
+   hork --query --as "$USER" -- "$1"
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools

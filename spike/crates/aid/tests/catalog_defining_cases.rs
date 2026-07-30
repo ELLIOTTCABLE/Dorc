@@ -35,54 +35,28 @@ use dorc_core::{BytePos, Interner, Span};
 /// without one must add it here with its surface note (the completeness gate enforces the
 /// partition, `ratchet_only_shrinks` guards the direction against the committed baseline).
 const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
-    // ── analyzer give-ups: trigger via a small book/oracle through the pipeline ──
-    (
-        "predict-unterminated",
-        "oracle: a check `case` body missing its `esac`",
-    ),
-    (
-        "munge-name-collision",
-        "oracle: two source names munging to one sh funcname",
-    ),
-    (
-        "tolerates-over-identity-dependence",
-        "oracle: `tolerates:user` over a body reading `id`/`$USER`",
-    ),
-    (
-        "heavy-context-no-tolerance",
-        "oracle: an is_converged reading identity with no tolerance vouch",
-    ),
-    (
-        "lend-map-unknown-dimension",
-        "oracle: a `__lend_map` line with an unknown dimension token",
-    ),
-    (
-        "carry-netns-on-net-kernel-forbidden",
-        "oracle: `invariant:netns` on a per-netns net-kernel store",
-    ),
-    (
-        "mark-brace-verdict-single-cell",
-        "oracle: a brace-alternation `@{a,b}` on a verdict/observe mark",
-    ),
+    // ── the survival lane: every one needs the `--risk-faultless-skips` derivation pipeline the
+    //    loom harness does not drive, so each note names the harness work first ──
     (
         "footprint-incoherent",
-        "oracle: a touches() footprint omitting its own effect coordinate",
+        "harness: `build_survival_footprints` (cli/main.rs, flag-on); then a touches() footprint \
+         omitting its own effect coordinate",
     ),
     (
         "touches-escalated",
-        "book+flag: a payload-bound touches() escalating to host-derivation",
+        "harness: `compile_derivations` + `merge_derived_footprints` (cli/main.rs, flag-on); then a \
+         payload-bound touches() escalating to host-derivation",
     ),
     (
         "deriv-family-incomplete",
-        "probe-results: a derived footprint family missing its deriv-end record",
+        "harness: the above PLUS admitted probe records in the harness world \
+         (`28L:tc-harness-records-vs-controller-scope`); then a derived family missing its \
+         deriv-end record",
     ),
     (
         "wrapped-site-adoption-hint",
-        "book: a `sudo`-wrapped site whose is_converged lacks tolerates",
-    ),
-    (
-        "wrapper-entry-incoherent",
-        "oracle: a wrapper whose __enter and __lend_map disagree on argv flow",
+        "harness: `build_wrapped_analysis` (cli/main.rs) reachable from the book route; then a \
+         `sudo`-wrapped site whose is_converged lacks `safe-across`",
     ),
     // ── records deframer: inject a mangled `probe-results.txt` frame ──
     (

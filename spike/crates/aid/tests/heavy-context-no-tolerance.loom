@@ -1,0 +1,13 @@
+---
+code: heavy-context-no-tolerance
+when-fires: a body reads identity but carries no tolerance vouch. oracle/entry.rs hint_heavy_context_no_vouch (reverse-direction corroboration hint).
+why: 27C §6 (recognize-never-license): a one-line vouch would make it context-shiftable. Static.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+hork__is_converged() {
+   hork --query --as "$USER" -- "$1"
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools

@@ -1,0 +1,19 @@
+---
+code: munge-name-collision
+when-fires: two DISTINCT source names munge to one sh funcname. oracle/reserved.rs. `{count}` interpolates twice (the count and the funcdef count).
+why: non-injective munge: refuse-and-run (never silently last-writer-wins).
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+# Two spellings of one tool's name. Dots and hyphens both munge to `_`, so the two funcdefs
+# would emit the same sh function.
+hork.tool__predict() {
+   hork --query "$1" >/dev/null 2>&1 : sm.dorc.Package:"$1"@installed
+}
+
+hork-tool__predict() {
+   hork --query "$1" >/dev/null 2>&1 : sm.dorc.Package:"$1"@installed
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools

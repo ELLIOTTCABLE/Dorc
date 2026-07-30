@@ -1,0 +1,14 @@
+---
+code: mark-brace-verdict-single-cell
+when-fires: a brace-alternation `@{a,b}` appears on a single-cell verdict/observe mark. oracle/predict/derive.rs. Static (literal braces escaped in the template).
+why: 277 §4c: a verdict/observe mark asserts exactly one cell; the brace mints no cell and the site runs (a role-aware rejection the parser cannot make).
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+# One rc cannot witness two cells, so the alternation has nothing to expand into here.
+hork__predict() {
+   hork --query "$1" >/dev/null 2>&1 : sm.dorc.Package:"$1"@{installed,pinned}
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
