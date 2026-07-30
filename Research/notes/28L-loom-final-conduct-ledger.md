@@ -494,6 +494,31 @@ lanes thread by fresh census, never by the map's count.
   (prefix + body + synopsis; ~25-transcript re-bless sanctioned;
   `cli-usage-synopsis` faced) · the `envelope:`-style closed key + one case
   facing the plan-stderr trio.
+- **BLIND-REVIEWER ROUND 1 LANDED** (branch `ai/r28-loom-review1` @ `15cad37b`,
+  throwaway — NEVER folds, contains probe prose; force-delete at close). 3/3 remits
+  mechanically completed, 2/3 fully green end-to-end; the Rust-side escort verdict:
+  the `DiagCode` rustdoc is "genuinely excellent", "the compiler names every site"
+  HELD PRECISELY (one E0063, at the fixture, as designed). Fence caveat, disclosed
+  honestly by the reviewer: the harness auto-injects CLAUDE.mds on directory touch,
+  so the reading fence is porous in this harness — the reviewer distinguished
+  tool-taught from leak-taught knowledge throughout; round 2 briefs accept this and
+  demand the same bookkeeping. EMPIRICAL VERDICTS on the two open questions:
+  `rul-committed-inventory-retired` HOLDS (`loom:vars` sufficed for variable
+  discovery; the real gap was `{{name}}`-syntax teaching — text-level, routed) ·
+  macro-chafe: NONE on the Rust side (supports the human's ~90 hold-the-line).
+- **fnd-shared-fixture-collision** (reviewer, +SURE, reproduced via the full gate) —
+  `overtype_placeholder_mints_words` borrows the LIVE `whylog-unwritten` case as its
+  still-unwritten fixture: the sanctioned prose burn-down breaks `gate:full-quiet`
+  while `test:looms` stays green, and the repair is invisible behind the loom-crate
+  boundary. A D2 test-design bug (live-case precondition instead of a synthesized
+  temp fixture). x2d item 7 fixes it and sweeps the suite for siblings.
+- **reviewer-chafe-pack ROUTED to x2d** (items 8–13): CASE-arg resolution (bare
+  slugs; both bases; refusal lists what it tried; real `--help`) · silent
+  variable-to-literal degradation gains a loud compile-preview DISCLOSURE (omission
+  stays legal per `282` §13) · `{{name}}`-syntax teaching in three texts (loop-hint,
+  vars header, usage) · lock-not-clean refusal gains its remedy · `loom:sections`
+  semantics pinned and self-described · texts written for a reader with NO doc
+  access.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
