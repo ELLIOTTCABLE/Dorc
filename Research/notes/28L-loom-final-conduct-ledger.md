@@ -560,6 +560,42 @@ lanes thread by fresh census, never by the map's count.
   next kernel arc; the committed case bakes today's render and re-blesses on the
   fix. Sibling note: `tc-lint-route-shows-the-whole-report` (noisy exemplar for
   wrapper oracles) rides render-form-unwelded, no action.
+- **x2d LANDED** (`ai/r28-loom-x2d` @ `f7b70bb6`, base `271d7921`; both legs green,
+  Win 1655 / WSL 1651; two ratified follow-ons running, then it folds BEFORE X2b's
+  continuation). All six items + the seven-item reviewer chafe pack: `owns:`
+  ownership key (filename-implicit; conflicts refuse naming both files;
+  `lint-source-analysis-diagnostics` now homes the other six `lint-source-*`) ·
+  metadata absent-means-keep + regression gate + quote normalization ·
+  `edit-loop:` hint in all 75 canonical cases, gate-held, generator-owned (names
+  compile/promote + loom:vars + the `{{name}}` mechanism) · the invocation-error
+  parts seat (main, dorc-sh, and both loom chains share it; `cli-usage-synopsis`
+  faced; 12 invocation transcripts re-blessed, bodies only) · `envelope: stderr`
+  key + `cli-plan-summary-line.loom` homing the plan-stderr trio · a CLOSED
+  frontmatter vocabulary in the looms runner (22 keys) · bare-slug/multi-base CASE
+  resolution + real `--help` · the DROPPED-VARIABLES compile disclosure · the
+  shared-fixture collision fixed (empty-register fixtures chosen at run time) ·
+  lock-not-clean remediation text · `sections` self-describing headers.
+- **fnd-wrapped-rows-are-chunk-editable SUPERSEDED** (x2d diagnosis, measured
+  corpus-wide; X2a's symptom was real, its mechanism wrong) — the weave absorption
+  rule WORKS: one editable section per wrapping prose-component at every width
+  (247 committed sections; the only split is a passthrough, not a wrap). The true
+  defect was `refuse_added_lines` counting the RENDERER's soft wrap on the
+  baseline side while normalizing only the edited side — any reword changing the
+  laid-out line count tripped `AddedLine`, whose text then misdirected to
+  add-register. Fixed by counting breaks in the STORED form on both sides via the
+  two EXISTING normalizer seats (no new judgment seat); a latent inverse hole
+  closed with it (a 3-line register no longer grants added-paragraph budget).
+  Round-trip pinned: reword-across-the-break at width 40.
+- **x2d adjudications** — envelope digest KEPT (production truth; fixture-tier FNV
+  drift-detector class) · `todo` note-only key ACCEPTED (documented in the
+  vocabulary; asserts nothing) · aid→dorc-loom DEV-dependency ACCEPTED (one
+  ownership resolver; production edges untouched; steering-sync documents it) ·
+  per-edit owner check → BUILD (follow-on 1) · metadata promote-REFUSAL +
+  acknowledgement flag → BUILD (follow-on 2; the suite gate was after-the-write).
+- **Steering-sync debts registered for X3** (from x2d's fold-notes): aid/CLAUDE.md
+  `cases-live-here` ("filename match") + the dev-dep note; cli/CLAUDE.md
+  loom-form-is-the-same-battery (key vocabulary now closed + 22-key list home);
+  28L already carries the ownership/loop-hint/envelope entries above.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
