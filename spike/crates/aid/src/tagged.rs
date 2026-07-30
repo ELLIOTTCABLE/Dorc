@@ -140,6 +140,13 @@ impl RenderParts {
         self.0.extend(other.0);
     }
 
+    /// Construct from ordered runs a test or fixture already holds.
+    #[cfg(test)]
+    #[must_use]
+    pub fn from_parts(parts: Vec<RenderPart>) -> Self {
+        Self(parts)
+    }
+
     /// The ordered runs, including empty parameter values.
     #[must_use]
     pub fn parts(&self) -> &[RenderPart] {

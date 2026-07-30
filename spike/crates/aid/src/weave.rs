@@ -639,4 +639,58 @@ mod tests {
         });
         assert!(!split, "no layout byte splits the row: {parts:?}");
     }
+
+    /// A catalog register wraps by the same rule, and the same absorption keeps it ONE section.
+    ///
+    /// This is the property the whole diagnostic surface rests on: a message is one editable
+    /// region however many lines it takes, so where the wrap lands can never change what an edit
+    /// addresses.
+    #[test]
+    fn a_catalog_register_stays_one_section_at_every_width() {
+        let message = RenderParts::from_parts(vec![
+            RenderPart::TemplateLiteral {
+                text: String::from("operand "),
+                code: "cmdsub-operand-top",
+                field: Field::Message,
+                paragraph: 0,
+                instance: 0,
+            },
+            RenderPart::ParamValue {
+                text: String::from("3"),
+                code: "cmdsub-operand-top",
+                field: Field::Message,
+                param: "position",
+                instance: 0,
+            },
+            RenderPart::TemplateLiteral {
+                text: String::from(" is a command-substitution nothing could be said about"),
+                code: "cmdsub-operand-top",
+                field: Field::Message,
+                paragraph: 0,
+                instance: 0,
+            },
+        ]);
+        for width in [80, 40] {
+            let rendered = render(&sentence(to_runs(&message)), width);
+            let parts = to_render_parts(&rendered);
+            assert_eq!(parts.text(), rendered.text(), "width {width}");
+            let split = parts.parts().windows(2).any(|pair| {
+                matches!(pair.first(), Some(RenderPart::Arrangement { slug, .. }) if *slug == WEFT_LAYOUT)
+                    && matches!(
+                        pair.last(),
+                        Some(RenderPart::TemplateLiteral { .. } | RenderPart::ParamValue { .. })
+                    )
+            });
+            assert!(
+                !split,
+                "width {width}: a layout byte splits the register: {parts:?}"
+            );
+        }
+        assert!(
+            render(&sentence(to_runs(&message)), 40)
+                .text()
+                .contains('\n'),
+            "the narrow width must actually wrap or it proves nothing"
+        );
+    }
 }
