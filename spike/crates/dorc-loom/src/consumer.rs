@@ -24,7 +24,8 @@ use errorloom::{
 };
 
 use crate::{
-    DorcSectionEdit, SectionKey, SectionVariableId, TemplateVariableName, to_editable_render,
+    DorcSectionEdit, ENVELOPE_KEY, ENVELOPE_STDERR, SectionKey, SectionVariableId,
+    TemplateVariableName, to_editable_render,
 };
 
 /// Exact current values by editable section and semantic variable name.
@@ -479,6 +480,34 @@ impl DorcConsumer {
         dorc_cli::invocation_error_parts(&ctx, diag, &interner)
     }
 
+    /// The plan route's stderr ENVELOPE, when the case opted into it with `envelope: stderr`.
+    ///
+    /// The three lines a `dorc plan` closes with are chrome around an ARTIFACT — no diagnostic
+    /// carries them, so no ordinary case ever renders them and their registry entries had no
+    /// editable home. The key is what a case says to be handed the whole stderr envelope instead
+    /// (`28L`, the X2a plan-stderr trio ruling). Oracles come from the case's own `*.oracle.sh`
+    /// sections, in section order, exactly as an admin's `-o` list would.
+    fn plan_envelope(&self, case: &Case, book: &str) -> Option<dorc_aid::tagged::RenderParts> {
+        if case.frontmatter().scalar(ENVELOPE_KEY) != Some(ENVELOPE_STDERR) {
+            return None;
+        }
+        let source = section_source(case, book)?;
+        let oracles: Vec<(String, String)> = case
+            .sections()
+            .iter()
+            .filter(|section| section.name().ends_with(".oracle.sh"))
+            .map(|section| (section.name().to_owned(), section.content().to_owned()))
+            .collect();
+        let paths: Vec<String> = oracles.iter().map(|(path, _)| path.clone()).collect();
+        let sources: Vec<String> = oracles.into_iter().map(|(_, source)| source).collect();
+        let world = dorc_cli::world::WhyWorld::analyze(book, source, &paths, &sources);
+        Some(dorc_cli::plan_envelope_parts(
+            &self.render_ctx(),
+            &world,
+            book,
+        ))
+    }
+
     /// [`Self::cli_parts`] for a source-staged diagnostic.
     fn staged_cli_parts(&self, stage: &str, diag: &Diag) -> dorc_aid::tagged::RenderParts {
         render_staged_cli_parts(
@@ -626,6 +655,9 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         let plan = parse_direct_plan(&tokens)?;
+        if let Some(parts) = self.plan_envelope(case, plan.book) {
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         // World-as-payload, the branch `render_direct_replay` has always had. Without it the
         // driver declined, so `compile`/`promote` never saw provenance for these cases.
         let Some(source) = materialized_source(case, context, plan.book) else {
@@ -1404,6 +1436,9 @@ impl DorcConsumer {
         }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
+        if let Some(parts) = self.plan_envelope(case, plan.book) {
+            return Ok(parts.text());
+        }
         let Some(source) = case
             .sections()
             .iter()

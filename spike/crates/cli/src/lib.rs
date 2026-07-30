@@ -97,6 +97,69 @@ fn staged_invocation_parts(
     dorc_aid::diag::render_staged_cli_parts(stage, ctx, error, "", "", interner)
 }
 
+/// One registry chrome LINE as a stamped part stream, its computed values interleaved.
+///
+/// Stamped but NOT laid out: these lines go to stderr exactly as long as they are, so the bytes
+/// stay `arrangement_sentence`'s by construction and only the attribution is added
+/// (`aid::arrangement::push_arrangement_sentence`). That is what lets the binary and a loom case
+/// read the same seat without moving a single production byte.
+#[must_use]
+pub fn chrome_line_parts(
+    ctx: &RenderCtx<'_>,
+    slug: &'static str,
+    values: &[&str],
+) -> dorc_aid::tagged::RenderParts {
+    let mut parts = dorc_aid::tagged::RenderParts::new();
+    dorc_aid::arrangement::push_arrangement_sentence(
+        &mut parts,
+        ctx.arrangements(),
+        slug,
+        None,
+        values,
+    );
+    parts
+}
+
+/// The plan route's stderr ENVELOPE: the why-pointer, the plan-summary yardstick, and the decision
+/// digest, in the order the binary prints them.
+///
+/// A loom case opting into this (`envelope: stderr`) is the only way these three lines have an
+/// editable home: they are stderr chrome around an artifact, so no diagnostic case ever reaches
+/// them and they sat registry-homed but faceless.
+#[must_use]
+pub fn plan_envelope_parts(
+    ctx: &RenderCtx<'_>,
+    world: &world::WhyWorld,
+    book_name: &str,
+) -> dorc_aid::tagged::RenderParts {
+    let counts = world.disposition_counts();
+    let digest = world.decision_digest();
+    let numbers = [
+        counts.sites.to_string(),
+        counts.elide.to_string(),
+        counts.omit.to_string(),
+        counts.guard.to_string(),
+        counts.run.to_string(),
+        world.may_alias_fires().to_string(),
+    ];
+    let summary: Vec<&str> = numbers.iter().map(String::as_str).collect();
+    let mut parts = dorc_aid::tagged::RenderParts::new();
+    for (slug, values) in [
+        ("cli-why-pointer-line", vec![book_name]),
+        ("cli-plan-summary-line", summary),
+        ("cli-decision-digest-line", vec![digest.as_str()]),
+    ] {
+        for part in chrome_line_parts(ctx, slug, &values).parts() {
+            parts.push(part.clone());
+        }
+        parts.push(dorc_aid::tagged::RenderPart::Arrangement {
+            text: String::from("\n"),
+            slug: "cli-envelope-break",
+        });
+    }
+    parts
+}
+
 /// The usage synopsis as its own laid-out paragraph, span-stamped so an edit lands on its registry
 /// entry.
 fn usage_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {

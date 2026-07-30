@@ -17,6 +17,12 @@ pub const OWNS_KEY: &str = "owns";
 /// The frontmatter key carrying the case's own editing loop.
 pub const EDIT_LOOP_KEY: &str = "edit-loop";
 
+/// The frontmatter key opting a plan-route replay into a wider stderr surface.
+pub const ENVELOPE_KEY: &str = "envelope";
+
+/// The one [`ENVELOPE_KEY`] value: render the plan route's whole stderr envelope.
+pub const ENVELOPE_STDERR: &str = "stderr";
+
 /// The loop, spelled out inside the case that needs it — GENERATED, never authored.
 ///
 /// A `.loom` is the whole teaching surface for someone who may not open the crates that read it

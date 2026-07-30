@@ -1,0 +1,20 @@
+---
+arrangement: cli-plan-summary-line
+envelope: stderr
+owns:
+  - cli-why-pointer-line
+  - cli-decision-digest-line
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-plan-summary-line && mise run loom:promote -- cli-plan-summary-line`. `mise run loom:vars -- --all cli-plan-summary-line` lists this case's values; type {{name}} to insert or move one.
+---
+-- webhost.sh --
+#!/bin/sh
+set -eu
+apt-get update
+cp ./nginx.conf /etc/nginx/nginx.conf
+hork tune --profile web
+
+-- replay --
+$ dorc plan --book=webhost.sh
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why webhost.sh:N` to query a source line
+dorc: plan-summary sites=4 elide=0 omit=0 guard=0 run=4 may-alias=0
+dorc: decision-digest c9e4bd60d91edbc2

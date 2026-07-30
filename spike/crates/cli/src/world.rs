@@ -190,6 +190,31 @@ impl WhyWorld {
         self.plan.disposition_counts()
     }
 
+    /// The may-alias fire-rate this world's survival pass recorded (`24F` §3a).
+    #[must_use]
+    pub fn may_alias_fires(&self) -> u32 {
+        self.plan.survival_report.may_alias_fires()
+    }
+
+    /// This world's decision digest — the same stable hash the binary prints, from the same inputs.
+    #[must_use]
+    pub fn decision_digest(&self) -> String {
+        let identity: Vec<Diag> = self
+            .why_diags
+            .iter()
+            .cloned()
+            .chain(self.refusals.iter().cloned())
+            .collect();
+        dorc_plan::erasability::decision_digest(
+            &self.plan,
+            &self.probe,
+            &self.book_src,
+            &self.ast,
+            &self.interner,
+            &identity,
+        )
+    }
+
     /// Borrow this world as the report context.
     #[must_use]
     pub fn report<'a>(&'a self, address: Option<&'a str>, receipt: &'a Receipt) -> WhyReport<'a> {

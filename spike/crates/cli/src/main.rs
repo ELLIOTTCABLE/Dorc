@@ -249,8 +249,8 @@ fn render_ctx() -> dorc_aid::RenderCtx<'static> {
 /// (`289:rul-arrangement-home-is-registry-plus-transcripts`). These stderr lines have a registry
 /// HOME but not yet an editable face: no case drives them, so their words are edited in the lock
 /// until a page case exists for them.
-fn chrome(slug: &str, values: &[&str]) -> String {
-    dorc_aid::arrangement::arrangement_sentence(render_ctx().arrangements(), slug, None, values)
+fn chrome(slug: &'static str, values: &[&str]) -> String {
+    dorc_cli::chrome_line_parts(&render_ctx(), slug, values).text()
 }
 
 fn report_invocation_error(diag: &Diag) {
