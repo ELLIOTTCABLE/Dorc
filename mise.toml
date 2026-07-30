@@ -320,15 +320,21 @@ run = "cargo run -q -p internal-tooling -- bless --dry"
 [tasks."loom:compile"]
 description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it. Runs --quiet, so only cases with something to report print; drop to a raw `cargo run` for the full per-case listing."
 dir = "spike"
-run = "cargo run --quiet -p dorc-loom -- compile --quiet"
+usage = 'arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"'
+run = "cargo run --quiet -p dorc-loom -- compile --quiet {{ usage.cases | join(sep=' ') }}"
 
 [tasks."loom:promote"]
 description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases, and word-diff what it wrote. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise. Nothing is staged or committed: the diff is yours to review and revert."
 dir = "spike"
 # `282` §6, "the review surface is the git diff" — promote requires a tree clean outside the
 # selected cases, so an unscoped diff afterwards IS the publication and nothing else.
+#
+# The case list is TEMPLATED rather than left to mise's trailing-args passthrough, which only
+# reaches the LAST command of a `run` array — so `-- <cases>` scoped the git diff and left promote
+# running over the whole corpus, silently unscoped (the exact opposite of what was typed).
+usage = 'arg "[cases]" var=#true help="case paths; MUST match the list loom:compile was given"'
 run = [
-  "cargo run --quiet -p dorc-loom -- promote --quiet",
+  "cargo run --quiet -p dorc-loom -- promote --quiet {{ usage.cases | join(sep=' ') }}",
   "git --no-pager diff --word-diff",
 ]
 

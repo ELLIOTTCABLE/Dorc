@@ -12,7 +12,10 @@ const RECEIPT_SCHEMA: u32 = 1;
 const RECEIPT_SEMANTICS_EPOCH: u32 = 1;
 /// Maximum accepted packet size at the persistence boundary.
 pub const MAX_RECEIPT_BYTES: usize = 2 * 1024 * 1024;
-const MAX_RECEIPT_CASES: usize = 64;
+/// Bounds the receipt, not the corpus: an unscoped run selects EVERY committed case, so this has
+/// to stay ahead of the collection or the whole compile/promote loop stops working the moment one
+/// more case lands (it did, at 65).
+const MAX_RECEIPT_CASES: usize = 512;
 const MAX_RECEIPT_REPLAYS: usize = 512;
 const MAX_RECEIPT_FIELD_BYTES: usize = 256 * 1024;
 const MAX_RENDER_COMPONENTS: usize = 4_096;
