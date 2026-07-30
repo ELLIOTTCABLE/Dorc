@@ -20,7 +20,14 @@ use errorloom::{
     execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       an omitted CASE list means every crates/aid/tests/*.loom";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values";
+
+/// The `{{name}}` mechanism has no other trace: every committed case is fully rendered, so a
+/// reader who has only ever seen transcripts has no way to learn that a value can be typed at all.
+/// Both inventory surfaces say it, once, at the top.
+const VALUE_SYNTAX_NOTE: &str =
+    "type {{name}} in a sentence to insert or move one of these values; omitting one bakes it to \
+     literal text";
 
 fn main() -> ExitCode {
     match run() {
@@ -57,6 +64,7 @@ enum Command {
     Sections {
         cases: Vec<PathBuf>,
     },
+    Help,
 }
 
 type SelectedCase = (String, PathBuf);
@@ -89,11 +97,51 @@ fn run() -> Result<ExitCode, String> {
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
         Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
         Command::Sections { cases } => print_sections(&cases, &mut out),
+        Command::Help => writeln!(out, "{USAGE}")
+            .map_err(|error| error.to_string())
+            .map(|()| ExitCode::SUCCESS),
     }
 }
 
+/// Resolve one CASE argument to a real file.
+///
+/// Four spellings resolve, because a reader who has only ever seen a case's SLUG has no way to know
+/// where the collection lives, and the previous single spelling (a path relative to `spike/`) was
+/// nowhere stated. In order: the canonical collection by slug, the canonical collection by
+/// filename, the path as given, and the path against the workspace root.
+fn resolve_case(arg: &str) -> Result<PathBuf, String> {
+    let slug = arg.strip_suffix(".loom").unwrap_or(arg);
+    let tried = [
+        cases_dir().join(format!("{slug}.loom")),
+        PathBuf::from(arg),
+        spike_dir()?.join(arg),
+    ];
+    if let Some(found) = tried.iter().find(|path| path.is_file()) {
+        return Ok(found.clone());
+    }
+    Err(format!(
+        "no case `{arg}`. A CASE is its bare slug (`whylog-unwritten`), its filename, or a path \
+         relative to the current directory or to `spike/`; these were tried, in order: {}. \
+         The collection is {} — `dorc-loom sections` with no arguments lists every case in it",
+        tried
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", "),
+        cases_dir().display()
+    ))
+}
+
 fn parse_args() -> Result<Command, String> {
-    let mut argv = std::env::args().skip(1);
+    let argv: Vec<String> = std::env::args().skip(1).collect();
+    // Anywhere, not only first: a reader who has already typed a verb asks the verb for help.
+    if argv
+        .iter()
+        .any(|arg| matches!(arg.as_str(), "--help" | "-h" | "help"))
+    {
+        return Ok(Command::Help);
+    }
+    let mut argv = argv.into_iter();
     match argv.next().as_deref() {
         Some("compile") => {
             let (cases, env, quiet) = collect_compile_args(argv)?;
@@ -139,7 +187,7 @@ fn parse_args() -> Result<Command, String> {
                 ));
             }
             Ok(Command::AddRegister {
-                case: PathBuf::from(case),
+                case: resolve_case(&case)?,
                 register,
             })
         }
@@ -280,7 +328,7 @@ fn collect_compile_args(
         } else if arg.starts_with('-') {
             return Err(format!("unknown option {arg:?}\n{USAGE}"));
         } else {
-            cases.push(PathBuf::from(arg));
+            cases.push(resolve_case(&arg)?);
         }
     }
     if cases.is_empty() {
@@ -308,7 +356,7 @@ fn collect_cases(argv: impl Iterator<Item = String>) -> Result<Vec<PathBuf>, Str
         if arg.starts_with('-') {
             return Err(format!("unknown option {arg:?}\n{USAGE}"));
         }
-        cases.push(PathBuf::from(arg));
+        cases.push(resolve_case(&arg)?);
     }
     if cases.is_empty() {
         return corpus_cases();
@@ -547,7 +595,15 @@ fn publish_file(path: &Path, bytes: &str) -> Result<(), String> {
 }
 
 fn cases_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
+    crates_dir().join("aid").join("tests")
+}
+
+/// `spike/crates`, so every path this tool prints reads as a real location rather than as a
+/// traversal out of whichever crate happens to host the binary.
+fn crates_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .map_or_else(|| PathBuf::from("crates"), Path::to_path_buf)
 }
 
 /// Drive one case's replays through the Dorc adapter, routing declines to the generic executor.
@@ -758,11 +814,11 @@ fn receipt_store() -> Result<FsReceiptStore, String> {
 }
 
 fn catalog_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/catalog_lock.rs")
+    crates_dir().join("aid").join("src").join("catalog_lock.rs")
 }
 
 fn arrangement_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/src/arrangement_lock.rs")
+    crates_dir().join("aid").join("src").join("arrangement_lock.rs")
 }
 
 fn spike_dir() -> Result<PathBuf, String> {
@@ -817,6 +873,7 @@ fn print_variables(
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
+    writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;
     for path in cases {
         let case = load(path)?;
         let baseline = consumer
@@ -843,6 +900,16 @@ fn print_variables(
 /// without dropping every replay after the first.
 fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
+    // Which bytes these describe is the one thing a reader can get wrong here, and getting it
+    // wrong reads as the tool lying: this is the PUBLISHED baseline an edit is attributed against,
+    // never the on-disk transcript.
+    writeln!(
+        out,
+        "sections of the published baseline — the render your edit is attributed against; what \
+         you have typed on disk is what `mise run loom:compile` reads"
+    )
+    .map_err(|error| error.to_string())?;
+    writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;
     for path in cases {
         let case = load(path)?;
         writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;

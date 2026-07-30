@@ -157,6 +157,17 @@ impl Repository for GitRepository {
 /// # Errors
 ///
 /// Returns a refusal for malformed Git state, a dirty generated lock, a selected case in the wrong
+/// A dirty generated lock means a PRIOR promote is still uncommitted, and a reader who has never
+/// seen this tool's two-file publication has no way to guess that from the path alone.
+fn lock_not_clean(path: &str) -> String {
+    format!(
+        "the generated lock {path} differs from HEAD, which means an earlier `dorc-loom promote` \
+         has not been committed. This run would publish on top of it and the two changes would be \
+         impossible to tell apart. Commit the pending promotion (the lock and the case it \
+         rewrote), or `git restore` both, then run this again."
+    )
+}
+
 /// git state, or any non-output transcript difference.
 pub fn classify_prose_changes(
     repository: &impl Repository,
@@ -177,7 +188,7 @@ pub fn classify_prose_changes(
     }
     for (path, status) in &by_path {
         if path == catalog || path == arrangement {
-            return Err(format!("generated lock is not clean against HEAD: {path}"));
+            return Err(lock_not_clean(path));
         }
         if selected.binary_search(path).is_err() {
             // Outside the blast radius: this run never reads or writes it.
@@ -203,7 +214,7 @@ pub fn classify_prose_changes(
     }
     for lock in [catalog, arrangement] {
         if repository.current_bytes(lock)? != repository.head_bytes(lock)? {
-            return Err(format!("generated lock is not clean against HEAD: {lock}"));
+            return Err(lock_not_clean(lock));
         }
     }
 
