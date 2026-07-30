@@ -194,3 +194,65 @@ lanes thread by fresh census, never by the map's count.
 - **D1 restart** — the first D1 dispatch was stopped by the human before the weft
   absorption (zero commits; tree clean at `599e90ed`); relaunched with the weft-directed
   brief at this commit.
+- **rul-weft-is-engine-not-law** (human-typed unweld, 2026-07-29; amends
+  rul-diagnostic-surface-renders-through-weft ABOVE from weld to lean) — the LAW is
+  engine-agnostic: a render seat must emit a byte-exact, total-cover, stamped part
+  stream, and nothing may re-derive structure from byte shapes; the enforcement gate
+  compares seat-vs-transcript whoever rendered. Weft is the design-priority engine (and
+  D1's), never a transport requirement; a non-weft seat honoring the stamped-stream
+  contract stays legal. Support both paths; prioritize weft for design attention.
+- **rul-quarantine-binds-conductor-only** (human-typed, 2026-07-29) — the
+  quarantine-DO-NOT-READ fence binds the FABLE CONDUCTOR, not builders or scouts. Every
+  builder brief carries: mandatory read of `quarantine-DO-NOT-READ/
+  AGENTS.for-builders-only.md` (that file only, unless it directs otherwise), follow it,
+  NEVER report/quote its contents to the conductor; a material brief-conflict is
+  reported only as "builders-only conflict — human adjudicates". String-transport
+  builders (D2; the X2 de-passthrough lane) additionally read `284`. Exception, flagged
+  unvetoed: the blind naive-reviewer gate reads neither (its blindness is the point).
+- **fnd-284-landed-state** (quarantine scout, 2026-07-29; public citations only) — the
+  284 hand-off is mostly UNBUILT: the type-gate is open (`is_foreign_param` is
+  `param == "detail"`, aid/catalog.rs:246, self-documented "LATER"); the
+  foreign-vs-our-words audit never started (23 `detail` sites, grown from 18); the
+  2026-07-26 `display.rs` cluster landed the TERMINAL-SAFETY half only (encode_line/
+  encode_foreign through params_of, tested). Sharp extra: `Said::Foreign` /
+  `RenderPart::ForeignText` carry text in enum-variant fields — effectively public, so
+  a string literal constructs "foreign" today; the seal needs a room-pattern inner type
+  (`core/room.rs` precedent). Charterable entirely from public docs: `282` §0+§8 ·
+  `288` §6 · `28A` §2m/§2r/§2s · AID-NEEDS rows · room.rs. Human ack (2026-07-29):
+  whylog stays out-of-scope EXCEPT the mechanical type-enforcement ripple of the
+  284-shaped work — no redaction machinery, no whylog redesign, no adapter layers;
+  secret-taint sanitization stays with its own (unowned) row.
+- **D1 LANDED + conductor-verified** — `3434ba1f`…`19f491fb` (8 commits). The
+  diagnostic surface composes a weft `Banner`/`CodeBlock`/`LabeledRow` document through
+  `aid::weave`; `render_cli` IS the part stream's `.text()` (string seat and parts seat
+  cannot disagree); K1–K6 deleted with ZERO byte-shape survivors on the render/transport
+  path; K7 landed as `errorloom/src/address.rs` (component-sequence alignment);
+  `transcript_bytes_equal_production_bytes` live in the looms runner; width is a seat
+  parameter (canonical const for transcripts). Bridge extension for D2: `Face::{Code,
+  Register{field,paragraph}, Hole{field,param}}`, Template/Param facet arms,
+  `weave::to_runs` inverse; the placeholder seam is ONE line (diag.rs:2764 still mints
+  `Arrangement{"unwritten-placeholder"}`). Obligations held: locks byte-identical ·
+  artifact `.sh`/`.out`/`.ran` under cli/tests untouched · 47 loom transcripts moved,
+  transcript-body lines only · conductor own-hand `gate:full-quiet` GREEN at `19f491fb`
+  (cold clippy; builder additionally reports both legs green). Form changes ride
+  render-form-unwelded: flush-left continuations · weft `[ ` locus supersedes `-->` ·
+  weft-measured gutters SUPERSEDE the `28A` §12 gutter aesthetic (flagged to the human;
+  a weft geometry tune can revisit) · uniform trailing newline (D4's trim ruling gets
+  one shape to bind). Residues routed: txtar-header-lookalike container escape → D2 ·
+  wrap-inside-a-value → LEDGER (wants a weft run-level unbreakable mark; weft vocabulary
+  change, not this arc) · zero-width-run inversion → `28H` ruling 1's seat-defect, take
+  in an X-lane only if cheap · wrapped placeholder rendering → D2's face work.
+  tc-rulings: `tc-catalog-values-are-unencoded-for-a-measured-surface` → DEFER to X2
+  type-gating (D1's refusal to glyph-mangle 16 codes was correct);
+  `layout_box(width, indent)` → absorbed by D2's `RenderCtx`. Housekeeping: D1
+  relabelled its own commits (dsn misuse); `relabel-backup` branch awaits the human's
+  hook-reserved delete.
+- **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
+  editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
+  help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
+  mirror-thread (census-corrected seats incl. lint/render.rs:119, cli/main.rs:243/414;
+  absorbs layout_box) · `editable_baseline`-via-`replay` · txtar-header escape; D3
+  reach pack (`ai/r28-loom-d3`): stand-in retirement per rul-honest-firing (parse/CFG
+  diag union + records intake; irreducible residue beside payload types in aid) ·
+  params destructuring enforcement · UnknownParam Rust-path refusal + rustdoc repairs ·
+  the 14 trivially-fireable ratchet cases · cheap lint/cli faces.
