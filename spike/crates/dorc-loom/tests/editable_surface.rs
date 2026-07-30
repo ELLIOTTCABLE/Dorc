@@ -11,7 +11,7 @@
 )]
 
 use dorc_loom::{DorcConsumer, DorcEditableBaseline, DorcSectionEditRefusal, compile_section_edit};
-use errorloom::{Case, RenderComponent, RunEnv};
+use errorloom::{Case, CaseRenderer, RenderComponent, RunEnv};
 
 /// One case, replayed through `consumer`'s own mirror into its editable baseline and transcript.
 fn drive(consumer: &DorcConsumer, case: &Case) -> (DorcEditableBaseline, String) {
@@ -212,6 +212,38 @@ fn a_backticked_marker_compiles() {
             dorc_loom::TemplateVariableName(String::from("mode")),
         ],
         "the retyped marker binds and the untouched variable is preserved"
+    );
+}
+
+/// The one-step loop (`28H:finding-why-render-reads-the-const-not-the-mirror`): a chrome row
+/// edited in a transcript re-renders through the EDITED registry, with no intermediate rebuild —
+/// the re-render reads the same context the edit landed in, not the compiled-in table.
+#[test]
+fn one_step_why_row_edit() {
+    let case = Case::parse(include_str!(
+        "../../aid/tests/why-drift-analysis-suppressed.loom"
+    ))
+    .expect("parses");
+    let mut consumer = DorcConsumer::new();
+    let (baseline, transcript) = drive(&consumer, &case);
+    let edited = transcript.replace("   oracles: firewall", "   loaded oracles: firewall");
+    assert_ne!(edited, transcript, "the fixture must actually edit a row");
+
+    let preview = dorc_loom::compile_preview(&baseline, &edited).expect("the chrome line compiles");
+    consumer
+        .apply_preview(&preview)
+        .expect("the registry mirror takes it");
+    let rerendered = consumer.render_case(&case).expect("the case re-renders");
+    assert!(
+        rerendered.contains("loaded oracles: firewall.oracle.sh"),
+        "the re-render must read the edited row: {rerendered}"
+    );
+    assert!(
+        dorc_aid::arrangement::ARRANGEMENTS
+            .iter()
+            .any(|entry| entry.slug == "why-receipt-oracles"
+                && entry.words.words() == Some(&["oracles: ", ""][..])),
+        "the compiled-in table is untouched — nothing was rebuilt"
     );
 }
 
