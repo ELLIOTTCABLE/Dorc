@@ -1,0 +1,18 @@
+---
+code: cfg-inline-refused
+when-fires: a function call could not be inlined. cfg.rs — SEVEN distinct emit paths under one slug: redefinition, recursion, inline-depth budget, unmodeled positional in body, unmodeled write-redirect in body (tc-M2), per-call node budget, per-book node budget. Each names its own reason.
+why: the call runs as an ordinary unmodeled command (MustRun, safe). PASSTHROUGH — the per-path reason rides `detail`.
+---
+-- book.sh --
+#!/bin/sh
+retry() { retry; }
+retry
+
+-- replay --
+$ dorc plan --book=book.sh
+warning[cfg-inline-refused]: sm recursive call to `retry` (direct or transitive
+within the active inline stack); not inlined -- it runs as an ordinary unmodeled
+command
+      [ book.sh:2:11
+   2 | retry() { retry; }
+     |           \___/

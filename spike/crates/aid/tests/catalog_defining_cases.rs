@@ -26,8 +26,8 @@ use dorc_core::{BytePos, Interner, Span};
 
 /// The SHRINK-ONLY not-yet-covered allowlist (`tc-defining-case-coverage-ratchet`). Each entry's note
 /// is the corruption/trigger surface a future defining case injects, so coverage is mechanical
-/// (conductor rider). A code may leave this list ONLY by gaining a `covered()` case; adding a NEW code
-/// without a defining case must add it here with its surface note (the completeness gate enforces the
+/// (conductor rider). A code may leave this list ONLY by gaining a defining case; adding a NEW code
+/// without one must add it here with its surface note (the completeness gate enforces the
 /// partition, `ratchet_only_shrinks` guards the direction against the committed baseline).
 const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
     // ── analyzer give-ups: trigger via a small book/oracle through the pipeline ──
@@ -40,14 +40,6 @@ const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
         "book: a write-redirect to a dynamic target, `echo x >\"$f\"`",
     ),
     (
-        "depth-2-positional-unthreaded",
-        "book: a depth-2 inlined call passing `$1` through two levels",
-    ),
-    (
-        "syntax-malformed",
-        "book: a parse error, e.g. an unterminated double-quote",
-    ),
-    (
         "cfg-top-node",
         "book: an unsupported construct that lowers to a CFG ⊤ node",
     ),
@@ -56,20 +48,8 @@ const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
         "book: `set -e` with an unmodeled command in the errexit region",
     ),
     (
-        "cfg-inline-refused",
-        "book: a recursive/over-budget funcdef call the inliner refuses",
-    ),
-    (
-        "cfg-builtin-shadowed",
-        "book: a funcdef named `test`/`[` shadowing a relied-on builtin",
-    ),
-    (
         "effect-kind-disagreement",
         "oracle: a check annotation kind ≠ the effect-map kind for a verb",
-    ),
-    (
-        "predict-out-of-dialect",
-        "oracle: a check body using a backtick / `[[ ]]` (out of dialect)",
     ),
     (
         "predict-unterminated",

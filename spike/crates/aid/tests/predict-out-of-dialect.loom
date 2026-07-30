@@ -1,0 +1,24 @@
+---
+code: predict-out-of-dialect
+when-fires: a check function body uses a construct outside the check dialect (a strict subset of sh). oracle/predict.rs lift_failure.
+why: out-of-dialect input is a lift failure. PASSTHROUGH — the check parser's description rides `detail`.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+pkg__is_converged() { [ "`dpkg -s "$1"`" = installed ]; }
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ oracle.sh:2:1
+     2 | pkg__is_converged() { [ "`dpkg -s "$1"`" = installed ]; }
+       | \_______________/
+  error[predict-out-of-dialect]: sm statement does not start with a word
+        [ oracle.sh:2:23
+     2 | pkg__is_converged() { [ "`dpkg -s "$1"`" = installed ]; }
+       |                       ^
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

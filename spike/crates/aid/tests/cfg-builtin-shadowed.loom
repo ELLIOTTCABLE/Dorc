@@ -1,0 +1,21 @@
+---
+code: cfg-builtin-shadowed
+when-fires: a book funcdef shadows a shell builtin the engine relies on (dash resolves a function before a regular builtin). cfg.rs warn_shadowed_relied_builtins.
+why: find-I: builtin-dependent conclusions may be unsound for this book. PASSTHROUGH — the disclosure text rides `detail`; the primary span is the funcdef name_span.
+---
+-- book.sh --
+#!/bin/sh
+test() { hork --stub; }
+if test -f /etc/nginx/nginx.conf; then
+  apt-get install -y nginx
+fi
+
+-- replay --
+$ dorc plan --book=book.sh
+warning[cfg-builtin-shadowed]: sm function `test` shadows a shell builtin the
+engine relies on (dash resolves a function before a regular builtin): analysis
+treats the bare word `test` as the builtin when classifying effects and minting
+stand-ins, so builtin-dependent conclusions may be unsound for this book
+      [ book.sh:2:1
+   2 | test() { hork --stub; }
+     | \__/

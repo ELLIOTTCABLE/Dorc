@@ -1,0 +1,18 @@
+---
+code: syntax-malformed
+when-fires: the parser hit a structurally malformed sh construct (a parse error); parsing continues fail-soft.
+why: inv-no-throw: errors are data. PASSTHROUGH — the parser's description rides `detail`.
+---
+-- book.sh --
+#!/bin/sh
+# the `for` loop never reaches its `done`
+for pkg in nginx redis
+do
+  apt-get install -y "$pkg"
+
+-- replay --
+$ dorc plan --book=book.sh
+error[syntax-malformed]: sm expected `done` to close the loop
+      [ book.sh:6:1
+   6 | 
+     | ^

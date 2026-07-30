@@ -1,0 +1,21 @@
+---
+code: depth-2-positional-unthreaded
+when-fires: a depth-2 inlined call's argument references a positional that does not thread two inline levels. cfg.rs (né dq-depth-2-positional-unthreaded).
+why: 216 §1.2 correction: the inner body's positional resolves ⊤, so the call runs verbatim. `{name}` = the refused call's function name. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).
+---
+-- book.sh --
+#!/bin/sh
+install_one() { apt-get install -y "$1"; }
+deploy() { install_one "$1"; }
+deploy nginx
+
+-- replay --
+$ dorc plan --book=book.sh
+note[depth-2-positional-unthreaded]: sm call `install_one` not inlined: its
+argument references a positional (`$1`..`$9`/`$#`) that does not thread through
+two inline levels => the inner body's positional is ⊤ -- it runs as an
+ordinary unmodeled command (depth-2 positional threading is out of the modeled
+subset)
+      [ book.sh:3:12
+   3 | deploy() { install_one "$1"; }
+     |            \______________/
