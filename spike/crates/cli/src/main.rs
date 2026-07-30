@@ -66,8 +66,7 @@ mod whylog_store;
 
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete,
-    Diag, DiagCode, EscalationPolicy, FootprintIncoherent, ReachesConflict,
-    ReachesProviderCollision, ResolverConflict, ResolverProviderCollision, TouchesEscalated,
+    Diag, DiagCode, EscalationPolicy, FootprintIncoherent, TouchesEscalated,
     WrappedSiteAdoptionHint,
 };
 use dorc_aid::said::Said;
@@ -76,6 +75,7 @@ use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol
 
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
+use dorc_cli::kinds::{KindReaches, KindResolvers, build_kind_reaches, build_kind_resolvers};
 use dorc_cli::{
     Args, CONSENT_FLAG, DriftedReceipt, Invocation, LintArgs, LintFormat, Mode, PlanTally, Receipt,
     humane_read_error, parse_args_from,
@@ -2562,164 +2562,6 @@ fn own_wall_coord(
         .map(|f| dorc_plan::EntityCoord::new(f.kind, f.entity))
 }
 
-/// A kind-keyed lift's product with every diagnostic it raised held as DATA — nothing writes fd 2
-/// from inside the lift (`io-at-edges-only`; it is also what keeps a unit test driving one of these
-/// from painting a red caret frame across a green run).
-///
-/// Two groups, because they frame against different sources: `lift` is the per-file lift's own
-/// diagnostics, which the report seat frames spanlessly as it always has, while `confusability` is
-/// keyed by the oracle file each diagnostic's caret resolves against (`law-lineno-identity`).
-/// `run` reports them in that order, at the point the lift used to print them.
-struct KindLift<T> {
-    value: T,
-    lift: Vec<Diag>,
-    confusability: BTreeMap<usize, Vec<Diag>>,
-}
-
-/// The per-KIND resolvers (24F §3, corr-kind-keying §10): `<kind>.resolve()` funcdefs lifted per
-/// oracle file, combined with CONFUSABILITY enforcement. Resolvers are a SECOND family keyed by KIND
-/// (the kind-owner holds the nouns — 23M contribution-vs-identity), NOT per-command role-siblings;
-/// the engine looks one up by a coordinate's kind symbol, never its provider.
-struct KindResolvers {
-    /// Per-file resolver sets (indexed by `by_kind`).
-    sets: Vec<dorc_oracle::resolve::ResolverSet>,
-    /// The kept, non-conflicting map from a RAW coordinate kind to `(file-index, munged-base
-    /// symbol)`. Kind-keyed funcdefs are NAMED by the kind's forward-munge (`sm_dorc_Package__resolve`),
-    /// so the inner [`ResolverSet`] is keyed by the munged base; this map re-keys to the RAW kind a
-    /// coordinate carries (`flag-forward-munge-keying`), so a lookup by `coord.kind()` finds the
-    /// funcdef named by that kind's munge. A kind ABSENT here is resolver-LESS (the token-equality
-    /// floor) — never declared, or REFUSED for a cross-file duplicate.
-    by_kind: BTreeMap<Symbol, (usize, Symbol)>,
-}
-
-impl KindResolvers {
-    /// The resolver-bearing RAW kinds (the engine marks each; a coordinate of such a kind that fails
-    /// to resolve degrades to may-alias, §3a).
-    fn resolver_kinds(&self) -> impl Iterator<Item = Symbol> + '_ {
-        self.by_kind.keys().copied()
-    }
-
-    /// The `(file-index, resolver funcdef)` for a RAW coordinate kind, if it has a kept resolver.
-    fn get(&self, kind: Symbol) -> Option<(usize, &dorc_oracle::predict::Predict)> {
-        let (idx, base) = *self.by_kind.get(&kind)?;
-        self.sets.get(idx)?.get(base).map(|p| (idx, p))
-    }
-}
-
-/// Lift the per-kind resolvers + ENFORCE confusability (24F §3 / corr-kind-keying §10 — a LOUD
-/// diagnostic, never a silent dud). Two checks: (1) at-most-one-resolver-per-kind — two files
-/// declaring `<kind>.resolve()` for the SAME kind ⇒ REFUSE BOTH (the kind stays resolver-less) + an
-/// error; (2) a resolver keyed to a name matching a known PROVIDER (a lifted predict/touches
-/// command) ⇒ a WARNING (the exact mis-keying the brief itself made — `apt-get.resolve()` would mint
-/// identity for a "kind" no coordinate uses). `inv-referent-agnostic`: names compared as interned
-/// symbols/strings, never decoded.
-fn build_kind_resolvers(
-    oracle_srcs: &[String],
-    checks: &[dorc_oracle::predict::PredictSet],
-    touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
-    coord_kinds: &BTreeSet<Symbol>,
-    interner: &mut Interner,
-) -> KindLift<KindResolvers> {
-    use dorc_oracle::resolve::ResolverSet;
-    use dorc_oracle::to_funcname_segment;
-
-    let mut lift = Vec::new();
-    let sets: Vec<ResolverSet> = oracle_srcs
-        .iter()
-        .map(|src| {
-            let lifted = ResolverSet::lift(interner, src);
-            lift.extend(lifted.diags);
-            lifted.value
-        })
-        .collect();
-
-    // Every (kind, file-index) declaration, grouped by kind (the same kind in ≥2 files is a conflict).
-    let mut per_kind: BTreeMap<Symbol, Vec<usize>> = BTreeMap::new();
-    for (idx, set) in sets.iter().enumerate() {
-        for kind in set.kinds() {
-            per_kind.entry(kind).or_default().push(idx);
-        }
-    }
-
-    // The known PROVIDER names, FORWARD-MUNGED into NAME space (`flag-forward-munge-keying`: a
-    // kind-keyed resolver interns its base by the kind's forward-munge, so the collision compares in
-    // the same NAME space the funcdefs live in) — a resolver whose kind munges to a provider's is the
-    // mis-keying we warn on.
-    let mut providers: BTreeSet<String> = BTreeSet::new();
-    for cs in checks {
-        for p in cs.providers() {
-            providers.insert(to_funcname_segment(interner.resolve(p)));
-        }
-    }
-    for (_, ts) in touches_paired {
-        for p in ts.providers() {
-            providers.insert(to_funcname_segment(interner.resolve(p)));
-        }
-    }
-
-    let mut diags_by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
-    let mut base_to_idx: BTreeMap<Symbol, usize> = BTreeMap::new();
-    for (kind, files) in per_kind {
-        let name = interner.resolve(kind).to_owned();
-        // The diagnostic points at the FIRST declaring file's `<kind>__resolve` funcdef name
-        // (`aid-caret-span-precision`); the file index carries its `law-lineno-identity` space.
-        let anchor = files
-            .first()
-            .and_then(|&idx| Some((idx, sets.get(idx)?.get(kind)?.name_span)));
-        if files.len() > 1 {
-            if let Some((idx, span)) = anchor {
-                diags_by_file.entry(idx).or_default().push(Diag::new(
-                    DiagCode::ResolverConflict(ResolverConflict {
-                        kind: name.clone(),
-                        count: files.len(),
-                    }),
-                    span,
-                ));
-            }
-            continue; // refuse both ⇒ resolver-less
-        }
-        if providers.contains(&name)
-            && let Some((idx, span)) = anchor
-        {
-            // Kept (it may legitimately match a kind of the same name); the warning surfaces the risk.
-            diags_by_file.entry(idx).or_default().push(Diag::new(
-                DiagCode::ResolverProviderCollision(ResolverProviderCollision {
-                    name: name.clone(),
-                }),
-                span,
-            ));
-        }
-        if let Some(&idx) = files.first() {
-            base_to_idx.insert(kind, idx);
-        }
-    }
-    let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
-    KindLift {
-        value: KindResolvers { sets, by_kind },
-        lift,
-        confusability: diags_by_file,
-    }
-}
-
-/// Re-key a kind-keyed `munged-base → file-index` map to the RAW coordinate kinds
-/// (`flag-forward-munge-keying`). A raw coord kind K maps to `(idx, munged-base)` iff its
-/// forward-munge is a kept base. Shared by [`build_kind_resolvers`] and [`build_kind_reaches`].
-fn rekey_to_raw_kinds(
-    base_to_idx: &BTreeMap<Symbol, usize>,
-    coord_kinds: &BTreeSet<Symbol>,
-    interner: &mut Interner,
-) -> BTreeMap<Symbol, (usize, Symbol)> {
-    let mut by_kind = BTreeMap::new();
-    for &raw in coord_kinds {
-        let munged_text = dorc_oracle::to_funcname_segment(interner.resolve(raw));
-        let base = interner.intern(&munged_text);
-        if let Some(&idx) = base_to_idx.get(&base) {
-            by_kind.insert(raw, (idx, base));
-        }
-    }
-    by_kind
-}
-
 /// Collect the coordinates that need canonicalization (24F §3): every establish/query BACKING coord
 /// and every wall-candidate FOOTPRINT coord whose KIND is resolver-bearing. Deduplicated (resolution
 /// is a pure function of `(kind, entity)`) and deterministic (`BTreeSet`). Derived-footprint coords
@@ -2770,7 +2612,7 @@ fn collect_resolver_coords(
 
 /// Collect the RAW coordinate kinds present in this analysis — every establish/query BACKING kind
 /// plus every wall-candidate FOOTPRINT kind. Used to re-key the munged kind-keyed resolver/reaches
-/// maps to the raw kinds coordinates carry (`flag-forward-munge-keying`; [`rekey_to_raw_kinds`]).
+/// maps to the raw kinds coordinates carry (`flag-forward-munge-keying`; `kinds::rekey_to_raw_kinds`).
 ///
 /// rider-resolver-coverage-watch (`277` §7b): this collected set is EXACTLY the population the
 /// survival comparison ([`dorc_plan::survival::disjoint`]) ever canonicalizes — backings come from
@@ -2904,117 +2746,6 @@ fn dangling_diagnostics(resolutions: &dorc_plan::Resolutions, interner: &Interne
             }))
         })
         .collect()
-}
-
-/// The per-KIND reach-functions (24G §4): `<kind>.reaches()` funcdefs lifted per oracle file, with
-/// CONFUSABILITY enforcement — kind-keyed exactly like the resolvers ([`KindResolvers`], corr-kind-keying
-/// §10). The engine expands a footprint coord through the reach-function keyed by the coord's kind.
-struct KindReaches {
-    /// Per-file reach sets (indexed by `by_kind`).
-    sets: Vec<dorc_oracle::reaches::ReachesSet>,
-    /// The kept, non-conflicting map from a RAW coordinate kind to `(file-index, munged-base symbol)`
-    /// — re-keyed from the funcdef's munged base to the raw kind coords carry
-    /// (`flag-forward-munge-keying`; see [`KindResolvers::by_kind`]). A kind ABSENT here is reach-LESS
-    /// (its footprints never expand) — never declared, or REFUSED for a cross-file duplicate.
-    by_kind: BTreeMap<Symbol, (usize, Symbol)>,
-}
-
-impl KindReaches {
-    /// The reach-bearing RAW kinds (the engine expands every footprint coord of such a kind).
-    fn reach_kinds(&self) -> impl Iterator<Item = Symbol> + '_ {
-        self.by_kind.keys().copied()
-    }
-
-    /// The `(file-index, reaches funcdef)` for a RAW coordinate kind, if it has a kept reach-function.
-    fn get(&self, kind: Symbol) -> Option<(usize, &dorc_oracle::predict::Predict)> {
-        let (idx, base) = *self.by_kind.get(&kind)?;
-        self.sets.get(idx)?.get(base).map(|p| (idx, p))
-    }
-}
-
-/// Lift the per-kind reach-functions + ENFORCE confusability (24G §4, kind-keyed like the resolver —
-/// a LOUD diagnostic, never a silent dud). Two checks, mirroring [`build_kind_resolvers`]: (1)
-/// at-most-one-reaches-per-kind — two files declaring `<kind>.reaches()` for the SAME kind ⇒ REFUSE
-/// BOTH (the kind stays reach-less) + an error; (2) a reaches keyed to a name matching a known
-/// PROVIDER ⇒ a WARNING (the reaches is keyed by KIND, not command). `inv-referent-agnostic`: names
-/// compared as interned strings, never decoded.
-fn build_kind_reaches(
-    oracle_srcs: &[String],
-    checks: &[dorc_oracle::predict::PredictSet],
-    touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
-    coord_kinds: &BTreeSet<Symbol>,
-    interner: &mut Interner,
-) -> KindLift<KindReaches> {
-    use dorc_oracle::reaches::ReachesSet;
-    use dorc_oracle::to_funcname_segment;
-
-    let mut lift = Vec::new();
-    let sets: Vec<ReachesSet> = oracle_srcs
-        .iter()
-        .map(|src| {
-            let lifted = ReachesSet::lift(interner, src);
-            lift.extend(lifted.diags);
-            lifted.value
-        })
-        .collect();
-
-    let mut per_kind: BTreeMap<Symbol, Vec<usize>> = BTreeMap::new();
-    for (idx, set) in sets.iter().enumerate() {
-        for kind in set.kinds() {
-            per_kind.entry(kind).or_default().push(idx);
-        }
-    }
-
-    let mut providers: BTreeSet<String> = BTreeSet::new();
-    for cs in checks {
-        for p in cs.providers() {
-            providers.insert(to_funcname_segment(interner.resolve(p)));
-        }
-    }
-    for (_, ts) in touches_paired {
-        for p in ts.providers() {
-            providers.insert(to_funcname_segment(interner.resolve(p)));
-        }
-    }
-
-    let mut diags_by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
-    let mut base_to_idx: BTreeMap<Symbol, usize> = BTreeMap::new();
-    for (kind, files) in per_kind {
-        let name = interner.resolve(kind).to_owned();
-        // Point at the FIRST declaring file's `<kind>__reaches` funcdef name (`aid-caret-span-precision`).
-        let anchor = files
-            .first()
-            .and_then(|&idx| Some((idx, sets.get(idx)?.get(kind)?.name_span)));
-        if files.len() > 1 {
-            if let Some((idx, span)) = anchor {
-                diags_by_file.entry(idx).or_default().push(Diag::new(
-                    DiagCode::ReachesConflict(ReachesConflict {
-                        kind: name.clone(),
-                        count: files.len(),
-                    }),
-                    span,
-                ));
-            }
-            continue;
-        }
-        if providers.contains(&name)
-            && let Some((idx, span)) = anchor
-        {
-            diags_by_file.entry(idx).or_default().push(Diag::new(
-                DiagCode::ReachesProviderCollision(ReachesProviderCollision { name: name.clone() }),
-                span,
-            ));
-        }
-        if let Some(&idx) = files.first() {
-            base_to_idx.insert(kind, idx);
-        }
-    }
-    let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
-    KindLift {
-        value: KindReaches { sets, by_kind },
-        lift,
-        confusability: diags_by_file,
-    }
 }
 
 /// The per-arm wrapper funcname a dynamic `reaches()` arm ships and is invoked under. Engine-

@@ -21,6 +21,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod kinds;
 pub mod why;
 pub mod world;
 

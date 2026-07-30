@@ -668,12 +668,17 @@ impl DorcConsumer {
             let parts = self.cli_parts(&diag, "", "");
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         };
+        let oracles: Vec<String> = plan
+            .oracles
+            .iter()
+            .map(|path| materialized_source(case, context, path))
+            .collect::<Option<_>>()?;
         let results = match plan.input {
             Some(input) => Some(materialized_input(case, context, input)?),
             None => None,
         };
         let (diag, _, filename) =
-            Self::world_of_source(case, plan.book, &source, results.as_deref()).ok()?;
+            Self::world_of_source(case, plan.book, &source, &oracles, results.as_deref()).ok()?;
         if plan.machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }
@@ -771,17 +776,24 @@ impl DorcConsumer {
             .frontmatter()
             .scalar("code")
             .ok_or_else(|| "case has no `code`".to_owned())?;
+        // The BOOK route first: a case carrying both a book and oracles is a `dorc plan` world,
+        // and its oracle sections are that run's loaded set rather than a lint target.
+        if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh")
+            && let Ok(world) = fire_book_analysis(
+                slug,
+                section.name(),
+                section.content(),
+                &oracle_sections(case),
+            )
+        {
+            return Ok(world);
+        }
         if let Some(section) = case
             .sections()
             .iter()
             .find(|s| s.name().ends_with("oracle.sh"))
         {
             return fire_lint_case(slug, section.name(), section.content());
-        }
-        if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh")
-            && let Ok(world) = fire_book_analysis(slug, section.name(), section.content())
-        {
-            return Ok(world);
         }
         if let Some((book, results)) = declared_plan_inputs(case)
             && let Ok(diag) = fire_records_admission(slug, book, results)
@@ -811,6 +823,7 @@ impl DorcConsumer {
         case: &Case,
         path: &str,
         source: &str,
+        oracles: &[String],
         results: Option<&str>,
     ) -> Result<(Diag, String, String), String> {
         let slug = case
@@ -822,7 +835,7 @@ impl DorcConsumer {
             return Ok((diag, source.to_owned(), filename));
         }
         if path == "book.sh"
-            && let Ok((diag, _, filename)) = fire_book_analysis(slug, path, source)
+            && let Ok((diag, _, filename)) = fire_book_analysis(slug, path, source, oracles)
         {
             return Ok((diag, source.to_owned(), filename));
         }
@@ -1170,6 +1183,10 @@ fn exact_words(command: &str) -> Option<Vec<&str>> {
 
 struct DirectPlan<'a> {
     book: &'a str,
+    /// The `-o <path>` oracle set, in the order the invocation names it — the same order
+    /// `law-lineno-identity` keys oracle file indices by, so a threaded span frames into the
+    /// section the author expects.
+    oracles: Vec<&'a str>,
     input: Option<&'a str>,
     machine: bool,
 }
@@ -1187,6 +1204,7 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
         return None;
     }
     let mut book = None;
+    let mut oracles = Vec::new();
     let mut input = None;
     let mut verbose = false;
     let mut machine = false;
@@ -1196,6 +1214,13 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
             if book.replace(path).is_some() || !case_relative_path(path) {
                 return None;
             }
+        } else if *word == "-o" {
+            index = index.saturating_add(1);
+            let path = *words.get(index)?;
+            if !case_relative_path(path) || oracles.contains(&path) {
+                return None;
+            }
+            oracles.push(path);
         } else if *word == "--host" {
             index = index.saturating_add(1);
             words.get(index)?;
@@ -1222,6 +1247,7 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
     }
     (!verbose || !machine).then_some(DirectPlan {
         book: book?,
+        oracles,
         input,
         machine,
     })
@@ -1247,6 +1273,16 @@ fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> 
         return None;
     }
     fs::read_to_string(context.cwd().join(path)).ok()
+}
+
+/// Every `*.oracle.sh` section a case carries, in section order — the loaded set for a world
+/// derived without a command to name one ([`DorcConsumer::world_of`]).
+fn oracle_sections(case: &Case) -> Vec<String> {
+    case.sections()
+        .iter()
+        .filter(|section| section.name().ends_with("oracle.sh"))
+        .map(|section| section.content().to_owned())
+        .collect()
 }
 
 /// [`materialized_source`]'s twin for the re-render chain, which has no materialized directory:
@@ -1453,6 +1489,12 @@ impl DorcConsumer {
             }
             return Ok(self.cli_parts(&diag, "", "").text());
         };
+        let oracles: Vec<String> = plan
+            .oracles
+            .iter()
+            .map(|path| section_source(case, path).map(str::to_owned))
+            .collect::<Option<_>>()
+            .ok_or_else(|| format!("unsupported replay {command:?}"))?;
         let results = match plan.input {
             Some(input) => Some(
                 section_source(case, input)
@@ -1460,7 +1502,8 @@ impl DorcConsumer {
             ),
             None => None,
         };
-        let (diag, _, filename) = Self::world_of_source(case, plan.book, source, results)?;
+        let (diag, _, filename) =
+            Self::world_of_source(case, plan.book, source, &oracles, results)?;
         if plan.machine {
             return Ok(render_diag_jsonl(&diag));
         }
@@ -1569,41 +1612,64 @@ fn fire_lint_case(
 }
 
 /// World-as-pipeline for the cmdsub flagship (`28A` §2n, extended to the analysis kernel): fire the
-/// REAL pipeline (parse → cfg → value → classify with NO oracles loaded) over the materialized
-/// `book.sh`, returning the (spanned) diagnostic whose slug matches the case's `code` + the source its
-/// caret frame resolves against. The ⊤-operand disclosure fires before any oracle argparse, so an
-/// empty [`dorc_oracle::KindIndex`] suffices; the whole path is kernel-pure (`inv-determinism`).
-/// Refuses if the pipeline fired nothing matching the declared slug (honest-trigger coherence).
+/// REAL pipeline over the materialized `book.sh` against the case's own `-o` oracle set, returning
+/// the (spanned) diagnostic whose slug matches the case's `code` + the source its caret frame
+/// resolves against. Refuses if the pipeline fired nothing matching the declared slug
+/// (honest-trigger coherence). The whole path is kernel-pure (`inv-determinism`).
 ///
-/// The search covers all three stages the run really reports — parse, CFG, and effect. Searching
-/// only the last discarded the two earlier stages' diagnostics, so every parse/CFG code was
-/// unreachable from a defining case and had to settle for a hand-built stand-in.
+/// The stage sequence is the binary's own, in the binary's own order (`cli/src/main.rs`'s `run`):
+/// lift the oracles into the effect map + the check sets + the verdict index, then
+/// parse → marker → reserved → CFG → value-flow → classify. Every stage's diagnostics are
+/// searched, because a run reports every stage: searching only the last left every parse/CFG code
+/// unreachable, and loading no oracles left every oracle-dependent code unreachable, so both had to
+/// settle for hand-built stand-ins (`289:rul-worldless-route-honest-trigger`).
 fn fire_book_analysis(
     slug: &str,
     filename: &str,
     source: &str,
+    oracles: &[String],
 ) -> Result<(Diag, String, String), String> {
     let mut interner = Interner::default();
+    let oracle_refs: Vec<&str> = oracles.iter().map(String::as_str).collect();
+    let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
+    let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
+        .iter()
+        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+        .collect();
+    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
+        .iter()
+        .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
+        .collect();
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
+
     let parsed = dorc_syntax::parse(source);
+    let marker = dorc_oracle::marker::check_dialect_marker(&mut interner, source);
+    let reserved = dorc_oracle::reserved::lint_book_reserved_names(&parsed.value);
     let cfg = dorc_analysis::cfg::build(&parsed.value);
     let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
-    let idx = dorc_oracle::KindIndex::default();
     let mut arena = ProvArena::new();
     let effect = dorc_analysis::effect::classify(
         &cfg.value,
         &value,
         &parsed.value,
         &idx,
-        &[],
-        &dorc_oracle::verdict::VerdictIndex::default(),
+        &checks,
+        &verdicts,
         &mut interner,
         &mut arena,
     );
+    // The oracle-side confusability lints are a run's own act over the SAME lifted sets
+    // (`cli::kinds`), not a second implementation: a defining case for one of them therefore pins
+    // what an author's `dorc plan` really prints.
+    let kinds = dorc_cli::kinds::confusability_diagnostics(&checks, &oracle_refs, &mut interner);
     let diag = parsed
         .diags
         .into_iter()
+        .chain(marker)
+        .chain(reserved)
         .chain(cfg.diags)
         .chain(effect.diags)
+        .chain(kinds)
         .find(|d| d.code.slug() == slug)
         .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))?;
     Ok((diag, source.to_owned(), filename.to_owned()))
