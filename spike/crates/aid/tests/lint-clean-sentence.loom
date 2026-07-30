@@ -1,0 +1,16 @@
+---
+arrangement: lint-clean-sentence
+when-used: The whole quiet-on-clean sentence a findings-free `dorc lint` prints instead of a report. Values, in order: file count, its plural suffix, source count, its plural suffix.
+why: 27R section 8 delta-positive-clean-sentence: clean is stated positively, never as silence.
+---
+-- oracle.sh --
+# dorc-lang/v0.2
+# Nothing here for any lint source to report: the point of the case is the render a CLEAN run
+# produces, which is a sentence rather than an empty report.
+nginx__is_converged() {
+   systemctl is-active --quiet nginx
+}
+
+-- replay --
+$ dorc lint oracle.sh --no-tools
+dorc lint: clean -- nothing found across 1 file, 7 sources.
