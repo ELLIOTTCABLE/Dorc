@@ -41,7 +41,7 @@ fn compiler_binds_exact_empty_and_nul_values() {
 }
 
 #[test]
-fn compiler_refuses_unknown_and_adjacent_markers() {
+fn compiler_refuses_an_unknown_name_and_binds_adjacent_markers() {
     assert!(matches!(
         compile_fragments(
             &[EditableFragment::Text(String::from("{{missing}}"))],
@@ -49,13 +49,13 @@ fn compiler_refuses_unknown_and_adjacent_markers() {
         ),
         Err(CompileRefusal::UnknownVariable(_))
     ));
-    assert!(matches!(
-        compile_fragments(
-            &[EditableFragment::Text(String::from("{{a}}{{b}}"))],
-            &values(&[("a", "a"), ("b", "b")])
-        ),
-        Err(CompileRefusal::AttachedMarker(_))
-    ));
+    let compiled = compile_fragments(
+        &[EditableFragment::Text(String::from("{{a}}{{b}}"))],
+        &values(&[("a", "a"), ("b", "b")]),
+    )
+    .unwrap_or_else(|error| panic!("{error:?}"));
+    assert_eq!(compiled.text(), "ab");
+    assert_eq!(compiled.used(), &[name("a"), name("b")]);
 }
 
 #[test]
@@ -70,16 +70,15 @@ fn compiler_markers_override_and_respect_fragment_boundaries() {
         .unwrap_or_else(|error| panic!("{error:?}"));
     assert_eq!(compiled.used(), &[name("command")]);
     assert_eq!(compiled.text(), "run   apt ");
-    assert!(matches!(
-        compile_fragments(
-            &[
-                variable("path", "/x"),
-                EditableFragment::Text(String::from("{{command}}"))
-            ],
-            &values(&[("path", "/x"), ("command", "apt")])
-        ),
-        Err(CompileRefusal::AttachedMarker(_))
-    ));
+    let glued = compile_fragments(
+        &[
+            variable("path", "/x"),
+            EditableFragment::Text(String::from("{{command}}")),
+        ],
+        &values(&[("path", "/x"), ("command", "apt")]),
+    )
+    .unwrap_or_else(|error| panic!("{error:?}"));
+    assert_eq!(glued.text(), "/xapt");
     let accepted = compile_fragments(
         &[
             variable("path", "/x"),

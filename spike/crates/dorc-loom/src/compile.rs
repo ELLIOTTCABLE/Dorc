@@ -62,8 +62,6 @@ pub enum CompileRefusal {
     Template(TemplateRefusal),
     /// No exact binding exists for a name.
     UnknownVariable(TemplateVariableName),
-    /// A marker was not whitespace-delimited.
-    AttachedMarker(TemplateVariableName),
 }
 
 /// Compile generic section fragments with exact bindings.
@@ -76,13 +74,8 @@ pub fn compile_fragments(
 ) -> Result<CompiledSection, CompileRefusal> {
     let parsed: Result<Vec<_>, _> = source
         .iter()
-        .enumerate()
-        .map(|(index, fragment)| match fragment {
-            EditableFragment::Text(text) => parse_text(
-                text,
-                nearest_before(source, index),
-                nearest_after(source, index),
-            ),
+        .map(|fragment| match fragment {
+            EditableFragment::Text(text) => parse_text(text),
             EditableFragment::Variable { id, .. } => {
                 Ok(vec![CompiledFragment::Variable(id.name.clone())])
             }
@@ -139,95 +132,55 @@ pub fn compile_fragments(
     })
 }
 
-fn parse_text(
-    text: &str,
-    external_before: Option<char>,
-    external_after: Option<char>,
-) -> Result<Vec<CompiledFragment>, CompileRefusal> {
+/// Split one edited text fragment at its marker tokens.
+///
+/// The TOKEN is what the grammar rules — `{{` + a NAME + `}}`, whole, with no interior whitespace
+/// or expressions — and nothing about what SURROUNDS it (`28L:rul-attached-markers-land`, amending
+/// `282:rul-double-brace-template-only`'s no-attached-punctuation clause). Twenty-six of the
+/// corpus's own messages backtick-quote a value, so a whitespace-delimiter requirement made the
+/// house idiom the one spelling an author could not newly write. Re-holing — the REVERSE direction,
+/// discovering a marker from a rendered value — stays anchor-gated and deliberately stupid
+/// (`282:rul-rehole-deliberately-stupid`), so a glued marker costs it nothing it had.
+fn parse_text(text: &str) -> Result<Vec<CompiledFragment>, CompileRefusal> {
     let parts = parse_template(text).map_err(CompileRefusal::Template)?;
-    let mut out = Vec::new();
-    for (index, part) in parts.iter().enumerate() {
-        match part {
-            TemplatePart::Literal(text) => out.push(CompiledFragment::Text(text.clone())),
-            TemplatePart::Hole(name) => {
-                let previous = parts
-                    .get(index.wrapping_sub(1))
-                    .and_then(|part| match part {
-                        TemplatePart::Literal(text) => text.chars().last(),
-                        TemplatePart::Hole(_) => None,
-                    });
-                let next = index
-                    .checked_add(1)
-                    .and_then(|next| parts.get(next))
-                    .and_then(|part| match part {
-                        TemplatePart::Literal(text) => text.chars().next(),
-                        TemplatePart::Hole(_) => None,
-                    });
-                let name = TemplateVariableName(name.clone());
-                if matches!(
-                    index
-                        .checked_sub(1)
-                        .and_then(|previous| parts.get(previous)),
-                    Some(TemplatePart::Hole(_))
-                ) || matches!(
-                    index.checked_add(1).and_then(|next| parts.get(next)),
-                    Some(TemplatePart::Hole(_))
-                ) || previous
-                    .or(external_before)
-                    .is_some_and(|c| !c.is_whitespace())
-                    || next.or(external_after).is_some_and(|c| !c.is_whitespace())
-                {
-                    return Err(CompileRefusal::AttachedMarker(name));
-                }
-                out.push(CompiledFragment::Variable(name));
-            }
-        }
-    }
-    Ok(out)
-}
-
-fn nearest_before(fragments: &[EditableFragment<SectionVariableId>], index: usize) -> Option<char> {
-    fragments
-        .get(..index)
-        .unwrap_or_default()
-        .iter()
-        .rev()
-        .find_map(|fragment| match fragment {
-            EditableFragment::Text(text) | EditableFragment::Variable { rendered: text, .. } => {
-                text.chars().last()
-            }
+    Ok(parts
+        .into_iter()
+        .map(|part| match part {
+            TemplatePart::Literal(text) => CompiledFragment::Text(text),
+            TemplatePart::Hole(name) => CompiledFragment::Variable(TemplateVariableName(name)),
         })
-}
-fn nearest_after(fragments: &[EditableFragment<SectionVariableId>], index: usize) -> Option<char> {
-    fragments.get(index.saturating_add(1)..).and_then(|rest| {
-        rest.iter().find_map(|fragment| match fragment {
-            EditableFragment::Text(text) | EditableFragment::Variable { rendered: text, .. } => {
-                text.chars().next()
-            }
-        })
-    })
+        .collect())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn text(text: &str) -> CompiledFragment {
+        CompiledFragment::Text(String::from(text))
+    }
+    fn hole(name: &str) -> CompiledFragment {
+        CompiledFragment::Variable(TemplateVariableName(String::from(name)))
+    }
+
+    /// The token is whole; its neighbours are none of the grammar's business.
     #[test]
-    fn strict_markers_require_whole_tokens() {
+    fn a_marker_is_a_whole_token_wherever_it_is_glued() {
         assert_eq!(
-            parse_text("run {{command}} \0", None, None),
-            Ok(vec![
-                CompiledFragment::Text(String::from("run ")),
-                CompiledFragment::Variable(TemplateVariableName(String::from("command"))),
-                CompiledFragment::Text(String::from(" \0")),
-            ])
+            parse_text("run {{command}} \0"),
+            Ok(vec![text("run "), hole("command"), text(" \0")])
+        );
+        assert_eq!(
+            parse_text("the flag `{{flag}}` is"),
+            Ok(vec![text("the flag `"), hole("flag"), text("` is")]),
+            "the corpus's own backtick idiom compiles"
+        );
+        assert_eq!(
+            parse_text("({{a}}{{b}})"),
+            Ok(vec![text("("), hole("a"), hole("b"), text(")")])
         );
         assert!(matches!(
-            parse_text("run({{command}})", None, None),
-            Err(CompileRefusal::AttachedMarker(_))
-        ));
-        assert!(matches!(
-            parse_text("{{command}", None, None),
+            parse_text("{{command}"),
             Err(CompileRefusal::Template(_))
         ));
     }

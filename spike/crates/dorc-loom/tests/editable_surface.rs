@@ -90,6 +90,31 @@ fn overtype_placeholder_mints_words() {
     );
 }
 
+/// The house idiom: twenty-six committed messages backtick-quote a value, and until now that was
+/// the one spelling an author could not newly write (`28L:rul-attached-markers-land`).
+#[test]
+fn a_backticked_marker_compiles() {
+    let (_, _, baseline, transcript) =
+        driven(include_str!("../../aid/tests/cli-flag-requires-mode.loom"));
+    let edited = transcript.replace(
+        "sm --whylog is only valid",
+        "sm the flag `{{flag}}` is only valid",
+    );
+    let edit = compile_section_edit(&baseline, &edited).expect("a glued marker compiles");
+    assert_eq!(
+        edit.compiled().text(),
+        "sm the flag `--whylog` is only valid with dorc why"
+    );
+    assert_eq!(
+        edit.compiled().used(),
+        &[
+            dorc_loom::TemplateVariableName(String::from("flag")),
+            dorc_loom::TemplateVariableName(String::from("mode")),
+        ],
+        "the retyped marker binds and the untouched variable is preserved"
+    );
+}
+
 /// A placeholder long enough to WRAP is still one section: the break weft minted inside it is the
 /// register's own space wearing the renderer's clothes, and a second section here would leave half
 /// the placeholder unaddressable.

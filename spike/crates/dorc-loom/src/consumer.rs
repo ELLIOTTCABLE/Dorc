@@ -1539,8 +1539,8 @@ fn editable_variables(
 mod tests {
     use super::*;
     use crate::{
-        CompileRefusal, DorcSectionEditRefusal, compile_fragments, compile_preview,
-        compile_section_edit, render_compile_preview,
+        DorcSectionEditRefusal, compile_fragments, compile_preview, compile_section_edit,
+        render_compile_preview,
     };
     use errorloom::{EditableFragment, EditableSection, RenderComponent};
 
@@ -1790,7 +1790,7 @@ mod tests {
     }
 
     #[test]
-    fn malformed_unknown_and_attached_markers_refuse_structurally() {
+    fn malformed_and_unknown_markers_refuse_structurally() {
         let baseline = baseline(vec![RenderComponent::EditableSection(
             EditableSection::new(
                 key(0),
@@ -1808,12 +1808,11 @@ mod tests {
             compile_section_edit(&baseline, "run {{unknown}}"),
             Err(DorcSectionEditRefusal::UnknownVariable(_))
         ));
-        assert!(matches!(
-            compile_section_edit(&baseline, "run ({{command}})"),
-            Err(DorcSectionEditRefusal::Compile(
-                CompileRefusal::AttachedMarker(_)
-            ))
-        ));
+        assert_eq!(
+            compile_section_edit(&baseline, "run ({{command}})").map(|edit| edit.compiled().text()),
+            Ok(String::from("run (apt-get)")),
+            "a marker glued to punctuation is an ordinary marker"
+        );
     }
 
     #[test]
