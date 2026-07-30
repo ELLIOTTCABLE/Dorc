@@ -56,6 +56,23 @@ use dorc_core::{ProvId, Span, TopCause};
 /// legacy string-slug mechanism is retired. Variant kinds: PASSTHROUGH codes carry a `detail`
 /// the emit site fills (catalog message `sm {detail}`); TEMPLATIZED codes carry named params a
 /// real `sm <template>` interpolates (`params_of`).
+///
+/// # Coming here from a `.loom` file
+///
+/// A defining case names its diagnostic by SLUG (`code: cli-file-not-found`). The slug and the
+/// variant are the same name in two spellings — [`Self::slug`] is the whole mapping, one arm per
+/// variant — and the variant's payload STRUCT (`CliFileNotFound`, declared beside this enum) is
+/// the complete set of values that case's prose may interpolate. To make a NEW value available to
+/// a loom:
+///
+/// 1. add the field to that payload struct;
+/// 2. name it in the payload's [`params_of`] arm — the arm destructures exhaustively, so the
+///    compiler stops you here rather than letting the value be silently loom-invisible;
+/// 3. fill it in wherever the diagnostic is minted (the compiler names every site);
+/// 4. rebuild, and `dorc-loom vars --all <case>` lists it.
+///
+/// Nothing in `dorc-loom` needs touching for any of that, and nothing there is an edit surface
+/// (`28L:rul-rust-and-loom-are-the-only-edit-surfaces`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DiagCode {
     // ── round-22 §5 worked examples ─────────────────────────────────────────
@@ -2130,9 +2147,15 @@ impl Diag {
     /// (The two check-dialect codes [`DiagCode::PredictUnterminated`] / [`DiagCode::PredictOutOfDialect`]
     /// are NOT here: their EOF give-up synthesizes a zero-width end-of-input span and lowers through
     /// [`new`](Self::new) — human ruling 22-q1.) It is NOT a general escape hatch: [`new`](Self::new)
-    /// with a real [`Span`] stays the only ordinary path, and `core/tests/diag_tidy.rs` hard-codes the
-    /// allow-list (`SPANLESS_SITE_PAYLOADS`, the source of truth for the exact set) — a spanless-mint
-    /// site not on it fails the gate. Do NOT use it to dodge plumbing a span that exists.
+    /// with a real [`Span`] stays the only ordinary path, and `crates/aid/tests/diag_tidy.rs`
+    /// hard-codes the allow-list (`SPANLESS_SITE_PAYLOADS`, the source of truth for the exact set) —
+    /// a spanless-mint site not on it fails the gate. Do NOT use it to dodge plumbing a span that
+    /// exists.
+    ///
+    /// **Spell the payload literally at the call.** That gate is a lexical grep for this
+    /// constructor's name immediately followed by the payload's own constructor, so a variant built
+    /// into a local and passed in is invisible to it, and a shared helper minting several codes
+    /// hides all of them. Two builders have hit this exact red; the compiler cannot warn you.
     ///
     /// `inv-no-throw`: returns data, never panics. The mandatory-primary-span guarantee (`21Z`
     /// drop-B) is preserved for everything else BECAUSE this is the lone, self-describing, gated
