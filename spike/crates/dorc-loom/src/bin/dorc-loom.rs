@@ -4,17 +4,23 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+#[cfg(test)]
+use dorc_loom::TemplateVariableName;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
-    InspectedReplay, Repository, build_publication, classify_prose_changes, compile_preview,
-    compile_receipt, load_arrangement_corpus, load_corpus_by_slug, promote_receipt,
-    render_compile_preview, replay_case_with_inputs,
+    InspectedReplay, Repository, SectionKey, SectionVariableId, build_publication,
+    classify_prose_changes, compile_preview, compile_receipt, load_arrangement_corpus,
+    load_corpus_by_slug, promote_receipt, render_compile_preview, replay_case,
+    replay_case_with_inputs,
 };
+#[cfg(test)]
+use errorloom::EditableSection;
 use errorloom::{
-    Case, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case, read_case_text,
+    Case, EditableFragment, RenderComponent, ReplayInput, ReplayResult, RunEnv, RunError,
+    execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help>\n       an omitted CASE list means every crates/aid/tests/*.loom";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       an omitted CASE list means every crates/aid/tests/*.loom";
 
 fn main() -> ExitCode {
     match run() {
@@ -48,6 +54,9 @@ enum Command {
         case: PathBuf,
         register: String,
     },
+    Sections {
+        cases: Vec<PathBuf>,
+    },
 }
 
 type SelectedCase = (String, PathBuf);
@@ -79,6 +88,7 @@ fn run() -> Result<ExitCode, String> {
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
         Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
+        Command::Sections { cases } => print_sections(&cases, &mut out),
     }
 }
 
@@ -133,6 +143,9 @@ fn parse_args() -> Result<Command, String> {
                 register,
             })
         }
+        Some("sections") => Ok(Command::Sections {
+            cases: collect_cases(argv)?,
+        }),
         _ => Err(USAGE.to_owned()),
     }
 }
@@ -538,7 +551,7 @@ fn cases_dir() -> PathBuf {
 }
 
 /// Drive one case's replays through the Dorc adapter, routing declines to the generic executor.
-type DrivenReplays = Vec<ReplayResult<dorc_loom::SectionKey, dorc_loom::SectionVariableId>>;
+type DrivenReplays = Vec<ReplayResult<SectionKey, SectionVariableId>>;
 
 fn drive_replays(
     case: &Case,
@@ -549,20 +562,63 @@ fn drive_replays(
 ) -> Result<DrivenReplays, String> {
     let input = ReplayInput::new(case_name(path)?, source.to_owned())
         .map_err(|error| format!("{}: {error}", path.display()))?;
-    replay_case_with_inputs(case, consumer, env, &[input], |command, context| {
-        execute_generic(command, context).map(ReplayResult::bytes)
+    catch_arity_panic(path, || {
+        replay_case_with_inputs(case, consumer, env, &[input], |command, context| {
+            execute_generic(command, context).map(ReplayResult::bytes)
+        })
+        .map_err(|error| match error {
+            // The raw refusal names neither the flag that supplies a shell nor the decline that
+            // needed one.
+            RunError::ShellNotConfigured => format!(
+                "{}: a replay declined the in-process Dorc driver and would need the generic \
+                 executor, which has no shell. Rerun with `--shell=PATH` (e.g. `--shell=/bin/sh`), \
+                 or make the replay a shape the driver handles",
+                path.display()
+            ),
+            other => format!("{}: {other}", path.display()),
+        })
     })
-    .map_err(|error| match error {
-        // The raw refusal names neither the flag that supplies a shell nor the decline that
-        // needed one.
-        RunError::ShellNotConfigured => format!(
-            "{}: a replay declined the in-process Dorc driver and would need the generic \
-             executor, which has no shell. Rerun with `--shell=PATH` (e.g. `--shell=/bin/sh`), \
-             or make the replay a shape the driver handles",
-            path.display()
-        ),
-        other => format!("{}: {other}", path.display()),
-    })
+}
+
+/// A hand-seeded arrangement row whose word-run count disagrees with the values its seat
+/// interleaves is a wiring defect `dorc_aid::arrangement::sentence_words` already diagnoses
+/// precisely — by design, LOUDLY, as a `debug_assert!` naming the row and both counts
+/// (`an_arity_slip_names_the_row_and_both_counts`). Left alone that takes this whole process down
+/// the first time some case's render happens to reach the bad row; this traps exactly that panic at
+/// dorc-loom's own render-driving boundary and turns it into the same typed refusal every other
+/// generation-time defect gets (`28L` friction §4 arity-slip-compile-time-refusal; D3's
+/// `arrangement_row` existence-only split is the precedent this extends — a BEFORE-promote check,
+/// not a new analysis). The default panic hook is suppressed for the call's duration so the
+/// refusal is the only thing printed; nothing here mutates shared state across the unwind boundary
+/// (`consumer` is read-only through this whole path), so `AssertUnwindSafe` is sound.
+fn catch_arity_panic<T>(
+    path: &Path,
+    drive: impl FnOnce() -> Result<T, String> + std::panic::UnwindSafe,
+) -> Result<T, String> {
+    let previous_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+    let outcome = std::panic::catch_unwind(drive);
+    std::panic::set_hook(previous_hook);
+    match outcome {
+        Ok(result) => result,
+        Err(payload) => Err(format!(
+            "{}: rendering this case panicked ({}). A hand-seeded arrangement row's `words` list \
+             must carry exactly one more word than the values its seat interleaves; fix the named \
+             row's word count in crates/aid/src/arrangement_lock.rs to match, then rebuild",
+            path.display(),
+            panic_message(&payload)
+        )),
+    }
+}
+
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
+    if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else if let Some(message) = payload.downcast_ref::<&str>() {
+        (*message).to_owned()
+    } else {
+        "no panic message available".to_owned()
+    }
 }
 
 /// A case with nothing to report costs a `--quiet` caller nothing: the header is written only once
@@ -789,6 +845,74 @@ fn print_variables(
     Ok(ExitCode::SUCCESS)
 }
 
+/// `dorc-loom sections CASE...` — the census/affordance/debug half of
+/// `28L:rul-variable-surface-is-block-plus-sections`: for every replay of a case, print each
+/// editable section's key and its ordered `Text | Variable` fragment series (names + current
+/// rendered values), alongside the computed (immutable) spans around it. A print surface only —
+/// it drives replays exactly as `vars`'s `editable_baseline` does, just without dropping every
+/// replay after the first.
+fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, String> {
+    let consumer = DorcConsumer::new();
+    for path in cases {
+        let case = load(path)?;
+        writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
+        let results = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
+            Ok(ReplayResult::bytes(String::new()))
+        })
+        .map_err(|error| format!("{}: {error}", path.display()))?;
+        for (index, result) in results.iter().enumerate() {
+            let Some(render) = result.editable_render() else {
+                writeln!(out, "replay {index}: bytes-only").map_err(|error| error.to_string())?;
+                continue;
+            };
+            let baseline = consumer
+                .baseline_from_render(&case, render.clone())
+                .map_err(|error| format!("{}: {error}", path.display()))?;
+            writeln!(out, "replay {index}:").map_err(|error| error.to_string())?;
+            for component in baseline.render().components() {
+                print_component(out, component)?;
+            }
+        }
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+fn print_component(
+    out: &mut impl Write,
+    component: &RenderComponent<SectionKey, SectionVariableId>,
+) -> Result<(), String> {
+    match component {
+        RenderComponent::Structure(text) => {
+            writeln!(out, "  computed: {text:?}").map_err(|error| error.to_string())
+        }
+        RenderComponent::FixedVariable { id, rendered } => {
+            writeln!(out, "  computed {{{{{}}}}} = {rendered:?}", id.name.0)
+                .map_err(|error| error.to_string())
+        }
+        RenderComponent::EditableSection(section) => {
+            let key = section.id();
+            writeln!(
+                out,
+                "  section {}/{}#{} (segment {}):",
+                key.owner, key.field, key.instance, key.segment,
+            )
+            .map_err(|error| error.to_string())?;
+            for fragment in section.fragments() {
+                match fragment {
+                    EditableFragment::Text(text) => {
+                        writeln!(out, "    text: {text:?}").map_err(|error| error.to_string())?;
+                    }
+                    EditableFragment::Variable { id, rendered } => {
+                        writeln!(out, "    var {{{{{}}}}} = {rendered:?}", id.name.0)
+                            .map_err(|error| error.to_string())?;
+                    }
+                }
+            }
+            Ok(())
+        }
+    }
+}
+
 fn load(path: &Path) -> Result<Case, String> {
     read_case(path).map_err(|error| format!("{}: {error}", path.display()))
 }
@@ -853,5 +977,88 @@ mod tests {
         let mut verbose = Vec::new();
         emit_case(&mut verbose, Path::new("silent.loom"), b"", false).expect("emit");
         assert!(!verbose.is_empty());
+    }
+
+    /// `sections` names a computed span, an editable section's key, and its fragment series —
+    /// structure, not prose bytes: real catalog wording is free to churn without retouching this.
+    #[test]
+    fn sections_prints_computed_spans_and_editable_fragment_series() {
+        let components = vec![
+            RenderComponent::Structure("error[".to_owned()),
+            RenderComponent::FixedVariable {
+                id: SectionVariableId {
+                    name: TemplateVariableName("code".to_owned()),
+                    occurrence: 0,
+                },
+                rendered: "some-code".to_owned(),
+            },
+            RenderComponent::EditableSection(EditableSection::new(
+                SectionKey {
+                    owner: "some-code".to_owned(),
+                    field: "message",
+                    instance: 0,
+                    segment: 0,
+                },
+                vec![
+                    EditableFragment::Text("do the ".to_owned()),
+                    EditableFragment::Variable {
+                        id: SectionVariableId {
+                            name: TemplateVariableName("thing".to_owned()),
+                            occurrence: 0,
+                        },
+                        rendered: "widget".to_owned(),
+                    },
+                    EditableFragment::Text(" now".to_owned()),
+                ],
+            )),
+        ];
+        let mut out = Vec::new();
+        for component in &components {
+            print_component(&mut out, component).expect("print");
+        }
+        let out = String::from_utf8(out).expect("utf8");
+        assert!(out.contains("computed: \"error[\""), "{out}");
+        assert!(out.contains("computed {{code}} = \"some-code\""), "{out}");
+        assert!(
+            out.contains("section some-code/message#0 (segment 0):"),
+            "{out}"
+        );
+        assert!(out.contains("text: \"do the \""), "{out}");
+        assert!(out.contains("var {{thing}} = \"widget\""), "{out}");
+        assert!(out.contains("text: \" now\""), "{out}");
+    }
+
+    /// A hand-seeded row's arity mismatch panics deep inside the shared renderer
+    /// (`dorc_aid::arrangement::sentence_words`'s own `debug_assert!`) the first time some case's
+    /// render reaches it — a whole-PAGE entry's arity is always "exactly one word", so seeding a
+    /// second one reproduces the wiring defect without needing a value-bearing seat. This proves
+    /// dorc-loom's own driving boundary catches that panic instead of taking the whole process
+    /// down, and reports the row, the diagnosis, and the fix.
+    #[test]
+    fn a_hand_seeded_arity_mismatch_refuses_instead_of_crashing_the_process() {
+        let text = std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests/cli-help-page.loom"),
+        )
+        .expect("read fixture case");
+        let case = Case::parse(&text).expect("case parses");
+        let mut consumer = DorcConsumer::new();
+        consumer.set_arrangement_words(
+            "cli-help-page",
+            dorc_aid::arrangement::OwnedWords::Authored(vec![
+                "one word".to_owned(),
+                "an extra word a page never takes".to_owned(),
+            ]),
+        );
+        let error = drive_replays(
+            &case,
+            &consumer,
+            &RunEnv::new(),
+            Path::new("crates/aid/tests/cli-help-page.loom"),
+            &text,
+        )
+        .expect_err("a bad-arity row must refuse, not panic");
+        assert!(error.contains("cli-help-page"), "{error}");
+        assert!(error.contains("panicked"), "{error}");
+        assert!(error.contains("arrangement_lock.rs"), "{error}");
     }
 }
