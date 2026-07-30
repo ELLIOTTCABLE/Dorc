@@ -306,6 +306,27 @@ fn vars_answers_the_whylog_cases() {
     }
 }
 
+/// The container has no escape for a body line that reads back as a section header, so the render
+/// seat refuses one by name rather than writing a case that re-parses into a different case
+/// (`28L:residue-a-wrapped-line-can-look-like-a-txtar-header`).
+#[test]
+fn a_rendered_section_header_lookalike_refuses_by_name() {
+    let case = Case::parse(include_str!("../../aid/tests/cli-help-page.loom")).expect("parses");
+    let mut consumer = DorcConsumer::new();
+    consumer.set_arrangement_words(
+        "cli-help-page",
+        dorc_aid::arrangement::OwnedWords::Authored(vec![String::from("-- book.sh --\n")]),
+    );
+    let error = consumer
+        .render_case(&case)
+        .expect_err("a header lookalike cannot be written");
+    assert!(error.contains("-- book.sh --"), "{error}");
+    assert!(
+        error.contains("does not both begin `-- ` and end ` --`"),
+        "the refusal names the repair: {error}"
+    );
+}
+
 /// A placeholder long enough to WRAP is still one section: the break weft minted inside it is the
 /// register's own space wearing the renderer's clothes, and a second section here would leave half
 /// the placeholder unaddressable.

@@ -1195,6 +1195,17 @@ impl CaseRenderer for DorcConsumer {
             .collect::<Result<Vec<_>, _>>()?;
         let mut regenerated = case.clone();
         regenerated.set_replay_outputs(outputs);
+        // A rendered line that reads back as a txtar header would silently re-parse into a
+        // DIFFERENT case, and the container has no escape for one. Without this the failure still
+        // happened — as a bare "render-level fixpoint failed", which names neither the line nor the
+        // reason (`28L:residue-a-wrapped-line-can-look-like-a-txtar-header`).
+        regenerated.check_hygiene(None).map_err(|error| {
+            format!(
+                "{error}; a rendered line cannot also be a section header and the container has no \
+                 escape for one -- reword the prose, or change the value the render interpolates, \
+                 so the line does not both begin `-- ` and end ` --`"
+            )
+        })?;
         Ok(regenerated.to_text())
     }
 }
