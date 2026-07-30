@@ -151,18 +151,25 @@ impl Repository for GitRepository {
 /// differ, and only within raw replay-output islands. Replay provenance decides
 /// whether those islands are editable in the subsequent inspection pass.
 ///
+/// The refusal is BLAST-RADIUS scoped (`28L` friction §4 blast-radius-scoped dirty gate): only the
+/// `selected` cases and the two generated locks (`catalog`, `arrangement`) are this run's concern.
+/// Dirt anywhere else in the repository is none of its business and no longer refuses — a source
+/// edit in an unrelated crate used to make every `compile`/`promote` refuse, forcing a throwaway
+/// commit just to run the tool.
+///
 /// # Errors
 ///
-/// Returns a refusal for malformed Git state, dirty unrelated paths, or any
-/// non-output transcript difference.
+/// Returns a refusal for malformed Git state, a dirty generated lock, a selected case in the wrong
+/// git state, or any non-output transcript difference.
 pub fn classify_prose_changes(
     repository: &impl Repository,
     selected: Vec<String>,
     catalog: &str,
+    arrangement: &str,
 ) -> Result<ProseClassification, String> {
     validate_selected(&selected)?;
-    if !safe_path(catalog) {
-        return Err("unsafe catalog path".to_owned());
+    if !safe_path(catalog) || !safe_path(arrangement) {
+        return Err("unsafe generated-lock path".to_owned());
     }
     let statuses = parse_porcelain(&repository.status_porcelain()?)?;
     let mut by_path = BTreeMap::new();
@@ -172,11 +179,12 @@ pub fn classify_prose_changes(
         }
     }
     for (path, status) in &by_path {
-        if path == catalog {
-            return Err("catalog is not clean against HEAD".to_owned());
+        if path == catalog || path == arrangement {
+            return Err(format!("generated lock is not clean against HEAD: {path}"));
         }
         if selected.binary_search(path).is_err() {
-            return Err(format!("dirty path outside selected prose edits: {path}"));
+            // Outside the blast radius: this run never reads or writes it.
+            continue;
         }
         if status.prose_edit_shape().is_none() {
             // A SELECTED case in the wrong git state: "outside selected prose edits" reads as a
@@ -196,8 +204,10 @@ pub fn classify_prose_changes(
             });
         }
     }
-    if repository.current_bytes(catalog)? != repository.head_bytes(catalog)? {
-        return Err("catalog is not clean against HEAD".to_owned());
+    for lock in [catalog, arrangement] {
+        if repository.current_bytes(lock)? != repository.head_bytes(lock)? {
+            return Err(format!("generated lock is not clean against HEAD: {lock}"));
+        }
     }
 
     let (mut touched, mut staged) = (BTreeSet::new(), BTreeSet::new());
@@ -433,6 +443,7 @@ mod tests {
     }
 
     const CATALOG: &str = "spike/crates/aid/src/catalog_lock.rs";
+    const ARRANGEMENT: &str = "spike/crates/aid/src/arrangement_lock.rs";
     const CASE: &str = "spike/crates/aid/tests/one.loom";
 
     fn case(frontmatter: &str, preamble: &str, book: &str, command: &str, output: &str) -> String {
@@ -441,11 +452,15 @@ mod tests {
         )
     }
 
+    /// The two generated locks and the one selected case, at whatever bytes/status the test wants.
+    /// Every caller passes `classify_prose_changes(&repository, ..., CATALOG, ARRANGEMENT)`.
     fn repository(head_case: String, current_case: String, status: &[u8]) -> FakeRepository {
         let mut current = BTreeMap::new();
         let mut head = BTreeMap::new();
         current.insert(CATALOG.to_owned(), b"catalog".to_vec());
         head.insert(CATALOG.to_owned(), b"catalog".to_vec());
+        current.insert(ARRANGEMENT.to_owned(), b"arrangement".to_vec());
+        head.insert(ARRANGEMENT.to_owned(), b"arrangement".to_vec());
         current.insert(CASE.to_owned(), current_case.into_bytes());
         head.insert(CASE.to_owned(), head_case.into_bytes());
         FakeRepository {
@@ -467,7 +482,8 @@ mod tests {
         let current = head.replace("old prose", "new prose");
         let repository = repository(head, current, format!(" M {CASE}\0").as_bytes());
         let result =
-            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).expect("accept");
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .expect("accept");
         assert_eq!(result.selected(), &[CASE.to_owned()]);
         assert_eq!(result.touched(), &BTreeSet::from([CASE.to_owned()]));
         assert!(result.staged().is_empty());
@@ -492,7 +508,10 @@ mod tests {
             head.replace("\n\n-- replay --", "\n \n-- replay --"),
         ] {
             let repository = repository(head.clone(), changed, format!(" M {CASE}\0").as_bytes());
-            assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
+            assert!(
+                classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                    .is_err()
+            );
         }
     }
 
@@ -507,7 +526,8 @@ mod tests {
         );
         let repository = repository(source.clone(), source, b"");
         let result =
-            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).expect("clean");
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .expect("clean");
         assert!(result.touched().is_empty());
     }
 
@@ -525,7 +545,8 @@ mod tests {
         let current = head.replace("old prose", "new prose");
         let repository = repository(head, current, format!("M  {CASE}\0").as_bytes());
         let result =
-            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).expect("accept");
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .expect("accept");
         assert_eq!(result.touched(), &BTreeSet::from([CASE.to_owned()]));
         assert_eq!(result.staged(), &BTreeSet::from([CASE.to_owned()]));
     }
@@ -549,7 +570,10 @@ mod tests {
             format!("UU {CASE}\0"),
         ] {
             let repository = repository(source.clone(), source.clone(), status.as_bytes());
-            assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
+            assert!(
+                classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                    .is_err()
+            );
         }
     }
 
@@ -567,8 +591,9 @@ mod tests {
             "prose\n",
         );
         let repository = repository(source.clone(), source, format!("?? {CASE}\0").as_bytes());
-        let error = classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG)
-            .expect_err("an untracked case is unpromotable");
+        let error =
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .expect_err("an untracked case is unpromotable");
         assert!(error.contains("not committed"), "{error}");
         assert!(!error.contains("outside selected prose edits"), "{error}");
     }
@@ -587,14 +612,17 @@ mod tests {
         );
         let current = head.replace("old prose", "new prose");
         let repository = repository(head, current, format!("MM {CASE}\0").as_bytes());
-        let error = classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG)
-            .expect_err("a half-staged case holds a third version");
+        let error =
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .expect_err("a half-staged case holds a third version");
         assert!(error.contains("`MM`"), "{error}");
         assert!(!error.contains("promote"), "{error}");
     }
 
+    /// Dirt INSIDE the blast radius — either generated lock — refuses and names the dirty file
+    /// (`28L` friction §4 blast-radius-scoped dirty gate).
     #[test]
-    fn rejects_dirty_catalog_and_unselected_paths() {
+    fn dirty_generated_lock_refuses_and_names_the_file() {
         let source = case(
             "code: one\n",
             "",
@@ -602,14 +630,40 @@ mod tests {
             "dorc plan --book=book.sh",
             "prose\n",
         );
-        let mut repository = repository(
-            source.clone(),
-            source.clone(),
-            format!(" M {CATALOG}\0").as_bytes(),
+        for dirty in [CATALOG, ARRANGEMENT] {
+            let repository = repository(
+                source.clone(),
+                source.clone(),
+                format!(" M {dirty}\0").as_bytes(),
+            );
+            let error =
+                classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                    .expect_err("a dirty generated lock refuses");
+            assert!(error.contains(dirty), "{error}");
+        }
+    }
+
+    /// Dirt OUTSIDE the blast radius — neither a selected case nor a generated lock — no longer
+    /// refuses: a source edit anywhere else in the repo used to force a throwaway commit before
+    /// `compile`/`promote` would even run (`28L` friction §4 blast-radius-scoped dirty gate).
+    #[test]
+    fn dirt_outside_the_blast_radius_does_not_refuse() {
+        let source = case(
+            "code: one\n",
+            "",
+            "book",
+            "dorc plan --book=book.sh",
+            "prose\n",
         );
-        assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
-        repository.status = b"?? unrelated.txt\0".to_vec();
-        assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
+        let repository = repository(
+            source.clone(),
+            source,
+            b"?? unrelated.txt\0 M crates/dorc-loom/src/bin/dorc-loom.rs\0",
+        );
+        let result =
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .expect("dirt outside the blast radius proceeds");
+        assert!(result.touched().is_empty());
     }
 
     #[test]
@@ -627,7 +681,10 @@ mod tests {
             format!(" M {CASE}\0").as_bytes(),
         );
         let before = repository.clone();
-        assert!(classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG).is_err());
+        assert!(
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .is_err()
+        );
         assert_eq!(repository.status, before.status);
         assert_eq!(repository.current, before.current);
         assert_eq!(repository.head, before.head);

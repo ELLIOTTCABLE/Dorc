@@ -796,7 +796,8 @@ fn gate_touched_set(cases: &[PathBuf]) -> Result<GatedCases, String> {
     paths.sort_by(|left, right| left.0.cmp(&right.0));
     let selected = paths.iter().map(|(path, _)| path.clone()).collect();
     let catalog = repository.repository_path(&catalog_path())?;
-    let classification = classify_prose_changes(&repository, selected, &catalog)?;
+    let arrangement = repository.repository_path(&arrangement_path())?;
+    let classification = classify_prose_changes(&repository, selected, &catalog, &arrangement)?;
     Ok(GatedCases {
         repository,
         paths,
