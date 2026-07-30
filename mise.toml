@@ -318,14 +318,22 @@ dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless --dry"
 
 [tasks."loom:compile"]
-description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it. Runs --quiet, so only cases with something to report print; drop to a raw `cargo run` for the full per-case listing."
+description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it. Runs --quiet, so only cases with something to report print."
 dir = "spike"
+# `raw = true` connects stdio directly, bypassing mise's own output buffering — without it,
+# `MISE_TASK_OUTPUT=timed` (the agent default) drops any stdout that displays for under a second,
+# which silently swallowed a fast refusal's full evidence behind the one-line `compile: N cases,
+# M refused` summary (reproduced 2026-07-29). Fix belongs in the task, never at the call site
+# (`never-filter-a-task`).
+raw = true
 usage = 'arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"'
 run = "cargo run --quiet -p dorc-loom -- compile --quiet {{ usage.cases | join(sep=' ') }}"
 
 [tasks."loom:promote"]
 description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases, and word-diff what it wrote. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise. Nothing is staged or committed: the diff is yours to review and revert."
 dir = "spike"
+# See loom:compile's `raw` comment — the same timed-output swallow applies here.
+raw = true
 # `282` §6, "the review surface is the git diff" — promote requires a tree clean outside the
 # selected cases, so an unscoped diff afterwards IS the publication and nothing else.
 #
@@ -337,6 +345,40 @@ run = [
   "cargo run --quiet -p dorc-loom -- promote --quiet {{ usage.cases | join(sep=' ') }}",
   "git --no-pager diff --word-diff",
 ]
+
+[tasks."loom:scaffold"]
+description = "Write the empty defining-case skeleton for a freshly-minted code slug (crates/aid/tests/<slug>.loom) and print the two-step follow-up. Never overwrites an authored case."
+dir = "spike"
+raw = true
+usage = 'arg "slug" help="the new code slug (lowercase letters, digits, hyphens)"'
+run = "cargo run --quiet -p dorc-loom -- scaffold {{ usage.slug }}"
+
+[tasks."loom:vars"]
+description = "Print each case's named template-variable series and current rendered values, driven from the same render an edit compiles against. `--all` lists the full typed-payload inventory; bare is `--used` (only variables a rendered section actually consumes). Bare case list takes the whole corpus."
+dir = "spike"
+raw = true
+usage = '''
+flag "--all" help="list every variable in the payload, not only ones a rendered section consumes"
+arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"
+'''
+run = "cargo run --quiet -p dorc-loom -- vars {% if usage.all %}--all{% else %}--used{% endif %} {{ usage.cases | join(sep=' ') }}"
+
+[tasks."loom:add-register"]
+description = "Mint a code's `help` register (HelpRegister::Unwritten) so the ordinary compile/promote loop can fill it — see the command's own printed follow-up. Refuses if the case has an unpromoted prose edit or the register already exists."
+dir = "spike"
+raw = true
+usage = '''
+arg "case" help="the defining-case .loom path"
+arg "register" help="the register to add; only `help` exists today"
+'''
+run = "cargo run --quiet -p dorc-loom -- add-register {{ usage.case }} {{ usage.register }}"
+
+[tasks."loom:sections"]
+description = "Census/affordance/debug surface: for every replay of a case, print each editable section's key and its ordered Text|Variable fragment series (names + current rendered values), alongside the computed (immutable) spans around it — `dorc-loom sections`, read-only. Bare case list takes the whole corpus."
+dir = "spike"
+raw = true
+usage = 'arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"'
+run = "cargo run --quiet -p dorc-loom -- sections {{ usage.cases | join(sep=' ') }}"
 
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table, or a book plus its oracles for a one-off."
