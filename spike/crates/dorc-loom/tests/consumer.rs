@@ -48,9 +48,7 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
     let rendered = DorcConsumer::new()
         .render_case(&case)
         .expect("pipeline render");
-    // The SLUG, not the words: this case exists to prove the gate fires and the frame is spanned,
-    // and pinning `[unwritten: …]` here would make the sanctioned prose burn-down break a test
-    // about something else entirely.
+    // The SLUG, not the words: prose burn-down must not break a test about the gate firing.
     assert!(
         rendered.contains("error[marker-version-unrecognized]: "),
         "the real gate fires: {rendered}"

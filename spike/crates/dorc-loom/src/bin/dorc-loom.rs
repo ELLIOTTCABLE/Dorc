@@ -905,9 +905,7 @@ fn print_variables(
 /// without dropping every replay after the first.
 fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
-    // Which bytes these describe is the one thing a reader can get wrong here, and getting it
-    // wrong reads as the tool lying: this is the PUBLISHED baseline an edit is attributed against,
-    // never the on-disk transcript.
+    // Which bytes these describe is the one thing a reader can get wrong here.
     writeln!(
         out,
         "sections of the published baseline — the render your edit is attributed against; what \
