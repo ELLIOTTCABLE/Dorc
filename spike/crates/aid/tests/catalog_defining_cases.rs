@@ -6,7 +6,7 @@
 //! this file keeps what stays in `aid`:
 //!
 //! * **production byte equality** — `render_body_parts` / `render_cli_parts` reproduce their product
-//!   render bytes over every real `covered()` payload.
+//!   render bytes over every payload in [`dorc_aid::fixture`].
 //! * **completeness + the coverage RATCHET** (`tc-defining-case-coverage-ratchet`) — every catalog
 //!   code is EITHER case-owned (a dorc-loom case file exists, [`is_case_owned`]) OR on the shrink-only
 //!   [`DEFINING_CASE_RATCHET`]; the partition is `case-owned ∪ ratchet == every catalog slug`. The
@@ -14,244 +14,15 @@
 //!   delete a code's sole emit and that gate fails.
 //!
 //! Every ratchet entry carries a one-line trigger surface so a future case is mechanical, not
-//! re-derived (conductor rider). `covered()` is the real-payload set the byte-equality tests exercise —
-//! the transitional twin of the dorc-loom `canonical_payload` constructors; ownership itself is tracked by
-//! the case files, never by membership in this list.
+//! re-derived (conductor rider). The stand-in payload table used to be duplicated here and in
+//! `dorc-loom`, kept honest by a drift guard (`28A:rul-keep-covered-with-drift-guard`); both now read
+//! the ONE table in `aid`, so there is nothing left to drift.
 
 use dorc_aid::RenderCtx;
-use dorc_aid::diag::{
-    self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, HostEvidenceAdmissionRefused,
-    HostEvidenceRefusalKind, MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer,
-    MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid,
-    OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
-    SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
-    WhylogVersionRefused, WrapperPeelIncoherent,
-};
+use dorc_aid::diag::{self, Diag, DiagCode, WhylogVersionRefused};
+use dorc_aid::fixture::canonical_payloads;
 use dorc_aid::tagged::RenderPart;
-use dorc_core::{BytePos, Interner, LeafId, Span, TopCause};
-
-/// A defining case: the code's stable slug + a constructor for its CANONICAL payload (fixed values so
-/// the renders are deterministic — `inv-determinism`).
-struct DefiningCase {
-    slug: &'static str,
-    build: fn() -> DiagCode,
-}
-
-/// The canonical real payloads the tagged-render twins exercise: one per covered code, spanning the
-/// payload species (templated / passthrough / static / unwritten). The dorc-loom `canonical_payload`
-/// constructors are the runtime twin of this list; coverage/ownership itself is tracked by the case
-/// files ([`is_case_owned`]), not by membership here.
-#[expect(
-    clippy::too_many_lines,
-    reason = "one struct literal per covered code — the case table is inherently long and stays \
-              scannable; splitting it would scatter the defining cases"
-)]
-fn covered() -> Vec<DefiningCase> {
-    vec![
-        DefiningCase {
-            slug: "cmdsub-operand-top",
-            build: || {
-                DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                    site: SiteId::leaf(LeafId(3)),
-                    position: OperandPosition::Operand(1),
-                    cause: None,
-                    top_cause: TopCause::UnmodeledExpansion,
-                    command: CommandName::Literal("apt-get".to_owned()),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "site-unresolvable",
-            build: || {
-                DiagCode::SiteUnresolvable(SiteUnresolvable {
-                    site: SiteId::leaf(LeafId(4)),
-                    detail: "2 sites run unprobed (no read-only check could be shipped): \
-                             `make install`, `ldconfig`"
-                        .to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "render-heredoc-refused",
-            build: || {
-                DiagCode::RenderHeredocRefused(RenderHeredocRefused {
-                    site: SiteId::leaf(LeafId(7)),
-                    verb: "elide",
-                    command: "cat <<EOF".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "syntax-unsupported",
-            build: || {
-                DiagCode::SyntaxUnsupported(SyntaxUnsupported {
-                    detail: "process substitution `<(...)` is not modeled".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "missing-dialect-marker",
-            build: || DiagCode::MissingDialectMarker(MissingDialectMarker),
-        },
-        DefiningCase {
-            slug: "munge-name-invalid",
-            build: || {
-                DiagCode::MungeNameInvalid(MungeNameInvalid {
-                    source: "9pkg".to_owned(),
-                    funcname: "9pkg".to_owned(),
-                    problem: "starts with a digit".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "tolerates-unknown-dimension",
-            build: || {
-                DiagCode::ToleratesUnknownDimension(ToleratesUnknownDimension {
-                    token: "netns2".to_owned(),
-                    expected: "user, netns, fs-view".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "records-fact-truncated",
-            build: || {
-                DiagCode::RecordsFactTruncated(RecordsFactTruncated {
-                    received: 3,
-                    declared: 5,
-                    unseen: 2,
-                })
-            },
-        },
-        DefiningCase {
-            slug: "host-evidence-admission-refused",
-            build: || {
-                DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
-                    kind: HostEvidenceRefusalKind::Framing,
-                })
-            },
-        },
-        DefiningCase {
-            slug: "dangling-reference",
-            build: || {
-                DiagCode::DanglingReference(DanglingReference {
-                    coord: "sm.dorc.Package:nginx".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "escalation-policy",
-            build: || {
-                DiagCode::EscalationPolicy(EscalationPolicy {
-                    detail: "escalation policy: probe re-uses connection authority for \
-                             `tolerates:`-vouched functions only (default)"
-                        .to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "carried-across-substrate-axis",
-            build: || {
-                DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
-                    detail: "elision carried across the fs-view axis: backing kind `sm_dorc_File` \
-                             vouches `invariant:fs-view`; the verdict body is read-set-closed"
-                        .to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "wrapper-peel-incoherent",
-            build: || {
-                DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
-                    detail: "wrapper `sudo`: __predict and __lend_map disagree on the peel tail \
-                             position (predict reaches \"$@\" after 1 argv token(s), lend_map after 0)"
-                        .to_owned(),
-                })
-            },
-        },
-        // The conductor-authored-prose quartet (`27V` Lane B): their prose is the third catalog
-        // state (unprefixed, rostered), so the defining case pins the AUTHORED render byte-for-byte.
-        DefiningCase {
-            slug: "whylog-version-refused",
-            build: || {
-                DiagCode::WhylogVersionRefused(WhylogVersionRefused {
-                    found: "dorc-whylog/2".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "whylog-book-desync",
-            build: || {
-                DiagCode::WhylogBookDesync(WhylogBookDesync {
-                    which: "book".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "whylog-absent",
-            build: || {
-                DiagCode::WhylogAbsent(WhylogAbsent {
-                    dir: "./.dorc/whylog".to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "whylog-corrupt",
-            build: || {
-                DiagCode::WhylogCorrupt(WhylogCorrupt {
-                    detail: "no end-sentinel — a partial write?".to_owned(),
-                })
-            },
-        },
-        // The new code (gap-5) mints with UNWRITTEN prose (`27V:rul-error-authorship-tier`): its
-        // defining case pins that the render is the greppable `[unwritten: …]` placeholder — a valid
-        // defining case that flips to the authored render when the conductor writes the prose.
-        DefiningCase {
-            slug: "aid-unloaded-sibling-oracle",
-            build: || {
-                DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
-                    detail: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh`"
-                        .to_owned(),
-                })
-            },
-        },
-        // The four `281` mark-grammar parse codes (`28A:rul-new-codes-ship-covered-cases`): each
-        // covered() with `[unwritten:]` prose (the aid precedent above), so the ratchet never grows.
-        DefiningCase {
-            slug: "mark-unknown-verb",
-            build: || {
-                DiagCode::MarkUnknownVerb(MarkUnknownVerb {
-                    token: "frobnicate".to_owned(),
-                    expected: "asserts, refutes, reads, bind, safe-across, disturbs, lends, \
-                               stored-in, undivided-by-transit-across"
-                        .to_owned(),
-                })
-            },
-        },
-        DefiningCase {
-            slug: "mark-rc-arity-exceeded",
-            build: || DiagCode::MarkRcArityExceeded(MarkRcArityExceeded),
-        },
-        DefiningCase {
-            slug: "mark-standalone-rc-consumer",
-            build: || DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer),
-        },
-        DefiningCase {
-            slug: "mark-hashcolon-malformed",
-            build: || DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
-        },
-        // The phase-4 empty-loop pilot (`28A` §2l): minted with UNWRITTEN prose, its defining case
-        // pins the greppable `[unwritten:]` render until the conductor authors the message.
-        DefiningCase {
-            slug: "marker-version-unrecognized",
-            build: || {
-                DiagCode::MarkerVersionUnrecognized(MarkerVersionUnrecognized {
-                    found: "# dorc-lang/v0.1".to_owned(),
-                })
-            },
-        },
-    ]
-}
+use dorc_core::{BytePos, Interner, Span};
 
 /// The SHRINK-ONLY not-yet-covered allowlist (`tc-defining-case-coverage-ratchet`). Each entry's note
 /// is the corruption/trigger surface a future defining case injects, so coverage is mechanical
@@ -407,20 +178,18 @@ const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
 fn defining_case_parts_match_product_renders() {
     let interner = Interner::default();
     let src = "make install >/etc/motd\nldconfig\n";
-    for case in covered() {
-        let diag = Diag::new((case.build)(), Span::new(BytePos(0), BytePos(4)));
+    for (slug, code) in canonical_payloads() {
+        let diag = Diag::new(code, Span::new(BytePos(0), BytePos(4)));
         assert_eq!(
             diag::render_body_parts(&RenderCtx::production(), &diag, &interner).text(),
             diag::render_body(&diag, &interner),
-            "defining case `{}`: body parts drifted",
-            case.slug
+            "defining case `{slug}`: body parts drifted"
         );
         assert_eq!(
             diag::render_cli_parts(&RenderCtx::production(), &diag, src, "book.sh", &interner)
                 .text(),
             diag::render_cli(&diag, src, "book.sh", &interner),
-            "defining case `{}`: cli parts drifted",
-            case.slug
+            "defining case `{slug}`: cli parts drifted"
         );
     }
 }
@@ -461,18 +230,16 @@ const REPAIR_HINT: &str = "Mint its prose home: `dorc-loom scaffold <slug>`, aut
                            when-fires/why and a replay whose output carries the slug, then have \
                            the orchestrator run `dorc-loom promote <case>`.";
 
-/// The `covered()`/`canonical_payload` DRIFT GUARD (`28A` §2u). The two constructor tables are
-/// duplicated by design (`28A:rul-keep-covered-with-drift-guard`), but completeness (g12) keys to
-/// case files, so nothing forced `covered()`'s slugs to stay case-owned — a code could leave the
-/// case corpus while `covered()` still claimed to construct it.
+/// A stand-in exists to give a defining case a world; completeness (g12) keys to case FILES, so
+/// nothing else forces the fixture table's slugs to stay case-owned — a code could leave the case
+/// corpus while `aid::fixture` still claimed to construct it (`28A` §2u).
 #[test]
-fn every_covered_slug_is_case_owned() {
-    for case in covered() {
-        let slug = case.slug;
+fn every_fixture_slug_is_case_owned() {
+    for (slug, _) in canonical_payloads() {
         assert!(
             is_case_owned(slug),
-            "`covered()` constructs `{slug}` but no defining case owns it — the duplicated \
-             constructor tables have drifted (28A:rul-keep-covered-with-drift-guard)"
+            "`aid::fixture` constructs `{slug}` but no defining case owns it — delete the entry, \
+             or mint the case"
         );
     }
 }

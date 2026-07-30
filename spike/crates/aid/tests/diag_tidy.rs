@@ -436,10 +436,53 @@ fn production_emit_source() -> String {
 
 /// Scanned, but NOT part of the production emit surface. `aid` only DEFINES the codes (its own
 /// match arms and tests would satisfy the grep for every variant — the act-3 vacuity). `dorc-loom`
-/// is the same category one layer out: `canonical_payload` constructs eleven payloads literally as
-/// CASE FIXTURES, so counting them as emits would mask a dead catalog entry whose real emit died.
+/// is the same category one layer out: it reaches the `aid::fixture` stand-in worlds as CASE
+/// FIXTURES, so counting them as emits would mask a dead catalog entry whose real emit died.
 /// Both stay in [`SCANNED_CRATES`] for the scans that legitimately want the whole tree.
 const NON_EMIT_CRATES: &[&str] = &["aid", "dorc-loom"];
+
+/// The FIXTURE FENCE (`rul-fixture-identity-never-production`). `aid::fixture` holds canned
+/// stand-in worlds so a defining case can render a code that has no honest trigger; every value in
+/// it is invented (`webhost.sh`, `web1.example.net`, rc 2). A real diagnostic is built at its emit
+/// site out of the world that site observed, so reaching the canned table from an emit would ship a
+/// fabricated path or host inside a genuine refusal. The fence is that only the crate that DEFINES
+/// the table and the authoring tool that consumes it may name it — comments are not a fence, this
+/// is (`spike/CLAUDE.md`: absence of a constructor is).
+#[test]
+fn fixture_payloads_are_unreachable_from_production() {
+    const ALLOWED: &[&str] = &["aid", "dorc-loom"];
+    let crates = crates_dir();
+    let entries = std::fs::read_dir(&crates).expect("crates/ is readable");
+    let mut scanned = 0usize;
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !entry.path().is_dir() || ALLOWED.contains(&name.as_str()) {
+            continue;
+        }
+        let mut files = Vec::new();
+        rs_files(&entry.path().join("src"), &mut files);
+        for file in files {
+            scanned += 1;
+            let Ok(text) = std::fs::read_to_string(&file) else {
+                continue;
+            };
+            for needle in ["canonical_payload(", "canonical_payloads("] {
+                assert!(
+                    !text.contains(needle),
+                    "{} names `{needle}` — the fixture stand-in worlds are for the defining-case \
+                     corpus only. Build the payload from the world the emit site observed \
+                     (rul-fixture-identity-never-production).",
+                    file.display()
+                );
+            }
+        }
+    }
+    assert!(
+        scanned > 0,
+        "the fixture fence scanned no files — its crate walk is broken, and a broken walk passes \
+         vacuously"
+    );
+}
 
 /// Extract every payload-struct name constructed at a `new_spanless_site(…::<Payload>(…))` call in
 /// `source` — the spanless-mint marker. Matches both the `Code::` alias (the emit crates) and the
@@ -868,7 +911,7 @@ fn constructed_scan_negative_control_excludes_aid_diag_arms() {
         "sanity: a non-emitted variant is absent from the production basis"
     );
     // The SAME vacuity one layer out: `dorc-loom`'s case fixtures would stand in for dead emits.
-    let loom_only_marker = "fn canonical_payload(";
+    let loom_only_marker = "fn fire_book_analysis(";
     assert!(
         scanned_source().contains(loom_only_marker),
         "precondition: the widened scan set does include dorc-loom's source"

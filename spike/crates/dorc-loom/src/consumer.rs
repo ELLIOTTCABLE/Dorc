@@ -15,19 +15,9 @@ use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, own
 use dorc_aid::catalog::{
     HelpRegister, OwnedEntry, is_foreign_param, owned_catalog, parse_template,
 };
-use dorc_aid::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
-    CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
-    Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
-    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
-    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
-    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
-    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
-    TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted, TransportSessionLost,
-    WhylogUnwritten, WrapperPeelIncoherent, render_cli_parts, render_staged_cli_parts,
-};
+use dorc_aid::diag::{Diag, DiagCode, render_cli_parts, render_staged_cli_parts};
 use dorc_aid::{RenderCtx, Severity};
-use dorc_core::{Interner, LeafId, ProvArena, TopCause};
+use dorc_core::{Interner, ProvArena};
 use errorloom::{
     Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
     ReplayDriver, ReplayInput, ReplayResult, RunEnv, RunError, drive_case, drive_case_with_inputs,
@@ -738,6 +728,9 @@ impl DorcConsumer {
         {
             return Ok((diag, String::new(), String::new()));
         }
+        if let Ok(diag) = Self::whylog_diagnostic(case) {
+            return Ok((diag, String::new(), String::new()));
+        }
         let diag = canonical_payload(slug)
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
         Ok((diag, String::new(), String::new()))
@@ -1359,161 +1352,16 @@ fn render_diag_jsonl(diag: &Diag) -> String {
     )
 }
 
-/// The world-as-payload canonical constructors, keyed by slug (`283:dec-world-two-forms`). The
-/// phase-5 backport (`283` §5.9) renders every non-pipeline covered code SPANLESS: a code may carry a
-/// span in production, but its defining case pins the frame-less title+body prose registers (the
-/// authoring surface), not the caret frame — that is the marker pilot's world-as-pipeline job.
-#[expect(
-    clippy::too_many_lines,
-    reason = "one arm PER CODE, like the catalog registry it mirrors — merging arms would hide which codes have a constructed stand-in"
-)]
+/// The world-as-payload floor (`283:dec-world-two-forms`), for a slug with no honest trigger. The
+/// stand-in payloads themselves live beside the payload TYPES, in [`dorc_aid::fixture`] — a Rust
+/// surface — so adding a payload field never compile-errors inside this crate
+/// (`28L:rul-rust-and-loom-are-the-only-edit-surfaces`).
+///
+/// Every stand-in renders SPANLESS: a code may carry a span in production, but its defining case
+/// pins the frame-less title+body prose registers (the authoring surface), not the caret frame —
+/// that is the world-as-pipeline routes' job.
 fn canonical_payload(slug: &str) -> Option<Diag> {
-    let code = match slug {
-        // phase-5 backport: the covered give-up / records / mark-grammar codes.
-        "cmdsub-operand-top" => DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-            site: SiteId::leaf(LeafId(3)),
-            position: OperandPosition::Operand(1),
-            cause: None,
-            top_cause: TopCause::UnmodeledExpansion,
-            command: CommandName::Literal("apt-get".to_owned()),
-        }),
-        "site-unresolvable" => DiagCode::SiteUnresolvable(SiteUnresolvable {
-            site: SiteId::leaf(LeafId(4)),
-            detail: "2 sites run unprobed (no read-only check could be shipped): \
-                     `make install`, `ldconfig`"
-                .to_owned(),
-        }),
-        "render-heredoc-refused" => DiagCode::RenderHeredocRefused(RenderHeredocRefused {
-            site: SiteId::leaf(LeafId(7)),
-            verb: "elide",
-            command: "cat <<EOF".to_owned(),
-        }),
-        "syntax-unsupported" => DiagCode::SyntaxUnsupported(SyntaxUnsupported {
-            detail: "process substitution `<(...)` is not modeled".to_owned(),
-        }),
-        "records-fact-truncated" => DiagCode::RecordsFactTruncated(RecordsFactTruncated {
-            received: 3,
-            declared: 5,
-            unseen: 2,
-        }),
-        "host-evidence-admission-refused" => {
-            DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
-                kind: HostEvidenceRefusalKind::Framing,
-            })
-        }
-        "escalation-policy" => DiagCode::EscalationPolicy(EscalationPolicy {
-            detail: "escalation policy: probe re-uses connection authority for \
-                     `tolerates:`-vouched functions only (default)"
-                .to_owned(),
-        }),
-        "carried-across-substrate-axis" => {
-            DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
-                detail: "elision carried across the fs-view axis: backing kind `sm_dorc_File` \
-                         vouches `invariant:fs-view`; the verdict body is read-set-closed"
-                    .to_owned(),
-            })
-        }
-        "wrapper-peel-incoherent" => DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
-            detail: "wrapper `sudo`: __predict and __lend_map disagree on the peel tail \
-                     position (predict reaches \"$@\" after 1 argv token(s), lend_map after 0)"
-                .to_owned(),
-        }),
-        "aid-unloaded-sibling-oracle" => {
-            DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
-                detail: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh`"
-                    .to_owned(),
-            })
-        }
-        "dangling-reference" => DiagCode::DanglingReference(DanglingReference {
-            coord: "sm.dorc.Package:nginx".to_owned(),
-        }),
-        // World-as-payload by necessity: this one is read back from a RECORDS stream, and replay
-        // drives no host and admits no records.
-        "shared-cell-measurements-disagree" => {
-            DiagCode::SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree {
-                cell: "dorc-auto:cp@converged".to_owned(),
-                sites: 2,
-            })
-        }
-        // The external-linter trio: world-as-payload by necessity — replay never runs a foreign
-        // tool (`tools_enabled: false`).
-        "lint-tool-absent" => DiagCode::LintToolAbsent(LintToolAbsent {
-            tool: "shellcheck".to_owned(),
-        }),
-        "lint-tool-output-unparsable" => {
-            DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable {
-                tool: "checkbashisms".to_owned(),
-                output: "possible bashism in - line 4 (should be '.'):".to_owned(),
-            })
-        }
-        "lint-tool-failed-without-findings" => {
-            DiagCode::LintToolFailedWithoutFindings(LintToolFailedWithoutFindings {
-                tool: "shellcheck".to_owned(),
-                rc: 2,
-            })
-        }
-        // The invocation errors whose world is an I/O FAILURE, not an argv — an honest trigger
-        // would need a real unreadable file, a full disk, or an absent `sh`.
-        "cli-file-not-found" => DiagCode::CliFileNotFound(CliFileNotFound {
-            kind: "book".to_owned(),
-            path: "webhost.sh".to_owned(),
-        }),
-        "cli-file-permission-denied" => {
-            DiagCode::CliFilePermissionDenied(CliFilePermissionDenied {
-                kind: "oracle".to_owned(),
-                path: "/etc/dorc/nginx.oracle.sh".to_owned(),
-            })
-        }
-        "cli-file-unreadable" => DiagCode::CliFileUnreadable(CliFileUnreadable {
-            kind: "results".to_owned(),
-            path: "probe-results.txt".to_owned(),
-            detail: "Is a directory (os error 21)".to_owned(),
-        }),
-        "cli-shim-dir-unwritable" => DiagCode::CliShimDirUnwritable(CliShimDirUnwritable {
-            path: "/run/dorc/shims".to_owned(),
-            detail: "Read-only file system (os error 30)".to_owned(),
-        }),
-        "whylog-unwritten" => DiagCode::WhylogUnwritten(WhylogUnwritten {
-            dir: "/var/lib/dorc/whylog".to_owned(),
-            reason: "directory".to_owned(),
-        }),
-        "lint-no-lintable-files" => DiagCode::LintNoLintableFiles(LintNoLintableFiles),
-        "lint-file-count-drift" => DiagCode::LintFileCountDrift(LintFileCountDrift {
-            expected: 12,
-            found: 9,
-        }),
-        "lint-required-tools-missing" => {
-            DiagCode::LintRequiredToolsMissing(LintRequiredToolsMissing {
-                tools: "checkbashisms, shellcheck".to_owned(),
-            })
-        }
-        "dorc-sh-script-unreadable" => DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable {
-            path: "webhost.sh".to_owned(),
-            detail: "No such file or directory (os error 2)".to_owned(),
-        }),
-        "dorc-sh-exec-failed" => DiagCode::DorcShExecFailed(DorcShExecFailed {
-            detail: "No such file or directory (os error 2)".to_owned(),
-        }),
-        "transport-crlf-refused" => DiagCode::TransportCrlfRefused(TransportCrlfRefused {
-            which: "webhost.dorc-plan.sh".to_owned(),
-            line: "1".to_owned(),
-        }),
-        "transport-session-lost" => DiagCode::TransportSessionLost(TransportSessionLost {
-            host: "web1.example.net".to_owned(),
-            attempts: "3".to_owned(),
-            diagnosis: "the session ended without a status".to_owned(),
-        }),
-        "transport-not-attempted" => DiagCode::TransportNotAttempted(TransportNotAttempted {
-            host: "web1.example.net".to_owned(),
-            detail: "program not found".to_owned(),
-        }),
-        "transport-apply-failed" => DiagCode::TransportApplyFailed(TransportApplyFailed {
-            host: "web1.example.net".to_owned(),
-            status: "2".to_owned(),
-        }),
-        _ => return None,
-    };
-    Some(Diag::new_spanless_site(code))
+    dorc_aid::fixture::canonical_payload(slug).map(Diag::new_spanless_site)
 }
 
 /// World-as-pipeline for the marker pilot (`28A` §2n): fire the REAL in-process marker gate over the
