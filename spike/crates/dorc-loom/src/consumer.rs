@@ -13,7 +13,9 @@ use std::fs;
 
 use dorc_aid::Severity;
 use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
-use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
+use dorc_aid::catalog::{
+    HelpRegister, OwnedEntry, is_foreign_param, owned_catalog, parse_template,
+};
 use dorc_aid::diag::{
     AidUnloadedSiblingOracle, CANONICAL_TRANSCRIPT_WIDTH, CarriedAcrossSubstrateAxis,
     CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable, CliShimDirUnwritable,
@@ -156,6 +158,15 @@ pub enum DorcApplyRefusal {
     },
 }
 
+/// Why minting a prose register refused.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SeedRefusal {
+    /// No catalog row carries that slug.
+    MissingCode(String),
+    /// The register is already there — unwritten or written.
+    AlreadyPresent(String),
+}
+
 impl Default for DorcConsumer {
     fn default() -> Self {
         Self::new()
@@ -189,6 +200,33 @@ impl DorcConsumer {
     pub fn set_message(&mut self, slug: &str, message: Option<String>) {
         if let Some(e) = self.mirror.iter_mut().find(|e| e.slug == slug) {
             e.message = message;
+        }
+    }
+
+    /// Mint a code's HELP register in the mirror, unwritten (`28L:rul-help-affordance-is-scaffold`).
+    ///
+    /// The register, never its prose: after promotion the render grows a
+    /// `= help: [unwritten: <slug>.help]` line and the ORDINARY transcript loop fills it. That is
+    /// why this is an explicit act rather than something an added transcript line could imply —
+    /// inferring the register from the shape of a typed line is the byte-shape re-detection the
+    /// whole surface is built to avoid (`28L:rul-editability-is-stamped-never-re-derived`).
+    ///
+    /// # Errors
+    /// Returns [`SeedRefusal`] when no row carries the slug, or the register is already there.
+    pub fn seed_help_register(&mut self, slug: &str) -> Result<(), SeedRefusal> {
+        let entry = self
+            .mirror
+            .iter_mut()
+            .find(|entry| entry.slug == slug)
+            .ok_or_else(|| SeedRefusal::MissingCode(slug.to_owned()))?;
+        match entry.help {
+            HelpRegister::Absent => {
+                entry.help = HelpRegister::Unwritten;
+                Ok(())
+            }
+            HelpRegister::Unwritten | HelpRegister::Written(_) => {
+                Err(SeedRefusal::AlreadyPresent(slug.to_owned()))
+            }
         }
     }
 
@@ -291,7 +329,7 @@ impl DorcConsumer {
         if key.field == "message" {
             entry.message = Some(template);
         } else {
-            entry.help = dorc_aid::catalog::HelpRegister::Written(template);
+            entry.help = HelpRegister::Written(template);
         }
         entry.params = entry
             .message

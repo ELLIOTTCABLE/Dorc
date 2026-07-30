@@ -10,14 +10,12 @@
     reason = "fixture harness over the committed corpus; the no-panic lints guard untrusted input"
 )]
 
-use dorc_loom::{DorcConsumer, DorcEditableBaseline, compile_section_edit};
+use dorc_loom::{DorcConsumer, DorcEditableBaseline, DorcSectionEditRefusal, compile_section_edit};
 use errorloom::{Case, RenderComponent, RunEnv};
 
-/// One committed case, replayed through the production seat into its editable baseline.
-fn driven(text: &str) -> (Case, DorcConsumer, DorcEditableBaseline, String) {
-    let case = Case::parse(text).expect("case parses");
-    let consumer = DorcConsumer::new();
-    let replay = dorc_loom::replay_case(&case, &consumer, &RunEnv::new(), |command, _| {
+/// One case, replayed through `consumer`'s own mirror into its editable baseline and transcript.
+fn drive(consumer: &DorcConsumer, case: &Case) -> (DorcEditableBaseline, String) {
+    let replay = dorc_loom::replay_case(case, consumer, &RunEnv::new(), |command, _| {
         panic!("the in-process driver must claim {command:?}")
     })
     .expect("case replays")
@@ -26,11 +24,28 @@ fn driven(text: &str) -> (Case, DorcConsumer, DorcEditableBaseline, String) {
     let transcript = replay.output().to_owned();
     let baseline = consumer
         .baseline_from_render(
-            &case,
+            case,
             replay.editable_render().cloned().expect("editable render"),
         )
         .expect("editable baseline");
+    (baseline, transcript)
+}
+
+/// One committed case, replayed through the production seat into its editable baseline.
+fn driven(text: &str) -> (Case, DorcConsumer, DorcEditableBaseline, String) {
+    let case = Case::parse(text).expect("case parses");
+    let consumer = DorcConsumer::new();
+    let (baseline, transcript) = drive(&consumer, &case);
     (case, consumer, baseline, transcript)
+}
+
+fn help_of(consumer: &DorcConsumer, slug: &str) -> dorc_aid::catalog::HelpRegister<String> {
+    consumer
+        .mirror()
+        .iter()
+        .find(|entry| entry.slug == slug)
+        .map(|entry| entry.help.clone())
+        .expect("the mirror carries the code")
 }
 
 fn sections(baseline: &DorcEditableBaseline) -> Vec<(String, &'static str)> {
@@ -87,6 +102,91 @@ fn overtype_placeholder_mints_words() {
         Some(String::from(
             "the run finished but its why durable did not land"
         ))
+    );
+}
+
+/// The silent-corruption path this pack closes: a `= help:` line the render never emitted used to
+/// be absorbed into the message register, rewriting somebody's sentence with somebody else's line.
+/// It refuses now, and the refusal names the command that mints the register instead.
+#[test]
+fn added_help_line_refuses_and_names_the_command() {
+    let (_, _, baseline, transcript) =
+        driven(include_str!("../../aid/tests/cli-no-book-given.loom"));
+    let edited = format!("{transcript}  = help: pass --book=PATH\n");
+    let refusal =
+        compile_section_edit(&baseline, &edited).expect_err("an added line is not a prose edit");
+    assert!(
+        matches!(
+            refusal,
+            DorcSectionEditRefusal::AddedLine {
+                laid_out: 0,
+                edited: 1,
+                ..
+            }
+        ),
+        "{refusal:?}"
+    );
+    assert!(
+        refusal
+            .explain("crates/aid/tests/cli-no-book-given.loom")
+            .contains("dorc-loom add-register crates/aid/tests/cli-no-book-given.loom help"),
+        "the refusal must name the repair verbatim: {}",
+        refusal.explain("crates/aid/tests/cli-no-book-given.loom")
+    );
+}
+
+/// The affordance the refusal names: mint the register, and the ORDINARY loop fills it — the
+/// placeholder the render then grows is an edit region like any other.
+#[test]
+fn help_register_edit_round_trips() {
+    let case = Case::parse(include_str!("../../aid/tests/cli-no-book-given.loom")).expect("parses");
+    let mut consumer = DorcConsumer::new();
+    assert_eq!(
+        help_of(&consumer, "cli-no-book-given"),
+        dorc_aid::catalog::HelpRegister::Absent
+    );
+    consumer
+        .seed_help_register("cli-no-book-given")
+        .expect("the register is absent");
+
+    let (baseline, transcript) = drive(&consumer, &case);
+    assert!(
+        transcript.contains("= help:  [unwritten: cli-no-book-given.help]"),
+        "the seeded register renders its own placeholder: {transcript:?}"
+    );
+    let edited = transcript.replace(
+        "[unwritten: cli-no-book-given.help]",
+        "give a path, or --book=PATH",
+    );
+    let edit = compile_section_edit(&baseline, &edited).expect("the placeholder is editable");
+    assert_eq!(edit.section().field, "help");
+    consumer
+        .apply_section_edit(&edit)
+        .expect("the mirror takes it");
+    assert_eq!(
+        help_of(&consumer, "cli-no-book-given"),
+        dorc_aid::catalog::HelpRegister::Written(String::from("give a path, or --book=PATH"))
+    );
+}
+
+/// Seeding twice is a mistake worth naming rather than a no-op that quietly loses an edit.
+#[test]
+fn seeding_an_existing_register_refuses() {
+    let mut consumer = DorcConsumer::new();
+    consumer
+        .seed_help_register("cli-no-book-given")
+        .expect("absent");
+    assert_eq!(
+        consumer.seed_help_register("cli-no-book-given"),
+        Err(dorc_loom::SeedRefusal::AlreadyPresent(String::from(
+            "cli-no-book-given"
+        )))
+    );
+    assert_eq!(
+        consumer.seed_help_register("no-such-code"),
+        Err(dorc_loom::SeedRefusal::MissingCode(String::from(
+            "no-such-code"
+        )))
     );
 }
 

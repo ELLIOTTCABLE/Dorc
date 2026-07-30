@@ -14,7 +14,7 @@ use errorloom::{
     Case, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG>\n       an omitted CASE list means every crates/aid/tests/*.loom";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help>\n       an omitted CASE list means every crates/aid/tests/*.loom";
 
 fn main() -> ExitCode {
     match run() {
@@ -43,6 +43,10 @@ enum Command {
     },
     Scaffold {
         slug: String,
+    },
+    AddRegister {
+        case: PathBuf,
+        register: String,
     },
 }
 
@@ -74,6 +78,7 @@ fn run() -> Result<ExitCode, String> {
         Command::Promote { cases, env, quiet } => promote_cases(&cases, &env, quiet, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
+        Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
     }
 }
 
@@ -111,8 +116,89 @@ fn parse_args() -> Result<Command, String> {
             }
             Ok(Command::Scaffold { slug })
         }
+        Some("add-register") => {
+            let case = argv
+                .next()
+                .ok_or_else(|| format!("add-register needs a case path\n{USAGE}"))?;
+            let register = argv
+                .next()
+                .ok_or_else(|| format!("add-register needs a register name\n{USAGE}"))?;
+            if argv.next().is_some() {
+                return Err(format!(
+                    "add-register takes one case and one register\n{USAGE}"
+                ));
+            }
+            Ok(Command::AddRegister {
+                case: PathBuf::from(case),
+                register,
+            })
+        }
         _ => Err(USAGE.to_owned()),
     }
+}
+
+/// `dorc-loom add-register CASE help` — mint a code's help register so the ordinary transcript loop
+/// can fill it (`28L:rul-help-affordance-is-scaffold`).
+///
+/// The register is a CATALOG fact, so this publishes through the same generator promote uses: the
+/// lock gains `HelpRegister::Unwritten` and the case's transcript grows the
+/// `= help: [unwritten: <slug>.help]` line the author then overtypes. Nothing here writes prose.
+fn add_register(path: &Path, register: &str, out: &mut impl Write) -> Result<ExitCode, String> {
+    if register != "help" {
+        return Err(format!(
+            "`help` is the only register that can be added; `message` exists on every code and \
+             `{register}` is not a register"
+        ));
+    }
+    let case = load(path)?;
+    let slug = case
+        .frontmatter()
+        .scalar("code")
+        .ok_or_else(|| {
+            format!(
+                "{} declares no `code`, so it owns no catalog registers",
+                path.display()
+            )
+        })?
+        .to_owned();
+    let gated = gate_touched_set(std::slice::from_ref(&path.to_path_buf()))?;
+    if !gated.touched.is_empty() {
+        return Err(format!(
+            "{} has a prose edit that is not promoted yet, and adding a register rewrites the \
+             case; run `dorc-loom compile {0}` then `dorc-loom promote {0}` first",
+            path.display()
+        ));
+    }
+    let mut consumer = DorcConsumer::new();
+    consumer.seed_help_register(&slug).map_err(|refusal| match refusal {
+        dorc_loom::SeedRefusal::MissingCode(slug) => format!(
+            "no catalog row for `{slug}`; promote its defining case first: `dorc-loom promote {}`",
+            path.display()
+        ),
+        dorc_loom::SeedRefusal::AlreadyPresent(slug) => format!(
+            "`{slug}` already has a help register; edit its `= help:` line in {}, then \
+             `dorc-loom compile {0}` and `dorc-loom promote {0}`",
+            path.display()
+        ),
+    })?;
+    publish(
+        &consumer,
+        &std::collections::BTreeMap::from([(slug.clone(), case)]),
+        out,
+    )?;
+    writeln!(
+        out,
+        "next: rebuild, then overtype `[unwritten: {slug}.help]` in {} with the remediation words",
+        path.display()
+    )
+    .map_err(|error| error.to_string())?;
+    writeln!(
+        out,
+        "then: dorc-loom compile {0} && dorc-loom promote {0}",
+        path.display()
+    )
+    .map_err(|error| error.to_string())
+    .map(|()| ExitCode::SUCCESS)
 }
 
 /// Write the empty defining-case skeleton for a freshly-minted code
@@ -553,8 +639,13 @@ fn inspect_cases(
         }
         if let Some((index, error, dirty)) = case_refusal {
             refused = refused.saturating_add(1);
-            writeln!(body, "refusal in replay {index}: {error:?}")
-                .map_err(|write| write.to_string())?;
+            writeln!(
+                body,
+                "refusal in replay {index}: {}",
+                error.explain(&path.display().to_string())
+            )
+            .map_err(|write| write.to_string())?;
+            writeln!(body, "class: {error:?}").map_err(|write| write.to_string())?;
             writeln!(body, "baseline: exact renderer provenance")
                 .map_err(|write| write.to_string())?;
             writeln!(body, "edited:\n{}", bounded_evidence(&dirty))

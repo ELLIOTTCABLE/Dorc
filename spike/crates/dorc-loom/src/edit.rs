@@ -56,6 +56,83 @@ pub enum DorcSectionEditRefusal {
     CandidateMismatch,
     /// The selected field is split around immutable render components.
     SplitEditableField(SectionKey),
+    /// The edit laid out MORE lines than the render did.
+    ///
+    /// A catalog register and a chrome line hold WORDS; where those words BREAK is the renderer's
+    /// (`282` §3, `28H` ruling 7). So a transcript line the render never emitted is not a longer
+    /// sentence — it is a request for a register that does not exist yet, and absorbing it into the
+    /// neighbouring one silently rewrote that register with somebody else's line
+    /// (`_loom-final-map:fnd-added-help-is-silently-absorbed`). A whole-PAGE entry is exempt: its
+    /// blank lines ARE the author's.
+    AddedLine {
+        /// The section the added line landed in.
+        section: SectionKey,
+        /// Line breaks the render laid out inside that section.
+        laid_out: usize,
+        /// Line breaks the compiled edit carries.
+        edited: usize,
+    },
+}
+
+impl DorcSectionEditRefusal {
+    /// The refusal as one actionable sentence naming `case`, the file the reader is holding
+    /// (`28L:rul-refusals-name-the-next-command`). Blunt is allowed; unactionable is not.
+    #[must_use]
+    pub fn explain(&self, case: &str) -> String {
+        match self {
+            DorcSectionEditRefusal::Unchanged => format!(
+                "no transcript bytes changed in {case}; edit the prose between the render's own \
+                 chrome, then rerun"
+            ),
+            DorcSectionEditRefusal::Transport(refusal) => format!(
+                "the edit could not be attributed to one section of {case} ({refusal:?}); revert \
+                 {case} to its committed bytes and change prose only"
+            ),
+            DorcSectionEditRefusal::Template(refusal) => format!(
+                "a `{{{{name}}}}` marker in {case} is malformed ({refusal:?}); spell it as one \
+                 whole token, `{{{{name}}}}`"
+            ),
+            DorcSectionEditRefusal::UnknownVariable(name)
+            | DorcSectionEditRefusal::Compile(CompileRefusal::UnknownVariable(name)) => format!(
+                "no value `{}` on this diagnostic's payload; list the ones it carries with \
+                 `dorc-loom vars --all {case}`, or add the field to its payload struct and its \
+                 `params_of` arm in spike/crates/aid/src/diag.rs, then rebuild",
+                name.0
+            ),
+            DorcSectionEditRefusal::Compile(refusal) => format!(
+                "a marker in {case} did not compile ({refusal:?}); spell it as one whole token, \
+                 `{{{{name}}}}`, naming a value from `dorc-loom vars --all {case}`"
+            ),
+            DorcSectionEditRefusal::AmbiguousCandidate => format!(
+                "the edit in {case} reads as an edit to two different sections; revert {case} and \
+                 change one section at a time"
+            ),
+            DorcSectionEditRefusal::MarkerOutsideEditableSection => format!(
+                "a `{{{{name}}}}` marker in {case} sits outside the prose the render stamped as \
+                 editable; move it inside a message or help sentence"
+            ),
+            DorcSectionEditRefusal::CandidateMismatch => format!(
+                "the edit in {case} lands on a different section than its markers do; revert \
+                 {case} and change one section at a time"
+            ),
+            DorcSectionEditRefusal::SplitEditableField(section) => format!(
+                "the `{}` register of `{}` renders in more than one place in {case}, so one edit \
+                 cannot own it; report this case — the render, not the edit, is what has to change",
+                section.field, section.owner
+            ),
+            DorcSectionEditRefusal::AddedLine {
+                section,
+                laid_out,
+                edited,
+            } => format!(
+                "the edit adds a line the render did not lay out ({} laid out {laid_out}, the \
+                 edit has {edited}); a register holds words and the renderer owns where they \
+                 break. To add a help line, mint the register first: \
+                 `dorc-loom add-register {case} help`",
+                section.field
+            ),
+        }
+    }
 }
 
 /// Compile one dirty transcript edit through the generic transport.
@@ -100,6 +177,7 @@ pub fn compile_section_edit(
                 match compile_fragments(edit.fragments(), &values) {
                     Ok(compiled) => {
                         refuse_split_field(baseline.render(), section.id())?;
+                        refuse_added_lines(baseline.render(), section.id(), &compiled)?;
                         successful.push(DorcSectionEdit {
                             section: section.id().clone(),
                             compiled,
@@ -187,10 +265,63 @@ fn compile_transport(
     let compiled =
         compile_fragments(edit.fragments(), &values).map_err(DorcSectionEditRefusal::Compile)?;
     refuse_split_field(baseline.render(), edit.section())?;
+    refuse_added_lines(baseline.render(), edit.section(), &compiled)?;
     Ok(DorcSectionEdit {
         section: edit.section().clone(),
         compiled,
     })
+}
+
+/// Refuse an edit that carries more line breaks than the render laid out in that section
+/// (see [`DorcSectionEditRefusal::AddedLine`]).
+///
+/// Both counts come from PROSE only — a value's own bytes are the render's account of the world and
+/// belong to neither side of the arithmetic — so the comparison reads the render's stamped
+/// fragments, never the shape of a rendered line
+/// (`28L:rul-editability-is-stamped-never-re-derived`).
+fn refuse_added_lines(
+    render: &EditableRender<SectionKey, SectionVariableId>,
+    selected: &SectionKey,
+    compiled: &CompiledSection,
+) -> Result<(), DorcSectionEditRefusal> {
+    if selected.field == crate::ARRANGEMENT_FIELD {
+        return Ok(());
+    }
+    let laid_out = render
+        .components()
+        .iter()
+        .filter_map(|component| match component {
+            RenderComponent::EditableSection(section) if section.id() == selected => Some(section),
+            _ => None,
+        })
+        .flat_map(EditableSection::fragments)
+        .filter_map(|fragment| match fragment {
+            EditableFragment::Text(text) => Some(prose_line_breaks(text)),
+            EditableFragment::Variable { .. } => None,
+        })
+        .sum();
+    let edited = compiled
+        .fragments()
+        .iter()
+        .filter_map(|fragment| match fragment {
+            crate::CompiledFragment::Text(text) => Some(prose_line_breaks(text)),
+            crate::CompiledFragment::Variable(_) => None,
+        })
+        .sum();
+    if edited > laid_out {
+        return Err(DorcSectionEditRefusal::AddedLine {
+            section: selected.clone(),
+            laid_out,
+            edited,
+        });
+    }
+    Ok(())
+}
+
+/// The ONE place this crate decides what a line break in prose is (`28H`'s
+/// named-word-judgment law).
+fn prose_line_breaks(text: &str) -> usize {
+    text.matches('\n').count()
 }
 
 /// A catalog register split across several sections cannot be owned by one edit: rewriting one
