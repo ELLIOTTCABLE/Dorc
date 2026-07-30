@@ -889,7 +889,7 @@ fn line_words(compiled: &crate::CompiledSection) -> Vec<String> {
 /// storing the wrap it chose at one width would freeze that width into the entry (`282` §3's
 /// read-in normalization). Collapse, never TRIM: a word's own leading or trailing space is what
 /// separates it from the value beside it.
-fn collapse_runs(word: &str) -> String {
+pub(crate) fn collapse_runs(word: &str) -> String {
     let mut out = String::with_capacity(word.len());
     let mut spacing = false;
     for character in word.chars() {

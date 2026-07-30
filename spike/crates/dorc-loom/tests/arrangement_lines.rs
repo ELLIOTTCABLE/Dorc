@@ -167,6 +167,31 @@ fn a_wrapped_words_only_line_is_one_section_at_every_width() {
     }
 }
 
+/// The real gap, and the round-trip that closes it: a reword that MOVES the break point — here by
+/// making the sentence long enough to need one more laid-out line than the render produced — is an
+/// ordinary prose edit, because where a register's words wrap is the renderer's and never the
+/// author's (`28H` ruling 7). It used to refuse as an added line and point at
+/// `add-register … help`, a register a chrome component cannot even have.
+#[test]
+fn a_reword_across_the_break_point_compiles() {
+    let (text, baseline) = laid_out_runs(words_only(LONG_LINE), 40);
+    let tail = " whatsoever, and nothing else besides";
+    let longer = format!("{LONG_LINE}{tail}");
+    let rewrapped = laid_out_runs(words_only(&longer), 40).0;
+    assert!(
+        rewrapped.lines().count() > text.lines().count(),
+        "the fixture must need an extra laid-out line or it proves nothing"
+    );
+
+    let edited = format!("{}{tail}\n", text.trim_end_matches('\n'));
+    match applied(&baseline, &edited, WORDS_ONLY_SLUG) {
+        Ok(OwnedWords::Authored(words)) => {
+            assert_eq!(words, vec![longer], "the wrap never reaches storage");
+        }
+        other => panic!("a reword across the break must compile, got {other:?}"),
+    }
+}
+
 /// GLUED. The value abuts its closing word with no whitespace between them
 /// (`28A:rul-glued-param-rehole-seam`) — the one place the bet that errorloom needs no change
 /// could have broken, because the transport's anchors are single characters lifted off the text

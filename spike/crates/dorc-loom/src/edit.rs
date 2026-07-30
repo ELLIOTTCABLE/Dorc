@@ -220,6 +220,12 @@ fn compile_transport(
 /// belong to neither side of the arithmetic — so the comparison reads the render's stamped
 /// fragments, never the shape of a rendered line
 /// (`28L:rul-editability-is-stamped-never-re-derived`).
+///
+/// Both sides are counted in the field's STORED form, which is what makes the arithmetic mean
+/// anything: a renderer's soft wrap is a break in neither. Counting the render's own wrap on the
+/// baseline side used to refuse any reword that needed one more laid-out line than the render
+/// happened to produce, and to refuse it by naming the help-register affordance
+/// (`28L:fnd-wrapped-rows-are-chunk-editable`, re-measured — one section, miscounted breaks).
 fn refuse_added_lines(
     render: &EditableRender<SectionKey, SectionVariableId>,
     selected: &SectionKey,
@@ -237,7 +243,7 @@ fn refuse_added_lines(
         })
         .flat_map(EditableSection::fragments)
         .filter_map(|fragment| match fragment {
-            EditableFragment::Text(text) => Some(prose_line_breaks(text)),
+            EditableFragment::Text(text) => Some(prose_line_breaks(selected.field, text)),
             EditableFragment::Variable { .. } => None,
         })
         .sum();
@@ -245,7 +251,7 @@ fn refuse_added_lines(
         .fragments()
         .iter()
         .filter_map(|fragment| match fragment {
-            crate::CompiledFragment::Text(text) => Some(prose_line_breaks(text)),
+            crate::CompiledFragment::Text(text) => Some(prose_line_breaks(selected.field, text)),
             crate::CompiledFragment::Variable(_) => None,
         })
         .sum();
@@ -260,9 +266,19 @@ fn refuse_added_lines(
 }
 
 /// The ONE place this crate decides what a line break in prose is (`28H`'s
-/// named-word-judgment law).
-fn prose_line_breaks(text: &str) -> usize {
-    text.matches('\n').count()
+/// named-word-judgment law): the breaks the field's STORED form carries.
+///
+/// A chrome line stores every whitespace run as one space ([`crate::consumer::collapse_runs`]), so
+/// it has no breaks by construction; a catalog register keeps only a paragraph break. Either way a
+/// renderer's soft wrap counts as nothing, on whichever side of the comparison it appears — the
+/// same two normalizers the compile path stores through, never a second judgment.
+fn prose_line_breaks(field: &str, text: &str) -> usize {
+    let stored = if field == crate::ARRANGEMENT_LINE_FIELD {
+        crate::consumer::collapse_runs(text)
+    } else {
+        collapse_paragraph_whitespace(text)
+    };
+    stored.matches('\n').count()
 }
 
 /// Read-in normalization for catalog prose (`282` §3): within a paragraph, whitespace runs

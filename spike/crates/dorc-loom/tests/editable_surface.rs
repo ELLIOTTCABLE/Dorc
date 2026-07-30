@@ -131,16 +131,42 @@ fn added_help_line_refuses_and_names_the_command() {
         ),
         "{refusal:?}"
     );
+    let explained = refusal.explain(std::path::Path::new(
+        "crates/aid/tests/cli-no-book-given.loom",
+    ));
     assert!(
-        refusal
-            .explain(std::path::Path::new(
-                "crates/aid/tests/cli-no-book-given.loom"
-            ))
-            .contains("dorc-loom add-register crates/aid/tests/cli-no-book-given.loom help"),
-        "the refusal must name the repair verbatim: {}",
-        refusal.explain(std::path::Path::new(
-            "crates/aid/tests/cli-no-book-given.loom"
-        ))
+        explained.contains("dorc-loom add-register crates/aid/tests/cli-no-book-given.loom help")
+            && explained.contains("mise run loom:compile crates/aid/tests/cli-no-book-given.loom"),
+        "a blank line reads two ways and the refusal names the repair for both: {explained}"
+    );
+}
+
+/// The other half of the same arithmetic: the RENDER's own wrap is not a laid-out break either.
+/// This register wraps, so the guard used to grant it a break of budget — enough for a genuinely
+/// added line to ride in free on a register the renderer happened to break twice. Both sides are
+/// counted in the stored form now, so a wrapping register reports the same zero a flat one does.
+#[test]
+fn a_wrapping_register_grants_no_added_line_budget() {
+    let (_, _, baseline, transcript) = driven(include_str!(
+        "../../aid/tests/aid-unloaded-sibling-oracle.loom"
+    ));
+    assert!(
+        transcript.contains("but were\nnot loaded"),
+        "the fixture register must still wrap or it proves nothing: {transcript:?}"
+    );
+    let edited = format!("{}\n\nand a second paragraph\n", transcript.trim_end());
+    let refusal =
+        compile_section_edit(&baseline, &edited).expect_err("a blank line is not a prose edit");
+    assert!(
+        matches!(
+            refusal,
+            DorcSectionEditRefusal::AddedLine {
+                laid_out: 0,
+                edited: 2,
+                ..
+            }
+        ),
+        "{refusal:?}"
     );
 }
 
