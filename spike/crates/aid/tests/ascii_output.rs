@@ -232,10 +232,11 @@ const CORPUS_JARGON_GLYPHS: &[char] = &['⊤', '⊄'];
 
 /// Cases whose RENDER is non-ASCII because the thing under test is non-ASCII. A row here is a
 /// statement that the bytes are the fixture's, not the engine's voice.
-const CORPUS_CASE_ALLOWLIST: &[(&str, &str)] = &[(
-    "munge-name-invalid",
-    "the case lints a deliberately-illegal non-ASCII function name; the render quotes it back",
-)];
+///
+/// Empty, and the emptiness is load-bearing: a quotation of somebody else's bytes reaches a
+/// laid-out surface through the display seat, which escapes anything outside printable ASCII. A
+/// case that quotes an illegal name therefore renders the escape, not the name.
+const CORPUS_CASE_ALLOWLIST: &[(&str, &str)] = &[];
 
 /// One committed case: its engine-rendered region and the input bytes that region may legally
 /// echo. Splitting the two is the whole trick — see the module header.
