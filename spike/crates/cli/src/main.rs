@@ -254,11 +254,10 @@ fn chrome(slug: &str, values: &[&str]) -> String {
 }
 
 fn report_invocation_error(diag: &Diag) {
-    eprintln!(
-        "dorc: {}",
-        dorc_aid::diag::render_body(diag, &Interner::default())
+    eprint!(
+        "{}",
+        dorc_cli::invocation_error_parts(&render_ctx(), diag, &Interner::default()).text()
     );
-    eprintln!("{}", dorc_cli::usage_text(&render_ctx()));
 }
 
 /// `dorc strip <path>` (`27D` rider-dorc-sh-unbuilt / `274` §13): read the file, erase every dorc

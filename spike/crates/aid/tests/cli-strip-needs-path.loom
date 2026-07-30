@@ -6,4 +6,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc strip
-error[cli-strip-needs-path]: sm strip needs a file path
+dorc: error[cli-strip-needs-path]: sm strip needs a file path
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

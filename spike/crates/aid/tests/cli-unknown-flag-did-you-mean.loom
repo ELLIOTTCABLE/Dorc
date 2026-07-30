@@ -6,5 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --wat --book=webhost.sh
-error[cli-unknown-flag-did-you-mean]: sm unknown flag `--wat` -- did you mean
-`--last`?
+dorc: error[cli-unknown-flag-did-you-mean]: sm unknown flag `--wat` -- did you
+mean `--last`?
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

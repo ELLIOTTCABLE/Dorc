@@ -6,4 +6,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc pln --book=webhost.sh
-error[cli-unknown-mode]: sm unknown mode `pln` -- did you mean `plan`?
+dorc: error[cli-unknown-mode]: sm unknown mode `pln` -- did you mean `plan`?
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

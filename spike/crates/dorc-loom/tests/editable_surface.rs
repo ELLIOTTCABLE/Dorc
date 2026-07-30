@@ -117,7 +117,12 @@ fn overtype_placeholder_mints_words() {
 fn added_help_line_refuses_and_names_the_command() {
     let (_, _, baseline, transcript) =
         driven(include_str!("../../aid/tests/cli-no-book-given.loom"));
-    let edited = format!("{transcript}\n  = help: pass --book=PATH\n");
+    // Straight after the message rather than at the end of the render: an invocation error now
+    // closes with the usage synopsis, and a line appended past THAT would land in the chrome.
+    let (message, rest) = transcript
+        .split_once('\n')
+        .expect("an invocation error renders more than one line");
+    let edited = format!("{message}\n\n  = help: pass --book=PATH\n{rest}");
     let refusal =
         compile_section_edit(&baseline, &edited).expect_err("an added line is not a prose edit");
     assert!(

@@ -465,6 +465,20 @@ impl DorcConsumer {
         )
     }
 
+    /// One INVOCATION error, whole — prefix, diagnostic, usage synopsis — through the binary's own
+    /// seat, so a case shows the bytes an admin really sees rather than the diagnostic alone.
+    ///
+    /// Which binary it is comes from the replay's own first word, never from the diagnostic: the
+    /// shim prints a different framing and no synopsis.
+    fn invocation_parts(&self, diag: &Diag, binary: &str) -> dorc_aid::tagged::RenderParts {
+        let ctx = self.render_ctx();
+        let interner = Interner::default();
+        if binary == "dorc-sh" {
+            return dorc_cli::shim_error_parts(&ctx, diag, &interner);
+        }
+        dorc_cli::invocation_error_parts(&ctx, diag, &interner)
+    }
+
     /// [`Self::cli_parts`] for a source-staged diagnostic.
     fn staged_cli_parts(&self, stage: &str, diag: &Diag) -> dorc_aid::tagged::RenderParts {
         render_staged_cli_parts(
@@ -603,7 +617,7 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(result.human())));
         }
         if let Some(diag) = fire_invocation_error(case, &tokens) {
-            let parts = self.cli_parts(&diag, "", "");
+            let parts = self.invocation_parts(&diag, tokens.first().copied().unwrap_or_default());
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if parse_direct_remote_apply(&tokens) {
@@ -1379,8 +1393,9 @@ impl DorcConsumer {
             .text());
         }
         if let Some(diag) = fire_invocation_error(case, &words) {
-            let parts = self.cli_parts(&diag, "", "");
-            return Ok(parts.text());
+            return Ok(self
+                .invocation_parts(&diag, words.first().copied().unwrap_or_default())
+                .text());
         }
         if parse_direct_remote_apply(&words) {
             let diag = Self::world_of(case)?.0;

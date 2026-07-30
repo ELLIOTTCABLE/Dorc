@@ -6,4 +6,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book
-error[cli-flag-needs-value]: sm --book needs a path
+dorc: error[cli-flag-needs-value]: sm --book needs a path
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

@@ -31,9 +31,14 @@ use std::process::{Command, ExitCode};
 /// The seam note stands and changes nothing now: if `dorc-sh` ever ships host-side, host-side
 /// emissions likely stay raw-bytes-upstream with controller-side narration.
 fn report(diag: &dorc_aid::Diag) {
-    eprintln!(
-        "dorc-sh: {}",
-        dorc_aid::diag::render_body(diag, &dorc_core::Interner::default())
+    eprint!(
+        "{}",
+        dorc_cli::shim_error_parts(
+            &dorc_aid::RenderCtx::production(),
+            diag,
+            &dorc_core::Interner::default()
+        )
+        .text()
     );
 }
 

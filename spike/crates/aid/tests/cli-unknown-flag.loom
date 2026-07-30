@@ -6,4 +6,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --boook=webhost.sh
-error[cli-unknown-flag]: sm unknown flag `--boook=webhost.sh`
+dorc: error[cli-unknown-flag]: sm unknown flag `--boook=webhost.sh`
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

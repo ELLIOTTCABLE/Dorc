@@ -6,5 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc lint --expect-files=many oracle.sh
-error[cli-flag-value-not-a-number]: sm --expect-files needs a non-negative
+dorc: error[cli-flag-value-not-a-number]: sm --expect-files needs a non-negative
 integer, got `many`
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

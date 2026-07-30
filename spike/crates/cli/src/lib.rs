@@ -53,6 +53,56 @@ pub fn usage_text(ctx: &RenderCtx<'_>) -> String {
     arrangement_text(ctx.arrangements(), USAGE_ARRANGEMENT, None)
 }
 
+/// One invocation error, WHOLE, as a stamped part stream: the `dorc: ` seat prefix, the rendered
+/// diagnostic, and the usage synopsis beneath it.
+///
+/// The one seat, so the loom and the binary cannot disagree about the bytes an admin sees
+/// (`28L:rul-editability-is-stamped-never-re-derived`). It also gives `cli-usage-synopsis` its
+/// first FACE: the synopsis used to be read as plain text through [`usage_text`], which left the
+/// one line every argument error prints with no editable home at all.
+///
+#[must_use]
+pub fn invocation_error_parts(
+    ctx: &RenderCtx<'_>,
+    error: &InvocationError,
+    interner: &dorc_core::Interner,
+) -> dorc_aid::tagged::RenderParts {
+    let mut parts = staged_invocation_parts("dorc", ctx, error, interner);
+    for part in usage_parts(ctx).parts() {
+        parts.push(part.clone());
+    }
+    parts
+}
+
+/// The `dorc-sh` shim's own invocation errors, under its terse `dorc-sh: ` framing.
+///
+/// No synopsis: the shim's whole error vocabulary is three lines and one of them IS its usage, so
+/// appending `dorc`'s would name a command the reader did not run.
+#[must_use]
+pub fn shim_error_parts(
+    ctx: &RenderCtx<'_>,
+    error: &InvocationError,
+    interner: &dorc_core::Interner,
+) -> dorc_aid::tagged::RenderParts {
+    staged_invocation_parts("dorc-sh", ctx, error, interner)
+}
+
+/// `stage` is the seat's own prefix word — not a catalog register, and never editable.
+fn staged_invocation_parts(
+    stage: &str,
+    ctx: &RenderCtx<'_>,
+    error: &InvocationError,
+    interner: &dorc_core::Interner,
+) -> dorc_aid::tagged::RenderParts {
+    dorc_aid::diag::render_staged_cli_parts(stage, ctx, error, "", "", interner)
+}
+
+/// The usage synopsis as its own laid-out paragraph, span-stamped so an edit lands on its registry
+/// entry.
+fn usage_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {
+    why_parts(vec![registry_paragraph(ctx, USAGE_ARRANGEMENT)], 0)
+}
+
 /// The long help (ack-1 + the cheap help-is-success item): `--help`/`-h` prints this to STDOUT
 /// and exits 0 (a help request is a success, not a usage error).
 #[must_use]
