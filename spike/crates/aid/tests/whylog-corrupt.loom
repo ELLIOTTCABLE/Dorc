@@ -2,6 +2,7 @@
 code: whylog-corrupt
 when-fires: `dorc why --last` found a durable but it is truncated or otherwise unparseable (a partial write, a clobbered file). plan/whylog.rs parse (`inv-no-throw`: malformed bytes are DATA, never a panic).
 why: inv-no-throw: a corrupt durable is diagnostics, never a crash — the reader refuses politely and names the parse-failure reason. Pull-surface: Warning, Floor::None. `{detail}` = the parse-failure reason (e.g. missing header/end sentinel, an unrecognized section). Remediation register (help) wanted: the durable is damaged — re-run the live analysis to regenerate it.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-corrupt && mise run loom:promote -- whylog-corrupt`. `mise run loom:vars -- --all whylog-corrupt` lists this case's values; type {{name}} to insert or move one.
 ---
 -- .whylog --
 dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@

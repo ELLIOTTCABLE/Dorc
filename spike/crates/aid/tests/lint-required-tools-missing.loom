@@ -2,6 +2,7 @@
 code: lint-required-tools-missing
 when-fires: --require-tools was given and a configured external linter is absent from PATH. cli/main.rs lint_command. {tools} lists them.
 why: 27R section 4 dir-absent-is-info, inverted by explicit request: absence is advisory by default, and --require-tools is how CI says a partial lint must not read as a pass.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-required-tools-missing && mise run loom:promote -- lint-required-tools-missing`. `mise run loom:vars -- --all lint-required-tools-missing` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=webhost.sh

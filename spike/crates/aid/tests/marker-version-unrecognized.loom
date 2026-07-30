@@ -3,6 +3,7 @@ code: marker-version-unrecognized
 when-fires: a dorc-lang dialect construct appears in a file whose `# dorc-lang/vX.Y` version marker names a version this binary does not recognize (only v0.2 today), distinct from a wholly-missing marker. oracle/marker.rs.
 why: marker-gates-syntax-only + versioned-additive: an unrecognized version is a loud file-level refusal SEPARATE from missing-marker, so a vNEXT/typo'd-version file is not mis-blamed as markerless (`28A` §2l). `{found}` = the version tag read from the marker.
 todo: This needs to be relocated to the *comment span* of the version-marker itself, not the first parser-construct.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- marker-version-unrecognized && mise run loom:promote -- marker-version-unrecognized`. `mise run loom:vars -- --all marker-version-unrecognized` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.1

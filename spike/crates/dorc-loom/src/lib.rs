@@ -25,7 +25,8 @@ mod inspect;
 pub use inspect::render_compile_preview;
 mod ownership;
 pub use ownership::{
-    CaseOwnership, ComponentRef, OWNS_KEY, corpus_ownership, is_registered_component,
+    CaseOwnership, ComponentRef, EDIT_LOOP_KEY, OWNS_KEY, corpus_ownership, edit_loop_hint,
+    is_registered_component,
 };
 mod preview;
 mod refusal;

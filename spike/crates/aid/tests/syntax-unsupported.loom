@@ -2,6 +2,7 @@
 code: syntax-unsupported
 when-fires: the parser hit an unmodeled/out-of-scope sh construct; it becomes an `Unsupported` ⊤-node and parsing continues.
 why: inv-top-reject: under-modeling is a loud correctness boundary. PASSTHROUGH — the parser's own description of the construct rides `detail`.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported && mise run loom:promote -- syntax-unsupported`. `mise run loom:vars -- --all syntax-unsupported` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

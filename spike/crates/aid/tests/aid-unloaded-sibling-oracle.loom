@@ -2,6 +2,7 @@
 code: aid-unloaded-sibling-oracle
 when-fires: the cli-edge scan found `*.oracle.sh` files on disk beside the loaded oracles (or the book) that were NOT loaded this run. cli emit_unloaded_sibling_oracles.
 why: 24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common cause of a wall that a present-but-unloaded oracle would lift; the run is unchanged (advisory Note). PASSTHROUGH — the cli builds `{detail}` (the sorted unloaded-sibling list).
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- aid-unloaded-sibling-oracle && mise run loom:promote -- aid-unloaded-sibling-oracle`. `mise run loom:vars -- --all aid-unloaded-sibling-oracle` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

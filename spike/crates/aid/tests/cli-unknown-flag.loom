@@ -2,6 +2,7 @@
 code: cli-unknown-flag
 when-fires: an unrecognized flag with no near neighbour in the flag table. cli/lib.rs parse_args_from and parse_lint_args. {flag} is the token.
 why: inv-top-reject in the small: an unmodeled flag is refused loudly rather than ignored, because a silently-dropped flag is a plan the admin did not ask for.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-unknown-flag && mise run loom:promote -- cli-unknown-flag`. `mise run loom:vars -- --all cli-unknown-flag` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --boook=webhost.sh

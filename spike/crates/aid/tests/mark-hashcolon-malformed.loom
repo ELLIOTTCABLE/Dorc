@@ -2,6 +2,7 @@
 code: mark-hashcolon-malformed
 when-fires: the new-grammar mark parser found a `#:` comment that looks like a mark-block but did not parse (`281` §9). oracle/predict/mark_grammar.rs.
 why: 281 §9 graceful degradation: the hash-colon carrier is left a plain comment (never mis-erased) but diagnosed (Warning) so a broken one is never silently ignored.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- mark-hashcolon-malformed && mise run loom:promote -- mark-hashcolon-malformed`. `mise run loom:vars -- --all mark-hashcolon-malformed` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

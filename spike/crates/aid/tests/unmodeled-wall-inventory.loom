@@ -2,6 +2,7 @@
 code: unmodeled-wall-inventory
 when-fires: a linted book carries at least one unmodeled ⊤-wall; the finding names the FIRST one. lint/source_unmodeled.rs. `{wall_count}`/`{wall_word}` are the census, `{downstream}` the approximate leaf count after the first wall.
 why: 27R §2 item-2, the gradual-enhancement nag - silence licenses nothing, so a wall is disclosed with the cost it imposes. The downstream count is APPROXIMATE (all downstream commands, not only the modeled ones) - seam-unmodeled-degradation-count.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- unmodeled-wall-inventory && mise run loom:promote -- unmodeled-wall-inventory`. `mise run loom:vars -- --all unmodeled-wall-inventory` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

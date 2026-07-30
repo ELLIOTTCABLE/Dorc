@@ -14,6 +14,25 @@ use errorloom::{Case, FrontmatterValue};
 /// The frontmatter key a case declares extra prose-components in.
 pub const OWNS_KEY: &str = "owns";
 
+/// The frontmatter key carrying the case's own editing loop.
+pub const EDIT_LOOP_KEY: &str = "edit-loop";
+
+/// The loop, spelled out inside the case that needs it — GENERATED, never authored.
+///
+/// A `.loom` is the whole teaching surface for someone who may not open the crates that read it
+/// (`28L:rul-rust-and-loom-are-the-only-edit-surfaces`), and the two things it could not tell them
+/// were what to run afterwards and that a value can be typed at all. One const mints it, one gate
+/// holds every case to it, so it cannot drift into 75 slightly different sentences.
+#[must_use]
+pub fn edit_loop_hint(slug: &str) -> String {
+    format!(
+        "edit a sentence in the transcript below, then run \
+         `mise run loom:compile -- {slug} && mise run loom:promote -- {slug}`. \
+         `mise run loom:vars -- --all {slug}` lists this case's values; type {{{{name}}}} to \
+         insert or move one."
+    )
+}
+
 /// One prose-component, as an ownership declaration names it: a registry/catalog slug, optionally
 /// narrowed to one occurrence with `slug@N`. A slug with no occurrence claims every occurrence.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]

@@ -103,6 +103,40 @@ fn known_frontmatter_keys(name: &str, case: &Case) -> Result<(), Failed> {
     .into())
 }
 
+/// The primary loom collection — the authoring surface a prose editor works in, and the only one
+/// the in-file loop hint binds (a `.rs` test's fixture case teaches nobody).
+fn is_primary_collection(path: &std::path::Path) -> bool {
+    path.parent()
+        .and_then(|dir| dir.parent())
+        .is_some_and(|crate_dir| crate_dir.file_name().is_some_and(|name| name == "aid"))
+}
+
+/// Every canonical case carries its own editing loop, in the generator's exact current words.
+///
+/// Generated text, checked rather than trusted: the hint is the one thing in the file that tells a
+/// reader what to run next, so a case that missed a rewording would teach a command that no longer
+/// exists — worse than saying nothing (`28L:rul-in-file-loop-hint-minted`).
+fn carries_the_edit_loop(
+    case_name: &str,
+    path: &std::path::Path,
+    case: &Case,
+) -> Result<(), Failed> {
+    if !is_primary_collection(path) {
+        return Ok(());
+    }
+    let want = dorc_loom::edit_loop_hint(case_name);
+    match case.frontmatter().scalar(dorc_loom::EDIT_LOOP_KEY) {
+        Some(found) if found == want => Ok(()),
+        found => Err(format!(
+            "FAIL  {case_name}  [the `{key}:` frontmatter line is {}; it is generated text and \
+             every case carries the current form. Set it to exactly:\n      {key}: {want}]",
+            found.map_or_else(|| String::from("missing"), |found| format!("{found:?}")),
+            key = dorc_loom::EDIT_LOOP_KEY,
+        )
+        .into()),
+    }
+}
+
 /// Parse, hygiene-check, and render-fixpoint one committed case.
 fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let name = &case.name;
@@ -111,6 +145,7 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
     known_frontmatter_keys(name, &parsed)?;
+    carries_the_edit_loop(name, &case.path, &parsed)?;
     if let Err(error) = parsed.check_hygiene(Some("code")) {
         // A new replay block is `$ cmd` with no output, which surfaces no slug — so hygiene, not
         // the fixpoint, is where its author stands when they need the candidate.

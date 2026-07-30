@@ -2,6 +2,7 @@
 code: cli-unknown-mode
 when-fires: the leading token is not a mode but is within edit-distance 2 of one. cli/lib.rs parse_args_from. {mode} is the token, {suggestion} the nearest real mode.
 why: 27S did-you-mean: a near-miss is a typo, and naming the intended mode costs one line and saves a round-trip. A wholly-different word is a positional book instead, never a wrong guess.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-unknown-mode && mise run loom:promote -- cli-unknown-mode`. `mise run loom:vars -- --all cli-unknown-mode` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc pln --book=webhost.sh

@@ -2,6 +2,7 @@
 code: cli-strip-needs-path
 when-fires: dorc strip was given no path. cli/lib.rs parse_args_from. No params - the invocation says everything.
 why: 288 rul-dorc-strip-is-the-offramp: strip takes exactly one positional, so an empty one is unambiguous rather than a guess at intent.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-strip-needs-path && mise run loom:promote -- cli-strip-needs-path`. `mise run loom:vars -- --all cli-strip-needs-path` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc strip

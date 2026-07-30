@@ -2,6 +2,7 @@
 code: carried-across-substrate-axis
 when-fires: a cross-context elision carried a substrate-axis fact via pure-predicate carry. cli/main.rs. Spanned (the carried site's span).
 why: 27C §9: every cross-context elision renders its attribution chain from day one. PASSTHROUGH — the chain text rides `detail`.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- carried-across-substrate-axis && mise run loom:promote -- carried-across-substrate-axis`. `mise run loom:vars -- --all carried-across-substrate-axis` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

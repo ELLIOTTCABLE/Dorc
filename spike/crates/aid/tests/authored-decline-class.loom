@@ -2,6 +2,7 @@
 code: authored-decline-class
 when-fires: a verdict arm carries a report-sink emission whose `<verb> <class>` header WAS readable statically. lint/source_oracle_solo.rs, tier-1 inventory. `{class}` is the read class token.
 why: 27W decline-class-emission - classing a decline is enhancement, and the inventory is how an author sees what they classed. Advisory only, never gates; the license plane never reads a class.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- authored-decline-class && mise run loom:promote -- authored-decline-class`. `mise run loom:vars -- --all authored-decline-class` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

@@ -288,7 +288,10 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
         ));
     }
     let skeleton = format!(
-        "---\ncode: {slug}\nwhen-fires:\nwhy:\n---\n-- replay --\n$ dorc plan --book=book.sh\n"
+        "---\ncode: {slug}\nwhen-fires:\nwhy:\n{key}: {loop_hint}\n---\n-- replay --\n\
+         $ dorc plan --book=book.sh\n",
+        key = dorc_loom::EDIT_LOOP_KEY,
+        loop_hint = dorc_loom::edit_loop_hint(slug),
     );
     std::fs::write(&path, skeleton)
         .map_err(|error| format!("write {}: {error}", path.display()))?;

@@ -2,6 +2,7 @@
 code: syntax-malformed
 when-fires: the parser hit a structurally malformed sh construct (a parse error); parsing continues fail-soft.
 why: inv-no-throw: errors are data. PASSTHROUGH — the parser's description rides `detail`.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed && mise run loom:promote -- syntax-malformed`. `mise run loom:vars -- --all syntax-malformed` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

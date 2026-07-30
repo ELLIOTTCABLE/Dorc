@@ -2,6 +2,7 @@
 code: transport-apply-failed
 when-fires: a remote apply ran to completion and its artifact exited non-zero. cli/main.rs ship_consented_apply. {host} is the destination, {status} the status the completion marker carried.
 why: law-lane-discipline. The third world state in the transport family and the only KNOWN one: it ran, it finished, it exited non-zero. The status is reproduced, never interpreted. A zero is equally not a health claim - plans/252 section 8 - which is what a verify re-probe is for.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- transport-apply-failed && mise run loom:promote -- transport-apply-failed`. `mise run loom:vars -- --all transport-apply-failed` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
