@@ -1,7 +1,7 @@
 ---
 arrangement: why-reason-run-not-elidable
-when-used: The ANALYSIS row for an addressed site that ran and is not a candidate for anything else -- no check was possible and none would have helped.
-why: 28L rul-full-driver-this-arc: the quiet arm of the addressed triptych needs a face too, or the only reason rows a reader can edit are the loud ones.
+when-used: The ANALYSIS row for a site that ran for none of the more specific reasons.
+why: "The residual arm: a mutator with no converged report, an inert builtin, or a running wall above it. Named as a set because the render cannot yet say which member applies."
 ---
 -- book.sh --
 #!/bin/sh

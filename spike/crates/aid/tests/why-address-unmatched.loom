@@ -1,7 +1,7 @@
 ---
 arrangement: why-address-unmatched
-when-used: The whole answer to a `dorc why <address>` whose address matched no site in the analyzed book. Value: the address as given.
-why: 28L rul-full-driver-this-arc: a miss is a real answer with real words, and a reader who mistyped an address sees this sentence and nothing else.
+when-used: "The whole `dorc why <addr>` render when the address matched no analyzed command. Value: the address as given."
+why: "law-lineno-identity: the ONE line-number space is the source file's, so an unmatched address says so rather than silently reporting the wrong surface."
 ---
 -- book.sh --
 #!/bin/sh
