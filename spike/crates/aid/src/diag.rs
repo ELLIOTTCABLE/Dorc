@@ -2237,202 +2237,293 @@ const FOREIGN_PARAM_CAP: usize = 2048;
 /// Split from [`params_of`] so BOTH renders — the string one and the parts one — see the same
 /// bytes: they must agree exactly, and encoding at only one of them would make the two disagree
 /// the first time a book carried something interesting.
+///
+/// **Every arm destructures its payload EXHAUSTIVELY, with no `..`.** That is the whole reason the
+/// arms are written the long way: a field added to a payload struct is `E0027` here, at the seat
+/// that decides whether the new value is loom-visible. Without it a new field compiled green and
+/// was silently invisible to the case corpus — `{{new_field}}` refused as an unknown name with
+/// nothing to say why. Name a field to publish it; bind it `_` to say, deliberately, that it is
+/// engine bookkeeping rather than a value prose may interpolate.
 #[expect(
     clippy::match_same_arms,
     clippy::too_many_lines,
     reason = "one arm PER CODE, like `registry` — merging the param-less arms by `|` would hide \
-              which codes declare no holes, and the per-code shape is what makes the fn long"
+              which codes declare no holes, and the exhaustive destructuring is what makes a new \
+              payload field a compile error here"
 )]
 fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, String)> {
     match code {
-        DiagCode::CmdsubOperandTop(p) => vec![
-            ("position", p.position.describe(ctx)),
-            ("cause", p.top_cause.describe().to_owned()),
-            ("command", p.command.describe()),
+        DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+            site: _,
+            position,
+            cause: _,
+            top_cause,
+            command,
+        }) => vec![
+            ("position", position.describe(ctx)),
+            ("cause", top_cause.describe().to_owned()),
+            ("command", command.describe()),
         ],
-        DiagCode::RenderHeredocRefused(p) => {
-            vec![("verb", p.verb.to_owned()), ("command", p.command.clone())]
+        DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+            site: _,
+            verb,
+            command,
+        }) => vec![("verb", (*verb).to_owned()), ("command", command.clone())],
+        DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {
+            vec![("inner", inner.clone())]
         }
-        DiagCode::CmdsubInnerNonleaf(p) => vec![("inner", p.inner.clone())],
-        DiagCode::Depth2PositionalUnthreaded(p) => vec![("name", p.name.clone())],
-        DiagCode::SiteUnresolvable(p) => vec![("detail", p.detail.clone())],
-        DiagCode::SyntaxUnsupported(p) => vec![("detail", p.detail.clone())],
-        DiagCode::SyntaxMalformed(p) => vec![("detail", p.detail.clone())],
-        DiagCode::CfgTopNode(p) => vec![("detail", p.detail.clone())],
-        DiagCode::CfgErexitUnknown(p) => vec![("detail", p.detail.clone())],
-        DiagCode::CfgInlineRefused(p) => vec![("detail", p.detail.clone())],
-        DiagCode::CfgBuiltinShadowed(p) => vec![("detail", p.detail.clone())],
-        DiagCode::EffectKindDisagreement(p) => vec![("detail", p.detail.clone())],
-        DiagCode::PredictOutOfDialect(p) => vec![("detail", p.detail.clone())],
-        DiagCode::PredictUnterminated(p) => vec![("detail", p.detail.clone())],
-        DiagCode::OracleRoleFnUnlifted(p) => vec![("funcname", p.funcname.clone())],
-        DiagCode::MarkOnAndOrList(_) => vec![],
-        DiagCode::FootprintIncoherent(p) => vec![("detail", p.detail.clone())],
-        DiagCode::EscalationPolicy(p) => vec![("detail", p.detail.clone())],
-        DiagCode::CarriedAcrossSubstrateAxis(p) => vec![("detail", p.detail.clone())],
-        DiagCode::WrappedSiteAdoptionHint(p) => vec![("detail", p.detail.clone())],
-        DiagCode::WrapperEntryIncoherent(p) => vec![("detail", p.detail.clone())],
-        DiagCode::WrapperPeelIncoherent(p) => vec![("detail", p.detail.clone())],
-        DiagCode::WhylogVersionRefused(p) => vec![("found", p.found.clone())],
-        DiagCode::WhylogBookDesync(p) => vec![("which", p.which.clone())],
-        DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
-        DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
-        DiagCode::WhylogUnwritten(p) => {
-            vec![("dir", p.dir.clone()), ("reason", p.reason.clone())]
+        DiagCode::Depth2PositionalUnthreaded(Depth2PositionalUnthreaded { site: _, name }) => {
+            vec![("name", name.clone())]
         }
-        DiagCode::AidUnloadedSiblingOracle(p) => vec![("detail", p.detail.clone())],
-        DiagCode::UnmodeledWallInventory(p) => vec![
-            ("wall_count", p.wall_count.to_string()),
-            ("wall_word", p.wall_word.to_owned()),
-            ("downstream", p.downstream.to_string()),
+        DiagCode::SiteUnresolvable(SiteUnresolvable { site: _, detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::SyntaxUnsupported(SyntaxUnsupported { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::SyntaxMalformed(SyntaxMalformed { detail }) => vec![("detail", detail.clone())],
+        DiagCode::CfgTopNode(CfgTopNode { detail }) => vec![("detail", detail.clone())],
+        DiagCode::CfgErexitUnknown(CfgErexitUnknown { detail }) => vec![("detail", detail.clone())],
+        DiagCode::CfgInlineRefused(CfgInlineRefused { detail }) => vec![("detail", detail.clone())],
+        DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::EffectKindDisagreement(EffectKindDisagreement { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::PredictOutOfDialect(PredictOutOfDialect { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::PredictUnterminated(PredictUnterminated { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::OracleRoleFnUnlifted(OracleRoleFnUnlifted { funcname }) => {
+            vec![("funcname", funcname.clone())]
+        }
+        DiagCode::MarkOnAndOrList(MarkOnAndOrList) => vec![],
+        DiagCode::FootprintIncoherent(FootprintIncoherent { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::EscalationPolicy(EscalationPolicy { detail }) => vec![("detail", detail.clone())],
+        DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::WrappedSiteAdoptionHint(WrappedSiteAdoptionHint { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::WrapperEntryIncoherent(WrapperEntryIncoherent { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::WhylogVersionRefused(WhylogVersionRefused { found }) => {
+            vec![("found", found.clone())]
+        }
+        DiagCode::WhylogBookDesync(WhylogBookDesync { which }) => vec![("which", which.clone())],
+        DiagCode::WhylogAbsent(WhylogAbsent { dir }) => vec![("dir", dir.clone())],
+        DiagCode::WhylogCorrupt(WhylogCorrupt { detail }) => vec![("detail", detail.clone())],
+        DiagCode::WhylogUnwritten(WhylogUnwritten { dir, reason }) => {
+            vec![("dir", dir.clone()), ("reason", reason.clone())]
+        }
+        DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle { detail }) => {
+            vec![("detail", detail.clone())]
+        }
+        DiagCode::UnmodeledWallInventory(UnmodeledWallInventory {
+            wall_count,
+            wall_word,
+            downstream,
+        }) => vec![
+            ("wall_count", wall_count.to_string()),
+            ("wall_word", (*wall_word).to_owned()),
+            ("downstream", downstream.to_string()),
         ],
-        DiagCode::VerdictTerminalPipeline(_) => vec![],
-        DiagCode::AuthoredDeclineClass(p) => vec![("class", p.class.clone())],
-        DiagCode::AuthoredDeclineClassUnreadable(_) => vec![],
-        DiagCode::LintToolAbsent(p) => vec![("tool", p.tool.clone())],
-        DiagCode::LintToolOutputUnparsable(p) => {
-            vec![("tool", p.tool.clone()), ("output", p.output.clone())]
+        DiagCode::VerdictTerminalPipeline(VerdictTerminalPipeline) => vec![],
+        DiagCode::AuthoredDeclineClass(AuthoredDeclineClass { class }) => {
+            vec![("class", class.clone())]
         }
-        DiagCode::CliStripNeedsPath(_)
-        | DiagCode::CliNoBookGiven(_)
-        | DiagCode::LintNoLintableFiles(_)
-        | DiagCode::DorcShUsage(_) => vec![],
-        DiagCode::CliStripGotAFlag(p) => vec![("got", p.got.clone())],
-        DiagCode::CliUnknownMode(p) => vec![
-            ("mode", p.mode.clone()),
-            ("suggestion", p.suggestion.clone()),
+        DiagCode::AuthoredDeclineClassUnreadable(AuthoredDeclineClassUnreadable) => vec![],
+        DiagCode::LintToolAbsent(LintToolAbsent { tool }) => vec![("tool", tool.clone())],
+        DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable { tool, output }) => {
+            vec![("tool", tool.clone()), ("output", output.clone())]
+        }
+        DiagCode::CliStripNeedsPath(CliStripNeedsPath)
+        | DiagCode::CliNoBookGiven(CliNoBookGiven)
+        | DiagCode::LintNoLintableFiles(LintNoLintableFiles)
+        | DiagCode::DorcShUsage(DorcShUsage) => vec![],
+        DiagCode::CliStripGotAFlag(CliStripGotAFlag { got }) => vec![("got", got.clone())],
+        DiagCode::CliUnknownMode(CliUnknownMode { mode, suggestion }) => {
+            vec![("mode", mode.clone()), ("suggestion", suggestion.clone())]
+        }
+        DiagCode::CliFlagNeedsValue(CliFlagNeedsValue { flag, wants }) => {
+            vec![("flag", flag.clone()), ("wants", (*wants).to_owned())]
+        }
+        DiagCode::CliUnknownFlag(CliUnknownFlag { flag }) => vec![("flag", flag.clone())],
+        DiagCode::CliUnknownFlagDidYouMean(CliUnknownFlagDidYouMean { flag, suggestion }) => {
+            vec![("flag", flag.clone()), ("suggestion", suggestion.clone())]
+        }
+        DiagCode::CliFlagValueNotRecognized(CliFlagValueNotRecognized {
+            flag,
+            got,
+            expected,
+        }) => vec![
+            ("flag", flag.clone()),
+            ("got", got.clone()),
+            ("expected", (*expected).to_owned()),
         ],
-        DiagCode::CliFlagNeedsValue(p) => {
-            vec![("flag", p.flag.clone()), ("wants", p.wants.to_owned())]
+        DiagCode::CliFlagValueNotANumber(CliFlagValueNotANumber { flag, got }) => {
+            vec![("flag", flag.clone()), ("got", got.clone())]
         }
-        DiagCode::CliUnknownFlag(p) => vec![("flag", p.flag.clone())],
-        DiagCode::CliUnknownFlagDidYouMean(p) => vec![
-            ("flag", p.flag.clone()),
-            ("suggestion", p.suggestion.clone()),
+        DiagCode::CliFlagsMutuallyExclusive(CliFlagsMutuallyExclusive { first, second }) => vec![
+            ("first", (*first).to_owned()),
+            ("second", (*second).to_owned()),
         ],
-        DiagCode::CliFlagValueNotRecognized(p) => vec![
-            ("flag", p.flag.clone()),
-            ("got", p.got.clone()),
-            ("expected", p.expected.to_owned()),
+        DiagCode::CliFlagRequiresMode(CliFlagRequiresMode { flag, mode }) => {
+            vec![("flag", (*flag).to_owned()), ("mode", (*mode).to_owned())]
+        }
+        DiagCode::CliFileNotFound(CliFileNotFound { kind, path }) => {
+            vec![("kind", kind.clone()), ("path", path.clone())]
+        }
+        DiagCode::CliFilePermissionDenied(CliFilePermissionDenied { kind, path }) => {
+            vec![("kind", kind.clone()), ("path", path.clone())]
+        }
+        DiagCode::CliFileUnreadable(CliFileUnreadable { kind, path, detail }) => vec![
+            ("kind", kind.clone()),
+            ("path", path.clone()),
+            ("detail", detail.clone()),
         ],
-        DiagCode::CliFlagValueNotANumber(p) => {
-            vec![("flag", p.flag.clone()), ("got", p.got.clone())]
-        }
-        DiagCode::CliFlagsMutuallyExclusive(p) => vec![
-            ("first", p.first.to_owned()),
-            ("second", p.second.to_owned()),
+        DiagCode::LintFileCountDrift(LintFileCountDrift { expected, found }) => vec![
+            ("expected", expected.to_string()),
+            ("found", found.to_string()),
         ],
-        DiagCode::CliFlagRequiresMode(p) => {
-            vec![("flag", p.flag.to_owned()), ("mode", p.mode.to_owned())]
+        DiagCode::LintRequiredToolsMissing(LintRequiredToolsMissing { tools }) => {
+            vec![("tools", tools.clone())]
         }
-        DiagCode::CliFileNotFound(p) => {
-            vec![("kind", p.kind.clone()), ("path", p.path.clone())]
+        DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable { path, detail }) => {
+            vec![("path", path.clone()), ("detail", detail.clone())]
         }
-        DiagCode::CliFilePermissionDenied(p) => {
-            vec![("kind", p.kind.clone()), ("path", p.path.clone())]
+        DiagCode::DorcShExecFailed(DorcShExecFailed { detail }) => vec![("detail", detail.clone())],
+        DiagCode::CliShimDirUnwritable(CliShimDirUnwritable { path, detail }) => {
+            vec![("path", path.clone()), ("detail", detail.clone())]
         }
-        DiagCode::CliFileUnreadable(p) => vec![
-            ("kind", p.kind.clone()),
-            ("path", p.path.clone()),
-            ("detail", p.detail.clone()),
+        DiagCode::TransportCrlfRefused(TransportCrlfRefused { which, line }) => {
+            vec![("which", which.clone()), ("line", line.clone())]
+        }
+        DiagCode::TransportSessionLost(TransportSessionLost {
+            host,
+            attempts,
+            diagnosis,
+        }) => vec![
+            ("host", host.clone()),
+            ("attempts", attempts.clone()),
+            ("diagnosis", diagnosis.clone()),
         ],
-        DiagCode::LintFileCountDrift(p) => vec![
-            ("expected", p.expected.to_string()),
-            ("found", p.found.to_string()),
+        DiagCode::TransportNotAttempted(TransportNotAttempted { host, detail }) => {
+            vec![("host", host.clone()), ("detail", detail.clone())]
+        }
+        DiagCode::TransportApplyFailed(TransportApplyFailed { host, status }) => {
+            vec![("host", host.clone()), ("status", status.clone())]
+        }
+        DiagCode::LintToolFailedWithoutFindings(LintToolFailedWithoutFindings { tool, rc }) => {
+            vec![("tool", tool.clone()), ("rc", rc.to_string())]
+        }
+        DiagCode::MarkerVersionUnrecognized(MarkerVersionUnrecognized { found }) => {
+            vec![("found", found.clone())]
+        }
+        DiagCode::MungeNameInvalid(MungeNameInvalid {
+            source,
+            funcname,
+            problem,
+        }) => vec![
+            ("source", source.clone()),
+            ("funcname", funcname.clone()),
+            ("problem", problem.clone()),
         ],
-        DiagCode::LintRequiredToolsMissing(p) => vec![("tools", p.tools.clone())],
-        DiagCode::DorcShScriptUnreadable(p) => {
-            vec![("path", p.path.clone()), ("detail", p.detail.clone())]
-        }
-        DiagCode::DorcShExecFailed(p) => vec![("detail", p.detail.clone())],
-        DiagCode::CliShimDirUnwritable(p) => {
-            vec![("path", p.path.clone()), ("detail", p.detail.clone())]
-        }
-        DiagCode::TransportCrlfRefused(p) => {
-            vec![("which", p.which.clone()), ("line", p.line.clone())]
-        }
-        DiagCode::TransportSessionLost(p) => vec![
-            ("host", p.host.clone()),
-            ("attempts", p.attempts.clone()),
-            ("diagnosis", p.diagnosis.clone()),
+        DiagCode::MungeNameCollision(MungeNameCollision {
+            source,
+            funcname,
+            count,
+            names,
+        }) => vec![
+            ("source", source.clone()),
+            ("funcname", funcname.clone()),
+            ("count", count.to_string()),
+            ("names", names.clone()),
         ],
-        DiagCode::TransportNotAttempted(p) => {
-            vec![("host", p.host.clone()), ("detail", p.detail.clone())]
+        DiagCode::ReservedNamespaceSquat(ReservedNamespaceSquat { name, role }) => {
+            vec![("name", name.clone()), ("role", role.clone())]
         }
-        DiagCode::TransportApplyFailed(p) => {
-            vec![("host", p.host.clone()), ("status", p.status.clone())]
+        DiagCode::ToleratesUnknownDimension(ToleratesUnknownDimension { token, expected }) => {
+            vec![("token", token.clone()), ("expected", expected.clone())]
         }
-        DiagCode::LintToolFailedWithoutFindings(p) => {
-            vec![("tool", p.tool.clone()), ("rc", p.rc.to_string())]
+        DiagCode::MarkUnknownVerb(MarkUnknownVerb { token, expected }) => {
+            vec![("token", token.clone()), ("expected", expected.clone())]
         }
-        DiagCode::MarkerVersionUnrecognized(p) => vec![("found", p.found.clone())],
-        DiagCode::MungeNameInvalid(p) => vec![
-            ("source", p.source.clone()),
-            ("funcname", p.funcname.clone()),
-            ("problem", p.problem.clone()),
+        DiagCode::LendMapUnknownDimension(LendMapUnknownDimension { token, expected }) => {
+            vec![("token", token.clone()), ("expected", expected.clone())]
+        }
+        DiagCode::CarryNetnsOnNetKernelForbidden(CarryNetnsOnNetKernelForbidden {
+            kind_munged,
+        }) => vec![("kind_munged", kind_munged.clone())],
+        DiagCode::RecordsFactTruncated(RecordsFactTruncated {
+            received,
+            declared,
+            unseen,
+        }) => vec![
+            ("received", received.to_string()),
+            ("declared", declared.to_string()),
+            ("unseen", unseen.to_string()),
         ],
-        DiagCode::MungeNameCollision(p) => vec![
-            ("source", p.source.clone()),
-            ("funcname", p.funcname.clone()),
-            ("count", p.count.to_string()),
-            ("names", p.names.clone()),
-        ],
-        DiagCode::ReservedNamespaceSquat(p) => {
-            vec![("name", p.name.clone()), ("role", p.role.clone())]
+        DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused { which }) => {
+            vec![("which", which.clone())]
         }
-        DiagCode::ToleratesUnknownDimension(p) => {
-            vec![("token", p.token.clone()), ("expected", p.expected.clone())]
+        DiagCode::RecordsTornLine(RecordsTornLine { count }) => vec![("count", count.to_string())],
+        DiagCode::RecordsAlienLine(RecordsAlienLine { count }) => {
+            vec![("count", count.to_string())]
         }
-        DiagCode::MarkUnknownVerb(p) => {
-            vec![("token", p.token.clone()), ("expected", p.expected.clone())]
+        DiagCode::RecordsLateLine(RecordsLateLine { count }) => vec![("count", count.to_string())],
+        DiagCode::TouchesEscalated(TouchesEscalated { site, call }) => {
+            vec![("site", site.to_string()), ("call", call.clone())]
         }
-        DiagCode::LendMapUnknownDimension(p) => {
-            vec![("token", p.token.clone()), ("expected", p.expected.clone())]
+        DiagCode::DerivFamilyIncomplete(DerivFamilyIncomplete { site, reason }) => {
+            vec![("site", site.to_string()), ("reason", reason.clone())]
         }
-        DiagCode::CarryNetnsOnNetKernelForbidden(p) => {
-            vec![("kind_munged", p.kind_munged.clone())]
+        DiagCode::ResolverConflict(ResolverConflict { kind, count }) => {
+            vec![("kind", kind.clone()), ("count", count.to_string())]
         }
-        DiagCode::RecordsFactTruncated(p) => vec![
-            ("received", p.received.to_string()),
-            ("declared", p.declared.to_string()),
-            ("unseen", p.unseen.to_string()),
-        ],
-        DiagCode::RecordsIntegrityRefused(p) => vec![("which", p.which.clone())],
-        DiagCode::RecordsTornLine(p) => vec![("count", p.count.to_string())],
-        DiagCode::RecordsAlienLine(p) => vec![("count", p.count.to_string())],
-        DiagCode::RecordsLateLine(p) => vec![("count", p.count.to_string())],
-        DiagCode::TouchesEscalated(p) => {
-            vec![("site", p.site.to_string()), ("call", p.call.clone())]
+        DiagCode::ResolverProviderCollision(ResolverProviderCollision { name }) => {
+            vec![("name", name.clone())]
         }
-        DiagCode::DerivFamilyIncomplete(p) => {
-            vec![("site", p.site.to_string()), ("reason", p.reason.clone())]
+        DiagCode::DanglingReference(DanglingReference { coord }) => vec![("coord", coord.clone())],
+        DiagCode::SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree {
+            cell,
+            sites,
+        }) => {
+            vec![("cell", cell.clone()), ("sites", sites.to_string())]
         }
-        DiagCode::ResolverConflict(p) => {
-            vec![("kind", p.kind.clone()), ("count", p.count.to_string())]
+        DiagCode::ReachesConflict(ReachesConflict { kind, count }) => {
+            vec![("kind", kind.clone()), ("count", count.to_string())]
         }
-        DiagCode::ResolverProviderCollision(p) => vec![("name", p.name.clone())],
-        DiagCode::DanglingReference(p) => vec![("coord", p.coord.clone())],
-        DiagCode::SharedCellMeasurementsDisagree(p) => {
-            vec![("cell", p.cell.clone()), ("sites", p.sites.to_string())]
+        DiagCode::ReachesProviderCollision(ReachesProviderCollision { name }) => {
+            vec![("name", name.clone())]
         }
-        DiagCode::ReachesConflict(p) => {
-            vec![("kind", p.kind.clone()), ("count", p.count.to_string())]
+        // Static-message codes (no interpolation): no params. Their payload fields are still named
+        // here, so adding one is a compile error at this seat too.
+        DiagCode::RedirTargetTop(RedirTargetTop { site: _ })
+        | DiagCode::MissingDialectMarker(MissingDialectMarker)
+        | DiagCode::ToleratesOverIdentityDependence(ToleratesOverIdentityDependence)
+        | DiagCode::HeavyContextNoTolerance(HeavyContextNoTolerance)
+        | DiagCode::MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell)
+        | DiagCode::MarkRcArityExceeded(MarkRcArityExceeded)
+        | DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer)
+        | DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed)
+        | DiagCode::RecordsHeaderlessRefused(RecordsHeaderlessRefused)
+        | DiagCode::RecordsGluedLine(RecordsGluedLine)
+        | DiagCode::RecordsHeaderMissing(RecordsHeaderMissing)
+        | DiagCode::RecordsSentinelNonce(RecordsSentinelNonce)
+        | DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused { kind: _ }) => {
+            vec![]
         }
-        DiagCode::ReachesProviderCollision(p) => vec![("name", p.name.clone())],
-        // Static-message codes (no interpolation): no params.
-        DiagCode::RedirTargetTop(_)
-        | DiagCode::MissingDialectMarker(_)
-        | DiagCode::ToleratesOverIdentityDependence(_)
-        | DiagCode::HeavyContextNoTolerance(_)
-        | DiagCode::MarkBraceVerdictSingleCell(_)
-        | DiagCode::MarkRcArityExceeded(_)
-        | DiagCode::MarkStandaloneRcConsumer(_)
-        | DiagCode::MarkHashcolonMalformed(_)
-        | DiagCode::RecordsHeaderlessRefused(_)
-        | DiagCode::RecordsGluedLine(_)
-        | DiagCode::RecordsHeaderMissing(_)
-        | DiagCode::RecordsSentinelNonce(_)
-        | DiagCode::HostEvidenceAdmissionRefused(_) => vec![],
     }
 }
 
