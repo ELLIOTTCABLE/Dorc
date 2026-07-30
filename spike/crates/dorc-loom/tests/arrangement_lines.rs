@@ -30,7 +30,15 @@ const SHELL: &str = "---\narrangement: cli-help-page\nwhen-used: harness.\nwhy: 
 
 /// Lay one chrome line out at `width` and take it all the way to an editable baseline.
 fn laid_out(said: &Said, width: usize) -> (String, dorc_loom::DorcEditableBaseline) {
-    let runs: Vec<Run<Face>> = said.runs(&dorc_aid::RenderCtx::production(), "harness");
+    laid_out_runs(
+        said.runs(&dorc_aid::RenderCtx::production(), "harness"),
+        width,
+    )
+}
+
+/// The same, from runs the test minted itself — so a fixture that has to be LONG enough to wrap
+/// carries its own length rather than borrowing a registry entry whose prose may be reworded.
+fn laid_out_runs(runs: Vec<Run<Face>>, width: usize) -> (String, dorc_loom::DorcEditableBaseline) {
     let document = Document::new(vec![Node::new(NodeKind::Prose(Paragraph { runs }))]);
     let rendered = render(&document, width);
     let parts = to_render_parts(&rendered);
@@ -122,6 +130,40 @@ fn a_four_value_line_survives_a_wrap_and_edits_back() {
             "every word boundary the render stamped came back, whitespace collapsed"
         ),
         other => panic!("expected the re-split words, got {other:?}"),
+    }
+}
+
+/// The registry slug the words-only fixtures below rewrite. Any real slug does — they carry their
+/// own text and only need an entry for an applied edit to land on.
+const WORDS_ONLY_SLUG: &str = "lint-source-analysis-diagnostics";
+
+/// A words-only chrome component, long enough that every width below the literal wraps it.
+fn words_only(text: &str) -> Vec<Run<Face>> {
+    vec![dorc_aid::weave::words(
+        text.to_owned(),
+        WORDS_ONLY_SLUG,
+        None,
+    )]
+}
+
+const LONG_LINE: &str =
+    "engine parse and control-flow-graph diagnostics over each file, computed with no world at all";
+
+/// DIAGNOSIS for the reported section-per-chunk gap: it does not happen. A words-only component
+/// long enough to wrap is ONE editable section at EVERY width — weft's newline+pad is pure layout
+/// lying between two stretches of one row, which the bridge's absorption rule folds back into the
+/// row (`aid::weave::to_render_parts`). Measured corpus-wide too: of 247 committed sections the
+/// only split pair is a `{{detail}}` passthrough, which is a foreign VALUE splitting its register,
+/// not a wrap.
+///
+/// What actually refused a reworded long line is one layer down: the added-line guard counted the
+/// RENDERER's soft wrap as an authored break.
+#[test]
+fn a_wrapped_words_only_line_is_one_section_at_every_width() {
+    for width in [30, 40, 55, 80] {
+        let (text, baseline) = laid_out_runs(words_only(LONG_LINE), width);
+        assert!(text.contains('\n'), "width {width} must wrap: {text:?}");
+        assert_eq!(sections(&baseline), 1, "width {width}: {text:?}");
     }
 }
 
