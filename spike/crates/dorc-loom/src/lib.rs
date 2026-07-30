@@ -24,6 +24,7 @@ pub use edit::{
 mod inspect;
 pub use inspect::render_compile_preview;
 mod preview;
+mod refusal;
 pub use preview::{CompilePreview, SectionPreview, compile_preview};
 mod receipt;
 pub use receipt::{

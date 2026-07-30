@@ -144,6 +144,9 @@ pub enum DorcApplyRefusal {
         expected: Vec<String>,
         /// The sequence the edit compiled to.
         found: Vec<String>,
+        /// The entry's own stored words — the half of the line that IS the author's, carried so
+        /// the refusal can point at it instead of leaving them to guess which word was computed.
+        editable_words: Vec<String>,
     },
 }
 
@@ -406,6 +409,7 @@ impl DorcConsumer {
                 slug: key.owner.clone(),
                 expected,
                 found,
+                editable_words: entry.words.words().unwrap_or_default().to_vec(),
             });
         }
         entry.words = OwnedWords::Authored(words);

@@ -161,14 +161,30 @@ fn moving_a_value_refuses_by_name() {
     let edited = text.replace("14|apt-get ran", "{{v1}} {{v0}}");
     assert_ne!(edited, text, "the fixture rewrote the value order");
     match applied(&baseline, &edited, "why-outcome-contrastive") {
-        Err(dorc_loom::DorcApplyRefusal::ArrangementValueSequenceChanged {
-            slug,
-            expected,
-            found,
-        }) => {
+        Err(refusal) => {
+            let dorc_loom::DorcApplyRefusal::ArrangementValueSequenceChanged {
+                ref slug,
+                ref expected,
+                ref found,
+                ..
+            } = refusal
+            else {
+                panic!("a moved value must refuse by name, got {refusal:?}")
+            };
             assert_eq!(slug, "why-outcome-contrastive");
-            assert_eq!(expected, vec!["v0", "v1", "v2", "v3"]);
+            assert_eq!(*expected, vec!["v0", "v1", "v2", "v3"]);
             assert_ne!(found, expected, "the refusal names what moved");
+            // The author sees an ordinary English word; the refusal has to say it was computed and
+            // which words on the line are theirs to change.
+            let explained = refusal.explain(std::path::Path::new("crates/aid/tests/x.loom"));
+            assert!(
+                explained.contains("computed") && explained.contains("edit are"),
+                "the refusal must name the computed values AND the editable words: {explained}"
+            );
+            assert!(
+                explained.contains("mise run loom:compile crates/aid/tests/x.loom"),
+                "every refusal ends in its next command: {explained}"
+            );
         }
         other => panic!("a moved value must refuse, got {other:?}"),
     }

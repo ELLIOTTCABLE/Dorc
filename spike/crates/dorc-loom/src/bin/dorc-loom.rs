@@ -696,7 +696,7 @@ fn emit_previews(
         let rendered = render_compile_preview(&preview);
         consumer
             .apply_preview(&preview)
-            .map_err(|error| format!("{}: apply compiled section: {error:?}", path.display()))?;
+            .map_err(|error| format!("{}: {}", path.display(), error.explain(path)))?;
         compiled.insert(index, preview);
         writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
     }
