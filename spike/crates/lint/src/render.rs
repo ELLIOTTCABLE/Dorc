@@ -163,20 +163,22 @@ fn append_finding_parts(out: &mut RenderParts, finding: &Finding, verbosity: Ver
     let Some(provenance) = &finding.provenance else {
         return;
     };
-    out.push(RenderPart::Arrangement {
-        text: String::from("  "),
-        slug: "lint-indent",
-    });
-    // The framed render ends its own last line, so nothing is appended after it.
-    out.append(dorc_aid::diag::render_cli_parts(
+    // The finding list's own indent is part of the BOX, so a wrapped line lands inside the list
+    // instead of flush against the report's left edge. The framed render ends its own last line,
+    // so nothing is appended after it either.
+    out.append(dorc_aid::diag::render_cli_parts_within(
         &dorc_aid::catalog::CONST_CATALOG,
         &provenance.diag,
         &provenance.source,
         &finding.path,
         &dorc_core::Interner::default(),
-        dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
+        &dorc_aid::diag::layout_box(dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH, FINDING_INDENT),
     ));
 }
+
+/// How far a framed finding sits inside the report's finding list — the same lead the compact form
+/// carries, so the two shapes line up.
+const FINDING_INDENT: usize = 2;
 
 /// The compact form, emitted as PARTS: `  <line>:<col> <severity> [<source>:<code>] <message>` plus
 /// a `(approximate)`/`(raw)` tag when the location fidelity is not exact (`27R` §4 remap-fidelity).

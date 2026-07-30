@@ -2516,8 +2516,31 @@ pub fn render_cli_parts(
     interner: &dorc_core::Interner,
     width: usize,
 ) -> crate::tagged::RenderParts {
+    render_cli_parts_within(lookup, diag, src, filename, interner, &layout_box(width, 0))
+}
+
+/// The box a diagnostic lays out into: `width` columns, the leftmost `indent` of them spent.
+///
+/// A seat that already owns geometry — a lint report's indented finding list — hands one of these
+/// instead of a bare width, so the indent is laid out THROUGH the render rather than glued on in
+/// front of it. Bytes glued on in front are the ones a wrap cannot see.
+#[must_use]
+pub fn layout_box(width: usize, indent: usize) -> weft::Frame {
+    weft::Frame::of_width(width.into()).inset(indent)
+}
+
+/// [`render_cli_parts`] into a box the caller already owns.
+#[must_use]
+pub fn render_cli_parts_within(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &dorc_core::Interner,
+    frame: &weft::Frame,
+) -> crate::tagged::RenderParts {
     let document = diagnostic_document(None, lookup, diag, src, filename, interner);
-    crate::weave::to_render_parts(&weft::render(&document, width))
+    crate::weave::to_render_parts(&weft::render_framed(&document, frame))
 }
 
 /// Render a source-staged diagnostic (`282` §4). The stage prefix is a run INSIDE the document, so
