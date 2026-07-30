@@ -2386,6 +2386,12 @@ fn run_lint(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
         .into());
     }
     let got = strip_trailing_newlines(&strip_cr(&out.stdout));
+    // A lint case's golden is written HERE, like every other gate's: without this the only route
+    // to re-blessing one was a hand edit, which is a golden nothing mechanically produced.
+    if harness.bless {
+        std::fs::write(dir.join("expected.out"), format!("{got}\n")).expect("bless expected.out");
+        return Ok(());
+    }
     let want = strip_trailing_newlines(&strip_cr(&read_or_empty(&dir.join("expected.out"))));
     if got != want {
         return Err(format!(
