@@ -1,0 +1,34 @@
+---
+arrangement: why-improvement-ran-blind
+when-used: The IMPROVEMENTS item for a site that ran with no read-only check behind it -- the aggregate row that turns an un-oracled command into a next step.
+why: 28L rul-full-driver-this-arc: the zero-argument `dorc why` aggregate is driven in-process here, so every row it reaches has an editable home rather than a lock-only one.
+---
+-- book.sh --
+#!/bin/sh
+# Two un-oracled commands and nothing described: the whole run is unprobed, which is exactly the
+# world the IMPROVEMENTS panel exists to report. `hork` is the corpus's inert stand-in mutator.
+hork tune --profile web
+apt-get install -y nginx
+
+-- replay --
+$ dorc why --book=book.sh
+receipt: [unwritten: why-receipt-when-undated], host localhost
+   book book.sh (digest 8b371a4bf6c3a5e85489f460efba25f842e9bfd87573a9e4f0e59b8297a23df7)
+   oracles:
+   risk-profile: none (no trust flags)
+   plan: 2 ran, 0 guarded, 0 skipped (0 by proof)
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+=== IMPROVEMENTS: dorc can do better, with your help ===
+
+book.sh:4 | hork tune --profile web
+   ran blind, as on every apply: no read-only check could be shipped for hork
+   (dorc why book.sh:4)
+
+book.sh:5 | apt-get install -y nginx
+   ran blind, as on every apply: no read-only check could be shipped for apt-get
+   (dorc why book.sh:5)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)

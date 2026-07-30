@@ -1,0 +1,26 @@
+---
+arrangement: why-reason-run-not-elidable
+when-used: The ANALYSIS row for an addressed site that ran and is not a candidate for anything else -- no check was possible and none would have helped.
+why: 28L rul-full-driver-this-arc: the quiet arm of the addressed triptych needs a face too, or the only reason rows a reader can edit are the loud ones.
+---
+-- book.sh --
+#!/bin/sh
+# `cd` is a no-target-state builtin: no read-only check could ever be authored for it, so the
+# firehose deliberately says nothing about it (cheap-7) and the addressed answer is the quiet one.
+cd /var/tmp
+hork tune --profile web
+
+-- replay --
+$ dorc why book.sh:4 --book=book.sh
+      [ book.sh, participating lines:
+   4 | cd /var/tmp
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   4|cd ran RATHER THAN guarded: nothing licensed removing this line: it mutates with no
+   converged report, or a wall above it runs
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)

@@ -22,6 +22,7 @@
 #![forbid(unsafe_code)]
 
 pub mod why;
+pub mod world;
 
 use dorc_aid::RenderCtx;
 use dorc_aid::Severity;

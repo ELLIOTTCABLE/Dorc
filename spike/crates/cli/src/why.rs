@@ -1865,11 +1865,13 @@ fn why_triptych_parts(
     );
     let mut parts = why_parts(nodes, TRIPTYCH_INSET);
     push_gap(&mut parts);
+    // No trailing gap after the footer. It used to print one, and a trailing blank line is layout
+    // the loom container cannot round-trip — so the transcript and the part stream said different
+    // bytes, which is exactly what `28L:rul-editability-is-stamped-never-re-derived` forbids.
     parts.append(why_parts(
         vec![registry_paragraph(ctx, "why-receipt-footer")],
         0,
     ));
-    push_gap(&mut parts);
     parts
 }
 

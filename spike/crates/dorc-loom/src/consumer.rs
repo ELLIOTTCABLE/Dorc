@@ -555,6 +555,12 @@ impl DorcConsumer {
                 .vars_inventory(context.materialized_input(path)?, path, *mode == "--used")
                 .map(ReplayResult::bytes);
         }
+        if let Some(why) = parse_direct_why_report(&tokens) {
+            let parts = live_why_parts(&self.render_ctx(), &why, |path| {
+                materialized_source(case, context, path)
+            })?;
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        }
         if let Some(why) = parse_direct_why(&tokens) {
             let raw = context.materialized_input(why.whylog);
             if let Some(parts) = raw.and_then(|whylog| {
@@ -975,6 +981,92 @@ fn drifted_why_parts(
     ))
 }
 
+/// One LIVE `dorc why [<address>] --book=<book> [-o <oracle>]… [--all]` replay: the full report
+/// over a world the case materializes, rather than the degraded receipt a drifted durable yields.
+///
+/// This is what gives the `why-*` chrome an editable home (`28L:rul-full-driver-this-arc`): the
+/// report is driven through the same `dorc_cli::why` seat the binary prints, so the transcript a
+/// human edits IS the render.
+struct DirectWhyReport<'a> {
+    /// The `book.sh:N` / content positional, when the case asked about one site.
+    address: Option<&'a str>,
+    /// The case-relative book.
+    book: &'a str,
+    /// The case-relative oracle sources, in argv order.
+    oracles: Vec<&'a str>,
+    /// `--all`: the deepest pull tier.
+    deepest: bool,
+}
+
+fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>> {
+    let mut rest = words.strip_prefix(&["dorc", "why"])?.iter().peekable();
+    let leads = rest.peek().is_some_and(|word| !word.starts_with('-'));
+    let address = leads.then(|| rest.next().copied()).flatten();
+    let mut book = None;
+    let mut oracles = Vec::new();
+    let mut deepest = false;
+    while let Some(word) = rest.next() {
+        if let Some(path) = word.strip_prefix("--book=") {
+            book = Some(path);
+        } else if *word == "-o" || *word == "--oracle" {
+            oracles.push(*rest.next()?);
+        } else if *word == "--all" {
+            deepest = true;
+        } else {
+            return None;
+        }
+    }
+    let book = book?;
+    (case_relative_path(book) && oracles.iter().copied().all(case_relative_path)).then_some(
+        DirectWhyReport {
+            address,
+            book,
+            oracles,
+            deepest,
+        },
+    )
+}
+
+/// The LIVE `dorc why` report, rendered in-process over a world the case materializes.
+///
+/// The ONE seat both replay chains go through — they differ only in where a case's bytes come
+/// from, so that is the only thing `source` supplies.
+fn live_why_parts(
+    ctx: &RenderCtx<'_>,
+    why: &DirectWhyReport<'_>,
+    source: impl Fn(&str) -> Option<String>,
+) -> Option<dorc_aid::tagged::RenderParts> {
+    let book = source(why.book)?;
+    let oracle_paths: Vec<String> = why.oracles.iter().map(|p| (*p).to_owned()).collect();
+    let oracle_srcs = oracle_paths
+        .iter()
+        .map(|path| source(path))
+        .collect::<Option<Vec<String>>>()?;
+    let world = dorc_cli::world::WhyWorld::analyze(why.book, &book, &oracle_paths, &oracle_srcs);
+    // Every field is controller-minted, exactly as the binary mints them on a hostless run: the
+    // fixture framing supplies the host, the book supplies its own digest, and there is no clock
+    // (`28F:rul-probe-instants-host-says-no-times` — an undated receipt says so rather than
+    // inventing a moment).
+    let framing = dorc_plan::records::Framing::spike(dorc_plan::invocation::book_digest(&book));
+    let receipt = dorc_cli::Receipt {
+        at: None,
+        replayed: false,
+        host: framing.host().to_owned(),
+        book: why.book.to_owned(),
+        book_digest: framing.book_digest().to_owned(),
+        at_head: None,
+        oracles: oracle_paths,
+        risk_profile: None,
+        tally: dorc_cli::PlanTally::Derived(world.disposition_counts()),
+        deepest_tier: why.deepest,
+        narratable: true,
+    };
+    Some(dorc_cli::why::why_report_parts(
+        ctx,
+        &world.report(why.address, &receipt),
+    ))
+}
+
 /// The HONEST-TRIGGER invocation route (`289:rul-worldless-route-honest-trigger`; `291` §5a W2).
 ///
 /// Runs the REAL argument parser over the case's own replay argv and returns the diagnostic it
@@ -1250,6 +1342,13 @@ impl DorcConsumer {
             return section_source(case, path)
                 .and_then(|source| self.vars_inventory(source, path, *mode == "--used"))
                 .ok_or_else(|| format!("unsupported replay {command:?}"));
+        }
+        if let Some(why) = parse_direct_why_report(&words) {
+            return live_why_parts(&self.render_ctx(), &why, |path| {
+                section_source(case, path).map(str::to_owned)
+            })
+            .map(|parts| parts.text())
+            .ok_or_else(|| format!("unsupported replay {command:?}"));
         }
         if let Some(why) = parse_direct_why(&words) {
             return self.render_direct_why(case, &why, command);

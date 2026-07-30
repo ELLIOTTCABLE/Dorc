@@ -1,0 +1,23 @@
+---
+arrangement: why-nothing-to-report
+when-used: The whole body of a zero-argument `dorc why` on a run with nothing spent, nothing surprising and nothing to improve. Value: the book's path.
+why: 28L rul-full-driver-this-arc: the calm answer is the one a reader gets most often, and it was the last aggregate shape with no editable home.
+---
+-- book.sh --
+#!/bin/sh
+# Only no-target-state builtins: nothing to probe, nothing to describe, nothing to say.
+cd /var/tmp
+true
+
+-- replay --
+$ dorc why --book=book.sh
+receipt: [unwritten: why-receipt-when-undated], host localhost
+   book book.sh (digest 08fc6d98b8b57fcd3b0cc4b868f1b15a4edd16f9bac50733b918b543bf28dda0)
+   oracles:
+   risk-profile: none (no trust flags)
+   plan: 2 ran, 0 guarded, 0 skipped (0 by proof)
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+dorc why: nothing to report for book.sh -- no trust spent, no surprises, nothing dorc could
+do better with more description.

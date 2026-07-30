@@ -1,0 +1,226 @@
+---
+arrangement: why-declines-payload
+when-used: The quoted payload of an ANALYSIS row where the oracle author DECLINED to answer, naming the class they declined under. Value: the class token.
+why: 28L rul-full-driver-this-arc: a classed decline is the one place dorc's answer is "someone who knows this tool said no", and every word of that answer -- including the per-class wording -- needs an editable home.
+---
+-- book.sh --
+#!/bin/sh
+# One site per decline class, so the whole occurrence-keyed family renders. Every tool named
+# here is an inert stand-in; nothing in this case is ever executed.
+sysctl vm.drop_caches
+hork tune --profile web
+wombat prompt --confirm
+wombat wipe --all
+
+-- sysctl.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# A write-only trigger key: reading it back reports nothing about whether it fired, so no answer
+# here could honestly license keeping the line out of the plan. Unanswerable for anyone, ever.
+sysctl__is_converged() {
+   key=$1
+   case $key in
+   vm.drop_caches|vm.compact_memory)
+      printf 'decline unsound %s is a write-only trigger key\n' "$key" >>"${DREP_V1:-/dev/null}"
+      return 2 ;;
+   *) sysctl -n -- "$key" >/dev/null 2>&1 ;;
+   esac
+}
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The author has not described this verb YET -- a "not yet", not a "not ever", so dorc may still
+# suggest that somebody model it.
+hork__is_converged() {
+   verb=$1
+   case $verb in
+   tune)
+      printf 'decline unmodeled %s carries no readable settled state yet\n' "$verb" >>"${DREP_V1:-/dev/null}"
+      return 2 ;;
+   *) return 2 ;;
+   esac
+}
+
+-- wombat.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# Two more classes on one tool: a check that would have to ask a human, and one whose own
+# read-back is dangerous enough that the author refuses to ship it into a probe.
+wombat__is_converged() {
+   verb=$1
+   case $verb in
+   prompt)
+      printf 'decline interactive %s cannot be answered without a human\n' "$verb" >>"${DREP_V1:-/dev/null}"
+      return 2 ;;
+   wipe)
+      printf 'decline hazard %s cannot be read back safely\n' "$verb" >>"${DREP_V1:-/dev/null}"
+      return 2 ;;
+   *) return 2 ;;
+   esac
+}
+
+-- replay --
+$ dorc why book.sh:4 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+      [ book.sh, participating lines:
+   4 | sysctl vm.drop_caches
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   4|sysctl ran RATHER THAN guarded: by its author's judgment, not by a gap. sysctl's oracle
+   deliberately declines this key.
+
+   === ANALYSIS ===
+
+   what 4|sysctl rested on:
+
+   * sysctl.oracle.sh:9  declines  "[unsound]"
+
+      The author looked, and ruled the question unanswerable -- for any tool, ever, not just
+      this one. Their arm, as-written:
+
+         [ sysctl.oracle.sh, as-written:
+      9 |       printf 'decline unsound %s is a write-only trigger key\n' "$key" >>"${DREP_V1:-/dev/null}"
+
+   * dorc                derives   a cannot-say always runs: nothing is ever skipped without
+                                   an authored yes
+
+   so: this line runs on every apply, and that is correct. dorc will not suggest an oracle
+   for this shape; the person who knows the tool already answered.
+
+   === NEXT STEPS ===
+
+   nothing to fix; the run is the right behavior.
+
+   review:  `dorc why book.sh:4 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why book.sh:5 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+      [ book.sh, participating lines:
+   5 | hork tune --profile web
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   5|hork ran RATHER THAN guarded: by its author's judgment, not by a gap. hork's oracle
+   deliberately declines this key.
+
+   === ANALYSIS ===
+
+   what 5|hork rested on:
+
+   * hork.oracle.sh:9  declines  "[unmodeled]"
+
+      [unwritten: why-declines-explanation]
+
+         [ hork.oracle.sh, as-written:
+      9 |       printf 'decline unmodeled %s carries no readable settled state yet\n' "$verb" >>"${DREP_V1:-/dev/null}"
+
+   * dorc              derives   a cannot-say always runs: nothing is ever skipped without
+                                 an authored yes
+
+   [unwritten: why-declines-join]
+
+   === NEXT STEPS ===
+
+   [unwritten: why-declines-next-steps-opener]
+
+   review:  `dorc why book.sh:5 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why book.sh:6 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+      [ book.sh, participating lines:
+   6 | wombat prompt --confirm
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   6|wombat ran RATHER THAN guarded: by its author's judgment, not by a gap. wombat's oracle
+   deliberately declines this key.
+
+   === ANALYSIS ===
+
+   what 6|wombat rested on:
+
+   * wombat.oracle.sh:9  declines  "[interactive]"
+
+      [unwritten: why-declines-explanation]
+
+         [ wombat.oracle.sh, as-written:
+      9 |       printf 'decline interactive %s cannot be answered without a human\n' "$verb" >>"${DREP_V1:-/dev/null}"
+
+   * dorc                derives   a cannot-say always runs: nothing is ever skipped without
+                                   an authored yes
+
+   [unwritten: why-declines-join]
+
+   === NEXT STEPS ===
+
+   [unwritten: why-declines-next-steps-opener]
+
+   review:  `dorc why book.sh:6 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why book.sh:7 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+      [ book.sh, participating lines:
+   7 | wombat wipe --all
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   7|wombat ran RATHER THAN guarded: by its author's judgment, not by a gap. wombat's oracle
+   deliberately declines this key.
+
+   === ANALYSIS ===
+
+   what 7|wombat rested on:
+
+   * wombat.oracle.sh:12  declines  "[hazard]"
+
+      [unwritten: why-declines-explanation]
+
+         [ wombat.oracle.sh, as-written:
+      12 |       printf 'decline hazard %s cannot be read back safely\n' "$verb" >>"${DREP_V1:-/dev/null}"
+
+   * dorc                 derives   a cannot-say always runs: nothing is ever skipped
+                                    without an authored yes
+
+   [unwritten: why-declines-join]
+
+   === NEXT STEPS ===
+
+   [unwritten: why-declines-next-steps-opener]
+
+   review:  `dorc why book.sh:7 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+receipt: [unwritten: why-receipt-when-undated], host localhost
+   book book.sh (digest 9b8ed805ae3fa41a0473f1f6bcd353a94c7bde0698f7df1b9b2da63fefc641b7)
+   oracles: sysctl.oracle.sh, hork.oracle.sh, wombat.oracle.sh
+   risk-profile: none (no trust flags)
+   plan: 4 ran, 0 guarded, 0 skipped (0 by proof)
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+=== IMPROVEMENTS: dorc can do better, with your help ===
+
+book.sh:5 | hork tune --profile web
+   [unwritten: why-improvement-declined-unmodeled]
+   (dorc why book.sh:5)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)

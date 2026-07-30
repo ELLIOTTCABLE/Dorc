@@ -1,0 +1,34 @@
+---
+arrangement: why-reason-run-unprobed
+when-used: The ANALYSIS row for an addressed site that ran because no read-only check could be shipped for its command.
+why: 28L rul-full-driver-this-arc: the addressed triptych is driven in-process here, so the reason rows a reader lands on have an editable home rather than a lock-only one.
+---
+-- book.sh --
+#!/bin/sh
+# Nothing here is described, so the first command is the first WALL and the addressed answer is
+# the plain triptych: what happened, why, and nothing to repair. `hork` is the corpus's inert
+# stand-in mutator; no case ever runs it.
+hork tune --profile web
+apt-get install -y nginx
+
+-- replay --
+$ dorc why book.sh:5 --book=book.sh
+      [ book.sh, participating lines:
+   5 | hork tune --profile web
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   5|hork ran RATHER THAN guarded: no read-only check could be shipped for this line, and
+   dorc runs whatever it cannot check
+
+   === ANALYSIS ===
+
+   what 5|hork rested on:
+
+   * dorc  derives  this is the first wall in book order -- an oracle vouching its
+                    convergence would let dorc remove it once converged
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)

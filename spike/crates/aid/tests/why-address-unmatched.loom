@@ -1,0 +1,13 @@
+---
+arrangement: why-address-unmatched
+when-used: The whole answer to a `dorc why <address>` whose address matched no site in the analyzed book. Value: the address as given.
+why: 28L rul-full-driver-this-arc: a miss is a real answer with real words, and a reader who mistyped an address sees this sentence and nothing else.
+---
+-- book.sh --
+#!/bin/sh
+hork tune --profile web
+
+-- replay --
+$ dorc why nosuchcommand --book=book.sh
+dorc why: no analyzed command matched nosuchcommand (an address is a SOURCE line:
+`<book>:<N>` or a bare `<N>`).
