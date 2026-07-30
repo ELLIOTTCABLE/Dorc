@@ -370,6 +370,66 @@ lanes thread by fresh census, never by the map's count.
   sanctioned DORC_LOOM_DUMP flow — promote refuses structure changes by design) ·
   blast-radius dirty-gate scoping · arrangement arity compile-time refusal (rides
   D3's `arrangement_row` split) · `[deferred to e2e]` trial naming.
+- **X2a LANDED** (`ai/r28-loom-x2a` @ `32a0887f`, base `77b2295c`; both legs green
+  own-hand foreground, Win 1638 / WSL 1634; folds AFTER D4). The why-report assembly
+  extracted whole: `cli/src/why.rs` (lib module; `WhyReport<'a>` 17-field Copy ctx;
+  ~45 helpers private) + `cli/src/world.rs` (`WhyWorld::analyze` = the binary's own
+  call sequence, handing out reports); main.rs 10389 → 7570; I/O edges stayed.
+  `dorc why [<addr>]` drives in-process on BOTH chains through `live_why_parts` —
+  and `transcript_bytes_equal_production_bytes` CAUGHT a real divergence on first
+  contact (a trailing blank the container trims; production `dorc why <addr>` lost
+  one trailing blank line, zero golden churn). Faces 28 → 67 of ~125; the edit loop
+  proven on a why row end-to-end. `lint-source-*` (8) faced as a weft table.
+  Reason-opener: two instances were already registry rows (map §6 stale); the live
+  third (`CommandName::describe`'s resolved-dynamic sentence) migrated as
+  `why-command-name` 0/1 (verbatim seed, fixpoint green); `CommandName::Literal`
+  deliberately unregistered (the world's own word). Locks moved only by the 2-row
+  hand-seed. Artifact floor untouched; zero blesses.
+- **fnd-wrapped-rows-are-chunk-editable** (X2a, +SURE, measured) — a registry row
+  wrapping at the canonical width renders as one editable section PER CHUNK (the
+  layout newline closes sections despite the bridge's absorption rule — mechanism
+  unconfirmed at altitude), so long rows are partially editable and a reword that
+  moves the break point refuses with the ADD-A-HELP-LINE text — a
+  rul-refusals-name-the-next-command MISS on top of a transport gap. The banked
+  "wrap-inside-a-value → ledger" residue now bites real faces; PROMOTED from ledger
+  to build: the x2d lane owns section-per-chunk repair + a correct refusal.
+- **rul-ownership-declaration-adopted** (conductor; resolves the deferred
+  `28H:tc-one-transcript-many-rows-ownership`, which X2a showed is now THE gating
+  item for the arc-close invariant — faces exist but each case OWNS only its
+  namesake row, so ~35 faced-but-foreign rows have no editable HOME short of ~35
+  near-duplicate cases) — a case may DECLARE the row-set it owns in a closed
+  frontmatter key; `is_case_owned`/`authored_words_are_case_owned` re-key to the
+  declaration (filename stays the default singleton); one row, one owner,
+  conflicts refuse loudly. x2d builds it.
+- **fnd-case-frontmatter-overwrites-lock-metadata** (X2a, +SURE) — a new
+  arrangement case's `when-used`/`why` silently REPLACES committed lock metadata at
+  promote (X2a's own draft degraded five rows; the fixpoint caught it), and
+  frontmatter scalars store surrounding quotes verbatim. x2d: absent-means-keep +
+  a metadata-regression guard + quote normalization at the frontmatter seat.
+- **tc-harness-records-vs-controller-scope** (X2a, flagged; conductor design
+  guidance issued, X2b builds behind a CHECKPOINT) — ~35 why rows (the
+  survival/guard/measured families) are un-faceable without probe RECORDS in the
+  loom harness's world; the scope types are deliberately binary-private
+  (rul-attribution-is-controller-minted). Guidance: dorc-loom IS the controller of
+  its own in-process runs, and fixture records carry the FULL framed form
+  (`28H:rul-fixture-records-enriched-not-reduced`), so the shape to propose is the
+  REAL framed admission driven by dorc-loom-minted scope over fixture records —
+  never an unframed side-door, never widening production scope visibility.
+  X2b proposes the exact seam and STOPS for conductor review before building it.
+- **Rulings on X2a's stopped items** — `cli-usage-synopsis`: DO IT in x2d (one lib
+  parts seat: prefix + body + synopsis; the ~25-transcript re-bless is sanctioned
+  churn) · plan-stderr trio: route RULED — mint ONE new closed frontmatter key
+  (spelling latitude; e.g. `envelope: stderr`) that opts a plan-route replay into
+  rendering the full stderr envelope; existing cases untouched; x2d builds it ·
+  `TopCause::describe`'s 7 DECIDE-plane phrases: the enum→slug-map-in-aid shape
+  (remediation_hint_slug precedent), routed to x2c's prose-site audit.
+- **Revised X2 cut** — X2b (post-D4-fold): oracle-loading widening + the ~7
+  lint-fireable cases + tolerance-detector wiring + the records-admission seam
+  (checkpointed). x2c (parallel, post-folds): de-passthrough (reads 284) +
+  TopCause migration. x2d (parallel, post-X2a-fold): ownership-declaration key ·
+  wrap-chunk sections + refusal repair · metadata guard · usage-synopsis ·
+  stderr-envelope key. Blind-reviewer round 1 + the conductor rehearsal fire at
+  the post-D4 fold state (X1 surfaces are complete there).
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
