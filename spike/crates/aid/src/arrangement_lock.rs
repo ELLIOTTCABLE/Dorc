@@ -139,6 +139,20 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Words::Migrated(&["operand ", ""]),
     },
     ArrangementEntry {
+        slug: "why-command-name",
+        occurrence: Some(0),
+        when_used: "The `{command}` fill when constant-propagation resolved a dynamic command word to a known name. The value is that name.",
+        why: "289 finding-reason-opener-still-hardcoded, third instance: CommandName::describe() hand-wrote a user-facing clause in the fact plane. A LITERAL command word stays out of the registry — it is a value, not prose.",
+        words: Words::Migrated(&["this dynamic command-word, which resolves to `", "`,"]),
+    },
+    ArrangementEntry {
+        slug: "why-command-name",
+        occurrence: Some(1),
+        when_used: "As occurrence 0, when no single command name is clear (a ⊤ command word), so the sentence names none.",
+        why: "As occurrence 0. One thing said two ways is what the occurrence discriminator is for.",
+        words: Words::Migrated(&["this command"]),
+    },
+    ArrangementEntry {
         slug: "why-reason-cmdsub-opener",
         occurrence: None,
         when_used: "Opens every why-lens reason for a command forced to run by an unresolvable operand — the `why:` stderr line and the same reason inside a `dorc why` answer. The value is the ⊤ position (why-operand-position).",

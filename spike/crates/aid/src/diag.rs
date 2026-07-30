@@ -507,17 +507,25 @@ impl CommandName {
     /// The `{command}` fill text (`282` §12 item-6): the bare name for a literal, a resolves-to
     /// clause for a const-prop'd dynamic word, a neutral fallback when no single name is clear. The
     /// engine-owned canonical formatter for this param (the `describe()` family, `27V` §3).
+    ///
+    /// The two WORDED forms are registry rows, the third `289:finding-reason-opener-still-hardcoded`
+    /// instance: a `describe()` on an enum is not an exemption from `288` §1. A LITERAL name stays
+    /// out of the registry — it is the world's own word, not a sentence of ours.
     #[must_use]
-    pub fn describe(&self) -> String {
+    pub fn describe(&self, ctx: &RenderCtx<'_>) -> String {
         match self {
             CommandName::Literal(name) => name.clone(),
             CommandName::Resolved(name) => {
-                format!("this dynamic command-word, which resolves to `{name}`,")
+                crate::said::words_text(ctx, COMMAND_NAME_WORDS, Some(0), &[name])
             }
-            CommandName::Unclear => "this command".to_owned(),
+            CommandName::Unclear => crate::said::words_text(ctx, COMMAND_NAME_WORDS, Some(1), &[]),
         }
     }
 }
+
+/// The registry slug holding the `{command}` fill's two worded forms (occurrence 0 = a
+/// const-propagated dynamic word, occurrence 1 = no clear name).
+const COMMAND_NAME_WORDS: &str = "why-command-name";
 
 /// Payload of [`DiagCode::CmdsubOperandTop`]: the ⊤-origin site, WHICH position went ⊤, an optional
 /// ⊤-cause receipt (`228` dc-1 — the exempt-plane hook that links this origin to its poisoned
@@ -2285,7 +2293,7 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Str
         }) => vec![
             ("position", position.describe(ctx)),
             ("cause", top_cause.describe().to_owned()),
-            ("command", command.describe()),
+            ("command", command.describe(ctx)),
         ],
         DiagCode::RenderHeredocRefused(RenderHeredocRefused {
             site: _,

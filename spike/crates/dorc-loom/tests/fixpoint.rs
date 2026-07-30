@@ -225,12 +225,24 @@ fn the_lock_report_names_the_row_and_the_field() {
 /// no committed transcript may show `[unwritten: <slug>]` for an arrangement row that HAS words.
 /// That combination is only reachable by degradation — a row whose word count stopped matching its
 /// seat — and re-blessing bakes it in quietly, since the placeholder re-renders as a fixpoint.
+///
+/// FULLY written, occurrence by occurrence: the rendered placeholder carries the slug alone, so a
+/// slug with a written occurrence 0 and an unwritten occurrence 1 is INDISTINGUISHABLE from the
+/// degradation this looks for — and the honest reading of an unwritten sibling rendering its own
+/// placeholder is that it is unwritten. Keying on any-written false-fired the moment a transcript
+/// first reached a partially-written family (the four decline classes).
 #[test]
 fn no_committed_transcript_shows_a_written_arrangement_as_unwritten() {
+    let unwritten: std::collections::BTreeSet<&str> = dorc_aid::arrangement::ARRANGEMENTS
+        .iter()
+        .filter(|entry| entry.words.words().is_none())
+        .map(|entry| entry.slug)
+        .collect();
     let written: std::collections::BTreeSet<&str> = dorc_aid::arrangement::ARRANGEMENTS
         .iter()
         .filter(|entry| entry.words.words().is_some())
         .map(|entry| entry.slug)
+        .filter(|slug| !unwritten.contains(slug))
         .collect();
     let mut degraded = Vec::new();
     let mut scanned = 0usize;
