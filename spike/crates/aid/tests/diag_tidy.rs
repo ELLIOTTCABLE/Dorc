@@ -921,3 +921,68 @@ fn constructed_scan_negative_control_excludes_aid_diag_arms() {
         "the production basis must EXCLUDE dorc-loom: its case-fixture constructors are not emits"
     );
 }
+
+/// The FIXTURE-INTAKE FENCE (`28L:rul-records-seam-approved`, rider (b)).
+///
+/// `dorc_cli::results::admit_fixture_records` mints a `Framing::spike` scope internally so a loom
+/// case can drive the REAL host-evidence admission over its own committed records. Its SIGNATURE
+/// already fences the identity — it takes no `Framing`, host, nonce or attempt, and none can be
+/// added by a caller — so no fixture caller can name a managed host. What a signature cannot fence
+/// is who calls it: `dorc-cli`'s lib, its bin, and `dorc-loom` are three separate crates, and no
+/// type can privilege one over another. So the production side is pinned lexically here, exactly as
+/// [`fixture_payloads_are_unreachable_from_production`] pins the stand-in worlds.
+///
+/// The production intake is `admit_controller_records`, which takes the controller's own framing;
+/// that is the seat where the re-entry trigger will bite when a second scope first becomes
+/// representable (`rul-attribution-is-controller-minted`).
+#[test]
+fn fixture_intake_is_unreachable_from_production() {
+    /// The lib that DEFINES it, and the harness that is licensed to drive it.
+    const ALLOWED_CRATES: &[&str] = &["cli", "dorc-loom"];
+    /// Within `cli`, only the defining module may name it — never the binary.
+    const ALLOWED_CLI_FILES: &[&str] = &["results.rs"];
+
+    let crates = crates_dir();
+    let entries = std::fs::read_dir(&crates).expect("crates/ is readable");
+    let mut scanned = 0usize;
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !entry.path().is_dir() {
+            continue;
+        }
+        let mut files = Vec::new();
+        rs_files(&entry.path().join("src"), &mut files);
+        for file in files {
+            let base = file
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            let licensed = match name.as_str() {
+                "dorc-loom" => true,
+                "cli" => ALLOWED_CLI_FILES.contains(&base.as_str()),
+                _ => false,
+            };
+            if licensed {
+                continue;
+            }
+            scanned += 1;
+            let Ok(text) = std::fs::read_to_string(&file) else {
+                continue;
+            };
+            assert!(
+                !text.contains("admit_fixture_records("),
+                "{} names `admit_fixture_records(` — that entry point mints a FIXTURE framing \
+                 (`Framing::spike`) and exists so a loom case can drive the real admission over \
+                 its own bytes. Production intake goes through `admit_controller_records` with \
+                 the framing this run's controller minted \
+                 (rul-attribution-is-controller-minted).",
+                file.display()
+            );
+        }
+    }
+    assert!(
+        ALLOWED_CRATES.len() == 2 && scanned > 0,
+        "the fixture-intake fence scanned no files — its crate walk is broken, and a broken walk \
+         passes vacuously"
+    );
+}

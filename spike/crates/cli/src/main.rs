@@ -71,15 +71,25 @@ use dorc_aid::diag::{
 };
 use dorc_aid::said::Said;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Severity, SpeechAct};
-use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Symbol, Verdict};
+use dorc_core::{Interner, Observable, Predicted, ProvArena, Symbol, Verdict};
 
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 use dorc_cli::kinds::{KindReaches, KindResolvers, build_kind_reaches, build_kind_resolvers};
+use dorc_cli::results::{RecordKey, ReportRecord, ResolvOutcome, RunClock, SiteResults};
+// The legacy headerless string parser below is `#[cfg(test)]`-gated law
+// (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
+#[cfg(test)]
+use dorc_cli::results::{
+    REPORT_RAW_CAP, parse_leaf, parse_report_record, parse_site_record, sanitize_report_raw,
+    split_key,
+};
 use dorc_cli::{
     Args, CONSENT_FLAG, DriftedReceipt, Invocation, LintArgs, LintFormat, Mode, PlanTally, Receipt,
     humane_read_error, parse_args_from,
 };
+#[cfg(test)]
+use dorc_core::{OutBytes, Rc};
 // The why REPORT composes across the same seam (`28L:rul-full-driver-this-arc`): this edge builds
 // the world and prints the bytes, the lib turns that world into a stamped part stream.
 use dorc_cli::why::{
@@ -174,7 +184,7 @@ fn main() -> ExitCode {
             }
         },
         Ok(Invocation::Lint(args)) => lint_command(&args),
-        Ok(Invocation::Analyze(args)) => match run(&args, &mut RunClock::for_invocation()) {
+        Ok(Invocation::Analyze(args)) => match run(&args, &mut clock_for_invocation()) {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
             Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
@@ -571,38 +581,6 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
     Ok(())
 }
 
-/// The run's instant source — the DI seam for wall clock (`io-at-edges-only`). It lives HERE, in
-/// the binary, and nowhere else: the analyzer kernel owns no clock type at all, so no kernel
-/// signature can accept one and no kernel path can "reach for a clock to help". Only
-/// [`dorc_core::RunInstant`] values (already read) cross inward.
-///
-/// Nondeterminism enters ONCE, at [`system`](RunClock::system) — the single wall-clock read in the
-/// product, exactly as `records::Nonce` is minted once at this edge and DI'd inward
-/// (`inv-determinism`: nondeterminism is seeded and injected, never ambient). Everything after is a
-/// deterministic tick, so a seeded DST clock and the production clock are the same code path.
-///
-/// [`Absent`](RunClock::Absent) is a first-class "no clock here", not a failure mode: a replayed
-/// durable does not carry the original run's per-record observation times, and re-stamping them
-/// from the REPLAY's clock would present this moment as the original measurement.
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum RunClock {
-    /// Yields `at`, then advances by `step_millis`. Production reads a whole record stream in one
-    /// slurp, so it ticks by zero — every record of one read genuinely shares one instant. A DST
-    /// seed supplies a non-zero step to make per-record instants distinguishable.
-    Ticking {
-        at: dorc_core::RunInstant,
-        step_millis: u64,
-    },
-    /// No clock: every read is `None`.
-    Absent,
-    /// The instants a durable RECORDED, keyed by the record ordinal they belong to.
-    ///
-    /// Not a clock at all, which is the point: a replay must date its records from the run that
-    /// made them, and reading any live clock here would present the moment of reading as the
-    /// moment of measurement. An ordinal the durable carries no instant for answers `None`.
-    Recorded(BTreeMap<u64, dorc_core::RunInstant>),
-}
-
 /// The harness's clock pin (`rul-fixture-identity-never-production`) — Unix milliseconds, and the
 /// ONE substitution point for the run's instant, exactly as `records::Framing::spike` is the one
 /// substitution point for the run's nonce/host.
@@ -614,59 +592,36 @@ enum RunClock {
 /// the default and the pin is something a harness must deliberately set.
 const FIXTURE_CLOCK_ENV: &str = "DORC_FIXTURE_CLOCK_MS";
 
-impl RunClock {
-    /// The clock this invocation runs on: the harness pin when one is set, else the real one.
-    /// Read at the process edge, once (`io-at-edges-only`).
-    fn for_invocation() -> Self {
-        match std::env::var(FIXTURE_CLOCK_ENV)
-            .ok()
-            .as_deref()
-            .map(str::parse::<u64>)
-        {
-            Some(Ok(millis)) => Self::Ticking {
-                at: dorc_core::RunInstant(millis),
-                step_millis: 0,
-            },
-            Some(Err(_)) => Self::Absent,
-            None => Self::system(),
-        }
+/// The clock this invocation runs on: the harness pin when one is set, else the real one.
+/// Read at the process edge, once (`io-at-edges-only`). A free function rather than a
+/// [`RunClock`] method because the type itself is pure and lives across the loom seam; the
+/// environment read is what has to stay on this side of it.
+fn clock_for_invocation() -> RunClock {
+    match std::env::var(FIXTURE_CLOCK_ENV)
+        .ok()
+        .as_deref()
+        .map(str::parse::<u64>)
+    {
+        Some(Ok(millis)) => RunClock::Ticking {
+            at: dorc_core::RunInstant(millis),
+            step_millis: 0,
+        },
+        Some(Err(_)) => RunClock::Absent,
+        None => system_clock(),
     }
+}
 
-    /// The ONE wall-clock read. A clock the platform cannot place after the epoch answers
-    /// [`Absent`](RunClock::Absent) rather than saturating to a fabricated zero (`inv-no-throw`).
-    fn system() -> Self {
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .ok()
-            .and_then(|d| u64::try_from(d.as_millis()).ok())
-            .map_or(Self::Absent, |millis| Self::Ticking {
-                at: dorc_core::RunInstant(millis),
-                step_millis: 0,
-            })
-    }
-
-    fn now(&mut self) -> Option<dorc_core::RunInstant> {
-        match self {
-            Self::Ticking { at, step_millis } => {
-                let read = *at;
-                *at = dorc_core::RunInstant(read.0.saturating_add(*step_millis));
-                Some(read)
-            }
-            Self::Absent | Self::Recorded(_) => None,
-        }
-    }
-
-    /// The instant belonging to the record at `ordinal`.
-    ///
-    /// A live run reads its own clock and ignores the ordinal — the reading IS the record's
-    /// arrival. A replay looks the ordinal up, because its records arrived once, already, and the
-    /// only honest answer is the one that run wrote down.
-    fn at(&mut self, ordinal: u64) -> Option<dorc_core::RunInstant> {
-        match self {
-            Self::Recorded(instants) => instants.get(&ordinal).copied(),
-            Self::Ticking { .. } | Self::Absent => self.now(),
-        }
-    }
+/// The ONE wall-clock read. A clock the platform cannot place after the epoch answers
+/// [`RunClock::Absent`] rather than saturating to a fabricated zero (`inv-no-throw`).
+fn system_clock() -> RunClock {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|d| u64::try_from(d.as_millis()).ok())
+        .map_or(RunClock::Absent, |millis| RunClock::Ticking {
+            at: dorc_core::RunInstant(millis),
+            step_millis: 0,
+        })
 }
 
 #[expect(
@@ -1180,24 +1135,25 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // read the (simulated) probe results — the site-keyed records the rendered probe would emit
     // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
     // the default stdin (the harness pipes them in).
-    let scope =
-        WidthOneAttemptScope::new(&framing, book_name, &book_src, &oracle_paths, &oracle_srcs);
+    let run_sources = dorc_cli::results::RunSources {
+        book_name,
+        book: &book_src,
+        oracle_paths: &oracle_paths,
+        oracle_sources: &oracle_srcs,
+    };
+    let scope = dorc_cli::results::replay_scope(&framing, &run_sources);
     let (admitted_records, scoped_results, whylog_eligible) = if let Some(r) = replay.as_ref() {
-        let results = r.records.as_ref().map_or_else(
-            || SiteResults {
-                framed: true,
-                ..SiteResults::default()
-            },
-            |records| {
-                parse_admitted_results(
-                    records,
-                    &mut RunClock::Recorded(r.instants.clone()),
-                    &mut interner,
-                )
-            },
+        let scoped = dorc_cli::results::replayed_records(
+            scope,
+            r.records.as_ref(),
+            &mut RunClock::Recorded(r.instants.clone()),
+            &mut interner,
         );
-        (None, ScopedHostEvidence::new(scope, results), false)
+        (None, scoped, false)
     } else {
+        // The BOUNDED READ is this edge's (`rul-host-bytes-bounded-before-admission`): the limit
+        // is spent against the real reader, before anything is allocated, and only the bounded
+        // bytes cross the seam.
         let evidence = if let Some(captured) = shipped_evidence.as_deref() {
             dorc_plan::records::read_host_evidence(
                 std::io::Cursor::new(captured),
@@ -1218,10 +1174,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         };
         let admitted = match evidence {
             dorc_plan::records::Admission::Admitted(bytes) => {
-                dorc_plan::records::admit_unscoped_host_records(
-                    &bytes,
+                dorc_cli::results::admit_controller_records(
                     &framing,
-                    dorc_plan::records::HostEvidenceLimits::spike_default(),
+                    &run_sources,
+                    &bytes,
+                    clock,
+                    &mut interner,
                 )
             }
             dorc_plan::records::Admission::NoObservation => {
@@ -1232,21 +1190,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             }
         };
         match admitted {
-            dorc_plan::records::Admission::Admitted(records) => {
-                let parsed = parse_admitted_results(&records, clock, &mut interner);
-                (Some(records), ScopedHostEvidence::new(scope, parsed), true)
+            dorc_plan::records::Admission::Admitted(admitted) => {
+                (Some(admitted.records), admitted.scoped, true)
             }
-            dorc_plan::records::Admission::NoObservation => (
-                None,
-                ScopedHostEvidence::new(
-                    scope,
-                    SiteResults {
-                        framed: true,
-                        ..SiteResults::default()
-                    },
-                ),
-                false,
-            ),
+            dorc_plan::records::Admission::NoObservation => {
+                (None, dorc_cli::results::no_observation(scope), false)
+            }
             dorc_plan::records::Admission::Refused(reason) => {
                 report_at(advisory, "records", None, &[reason.spanless_diagnostic()]);
                 return Ok(RunOutcome::IngressRefused);
@@ -1254,7 +1203,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         }
     };
     let _scope = scoped_results.scope();
-    let results = scoped_results.borrow();
+    let results = scoped_results.results();
 
     // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
@@ -1759,12 +1708,19 @@ fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
         }
     };
     let framing = dorc_plan::records::Framing::spike(book_digest(&book));
-    let scope =
-        WidthOneAttemptScope::new(&framing, &book_path, &book, &oracle_paths, &oracle_sources);
+    let scope = dorc_cli::results::replay_scope(
+        &framing,
+        &dorc_cli::results::RunSources {
+            book_name: &book_path,
+            book: &book,
+            oracle_paths: &oracle_paths,
+            oracle_sources: &oracle_sources,
+        },
+    );
     // An edited book is the ordinary mismatch, so it is NAMED rather than reported as generic
     // framing — and it is the ENTRY to the degraded receipt (`28F:rul-drift-replay-d1`) rather than
     // a dead end. The diag still fires: drift loud on the report lane, receipt on stdout.
-    if envelope.claims().book_digest() != scope.book.1 {
+    if envelope.claims().book_digest() != scope.book_digest() {
         return Ok(Carrier::new(
             ReplayLoad::Drifted(Box::new(dorc_cli::drifted_receipt(&envelope))),
             vec![Diag::new_spanless_site(DiagCode::WhylogBookDesync(
@@ -1774,7 +1730,7 @@ fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
             ))],
         ));
     }
-    if !replay_claims_match(&envelope, &scope) {
+    if !scope.matches_claims(&envelope) {
         return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
     }
     let decision_digest = envelope.claims().decision_digest().to_owned();
@@ -1855,32 +1811,6 @@ fn read_replay_source(path: impl AsRef<std::path::Path>) -> Result<String, ()> {
 
 fn refuse_replay(reason: dorc_plan::records::AdmissionRefusal) -> Carrier<ReplayLoad> {
     Carrier::new(ReplayLoad::Refused, vec![reason.spanless_diagnostic()])
-}
-
-fn replay_claims_match(
-    envelope: &dorc_plan::whylog::UnscopedWhylogEnvelope,
-    scope: &WidthOneAttemptScope,
-) -> bool {
-    let claims = envelope.claims();
-    claims.nonce() == scope.nonce
-        && claims.attempt() == scope.attempt
-        && claims.host() == scope.host
-        && claims.target() == "width-one"
-        && claims.generation() == "width-one"
-        && envelope.mode() == "whylog-replay"
-        && envelope.recorded_book_path().as_str() == scope.book.0
-        && claims.book_digest() == scope.book.1
-        && envelope.recorded_oracles().len() == scope.sources.len()
-        && envelope
-            .recorded_oracles()
-            .iter()
-            .zip(&scope.sources)
-            .enumerate()
-            .all(|(ordinal, (recorded, current))| {
-                recorded.ordinal() == ordinal
-                    && recorded.path().as_str() == current.0
-                    && recorded.digest() == current.1
-            })
 }
 
 /// Write the durable for a completed run (`27V` Lane B), through the hardened store.
@@ -4125,197 +4055,6 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
     }
 }
 
-/// A record's key: the command **site** (the stable `LeafId`, `inv-site-keyed-results`)
-/// plus an optional MEMBER index (task-L2 item-4): `None` for an ordinary single-fact
-/// record (`site N`), `Some(m)` for member `m` of an in-loop Members family (`site N.M`).
-/// The probe's [`dorc_plan::ProbePredict`] carries the same `(site, member)` pair, so the
-/// bridge ([`facts_from_sites`]) keys a member record back to that member's cell.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct RecordKey {
-    site: dorc_plan::LeafId,
-    member: Option<u32>,
-}
-
-/// Controller-owned width-one identity. Payload records never construct or refresh this scope.
-#[derive(Debug)]
-struct WidthOneAttemptScope {
-    host: String,
-    target: WidthOneLocalTargetId,
-    nonce: String,
-    attempt: u32,
-    sources: Vec<(String, String)>,
-    generation: InitialWidthOneGeneration,
-    book: (String, String),
-}
-
-#[derive(Debug)]
-struct WidthOneLocalTargetId;
-
-#[derive(Debug)]
-struct InitialWidthOneGeneration;
-
-impl WidthOneAttemptScope {
-    fn new(
-        framing: &dorc_plan::records::Framing,
-        book_name: &str,
-        book: &str,
-        paths: &[String],
-        sources: &[String],
-    ) -> Self {
-        Self {
-            host: framing.host().to_owned(),
-            target: WidthOneLocalTargetId,
-            nonce: framing.nonce().0.clone(),
-            attempt: framing.attempt(),
-            sources: paths
-                .iter()
-                .zip(sources)
-                .map(|(path, source)| (path.clone(), book_digest(source)))
-                .collect(),
-            generation: InitialWidthOneGeneration,
-            book: (book_name.to_owned(), book_digest(book)),
-        }
-    }
-
-    fn retain(&self) {
-        let _ = (
-            &self.host,
-            &self.target,
-            &self.nonce,
-            self.attempt,
-            &self.sources,
-            &self.generation,
-            &self.book,
-        );
-    }
-}
-
-/// Keeps controller attribution attached while live evidence participates in planning.
-struct ScopedHostEvidence<T> {
-    scope: WidthOneAttemptScope,
-    value: T,
-}
-
-impl<T> ScopedHostEvidence<T> {
-    fn new(scope: WidthOneAttemptScope, value: T) -> Self {
-        Self { scope, value }
-    }
-
-    fn borrow(&self) -> &T {
-        &self.value
-    }
-
-    fn scope(&self) -> &WidthOneAttemptScope {
-        self.scope.retain();
-        &self.scope
-    }
-}
-
-/// The probe results parsed from stdin, keyed by [`RecordKey`] (site, optional member —
-/// `inv-site-keyed-results` + task-L2 item-4). One record per (site, member): the reported
-/// Effect [`Verdict`] plus the raw probe-command rc carried alongside it. Whether that rc
-/// is fold-usable is the FIREWALL's decision ([`facts_from_sites`]), not the parser's —
-/// the parser faithfully carries what the probe reported (`inv-superposition`: the wire
-/// transports the observed rc; the phased caller decides which channel, if any, it feeds).
-#[derive(Debug, Default)]
-struct SiteResults {
-    records: BTreeMap<RecordKey, SiteRecord>,
-    /// The DERIVATION coord-blob lane (24E §5 / fork-s4-coordwire): per escalated wall-site, the
-    /// raw `kind:entity` coordinate lines its host-run `touches()` printed (`deriv <leafid>
-    /// coord=…`). Demuxed SEPARATELY from the `site` verdict records (a derivation-blob never
-    /// collides with a site's `effect=`/`rc=` record — `inv-site-keyed-results`). Read back into a
-    /// `Derived` [`dorc_plan::Footprint`] before the survival walk (24E §2 corr-§2).
-    derivations: BTreeMap<dorc_plan::LeafId, Vec<String>>,
-    /// The DERIV FAMILY end-records (`262` §2 / `26A` stop-1): per escalated wall-site, the `n=<K>`
-    /// declared by its `deriv-end <leafid> n=<K>` close-record. THE SAFETY INVERSION: a deriv
-    /// footprint is an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the
-    /// under-execution direction). The consumer ([`merge_derived_footprints`]) refuses a family
-    /// whose received coord count ≠ this `K` (or that has no end-record) ⇒ wall-total. Absent key
-    /// ⇒ the family never closed ⇒ refused.
-    derivation_ends: BTreeMap<dorc_plan::LeafId, u32>,
-    /// The RESOLVER canonicalization lane (24F §3): per `kind:entity` coordinate label, the readback
-    /// of running its `<kind>.resolve()` host-side — a [`ResolvOutcome`]. Demuxed SEPARATELY from the
-    /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
-    /// of the coordinate). Read into a [`dorc_plan::Resolutions`] before the survival walk.
-    resolutions: BTreeMap<String, ResolvOutcome>,
-    /// The REACH expansion lane (24G §4): per `(coordinate label, arm index)`, the RAW ENTITY lines a
-    /// DYNAMIC `reaches()` arm printed host-side (`reach <coord> arm=<n> entity=…`). Demuxed SEPARATELY
-    /// (keyed by the coordinate + arm, a pure function of them). Read into the footprints (via
-    /// [`dorc_plan::Footprint::add_reached`]) before the survival walk. NB the arm index re-keys each
-    /// line back to the arm's LIFTED kind (the vocabulary fence — the kind is never host-minted).
-    reaches: BTreeMap<(String, usize), Vec<String>>,
-    /// The REPORT lane (`27W` §2 tier-3): the `<verb> <class> <tail>` emissions an oracle wrote on
-    /// its declining paths, re-keyed to their emitting site by the probe scaffold (`report site=<key>
-    /// …`). Decision-inert (`two-plane-aid-law`): classes route AID only, never the license plane.
-    /// Noise-tolerant (`27W:rul-report-noise-tolerant`): nothing is silently dropped — an
-    /// unrecognized verb/class or free-form line is RETAINED (`recognized=false`), sanitized +
-    /// size-capped, for max-verbosity display (d4). Ordered by arrival (a `Vec`, deduped on the
-    /// whole record).
-    reports: Vec<ReportRecord>,
-    /// Was the source stream FRAMED (`262` §2)? Gates the at-most deriv-family completeness
-    /// check ([`merge_derived_footprints`]) — only a framed stream carries `deriv-end`
-    /// close-records; the legacy authored fixtures are trusted-complete.
-    framed: bool,
-}
-
-/// One ingested report-lane record (`27W` §2 tier-3 · `decline-class-emission`): an emission an
-/// oracle wrote on a declining path (`printf '<verb> <class> <tail>' >>"${DREP_V1:-/dev/null}"`),
-/// re-keyed to its site by the probe scaffold. Decision-inert. Noise-tolerant: an unrecognized
-/// verb/class is kept (`recognized=false`) as a generic author-note, never dropped, never an error.
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct ReportRecord {
-    /// The emitting site (the scaffold's `site=<key>`), if attached.
-    site: Option<RecordKey>,
-    /// The recognized decline class, or `None` (degrade-generic — unknown token / free-form line).
-    class: Option<dorc_aid::narrative::DeclineClass>,
-    /// The full raw `<verb> <class> <tail>` emission, sanitized + size-capped at ingestion (the
-    /// BASIC cap only — full why-surface sanitization is the security round's, `an-output-sanitization`
-    /// fence named; `law-whylog-is-sensitive`). Retained for max-verbosity display (d4).
-    raw: String,
-    /// Whether the verb + class were BOTH recognized (else retained as a generic author-note).
-    recognized: bool,
-}
-
-/// The ingestion size-cap on a report-lane emission's raw text (`27W` §2 — the BASIC cap only). A
-/// tail longer than this is truncated with an ellipsis; a curious admin still sees the head at max
-/// verbosity, and the full text never reaches a decision (decision-inert).
-const REPORT_RAW_CAP: usize = 200;
-
-/// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
-/// [`Dangling`](ResolvOutcome::Dangling) — the resolver's natural failure on an enumerable kind (§4,
-/// a reference to a non-existent entity), which rides the may-alias degrade + a loud diagnostic.
-#[derive(Debug, Clone)]
-enum ResolvOutcome {
-    /// The resolver printed a canonical form (interned into the shared vocabulary at readback).
-    Canonical(String),
-    /// The resolver failed (non-zero rc / empty stdout) — a dangling reference (§4) ⇒ may-alias.
-    Dangling,
-}
-
-/// One site's reported observation: the Effect-channel [`Verdict`], the raw probe-command
-/// exit status, and the RESERVED `Stdout`/`Stderr` [`OutBytes`]s (`19F` §3 tuple shape).
-/// The out-claims are parsed-and-stored but produce NOTHING this round — the probe never
-/// emits `stdout=`/`stderr=`, so they arrive `Predicted::Top` in practice; the slots exist
-/// so a future stdout-producing probe is a value-plumbing change, not a grammar change.
-#[derive(Debug, Clone, Copy)]
-struct SiteRecord {
-    verdict: Verdict,
-    rc: Rc,
-    stdout: Predicted<OutBytes>,
-    stderr: Predicted<OutBytes>,
-    /// This record's identity as a probe EVENT (C6, `27V` §2): its arrival ordinal in the deframed
-    /// stream (deterministic, no clock) plus the instant the controller observed it, when the edge
-    /// injected a clock. Minted straight into the [`dorc_core::OriginKind::ProbeResult`] origin so
-    /// the whylog can order/attribute probe events. A meet keeps the first-seen stamp.
-    stamp: dorc_core::ProbeStamp,
-    /// A DUPLICATE-MEET marker (`262` §2 / `26A` stop-1): set when two records for one
-    /// (site, member) key DISAGREED and were met toward ⊤. The §1 tie-break law forbids
-    /// first-wins/last-wins; a conflict is can't-tell. `verdict` is already `Unknown` when
-    /// this is set (effect ⇒ run); this ALSO withholds the fold-usable Query rc
-    /// ([`facts_from_sites`]) so a conflicting rc cannot substitute into the control-flow fold.
-    conflicted: bool,
-}
-
 /// The rc a `128 + SIGPIPE` early-exit race lands on (`sigpipe-flap-class`, `279f` §5):
 /// a `pipefail`-off pipeline whose early-exit consumer (`… | grep -q`) closed the pipe before an
 /// upstream stage finished writing produces this race-dependently. It is opaque to Dorc's verdict
@@ -4605,246 +4344,6 @@ fn parse_results(
         }
     }
     out
-}
-
-/// Converts only grammar-admitted records. The legacy string parser above is replay-only until 3C2.
-fn parse_admitted_results(
-    records: &dorc_plan::records::AdmittedUnscopedHostRecords,
-    clock: &mut RunClock,
-    interner: &mut Interner,
-) -> SiteResults {
-    let mut out = SiteResults {
-        framed: true,
-        ..SiteResults::default()
-    };
-    for (ordinal, record) in records.iter().enumerate() {
-        match record {
-            dorc_plan::records::AdmittedHostRecord::Site {
-                key,
-                effect,
-                rc,
-                stdout,
-                stderr,
-                ..
-            } => {
-                let Some(key) = parse_site_key(key) else {
-                    continue;
-                };
-                let rec = SiteRecord {
-                    verdict: effect_word_to_verdict(effect),
-                    rc: Rc(rc),
-                    stdout: stdout.map_or(Predicted::Top, |value| {
-                        Predicted::Value(OutBytes(interner.intern(value)))
-                    }),
-                    stderr: stderr.map_or(Predicted::Top, |value| {
-                        Predicted::Value(OutBytes(interner.intern(value)))
-                    }),
-                    conflicted: false,
-                    stamp: dorc_core::ProbeStamp::received(
-                        ordinal as u64,
-                        clock.at(ordinal as u64),
-                    ),
-                };
-                out.records
-                    .entry(key)
-                    .and_modify(|prior| *prior = meet_record(*prior, rec))
-                    .or_insert(rec);
-            }
-            dorc_plan::records::AdmittedHostRecord::Derivation { site, coord } => {
-                out.derivations
-                    .entry(dorc_plan::LeafId(site))
-                    .or_default()
-                    .push(coord.to_owned());
-            }
-            dorc_plan::records::AdmittedHostRecord::DerivationEnd { site, count } => {
-                out.derivation_ends.insert(dorc_plan::LeafId(site), count);
-            }
-            dorc_plan::records::AdmittedHostRecord::Resolution { coord, canonical } => {
-                out.resolutions.insert(
-                    coord.to_owned(),
-                    canonical.map_or(ResolvOutcome::Dangling, |value| {
-                        ResolvOutcome::Canonical(value.to_owned())
-                    }),
-                );
-            }
-            dorc_plan::records::AdmittedHostRecord::Reach { coord, arm, entity } => {
-                out.reaches
-                    .entry((coord.to_owned(), arm))
-                    .or_default()
-                    .push(entity.to_owned());
-            }
-            dorc_plan::records::AdmittedHostRecord::Report { body } => {
-                parse_report_record(body, &mut out);
-            }
-        }
-    }
-    out
-}
-
-/// Ingest one report-lane record (`27W` §2 tier-3): `report [site=<key>] <verb> <class> <tail…>`.
-/// Decision-inert. Noise-tolerant (`27W:rul-report-noise-tolerant`): the verb/class are recognized
-/// best-effort, but an unrecognized token or free-form line is RETAINED (`recognized=false`), never
-/// dropped, never an error. Deduped on the whole record — a tier-3 echo of an already-ingested line
-/// adds nothing (the dedup the tier-2 static classification will later key by (site, arm, class)).
-fn parse_report_record(rest: &str, out: &mut SiteResults) {
-    let (site, body) = match rest.strip_prefix("site=") {
-        Some(after) => {
-            let (key_tok, tail) = after.split_once(' ').unwrap_or((after, ""));
-            (parse_site_key(key_tok), tail)
-        }
-        None => (None, rest),
-    };
-    // v1 grammar: verb `decline` + a starter-set class; either unrecognized ⇒ degrade-generic.
-    let mut words = body.split_whitespace();
-    let verb = words.next();
-    let class = words
-        .next()
-        .and_then(dorc_aid::narrative::DeclineClass::from_token);
-    let recognized = verb == Some("decline") && class.is_some();
-    let rec = ReportRecord {
-        site,
-        class,
-        raw: sanitize_report_raw(body),
-        recognized,
-    };
-    if !out.reports.contains(&rec) {
-        out.reports.push(rec);
-    }
-}
-
-/// Sanitize + size-cap a report-lane emission's raw text at ingestion (`27W` §2).
-///
-/// A thin delegation to the shared display seat: the lane keeps its own budget
-/// ([`REPORT_RAW_CAP`]) and its own destination (a plain advisory line, which nothing measures),
-/// while the encoding itself is one implementation shared with every other display route. NEVER a
-/// decision input (decision-inert), and encoding grants the bytes no trust
-/// (`sinv-hostile-sensitive-orthogonal`).
-fn sanitize_report_raw(s: &str) -> String {
-    dorc_aid::display::encode_line(s, REPORT_RAW_CAP)
-}
-
-/// Parse `u32` leaf-id.
-#[cfg(test)]
-fn parse_leaf(tok: &str) -> Option<dorc_plan::LeafId> {
-    tok.parse::<u32>().ok().map(dorc_plan::LeafId)
-}
-
-/// Split a record body at a FREE-CONTENT `key=` into `(head, value)` where `value` runs to
-/// end-of-line (whitespace included — `262` §2 last-to-token). The key must be preceded by a
-/// space (or begin the body). Returns `None` when the key is absent.
-#[cfg(test)]
-fn split_key<'a>(body: &'a str, key: &str) -> Option<(&'a str, &'a str)> {
-    if let Some(v) = body.strip_prefix(key) {
-        return Some(("", v));
-    }
-    let pat = format!(" {key}");
-    let at = body.find(&pat)?;
-    Some((&body[..at], &body[at..][pat.len()..]))
-}
-
-/// Parse one `site <leafid> effect=<word> rc=<n> [stdout=<free-content>]` record (`262` §2).
-/// `stdout=` is the FREE-CONTENT field (last-to-token) — the read-value lane's future carrier
-/// (`279f` rider): it runs to end-of-line so embedded spaces survive byte-exactly. `stderr=`
-/// stays single-token (stderr handling is out of spike scope — churn-avoidance-disclosure).
-/// Unknown keys BEFORE the free-content field are ignored (additive-keys, `24Kc`). A duplicate
-/// (site, member) record MERGES BY MEET, never last-wins (`262` §1 tie-break law).
-#[cfg(test)]
-fn parse_site_record(
-    rest: &str,
-    stamp: dorc_core::ProbeStamp,
-    out: &mut SiteResults,
-    interner: &mut Interner,
-) {
-    // `stdout=` is the trailing free-content field; everything from it runs to EOL.
-    let (head, stdout) = match split_key(rest, "stdout=") {
-        Some((h, v)) => (h, Predicted::Value(OutBytes(interner.intern(v)))),
-        None => (rest, Predicted::Top),
-    };
-    let mut it = head.split_whitespace();
-    let Some(key) = it.next().and_then(parse_site_key) else {
-        return; // malformed site key ⇒ drop (⇒ Unknown ⇒ run)
-    };
-    let mut verdict = Verdict::Unknown;
-    let mut rc = Rc(0);
-    let mut stderr = Predicted::Top;
-    for tok in it {
-        if let Some(w) = tok.strip_prefix("effect=") {
-            verdict = effect_word_to_verdict(w);
-        } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
-            rc = Rc(n);
-        } else if let Some(t) = tok.strip_prefix("stderr=") {
-            stderr = Predicted::Value(OutBytes(interner.intern(t)));
-        }
-    }
-    let rec = SiteRecord {
-        verdict,
-        rc,
-        stdout,
-        stderr,
-        conflicted: false,
-        stamp,
-    };
-    out.records
-        .entry(key)
-        .and_modify(|prior| *prior = meet_record(*prior, rec))
-        .or_insert(rec);
-}
-
-/// Meet two records reported for one (site, member) key (`262` §2 duplicate-by-meet / §1
-/// tie-break law). Identical ⇒ idempotent (unchanged). ANY disagreement ⇒ can't-tell: verdict
-/// ⊤ (⇒ run), out-claims ⊤, and `conflicted` set so the fold-usable Query rc is withheld
-/// ([`facts_from_sites`]). NEVER first-wins/last-wins; commutative + idempotent, so arrival
-/// order cannot change the fold (`262` §1 pin-fold-permutation).
-fn meet_record(a: SiteRecord, b: SiteRecord) -> SiteRecord {
-    let rc_conflict = a.rc != b.rc;
-    SiteRecord {
-        verdict: if a.verdict == b.verdict {
-            a.verdict
-        } else {
-            Verdict::Unknown
-        },
-        rc: a.rc,
-        stdout: if a.stdout == b.stdout {
-            a.stdout
-        } else {
-            Predicted::Top
-        },
-        stderr: if a.stderr == b.stderr {
-            a.stderr
-        } else {
-            Predicted::Top
-        },
-        conflicted: a.conflicted || b.conflicted || rc_conflict || a.verdict != b.verdict,
-        stamp: a.stamp, // keep the first-seen stamp (C6): the meet is order-independent
-    }
-}
-
-/// Parse a record's site key token (task-L2 item-4): `N` ⇒ `RecordKey { site: N, member:
-/// None }`; `N.M` ⇒ `RecordKey { site: N, member: Some(M) }` (member `M` of an in-loop
-/// Members family). Both `N` and `M` are `u32`; a non-numeric / malformed token ⇒ `None`
-/// (the record is dropped ⇒ that cell folds to Unknown ⇒ run, the kFAIL-perform floor).
-fn parse_site_key(tok: &str) -> Option<RecordKey> {
-    match tok.split_once('.') {
-        Some((leaf, member)) => Some(RecordKey {
-            site: dorc_plan::LeafId(leaf.parse::<u32>().ok()?),
-            member: Some(member.parse::<u32>().ok()?),
-        }),
-        None => Some(RecordKey {
-            site: dorc_plan::LeafId(tok.parse::<u32>().ok()?),
-            member: None,
-        }),
-    }
-}
-
-/// Map the probe's three-outcome `effect=` word to a [`Verdict`] (the probe-record
-/// convention, 202 §3): `holds ⇒ Converged`, `absent ⇒ Diverged`,
-/// anything else (`cant-tell` / garbled) ⇒ `Unknown` (the safe direction).
-fn effect_word_to_verdict(word: &str) -> Verdict {
-    match word {
-        "holds" => Verdict::Converged,
-        "absent" => Verdict::Diverged,
-        _ => Verdict::Unknown,
-    }
 }
 
 /// The comparison key that lets a LOADED oracle path and a DISCOVERED one denote the same file.
