@@ -673,11 +673,29 @@ fn parse_frontmatter_entries(raw: &str) -> Result<BTreeMap<String, FrontmatterVa
                 i = next;
             }
         } else {
-            entries.insert(key.to_owned(), FrontmatterValue::Scalar(rest.to_owned()));
+            entries.insert(key.to_owned(), FrontmatterValue::Scalar(unquoted(rest)));
             i = i.saturating_add(1);
         }
     }
     Ok(entries)
+}
+
+/// Strip one layer of surrounding quotes from a scalar.
+///
+/// Authors reach for them out of YAML habit — on a sentence with a colon in it, most of all — and
+/// a consumer that stores the raw bytes stores the quote marks too, so the quoting shows up in
+/// whatever product surface the value reaches. The RAW frontmatter text is untouched, so the file
+/// still reads back exactly as written; only the parsed value drops them.
+fn unquoted(scalar: &str) -> String {
+    for quote in ['"', '\''] {
+        if let Some(inner) = scalar
+            .strip_prefix(quote)
+            .and_then(|rest| rest.strip_suffix(quote))
+        {
+            return inner.to_owned();
+        }
+    }
+    scalar.to_owned()
 }
 
 /// Collect the indented `- item` lines starting at `start`; returns the items and

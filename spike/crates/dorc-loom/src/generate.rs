@@ -98,19 +98,22 @@ pub fn generate_catalog_lock(
         let message = entry.message.clone();
         let help = entry.help.clone();
         let params = refreshed_params(message.as_deref(), help.written().map(String::as_str));
+        let carried = CATALOG.iter().find(|c| c.slug == entry.slug);
         let (when_fires, why, example) = if let Some(case) = cases.get(&entry.slug) {
             (
-                frontmatter_scalar(case, "when-fires", &entry.slug)?,
-                frontmatter_scalar(case, "why", &entry.slug)?,
+                kept_or_declared(
+                    case,
+                    "when-fires",
+                    carried.map(|c| c.when_fires),
+                    &entry.slug,
+                )?,
+                kept_or_declared(case, "why", carried.map(|c| c.why), &entry.slug)?,
                 case_example(consumer, case, message.as_deref(), &entry.slug)?,
             )
         } else {
-            let carried = CATALOG
-                .iter()
-                .find(|c| c.slug == entry.slug)
-                .ok_or_else(|| {
-                    format!("ratcheted `{}` absent from the current lock", entry.slug)
-                })?;
+            let carried = carried.ok_or_else(|| {
+                format!("ratcheted `{}` absent from the current lock", entry.slug)
+            })?;
             (
                 carried.when_fires.to_owned(),
                 carried.why.to_owned(),
@@ -161,23 +164,21 @@ pub fn generate_arrangement_lock(
 ) -> Result<String, String> {
     let mut rows = Vec::with_capacity(consumer.arrangements().len());
     for entry in consumer.arrangements() {
+        let carried = ARRANGEMENTS
+            .iter()
+            .find(|carried| carried.slug == entry.slug && carried.occurrence == entry.occurrence);
         let (when_used, why) = if let Some(case) = cases.get(&entry.slug) {
             (
-                frontmatter_scalar(case, "when-used", &entry.slug)?,
-                frontmatter_scalar(case, "why", &entry.slug)?,
+                kept_or_declared(case, "when-used", carried.map(|c| c.when_used), &entry.slug)?,
+                kept_or_declared(case, "why", carried.map(|c| c.why), &entry.slug)?,
             )
         } else {
-            let carried = ARRANGEMENTS
-                .iter()
-                .find(|carried| {
-                    carried.slug == entry.slug && carried.occurrence == entry.occurrence
-                })
-                .ok_or_else(|| {
-                    format!(
-                        "carried arrangement `{}` absent from the registry",
-                        entry.slug
-                    )
-                })?;
+            let carried = carried.ok_or_else(|| {
+                format!(
+                    "carried arrangement `{}` absent from the registry",
+                    entry.slug
+                )
+            })?;
             (carried.when_used.to_owned(), carried.why.to_owned())
         };
         rows.push(ArrangementRow {
@@ -289,6 +290,28 @@ fn frontmatter_scalar(case: &Case, key: &str, slug: &str) -> Result<String, Stri
         .scalar(key)
         .map(str::to_owned)
         .ok_or_else(|| format!("case `{slug}` frontmatter missing `{key}`"))
+}
+
+/// ABSENT-MEANS-KEEP (`28L:fnd-case-frontmatter-overwrites-lock-metadata`): a case that omits a
+/// metadata key leaves the committed words alone.
+///
+/// The failure this closes is a case arriving for a component that ALREADY had metadata — one
+/// slug's several occurrences all read one case's frontmatter, so a single new case degraded five
+/// committed entries at once and nothing said so. Omitting the key is now the way to mean "the
+/// committed words still hold", which is what a case written to face a component (rather than to
+/// define one) means. A component with no committed row still has to declare both keys: nothing
+/// exists to keep.
+fn kept_or_declared(
+    case: &Case,
+    key: &str,
+    committed: Option<&str>,
+    slug: &str,
+) -> Result<String, String> {
+    match (case.frontmatter().scalar(key), committed) {
+        (Some(declared), _) => Ok(declared.to_owned()),
+        (None, Some(kept)) => Ok(kept.to_owned()),
+        (None, None) => Err(format!("case `{slug}` frontmatter missing `{key}`")),
+    }
 }
 
 #[cfg(test)]

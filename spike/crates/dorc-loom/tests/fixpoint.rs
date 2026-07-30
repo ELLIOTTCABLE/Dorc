@@ -479,3 +479,49 @@ fn lint_mark_diagnostics_require_their_defining_source_shape() {
         );
     }
 }
+
+/// The metadata-REGRESSION gate (`28L:fnd-case-frontmatter-overwrites-lock-metadata`): where a case
+/// declares `when-fires`/`when-used`/`why` for a component that already carries committed metadata,
+/// the two say the same thing.
+///
+/// Omitting a key means "keep the committed words" (`kept_or_declared`), so the only way to reach
+/// this gate is to have TYPED different words — and that is a metadata edit, which has to be seen
+/// rather than absorbed. One slug's several occurrences all read one case's frontmatter, so a
+/// single unseen edit reaches every one of them at once; that is what happened, and what naming
+/// both texts here is for. The repair is either direction: restore the committed words in the case,
+/// or promote the case so the lock takes the new ones.
+#[test]
+fn a_case_never_silently_rewrites_committed_metadata() {
+    let arrangements = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");
+    for entry in dorc_aid::arrangement::ARRANGEMENTS {
+        let Some(case) = arrangements.get(entry.slug) else {
+            continue;
+        };
+        for (key, committed) in [("when-used", entry.when_used), ("why", entry.why)] {
+            assert_metadata_agrees(entry.slug, key, case, committed);
+        }
+    }
+
+    let codes = load_corpus_by_slug(&corpus_dir()).expect("load catalog corpus");
+    for entry in dorc_aid::catalog::CATALOG {
+        let Some(case) = codes.get(entry.slug) else {
+            continue;
+        };
+        for (key, committed) in [("when-fires", entry.when_fires), ("why", entry.why)] {
+            assert_metadata_agrees(entry.slug, key, case, committed);
+        }
+    }
+}
+
+fn assert_metadata_agrees(slug: &str, key: &str, case: &Case, committed: &str) {
+    let Some(declared) = case.frontmatter().scalar(key) else {
+        return;
+    };
+    assert_eq!(
+        declared, committed,
+        "`{slug}`: the case's `{key}:` and the committed entry disagree.\n  case:      \
+         {declared:?}\n  committed: {committed:?}\nOmit `{key}:` from the case to keep the \
+         committed words, or run `mise run loom:compile crates/aid/tests/{slug}.loom && \
+         mise run loom:promote crates/aid/tests/{slug}.loom` to publish the new ones."
+    );
+}
