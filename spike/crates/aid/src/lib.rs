@@ -60,6 +60,29 @@ pub use narrative::{CollapseKind, CollapseNarrative, Knowability, SpeechAct};
 
 pub mod fixture;
 
+/// The prose-ownership question both prose gates ask, answered ONCE per test binary.
+///
+/// The corpus tool owns the answer (`dorc_loom::corpus_ownership`) and this crate's gates are the
+/// ones asking, so the dependency is a test-only cycle rather than a second resolver
+/// (`28L:rul-ownership-declaration-adopted`). The scan is the crate's ONE filesystem read and it
+/// stays inside `cfg(test)` — `aid-is-dst-clean` binds production code.
+#[cfg(test)]
+mod case_ownership {
+    use std::sync::OnceLock;
+
+    /// Whether some case in the primary collection is `slug`'s authoring home: the case named for
+    /// it, or a multi-component case declaring it in `owns:`.
+    pub(crate) fn is_case_owned(slug: &str) -> bool {
+        static OWNERSHIP: OnceLock<dorc_loom::CaseOwnership> = OnceLock::new();
+        OWNERSHIP
+            .get_or_init(|| {
+                let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+                dorc_loom::corpus_ownership(&dir).unwrap_or_else(|error| panic!("{error}"))
+            })
+            .owns(slug)
+    }
+}
+
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.

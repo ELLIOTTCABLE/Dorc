@@ -447,15 +447,7 @@ mod tests {
         }
     }
 
-    /// Whether `slug`'s prose is CASE-OWNED: an arrangement case file exists for it in the
-    /// primary loom collection. The twin of the catalog's `is_case_owned`, and the reason a
-    /// human may author words at all — the render-level fixpoint gate protects them.
-    fn is_case_owned(slug: &str) -> bool {
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests")
-            .join(format!("{slug}.loom"))
-            .exists()
-    }
+    use crate::case_ownership::is_case_owned;
 
     /// Gate (the arrangement twin of `message_registers_are_sm_or_unwritten`): authored words
     /// exist only for a case-owned slug, so every string a human wrote is fixpoint-protected

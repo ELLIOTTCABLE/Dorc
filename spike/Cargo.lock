@@ -103,6 +103,7 @@ name = "dorc-aid"
 version = "0.0.0"
 dependencies = [
  "dorc-core",
+ "dorc-loom",
  "weft",
 ]
 

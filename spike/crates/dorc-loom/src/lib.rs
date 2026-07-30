@@ -23,6 +23,10 @@ pub use edit::{
 };
 mod inspect;
 pub use inspect::render_compile_preview;
+mod ownership;
+pub use ownership::{
+    CaseOwnership, ComponentRef, OWNS_KEY, corpus_ownership, is_registered_component,
+};
 mod preview;
 mod refusal;
 pub use preview::{CompilePreview, SectionPreview, compile_preview};

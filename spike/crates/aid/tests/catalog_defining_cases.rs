@@ -18,6 +18,11 @@
 //! `dorc-loom`, kept honest by a drift guard (`28A:rul-keep-covered-with-drift-guard`); both now read
 //! the ONE table in `aid`, so there is nothing left to drift.
 
+#![expect(
+    clippy::expect_used,
+    reason = "the corpus scan is the gate's own precondition; a broken corpus must abort it loudly"
+)]
+
 use dorc_aid::RenderCtx;
 use dorc_aid::diag::{self, Diag, DiagCode, WhylogVersionRefused};
 use dorc_aid::fixture::canonical_payloads;
@@ -194,14 +199,18 @@ fn body_parts_keep_empty_parameter_identity() {
     )));
 }
 
-/// Whether `slug` is CASE-OWNED: a defining case file exists in the dorc-loom corpus (mirrors the
-/// private predicate in `catalog.rs`). Ownership moved to those files at the `283` flip; phase 5
-/// backported the covered codes, so completeness keys to real case files, not the `covered()` list.
+/// Whether `slug` is CASE-OWNED: some case in the collection is its authoring home — the case
+/// named for it, or a multi-component case declaring it in `owns:`
+/// (`28L:rul-ownership-declaration-adopted`). Ownership moved to those files at the `283` flip;
+/// phase 5 backported the covered codes, so completeness keys to real cases, not `covered()`.
 fn is_case_owned(slug: &str) -> bool {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join(format!("{slug}.loom"))
-        .exists()
+    static OWNERSHIP: std::sync::OnceLock<dorc_loom::CaseOwnership> = std::sync::OnceLock::new();
+    OWNERSHIP
+        .get_or_init(|| {
+            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+            dorc_loom::corpus_ownership(&dir).expect("the committed corpus resolves one home each")
+        })
+        .owns(slug)
 }
 
 /// The mint recipe, named VERBATIM so a red gate hands the reader the command that repairs it

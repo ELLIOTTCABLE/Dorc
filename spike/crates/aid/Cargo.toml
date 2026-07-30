@@ -18,5 +18,12 @@ publish = false
 dorc-core = { path = "../core", version = "0.0.0" }
 weft = { path = "../weft", version = "0.0.0" }
 
+# Test-only, and a deliberate dev-dependency CYCLE (`dorc-loom` deps this crate). The prose-
+# ownership question — which case is a component's authoring home — is the corpus tool's to answer,
+# and this crate's gates are the ones asking it; a second resolver here would be a second answer.
+# A dev-dependency creates no production edge, so `aid-is-dst-clean` is untouched.
+[dev-dependencies]
+dorc-loom = { path = "../dorc-loom", version = "0.0.0" }
+
 [lints]
 workspace = true

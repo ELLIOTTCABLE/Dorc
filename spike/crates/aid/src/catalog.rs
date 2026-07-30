@@ -558,17 +558,7 @@ mod tests {
         }
     }
 
-    /// Whether `slug`'s prose is CASE-OWNED: a defining case file exists for it in the dorc-loom
-    /// corpus (`283` flip / `28A` §2o). This is where prose ownership moved when the
-    /// `CONDUCTOR_AUTHORED` roster retired — a case-owned code's unprefixed prose is protected by the
-    /// render-level `fixpoint_check` (a catalog hand-edit moves the render off the committed case
-    /// bytes), so the roster's two-place bookkeeping is no longer needed.
-    fn is_case_owned(slug: &str) -> bool {
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests")
-            .join(format!("{slug}.loom"))
-            .exists()
-    }
+    use crate::case_ownership::is_case_owned;
 
     /// Gate (`amendment-prose-boundary`, re-keyed at the `283` flip): every WRITTEN user-facing
     /// register is `sm `-prefixed base-tip prose or CASE-OWNED (a defining case in the dorc-loom

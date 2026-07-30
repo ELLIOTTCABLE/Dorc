@@ -2,6 +2,13 @@
 arrangement: lint-source-analysis-diagnostics
 when-used: The `dorc lint --list-sources` line for the analysis-diagnostics source.
 why: 27R section 8 delta-named-sources-selectable: each source describes itself to the admin choosing a subset.
+owns:
+  - lint-source-unmodeled-inventory
+  - lint-source-verdict-body
+  - lint-source-oracle-validate
+  - lint-source-oracle-declined-inventory
+  - lint-source-shellcheck
+  - lint-source-checkbashisms
 ---
 -- replay --
 $ dorc lint --list-sources

@@ -54,6 +54,55 @@ fn trial_name(case: &LoomCase) -> String {
     }
 }
 
+/// Every frontmatter key some gate reads, across BOTH runners — the closed vocabulary
+/// (`crates/cli/CLAUDE.md` loom-form-is-the-same-battery). The e2e runner's `LOOM_KEYS` is the
+/// run-lane subset of this list; a key here that only IT reads is still read.
+///
+/// The one deliberate exception is `todo`, which asserts nothing about the case and is why it is
+/// safe unread: an author's note about the case's own future, not a gate they believe they armed.
+const FRONTMATTER_KEYS: [&str; 22] = [
+    "code",
+    "arrangement",
+    "when-fires",
+    "when-used",
+    "why",
+    "owns",
+    "todo",
+    "run",
+    "fixpoint",
+    "flags",
+    "exit",
+    "apply-exit",
+    "tolerate",
+    "probe-results",
+    "dual-rail",
+    "why-addr",
+    "expect-diagnostic",
+    "expect-why",
+    "expect-hint",
+    "expect-why-chain",
+    "edit-loop",
+    "envelope",
+];
+
+/// Refuse a frontmatter key no gate reads: it is an assertion the author only believes they made.
+fn known_frontmatter_keys(name: &str, case: &Case) -> Result<(), Failed> {
+    let Some(unknown) = case
+        .frontmatter()
+        .keys()
+        .find(|key| !FRONTMATTER_KEYS.contains(key))
+    else {
+        return Ok(());
+    };
+    Err(format!(
+        "FAIL  {name}  [unread frontmatter key `{unknown}` — the key vocabulary is closed, and a \
+         key no gate reads is an assertion you only believe you made. The keys that do something \
+         are {}]",
+        FRONTMATTER_KEYS.join(", ")
+    )
+    .into())
+}
+
 /// Parse, hygiene-check, and render-fixpoint one committed case.
 fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let name = &case.name;
@@ -61,6 +110,7 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         .map_err(|error| format!("FAIL  {name}  [read {}: {error}]", case.path.display()))?;
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
+    known_frontmatter_keys(name, &parsed)?;
     if let Err(error) = parsed.check_hygiene(Some("code")) {
         // A new replay block is `$ cmd` with no output, which surfaces no slug — so hygiene, not
         // the fixpoint, is where its author stands when they need the candidate.
