@@ -2467,14 +2467,15 @@ pub fn render_message_with(
     }
 }
 
-/// The CLI narrative render (`22B` `render-1`, the render-plane half of rec-1 two-surfaces): title
-/// (`<severity>[<slug>]: <problem>`, the filled catalog message's first line) / the primary span as
-/// a rustc-style caret frame (`--> file:line:col`, source-line gutter, `^^^` underline; ack-8) /
-/// each LABELED secondary span as its own `---` caret frame (cause+effect in one frame, 228) / the
-/// message body's continuation lines (a multi-line catalog message's tail, the catalog help, and
-/// any authored notes/suggestion). `src`/`filename` resolve a span to a framed source excerpt
-/// (rul24-lineno-identity). The unit tests pin this shape; the cli's `report()` shares
-/// [`render_body`] + [`frame_region`] but owns the stage prefix + colour + no-source fallback.
+/// The CLI narrative render (`22B` `render-1`, the render-plane half of rec-1 two-surfaces): the
+/// `<severity>[<slug>]: <problem>` title and the message laid out together, a source frame per
+/// span (`file:line:col` locus, source-line gutter, an underline beneath the span; ack-8), then
+/// the catalog help and any authored notes/suggestion as labelled rows. `src`/`filename` resolve a
+/// span to a framed source excerpt (rul24-lineno-identity).
+///
+/// The BYTES are [`render_cli_parts`]' bytes, by construction rather than by agreement: there is
+/// one render form, and the string seat is its concatenation
+/// (`28L:rul-editability-is-stamped-never-re-derived`).
 #[must_use]
 pub fn render_cli(
     diag: &Diag,
@@ -2482,64 +2483,30 @@ pub fn render_cli(
     filename: &str,
     interner: &dorc_core::Interner,
 ) -> String {
-    render_cli_with(
+    render_cli_parts(
         &crate::catalog::CONST_CATALOG,
         diag,
         src,
         filename,
         interner,
+        CANONICAL_TRANSCRIPT_WIDTH,
     )
+    .text()
 }
 
-/// The [`render_cli`] seat parameterized by a [`CatalogLookup`](crate::catalog::CatalogLookup)
-/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
-/// Byte-identical to [`render_cli`] under the const lookup (gate-pinned).
-#[must_use]
-pub fn render_cli_with(
-    lookup: &dyn crate::catalog::CatalogLookup,
-    diag: &Diag,
-    src: &str,
-    filename: &str,
-    interner: &dorc_core::Interner,
-) -> String {
-    use std::fmt::Write;
-    let spec = registry(&diag.code);
-    let body = render_body_with(lookup, diag, interner);
-    let (problem, rest) = match body.split_once('\n') {
-        Some((p, r)) => (p, Some(r)),
-        None => (body.as_str(), None),
-    };
-    let mut out = String::new();
-    let _ = write!(
-        out,
-        "{}[{}]: {problem}",
-        severity_word(spec.severity),
-        diag.code.slug(),
-    );
-    // The primary caret frame (ack-8); the spanless second-class case (arch-3-residual-2) omits it.
-    if let Some(primary) = diag.primary.span() {
-        out.push_str(&frame_region(primary, src, filename, None, true));
-    }
-    for sec in &diag.secondary {
-        if let Some(span) = sec.span() {
-            out.push_str(&frame_region(
-                span,
-                src,
-                filename,
-                sec.label.as_deref(),
-                false,
-            ));
-        }
-    }
-    // The message-body continuation lines land AFTER the region (caret frame beneath the title).
-    if let Some(rest) = rest {
-        out.push('\n');
-        out.push_str(rest);
-    }
-    out
-}
+/// The width committed transcripts — and the deterministic no-terminal fallback — lay out at.
+///
+/// A width, not THE width: the render seat takes one as an input, so a surface that knows its own
+/// box passes that instead. Detecting a terminal's width is an I/O-edge concern and never reaches
+/// here (`inv-determinism`).
+pub const CANONICAL_TRANSCRIPT_WIDTH: usize = 80;
 
-/// The ordered-parts twin of [`render_cli`].
+/// The ordered-parts twin of [`render_cli`], laid out at `width`.
+///
+/// Layout happens INSIDE the part stream: the seat composes a document, the layout engine wraps
+/// it, and every wrapped run comes back stamped with the register it was born from
+/// (`28L:rul-editability-is-stamped-never-re-derived`). Nothing downstream re-derives a register,
+/// a word boundary, or a section from the SHAPE of these bytes.
 #[must_use]
 pub fn render_cli_parts(
     lookup: &dyn crate::catalog::CatalogLookup,
@@ -2547,45 +2514,14 @@ pub fn render_cli_parts(
     src: &str,
     filename: &str,
     interner: &dorc_core::Interner,
+    width: usize,
 ) -> crate::tagged::RenderParts {
-    let body = render_body_parts_with(lookup, diag, interner);
-    let body_text = body.text();
-    let split = body_text.find('\n');
-    let (head, tail) = split_parts_at(&body, split.unwrap_or(body_text.len()));
-    let mut parts = crate::tagged::RenderParts::new();
-    push_arrangement_part(
-        &mut parts,
-        format!(
-            "{}[{}]: ",
-            severity_word(registry(&diag.code).severity),
-            diag.code.slug(),
-        ),
-        "cli-title",
-    );
-    parts.append(head);
-    if let Some(primary) = diag.primary.span() {
-        push_arrangement_part(
-            &mut parts,
-            frame_region(primary, src, filename, None, true),
-            "cli-frame",
-        );
-    }
-    for secondary in &diag.secondary {
-        if let Some(span) = secondary.span() {
-            push_arrangement_part(
-                &mut parts,
-                frame_region(span, src, filename, secondary.label.as_deref(), false),
-                "cli-frame-secondary",
-            );
-        }
-    }
-    if split.is_some() {
-        parts.append(tail);
-    }
-    parts
+    let document = diagnostic_document(None, lookup, diag, src, filename, interner);
+    crate::weave::to_render_parts(&weft::render(&document, width))
 }
 
-/// Render a source-staged diagnostic (`282` §4); its prefix and terminal newline stay immutable structure.
+/// Render a source-staged diagnostic (`282` §4). The stage prefix is a run INSIDE the document, so
+/// the layout accounts for the columns it occupies rather than overflowing past them.
 #[must_use]
 pub fn render_staged_cli_parts(
     stage: &str,
@@ -2594,98 +2530,112 @@ pub fn render_staged_cli_parts(
     src: &str,
     filename: &str,
     interner: &dorc_core::Interner,
+    width: usize,
 ) -> crate::tagged::RenderParts {
-    let mut parts = crate::tagged::RenderParts::new();
-    push_arrangement_part(&mut parts, format!("{stage}: "), "cli-stage-prefix");
-    parts.append(render_cli_parts(lookup, diag, src, filename, interner));
-    push_arrangement_part(&mut parts, String::from("\n"), "cli-terminal-newline");
-    parts
+    let document = diagnostic_document(Some(stage), lookup, diag, src, filename, interner);
+    crate::weave::to_render_parts(&weft::render(&document, width))
+}
+
+/// The diagnostic as a laid-out document: the title-and-message paragraph, a source frame per
+/// span, then one labelled row per continuation register.
+///
+/// Every English word arrives as a run from here; the engine self-mints only wordless geometry
+/// (`28F:rul-weft-geometry-vs-words`). Severity, the code brackets and the `= <connective>:` lead
+/// are chrome this seat COMPUTED, so they are stamped immutable and no edit can reach them.
+fn diagnostic_document(
+    stage: Option<&str>,
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    interner: &dorc_core::Interner,
+) -> weft::Document<crate::weave::Face> {
+    use crate::weave::{mark, to_runs};
+    use weft::{LabeledRow, Node, NodeKind, Paragraph};
+
+    let mut headline = Vec::new();
+    if let Some(stage) = stage {
+        headline.push(mark(format!("{stage}: "), "cli-stage-prefix"));
+    }
+    headline.push(mark(
+        format!(
+            "{}[{}]: ",
+            severity_word(registry(&diag.code).severity),
+            diag.code.slug(),
+        ),
+        "cli-title",
+    ));
+    headline.extend(to_runs(&message_parts(lookup, diag, interner)));
+    let mut nodes = vec![Node::new(NodeKind::Prose(Paragraph { runs: headline }))];
+
+    if let Some(primary) = diag.primary.span() {
+        nodes.push(Node::new(NodeKind::Code(frame_block(
+            primary, src, filename, None, true,
+        ))));
+    }
+    for secondary in &diag.secondary {
+        if let Some(span) = secondary.span() {
+            nodes.push(Node::new(NodeKind::Code(frame_block(
+                span,
+                src,
+                filename,
+                secondary.label.as_deref(),
+                false,
+            ))));
+        }
+    }
+
+    let mut row = |lead: String, slug: &'static str, body: Vec<weft::Run<crate::weave::Face>>| {
+        nodes.push(Node::new(NodeKind::Labeled(LabeledRow {
+            table: None,
+            label: vec![mark(lead, slug)],
+            body,
+            attachments: Vec::new(),
+        })));
+    };
+    if let Some(help) = help_parts(lookup, diag, interner) {
+        row(
+            format!("= {}:", help_connective(&diag.code)),
+            "cli-help-connective",
+            to_runs(&help),
+        );
+    }
+    for child in &diag.children {
+        let (lead, text) = match child {
+            SubDiag::Note(note) => ("= note:", note),
+            SubDiag::Help(help) => ("= help:", help),
+        };
+        row(
+            String::from(lead),
+            "cli-authored-lead",
+            vec![crate::weave::value(
+                text,
+                "cli-authored-text",
+                crate::weave::RENDER_VALUE_CAP,
+            )],
+        );
+    }
+    if let Some(suggestion) = &diag.suggestion {
+        row(
+            String::from("= help:"),
+            "cli-authored-lead",
+            vec![crate::weave::value(
+                format!(
+                    "{} [{}]",
+                    suggestion.message,
+                    remediation_tag(suggestion.remediation)
+                ),
+                "cli-authored-text",
+                crate::weave::RENDER_VALUE_CAP,
+            )],
+        );
+    }
+    weft::Document::new(nodes)
 }
 
 fn push_arrangement_part(parts: &mut crate::tagged::RenderParts, text: String, slug: &'static str) {
     if !text.is_empty() {
         parts.push(crate::tagged::RenderPart::Arrangement { text, slug });
-    }
-}
-
-fn split_parts_at(
-    parts: &crate::tagged::RenderParts,
-    at: usize,
-) -> (crate::tagged::RenderParts, crate::tagged::RenderParts) {
-    let mut head = crate::tagged::RenderParts::new();
-    let mut tail = crate::tagged::RenderParts::new();
-    let mut offset: usize = 0;
-    for part in parts.parts() {
-        let text = part.text();
-        let end = offset.saturating_add(text.len());
-        if text.is_empty() || end <= at {
-            head.push(part.clone());
-        } else if offset >= at {
-            tail.push(part.clone());
-        } else {
-            let split = at.saturating_sub(offset);
-            head.push(part_with_text(part, String::from(&text[..split])));
-            tail.push(part_with_text(part, String::from(&text[split..])));
-        }
-        offset = end;
-    }
-    (head, tail)
-}
-
-fn part_with_text(part: &crate::tagged::RenderPart, text: String) -> crate::tagged::RenderPart {
-    use crate::tagged::RenderPart;
-
-    match part {
-        RenderPart::TemplateLiteral {
-            code,
-            field,
-            paragraph,
-            instance,
-            ..
-        } => RenderPart::TemplateLiteral {
-            text,
-            code,
-            field: *field,
-            paragraph: *paragraph,
-            instance: *instance,
-        },
-        RenderPart::ParamValue {
-            code,
-            field,
-            param,
-            instance,
-            ..
-        } => RenderPart::ParamValue {
-            text,
-            code,
-            field: *field,
-            param,
-            instance: *instance,
-        },
-        RenderPart::ForeignText { source, .. } => RenderPart::ForeignText {
-            text,
-            source: source.clone(),
-        },
-        RenderPart::Arrangement { slug, .. } => RenderPart::Arrangement { text, slug },
-        RenderPart::ArrangementPage { slug, .. } => RenderPart::ArrangementPage { text, slug },
-        RenderPart::ArrangementWords {
-            slug, occurrence, ..
-        } => RenderPart::ArrangementWords {
-            text,
-            slug,
-            occurrence: *occurrence,
-        },
-        RenderPart::ArrangementValue {
-            slug,
-            occurrence,
-            index,
-            ..
-        } => RenderPart::ArrangementValue {
-            text,
-            slug,
-            occurrence: *occurrence,
-            index: *index,
-        },
     }
 }
 
@@ -2756,7 +2706,9 @@ pub fn render_body_parts(
     render_body_parts_with(&crate::catalog::CONST_CATALOG, diag, interner)
 }
 
-fn render_body_parts_with(
+/// The MESSAGE register as parts: the filled catalog template, or the greppable
+/// `[unwritten: <slug>]` placeholder when no words are authored yet.
+fn message_parts(
     lookup: &dyn crate::catalog::CatalogLookup,
     diag: &Diag,
     interner: &dorc_core::Interner,
@@ -2789,21 +2741,48 @@ fn render_body_parts_with(
             "unwritten-placeholder",
         ),
     }
-    if let Some(help) = lookup.help(code) {
+    parts
+}
+
+/// The HELP register as parts, without its `= <connective>:` lead — the lead is the seat's chrome
+/// and belongs to whichever arrangement the seat puts the register in.
+fn help_parts(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    interner: &dorc_core::Interner,
+) -> Option<crate::tagged::RenderParts> {
+    let params = params_of(&diag.code, interner);
+    let refs: Vec<(&'static str, &str)> = params
+        .iter()
+        .map(|(key, value)| (*key, value.as_str()))
+        .collect();
+    let code = diag.code.slug();
+    let help = lookup.help(code)?;
+    let mut parts = crate::tagged::RenderParts::new();
+    match crate::catalog::fill_template_parts(help, &refs, code, crate::tagged::Field::Help, 0) {
+        Ok(field_parts) => parts.append(field_parts),
+        Err(_) => push_arrangement_part(
+            &mut parts,
+            format!("[invalid catalog template: {code}]"),
+            "invalid-template",
+        ),
+    }
+    Some(parts)
+}
+
+fn render_body_parts_with(
+    lookup: &dyn crate::catalog::CatalogLookup,
+    diag: &Diag,
+    interner: &dorc_core::Interner,
+) -> crate::tagged::RenderParts {
+    let mut parts = message_parts(lookup, diag, interner);
+    if let Some(help) = help_parts(lookup, diag, interner) {
         push_arrangement_part(
             &mut parts,
             format!("\n  = {}: ", help_connective(&diag.code)),
             "help-connective",
         );
-        match crate::catalog::fill_template_parts(help, &refs, code, crate::tagged::Field::Help, 0)
-        {
-            Ok(field_parts) => parts.append(field_parts),
-            Err(_) => push_arrangement_part(
-                &mut parts,
-                format!("[invalid catalog template: {code}]"),
-                "invalid-template",
-            ),
-        }
+        parts.append(help);
     }
     for child in &diag.children {
         let (text, slug) = match child {
@@ -3070,28 +3049,6 @@ pub fn line_col(src: &str, byte: usize) -> (usize, usize) {
     (line, clamped.saturating_sub(line_start).saturating_add(1))
 }
 
-/// The floor on the gutter's line-number field (item-1 gutter stability): a 3-digit field holds
-/// 0–999, so the `|` column stays put across a book's frames and a code line never shifts relative
-/// to its neighbours. A larger number FILLS/BUTTS the bar (`600|`, `6000|`); the field grows past
-/// this only when a book exceeds 999 lines.
-const GUTTER_MIN_WIDTH: usize = 3;
-
-/// Format line number `l` into the `w`-wide gutter field (item-1 placement): right-aligned by
-/// default (rustc ones-place alignment), EXCEPT a frame whose line numbers ALL share one digit-width
-/// ≤ 2 gets the slack aesthetic — a lone/all-1-digit frame CENTERS (` 6 `), an all-2-digit frame
-/// LEFT-aligns (`60 `). `min_digits`/`max_digits` are the frame's narrowest/widest number widths.
-/// Pure; total.
-fn gutter_field(l: usize, w: usize, min_digits: usize, max_digits: usize) -> String {
-    let num = l.to_string();
-    if min_digits == max_digits && max_digits == 1 {
-        format!("{num:^w$}")
-    } else if min_digits == max_digits && max_digits == 2 {
-        format!("{num:<w$}")
-    } else {
-        format!("{num:>w$}")
-    }
-}
-
 /// The under-span mark for a caret frame. A primary SPAN (a byte region, `run >= 2`) renders the
 /// bracket form `\`+`_`…+`/` — it reads as "this whole extent", not "this point" (the `e6edf5e`
 /// style). A single-column primary keeps a `^` (the door item-1 left open for a lexeme point); a
@@ -3110,81 +3067,90 @@ fn span_underline(run: usize, primary: bool) -> String {
     mark
 }
 
-/// A rustc-style caret region for ONE span (ack-8, the diagnostics frame): the `--> file:line:col`
-/// locator, the source line in a `N | …` gutter, and an underline (`\`…`/` primary span / `-`
-/// secondary) beneath the span with an optional label. This is the shared primitive both the legacy-diag
-/// render (the cli's `report()`) and [`render_cli`]'s multi-span model call, so the frame shape
-/// stays identical whether a diagnostic carries one span or several (cause+effect in one frame).
+/// A caret frame for ONE span (ack-8, the diagnostics frame), as a laid-out code block: a
+/// `file:line:col` locus, the source line in a gutter, and an underline (`\`…`/` primary span /
+/// `-` secondary) beneath the span with an optional label.
 ///
-/// Feeds **rul24-lineno-identity**: the `N` gutter IS the SOURCE line (via [`line_col`]), so a
-/// number the user reads here is the number they type back as `:N`. ASCII only (color is a
-/// severity/tier channel layered at the I/O edge, never in these bytes). A multi-line span renders
-/// EVERY source line it covers, each in its own `N | …` gutter with a per-line underline (the rustc
-/// continuation shape) — precision first, beauty second (no `_^`-wrapping, no color). A single-line
-/// span is byte-identical to the pre-multiline form. Each returned line is newline-prefixed so it
-/// appends cleanly after a title. `inv-referent-agnostic`: the source line is shown, never decoded.
-#[must_use]
-pub fn frame_region(
+/// Feeds **rul24-lineno-identity**: the gutter IS the SOURCE line (via [`line_col`]), so a number
+/// the user reads here is the number they type back as `:N`. The gutter's WIDTH and the bar's
+/// column are the layout engine's — a gutter is a lead folded into the block's first stop, not a
+/// field this seat pads. A multi-line span renders EVERY source line it covers, each with its own
+/// underline (the rustc continuation shape). `inv-referent-agnostic`: the source line is shown,
+/// never decoded — it enters as somebody else's bytes and is encoded at that mint, which is what
+/// keeps a control byte from corrupting both the geometry and the terminal.
+fn frame_block(
     span: Span,
     src: &str,
     filename: &str,
     label: Option<&str>,
     primary: bool,
-) -> String {
-    use std::fmt::Write;
-    let lo = span.lo.0 as usize;
-    let hi = span.hi.0 as usize;
-    let (line, col) = line_col(src, lo);
-    let (hi_line, hi_col) = line_col(src, hi);
-    // The gutter field holds the WIDEST rendered line number (the last), floored at
-    // [`GUTTER_MIN_WIDTH`] so the `|` column never shifts across a small/medium book (item-1). The
-    // frame's own number set (first line = narrowest, last = widest) fixes the alignment aesthetic.
-    let min_digits = line.to_string().len();
-    let max_digits = hi_line.to_string().len();
-    let gutter_w = max_digits.max(GUTTER_MIN_WIDTH);
-    let gutter = " ".repeat(gutter_w);
+) -> weft::CodeBlock<crate::weave::Face> {
+    use crate::weave::{RENDER_SOURCE_CAP, RENDER_VALUE_CAP, foreign, mark, value};
+    use weft::{CodeCell, CodeLine, Literalness};
+
+    let (line, col) = line_col(src, span.lo.0 as usize);
+    let (hi_line, hi_col) = line_col(src, span.hi.0 as usize);
     let lines: Vec<&str> = src.lines().collect();
-    let mut out = String::new();
-    let _ = write!(out, "\n{gutter}--> {filename}:{line}:{col}");
-    let _ = write!(out, "\n{gutter}|");
+    let mut block_lines = Vec::new();
     for l in line..=hi_line {
         let line_text = lines.get(l.saturating_sub(1)).copied().unwrap_or("");
-        let field = gutter_field(l, gutter_w, min_digits, max_digits);
-        // This line's slice of the span: from the start column on the FIRST line (0 on continuation
-        // lines) to the end column on the LAST line (end-of-line on earlier lines).
+        // This line's slice of the span: from the start column on the FIRST line (0 on
+        // continuation lines) to the end column on the LAST line (end-of-line on earlier lines).
         let start = if l == line { col.saturating_sub(1) } else { 0 };
         let end = if l == hi_line {
             hi_col.saturating_sub(1)
         } else {
             line_text.len()
         };
-        let run = end.saturating_sub(start).max(1);
-        let underline = span_underline(run, primary);
-        let _ = write!(out, "\n{field}| {line_text}");
-        let _ = write!(out, "\n{gutter}| {}{underline}", " ".repeat(start));
+        block_lines.push(CodeLine {
+            gutter: Some(value(l.to_string(), "cli-frame-gutter", RENDER_VALUE_CAP)),
+            cells: vec![CodeCell::new(vec![foreign(
+                line_text,
+                filename.to_owned(),
+                RENDER_SOURCE_CAP,
+            )])],
+        });
+        let mut underline = vec![mark(
+            format!(
+                "{}{}",
+                " ".repeat(encoded_width(line_text, 0, start)),
+                span_underline(encoded_width(line_text, start, end).max(1), primary),
+            ),
+            "cli-frame-underline",
+        )];
+        if let Some(label) = label {
+            underline.push(value(
+                format!(" {label}"),
+                "cli-frame-label",
+                RENDER_VALUE_CAP,
+            ));
+        }
+        block_lines.push(CodeLine {
+            gutter: None,
+            cells: vec![CodeCell::new(underline)],
+        });
     }
-    if let Some(l) = label {
-        let _ = write!(out, " {l}");
+    weft::CodeBlock {
+        table: None,
+        mode: Literalness::Literal,
+        locus: Some(vec![value(
+            format!("{filename}:{line}:{col}"),
+            "cli-frame-locus",
+            RENDER_VALUE_CAP,
+        )]),
+        lines: block_lines,
     }
-    out
 }
 
-/// The PRIMARY-span region frame for a [`Diag`] (the cli `report()` path): the [`frame_region`]
-/// block against `source` (`(filename, text)`), or the byte-offset fallback `  --> <lo>:<hi>` when
-/// no source is threaded for this stage, or the empty string when the diagnostic is spanless. Only
-/// the primary caret — the multi-span secondaries live in [`render_cli`]. `report()` builds the
-/// TITLE (`<stage>: <sev>[<code>]: <msg>`, the gate-3 floor's shape) itself; this is the region
-/// below it.
-#[must_use]
-pub fn render_region(diag: &Diag, source: Option<(&str, &str)>) -> String {
-    match (diag.primary.span(), source) {
-        (Some(span), Some((filename, src))) => frame_region(span, src, filename, None, true),
-        // No source to resolve line:col against ⇒ the byte-offset fallback (the span still reaches
-        // the user, just without the framed excerpt).
-        (Some(span), None) => format!("\n  --> {}:{}", span.lo.0, span.hi.0),
-        // Spanless (arch-3-residual-2): no location to point at.
-        (None, _) => String::new(),
-    }
+/// How many COLUMNS `line[from..to]` occupies once encoded for display.
+///
+/// The span's coordinates are byte offsets into the author's own line, but the line reaches the
+/// reader escaped, so an underline placed at a raw offset would drift the moment a line carried a
+/// byte the encoder widened. Byte offsets that do not land on a character boundary fall back to
+/// the whole line rather than panicking (`inv-no-throw`).
+fn encoded_width(line: &str, from: usize, to: usize) -> usize {
+    let slice = line.get(from..to).unwrap_or("");
+    crate::display::encode_foreign(slice, usize::MAX).len()
 }
 
 #[cfg(test)]
@@ -3534,25 +3500,28 @@ mod tests {
         );
     }
 
-    /// ack-8 the caret frame: `frame_region` underlines the exact span on its source line, in a
-    /// gutter whose number IS the SOURCE line (rul24-lineno-identity). Primary uses `^`, and the
-    /// span's start column places the underline. Pins the flagship shape (a diagnostic points at
-    /// the exact bytes it means).
+    /// One frame's rendered bytes, laid out on its own.
+    fn framed(span: Span, src: &str) -> String {
+        let document = weft::Document::new(vec![weft::Node::new(weft::NodeKind::Code(
+            frame_block(span, src, "book.sh", None, true),
+        ))]);
+        weft::render(&document, CANONICAL_TRANSCRIPT_WIDTH)
+            .text()
+            .to_owned()
+    }
+
+    /// ack-8 the caret frame: the block underlines the exact span on its source line, in a gutter
+    /// whose number IS the SOURCE line (rul24-lineno-identity). The span's start column places the
+    /// underline. Pins the flagship shape (a diagnostic points at the exact bytes it means).
     #[test]
-    fn frame_region_underlines_the_span_on_its_source_line() {
+    fn a_frame_underlines_the_span_on_its_source_line() {
         let src = "set -eu\napt-get install $(date)\n";
         // `$(date)` on line 2 (after "apt-get install "); a 7-byte span.
         let lo = u32::try_from(src.find("$(date)").unwrap()).unwrap();
         let hi = lo + u32::try_from("$(date)".len()).unwrap();
-        let frame = frame_region(
-            Span::new(BytePos(lo), BytePos(hi)),
-            src,
-            "book.sh",
-            None,
-            true,
-        );
+        let frame = framed(Span::new(BytePos(lo), BytePos(hi)), src);
         assert!(
-            frame.contains("--> book.sh:2:17"),
+            frame.contains("book.sh:2:17"),
             "file:line:col locator: {frame}"
         );
         assert!(
@@ -3566,38 +3535,56 @@ mod tests {
     }
 
     /// ack-8 the MULTI-LINE caret frame (`aid-caret-span-precision`): a span crossing lines renders
-    /// EVERY covered source line, each with its own `N | …` gutter and a per-line underline (the
-    /// first line from its start column, continuation lines from column 0, the last line to its end
-    /// column). The gutter is right-padded to the widest line number so the `|` columns align. Here
-    /// the span covers lines 9–10, so ` 9` aligns under `10` and both `iii`/`jjj` are underlined.
+    /// EVERY covered source line, each in its own gutter with a per-line underline (the first line
+    /// from its start column, continuation lines from column 0, the last line to its end column).
+    /// The gutters right-align on the widest number, so the bar column is one column for the whole
+    /// block. Here the span covers lines 9–10, so ` 9` aligns under `10`.
     #[test]
-    fn frame_region_renders_every_line_of_a_multiline_span() {
+    fn a_frame_renders_every_line_of_a_multiline_span() {
         let src = "a\nb\nc\nd\ne\nf\ng\nh\niii\njjj\n";
         let lo = u32::try_from(src.find("iii").unwrap()).unwrap();
         let hi = u32::try_from(src.find("jjj").unwrap() + "jjj".len()).unwrap();
-        let frame = frame_region(
-            Span::new(BytePos(lo), BytePos(hi)),
-            src,
-            "book.sh",
-            None,
-            true,
-        );
+        let frame = framed(Span::new(BytePos(lo), BytePos(hi)), src);
         assert!(
-            frame.contains("--> book.sh:9:1"),
+            frame.contains("book.sh:9:1"),
             "locator on the first line: {frame}"
         );
         assert!(
-            frame.contains("\n  9| iii"),
-            "line 9 in the 3-wide gutter: {frame}"
+            frame.contains("\n 9 | iii"),
+            "line 9 right-aligned in the block's gutter: {frame}"
         );
         assert!(
-            frame.contains("\n 10| jjj"),
-            "line 10 in the aligned gutter: {frame}"
+            frame.contains("\n10 | jjj"),
+            "line 10 in the same gutter: {frame}"
         );
         assert_eq!(
             frame.matches("\n   | \\_/").count(),
             2,
             "a per-line `\\_/` span bracket beneath BOTH covered lines (not just the first): {frame}"
+        );
+    }
+
+    /// A source line reaches a laid-out surface ENCODED, so the underline has to be placed in the
+    /// columns the reader actually sees. A raw-byte offset would drift left of the span the moment
+    /// a line carried a tab.
+    #[test]
+    fn an_underline_lands_under_the_span_even_when_the_line_widens_on_encoding() {
+        let src = "a\tb cmd\n";
+        let lo = u32::try_from(src.find("cmd").unwrap()).unwrap();
+        let hi = lo + 3;
+        let frame = framed(Span::new(BytePos(lo), BytePos(hi)), src);
+        let line = frame
+            .lines()
+            .find(|line| line.contains("a\\x09b"))
+            .expect("the source line is escaped");
+        let underline = frame
+            .lines()
+            .find(|line| line.contains("\\_/"))
+            .expect("the span is underlined");
+        assert_eq!(
+            line.find("cmd"),
+            underline.find("\\_/"),
+            "the bracket sits under `cmd`:\n{frame}"
         );
     }
 

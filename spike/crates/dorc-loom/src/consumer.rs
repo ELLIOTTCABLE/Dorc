@@ -15,16 +15,16 @@ use dorc_aid::Severity;
 use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
 use dorc_aid::catalog::{OwnedEntry, is_foreign_param, owned_catalog, parse_template};
 use dorc_aid::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
-    CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
-    Diag, DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
-    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
-    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
-    LintToolOutputUnparsable, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
-    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
-    TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted, TransportSessionLost,
-    WhylogUnwritten, WrapperPeelIncoherent, render_cli_parts, render_cli_with,
-    render_staged_cli_parts,
+    AidUnloadedSiblingOracle, CANONICAL_TRANSCRIPT_WIDTH, CarriedAcrossSubstrateAxis,
+    CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable, CliShimDirUnwritable,
+    CmdsubOperandTop, CommandName, DanglingReference, Diag, DiagCode, DorcShExecFailed,
+    DorcShScriptUnreadable, EscalationPolicy, HostEvidenceAdmissionRefused,
+    HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing,
+    LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable, OperandPosition,
+    RecordsFactTruncated, RenderHeredocRefused, SharedCellMeasurementsDisagree, SiteId,
+    SiteUnresolvable, SyntaxUnsupported, TransportApplyFailed, TransportCrlfRefused,
+    TransportNotAttempted, TransportSessionLost, WhylogUnwritten, WrapperPeelIncoherent,
+    render_cli_parts, render_staged_cli_parts,
 };
 use dorc_core::{Interner, LeafId, ProvArena, TopCause};
 use errorloom::{
@@ -407,6 +407,36 @@ impl DorcConsumer {
         cases.iter().map(|case| self.render_case(case)).collect()
     }
 
+    /// One diagnostic's part stream at the corpus's canonical width.
+    ///
+    /// The ONE seat both answers come from — the provenance answer [`Self::replay`] hands the
+    /// transport, and the bytes [`Self::render_direct_replay`] commits. Two seats is how a
+    /// transcript stops being what the renderer printed
+    /// (`28L:rul-editability-is-stamped-never-re-derived`).
+    fn cli_parts(&self, diag: &Diag, src: &str, filename: &str) -> dorc_aid::tagged::RenderParts {
+        render_cli_parts(
+            &self.mirror,
+            diag,
+            src,
+            filename,
+            &Interner::default(),
+            CANONICAL_TRANSCRIPT_WIDTH,
+        )
+    }
+
+    /// [`Self::cli_parts`] for a source-staged diagnostic.
+    fn staged_cli_parts(&self, stage: &str, diag: &Diag) -> dorc_aid::tagged::RenderParts {
+        render_staged_cli_parts(
+            stage,
+            &self.mirror,
+            diag,
+            "",
+            "",
+            &Interner::default(),
+            CANONICAL_TRANSCRIPT_WIDTH,
+        )
+    }
+
     /// Render one case through the core part stream and map it to editable sections.
     ///
     /// # Errors
@@ -417,7 +447,7 @@ impl DorcConsumer {
         }
         let (diag, src, filename) = Self::world_of(case)?;
         let interner = Interner::default();
-        let parts = render_cli_parts(&self.mirror, &diag, &src, &filename, &interner);
+        let parts = self.cli_parts(&diag, &src, &filename);
         let render = to_editable_render(&parts);
         let variables = editable_variables(&render)?;
         let all_variables = dorc_aid::diag::params_of(&diag.code, &interner)
@@ -492,8 +522,7 @@ impl DorcConsumer {
                     }),
             );
             let diag = inspected.diagnostics.into_iter().next()?;
-            let interner = Interner::default();
-            let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
+            let parts = self.staged_cli_parts("whylog", &diag);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if let Some(path) = parse_direct_lint(&tokens) {
@@ -508,17 +537,15 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(result.human())));
         }
         if let Some(diag) = fire_invocation_error(case, &tokens) {
-            let interner = Interner::default();
-            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            let parts = self.cli_parts(&diag, "", "");
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if parse_direct_remote_apply(&tokens) {
             let diag = Self::world_of(case).ok()?.0;
-            let parts = render_cli_parts(&self.mirror, &diag, "", "", &Interner::default());
+            let parts = self.cli_parts(&diag, "", "");
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         let plan = parse_direct_plan(&tokens)?;
-        let interner = Interner::default();
         // World-as-payload, the branch `render_direct_replay` has always had. Without it the
         // driver declined, so `compile`/`promote` never saw provenance for these cases.
         let Some(source) = materialized_source(case, context, plan.book) else {
@@ -526,7 +553,7 @@ impl DorcConsumer {
             if plan.machine {
                 return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
             }
-            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
+            let parts = self.cli_parts(&diag, "", "");
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         };
         if let Some(input) = plan.input {
@@ -536,7 +563,7 @@ impl DorcConsumer {
         if plan.machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }
-        let parts = render_cli_parts(&self.mirror, &diag, &source, &filename, &interner);
+        let parts = self.cli_parts(&diag, &source, &filename);
         let render = to_editable_render(&parts);
         Some(ReplayResult::editable(render))
     }
@@ -1121,6 +1148,11 @@ impl CaseRenderer for DorcConsumer {
 }
 
 impl DorcConsumer {
+    /// The committed transcript for one replay block.
+    ///
+    /// Every arm here answers with the SAME seat's bytes as [`Self::replay`]'s provenance answer —
+    /// there is one render form, so nothing has to undo a second one before an edit can be
+    /// attributed (`28L:rul-editability-is-stamped-never-re-derived`).
     fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
         let words =
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
@@ -1149,18 +1181,16 @@ impl DorcConsumer {
             .text());
         }
         if let Some(diag) = fire_invocation_error(case, &words) {
-            let interner = Interner::default();
-            let parts = render_cli_parts(&self.mirror, &diag, "", "", &interner);
-            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
+            let parts = self.cli_parts(&diag, "", "");
+            return Ok(parts.text());
         }
         if parse_direct_remote_apply(&words) {
             let diag = Self::world_of(case)?.0;
-            let parts = render_cli_parts(&self.mirror, &diag, "", "", &Interner::default());
-            return Ok(format!("{}\n", reflow_to_canonical(&parts.text())));
+            let parts = self.cli_parts(&diag, "", "");
+            return Ok(parts.text());
         }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        let interner = Interner::default();
         let Some(source) = case
             .sections()
             .iter()
@@ -1173,13 +1203,7 @@ impl DorcConsumer {
             if plan.machine {
                 return Ok(render_diag_jsonl(&diag));
             }
-            return Ok(reflow_to_canonical(&render_cli_with(
-                &self.mirror,
-                &diag,
-                "",
-                "",
-                &interner,
-            )));
+            return Ok(self.cli_parts(&diag, "", "").text());
         };
         if let Some(input) = plan.input {
             let has_input = case_relative_path(input)
@@ -1195,13 +1219,7 @@ impl DorcConsumer {
         if plan.machine {
             return Ok(render_diag_jsonl(&diag));
         }
-        Ok(reflow_to_canonical(&render_cli_with(
-            &self.mirror,
-            &diag,
-            source,
-            &filename,
-            &interner,
-        )))
+        Ok(self.cli_parts(&diag, source, &filename).text())
     }
 
     /// The re-render half of the `dorc why --last` route: the degraded RECEIPT when the case's
@@ -1237,71 +1255,9 @@ impl DorcConsumer {
         .into_iter()
         .next()
         .ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        let interner = Interner::default();
-        let parts = render_staged_cli_parts("whylog", &self.mirror, &diag, "", "", &interner);
-        Ok(format!("{}\n", reflow_to_canonical(&parts.text())))
+        let parts = self.staged_cli_parts("whylog", &diag);
+        Ok(parts.text())
     }
-}
-
-/// The corpus's pinned canonical render width (`282` §3): committed transcripts word-wrap HERE, not
-/// at a terminal — a live surface may wrap adaptively, the corpus does not. The committed file's own
-/// hard-wrapping is normalized away on read-in (the whitespace-collapsing prose tokenizer) and
-/// regenerated at this width, so the on-disk layout is render-owned, never author-owned.
-const CANONICAL_WIDTH: usize = 80;
-
-/// Reflow a flat CLI diagnostic render to [`CANONICAL_WIDTH`] (`282` §3, item-6 layout): the title
-/// line wraps under a 3-space hanging indent (the message body under the title) and each
-/// `= help:` / `= note:` block wraps under a 6-space hanging indent, its `=` marker re-aligned to the
-/// frame's gutter column; the caret-frame lines pass through verbatim. This corpus surface owns the
-/// wrap so a committed file's editing-time layout never reaches the fixpoint assertion.
-fn reflow_to_canonical(render: &str) -> String {
-    let mut out: Vec<String> = Vec::new();
-    for (i, line) in render.lines().enumerate() {
-        if i == 0
-            && let Some(cut) = line.find("]: ")
-        {
-            let (prefix, text) = line.split_at(cut.saturating_add(3));
-            out.push(wrap_words(prefix, "   ", text));
-            continue;
-        }
-        if let Some(rest) = line.trim_start().strip_prefix("= ")
-            && let Some(cut) = rest.find(": ")
-        {
-            let marker = rest.get(..cut.saturating_add(2)).unwrap_or(rest);
-            let text = rest.get(cut.saturating_add(2)..).unwrap_or("");
-            out.push(wrap_words(&format!("   = {marker}"), "      ", text));
-            continue;
-        }
-        out.push(line.to_owned());
-    }
-    out.join("\n")
-}
-
-/// Greedy word-wrap of `text` beneath `prefix` (the un-wrapped first-line lead-in) at
-/// [`CANONICAL_WIDTH`], every continuation line carrying `cont_indent`. Column counting is by
-/// `char`, so the one-column `—`/`…` glyphs the prose uses count as one. Pure; total.
-fn wrap_words(prefix: &str, cont_indent: &str, text: &str) -> String {
-    let mut out = String::from(prefix);
-    let mut col = prefix.chars().count();
-    let mut started = false;
-    for word in text.split_whitespace() {
-        let wlen = word.chars().count();
-        if !started {
-            out.push_str(word);
-            col = col.saturating_add(wlen);
-            started = true;
-        } else if col.saturating_add(1).saturating_add(wlen) <= CANONICAL_WIDTH {
-            out.push(' ');
-            out.push_str(word);
-            col = col.saturating_add(1).saturating_add(wlen);
-        } else {
-            out.push('\n');
-            out.push_str(cont_indent);
-            out.push_str(word);
-            col = cont_indent.chars().count().saturating_add(wlen);
-        }
-    }
-    out
 }
 
 /// The compact machine view of a single diagnostic for a `--format=jsonl` replay block (`282` §2

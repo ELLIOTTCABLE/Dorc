@@ -7857,6 +7857,7 @@ fn report(stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
             src,
             filename,
             &interner,
+            dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
         )
         .text();
         let prefix = format!("{stage}: {word}");

@@ -521,7 +521,9 @@ fn inspect_cases(
             .enumerate()
         {
             let changed_from_head = block.output() != head_block.output();
-            let dirty = unreflow(block.output());
+            // The committed bytes ARE the render's bytes, so an edit compiles against them
+            // directly (`28L:rul-editability-is-stamped-never-re-derived`).
+            let dirty = block.output().to_owned();
             if let Some(render) = routed.editable_render().cloned() {
                 let baseline = consumer
                     .baseline_from_render(&case, render)
@@ -723,91 +725,6 @@ fn case_name(path: &Path) -> Result<String, String> {
         .filter(|name| !name.is_empty())
         .map(str::to_owned)
         .ok_or_else(|| format!("{}: case file has no UTF-8 filename", path.display()))
-}
-
-/// Undo `reflow_to_canonical` on a committed transcript, so an edit is compiled against the bytes
-/// the renderer actually produced. It must be that function's EXACT inverse: a render it never
-/// touched must come back verbatim, or a surface that was already laid out gets un-laid-out.
-///
-/// The title-line rule carries the `]: ` condition for that reason. `reflow_to_canonical` wraps
-/// line 0 only when it holds a diagnostic's `[<code>]: ` marker; a weft-rendered REPORT has no
-/// marker and its indented rows are the RENDERER's own structure, so joining them here glued a
-/// whole receipt banner onto one line and refused every edit as
-/// `MarkerOutsideEditableSection` (`28H:friction-unreflow-is-diagnostic-shaped`).
-fn unreflow(render: &str) -> String {
-    let mut lines = render.lines().peekable();
-    let mut out = Vec::new();
-    if let Some(first) = lines.next() {
-        if first.contains("]: ") {
-            out.push(join_continuations(first, &mut lines, "   "));
-        } else {
-            out.push(normalize_layout(first));
-        }
-    }
-    while let Some(line) = lines.next() {
-        if line.trim_start().starts_with("= ") {
-            out.push(normalize_layout(&join_continuations(
-                line, &mut lines, "      ",
-            )));
-        } else {
-            out.push(normalize_layout(line));
-        }
-    }
-    let mut out = out.join("\n");
-    // `lines()` drops a trailing newline, and the edit compiler strips the baseline's trailing
-    // STRUCTURE component as an exact suffix — so losing it refused EVERY case edit
-    // (`289:rul-reflow-fix-in-phase-four`).
-    if render.ends_with('\n') {
-        out.push('\n');
-    }
-    out
-}
-
-fn normalize_layout(line: &str) -> String {
-    if let Some(rest) = line.strip_prefix("   = ") {
-        return format!("  = {rest}");
-    }
-    if is_caret_gutter(line)
-        && let Some(rest) = line.strip_prefix("  ")
-    {
-        return format!(" {rest}");
-    }
-    line.to_owned()
-}
-
-/// A caret-frame SOURCE-GUTTER line: `<pad><line-number><pad>| <source bytes>`. The gutter is
-/// right-aligned on the frame's widest line number, so a single-digit line inside a frame reaching
-/// three digits carries two leading spaces — which is what [`normalize_layout`] strips.
-///
-/// The `|` is load-bearing. Without it the rule also swallowed a leading space from a COMPACT lint
-/// finding (`  2:1 info [source:code] …`), whose leading two spaces are the renderer's own, and the
-/// mismatch refused every compact-line transcript edit as `MarkerOutsideEditableSection` —
-/// `289:rul-reflow-fix-in-phase-four`. Gutter digits are followed only by spaces then `|`; a
-/// finding's are followed by `:`, so the two shapes never collide.
-fn is_caret_gutter(line: &str) -> bool {
-    let rest = line.trim_start_matches(' ');
-    let digits = rest.trim_start_matches(|c: char| c.is_ascii_digit());
-    if digits.len() == rest.len() {
-        return false; // no line number at all
-    }
-    digits.trim_start_matches(' ').starts_with('|')
-}
-
-fn join_continuations<'a>(
-    first: &str,
-    lines: &mut std::iter::Peekable<impl Iterator<Item = &'a str>>,
-    indent: &str,
-) -> String {
-    let mut joined = first.to_owned();
-    while lines
-        .peek()
-        .is_some_and(|line| line.starts_with(indent) && !line.trim_start().starts_with("-->"))
-    {
-        let line = lines.next().unwrap_or_default();
-        joined.push(' ');
-        joined.push_str(line.trim());
-    }
-    joined
 }
 
 #[cfg(test)]

@@ -167,17 +167,15 @@ fn append_finding_parts(out: &mut RenderParts, finding: &Finding, verbosity: Ver
         text: String::from("  "),
         slug: "lint-indent",
     });
+    // The framed render ends its own last line, so nothing is appended after it.
     out.append(dorc_aid::diag::render_cli_parts(
         &dorc_aid::catalog::CONST_CATALOG,
         &provenance.diag,
         &provenance.source,
         &finding.path,
         &dorc_core::Interner::default(),
+        dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
     ));
-    out.push(RenderPart::Arrangement {
-        text: String::from("\n"),
-        slug: "lint-terminal-newline",
-    });
 }
 
 /// The compact form, emitted as PARTS: `  <line>:<col> <severity> [<source>:<code>] <message>` plus

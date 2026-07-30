@@ -420,7 +420,8 @@ fn defining_case_parts_match_product_renders() {
                 &diag,
                 src,
                 "book.sh",
-                &interner
+                &interner,
+                diag::CANONICAL_TRANSCRIPT_WIDTH,
             )
             .text(),
             diag::render_cli(&diag, src, "book.sh", &interner),

@@ -171,6 +171,7 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
                 "",
                 "",
                 &interner,
+                dorc_aid::diag::CANONICAL_TRANSCRIPT_WIDTH,
             )
             .text()
         );

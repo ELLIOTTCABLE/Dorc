@@ -19,7 +19,7 @@
 
 use weft::{Instance, Provenance, Rendered, Run, Span};
 
-use crate::tagged::{RenderPart, RenderParts};
+use crate::tagged::{Field, RenderPart, RenderParts};
 
 /// The identity a rendered run carries into weft's span map.
 ///
@@ -50,7 +50,32 @@ pub enum Face {
     /// because some tables are per-instance — the two halves of one cut excerpt relate to each
     /// other and to nothing else.
     Table(String),
+    /// A diagnostic code — the catalog row a prose register belongs to.
+    Code(&'static str),
+    /// Which prose register of a catalog row, and which paragraph of it.
+    Register {
+        /// The register.
+        field: Field,
+        /// Zero-based paragraph within the register.
+        paragraph: usize,
+    },
+    /// A named interpolation hole in a catalog register.
+    Hole {
+        /// The register the hole sits in.
+        field: Field,
+        /// The declared param name.
+        param: &'static str,
+    },
 }
+
+/// The display budget for one interpolated value on a laid-out surface.
+///
+/// Generous — several of these carry an engine-authored sentence — and bounded, because some
+/// carry text a book, not we, decided the length of.
+pub const RENDER_VALUE_CAP: usize = 2048;
+
+/// The display budget for one quoted line of somebody else's source on a laid-out surface.
+pub const RENDER_SOURCE_CAP: usize = 4096;
 
 /// The [`RenderPart::Arrangement`] slug for weft's own layout: indentation, padding, line
 /// breaks, column separators. Renderer-computed and never an edit region.
@@ -157,6 +182,23 @@ pub fn foreign(text: &str, source: impl Into<String>, cap: usize) -> Run<Face> {
     )
 }
 
+/// A run of catalog or registry prose, as the whitespace-absorption rule compares them.
+///
+/// Two stretches of ONE row are what the rule looks for: a break weft minted between them is that
+/// row's own inter-word space wearing the renderer's clothes.
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum Row {
+    Arrangement {
+        slug: &'static str,
+        occurrence: Option<usize>,
+    },
+    Register {
+        code: &'static str,
+        field: Field,
+        instance: usize,
+    },
+}
+
 /// What one stretch of rendered output IS, for transport purposes — the bridge's working
 /// vocabulary between weft's span map and the loom's part stream.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -170,20 +212,79 @@ enum Facet {
         occurrence: Option<usize>,
         index: usize,
     },
+    Template {
+        code: &'static str,
+        field: Field,
+        paragraph: usize,
+        instance: usize,
+    },
+    Param {
+        code: &'static str,
+        field: Field,
+        param: &'static str,
+        instance: usize,
+    },
     Foreign(String),
     Computed(&'static str),
     Layout,
 }
 
 impl Facet {
-    /// The registry row this stretch belongs to, if any. Two stretches of one row are what the
-    /// whitespace-absorption rule looks for.
-    fn row(&self) -> Option<(&'static str, Option<usize>)> {
+    /// The prose row this stretch belongs to, if any.
+    fn row(&self) -> Option<Row> {
         match self {
             Facet::Words { slug, occurrence }
             | Facet::Value {
                 slug, occurrence, ..
-            } => Some((*slug, *occurrence)),
+            } => Some(Row::Arrangement {
+                slug,
+                occurrence: *occurrence,
+            }),
+            Facet::Template {
+                code,
+                field,
+                instance,
+                ..
+            }
+            | Facet::Param {
+                code,
+                field,
+                instance,
+                ..
+            } => Some(Row::Register {
+                code,
+                field: *field,
+                instance: *instance,
+            }),
+            _ => None,
+        }
+    }
+
+    /// The row's own WORDS facet — what an absorbed inter-word space belongs to when the two
+    /// stretches around it are different pieces of one row.
+    fn words_of(row: &Row, paragraph: usize) -> Facet {
+        match row {
+            Row::Arrangement { slug, occurrence } => Facet::Words {
+                slug,
+                occurrence: *occurrence,
+            },
+            Row::Register {
+                code,
+                field,
+                instance,
+            } => Facet::Template {
+                code,
+                field: *field,
+                paragraph,
+                instance: *instance,
+            },
+        }
+    }
+
+    /// The paragraph a stretch names, for reconstructing an absorbed space's own facet.
+    fn paragraph(&self) -> Option<usize> {
+        match self {
+            Facet::Template { paragraph, .. } => Some(*paragraph),
             _ => None,
         }
     }
@@ -206,6 +307,26 @@ fn facet_of(provenance: &Provenance<Face>) -> Facet {
             occurrence: *occurrence,
             index: instance.0 as usize,
         },
+        Provenance::Template {
+            key: Face::Code(code),
+            field: Face::Register { field, paragraph },
+            instance,
+        } => Facet::Template {
+            code,
+            field: *field,
+            paragraph: *paragraph,
+            instance: instance.0 as usize,
+        },
+        Provenance::Param {
+            key: Face::Code(code),
+            param: Face::Hole { field, param },
+            instance,
+        } => Facet::Param {
+            code,
+            field: *field,
+            param,
+            instance: instance.0 as usize,
+        },
         Provenance::Foreign {
             key: Face::Source(source),
         } => Facet::Foreign(source.clone()),
@@ -219,6 +340,72 @@ fn facet_of(provenance: &Provenance<Face>) -> Facet {
         Provenance::Arrangement { key: None } => Facet::Layout,
         _ => Facet::Computed(WEFT_UNKEYED),
     }
+}
+
+/// Map a part stream INTO weft's run vocabulary — the direction a seat composing a document needs.
+///
+/// The inverse of [`to_render_parts`], and the two must stay inverses: a run this mints has to
+/// come back as the part it was born from, or an edit lands on the wrong register.
+///
+/// Values are encoded on the way in. A laid-out surface measures bytes as columns and does not
+/// sanitise its input, so a control byte would corrupt the geometry as well as the terminal
+/// (`28D:must-encode-per-surface`); our OWN words — catalog literals, registry words, computed
+/// chrome — are never encoded, because encoding them twice would be a defect.
+#[must_use]
+pub fn to_runs(parts: &RenderParts) -> Vec<Run<Face>> {
+    parts
+        .parts()
+        .iter()
+        .map(|part| match part {
+            RenderPart::TemplateLiteral {
+                text,
+                code,
+                field,
+                paragraph,
+                instance,
+            } => Run::template(
+                text.clone(),
+                Face::Code(code),
+                Face::Register {
+                    field: *field,
+                    paragraph: *paragraph,
+                },
+                Instance(u32::try_from(*instance).unwrap_or(u32::MAX)),
+            ),
+            RenderPart::ParamValue {
+                text,
+                code,
+                field,
+                param,
+                instance,
+            } => Run::param(
+                crate::display::encode_foreign(text, RENDER_VALUE_CAP),
+                Face::Code(code),
+                Face::Hole {
+                    field: *field,
+                    param,
+                },
+                Instance(u32::try_from(*instance).unwrap_or(u32::MAX)),
+            ),
+            RenderPart::ForeignText { text, source } => {
+                foreign(text, source.clone(), RENDER_VALUE_CAP)
+            }
+            RenderPart::Arrangement { text, slug } | RenderPart::ArrangementPage { text, slug } => {
+                mark(text.clone(), slug)
+            }
+            RenderPart::ArrangementWords {
+                text,
+                slug,
+                occurrence,
+            } => words(text.clone(), slug, *occurrence),
+            RenderPart::ArrangementValue {
+                text,
+                slug,
+                occurrence,
+                index,
+            } => sentence_value(text, slug, *occurrence, *index, RENDER_VALUE_CAP),
+        })
+        .collect()
 }
 
 /// Map a weft render back to the loom's part stream — the bridge that gives the why surface an
@@ -264,10 +451,11 @@ pub fn to_render_parts(rendered: &Rendered<Face>) -> RenderParts {
         let absorbed = if before == after {
             before.clone()
         } else {
-            Facet::Words {
-                slug: row.0,
-                occurrence: row.1,
-            }
+            let paragraph = before
+                .paragraph()
+                .or_else(|| after.paragraph())
+                .unwrap_or(0);
+            Facet::words_of(&row, paragraph)
         };
         if let Some(slot) = facets.get_mut(index) {
             *slot = absorbed;
@@ -317,6 +505,30 @@ fn part_of(facet: Facet, text: String) -> RenderPart {
             slug,
             occurrence,
             index,
+        },
+        Facet::Template {
+            code,
+            field,
+            paragraph,
+            instance,
+        } => RenderPart::TemplateLiteral {
+            text,
+            code,
+            field,
+            paragraph,
+            instance,
+        },
+        Facet::Param {
+            code,
+            field,
+            param,
+            instance,
+        } => RenderPart::ParamValue {
+            text,
+            code,
+            field,
+            param,
+            instance,
         },
         Facet::Foreign(source) => RenderPart::ForeignText { text, source },
         Facet::Computed(slug) => RenderPart::Arrangement { text, slug },
