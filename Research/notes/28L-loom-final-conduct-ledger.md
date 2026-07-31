@@ -700,6 +700,50 @@ lanes thread by fresh census, never by the map's count.
   transport-not-attempted sibling pair · the stale `PASSTHROUGH` metadata
   wording sweep (with `--accept-metadata`, x2d's gate makes it deliberate) ·
   x2c's aid/CLAUDE.md `passthrough-is-type-gated` bullet reviewed at fold.
+- **x2e LANDED** (`ai/r28-loom-x2e` @ `5428800f`, base `16577d6b`; both legs green,
+  Win 1682 / WSL 1678; folds AFTER x2c). (1) fnd-lint-route-rerender FIXED
+  STRUCTURALLY: the seat was `lint_materialized_source` rendering EAGERLY with
+  `RenderCtx::production()` baked in — now lazy (`human(ctx)`), so a stale stored
+  render is unrepresentable (and the eager render at main.rs was dead work);
+  pinned both directions on the mirror with the pin proven to bite. (2) records
+  into `WhyWorld`: `analyze_measured(...)` via a PURE 397-line deletion
+  extraction (regions verbatim to results.rs/survival.rs; zero insertions;
+  127 looms byte-identical); reach expansion NOT skipped and auto-kind fences
+  registered (both under-execution-direction calls, correct); `RunClock::Absent`;
+  the residual honestly narrowed: the wrapper peel is unthreaded — wrapper
+  why-worlds stay diagnostic-plane. (3) faces 8 → 40 of 93: 29 components were
+  ALREADY RENDERED by committed cases and merely unowned — x2d's `owns:` key
+  faced them with zero new worlds; one new measured case
+  (`why-reason-skipped-converged`, the first converged-elide loom through the
+  real fixture intake). (4) `expected_header_prefix` beside the parser so the
+  admission refusal PRINTS the demanded header — and the refusal had been
+  SWALLOWED into "unsupported replay" (`live_why_parts` was Option); now Result,
+  text verbatim, self-tested (the lane authored its own case by copying the
+  digest out of the refusal).
+- **x2e tc-rulings** — `tc-lazy-render-vs-paired-result` → ACCEPTED
+  (unrepresentable-beats-remembered, the standing ratification; the doc updates
+  with the type) · `tc-why-world-peel-unthreaded` → accepted as a DISCLOSED
+  residual (two seats, one world, documented; wrapper faces ride the diagnostic
+  plane until a future peel-threading) · `tc-reason-renders-as-a-value-not-a-
+  section` → as-built, rides render-form-unwelded (a prose-era render-shape
+  question, not machinery).
+- **Ledger rows minted (structurally un-faceable, law-cited — the human's
+  accepted category)** — `why-receipt-when-live` + `why-receipt-when-replayed`:
+  need a live clock; `RunClock::Absent` is forced because a committed transcript
+  must be a fixpoint and rendered surfaces have no tolerate-vocabulary
+  (seam-tolerated-nondeterminism-stops-at-the-run-log) ⇒ lock-tier forever ·
+  `why-receipt-book-at-head`: needs a git-HEAD query, an I/O edge that stays in
+  main.rs (lib-target-is-a-loom-seam) ⇒ lock-tier forever.
+- **x2g QUEUED** (with x2f, after the x2c+x2e folds; the LAST build lane pair):
+  author the ~49 buildable worlds (a handful of worlds face whole clusters — the
+  survival world alone covers the trust-spent/claims/vouch-payload/derives/
+  surprises/analysis-opener/next-step/remediation cluster; plus guard-licensed ·
+  declined-vouch · render-refused-heredoc · omitted-pipe · cmdsub worlds; the
+  skipped-converged case + X2b's survival fixtures are the exemplars) ·
+  attempt-and-size threading the validity-fixpoint cascades map into
+  `analyze_measured` (faces `why-reason-elide-cascaded`; if it balloons, ledger
+  with the mechanical reason) · `sections`' first-replay-only census note fixed
+  or documented.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
