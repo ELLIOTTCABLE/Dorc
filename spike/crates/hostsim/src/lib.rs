@@ -1154,7 +1154,7 @@ apt_get__predict() {
                 // hostsim's corpus has no all-Query pipeline ⇒ no connected check-pipe (24J §2);
                 // default keeps compile_probe consistent with the `build_plan` wrapper it uses below.
                 &dorc_plan::ConnectedPipes::default(),
-                |provider, argv| ship_corpus(&checks, &i, provider, argv),
+                |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
                 |_, _, _| None,
                 // hostsim exercises elision soundness, not guards — no vouched past-wall probes.
                 |_| false,
@@ -1276,7 +1276,7 @@ apt_get__predict() {
             &classes,
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
-            |_provider, _argv| None,
+            |_, _provider, _argv| None,
             |_, _, _| None,
             |_| false,
         );
@@ -1441,7 +1441,7 @@ grep__predict() {
             &cfg,
             &value,
             &classes,
-            |p, a: &[dorc_core::Symbol]| ship_stage_from(CONNECTED_ORACLE, &checks, &i, p, a),
+            |_n, p, a: &[dorc_core::Symbol]| ship_stage_from(CONNECTED_ORACLE, &checks, &i, p, a),
         );
         let probe = compile_probe(
             &parsed.value,
@@ -1450,7 +1450,7 @@ grep__predict() {
             &classes,
             &BTreeMap::new(),
             &connected,
-            |p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
+            |_n, p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
             |_, _, _| None,
             |_| false,
         );

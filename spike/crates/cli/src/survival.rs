@@ -504,6 +504,7 @@ pub fn build_wrapped_analysis(
     dial: dorc_core::EscalationDial,
     capability: dorc_core::Capability,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> WrappedAnalysis {
     use dorc_aid::narrative::EntryDegradeTag;
     use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
@@ -579,6 +580,8 @@ pub fn build_wrapped_analysis(
             inner_provider,
             &inner_operands,
             interner,
+            node,
+            live,
         ) else {
             // No inner check ⇒ run; the fact is still born in-context for classify.
             out.peeled.insert(
@@ -867,6 +870,11 @@ fn build_wrapper_index(
 /// body if the inner is a modeled command, else the auto-cell `__is_converged` verdict body (the
 /// markless shape). `None` ⇒ no inner check ⇒ the site can't be probed ⇒ runs. Returns
 /// `(mangled funcname, stripped funcdef)` — the funcname matches the strip's mangled name byte-for-byte.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the entry-composed ship is a SITE-keyed act like every other (`28K` §2), so it takes \
+              the site node and the positional oracle beside the already-threaded inner argv"
+)]
 fn resolve_inner_check(
     oracle_srcs: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
@@ -875,6 +883,8 @@ fn resolve_inner_check(
     inner_provider: Symbol,
     inner_operands: &[Symbol],
     interner: &Interner,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<(String, String)> {
     use dorc_oracle::predict::map_provider_name;
     let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
@@ -884,12 +894,21 @@ fn resolve_inner_check(
         interner,
         inner_provider,
         inner_operands,
+        node,
+        live,
     ) {
         return Some((format!("{seg}__predict"), shipped.sh));
     }
     // Entry-composition is out of both the tier-3 drain scope and the span-threading scope this
     // round: the composed body has no single defining funcdef to name, so its site stays span-less.
-    let shipped = ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
+    let shipped = ship_verdict_body(
+        oracle_srcs,
+        verdict_sets,
+        interner,
+        inner_provider,
+        node,
+        live,
+    )?;
     Some((format!("{seg}__is_converged"), shipped.sh))
 }
 
@@ -954,6 +973,7 @@ pub fn survival_diagnostics(
         dial,
         capability,
         &mut interner,
+        dorc_analysis::funcenv::LiveDefinitions::unsolved(),
     );
     let mut out = wrapped.hints;
 

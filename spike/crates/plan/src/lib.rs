@@ -1315,11 +1315,12 @@ pub fn build_vouches(
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
-        VerdictResolution, VerdictSet, check_commands, classify_decline, evaluate_verdict,
-        vouch_site,
+        VERDICT_SUFFIX, VerdictResolution, VerdictSet, check_commands, classify_decline,
+        evaluate_verdict, vouch_site,
     };
 
     let mut diags = Vec::new();
@@ -1376,13 +1377,18 @@ pub fn build_vouches(
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
         // The file INDEX rides along so an arm span crossing to the render carries its file
         // identity (`tc-oracle-file-identity`).
-        // The LIVE verdict definition (`28K` §1); must agree with every other resolution seat.
+        // The LIVE verdict definition (`28K` §1), AT THIS SITE (`28K` §2
+        // rul-visibility-is-full-positional): authoring the verdict IS the vouching act, so a
+        // definition a shell would not yet have called cannot vouch for a line above it. Must
+        // agree with every other resolution seat.
         let want = map_provider_name(interner.resolve(*provider));
+        let verdict_name = format!("{want}{VERDICT_SUFFIX}");
         let found = verdict_sets
             .iter()
             .zip(oracle_srcs)
             .enumerate()
             .rev()
+            .filter(|(idx, _)| live.answers_at(node, &verdict_name, *idx))
             .find_map(|(idx, (set, src))| {
                 set.providers()
                     .find(|p| map_provider_name(interner.resolve(*p)) == want)
@@ -2602,7 +2608,7 @@ pub fn connected_check_pipes(
     cfg: &Cfg,
     value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
-    ship_stage: impl Fn(Symbol, &[Symbol]) -> Option<StageShip>,
+    ship_stage: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<StageShip>,
 ) -> ConnectedPipes {
     // AstId → (CfgNodeId, is-QueryResolvable). A simple-pipe stage is a single leaf, so the map is
     // 1:1 for the shapes we recognise; a stage whose AstId is absent (opaque/mutator/nested) fails
@@ -2656,7 +2662,7 @@ pub fn connected_check_pipes(
         let mut refused = false;
         for (idx, &stage_node) in nodes.iter().enumerate() {
             let Some((provider, argv, ship)) =
-                ship_stage_for_argv(&value.argv_values(stage_node), &ship_stage)
+                ship_stage_for_argv(&value.argv_values(stage_node), stage_node, &ship_stage)
             else {
                 refused = true;
                 break;
@@ -2698,7 +2704,8 @@ pub fn connected_check_pipes(
 /// word or operand ⇒ no concrete stage ⇒ `None` (refuses the compound, `kFAIL-perform`).
 fn ship_stage_for_argv(
     argv: &[ValueOf],
-    ship_stage: &impl Fn(Symbol, &[Symbol]) -> Option<StageShip>,
+    node: CfgNodeId,
+    ship_stage: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<StageShip>,
 ) -> Option<(Symbol, Vec<Symbol>, StageShip)> {
     let (first, rest) = argv.split_first()?;
     let &ValueOf::Literal(provider) = first else {
@@ -2711,7 +2718,7 @@ fn ship_stage_for_argv(
         };
         operands.push(s);
     }
-    let ship = ship_stage(provider, &operands)?;
+    let ship = ship_stage(node, provider, &operands)?;
     Some((provider, operands, ship))
 }
 
@@ -2766,7 +2773,7 @@ pub fn compile_probe(
     classes: &[(CfgNodeId, SkipClass)],
     wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
-    ship_body: impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_body: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
     ship_auto: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
     is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
@@ -2956,7 +2963,7 @@ pub fn compile_probe(
         // R3: ship the provider's stripped `check()` invoked with the site's argv. A ⊤ command word or
         // operand, or no check resolving this argv, ⇒ un-shippable (no concrete invocation ⇒
         // `can't-probe ⇒ can't-elide`, `kFAIL-perform`).
-        match ship_for_argv(&value.argv_values(node), &ship_body) {
+        match ship_for_argv(&value.argv_values(node), node, &ship_body) {
             Some((provider, argv, shipped)) => checks.push(ProbePredict {
                 site,
                 member: None,
@@ -3007,12 +3014,16 @@ fn ship_auto_for_argv(
     Some((provider, operands, shipped))
 }
 
+/// `node` is the SITE, not a decoration: the ship closure resolves the body positionally
+/// (`28K` §2 rul-visibility-is-full-positional), so it must ship the definition live at the line
+/// the check will guard — the same answer the classify lane already read there.
 fn ship_for_argv(
     argv: &[ValueOf],
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    node: CfgNodeId,
+    ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) -> Option<(Symbol, Vec<Symbol>, ShippedCheck)> {
     let (provider, operands) = literal_invocation(argv)?;
-    let shipped = ship_body(provider, &operands)?;
+    let shipped = ship_body(node, provider, &operands)?;
     Some((provider, operands, shipped))
 }
 
@@ -3047,7 +3058,7 @@ fn push_member_predicts(
     node: CfgNodeId,
     members: &[FactKey],
     value: &ValueFlow,
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) {
     // R3: the per-member argvs (aligned with `members`, list order, dups kept —
     // [`ValueFlow::member_argv`]). Absent, or a length mismatch, means the Members
@@ -3063,7 +3074,7 @@ fn push_member_predicts(
     }
     let mut staged = Vec::with_capacity(members.len());
     for (idx, (fact, argv)) in members.iter().zip(member_argvs).enumerate() {
-        let Some((provider, args, shipped)) = ship_for_argv(argv, ship_body) else {
+        let Some((provider, args, shipped)) = ship_for_argv(argv, node, ship_body) else {
             // One member un-shippable ⇒ the whole site is unresolvable (all or none).
             unresolvable.push(site);
             return;
@@ -3105,7 +3116,7 @@ fn push_inline_predicts(
     site: LeafId,
     sites: &[InlineSite],
     value: &ValueFlow,
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) {
     let mut staged = Vec::new();
     for (idx, body) in sites.iter().enumerate() {
@@ -3115,7 +3126,9 @@ fn push_inline_predicts(
         let body_argv = value.argv_values(body.node);
         match &body.class {
             SkipClass::EstablishAmbient(fact) => {
-                let Some((provider, args, shipped)) = ship_for_argv(&body_argv, ship_body) else {
+                let Some((provider, args, shipped)) =
+                    ship_for_argv(&body_argv, body.node, ship_body)
+                else {
                     // An un-shippable ESTABLISH ⇒ the whole call is unresolvable (all or none).
                     unresolvable.push(site);
                     return;
@@ -3138,7 +3151,9 @@ fn push_inline_predicts(
             SkipClass::QueryResolvable { fact, valid } => {
                 // A read-only guard: ship its check if resolvable (it does NOT gate the call's
                 // elision, so an un-shippable guard is simply omitted, never a blocker).
-                if let Some((provider, args, shipped)) = ship_for_argv(&body_argv, ship_body) {
+                if let Some((provider, args, shipped)) =
+                    ship_for_argv(&body_argv, body.node, ship_body)
+                {
                     staged.push(ProbePredict {
                         site,
                         member,
@@ -5131,7 +5146,7 @@ apt_get__is_converged() { return 0; }
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| {
+            |_, provider, argv| {
                 if probeable {
                     ship_corpus(&checks, &i, provider, argv)
                 } else {
@@ -5180,7 +5195,7 @@ apt_get__is_converged() { return 0; }
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |_, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
+            |_, _, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
             |_, _, _| {
                 Some(ShippedCheck::verdict(
                     "VERDICT_BODY".to_owned(),
@@ -5232,7 +5247,7 @@ apt_get__is_converged() { return 0; }
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |_, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
+            |_, _, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
             |_, _, _| None,
             |_| true,
         );
@@ -5350,7 +5365,13 @@ apt_get__is_converged() { return 0; }
         )
         .value;
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
-        let (_vouches, narrative) = build_vouches(&[verdict_src], &classes, &value, &mut i);
+        let (_vouches, narrative) = build_vouches(
+            &[verdict_src],
+            &classes,
+            &value,
+            &mut i,
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+        );
         let mut decline_leaves: Vec<u32> = narrative
             .iter()
             .filter_map(|ev| match ev.kind() {
@@ -5372,7 +5393,7 @@ apt_get__is_converged() { return 0; }
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| ship_corpus(&checks, &i, provider, argv),
+            |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
             |_, _, _| None,
             |_| false,
         );
@@ -5386,7 +5407,13 @@ apt_get__is_converged() { return 0; }
         // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): a body that REACHES
         // its check vouches rather than declines, so the same two sites mint no `VerdictDecline`.
         let vouching_src = "apt_get__is_converged() { dpkg -s \"$2\" : package:\"$2\"@installed ;}";
-        let (_vouches, none) = build_vouches(&[vouching_src], &classes, &value, &mut i);
+        let (_vouches, none) = build_vouches(
+            &[vouching_src],
+            &classes,
+            &value,
+            &mut i,
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+        );
         assert!(
             !none
                 .iter()
@@ -5782,7 +5809,7 @@ apt_get__is_converged() {
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| ship_corpus(&checks, &i, provider, argv),
+            |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
             |_, _, _| None,
             |_| false,
         );
@@ -6166,9 +6193,15 @@ apt_get__is_converged() {
             &mut dorc_core::ProvArena::new(),
         )
         .value;
-        let mut vouches = build_vouches(&[CORPUS_VERDICT_SRC], &classes, &value, &mut i)
-            .0
-            .value;
+        let mut vouches = build_vouches(
+            &[CORPUS_VERDICT_SRC],
+            &classes,
+            &value,
+            &mut i,
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+        )
+        .0
+        .value;
         let supplied = classes.iter().find_map(|(node, class)| match class {
             SkipClass::EstablishMembers { members, .. } => {
                 members.first().map(|fact| (*node, *fact))
@@ -7588,7 +7621,7 @@ apt_get__is_converged() {
         clippy::unnecessary_wraps,
         reason = "must match the `ship_stage: Fn(..) -> Option<StageShip>` closure signature"
     )]
-    fn ship_all_real(_p: Symbol, _a: &[Symbol]) -> Option<StageShip> {
+    fn ship_all_real(_n: CfgNodeId, _p: Symbol, _a: &[Symbol]) -> Option<StageShip> {
         Some(StageShip {
             sh: "stub__predict() { :; }".to_owned(),
             produces_real_stdout: true,
@@ -7658,7 +7691,7 @@ apt_get__is_converged() {
         // coverage rule bites: the FIRST stage `otelcol` declines stdout, so nothing ships.
         let src = "otelcol --version | grep -q x || curl y\n";
         let (ast, cfg, value, classes, i) = pipe_fixture(src, &["otelcol", "grep"]);
-        let ship = |p: Symbol, _a: &[Symbol]| {
+        let ship = |_n: CfgNodeId, p: Symbol, _a: &[Symbol]| {
             Some(StageShip {
                 sh: "stub__predict() { :; }".to_owned(),
                 // otelcol declines stdout (rc-only / redirect-void); grep is fine — but grep is LAST.
@@ -7689,7 +7722,7 @@ apt_get__is_converged() {
         // sinks the whole pipe to run. Here `grep` (the governor) has no shippable predict.
         let src = "otelcol --version | grep -q x\n";
         let (ast, cfg, value, classes, i) = pipe_fixture(src, &["otelcol", "grep"]);
-        let ship = |p: Symbol, _a: &[Symbol]| {
+        let ship = |_n: CfgNodeId, p: Symbol, _a: &[Symbol]| {
             (i.resolve(p) != "grep").then(|| StageShip {
                 sh: "stub__predict() { :; }".to_owned(),
                 produces_real_stdout: true,

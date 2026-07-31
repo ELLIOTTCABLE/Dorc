@@ -236,7 +236,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &classes,
         &std::collections::BTreeMap::new(),
         &ConnectedPipes::default(),
-        |provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
+        |_, provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
         |_, _, _| None,
         |_| false,
     );
@@ -414,7 +414,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &classes,
             &std::collections::BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
+            |_, provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
             |_, _, _| None,
             |_| false,
         );

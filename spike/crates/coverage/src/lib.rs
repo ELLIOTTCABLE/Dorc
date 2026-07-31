@@ -467,6 +467,12 @@ fn ship_predict_stage(
 /// The site-id space is the engine's own (`build_plan`'s span-sorted [`LeafId`]s),
 /// so a row's `site` matches the probe record and the apply leaf one-to-one.
 #[must_use]
+#[expect(
+    clippy::too_many_lines,
+    reason = "a byte-mirror of the cli's own pipeline in the cli's own order — the WHOLE point is \
+              that the dashboard measures what the shipped tool decides, and splitting it is how \
+              the two orders start to drift"
+)]
 pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let mut interner = Interner::default();
 
@@ -522,7 +528,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &cfg,
         &value,
         &classes,
-        |p, a: &[Symbol]| ship_predict_stage(inputs.oracles, &checks, &interner, p, a),
+        |_n, p, a: &[Symbol]| ship_predict_stage(inputs.oracles, &checks, &interner, p, a),
     );
     // R3 (23D §1 — the check IS the oracle): byte-mirror of the cli's `compile_probe`
     // call — the probe ships each provider's stripped `<provider>__predict` funcdef invoked
@@ -534,7 +540,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &classes,
         &BTreeMap::new(),
         &connected,
-        |provider, argv| ship_predict_body(inputs.oracles, &checks, &interner, provider, argv),
+        |_n, provider, argv| ship_predict_body(inputs.oracles, &checks, &interner, provider, argv),
         // The dashboard does not exercise the typeless-floor auto-cell probe (`24L` §2): its
         // corpora carry marked effects, so no auto-cell mints; a real ship-verdict closure would be
         // dead code here. The dedicated e2e + plan unit tests cover the floor.
@@ -548,9 +554,11 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // dashboard must build them (the SAME `dorc_plan::build_vouches` the cli drives) or it would
     // under-report elision vs the shipped tool. Lift diags are dropped (the dashboard is a readout,
     // not gate-3). Kill-aware, survival-OFF (`None`): dashboard parity with the honest baseline.
-    let vouches = dorc_plan::build_vouches(inputs.oracles, &classes, &value, &mut interner)
-        .0
-        .value;
+    let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
+    let vouches =
+        dorc_plan::build_vouches(inputs.oracles, &classes, &value, &mut interner, ambient)
+            .0
+            .value;
     let plan = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,

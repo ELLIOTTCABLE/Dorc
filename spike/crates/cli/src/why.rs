@@ -2937,7 +2937,7 @@ mod not_ours_bytes_tests {
             &classes,
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
-            |_, _| None,
+            |_, _, _| None,
             |_, _, _| None,
             |_| false,
         );

@@ -61,6 +61,9 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let verdicts = dorc_oracle::verdict::VerdictIndex::of(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
+    // ONE inline oracle against a generated book: no unit spans two files, so the positional
+    // answer could only ever equal the ambient one (`28K` §2).
+    let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
     let (classified, _why, kills, _kill_coords, fact_backings, _narrative, _invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
@@ -75,9 +78,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &mut arena,
             &mut std::collections::BTreeMap::new(),
             &mut BTreeSet::new(),
-            // The differential net drives ONE inline oracle against a generated book, so no unit
-            // spans two files and the positional answer could only equal the ambient one.
-            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+            ambient,
         );
     let classes = classified.value;
 
@@ -92,10 +93,10 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &cfg,
         &value,
         &classes,
-        |p, a: &[Symbol]| ship_predict_stage(ORACLE_SH, &checks, i, p, a),
+        |_n, p, a: &[Symbol]| ship_predict_stage(ORACLE_SH, &checks, i, p, a),
     );
     let probe = {
-        let ship = |provider: Symbol, argv: &[Symbol]| {
+        let ship = |_n: CfgNodeId, provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
         };
         // The sweep exercises the elision/survival soundness net, not the GUARD tier: no
@@ -154,7 +155,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // every `install` victim would run and the net's elision coverage would vanish. Always-on
     // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped
     // (the net asserts on behaviour, not stderr text).
-    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &classes, &value, i)
+    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &classes, &value, i, ambient)
         .0
         .value;
 

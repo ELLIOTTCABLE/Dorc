@@ -169,16 +169,18 @@ impl WhyWorld {
         let classes = origin.classes.clone();
 
         let (vouch_lift, decline_narrative) =
-            dorc_plan::build_vouches(&oracle_refs, &classes, &value, &mut interner);
+            dorc_plan::build_vouches(&oracle_refs, &classes, &value, &mut interner, live);
         let vouches = vouch_lift.value;
 
-        let ship = |provider: Symbol, argv: &[Symbol]| {
-            ship_predict_body(oracle_srcs, &checks, &interner, provider, argv)
+        let ship = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, argv: &[Symbol]| {
+            ship_predict_body(oracle_srcs, &checks, &interner, provider, argv, node, live)
         };
         let ship_auto = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, _: &[Symbol]| {
             verdict_lane
                 .contains(&node)
-                .then(|| ship_verdict_body(oracle_srcs, &verdict_sets, &interner, provider))
+                .then(|| {
+                    ship_verdict_body(oracle_srcs, &verdict_sets, &interner, provider, node, live)
+                })
                 .flatten()
         };
         let probe = dorc_plan::compile_probe(
@@ -541,6 +543,13 @@ pub fn definition_table(
 }
 
 /// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.
+///
+/// The scan runs BACKWARDS because sh's answer is last-definition-wins (`28K` §1), and each
+/// candidate is then gated on being live AT `node` (`28K` §2 rul-visibility-is-full-positional) —
+/// the same question `command_effect` asked when it decided this site was probeable. Both seats
+/// consult one oracle over one ordered set, which is what makes "the resolution sites must agree"
+/// a property rather than a hope: a disagreement would ship one author's body to measure a cell
+/// another author's body keyed.
 #[must_use]
 pub fn ship_predict_body(
     oracle_srcs: &[String],
@@ -548,8 +557,12 @@ pub fn ship_predict_body(
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
-    use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
+    use dorc_oracle::predict::{
+        PREDICT_SUFFIX, Resolution, evaluate, map_provider_name, strip_predict,
+    };
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
         .iter()
@@ -557,6 +570,9 @@ pub fn ship_predict_body(
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
     for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate().rev() {
+        if !live.answers_at(node, &format!("{want}{PREDICT_SUFFIX}"), idx) {
+            continue;
+        }
         for cp in cs.providers() {
             if map_provider_name(interner.resolve(cp)) != want {
                 continue;
@@ -574,16 +590,23 @@ pub fn ship_predict_body(
 }
 
 /// `24L` §2 — the stripped `<provider>__is_converged` a typeless-floor auto-cell probe ships.
+/// Positional on the same terms as [`ship_predict_body`].
 #[must_use]
 pub fn ship_verdict_body(
     oracle_srcs: &[String],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     interner: &Interner,
     provider: Symbol,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
+    use dorc_oracle::verdict::VERDICT_SUFFIX;
     let want = map_provider_name(interner.resolve(provider));
     for (idx, (src, set)) in oracle_srcs.iter().zip(verdict_sets).enumerate().rev() {
+        if !live.answers_at(node, &format!("{want}{VERDICT_SUFFIX}"), idx) {
+            continue;
+        }
         for vp in set.providers() {
             if map_provider_name(interner.resolve(vp)) != want {
                 continue;

@@ -898,6 +898,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         args.dial,
         args.capability,
         &mut interner,
+        live_defs,
     );
     let peeled_sites = wrapped_analysis.peeled;
     let wrapped_probes = wrapped_analysis.wrapped;
@@ -937,7 +938,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // the verdict) and, converged, mints a `Disposition::Guard`.
     // Lift diags drop here: `validate` above surfaces them per-file. This lane could only report
     // them sourceless, which framed every verdict give-up at a fileless `1:1`.
-    let vouch_lift = build_vouches(&source_refs, &classes, &value, &mut interner);
+    let vouch_lift = build_vouches(&source_refs, &classes, &value, &mut interner, live_defs);
     let (mut vouches, decline_narrative) = vouch_lift.value;
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
@@ -956,7 +957,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // any compound whose stage can't be model-substituted (⇒ its stages run). Empty for a book with
     // no such pipe. Threaded into BOTH the probe compiler (ship the composed body) and the plan
     // builder (omit the subsumed members).
-    let ship_stage = |p, a: &[Symbol]| ship_predict_stage(&source_srcs, &checks, &interner, p, a);
+    let ship_stage = |n, p, a: &[Symbol]| {
+        ship_predict_stage(&source_srcs, &checks, &interner, p, a, n, live_defs)
+    };
     let connected =
         dorc_plan::connected_check_pipes(&parsed.value, &cfg.value, &value, &classes, ship_stage);
 
@@ -964,7 +967,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
     // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
-    let ship = |p, a: &[Symbol]| ship_predict_body(&source_srcs, &checks, &interner, p, a);
+    let ship = |n, p, a: &[Symbol]| {
+        ship_predict_body(&source_srcs, &checks, &interner, p, a, n, live_defs)
+    };
     // `24L` §2 — a VERDICT-LANE site ships the oracle.s own `is_converged` funcdef, strip-only
     // (rul-only-oracle-bytes-ship). Keyed on the SITE.s lane, never its fact.s KIND (`26H` §3.5):
     // an authored verdict cell is an ordinary kind, so `is_auto_kind` would route it to the
@@ -978,7 +983,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         if !verdict_lane.contains(&node) {
             return None;
         }
-        ship_verdict_body(&source_srcs, &verdict_sets, &interner, p)
+        ship_verdict_body(&source_srcs, &verdict_sets, &interner, p, node, live_defs)
     };
     let probe = dorc_plan::compile_probe(
         &parsed.value,
@@ -2123,9 +2128,12 @@ fn ship_predict_stage(
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::StageShip> {
     use dorc_oracle::predict::{
-        Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout, strip_predict,
+        PREDICT_SUFFIX, Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout,
+        strip_predict,
     };
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
@@ -2133,7 +2141,11 @@ fn ship_predict_stage(
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (src, cs) in oracle_srcs.iter().zip(checks).rev() {
+    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate().rev() {
+        // A composed stage is a SITE like any other (`28K` §2).
+        if !live.answers_at(node, &format!("{want}{PREDICT_SUFFIX}"), idx) {
+            continue;
+        }
         for cp in cs.providers() {
             if map_provider_name(interner.resolve(cp)) != want {
                 continue;
@@ -2315,13 +2327,14 @@ fn build_vouches(
     )],
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Carrier<(dorc_plan::Vouches, Vec<CollapseNarrative>)> {
     // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
     // share it). This edge only RESHAPES the lift: its diagnostics ride out AS-IS (inv-top-reject —
     // the tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
     // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
     let (lifted, decline_narrative) =
-        dorc_plan::build_vouches(oracle_refs, classes, value, interner);
+        dorc_plan::build_vouches(oracle_refs, classes, value, interner, live);
     lifted.map(|vouches| (vouches, decline_narrative))
 }
 
@@ -4209,6 +4222,7 @@ mod tests {
                 dial,
                 dorc_core::Capability::Root,
                 &mut interner,
+                dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             )
             .collapse_narrative
             .iter()
@@ -4926,7 +4940,17 @@ apt_get__predict() {
             &mut BTreeSet::new(),
         );
         let probe = {
-            let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
+            let ship = |n, p, a: &[Symbol]| {
+                ship_predict_body(
+                    &oracle_srcs,
+                    &checks,
+                    &interner,
+                    p,
+                    a,
+                    n,
+                    dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+                )
+            };
             dorc_plan::compile_probe(
                 &parsed.value,
                 &cfg,
@@ -5214,7 +5238,7 @@ apt_get__predict() {
             &classes,
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
-            |_, _| None,
+            |_, _, _| None,
             |_, _, _| None,
             |_| false,
         );
