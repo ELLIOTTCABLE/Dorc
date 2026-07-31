@@ -12,6 +12,7 @@
 //! word/quote*. Everything else accretes into a [`Tok::Word`] whose internal
 //! structure (positional? variable? `name=value`?) the parser decodes.
 
+use dorc_aid::diag::PredictLexError;
 use dorc_core::{BytePos, Span};
 
 /// A lexed token with its source span.
@@ -80,8 +81,10 @@ pub(super) enum Tok {
     /// parser folds it into the preceding command without interpreting it.
     Redirect(String),
     /// A byte the dialect does not model (NUL, an unterminated quote's remainder,
-    /// a stray backtick / `$(`). Forces the parser to reject the construct.
-    Error(String),
+    /// a stray backtick / `$(`). Forces the parser to reject the construct. The variant carries
+    /// its own typed reason (`28L:rul-reason-enums-not-sibling-codes`), which the diagnostic
+    /// renders through the registry rather than composing a sentence here.
+    Error(PredictLexError),
 }
 
 /// Lex `src` into tokens. Total: every byte is consumed into some token (or an
@@ -163,7 +166,7 @@ impl Lexer<'_> {
                 b'>' | b'<' => self.redirect(),
                 b'0'..=b'9' if self.is_fd_redirect() => self.redirect(), // `2>/dev/null`
                 0 => self.error_byte(),
-                b'`' => self.error_run("backtick command-substitution is out of dialect"),
+                b'`' => self.error_run(PredictLexError::BacktickCommandSubstitution),
                 _ => self.word(),
             }
         }
@@ -194,7 +197,7 @@ impl Lexer<'_> {
     fn error_byte(&mut self) {
         let lo = self.pos;
         self.out.push(Token {
-            kind: Tok::Error("unmodeled byte".to_owned()),
+            kind: Tok::Error(PredictLexError::UnmodeledByte),
             span: span(lo, lo.saturating_add(1)),
         });
         self.pos = self.pos.saturating_add(1);
@@ -202,10 +205,10 @@ impl Lexer<'_> {
 
     /// Emit an Error token spanning one metacharacter run and step past it. Used for
     /// constructs (backticks) the dialect rejects wholesale.
-    fn error_run(&mut self, msg: &str) {
+    fn error_run(&mut self, reason: PredictLexError) {
         let lo = self.pos;
         self.out.push(Token {
-            kind: Tok::Error(msg.to_owned()),
+            kind: Tok::Error(reason),
             span: span(lo, lo.saturating_add(1)),
         });
         self.pos = self.pos.saturating_add(1);
@@ -407,7 +410,7 @@ impl Lexer<'_> {
         // we have already advanced past it, so emit one Error spanning lo..pos.
         self.pos = self.bytes.len();
         self.out.push(Token {
-            kind: Tok::Error("unterminated quote".to_owned()),
+            kind: Tok::Error(PredictLexError::UnterminatedQuote),
             span: span(lo, self.pos),
         });
     }

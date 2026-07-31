@@ -12,10 +12,11 @@ use super::ast::{
     Pattern, Predict, PredictSet, RefusedMark, Stmt, Test, TestOp, Word,
 };
 use super::lexer::{Tok, Token, lex};
-use super::{VERB_BINDING, lift_failure};
+use super::{VERB_BINDING, out_of_dialect, unterminated};
 use dorc_aid::diag::{
     DiagCode, MarkHashcolonMalformed, MarkOnAndOrList, MarkRcArityExceeded,
-    MarkStandaloneRcConsumer, MarkUnknownVerb,
+    MarkStandaloneRcConsumer, MarkUnknownVerb, PredictLexError, PredictOutOfDialectReason,
+    PredictUnterminatedReason,
 };
 use dorc_aid::{Carrier, Diag};
 use dorc_core::{Interner, Span, Symbol};
@@ -392,14 +393,17 @@ impl Parser<'_> {
         if !self.expect(&Tok::LParen) || !self.expect(&Tok::RParen) {
             self.fail(
                 header.name_span,
-                "malformed function header (expected `()`)",
+                PredictOutOfDialectReason::MalformedFunctionHeader,
             );
             self.resync_past_brace();
             return;
         }
         self.skip_newlines();
         if !self.expect(&Tok::LBrace) {
-            self.fail(header.name_span, "function body must start with `{`");
+            self.fail(
+                header.name_span,
+                PredictOutOfDialectReason::FunctionBodyMustStartWithBrace,
+            );
             self.resync_past_brace();
             return;
         }
@@ -426,7 +430,10 @@ impl Parser<'_> {
             }
             Err(diag_emitted) => {
                 if !diag_emitted {
-                    self.fail(header.name_span, "check body is out of dialect");
+                    self.fail(
+                        header.name_span,
+                        PredictOutOfDialectReason::CheckBodyOutOfDialect,
+                    );
                 }
                 self.resync_past_brace();
             }
@@ -493,7 +500,9 @@ impl Parser<'_> {
         let stmt = self.parse_word_led()?;
         match (self.and_or_op(), stmt) {
             (Some(_), Stmt::Command(first)) => self.parse_and_or_tail(AndOrItem::Command(first)),
-            (Some(_), _) => Err(self.fail_here("an and-or list must be led by a command")),
+            (Some(_), _) => {
+                Err(self.fail_here(PredictOutOfDialectReason::AndOrListNotLedByCommand))
+            }
             (None, stmt) => Ok(stmt),
         }
     }
@@ -555,7 +564,7 @@ impl Parser<'_> {
             self.skip_newlines(); // sh continues a list across a newline after its operator
 
             let Stmt::Command(cmd) = self.parse_word_led()? else {
-                return Err(self.fail_here("an and-or list item must be a command"));
+                return Err(self.fail_here(PredictOutOfDialectReason::AndOrListItemNotCommand));
             };
             end = cmd.span;
             rest.push(AndOrLink {
@@ -607,7 +616,7 @@ impl Parser<'_> {
         let test = self.parse_bracket_test()?;
         self.skip_separators();
         if !self.eat_keyword("do") {
-            return Err(self.fail_here("expected `do` after `while` test"));
+            return Err(self.fail_here(PredictOutOfDialectReason::ExpectedDoAfterWhileTest));
         }
         let body = self.parse_block(BlockEnd::Keyword("done"))?;
         Ok(Stmt::While { test, body })
@@ -618,7 +627,7 @@ impl Parser<'_> {
         let test = self.parse_bracket_test()?;
         self.skip_separators();
         if !self.eat_keyword("then") {
-            return Err(self.fail_here("expected `then` after `if` test"));
+            return Err(self.fail_here(PredictOutOfDialectReason::ExpectedThenAfterIfTest));
         }
         let then_body = self.parse_block(BlockEnd::IfThenEnd)?;
         // `parse_block` recorded which terminator it consumed (`else` vs `fi`).
@@ -639,7 +648,7 @@ impl Parser<'_> {
         let scrutinee = self.parse_word()?;
         self.skip_separators();
         if !self.eat_keyword("in") {
-            return Err(self.fail_here("expected `in` after `case` scrutinee"));
+            return Err(self.fail_here(PredictOutOfDialectReason::ExpectedInAfterCaseScrutinee));
         }
         let mut arms = Vec::new();
         let guard = self.toks.len().saturating_add(1);
@@ -654,7 +663,7 @@ impl Parser<'_> {
                 break;
             }
             if self.peek().is_none() {
-                return Err(self.fail_here("unterminated `case` (expected `esac`)"));
+                return Err(self.fail_here(PredictOutOfDialectReason::UnterminatedCaseExpectedEsac));
             }
             let arm = self.parse_case_arm()?;
             arms.push(arm);
@@ -680,7 +689,11 @@ impl Parser<'_> {
                     self.bump();
                     break;
                 }
-                _ => return Err(self.fail_here("expected `|` or `)` in case-arm pattern")),
+                _ => {
+                    return Err(self.fail_here(
+                        PredictOutOfDialectReason::ExpectedPipeOrRparenInCaseArmPattern,
+                    ));
+                }
             }
         }
         // The arm body runs until `;;` (arm end) or `esac` (last arm, no `;;`).
@@ -704,12 +717,12 @@ impl Parser<'_> {
                     // A non-trivial glob pattern is out of dialect — arm selection
                     // must be a concrete equality, never a pattern-match (kFAIL:
                     // bias to Top, so reject rather than under-model).
-                    Err(self.fail_here("only literal and `*` case patterns are in dialect"))
+                    Err(self.fail_here(PredictOutOfDialectReason::CasePatternOutOfDialect))
                 } else {
                     Ok(Pattern::Literal(lexeme))
                 }
             }
-            _ => Err(self.fail_here("expected a case-arm pattern")),
+            _ => Err(self.fail_here(PredictOutOfDialectReason::ExpectedCaseArmPattern)),
         }
     }
 
@@ -734,7 +747,7 @@ impl Parser<'_> {
         }
         // Anything else (`shift $x`, `shift foo`) is a dynamic/invalid count ⇒ out
         // of dialect (kFAIL: reject rather than under-model).
-        Err(self.fail_here("`shift` count must be a literal integer"))
+        Err(self.fail_here(PredictOutOfDialectReason::ShiftCountNotLiteralInteger))
     }
 
     /// Parse a word-led line: an annotation (`name : kind = value`), an assignment
@@ -749,7 +762,7 @@ impl Parser<'_> {
         else {
             // A line that does not start with a word (e.g. a stray `]`, redirect,
             // or error token) is out of dialect.
-            return Err(self.fail_here("statement does not start with a word"));
+            return Err(self.fail_here(PredictOutOfDialectReason::StatementDoesNotStartWithWord));
         };
         let first = lexeme.clone();
         let first_sq = *single_quoted;
@@ -841,7 +854,7 @@ impl Parser<'_> {
             kind_span,
         )) = self.take_word()
         else {
-            return Err(self.fail_here("annotation kind must be a single literal word"));
+            return Err(self.fail_here(PredictOutOfDialectReason::AnnotationKindNotSingleWord));
         };
         // The `= value` tail is OPTIONAL. Present ⇒ the ordinary operand annotation.
         // Absent ⇒ the nullary/Singleton spelling (`value = None`): the evaluator
@@ -861,7 +874,7 @@ impl Parser<'_> {
         }
         self.bump(); // `=`
         let Some((lexeme, quoting, val_span)) = self.take_word() else {
-            return Err(self.fail_here("annotation requires a value word after `=`"));
+            return Err(self.fail_here(PredictOutOfDialectReason::AnnotationNeedsValueWord));
         };
         let value = parse_word_lexeme(&lexeme, quoting, self.interner);
         Ok(Stmt::Annotation(Annotation {
@@ -906,7 +919,7 @@ impl Parser<'_> {
             // A single-quoted word is always a plain command word (`':'` is a literal).
             Some(Tok::Word { .. }) => CmdTok::Word,
             Some(Tok::Redirect(t)) => CmdTok::Redirect(t.clone()),
-            Some(Tok::Error(msg)) => CmdTok::Error(msg.clone()),
+            Some(Tok::Error(reason)) => CmdTok::Error(*reason),
             // A pipe `|` (24E §14): ACCEPT it — the whole list-item ships byte-exact and ⊤s at
             // trace (parse-permissively / trace-conservatively).
             Some(Tok::Pipe) => CmdTok::Pipe,
@@ -1012,13 +1025,17 @@ impl Parser<'_> {
                     self.bump();
                 }
                 CmdTok::Error(msg) => {
-                    return Err(self.fail_here(&format!("out-of-dialect token in command: {msg}")));
+                    return Err(
+                        self.fail_here(PredictOutOfDialectReason::OutOfDialectToken { lex: msg })
+                    );
                 }
-                CmdTok::Other => return Err(self.fail_here("unexpected token in command")),
+                CmdTok::Other => {
+                    return Err(self.fail_here(PredictOutOfDialectReason::UnexpectedTokenInCommand));
+                }
             }
         }
         if words.is_empty() {
-            return Err(self.fail_here("empty command"));
+            return Err(self.fail_here(PredictOutOfDialectReason::EmptyCommand));
         }
         // The command span ends at its last real word/redirect (EXCLUDING the trailing
         // mark), so the strip deletes exactly `[span.hi .. mark.span.hi]`. A PIPELINE (24E §14)
@@ -1062,8 +1079,7 @@ impl Parser<'_> {
                 return Err(self.fail_mark(
                     intro,
                     marker_span,
-                    "trailing bind marks (`:=` / `bind`) are not accepted in v0.2 production \
-                      (`28A:rul-single-mark-production-subset`); type the value inline `name : KIND = value`",
+                    PredictOutOfDialectReason::TrailingBindMarkWithValue,
                 ));
             }
             None => {
@@ -1074,7 +1090,7 @@ impl Parser<'_> {
                         return Err(self.fail_mark(
                             intro,
                             marker_span,
-                            "dialect mark requires a verb or coordinate",
+                            PredictOutOfDialectReason::MarkNeedsVerbOrCoordinate,
                         ));
                     }
                 };
@@ -1086,8 +1102,7 @@ impl Parser<'_> {
                         return Err(self.fail_mark(
                             intro,
                             marker_span,
-                            "trailing bind marks (`bind`) are not accepted in v0.2 production \
-                              (`28A:rul-single-mark-production-subset`)",
+                            PredictOutOfDialectReason::TrailingBindMarkWord,
                         ));
                     }
                     if let Some(kind) = mark_verb(&head) {
@@ -1097,7 +1112,7 @@ impl Parser<'_> {
                             return Err(self.fail_mark(
                                 intro,
                                 marker_span,
-                                "malformed hash-colon mark",
+                                PredictOutOfDialectReason::MalformedHashColonMark,
                             ));
                         }
                         self.out.push(Diag::new(
@@ -1116,14 +1131,14 @@ impl Parser<'_> {
             return Err(self.fail_mark(
                 intro,
                 marker_span,
-                "dialect mark requires a payload after the verb",
+                PredictOutOfDialectReason::MarkNeedsPayload,
             ));
         };
         let Some(parsed) = split_mark_target(&lexeme, '@') else {
             return Err(self.fail_mark(
                 intro,
                 marker_span,
-                "malformed dialect mark target (expected `kind:entity@selector`)",
+                PredictOutOfDialectReason::MalformedMarkTarget,
             ));
         };
         // rider-selector-charset-unenforced (`277` §4b / `281` §6): a selector is a POSIX name in
@@ -1135,8 +1150,7 @@ impl Parser<'_> {
             return Err(self.fail_mark(
                 intro,
                 marker_span,
-                "selector must be a POSIX name (letter/underscore, then letters/digits/underscores) \
-                 or a brace-alternation `{a,b}`",
+                PredictOutOfDialectReason::SelectorNotPosixName,
             ));
         }
         Ok(Mark {
@@ -1150,7 +1164,12 @@ impl Parser<'_> {
         })
     }
 
-    fn fail_mark(&mut self, intro: MarkIntro, marker_span: Span, message: &str) -> bool {
+    fn fail_mark(
+        &mut self,
+        intro: MarkIntro,
+        marker_span: Span,
+        reason: PredictOutOfDialectReason,
+    ) -> bool {
         if intro.carrier == MarkCarrier::Hash {
             self.out.push(Diag::new(
                 DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
@@ -1158,7 +1177,7 @@ impl Parser<'_> {
             ));
             true
         } else {
-            self.fail_here(message)
+            self.fail_here(reason)
         }
     }
 
@@ -1170,7 +1189,7 @@ impl Parser<'_> {
             Some((lexeme, quoting, _span)) => {
                 Ok(parse_word_lexeme(&lexeme, quoting, self.interner))
             }
-            None => Err(self.fail_here("expected a word")),
+            None => Err(self.fail_here(PredictOutOfDialectReason::ExpectedAWord)),
         }
     }
 
@@ -1179,7 +1198,7 @@ impl Parser<'_> {
     fn parse_bracket_test(&mut self) -> Result<Test, bool> {
         let lo = self.peek_span().unwrap_or(ZERO_SPAN);
         if !self.expect(&Tok::LBracket) {
-            return Err(self.fail_here("expected `[` to open a test"));
+            return Err(self.fail_here(PredictOutOfDialectReason::ExpectedLbracketToOpenTest));
         }
         let lhs = self.parse_word()?;
         let op = match self.peek() {
@@ -1194,14 +1213,16 @@ impl Parser<'_> {
                 ..
             }) if lexeme == "!=" => TestOp::Ne,
             _ => {
-                return Err(self.fail_here("test operator must be `=` or `!=` (string comparison)"));
+                return Err(
+                    self.fail_here(PredictOutOfDialectReason::TestOperatorNotStringComparison)
+                );
             }
         };
         self.bump();
         let rhs = self.parse_word()?;
         let hi = self.peek_span().unwrap_or(lo);
         if !self.expect(&Tok::RBracket) {
-            return Err(self.fail_here("expected `]` to close a test"));
+            return Err(self.fail_here(PredictOutOfDialectReason::ExpectedRbracketToCloseTest));
         }
         Ok(Test {
             lhs,
@@ -1237,17 +1258,15 @@ impl Parser<'_> {
     /// Emit an out-of-dialect diagnostic pointing at the current token (or, at end-of-input,
     /// a synthesized EOF span; human ruling 22-q1) and return `true` (the "diagnostic already
     /// emitted" signal for `parse_block`).
-    fn fail_here(&mut self, msg: &str) -> bool {
+    fn fail_here(&mut self, reason: PredictOutOfDialectReason) -> bool {
         let span = self.peek_span().unwrap_or_else(|| self.eof_span());
-        let diag = lift_failure(false, span, msg.to_owned());
-        self.out.push(diag);
+        self.out.push(out_of_dialect(span, reason));
         true
     }
 
     /// Emit an out-of-dialect diagnostic at a specific span.
-    fn fail(&mut self, span: Span, msg: &str) {
-        let diag = lift_failure(false, span, msg.to_owned());
-        self.out.push(diag);
+    fn fail(&mut self, span: Span, reason: PredictOutOfDialectReason) {
+        self.out.push(out_of_dialect(span, reason));
     }
 
     /// Skip one top-level non-check item: advance to the next statement boundary,
@@ -1338,8 +1357,8 @@ enum CmdTok {
     /// tracers ⊤ on (trace-conservatively). NOT hard-killed (the kLANG mirror-invariant: valid sh
     /// degrades). Distinct from a case-arm pattern `|` (that is [`parse_case_arm`]'s own grammar).
     Pipe,
-    /// An out-of-dialect token (carries the lexer's message).
-    Error(String),
+    /// An out-of-dialect token (carries the lexer's typed reason).
+    Error(PredictLexError),
     /// Any other unexpected metacharacter ⇒ out of dialect.
     Other,
 }
@@ -1409,21 +1428,13 @@ fn true_with(p: &mut Parser<'_>, end: BlockEnd) -> bool {
     // Always a real span: a `parse_block` that ran off the end is at EOF, so synthesize an
     // end-of-input span there (human ruling 22-q1 — point the UI at end-of-file).
     let span = p.peek_span().unwrap_or_else(|| p.eof_span());
-    let msg = match end {
-        BlockEnd::Brace => "unterminated function body (expected `}`)",
-        BlockEnd::Keyword(kw) => {
-            return {
-                let diag =
-                    lift_failure(true, span, format!("unterminated block (expected `{kw}`)"));
-                p.out.push(diag);
-                true
-            };
-        }
-        BlockEnd::CaseArmEnd => "unterminated case arm (expected `;;` or `esac`)",
-        BlockEnd::IfThenEnd => "unterminated `if` (expected `else`/`fi`)",
+    let reason = match end {
+        BlockEnd::Brace => PredictUnterminatedReason::FunctionBody,
+        BlockEnd::Keyword(keyword) => PredictUnterminatedReason::Block { keyword },
+        BlockEnd::CaseArmEnd => PredictUnterminatedReason::CaseArm,
+        BlockEnd::IfThenEnd => PredictUnterminatedReason::IfThen,
     };
-    let diag = lift_failure(true, span, msg.to_owned());
-    p.out.push(diag);
+    p.out.push(unterminated(span, reason));
     true
 }
 

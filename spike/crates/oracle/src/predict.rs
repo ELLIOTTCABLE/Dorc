@@ -31,7 +31,10 @@
 //! entity (by tracing the oracle's own argparse); it never branches on what the
 //! entity's text *means*. Kind strings are opaque coordination handles.
 
-use dorc_aid::diag::{Diag, DiagCode as Code, PredictOutOfDialect, PredictUnterminated};
+use dorc_aid::diag::{
+    Diag, DiagCode as Code, PredictOutOfDialect, PredictOutOfDialectReason, PredictUnterminated,
+    PredictUnterminatedReason,
+};
 use dorc_core::{Interner, Span};
 
 mod ast;
@@ -318,8 +321,9 @@ const VERB_BINDING: &str = "verb";
 /// out of dialect. Fail-soft (`inv-no-throw`): the function contributes no [`Predict`]
 /// and the rest of the file still lifts.
 ///
-/// `is_unterminated`: selects `PredictUnterminated` vs `PredictOutOfDialect`. Both carry
-/// the message as `detail`. The `span` is ALWAYS real: every caller that previously had
+/// The two codes take DIFFERENT typed reasons (`28L:rul-reason-enums-not-sibling-codes`), so the
+/// caller picks the code by picking the reason and the old `is_unterminated` bool is gone. The
+/// `span` is ALWAYS real: every caller that previously had
 /// no token (an EOF give-up — an unterminated body, a `fail_here`/`true_with` at
 /// end-of-input) now synthesizes a zero-width end-of-input span via
 /// [`Parser::eof_span`](super::parser) (human ruling 22-q1: pointing the UI at
@@ -337,19 +341,19 @@ const VERB_BINDING: &str = "verb";
 /// these emits — a `Diag::new(var, …)` form would be invisible to the needle-shape scanner (t-4
 /// non-literal bypass) and read as dead catalog. Verbose-on-purpose; the literals are the gate's
 /// eyes.
-pub(crate) fn lift_failure(is_unterminated: bool, span: Span, message: impl Into<String>) -> Diag {
-    let detail = message.into();
-    if is_unterminated {
-        Diag::new(
-            Code::PredictUnterminated(PredictUnterminated { detail }),
-            span,
-        )
-    } else {
-        Diag::new(
-            Code::PredictOutOfDialect(PredictOutOfDialect { detail }),
-            span,
-        )
-    }
+pub(crate) fn out_of_dialect(span: Span, reason: PredictOutOfDialectReason) -> Diag {
+    Diag::new(
+        Code::PredictOutOfDialect(PredictOutOfDialect { reason }),
+        span,
+    )
+}
+
+/// The unterminated-body half of [`out_of_dialect`], carrying its own reason vocabulary.
+pub(crate) fn unterminated(span: Span, reason: PredictUnterminatedReason) -> Diag {
+    Diag::new(
+        Code::PredictUnterminated(PredictUnterminated { reason }),
+        span,
+    )
 }
 
 #[cfg(test)]
@@ -584,11 +588,14 @@ package__disturbance_reaches_only() {
 
 #[cfg(test)]
 mod lift_failure_tests {
-    use super::{Code, lift_failure, lift_predicts};
-    use dorc_aid::diag::{PredictOutOfDialect, PredictUnterminated, registry};
+    use super::{Code, lift_predicts, out_of_dialect, unterminated};
+    use dorc_aid::diag::{
+        PredictOutOfDialect, PredictOutOfDialectReason, PredictUnterminated,
+        PredictUnterminatedReason, registry,
+    };
     use dorc_core::{BytePos, Interner, Span};
 
-    /// The emit-vs-registry AGREEMENT pin (x3a-5/t-4 fix, `224` §10): `lift_failure` must source
+    /// The emit-vs-registry AGREEMENT pin (x3a-5/t-4 fix, `224` §10): the two mints must source
     /// its severity from [`registry`], never hardcode it. This catches the exact regression the
     /// crosscheck found — a reversion to `Diagnostic::error(…)` would hardcode `Error`, so if a
     /// future registry edit moved either check code OFF `Error`, the emit would DISAGREE and this
@@ -599,7 +606,7 @@ mod lift_failure_tests {
     /// `Severity::Error` on the emit side — it compares the EMITTED severity against the registry's,
     /// so the test stays correct (and keeps protecting) if the human re-grades the code at harvest.
     ///
-    /// Span is ALWAYS real now (human ruling 22-q1): `lift_failure` takes a [`Span`], not
+    /// Span is ALWAYS real now (human ruling 22-q1): both mints take a [`Span`], not
     /// `Option<Span>`, so this exercises the single real-span path per code (the EOF-synthesis path
     /// is pinned separately in [`eof_give_up_carries_a_real_end_span`]).
     #[test]
@@ -607,10 +614,10 @@ mod lift_failure_tests {
         let interner = Interner::default();
         let span = Span::new(BytePos(3), BytePos(7));
         let want_unterm = registry(&Code::PredictUnterminated(PredictUnterminated {
-            detail: String::new(),
+            reason: PredictUnterminatedReason::FunctionBody,
         }))
         .severity;
-        let d = lift_failure(true, span, "unterminated");
+        let d = unterminated(span, PredictUnterminatedReason::FunctionBody);
         assert_eq!(d.code.slug(), "predict-unterminated");
         assert_eq!(
             d.severity(),
@@ -620,15 +627,15 @@ mod lift_failure_tests {
         assert_eq!(d.primary.span(), Some(span), "span flows through unchanged");
         assert_eq!(
             dorc_aid::diag::render_body(&d, &interner),
-            "sm unterminated",
-            "PASSTHROUGH message is `sm ` + the detail"
+            "sm unterminated function body (expected `}`)",
+            "the message is `sm ` + the reason's registry sentence"
         );
 
         let want_dialect = registry(&Code::PredictOutOfDialect(PredictOutOfDialect {
-            detail: String::new(),
+            reason: PredictOutOfDialectReason::EmptyCommand,
         }))
         .severity;
-        let d = lift_failure(false, span, "out of dialect");
+        let d = out_of_dialect(span, PredictOutOfDialectReason::EmptyCommand);
         assert_eq!(d.code.slug(), "predict-out-of-dialect");
         assert_eq!(
             d.severity(),
@@ -638,7 +645,7 @@ mod lift_failure_tests {
         assert_eq!(d.primary.span(), Some(span));
         assert_eq!(
             dorc_aid::diag::render_body(&d, &interner),
-            "sm out of dialect"
+            "sm empty command"
         );
     }
 
@@ -681,7 +688,7 @@ mod lift_failure_tests {
     /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive the production `lift_predicts` path for an
     /// UNTERMINATED body and pin the registered code `predict-unterminated`. The existing
     /// [`eof_give_up_carries_a_real_end_span`] drives the same path but pins only the SPAN, and
-    /// [`lift_failure_severity_agrees_with_registry`] pins the code via a DIRECT `lift_failure`
+    /// [`lift_failure_severity_agrees_with_registry`] pins the code via a DIRECT mint
     /// call (a construction, the x3a-B/t-1 vacuity). This closes the gap: the code identity is
     /// asserted on a real source-driven give-up.
     #[test]
@@ -700,9 +707,9 @@ mod lift_failure_tests {
 
     /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive `lift_predicts` for an OUT-OF-DIALECT body
     /// and pin `predict-out-of-dialect`. The check dialect is a strict subset of sh with no `for`
-    /// loop, so a `for` in the body is rejected via `fail_here` (the `is_unterminated == false`
-    /// path). No prior test drove this give-up from source — only the direct-construction
-    /// `lift_failure(false, …)` did. Pins the registered code on a real source-driven path.
+    /// loop, so a `for` in the body is rejected via `fail_here` (the out-of-dialect path). No
+    /// prior test drove this give-up from source — only the direct construction did. Pins the
+    /// registered code on a real source-driven path.
     #[test]
     fn out_of_dialect_predict_body_emits_predict_out_of_dialect_from_lift() {
         let mut i = Interner::default();

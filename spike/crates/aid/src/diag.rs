@@ -864,16 +864,114 @@ pub struct EffectKindDisagreement {
 /// the check dialect. No `SiteId` (`site()` returns `None`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PredictOutOfDialect {
-    /// The check parser's description (display only).
-    pub detail: String,
+    /// Which dialect rule the body broke.
+    pub reason: PredictOutOfDialectReason,
+}
+
+/// Which check-dialect rule a body broke (see [`CfgTopNodeReason`] for why the reason enums live
+/// in this crate).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PredictOutOfDialectReason {
+    /// The `name__predict` header is not followed by `()`.
+    MalformedFunctionHeader,
+    /// The function body does not open with `{`.
+    FunctionBodyMustStartWithBrace,
+    /// The whole check body failed to lift.
+    CheckBodyOutOfDialect,
+    /// An and-or list does not begin with a command.
+    AndOrListNotLedByCommand,
+    /// An and-or list item is not a command.
+    AndOrListItemNotCommand,
+    /// No `do` after a `while` test.
+    ExpectedDoAfterWhileTest,
+    /// No `then` after an `if` test.
+    ExpectedThenAfterIfTest,
+    /// No `in` after a `case` scrutinee.
+    ExpectedInAfterCaseScrutinee,
+    /// A `case` never closed.
+    UnterminatedCaseExpectedEsac,
+    /// No `|` or `)` in a case-arm pattern.
+    ExpectedPipeOrRparenInCaseArmPattern,
+    /// A case pattern outside the literal/`*` subset.
+    CasePatternOutOfDialect,
+    /// No case-arm pattern where one was required.
+    ExpectedCaseArmPattern,
+    /// A `shift` count that is not a literal integer.
+    ShiftCountNotLiteralInteger,
+    /// A statement that does not begin with a word.
+    StatementDoesNotStartWithWord,
+    /// An annotation kind that is not a single literal word.
+    AnnotationKindNotSingleWord,
+    /// An annotation with no value word after `=`.
+    AnnotationNeedsValueWord,
+    /// The lexer refused a token inside a command.
+    OutOfDialectToken {
+        /// What the lexer refused.
+        lex: PredictLexError,
+    },
+    /// Any other unexpected token inside a command.
+    UnexpectedTokenInCommand,
+    /// A command with no words.
+    EmptyCommand,
+    /// A token where a word was required.
+    ExpectedAWord,
+    /// No `[` opening a test.
+    ExpectedLbracketToOpenTest,
+    /// A test operator outside the string-comparison subset.
+    TestOperatorNotStringComparison,
+    /// No `]` closing a test.
+    ExpectedRbracketToCloseTest,
+    /// A trailing `:=` bind mark.
+    TrailingBindMarkWithValue,
+    /// A mark with no verb or coordinate after its intro.
+    MarkNeedsVerbOrCoordinate,
+    /// A trailing `bind` mark.
+    TrailingBindMarkWord,
+    /// A `#:` mark that does not parse.
+    MalformedHashColonMark,
+    /// A mark with no payload after its verb.
+    MarkNeedsPayload,
+    /// A mark payload that does not split into a coordinate.
+    MalformedMarkTarget,
+    /// A selector outside the POSIX-name-in-spirit charset.
+    SelectorNotPosixName,
+}
+
+/// What the check lexer refused — the inner clause of
+/// [`PredictOutOfDialectReason::OutOfDialectToken`], and the check lexer's own error token.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PredictLexError {
+    /// A byte the dialect does not model.
+    UnmodeledByte,
+    /// A backtick command substitution.
+    BacktickCommandSubstitution,
+    /// A quote that never closed.
+    UnterminatedQuote,
 }
 
 /// Payload of [`DiagCode::PredictUnterminated`]: a check function body is structurally
 /// unterminated. No `SiteId` (`site()` returns `None`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PredictUnterminated {
-    /// The check parser's description (display only).
-    pub detail: String,
+    /// Which block ran off the end of the input.
+    pub reason: PredictUnterminatedReason,
+}
+
+/// Which block ran off the end of a check body (see [`CfgTopNodeReason`] for why the reason enums
+/// live in this crate).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PredictUnterminatedReason {
+    /// The function body itself.
+    FunctionBody,
+    /// A keyword-closed block.
+    Block {
+        /// The keyword that would have closed it.
+        keyword: &'static str,
+    },
+    /// A case arm.
+    CaseArm,
+    /// An `if`'s then-branch.
+    IfThen,
 }
 
 /// Payload of [`DiagCode::OracleRoleFnUnlifted`] (TEMPLATIZED): the declared-but-unlifted
@@ -2577,11 +2675,11 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("annotated", annotated.clone()),
             ours("effect_map", effect_map.clone()),
         ],
-        DiagCode::PredictOutOfDialect(PredictOutOfDialect { detail }) => {
-            vec![ours("detail", detail.clone())]
+        DiagCode::PredictOutOfDialect(PredictOutOfDialect { reason }) => {
+            vec![ours("detail", predict_out_of_dialect_text(ctx, *reason))]
         }
-        DiagCode::PredictUnterminated(PredictUnterminated { detail }) => {
-            vec![ours("detail", detail.clone())]
+        DiagCode::PredictUnterminated(PredictUnterminated { reason }) => {
+            vec![ours("detail", predict_unterminated_text(ctx, *reason))]
         }
         DiagCode::OracleRoleFnUnlifted(OracleRoleFnUnlifted { funcname }) => {
             vec![ours("funcname", funcname.clone())]
@@ -3603,6 +3701,79 @@ fn syntax_malformed_text(ctx: &RenderCtx<'_>, reason: SyntaxMalformedReason) -> 
         }
     };
     crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+}
+
+/// The registry sentence for one [`PredictOutOfDialectReason`].
+fn predict_out_of_dialect_text(ctx: &RenderCtx<'_>, reason: PredictOutOfDialectReason) -> String {
+    use PredictOutOfDialectReason as R;
+    let arrangements = ctx.arrangements();
+    let none: Vec<String> = Vec::new();
+    let (slug, values) = match reason {
+        R::MalformedFunctionHeader => ("predict-out-of-dialect-malformed-function-header", none),
+        R::FunctionBodyMustStartWithBrace => {
+            ("predict-out-of-dialect-body-must-start-with-brace", none)
+        }
+        R::CheckBodyOutOfDialect => ("predict-out-of-dialect-check-body", none),
+        R::AndOrListNotLedByCommand => ("predict-out-of-dialect-and-or-list-not-led", none),
+        R::AndOrListItemNotCommand => ("predict-out-of-dialect-and-or-item-not-command", none),
+        R::ExpectedDoAfterWhileTest => ("predict-out-of-dialect-expected-do-after-while", none),
+        R::ExpectedThenAfterIfTest => ("predict-out-of-dialect-expected-then-after-if", none),
+        R::ExpectedInAfterCaseScrutinee => ("predict-out-of-dialect-expected-in-after-case", none),
+        R::UnterminatedCaseExpectedEsac => ("predict-out-of-dialect-unterminated-case", none),
+        R::ExpectedPipeOrRparenInCaseArmPattern => {
+            ("predict-out-of-dialect-expected-pipe-or-rparen", none)
+        }
+        R::CasePatternOutOfDialect => ("predict-out-of-dialect-case-pattern", none),
+        R::ExpectedCaseArmPattern => ("predict-out-of-dialect-expected-case-arm-pattern", none),
+        R::ShiftCountNotLiteralInteger => ("predict-out-of-dialect-shift-count", none),
+        R::StatementDoesNotStartWithWord => ("predict-out-of-dialect-statement-not-a-word", none),
+        R::AnnotationKindNotSingleWord => ("predict-out-of-dialect-annotation-kind", none),
+        R::AnnotationNeedsValueWord => ("predict-out-of-dialect-annotation-value", none),
+        R::OutOfDialectToken { lex } => (
+            "predict-out-of-dialect-token-in-command",
+            vec![predict_lex_error_text(ctx, lex)],
+        ),
+        R::UnexpectedTokenInCommand => ("predict-out-of-dialect-unexpected-token", none),
+        R::EmptyCommand => ("predict-out-of-dialect-empty-command", none),
+        R::ExpectedAWord => ("predict-out-of-dialect-expected-a-word", none),
+        R::ExpectedLbracketToOpenTest => ("predict-out-of-dialect-expected-test-open", none),
+        R::TestOperatorNotStringComparison => ("predict-out-of-dialect-test-operator", none),
+        R::ExpectedRbracketToCloseTest => ("predict-out-of-dialect-expected-test-close", none),
+        R::TrailingBindMarkWithValue => ("predict-out-of-dialect-trailing-bind-with-value", none),
+        R::MarkNeedsVerbOrCoordinate => ("predict-out-of-dialect-mark-needs-verb", none),
+        R::TrailingBindMarkWord => ("predict-out-of-dialect-trailing-bind-word", none),
+        R::MalformedHashColonMark => ("predict-out-of-dialect-malformed-hashcolon-mark", none),
+        R::MarkNeedsPayload => ("predict-out-of-dialect-mark-needs-payload", none),
+        R::MalformedMarkTarget => ("predict-out-of-dialect-malformed-mark-target", none),
+        R::SelectorNotPosixName => ("predict-out-of-dialect-selector-charset", none),
+    };
+    let borrowed: Vec<&str> = values.iter().map(String::as_str).collect();
+    crate::arrangement::arrangement_sentence(arrangements, slug, None, &borrowed)
+}
+
+/// The registry sentence for one [`PredictLexError`] — the inner clause of
+/// [`PredictOutOfDialectReason::OutOfDialectToken`].
+fn predict_lex_error_text(ctx: &RenderCtx<'_>, lex: PredictLexError) -> String {
+    let slug = match lex {
+        PredictLexError::UnmodeledByte => "predict-lex-unmodeled-byte",
+        PredictLexError::BacktickCommandSubstitution => "predict-lex-backtick-substitution",
+        PredictLexError::UnterminatedQuote => "predict-lex-unterminated-quote",
+    };
+    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+}
+
+/// The registry sentence for one [`PredictUnterminatedReason`].
+fn predict_unterminated_text(ctx: &RenderCtx<'_>, reason: PredictUnterminatedReason) -> String {
+    let none: Vec<&str> = Vec::new();
+    let (slug, values) = match reason {
+        PredictUnterminatedReason::FunctionBody => ("predict-unterminated-function-body", none),
+        PredictUnterminatedReason::Block { keyword } => {
+            ("predict-unterminated-block", vec![keyword])
+        }
+        PredictUnterminatedReason::CaseArm => ("predict-unterminated-case-arm", none),
+        PredictUnterminatedReason::IfThen => ("predict-unterminated-if-then", none),
+    };
+    crate::arrangement::arrangement_sentence(ctx.arrangements(), slug, None, &values)
 }
 
 /// The registry sentence for one [`WhylogCorruptReason`].
