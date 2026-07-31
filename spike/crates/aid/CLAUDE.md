@@ -145,6 +145,22 @@ crate's charter) · `notes/287` (errorloom as-built).
   an emit site belongs in the code's register with typed holes; if a signature blocks you, that is
   the seal working. `weft::Run::foreign` still takes a `String` (`weft-deps-nothing`), so
   `weave::foreign` is the seat that binds the seal.
+- **prose-pins-live-where-the-prose-does** (x2k sweep; the operational edge of `render-form-unwelded`)
+  — a unit test anywhere in the workspace may not hard-code the BYTES of a catalog or arrangement
+  register that a case owns and a transcript renders. That transcript IS the sanctioned pin and
+  re-blesses with the prose; a literal elsewhere makes the test a second, invisible owner, so
+  authoring the words reddens a crate whose author never opens it (the blind reviewer hit exactly
+  this). THREE legal shapes: ASK the registry (`catalog::entry(slug).message` /
+  `ArrangementLookup::words_exact`) and assert the RELATIONSHIP — this seat renders THAT register ·
+  state the mechanic over a SYNTHESIZED register (`Vec<OwnedEntry>` / `Vec<OwnedArrangement>` through
+  `RenderCtx::new`) · for a committed sentence a test must EDIT, take its current bytes from the
+  render and mutate those (`editable_surface.rs`'s `section_text`). Two corollaries: never assert a
+  real slug still renders `[unwritten:]` (`prose-three-state` makes that a resting state, not a pin —
+  the placeholder MECHANIC belongs on a synthesized row), and never identify a diagnostic by its
+  rendered WORDS from another crate — match the typed payload or reason enum (`analysis`'s
+  `inline_refusals` is the pattern). The residue that legitimately keeps a literal is the FACELESS
+  row: no owning case, no transcript, so the literal is its only net
+  (`aid/tests/arrangement_migration.rs`'s three remediation hints, and nothing else).
 - **error-slugs-are-semantic** (`288:rul-error-slugs-are-semantic`) — code slugs are
   user-facing surface that becomes a real compat surface at publication. Mint them
   semantic-first, never as a file-naming decision.
@@ -241,8 +257,13 @@ crate's charter) · `notes/287` (errorloom as-built).
   first, since empty output surfaces no slug; the render fixpoint second). The supported loop is
   `DORC_LOOM_DUMP=<dir> mise run test:looms -- <case>`, which writes the CANDIDATE
   transcript — commands re-driven, outputs filled — to `<dir>/<case>.loom` on either failure; copy
-  it over the case and re-run. `dorc-loom promote` cannot do this job: adding a command changes
-  bytes outside the replay-output islands, which it refuses as a non-prose change.
+  it over the case and re-run. BOTH failures NAME that loop unconditionally
+  (`dorc_loom::dump_rescue_hint`, one mint, indented into the runner's failure block): armed or
+  not, because the reader who needs telling is by definition the one who has not set the variable.
+  `dorc-loom promote` cannot do this job: adding a command changes bytes outside the
+  replay-output islands, which it refuses as a non-prose change — and that refusal now names WHICH
+  class of change it found (frontmatter · replay command · file section · unnamed residue) and the
+  one way out of each, `dump_rescue_hint` included.
 - **seam-tolerated-nondeterminism-stops-at-the-run-log** — the declared `tolerate:` vocabulary
   (`crates/cli/CLAUDE.md` tolerate-is-a-closed-vocabulary) normalizes the RUN LOG only
   (`expected.ran`, `head-expected.ran`); no normalizer is applied to `expected.out` or to a loom's

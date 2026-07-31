@@ -111,12 +111,16 @@ discipline: one rule per bullet, slugged; append to the matching section.
   fixture dir (`mocks/` included, dotfiles included, `expected.ran` as a byte section), and the
   committed transcript instead of `expected.out`. It is NOT a second harness — `run_loom`
   MATERIALIZES the case into exactly the dir shape and runs the unchanged gate battery over it, so
-  a conversion cannot quietly drop a check. TWO closed key vocabularies exist, and an unread key
-  is refused in both: the e2e runner's `LOOM_KEYS` (run-lane keys + `owns`, listed there because
-  ownership is corpus-wide even though no e2e gate reads it) and the looms runner's
-  `FRONTMATTER_KEYS` (the full ~22-key set: `code`/`arrangement`/`owns`/`edit-loop`/`envelope`/
-  `tolerate`/`run`/`fixpoint`/…). A new key joins the vocabulary in the same commit that mints it,
-  or its cases go red. The replay COMMAND is compared against the invocation the runner actually
+  a conversion cannot quietly drop a check. ONE closed key vocabulary exists and an unread key is
+  refused against it in both runners: `dorc_loom::FRONTMATTER_KEYS` (the full ~22-key set, every
+  row naming the gate that reads it), of which the e2e runner's run-lane set is a PROJECTION
+  (`run_lane_key_names`, the `run_lane` flag) rather than a second list — the two had to stay
+  subset-related by hand, nothing checked it, and a key one runner accepted and the other refused
+  would redden the same file from the far side. `owns` is in the run-lane set although no e2e gate
+  reads it, because ownership is corpus-wide and refusing the key there left a component with no
+  authoring home. `dorc-loom keys` PRINTS the set (with the `code:` vs `arrangement:` split), so an
+  author finds it without first provoking a refusal. A new key joins the vocabulary in the same
+  commit that mints it, or its cases go red. The replay COMMAND is compared against the invocation the runner actually
   drives, so a transcript can never show one command while the gates run another. Corpus walks
   skip `*.sync-conflict-*` (sync residue is never a case).
 - **one-fixpoint-authority-per-case** — `crates/cli/tests/looms.rs` render-fixpoints every committed
