@@ -240,8 +240,9 @@ $ dorc why 8 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgsta
 
    === OUTCOME ===
 
-   8|ufw skipped RATHER THAN guarded: the probe reported sm.dorc.Firewall:80/tcp@allowed
-   already in place, and the site's oracle vouches that is reason enough
+   8|ufw skipped RATHER THAN guarded:
+      the probe reported sm.dorc.Firewall:80/tcp@allowed already in place, and the site's
+      oracle vouches that is reason enough
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)

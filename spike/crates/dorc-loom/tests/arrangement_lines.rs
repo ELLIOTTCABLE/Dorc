@@ -96,18 +96,17 @@ fn a_single_value_line_edits_back_into_its_words() {
     }
 }
 
-/// MULTI RUN, and wrapped. Four values with prose between them, laid out narrow enough that weft
-/// breaks the line — so the section has to absorb the newline+pad weft minted where it dropped
-/// the row's own space, and the compile-back has to collapse it again.
+/// MULTI RUN, and wrapped. Several values with prose between them, laid out narrow enough that
+/// weft breaks the line — so the section has to absorb the newline+pad weft minted where it
+/// dropped the row's own space, and the compile-back has to collapse it again.
 #[test]
-fn a_four_value_line_survives_a_wrap_and_edits_back() {
+fn a_multi_value_line_survives_a_wrap_and_edits_back() {
     let said = Said::words(
         "why-outcome-contrastive",
         &[
             "14|apt-get",
             "ran",
-            "skipped",
-            "no oracle vouched for its convergence on this host",
+            "skipped for want of a vouched convergence check on this host",
         ],
     );
     let (text, baseline) = laid_out(&said, 40);
@@ -126,7 +125,7 @@ fn a_four_value_line_survives_a_wrap_and_edits_back() {
     match applied(&baseline, &edited, "why-outcome-contrastive") {
         Ok(OwnedWords::Authored(words)) => assert_eq!(
             words,
-            vec!["", " ", " INSTEAD OF ", ": ", ""],
+            vec!["", " ", " INSTEAD OF ", ":"],
             "every word boundary the render stamped came back, whitespace collapsed"
         ),
         other => panic!("expected the re-split words, got {other:?}"),
@@ -219,10 +218,7 @@ fn a_value_glued_to_its_closing_word_edits_back() {
 /// their order says which word goes where.
 #[test]
 fn moving_a_value_refuses_by_name() {
-    let said = Said::words(
-        "why-outcome-contrastive",
-        &["14|apt-get", "ran", "skipped", "nothing vouched"],
-    );
+    let said = Said::words("why-outcome-contrastive", &["14|apt-get", "ran", "skipped"]);
     let (text, baseline) = laid_out(&said, 92);
     // `{{v1}} {{v0}}` swaps the first two values inside the section's interior.
     let edited = text.replace("14|apt-get ran", "{{v1}} {{v0}}");
@@ -239,7 +235,7 @@ fn moving_a_value_refuses_by_name() {
                 panic!("a moved value must refuse by name, got {refusal:?}")
             };
             assert_eq!(slug, "why-outcome-contrastive");
-            assert_eq!(*expected, vec!["v0", "v1", "v2", "v3"]);
+            assert_eq!(*expected, vec!["v0", "v1", "v2"]);
             assert_ne!(found, expected, "the refusal names what moved");
             // The author sees an ordinary English word; the refusal has to say it was computed and
             // which words on the line are theirs to change.

@@ -110,9 +110,10 @@ $ dorc why book.sh:7 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
 
    === OUTCOME ===
 
-   7|ufw skipped RATHER THAN guarded: 5|apt-get, 6|hork ran above it, which normally forces
-   an apply-time guard-clause; but --risk-faultless-skips activates acting on authors'
-   at-most claims, and that claim does not reach what the skip was reported on.
+   7|ufw skipped RATHER THAN guarded:
+      5|apt-get, 6|hork ran above it, which normally forces an apply-time guard-clause; but
+      --risk-faultless-skips activates acting on authors' at-most claims, and that claim
+      does not reach what the skip was reported on.
 
    === ANALYSIS ===
 

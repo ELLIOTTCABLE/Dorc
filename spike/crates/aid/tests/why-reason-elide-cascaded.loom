@@ -1,5 +1,7 @@
 ---
 arrangement: why-reason-elide-cascaded
+owns:
+  - why-reason-omitted
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-elide-cascaded && mise run loom:promote -- why-reason-elide-cascaded`. `mise run loom:vars -- --all why-reason-elide-cascaded` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
@@ -52,8 +54,9 @@ $ dorc why book.sh:7 --book=book.sh -o package.oracle.sh < probe-results.txt --a
 
    === OUTCOME ===
 
-   7|dpkg skipped RATHER THAN guarded: the probe reported sm.dorc.PkgState:beta@installed
-   already in place, and the site's oracle vouches that is reason enough
+   7|dpkg skipped RATHER THAN guarded:
+      the probe reported sm.dorc.PkgState:beta@installed already in place, and the site's
+      oracle vouches that is reason enough
 
    === ANALYSIS ===
 
@@ -68,8 +71,8 @@ $ dorc why book.sh:7 --book=book.sh -o package.oracle.sh < probe-results.txt --a
 
    === OUTCOME ===
 
-   7|apt-get dropped as dead code RATHER THAN skipped: a guard's known status proves this
-   branch never runs
+   7|apt-get dropped as dead code RATHER THAN skipped:
+      a guard's known status proves this branch never runs
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)

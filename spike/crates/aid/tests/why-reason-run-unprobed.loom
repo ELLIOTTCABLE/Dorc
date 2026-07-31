@@ -23,8 +23,9 @@ $ dorc why book.sh:5 --book=book.sh
 
    === OUTCOME ===
 
-   5|hork ran RATHER THAN guarded: no read-only check could be shipped for this line, and
-   dorc runs whatever it cannot check
+   5|hork ran RATHER THAN guarded:
+      no read-only check could be shipped for this line, and dorc runs whatever it cannot
+      check
 
    === ANALYSIS ===
 

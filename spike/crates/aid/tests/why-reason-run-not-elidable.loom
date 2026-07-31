@@ -20,8 +20,9 @@ $ dorc why book.sh:4 --book=book.sh
 
    === OUTCOME ===
 
-   4|cd ran RATHER THAN guarded: nothing licensed removing this line: it mutates with no
-   converged report, or a wall above it runs
+   4|cd ran RATHER THAN guarded:
+      nothing licensed removing this line: it mutates with no converged report, or a wall
+      above it runs
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)

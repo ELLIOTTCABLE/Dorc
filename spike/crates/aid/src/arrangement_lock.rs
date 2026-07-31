@@ -353,7 +353,7 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         occurrence: None,
         when_used: "The OUTCOME panel's one sentence. Values, in order: the asked line's `N|command` reference, its disposition word, the foil disposition, and the because-clause.",
         why: "28E section 7 adopt-contrastive-first: the mid-register answers why THIS disposition rather than the other one, and the foil is the line's other disposition (free).",
-        words: Words::Migrated(&["", " ", " RATHER THAN ", ": ", ""]),
+        words: Words::Migrated(&["", " ", " RATHER THAN ", ":"]),
     },
     ArrangementEntry {
         slug: "why-outcome-because-survived",

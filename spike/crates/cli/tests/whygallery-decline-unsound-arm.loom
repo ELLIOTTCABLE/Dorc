@@ -153,8 +153,9 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --results=
 
    === OUTCOME ===
 
-   9|sysctl ran RATHER THAN guarded: by its author's judgment, not by a gap. sysctl's oracle
-   deliberately declines this key.
+   9|sysctl ran RATHER THAN guarded:
+      by its author's judgment, not by a gap. sysctl's oracle deliberately declines this
+      key.
 
    === ANALYSIS ===
 
@@ -193,8 +194,9 @@ $ dorc why 9 --all --book=book.sh -o firewall.oracle.sh -o sysctl.oracle.sh --re
 
    === OUTCOME ===
 
-   9|sysctl ran RATHER THAN guarded: by its author's judgment, not by a gap. sysctl's oracle
-   deliberately declines this key.
+   9|sysctl ran RATHER THAN guarded:
+      by its author's judgment, not by a gap. sysctl's oracle deliberately declines this
+      key.
 
    === ANALYSIS ===
 

@@ -1,6 +1,7 @@
 ---
 arrangement: why-analysis-opener-guarded
 owns:
+  - why-outcome-because-guarded
   - why-analysis-join-guarded
   - why-next-steps-opener-guarded
   - why-next-step-describe-walls
@@ -111,9 +112,10 @@ $ dorc why book.sh:11 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh 
 
    === OUTCOME ===
 
-   11|systemctl guarded RATHER THAN skipped: 7|hork, 9|wombat, 10|apt-get really ran above
-   it. A fact reported before they ran cannot be trusted after; the guard re-asks the
-   question live, in place, where nothing can go stale.
+   11|systemctl guarded RATHER THAN skipped:
+      7|hork, 9|wombat, 10|apt-get really ran above it. A fact reported before they ran
+      cannot be trusted after; the guard re-asks the question live, in place, where nothing
+      can go stale.
 
    === ANALYSIS ===
 
@@ -193,9 +195,9 @@ $ dorc why book.sh:8 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh -
 
    === OUTCOME ===
 
-   8|systemctl guarded RATHER THAN skipped: 7|hork really ran above it. A fact reported
-   before they ran cannot be trusted after; the guard re-asks the question live, in place,
-   where nothing can go stale.
+   8|systemctl guarded RATHER THAN skipped:
+      7|hork really ran above it. A fact reported before they ran cannot be trusted after;
+      the guard re-asks the question live, in place, where nothing can go stale.
 
    === ANALYSIS ===
 

@@ -17,6 +17,7 @@ owns:
   - why-next-step-label
   - why-next-step-review
   - why-next-steps-heading
+  - why-outcome-because-declined
   - why-outcome-contrastive
   - why-outcome-heading
   - why-participating-lines-closure
@@ -97,8 +98,9 @@ $ dorc why book.sh:4 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 
    === OUTCOME ===
 
-   4|sysctl ran RATHER THAN guarded: by its author's judgment, not by a gap. sysctl's oracle
-   deliberately declines this key.
+   4|sysctl ran RATHER THAN guarded:
+      by its author's judgment, not by a gap. sysctl's oracle deliberately declines this
+      key.
 
    === ANALYSIS ===
 
@@ -135,8 +137,8 @@ $ dorc why book.sh:5 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 
    === OUTCOME ===
 
-   5|hork ran RATHER THAN guarded: by its author's judgment, not by a gap. hork's oracle
-   deliberately declines this key.
+   5|hork ran RATHER THAN guarded:
+      by its author's judgment, not by a gap. hork's oracle deliberately declines this key.
 
    === ANALYSIS ===
 
@@ -171,8 +173,9 @@ $ dorc why book.sh:6 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 
    === OUTCOME ===
 
-   6|wombat ran RATHER THAN guarded: by its author's judgment, not by a gap. wombat's oracle
-   deliberately declines this key.
+   6|wombat ran RATHER THAN guarded:
+      by its author's judgment, not by a gap. wombat's oracle deliberately declines this
+      key.
 
    === ANALYSIS ===
 
@@ -207,8 +210,9 @@ $ dorc why book.sh:7 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 
    === OUTCOME ===
 
-   7|wombat ran RATHER THAN guarded: by its author's judgment, not by a gap. wombat's oracle
-   deliberately declines this key.
+   7|wombat ran RATHER THAN guarded:
+      by its author's judgment, not by a gap. wombat's oracle deliberately declines this
+      key.
 
    === ANALYSIS ===
 

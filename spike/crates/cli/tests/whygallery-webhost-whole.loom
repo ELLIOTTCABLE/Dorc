@@ -382,9 +382,10 @@ $ dorc why 15 --all --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o
 
    === OUTCOME ===
 
-   15|systemctl guarded RATHER THAN skipped: 12|apt-get, 14|hork really ran above it. A fact
-   reported before they ran cannot be trusted after; the guard re-asks the question live, in
-   place, where nothing can go stale.
+   15|systemctl guarded RATHER THAN skipped:
+      12|apt-get, 14|hork really ran above it. A fact reported before they ran cannot be
+      trusted after; the guard re-asks the question live, in place, where nothing can go
+      stale.
 
    === ANALYSIS ===
 

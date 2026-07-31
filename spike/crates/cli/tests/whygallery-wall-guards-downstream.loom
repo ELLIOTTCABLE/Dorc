@@ -192,9 +192,9 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh --results
 
    === OUTCOME ===
 
-   9|systemctl guarded RATHER THAN skipped: 8|hork really ran above it. A fact reported
-   before they ran cannot be trusted after; the guard re-asks the question live, in place,
-   where nothing can go stale.
+   9|systemctl guarded RATHER THAN skipped:
+      8|hork really ran above it. A fact reported before they ran cannot be trusted after;
+      the guard re-asks the question live, in place, where nothing can go stale.
 
    === ANALYSIS ===
 

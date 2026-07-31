@@ -1,6 +1,7 @@
 ---
 arrangement: why-claims-payload
 owns:
+  - why-outcome-because-survived
   - why-analysis-opener
   - why-analysis-join
   - why-vouch-payload-site
@@ -103,9 +104,10 @@ $ dorc why book.sh:8 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
 
    === OUTCOME ===
 
-   8|ufw skipped RATHER THAN guarded: 7|apt-get ran above it, which normally forces an
-   apply-time guard-clause; but --risk-faultless-skips activates acting on authors' at-most
-   claims, and that claim does not reach what the skip was reported on.
+   8|ufw skipped RATHER THAN guarded:
+      7|apt-get ran above it, which normally forces an apply-time guard-clause; but
+      --risk-faultless-skips activates acting on authors' at-most claims, and that claim
+      does not reach what the skip was reported on.
 
    === ANALYSIS ===
 

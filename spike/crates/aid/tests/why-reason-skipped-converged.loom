@@ -38,8 +38,9 @@ $ dorc why book.sh:2 --book=book.sh -o hork.oracle.sh < probe-results.txt --all
 
    === OUTCOME ===
 
-   2|hork skipped RATHER THAN guarded: the probe reported sm.dorc.Package:nginx@installed
-   already in place, and the site's oracle vouches that is reason enough
+   2|hork skipped RATHER THAN guarded:
+      the probe reported sm.dorc.Package:nginx@installed already in place, and the site's
+      oracle vouches that is reason enough
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)

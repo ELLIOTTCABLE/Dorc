@@ -562,6 +562,11 @@ struct ChainRender {
     /// What this line's skip SPENT, when it spent anything at all — see [`TrustSpent`].
     trust: Option<TrustSpent>,
     outcome: Said,
+    /// The because-clause the OUTCOME sentence ends on, rendered as its own line beneath it
+    /// (`28L:rul-composed-saids-render-as-own-lines`). It is a registry line in its own right —
+    /// several of them are — so it renders as one, rather than being flattened into the outcome
+    /// row's value where nothing downstream could name the entry an edit has to rewrite.
+    because: Option<Said>,
     /// The ANALYSIS opener, then the speaker rows, then the numberless join restatement
     /// (`28E` §7 adapt-join-only-numbering: a linear chain carries no numbering at all). The rows
     /// and the restatement are the [`ChainModel`]: what the walk derived, and what this render
@@ -755,15 +760,11 @@ fn survival_chain(
             crossed: joined_walls.clone(),
             claimant: claimants.join(", "),
         }),
-        outcome: contrastive(
-            reference,
-            &outcome,
-            &foil_word(ctx, disposition),
-            Said::words(
-                "why-outcome-because-survived",
-                &[&joined_walls, CONSENT_FLAG],
-            ),
-        ),
+        outcome: contrastive(reference, &outcome, &foil_word(ctx, disposition)),
+        because: Some(Said::words(
+            "why-outcome-because-survived",
+            &[&joined_walls, CONSENT_FLAG],
+        )),
         analysis_opener: Said::words("why-analysis-opener", &[reference, &outcome]),
         chain: ChainModel::all_selected(
             links,
@@ -889,8 +890,8 @@ fn guard_chain(
             reference,
             &OutcomeKind::Guarded.word(ctx),
             &OutcomeKind::Guarded.foil().word(ctx),
-            Said::words("why-outcome-because-guarded", &[&joined_walls]),
         ),
+        because: Some(Said::words("why-outcome-because-guarded", &[&joined_walls])),
         analysis_opener: Said::words("why-analysis-opener-guarded", &[]),
         chain: ChainModel::all_selected(
             links,
@@ -1113,8 +1114,8 @@ fn decline_chain(
             reference,
             &OutcomeKind::Ran.word(ctx),
             &OutcomeKind::Ran.foil().word(ctx),
-            Said::words("why-outcome-because-declined", &[word]),
         ),
+        because: Some(Said::words("why-outcome-because-declined", &[word])),
         analysis_opener: Said::words("why-analysis-opener-plain", &[reference]),
         chain: ChainModel::all_selected(links, Some(class_said("why-declines-join"))),
         participants: Vec::new(),
@@ -1210,22 +1211,29 @@ fn sentence_document(ctx: &RenderCtx<'_>, slug: &'static str, values: &[&str]) -
 
 /// The OUTCOME panel's one contrastive sentence, from all four chain walkers.
 ///
-/// The because-clause arrives as a composed fragment rather than a flattened string, which is
-/// what un-truncates it: a raw value is capped at [`WHY_VALUE_CAP`] because a pathological book
-/// word must not own the render, but a because-clause is OUR OWN registry words with their own
-/// already-capped values inside, and capping it a second time cut a 281-byte reason at 240
-/// (`28H:ask-because-clause-truncates-at-two-forty`).
-fn contrastive(reference: &str, outcome: &str, foil: &str, because: Said) -> Said {
-    Said::sentence(
-        "why-outcome-contrastive",
-        None,
-        vec![
-            Said::Value(reference.to_owned()),
-            Said::Value(outcome.to_owned()),
-            Said::Value(foil.to_owned()),
-            because,
-        ],
-    )
+/// The because-clause is NOT one of its values: it is its own registry line, rendered beneath this
+/// one (`28L:rul-composed-saids-render-as-own-lines`). Nesting it here flattened a whole sentence
+/// into an immutable value — the entry it came from could not be named, so it could not be
+/// edited — and it also re-capped OUR OWN words at [`WHY_VALUE_CAP`], cutting a 281-byte reason at
+/// 240 (`28H:ask-because-clause-truncates-at-two-forty`).
+fn contrastive(reference: &str, outcome: &str, foil: &str) -> Said {
+    Said::words("why-outcome-contrastive", &[reference, outcome, foil])
+}
+
+/// The OUTCOME panel's body: the contrastive sentence, with its because-clause hanging beneath it
+/// as a line of its own (`28L:rul-composed-saids-render-as-own-lines`).
+///
+/// The banner is what gives the clause its indent WITHOUT giving it its own section-splitting
+/// chrome: two registry lines, two sections, one per line — the transport law is
+/// `a-chrome-line-is-one-section`, not one-section-per-panel.
+fn outcome_node(ctx: &RenderCtx<'_>, chain: &ChainRender) -> Node<Face> {
+    let Some(because) = &chain.because else {
+        return paragraph(ctx, &chain.outcome, "why-outcome");
+    };
+    Node::new(NodeKind::Banner(Banner {
+        headline: chain.outcome.runs(ctx, "why-outcome"),
+        body: vec![paragraph(ctx, because, "why-outcome-because")],
+    }))
 }
 
 /// A titled panel. The header WORDS come from the registry; weft mints the rule around them and
@@ -1415,7 +1423,7 @@ fn chain_nodes(ctx: &RenderCtx<'_>, chain: &ChainRender, exhaustive: bool) -> Ve
     let mut out = vec![panel(
         ctx,
         "why-outcome-heading",
-        vec![paragraph(ctx, &chain.outcome, "why-outcome")],
+        vec![outcome_node(ctx, chain)],
     )];
     let links = chain.chain.rendered(exhaustive);
     if links.is_empty() {
@@ -1887,22 +1895,15 @@ fn why_triptych_parts(
 /// demonstrates. The richer per-disposition panels — a guarded line naming its wall, a declined line
 /// showing the author's arm — are the narration lane's.
 ///
-/// RESIDUAL SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): a multi-fragment
-/// reason still renders as ONE value of the outcome row, so its own fragments' registry rows get
-/// no face of their own in the transcript — nesting them would split the outcome line across
-/// sections, which is exactly what `28H` ruling 3 forbids. What DID change is the budget: a
-/// composed reason is no longer re-capped as if it were raw foreign bytes, so a long
-/// because-clause reads in full.
 fn plain_chain(site: &WhySite) -> ChainRender {
     let (because, rest) = site
         .reasons
         .split_first()
-        .map_or((Said::Value(String::new()), &[][..]), |(head, tail)| {
-            (head.clone(), tail)
-        });
+        .map_or((None, &[][..]), |(head, tail)| (Some(head.clone()), tail));
     ChainRender {
         trust: None,
-        outcome: contrastive(&site.reference(), &site.outcome, &site.foil, because),
+        outcome: contrastive(&site.reference(), &site.outcome, &site.foil),
+        because,
         analysis_opener: Said::words("why-analysis-opener-plain", &[&site.reference()]),
         chain: ChainModel::all_selected(
             rest.iter()
@@ -2140,38 +2141,45 @@ mod because_clause_tests {
         ])
     }
 
-    /// A because-clause is OUR words with their own already-capped values inside, so the display
-    /// budget that stops a pathological book word owning the render must not apply to it a second
-    /// time (`28H:ask-because-clause-truncates-at-two-forty`). It used to, and cut the reason at
-    /// 240 bytes mid-sentence.
+    /// A because-clause is its own registry LINE, never a value of the outcome row
+    /// (`28L:rul-composed-saids-render-as-own-lines`). Two things follow and both are pinned here:
+    /// it reaches the render WHOLE — as a value it was re-capped at [`WHY_VALUE_CAP`] and cut a
+    /// 281-byte reason mid-sentence (`28H:ask-because-clause-truncates-at-two-forty`) — and its
+    /// runs name its OWN entries, which is what a transcript edit has to be able to address.
     #[test]
-    fn a_composed_because_clause_renders_whole() {
+    fn a_because_clause_is_its_own_line_and_reaches_the_render_whole() {
+        let ctx = RenderCtx::production();
         let reason = composed_reason();
-        let whole = reason.text(&RenderCtx::production());
+        let whole = reason.text(&ctx);
         assert!(
             whole.len() > WHY_VALUE_CAP,
             "the fixture must exceed the raw-value budget or it proves nothing: {} bytes",
             whole.len()
         );
-        let rendered =
-            contrastive("14|apt-get", "ran", "skipped", reason).text(&RenderCtx::production());
+        let runs = reason.runs(&ctx, "why-outcome-because");
+        let bytes: String = runs.iter().map(|run| run.text.clone()).collect();
+        assert_eq!(bytes, whole, "nothing re-caps our own words");
         assert!(
-            rendered.contains(&whole),
-            "the whole clause survives, so nothing was truncated: {rendered}"
+            runs.iter().any(|run| matches!(
+                &run.provenance,
+                weft::Provenance::Arrangement {
+                    key: Some(dorc_aid::weave::Face::Row { slug, .. })
+                } if *slug == "why-reason-cmdsub-opener"
+            )),
+            "the clause's own entry is nameable in the span map"
         );
     }
 
     /// The budget still binds where it was FOR: a raw value is somebody else's bytes, and one
     /// pathological book word may not own the render.
     #[test]
-    fn a_raw_because_clause_is_still_capped() {
-        let rendered = contrastive(
-            "14|apt-get",
-            "ran",
-            "skipped",
-            Said::Value("z".repeat(WHY_VALUE_CAP * 2)),
-        )
-        .text(&RenderCtx::production());
+    fn a_raw_value_interpolated_into_the_outcome_row_is_still_capped() {
+        let sentence = contrastive("14|apt-get", &"z".repeat(WHY_VALUE_CAP * 2), "skipped");
+        let rendered: String = sentence
+            .runs(&RenderCtx::production(), "why-outcome")
+            .iter()
+            .map(|run| run.text.clone())
+            .collect();
         assert!(
             rendered.contains("..."),
             "a raw value is capped: {rendered}"
@@ -2625,13 +2633,9 @@ mod not_ours_bytes_tests {
             }),
             outcome: Said::words(
                 "why-outcome-contrastive",
-                &[
-                    &hostile_line(1),
-                    &hostile_line(2),
-                    &hostile_line(3),
-                    &hostile_line(4),
-                ],
+                &[&hostile_line(1), &hostile_line(2), &hostile_line(3)],
             ),
+            because: Some(Said::Value(hostile_line(4))),
             analysis_opener: cause_shaped_parts(),
             chain: ChainModel::all_selected(
                 vec![ChainLink {
