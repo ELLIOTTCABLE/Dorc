@@ -583,12 +583,11 @@ fn cell_effect(
     if cell.kind != annotation_kind {
         let em_kind = interner.resolve(cell.kind.0).to_owned();
         // Spanless: no source location at this classification depth (arch-3-residual-2).
-        let msg = format!(
-            "check annotation kind `{annotation_kind_str}` disagrees with the effect-map \
-             kind `{em_kind}` for this verb -- the annotation (declared identity) wins"
-        );
         diags.push(Diag::new_spanless_site(Code::EffectKindDisagreement(
-            EffectKindDisagreement { detail: msg },
+            EffectKindDisagreement {
+                annotated: annotation_kind_str.to_owned(),
+                effect_map: em_kind,
+            },
         )));
     }
     // The annotation wins (declared identity). Ambient context (`HostDefault`) — an in-book

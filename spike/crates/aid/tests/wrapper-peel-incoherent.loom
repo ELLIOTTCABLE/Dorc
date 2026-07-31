@@ -8,4 +8,7 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 $ dorc plan --book=book.sh
 error[wrapper-peel-incoherent]: sm wrapper `sudo`: __predict and __lend_map
 disagree on the peel tail position (predict reaches "$@" after 1 argv token(s),
-lend_map after 0)
+lend_map after 0) -- static incoherence (273 section 5,
+declarations-genuinely-contradict). The guest would start at a different token
+depending on which member dispatched; fix the argparse so both peel to the same
+tail.

@@ -151,7 +151,9 @@ fn shellcheck_unstructured_output_is_raw_passthrough() {
             &dorc_core::Interner::default(),
         )
         .iter()
-        .any(|(name, value)| *name == "output" && value.contains("no structure")),
+        .any(|(name, value)| {
+            *name == "output" && value.is_foreign() && value.text().contains("no structure")
+        }),
         "the unparsable tool output rides the payload: {code:?}"
     );
 }

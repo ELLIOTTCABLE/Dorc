@@ -61,14 +61,6 @@ const ASCII_SWEEP_ALLOWLIST: &[(&str, &str)] = &[
     ),
     // ── JARGON + PAYLOAD: a `{{detail}}` sample that also carries jargon ──
     (
-        "cfg-top-node",
-        "JARGON ⊤ + PAYLOAD: analysis/src/cfg.rs lower_top detail",
-    ),
-    (
-        "cfg-errexit-unknown",
-        "JARGON ⊤ + PAYLOAD: analysis/src/cfg.rs errexit detail",
-    ),
-    (
         "footprint-incoherent",
         "JARGON ⊄ + PAYLOAD: the touches()-footprint detail",
     ),

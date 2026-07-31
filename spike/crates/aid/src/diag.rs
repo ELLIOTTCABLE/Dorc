@@ -29,6 +29,7 @@
 
 use crate::RenderCtx;
 use crate::Severity;
+use crate::foreign::{ForeignBytes, ParamText};
 use crate::said::Said;
 use dorc_core::{ProvId, Span, TopCause};
 
@@ -549,18 +550,24 @@ pub struct CmdsubOperandTop {
     pub command: CommandName,
 }
 
-/// Payload of [`DiagCode::SiteUnresolvable`]: the probe-unresolvable site and the passthrough
-/// `detail` string. A PASSTHROUGH code (catalog message `sm {detail}`); the emit site builds
-/// `detail` to reproduce the pre-catalog output verbatim — the aggregate label AND the old
-/// `render_body` site-runs note continuation, folded into one string so the migrated render is
-/// byte-identical bar the `sm ` prefix (`27V`, conductor-ruled). The [`SiteId`] is the blamed
-/// handle the probe record keys back to (`inv-site-keyed-results`).
+/// Payload of [`DiagCode::SiteUnresolvable`]: the probe-unresolvable sites the apply will run.
+///
+/// De-passthrough'd (`282:rul-passthrough-type-gated`): the disclosure sentence was OURS and now
+/// lives in the catalog register, with the two genuinely-foreign values — the named sites and the
+/// quoted first command, both book bytes — sealed. The [`SiteId`] is the blamed handle the probe
+/// record keys back to (`inv-site-keyed-results`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SiteUnresolvable {
     /// The probe-unresolvable command-site (the apply runs it).
     pub site: SiteId,
-    /// The full disclosure text (aggregate label + the folded site-runs note), referent-agnostic.
-    pub detail: String,
+    /// How many sites are disclosed (`{count}`).
+    pub count: String,
+    /// `site` or `sites`, agreeing with `count` (`{site_word}`).
+    pub site_word: &'static str,
+    /// The named sites, each backticked with its give-up cause (`{names}`) — book bytes.
+    pub names: ForeignBytes,
+    /// The first site's source, as the caret's representative (`{excerpt}`) — book bytes.
+    pub excerpt: ForeignBytes,
 }
 
 /// Payload of [`DiagCode::RenderHeredocRefused`]: the heredoc-bearing site the leaf-exact render
@@ -641,11 +648,11 @@ pub struct CfgTopNode {
 
 /// Payload of [`DiagCode::CfgErexitUnknown`]: the errexit pass encountered an unknown command;
 /// the failure-edge is conservatively assumed. No `SiteId` (`site()` returns `None`).
+///
+/// Field-less since the de-passthrough (`282:rul-passthrough-type-gated`): the reason was one
+/// fixed sentence we wrote, so it belongs in the catalog register, not on the payload.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CfgErexitUnknown {
-    /// The CFG builder's description of the unknown construct (display only).
-    pub detail: String,
-}
+pub struct CfgErexitUnknown;
 
 /// Payload of [`DiagCode::CfgInlineRefused`]: a call could not be inlined. The detail names
 /// which budget or constraint was exceeded. No `SiteId` (`site()` returns `None`).
@@ -660,8 +667,8 @@ pub struct CfgInlineRefused {
 /// returns `None` (no plan-`LeafId`) but the primary span points at the definition.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CfgBuiltinShadowed {
-    /// The full disclosure text (display only — `inv-referent-agnostic`).
-    pub detail: String,
+    /// The shadowing function name, which is also the builtin it shadows (`{name}`).
+    pub name: String,
 }
 
 /// Payload of [`DiagCode::EffectKindDisagreement`]: a check's annotation kind disagrees with
@@ -670,8 +677,10 @@ pub struct CfgBuiltinShadowed {
 /// with `span: None` at its legacy site (no span available at the annotation-vs-map check).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EffectKindDisagreement {
-    /// Description of the disagreement (annotation kind vs effect-map kind; display only).
-    pub detail: String,
+    /// The kind the check annotation declared, which wins (`{annotated}`).
+    pub annotated: String,
+    /// The kind the effect map holds for the verb (`{effect_map}`).
+    pub effect_map: String,
 }
 
 /// Payload of [`DiagCode::PredictOutOfDialect`]: a check function body uses a construct outside
@@ -957,16 +966,20 @@ pub struct EscalationPolicy {
 /// attribution chain. Spanned (the carried site's span); `site()` returns `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CarriedAcrossSubstrateAxis {
-    /// The full attribution-chain text (display only).
-    pub detail: String,
+    /// The crossed axes, `+`-joined (`{axes}`).
+    pub axes: String,
+    /// The read kinds and their invariant loci (`{kinds}`).
+    pub kinds: String,
 }
 
 /// Payload of [`DiagCode::WrappedSiteAdoptionHint`] (PASSTHROUGH `sm {detail}`): the one-line
 /// adoption hint. Spanned (the wrapped site's span); `site()` returns `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WrappedSiteAdoptionHint {
-    /// The full adoption-hint text (display only).
-    pub detail: String,
+    /// The wrapper provider whose oracle could vouch (`{provider}`).
+    pub provider: String,
+    /// The dimension the vouch would name (`{dimension}`).
+    pub dimension: String,
 }
 
 /// Payload of [`DiagCode::ResolverConflict`] (TEMPLATIZED): the kind and the resolver count.
@@ -1026,16 +1039,24 @@ pub struct ReachesProviderCollision {
 /// incoherence refusal. Spanned (the entry `name_span`); `site()` returns `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WrapperEntryIncoherent {
-    /// The full incoherence-refusal text (display only).
-    pub detail: String,
+    /// The wrapper provider (`{wrapper}`).
+    pub wrapper: String,
+    /// How many leading args the entry form consumes (`{entry_shifts}`).
+    pub entry_shifts: String,
+    /// How many the lend-fold consumes (`{lend_shifts}`).
+    pub lend_shifts: String,
 }
 
 /// Payload of [`DiagCode::WrapperPeelIncoherent`] (PASSTHROUGH `sm {detail}`): the peel-tail
 /// incoherence refusal. Spanned (the predict `name_span`); `site()` returns `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WrapperPeelIncoherent {
-    /// The full incoherence-refusal text (display only).
-    pub detail: String,
+    /// The wrapper provider (`{wrapper}`).
+    pub wrapper: String,
+    /// How many argv tokens `__predict` consumes before `"$@"` (`{predict_depth}`).
+    pub predict_depth: String,
+    /// How many `__lend_map` consumes (`{lend_map_depth}`).
+    pub lend_map_depth: String,
 }
 
 /// Payload of [`DiagCode::WhylogVersionRefused`] (`27V` Lane B): the durable's format-version tag
@@ -1089,8 +1110,8 @@ pub struct WhylogUnwritten {
 /// `*.oracle.sh` files found on disk but not loaded (suggest, never auto-load). Spanless.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AidUnloadedSiblingOracle {
-    /// The full hint text (the unloaded sibling list; display only, `inv-referent-agnostic`).
-    pub detail: String,
+    /// The unloaded sibling files, backticked and comma-joined (`{oracles}`).
+    pub oracles: String,
 }
 
 /// Payload of [`DiagCode::UnmodeledWallInventory`] (`288` §5): the whole-book wall census the
@@ -1141,8 +1162,8 @@ pub struct LintToolAbsent {
 pub struct LintToolOutputUnparsable {
     /// The tool's name (`{tool}`).
     pub tool: String,
-    /// The tool's output, flattened to one truncated line (`{output}`; display only).
-    pub output: String,
+    /// The tool's own bytes (`{output}`; display only), sealed as not-ours at the capture edge.
+    pub output: ForeignBytes,
 }
 
 /// Payload of [`DiagCode::LintToolFailedWithoutFindings`] (`288` §5): the exit-trichotomy's third
@@ -1278,8 +1299,8 @@ pub struct CliFileUnreadable {
     pub kind: String,
     /// The path (`{path}`).
     pub path: String,
-    /// The OS error string (`{detail}`).
-    pub detail: String,
+    /// The platform's own words (`{detail}`), sealed as not-ours at the edge that read them.
+    pub detail: ForeignBytes,
 }
 
 /// Payload of [`DiagCode::LintNoLintableFiles`]: zero lintable files is OPERATIONAL, never clean.
@@ -1311,15 +1332,15 @@ pub struct DorcShUsage;
 pub struct DorcShScriptUnreadable {
     /// The script path (`{path}`).
     pub path: String,
-    /// The OS error string (`{detail}`).
-    pub detail: String,
+    /// The platform's own words (`{detail}`), sealed as not-ours at the edge that read them.
+    pub detail: ForeignBytes,
 }
 
 /// Payload of [`DiagCode::DorcShExecFailed`]: the exec of stock sh itself failed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DorcShExecFailed {
-    /// The OS error string (`{detail}`).
-    pub detail: String,
+    /// The platform's own words (`{detail}`), sealed as not-ours at the edge that read them.
+    pub detail: ForeignBytes,
 }
 
 /// Payload of [`DiagCode::CliShimDirUnwritable`]: the `--shim-dir` materialization edge failed.
@@ -1329,8 +1350,8 @@ pub struct DorcShExecFailed {
 pub struct CliShimDirUnwritable {
     /// The path we could not create or write (`{path}`).
     pub path: String,
-    /// The OS error string (`{detail}`).
-    pub detail: String,
+    /// The platform's own words (`{detail}`), sealed as not-ours at the edge that read them.
+    pub detail: ForeignBytes,
 }
 
 /// Payload of [`DiagCode::TransportCrlfRefused`]: bytes bound for a host are not LF-only.
@@ -1371,9 +1392,14 @@ pub struct TransportSessionLost {
 /// local: the controller could not spawn a child at all.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransportNotAttempted {
-    /// The destination that went uncontacted (`{host}`).
+    /// The host (`{host}`).
     pub host: String,
-    /// The spawn failure (`{detail}`).
+    /// Why nothing was attempted (`{detail}`).
+    ///
+    /// MIXED and therefore left a passthrough by the x2c audit: one producer is the platform's
+    /// spawn error, the other a sentence we compose about an unusable run marker. Splitting it is
+    /// a world-variant sibling pair (`AID-NEEDS:law-codes-vary-by-world-not-grammar`), not a hole
+    /// rename.
     pub detail: String,
 }
 
@@ -2235,39 +2261,29 @@ impl Diag {
 
 /// The named template params a code's payload supplies, in `(name, value)` form — the closed set
 /// of `{holes}` the catalog message/help may interpolate (`27V` §3 · `AID-NEEDS:law-trust-tier`).
-/// The per-variant formatter: PASSTHROUGH codes yield `[("detail", …)]`; TEMPLATIZED codes yield
-/// their named params (calling the sanctioned engine formatters — `position.describe()`,
-/// `top_cause.describe()` — where needed, never hand-writing values); static-message codes yield
-/// `[]`. The `interner` is threaded for forward-compat (no payload resolves an interned handle at
-/// HEAD — the excerpt handles were retired into `detail` strings). Pure; `inv-no-throw`.
+/// The per-variant formatter: a PASSTHROUGH code yields a [`ParamText::Foreign`] hole (its payload
+/// field is a sealed [`ForeignBytes`]); every other hole is [`ParamText::Ours`], filled by the
+/// sanctioned engine formatters — `position.describe()`, `top_cause.describe(ctx)` — never by
+/// hand-written values; static-message codes yield `[]`. The `interner` is threaded for
+/// forward-compat (no payload resolves an interned handle at HEAD). Pure; `inv-no-throw`.
 #[must_use]
 pub fn params_of(
     ctx: &RenderCtx<'_>,
     code: &DiagCode,
     _interner: &dorc_core::Interner,
-) -> Vec<(&'static str, String)> {
-    let raw = params_of_raw(ctx, code);
-    raw.into_iter()
-        .map(|(name, value)| {
-            if crate::catalog::is_foreign_param(name) {
-                (name, crate::display::encode_line(&value, FOREIGN_PARAM_CAP))
-            } else {
-                (name, value)
-            }
-        })
-        .collect()
+) -> Vec<(&'static str, ParamText)> {
+    params_of_raw(ctx, code)
 }
 
-/// The budget for one passthrough value on a diagnostic line. Generous — a `detail` is an
-/// engine-authored sentence, not a quotation — and bounded, because some of them carry a source
-/// command that the book, not we, decided the length of.
-const FOREIGN_PARAM_CAP: usize = 2048;
+/// The budget for one passthrough value on a diagnostic line. Generous — a passthrough is usually
+/// one line of somebody's error text, not a document — and bounded, because the length was decided
+/// by a platform or a book, not by us.
+pub(crate) const FOREIGN_PARAM_CAP: usize = 2048;
 
-/// The per-code hole values, before the passthrough ones are made safe to display.
+/// The per-code hole values.
 ///
-/// Split from [`params_of`] so BOTH renders — the string one and the parts one — see the same
-/// bytes: they must agree exactly, and encoding at only one of them would make the two disagree
-/// the first time a book carried something interesting.
+/// The ONE seat both renders read — the string one and the parts one — so they cannot disagree
+/// about a code's values or about which of them are somebody else's bytes.
 ///
 /// **Every arm destructures its payload EXHAUSTIVELY, with no `..`.** That is the whole reason the
 /// arms are written the long way: a field added to a payload struct is `E0027` here, at the seat
@@ -2282,7 +2298,19 @@ const FOREIGN_PARAM_CAP: usize = 2048;
               which codes declare no holes, and the exhaustive destructuring is what makes a new \
               payload field a compile error here"
 )]
-fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, String)> {
+fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, ParamText)> {
+    /// A hole filled with a value the engine computed.
+    fn ours(name: &'static str, text: String) -> (&'static str, ParamText) {
+        (name, ParamText::Ours(text))
+    }
+    /// A hole filled with somebody else's bytes — spelled differently from [`ours`] at every arm so
+    /// the passthrough census is a grep rather than an inspection of param names.
+    fn foreign(name: &'static str, bytes: &ForeignBytes) -> (&'static str, ParamText) {
+        (
+            name,
+            ParamText::Foreign(bytes.on_plain_sink(FOREIGN_PARAM_CAP)),
+        )
+    }
     match code {
         DiagCode::CmdsubOperandTop(CmdsubOperandTop {
             site: _,
@@ -2291,184 +2319,243 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Str
             top_cause,
             command,
         }) => vec![
-            ("position", position.describe(ctx)),
-            ("cause", top_cause.describe().to_owned()),
-            ("command", command.describe(ctx)),
+            ours("position", position.describe(ctx)),
+            ours(
+                "cause",
+                crate::arrangement::arrangement_text(
+                    ctx.arrangements(),
+                    top_cause_slug(*top_cause),
+                    None,
+                ),
+            ),
+            ours("command", command.describe(ctx)),
         ],
         DiagCode::RenderHeredocRefused(RenderHeredocRefused {
             site: _,
             verb,
             command,
-        }) => vec![("verb", (*verb).to_owned()), ("command", command.clone())],
+        }) => vec![
+            ours("verb", (*verb).to_owned()),
+            ours("command", command.clone()),
+        ],
         DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {
-            vec![("inner", inner.clone())]
+            vec![ours("inner", inner.clone())]
         }
         DiagCode::Depth2PositionalUnthreaded(Depth2PositionalUnthreaded { site: _, name }) => {
-            vec![("name", name.clone())]
+            vec![ours("name", name.clone())]
         }
-        DiagCode::SiteUnresolvable(SiteUnresolvable { site: _, detail }) => {
-            vec![("detail", detail.clone())]
-        }
+        DiagCode::SiteUnresolvable(SiteUnresolvable {
+            site: _,
+            count,
+            site_word,
+            names,
+            excerpt,
+        }) => vec![
+            ours("count", count.clone()),
+            ours("site_word", (*site_word).to_owned()),
+            foreign("names", names),
+            foreign("excerpt", excerpt),
+        ],
         DiagCode::SyntaxUnsupported(SyntaxUnsupported { detail }) => {
-            vec![("detail", detail.clone())]
+            vec![ours("detail", detail.clone())]
         }
-        DiagCode::SyntaxMalformed(SyntaxMalformed { detail }) => vec![("detail", detail.clone())],
-        DiagCode::CfgTopNode(CfgTopNode { detail }) => vec![("detail", detail.clone())],
-        DiagCode::CfgErexitUnknown(CfgErexitUnknown { detail }) => vec![("detail", detail.clone())],
-        DiagCode::CfgInlineRefused(CfgInlineRefused { detail }) => vec![("detail", detail.clone())],
-        DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed { detail }) => {
-            vec![("detail", detail.clone())]
+        DiagCode::SyntaxMalformed(SyntaxMalformed { detail }) => {
+            vec![ours("detail", detail.clone())]
         }
-        DiagCode::EffectKindDisagreement(EffectKindDisagreement { detail }) => {
-            vec![("detail", detail.clone())]
+        DiagCode::CfgTopNode(CfgTopNode { detail }) => vec![ours("detail", detail.clone())],
+        DiagCode::CfgErexitUnknown(CfgErexitUnknown) => vec![],
+        DiagCode::CfgInlineRefused(CfgInlineRefused { detail }) => {
+            vec![ours("detail", detail.clone())]
         }
+        DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed { name }) => {
+            vec![ours("name", name.clone())]
+        }
+        DiagCode::EffectKindDisagreement(EffectKindDisagreement {
+            annotated,
+            effect_map,
+        }) => vec![
+            ours("annotated", annotated.clone()),
+            ours("effect_map", effect_map.clone()),
+        ],
         DiagCode::PredictOutOfDialect(PredictOutOfDialect { detail }) => {
-            vec![("detail", detail.clone())]
+            vec![ours("detail", detail.clone())]
         }
         DiagCode::PredictUnterminated(PredictUnterminated { detail }) => {
-            vec![("detail", detail.clone())]
+            vec![ours("detail", detail.clone())]
         }
         DiagCode::OracleRoleFnUnlifted(OracleRoleFnUnlifted { funcname }) => {
-            vec![("funcname", funcname.clone())]
+            vec![ours("funcname", funcname.clone())]
         }
         DiagCode::MarkOnAndOrList(MarkOnAndOrList) => vec![],
         DiagCode::FootprintIncoherent(FootprintIncoherent { detail }) => {
-            vec![("detail", detail.clone())]
+            vec![ours("detail", detail.clone())]
         }
-        DiagCode::EscalationPolicy(EscalationPolicy { detail }) => vec![("detail", detail.clone())],
-        DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis { detail }) => {
-            vec![("detail", detail.clone())]
+        DiagCode::EscalationPolicy(EscalationPolicy { detail }) => {
+            vec![ours("detail", detail.clone())]
         }
-        DiagCode::WrappedSiteAdoptionHint(WrappedSiteAdoptionHint { detail }) => {
-            vec![("detail", detail.clone())]
+        DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis { axes, kinds }) => {
+            vec![ours("axes", axes.clone()), ours("kinds", kinds.clone())]
         }
-        DiagCode::WrapperEntryIncoherent(WrapperEntryIncoherent { detail }) => {
-            vec![("detail", detail.clone())]
-        }
-        DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent { detail }) => {
-            vec![("detail", detail.clone())]
-        }
+        DiagCode::WrappedSiteAdoptionHint(WrappedSiteAdoptionHint {
+            provider,
+            dimension,
+        }) => vec![
+            ours("provider", provider.clone()),
+            ours("dimension", dimension.clone()),
+        ],
+        DiagCode::WrapperEntryIncoherent(WrapperEntryIncoherent {
+            wrapper,
+            entry_shifts,
+            lend_shifts,
+        }) => vec![
+            ours("wrapper", wrapper.clone()),
+            ours("entry_shifts", entry_shifts.clone()),
+            ours("lend_shifts", lend_shifts.clone()),
+        ],
+        DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
+            wrapper,
+            predict_depth,
+            lend_map_depth,
+        }) => vec![
+            ours("wrapper", wrapper.clone()),
+            ours("predict_depth", predict_depth.clone()),
+            ours("lend_map_depth", lend_map_depth.clone()),
+        ],
         DiagCode::WhylogVersionRefused(WhylogVersionRefused { found }) => {
-            vec![("found", found.clone())]
+            vec![ours("found", found.clone())]
         }
-        DiagCode::WhylogBookDesync(WhylogBookDesync { which }) => vec![("which", which.clone())],
-        DiagCode::WhylogAbsent(WhylogAbsent { dir }) => vec![("dir", dir.clone())],
-        DiagCode::WhylogCorrupt(WhylogCorrupt { detail }) => vec![("detail", detail.clone())],
+        DiagCode::WhylogBookDesync(WhylogBookDesync { which }) => {
+            vec![ours("which", which.clone())]
+        }
+        DiagCode::WhylogAbsent(WhylogAbsent { dir }) => vec![ours("dir", dir.clone())],
+        DiagCode::WhylogCorrupt(WhylogCorrupt { detail }) => vec![ours("detail", detail.clone())],
         DiagCode::WhylogUnwritten(WhylogUnwritten { dir, reason }) => {
-            vec![("dir", dir.clone()), ("reason", reason.clone())]
+            vec![ours("dir", dir.clone()), ours("reason", reason.clone())]
         }
-        DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle { detail }) => {
-            vec![("detail", detail.clone())]
+        DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle { oracles }) => {
+            vec![ours("oracles", oracles.clone())]
         }
         DiagCode::UnmodeledWallInventory(UnmodeledWallInventory {
             wall_count,
             wall_word,
             downstream,
         }) => vec![
-            ("wall_count", wall_count.to_string()),
-            ("wall_word", (*wall_word).to_owned()),
-            ("downstream", downstream.to_string()),
+            ours("wall_count", wall_count.to_string()),
+            ours("wall_word", (*wall_word).to_owned()),
+            ours("downstream", downstream.to_string()),
         ],
         DiagCode::VerdictTerminalPipeline(VerdictTerminalPipeline) => vec![],
         DiagCode::AuthoredDeclineClass(AuthoredDeclineClass { class }) => {
-            vec![("class", class.clone())]
+            vec![ours("class", class.clone())]
         }
         DiagCode::AuthoredDeclineClassUnreadable(AuthoredDeclineClassUnreadable) => vec![],
-        DiagCode::LintToolAbsent(LintToolAbsent { tool }) => vec![("tool", tool.clone())],
+        DiagCode::LintToolAbsent(LintToolAbsent { tool }) => vec![ours("tool", tool.clone())],
         DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable { tool, output }) => {
-            vec![("tool", tool.clone()), ("output", output.clone())]
+            vec![ours("tool", tool.clone()), foreign("output", output)]
         }
         DiagCode::CliStripNeedsPath(CliStripNeedsPath)
         | DiagCode::CliNoBookGiven(CliNoBookGiven)
         | DiagCode::LintNoLintableFiles(LintNoLintableFiles)
         | DiagCode::DorcShUsage(DorcShUsage) => vec![],
-        DiagCode::CliStripGotAFlag(CliStripGotAFlag { got }) => vec![("got", got.clone())],
+        DiagCode::CliStripGotAFlag(CliStripGotAFlag { got }) => vec![ours("got", got.clone())],
         DiagCode::CliUnknownMode(CliUnknownMode { mode, suggestion }) => {
-            vec![("mode", mode.clone()), ("suggestion", suggestion.clone())]
+            vec![
+                ours("mode", mode.clone()),
+                ours("suggestion", suggestion.clone()),
+            ]
         }
         DiagCode::CliFlagNeedsValue(CliFlagNeedsValue { flag, wants }) => {
-            vec![("flag", flag.clone()), ("wants", (*wants).to_owned())]
+            vec![
+                ours("flag", flag.clone()),
+                ours("wants", (*wants).to_owned()),
+            ]
         }
-        DiagCode::CliUnknownFlag(CliUnknownFlag { flag }) => vec![("flag", flag.clone())],
+        DiagCode::CliUnknownFlag(CliUnknownFlag { flag }) => vec![ours("flag", flag.clone())],
         DiagCode::CliUnknownFlagDidYouMean(CliUnknownFlagDidYouMean { flag, suggestion }) => {
-            vec![("flag", flag.clone()), ("suggestion", suggestion.clone())]
+            vec![
+                ours("flag", flag.clone()),
+                ours("suggestion", suggestion.clone()),
+            ]
         }
         DiagCode::CliFlagValueNotRecognized(CliFlagValueNotRecognized {
             flag,
             got,
             expected,
         }) => vec![
-            ("flag", flag.clone()),
-            ("got", got.clone()),
-            ("expected", (*expected).to_owned()),
+            ours("flag", flag.clone()),
+            ours("got", got.clone()),
+            ours("expected", (*expected).to_owned()),
         ],
         DiagCode::CliFlagValueNotANumber(CliFlagValueNotANumber { flag, got }) => {
-            vec![("flag", flag.clone()), ("got", got.clone())]
+            vec![ours("flag", flag.clone()), ours("got", got.clone())]
         }
         DiagCode::CliFlagsMutuallyExclusive(CliFlagsMutuallyExclusive { first, second }) => vec![
-            ("first", (*first).to_owned()),
-            ("second", (*second).to_owned()),
+            ours("first", (*first).to_owned()),
+            ours("second", (*second).to_owned()),
         ],
         DiagCode::CliFlagRequiresMode(CliFlagRequiresMode { flag, mode }) => {
-            vec![("flag", (*flag).to_owned()), ("mode", (*mode).to_owned())]
+            vec![
+                ours("flag", (*flag).to_owned()),
+                ours("mode", (*mode).to_owned()),
+            ]
         }
         DiagCode::CliFileNotFound(CliFileNotFound { kind, path }) => {
-            vec![("kind", kind.clone()), ("path", path.clone())]
+            vec![ours("kind", kind.clone()), ours("path", path.clone())]
         }
         DiagCode::CliFilePermissionDenied(CliFilePermissionDenied { kind, path }) => {
-            vec![("kind", kind.clone()), ("path", path.clone())]
+            vec![ours("kind", kind.clone()), ours("path", path.clone())]
         }
         DiagCode::CliFileUnreadable(CliFileUnreadable { kind, path, detail }) => vec![
-            ("kind", kind.clone()),
-            ("path", path.clone()),
-            ("detail", detail.clone()),
+            ours("kind", kind.clone()),
+            ours("path", path.clone()),
+            foreign("detail", detail),
         ],
         DiagCode::LintFileCountDrift(LintFileCountDrift { expected, found }) => vec![
-            ("expected", expected.to_string()),
-            ("found", found.to_string()),
+            ours("expected", expected.to_string()),
+            ours("found", found.to_string()),
         ],
         DiagCode::LintRequiredToolsMissing(LintRequiredToolsMissing { tools }) => {
-            vec![("tools", tools.clone())]
+            vec![ours("tools", tools.clone())]
         }
         DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable { path, detail }) => {
-            vec![("path", path.clone()), ("detail", detail.clone())]
+            vec![ours("path", path.clone()), foreign("detail", detail)]
         }
-        DiagCode::DorcShExecFailed(DorcShExecFailed { detail }) => vec![("detail", detail.clone())],
+        DiagCode::DorcShExecFailed(DorcShExecFailed { detail }) => vec![foreign("detail", detail)],
         DiagCode::CliShimDirUnwritable(CliShimDirUnwritable { path, detail }) => {
-            vec![("path", path.clone()), ("detail", detail.clone())]
+            vec![ours("path", path.clone()), foreign("detail", detail)]
         }
         DiagCode::TransportCrlfRefused(TransportCrlfRefused { which, line }) => {
-            vec![("which", which.clone()), ("line", line.clone())]
+            vec![ours("which", which.clone()), ours("line", line.clone())]
         }
         DiagCode::TransportSessionLost(TransportSessionLost {
             host,
             attempts,
             diagnosis,
         }) => vec![
-            ("host", host.clone()),
-            ("attempts", attempts.clone()),
-            ("diagnosis", diagnosis.clone()),
+            ours("host", host.clone()),
+            ours("attempts", attempts.clone()),
+            ours("diagnosis", diagnosis.clone()),
         ],
         DiagCode::TransportNotAttempted(TransportNotAttempted { host, detail }) => {
-            vec![("host", host.clone()), ("detail", detail.clone())]
+            vec![ours("host", host.clone()), ours("detail", detail.clone())]
         }
         DiagCode::TransportApplyFailed(TransportApplyFailed { host, status }) => {
-            vec![("host", host.clone()), ("status", status.clone())]
+            vec![ours("host", host.clone()), ours("status", status.clone())]
         }
         DiagCode::LintToolFailedWithoutFindings(LintToolFailedWithoutFindings { tool, rc }) => {
-            vec![("tool", tool.clone()), ("rc", rc.to_string())]
+            vec![ours("tool", tool.clone()), ours("rc", rc.to_string())]
         }
         DiagCode::MarkerVersionUnrecognized(MarkerVersionUnrecognized { found }) => {
-            vec![("found", found.clone())]
+            vec![ours("found", found.clone())]
         }
         DiagCode::MungeNameInvalid(MungeNameInvalid {
             source,
             funcname,
             problem,
         }) => vec![
-            ("source", source.clone()),
-            ("funcname", funcname.clone()),
-            ("problem", problem.clone()),
+            ours("source", source.clone()),
+            ours("funcname", funcname.clone()),
+            ours("problem", problem.clone()),
         ],
         DiagCode::MungeNameCollision(MungeNameCollision {
             source,
@@ -2476,67 +2563,85 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Str
             count,
             names,
         }) => vec![
-            ("source", source.clone()),
-            ("funcname", funcname.clone()),
-            ("count", count.to_string()),
-            ("names", names.clone()),
+            ours("source", source.clone()),
+            ours("funcname", funcname.clone()),
+            ours("count", count.to_string()),
+            ours("names", names.clone()),
         ],
         DiagCode::ReservedNamespaceSquat(ReservedNamespaceSquat { name, role }) => {
-            vec![("name", name.clone()), ("role", role.clone())]
+            vec![ours("name", name.clone()), ours("role", role.clone())]
         }
         DiagCode::ToleratesUnknownDimension(ToleratesUnknownDimension { token, expected }) => {
-            vec![("token", token.clone()), ("expected", expected.clone())]
+            vec![
+                ours("token", token.clone()),
+                ours("expected", expected.clone()),
+            ]
         }
         DiagCode::MarkUnknownVerb(MarkUnknownVerb { token, expected }) => {
-            vec![("token", token.clone()), ("expected", expected.clone())]
+            vec![
+                ours("token", token.clone()),
+                ours("expected", expected.clone()),
+            ]
         }
         DiagCode::LendMapUnknownDimension(LendMapUnknownDimension { token, expected }) => {
-            vec![("token", token.clone()), ("expected", expected.clone())]
+            vec![
+                ours("token", token.clone()),
+                ours("expected", expected.clone()),
+            ]
         }
         DiagCode::CarryNetnsOnNetKernelForbidden(CarryNetnsOnNetKernelForbidden {
             kind_munged,
-        }) => vec![("kind_munged", kind_munged.clone())],
+        }) => vec![ours("kind_munged", kind_munged.clone())],
         DiagCode::RecordsFactTruncated(RecordsFactTruncated {
             received,
             declared,
             unseen,
         }) => vec![
-            ("received", received.to_string()),
-            ("declared", declared.to_string()),
-            ("unseen", unseen.to_string()),
+            ours("received", received.to_string()),
+            ours("declared", declared.to_string()),
+            ours("unseen", unseen.to_string()),
         ],
         DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused { which }) => {
-            vec![("which", which.clone())]
+            vec![ours("which", which.clone())]
         }
-        DiagCode::RecordsTornLine(RecordsTornLine { count }) => vec![("count", count.to_string())],
+        DiagCode::RecordsTornLine(RecordsTornLine { count }) => {
+            vec![ours("count", count.to_string())]
+        }
         DiagCode::RecordsAlienLine(RecordsAlienLine { count }) => {
-            vec![("count", count.to_string())]
+            vec![ours("count", count.to_string())]
         }
-        DiagCode::RecordsLateLine(RecordsLateLine { count }) => vec![("count", count.to_string())],
+        DiagCode::RecordsLateLine(RecordsLateLine { count }) => {
+            vec![ours("count", count.to_string())]
+        }
         DiagCode::TouchesEscalated(TouchesEscalated { site, call }) => {
-            vec![("site", site.to_string()), ("call", call.clone())]
+            vec![ours("site", site.to_string()), ours("call", call.clone())]
         }
         DiagCode::DerivFamilyIncomplete(DerivFamilyIncomplete { site, reason }) => {
-            vec![("site", site.to_string()), ("reason", reason.clone())]
+            vec![
+                ours("site", site.to_string()),
+                ours("reason", reason.clone()),
+            ]
         }
         DiagCode::ResolverConflict(ResolverConflict { kind, count }) => {
-            vec![("kind", kind.clone()), ("count", count.to_string())]
+            vec![ours("kind", kind.clone()), ours("count", count.to_string())]
         }
         DiagCode::ResolverProviderCollision(ResolverProviderCollision { name }) => {
-            vec![("name", name.clone())]
+            vec![ours("name", name.clone())]
         }
-        DiagCode::DanglingReference(DanglingReference { coord }) => vec![("coord", coord.clone())],
+        DiagCode::DanglingReference(DanglingReference { coord }) => {
+            vec![ours("coord", coord.clone())]
+        }
         DiagCode::SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree {
             cell,
             sites,
         }) => {
-            vec![("cell", cell.clone()), ("sites", sites.to_string())]
+            vec![ours("cell", cell.clone()), ours("sites", sites.to_string())]
         }
         DiagCode::ReachesConflict(ReachesConflict { kind, count }) => {
-            vec![("kind", kind.clone()), ("count", count.to_string())]
+            vec![ours("kind", kind.clone()), ours("count", count.to_string())]
         }
         DiagCode::ReachesProviderCollision(ReachesProviderCollision { name }) => {
-            vec![("name", name.clone())]
+            vec![ours("name", name.clone())]
         }
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.
@@ -2588,7 +2693,7 @@ pub fn render_message_with(
     interner: &dorc_core::Interner,
 ) -> String {
     let params = params_of(ctx, code, interner);
-    let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.text())).collect();
     match ctx.catalog().message(code.slug()) {
         Some(t) => crate::catalog::fill_template(t, &refs)
             .unwrap_or_else(|_| format!("[invalid catalog template: {}]", code.slug())),
@@ -2771,7 +2876,7 @@ pub fn render_body_with(
 ) -> String {
     use std::fmt::Write;
     let params = params_of(ctx, &diag.code, interner);
-    let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.text())).collect();
     let slug = diag.code.slug();
     let mut out = match ctx.catalog().message(slug) {
         Some(t) => crate::catalog::fill_template(t, &refs)
@@ -2843,16 +2948,12 @@ fn message_parts(
     interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
     let params = params_of(ctx, &diag.code, interner);
-    let refs: Vec<(&'static str, &str)> = params
-        .iter()
-        .map(|(key, value)| (*key, value.as_str()))
-        .collect();
     let code = diag.code.slug();
     let mut parts = crate::tagged::RenderParts::new();
     match ctx.catalog().message(code) {
         Some(template) => match crate::catalog::fill_template_parts(
             template,
-            &refs,
+            &params,
             code,
             crate::tagged::Field::Message,
             0,
@@ -2897,10 +2998,6 @@ fn help_parts(
     interner: &dorc_core::Interner,
 ) -> Option<crate::tagged::RenderParts> {
     let params = params_of(ctx, &diag.code, interner);
-    let refs: Vec<(&'static str, &str)> = params
-        .iter()
-        .map(|(key, value)| (*key, value.as_str()))
-        .collect();
     let code = diag.code.slug();
     let mut parts = crate::tagged::RenderParts::new();
     match ctx.catalog().help(code) {
@@ -2917,7 +3014,7 @@ fn help_parts(
         crate::catalog::HelpRegister::Written(help) => {
             match crate::catalog::fill_template_parts(
                 help,
-                &refs,
+                &params,
                 code,
                 crate::tagged::Field::Help,
                 0,
@@ -3095,6 +3192,23 @@ fn remediation_for(code: &DiagCode) -> RemediationClass {
     registry(code).remediation
 }
 
+/// The arrangement-registry key holding one ?-cause's naming phrase.
+///
+/// The DECIDE plane holds no user-facing words (`aid-is-the-describe-plane`), so what `core` owns
+/// is the enum and what this plane owns is the sentence — the `remediation_hint_slug` shape, one
+/// tier down. Occurrence-less: one entry serves every site that reaches a cause.
+fn top_cause_slug(cause: TopCause) -> &'static str {
+    match cause {
+        TopCause::UnmodeledExpansion => "why-top-cause-unmodeled-expansion",
+        TopCause::UnresolvablePositional => "why-top-cause-unresolvable-positional",
+        TopCause::DynamicParameter => "why-top-cause-dynamic-parameter",
+        TopCause::DynamicValue => "why-top-cause-dynamic-value",
+        TopCause::SplitOrGlob => "why-top-cause-split-or-glob",
+        TopCause::NonConvergent => "why-top-cause-non-convergent",
+        TopCause::WalledRead => "why-top-cause-walled-read",
+    }
+}
+
 /// The arrangement-registry key holding a class's one-line remediation hint (the why-lens's
 /// `<remediation hint>` tail). The hint PROSE lives in the registry
 /// (`289:rul-arrangement-home-is-registry-plus-transcripts`); what stays here is only the
@@ -3184,7 +3298,7 @@ fn cause_locus(span: Span, src: &str) -> Vec<Said> {
         Some(text) => vec![
             coordinate,
             Said::Mark(CAUSE_QUOTE, " `".to_owned()),
-            Said::foreign(text, "the book"),
+            Said::foreign(&ForeignBytes::from_io_edge(text), "the book"),
             Said::Mark(CAUSE_QUOTE, "`".to_owned()),
         ],
         None => vec![coordinate],
@@ -3274,7 +3388,7 @@ fn frame_block(
         block_lines.push(CodeLine {
             gutter: Some(value(l.to_string(), "cli-frame-gutter", RENDER_VALUE_CAP)),
             cells: vec![CodeCell::new(vec![foreign(
-                line_text,
+                &ForeignBytes::from_io_edge(line_text),
                 filename.to_owned(),
                 RENDER_SOURCE_CAP,
             )])],
@@ -3335,6 +3449,18 @@ mod tests {
         SiteId::leaf(LeafId(n))
     }
 
+    /// A one-site [`SiteUnresolvable`] whose named sites and excerpt are `names` (test helper —
+    /// the callers below care about the code, not about which command it disclosed).
+    fn unresolvable(names: &str) -> SiteUnresolvable {
+        SiteUnresolvable {
+            site: site(0),
+            count: "1".to_owned(),
+            site_word: "site",
+            names: ForeignBytes::from_io_edge(names),
+            excerpt: ForeignBytes::from_io_edge(names),
+        }
+    }
+
     /// A [`CmdsubOperandTop`] payload with the sweep's `top_cause` field (test helper).
     fn cmdsub_top(pos: OperandPosition, cause: Option<ProvId>) -> CmdsubOperandTop {
         CmdsubOperandTop {
@@ -3364,15 +3490,10 @@ mod tests {
 
     /// The second-class spanless mint (arch-3-residual-2): [`Diag::new_spanless_site`] produces a
     /// primary whose span is `None`; `render_cli` renders the title (catalog message) but OMITS the
-    /// region (no location to point at) and never panics (`inv-no-throw`). The message is the
-    /// filled catalog template (the `sm `-prefixed passthrough `detail`).
+    /// region (no location to point at) and never panics (`inv-no-throw`).
     #[test]
     fn spanless_site_renders_without_region() {
-        let detail =
-            "errexit state is ⊤ at one or more commands; failure-edges added conservatively";
-        let d = Diag::new_spanless_site(DiagCode::CfgErexitUnknown(CfgErexitUnknown {
-            detail: detail.to_owned(),
-        }));
+        let d = Diag::new_spanless_site(DiagCode::CfgErexitUnknown(CfgErexitUnknown));
         assert_eq!(
             d.primary.span(),
             None,
@@ -3393,8 +3514,8 @@ mod tests {
             cli.split_whitespace()
                 .collect::<Vec<_>>()
                 .join(" ")
-                .contains(&format!("sm {detail}")),
-            "sm-prefixed detail: {cli}"
+                .contains("errexit state is unknown at one or more commands"),
+            "the register's own words, not a payload passthrough: {cli}"
         );
     }
 
@@ -3405,7 +3526,7 @@ mod tests {
         let note = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                detail: "x".to_owned(),
+                ..unresolvable("x")
             }),
             span(0, 1),
         );
@@ -3433,7 +3554,7 @@ mod tests {
         assert_eq!(registry(&refused).floor, Floor::WarnOrDeny);
         let unresolvable = DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: site(0),
-            detail: "x".to_owned(),
+            ..unresolvable("x")
         });
         assert_eq!(registry(&unresolvable).floor, Floor::None);
     }
@@ -3497,7 +3618,7 @@ mod tests {
             DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, None)),
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                detail: "x".to_owned(),
+                ..unresolvable("x")
             }),
         ] {
             assert_eq!(
@@ -3563,22 +3684,27 @@ mod tests {
     }
 
     /// The `sm `-prefix migration boundary (`27V`): every user-facing message is the catalog's
-    /// `sm `-prefixed base-tip prose. A PASSTHROUGH code renders `sm ` + its detail; a TEMPLATIZED
-    /// code fills its named params. The catalog help also `sm `-prefixes.
+    /// `sm `-prefixed base-tip prose. Every code fills its named params — a de-passthrough'd code
+    /// interpolates its sealed foreign values into words the register owns.
     #[test]
     fn catalog_messages_are_sm_prefixed_and_param_filled() {
         let i = Interner::default();
         let pass = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                detail: "3 sites run unprobed".to_owned(),
+                ..unresolvable("3 sites run unprobed")
             }),
             span(0, 1),
         );
         assert_eq!(
             render_body(&pass, &i),
-            "sm 3 sites run unprobed",
-            "passthrough message is `sm ` + detail"
+            concat!(
+                "sm 1 site run unprobed (no read-only check could be shipped): ",
+                "3 sites run unprobed -- run `dorc why` for the per-site detail ",
+                "(the apply runs each anyway, to stay safe)\n",
+                "  = help: sm site runs `3 sites run unprobed`"
+            ),
+            "the register owns the sentence; the sealed values fill its holes"
         );
         let tmpl = Diag::new(
             DiagCode::RenderHeredocRefused(RenderHeredocRefused {
@@ -3613,7 +3739,7 @@ mod tests {
                     leaf: LeafId(4),
                     member: Some(2),
                 },
-                detail: "make install".to_owned(),
+                ..unresolvable("make install")
             }),
             span(0, 12),
         );
@@ -3962,7 +4088,7 @@ mod tests {
         let unresolvable = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                detail: "make install".to_owned(),
+                ..unresolvable("make install")
             }),
             span(0, 12),
         );
@@ -4016,14 +4142,15 @@ mod tests {
     /// A passthrough value is somebody else's bytes reaching a terminal, so it wears the
     /// not-ours class AND arrives already encoded. Both renders read one seat
     /// ([`params_of`]), so the string form and the parts form can never disagree about what a
-    /// reader is shown.
+    /// reader is shown. The class is the VALUE's type now, so this code's two book-derived
+    /// values are both not-ours and its counts and structure words are not.
     #[test]
     fn a_passthrough_value_reaches_both_renders_already_encoded() {
         let hostile = "make install \u{1b}[31m \u{202e}llatsni ekam\u{202c}\u{7}";
         let diag = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                detail: hostile.to_owned(),
+                ..unresolvable(hostile)
             }),
             span(0, 5),
         );
@@ -4048,7 +4175,10 @@ mod tests {
                 );
             }
         }
-        assert_eq!(foreign, 1, "the detail is the render's one not-ours run");
+        assert_eq!(
+            foreign, 2,
+            "the named sites and the quoted excerpt are the render's not-ours runs"
+        );
         assert_eq!(
             render_body(&diag, &interner),
             parts.text(),

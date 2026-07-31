@@ -280,7 +280,7 @@ fn case_example(
     let payload = params_of(&consumer.render_ctx(), &diag.code, &interner);
     let refs: Vec<(&str, &str)> = payload
         .iter()
-        .map(|(key, value)| (*key, value.as_str()))
+        .map(|(key, value)| (*key, value.text()))
         .collect();
     fill_template(template, &refs).map_err(|error| format!("`{slug}` example: {error:?}"))
 }

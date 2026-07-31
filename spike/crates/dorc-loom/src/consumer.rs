@@ -12,9 +12,7 @@ use std::fmt::Write;
 use std::fs;
 
 use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
-use dorc_aid::catalog::{
-    HelpRegister, OwnedEntry, is_foreign_param, owned_catalog, parse_template,
-};
+use dorc_aid::catalog::{HelpRegister, OwnedEntry, owned_catalog, parse_template};
 use dorc_aid::diag::{Diag, DiagCode, render_cli_parts, render_staged_cli_parts};
 use dorc_aid::{RenderCtx, Severity};
 use dorc_core::{Interner, ProvArena};
@@ -740,8 +738,13 @@ impl DorcConsumer {
         let interner = Interner::default();
         let all_variables = dorc_aid::diag::params_of(&self.render_ctx(), &diag.code, &interner)
             .into_iter()
-            .filter(|(name, _)| !is_foreign_param(name))
-            .map(|(name, value)| (TemplateVariableName(String::from(name)), value))
+            .filter(|(_, value)| !value.is_foreign())
+            .map(|(name, value)| {
+                (
+                    TemplateVariableName(String::from(name)),
+                    value.text().to_owned(),
+                )
+            })
             .collect();
         Ok(DorcEditableBaseline {
             render,

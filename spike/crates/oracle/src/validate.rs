@@ -228,16 +228,9 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
         if let Some(inc) = check_entry_coherence(enter, lend) {
             diags.push(Diag::new(
                 DiagCode::WrapperEntryIncoherent(WrapperEntryIncoherent {
-                    detail: format!(
-                        "wrapper `{}`: __enter and __lend_map disagree on argv flow (entry \
-                         consumes {} leading arg(s), the lend-fold consumes {}) -- static \
-                         incoherence (27C:rul-fold-entry-coherence-failfast, \
-                         declarations-genuinely-contradict). The entry form drops/transforms args \
-                         the fold relied on; make the entry pass the fold's guest verbatim.",
-                        interner.resolve(*provider),
-                        inc.entry_shifts,
-                        inc.lend_shifts,
-                    ),
+                    wrapper: interner.resolve(*provider).to_owned(),
+                    entry_shifts: inc.entry_shifts.to_string(),
+                    lend_shifts: inc.lend_shifts.to_string(),
                 }),
                 enter.name_span,
             ));
@@ -251,17 +244,9 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
             if let Some(inc) = check_peel_coherence(predict, lend, argv) {
                 diags.push(Diag::new(
                     DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
-                        detail: format!(
-                            "wrapper `{}`: __predict and __lend_map disagree on the peel tail \
-                             position (predict reaches \"$@\" after {} argv token(s), lend_map \
-                             after {}) -- static incoherence (273 section 5, \
-                             declarations-genuinely-contradict). The guest would start at a \
-                             different token depending on which member dispatched; fix the \
-                             argparse so both peel to the same tail.",
-                            interner.resolve(*provider),
-                            inc.predict_depth,
-                            inc.lend_map_depth
-                        ),
+                        wrapper: interner.resolve(*provider).to_owned(),
+                        predict_depth: inc.predict_depth.to_string(),
+                        lend_map_depth: inc.lend_map_depth.to_string(),
                     }),
                     predict.name_span,
                 ));

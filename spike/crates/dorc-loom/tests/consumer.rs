@@ -528,7 +528,16 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
     let baseline = DorcConsumer::new()
         .editable_baseline(&foreign)
         .expect("foreign baseline");
-    assert!(baseline.all_variables().is_empty());
+    // The inventory offers the values a loom author may move, and withholds the two the code
+    // relays from the book — foreignness is the VALUE's type now, not the hole's name
+    // (`282:rul-passthrough-type-gated`).
+    assert_eq!(
+        baseline.all_variables().keys().collect::<Vec<_>>(),
+        vec![
+            &TemplateVariableName(String::from("count")),
+            &TemplateVariableName(String::from("site_word")),
+        ]
+    );
 }
 
 #[test]

@@ -117,7 +117,7 @@ pub fn to_editable_render(parts: &RenderParts) -> EditableRender<SectionKey, Sec
                 param,
                 instance,
             } => open.catalog_value(code, *field, *instance, param, text),
-            RenderPart::ForeignText { text, source } => open.fixed(source, text),
+            RenderPart::ForeignText { text, source } => open.fixed(source, text.as_str()),
             RenderPart::Arrangement { text, .. } => open.structure(text),
             RenderPart::ArrangementPage { text, slug } => open.page(slug, text),
             RenderPart::ArrangementWords {

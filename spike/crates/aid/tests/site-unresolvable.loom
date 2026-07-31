@@ -7,4 +7,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 -- replay --
 $ dorc plan --book=book.sh
 note[site-unresolvable]: sm 2 sites run unprobed (no read-only check could be
-shipped): `make install`, `ldconfig`
+shipped): `make install`, `ldconfig` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+   = help:  sm site runs `make install`

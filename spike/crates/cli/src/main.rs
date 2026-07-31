@@ -235,7 +235,7 @@ fn shim_dir_unwritable(path: &str, err: &std::io::Error) -> Diag {
     Diag::new_spanless_site(DiagCode::CliShimDirUnwritable(
         dorc_aid::diag::CliShimDirUnwritable {
             path: path.to_owned(),
-            detail: err.to_string(),
+            detail: dorc_aid::ForeignBytes::from_os_error(err),
         },
     ))
 }
@@ -2503,24 +2503,16 @@ fn unresolvable_diagnostics(
             None => format!("`{t}`"),
         })
         .collect();
-    let plural = if real.len() == 1 { "" } else { "s" };
-    let label = format!(
-        "{} site{plural} run unprobed (no read-only check could be shipped): {} -- \
-         run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)",
-        real.len(),
-        names.join(", "),
-    );
     let first_text = book_src
         .get(first_span.lo.0 as usize..first_span.hi.0 as usize)
         .unwrap_or("<source unavailable>");
-    // PASSTHROUGH `detail` reproduces BOTH the aggregate label AND the old render_body
-    // `\n  = note: site runs `{excerpt}`` continuation, folded into one string so the migrated
-    // render stays byte-identical bar the `sm ` prefix (`27V`, conductor-ruled shape).
-    let detail = format!("{label}\n  = note: site runs `{first_text}`");
     vec![Diag::new(
         DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: SiteId::leaf(first_leaf),
-            detail,
+            count: real.len().to_string(),
+            site_word: if real.len() == 1 { "site" } else { "sites" },
+            names: dorc_aid::ForeignBytes::from_io_edge(&names.join(", ")),
+            excerpt: dorc_aid::ForeignBytes::from_io_edge(first_text),
         }),
         first_span,
     )]
@@ -3907,13 +3899,13 @@ fn unloaded_sibling_oracle_diagnostics(books: &[String], oracle_paths: &[String]
         return Vec::new();
     }
     unloaded.sort();
-    let detail = unloaded
+    let oracles = unloaded
         .iter()
         .map(|p| format!("`{p}`"))
         .collect::<Vec<_>>()
         .join(", ");
     vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
-        AidUnloadedSiblingOracle { detail },
+        AidUnloadedSiblingOracle { oracles },
     ))]
 }
 
@@ -5780,7 +5772,7 @@ apt_get__predict() {
             ),
             Diag::new(
                 DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed {
-                    detail: "a warning".to_owned(),
+                    name: "cd".to_owned(),
                 }),
                 span,
             ),

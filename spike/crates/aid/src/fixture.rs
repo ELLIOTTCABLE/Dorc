@@ -18,6 +18,8 @@
 
 use dorc_core::{LeafId, TopCause};
 
+use crate::ForeignBytes;
+
 use crate::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
     CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
@@ -67,9 +69,10 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "site-unresolvable",
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: SiteId::leaf(LeafId(4)),
-                detail: "2 sites run unprobed (no read-only check could be shipped): \
-                         `make install`, `ldconfig`"
-                    .to_owned(),
+                count: "2".to_owned(),
+                site_word: "sites",
+                names: ForeignBytes::from_io_edge("`make install`, `ldconfig`"),
+                excerpt: ForeignBytes::from_io_edge("make install"),
             }),
         ),
         (
@@ -111,24 +114,22 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
         (
             "carried-across-substrate-axis",
             DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
-                detail: "elision carried across the fs-view axis: backing kind `sm_dorc_File` \
-                         vouches `invariant:fs-view`; the verdict body is read-set-closed"
-                    .to_owned(),
+                axes: "fs-view".to_owned(),
+                kinds: "sm_dorc_File (invariant: line at certsync.oracle.sh:12)".to_owned(),
             }),
         ),
         (
             "wrapper-peel-incoherent",
             DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
-                detail: "wrapper `sudo`: __predict and __lend_map disagree on the peel tail \
-                         position (predict reaches \"$@\" after 1 argv token(s), lend_map after 0)"
-                    .to_owned(),
+                wrapper: "sudo".to_owned(),
+                predict_depth: "1".to_owned(),
+                lend_map_depth: "0".to_owned(),
             }),
         ),
         (
             "aid-unloaded-sibling-oracle",
             DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
-                detail: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh`"
-                    .to_owned(),
+                oracles: "`redis.oracle.sh`".to_owned(),
             }),
         ),
         (
@@ -156,7 +157,7 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "lint-tool-output-unparsable",
             DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable {
                 tool: "checkbashisms".to_owned(),
-                output: "possible bashism in - line 4 (should be '.'):".to_owned(),
+                output: ForeignBytes::from_io_edge("possible bashism in - line 4 (should be '.'):"),
             }),
         ),
         (
@@ -187,14 +188,14 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::CliFileUnreadable(CliFileUnreadable {
                 kind: "results".to_owned(),
                 path: "probe-results.txt".to_owned(),
-                detail: "Is a directory (os error 21)".to_owned(),
+                detail: ForeignBytes::from_io_edge("Is a directory (os error 21)"),
             }),
         ),
         (
             "cli-shim-dir-unwritable",
             DiagCode::CliShimDirUnwritable(CliShimDirUnwritable {
                 path: "/run/dorc/shims".to_owned(),
-                detail: "Read-only file system (os error 30)".to_owned(),
+                detail: ForeignBytes::from_io_edge("Read-only file system (os error 30)"),
             }),
         ),
         (
@@ -225,13 +226,13 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "dorc-sh-script-unreadable",
             DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable {
                 path: "webhost.sh".to_owned(),
-                detail: "No such file or directory (os error 2)".to_owned(),
+                detail: ForeignBytes::from_io_edge("No such file or directory (os error 2)"),
             }),
         ),
         (
             "dorc-sh-exec-failed",
             DiagCode::DorcShExecFailed(DorcShExecFailed {
-                detail: "No such file or directory (os error 2)".to_owned(),
+                detail: ForeignBytes::from_io_edge("No such file or directory (os error 2)"),
             }),
         ),
         // A SESSION, not bytes we parsed: the spike opens no sockets.

@@ -14,21 +14,23 @@ use errorloom::{EditableFragment, RenderComponent};
 #[test]
 fn every_catalog_template_maps_through_render_parts() {
     for entry in CATALOG {
-        let values: Vec<(&'static str, String)> = entry
+        let values: Vec<(&'static str, dorc_aid::ParamText)> = entry
             .params
             .iter()
-            .map(|param| (*param, format!("value-for-{param}")))
+            .map(|param| {
+                (
+                    *param,
+                    dorc_aid::ParamText::Ours(format!("value-for-{param}")),
+                )
+            })
             .collect();
-        let refs: Vec<(&'static str, &str)> = values
-            .iter()
-            .map(|(param, value)| (*param, value.as_str()))
-            .collect();
+        let refs: Vec<(&str, &str)> = values.iter().map(|(k, v)| (*k, v.text())).collect();
         for (field, template) in [
             (Field::Message, entry.message),
             (Field::Help, entry.help.written().copied()),
         ] {
             let Some(template) = template else { continue };
-            let parts = fill_template_parts(template, &refs, entry.slug, field, 0)
+            let parts = fill_template_parts(template, &values, entry.slug, field, 0)
                 .unwrap_or_else(|error| panic!("{}: {error:?}", entry.slug));
             assert_eq!(fill_template(template, &refs), Ok(parts.text()));
             assert_eq!(to_editable_render(&parts).text(), parts.text());
@@ -53,7 +55,10 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
         Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: SiteId::leaf(LeafId(4)),
-                detail: "2 sites run unprobed: `make install`, `ldconfig`".to_owned(),
+                count: "2".to_owned(),
+                site_word: "sites",
+                names: dorc_aid::ForeignBytes::from_io_edge("`make install`, `ldconfig`"),
+                excerpt: dorc_aid::ForeignBytes::from_io_edge("make install"),
             }),
             span,
         ),

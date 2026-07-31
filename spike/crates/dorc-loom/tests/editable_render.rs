@@ -41,7 +41,7 @@ fn adapter_preserves_bytes_and_sections_around_foreign_data() {
         },
         literal("a"),
         RenderPart::ForeignText {
-            text: String::new(),
+            text: dorc_aid::ForeignBytes::from_io_edge("").on_measured_sink(64),
             source: String::from("detail"),
         },
         literal("b"),

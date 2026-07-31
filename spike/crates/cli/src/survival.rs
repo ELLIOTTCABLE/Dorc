@@ -667,15 +667,19 @@ pub fn build_wrapped_analysis(
                                 .map(|loc| (k.clone(), loc))
                         })
                         .collect();
-                    let text =
-                        carry_attribution_text(&chain.composed.crossed(), &read_kinds, &loci);
+                    let (axes, kinds) =
+                        carry_attribution_values(&chain.composed.crossed(), &read_kinds, &loci);
                     out.hints.push(Diag::new(
                         DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
-                            detail: text.clone(),
+                            axes: axes.clone(),
+                            kinds: kinds.clone(),
                         }),
                         span,
                     ));
-                    out.carried.insert(cfg.node(node).ast, text);
+                    out.carried.insert(
+                        cfg.node(node).ast,
+                        carry_attribution_text(&chain.composed.crossed(), &read_kinds, &loci),
+                    );
                     (
                         dorc_core::Context::HostDefault,
                         dorc_plan::WrappedProbe::Carry {
@@ -705,7 +709,8 @@ pub fn build_wrapped_analysis(
                     if let EntryDegrade::Unvouched(dim) = reason {
                         out.hints.push(Diag::new(
                             DiagCode::WrappedSiteAdoptionHint(WrappedSiteAdoptionHint {
-                                detail: adoption_hint(inner_word, dim),
+                                provider: inner_word.to_owned(),
+                                dimension: dim.as_token().to_owned(),
                             }),
                             ast.node(cfg.node(node).ast).span,
                         ));
@@ -758,6 +763,22 @@ fn carry_attribution_text(
     read_kinds: &BTreeSet<String>,
     loci: &BTreeMap<String, String>,
 ) -> String {
+    let (axes, kinds) = carry_attribution_values(crossed, read_kinds, loci);
+    format!(
+        "pure-predicate carry across {axes} (unflagged, 27C section 4(a)): {kinds} -- each vouched invariant \
+         across {axes} by its kind-owner's `invariant:` line (vouch-species); the verdict body is \
+         engine-proved read-set-closed"
+    )
+}
+
+/// The two VALUES that attribution is made of, split so the diagnostic register can hold the
+/// sentence and interpolate them (`282:rul-passthrough-type-gated`). The why-lens line above still
+/// composes its own text, because that surface has no registry home yet.
+fn carry_attribution_values(
+    crossed: &[dorc_oracle::wrapper::Dimension],
+    read_kinds: &BTreeSet<String>,
+    loci: &BTreeMap<String, String>,
+) -> (String, String) {
     let axes = crossed
         .iter()
         .map(|d| d.as_token())
@@ -772,11 +793,7 @@ fn carry_attribution_text(
         })
         .collect::<Vec<_>>()
         .join(", ");
-    format!(
-        "pure-predicate carry across {axes} (unflagged, 27C section 4(a)): {kinds} -- each vouched invariant \
-         across {axes} by its kind-owner's `invariant:` line (vouch-species); the verdict body is \
-         engine-proved read-set-closed"
-    )
+    (axes, kinds)
 }
 
 /// The lifted wrapper models, per-provider stripped `__enter` defs, and `tolerates:` vouches — the

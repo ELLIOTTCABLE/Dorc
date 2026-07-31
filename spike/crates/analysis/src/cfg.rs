@@ -560,7 +560,7 @@ impl<'a> Builder<'a> {
             // the spine unifies at Error (louder, safer). Human disposes at PR.
             self.diags.push(Diag::new(
                 Code::CfgTopNode(CfgTopNode {
-                    detail: "CFG nesting bound hit; construct treated as ⊤ (un-probeable)"
+                    detail: "CFG nesting bound hit; construct treated as unknown (un-probeable)"
                         .to_string(),
                 }),
                 self.span(id),
@@ -1338,7 +1338,8 @@ impl<'a> Builder<'a> {
         self.add_edge(entry_pred, top);
         self.diags.push(Diag::new(
             Code::CfgTopNode(CfgTopNode {
-                detail: "unsupported construct (⊤): un-probeable and un-skippable".to_string(),
+                detail: "unsupported construct (unknown): un-probeable and un-skippable"
+                    .to_string(),
             }),
             self.span(id),
         ));
@@ -1495,13 +1496,9 @@ impl<'a> Builder<'a> {
         }
         if saw_top {
             // Spanless: the errexit pass spans a region, not a single point (arch-3-residual-2).
-            let msg = "errexit state is ⊤ at one or more commands; failure-edges \
-                       added conservatively (over-approximate, sound)";
             self.diags
                 .push(Diag::new_spanless_site(Code::CfgErexitUnknown(
-                    CfgErexitUnknown {
-                        detail: msg.to_string(),
-                    },
+                    CfgErexitUnknown,
                 )));
         }
     }
@@ -1889,15 +1886,10 @@ impl<'a> Builder<'a> {
                 continue;
             };
             if is_engine_relied_builtin(name) {
-                let detail = format!(
-                    "function `{name}` shadows a shell builtin the engine relies on \
-                     (dash resolves a function before a regular builtin): analysis \
-                     treats the bare word `{name}` as the builtin when classifying \
-                     effects and minting stand-ins, so builtin-dependent conclusions \
-                     may be unsound for this book"
-                );
                 self.diags.push(Diag::new(
-                    Code::CfgBuiltinShadowed(CfgBuiltinShadowed { detail }),
+                    Code::CfgBuiltinShadowed(CfgBuiltinShadowed {
+                        name: (*name).clone(),
+                    }),
                     *name_span,
                 ));
             }
