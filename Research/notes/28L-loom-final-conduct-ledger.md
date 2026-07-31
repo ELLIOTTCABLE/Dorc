@@ -916,6 +916,48 @@ lanes thread by fresh census, never by the map's count.
   flow (D4 measured the dump flow producing zero output without it) — plus
   `scaffold` emitting the block in new skeletons so default-present is true at
   birth.
+- **OPAQUE REVIEW 28-reviewA: ACK** (human-triggered on the records-seam choice;
+  human-authorized local-Opus override of the dispatch instructions, all other
+  skill mechanics followed; pass `initial`, range `833bbe0b..933dae59` — the whole
+  arc, code + design + docs; the report + the authorized inventory update landed
+  by pathspec, unread, at the commit after `933dae59`). Per the skill: ACK asserts
+  only the absence of a rare qualifying flaw in the sealed domain — orthogonal to
+  every concern named in this ledger. Candidate unfrozen; folds resume.
+- **x2i LANDED** (`ai/r28-loom-x2i` @ `5c073e59`; both legs green, Win 1767 /
+  WSL 1763; held unfolded through the review, folds with x2j). Remedy 1 landed
+  (8 registers → `"{{reason}}"`, hand-seed proven a generator fixpoint) — WITH the
+  honest measurement that it faced NOTHING yet
+  (`fnd-emptied-register-does-not-face-the-reason`, +SURE: the reason still
+  arrives at a param seat as one Variable fragment; EditableVariableTouched on
+  edit; remedy 1 bought the splice PRECONDITION — zero words losable — not the
+  face). THE GRIND: 71 new cases (corpus 105 → 176; 205 trials), 83/93 variants
+  fired via the `dorc lint --no-tools` sibling-case route (no new frontmatter
+  key; filename-implicit ownership); two minted cases DELETED as false faces
+  (rendered a different component than they owned — correct discipline).
+  Item 3: `why-vouch-payload-establish` FACED (the inline-call aggregate
+  surviving a running wall; the member-loop shape measured impossible —
+  `in_loop_body` is a structural elision floor); the cmdsub because-chain faced;
+  `why-tier-word#5` blocked on `289:seam-narrative-render-unconsumed`;
+  `why-as-written-elided` unreachable (no authored oracle can span 9 lines in
+  the check dialect). THE CENSUS: 207 components — 179 homed / 28 residue in six
+  buckets (5 never-loom law-cited incl. `predict-lex-unmodeled-byte`, a NUL no
+  editable txtar can hold · 2 dead-variant deletions, +SURE proofs · 2
+  totality-guards kept · 5 blocked-on-emit-seat · 12 blocked-on-render-seat ·
+  1 collection-fenced — `owns:` silently unread outside the primary collection,
+  BIT during the gate). Standing overlay: the 83 owned reason components are
+  homed-and-rendered, transcript-editable only after x2j's substitution face.
+  New tc: `tc-cause-locus-prints-byte-offsets-as-line-col` (+SURE; "first seen
+  at 192:239" is byte offsets in line:col clothing) → x2j item 5.
+- **x2j DISPATCHED** (branch `ai/r28-loom-x2j` off `5c073e59`, reusing the x2i
+  worktree; the genuinely-final build): the substitution face (ParamText grows a
+  registry-backed variant carrying the slug the reason arms currently throw
+  away; a single-hole register's section re-keys WHOLE to the component's face —
+  splits nothing, loses nothing; interior holes stay priced-out) · the restored
+  vars-inventory (self-reference rule both chains + agreement guard; scaffold
+  emits; NO corpus churn per the human's lean) · the two dead-variant deletions ·
+  the ownership collection-fence fix (`owns:` joins the e2e vocabulary;
+  corpus-wide one-owner scan; `why-chain-event-received` homed) · the locus
+  line:col fix.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
