@@ -901,6 +901,21 @@ lanes thread by fresh census, never by the map's count.
   `why-tier-word#5` Consented · `why-as-written-elided` long-excerpt).
   Un-fireable variants exit as ledger rows with the mechanical reason — zero
   silent gaps. After x2i: the census is FINAL and X2 closes.
+- **rul-committed-inventory-retired REVERSED, softened** (human-typed 2026-07-31)
+  — the retirement was wrong: `282:rul-used-inventory-is-committed` was
+  intentional, and "redundant" was never true — the block's purpose is showing
+  the reader which bits of the FOLLOWING output are variables, and the
+  sh-invocation-in-the-transcript is the right mechanism (no special structure).
+  Human latitude: per-file judgment (helpful in some looms, noise in others);
+  never MISSING BY DEFAULT; no reason owed beyond mess. Gentle lean adopted as
+  the plan: NO corpus-wide churn — cases edited from here on carry the block at
+  the author's judgment; untouched cases stay as they are this arc. BUILD (x2j,
+  micro-lane after x2i): the self-reference dispatch rule (both chains resolve
+  `vars --used <this-case>` against the case being rendered; agreement-guarded)
+  — the ONE thing between today and the human's type-blank-command-and-rerun
+  flow (D4 measured the dump flow producing zero output without it) — plus
+  `scaffold` emitting the block in new skeletons so default-present is true at
+  birth.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
