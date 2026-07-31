@@ -61,8 +61,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let verdicts = dorc_oracle::verdict::VerdictIndex::of(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
-    // ONE inline oracle against a generated book: no unit spans two files, so the positional
-    // answer could only ever equal the ambient one (`28K` §2).
+    // ONE inline oracle, so no unit spans two files and positional == ambient (`28K` §2).
     let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
     let (classified, _why, kills, _kill_coords, fact_backings, _narrative, _invalidators) =
         dorc_analysis::effect::classify_with_why_diags(

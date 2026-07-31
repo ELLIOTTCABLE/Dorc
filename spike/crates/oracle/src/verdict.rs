@@ -126,8 +126,8 @@ impl VerdictIndex {
     pub fn from_sets(interner: &mut Interner, sets: &[VerdictSet]) -> Self {
         let mut by_provider = BTreeMap::new();
         let mut sources = BTreeMap::new();
-        // Keyed by the MAPPED name, so two files spelling one provider differently still contest
-        // for one slot — the same key `command_effect` looks a site's command word up under.
+        // Keyed by the MAPPED name — the same key `command_effect` looks a command word up under,
+        // so two files spelling one provider differently still contest for one slot.
         let mapped_of = |interner: &mut Interner, set: &VerdictSet| -> Vec<(ProviderId, Symbol)> {
             let providers: Vec<Symbol> = set.providers().collect();
             providers

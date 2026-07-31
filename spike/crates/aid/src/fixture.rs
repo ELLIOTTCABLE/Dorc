@@ -150,8 +150,7 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 prior: "vendor/yum.oracle.sh:4".to_owned(),
             }),
         ),
-        // Same necessity: the trigger is a whole BOOK read positionally — a definition plus the
-        // sites above it — which a one-source case cannot materialize.
+        // Same necessity: the trigger is a whole BOOK read positionally.
         (
             "role-defined-below-its-sites",
             DiagCode::RoleDefinedBelowItsSites(RoleDefinedBelowItsSites {

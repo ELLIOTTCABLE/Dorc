@@ -2230,8 +2230,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
-        // NOTE, not warning: nothing is wrong — the book is correct sh and applies unchanged.
-        // This is the aid plane naming value the admin could recover by moving one line.
+        // NOTE: nothing is wrong — the book is correct sh and applies unchanged; the aid plane is
+        // naming value the admin could recover by moving one line.
         DiagCode::RoleDefinedBelowItsSites(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,

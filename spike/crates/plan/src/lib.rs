@@ -1377,10 +1377,9 @@ pub fn build_vouches(
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
         // The file INDEX rides along so an arm span crossing to the render carries its file
         // identity (`tc-oracle-file-identity`).
-        // The LIVE verdict definition (`28K` §1) AT THIS SITE (`28K` §2): authoring the verdict IS
-        // the vouching act, so one a shell has not reached cannot vouch for a line above it. Both
-        // halves come from the shared seats, never a local `.rev()` spelling of the same rule
-        // (`28M:fnd-verdict-resolution-duplicates-live-source`).
+        // The LIVE verdict definition (`28K` §1) AT THIS SITE (`28K` §2), from the SHARED seats —
+        // authoring the verdict IS the vouching act, so one a shell has not reached cannot vouch
+        // for a line above it (`28M:fnd-verdict-resolution-duplicates-live-source`).
         let want = map_provider_name(interner.resolve(*provider));
         let verdict_name = format!("{want}{VERDICT_SUFFIX}");
         let named = |set: &VerdictSet| {

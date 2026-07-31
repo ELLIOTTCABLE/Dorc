@@ -131,9 +131,8 @@ impl WhyWorld {
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeSet::new();
         let peeled = BTreeMap::new();
-        // The book's id sits ONE PAST the oracle vector this seat lifts (it does not yet feed the
-        // book to the lifts — `28M` §7's rename rider names the gap), so a site a book definition
-        // owns withholds rather than answering from an oracle a shell would no longer call.
+        // The book's id sits ONE PAST the vector this seat lifts (it does not feed the book to the
+        // lifts — `28M` §7's rename rider names the gap), so a book-owned site withholds.
         let definitions = definition_table(
             oracle_paths,
             &oracle_refs,
