@@ -20,7 +20,85 @@ use errorloom::{
     execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
+
+/// Each verb's own page — what it does, what its flags mean, and the command that follows it.
+///
+/// The index above answers "which verb", and answers nothing else: it cannot say what a receipt is,
+/// why `promote` wants the same CASE list `compile` got, or which of two spellings of a flag is
+/// which. A reader who has already chosen a verb and typed `--help` is asking the VERB, so that is
+/// what they get (`28L:rul-refusals-name-the-next-command`, in its non-refusing register).
+fn usage_for(verb: &str) -> &'static str {
+    match verb {
+        "compile" => COMPILE_USAGE,
+        "promote" => PROMOTE_USAGE,
+        "vars" => VARS_USAGE,
+        "sections" => SECTIONS_USAGE,
+        "scaffold" => SCAFFOLD_USAGE,
+        "add-register" => ADD_REGISTER_USAGE,
+        _ => USAGE,
+    }
+}
+
+/// The verbs `usage_for` has a page for — also what makes `dorc-loom <verb> --help` route to it.
+const VERBS: [&str; 6] = [
+    "compile",
+    "promote",
+    "vars",
+    "sections",
+    "scaffold",
+    "add-register",
+];
+
+const COMPILE_USAGE: &str =
+    "usage: dorc-loom compile [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]
+  Drive every selected case's replays, compile the prose you edited back into template form, print
+  what it understood, and record the whole inspection as a receipt under spike/target. Writes no
+  source file. Bare, it takes the whole corpus and narrows to the prose-changed cases itself.
+  --quiet     drop the header of every case that has nothing to report
+  --shell=P   lend the generic executor a shell, for a replay the in-process driver declines
+  --path=D    prepend a directory to the replay PATH (repeatable)
+  next: dorc-loom promote <the same CASE list> -- the receipt refuses a different one";
+
+const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]
+  Verify against the compile receipt, then publish: both generated locks
+  (crates/aid/src/catalog_lock.rs and arrangement_lock.rs) plus every affected case. In-process
+  renders only -- no binary is run and no fixture is executed. Every byte and both fixpoints are
+  computed before the first write, so a validation failure leaves the tree byte-identical. Nothing
+  is staged or committed; the diff is yours.
+  --accept-metadata  acknowledge that a case's when-fires / when-used / why REPLACES the committed
+                     registry entry; without it a metadata change refuses before any write
+  the other flags are compile's, and the CASE list must be the one compile saw
+  next: mise run test -- a promote republishes shared locks, so its blast radius is wider than the
+        case in front of you";
+
+const VARS_USAGE: &str = "usage: dorc-loom vars <--used|--all> [CASE...]
+  Print each case's named template variables and their currently-rendered values, driven from the
+  same render an edit compiles against.
+  --used   only the variables some rendered section actually consumes
+  --all    the whole typed payload, including values no sentence spends yet
+  next: type {{name}} into a sentence in the transcript to insert or move that value, then
+        dorc-loom compile";
+
+const SECTIONS_USAGE: &str = "usage: dorc-loom sections [CASE...]
+  Per replay, print each editable section's key and its ordered Text|Variable fragment series,
+  alongside the computed (immutable) spans around it. The answer to `which bytes in this transcript
+  are mine to edit` -- read-only, and driven from the published baseline rather than from your
+  worktree.
+  next: edit an editable section in the case, then dorc-loom compile";
+
+const SCAFFOLD_USAGE: &str = "usage: dorc-loom scaffold SLUG
+  Write the empty defining-case skeleton for a freshly-minted code slug to
+  crates/aid/tests/SLUG.loom. Never overwrites an authored case, and never writes prose: the message
+  register stays unwritten, and everything the skeleton omits is deliberately red until a world that
+  really fires the code is authored.
+  next: the two-step follow-up the command prints";
+
+const ADD_REGISTER_USAGE: &str = "usage: dorc-loom add-register CASE help
+  Mint a code's `help` register, so the ordinary transcript loop can fill it. `help` is the only
+  addable register -- `message` exists on every code already. Refuses when the case carries an
+  unpromoted prose edit, or when the register is already there.
+  next: rebuild, overtype the printed [unwritten: SLUG.help] placeholder, then compile and promote";
 
 /// The `{{name}}` mechanism has no other trace: every committed case is fully rendered, so a
 /// reader who has only ever seen transcripts has no way to learn that a value can be typed at all.
@@ -64,7 +142,10 @@ enum Command {
     Sections {
         cases: Vec<PathBuf>,
     },
-    Help,
+    /// The index, or one verb's own page when the reader had already chosen a verb.
+    Help {
+        verb: Option<String>,
+    },
 }
 
 type SelectedCase = (String, PathBuf);
@@ -102,9 +183,13 @@ fn run() -> Result<ExitCode, String> {
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
         Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
         Command::Sections { cases } => print_sections(&cases, &mut out),
-        Command::Help => writeln!(out, "{USAGE}")
-            .map_err(|error| error.to_string())
-            .map(|()| ExitCode::SUCCESS),
+        Command::Help { verb } => writeln!(
+            out,
+            "{}",
+            verb.as_deref().map_or(USAGE, |verb| usage_for(verb))
+        )
+        .map_err(|error| error.to_string())
+        .map(|()| ExitCode::SUCCESS),
     }
 }
 
@@ -137,29 +222,44 @@ fn resolve_case(arg: &str) -> Result<PathBuf, String> {
     ))
 }
 
+/// The verb this invocation is ABOUT, for the help and misuse pages: the leading verb, or the one
+/// after a leading `help`. `None` means the reader has not chosen one and wants the index.
+fn chosen_verb(argv: &[String]) -> Option<&str> {
+    let leading = argv.first().map(String::as_str)?;
+    if leading == "help" {
+        return argv
+            .get(1)
+            .map(String::as_str)
+            .filter(|next| VERBS.contains(next));
+    }
+    VERBS.contains(&leading).then_some(leading)
+}
+
 fn parse_args() -> Result<Command, String> {
     let argv: Vec<String> = std::env::args().skip(1).collect();
-    // Anywhere, not only first: a reader who has already typed a verb asks the verb for help.
+    // Anywhere, not only first: a reader who has already typed a verb asks THE VERB for help.
     if argv
         .iter()
         .any(|arg| matches!(arg.as_str(), "--help" | "-h" | "help"))
     {
-        return Ok(Command::Help);
+        return Ok(Command::Help {
+            verb: chosen_verb(&argv).map(str::to_owned),
+        });
     }
     let mut argv = argv.into_iter();
     match argv.next().as_deref() {
         Some("compile") => {
-            let (cases, env, quiet, accept_metadata) = collect_compile_args(argv)?;
+            let (cases, env, quiet, accept_metadata) = collect_compile_args("compile", argv)?;
             if accept_metadata {
                 return Err(format!(
                     "{ACCEPT_METADATA} is a promote-time acknowledgement; compile writes nothing \
-                     to acknowledge\n{USAGE}"
+                     to acknowledge\n{COMPILE_USAGE}"
                 ));
             }
             Ok(Command::Compile { cases, env, quiet })
         }
         Some("promote") => {
-            let (cases, env, quiet, accept_metadata) = collect_compile_args(argv)?;
+            let (cases, env, quiet, accept_metadata) = collect_compile_args("promote", argv)?;
             Ok(Command::Promote {
                 cases,
                 env,
@@ -170,36 +270,36 @@ fn parse_args() -> Result<Command, String> {
         Some("vars") => {
             let mode = argv
                 .next()
-                .ok_or_else(|| format!("vars needs --used or --all\n{USAGE}"))?;
+                .ok_or_else(|| format!("vars needs --used or --all\n{VARS_USAGE}"))?;
             let used = match mode.as_str() {
                 "--used" => true,
                 "--all" => false,
-                _ => return Err(format!("unknown vars mode {mode:?}\n{USAGE}")),
+                _ => return Err(format!("unknown vars mode {mode:?}\n{VARS_USAGE}")),
             };
             Ok(Command::Vars {
                 used,
-                cases: collect_cases(argv)?,
+                cases: collect_cases("vars", argv)?,
             })
         }
         Some("scaffold") => {
             let slug = argv
                 .next()
-                .ok_or_else(|| format!("scaffold needs a code slug\n{USAGE}"))?;
+                .ok_or_else(|| format!("scaffold needs a code slug\n{SCAFFOLD_USAGE}"))?;
             if argv.next().is_some() {
-                return Err(format!("scaffold takes exactly one slug\n{USAGE}"));
+                return Err(format!("scaffold takes exactly one slug\n{SCAFFOLD_USAGE}"));
             }
             Ok(Command::Scaffold { slug })
         }
         Some("add-register") => {
             let case = argv
                 .next()
-                .ok_or_else(|| format!("add-register needs a case path\n{USAGE}"))?;
-            let register = argv
-                .next()
-                .ok_or_else(|| format!("add-register needs a register name\n{USAGE}"))?;
+                .ok_or_else(|| format!("add-register needs a case path\n{ADD_REGISTER_USAGE}"))?;
+            let register = argv.next().ok_or_else(|| {
+                format!("add-register needs a register name\n{ADD_REGISTER_USAGE}")
+            })?;
             if argv.next().is_some() {
                 return Err(format!(
-                    "add-register takes one case and one register\n{USAGE}"
+                    "add-register takes one case and one register\n{ADD_REGISTER_USAGE}"
                 ));
             }
             Ok(Command::AddRegister {
@@ -208,7 +308,7 @@ fn parse_args() -> Result<Command, String> {
             })
         }
         Some("sections") => Ok(Command::Sections {
-            cases: collect_cases(argv)?,
+            cases: collect_cases("sections", argv)?,
         }),
         _ => Err(USAGE.to_owned()),
     }
@@ -331,6 +431,7 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
 }
 
 fn collect_compile_args(
+    verb: &str,
     mut argv: impl Iterator<Item = String>,
 ) -> Result<(Vec<PathBuf>, RunEnv, bool, bool), String> {
     let mut env = RunEnv::new().path_dir(binary_dir()?);
@@ -351,7 +452,7 @@ fn collect_compile_args(
         } else if arg == ACCEPT_METADATA {
             accept_metadata = true;
         } else if arg.starts_with('-') {
-            return Err(format!("unknown option {arg:?}\n{USAGE}"));
+            return Err(format!("unknown option {arg:?}\n{}", usage_for(verb)));
         } else {
             cases.push(resolve_case(&arg)?);
         }
@@ -422,11 +523,11 @@ fn binary_dir() -> Result<PathBuf, String> {
         .ok_or_else(|| "locate built tools: executable has no parent".to_owned())
 }
 
-fn collect_cases(argv: impl Iterator<Item = String>) -> Result<Vec<PathBuf>, String> {
+fn collect_cases(verb: &str, argv: impl Iterator<Item = String>) -> Result<Vec<PathBuf>, String> {
     let mut cases = Vec::new();
     for arg in argv {
         if arg.starts_with('-') {
-            return Err(format!("unknown option {arg:?}\n{USAGE}"));
+            return Err(format!("unknown option {arg:?}\n{}", usage_for(verb)));
         }
         cases.push(resolve_case(&arg)?);
     }
@@ -1076,6 +1177,37 @@ fn case_name(path: &Path) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every verb has a page of its own, and every page ends where the reader goes next. The index
+    /// answers "which verb" and nothing else, so a verb that falls through to it silently teaches a
+    /// reader who already knew the one thing it says.
+    #[test]
+    fn every_verb_has_its_own_page_ending_in_a_next_command() {
+        for verb in VERBS {
+            let page = usage_for(verb);
+            assert_ne!(page, USAGE, "`{verb}` falls through to the index");
+            assert!(
+                page.starts_with(&format!("usage: dorc-loom {verb}")),
+                "`{verb}` page opens on someone else's synopsis: {page}"
+            );
+            assert!(
+                page.contains("\n  next: "),
+                "`{verb}` page has no next: {page}"
+            );
+        }
+        assert_eq!(usage_for("nonesuch"), USAGE);
+    }
+
+    /// `--help` after a verb asks the VERB; before one, or with no verb at all, it asks the index.
+    #[test]
+    fn help_routes_to_the_verb_the_reader_already_chose() {
+        let argv = |args: &[&str]| args.iter().map(|a| (*a).to_owned()).collect::<Vec<_>>();
+        assert_eq!(chosen_verb(&argv(&["promote", "--help"])), Some("promote"));
+        assert_eq!(chosen_verb(&argv(&["help", "vars"])), Some("vars"));
+        assert_eq!(chosen_verb(&argv(&["help"])), None);
+        assert_eq!(chosen_verb(&argv(&["--help"])), None);
+        assert_eq!(chosen_verb(&argv(&["nonesuch", "-h"])), None);
+    }
 
     /// Under-naming is the failure that matters: a rewritten case's staged bytes are the author's
     /// own pre-promote text, so a bare `git commit` would take those and drop the promotion.
