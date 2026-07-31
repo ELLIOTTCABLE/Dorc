@@ -154,6 +154,11 @@ pub mod validate;
 /// dialect construct, yielding runnable stock sh (`strip-is-pure-erasure`, `274` §13).
 pub mod strip;
 
+/// What a pinned role definition needs BESIDES itself (`28K` §4 `rul-pin-by-definition-bytes`):
+/// the helper funcdefs it calls and the file-level constants of every source contributing that
+/// code, resolved across the loaded set and REFUSED where two sources disagree.
+pub mod closure;
+
 pub use strip::strip_file;
 
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
