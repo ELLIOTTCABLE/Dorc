@@ -1,0 +1,107 @@
+---
+arrangement: why-reason-render-refused
+owns:
+  - why-surprises-heading
+  - why-reason-guard-refused
+  - why-reason-skipped-converged
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-render-refused && mise run loom:promote -- why-reason-render-refused`. `mise run loom:vars -- --all why-reason-render-refused` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+# Both `hork add` lines are converged, and both carry a heredoc. A heredoc's AST span covers the
+# `<<EOF` operator and not the body, so editing the command span would strand the body as stray
+# artifact lines -- dorc refuses the edit and runs the line verbatim rather than ship a broken
+# artifact. The first would have been removed outright; the second, past `wombat`'s wall, would
+# have been guarded. Every tool named here is an inert corpus stand-in.
+hork add nginx <<EOF
+server
+EOF
+wombat sync --profile web
+hork add redis <<EOF
+cache
+EOF
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = "$1"
+   case $verb in
+      add) hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+   esac
+}
+
+hork__is_converged() {
+   verb=$1; shift
+   case $verb in
+      add) hork --query -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=3de7697eda402a72b6220063a6d523a1cde9a886bd9b7c0d76aea97f71ce6022 sites=2 @@dorc@@
+dorc site 0 effect=holds rc=0 @@dorc@@
+dorc site 2 effect=holds rc=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- replay --
+$ dorc why --book=book.sh -o hork.oracle.sh < probe-results.txt
+receipt: [unwritten: why-receipt-when-undated], host localhost
+   book book.sh (digest 3de7697eda402a72b6220063a6d523a1cde9a886bd9b7c0d76aea97f71ce6022)
+   oracles: hork.oracle.sh
+   risk-profile: none (no trust flags)
+   plan: 1 ran, 1 guarded, 1 skipped (1 by proof)
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+=== SURPRISES: the world disagreed with the plan ===
+
+book.sh:7 | hork add nginx <<EOF
+   the probe reported sm.dorc.Package:nginx@installed already in place, and the site's
+   oracle vouches that is reason enough the line's form (a heredoc body) cannot be edited
+   safely, so it runs verbatim instead
+   (dorc why book.sh:7)
+
+book.sh:11 | hork add redis <<EOF
+   the sm.dorc.Package oracle vouches this is already satisfied, but no guard-clause fits
+   this line's form, so it runs verbatim
+   (dorc why book.sh:11)
+
+=== IMPROVEMENTS: dorc can do better, with your help ===
+
+book.sh:10 | wombat sync --profile web
+   ran blind, as on every apply: no read-only check could be shipped for wombat
+   (dorc why book.sh:10)
+
+~2 lines of sh: a convergence check for wombat would recover 1 line(s) whenever it is
+converged
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why book.sh:7 --book=book.sh -o hork.oracle.sh < probe-results.txt --all
+      [ book.sh, participating lines:
+   7 | hork add nginx <<EOF
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   7|hork skipped RATHER THAN guarded: the probe reported sm.dorc.Package:nginx@installed
+   already in place, and the site's oracle vouches that is reason enough
+
+   === ANALYSIS ===
+
+   what 7|hork rested on:
+
+   * dorc  derives  the line's form (a heredoc body) cannot be edited safely, so it runs
+                    verbatim instead
+
+   [unnarrated: FactMergeDisagreement]
+
+   [unnarrated: RenderRefusal]
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)

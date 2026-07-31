@@ -98,9 +98,26 @@ impl CaseOwnership {
             }
         }
         paths.sort();
+        // DECLARED claims first, so an explicit `owns:` wins the slug its FILENAME would otherwise
+        // claim implicitly. A case is named for the world it demonstrates, and the case that
+        // RENDERS a component editably is often a different one; without this the component's home
+        // is a case that can only refuse the edit, and the prose has no home at all.
+        let mut declared: Vec<(PathBuf, Vec<ComponentRef>, Vec<ComponentRef>)> = Vec::new();
         for path in paths {
-            for claim in claims_of(&path, registered)? {
-                insert(&mut owners, claim, &path)?;
+            let (explicit, implicit) = claims_of(&path, registered)?;
+            declared.push((path, explicit, implicit));
+        }
+        for (path, explicit, _) in &declared {
+            for claim in explicit {
+                insert(&mut owners, claim.clone(), path)?;
+            }
+        }
+        for (path, _, implicit) in &declared {
+            for claim in implicit {
+                if owners.keys().any(|owned| owned.slug == claim.slug) {
+                    continue;
+                }
+                insert(&mut owners, claim.clone(), path)?;
             }
         }
         Ok(Self { owners })
@@ -180,17 +197,21 @@ pub fn refuse_foreign_components(
     Ok(())
 }
 
-/// Every component one case claims: its filename's implicit entry, plus each `owns:` entry.
-fn claims_of(path: &Path, registered: &dyn Fn(&str) -> bool) -> Result<Vec<ComponentRef>, String> {
-    let mut claims = Vec::new();
+/// One case's `(declared, implicit)` claims: each `owns:` entry, and its filename's entry.
+fn claims_of(
+    path: &Path,
+    registered: &dyn Fn(&str) -> bool,
+) -> Result<(Vec<ComponentRef>, Vec<ComponentRef>), String> {
+    let mut implicit = Vec::new();
     if let Some(stem) = path.file_stem().and_then(|stem| stem.to_str())
         && registered(stem)
     {
-        claims.push(ComponentRef {
+        implicit.push(ComponentRef {
             slug: stem.to_owned(),
             occurrence: None,
         });
     }
+    let mut claims = Vec::new();
     let text = std::fs::read_to_string(path)
         .map_err(|error| format!("read case {}: {error}", path.display()))?;
     let case =
@@ -215,7 +236,8 @@ fn claims_of(path: &Path, registered: &dyn Fn(&str) -> bool) -> Result<Vec<Compo
             claims.push(claim);
         }
     }
-    Ok(claims)
+    implicit.retain(|entry| !claims.contains(entry));
+    Ok((claims, implicit))
 }
 
 /// The `owns:` entries a case declares, scalar or list.
@@ -332,6 +354,20 @@ mod tests {
         assert!(
             ownership.owner("gamma", Some(0)).is_none(),
             "an occurrence-narrowed claim covers only that occurrence"
+        );
+    }
+
+    /// A declared home beats the filename's implicit one, and does not collide with it. A case is
+    /// named for the world it demonstrates; the case that renders a component EDITABLY is often a
+    /// different one, and pinning the home to the filename left such a component with an owner
+    /// that could only refuse the edit.
+    #[test]
+    fn an_explicit_claim_outranks_a_filename() {
+        let (dir, _) = corpus(&[("alpha", &case("")), ("beta", &case("owns: alpha\n"))]);
+        let ownership = CaseOwnership::scan(dir.path(), &every_slug).expect("scan");
+        assert_eq!(
+            ownership.owner("alpha", None).and_then(Path::file_name),
+            Some(std::ffi::OsStr::new("beta.loom"))
         );
     }
 
