@@ -97,6 +97,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   Oracle-only is still right for the whylog/attempt-scope record of what was LOADED; the
   survival lanes (`touches`, kind resolvers/reaches) stay oracle-only coherently among
   themselves, and widening them is its own dispatch.
+- **one-definition-table-two-drivers** (`28K` §2) — `world::definition_table` is the ONE reader of
+  role funcdefs, and the binary and `WhyWorld` both call it: a why report answering from a different
+  function environment than the run would be a decoration, which is the failure
+  `lib-target-is-a-loom-seam` exists to prevent. `WhyWorld` sites the book's `SourceFileId` one PAST
+  the oracle vector it lifts, because that seat genuinely does not feed the book to the lifts
+  (bitem7's rename rider owns the gap) — so a site a book definition owns WITHHOLDS there rather
+  than answering from an oracle a shell would no longer call. Widening that seat to the source-wide
+  vectors is its own dispatch; siting the book id honestly is not.
 - **withdrawal-is-applied-once-never-consulted** (`28K` §1) — a contested family is removed from
   the lifted sets (`idx`/`checks`/`verdict_sets`) at THIS edge, before `classify` sees them, so
   the family is indistinguishable from one nobody described and no downstream seat has to

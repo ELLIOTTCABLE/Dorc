@@ -67,6 +67,25 @@ discipline: one rule per bullet, slugged; append to the matching section.
   the unit's exit (a conditional definition joins ⊤ there and provably shadowed nothing).
   Never guard-SHAPE recognition around load sites (`28K` §2 `rul-conflict-pass-is-semantic`);
   a same-FILE redefinition belongs to the pre-existing `216` e-1 refusal, not here.
+- **visibility-is-full-positional** (`28K` §2, ACKED spike-tier 2026-07-31) — every SITE-KEYED
+  consuming act (verdict, predict-at-site, probe-ship, vouch, guard eligibility) answers only when
+  the definition it would answer FROM is the one live AT the site, read through
+  `funcenv::LiveDefinitions`. A definition below a site licenses NOTHING at it. The mechanism is
+  AGREEMENT, never re-resolution: the whole-unit winner is computed as before and the act WITHHOLDS
+  when the site disagrees, because resolving a site's identity through one file's argparse while
+  reading another file's cells measures one cell and keys the record to another — pope-sin tier
+  (`271:rul-sin-ordering`), and no golden can see it. `KindIndex`/`VerdictIndex` carry `source_of`
+  so that agreement is CHECKED rather than assumed. Two escapes exist and both are named: a name the
+  `DefinitionTable` does not know is un-gated (the environment holds no opinion; the containment is
+  `28O:fnd-two-parsers-disagree-on-funcdefs`), and `LiveDefinitions::unsolved()` is the explicit
+  no-environment posture for hand-built indices and the instrument/hint lanes. Never re-derive
+  positionality from spans or argv — it is a fact about the CFG node.
+- **vocabulary-acts-stay-ambient** (`28M` §5.3) — the kind-owner trio (`__resolve`,
+  `__disturbance_reaches_only`, `__state_stored_only_in`) is the ONE exception: single-occupancy,
+  loaded from the ambient prefix, never routed through the positional oracle. They canonicalize and
+  type for OTHER authors' sites, so answering differently at different lines of somebody's book is
+  incoherent. The species test is `oracle::reserved::is_vocabulary_role`, keyed on the SUFFIX
+  because that IS the distinction (`271:rul-family`); an in-book one refuses with a notice.
 - **top-licenses-nothing** (rider 1; `28O:res-polyfill-binding-tops-pending-fold`) —
   `funcenv::unprovable` names every role name whose exit binding is ⊤, and the driver
   withholds those families SILENTLY (⊤ never complains). Not decoration: it is the entire

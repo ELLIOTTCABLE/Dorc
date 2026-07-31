@@ -35,6 +35,16 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `detected`. Dropping only `checks` would leave the header behind, so the marks-lost
   backstop (`crate::validate`) would report a WITHDRAWN funcdef as a lift failure and
   point the author at the wrong repair (`271:rul-sin-ordering`).
+- **live-source-is-the-only-resolution-seat** (`28K` §1;
+  `28M:fnd-verdict-resolution-duplicates-live-source`) — `crate::live_source` answers "which
+  definition would a shell have live" for the WHOLE unit, and every site that asks calls it: the
+  effect-map lift, `VerdictIndex::from_sets`, `analysis::effect`'s predict lane, the three cli ship
+  closures, `plan::build_vouches`. A local backwards scan is the SAME rule spelled twice and is how
+  the verdict's winner silently split from the predict's. Its predicate asks only "does this file
+  DEFINE the role", never "does its body answer this argv" — the second question is the retired
+  decline-fallthrough cascade (`28K` §6), which outlived its stage-D fix inside the ship lane. A
+  decline by the winner is a decline. The site-keyed acts then NARROW that answer positionally
+  (`analysis/CLAUDE.md visibility-is-full-positional`); the two compose, they never compete.
 - **safe-across-vouch** (né tolerates-vouch; `27C` §2, mark spelled `: safe-across
   <dim>` per `281` §5) — per-function, per-dimension; asserts "this
   body's effects are read-only BY DESIGN, not by privilege-starvation"; gates
