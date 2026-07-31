@@ -28,7 +28,8 @@ plan is `28K` §10 (bitem0–bitem9 + fold checklist); on committee-corner confl
 
 - builder-1: bitem0 positional-regime conversion (LANDED) → bitem2 resolution-seat unification
   (LANDED, taken before bitem1 because the gate needs both indices' provenance) → bitem1
-  pin-by-definition-bytes (NOT STARTED — see its section for why, and for the handoff state).
+  pin-by-definition-bytes (handed off unstarted).
+- builder-2: bitem1 pin-by-definition-bytes (LANDED).
 
 ## Findings / deviations
 
@@ -228,12 +229,181 @@ above (~SUSPECT worth a plural fixture when bitem6's suites land).
 - **`res-syntax-owes-a-loud-unsupported`** (28O, unchanged) is now load-bearing in a second place:
   it is the containment argument for `dec-the-gate-applies-only-to-names-the-unit-knows`.
 
-## bitem1 — pin-by-definition-bytes (NOT STARTED)
+## bitem1 — pin-by-definition-bytes (LANDED)
 
-Deliberately not begun rather than half-begun. It is the only item in this brief that MOVES
-ARTIFACT BYTES (hoisted definitions, hash-munged names, provenance blocks), so it re-blesses a
-large slice of the corpus, and the brief's stop-condition — artifact bytes moving or a license
-widening — is exactly the surface it operates on. Starting it without the budget to inspect that
-churn case by case would have produced the one outcome the instruction forbids. Handoff state: the
-seats it builds on are all landed and the corpus is byte-stable at this tip, so it starts from a
-clean baseline.
+`28K` §4. The emission half of `rul-runtime-resolution-never-load-bearing`: what a guard invokes is
+now decided by the artifact, not re-derived by a landing shell. Predecessor's handoff held — the
+seats were landed and the corpus byte-stable, so this started clean.
+
+### fnd-a-shipped-body-was-never-self-contained
+
+The measurement that reframed the item, taken before any code was written. A verdict body calling a
+helper LIFTS cleanly today and ships ALONE, in both lanes:
+
+```sh
+# dorc-lang/v0.2
+WOMBAT_ROOT=/etc/wombat
+_wombat_check() { wombat cmp -- "$1" "$WOMBAT_ROOT/$1" ;}
+wombat__is_converged() { _wombat_check "$1" ;}
+```
+⇒ the probe emits `wombat__is_converged() { _wombat_check "$1"; }` and nothing else. +SURE
+(measured through the built binary).
+
+Usually that fails safe (`_wombat_check` unbound ⇒ rc 127 ⇒ cant-tell/decline ⇒ the site runs), and
+that is what makes it easy to shrug at. It is not RELIABLY safe: a body that IGNORES a helper's
+status and answers 0 from a later test reports converged off a helper that never ran, which is the
+priority-1 under-execute. So `28K` §4's closure clause is not an ergonomic nicety — it closes a live
+under-execute route, and the same route exists in the probe lane.
+
+### dec-the-closure-is-shared-machinery-and-both-lanes-take-it
+
+`28K` §4's Artifact-surface asymmetry says the probe artifacts "were already pinned by composition
+and are unchanged by this plan". That is true of PINNING and false of CLOSURE: the probe composes
+the resolved body but not its dependencies, so it shipped the same un-runnable bodies. The brief's
+"machinery shared with probe composition where genuinely shareable" is read as licensing the shared
+seat, and the seat is wired into both: the guard lane (`plan::build_vouches`) and the probe's three
+ship seats. Zero corpus churn either way (below), so the reach cost nothing and the alternative was
+knowingly leaving one lane broken.
+
+Line held: the SURVIVAL/kind lanes (`touches`, resolvers, reaches) ship closure-less bodies still.
+They read the oracle-only vectors, are a deliberately un-widened lane
+(`28O:res-in-book-survival-roles-not-lifted`), and widening them is "its own dispatch" per
+`cli/CLAUDE.md`. Named, not chased.
+
+### dec-constants-ride-per-contributing-file
+
+The one place the design had to be sharpened rather than implemented. A reference-driven constant
+capture cannot prove itself complete: the lexer collapses every operator form of parameter expansion
+to one opaque `ParamComplex` and discards the name (`28O:res-load-inert-conservatism`), so
+`${ROOT%/}` names a constant the pass cannot see, and a missed constant expands empty — the
+under-execute direction again. Two escapes were priced and both lost: refusing on any `ParamComplex`
+kills the entire corpus (`case "${1-}" in` is THE canonical idiom), and teaching the lexer to retain
+the name is syntax-crate surgery this item does not own.
+
+Landed instead: a file's constants travel whenever that file's CODE travels. Complete for any
+expansion form, no analysis hole, no refusal. Its accepted residue is `res-constants-of-non-
+contributing-files`, below.
+
+### dec-already-in-place-beats-hoisting
+
+`28K` §4 says two things that collide for one cell, and the collision is worth recording because the
+resolution is what moved the only golden. "In the single-definition common case the plain name is
+emitted, byte-identical to strip" reads as a mandate to hoist; "the shipped artifact never again
+carries two same-named funcdefs by ANY route" forbids doing so when the book's own text already
+defines that name — the stage-3 in-book oracle, live in the corpus as
+`contest28-late-definition-licenses-nothing-above`, whose artifact carried the hoisted copy AND the
+book's own definition.
+
+Ruled: a body the book already defines at top level, byte-identical, is NOT copied. Read carefully,
+this is not the rejected no-preamble design (`28K` §4 rejects "guard as bare call, bound by the
+book's own sourcing at runtime"): nothing is re-derived, because after the pass exactly ONE funcdef
+in the shipped bytes binds that name, so no shell can resolve it differently. And the ordering it
+depends on is guaranteed, not hoped for — `rul-visibility-is-full-positional` mints a vouch only
+where the definition is the one live at the line, so a book-sited definition always PRECEDES its
+guards. +SURE.
+
+### fnd-hash-munge-has-no-reachable-input-today-and-is-built-anyway
+
+Scouted before building it: under `28P:dec-the-gate-is-agreement-not-re-resolution`, `live_source`
+answers the WHOLE-UNIT winner and `answers_at` withholds wherever the site disagrees, so at most ONE
+body per name can reach the artifact. Two distinct bodies under one name is currently unreachable;
+the retired dedup-by-funcname could not actually mis-bind today. +SURE.
+
+Built regardless, and the reason is the item's whole point: the old emission was safe by a
+conspiracy of three unrelated mechanisms, exactly the "emergent, not typed" shape `28M` §8 complains
+about. If bitem4 closes `res-plural-families-withhold-off-peak` with a per-file effect map, plural
+bodies become reachable and the old code would silently emit one and let both sites invoke it — a
+site running a judgment its author never made for that line, invisible to every golden. The
+mechanism is unit-pinned (`two_distinct_bodies_under_one_name_are_hash_munged_apart`), including the
+`23A:P-reingest` floor (a munged name must not parse as a `__role`), and its corpus-unreachability is
+recorded here rather than in a comment.
+
+### fnd-a-helpers-only-file-was-refused-out-of-dialect
+
+Found by the contested-helper fixture, not by reasoning. `validate` gated `lint_mark_subset` on
+`!src.contains("__")`, reading any `__`-free file as a bare fragment of marked STATEMENTS — so the
+HELPERS half of `28M` §8's REQUIRED package shape (bulk logic, non-role names ⇒ no `__` anywhere)
+errored `predict-out-of-dialect` at its first funcdef. The cross-file closure this item exists to
+build is unusable in its designed shape while that stands.
+
+Sharpened to `!src.contains("__") && !declares_functions(src)`. A file that DEFINES FUNCTIONS is a
+definitions file whatever its names look like; the fragment reading is for files that define none,
+which is structurally what the `mark-*` cases are. Eight corpus cases moved and every one was
+carrying the SAME false error over an ordinary BOOK's function (`install_one() { hork add nginx; }`
+⇒ `error[predict-out-of-dialect]`), so the churn is a false-positive burn-down, not a relaxation.
+Flagged upward all the same (`tc-lint-dialect-heuristic-widened`, below): it removes an
+error-severity diagnostic corpus-wide and it is outside §4.
+
+### res-constants-of-non-contributing-files (disclosed under-approximation)
+
+A body reading a constant from a file that contributes NO code to its closure is not captured —
+nothing ties that file to that definition, and shipping every loaded oracle's constants would put
+the whole stdlib's variable namespace above the admin's book. Conservative in the value direction
+(a missing constant expands empty ⇒ the check answers falsely-diverged ⇒ the site runs, in the
+common shape), but not provably so in every shape. ~SUSPECT it never bites before the stdlib exists;
+the honest repair is either the lexer retaining `ParamComplex` names or an explicit dependency
+spelling, and both are someone else's lane.
+
+### res-hoisted-constants-widen-the-variable-namespace
+
+A hoisted constant lands at the top of the apply artifact and can shadow a book variable of the same
+name. Real, and NOT a new hazard class: `guard23-var-namespace-isolated` already pins that a guard
+body's own assignments clobber the book's (`pkg=` there), accepted-and-disclosed. What is new is the
+surface — the FUNCTION namespace has a loud-friend lint (`reserved-namespace-squat`) and the
+variable namespace has none. Named, not built.
+
+### res-helper-bodies-ship-unstripped
+
+Closure helpers ship VERBATIM, which is exactly what `dorc strip` leaves of a non-role top-level item
+(`collect_strip_edits` collects from role `Predict`s only). So the byte floor holds by construction.
+The pre-existing hole it inherits: a mark inside a HELPER body survives `dorc strip` too, and
+`lint_mark_subset` never sees a file that has `__` in it. Out of lane; recorded because the closure
+now makes those bytes executable in two more places.
+
+### The aid surface (`message: None`; ceiling 18 → 19)
+
+- **`helper-declaration-contested`** (Warning) — two loaded sources declare one non-role name with
+  differing bytes. WARNING on `role-family-contested`'s footing: the refusal only withholds, and
+  erroring would punish an admin for a collision two upstream authors caused. Defining case is the
+  fixture-payload form (a two-file world a one-source case cannot materialize), with the honest
+  firing route pinned separately at e2e (`pin28-contested-helper-withholds-the-pin`). Ceiling bumped
+  18 → 19, deliberately: `289:rul-unwritten-ceiling-one-bump`'s headroom was already spent, so this
+  is the second conscious bump in the lane.
+
+### Golden churn, case by case
+
+Predicted before building: closure work ⇒ ZERO (a corpus survey over BOTH shapes — case dirs and
+`.loom` txtar sections, per `28O:fnd-loom-cases-are-invisible-to-directory-surveys` — found zero
+oracle helpers and zero top-level constants anywhere); the in-place rule ⇒ exactly the one in-book
+oracle case; hash-munge ⇒ zero (no plural-body case exists).
+
+Actual, by cause:
+
+| cause | cases | delta |
+|---|---|---|
+| closure capture (both lanes) | 0 | corpus has no helpers/constants to capture |
+| already-in-place suppression | 1 (`contest28-late-definition…`) | the duplicated funcdef + its banner removed; run-set, verdict, license, guard all identical |
+| hash-munge | 0 | unreachable today (see above) |
+| the mark-fragment sharpening | 8 aid looms | one bogus `predict-out-of-dialect` per case, tally `1 error` → `0 errors`; NOT predicted, and the finding is why |
+| net-new cases | 2 e2e + 1 aid loom + 12 unit | additive |
+
+No site's verdict, license, or disposition moved anywhere in the corpus. 1836 → 1852 trials.
+
+### Flagged upward
+
+- **`tc-lint-dialect-heuristic-widened`** — the `declares_functions` sharpening removes an
+  error-severity diagnostic from every book carrying a plain shell function, and it lands in
+  `oracle::validate` rather than in §4's emission surface. My read: it is a false-positive burn-down
+  (books are plain sh always, so a book's funcdef is never out of dialect), no real check is lost
+  (files WITH `__` never ran the mark-subset lint, and the dialect checking that matters is
+  `lift_predicts`/`lift_verdicts_converged`, untouched), and it is a hard blocker for the item's
+  headline capability. But it changes `dorc lint`'s exit code for a real input class and touches
+  eight cases owned by another concern, so it is the conductor's to keep or revert.
+- **`tc-survival-lanes-ship-closure-less-bodies`** — `touches`/`resolve`/`disturbance_reaches_only`
+  bodies still ship without their closure, so the under-execute route
+  `fnd-a-shipped-body-was-never-self-contained` names is closed in two lanes of five. Held to the
+  brief's line (those lanes are oracle-only and their widening is its own dispatch), but the
+  asymmetry is now a property of the tree rather than of the design, and somebody should own it.
+- **`res-book-span-consumers-arrive-in-stages-d-to-f` is discharged** — the guard attribution's
+  `file:line` locus already resolves through the SOURCE-wide table, so a book-sited vouch names the
+  book. No new consumer was needed; recorded so the item is not re-opened.
