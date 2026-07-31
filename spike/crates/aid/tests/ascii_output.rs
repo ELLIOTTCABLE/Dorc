@@ -59,11 +59,6 @@ const ASCII_SWEEP_ALLOWLIST: &[(&str, &str)] = &[
         "lint-source-unmodeled-inventory",
         "JARGON ⊤ (arrangement): `book ⊤-wall inventory`",
     ),
-    // ── JARGON + PAYLOAD: a `{{detail}}` sample that also carries jargon ──
-    (
-        "footprint-incoherent",
-        "JARGON ⊄ + PAYLOAD: the touches()-footprint detail",
-    ),
     // ── PAYLOAD: the fixture owns the words ──
     (
         "munge-name-invalid",

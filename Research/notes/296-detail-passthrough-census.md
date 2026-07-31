@@ -108,6 +108,18 @@ RESIDUE, with its reason:
   rather than silently dropping the platform's spawn error.
 - **`296:fnd-registry-words-escape-the-ascii-law`** — reclassifying a hole from foreign to ours
   changed its encoding (the measured sink escapes; the plain one blanks), which surfaced `⊤` inside
-  two `cfg.rs` details. Those are respelled. But the same glyph sits in `unmodeled-wall-inventory`'s
-  MESSAGE REGISTER, and registry words are never encoded, so it reaches output raw — a
-  `weft-ascii-forever` hole the ASCII sweep's allowlist currently excuses rather than closes.
+  two `cfg.rs` details and `⊄` inside `survival.rs`'s footprint detail. All three are respelled and
+  their three `ASCII_SWEEP_ALLOWLIST` rows deleted — the sweep's shrink-only ratchet moved in the
+  right direction as a side effect. But the same glyph sits in `unmodeled-wall-inventory`'s MESSAGE
+  REGISTER, and registry words are never encoded, so it reaches output raw — a `weft-ascii-forever`
+  hole the allowlist still excuses rather than closes.
+
+## §5 — Census delta at the X2b fold (`e0c0530d`)
+
+X2b's 22 new cases + 4 survival cases minted NO new payload struct and no new `detail`-class field
+(`git diff` over `aid/src/diag.rs` across the fold is empty of `pub struct` / `pub detail`), so §2
+is complete at the merged state. What they DID mint is honest firing worlds for four codes this
+lane touched — `effect-kind-disagreement`, `wrapped-site-adoption-hint`, `wrapper-entry-incoherent`,
+`footprint-incoherent` — so those examples are now re-derived from a real emit rather than a
+fixture. Count at the merged tip: 10 `detail: String` remaining, exactly the deferred N-sentence set
+plus `transport-not-attempted`; 4 `detail: ForeignBytes` plus `LintToolOutputUnparsable.output`.

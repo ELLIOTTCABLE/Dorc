@@ -370,7 +370,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a touches() footprint is incoherent. cli/main.rs — TWO emit paths: the SPANNED own-coordinate canary (footprint omits its own effect coordinate), and the SPANLESS malformed-derived-coordinate refusal (the SPANLESS_SITE_PAYLOADS one).",
         why: "24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. PASSTHROUGH — the per-path text rides `detail`.",
         params: &["detail"],
-        example: "sm touches() footprint omits this command's own effect coordinate (at-least ⊄ at-most) -- footprint refused, the site walls",
+        example: "sm touches() footprint omits this command's own effect coordinate (at-least not-within at-most) -- footprint refused, the site walls",
         message: Some("sm {{detail}}"),
         help: HelpRegister::Absent,
     },

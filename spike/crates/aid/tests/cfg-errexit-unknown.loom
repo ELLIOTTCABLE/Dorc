@@ -12,5 +12,5 @@ hork --settle
 
 -- replay --
 $ dorc plan --book=book.sh
-warning[cfg-errexit-unknown]: sm errexit state is ⊤ at one or more commands;
-failure-edges added conservatively (over-approximate, sound)
+warning[cfg-errexit-unknown]: sm errexit state is unknown at one or more
+commands; failure-edges added conservatively (over-approximate, sound)

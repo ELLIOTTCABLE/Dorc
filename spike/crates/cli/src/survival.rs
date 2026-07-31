@@ -105,7 +105,7 @@ pub fn build_survival_footprints(
             diags.push(Diag::new(
                 DiagCode::FootprintIncoherent(FootprintIncoherent {
                     detail: "touches() footprint omits this command's own effect coordinate \
-                             (at-least ⊄ at-most) -- footprint refused, the site walls"
+                             (at-least not-within at-most) -- footprint refused, the site walls"
                         .to_string(),
                 }),
                 span,
@@ -512,9 +512,7 @@ pub fn build_wrapped_analysis(
     use dorc_aid::narrative::EntryDegradeTag;
     use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
     use dorc_analysis::value::ValueOf;
-    use dorc_oracle::entry::{
-        EntryDecision, EntryDegrade, adoption_hint, decide_entry, peel_book_chain,
-    };
+    use dorc_oracle::entry::{EntryDecision, EntryDegrade, decide_entry, peel_book_chain};
     use dorc_oracle::predict::map_provider_name;
 
     let WrapperIndexBundle {
