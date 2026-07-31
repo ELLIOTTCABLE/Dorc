@@ -633,7 +633,7 @@ pub fn ship_predict_body(
     let body = strip_predict(src, &check, interner);
     let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::ShippedCheck::predict(
-        format!("{closure}{body}"),
+        format!("{}{body}", closure.sh),
         Some((check.name_span, source_file_id(idx))),
     ))
 }
@@ -672,7 +672,7 @@ pub fn ship_verdict_body(
     let body = strip_verdict(src, &verdict, interner);
     let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::ShippedCheck::verdict(
-        format!("{closure}{body}"),
+        format!("{}{body}", closure.sh),
         Some((verdict.name_span, source_file_id(idx))),
         emits_report,
     ))

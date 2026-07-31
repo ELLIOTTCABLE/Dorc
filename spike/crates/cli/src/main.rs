@@ -2318,7 +2318,7 @@ fn ship_predict_stage(
     let body = strip_predict(oracle_srcs.get(idx)?, &check, interner);
     let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::StageShip {
-        sh: format!("{closure}{body}"),
+        sh: format!("{}{body}", closure.sh),
         produces_real_stdout: predict_stage_stdout(&check, &arg_refs) == StageStdout::RealBytes,
     })
 }

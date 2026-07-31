@@ -53,6 +53,21 @@ struct Declaration {
     bytes: String,
 }
 
+/// What a pinned definition carries besides itself.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Closure {
+    /// The declarations to emit immediately BEFORE the definition; empty when it needs nothing.
+    pub sh: String,
+    /// The external command words the closure's own bodies reach, in name order.
+    ///
+    /// The guard's dual-rail attribution (`24D`'s `guardcmd` ledger) allowlists the commands a
+    /// shipped check legitimately runs at apply, and it was derived from the ROLE body alone. Once
+    /// a helper travels with the definition, the real check-commands live in the helper — measured
+    /// on this tree by the first end-to-end closure case, which the gate flagged as an
+    /// unaccounted-for apply-only line. Attribution only, never decision data.
+    pub commands: Vec<String>,
+}
+
 /// Why a closure could not be pinned. One world-state with one remediation ("make the loaded
 /// sources agree, or load only one of them"), so it is one reason rather than sibling classes
 /// (`28L:rul-reason-enums-not-sibling-codes`).
@@ -195,13 +210,14 @@ impl HelperIndex {
     ///
     /// [`ClosureRefusal`] when the loaded sources declare one needed name with differing bytes —
     /// the diamond rider (`28M` §8): version-skewed vendored copies refuse rather than dedup.
-    pub fn closure_for(&self, file: usize, body: &str) -> Result<String, ClosureRefusal> {
+    pub fn closure_for(&self, file: usize, body: &str) -> Result<Closure, ClosureRefusal> {
         if self.is_empty() {
-            return Ok(String::new());
+            return Ok(Closure::default());
         }
         let mut contributing: BTreeSet<usize> = BTreeSet::new();
         contributing.insert(file);
         let mut helpers: BTreeMap<(usize, u32), String> = BTreeMap::new();
+        let mut reached: BTreeSet<String> = BTreeSet::new();
         let mut pending: Vec<String> = called_names(body);
         let mut visited: BTreeSet<String> = BTreeSet::new();
         while let Some(name) = pending.pop() {
@@ -214,7 +230,9 @@ impl HelperIndex {
             let chosen = agree(&name, declarations)?;
             contributing.insert(chosen.file);
             helpers.insert((chosen.file, chosen.span.lo.0), chosen.bytes.clone());
-            pending.extend(called_names(&chosen.bytes));
+            let inner = called_names(&chosen.bytes);
+            reached.extend(inner.iter().cloned());
+            pending.extend(inner);
         }
         // Constants of every contributing file, in load then source order, before any helper: a
         // funcdef body reads them at CALL time, so definition order is free, but a deterministic
@@ -238,7 +256,13 @@ impl HelperIndex {
         for bytes in helpers.values() {
             push_block(&mut out, bytes);
         }
-        Ok(out)
+        Ok(Closure {
+            sh: out,
+            commands: reached
+                .into_iter()
+                .filter(|name| !self.helpers.contains_key(name))
+                .collect(),
+        })
     }
 
     /// Which constant names one emitted declaration binds — the `A=1 B=2` item binds two.
@@ -418,7 +442,9 @@ mod tests {
         let index = index(&[&src]);
         assert!(index.is_empty());
         assert_eq!(
-            index.closure_for(0, "wombat__is_converged() { wombat cmp -- \"$1\"; }"),
+            index
+                .closure_for(0, "wombat__is_converged() { wombat cmp -- \"$1\"; }")
+                .map(|c| c.sh),
             Ok(String::new())
         );
     }
@@ -435,7 +461,8 @@ mod tests {
         let index = index(&[&src]);
         let closure = index
             .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
-            .expect("one source cannot disagree with itself");
+            .expect("one source cannot disagree with itself")
+            .sh;
         assert!(
             closure.contains("WOMBAT_ROOT=/etc/wombat"),
             "the file's constant rides with its code:\n{closure}"
@@ -456,7 +483,8 @@ mod tests {
         let index = index(&[&helpers, &entry]);
         let closure = index
             .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
-            .expect("the two sources agree");
+            .expect("the two sources agree")
+            .sh;
         assert!(
             closure.contains("_wombat_check() {"),
             "a cross-file helper rides with the entrypoint (`28M` §8 overlay riders):\n{closure}"
@@ -474,7 +502,8 @@ mod tests {
         );
         let closure = index(&[&src])
             .closure_for(0, "wombat__is_converged() {\n   _outer \"$1\"\n}")
-            .expect("one source");
+            .expect("one source")
+            .sh;
         assert!(closure.contains("_outer() {"), "{closure}");
         assert!(closure.contains("_inner() {"), "{closure}");
     }
@@ -491,7 +520,8 @@ mod tests {
                 0,
                 "wombat__is_converged() {\n   wombat cmp -- \"$(_dest \"$1\")\"\n}",
             )
-            .expect("one source");
+            .expect("one source")
+            .sh;
         assert!(closure.contains("_dest() {"), "{closure}");
     }
 
@@ -504,7 +534,8 @@ mod tests {
         let b = format!("{MARKER}{body}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
         let closure = index(&[&a, &b])
             .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
-            .expect("identical copies agree");
+            .expect("identical copies agree")
+            .sh;
         assert_eq!(
             closure.matches("_wombat_check() {").count(),
             1,
@@ -552,7 +583,8 @@ mod tests {
         );
         let closure = index(&[&src])
             .closure_for(0, "wombat__is_converged() {\n   other__predict \"$1\"\n}")
-            .expect("one source");
+            .expect("one source")
+            .sh;
         assert!(
             !closure.contains("other__predict() {"),
             "role members resolve through the role lane, never here:\n{closure}"
@@ -569,8 +601,8 @@ mod tests {
         );
         let index = index(&[&src]);
         let body = "wombat__is_converged() {\n   _b; _a\n}";
-        let once = index.closure_for(0, body).expect("one source");
-        assert_eq!(once, index.closure_for(0, body).expect("one source"));
+        let once = index.closure_for(0, body).expect("one source").sh;
+        assert_eq!(once, index.closure_for(0, body).expect("one source").sh);
         assert!(
             once.find("_b() {") < once.find("_a() {"),
             "source order, not discovery order:\n{once}"

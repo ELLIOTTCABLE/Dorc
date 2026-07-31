@@ -567,6 +567,24 @@ pub mod apply {
          # authored bytes verbatim, no engine-synthesized sh).\n"
     }
 
+    /// The provenance line preceding a HASH-MUNGED pinned definition (`28K` §4
+    /// `rul-hash-munge-disambiguation`): which AUTHORED function these bytes are.
+    ///
+    /// Emitted ONLY where the unit holds two distinct bodies under one name, so the ordinary
+    /// single-definition artifact keeps its byte floor (`strip-is-pure-erasure`: the emitted
+    /// definition is byte-identical to `dorc strip` of the authored one). Where it IS emitted the
+    /// disambiguated name is engine scaffolding a reader cannot map back on their own, and leaving
+    /// them unable to answer "whose judgment is this?" is the attribution loss
+    /// `271:rul-sin-ordering` ranks worst. The `file:line` rides the PLAN-RENDER surface
+    /// (`emit_guard_attribution`'s locus), per `two-surfaces`; this is the artifact's half.
+    ///
+    /// GUARANTEE: one `#`-comment line ⇒ dash-n-clean, and receipt-shaped, so the byte floor holds
+    /// under receipt-stripping exactly as the guard banner's does (rec-1).
+    #[must_use]
+    pub fn pinned_provenance(authored: &str) -> String {
+        format!("# dorc: pinned definition of `{authored}` (disambiguated: two live bodies)\n")
+    }
+
     /// The FLAT-render provenance block for a `Replace`d leaf (`# replace[id]: <sh>
     /// (→ <stand-in>)` + a why-line naming the fact).
     ///

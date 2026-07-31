@@ -1516,14 +1516,17 @@ pub fn build_vouches(
         let Ok(closure) = helpers.closure_for(file_idx, &stripped) else {
             continue;
         };
-        let preamble = format!("{closure}{stripped}");
+        let preamble = format!("{}{stripped}", closure.sh);
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
         } else {
             format!("{fn_name} {}", op_refs.join(" "))
         };
         let kind_label = interner.resolve(fact.kind.0).to_owned();
-        let check_cmds = check_commands(verdict);
+        // The dual-rail ledger allowlists what the SHIPPED check runs, so it has to cover the
+        // closure's commands too — a helper's `wombat cmp` is the guard's real check-command.
+        let mut check_cmds = check_commands(verdict);
+        check_cmds.extend(closure.commands.iter().cloned());
         // C7: the reached vouching-arm span (or `name_span` for a check-less `return 0` vouch) +
         // its oracle-file id, for the guard render.
         let defining = vouch_site(verdict, &op_refs).unwrap_or(verdict.name_span);
@@ -4126,6 +4129,7 @@ impl Plan {
                     hoisted.push_str(body);
                     hoisted.push('\n');
                 } else if plural {
+                    hoisted.push_str(&render::apply::pinned_provenance(name));
                     // Rename the funcdef HEADER only (`name() {`), never every occurrence: the
                     // pinned string starts with the closure, whose bytes are somebody else's.
                     let header = format!("{name}()");
@@ -5344,6 +5348,16 @@ apt_get__is_converged() { return 0; }
         assert!(
             !pinned.hoisted().contains("apt_get__is_converged()"),
             "the plain name binds nothing when the unit holds two bodies:\n{}",
+            pinned.hoisted()
+        );
+        assert_eq!(
+            pinned
+                .hoisted()
+                .matches("# dorc: pinned definition of `apt_get__is_converged`")
+                .count(),
+            2,
+            "each munged body names the AUTHORED function it is, or a reader cannot answer whose \
+             judgment runs:\n{}",
             pinned.hoisted()
         );
     }
