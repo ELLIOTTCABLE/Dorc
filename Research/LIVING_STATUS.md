@@ -41,14 +41,6 @@ commits anywhere (conductor-verified 2026-07-31).
 
 ## CLEANUP QUEUE (branch deletion is human force-delete gated; verdicts below are advisory)
 
-- **`ai/r26-siblings-audit`** (1 ahead: "Advocate for the three unrepresented columns, and
-  retract the dead-upstream claim") — DROPPABLE: the commit is patch-equivalent to one already
-  on `ai/main` (the siblings-integrate chain carried it; `git cherry` agrees, and the audit
-  file's bytes on main are identical). Nothing looks forgotten.
-- **`ai/r26-strawmen-k8s` (3 ahead) · `ai/r26-strawmen-cloud` (2) · `ai/r26-strawmen-osnix`
-  (1)** — DROPPABLE: post-fold audit/verification commits (the `SIBLINGS-audit-*` columns +
-  cloud-fragment narrowings), every one patch-equivalent on `ai/main`, which holds the strict
-  union of the lanes. No unique load-bearing content found.
 - **Four `*.sync-conflict-*-PHNHRER` branches** (SyncThing incursions, no unique content): the
   `ai/r26-strawmen-{k8s,osnix}` twins are already reachable from main; the
   `ai/r28-declined-rerank` and `worktree-agent-aba0f…` twins are tip-identical to their base
@@ -60,8 +52,6 @@ commits anywhere (conductor-verified 2026-07-31).
 - `git worktree prune` DONE 2026-07-31 (removed the 4 stale entries: r26-accept, r28-impl,
   spike3-r26, spike3-r27). `ai/r26-executor-blocked` no longer exists (human deleted).
 - Untracked in the primary checkout, flagged to the human: `dorc-temp-key{,.pub}` +
-  `spike/mykey-known-hosts` (pre-existing, uncommitted).
-- The r26 Vultr box still idles at its `26E` address (~$0.0137/hr; teardown human-ack-only).
 
 ## r26 — CLOSED (live-execution + kernel arc + glue-residue research; compressed 2026-07-31)
 
