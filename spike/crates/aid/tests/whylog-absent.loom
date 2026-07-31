@@ -6,6 +6,7 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc why --last --whylog=.whylog
-whylog: warning[whylog-absent]: no saved why-log to read back in `.whylog`
+whylog: warning[whylog-absent]: there is no saved why-log in `.whylog` to read
+back
    = help:  a why-log is saved when a plan or apply runs with `--whylog-dir`;
             run one first, or point `--whylog-dir` at the right directory

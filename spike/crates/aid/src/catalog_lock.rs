@@ -505,8 +505,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "`dorc why --last` was asked to replay the last run but no durable exists in the whylog directory (no prior run wrote one, or the wrong directory). cli --last reader.",
         why: "the durable is written only when a plan/apply/round-trip run was asked to (spike: the `--whylog-dir` opt-in; product: quietly beside its work); a `--last` with nothing to replay is a benign no-answer, not a crash. Pull-surface: Warning, Floor::None. `{dir}` = the whylog directory searched. Remediation register (help) wanted: run a plan/apply first (or point --whylog-dir at the right directory) to produce a durable to replay.",
         params: &["dir"],
-        example: "no saved why-log to read back in `.whylog`",
-        message: Some("no saved why-log to read back in `{{dir}}`"),
+        example: "there is no saved why-log in `.whylog` to read back",
+        message: Some("there is no saved why-log in `{{dir}}` to read back"),
         help: HelpRegister::Written("a why-log is saved when a plan or apply runs with `--whylog-dir`; run one first, or point `--whylog-dir` at the right directory"),
     },
     CatalogEntry {
