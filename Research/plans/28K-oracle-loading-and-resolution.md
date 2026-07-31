@@ -96,34 +96,29 @@ coherence debt against the first.
   evaluated over the abstract environment ("did a cross-unit override occur without an
   intervening unset of that name"), never as syntactic guard-pattern-recognition around
   load sites (`271:rul-net-quality-u-curve`: imperfect mechanical nets are the footgun).
-- **rul-visibility-follows-native-observability** [TYPED direction 2026-07-28; wording
-  PROPOSED] — the hoisting question, settled by one test: *does a native-sh load-order
-  apply to the consuming act at all?* If yes, follow it exactly; ambience is permitted
-  only where sh is silent.
-  - *Positional regime* — anything that is, or stands in for, text in the book's
-    execution stream follows sh execution order. Guard eligibility above all: the naive
-    mental model to preserve is Dorc as a "stupid guard-inserter" that just writes
-    `apt_get__is_converged … || ` in front of the line, and text inserted there cannot
-    see a definition loaded below it. Also positional: the book's own direct calls of
-    role functions, and the env constructs themselves (`.`, `unset -f`, `command -v`,
-    subshell scopes).
-  - *Ambient regime* (JS-hoisting-like) — consuming acts with no runtime referent read
-    the completed load of the innermost enclosing scope (sh's own last-wins end-state;
-    a subshell re-source region governs within its extent): probe composition, elision
-    licensure, disturbs/footprint claims, kind-owner families, binds and marks.
-  - Ambience is no invention where it principally applies: marked files are load-inert
-    (§2a), and sh resolves a function body's callees at *call* time, so a
-    definitions-only file's internal order is unobservable to any shell — ambient
-    reading is native-sh-indistinguishable there. Order is observable exactly where raw
-    commands interleave with definitions — books — which is exactly where the
-    positional regime binds.
-  - Named, accepted consequence (consistency and predictability trump aesthetics,
-    human-typed): a definition introduced late in a book — the stage-3 bottom-appended
-    oracle — licenses elision at sites above itself but backs guards only below itself;
-    an above-site that cannot elide runs unguarded. USER_STORY's renders are unaffected
-    (every guard shown there comes from ambient-loaded libraries). Top-level
-    conditional definitions and loads whose end-state is statically undecidable stay ⊤
-    in both regimes.
+- **rul-visibility-is-full-positional** [ACKED spike-tier, human-typed 2026-07-31 —
+  `28M` §7; supersedes the two-regime split this bullet formerly carried] — every
+  site-keyed consuming act (verdict, predict-at-site, probe-ship, vouch, guard
+  eligibility) reads the function environment AS OF THE SITE'S POSITION in execution
+  order: if a shell executing the book top-to-bottom would not have the definition
+  live at that line, it answers nothing at that line, for *any* act. The naive mental
+  model to preserve — Dorc as a "stupid guard-inserter" whose inserted text cannot see
+  a definition loaded below it — now applies uniformly, not only to guards. The env
+  constructs themselves (`.`, `unset -f`, `command -v`, subshell scopes) are
+  positional as before.
+  - The one ambient tier is VOCABULARY: kind-owner families load from the ambient
+    prefix (CLI-named files, "before line 1"), single-occupancy; in-book vocabulary
+    roles refuse-with-notice (`28M:obl-in-book-vocabulary-role-notice`).
+  - Positionality bites only in books: marked oracle files are load-inert (§2a), so a
+    definitions-only file's internal order stays unobservable and whole-file loading
+    is order-free.
+  - Named, accepted consequence (sharper than the old split's): a definition
+    introduced late in a book licenses NOTHING above itself — no elision, no guard,
+    no vouch. The stage-3 in-book oracle is spelled define-before-use
+    (README/USER_STORY respelled so, 2026-07-31); a late definition with describable
+    sites above it earns a move-it-up hint (aid-plane). Top-level conditional
+    definitions and loads whose end-state is statically undecidable stay ⊤
+    everywhere, as before.
 - CLI-named files and `-I` include-dirs load as the ambient prefix ("before line 1", in
   command-line order); the book's own text executes after. The input surface's standing
   rulings are glossed in §2a.
@@ -195,6 +190,11 @@ rulings are durable here now.
   rejected (§6), a guard's Dorc-meaning is *pure load-time sh* — nothing layered on text
   a shell would treat as dead. Etiquette (lint/hint lane): publishing an oracle for a
   tool outside your project's own scope ⇒ guard it; costs the author nothing standalone.
+  *(As-built disclosure, 2026-07-31: the reads-the-lattice sentence is not yet
+  delivered — the analyzer cannot fold `command -v` conditions, so guarded definitions
+  are exempt by ⊤-abstention, and a loaded guard joins its family to ⊤: conservative,
+  sparing-inert, silently walls. The banked decidable-condition fold is the repair —
+  `28O:res-polyfill-binding-tops-pending-fold`, `28M` §5.4.)*
 - **The admin's toolkit, all native, none requiring the oracle author's cooperation:**
   global surgical removal (`. a-repo/tools.sh` then `unset -f yum__is_converged …` per
   family member); regional preference (rul-scope-by-subshell-resource — and re-sourcing a
@@ -390,14 +390,86 @@ when it collides with a loaded unit.
 
    > human: soft ack; spirit not letter
 
-## §10. Build shape (minimal; no phase ceremony)
+## §10. Build shape — THE resume plan (rewritten 2026-07-31 at the ratification
+sitting's close; a fresh implementation-conductor executes from here)
 
-Interpreter upgrade (source/unset/command-v/env-domain; refusal set; end-of-load env) +
-the semantic conflict pass + retirement of first-match resolution and per-site
-redefinition emission + pin-by-definition-bytes with hash-munge disambiguation + the
-two-kind fixture merges and golden re-bless. The CLI-round's load-inert check and
-SourceFileId provenance land first in its own round and are load-bearing here (inert
-sourcing; pinned-definition attribution). Differential battery: sentinel-body load-order
-manifests under the pinned two-binary floor; the `command -v` PATH-reach case; the
-`||`-operand funcdef parse question for the terse guard form (the `if` form is canonical
-regardless).
+**Standing state:** lane `ai/r28-oracle-loading` (worktree `r28-oracle-loading`),
+rebased onto post-loom `ai/main`, both legs green (Win 1826 / WSL 1822), locks at the
+generator fixpoint. Stages A/B/G/D/E are LANDED — ledger `notes/28O` (read its rebase
+section). §9 above is fully typed-closed; `28M` §7 is the ack-ledger and §8 the
+license-plane ground truth — on conflict in the committee corner, `28M` governs. This
+section is the ONLY live implementation plan for this lane; `28M` §8's build items are
+incorporated below by name, and nothing else in r28 plans further work here. The
+`bitem` slugs are ordered (build in integer order, parallelizing only where obviously
+independent); they decompose the ruled stage letters — `bitem0`–`bitem7` are stage F,
+`bitem8` is stage H, `bitem9` is stage C2 — so `28O`'s stage vocabulary still connects.
+
+**bitem0-positional-regime-conversion** (the acked regime, §2 as rewritten): site-keyed
+acts (verdict, predict-at-site, probe-ship, vouch, guard eligibility) move from the
+ambient `live_source` answer to positional funcenv reads; vocabulary acts stay
+ambient-prefix, single-occupancy, in-book refuse-with-notice. Mint the move-it-up hint
+(late in-book definition with describable sites above; empty prose, defining case).
+Pin the sharpened consequence cell (late definition licenses nothing above).
+
+**bitem1-pin-by-definition-bytes** (§4, unchanged in substance): emission + closure +
+hash-munge + content-dedup + provenance blocks. The closure captures from the LIVE
+environment wherever sourced — cross-file helpers included (`28M` §8 overlay riders);
+diamond-loading keys unit-identity to the DEFINING file's `SourceFileId` (pin:
+version-skewed vendored copies refuse rather than dedup).
+
+**bitem2-resolution-seat-unification**: `VerdictIndex::from_sets` consults `live_source`
+instead of re-implementing last-wins (`28M:fnd-verdict-resolution-duplicates-live-source`);
+re-audit all five seats after bitem0 (the "five sites must agree" comment becomes true
+or dies).
+
+**bitem3-custody-and-monologue-pins** (`28M` §8): thread `SourceFileId` custody into the
+`ReplaceLicense` mint (re-entry becomes a type error); pin split-family
+establish-elide consumes nothing predict-derived; trace the stdout parallel of the
+rc firewall (pin only what the trace finds missing); pin vouch-covers-the-stand-in-rc-0.
+The small meet-direction registry over properties (typed lean, machinery-high) rides
+here; flag to the conductor if it snowballs past "small".
+
+**bitem4-committee-fence-at-sparing-tier** (`28M` §4; build-as-spiked, marked
+UNRATIFIED in code comment and ledger): live ROLE members spanning source units ⇒
+footprints spare nothing, tokens collide. Role members only — helpers ride under the
+calling entrypoint's custody (`28M` §7 tune).
+
+**bitem5-split-family-coherence-aid** (`28M` §7 lean-demotion-is-not-deletion — this is
+strictly MORE machinery than the fail-fast form it replaces, never less): collate the
+divergence evidence WITHOUT early exit, carry it forward, narrate attributed under the
+kWARN-rich weld (chimera-incoherence narration mints at minimum; render may wait for
+the arrangement-walker round). Totals-conflict
+(`28M:rul-conflict-between-totals-is-falsification`) is a DISTINCT detected class from
+judgment-tier divergence; the engine knows them apart.
+
+**bitem6-commissioned-composition-suites** (`28M` §7/§8, human-typed): (1) the
+split-family lane-separation fixture (the W-B pins as a steady-state configuration);
+(2) the two-file helper-package shape — helpers file (bulk logic, non-role names) +
+ONE thin opt-out-able entrypoints file — proving both halves: entrypoints lift with
+cross-file helper closure intact, AND the entrypoint file can be discarded/swapped
+(`unset -f` / not-sourced / replaced by the admin's own) over the same helpers. These
+tests MEASURE whether the check-dialect/lift currently ⊤s non-role calls inside role
+bodies; a gap is reported as named lane work, never built around silently.
+
+**bitem7-renames-and-small-riders**: rename `WhyReport.oracle_paths`/`oracle_srcs`
+(source-wide now); optional lint candidate
+entrypoint-only-constants-under-deep-require (~SUSPECT tier, skip if it drags).
+
+**bitem8-differential-load-order-battery** (ruled stage H, unchanged): sentinel-body
+load-order manifests under the pinned two-binary floor; the `command -v` PATH-reach vs
+fn-definedness case; the `||`-operand funcdef parse question for the terse guard form
+(the `if` form is canonical regardless).
+
+**bitem9-value-flow-source-targets** (ruled stage C2), budget-permitting, as
+originally ruled.
+
+**fold-checklist-at-lane-close** (conductor's, not a bitem): eyeball the load-inert
+refusal on the three loom-era lint cases; promote `28O`'s routed-to-fold items into
+the registries; place the remaining supersession markers (`28O` collide-on-plural; the
+E→F checkpoint asks); LIVING_STATUS re-measure; dispose of `ai/r28-cli-inputs`.
+
+**Explicitly NOT this lane's** (deferred by name, do not scope-creep): the
+decidable-condition fold (`28M` §5.7 named futures) · the committee-fence design
+sitting · kind-level token registration · MH2 target-identity · richer blessing
+vocabulary (field-evidence-gated) · `res-host-conditional-loading` ·
+the dialect-reach widening for unary file-tests (gates stdlib revival, not this lane).

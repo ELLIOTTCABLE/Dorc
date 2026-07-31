@@ -30,13 +30,15 @@ legs green, Win 1826 / WSL 1822, locks verified at the generator fixpoint). Buil
 what adapted). The lane is PARKED at the E→F conductor checkpoint, pending the human's
 ratification of **`plans/28M`** (the committee-speech sitting; by 28M's own governance, `28K`
 remains the ruled plan until ratified) plus `28K` §9's five ratification items. Stages F/H/C2
-remain deliberately unbuilt. **The ratification sitting OPENED 2026-07-31** — ack-ledger +
-stage-F riders in **`28M` §7**: the full-positional regime is ACKED (spike-tier); the
-committee fence is deliberately unresolved with motion authorized (build-as-spiked,
-unratified); explicit (non-automatic) cross-author composition is sanctioned, with a
-commissioned suite-tier proof that cross-file helper calls compose inside role bodies;
-three `28K` explainers owed to the human (`blessing-vocabulary-v0`,
-`decline-fallthrough-cascade`, `two-regime-wording`).
+remain deliberately unbuilt — **but the checkpoint is now CLEARED (2026-07-31)**: all
+`28K` §9 ratifications typed-closed (see the in-doc `> human:` answers); the
+full-positional regime ACKED spike-tier; the committee fence unresolved-but-motion-
+authorized (build-as-spiked); explicit cross-author composition sanctioned with the
+commissioned two-file helper-package suite. Ack-ledger + stage-F riders: **`28M` §7**;
+license-plane ground truth: **`28M` §8**. **`28K` §10 is rewritten as THE resume plan**
+(F0–F7/H/C2 + fold checklist) — a fresh implementation-conductor executes from it; the
+design-leavings (committee-fence sitting · decidable-condition fold · `res-knobs-entry-
+owed` naming · named futures) run as a concurrent human sitting.
 
 **Live-small: `ai/r28-cli-inputs`** (2 doc commits, the positional-input surface ruling;
 rebased clean onto post-loom `ai/main` 2026-07-31).

@@ -278,6 +278,15 @@ composites nobody's fault.
   ownership and must not silently ⊤. (Conductor ~SUSPECTs the current check-dialect /
   lift refuses or tops non-role calls inside verdict bodies; the commissioned tests
   will measure, and any gap becomes named lane work, not a silent wall.)
+- **lean-demotion-is-not-deletion [TYPED lean 2026-07-31]** — re §8's
+  `rul-fail-fast-union`: moving a check from fail-fast to the aid plane MOVES it, never
+  deletes it — and typically makes it *more* machinery, not less: the same evidence must
+  be collated WITHOUT the early exit, then carried forward, attributed, narrated, and
+  potentially dynamically weighed for best handling/resolution. Anything somebody
+  thought fail-fast-important becomes more important, not less, when its handling goes
+  non-boolean. Concretely: the split-family coherence detector is BUILD-SCOPE for the
+  F-brief (detection + collation + forward-propagation + attributed narration under the
+  kWARN-rich weld), sized as such — never dropped on "it no longer fail-fasts".
 - **Stage-F resume riders** (banked here so the checkpoint record carries them):
   rename `WhyReport.oracle_paths`/`oracle_srcs` (rebase widened them source-wide; the
   names now understate) · fold-inspection of the load-inert refusal newly firing on
