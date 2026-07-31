@@ -852,6 +852,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             .map(|(path, src)| (path.as_str(), *src));
         report_at(advisory, "loading", source, &diags);
     }
+    report_at(
+        advisory,
+        "loading",
+        book_source,
+        &positional_loading_notices(&parsed.value, &cfg.value, &value, &interner, live_defs),
+    );
     // The withdrawal, applied ONCE to the lifted sets so no downstream consumer has to remember to
     // ask: a contested family becomes indistinguishable from one nobody described.
     let idx = idx.withdrawing(&contested, &interner);
@@ -2044,6 +2050,74 @@ fn source_table(
         .chain(std::iter::once(book_src.to_owned()))
         .collect();
     (paths, srcs)
+}
+
+/// The two notices the full-positional regime owes a book author (`28K` §2
+/// `rul-visibility-is-full-positional`), both aid-plane and neither changing any license.
+///
+/// **The move-it-up hint** — a book defines a COMMAND role below sites its family could otherwise
+/// have answered. The design's named, accepted consequence is that such a definition licenses
+/// nothing above itself; the recovery is one line of cut-and-paste, and the engine is the only
+/// party positioned to notice. Fired only where NOTHING answers the site: if some other unit's
+/// definition is live there the family is contested (or genuinely served) and this would be noise.
+///
+/// **The in-book vocabulary refusal** (`28M:obl-in-book-vocabulary-role-notice`) — kind-owner
+/// members load from the ambient prefix only, so an in-book one never takes effect. Refused WITH a
+/// notice rather than silently, since silence here reads as "my resolver is broken".
+fn positional_loading_notices(
+    book: &dorc_syntax::Ast,
+    cfg: &dorc_analysis::cfg::Cfg,
+    value: &dorc_analysis::value::ValueFlow,
+    interner: &Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+) -> Vec<Diag> {
+    use dorc_analysis::cfg::CfgNodeKind;
+    use dorc_analysis::value::ValueOf;
+    use dorc_syntax::ast::NodeKind;
+
+    let mut diags = Vec::new();
+    for (_, node) in book.iter() {
+        let NodeKind::FuncDef {
+            name, name_span, ..
+        } = &node.kind
+        else {
+            continue;
+        };
+        let Some((family, role)) = dorc_oracle::reserved::role_family(name) else {
+            continue;
+        };
+        if dorc_oracle::reserved::is_vocabulary_role(role) {
+            diags.push(Diag::new(
+                DiagCode::InBookVocabularyRole(dorc_aid::diag::InBookVocabularyRole {
+                    name: name.clone(),
+                    role: role.to_owned(),
+                }),
+                *name_span,
+            ));
+            continue;
+        }
+        let unanswered = cfg
+            .iter()
+            .filter(|(id, n)| n.kind == CfgNodeKind::Command && !cfg.is_expansion_internal(*id))
+            .filter(|(id, _)| live.source_before(*id, name).is_none())
+            .filter(|(id, _)| match value.argv_values(*id).first() {
+                Some(ValueOf::Literal(word)) => {
+                    dorc_oracle::to_funcname_segment(interner.resolve(*word)) == family
+                }
+                _ => false,
+            })
+            .count();
+        if unanswered > 0 {
+            diags.push(Diag::new(
+                DiagCode::RoleDefinedBelowItsSites(dorc_aid::diag::RoleDefinedBelowItsSites {
+                    name: name.clone(),
+                    sites: unanswered,
+                }),
+                *name_span,
+            ));
+        }
+    }
+    diags
 }
 
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier

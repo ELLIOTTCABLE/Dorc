@@ -169,6 +169,14 @@ pub enum DiagCode {
     /// `unset -f` (`28K` §1 `rul-silent-shadowing-refuses`). The family's licenses are withheld;
     /// its sites run. Spanned at the shadowing definition's name.
     RoleFamilyContested(RoleFamilyContested),
+    /// A book defines a role function BELOW sites its family could otherwise have answered
+    /// (`28K` §2 `rul-visibility-is-full-positional`): the definition licenses nothing above
+    /// itself, and moving it up recovers those sites. Spanned at the definition's name.
+    RoleDefinedBelowItsSites(RoleDefinedBelowItsSites),
+    /// A book defines a KIND-OWNER role — the vocabulary tier, which loads from the ambient prefix
+    /// only (`28M:obl-in-book-vocabulary-role-notice`). It is refused with a notice rather than
+    /// silently ignored. Spanned at the definition's name.
+    InBookVocabularyRole(InBookVocabularyRole),
 
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
@@ -366,6 +374,12 @@ impl DiagCode {
     /// `Diagnostic` strings the migrated sites used, so existing `expected-diagnostics`
     /// fixtures and the coverage bridge keep matching.
     #[must_use]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one arm per code, and that ONE-TO-ONE shape is the property: a wildcard or a \
+                  derived spelling would let a new code ship without a deliberate slug, which is a \
+                  wire-format commitment (`288:rul-error-slugs-are-semantic`)"
+    )]
     pub fn slug(&self) -> &'static str {
         match self {
             DiagCode::CmdsubOperandTop(_) => "cmdsub-operand-top",
@@ -390,6 +404,8 @@ impl DiagCode {
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
             DiagCode::OracleFileNotLoadInert(_) => "oracle-file-not-load-inert",
             DiagCode::RoleFamilyContested(_) => "role-family-contested",
+            DiagCode::RoleDefinedBelowItsSites(_) => "role-defined-below-its-sites",
+            DiagCode::InBookVocabularyRole(_) => "in-book-vocabulary-role",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1060,6 +1076,28 @@ pub struct RoleFamilyContested {
     pub name: String,
     /// Where the OVERRIDDEN definition was authored, `file:line`-shaped (`{prior}`).
     pub prior: String,
+}
+
+/// Payload of [`DiagCode::RoleDefinedBelowItsSites`] (TEMPLATIZED): the move-it-up hint's
+/// operands — the role function defined too late, and how many sites above it its family would
+/// otherwise have answered. Spanned at the definition's name; `site()` returns `None`, because
+/// the remediation is at the DEFINITION, not at any one site that lost its answer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RoleDefinedBelowItsSites {
+    /// The role function whose definition sits too low (`{name}`).
+    pub name: String,
+    /// How many command sites above it name this family (`{sites}`).
+    pub sites: usize,
+}
+
+/// Payload of [`DiagCode::InBookVocabularyRole`] (TEMPLATIZED): the in-book kind-owner definition
+/// the vocabulary tier refuses. Spanned at the definition's name; `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InBookVocabularyRole {
+    /// The kind-owner role function the book defined (`{name}`).
+    pub name: String,
+    /// Its role suffix — which member of the vocabulary tier it is (`{role}`).
+    pub role: String,
 }
 
 /// Payload of [`DiagCode::MissingDialectMarker`] (static): the file-level marker refusal. The
@@ -2192,6 +2230,20 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // NOTE, not warning: nothing is wrong — the book is correct sh and applies unchanged.
+        // This is the aid plane naming value the admin could recover by moving one line.
+        DiagCode::RoleDefinedBelowItsSites(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        // WARNING: the definition genuinely does not load, so silence would leave the author
+        // wondering why their kind-owner body never answers.
+        DiagCode::InBookVocabularyRole(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -3040,6 +3092,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("name", name.clone()),
             ours("prior", prior.clone()),
         ],
+        DiagCode::RoleDefinedBelowItsSites(RoleDefinedBelowItsSites { name, sites }) => {
+            vec![ours("name", name.clone()), ours("sites", sites.to_string())]
+        }
+        DiagCode::InBookVocabularyRole(InBookVocabularyRole { name, role }) => {
+            vec![ours("name", name.clone()), ours("role", role.clone())]
+        }
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.
         DiagCode::RedirTargetTop(RedirTargetTop { site: _ })

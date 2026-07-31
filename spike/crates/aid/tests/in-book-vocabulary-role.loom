@@ -1,0 +1,9 @@
+---
+code: in-book-vocabulary-role
+when-fires: a BOOK defines a KIND-OWNER role function — `<kind>__resolve`, `<kind>__disturbance_reaches_only`, or `<kind>__state_stored_only_in`. cli/main.rs positional_loading_notices, one mint per such definition, spanned at the definition's name; `{role}` names which member of the vocabulary tier it is. The command-keyed trio (`predict` / `disturbs` / `is_converged`) is unaffected — a book defining one of those is an ordinary in-book oracle and is exactly what stage 3 asks for.
+why: `28M` §5.3 obl-in-book-vocabulary-role-notice. The vocabulary tier is the ONE ambient exception to the full-positional regime: kind-owner members canonicalize entities and type emissions for OTHER authors' sites, so they must be single-occupancy and load "before line 1" rather than answering differently at different lines of somebody's book (`28M` §3 wall-kind-owner-single-occupancy — single occupancy in an owned namespace is what converts multi-author danger into single-author trust). A book cannot supply that: its definitions are positional by construction. So the definition does not load, and the notice exists because silence here reads as "my resolver is broken" rather than "this belongs in a loaded file". The remediation is to move it into a marked oracle file and name that file on the command line. WARNING, not note: unlike the move-it-up hint, something the author wrote genuinely has no effect.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- in-book-vocabulary-role && mise run loom:promote -- in-book-vocabulary-role`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all in-book-vocabulary-role` lists this case's values; type {{name}} to insert or move one.
+---
+-- replay --
+$ dorc plan --book=book.sh
+warning[in-book-vocabulary-role]: [unwritten: in-book-vocabulary-role]

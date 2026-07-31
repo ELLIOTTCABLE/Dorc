@@ -186,6 +186,8 @@ const MIGRATED_SLUGS: &[&str] = &[
     "reserved-namespace-squat",
     "oracle-file-not-load-inert",
     "role-family-contested",
+    "role-defined-below-its-sites",
+    "in-book-vocabulary-role",
     "missing-dialect-marker",
     "marker-version-unrecognized",
     "tolerates-unknown-dimension",

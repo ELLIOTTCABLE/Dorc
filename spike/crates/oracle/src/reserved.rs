@@ -70,6 +70,23 @@ pub fn role_family(name: &str) -> Option<(&str, &'static str)> {
     })
 }
 
+/// Whether a role suffix names a KIND-OWNER member — the vocabulary tier.
+///
+/// The three kind-keyed roles (`kind__resolve`, `kind__disturbance_reaches_only`,
+/// `kind__state_stored_only_in`) canonicalize entities and type emissions for OTHER authors' sites,
+/// so they are single-occupancy and load from the ambient prefix only; the command-keyed trio
+/// (`predict` / `disturbs` / `is_converged`) answer their own sites and are positional
+/// (`28K` §2 rul-visibility-is-full-positional, `28M` §5.3). Keyed on the suffix because that IS
+/// the species distinction — a family is COMMAND or KIND by name-construction alone
+/// (`271:rul-family`).
+#[must_use]
+pub fn is_vocabulary_role(suffix: &str) -> bool {
+    matches!(
+        suffix,
+        "__resolve" | "__state_stored_only_in" | crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX
+    )
+}
+
 /// Why a munged name is not a legal POSIX NAME (`XBD §3.216`: a NAME is `[A-Za-z_][A-Za-z0-9_]*`
 /// — character-class + no-leading-digit, no length bound). The `ca-strict-set` posture (24M §4b):
 /// dash/busybox hold the strict letters/digits/underscore set, so we stay strict for cross-shell
