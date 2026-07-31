@@ -1,0 +1,173 @@
+---
+arrangement: why-claims-payload
+owns:
+  - why-analysis-opener
+  - why-analysis-join
+  - why-vouch-payload-site
+  - why-claims-covers-unmeasured
+  - why-derives-payload-disjoint
+  - why-mark-legend
+  - why-chain-event-rc-only
+  - why-next-steps-opener
+  - why-next-step-suspect-sole-claim
+  - why-next-step-fix-widen
+  - why-next-step-fix-replan
+  - why-next-step-verify
+  - why-alternative-connective
+  - why-trust-spent-heading
+  - why-trust-spent-item-reason
+  - why-receipt-plan-tally
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-claims-payload && mise run loom:promote -- why-claims-payload`. `mise run loom:vars -- --all why-claims-payload` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+# The one world where a line leaves the plan on an author's CLAIM rather than on a measurement.
+# `apt-get install` came back diverged, so it RUNS -- a wall across the book. Its author's
+# `disturbs` member claims that install touches at most the Package cell it names, the firewall
+# fact below is a different kind entirely, and `--risk-faultless-skips` is the admin consenting
+# to act on a claim nothing verifies. Every tool named here is an inert corpus stand-in.
+apt-get install -y oldpkg
+ufw allow 443/tcp
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# Nothing here knows about packages: the disjointness the survival rests on is derived from the
+# two kinds, never declared by either author.
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+ufw__is_converged() {
+   verb=$1; shift
+   case $verb in
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The `disturbs` member below is the AT-MOST claim the whole survival hangs on: this author says
+# an install touches the Package cell it names, and nothing else. Nothing checks that. Widening
+# the member is the repair the chain's `fix:` row points at.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
+   esac
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=f203ed3f19aa2b33e3b0aba33ee23fabd15e808605144689096689f31a50f1b4 sites=2 @@dorc@@
+dorc site 0 effect=absent rc=1 @@dorc@@
+dorc site 1 effect=holds rc=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- replay --
+$ dorc why book.sh:8 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --risk-faultless-skips < probe-results.txt --all
+      [ book.sh, participating lines:
+   7 | apt-get install -y oldpkg
+   8 | ufw allow 443/tcp
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   8|ufw skipped RATHER THAN guarded: 7|apt-get ran above it, which normally forces an
+   apply-time guard-clause; but --risk-faultless-skips activates acting on authors' at-most
+   claims, and that claim does not reach what the skip was reported on.
+
+   === ANALYSIS ===
+
+   8|ufw being skipped stood on all of the following, together:
+
+   * firewall.oracle.sh:5   reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
+   * firewall.oracle.sh:16  vouches   "re-running this line adds nothing worth running
+                                      while sm.dorc.Firewall:443/tcp holds"
+   ! package.oracle.sh:23   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
+
+      This speaks for everything it did NOT measure. Fact derived from as-written contract
+      only; no run can back it.
+
+         [ package.oracle.sh, as-written:
+      23 |       install) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
+
+   * dorc                   derives   that claim is proven disjoint from
+                                      sm.dorc.Firewall:443/tcp -- it does not overlap what
+                                      was reported
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: nothing 7|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what
+   the skip was reported on; the skip stood.
+
+   === NEXT STEPS ===
+
+   if 8|ufw SHOULD have run:
+
+      suspect:  the 7|apt-get claim -- the only link speaking for unmeasured state. if it
+                also touches sm.dorc.Firewall:443/tcp, it is what wrongly kept this line
+                out.
+
+      fix:      package.oracle.sh:23 (widen the claim; every consumer heals)
+   OR
+      fix:      `dorc plan <book> <host>` (run without --risk-faultless-skips, to distrust
+                oracle-authored claims)
+
+      verify:   `dorc plan <book> <host>` (re-measures the world as it is now; a fact that
+                came back wrong comes back diverged, and the line returns)
+      review:   `dorc why book.sh:8 --all` (every link, unselected, exhaustive)
+
+   [unnarrated: WallFormation]
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh --risk-faultless-skips < probe-results.txt
+receipt: [unwritten: why-receipt-when-undated], host localhost
+   book book.sh (digest f203ed3f19aa2b33e3b0aba33ee23fabd15e808605144689096689f31a50f1b4)
+   oracles: firewall.oracle.sh, package.oracle.sh
+   risk-profile: --risk-faultless-skips
+   plan: 1 ran, 0 guarded, 1 skipped (0 by proof, 1 by trusted claim)
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+=== TRUST SPENT: skips resting on a human claim, not proof ===
+
+book.sh:8 | ufw allow 443/tcp
+   was skipped PAST 7|apt-get really-running, on apt-get's at-most claim
+   (dorc why book.sh:8)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)

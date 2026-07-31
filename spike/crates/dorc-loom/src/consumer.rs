@@ -1197,7 +1197,7 @@ fn live_why_parts(
         book_digest: framing.book_digest().to_owned(),
         at_head: None,
         oracles: oracle_paths,
-        risk_profile: None,
+        risk_profile: why.consented.then_some(dorc_cli::CONSENT_FLAG),
         tally: dorc_cli::PlanTally::Derived(world.disposition_counts()),
         deepest_tier: why.deepest,
         narratable: true,
