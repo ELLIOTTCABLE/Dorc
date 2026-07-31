@@ -1,4 +1,4 @@
-# 294 — Oracle loading and resolution: the build ledger
+# 28O — Oracle loading and resolution: the build ledger
 
 Builder ledger for `plans/28K` (the function-environment pass), branch `ai/r28-oracle-loading`,
 based at `ai/main` @ `7068224d`. Append-only; one section per stage as it lands. Confidence marks
@@ -162,7 +162,7 @@ Counterexample to `oracle/CLAUDE.md grammar-is-v0.2`'s "the r28 cutover retired 
 corpus-wide; nothing left to convert": bind-POSITION kinds were missed. `spike/fixtures/package.oracle.sh`
 still bound the undotted `package` while its marks already spelled `sm.dorc.Package`, and five unit
 expectations asserted the undotted answer. They passed only because the bind outranked the mark.
-(That file's markerless-yet-dialect inconsistency, `293` §7, is a SEPARATE sibling item and was
+(That file's markerless-yet-dialect inconsistency, §7, is a SEPARATE sibling item and was
 deliberately left alone.)
 
 ### fnd-canonical-arm-local-shape-sidesteps-the-residue
