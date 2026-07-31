@@ -19,6 +19,11 @@ expect-diagnostic:
 # product`) and no downstream elision survives it without the survival flag. The vouch still
 # holds, so the guard is minted from the book's own verdict body — the definition live at THAT
 # line, which is the whole property under test.
+#
+# The apply artifact carries NO guard preamble, and that is the SECOND property (`28K` §4): the
+# pinned definition is the book's own, already sitting where its author put it, so copying it above
+# the book would ship two same-named funcdefs — the shape `oracle/src/reserved.rs` refuses by
+# another route. Nothing is re-derived at runtime; exactly one funcdef binds that name here.
 foobar sync-certs /etc/nginx/certs
 foobar__is_converged() {
    foobar status --certs-current -- "$2"
@@ -76,7 +81,7 @@ $ dorc --book=book.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=136bcbc56111093f684dfc635f110fce509c8b61c2d94c6e58ee12d3bdfc426a sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=13ed8845e21db62d9d5aa258b1c07e5cb7f4d38126cf90ed81e753366dc52225 sites=1 @@dorc@@\n'
 # site 1: dorc-auto:foobar@converged
 foobar__is_converged() {
    foobar status --certs-current -- "$2"
@@ -86,13 +91,6 @@ foobar__is_converged 'sync-certs' '/etc/nginx/other'; _rc=$?; if [ "$_rc" -eq 0 
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
-
-# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
-# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
-# authored bytes verbatim, no engine-synthesized sh).
-foobar__is_converged() {
-   foobar status --certs-current -- "$2"
-}
 
 #!/bin/sh
 # contest28-late-definition-licenses-nothing-above (`28K` §2 rul-visibility-is-full-positional,
@@ -108,6 +106,11 @@ foobar__is_converged() {
 # product`) and no downstream elision survives it without the survival flag. The vouch still
 # holds, so the guard is minted from the book's own verdict body — the definition live at THAT
 # line, which is the whole property under test.
+#
+# The apply artifact carries NO guard preamble, and that is the SECOND property (`28K` §4): the
+# pinned definition is the book's own, already sitting where its author put it, so copying it above
+# the book would ship two same-named funcdefs — the shape `oracle/src/reserved.rs` refuses by
+# another route. Nothing is re-derived at runtime; exactly one funcdef binds that name here.
 foobar sync-certs /etc/nginx/certs
 foobar__is_converged() {
    foobar status --certs-current -- "$2"
