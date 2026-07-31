@@ -215,17 +215,107 @@ pub fn arrangement_sentence(
     occurrence: Option<usize>,
     values: &[&str],
 ) -> String {
-    let Some(words) = sentence_words(lookup, slug, occurrence, values.len()) else {
-        return unwritten_placeholder(slug);
-    };
+    match sentence_words(lookup, slug, occurrence, values.len()) {
+        Some(words) => interleave(&words, values),
+        None => unwritten_placeholder(slug),
+    }
+}
+
+/// `words[0] values[0] words[1] …` — the one arithmetic both the flat seat and [`ComponentText`]
+/// concatenate by, so a component's bytes and its pieces can never disagree.
+fn interleave(words: &[impl AsRef<str>], values: &[impl AsRef<str>]) -> String {
     let mut out = String::new();
     for (index, word) in words.iter().enumerate() {
-        out.push_str(word);
+        out.push_str(word.as_ref());
         if let Some(value) = values.get(index) {
-            out.push_str(value);
+            out.push_str(value.as_ref());
         }
     }
     out
+}
+
+/// One prose-component resolved WHOLE: the entry's own words and the values the seat interleaves,
+/// kept apart rather than concatenated, plus the bytes they concatenate to.
+///
+/// The separation is what lets a component be stamped with its OWN face when a catalog register is
+/// nothing but the hole it fills (`28L:rul-empty-registers-for-pure-holes`): the words belong to the
+/// registry entry, so the entry is where an edit to them lands, and the value boundaries the entry's
+/// arity depends on survive the round trip.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ComponentText {
+    slug: &'static str,
+    occurrence: Option<usize>,
+    words: Vec<String>,
+    values: Vec<String>,
+    text: String,
+}
+
+impl ComponentText {
+    /// The rendered bytes.
+    #[must_use]
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    /// The registry slug this component came from.
+    #[must_use]
+    pub fn slug(&self) -> &'static str {
+        self.slug
+    }
+
+    /// The occurrence the seat resolved, or `None` for the whole-slug entry.
+    #[must_use]
+    pub fn occurrence(&self) -> Option<usize> {
+        self.occurrence
+    }
+
+    /// Stamp the component onto a part stream as its own editable line — `words[0]`, `values[0]`,
+    /// `words[1]`, … — so the transport re-splits an edit at exactly the boundaries the render
+    /// placed.
+    pub fn push_parts(&self, parts: &mut RenderParts) {
+        for (index, word) in self.words.iter().enumerate() {
+            parts.push(RenderPart::ArrangementWords {
+                text: word.clone(),
+                slug: self.slug,
+                occurrence: self.occurrence,
+            });
+            if let Some(value) = self.values.get(index) {
+                parts.push(RenderPart::ArrangementValue {
+                    text: value.clone(),
+                    slug: self.slug,
+                    occurrence: self.occurrence,
+                    index,
+                });
+            }
+        }
+    }
+}
+
+/// Resolve one prose-component for a seat passing `values`, or the greppable placeholder when the
+/// entry is unwritten or cannot serve that arity.
+#[must_use]
+pub fn component_text(
+    lookup: &dyn ArrangementLookup,
+    slug: &'static str,
+    occurrence: Option<usize>,
+    values: &[&str],
+) -> ComponentText {
+    let (words, values): (Vec<String>, Vec<String>) =
+        match sentence_words(lookup, slug, occurrence, values.len()) {
+            Some(words) => (
+                words.iter().map(|word| (*word).to_owned()).collect(),
+                values.iter().map(|value| (*value).to_owned()).collect(),
+            ),
+            None => (vec![unwritten_placeholder(slug)], Vec::new()),
+        };
+    let text = interleave(&words, &values);
+    ComponentText {
+        slug,
+        occurrence,
+        words,
+        values,
+        text,
+    }
 }
 
 /// The greppable placeholder a row with no words yet renders as. COMPUTED, never a registry row
@@ -293,29 +383,7 @@ pub fn push_arrangement_sentence(
     occurrence: Option<usize>,
     values: &[&str],
 ) {
-    let Some(words) = sentence_words(lookup, slug, occurrence, values.len()) else {
-        parts.push(RenderPart::ArrangementWords {
-            text: unwritten_placeholder(slug),
-            slug,
-            occurrence,
-        });
-        return;
-    };
-    for (index, word) in words.iter().enumerate() {
-        parts.push(RenderPart::ArrangementWords {
-            text: (*word).to_owned(),
-            slug,
-            occurrence,
-        });
-        if let Some(value) = values.get(index) {
-            parts.push(RenderPart::ArrangementValue {
-                text: (*value).to_owned(),
-                slug,
-                occurrence,
-                index,
-            });
-        }
-    }
+    component_text(lookup, slug, occurrence, values).push_parts(parts);
 }
 
 /// The whole rendered PAGE for one arrangement key, as a one-span part stream — an invocation

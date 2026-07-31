@@ -141,6 +141,14 @@ pub enum ParamText {
     Ours(String),
     /// Bytes from an I/O edge, already through the display seat.
     Foreign(ForeignText),
+    /// A whole prose-component read out of the arrangement registry — a typed reason's sentence
+    /// (`28L:rul-reason-enums-not-sibling-codes`).
+    ///
+    /// A third class rather than a flavour of [`Ours`](ParamText::Ours) because these bytes ALREADY
+    /// have an authoring home: they are registry words, so where an edit to them belongs is the
+    /// entry, never the register that interpolated them. Carrying the component's identity to the
+    /// render seat is what lets it say so (`28L:rul-empty-registers-for-pure-holes`).
+    Component(crate::arrangement::ComponentText),
 }
 
 impl ParamText {
@@ -150,6 +158,7 @@ impl ParamText {
         match self {
             ParamText::Ours(text) => text,
             ParamText::Foreign(foreign) => foreign.as_str(),
+            ParamText::Component(component) => component.text(),
         }
     }
 

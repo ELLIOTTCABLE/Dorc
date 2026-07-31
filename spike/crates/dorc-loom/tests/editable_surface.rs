@@ -367,6 +367,94 @@ fn a_backticked_marker_compiles() {
     );
 }
 
+/// `28L:rul-empty-registers-for-pure-holes`, end to end: a code whose whole message is its
+/// `{{reason}}` hole renders the COMPONENT's face, so the sentence in the transcript is editable
+/// prose and the edit lands on the component's own registry entry.
+///
+/// Before the component carried its identity to the render seat, that register rendered as ONE
+/// variable fragment and the same keystrokes were an attempt to rewrite a value —
+/// `EditableVariableTouched`, the refusal for lying about the world. Eighty-odd variant sentences
+/// were rendered-but-uneditable that way, which is the gap this closes.
+#[test]
+fn a_lone_reason_hole_edits_at_the_components_own_entry() {
+    let case = Case::parse(include_str!(
+        "../../aid/tests/predict-out-of-dialect-shift-count.loom"
+    ))
+    .expect("parses");
+    let mut consumer = DorcConsumer::new();
+    let (baseline, transcript) = drive(&consumer, &case);
+    assert!(
+        sections(&baseline).contains(&(
+            String::from("predict-out-of-dialect-shift-count"),
+            dorc_loom::ARRANGEMENT_LINE_FIELD
+        )),
+        "the section wears the COMPONENT's face, not the code's register: {:?}",
+        sections(&baseline)
+    );
+
+    let edited = transcript.replace(
+        "`shift` count must be a literal integer",
+        "`shift` needs a literal integer count",
+    );
+    assert_ne!(edited, transcript, "the fixture must edit the sentence");
+    let preview =
+        dorc_loom::compile_preview(&baseline, &edited).expect("the component's words compile");
+    consumer
+        .apply_preview(&preview)
+        .expect("the registry mirror takes it");
+
+    assert_eq!(
+        consumer
+            .arrangements()
+            .iter()
+            .find(|entry| entry.slug == "predict-out-of-dialect-shift-count")
+            .and_then(|entry| entry.words.words())
+            .map(<[String]>::to_vec),
+        Some(vec![String::from("`shift` needs a literal integer count")]),
+        "the COMPONENT's entry is what moved"
+    );
+    assert_eq!(
+        consumer
+            .mirror()
+            .iter()
+            .find(|entry| entry.slug == "predict-out-of-dialect")
+            .and_then(|entry| entry.message.as_deref()),
+        Some("{{reason}}"),
+        "the register that is nothing but a hole stays nothing but a hole"
+    );
+    assert!(
+        consumer
+            .render_case(&case)
+            .expect("the case re-renders")
+            .contains("`shift` needs a literal integer count"),
+        "the one-step loop holds for a component face too"
+    );
+}
+
+/// The exclusion the same ruling names: a register with words of ITS OWN around the hole keeps the
+/// component as an ordinary VALUE.
+///
+/// Facing an interior hole would split its register into sections fenced by the component — the
+/// priced-and-declined remedy — so the section here is the code's, and the component's own words
+/// are edited through the case that homes them.
+#[test]
+fn a_reason_inside_a_sentence_stays_a_value() {
+    let case = Case::parse(include_str!("../../aid/tests/whylog-corrupt.loom")).expect("parses");
+    let consumer = DorcConsumer::new();
+    let (baseline, _) = drive(&consumer, &case);
+    let sections = sections(&baseline);
+    assert!(
+        sections.contains(&(String::from("whylog-corrupt"), "message")),
+        "the code's own register owns the section: {sections:?}"
+    );
+    assert!(
+        !sections
+            .iter()
+            .any(|(owner, _)| owner.starts_with("whylog-corrupt-")),
+        "no component fences the register into pieces: {sections:?}"
+    );
+}
+
 /// The one-step loop (`28H:finding-why-render-reads-the-const-not-the-mirror`): a chrome row
 /// edited in a transcript re-renders through the EDITED registry, with no intermediate rebuild —
 /// the re-render reads the same context the edit landed in, not the compiled-in table.

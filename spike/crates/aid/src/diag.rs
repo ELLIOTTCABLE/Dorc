@@ -29,6 +29,7 @@
 
 use crate::RenderCtx;
 use crate::Severity;
+use crate::arrangement::{ComponentText, component_text};
 use crate::foreign::{ForeignBytes, ParamText};
 use crate::said::Said;
 use dorc_core::{Capability, EscalationDial, ProvId, Span, TopCause};
@@ -2627,6 +2628,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ParamText::Foreign(bytes.on_plain_sink(FOREIGN_PARAM_CAP)),
         )
     }
+    /// A hole filled with a whole prose-component. Its identity travels with it: the render seat
+    /// needs the slug it resolved to stamp the component's own face on a register that is nothing
+    /// but this hole (`28L:rul-empty-registers-for-pure-holes`).
+    fn component(name: &'static str, text: ComponentText) -> (&'static str, ParamText) {
+        (name, ParamText::Component(text))
+    }
     match code {
         DiagCode::CmdsubOperandTop(CmdsubOperandTop {
             site: _,
@@ -2673,17 +2680,17 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             foreign("excerpt", excerpt),
         ],
         DiagCode::SyntaxUnsupported(SyntaxUnsupported { reason }) => {
-            vec![ours("reason", syntax_unsupported_text(ctx, *reason))]
+            vec![component("reason", syntax_unsupported_text(ctx, *reason))]
         }
         DiagCode::SyntaxMalformed(SyntaxMalformed { reason }) => {
-            vec![ours("reason", syntax_malformed_text(ctx, *reason))]
+            vec![component("reason", syntax_malformed_text(ctx, *reason))]
         }
         DiagCode::CfgTopNode(CfgTopNode { reason }) => {
-            vec![ours("reason", cfg_top_node_text(ctx, *reason))]
+            vec![component("reason", cfg_top_node_text(ctx, *reason))]
         }
         DiagCode::CfgErexitUnknown(CfgErexitUnknown) => vec![],
         DiagCode::CfgInlineRefused(CfgInlineRefused { reason }) => {
-            vec![ours("reason", cfg_inline_refused_text(ctx, reason))]
+            vec![component("reason", cfg_inline_refused_text(ctx, reason))]
         }
         DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed { name }) => {
             vec![ours("name", name.clone())]
@@ -2696,23 +2703,26 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("effect_map", effect_map.clone()),
         ],
         DiagCode::PredictOutOfDialect(PredictOutOfDialect { reason }) => {
-            vec![ours("reason", predict_out_of_dialect_text(ctx, *reason))]
+            vec![component(
+                "reason",
+                predict_out_of_dialect_text(ctx, *reason),
+            )]
         }
         DiagCode::PredictUnterminated(PredictUnterminated { reason }) => {
-            vec![ours("reason", predict_unterminated_text(ctx, *reason))]
+            vec![component("reason", predict_unterminated_text(ctx, *reason))]
         }
         DiagCode::OracleRoleFnUnlifted(OracleRoleFnUnlifted { funcname }) => {
             vec![ours("funcname", funcname.clone())]
         }
         DiagCode::MarkOnAndOrList(MarkOnAndOrList) => vec![],
         DiagCode::FootprintIncoherent(FootprintIncoherent { reason }) => {
-            vec![ours("reason", footprint_incoherent_text(ctx, *reason))]
+            vec![component("reason", footprint_incoherent_text(ctx, *reason))]
         }
         DiagCode::EscalationPolicy(EscalationPolicy {
             dial,
             capability,
             entry_forms,
-        }) => vec![ours(
+        }) => vec![component(
             "reason",
             escalation_policy_text(ctx, *dial, *capability, entry_forms),
         )],
@@ -2752,7 +2762,7 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::WhylogAbsent(WhylogAbsent { dir }) => vec![ours("dir", dir.clone())],
         DiagCode::WhylogCorrupt(WhylogCorrupt { reason }) => {
-            vec![ours("reason", whylog_corrupt_text(ctx, *reason))]
+            vec![component("reason", whylog_corrupt_text(ctx, *reason))]
         }
         DiagCode::WhylogUnwritten(WhylogUnwritten { dir, reason }) => {
             vec![ours("dir", dir.clone()), ours("reason", reason.clone())]
@@ -3560,79 +3570,76 @@ fn remediation_hint_slug(class: RemediationClass) -> &'static str {
 // arrangement component per reason, and the reason's own fields as that component's values. The
 // map is a single exhaustive `match`, so a new variant is a compile error here — at the seat that
 // decides what the new world says.
+//
+// They answer with the resolved COMPONENT, not with its bytes, so a code whose whole message is the
+// `{{reason}}` hole can be rendered with the component's own face and edited at the entry the words
+// live in (`28L:rul-empty-registers-for-pure-holes`); a code that says something of its own around
+// the hole interpolates the same component as an ordinary value.
 
 /// The registry sentence for one [`CfgTopNodeReason`].
-fn cfg_top_node_text(ctx: &RenderCtx<'_>, reason: CfgTopNodeReason) -> String {
+fn cfg_top_node_text(ctx: &RenderCtx<'_>, reason: CfgTopNodeReason) -> ComponentText {
     let slug = match reason {
         CfgTopNodeReason::UnsupportedConstruct => "cfg-top-node-unsupported-construct",
         CfgTopNodeReason::NestingBound => "cfg-top-node-nesting-bound",
     };
-    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+    component_text(ctx.arrangements(), slug, None, &[])
 }
 
 /// The registry sentence for one [`CfgInlineRefusedReason`].
-fn cfg_inline_refused_text(ctx: &RenderCtx<'_>, reason: &CfgInlineRefusedReason) -> String {
-    use crate::arrangement::arrangement_sentence as sentence;
+fn cfg_inline_refused_text(ctx: &RenderCtx<'_>, reason: &CfgInlineRefusedReason) -> ComponentText {
     let arrangements = ctx.arrangements();
-    match reason {
+    let (slug, values): (&'static str, Vec<String>) = match reason {
         CfgInlineRefusedReason::Redefined { name } => {
-            sentence(arrangements, "cfg-inline-refused-redefined", None, &[name])
+            ("cfg-inline-refused-redefined", vec![name.clone()])
         }
-        CfgInlineRefusedReason::RecursiveCall { name } => sentence(
-            arrangements,
-            "cfg-inline-refused-recursive-call",
-            None,
-            &[name],
-        ),
-        CfgInlineRefusedReason::DepthBudget { name, budget } => sentence(
-            arrangements,
+        CfgInlineRefusedReason::RecursiveCall { name } => {
+            ("cfg-inline-refused-recursive-call", vec![name.clone()])
+        }
+        CfgInlineRefusedReason::DepthBudget { name, budget } => (
             "cfg-inline-refused-depth-budget",
-            None,
-            &[name, &budget.to_string()],
+            vec![name.clone(), budget.to_string()],
         ),
-        CfgInlineRefusedReason::UnmodeledPositional { name, construct } => sentence(
-            arrangements,
+        CfgInlineRefusedReason::UnmodeledPositional { name, construct } => (
             "cfg-inline-refused-unmodeled-positional",
-            None,
-            &[name, construct],
+            vec![name.clone(), (*construct).to_owned()],
         ),
-        CfgInlineRefusedReason::WriteRedirect { name, redirect } => sentence(
-            arrangements,
+        CfgInlineRefusedReason::WriteRedirect { name, redirect } => (
             "cfg-inline-refused-write-redirect",
-            None,
-            &[name, &unmodeled_write_redirect_text(ctx, redirect)],
+            vec![name.clone(), unmodeled_write_redirect_text(ctx, redirect)],
         ),
         CfgInlineRefusedReason::PerCallNodeBudget {
             name,
             estimate,
             budget,
-        } => sentence(
-            arrangements,
+        } => (
             "cfg-inline-refused-per-call-budget",
-            None,
-            &[name, &estimate.to_string(), &budget.to_string()],
+            vec![name.clone(), estimate.to_string(), budget.to_string()],
         ),
         CfgInlineRefusedReason::PerBookNodeBudget {
             name,
             spliced,
             estimate,
             budget,
-        } => sentence(
-            arrangements,
+        } => (
             "cfg-inline-refused-per-book-budget",
-            None,
-            &[
-                name,
-                &spliced.to_string(),
-                &estimate.to_string(),
-                &budget.to_string(),
+            vec![
+                name.clone(),
+                spliced.to_string(),
+                estimate.to_string(),
+                budget.to_string(),
             ],
         ),
-    }
+    };
+    component_text(arrangements, slug, None, &borrowed(&values))
+}
+
+/// The values a reason map collected, as the arity seat takes them.
+fn borrowed(values: &[String]) -> Vec<&str> {
+    values.iter().map(String::as_str).collect()
 }
 
 /// The registry sentence for one [`SyntaxUnsupportedReason`].
-fn syntax_unsupported_text(ctx: &RenderCtx<'_>, reason: SyntaxUnsupportedReason) -> String {
+fn syntax_unsupported_text(ctx: &RenderCtx<'_>, reason: SyntaxUnsupportedReason) -> ComponentText {
     let none: Vec<&str> = Vec::new();
     let (slug, values) = match reason {
         SyntaxUnsupportedReason::ParserStalled => ("syntax-unsupported-parser-stalled", none),
@@ -3693,11 +3700,11 @@ fn syntax_unsupported_text(ctx: &RenderCtx<'_>, reason: SyntaxUnsupportedReason)
         }
         SyntaxUnsupportedReason::ExpectedAWord => ("syntax-unsupported-expected-a-word", none),
     };
-    crate::arrangement::arrangement_sentence(ctx.arrangements(), slug, None, &values)
+    component_text(ctx.arrangements(), slug, None, &values)
 }
 
 /// The registry sentence for one [`SyntaxMalformedReason`].
-fn syntax_malformed_text(ctx: &RenderCtx<'_>, reason: SyntaxMalformedReason) -> String {
+fn syntax_malformed_text(ctx: &RenderCtx<'_>, reason: SyntaxMalformedReason) -> ComponentText {
     let slug = match reason {
         SyntaxMalformedReason::ExpectedThenAfterIf => "syntax-malformed-expected-then-after-if",
         SyntaxMalformedReason::ExpectedThenAfterElif => "syntax-malformed-expected-then-after-elif",
@@ -3723,11 +3730,14 @@ fn syntax_malformed_text(ctx: &RenderCtx<'_>, reason: SyntaxMalformedReason) -> 
             "syntax-malformed-unterminated-brace-group"
         }
     };
-    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+    component_text(ctx.arrangements(), slug, None, &[])
 }
 
 /// The registry sentence for one [`FootprintIncoherentReason`].
-fn footprint_incoherent_text(ctx: &RenderCtx<'_>, reason: FootprintIncoherentReason) -> String {
+fn footprint_incoherent_text(
+    ctx: &RenderCtx<'_>,
+    reason: FootprintIncoherentReason,
+) -> ComponentText {
     let slug = match reason {
         FootprintIncoherentReason::OmitsOwnCoordinate => {
             "footprint-incoherent-omits-own-coordinate"
@@ -3736,11 +3746,14 @@ fn footprint_incoherent_text(ctx: &RenderCtx<'_>, reason: FootprintIncoherentRea
             "footprint-incoherent-malformed-derived-coordinate"
         }
     };
-    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+    component_text(ctx.arrangements(), slug, None, &[])
 }
 
 /// The registry sentence for one [`PredictOutOfDialectReason`].
-fn predict_out_of_dialect_text(ctx: &RenderCtx<'_>, reason: PredictOutOfDialectReason) -> String {
+fn predict_out_of_dialect_text(
+    ctx: &RenderCtx<'_>,
+    reason: PredictOutOfDialectReason,
+) -> ComponentText {
     use PredictOutOfDialectReason as R;
     let arrangements = ctx.arrangements();
     let none: Vec<String> = Vec::new();
@@ -3781,8 +3794,7 @@ fn predict_out_of_dialect_text(ctx: &RenderCtx<'_>, reason: PredictOutOfDialectR
         R::MalformedMarkTarget => ("predict-out-of-dialect-malformed-mark-target", none),
         R::SelectorNotPosixName => ("predict-out-of-dialect-selector-charset", none),
     };
-    let borrowed: Vec<&str> = values.iter().map(String::as_str).collect();
-    crate::arrangement::arrangement_sentence(arrangements, slug, None, &borrowed)
+    component_text(arrangements, slug, None, &borrowed(&values))
 }
 
 /// The registry sentence for one [`PredictLexError`] — the inner clause of
@@ -3797,7 +3809,10 @@ fn predict_lex_error_text(ctx: &RenderCtx<'_>, lex: PredictLexError) -> String {
 }
 
 /// The registry sentence for one [`PredictUnterminatedReason`].
-fn predict_unterminated_text(ctx: &RenderCtx<'_>, reason: PredictUnterminatedReason) -> String {
+fn predict_unterminated_text(
+    ctx: &RenderCtx<'_>,
+    reason: PredictUnterminatedReason,
+) -> ComponentText {
     let none: Vec<&str> = Vec::new();
     let (slug, values) = match reason {
         PredictUnterminatedReason::FunctionBody => ("predict-unterminated-function-body", none),
@@ -3807,18 +3822,18 @@ fn predict_unterminated_text(ctx: &RenderCtx<'_>, reason: PredictUnterminatedRea
         PredictUnterminatedReason::CaseArm => ("predict-unterminated-case-arm", none),
         PredictUnterminatedReason::IfThen => ("predict-unterminated-if-then", none),
     };
-    crate::arrangement::arrangement_sentence(ctx.arrangements(), slug, None, &values)
+    component_text(ctx.arrangements(), slug, None, &values)
 }
 
 /// The registry sentence for one [`WhylogCorruptReason`].
-fn whylog_corrupt_text(ctx: &RenderCtx<'_>, reason: WhylogCorruptReason) -> String {
+fn whylog_corrupt_text(ctx: &RenderCtx<'_>, reason: WhylogCorruptReason) -> ComponentText {
     let slug = match reason {
         WhylogCorruptReason::Headerless => "whylog-corrupt-headerless",
         WhylogCorruptReason::HeaderTagMissing => "whylog-corrupt-header-tag-missing",
         WhylogCorruptReason::ResultsBlockOverruns => "whylog-corrupt-results-block-overruns",
         WhylogCorruptReason::EndSentinelMissing => "whylog-corrupt-end-sentinel-missing",
     };
-    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+    component_text(ctx.arrangements(), slug, None, &[])
 }
 
 /// The registry sentence disclosing the escalation policy at one [`EscalationDial`].
@@ -3827,8 +3842,7 @@ fn escalation_policy_text(
     dial: EscalationDial,
     capability: Capability,
     entry_forms: &str,
-) -> String {
-    use crate::arrangement::arrangement_sentence as sentence;
+) -> ComponentText {
     let arrangements = ctx.arrangements();
     let capability_word = crate::arrangement::arrangement_text(
         arrangements,
@@ -3839,26 +3853,18 @@ fn escalation_policy_text(
         },
         None,
     );
-    match dial {
-        EscalationDial::NoEscalation => sentence(
-            arrangements,
-            "escalation-policy-no-escalation",
-            None,
-            &[entry_forms],
-        ),
-        EscalationDial::VouchedOnly => sentence(
-            arrangements,
+    let (slug, values) = match dial {
+        EscalationDial::NoEscalation => ("escalation-policy-no-escalation", vec![entry_forms]),
+        EscalationDial::VouchedOnly => (
             "escalation-policy-vouched-only",
-            None,
-            &[&capability_word, entry_forms],
+            vec![capability_word.as_str(), entry_forms],
         ),
-        EscalationDial::AnyProbe => sentence(
-            arrangements,
+        EscalationDial::AnyProbe => (
             "escalation-policy-any-probe",
-            None,
-            &[&capability_word, entry_forms],
+            vec![capability_word.as_str(), entry_forms],
         ),
-    }
+    };
+    component_text(arrangements, slug, None, &values)
 }
 
 /// The registry sentence for one [`UnmodeledWriteRedirect`] — the inner clause of

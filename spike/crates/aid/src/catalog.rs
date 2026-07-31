@@ -257,8 +257,24 @@ pub fn fill_template_parts(
 ) -> Result<crate::tagged::RenderParts, TemplateRefusal> {
     use crate::tagged::{RenderPart, RenderParts};
 
+    let template_parts = parse_template(template)?;
+    // A register that is NOTHING but one registry-backed hole holds no words of its own
+    // (`28L:rul-empty-registers-for-pure-holes`), so a section opened over it would be a component's
+    // sentence wearing the code's face — rendered, and uneditable, because every byte in it is a
+    // value. Stamp the COMPONENT's face instead. The section is whole either way: sections open and
+    // close on owner change, and this one has a single owner from first byte to last, so re-keying
+    // it splits nothing.
+    if let [TemplatePart::Hole(name)] = template_parts.as_slice()
+        && let Some((_, crate::ParamText::Component(component))) =
+            params.iter().find(|(key, _)| key == name)
+    {
+        let mut parts = RenderParts::new();
+        component.push_parts(&mut parts);
+        return Ok(parts);
+    }
+
     let mut parts = RenderParts::new();
-    for part in parse_template(template)? {
+    for part in template_parts {
         match part {
             TemplatePart::Literal(text) if !text.is_empty() => {
                 parts.push(RenderPart::TemplateLiteral {
@@ -282,13 +298,19 @@ pub fn fill_template_parts(
                         text: text.clone(),
                         source: String::from(*param),
                     }),
-                    crate::ParamText::Ours(text) => parts.push(RenderPart::ParamValue {
-                        text: text.clone(),
-                        code,
-                        field,
-                        param,
-                        instance,
-                    }),
+                    // A component sharing its register with words of ours renders as a plain value:
+                    // splitting the register around a faced interior hole is the priced-and-declined
+                    // remedy (`28L:rul-empty-registers-for-pure-holes`), so its own words stay
+                    // editable at the entry and nowhere else.
+                    crate::ParamText::Ours(_) | crate::ParamText::Component(_) => {
+                        parts.push(RenderPart::ParamValue {
+                            text: value.text().to_owned(),
+                            code,
+                            field,
+                            param,
+                            instance,
+                        });
+                    }
                 }
             }
         }
