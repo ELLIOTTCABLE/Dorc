@@ -362,16 +362,33 @@ when it collides with a loaded unit.
 ## §9. Ratifications owed (open until typed)
 
 1. **rat-four-rules-wording** — §1's four rules as law, verbatim.
+
+   > human: acked.
+
 2. **rat-blessing-vocabulary-v0** — the shadow-refusal's blessing set is exactly
    {`unset -f` of the name, textually between the definitions}; guards exempt by
    consequence. Richer vocabulary only on field evidence.
+
+   > human: examined, mostly holds. See 28M §8,
+   >        `28M:rul-conflict-between-totals-is-falsification`,
+   >        `28M:rul-composite-meets-toward-guard-run`, etc.
+
 3. **rat-fallthrough-dead-on-principle** — §6's rejection is principled, not
    evidence-pending; nothing rebuilds toward it.
+
+   > human: acked, I don't see any sane way to express and maintain multi-author
+   >        engine-synthesis within our "attribution is paramount" paradigm
+
 4. **rat-two-regime-wording** — §2's visibility rule: the direction is typed
    (hoisting only where no native-sh load-order applies; guards follow the
    stupid-guard-inserter model), but the wording, the consumer allocation between the
    regimes, and the accepted elide-only-above-a-late-definition cell deserve eyes.
+
+   > human: acked and updated, USER_STORY and README are now consistent, I believe.
+
 5. **rat-two-kind-respell** — §7's ruling and its fixture consequences.
+
+   > human: soft ack; spirit not letter
 
 ## §10. Build shape (minimal; no phase ceremony)
 
