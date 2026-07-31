@@ -958,6 +958,30 @@ lanes thread by fresh census, never by the map's count.
   the ownership collection-fence fix (`owns:` joins the e2e vocabulary;
   corpus-wide one-owner scan; `why-chain-event-received` homed) · the locus
   line:col fix.
+- **BLIND-REVIEWER ROUND 2 LANDED** (branch `ai/r28-loom-review2` @ `aeef7689`;
+  probe-only, never folds; force-delete list). VERDICT: remits 1–3 (overtype ·
+  reason-sentence edit · add-a-value-from-Rust) PASS on tooling alone — the
+  in-file `edit-loop:` line rated "the single best piece of onboarding … no doc
+  needed"; the `params_of_raw`/`fixture.rs` rustdoc escort held its E0027/E0063
+  promises exactly; the metadata/compile refusals steered correctly. Remit 4
+  (the vars-list/blank-block flow) FAILS the naive dev: the `DORC_LOOM_DUMP`
+  rescue is advertised only when already configured, the "non-prose changes"
+  refusal is one undifferentiated wall, no surface enumerates the frontmatter
+  vocabulary or the `code:`/`arrangement:` split, subcommand `--help` is a
+  generic index, and a prose edit can break a register-pinning unit test the
+  edit-loop never warns about. Fence disclosure repeated (harness doc-injection;
+  the reviewer bookkept tool-taught vs injected and re-derived the dump
+  mechanism from permitted `cli` source). Overall: "yes" for the daily flows,
+  "no, not fully" until the discovery edges land.
+- **x2k DISPATCHED** (worktree loom-x2k off `e421f5ec`; the round-2 chafe pack,
+  the arc's last build): unconditional dump-hint in the hygiene failure ·
+  classified non-prose refusal naming the sanctioned path per change class ·
+  per-subcommand usage · frontmatter-vocabulary discoverability (+ the
+  code/arrangement sentence) · the register-prose-pin unit-test sweep
+  (render-form-unwelded's anti-pattern; the reviewer broke one) · `edit-loop:`
+  gains the prove step (mechanical corpus regen). Macro-checkpoint pre-read:
+  ZERO Rust-side repetition chafe in either reviewer round — the no-macro line
+  rests at the human's 90.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
