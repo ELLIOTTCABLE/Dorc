@@ -23,6 +23,7 @@
 
 pub mod kinds;
 pub mod results;
+pub mod survival;
 pub mod why;
 pub mod world;
 

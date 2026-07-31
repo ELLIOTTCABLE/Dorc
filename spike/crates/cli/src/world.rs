@@ -246,7 +246,8 @@ fn oracle_file_id(idx: usize) -> dorc_core::OracleFileId {
 }
 
 /// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.
-fn ship_predict_body(
+#[must_use]
+pub fn ship_predict_body(
     oracle_srcs: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
@@ -278,7 +279,8 @@ fn ship_predict_body(
 }
 
 /// `24L` §2 — the stripped `<provider>__is_converged` a typeless-floor auto-cell probe ships.
-fn ship_verdict_body(
+#[must_use]
+pub fn ship_verdict_body(
     oracle_srcs: &[String],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     interner: &Interner,
