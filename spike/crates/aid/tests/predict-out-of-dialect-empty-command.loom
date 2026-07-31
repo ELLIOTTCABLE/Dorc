@@ -1,0 +1,35 @@
+---
+arrangement: predict-out-of-dialect-empty-command
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-empty-command && mise run loom:promote -- predict-out-of-dialect-empty-command`. `mise run loom:vars -- --all predict-out-of-dialect-empty-command` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   do
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ hork.oracle.sh:3:4
+     3 |    do
+       |    \/
+  error[syntax-unsupported]: reserved word in command position
+        [ hork.oracle.sh:3:4
+     3 |    do
+       |    \/
+  error[predict-out-of-dialect]: empty command
+        [ hork.oracle.sh:3:4
+     3 |    do
+       |    \/
+  3:4 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+
+dorc lint: 3 errors, 1 warning, 1 info across 1 file.

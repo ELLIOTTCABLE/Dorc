@@ -1,5 +1,7 @@
 ---
 arrangement: predict-lex-backtick-substitution
+owns:
+  - predict-out-of-dialect-token-in-command
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-lex-backtick-substitution && mise run loom:promote -- predict-lex-backtick-substitution`. `mise run loom:vars -- --all predict-lex-backtick-substitution` lists this case's values; type {{name}} to insert or move one.
 ---
 -- hork.oracle.sh --

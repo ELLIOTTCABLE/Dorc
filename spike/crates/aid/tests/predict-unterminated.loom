@@ -2,6 +2,8 @@
 code: predict-unterminated
 when-fires: a check function body is structurally unterminated (missing `;;`/`esac`). oracle/predict.rs lift_failure.
 why: the check cannot be lifted. The reason is typed: four PredictUnterminatedReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).
+owns:
+  - predict-unterminated-function-body
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-unterminated && mise run loom:promote -- predict-unterminated`. `mise run loom:vars -- --all predict-unterminated` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --

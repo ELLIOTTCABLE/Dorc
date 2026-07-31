@@ -2,6 +2,8 @@
 code: cfg-top-node
 when-fires: an `Unsupported` AST ⊤-node became a CFG `Top` node (an unsupported construct, or the CFG nesting bound). cfg.rs lower_top + fresh(Top).
 why: the conservative ⊤-absorbing semantics; any command after it may mutate anything. The reason is typed: two CfgTopNodeReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes). NOTE plain-language pass owed: slug carries top/⊤ wording (law-plain-language-surfaces, 24H ack-4).
+owns:
+  - cfg-top-node-unsupported-construct
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cfg-top-node && mise run loom:promote -- cfg-top-node`. `mise run loom:vars -- --all cfg-top-node` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --

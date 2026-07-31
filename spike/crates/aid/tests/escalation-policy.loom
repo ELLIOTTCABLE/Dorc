@@ -2,6 +2,9 @@
 code: escalation-policy
 when-fires: the authority-disclosure line for the probe-escalation policy. cli/main.rs (SPANLESS). Consent legibility.
 why: 27C §2: the disclosure varies by dial (default vs --escalate-any-probe). The reason is typed: the payload carries core's own EscalationDial and Capability, and the `{reason}` hole renders the dial's prose-component with the capability word interleaved (28L rul-reason-enums-not-sibling-codes).
+owns:
+  - escalation-policy-capability-root
+  - escalation-policy-vouched-only
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- escalation-policy && mise run loom:promote -- escalation-policy`. `mise run loom:vars -- --all escalation-policy` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --

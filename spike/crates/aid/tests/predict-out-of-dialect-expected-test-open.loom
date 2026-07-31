@@ -1,0 +1,28 @@
+---
+arrangement: predict-out-of-dialect-expected-test-open
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-expected-test-open && mise run loom:promote -- predict-out-of-dialect-expected-test-open`. `mise run loom:vars -- --all predict-out-of-dialect-expected-test-open` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   while hork --ready
+   do
+      shift
+   done
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[predict-out-of-dialect]: expected `[` to open a test
+        [ hork.oracle.sh:3:10
+     3 |    while hork --ready
+       |          \__/
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

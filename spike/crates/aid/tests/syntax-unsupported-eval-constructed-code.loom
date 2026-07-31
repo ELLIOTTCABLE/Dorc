@@ -1,0 +1,25 @@
+---
+arrangement: syntax-unsupported-eval-constructed-code
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-eval-constructed-code && mise run loom:promote -- syntax-unsupported-eval-constructed-code`. `mise run loom:vars -- --all syntax-unsupported-eval-constructed-code` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+eval "hork add nginx"
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ book.sh:2:1
+     2 | eval "hork add nginx"
+       | \__/
+  error[syntax-unsupported]: `eval` executes constructed code (un-analyzable)
+        [ book.sh:2:1
+     2 | eval "hork add nginx"
+       | \__/
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+
+dorc lint: 2 errors, 0 warnings, 1 info across 1 file.

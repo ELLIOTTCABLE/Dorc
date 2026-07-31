@@ -1,0 +1,29 @@
+---
+arrangement: predict-out-of-dialect-test-operator
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-test-operator && mise run loom:promote -- predict-out-of-dialect-test-operator`. `mise run loom:vars -- --all predict-out-of-dialect-test-operator` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   while [ "$1" -eq 1 ]
+   do
+      shift
+   done
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[predict-out-of-dialect]: test operator must be `=` or `!=` (string
+  comparison)
+        [ hork.oracle.sh:3:17
+     3 |    while [ "$1" -eq 1 ]
+       |                 \_/
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

@@ -1,0 +1,24 @@
+---
+arrangement: syntax-malformed-unterminated-brace-group
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-unterminated-brace-group && mise run loom:promote -- syntax-malformed-unterminated-brace-group`. `mise run loom:vars -- --all syntax-malformed-unterminated-brace-group` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+install_one() {
+   hork add nginx
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[syntax-malformed]: unterminated brace group `{` (no `}`)
+        [ book.sh:2:15
+     2 | install_one() {
+       |               ^
+  error[predict-out-of-dialect]: unexpected token in command
+        [ book.sh:2:12
+     2 | install_one() {
+       |            ^
+
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.
