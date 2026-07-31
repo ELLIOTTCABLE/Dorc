@@ -41,6 +41,11 @@ mod receipt_store;
 pub use receipt_store::{FsReceiptStore, ReceiptStore, ReceiptWriteOutcome};
 mod repository;
 pub use repository::{GitRepository, ProseClassification, Repository, classify_prose_changes};
+mod vocabulary;
+pub use vocabulary::{
+    DEFINING_KEYS_NOTE, FRONTMATTER_KEYS, FrontmatterKey, frontmatter_key_names,
+    is_frontmatter_key, is_run_lane_key, run_lane_key_names,
+};
 mod workflow;
 pub use workflow::{compile as compile_receipt, promote as promote_receipt};
 

@@ -54,51 +54,24 @@ fn trial_name(case: &LoomCase) -> String {
     }
 }
 
-/// Every frontmatter key some gate reads, across BOTH runners — the closed vocabulary
-/// (`crates/cli/CLAUDE.md` loom-form-is-the-same-battery). The e2e runner's `LOOM_KEYS` is the
-/// run-lane subset of this list; a key here that only IT reads is still read.
-///
-/// The one deliberate exception is `todo`, which asserts nothing about the case and is why it is
-/// safe unread: an author's note about the case's own future, not a gate they believe they armed.
-const FRONTMATTER_KEYS: [&str; 22] = [
-    "code",
-    "arrangement",
-    "when-fires",
-    "when-used",
-    "why",
-    "owns",
-    "todo",
-    "run",
-    "fixpoint",
-    "flags",
-    "exit",
-    "apply-exit",
-    "tolerate",
-    "probe-results",
-    "dual-rail",
-    "why-addr",
-    "expect-diagnostic",
-    "expect-why",
-    "expect-hint",
-    "expect-why-chain",
-    "edit-loop",
-    "envelope",
-];
-
 /// Refuse a frontmatter key no gate reads: it is an assertion the author only believes they made.
+///
+/// The vocabulary itself is `dorc_loom::FRONTMATTER_KEYS` — one definition, because `dorc-loom keys`
+/// prints the same set and a runner that kept its own copy would drift from the listing an author
+/// is told to trust.
 fn known_frontmatter_keys(name: &str, case: &Case) -> Result<(), Failed> {
     let Some(unknown) = case
         .frontmatter()
         .keys()
-        .find(|key| !FRONTMATTER_KEYS.contains(key))
+        .find(|key| !dorc_loom::is_frontmatter_key(key))
     else {
         return Ok(());
     };
     Err(format!(
         "FAIL  {name}  [unread frontmatter key `{unknown}` — the key vocabulary is closed, and a \
          key no gate reads is an assertion you only believe you made. The keys that do something \
-         are {}]",
-        FRONTMATTER_KEYS.join(", ")
+         are {}; `dorc-loom keys` says what each one is read by]",
+        dorc_loom::frontmatter_key_names().join(", ")
     )
     .into())
 }

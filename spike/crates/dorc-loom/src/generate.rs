@@ -253,9 +253,13 @@ fn load_corpus_keyed_by(dir: &Path, key: &str) -> Result<BTreeMap<String, Case>,
             if case.frontmatter().scalar("code").is_none()
                 && case.frontmatter().scalar("arrangement").is_none()
             {
+                // Naming the two keys was never the hard part; knowing which one this case wants,
+                // and that the vocabulary around them is closed at all, was.
                 return Err(format!(
-                    "case {} declares neither `code` nor `arrangement`",
-                    path.display()
+                    "case {} declares neither `code` nor `arrangement`, so it defines nothing. {}\n\
+                     The whole legal key set is `dorc-loom keys`; anything outside it is refused.",
+                    path.display(),
+                    crate::DEFINING_KEYS_NOTE
                 ));
             }
             continue;

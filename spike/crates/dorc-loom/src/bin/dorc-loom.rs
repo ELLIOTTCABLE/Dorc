@@ -20,7 +20,7 @@ use errorloom::{
     execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
 
 /// Each verb's own page — what it does, what its flags mean, and the command that follows it.
 ///
@@ -36,18 +36,20 @@ fn usage_for(verb: &str) -> &'static str {
         "sections" => SECTIONS_USAGE,
         "scaffold" => SCAFFOLD_USAGE,
         "add-register" => ADD_REGISTER_USAGE,
+        "keys" => KEYS_USAGE,
         _ => USAGE,
     }
 }
 
 /// The verbs `usage_for` has a page for — also what makes `dorc-loom <verb> --help` route to it.
-const VERBS: [&str; 6] = [
+const VERBS: [&str; 7] = [
     "compile",
     "promote",
     "vars",
     "sections",
     "scaffold",
     "add-register",
+    "keys",
 ];
 
 const COMPILE_USAGE: &str =
@@ -93,6 +95,12 @@ const SCAFFOLD_USAGE: &str = "usage: dorc-loom scaffold SLUG
   register stays unwritten, and everything the skeleton omits is deliberately red until a world that
   really fires the code is authored.
   next: the two-step follow-up the command prints";
+
+const KEYS_USAGE: &str = "usage: dorc-loom keys
+  Print the closed frontmatter-key vocabulary a case may declare, and which gate reads each key --
+  including which of `code:` and `arrangement:` a case wants. Takes no arguments and reads no case.
+  next: declare the key in the case's frontmatter; anything outside this set is refused by the
+        runners, because a key no gate reads is an assertion you only believe you made";
 
 const ADD_REGISTER_USAGE: &str = "usage: dorc-loom add-register CASE help
   Mint a code's `help` register, so the ordinary transcript loop can fill it. `help` is the only
@@ -142,6 +150,7 @@ enum Command {
     Sections {
         cases: Vec<PathBuf>,
     },
+    Keys,
     /// The index, or one verb's own page when the reader had already chosen a verb.
     Help {
         verb: Option<String>,
@@ -183,6 +192,7 @@ fn run() -> Result<ExitCode, String> {
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
         Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
         Command::Sections { cases } => print_sections(&cases, &mut out),
+        Command::Keys => print_keys(&mut out),
         Command::Help { verb } => writeln!(
             out,
             "{}",
@@ -310,6 +320,12 @@ fn parse_args() -> Result<Command, String> {
         Some("sections") => Ok(Command::Sections {
             cases: collect_cases("sections", argv)?,
         }),
+        Some("keys") => match argv.next() {
+            None => Ok(Command::Keys),
+            Some(extra) => Err(format!(
+                "keys takes no arguments; got {extra:?}\n{KEYS_USAGE}"
+            )),
+        },
         _ => Err(USAGE.to_owned()),
     }
 }
@@ -1109,6 +1125,24 @@ fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, S
                 print_component(out, component)?;
             }
         }
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+/// `dorc-loom keys` — the closed frontmatter vocabulary, and which gate gives each key effect.
+///
+/// A listing rather than a refusal because the vocabulary was previously discoverable only by
+/// declaring something outside it and reading what came back, which is a poor way to learn that
+/// `code:` and `arrangement:` are alternatives at all.
+fn print_keys(out: &mut impl Write) -> Result<ExitCode, String> {
+    writeln!(out, "{}\n", dorc_loom::DEFINING_KEYS_NOTE).map_err(|error| error.to_string())?;
+    let width = dorc_loom::FRONTMATTER_KEYS
+        .iter()
+        .map(|key| key.name.len())
+        .max()
+        .unwrap_or_default();
+    for key in &dorc_loom::FRONTMATTER_KEYS {
+        writeln!(out, "  {:width$}  {}", key.name, key.read_by).map_err(|e| e.to_string())?;
     }
     Ok(ExitCode::SUCCESS)
 }

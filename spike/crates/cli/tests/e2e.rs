@@ -902,27 +902,16 @@ struct LoomCaseSpec {
 /// The frontmatter keys a loom-form case may carry, and the dir-form artifact each becomes.
 /// Anything else is refused — an unread key is a silently-ineffective assertion.
 ///
-/// `owns` is read by neither runner: it is the prose-ownership resolver's
-/// (`dorc_loom::corpus_ownership`), which scans EVERY collection. It is listed because this
-/// runner's refusal is what a whole-product case's author meets, and refusing the key here left a
-/// prose-component rendered only by this collection with no authoring home at all
+/// A PROJECTION of `dorc_loom::FRONTMATTER_KEYS` rather than a second list: the looms runner sees
+/// whole-product cases too, so a key this runner accepted and that one did not would refuse the
+/// same file from the other side. `owns` is read by neither runner — it is the prose-ownership
+/// resolver's (`dorc_loom::corpus_ownership`), which scans EVERY collection — and is in the subset
+/// because THIS runner's refusal is what a whole-product case's author meets, and refusing the key
+/// here left a prose-component rendered only by this collection with no authoring home at all
 /// (`28L:rul-ownership-declaration-adopted`).
-const LOOM_KEYS: [&str; 14] = [
-    "run",
-    "fixpoint",
-    "flags",
-    "exit",
-    "apply-exit",
-    "tolerate",
-    "probe-results",
-    "dual-rail",
-    "why-addr",
-    "expect-diagnostic",
-    "expect-why",
-    "expect-hint",
-    "expect-why-chain",
-    "owns",
-];
+fn loom_keys() -> Vec<&'static str> {
+    dorc_loom::run_lane_key_names()
+}
 
 /// Scalar-or-list frontmatter items (an absent key is the empty list).
 fn loom_items(case: &errorloom::Case, key: &str) -> Vec<String> {
@@ -958,10 +947,16 @@ fn loom_spec(case: &LoomCase) -> Result<Option<LoomCaseSpec>, String> {
         "lint" => LoomRun::Lint,
         other => return Err(format!("unknown `run: {other}`")),
     };
-    let known: BTreeSet<&str> = LOOM_KEYS.iter().copied().collect();
-    if let Some(unknown) = parsed.frontmatter().keys().find(|key| !known.contains(key)) {
+    if let Some(unknown) = parsed
+        .frontmatter()
+        .keys()
+        .find(|key| !dorc_loom::is_run_lane_key(key))
+    {
         return Err(format!(
-            "unread frontmatter key `{unknown}` — the key vocabulary is closed, and a key no gate reads is an assertion the author only believes they made"
+            "unread frontmatter key `{unknown}` — the key vocabulary is closed, and a key no gate \
+             reads is an assertion the author only believes they made. A whole-product case reads \
+             {}; `dorc-loom keys` says what each one is read by",
+            loom_keys().join(", ")
         ));
     }
     Ok(Some(LoomCaseSpec {
