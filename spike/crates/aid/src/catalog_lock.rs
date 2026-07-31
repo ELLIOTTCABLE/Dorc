@@ -842,4 +842,22 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "transport-marker-unusable",
+        when_fires: "the run's nonce could not become a session marker, so no artifact was shipped and the host was never contacted. cli/transport_edge.rs (SPANLESS). {host} is the destination that went uncontacted.",
+        why: "AID-NEEDS:law-codes-vary-by-world-not-grammar. The sibling of transport-spawn-refused: the same untouched-host claim in a different world. Nothing outside the controller participated, so there is nothing to relay and the whole sentence is ours; the remedy is the invocation, where the spawn-refused remedy is the environment.",
+        params: &[],
+        example: "[unwritten: transport-marker-unusable]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
+    CatalogEntry {
+        slug: "transport-spawn-refused",
+        when_fires: "the controller could not spawn a session process for `--host`, so no artifact was shipped and the host was never contacted. cli/transport_edge.rs (SPANLESS). {host} is the destination that went uncontacted; {detail} is the platform's own words about the refused spawn, relayed.",
+        why: "AID-NEEDS:law-codes-vary-by-world-not-grammar. One of the two outcomes licensed to claim the host was untouched, because the failure is local and provable. Its sibling transport-marker-unusable is the same claim in a different world: there nothing outside the controller participated, so nothing is relayed and the remedy is the invocation rather than the environment.",
+        params: &[],
+        example: "[unwritten: transport-spawn-refused]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
