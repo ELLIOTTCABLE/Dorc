@@ -1,7 +1,7 @@
 ---
 code: predict-out-of-dialect
 when-fires: a check function body uses a construct outside the check dialect (a strict subset of sh). oracle/predict.rs lift_failure.
-why: out-of-dialect input is a lift failure. The reason is typed: a PredictOutOfDialectReason variant per dialect rule, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).
+why: out-of-dialect input is a lift failure. The reason is typed: a PredictOutOfDialectReason variant per dialect rule, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect && mise run loom:promote -- predict-out-of-dialect`. `mise run loom:vars -- --all predict-out-of-dialect` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --

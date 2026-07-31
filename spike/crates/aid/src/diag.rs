@@ -2677,17 +2677,17 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             foreign("excerpt", excerpt),
         ],
         DiagCode::SyntaxUnsupported(SyntaxUnsupported { reason }) => {
-            vec![ours("detail", syntax_unsupported_text(ctx, *reason))]
+            vec![ours("reason", syntax_unsupported_text(ctx, *reason))]
         }
         DiagCode::SyntaxMalformed(SyntaxMalformed { reason }) => {
-            vec![ours("detail", syntax_malformed_text(ctx, *reason))]
+            vec![ours("reason", syntax_malformed_text(ctx, *reason))]
         }
         DiagCode::CfgTopNode(CfgTopNode { reason }) => {
-            vec![ours("detail", cfg_top_node_text(ctx, *reason))]
+            vec![ours("reason", cfg_top_node_text(ctx, *reason))]
         }
         DiagCode::CfgErexitUnknown(CfgErexitUnknown) => vec![],
         DiagCode::CfgInlineRefused(CfgInlineRefused { reason }) => {
-            vec![ours("detail", cfg_inline_refused_text(ctx, reason))]
+            vec![ours("reason", cfg_inline_refused_text(ctx, reason))]
         }
         DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed { name }) => {
             vec![ours("name", name.clone())]
@@ -2700,24 +2700,24 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("effect_map", effect_map.clone()),
         ],
         DiagCode::PredictOutOfDialect(PredictOutOfDialect { reason }) => {
-            vec![ours("detail", predict_out_of_dialect_text(ctx, *reason))]
+            vec![ours("reason", predict_out_of_dialect_text(ctx, *reason))]
         }
         DiagCode::PredictUnterminated(PredictUnterminated { reason }) => {
-            vec![ours("detail", predict_unterminated_text(ctx, *reason))]
+            vec![ours("reason", predict_unterminated_text(ctx, *reason))]
         }
         DiagCode::OracleRoleFnUnlifted(OracleRoleFnUnlifted { funcname }) => {
             vec![ours("funcname", funcname.clone())]
         }
         DiagCode::MarkOnAndOrList(MarkOnAndOrList) => vec![],
         DiagCode::FootprintIncoherent(FootprintIncoherent { reason }) => {
-            vec![ours("detail", footprint_incoherent_text(ctx, *reason))]
+            vec![ours("reason", footprint_incoherent_text(ctx, *reason))]
         }
         DiagCode::EscalationPolicy(EscalationPolicy {
             dial,
             capability,
             entry_forms,
         }) => vec![ours(
-            "detail",
+            "reason",
             escalation_policy_text(ctx, *dial, *capability, entry_forms),
         )],
         DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis { axes, kinds }) => {
@@ -2756,7 +2756,7 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::WhylogAbsent(WhylogAbsent { dir }) => vec![ours("dir", dir.clone())],
         DiagCode::WhylogCorrupt(WhylogCorrupt { reason }) => {
-            vec![ours("detail", whylog_corrupt_text(ctx, *reason))]
+            vec![ours("reason", whylog_corrupt_text(ctx, *reason))]
         }
         DiagCode::WhylogUnwritten(WhylogUnwritten { dir, reason }) => {
             vec![ours("dir", dir.clone()), ours("reason", reason.clone())]
