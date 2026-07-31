@@ -64,7 +64,15 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
     for (i, src) in oracles.iter().enumerate() {
         let mut diags = crate::predict::lift_predicts(interner, src).diags;
         diags.extend(crate::predict::lift_verdicts_converged(interner, src).diags);
-        if !src.contains("__") {
+        // The mark-subset lint reads a file as a bare fragment of marked STATEMENTS, so it only
+        // applies where there is nothing else to read it as. `__`-freedom alone was too crude a
+        // test: `28M` §8's packaging shape splits an oracle into a HELPERS file (bulk logic, non-role
+        // names ⇒ no `__` anywhere) plus a thin entrypoints file, and the helpers half was refused
+        // out of dialect at its first funcdef — measured while pinning the cross-file closure. A
+        // file that DEFINES FUNCTIONS is a definitions file whatever its names look like; the
+        // fragment reading is for files that define none (which is structurally what the `mark-*`
+        // cases are, since wrapping their marks in a funcdef would stop them firing at all).
+        if !src.contains("__") && !declares_functions(src) {
             diags.extend(crate::predict::lint_mark_subset(src));
         }
         diags.extend(unlifted_role_fns(interner, src));
@@ -272,6 +280,19 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
 
     let incoherent = !diags.is_empty();
     (diags, incoherent)
+}
+
+/// Does this source define any function at its top level? The discriminator between a file of
+/// DECLARATIONS (an oracle's helpers half — `28M` §8) and a bare fragment of marked statements.
+fn declares_functions(src: &str) -> bool {
+    use dorc_syntax::ast::NodeKind;
+    let ast = dorc_syntax::parse(src).value;
+    match &ast.node(ast.root()).kind {
+        NodeKind::Script { items } => items
+            .iter()
+            .any(|&item| matches!(ast.node(item).kind, NodeKind::FuncDef { .. })),
+        _ => false,
+    }
 }
 
 /// The MARKS-LOST BACKSTOP (`26G:haz-silence-is-the-common-cause`): every role a marked file can

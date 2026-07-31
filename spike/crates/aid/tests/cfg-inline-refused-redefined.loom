@@ -13,10 +13,6 @@ $ dorc lint book.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 book.sh:
-  error[predict-out-of-dialect]: unexpected token in command
-        [ book.sh:2:12
-     2 | install_one() { hork add nginx; }
-       |            ^
   warning[cfg-inline-refused]: function `install_one` is defined more than once;
   the call is not inlined (redefinition tracking is out of the modeled subset)
   -- it runs as an ordinary unmodeled command
@@ -24,4 +20,4 @@ book.sh:
      4 | install_one
        | \_________/
 
-dorc lint: 1 error, 1 warning, 0 infos across 1 file.
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.

@@ -13,10 +13,6 @@ $ dorc lint book.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 book.sh:
-  error[predict-out-of-dialect]: unexpected token in command
-        [ book.sh:3:12
-     3 | install_one() { hork add nginx > "$out"; }
-       |            ^
   warning[cfg-inline-refused]: call to `install_one` not inlined: its body has
   an unmodeled write-redirect (`>` to a dynamic/unresolved target) -- it runs as
   an ordinary unmodeled command (tc-M2)
@@ -24,4 +20,4 @@ book.sh:
      4 | install_one
        | \_________/
 
-dorc lint: 1 error, 1 warning, 0 infos across 1 file.
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.
