@@ -1,7 +1,7 @@
 ---
 code: footprint-incoherent
 when-fires: a touches() footprint is incoherent. cli/main.rs — TWO emit paths: the SPANNED own-coordinate canary (footprint omits its own effect coordinate), and the SPANLESS malformed-derived-coordinate refusal (the SPANLESS_SITE_PAYLOADS one).
-why: 24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. PASSTHROUGH — the per-path text rides `detail`.
+why: 24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. The reason is typed: two FootprintIncoherentReason variants, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- footprint-incoherent && mise run loom:promote -- footprint-incoherent`. `mise run loom:vars -- --all footprint-incoherent` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --

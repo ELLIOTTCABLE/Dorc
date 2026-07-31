@@ -1,7 +1,7 @@
 ---
 code: cfg-builtin-shadowed
 when-fires: a book funcdef shadows a shell builtin the engine relies on (dash resolves a function before a regular builtin). cfg.rs warn_shadowed_relied_builtins.
-why: find-I: builtin-dependent conclusions may be unsound for this book. PASSTHROUGH — the disclosure text rides `detail`; the primary span is the funcdef name_span.
+why: find-I: builtin-dependent conclusions may be unsound for this book. The hole is typed: `{name}` is the shadowing function, which is also the builtin it shadows; the sentence is the code's own register. The primary span is the funcdef name_span.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cfg-builtin-shadowed && mise run loom:promote -- cfg-builtin-shadowed`. `mise run loom:vars -- --all cfg-builtin-shadowed` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --

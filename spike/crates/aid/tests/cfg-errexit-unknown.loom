@@ -1,7 +1,7 @@
 ---
 code: cfg-errexit-unknown
 when-fires: the errexit-region pass hit an unknown/unmodeled command; the `set -e` failure-edge is conservatively assumed. cfg.rs (SPANLESS — spans a region).
-why: over-approximate, sound. PASSTHROUGH — the pass's description rides `detail`.
+why: over-approximate, sound. The payload is field-less: the reason was one fixed sentence, so it is the code's own register.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cfg-errexit-unknown && mise run loom:promote -- cfg-errexit-unknown`. `mise run loom:vars -- --all cfg-errexit-unknown` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --

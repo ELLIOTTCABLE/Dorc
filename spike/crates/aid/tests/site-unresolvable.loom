@@ -1,7 +1,7 @@
 ---
 code: site-unresolvable
 when-fires: a probe could not ship a read-only check for one or more command-sites, so the apply runs each. cli unresolvable_diagnostics (né dq-site-unresolvable).
-why: kFAIL-perform: unsure ⇒ run. PASSTHROUGH — `detail` reproduces BOTH the aggregate label (N sites …) AND the folded `\n  = note: site runs `{excerpt}`` line the old render_body emitted, so the migrated output is byte-identical bar the `sm ` prefix.
+why: kFAIL-perform: unsure ⇒ run. The holes are typed: `{count}` and `{site_word}` carry the aggregate label, and `{names}`/`{excerpt}` are book-derived bytes sealed as not-ours at the edge that read them.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- site-unresolvable && mise run loom:promote -- site-unresolvable`. `mise run loom:vars -- --all site-unresolvable` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
