@@ -101,3 +101,227 @@ fn the_remediation_hints_are_byte_identical() {
 fn a_seat_that_disagrees_with_its_entry_is_loud() {
     let _ = rendered("lint-summary-sentence", &["4"]);
 }
+
+/// Every typed REASON renders real words (`28L:rul-reason-enums-not-sibling-codes`).
+///
+/// The reason migrations replaced ~95 composed sentences with two hand-written tables — an
+/// enum-to-slug map in `diag.rs` and the matching `ARRANGEMENTS` rows — and almost none of the
+/// pairs is reached by a committed transcript. Two things can silently be wrong across a
+/// hand-written pair, and BOTH degrade to the same greppable placeholder rather than to a crash: a
+/// slug that names no row, and a word-run count that cannot serve the values its seat passes. This
+/// walks every variant of every migrated reason and asserts the render is neither.
+///
+/// Completeness is NOT compiler-forced — adding a variant without listing it here compiles green.
+/// The forcing that does exist is one tier down: the reason maps are exhaustive matches, so a new
+/// variant stops the build at its own map, and `params_of_raw`'s exhaustive destructuring makes a
+/// new payload field an error at the seat. What this list adds is the check no signature can make:
+/// that the slug on the far side of the map is a row, and that the row fits its seat.
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one line PER VARIANT, like the fixture table it resembles — the length IS the \
+              coverage, and splitting it by family would hide which reasons are unlisted"
+)]
+fn every_migrated_reason_renders_words_not_a_placeholder() {
+    use dorc_aid::diag::{
+        CfgInlineRefused, CfgInlineRefusedReason, CfgTopNode, CfgTopNodeReason, Diag, DiagCode,
+        EscalationPolicy, FootprintIncoherent, FootprintIncoherentReason, PredictLexError,
+        PredictOutOfDialect, PredictOutOfDialectReason, PredictUnterminated,
+        PredictUnterminatedReason, SyntaxMalformed, SyntaxMalformedReason, SyntaxUnsupported,
+        SyntaxUnsupportedReason, UnmodeledWriteRedirect, WhylogCorrupt, WhylogCorruptReason,
+        render_body,
+    };
+    use dorc_core::{BytePos, Capability, EscalationDial, Interner, Span};
+
+    let name = || "retry".to_owned();
+    let mut codes: Vec<DiagCode> = Vec::new();
+
+    for reason in [
+        CfgTopNodeReason::UnsupportedConstruct,
+        CfgTopNodeReason::NestingBound,
+    ] {
+        codes.push(DiagCode::CfgTopNode(CfgTopNode { reason }));
+    }
+    for reason in [
+        CfgInlineRefusedReason::Redefined { name: name() },
+        CfgInlineRefusedReason::RecursiveCall { name: name() },
+        CfgInlineRefusedReason::DepthBudget {
+            name: name(),
+            budget: 2,
+        },
+        CfgInlineRefusedReason::UnmodeledPositional {
+            name: name(),
+            construct: "$@",
+        },
+        CfgInlineRefusedReason::WriteRedirect {
+            name: name(),
+            redirect: UnmodeledWriteRedirect::ToPath {
+                path: "/etc/hosts".to_owned(),
+            },
+        },
+        CfgInlineRefusedReason::WriteRedirect {
+            name: name(),
+            redirect: UnmodeledWriteRedirect::ToDynamicTarget,
+        },
+        CfgInlineRefusedReason::PerCallNodeBudget {
+            name: name(),
+            estimate: 80,
+            budget: 64,
+        },
+        CfgInlineRefusedReason::PerBookNodeBudget {
+            name: name(),
+            spliced: 1000,
+            estimate: 80,
+            budget: 1024,
+        },
+    ] {
+        codes.push(DiagCode::CfgInlineRefused(CfgInlineRefused { reason }));
+    }
+    for reason in [
+        FootprintIncoherentReason::OmitsOwnCoordinate,
+        FootprintIncoherentReason::MalformedDerivedCoordinate,
+    ] {
+        codes.push(DiagCode::FootprintIncoherent(FootprintIncoherent {
+            reason,
+        }));
+    }
+    for reason in [
+        WhylogCorruptReason::Headerless,
+        WhylogCorruptReason::HeaderTagMissing,
+        WhylogCorruptReason::ResultsBlockOverruns,
+        WhylogCorruptReason::EndSentinelMissing,
+    ] {
+        codes.push(DiagCode::WhylogCorrupt(WhylogCorrupt { reason }));
+    }
+    for dial in [
+        EscalationDial::NoEscalation,
+        EscalationDial::VouchedOnly,
+        EscalationDial::AnyProbe,
+    ] {
+        for capability in [
+            Capability::Root,
+            Capability::NonRootNopasswd,
+            Capability::Degraded,
+        ] {
+            codes.push(DiagCode::EscalationPolicy(EscalationPolicy {
+                dial,
+                capability,
+                entry_forms: "sudo -n".to_owned(),
+            }));
+        }
+    }
+    for reason in [
+        SyntaxUnsupportedReason::ParserStalled,
+        SyntaxUnsupportedReason::NestingBound,
+        SyntaxUnsupportedReason::ReservedWordInCommandPosition,
+        SyntaxUnsupportedReason::ConstructTrailingRedirection {
+            construct: "if",
+            closer: "fi",
+        },
+        SyntaxUnsupportedReason::ForWithoutVariableName,
+        SyntaxUnsupportedReason::ForWithoutInList,
+        SyntaxUnsupportedReason::ForListWordHasExpansion,
+        SyntaxUnsupportedReason::ForListNotTerminated,
+        SyntaxUnsupportedReason::LoopJumpInBody,
+        SyntaxUnsupportedReason::LoopJumpInBodyOrCondition,
+        SyntaxUnsupportedReason::BackgroundAmp,
+        SyntaxUnsupportedReason::OperatorWithoutCommand,
+        SyntaxUnsupportedReason::DoubleSemicolonOutsideCase,
+        SyntaxUnsupportedReason::ExpectedACommand,
+        SyntaxUnsupportedReason::ArithmeticAsCommand,
+        SyntaxUnsupportedReason::DynamicCommandName,
+        SyntaxUnsupportedReason::EvalConstructedCode,
+        SyntaxUnsupportedReason::SourceOfNonLiteralTarget,
+        SyntaxUnsupportedReason::UnsetDynamicLvalue,
+        SyntaxUnsupportedReason::PrintfWritesLvalue,
+        SyntaxUnsupportedReason::TestReferencesLvalue,
+        SyntaxUnsupportedReason::ExpectedAWord,
+    ] {
+        codes.push(DiagCode::SyntaxUnsupported(SyntaxUnsupported { reason }));
+    }
+    for reason in [
+        SyntaxMalformedReason::ExpectedThenAfterIf,
+        SyntaxMalformedReason::ExpectedThenAfterElif,
+        SyntaxMalformedReason::ExpectedFiToCloseIf,
+        SyntaxMalformedReason::ExpectedInAfterCaseWord,
+        SyntaxMalformedReason::ExpectedEsacToCloseCase,
+        SyntaxMalformedReason::ExpectedDoToOpenLoopBody,
+        SyntaxMalformedReason::ExpectedDoneToCloseLoop,
+        SyntaxMalformedReason::UnterminatedCaseArm,
+        SyntaxMalformedReason::ExpectedRparenAfterCasePattern,
+        SyntaxMalformedReason::UnterminatedSubshell,
+        SyntaxMalformedReason::UnterminatedBraceGroup,
+    ] {
+        codes.push(DiagCode::SyntaxMalformed(SyntaxMalformed { reason }));
+    }
+    for reason in [
+        PredictOutOfDialectReason::MalformedFunctionHeader,
+        PredictOutOfDialectReason::FunctionBodyMustStartWithBrace,
+        PredictOutOfDialectReason::CheckBodyOutOfDialect,
+        PredictOutOfDialectReason::AndOrListNotLedByCommand,
+        PredictOutOfDialectReason::AndOrListItemNotCommand,
+        PredictOutOfDialectReason::ExpectedDoAfterWhileTest,
+        PredictOutOfDialectReason::ExpectedThenAfterIfTest,
+        PredictOutOfDialectReason::ExpectedInAfterCaseScrutinee,
+        PredictOutOfDialectReason::UnterminatedCaseExpectedEsac,
+        PredictOutOfDialectReason::ExpectedPipeOrRparenInCaseArmPattern,
+        PredictOutOfDialectReason::CasePatternOutOfDialect,
+        PredictOutOfDialectReason::ExpectedCaseArmPattern,
+        PredictOutOfDialectReason::ShiftCountNotLiteralInteger,
+        PredictOutOfDialectReason::StatementDoesNotStartWithWord,
+        PredictOutOfDialectReason::AnnotationKindNotSingleWord,
+        PredictOutOfDialectReason::AnnotationNeedsValueWord,
+        PredictOutOfDialectReason::OutOfDialectToken {
+            lex: PredictLexError::UnmodeledByte,
+        },
+        PredictOutOfDialectReason::OutOfDialectToken {
+            lex: PredictLexError::BacktickCommandSubstitution,
+        },
+        PredictOutOfDialectReason::OutOfDialectToken {
+            lex: PredictLexError::UnterminatedQuote,
+        },
+        PredictOutOfDialectReason::UnexpectedTokenInCommand,
+        PredictOutOfDialectReason::EmptyCommand,
+        PredictOutOfDialectReason::ExpectedAWord,
+        PredictOutOfDialectReason::ExpectedLbracketToOpenTest,
+        PredictOutOfDialectReason::TestOperatorNotStringComparison,
+        PredictOutOfDialectReason::ExpectedRbracketToCloseTest,
+        PredictOutOfDialectReason::TrailingBindMarkWithValue,
+        PredictOutOfDialectReason::MarkNeedsVerbOrCoordinate,
+        PredictOutOfDialectReason::TrailingBindMarkWord,
+        PredictOutOfDialectReason::MalformedHashColonMark,
+        PredictOutOfDialectReason::MarkNeedsPayload,
+        PredictOutOfDialectReason::MalformedMarkTarget,
+        PredictOutOfDialectReason::SelectorNotPosixName,
+    ] {
+        codes.push(DiagCode::PredictOutOfDialect(PredictOutOfDialect {
+            reason,
+        }));
+    }
+    for reason in [
+        PredictUnterminatedReason::FunctionBody,
+        PredictUnterminatedReason::Block { keyword: "done" },
+        PredictUnterminatedReason::CaseArm,
+        PredictUnterminatedReason::IfThen,
+    ] {
+        codes.push(DiagCode::PredictUnterminated(PredictUnterminated {
+            reason,
+        }));
+    }
+
+    let interner = Interner::default();
+    let span = Span::new(BytePos(0), BytePos(1));
+    for code in codes {
+        let slug = code.slug();
+        let body = render_body(&Diag::new(code, span), &interner);
+        assert!(
+            !body.contains("[unwritten:"),
+            "`{slug}`: a reason rendered the placeholder — its slug names no registry row, or its \
+             row cannot serve the seat's value count: {body}"
+        );
+        assert!(
+            body.trim() != "sm",
+            "`{slug}`: a reason rendered no words at all: {body:?}"
+        );
+    }
+}
