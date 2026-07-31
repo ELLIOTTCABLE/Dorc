@@ -22,6 +22,7 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use dorc_aid::Severity;
+use dorc_aid::diag::{CfgInlineRefusedReason, UnmodeledWriteRedirect};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, build};
 use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::Graph;
@@ -1673,13 +1674,27 @@ fn consumed_post_for_dollar_question_marks_body() {
 // diagnostics. The call resolution + budgets are `i-1`; the back-map is `i-6`.
 // ===========================================================================
 
-/// Did `build(src)` emit a `cfg-inline-refused` diagnostic mentioning `needle`?
-fn inline_refused_for(src: &str, needle: &str) -> bool {
+/// Every `cfg-inline-refused` REASON `build(src)` emitted.
+///
+/// The typed reason, never its rendered words: matching the prose asked the arrangement registry
+/// what the analyzer decided, so authoring better wording for a refusal broke an analysis test in
+/// another crate — the anti-pattern `render-form-unwelded` names. The reason enum is engine
+/// vocabulary and is exactly what these tests mean to pin.
+fn inline_refusals(src: &str) -> Vec<CfgInlineRefusedReason> {
     let parsed = parse(src);
-    build(&parsed.value).diags.iter().any(|d| {
-        d.code.slug() == "cfg-inline-refused"
-            && dorc_aid::diag::render_body(d, &dorc_core::Interner::default()).contains(needle)
-    })
+    build(&parsed.value)
+        .diags
+        .iter()
+        .filter_map(|d| match &d.code {
+            dorc_aid::diag::DiagCode::CfgInlineRefused(refused) => Some(refused.reason.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Did `build(src)` refuse an inline for a reason `wanted` accepts?
+fn inline_refused_because(src: &str, wanted: impl Fn(&CfgInlineRefusedReason) -> bool) -> bool {
+    inline_refusals(src).iter().any(wanted)
 }
 
 /// The body-leaf list (CFG node ids) of the FIRST inlined call whose call-word is `lit`.
@@ -1739,7 +1754,10 @@ fn redefined_function_call_refuses_with_diagnostic() {
         "a call to a redefined function is not inlined"
     );
     assert!(
-        inline_refused_for(src, "defined more than once"),
+        inline_refused_because(
+            src,
+            |reason| matches!(reason, CfgInlineRefusedReason::Redefined { name } if name == "p")
+        ),
         "the redefinition refusal is loud"
     );
 }
@@ -1756,7 +1774,10 @@ fn direct_recursion_refuses_with_cycle_diagnostic() {
         "the outer call still inlines (the recursion guard stops the inner, not the outer)"
     );
     assert!(
-        inline_refused_for(src, "recursive call to `p`"),
+        inline_refused_because(
+            src,
+            |reason| matches!(reason, CfgInlineRefusedReason::RecursiveCall { name } if name == "p")
+        ),
         "the recursion refusal names the cycle"
     );
 }
@@ -1791,7 +1812,10 @@ fn depth_budget_refuses_a_fourth_level() {
     // a fourth level `a`->`b`->`c`->`d` refuses `d` at depth 2 (the stack is already 2 deep).
     let src = "d() { apt-get install -y nginx; }\nc() { d; }\nb() { c; }\na() { b; }\na\n";
     assert!(
-        inline_refused_for(src, "inline-depth budget"),
+        inline_refused_because(src, |reason| matches!(
+            reason,
+            CfgInlineRefusedReason::DepthBudget { .. }
+        )),
         "the 4th-level call refuses at the depth budget"
     );
 }
@@ -1802,7 +1826,10 @@ fn body_using_shift_refuses() {
     let src = "p() { shift; apt-get install -y nginx; }\np x\n";
     assert!(call_body_sites_of(&cfg_of(src), src, "p").is_none());
     assert!(
-        inline_refused_for(src, "shift"),
+        inline_refused_because(
+            src,
+            |reason| matches!(reason, CfgInlineRefusedReason::UnmodeledPositional { construct, .. } if *construct == "shift")
+        ),
         "the shift refusal names it"
     );
 }
@@ -1811,7 +1838,10 @@ fn body_using_shift_refuses() {
 fn body_using_local_refuses() {
     let src = "p() { local x; apt-get install -y nginx; }\np\n";
     assert!(
-        inline_refused_for(src, "local"),
+        inline_refused_because(
+            src,
+            |reason| matches!(reason, CfgInlineRefusedReason::UnmodeledPositional { construct, .. } if *construct == "local")
+        ),
         "the local refusal names it"
     );
 }
@@ -1822,7 +1852,10 @@ fn body_using_dollar_at_refuses() {
     // bind the whole operand list this slice.)
     let src = "p() { apt-get install -y \"$@\"; }\np nginx\n";
     assert!(
-        inline_refused_for(src, "$@"),
+        inline_refused_because(
+            src,
+            |reason| matches!(reason, CfgInlineRefusedReason::UnmodeledPositional { construct, .. } if *construct == "$@")
+        ),
         "the positional-array refusal names the construct"
     );
 }
@@ -1835,7 +1868,13 @@ fn body_write_redirect_to_real_file_refuses_but_devnull_is_exempt() {
     let fences = "p() { apt-get install -y nginx >> /etc/motd; }\np\n";
     assert!(call_body_sites_of(&cfg_of(fences), fences, "p").is_none());
     assert!(
-        inline_refused_for(fences, "write-redirect"),
+        inline_refused_because(fences, |reason| matches!(
+            reason,
+            CfgInlineRefusedReason::WriteRedirect {
+                redirect: UnmodeledWriteRedirect::ToPath { .. },
+                ..
+            }
+        )),
         "a real-file body write-redirect refuses (tc-M2)"
     );
 
@@ -1845,7 +1884,10 @@ fn body_write_redirect_to_real_file_refuses_but_devnull_is_exempt() {
         "a `>/dev/null` body write-redirect is EXEMPT => the call still inlines"
     );
     assert!(
-        !inline_refused_for(exempt, "write-redirect"),
+        !inline_refused_because(exempt, |reason| matches!(
+            reason,
+            CfgInlineRefusedReason::WriteRedirect { .. }
+        )),
         "no write-redirect refusal for the devnull-exempt body"
     );
 }
@@ -1866,14 +1908,17 @@ fn at_budget_body_inlines_over_budget_refuses() {
     };
     let small = body_of(1);
     assert!(call_body_sites_of(&cfg_of(&small), &small, "p").is_some());
-    assert!(!inline_refused_for(&small, "budget"));
+    assert!(inline_refusals(&small).is_empty());
     let big = body_of(100);
     assert!(
         call_body_sites_of(&cfg_of(&big), &big, "p").is_none(),
         "an over-budget body is not inlined"
     );
     assert!(
-        inline_refused_for(&big, "per-call inline-node budget"),
+        inline_refused_because(&big, |reason| matches!(
+            reason,
+            CfgInlineRefusedReason::PerCallNodeBudget { .. }
+        )),
         "the over-budget refusal names the per-call budget"
     );
 }

@@ -4114,6 +4114,27 @@ mod tests {
         SiteId::leaf(LeafId(n))
     }
 
+    /// Whitespace-collapsed, so an assertion about WORDS is blind to the wrap the seat chose.
+    fn flattened(text: &str) -> String {
+        text.split_whitespace().collect::<Vec<_>>().join(" ")
+    }
+
+    /// One register's committed words, asked of the registry rather than copied out of it.
+    ///
+    /// Every catalog register below is case-owned, so its bytes are edited through the loom flow
+    /// (`mise run loom:compile`/`loom:promote`) by someone who will not be reading this file. A
+    /// literal here turns their prose edit into a `dorc-aid` unit failure with no pointer to the
+    /// flow that caused it, which is exactly what `render-form-unwelded` forbids; asking the
+    /// registry keeps the structural claim (this seat renders THAT register) and drops the byte
+    /// claim.
+    fn register_words(slug: &str) -> String {
+        flattened(
+            crate::catalog::entry(slug)
+                .and_then(|entry| entry.message)
+                .unwrap_or_else(|| panic!("`{slug}` has no written message register")),
+        )
+    }
+
     /// A one-site [`SiteUnresolvable`] whose named sites and excerpt are `names` (test helper —
     /// the callers below care about the code, not about which command it disclosed).
     fn unresolvable(names: &str) -> SiteUnresolvable {
@@ -4174,12 +4195,9 @@ mod tests {
             cli.starts_with("warning[cfg-errexit-unknown]: "),
             "title renders: {cli}"
         );
-        // The seat owns layout, so the words are asserted free of the wrap it chose.
+        // This code takes no params, so whatever the register holds IS the rendered body.
         assert!(
-            cli.split_whitespace()
-                .collect::<Vec<_>>()
-                .join(" ")
-                .contains("errexit state is unknown at one or more commands"),
+            flattened(&cli).contains(&register_words("cfg-errexit-unknown")),
             "the register's own words, not a payload passthrough: {cli}"
         );
     }
@@ -4224,8 +4242,43 @@ mod tests {
         assert_eq!(registry(&unresolvable).floor, Floor::None);
     }
 
+    /// The unwritten placeholder is a RENDER mechanic, so it is stated over a synthesized register
+    /// rather than over whichever committed code still has no words.
+    ///
+    /// Pointing it at a real slug made the test a second, invisible owner of that code's prose:
+    /// authoring the first sentence for it — the whole point of the burn-down — turned this into a
+    /// red unit test in a crate the author never opens (`prose-three-state` says `[unwritten:]` is
+    /// a legal RESTING state, never a pinned one).
     #[test]
-    fn the_transport_family_renders_the_unwritten_placeholder_and_never_panics() {
+    fn an_unwritten_register_renders_the_greppable_placeholder() {
+        let catalog = vec![crate::catalog::OwnedEntry {
+            slug: "transport-crlf-refused".to_owned(),
+            when_fires: String::new(),
+            why: String::new(),
+            message: None,
+            help: crate::catalog::HelpRegister::Absent,
+            params: Vec::new(),
+        }];
+        let arrangements = crate::arrangement::owned_arrangements();
+        let diag = Diag::new_spanless_site(DiagCode::TransportCrlfRefused(TransportCrlfRefused {
+            which: "book.sh".to_owned(),
+            line: "3".to_owned(),
+        }));
+        assert_eq!(
+            render_body_with(
+                &RenderCtx::new(&catalog, &arrangements),
+                &diag,
+                &Interner::default()
+            ),
+            "[unwritten: transport-crlf-refused]"
+        );
+    }
+
+    /// The transport family renders SOMETHING, always: a complete body, no unfilled hole, and no
+    /// panic on the spanless mint (`inv-no-throw`). Whether any given register has words yet is the
+    /// corpus-wide gate's business, not this seat's.
+    #[test]
+    fn the_transport_family_renders_completely_and_never_panics() {
         let codes = [
             DiagCode::TransportCrlfRefused(TransportCrlfRefused {
                 which: "book.sh".to_owned(),
@@ -4253,15 +4306,20 @@ mod tests {
         for code in codes {
             let slug = code.slug();
             assert_eq!(registry(&code).severity, Severity::Error);
-            assert_eq!(
-                render_body(&Diag::new_spanless_site(code), &Interner::default()),
-                format!("[unwritten: {slug}]")
+            let body = render_body(&Diag::new_spanless_site(code), &Interner::default());
+            assert!(!body.trim().is_empty(), "`{slug}` rendered nothing");
+            assert!(
+                !body.contains("{{"),
+                "`{slug}` left a hole unfilled: {body}"
             );
         }
     }
 
+    /// The admission refusal's REGISTRY row, which is the load-bearing half: it is Error-severity,
+    /// floor-Pinned, structurally-remediated, and payload-free, so no hole can leak a managed
+    /// host's bytes into it. What words it carries is the prose loop's, not this test's.
     #[test]
-    fn host_evidence_admission_refusal_is_pinned_and_unwritten() {
+    fn host_evidence_admission_refusal_is_pinned_and_payload_free() {
         let code = DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
             kind: HostEvidenceRefusalKind::Framing,
         });
@@ -4272,12 +4330,8 @@ mod tests {
         assert!(params_of(&RenderCtx::production(), &code, &Interner::default()).is_empty());
         let entry = crate::catalog::entry(code.slug()).expect("catalog entry");
         assert!(entry.params.is_empty());
-        assert_eq!(entry.message, None);
-        assert_eq!(entry.help, crate::catalog::HelpRegister::Absent);
-        assert_eq!(
-            render_body(&Diag::new_spanless_site(code), &Interner::default()),
-            "[unwritten: host-evidence-admission-refused]"
-        );
+        let body = render_body(&Diag::new_spanless_site(code), &Interner::default());
+        assert!(!body.trim().is_empty() && !body.contains("{{"), "{body}");
     }
 
     /// The gate-3 interaction: the two ⊤-disclosures stay `Note` (they must never silently become
@@ -4322,11 +4376,12 @@ mod tests {
             "a disclosure contributes no fact-plane artifact comment"
         );
         // The CLI render carries the CATALOG message (filled from the payload), not a `.label`.
+        // The run past the register's last hole is the longest stretch a filled render reproduces
+        // verbatim, so it witnesses THAT register without pinning its words.
         let cli = render_cli(&note, "echo TAIL", "book.sh", &i);
-        assert!(
-            cli.contains("left to run on every apply"),
-            "catalog message: {cli}"
-        );
+        let tail = register_words("cmdsub-operand-top");
+        let tail = flattened(tail.rsplit("}}").next().unwrap_or(&tail));
+        assert!(flattened(&cli).contains(&tail), "catalog message: {cli}");
         assert!(cli.contains("operand 1 is"), "position param filled: {cli}");
         assert!(
             cli.starts_with("note[cmdsub-operand-top]: "),
@@ -4347,18 +4402,57 @@ mod tests {
             comment.contains("site 7"),
             "names the fact-plane site: {comment}"
         );
+        // The literal run before the register's first hole: whatever the help says, none of it is
+        // artifact-plane, and asking the registry keeps that true through a prose edit.
+        let help = crate::catalog::entry("render-heredoc-refused")
+            .and_then(|entry| entry.help.written().copied())
+            .and_then(|template| template.split("{{").next())
+            .expect("the help register is written");
         assert!(
-            !comment.contains("split the heredoc"),
+            !comment.contains(help),
             "the help (exempt-plane) must NOT reach the artifact: {comment}"
         );
     }
 
-    /// The `sm `-prefix migration boundary (`27V`): every user-facing message is the catalog's
-    /// `sm `-prefixed base-tip prose. Every code fills its named params — a de-passthrough'd code
-    /// interpolates its sealed foreign values into words the register owns.
+    /// The message/help composition the render owes a payload: the REGISTER owns the sentence, the
+    /// payload's sealed values fill its holes, and the help register follows on its own
+    /// `  = help: ` continuation line.
+    ///
+    /// Driven through a SYNTHESIZED catalog, not the committed one. Pinning the real registers'
+    /// bytes made this test the second owner of two case-owned sentences, so the sanctioned prose
+    /// loop broke it from a crate its author never opens — `render-form-unwelded`'s own failure
+    /// mode. The composition is what this seat is responsible for, and a two-row fixture states it
+    /// exactly, holes and all. (Whether the COMMITTED registers still carry their `sm ` migration
+    /// prefix is `message_registers_are_sm_or_unwritten`'s corpus-wide job, keyed to
+    /// `is_case_owned` — never a byte copy here.)
     #[test]
-    fn catalog_messages_are_sm_prefixed_and_param_filled() {
+    fn a_register_owns_the_sentence_and_the_payload_fills_its_holes() {
         let i = Interner::default();
+        let catalog = vec![
+            crate::catalog::OwnedEntry {
+                slug: "site-unresolvable".to_owned(),
+                when_fires: String::new(),
+                why: String::new(),
+                message: Some(
+                    "{{count}} {{site_word}} unprobed: {{names}} -- see `dorc why`".to_owned(),
+                ),
+                help: crate::catalog::HelpRegister::Written("site runs `{{excerpt}}`".to_owned()),
+                params: Vec::new(),
+            },
+            crate::catalog::OwnedEntry {
+                slug: "render-heredoc-refused".to_owned(),
+                when_fires: String::new(),
+                why: String::new(),
+                message: Some(
+                    "refuses to {{verb}} a heredoc-bearing command (`{{command}}`)".to_owned(),
+                ),
+                help: crate::catalog::HelpRegister::Absent,
+                params: Vec::new(),
+            },
+        ];
+        let arrangements = crate::arrangement::owned_arrangements();
+        let ctx = RenderCtx::new(&catalog, &arrangements);
+
         let pass = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
@@ -4367,12 +4461,10 @@ mod tests {
             span(0, 1),
         );
         assert_eq!(
-            render_body(&pass, &i),
+            render_body_with(&ctx, &pass, &i),
             concat!(
-                "sm 1 site run unprobed (no read-only check could be shipped): ",
-                "3 sites run unprobed -- run `dorc why` for the per-site detail ",
-                "(the apply runs each anyway, to stay safe)\n",
-                "  = help: sm site runs `3 sites run unprobed`"
+                "1 site unprobed: 3 sites run unprobed -- see `dorc why`\n",
+                "  = help: site runs `3 sites run unprobed`"
             ),
             "the register owns the sentence; the sealed values fill its holes"
         );
@@ -4384,18 +4476,10 @@ mod tests {
             }),
             span(0, 1),
         );
-        let body = render_body(&tmpl, &i);
-        assert!(
-            body.starts_with("sm leaf-exact render refuses to guard"),
-            "{body}"
-        );
-        assert!(
-            body.contains("(`cat <<EOF`)"),
-            "command param filled: {body}"
-        );
-        assert!(
-            body.contains("\n  = help: sm split the heredoc body"),
-            "catalog help renders sm-prefixed: {body}"
+        assert_eq!(
+            render_body_with(&ctx, &tmpl, &i),
+            "refuses to guard a heredoc-bearing command (`cat <<EOF`)",
+            "an Absent help register adds no continuation line"
         );
     }
 

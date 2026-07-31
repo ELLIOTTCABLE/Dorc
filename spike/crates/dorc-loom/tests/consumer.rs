@@ -356,10 +356,14 @@ fn applied_template_regenerates_complete_multi_replay_case() {
     let baseline = consumer
         .editable_baseline(&case)
         .expect("editable baseline");
-    // Taken from the render rather than spelled here: the seat owns the wrap, so a literal copy of
-    // the sentence would go stale the first time its layout moved.
+    // Taken from the render rather than spelled here: the seat owns the wrap AND the words are
+    // loom-editable, so a literal copy would go stale the first time either moved. What this run
+    // must be is a real message section carrying the payload's own coordinate.
     let original = message_section_text(&baseline);
-    assert!(original.starts_with("sm coordinate sm.dorc.Package:nginx resolved DANGLING"));
+    assert!(
+        original.contains("sm.dorc.Package:nginx"),
+        "the message section carries the payload's coordinate: {original:?}"
+    );
     let dirty = baseline.render().text().replace(
         &original,
         "{{coord}} is dangling; inspect {{coord}} before applying",

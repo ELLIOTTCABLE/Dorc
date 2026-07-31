@@ -95,11 +95,23 @@ fn clean_book_is_silent_with_a_positive_sentence() {
         Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),
     );
     assert!(clean.findings.is_empty());
+    // Which SENTENCE, not which bytes: the clean and summary rows are both editable prose, and a
+    // literal copy of one here would make authoring better words a lint-crate failure
+    // (`render-form-unwelded`). Asking the registry keeps the real assertion — that a findings-free
+    // report reaches for the clean row rather than the summary one.
     let human = render::render_human(&dorc_aid::RenderCtx::production(), &clean);
-    assert!(
-        human.contains("clean -- nothing found"),
-        "positive clean sentence: {human}"
-    );
+    let clean_words = dorc_aid::arrangement::ArrangementLookup::words_exact(
+        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
+        "lint-clean-sentence",
+        None,
+    )
+    .expect("the clean row is committed");
+    for run in clean_words.iter().filter(|run| !run.trim().is_empty()) {
+        assert!(
+            human.contains(run.trim()),
+            "clean sentence missing {run:?}: {human}"
+        );
+    }
 }
 
 #[test]

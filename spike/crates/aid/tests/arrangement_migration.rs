@@ -1,79 +1,69 @@
-//! Byte-identity pins for the chrome migrated into the arrangement registry
+//! What the arrangement registry owes its callers
 //! (`289:rul-arrangement-home-is-registry-plus-transcripts`).
 //!
-//! The migration is a STORAGE move: every migrated line must render exactly the bytes its
-//! hardcoded predecessor did. Most of the moved chrome is covered by the e2e/loom goldens
-//! already, but three stderr lines — the plan-summary yardstick, the decision-digest, and the
-//! why-pointer — are asserted by NOTHING in the corpus, so moving them would have been an
-//! unwitnessed change. Each expectation below is the pre-migration literal, frozen.
+//! Two different jobs live here, and the difference is which pin OWNS the bytes.
 //!
-//! These are not render-form contracts (`27V:rul-output-form-unwelded` still holds): a
-//! deliberate rewording updates the entry AND its pin together. What they catch is the accident —
-//! a dropped separator, a lost space, a word-order slip in the ordered-word sequence.
+//! The value-interleaving ARITHMETIC (`words[0] v0 words[1] v1 …`, word runs = values + 1) is
+//! stated over a synthesized row: it is a property of the seat, so it needs no committed prose and
+//! must survive every rewording of it.
+//!
+//! A committed row's own BYTES are pinned here only while nothing else pins them. A row rendered by
+//! a committed transcript already has the sanctioned pin — which re-blesses freely with the prose
+//! (`27V:rul-output-form-unwelded`) — so a literal here would be a second, invisible owner, and a
+//! prose edit through `mise run loom:compile`/`loom:promote` would redden a crate its author never
+//! opens. What is left is the genuinely FACELESS residue: rows no case owns and no transcript
+//! renders, whose only net is a literal.
 
-use dorc_aid::arrangement::{CONST_ARRANGEMENTS, arrangement_sentence};
+use dorc_aid::arrangement::{
+    CONST_ARRANGEMENTS, OwnedArrangement, OwnedWords, arrangement_sentence,
+};
 
 fn rendered(slug: &str, values: &[&str]) -> String {
     arrangement_sentence(&CONST_ARRANGEMENTS, slug, None, values)
 }
 
-/// `emit_plan_summary`'s yardstick line, previously one `format!` in `cli/src/main.rs`.
-#[test]
-fn the_plan_summary_line_is_byte_identical() {
-    assert_eq!(
-        rendered("cli-plan-summary-line", &["12", "5", "1", "3", "3", "0"]),
-        "dorc: plan-summary sites=12 elide=5 omit=1 guard=3 run=3 may-alias=0"
-    );
-}
-
-/// The decision-digest line that follows it.
-#[test]
-fn the_decision_digest_line_is_byte_identical() {
-    assert_eq!(
-        rendered("cli-decision-digest-line", &["deadbeef"]),
-        "dorc: decision-digest deadbeef"
-    );
-}
-
-/// The aggregate why-pointer a `dorc plan` preview closes with.
-#[test]
-fn the_why_pointer_line_is_byte_identical() {
-    assert_eq!(
-        rendered("cli-why-pointer-line", &["webhost.sh"]),
-        "dorc: run `dorc why` for the per-site cause-chains, or `dorc why webhost.sh:N` to query a source line"
-    );
-}
-
-/// The lint report's two sentences. Both ARE golden-covered, but pinning them here keeps the
-/// value-interleaving contract (words = values + 1, in this order) readable in one place —
-/// including the plural-suffix positions, which are the easiest thing to mis-order.
-#[test]
-fn the_lint_sentences_are_byte_identical() {
-    assert_eq!(
-        rendered("lint-clean-sentence", &["3", "s", "1", ""]),
-        "dorc lint: clean -- nothing found across 3 files, 1 source."
-    );
-    assert_eq!(
-        rendered(
-            "lint-summary-sentence",
-            &["4", "s", "0", "s", "1", "", "1", ""]
-        ),
-        "dorc lint: 4 errors, 0 warnings, 1 info across 1 file."
-    );
-}
-
-/// The four why-lens remediation hints, previously a class-keyed `&'static str` match in
-/// `aid/src/diag.rs`. Like the three stderr lines above they are faceless — no transcript renders
-/// them — so these literals are the whole net; the `[tag]` suffix is part of the prose
-/// (`expected-why` needles substring-match it).
+/// The arithmetic every value-bearing chrome line is composed by, over a row nobody owns.
 ///
-/// No longer the pre-migration bytes: `28G` Phase W1 respelled them twice, and the net now pins the
-/// respell rather than the freeze. `elide` was ENGINE vocabulary reaching a user surface (the
-/// admin-English carve, `28E` §8), and the em-dash violated `rul-ascii-output-forever`
-/// (`28E` §0, human-typed). A migration net freezes bytes against ACCIDENTAL drift; it never
-/// outranks a ruling that the frozen bytes were wrong.
+/// The empty word run is the case worth stating: a plural suffix rides in one, and two values
+/// separated by nothing is exactly the position an off-by-one silently swaps.
 #[test]
-fn the_remediation_hints_are_byte_identical() {
+fn a_chrome_line_interleaves_its_values_between_its_word_runs() {
+    let registry = vec![OwnedArrangement {
+        slug: "harness-sentence".to_owned(),
+        occurrence: None,
+        when_used: "the interleaving fixture".to_owned(),
+        why: "the interleaving fixture".to_owned(),
+        words: OwnedWords::Authored(vec![
+            "found ".to_owned(),
+            " file".to_owned(),
+            " across ".to_owned(),
+            " source".to_owned(),
+            ".".to_owned(),
+        ]),
+    }];
+    assert_eq!(
+        arrangement_sentence(&registry, "harness-sentence", None, &["3", "s", "1", ""]),
+        "found 3 files across 1 source."
+    );
+    assert_eq!(
+        arrangement_sentence(&registry, "harness-sentence", None, &["1", "", "2", "s"]),
+        "found 1 file across 2 sources."
+    );
+}
+
+/// The FACELESS why-lens remediation hints, previously a class-keyed `&'static str` match in
+/// `aid/src/diag.rs`. No case owns them and no transcript renders them, so these literals are the
+/// whole net; the `[tag]` suffix is part of the prose (`expected-why` needles substring-match it).
+///
+/// `why-remediation-resolve-dynamism` USED to be pinned here beside them and no longer is: it is
+/// owned by `why-reason-cmdsub-opener.loom`, whose committed transcript renders it. Its bytes have a
+/// home that re-blesses with a prose edit, and a second copy here would only refuse one.
+///
+/// These are not the pre-migration bytes either: `28G` Phase W1 respelled them twice, and the net
+/// pins the respell rather than the freeze. A migration net freezes bytes against ACCIDENTAL drift;
+/// it never outranks a ruling that the frozen bytes were wrong.
+#[test]
+fn the_faceless_remediation_hints_are_byte_identical() {
     assert_eq!(
         rendered("why-remediation-provide-model", &[]),
         "to skip it, an oracle must declare a read-only probe for this kind [provide-model]"
@@ -81,10 +71,6 @@ fn the_remediation_hints_are_byte_identical() {
     assert_eq!(
         rendered("why-remediation-declare-identity", &[]),
         "to skip it, add the missing kind/selector/Query declaration [declare-identity]"
-    );
-    assert_eq!(
-        rendered("why-remediation-resolve-dynamism", &[]),
-        "to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]"
     );
     assert_eq!(
         rendered("why-remediation-structural", &[]),
