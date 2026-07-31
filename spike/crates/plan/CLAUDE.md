@@ -82,6 +82,26 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
 - **never-synthesized-never-mutating** — never engine-synthesized sh; never
   declared/claimed output in guard position; a body that provably mutates lifts
   nowhere (`271:rul-no-mutating-guards`).
+- **pinned-definitions-are-the-artifact's-binding** (`28K` §4
+  `rul-runtime-resolution-never-load-bearing`) — `Plan::pinned_definitions` decides, for the whole
+  artifact, which body each guard invokes and under what name; the render consults it and nothing
+  re-derives a binding at runtime. A misalignment there could swap WHOSE judgment executes, which is
+  pope-sin tier (`271:rul-sin-ordering`), so it is structural rather than three mechanisms agreeing.
+  Three rules in order: CONTENT-DEDUP (byte-identical bodies are one definition); ALREADY-IN-PLACE
+  (a body the book's own text defines at top level with the same bytes is not copied — the artifact
+  never carries two same-named funcdefs by ANY route, which is what dissolves the `reserved.rs`
+  tension; the positional regime guarantees a book-sited definition PRECEDES its guards, so nothing
+  is re-derived); HASH-MUNGE (two distinct bodies under one name each emit once as
+  `<name>_h<digest>`, digest over the definition BYTES). The retired dedup-by-funcname emitted the
+  first body and let both sites invoke it. A munged name cannot parse as a `__role`, so a
+  re-ingested artifact reads the guard as an opaque call ⇒ conservative run (`23A:P-reingest`).
+  `Plan::render_sh` is the flat DST render and emits no preamble at all — never wire a second
+  binding authority there.
+- **the-pinned-unit-includes-the-closure** — what a guard's preamble ships is the stripped definition
+  PLUS `dorc_oracle::closure`'s prefix (helpers + file-level constants). Two riders: a CONTESTED
+  closure withholds the VOUCH (no guard, no elide, the site runs), and the vouch's `check_cmds` —
+  the dual-rail `guardcmd` allowlist — must cover the closure's own commands, because once a helper
+  travels with the definition the real check-command lives in the helper.
 - **check-tax-awareness** — a guarded site pays its check on every apply,
   forever (`KNOBS:kPROBING`): an expensive check must earn its vouch or
   just-run. Planner economics, never a license question.

@@ -45,6 +45,28 @@ discipline: one rule per bullet, slugged; append to the matching section.
   decline-fallthrough cascade (`28K` §6), which outlived its stage-D fix inside the ship lane. A
   decline by the winner is a decline. The site-keyed acts then NARROW that answer positionally
   (`analysis/CLAUDE.md visibility-is-full-positional`); the two compose, they never compete.
+- **closure-travels-with-the-definition** (`28K` §4 `rul-pin-by-definition-bytes`) — a role funcdef's
+  span does not carry the helpers it calls or the file-level constants it reads, so `crate::closure`
+  is what every emitting seat asks before shipping a body: `HelperIndex::build` over the ordered
+  sources ONCE per unit, `closure_for` per definition. Measured before it existed: a verdict body
+  calling a helper lifted clean and shipped alone, which is usually a safe rc-127 decline and is NOT
+  reliably one (a body that ignores the helper's status and answers 0 from a later test reports
+  converged off a helper that never ran — priority-1 under-execute). Three sub-rules: helpers resolve
+  across the WHOLE loaded set (`28M` §7 `tune-explicit-composition-is-sanctioned` — the helpers-file +
+  thin-entrypoints package shape is the community-critical one); byte-identical declarations
+  content-dedup while DIFFERING ones REFUSE (`28M` §8's diamond rider — sh's own last-wins would
+  silently rebind an author's helper, and no admin spelling picks between two helpers of one name);
+  and constants ride per CONTRIBUTING FILE rather than per reference, because `ParamComplex` discards
+  the name so a reference-driven capture could not prove itself complete.
+- **only-load-inert-sources-contribute** (`28K` §2a) — `HelperIndex` indexes a source only when its
+  WHOLE top level is provably inert to load. That inertness IS the license to hoist a declaration
+  above somebody's book, and it is also what keeps the BOOK out of the index without threading its
+  id: a runbook has commands at top level, so its helpers stay where its author put them.
+- **a-definitions-file-is-not-a-mark-fragment** — `validate` runs `lint_mark_subset` only for a
+  source with no `__` AND no top-level funcdef. `__`-freedom alone read every helpers-only file — and
+  every ordinary BOOK carrying a function — as a bare marked-statement fragment and errored
+  `predict-out-of-dialect` at the funcdef header (eight corpus cases carried that false error). The
+  fragment reading is for files that define nothing, which is structurally what the `mark-*` cases are.
 - **safe-across-vouch** (né tolerates-vouch; `27C` §2, mark spelled `: safe-across
   <dim>` per `281` §5) — per-function, per-dimension; asserts "this
   body's effects are read-only BY DESIGN, not by privilege-starvation"; gates

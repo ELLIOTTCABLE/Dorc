@@ -112,6 +112,19 @@ discipline: one rule per bullet, slugged; append to the matching section.
   no license — the `erasure-is-applied-once-never-consulted` shape. Never re-plumb this as a
   per-seat predicate: a flag every present and future consumer must remember is the surface
   that rule exists to refuse.
+- **one-helper-index-two-lanes** (`28K` §4) — `dorc_oracle::closure::HelperIndex` is built ONCE at
+  this edge, from the same source vector the bodies are sliced out of, and threaded into BOTH the
+  guard lane (`build_vouches`) and the probe's three ship seats (`ship_predict_body` /
+  `ship_verdict_body` / `ship_predict_stage`). Building it per site would re-parse every source per
+  site and, worse, leave two copies of the resolution rule to drift — the failure
+  `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` records for the role lane. The
+  SURVIVAL/kind lanes (`touches`, resolvers, reaches) still ship closure-less bodies; widening them
+  is its own dispatch, exactly as widening them to the source-wide vectors is.
+- **helper-conflicts-report-at-the-load-edge** — `helper_conflict_diagnostics` mints one
+  `helper-declaration-contested` per NAME, spanned at the second declaration, whether or not any
+  pinned definition reaches it: loading both sources already rebound the name for every caller. A
+  per-definition report would be a correlated cascade pointing N-1 authors at somebody else's file
+  (`28O:dec-one-diagnostic-per-file-not-per-item`).
 - **speculate-and-intercept** — the probe model resolves probe-gated branches by
   running the read-only check for real (oracles intercept; not Ansible
   check-mode blindness).
