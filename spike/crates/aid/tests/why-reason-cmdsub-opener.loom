@@ -22,7 +22,7 @@ $ dorc why book.sh:4 --book=book.sh
 
    4|apt-get ran RATHER THAN guarded:
       ran because operand 3 is a command-substitution `$(...)` or runtime-dynamic value --
-      its value couldn't be resolved (first seen at 192:239 `apt-get install -y "$(cat
+      its value couldn't be resolved (first seen at 4:1 `apt-get install -y "$(cat
       /etc/webhost/pkgset)"`); so dorc runs it, to stay safe (when unsure, run). to skip it,
       make the operand a literal Dorc can resolve+probe [resolve-dynamism]
 

@@ -3944,9 +3944,14 @@ fn remediation_tag(class: RemediationClass) -> &'static str {
     }
 }
 
-/// A ⊤-cause site as the fragments it renders from: the no-caret region form `<lo>:<hi>`, then the
+/// A ⊤-cause site as the fragments it renders from: the no-caret `<line>:<col>` locus, then the
 /// book's own bytes quoted, when the span is in range (the drop-A fix — the span reaches the user).
 /// Referent-agnostic: the source text is shown for orientation, never decoded.
+///
+/// The coordinate is [`line_col`]'s, exactly as [`frame_block`]'s locus is: this seat used to print
+/// the span's raw BYTE OFFSETS in the same `N:M` shape the rest of the surface spells line:col in,
+/// so a reader following the number landed on the wrong line and had no way to tell
+/// (**rul24-lineno-identity**: one line-number space, the source file's).
 ///
 /// The split is the point (`ask-why-lens-stderr-unencoded`): the coordinate is ours and computed,
 /// the excerpt is the BOOK's, so it enters as a foreign fragment and is encoded at that mint —
@@ -3955,7 +3960,8 @@ fn remediation_tag(class: RemediationClass) -> &'static str {
 fn cause_locus(span: Span, src: &str) -> Vec<Said> {
     let lo = span.lo.0 as usize;
     let hi = span.hi.0 as usize;
-    let coordinate = Said::Value(format!("{}:{}", span.lo.0, span.hi.0));
+    let (line, col) = line_col(src, lo);
+    let coordinate = Said::Value(format!("{line}:{col}"));
     match src.get(lo..hi) {
         Some(text) => vec![
             coordinate,
@@ -4694,7 +4700,7 @@ mod tests {
         assert_eq!(
             exp.text(&RenderCtx::production()),
             "ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- \
-             its value couldn't be resolved (first seen at 11:20 `tall $(da`); so dorc runs it, to \
+             its value couldn't be resolved (first seen at 1:12 `tall $(da`); so dorc runs it, to \
              stay safe (when unsure, run). to skip it, make the operand a literal Dorc can \
              resolve+probe [resolve-dynamism]"
         );
