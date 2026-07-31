@@ -397,7 +397,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "the authority-disclosure line for the probe-escalation policy. cli/main.rs (SPANLESS). Consent legibility.",
         why: "27C §2: the disclosure varies by dial (default vs --escalate-any-probe). PASSTHROUGH — the policy text rides `detail`.",
         params: &["detail"],
-        example: "sm escalation policy: probe re-uses connection authority for `tolerates:`-vouched functions only (default)",
+        example: "sm escalation policy: probe re-uses connection authority (root) for `tolerates:`-vouched functions only (default); entry forms: sudo -n. Forbid with --no-probe-escalation; widen with --escalate-any-probe.",
         message: Some("sm {{detail}}"),
         help: HelpRegister::Absent,
     },
