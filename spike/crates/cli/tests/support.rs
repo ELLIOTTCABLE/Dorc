@@ -162,6 +162,11 @@ pub(crate) fn discover_looms(roots: &[PathBuf]) -> Vec<LoomCase> {
     let mut cases: Vec<LoomCase> = Vec::new();
     for root in roots {
         for (name, path) in sorted_entries(root) {
+            // A SyncThing conflict copy beside a case is never a case (dorc-loom's walkers
+            // hold the same rule); loading one is a duplicate-slug refusal at best.
+            if name.contains(".sync-conflict-") {
+                continue;
+            }
             let found = if path.is_dir() {
                 multi_file_loom(&name, &path)
             } else if path.extension().is_some_and(|ext| ext == "loom") {

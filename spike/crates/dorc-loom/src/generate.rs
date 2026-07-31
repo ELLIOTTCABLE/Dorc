@@ -242,6 +242,9 @@ fn load_corpus_keyed_by(dir: &Path, key: &str) -> Result<BTreeMap<String, Case>,
         if path.extension().is_none_or(|extension| extension != "loom") {
             continue;
         }
+        if crate::is_sync_residue(&path) {
+            continue;
+        }
         let text = std::fs::read_to_string(&path)
             .map_err(|error| format!("read case {}: {error}", path.display()))?;
         let case = Case::parse(&text)
@@ -388,6 +391,28 @@ mod tests {
              -- replay --\n$ dorc plan --book=book.sh\nerror[{slug}]: placeholder\n"
         );
         Case::parse(&text).expect("scaffolded case parses")
+    }
+
+    /// The corpus lives in a live-synced tree: a `foo.sync-conflict-<stamp>.loom` beside
+    /// `foo.loom` must be residue, never a duplicate defining case (it reddened the gate
+    /// twice on 2026-07-31). Skipped means SKIPPED — the residue may hold garbage.
+    #[test]
+    fn a_sync_conflict_copy_is_never_a_case() {
+        let dir =
+            std::env::temp_dir().join(format!("dorc-loom-sync-residue-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("create temp corpus");
+        let real = "---\ncode: probe-slug\nwhen-fires: t\nwhy: t\n---\n\
+                    -- replay --\n$ dorc plan --book=book.sh\nerror[probe-slug]: placeholder\n";
+        std::fs::write(dir.join("probe-slug.loom"), real).expect("write case");
+        std::fs::write(
+            dir.join("probe-slug.sync-conflict-20990101-000000-XXXXXXX.loom"),
+            "NOT EVEN A CASE",
+        )
+        .expect("write residue");
+        let cases = load_corpus_by_slug(&dir).expect("residue is skipped, not parsed");
+        assert_eq!(cases.len(), 1, "exactly the real case loads");
+        assert!(cases.contains_key("probe-slug"));
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     /// The mint seam: a case whose slug has no mirror row still reaches the generated lock, as an

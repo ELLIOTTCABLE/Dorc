@@ -115,6 +115,7 @@ impl CaseOwnership {
                 if path
                     .extension()
                     .is_some_and(|extension| extension == "loom")
+                    && !crate::is_sync_residue(&path)
                 {
                     paths.push(path);
                 }

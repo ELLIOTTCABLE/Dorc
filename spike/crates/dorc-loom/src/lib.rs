@@ -86,6 +86,15 @@ pub const ARRANGEMENT_FIELD: &str = "arrangement";
 /// lines are the author's and survive byte for byte.
 pub const ARRANGEMENT_LINE_FIELD: &str = "arrangement-line";
 
+/// Whether a path is a `SyncThing` conflict copy rather than a case — the corpus lives in a
+/// live-synced tree, and a `foo.sync-conflict-<stamp>.loom` beside `foo.loom` would otherwise
+/// load as a duplicate defining case (it broke the gate twice on 2026-07-31).
+pub(crate) fn is_sync_residue(path: &std::path::Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.contains(".sync-conflict-"))
+}
+
 /// The semantic name of the `index`-th value interleaved into a chrome line.
 ///
 /// Positional rather than declared: an arrangement entry stores WORDS and never grew a param
