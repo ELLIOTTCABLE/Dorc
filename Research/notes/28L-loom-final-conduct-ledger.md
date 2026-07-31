@@ -653,6 +653,53 @@ lanes thread by fresh census, never by the map's count.
   list; un-faceable residue LISTED with mechanical reasons for the ledger;
   (4) the framed-header admission refusal prints the expected header
   (rul-refusals-name-the-next-command).
+- **x2c LANDED** (`ai/r28-loom-x2c` @ `20f821f2`, base `6b23c5d8`; both legs green,
+  Win 1662 / WSL 1658; rebasing over the X2b fold now). The foreign-text SEAL:
+  `aid/src/foreign.rs` — `ForeignBytes` (private, no raw accessor, exits only via
+  capped sinks; `from_os_error` typed edge + `from_io_edge` loudly-named and
+  lexically fenced, gate proven) and `ForeignText` (the encoded seal);
+  `Said::Foreign`/`RenderPart::ForeignText`/`ParamText::Foreign` all carry it —
+  the public-variant-field hole is CLOSED; `is_foreign_param` DELETED (the catalog
+  reads a hole's class off the TYPE). Bounded deviation accepted: weft's own
+  `Run::foreign` stays stringly (weft-deps-nothing); the seal binds at
+  `aid::weave::foreign`, the only Dorc-side route in. Census durable at
+  `notes/296`: 23 sites (not the hand-off's 18), and the name-heuristic itself
+  missed a genuine foreign relay — (a) 5 foreign / (b) 17 ours (6 carrying ~55
+  N-sentence details) / (c) 2 mixed; the "syntax-*/predict-* relay foreign bytes"
+  claim is FALSE (our own format!ed sentences). Ten codes de-passthrough'd
+  VERBATIM (zero new codes; ratchet unmoved); `aid-unloaded-sibling-oracle`'s
+  fixture had been INVENTING a sentence the emitter never produces — corrected.
+  TopCause migrated (7 hand-seeded components; `TopCause::describe` deleted;
+  `core` now holds ZERO user-facing strings; zero byte movement). Whylog ripple:
+  EMPTY (measured — no adapter, no machinery, the human's no-cruft ack satisfied
+  by absence).
+- **rul-reason-enums-not-sibling-codes** (conductor; settles
+  `296:tc-many-sentences-one-slug`) — for the 6 codes carrying ~55
+  genuinely-different reason-sentences in one `detail`, the sibling-code remedy is
+  REJECTED (structurally blocked by defining-case-catalog × the shrink-only
+  ratchet, and disproportionate: the catalog rows would differ only in sentence).
+  The TopCause shape IS the remedy: typed reason enum in the emitting crate →
+  enum→slug map in `aid` → one arrangement prose-component per reason,
+  hand-seeded VERBATIM. Consistency with `AID-NEEDS:law-codes-vary-by-world-not-
+  grammar`: the law bars grammar-fit siblings and prescribes world-variant ones —
+  these reasons are sub-code render variants of ONE diagnostic world, exactly the
+  precedent TopCause + remediation_hint set; components, not codes. BUILD: lane
+  x2f. EXCEPTION: `transport-not-attempted` IS two worlds (two producers:
+  platform spawn-error vs our marker) — it gets the genuine sibling PAIR
+  (`296:tc-transport-not-attempted-is-two-worlds` settled the world-variant way);
+  x2f mints it with defining cases.
+- **fnd-registry-words-escape-the-ascii-law** (x2c) — `⊤` in
+  `unmodeled-wall-inventory`'s message register reaches output raw (registry
+  words are never encoded; the ASCII sweep's allowlist excuses it). RULING:
+  ledger row, no machinery — registry words are authored prose and are now
+  loom-editable BY THIS ARC'S OWN PRODUCT; the human's prose pass respells the
+  glyphs or keeps them deliberately; encoding our own words would mangle them.
+  The allowlist stays the documented exception.
+- **x2f QUEUED** (after the x2c fold; aid + emitting-crates territory): the 6
+  reason-enum migrations (~55 sentences, verbatim, per the ruling) · the
+  transport-not-attempted sibling pair · the stale `PASSTHROUGH` metadata
+  wording sweep (with `--accept-metadata`, x2d's gate makes it deliberate) ·
+  x2c's aid/CLAUDE.md `passthrough-is-type-gated` bullet reviewed at fold.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
