@@ -2,6 +2,7 @@
 code: carry-netns-on-net-kernel-forbidden
 when-fires: a kind's per-netns `net-kernel` store claims `invariant:netns` (a contradiction). oracle/carry.rs lift. `{kind_munged}` = the munged kind.
 why: 27C §4(a): network kernel state is namespaced; the false invariance line is dropped.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- carry-netns-on-net-kernel-forbidden && mise run loom:promote -- carry-netns-on-net-kernel-forbidden`. `mise run loom:vars -- --all carry-netns-on-net-kernel-forbidden` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

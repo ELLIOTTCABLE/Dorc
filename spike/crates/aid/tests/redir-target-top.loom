@@ -2,6 +2,7 @@
 code: redir-target-top
 when-fires: a write-redirect (`>`/`>>`) to a dynamic/unresolved target joins ⊤. effect.rs classify Redir arm (né dq-redir-target-top).
 why: y-1 / 21F imp-1: the target is unresolvable so no per-path `file` cell can be keyed. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- redir-target-top && mise run loom:promote -- redir-target-top`. `mise run loom:vars -- --all redir-target-top` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

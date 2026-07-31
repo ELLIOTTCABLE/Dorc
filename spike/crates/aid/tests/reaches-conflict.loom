@@ -2,6 +2,7 @@
 code: reaches-conflict
 when-fires: two oracle files declare one kind's reach-function. cli/main.rs. `{kind}` = the kind, `{count}` = the reach-function count.
 why: 24G §4 at-most-one-reaches-per-kind: BOTH refused (never first-wins-silently); the kind's footprints do not expand.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- reaches-conflict && mise run loom:promote -- reaches-conflict`. `mise run loom:vars -- --all reaches-conflict` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

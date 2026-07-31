@@ -2,6 +2,7 @@
 code: heavy-context-no-tolerance
 when-fires: a body reads identity but carries no tolerance vouch. oracle/entry.rs hint_heavy_context_no_vouch (reverse-direction corroboration hint).
 why: 27C §6 (recognize-never-license): a one-line vouch would make it context-shiftable. Static.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- heavy-context-no-tolerance && mise run loom:promote -- heavy-context-no-tolerance`. `mise run loom:vars -- --all heavy-context-no-tolerance` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

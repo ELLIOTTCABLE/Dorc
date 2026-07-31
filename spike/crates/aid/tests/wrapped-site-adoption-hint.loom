@@ -2,6 +2,7 @@
 code: wrapped-site-adoption-hint
 when-fires: a wrapped BOOK site degraded on a missing `tolerates:` vouch. cli/main.rs (27N). Spanned (the wrapped site's span).
 why: 27C §2 (recognize-never-license): the one-line adoption hint. PASSTHROUGH — the hint text rides `detail`.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- wrapped-site-adoption-hint && mise run loom:promote -- wrapped-site-adoption-hint`. `mise run loom:vars -- --all wrapped-site-adoption-hint` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

@@ -2,6 +2,7 @@
 code: effect-kind-disagreement
 when-fires: a check's annotation kind disagrees with the effect-map kind for the same verb; the annotation wins. effect.rs (SPANLESS — mid-resolution, no leaf).
 why: 204 §6 open seam: declared identity wins. PASSTHROUGH — the disagreement rides `detail`.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- effect-kind-disagreement && mise run loom:promote -- effect-kind-disagreement`. `mise run loom:vars -- --all effect-kind-disagreement` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

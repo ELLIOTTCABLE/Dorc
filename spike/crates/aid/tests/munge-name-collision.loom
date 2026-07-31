@@ -2,6 +2,7 @@
 code: munge-name-collision
 when-fires: two DISTINCT source names munge to one sh funcname. oracle/reserved.rs. `{count}` interpolates twice (the count and the funcdef count).
 why: non-injective munge: refuse-and-run (never silently last-writer-wins).
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- munge-name-collision && mise run loom:promote -- munge-name-collision`. `mise run loom:vars -- --all munge-name-collision` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2
