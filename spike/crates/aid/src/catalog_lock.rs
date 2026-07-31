@@ -17,7 +17,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "site-unresolvable",
         when_fires: "a probe could not ship a read-only check for one or more command-sites, so the apply runs each. cli unresolvable_diagnostics (né dq-site-unresolvable).",
-        why: "kFAIL-perform: unsure ⇒ run. PASSTHROUGH — `detail` reproduces BOTH the aggregate label (N sites …) AND the folded `\\n  = note: site runs `{excerpt}`` line the old render_body emitted, so the migrated output is byte-identical bar the `sm ` prefix.",
+        why: "kFAIL-perform: unsure ⇒ run. The holes are typed: `{count}` and `{site_word}` carry the aggregate label, and `{names}`/`{excerpt}` are book-derived bytes sealed as not-ours at the edge that read them.",
         params: &["count", "site_word", "names", "excerpt"],
         example: "sm 2 sites run unprobed (no read-only check could be shipped): `make install`, `ldconfig` -- run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)",
         message: Some("sm {{count}} {{site_word}} run unprobed (no read-only check could be shipped): {{names}} -- run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)"),
@@ -62,7 +62,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "syntax-unsupported",
         when_fires: "the parser hit an unmodeled/out-of-scope sh construct; it becomes an `Unsupported` ⊤-node and parsing continues.",
-        why: "inv-top-reject: under-modeling is a loud correctness boundary. PASSTHROUGH — the parser's own description of the construct rides `detail`.",
+        why: "inv-top-reject: under-modeling is a loud correctness boundary. The reason is typed: a SyntaxUnsupportedReason variant per unmodeled construct, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["detail"],
         example: "sm background/async `&` is not in the modeled subset",
         message: Some("sm {{detail}}"),
@@ -71,7 +71,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "syntax-malformed",
         when_fires: "the parser hit a structurally malformed sh construct (a parse error); parsing continues fail-soft.",
-        why: "inv-no-throw: errors are data. PASSTHROUGH — the parser's description rides `detail`.",
+        why: "inv-no-throw: errors are data. The reason is typed: a SyntaxMalformedReason variant per structural expectation, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["detail"],
         example: "sm expected `done` to close the loop",
         message: Some("sm {{detail}}"),
@@ -80,7 +80,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "cfg-top-node",
         when_fires: "an `Unsupported` AST ⊤-node became a CFG `Top` node (an unsupported construct, or the CFG nesting bound). cfg.rs lower_top + fresh(Top).",
-        why: "the conservative ⊤-absorbing semantics; any command after it may mutate anything. PASSTHROUGH — the CFG builder's reason rides `detail`. NOTE plain-language pass owed: slug carries top/⊤ wording (law-plain-language-surfaces, 24H ack-4).",
+        why: "the conservative ⊤-absorbing semantics; any command after it may mutate anything. The reason is typed: two CfgTopNodeReason variants, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes). NOTE plain-language pass owed: slug carries top/⊤ wording (law-plain-language-surfaces, 24H ack-4).",
         params: &["detail"],
         example: "sm unsupported construct (unknown): un-probeable and un-skippable",
         message: Some("sm {{detail}}"),
@@ -89,7 +89,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "cfg-errexit-unknown",
         when_fires: "the errexit-region pass hit an unknown/unmodeled command; the `set -e` failure-edge is conservatively assumed. cfg.rs (SPANLESS — spans a region).",
-        why: "over-approximate, sound. PASSTHROUGH — the pass's description rides `detail`.",
+        why: "over-approximate, sound. The payload is field-less: the reason was one fixed sentence, so it is the code's own register.",
         params: &[],
         example: "sm errexit state is unknown at one or more commands; failure-edges added conservatively (over-approximate, sound)",
         message: Some("sm errexit state is unknown at one or more commands; failure-edges added conservatively (over-approximate, sound)"),
@@ -98,7 +98,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "cfg-inline-refused",
         when_fires: "a function call could not be inlined. cfg.rs — SEVEN distinct emit paths under one slug: redefinition, recursion, inline-depth budget, unmodeled positional in body, unmodeled write-redirect in body (tc-M2), per-call node budget, per-book node budget. Each names its own reason.",
-        why: "the call runs as an ordinary unmodeled command (MustRun, safe). PASSTHROUGH — the per-path reason rides `detail`.",
+        why: "the call runs as an ordinary unmodeled command (MustRun, safe). The reason is typed: seven CfgInlineRefusedReason variants, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["detail"],
         example: "sm recursive call to `retry` (direct or transitive within the active inline stack); not inlined -- it runs as an ordinary unmodeled command",
         message: Some("sm {{detail}}"),
@@ -107,7 +107,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "cfg-builtin-shadowed",
         when_fires: "a book funcdef shadows a shell builtin the engine relies on (dash resolves a function before a regular builtin). cfg.rs warn_shadowed_relied_builtins.",
-        why: "find-I: builtin-dependent conclusions may be unsound for this book. PASSTHROUGH — the disclosure text rides `detail`; the primary span is the funcdef name_span.",
+        why: "find-I: builtin-dependent conclusions may be unsound for this book. The hole is typed: `{name}` is the shadowing function, which is also the builtin it shadows; the sentence is the code's own register. The primary span is the funcdef name_span.",
         params: &["name"],
         example: "sm function `test` shadows a shell builtin the engine relies on (dash resolves a function before a regular builtin): analysis treats the bare word `test` as the builtin when classifying effects and minting stand-ins, so builtin-dependent conclusions may be unsound for this book",
         message: Some("sm function `{{name}}` shadows a shell builtin the engine relies on (dash resolves a function before a regular builtin): analysis treats the bare word `{{name}}` as the builtin when classifying effects and minting stand-ins, so builtin-dependent conclusions may be unsound for this book"),
@@ -116,7 +116,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "effect-kind-disagreement",
         when_fires: "a check's annotation kind disagrees with the effect-map kind for the same verb; the annotation wins. effect.rs (SPANLESS — mid-resolution, no leaf).",
-        why: "204 §6 open seam: declared identity wins. PASSTHROUGH — the disagreement rides `detail`.",
+        why: "204 §6 open seam: declared identity wins. The holes are typed: `{annotated}` is the kind the annotation declared and `{effect_map}` the kind the effect map holds.",
         params: &["annotated", "effect_map"],
         example: "sm check annotation kind `sm.dorc.Package` disagrees with the effect-map kind `sm.dorc.Service` for this verb -- the annotation (declared identity) wins",
         message: Some("sm check annotation kind `{{annotated}}` disagrees with the effect-map kind `{{effect_map}}` for this verb -- the annotation (declared identity) wins"),
@@ -125,7 +125,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "predict-out-of-dialect",
         when_fires: "a check function body uses a construct outside the check dialect (a strict subset of sh). oracle/predict.rs lift_failure.",
-        why: "out-of-dialect input is a lift failure. PASSTHROUGH — the check parser's description rides `detail`.",
+        why: "out-of-dialect input is a lift failure. The reason is typed: a PredictOutOfDialectReason variant per dialect rule, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["detail"],
         example: "sm statement does not start with a word",
         message: Some("sm {{detail}}"),
@@ -134,7 +134,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "predict-unterminated",
         when_fires: "a check function body is structurally unterminated (missing `;;`/`esac`). oracle/predict.rs lift_failure.",
-        why: "the check cannot be lifted. PASSTHROUGH — the check parser's description rides `detail`.",
+        why: "the check cannot be lifted. The reason is typed: four PredictUnterminatedReason variants, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["detail"],
         example: "sm unterminated function body (expected `}`)",
         message: Some("sm {{detail}}"),
@@ -368,7 +368,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "footprint-incoherent",
         when_fires: "a touches() footprint is incoherent. cli/main.rs — TWO emit paths: the SPANNED own-coordinate canary (footprint omits its own effect coordinate), and the SPANLESS malformed-derived-coordinate refusal (the SPANLESS_SITE_PAYLOADS one).",
-        why: "24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. PASSTHROUGH — the per-path text rides `detail`.",
+        why: "24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. The reason is typed: two FootprintIncoherentReason variants, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["detail"],
         example: "sm touches() footprint omits this command's own effect coordinate (at-least not-within at-most) -- footprint refused, the site walls",
         message: Some("sm {{detail}}"),
@@ -395,7 +395,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "escalation-policy",
         when_fires: "the authority-disclosure line for the probe-escalation policy. cli/main.rs (SPANLESS). Consent legibility.",
-        why: "27C §2: the disclosure varies by dial (default vs --escalate-any-probe). PASSTHROUGH — the policy text rides `detail`.",
+        why: "27C §2: the disclosure varies by dial (default vs --escalate-any-probe). The reason is typed: the payload carries core's own EscalationDial and Capability, and the `{detail}` hole renders the dial's prose-component with the capability word interleaved (28L rul-reason-enums-not-sibling-codes).",
         params: &["detail"],
         example: "sm escalation policy: probe re-uses connection authority (root) for `tolerates:`-vouched functions only (default); entry forms: sudo -n. Forbid with --no-probe-escalation; widen with --escalate-any-probe.",
         message: Some("sm {{detail}}"),
@@ -404,7 +404,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "carried-across-substrate-axis",
         when_fires: "a cross-context elision carried a substrate-axis fact via pure-predicate carry. cli/main.rs. Spanned (the carried site's span).",
-        why: "27C §9: every cross-context elision renders its attribution chain from day one. PASSTHROUGH — the chain text rides `detail`.",
+        why: "27C §9: every cross-context elision renders its attribution chain from day one. The holes are typed: `{axes}` are the crossed axes and `{kinds}` the read kinds with their invariant loci; the sentence is the code's own register.",
         params: &["axes", "kinds"],
         example: "sm pure-predicate carry across fs-view (unflagged, 27C section 4(a)): sm_dorc_File (invariant: line at certsync.oracle.sh:12) -- each vouched invariant across fs-view by its kind-owner's `invariant:` line (vouch-species); the verdict body is engine-proved read-set-closed",
         message: Some("sm pure-predicate carry across {{axes}} (unflagged, 27C section 4(a)): {{kinds}} -- each vouched invariant across {{axes}} by its kind-owner's `invariant:` line (vouch-species); the verdict body is engine-proved read-set-closed"),
@@ -413,7 +413,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "wrapped-site-adoption-hint",
         when_fires: "a wrapped BOOK site degraded on a missing `tolerates:` vouch. cli/main.rs (27N). Spanned (the wrapped site's span).",
-        why: "27C §2 (recognize-never-license): the one-line adoption hint. PASSTHROUGH — the hint text rides `detail`.",
+        why: "27C §2 (recognize-never-license): the one-line adoption hint. The holes are typed: `{provider}` and `{dimension}` name the missing vouch.",
         params: &["provider", "dimension"],
         example: "sm would elide if hork's oracle vouched context-tolerance (one line: `: safe-across user`)",
         message: Some("sm would elide if {{provider}}'s oracle vouched context-tolerance (one line: `: safe-across {{dimension}}`)"),
@@ -467,7 +467,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "wrapper-entry-incoherent",
         when_fires: "a wrapper's `__enter` and `__lend_map` disagree on argv flow. cli/main.rs. Spanned (the entry name_span).",
-        why: "27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a pre-network fail-fast. PASSTHROUGH — the refusal text rides `detail`.",
+        why: "27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "entry_shifts", "lend_shifts"],
         example: "sm wrapper `runas`: __enter and __lend_map disagree on argv flow (entry consumes 1 leading arg(s), the lend-fold consumes 2) -- static incoherence (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). The entry form drops/transforms args the fold relied on; make the entry pass the fold's guest verbatim.",
         message: Some("sm wrapper `{{wrapper}}`: __enter and __lend_map disagree on argv flow (entry consumes {{entry_shifts}} leading arg(s), the lend-fold consumes {{lend_shifts}}) -- static incoherence (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). The entry form drops/transforms args the fold relied on; make the entry pass the fold's guest verbatim."),
@@ -476,7 +476,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "wrapper-peel-incoherent",
         when_fires: "a wrapper's `__predict` and `__lend_map` disagree on the peel tail position. cli/main.rs. Spanned (the predict name_span).",
-        why: "273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. PASSTHROUGH — the refusal text rides `detail`.",
+        why: "273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "predict_depth", "lend_map_depth"],
         example: "sm wrapper `sudo`: __predict and __lend_map disagree on the peel tail position (predict reaches \"$@\" after 1 argv token(s), lend_map after 0) -- static incoherence (273 section 5, declarations-genuinely-contradict). The guest would start at a different token depending on which member dispatched; fix the argparse so both peel to the same tail.",
         message: Some("sm wrapper `{{wrapper}}`: __predict and __lend_map disagree on the peel tail position (predict reaches \"$@\" after {{predict_depth}} argv token(s), lend_map after {{lend_map_depth}}) -- static incoherence (273 section 5, declarations-genuinely-contradict). The guest would start at a different token depending on which member dispatched; fix the argparse so both peel to the same tail."),
@@ -512,7 +512,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "whylog-corrupt",
         when_fires: "`dorc why --last` found a durable but it is truncated or otherwise unparseable (a partial write, a clobbered file). plan/whylog.rs parse (`inv-no-throw`: malformed bytes are DATA, never a panic).",
-        why: "inv-no-throw: a corrupt durable is diagnostics, never a crash — the reader refuses politely and names the parse-failure reason. Pull-surface: Warning, Floor::None. `{detail}` = the parse-failure reason (e.g. missing header/end sentinel, an unrecognized section). Remediation register (help) wanted: the durable is damaged — re-run the live analysis to regenerate it.",
+        why: "inv-no-throw: a corrupt durable is diagnostics, never a crash — the reader refuses politely and names the parse-failure reason. Pull-surface: Warning, Floor::None. The reason is typed: four WhylogCorruptReason variants, each with its own prose-component, which the `{detail}` hole renders (28L rul-reason-enums-not-sibling-codes). Remediation register (help) wanted: the durable is damaged — re-run the live analysis to regenerate it.",
         params: &["detail"],
         example: "the saved why-log is damaged and cannot be read back (no dorc-whylog-end sentinel (a truncated write?))",
         message: Some("the saved why-log is damaged and cannot be read back ({{detail}})"),
@@ -521,7 +521,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "aid-unloaded-sibling-oracle",
         when_fires: "the cli-edge scan found `*.oracle.sh` files on disk beside the loaded oracles (or the book) that were NOT loaded this run. cli emit_unloaded_sibling_oracles.",
-        why: "24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common cause of a wall that a present-but-unloaded oracle would lift; the run is unchanged (advisory Note). PASSTHROUGH — the cli builds `{detail}` (the sorted unloaded-sibling list).",
+        why: "24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common cause of a wall that a present-but-unloaded oracle would lift; the run is unchanged (advisory Note). The hole is typed: `{oracles}` is the sorted unloaded-sibling list, joined by the cli.",
         params: &["oracles"],
         example: "sibling oracle files exist on disk but were not loaded: `redis.oracle.sh`",
         message: Some("sibling oracle files exist on disk but were not loaded: {{oracles}}"),
