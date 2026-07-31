@@ -744,6 +744,23 @@ lanes thread by fresh census, never by the map's count.
   `analyze_measured` (faces `why-reason-elide-cascaded`; if it balloons, ledger
   with the mechanical reason) · `sections`' first-replay-only census note fixed
   or documented.
+- **x2c + x2e FOLDED** — `ai/r28-loom-final` @ `86e6dfe4` then `32908f22` (both ff;
+  suite 1687/1683 both legs at the x2e tip; the aid/CLAUDE.md
+  `passthrough-is-type-gated` bullet reviewed and accepted at fold). x2c's fold
+  caught + fixed a fresh `⊄` escape (`footprint-incoherent`) — three ASCII-allowlist
+  rows now gone. x2e's rebase was HOOK-BLOCKED (`git rebase` refused in its
+  worktree) and the lane did the correct thing: additive cherry-pick onto a
+  `-folded` branch, zero bypass, reported for conductor action — adopted as the
+  standing fallback for hook-blocked folds. Superseded branch pointers awaiting
+  human force-delete: `ai/r28-loom-x2e` + `x2e-prerebase-backup` (both duplicate
+  folded content at pre-fold SHAs).
+- **x2f + x2g DISPATCHED in parallel** off `32908f22` (the LAST build pair):
+  x2f = the eight reason-enum migrations (the census's 6 + `escalation-policy` +
+  `cfg-top-node`; `detail: String` exits at ZERO) + the transport sibling pair +
+  the stale-PASSTHROUGH metadata sweep; x2g = the last why-worlds (survival ·
+  guard · declined · render-refused · omitted · cmdsub; ~49 components) +
+  cascades attempt-and-size + the FINAL per-component accounting for the
+  arc-close ledger.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
