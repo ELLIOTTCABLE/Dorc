@@ -366,14 +366,18 @@ and one author.
 - **The monologue is emergent, not typed** — three mechanisms conspire (lane
   exclusivity · the establish-⊤ firewall · consumed-⊤ forbids-mint); none names
   custody. Re-entry routes: the unground "declared-rc opt-in (19A §5)" comment
-  (`plan/src/lib.rs:3650-3654`); any widening of measured-value reproduction; and
-  the FACT/WALL plane — the predict lane owns site classification and
-  effect-modeling while the verdict lane measures the cell — which is MAINSTREAM
-  (a stage-3 in-book verdict over a stdlib describing-predict is exactly a split
-  family) and is this corner's one unexamined surface: it fronts the next
-  sitting. Hardening [PROPOSED]: pin the monologue (a split-family
-  establish-elide consumes nothing predict-derived) and thread `SourceFileId`
-  custody into the `ReplaceLicense` mint, making re-entry a type error. Further
+  (`plan/src/lib.rs:3650-3654`), and any widening of measured-value reproduction.
+  The fact plane is NOT a route: facts are minted only by marked runnable lines
+  in whichever body ships, and the lanes are keying-separate by design — a
+  mark-less in-book verdict measures its own auto-cell, never another author's
+  coordinate (`verdict_cell_or_auto`; the W-B pins `verdict-lane-is-site-keyed` ·
+  `ship-seam-reads-the-lane-not-the-kind` are the machine-pinned statement).
+  Hardening [PROPOSED]: pin the monologue (a split-family establish-elide
+  consumes nothing predict-derived) and thread `SourceFileId` custody into the
+  `ReplaceLicense` mint, making re-entry a type error. COMMISSIONED [ACKED,
+  suite-tier]: a split-family fixture exercising the lane-separation pins — the
+  split family turns the single-author regression they guard against into a
+  steady-state configuration; rides stage F beside the custody pin. Further
   owed pins: the stdout parallel of the rc firewall (~SUSPECT, untraced) ·
   vouch-covers-the-stand-in-rc-0. Why custody rather than a coherence check, if
   reproduction ever widens: the predict↔verdict coupling is the adequacy gap
