@@ -119,6 +119,15 @@ crate's charter) · `notes/287` (errorloom as-built).
   bridge in the why report while the plan-stderr lens reads the same rows as plain text —
   edit-home is wherever a DRIVEN transcript stamps them, the lock otherwise. Do not "fix" a
   plain-text seat by stamping a span its surface's transport cannot anchor.
+- **passthrough-is-type-gated** (`282:rul-passthrough-type-gated`; `296` is the census) — a hole is
+  foreign because its VALUE is, never because the param is named `detail`. `aid::foreign` seals it:
+  `ForeignBytes` is minted only at an I/O edge (`from_os_error`, or the loudly-named and lexically
+  fenced `from_io_edge`) and has no raw accessor; `ForeignText` is what comes back through the
+  display seat, and it is what `Said::Foreign`, `RenderPart::ForeignText` and `ParamText::Foreign`
+  carry. `is_foreign_param` is GONE — do not re-derive a name convention. A sentence you composed at
+  an emit site belongs in the code's register with typed holes; if a signature blocks you, that is
+  the seal working. `weft::Run::foreign` still takes a `String` (`weft-deps-nothing`), so
+  `weave::foreign` is the seat that binds the seal.
 - **error-slugs-are-semantic** (`288:rul-error-slugs-are-semantic`) — code slugs are
   user-facing surface that becomes a real compat surface at publication. Mint them
   semantic-first, never as a file-naming decision.
