@@ -47,16 +47,6 @@ and spellings aren't necessarily settled.)
 # dorc-lang/v0.2
 set -eu
 
-CERTS=/etc/nginx/certs
-
-apt-get update
-dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
-cp ./nginx.conf /etc/nginx/nginx.conf
-foobar sync-certs "$CERTS"
-systemctl enable --now nginx
-hork tune --profile web >>/var/log/hork.log 2>&1
-ufw allow 443/tcp
-
 foobar__is_converged() {
    verb="$1"; shift
    case "$verb" in
@@ -68,6 +58,18 @@ foobar__is_converged() {
    *) return 2 ;;
    esac
 }
+
+CERTS=/etc/nginx/certs
+
+apt-get update
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+cp ./nginx.conf /etc/nginx/nginx.conf
+
+foobar sync-certs "$CERTS"
+
+systemctl enable --now nginx
+hork tune --profile web >>/var/log/hork.log 2>&1
+ufw allow 443/tcp
 ```
 
 ```console
