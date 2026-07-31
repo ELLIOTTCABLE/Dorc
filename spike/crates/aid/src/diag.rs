@@ -1205,8 +1205,18 @@ pub struct HostEvidenceAdmissionRefused {
 /// book command's span (`aid-caret-span-precision`). `site()` returns `None` (no plan-`LeafId`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FootprintIncoherent {
-    /// The full refusal text (display only).
-    pub detail: String,
+    /// Which coherence check refused the footprint.
+    pub reason: FootprintIncoherentReason,
+}
+
+/// Which coherence check refused a footprint (see [`CfgTopNodeReason`] for why the reason enums
+/// live in this crate).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FootprintIncoherentReason {
+    /// The authored emission omits the site's own effect coordinate.
+    OmitsOwnCoordinate,
+    /// A derived emission carried a coordinate that does not parse.
+    MalformedDerivedCoordinate,
 }
 
 /// Payload of [`DiagCode::TouchesEscalated`] (TEMPLATIZED): the escalated site number and the call.
@@ -2685,8 +2695,8 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             vec![ours("funcname", funcname.clone())]
         }
         DiagCode::MarkOnAndOrList(MarkOnAndOrList) => vec![],
-        DiagCode::FootprintIncoherent(FootprintIncoherent { detail }) => {
-            vec![ours("detail", detail.clone())]
+        DiagCode::FootprintIncoherent(FootprintIncoherent { reason }) => {
+            vec![ours("detail", footprint_incoherent_text(ctx, *reason))]
         }
         DiagCode::EscalationPolicy(EscalationPolicy {
             dial,
@@ -3698,6 +3708,19 @@ fn syntax_malformed_text(ctx: &RenderCtx<'_>, reason: SyntaxMalformedReason) -> 
         SyntaxMalformedReason::UnterminatedSubshell => "syntax-malformed-unterminated-subshell",
         SyntaxMalformedReason::UnterminatedBraceGroup => {
             "syntax-malformed-unterminated-brace-group"
+        }
+    };
+    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+}
+
+/// The registry sentence for one [`FootprintIncoherentReason`].
+fn footprint_incoherent_text(ctx: &RenderCtx<'_>, reason: FootprintIncoherentReason) -> String {
+    let slug = match reason {
+        FootprintIncoherentReason::OmitsOwnCoordinate => {
+            "footprint-incoherent-omits-own-coordinate"
+        }
+        FootprintIncoherentReason::MalformedDerivedCoordinate => {
+            "footprint-incoherent-malformed-derived-coordinate"
         }
     };
     crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)

@@ -16,7 +16,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::{
     CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete, Diag, DiagCode,
-    FootprintIncoherent, TouchesEscalated, WrappedSiteAdoptionHint,
+    FootprintIncoherent, FootprintIncoherentReason, TouchesEscalated, WrappedSiteAdoptionHint,
 };
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_core::{Interner, Symbol};
@@ -105,9 +105,7 @@ pub fn build_survival_footprints(
             let span = ast.node(cfg.node(*node).ast).span;
             diags.push(Diag::new(
                 DiagCode::FootprintIncoherent(FootprintIncoherent {
-                    detail: "touches() footprint omits this command's own effect coordinate \
-                             (at-least not-within at-most) -- footprint refused, the site walls"
-                        .to_string(),
+                    reason: FootprintIncoherentReason::OmitsOwnCoordinate,
                 }),
                 span,
             ));
@@ -383,10 +381,7 @@ pub fn merge_derived_footprints(
         if malformed {
             diags.push(Diag::new(
                 DiagCode::FootprintIncoherent(FootprintIncoherent {
-                    detail: "derived touches() emitted a malformed coordinate (not kind:entity) \
-                             -- footprint refused, the site walls (an at-most claim cannot be \
-                             partial)"
-                        .to_string(),
+                    reason: FootprintIncoherentReason::MalformedDerivedCoordinate,
                 }),
                 span,
             ));

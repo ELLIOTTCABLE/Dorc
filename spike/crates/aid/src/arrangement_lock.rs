@@ -1650,4 +1650,18 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "As predict-unterminated-function-body.",
         words: Words::Migrated(&["unterminated `if` (expected `else`/`fi`)"]),
     },
+    ArrangementEntry {
+        slug: "footprint-incoherent-omits-own-coordinate",
+        occurrence: None,
+        when_used: "Fills the `{detail}` hole of footprint-incoherent when the authored emission omits the site's own effect coordinate.",
+        why: "28L rul-reason-enums-not-sibling-codes: the two coherence refusals under this slug are FootprintIncoherentReason variants with their own prose-components.",
+        words: Words::Migrated(&["touches() footprint omits this command's own effect coordinate (at-least not-within at-most) -- footprint refused, the site walls"]),
+    },
+    ArrangementEntry {
+        slug: "footprint-incoherent-malformed-derived-coordinate",
+        occurrence: None,
+        when_used: "Fills the `{detail}` hole of footprint-incoherent when a derived emission carried a coordinate that does not parse.",
+        why: "As footprint-incoherent-omits-own-coordinate.",
+        words: Words::Migrated(&["derived touches() emitted a malformed coordinate (not kind:entity) -- footprint refused, the site walls (an at-most claim cannot be partial)"]),
+    },
 ];
