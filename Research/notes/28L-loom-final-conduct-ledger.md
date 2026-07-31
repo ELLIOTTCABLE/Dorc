@@ -838,6 +838,26 @@ lanes thread by fresh census, never by the map's count.
   teaching line · the `[unnarrated: FactMergeDisagreement]` ~SUSPECT (cheap
   investigate; deepest-tier only) · prose run-on noted for the human's prose era
   (aggregate joins reasons with a bare space — not machinery).
+- **x2f + x2g FOLDED** — `ai/r28-loom-final` @ `3b62af01` then `b673241b` (both ff;
+  x2g's fold via the cherry-pick fallback — the rebase hook-block is environmental
+  and intermittent; zero conflicts both folds; gates green at each tip, latest
+  Win 1695 / WSL 1691). x2f's near-miss recorded: its mechanical params sweep
+  briefly reclassified a genuine relay (`dorc-sh-exec-failed`), caught by
+  count-inspection before any gate — the byte-identity gate stood behind it.
+  x2f steering nit routed to X3: aid/CLAUDE.md's flat "never hand-edit the lock"
+  contradicts the error-prose-conductor-flow carve; the Boundaries bullet gains
+  the exception clause. Force-delete list grows: `x2f-prerebase-backup` ·
+  `ai/r28-loom-x2g` (pre-fold pointer).
+- **fnd-class-b-is-one-hundred-components** (x2g at the merged state, +SURE
+  measured) — x2f's 93 reason components render via `arrangement_text` into
+  `ours("reason", …)` = `ParamValue`, joining class B: ~102 components total are
+  registry-homed but faceless-at-a-param-seat. The x2h splice-on-value attempt is
+  therefore LOAD-BEARING for the arc-close invariant, not a nicety; its
+  stop-and-size gate stands but with real effort demanded first. x2h dispatched
+  (worktree loom-x2h off `b673241b`): the de-nest (18) · splice-on-value (~102;
+  three-shape design space, lean = interleaved fragments with two-row apply
+  routing) · the four dead-row deletions · the sites= teaching line + the
+  FactMergeDisagreement investigation.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
