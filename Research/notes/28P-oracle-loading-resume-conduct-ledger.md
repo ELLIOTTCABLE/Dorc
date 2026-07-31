@@ -59,6 +59,31 @@ plan is `28K` §10 (bitem0–bitem9 + fold checklist); on committee-corner confl
   fn-definedness contract stands alone, decidable-set v0 is final, and bitem8's reserved
   battery case is THE pin for the contract's one divergence cell.
 
+### Conductor adjudications at the bitem1 close (2026-07-31)
+
+- **adj-lint-heuristic-widening-kept** — builder-2's `tc-lint-dialect-heuristic-widened`
+  KEPT: the old gate error'd every ordinary book helper-function (false, error-severity,
+  corpus-wide) and refused the helpers half of `28M` §8's commissioned two-file package
+  shape outright — bitem6 cannot run without the fix. Residual detection loss accepted and
+  named: a stray mark in a book that also defines functions no longer trips the mark-subset
+  lint (~SUSPECT small; the load-inert gate still covers marked files). Precise re-cut
+  (lint per-statement rather than per-file) is a named small item, not commissioned. The 8
+  re-blessed looms merge into the fold-checklist eyeball-glance.
+- **adj-survival-closure-gap-measure-then-fix** — builder-2's
+  `tc-survival-lanes-ship-closure-less-bodies` routes into builder-3's lane (bitem3–5), as
+  a MEASURE-FIRST item ahead of bitem3: determine whether a survival-lane body
+  (`disturbs`/`resolve`/`reaches`) that dies mid-emission on an unbound helper is consumed
+  whole-body-atomically (failure ⇒ no claim ⇒ wall stands, safe) or as
+  emitted-lines-then-error (a PARTIAL at-most claim ⇒ wrongly-narrow footprint ⇒
+  under-execute at the survival tier — worse than the guard lane's closed hole, because
+  it corrupts the one naked-trust cell mechanically). If partial: closing it is the lane's
+  FIRST item, before bitem3. If atomic: extend closure capture there as ordinary value-add,
+  riding bitem4's surfaces.
+- **adj-hash-munge-unit-pinned-accepted** — the agreement gate makes hash-munge unreachable
+  today (only the ambient winner ships); built anyway per §4, unit-pinned. Correct call:
+  bitem4's per-file surface is what makes it reachable, and funcname-dedup would then
+  silently mis-bind. No corpus pin owed until then.
+
 ## bitem0 — the full-positional regime (LANDED)
 
 `28K` §2 `rul-visibility-is-full-positional`. Every site-keyed consuming act now reads the
