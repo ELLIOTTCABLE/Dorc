@@ -177,6 +177,11 @@ pub enum DiagCode {
     /// only (`28M:obl-in-book-vocabulary-role-notice`). It is refused with a notice rather than
     /// silently ignored. Spanned at the definition's name.
     InBookVocabularyRole(InBookVocabularyRole),
+    /// Two loaded sources declare one NON-role name — a helper function or a file-level constant —
+    /// with differing bytes, so no pinned definition needing it can carry it (`28K` §4
+    /// `rul-pin-by-definition-bytes`; `28M` §8's diamond rider: version-skewed vendored copies
+    /// refuse rather than dedup). Spanned at the later declaration.
+    HelperDeclarationContested(HelperDeclarationContested),
 
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
@@ -406,6 +411,7 @@ impl DiagCode {
             DiagCode::RoleFamilyContested(_) => "role-family-contested",
             DiagCode::RoleDefinedBelowItsSites(_) => "role-defined-below-its-sites",
             DiagCode::InBookVocabularyRole(_) => "in-book-vocabulary-role",
+            DiagCode::HelperDeclarationContested(_) => "helper-declaration-contested",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1088,6 +1094,17 @@ pub struct RoleDefinedBelowItsSites {
     pub name: String,
     /// How many command sites above it name this family (`{sites}`).
     pub sites: usize,
+}
+
+/// Payload of [`DiagCode::HelperDeclarationContested`] (TEMPLATIZED): the non-role name two
+/// loaded sources spell differently, and where the earlier one sits. Spanned at the LATER
+/// declaration — the one whose arrival changed the answer; `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HelperDeclarationContested {
+    /// The non-role name the loaded sources disagree about (`{name}`).
+    pub name: String,
+    /// Where the EARLIER declaration was authored, `file:line`-shaped (`{prior}`).
+    pub prior: String,
 }
 
 /// Payload of [`DiagCode::InBookVocabularyRole`] (TEMPLATIZED): the in-book kind-owner definition
@@ -2243,6 +2260,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // WARNING on the same footing as `role-family-contested`: the refusal only WITHHOLDS, and
+        // erroring would punish an admin for a collision two upstream authors caused.
+        DiagCode::HelperDeclarationContested(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -3096,6 +3120,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::InBookVocabularyRole(InBookVocabularyRole { name, role }) => {
             vec![ours("name", name.clone()), ours("role", role.clone())]
+        }
+        DiagCode::HelperDeclarationContested(HelperDeclarationContested { name, prior }) => {
+            vec![ours("name", name.clone()), ours("prior", prior.clone())]
         }
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.

@@ -24,12 +24,12 @@ use crate::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
     CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
     DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
-    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, InBookVocabularyRole,
-    LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing, LintToolAbsent,
-    LintToolFailedWithoutFindings, LintToolOutputUnparsable, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
-    MissingDialectMarker, MungeNameInvalid, OperandPosition, RecordsFactTruncated,
-    RenderHeredocRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
+    HelperDeclarationContested, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind,
+    InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing,
+    LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable,
+    MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
+    MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
+    RecordsFactTruncated, RenderHeredocRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
     SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
     SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
     TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
@@ -163,6 +163,15 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::InBookVocabularyRole(InBookVocabularyRole {
                 name: "sm_dorc_Package__resolve".to_owned(),
                 role: "__resolve".to_owned(),
+            }),
+        ),
+        // Same necessity again: two loaded sources spelling one helper differently is a
+        // two-file world, not a one-source one.
+        (
+            "helper-declaration-contested",
+            DiagCode::HelperDeclarationContested(HelperDeclarationContested {
+                name: "_yum_installed".to_owned(),
+                prior: "vendor/yum.oracle.sh:4".to_owned(),
             }),
         ),
         // Read back from a RECORDS stream: a replay drives no host and admits no records.
