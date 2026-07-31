@@ -17,6 +17,10 @@ hork.oracle.sh:
         [ hork.oracle.sh:2:15
      2 | hork__predict (
        |               ^
+  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict (
+       | \___________/
   warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
         [ hork.oracle.sh:2:1
      2 | hork__predict (
@@ -26,4 +30,4 @@ hork.oracle.sh:
      2 | hork__predict (
        | \___________/
 
-dorc lint: 2 errors, 1 warning, 0 infos across 1 file.
+dorc lint: 3 errors, 1 warning, 0 infos across 1 file.

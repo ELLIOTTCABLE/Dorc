@@ -15,10 +15,9 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 oracle.sh:
   error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
-   --> oracle.sh:2:1
-   |
- 2 | dpkg -s nginx : sm.a.B@x
-   | \______________________/
+        [ oracle.sh:2:1
+     2 | dpkg -s nginx : sm.a.B@x
+       | \______________________/
   error[mark-rc-arity-exceeded]: [unwritten: mark-rc-arity-exceeded]
         [ oracle.sh:3:11
      3 | : refutes sm.a.C@y
