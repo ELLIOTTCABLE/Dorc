@@ -64,7 +64,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "the parser hit an unmodeled/out-of-scope sh construct; it becomes an `Unsupported` ⊤-node and parsing continues.",
         why: "inv-top-reject: under-modeling is a loud correctness boundary. PASSTHROUGH — the parser's own description of the construct rides `detail`.",
         params: &["detail"],
-        example: "sm process substitution `<(...)` is not modeled",
+        example: "sm background/async `&` is not in the modeled subset",
         message: Some("sm {{detail}}"),
         help: HelpRegister::Absent,
     },
