@@ -1839,10 +1839,12 @@ fn admitted_site_results(
         // The refusal NAMES the header the stream must carry
         // (`28L:rul-refusals-name-the-next-command`). A framing mismatch is nearly always a book
         // edit moving the digest, and "refused" alone leaves the author to recompute a hash by
-        // hand; `sites=` stays theirs to count.
+        // hand; `sites=` stays theirs to count, so the text says what it counts — a census, never
+        // an id — because the two coincide at one record and diverge at two.
         Admission::Refused(reason) => Err(format!(
             "the declared results stream was refused ({}) -- a measured world cannot rest on a \
-             broken channel. Its first line must be:\n  {} sites=<N> {}",
+             broken channel. Its first line must be:\n  {} sites=<N> {}\nwhere <N> counts the \
+             `site` records that follow, NOT the largest site id among them",
             reason.spanless_diagnostic().code.slug(),
             dorc_plan::records::expected_header_prefix(&dorc_plan::records::Framing::spike(
                 dorc_plan::invocation::book_digest(source)
