@@ -437,7 +437,8 @@ as-built claims carry the scout's file:line grounding. UNACKED throughout
   stay so. The adequacy gap (converged≠no-op) is the principled WHY any future
   value-reproducing split-family elide must demand custody: the predict↔verdict
   coupling is judgment-tier, and per tool-opinion-gradient judgment is never pooled
-  across authors — that cell is PERMANENTLY custody-only, not deferred. Where
+  across authors — that cell is custody-only for as long as the judgment-tier
+  reading holds (lean, not weld: human pushback on permanence-surety, Q3). Where
   split-family members must genuinely cooperate, the instrument is a coherence
   CHECK, never license composition — but per §10's fail-fast union, split-family
   checks refuse-with-native-escape or hint only; fail-fast stays reserved for
@@ -462,7 +463,10 @@ as-built claims carry the scout's file:line grounding. UNACKED throughout
   shadow-refusal shape (complaint + withhold + native escape) or hint-only, never
   fail-fast. §8's rul-conflict-between-totals-is-falsification rider gains its
   mechanism: totals-conflict passes leg 1 and FAILS leg 2 (which total is wrong
-  takes tool knowledge, not a five-minute edit) ⇒ withhold-tier, permanently.
+  takes tool knowledge, not a five-minute edit) ⇒ withhold-tier — as a LEAN, not
+  a weld (human softening, Q3: tool-knowledge fixes MAY be five-minute edits; the
+  union needs the PROMISE of trivial resolution, which we cannot make statically;
+  revisit under fire).
   Corpus check: existing refusals already respect the union (cross-unit shadow =
   complaint + withhold, never abort; within-file redefinition passes both legs;
   proven-mutation fail-fast is correctness-mandatory with a quick escape).
@@ -473,8 +477,10 @@ as-built claims carry the scout's file:line grounding. UNACKED throughout
   concept must be spread across the userbase. Disposition: right shelf, wrong
   moment — as-built nothing rides it (§9's monologue: the establish lane
   reproduces nothing; the query lane is single-author). It becomes the pricing
-  instrument the day value-reproduction softening arrives (the declared-rc opt-in
-  path; asserted-stdout stand-ins). Corpus-consistent, not novel: the Status
+  instrument the day value-reproduction softening arrives — wider probe-MEASURED
+  reproduction only, e.g. the declared-rc opt-in path ("asserted-stdout
+  stand-ins" RETRACTED as sloppy, Q3: author-asserted bytes live only in probe
+  composition, and apply-side assertion is welded out — §11). Corpus-consistent, not novel: the Status
   trichotomy and compound per-channel coverage already grade the same axis.
   Caution [conductor]: the ladder grades reproduction-risk ONLY — no rung ever
   reads as elide-without-vouch; Effect coverage and the judgment gate are
@@ -501,3 +507,33 @@ as-built claims carry the scout's file:line grounding. UNACKED throughout
   verdict measures) is MAINSTREAM, not fringe — the stage-3 in-book admin verdict
   over a stdlib describing-predict is exactly a split family — so that residue
   fronts the queue for the next sitting.
+
+## §11. Sitting Q3 (2026-07-31) — vocabulary, softenings, and the predict/apply weld
+
+- **Monologue / dialogue** (vocabulary, from §2's speech-act frame; used throughout
+  §§8–10) — a license is a MONOLOGUE when every load-bearing utterance behind it
+  has ONE author (guard: verdict body + vouch; as-built establish-elide: verdict
+  body measures, vouch licenses, the stand-in's rc-0 rides that same vouch); a
+  DIALOGUE when the engine combines two authors' utterances into one license — a
+  composite sentence nobody uttered, repudiable by both. The stake is attribution:
+  a monologue failure names one line and one author; a dialogue failure is
+  nobody's (`271:rul-sin-ordering`).
+- **Permanence softened** [TYPED, Q3] — the human leans agreement that neither the
+  totals-conflict nor split-family incoherence is a clear fail-fast case, but
+  against PERMANENT/weld phrasing: tool-knowledge may fall under the five-minute
+  edit; subtle; may require trying under fire. §9/§10 rewritten in place to
+  lean-tier accordingly.
+- **rul-predict-feeds-plan-never-apply** [TYPED substance, human; banked because no
+  single corpus rule states it in this form] — `cmd__predict()` pipes probe-time
+  measurements into PLAN-time analysis through abstract interpretation of the
+  book; nothing predict-produced reaches APPLY-time except through the
+  elide/replace decision family. Mutators whose observables are live-consumed
+  always run or guard; predicted bytes never enter the artifact; resolved values
+  are never spliced into live command text (the book's own bytes re-evaluate at
+  apply). The one as-built value-materialization cell, inside the family: a
+  probe-MEASURED rc standing in for a proven-converged read-only command
+  (`QueryGuard`; measured-not-asserted, single-author, probe-provenance-only).
+  There is no aspiration, spike-tier or ever, to substitute predictor outputs for
+  apply-time calls. Consistent with inv-probe-sourced-values · the world-spoken
+  bytes pin · rul-ternary-verdict's never-synthesized-sh · the two-surfaces
+  byte-floor.
