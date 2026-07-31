@@ -2843,10 +2843,11 @@ mod fixpoint_freezes_the_environment_tests {
     /// module cannot name a fixpoint-reachable type either.
     #[test]
     fn the_fixpoint_loop_body_calls_no_funcenv_entry_point() {
-        let src = include_str!("main.rs");
-        // Column-0 anchored: this test lives in the file it scans (`spanless-gate-is-lexical`).
+        let src = include_str!("fixpoint.rs");
+        // Column-0 anchored (`spanless-gate-is-lexical`); the driver moved to the lib seam's
+        // `fixpoint.rs` at the loom-final fold, so that is the file the fence scans.
         let start = src
-            .find("\nfn settle_validity_fixpoint(")
+            .find("\npub fn settle_validity_fixpoint(")
             .expect("the fixpoint driver is still a column-0 item of this name");
         // Bounded at the column-0 closer; a slice running to EOF would make the gate worthless.
         let rest = &src[start..];
