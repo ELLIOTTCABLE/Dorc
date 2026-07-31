@@ -823,7 +823,7 @@ pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> Invoca
             dorc_aid::diag::CliFileUnreadable {
                 kind: kind.to_owned(),
                 path: path.to_owned(),
-                detail: err.to_string(),
+                detail: dorc_aid::ForeignBytes::from_os_error(err),
             },
         )),
     }

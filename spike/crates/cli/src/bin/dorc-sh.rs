@@ -57,7 +57,7 @@ fn main() -> ExitCode {
                 dorc_aid::diag::DiagCode::DorcShScriptUnreadable(
                     dorc_aid::diag::DorcShScriptUnreadable {
                         path: script.to_string_lossy().into_owned(),
-                        detail: e.to_string(),
+                        detail: dorc_aid::ForeignBytes::from_os_error(&e),
                     },
                 ),
             ));
@@ -81,7 +81,7 @@ fn main() -> ExitCode {
         Err(e) => {
             report(&dorc_aid::Diag::new_spanless_site(
                 dorc_aid::diag::DiagCode::DorcShExecFailed(dorc_aid::diag::DorcShExecFailed {
-                    detail: e.to_string(),
+                    detail: dorc_aid::ForeignBytes::from_os_error(&e),
                 }),
             ));
             ExitCode::from(127)

@@ -1015,7 +1015,7 @@ fn participating_block(
                     WHY_VALUE_CAP,
                 )),
                 cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
-                    text.trim_end(),
+                    &dorc_aid::ForeignBytes::from_io_edge(text.trim_end()),
                     filename.to_owned(),
                     WHY_SOURCE_CAP,
                 )])],
@@ -1309,7 +1309,7 @@ fn excerpt_nodes(ctx: &RenderCtx<'_>, excerpt: &Excerpt) -> Vec<Node<Face>> {
                         WHY_VALUE_CAP,
                     )),
                     cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
-                        text,
+                        &dorc_aid::ForeignBytes::from_io_edge(text),
                         excerpt.path.clone(),
                         WHY_SOURCE_CAP,
                     )])],
@@ -1342,7 +1342,7 @@ fn shipped_block(sh: &str) -> Node<Face> {
         lines: vec![CodeLine {
             gutter: None,
             cells: vec![CodeCell::new(vec![dorc_aid::weave::foreign(
-                sh,
+                &dorc_aid::ForeignBytes::from_io_edge(sh),
                 "the shipped guard",
                 WHY_SOURCE_CAP,
             )])],
@@ -2034,7 +2034,11 @@ fn aggregate_item(
         headline: vec![
             dorc_aid::weave::value(&address, "why-item-address", WHY_VALUE_CAP),
             dorc_aid::weave::mark(" | ", "why-item-gutter"),
-            dorc_aid::weave::foreign(&site.command, filename, WHY_SOURCE_CAP),
+            dorc_aid::weave::foreign(
+                &dorc_aid::ForeignBytes::from_io_edge(&site.command),
+                filename,
+                WHY_SOURCE_CAP,
+            ),
         ],
         body: vec![
             Node::new(NodeKind::Prose(Paragraph { runs })),
@@ -2125,7 +2129,10 @@ mod because_clause_tests {
             Said::words("why-reason-cmdsub-opener", &["operand 3"]),
             Said::Value("6:20".to_owned()),
             Said::Mark("why-cause-quote", " `".to_owned()),
-            Said::foreign("apt-get install -y \"$(resolve-dynamism)\"", "book.sh"),
+            Said::foreign(
+                &dorc_aid::ForeignBytes::from_io_edge("apt-get install -y \"$(resolve-dynamism)\""),
+                "book.sh",
+            ),
             Said::Mark("why-cause-quote", "`".to_owned()),
             Said::words("why-reason-cmdsub-closer", &[]),
             Said::words("why-remediation-resolve-dynamism", &[]),
@@ -2572,7 +2579,10 @@ mod not_ours_bytes_tests {
         Said::Parts(vec![
             Said::Value(hostile_line(5)),
             Said::Mark("why-cause-quote", " `".to_owned()),
-            Said::foreign(&hostile_line(4), "sweep.book.sh"),
+            Said::foreign(
+                &dorc_aid::ForeignBytes::from_io_edge(&hostile_line(4)),
+                "sweep.book.sh",
+            ),
             Said::Mark("why-cause-quote", "`".to_owned()),
         ])
     }
@@ -2629,7 +2639,10 @@ mod not_ours_bytes_tests {
                     payload: Said::Value(hostile_line(1)),
                     quoted: true,
                     event: Some(Said::words("why-chain-event-rc-only", &[&hostile_line(2)])),
-                    explanation: Some(Said::foreign(&hostile_line(3), "sweep.oracle.sh")),
+                    explanation: Some(Said::foreign(
+                        &dorc_aid::ForeignBytes::from_io_edge(&hostile_line(3)),
+                        "sweep.oracle.sh",
+                    )),
                     excerpt: Some(excerpt),
                 }],
                 Some(Said::Value(hostile_line(5))),
@@ -2660,7 +2673,10 @@ mod not_ours_bytes_tests {
             foil: foil_word(&RenderCtx::production(), &dorc_plan::Disposition::Run),
             reasons: vec![Said::Value(hostile_line(5))],
             class: AggregateClass::Improvement,
-            improvement: Some(Said::foreign(&hostile_line(0), "sweep.oracle.sh")),
+            improvement: Some(Said::foreign(
+                &dorc_aid::ForeignBytes::from_io_edge(&hostile_line(0)),
+                "sweep.oracle.sh",
+            )),
         };
         let receipt = Receipt {
             at: None,

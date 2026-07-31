@@ -131,7 +131,7 @@ fn lint_one_file(
                 dorc_aid::Diag::new_spanless_site(DiagCode::LintToolOutputUnparsable(
                     dorc_aid::diag::LintToolOutputUnparsable {
                         tool: tool.to_owned(),
-                        output: one_line_truncated(&raw),
+                        output: dorc_aid::ForeignBytes::from_io_edge(&one_line_truncated(&raw)),
                     },
                 )),
             ));
