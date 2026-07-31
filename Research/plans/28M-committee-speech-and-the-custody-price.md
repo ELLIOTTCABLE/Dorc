@@ -336,11 +336,12 @@ not-unlicensed`; grades as in the header.
   Riders: this resurrects price-union-of-strangers at MEMBER granularity
   (member-complementary strangers union with zero ceremony, zero refusal); and it
   leaks `28K` §8-monotonicity in spirit (no one's judgment is reassigned, yet the
-  composite grant is new and dual-authored). Candidate cheap rule, unruled: elide
-  demands vouch-member and predict-member same-custody; split families guard. Open
-  measurement, beside §7's commissioned composition tests: whether a channel-free
-  elide reads predict's Effect at all — if site-convergence derives wholly from the
-  shipped verdict body, that cell is B-only, a monologue.
+  composite grant is new and dual-authored). Candidate cheap rule, unruled,
+  reshaped by §9: pin the as-built monologue and type the custody demand at the
+  mint, so value-reproduction can never silently re-open the cell. The open
+  measurement is CLOSED (§9, scout-grounded): site-convergence derives wholly from
+  the shipped verdict body, and establish-elides reproduce no predict values — the
+  as-built cell IS a monologue; the license-plane danger is latent, not live.
 - **The retainability matrix** (shadowed-verdict contest; the composite rule applied
   per member): the verdict seat — nothing retainable; genuinely undecided until
   blessed (as-built correct). An uncontested `predict` as participant-model in OTHER
@@ -370,4 +371,73 @@ not-unlicensed`; grades as in the header.
   mid/post-impl; overlay-writer remedies slide BEHIND the kernel concerns here and in
   `26K`, never in front.
 - **Task minted** [TYPED]: `cmd__predict` under the composite rule needs its own
-  analysis — too many forking design-paths to settle inline.
+  analysis — too many forking design-paths to settle inline. (Discharged: §9.)
+
+## §9. Sitting Q1 follow-on (2026-07-31) — `cmd__predict` under the composite rule
+
+Conductor analysis + a read-only scout over `ai/r28-oracle-loading` @ `ebccaf90`;
+as-built claims carry the scout's file:line grounding. UNACKED throughout
+(rubber-duck output; awaiting human eyes).
+
+- **fnd-establish-elide-is-verdict-monologue** [+SURE, scout-grounded] — the two ship
+  lanes are mutually exclusive per site (`plan/src/lib.rs:2924-2954`): a vouched site
+  ships the VERDICT body, and site-convergence derives solely from that body's own rc
+  (`cli/src/results.rs:465-489,753` → `prove_replaceable`, `plan/src/lib.rs:517-563`);
+  predict's Effect never feeds that site's license. Establish-class sites are
+  firewalled to `Predicted::Top` ⇒ `StandIn::True` (`cli/src/results.rs:763-774`,
+  `plan/src/lib.rs:3661-3664`): a concrete establish-elide reproduces NO
+  predict-derived values, ever — and a byte-consuming establish site can never mint
+  at all (consumed-⊤ forbids), so §8's worst cell (asserted-byte poisoning of
+  downstream value-flow) is structurally unreachable as-built. Guards confirmed
+  value-free (`probe_verdict` display-only, excluded from canonical identity;
+  `plan/src/lib.rs:1076-1091,1162-1178`). Net: §8's split-family elide-dialogue is
+  NOT live at the license plane — the license is a verdict-author monologue.
+- **The catch** [conductor] — the monologue is EMERGENT, not typed: it falls out of
+  lane-exclusivity + the establish-⊤ firewall, and nothing pins it as a CUSTODY
+  property. Re-entry routes: the unground "declared-rc opt-in (19A §5)" comment
+  (`plan/src/lib.rs:3650-3654`, an establish-status-threading path the scout did not
+  chase to ground); any future value-reproduction softening; and the FACT/WALL plane,
+  where the predict lane still owns site classification and effect-modeling while
+  the verdict lane measures the cell (`28O`'s ship-seam-reads-the-lane warnings are
+  the adjacent territory) — the residual cross-author composition surface, unexamined.
+  Cheap hardening per the machinery-high lean [PROPOSED]: pin the monologue (a
+  split-family establish-elide case asserting nothing predict-derived is consumed)
+  and thread `SourceFileId` custody into the `ReplaceLicense` mint demand, so
+  re-entry becomes a type error rather than a drift.
+- **fnd-split-family-unrefused-confirmed** [+SURE] — detection is per-NAME
+  (`funcenv::contests`, `analysis/src/funcenv.rs:459-499`); withholding is per-FAMILY
+  via `role_family` (`cli/src/main.rs:832-840`, `oracle/src/reserved.rs:65-71`); a
+  member-split family (no shadowed name, members from different files) triggers
+  nothing, with ZERO corpus coverage (`contest28-*` exercises same-name shadows
+  only). §8's finding stands, now grounded — and the `role_family` map is the exact
+  seat where the §8 retainability matrix's granular withdrawal would land later
+  (per-member filtering; cheap when wanted).
+- **fnd-verdict-resolution-duplicates-live-source** [scout suspicion; promoted to a
+  stage-F fold item] — `VerdictIndex::from_sets` (`oracle/src/verdict.rs:106-127`)
+  re-implements last-definition-wins independently instead of consulting
+  `live_source`; the "ONE seat… five resolution sites must agree" doc-comment
+  (`oracle/src/lib.rs:345`) is aspirational. An iteration-order divergence would
+  split predict's winner from the verdict's winner SILENTLY — audit/unify at F.
+- **Machinery inventory** (req-3 of rul-composite-meets-toward-guard-run,
+  scout-grounded) — counterfactual "alone-views" exist at two granularities
+  (family-subtraction: the `withdrawing` seats applied once at the cli edge;
+  per-site effect-zeroing: `analysis/src/erase.rs` `ErasedSites` in the validity
+  fixpoint), and for factored licenses the per-contributor ladder already answers
+  (vouch-alone → guard · fact-alone → run, at establish sites) — no
+  universe-re-evaluation needed. Per-property meet-DIRECTION is CONVENTION-HELD, no
+  registry: `Must`/`May` wrappers (`analysis/src/lattice.rs:247,284`; no literal
+  coercion fn found), the `Flat<T>` ⊤-domain, the ternary `core::coord::compare` →
+  `Relation` (`core/src/coord.rs:302,157`), `VerdictTop`/`TopReason` as
+  degrade-reason enums. If req-3 is to be typed, the buildable piece is a small
+  direction-registry over properties; nothing blocks on it today.
+- **Consumer-sweep residue** [conductor] — predict-only families grant nothing
+  (compound participation is day-one-priced per §3
+  wall-cross-family-was-always-priced; display/hints are aid-plane): describing-
+  oracle publication stays custody-free, which is the ecosystem's on-ramp and should
+  stay so. The adequacy gap (converged≠no-op) is the principled WHY any future
+  value-reproducing split-family elide must demand custody: the predict↔verdict
+  coupling is judgment-tier, and per tool-opinion-gradient judgment is never pooled
+  across authors — that cell is PERMANENTLY custody-only, not deferred. Where
+  split-family members must genuinely cooperate, the sanctioned instrument is the
+  dual-peel shape — a static grammar-tier coherence CHECK that fail-fasts on
+  disagreement — never license composition.
