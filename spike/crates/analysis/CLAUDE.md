@@ -67,7 +67,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   the unit's exit (a conditional definition joins ⊤ there and provably shadowed nothing).
   Never guard-SHAPE recognition around load sites (`28K` §2 `rul-conflict-pass-is-semantic`);
   a same-FILE redefinition belongs to the pre-existing `216` e-1 refusal, not here.
-- **top-licenses-nothing** (rider 1; `294:res-polyfill-binding-tops-pending-fold`) —
+- **top-licenses-nothing** (rider 1; `28O:res-polyfill-binding-tops-pending-fold`) —
   `funcenv::unprovable` names every role name whose exit binding is ⊤, and the driver
   withholds those families SILENTLY (⊤ never complains). Not decoration: it is the entire
   reason the refusal may under-fire soundly, since an uncaught shadow can then grant

@@ -13,7 +13,7 @@
 //! There is no `un_contest`, no `remove`, no `retain`, and no `&mut` accessor: a set is built once
 //! from the environment's own answer and can only be READ afterwards. That asymmetry is the whole
 //! soundness argument for shipping the refusal ahead of the decidable-condition fold
-//! (`294:res-polyfill-binding-tops-pending-fold` option (ii)) — an under-firing refusal grants
+//! (`28O:res-polyfill-binding-tops-pending-fold` option (ii)) — an under-firing refusal grants
 //! nothing, so the only way this can hurt is if a family could be quietly un-withheld.
 //!
 //! The DIAGNOSTIC derives FROM this fact and never the reverse (`two-plane-aid-law`): licensure

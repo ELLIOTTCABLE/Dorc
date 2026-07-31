@@ -428,7 +428,7 @@ pub struct Contest {
 /// definition (if any) a shell would have.
 ///
 /// **Rider 1, `⊤-licenses-nothing`.** This is the load-bearing half of ruling (ii)
-/// (`294:res-polyfill-binding-tops-pending-fold`): the shadow refusal is allowed to UNDER-fire
+/// (`28O:res-polyfill-binding-tops-pending-fold`): the shadow refusal is allowed to UNDER-fire
 /// only because an unprovable binding grants nothing either. A name here is withheld exactly as a
 /// contested one is — silently, since ⊤ never complains — so the two halves together mean a
 /// license requires a PROVEN, uncontested definition and nothing weaker.
@@ -448,7 +448,7 @@ pub fn unprovable(defs: &DefinitionTable, env: &FuncEnv, exit: CfgNodeId) -> BTr
 /// Every proven cross-unit shadow in the unit, in a deterministic order (ambient prefix first,
 /// then CFG node order).
 ///
-/// **Ruling (ii), the binding one** (`294:res-polyfill-binding-tops-pending-fold`): the refusal
+/// **Ruling (ii), the binding one** (`28O:res-polyfill-binding-tops-pending-fold`): the refusal
 /// fires only on a PROVABLE shadow. A ⊤ prior binding — a half-defining branch, a guarded
 /// define-if-absent whose condition the domain cannot fold, a capped solve — complains NOT, and
 /// (this is the load-bearing half) licenses NOT either: ⊤ reaches no consumer as a definition, so
