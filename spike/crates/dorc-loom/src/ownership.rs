@@ -78,8 +78,12 @@ impl CaseOwnership {
     /// registered contributes no implicit entry, so an `.rs` test's fixture case beside the corpus
     /// claims nothing.
     ///
+    /// An explicit `owns:` OUTRANKS a filename's implicit claim rather than colliding with it, so
+    /// the losing case is not refused here — it is refused at the moment it matters, when an edit
+    /// through it hits [`refuse_foreign_components`] and is told which file to make the change in.
+    ///
     /// # Errors
-    /// Returns a refusal naming BOTH files when two cases claim one component, and a refusal
+    /// Returns a refusal naming BOTH files when two cases DECLARE one component, and a refusal
     /// naming the file when a case is unreadable, unparseable, or spells an entry it cannot mean.
     pub fn scan(dir: &Path, registered: &dyn Fn(&str) -> bool) -> Result<Self, String> {
         let mut owners: BTreeMap<ComponentRef, PathBuf> = BTreeMap::new();
