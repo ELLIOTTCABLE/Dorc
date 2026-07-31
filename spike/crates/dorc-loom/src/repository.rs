@@ -156,6 +156,155 @@ fn lock_not_clean(path: &str) -> String {
     )
 }
 
+/// How far a refused command echo is allowed to run before the refusal stops being readable.
+const MAX_ECHOED_COMMAND: usize = 120;
+
+/// How many changed names one clause lists before it counts the rest.
+const MAX_LISTED_NAMES: usize = 4;
+
+fn ellipsized(text: &str) -> String {
+    if text.len() <= MAX_ECHOED_COMMAND {
+        return text.to_owned();
+    }
+    let mut end = MAX_ECHOED_COMMAND;
+    while !text.is_char_boundary(end) {
+        end = end.saturating_sub(1);
+    }
+    format!("{}...", &text[..end])
+}
+
+fn listed(names: &[String]) -> String {
+    let shown: Vec<&str> = names
+        .iter()
+        .take(MAX_LISTED_NAMES)
+        .map(String::as_str)
+        .collect();
+    match names.len().saturating_sub(shown.len()) {
+        0 => shown.join(", "),
+        rest => format!("{}, and {rest} more", shown.join(", ")),
+    }
+}
+
+/// Which frontmatter keys differ between the committed case and the worktree one.
+fn changed_frontmatter_keys(head: &Case, current: &Case) -> Vec<String> {
+    let (head, current) = (head.frontmatter(), current.frontmatter());
+    let mut keys: BTreeSet<&str> = head.keys().collect();
+    keys.extend(current.keys());
+    keys.into_iter()
+        .filter(|key| head.get(key) != current.get(key))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// Which named file sections differ (content or presence).
+fn changed_sections(head: &Case, current: &Case) -> Vec<String> {
+    let committed: BTreeMap<&str, &str> = head
+        .sections()
+        .iter()
+        .map(|section| (section.name(), section.content()))
+        .collect();
+    let mut working: BTreeMap<&str, &str> = current
+        .sections()
+        .iter()
+        .map(|section| (section.name(), section.content()))
+        .collect();
+    let mut changed: Vec<String> = Vec::new();
+    for (name, content) in &committed {
+        match working.remove(name) {
+            Some(other) if other == *content => {}
+            _ => changed.push((*name).to_owned()),
+        }
+    }
+    changed.extend(working.into_keys().map(str::to_owned));
+    changed.sort();
+    changed
+}
+
+/// The first replay block whose COMMAND moved, or the arity change that made the lists incomparable.
+fn changed_replay_commands(head: &Case, current: &Case) -> Option<String> {
+    let (committed, working) = (head.replay().blocks(), current.replay().blocks());
+    if committed.len() != working.len() {
+        return Some(format!(
+            "the case now has {} replay {}, not {}",
+            working.len(),
+            if working.len() == 1 {
+                "block"
+            } else {
+                "blocks"
+            },
+            committed.len()
+        ));
+    }
+    committed
+        .iter()
+        .zip(working)
+        .enumerate()
+        .find(|(_, (one, other))| one.command() != other.command())
+        .map(|(index, (one, other))| {
+            format!(
+                "replay {index}'s command is now `{}`, not `{}`",
+                ellipsized(other.command()),
+                ellipsized(one.command())
+            )
+        })
+}
+
+/// Name the class of non-prose change and the ONE way forward for it
+/// (`28L:rul-refusals-name-the-next-command`).
+///
+/// A prose edit is the difference between HEAD and the worktree INSIDE the replay-output islands;
+/// everything else is a case-structure change, and each class has a different way out. Saying only
+/// "non-prose changes" named the bytes the tool refuses rather than the edit the author made, which
+/// leaves a reader guessing which of three unrelated flows they are in.
+///
+/// This is git-diff triage over two already-parsed cases — a comparison of frontmatter maps,
+/// section names, and replay command strings. It never re-derives editability or word boundaries
+/// from byte shapes (`28L:rul-editability-is-stamped-never-re-derived`); that remains the stamped
+/// part stream's alone.
+fn non_prose_diagnosis(case: &str, head: &Case, current: &Case) -> String {
+    let slug = case
+        .rsplit('/')
+        .next()
+        .and_then(|name| name.strip_suffix(".loom"))
+        .unwrap_or(case);
+    let mut clauses: Vec<String> = Vec::new();
+    let keys = changed_frontmatter_keys(head, current);
+    if !keys.is_empty() {
+        clauses.push(format!(
+            "FRONTMATTER changed ({}). Commit that first, with the transcript as authored -- it is \
+             case structure, not prose. If a metadata key moved (when-fires / when-used / why), the \
+             promote that follows needs `--accept-metadata` to acknowledge that those words replace \
+             the committed registry entry",
+            listed(&keys)
+        ));
+    }
+    if let Some(moved) = changed_replay_commands(head, current) {
+        clauses.push(format!(
+            "a REPLAY COMMAND changed ({moved}). A new or retyped command moves bytes outside the \
+             replay-output islands, so nothing fills it in place:\n{}\nCommit the filled case, then \
+             edit its prose",
+            crate::dump_rescue_hint(slug)
+        ));
+    }
+    let sections = changed_sections(head, current);
+    if !sections.is_empty() {
+        clauses.push(format!(
+            "a FILE SECTION changed ({}). A fixture edit is case structure too: commit it, re-derive \
+             the transcript through the dump above, and edit prose against the committed bytes",
+            listed(&sections)
+        ));
+    }
+    if clauses.is_empty() {
+        return format!(
+            "its non-replay bytes moved somewhere this triage cannot name -- the text above the \
+             first section, or the blank-line layout the container canonicalizes. Commit the case as \
+             it now stands, then edit its prose; `mise run test:looms -- {slug}` says whether the \
+             committed bytes are a render fixpoint"
+        );
+    }
+    clauses.join("; also, ")
+}
+
 /// Parse and classify the complete repository snapshot without performing I/O.
 ///
 /// Only selected cases whose edit sits wholly on one side of the index may
@@ -231,7 +380,15 @@ pub fn classify_prose_changes(
         let head_layout =
             Case::raw_layout(head).map_err(|error| format!("parse HEAD case {path}: {error}"))?;
         if !head_layout.same_non_replay_output_bytes(head, &current_layout, current) {
-            return Err(format!("selected case has non-prose changes: {path}"));
+            let head_case =
+                Case::parse(head).map_err(|error| format!("parse HEAD case {path}: {error}"))?;
+            let current_case = Case::parse(current)
+                .map_err(|error| format!("parse selected case {path}: {error}"))?;
+            return Err(format!(
+                "selected case {path} changed outside its replay outputs, which is the only place a \
+                 prose edit lives: {}",
+                non_prose_diagnosis(path, &head_case, &current_case)
+            ));
         }
         let changed = current != head;
         match (changed, by_path.get(path)) {
@@ -521,6 +678,55 @@ mod tests {
                     .is_err()
             );
         }
+    }
+
+    /// Refusing is half the job: the three classes of non-prose change have three unrelated ways
+    /// out, and a reader holding "non-prose changes" has been told which bytes the tool declined
+    /// rather than what they did or what to do next
+    /// (`28L:rul-refusals-name-the-next-command`).
+    #[test]
+    fn each_class_of_non_prose_change_names_its_own_way_out() {
+        let head = case(
+            "code: one\nwhy: old\n",
+            "preamble\n",
+            "book",
+            "dorc plan --book=book.sh",
+            "old prose\n",
+        );
+        let refusal = |changed: String| {
+            let repository = repository(head.clone(), changed, format!(" M {CASE}\0").as_bytes());
+            classify_prose_changes(&repository, vec![CASE.to_owned()], CATALOG, ARRANGEMENT)
+                .expect_err("a non-prose change refuses")
+        };
+
+        let metadata = refusal(head.replace("why: old", "why: new"));
+        assert!(metadata.contains("FRONTMATTER changed (why)"), "{metadata}");
+        assert!(metadata.contains("--accept-metadata"), "{metadata}");
+
+        let retyped = refusal(head.replace("$ dorc plan", "$ dorc explain"));
+        assert!(retyped.contains("REPLAY COMMAND changed"), "{retyped}");
+        assert!(
+            retyped.contains("`dorc explain --book=book.sh`"),
+            "{retyped}"
+        );
+        assert!(retyped.contains("DORC_LOOM_DUMP=<dir>"), "{retyped}");
+
+        let added = refusal(head.replace(
+            "$ dorc plan --book=book.sh\n",
+            "$ dorc plan --book=book.sh\nold prose\n\n$ dorc why 1\n",
+        ));
+        assert!(added.contains("2 replay blocks, not 1"), "{added}");
+
+        let fixture = refusal(head.replace("book\n", "book changed\n"));
+        assert!(
+            fixture.contains("FILE SECTION changed (book.sh)"),
+            "{fixture}"
+        );
+
+        // Layout residue: every named class agrees, so the fallback has to carry a way forward too.
+        let layout = refusal(head.replace("preamble\n", "preamble changed\n"));
+        assert!(layout.contains("cannot name"), "{layout}");
+        assert!(layout.contains("mise run test:looms -- one"), "{layout}");
     }
 
     #[test]
