@@ -28,7 +28,7 @@ freshly REBASED onto post-loom `ai/main` (2026-07-31; tip "Bank the rebase adapt
 legs green, Win 1826 / WSL 1822, locks verified at the generator fixpoint). Build ledger
 **`notes/28O`** (né `294`; renumbered out of a quarantine collision — its rebase section lists
 what adapted). The lane is PARKED at the E→F conductor checkpoint, pending the human's
-ratification of **`notes/28M`** (the committee-speech sitting; by 28M's own governance, `28K`
+ratification of **`plans/28M`** (the committee-speech sitting; by 28M's own governance, `28K`
 remains the ruled plan until ratified) plus `28K` §9's five ratification items. Stages F/H/C2
 remain deliberately unbuilt.
 
@@ -135,7 +135,7 @@ ARC** (2026-07-29→31: the stamped-provenance boundary weld · placeholder-over
 words-mint path · compile-forced params · ownership declarations · the foreign-text seal ·
 reason enums · ~176-case corpus · six main.rs lib-seam extractions) — conduct ledger
 `notes/28L`, prose accounting `notes/28N`; and **the r28 name-resolution sitting** that minted
-`plans/28K` + `notes/28M` (the live lane above). r29 is a quarantined lane
+`plans/28K` + `plans/28M` (the live lane above). r29 is a quarantined lane
 (`quarantine-DO-NOT-READ/`; off-limits, do not ask). r26+ tails beyond the live-execution
 remit, banked: emergency-distrust levers · retention design · whylog drifted-wording walk ·
 desync-transition machinery (`28G` §2).
