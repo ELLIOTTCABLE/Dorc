@@ -13,7 +13,9 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[mark-unknown-verb]: [unwritten: mark-unknown-verb]
+  error[mark-unknown-verb]: `frobnicate` is not a mark verb I know; a dotless
+  token in mark position must be one of asserts, refutes, reads, bind,
+  safe-across, disturbs, lends, stored-in, undivided-by-transit-across
         [ oracle.sh:2:24
      2 | foo__predict() { foo : frobnicate sm.dorc.X; }
        |                        \________/

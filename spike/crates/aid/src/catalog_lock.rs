@@ -243,9 +243,9 @@ pub const CATALOG: &[CatalogEntry] = &[
         slug: "mark-unknown-verb",
         when_fires: "the new-grammar mark parser hit a period-free head/continuation token that is not a known verb (`281` §4 rule-3 miss). oracle/predict/mark_grammar.rs.",
         why: "281 §4 keystone (rul-verbs-dotless-kinds-dotted): a dotless mark token is a verb; an unknown one is malformed committed syntax ⇒ the block drops to ⊤ (`inv-top-reject`). `{token}` = the bad token, `{expected}` = the known-verb vocabulary.",
-        params: &[],
-        example: "[unwritten: mark-unknown-verb]",
-        message: None,
+        params: &["token", "expected"],
+        example: "`frobnicate` is not a mark verb I know; a dotless token in mark position must be one of asserts, refutes, reads, bind, safe-across, disturbs, lends, stored-in, undivided-by-transit-across",
+        message: Some("`{{token}}` is not a mark verb I know; a dotless token in mark position must be one of {{expected}}"),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
