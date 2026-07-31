@@ -641,7 +641,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   testable bytes only unless an explicit transformation-aware driver preserves
   provenance. A pipeline such as `dorc plan --format=jsonl | jq --pretty` therefore
   carries no edit authority by default.
-- **defining-case-catalog** (post-`282`-flip; loom-final as-built — `28L`/`28M`) —
+- **defining-case-catalog** (post-`282`-flip; loom-final as-built — `28L`/`28N`) —
   every code has exactly ONE defining case; the **committed transcript CASE is the
   authoring surface** and the generated locks are DERIVED from it
   (`282:rul-transcript-is-the-authoring-surface`). Cases live at
@@ -670,7 +670,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   `transcript_bytes_equal_production_bytes` + both lock byte-identity gates. Render seats
   take a `RenderCtx` (catalog + arrangement lookup + frame; width is a parameter, the
   canonical const binds only transcripts). The arc-close accounting of every prose
-  surface, incl. the law-cited never-loom set: `notes/28M`.
+  surface, incl. the law-cited never-loom set: `notes/28N`.
 - **flat-test-tree-and-loom-placement** (`288` §3, `rul-flat-test-tree` +
   `rul-slug-decides-loom-placement`) — every case is a peer in a flat
   `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom`
@@ -753,7 +753,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
 ## Where the build stands (dated 2026-07-31 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 
 - THE LOOM-FINAL ARC (2026-07-29→31; conduct ledger `notes/28L`; accounting
-  `notes/28M`) COMPLETE on `ai/r28-loom-final`: the errorloom/dorc-loom pipeline is
+  `notes/28N`) COMPLETE on `ai/r28-loom-final`: the errorloom/dorc-loom pipeline is
   the project's working prose-edit surface end-to-end. The boundary weld (diagnostic
   renders compose weft documents; the two-render-chain split and its byte-shape
   re-detection layer DELETED; `transcript_bytes_equal_production_bytes` is the
@@ -768,12 +768,12 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
 - Catalog: 95 codes, 87 case-owned; ratchet = 8 `records-*` (no production emitter;
   HUMAN DECISION pending: delete-under-no-compat vs the r26-revival wiring).
   Components: ~181 transcript-faced; 31 lock-tier with the remedy priced
-  (per-fragment owners, declined); never-loom set law-cited in `28M`.
+  (per-fragment owners, declined); never-loom set law-cited in `28N`.
 - Blind-reviewer rounds (loom-naive Rust persona, tooling-only) are the standing
   empirical gate on the flows; round 1 landed its chafe into the build.
 - HORIZON: `270:block-stdlib` under the human-led conductor (`27Q` on-ramp), the
   field-trial revival, and the r26 records/reactive revival (which inherits the
-  records-8 decision). Post-arc loom residue is enumerated in `28M` §3 — nothing
+  records-8 decision). Post-arc loom residue is enumerated in `28N` §3 — nothing
   loom-shaped is deferred anywhere else.
 
 ## Build / test / run

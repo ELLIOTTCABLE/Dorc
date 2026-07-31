@@ -127,14 +127,14 @@ crate's charter) · `notes/287` (errorloom as-built).
   emitting inline must leave the ENTRY, not just the line — de-nest at the COMPOSING seat.
   Scope carve: single WORDS/sentence-TAILS substituted into a host sentence stay values
   (de-nesting them breaks the host); their components are lock-tier until per-fragment
-  owners exist (`28M` §3).
+  owners exist (`28N` §3).
 - **substitution-face-for-pure-holes** (`28L:rul-empty-registers-for-pure-holes` + x2j
   as-built) — when a register's compiled template is EXACTLY one hole and the value is
   registry-backed (`ParamText::Component` carries `(slug, occurrence, words, values, text)`),
   the render stamps the section as the COMPONENT's own words/values face and the edit routes
   to the component's entry. Interior holes (words of ours around the hole) deliberately fall
   back to `ParamValue` — the remedy for those is per-fragment owners, priced and declined
-  (`28M` §3). The reason maps answer with the component, never a bare String, so the slug is
+  (`28N` §3). The reason maps answer with the component, never a bare String, so the slug is
   never thrown away.
 - **passthrough-is-type-gated** (`282:rul-passthrough-type-gated`; `296` is the census) — a hole is
   foreign because its VALUE is, never because the param is named `detail`. `aid::foreign` seals it:
@@ -293,4 +293,4 @@ crate's charter) · `notes/287` (errorloom as-built).
   the case-owned gates; production edges unchanged; `aid-is-dst-clean` untouched).
 - Never introduce a second prose home. Every user-facing string ends up loom-editable
   (`288` §1) — a hardcoded string here is debt with a name; the arc-close accounting of
-  every surface (and the law-cited never-loom set) is `notes/28M`.
+  every surface (and the law-cited never-loom set) is `notes/28N`.

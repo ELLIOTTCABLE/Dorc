@@ -19,7 +19,7 @@
 The human's now-or-never order (2026-07-29) executed whole: looms are the working
 prose-edit surface, end-to-end, empirically gated. Conduct ledger **`notes/28L`**
 (every directive, ruling, and lane landing); the arc-close accounting of EVERY prose
-surface **`notes/28M`** (transcript-faced ~181 components + 87/95 catalog codes ·
+surface **`notes/28N`** (transcript-faced ~181 components + 87/95 catalog codes ·
 lock-tier 31 with the remedy priced · never-loom law-cited · records-8 pending the
 human's emitter decision). Headline machinery: the stamped-provenance boundary weld
 (byte-shape re-detection DELETED; `transcript_bytes_equal_production_bytes` standing) ·

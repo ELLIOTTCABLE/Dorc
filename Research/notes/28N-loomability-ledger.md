@@ -1,4 +1,7 @@
-# 28M — the loomability ledger (arc-close accounting of every prose surface)
+# 28N — the loomability ledger (arc-close accounting of every prose surface)
+
+(né 28M — yielded to the human's concurrent `28M-committee-speech-and-the-custody-price.md`
+rename on `ai/main`, found at fold; all arc references updated.)
 
 AI-authored (Fable conductor, 2026-07-31, at the loom-final arc's close; conduct record
 `notes/28L`; the human's mandate: every piece of project prose editable through looms, or
