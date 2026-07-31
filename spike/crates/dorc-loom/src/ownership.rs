@@ -86,22 +86,42 @@ impl CaseOwnership {
     /// Returns a refusal naming BOTH files when two cases DECLARE one component, and a refusal
     /// naming the file when a case is unreadable, unparseable, or spells an entry it cannot mean.
     pub fn scan(dir: &Path, registered: &dyn Fn(&str) -> bool) -> Result<Self, String> {
+        Self::scan_collections(std::slice::from_ref(&dir.to_path_buf()), registered)
+    }
+
+    /// [`Self::scan`] across SEVERAL collections, resolved as one corpus.
+    ///
+    /// One component has one owner corpus-WIDE, not one per directory: the registries are global,
+    /// so two collections claiming one component are two homes for one entry however far apart the
+    /// files sit.
+    ///
+    /// # Errors
+    /// [`Self::scan`]'s refusals, plus a colliding case STEM across collections — the per-edit
+    /// check ([`Self::foreign_owner`]) compares filenames, and every case-taking verb resolves a
+    /// bare slug, so two `x.loom` in one corpus are one name for two files.
+    pub fn scan_collections(
+        dirs: &[PathBuf],
+        registered: &dyn Fn(&str) -> bool,
+    ) -> Result<Self, String> {
         let mut owners: BTreeMap<ComponentRef, PathBuf> = BTreeMap::new();
-        let entries =
-            std::fs::read_dir(dir).map_err(|error| format!("read corpus dir: {error}"))?;
         let mut paths: Vec<PathBuf> = Vec::new();
-        for entry in entries {
-            let path = entry
-                .map_err(|error| format!("read corpus entry: {error}"))?
-                .path();
-            if path
-                .extension()
-                .is_some_and(|extension| extension == "loom")
-            {
-                paths.push(path);
+        for dir in dirs {
+            let entries =
+                std::fs::read_dir(dir).map_err(|error| format!("read corpus dir: {error}"))?;
+            for entry in entries {
+                let path = entry
+                    .map_err(|error| format!("read corpus entry: {error}"))?
+                    .path();
+                if path
+                    .extension()
+                    .is_some_and(|extension| extension == "loom")
+                {
+                    paths.push(path);
+                }
             }
         }
         paths.sort();
+        refuse_colliding_stems(&paths)?;
         // DECLARED claims first, so an explicit `owns:` wins the slug its FILENAME would otherwise
         // claim implicitly. A case is named for the world it demonstrates, and the case that
         // RENDERS a component editably is often a different one; without this the component's home
@@ -157,8 +177,10 @@ impl CaseOwnership {
         occurrence: Option<usize>,
         editing: &Path,
     ) -> Option<&Path> {
-        // Cases are flat in one collection, so the filename is the identity — and it is the only
-        // comparison that survives a caller who named the case by slug rather than by path.
+        // The filename is the identity: it is the only comparison that survives a caller who named
+        // the case by slug rather than by path. Stems are corpus-wide distinct
+        // ([`CaseOwnership::scan_collections`] refuses otherwise), so spanning two collections does
+        // not make this ambiguous.
         self.owner(slug, occurrence)
             .filter(|owner| owner.file_name() != editing.file_name())
     }
@@ -197,6 +219,28 @@ pub fn refuse_foreign_components(
                 |name| name.to_string_lossy().into_owned(),
             ),
         });
+    }
+    Ok(())
+}
+
+/// Refuse two cases sharing one stem, in whatever collections they sit.
+fn refuse_colliding_stems(paths: &[PathBuf]) -> Result<(), String> {
+    let mut seen: BTreeMap<&std::ffi::OsStr, &Path> = BTreeMap::new();
+    for path in paths {
+        let Some(stem) = path.file_stem() else {
+            continue;
+        };
+        if let Some(held) = seen.insert(stem, path.as_path()) {
+            return Err(format!(
+                "two cases share the name `{}`: {} and {}. A case name is corpus-wide — every verb \
+                 that takes a CASE resolves a bare slug, and an edit's owner check compares \
+                 filenames — so rename one of them, then: mise run loom:compile {}",
+                stem.to_string_lossy(),
+                held.display(),
+                path.display(),
+                path.display()
+            ));
+        }
     }
     Ok(())
 }
@@ -301,12 +345,38 @@ pub fn is_registered_component(slug: &str) -> bool {
             .any(|entry| entry.slug == slug)
 }
 
-/// The canonical corpus scan: the primary loom collection, resolved against the built registries.
+/// The canonical corpus scan: EVERY loom collection beside `primary`, resolved against the built
+/// registries.
+///
+/// `primary` is `crates/<c>/tests`, so its grandparent is `crates/` and the collections are its
+/// `*/tests` children — the same shape the two runners discover cases through
+/// (`crates/cli/tests/support.rs`'s `case_roots`). The walk is repeated rather than shared because
+/// that one lives in a test-support module of another crate; what must not diverge is the SET, and
+/// a collection either walker misses shows up as a component with no home rather than silently.
 ///
 /// # Errors
-/// Returns [`CaseOwnership::scan`]'s refusals.
-pub fn corpus_ownership(dir: &Path) -> Result<CaseOwnership, String> {
-    CaseOwnership::scan(dir, &is_registered_component)
+/// Returns [`CaseOwnership::scan_collections`]'s refusals.
+pub fn corpus_ownership(primary: &Path) -> Result<CaseOwnership, String> {
+    CaseOwnership::scan_collections(&loom_collections(primary), &is_registered_component)
+}
+
+/// `primary` plus every sibling `crates/*/tests` directory, deduped and ordered.
+fn loom_collections(primary: &Path) -> Vec<PathBuf> {
+    let mut dirs = vec![primary.to_path_buf()];
+    let Some(crates) = primary.parent().and_then(Path::parent) else {
+        return dirs;
+    };
+    let Ok(entries) = std::fs::read_dir(crates) else {
+        return dirs;
+    };
+    let mut siblings: Vec<PathBuf> = entries
+        .flatten()
+        .map(|entry| entry.path().join("tests"))
+        .filter(|dir| dir.is_dir() && dir != primary)
+        .collect();
+    siblings.sort();
+    dirs.extend(siblings);
+    dirs
 }
 
 #[cfg(test)]
@@ -314,7 +384,11 @@ mod tests {
     use super::*;
 
     fn corpus(cases: &[(&str, &str)]) -> (tempdir::TempDir, Vec<PathBuf>) {
-        let dir = tempdir::TempDir::new();
+        corpus_named("first", cases)
+    }
+
+    fn corpus_named(label: &str, cases: &[(&str, &str)]) -> (tempdir::TempDir, Vec<PathBuf>) {
+        let dir = tempdir::TempDir::new(label);
         let mut paths = Vec::new();
         for (name, body) in cases {
             let path = dir.path().join(format!("{name}.loom"));
@@ -417,11 +491,38 @@ mod tests {
         );
     }
 
-    /// The committed collection resolves cleanly — the corpus-wide half of the one-home law.
+    /// The committed collections resolve cleanly — the corpus-wide half of the one-home law.
+    ///
+    /// The scan spans EVERY `crates/*/tests`, so this also asserts that the run-lane collection is
+    /// reached: a component rendered only by a whole-product case has an authoring home there and
+    /// nowhere else, and scanning one directory left it homeless.
     #[test]
     fn the_committed_corpus_has_one_home_per_component() {
         let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests");
-        corpus_ownership(&dir).expect("the committed corpus resolves");
+        let ownership = corpus_ownership(&dir).expect("the committed corpus resolves");
+        assert!(
+            ownership
+                .owner("why-chain-event-received", None)
+                .is_some_and(|owner| owner.ends_with("whygallery-survive-trusted-footprint.loom")),
+            "a component only the run-lane collection renders is homed there"
+        );
+    }
+
+    /// A case name is corpus-wide, because every verb that takes one resolves a bare slug and the
+    /// per-edit owner check compares filenames. Two collections made that collidable.
+    #[test]
+    fn one_stem_in_two_collections_refuses() {
+        let (first, _) = corpus(&[("alpha", &case(""))]);
+        let (second, _) = corpus_named("second", &[("alpha", &case(""))]);
+        let refusal = CaseOwnership::scan_collections(
+            &[first.path().to_owned(), second.path().to_owned()],
+            &every_slug,
+        )
+        .expect_err("a shared stem refuses");
+        assert!(
+            refusal.contains("share the name `alpha`"),
+            "the refusal names the collision: {refusal}"
+        );
     }
 
     /// A scratch directory that removes itself, so the fixtures above never touch the corpus.
@@ -431,9 +532,9 @@ mod tests {
         pub(super) struct TempDir(PathBuf);
 
         impl TempDir {
-            pub(super) fn new() -> Self {
+            pub(super) fn new(label: &str) -> Self {
                 let path = std::env::temp_dir().join(format!(
-                    "dorc-loom-ownership-{}-{:?}",
+                    "dorc-loom-ownership-{label}-{}-{:?}",
                     std::process::id(),
                     std::thread::current().id()
                 ));

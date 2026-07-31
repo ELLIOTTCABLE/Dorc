@@ -901,7 +901,13 @@ struct LoomCaseSpec {
 
 /// The frontmatter keys a loom-form case may carry, and the dir-form artifact each becomes.
 /// Anything else is refused — an unread key is a silently-ineffective assertion.
-const LOOM_KEYS: [&str; 13] = [
+///
+/// `owns` is read by neither runner: it is the prose-ownership resolver's
+/// (`dorc_loom::corpus_ownership`), which scans EVERY collection. It is listed because this
+/// runner's refusal is what a whole-product case's author meets, and refusing the key here left a
+/// prose-component rendered only by this collection with no authoring home at all
+/// (`28L:rul-ownership-declaration-adopted`).
+const LOOM_KEYS: [&str; 14] = [
     "run",
     "fixpoint",
     "flags",
@@ -915,6 +921,7 @@ const LOOM_KEYS: [&str; 13] = [
     "expect-why",
     "expect-hint",
     "expect-why-chain",
+    "owns",
 ];
 
 /// Scalar-or-list frontmatter items (an absent key is the empty list).
