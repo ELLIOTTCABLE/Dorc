@@ -789,6 +789,55 @@ lanes thread by fresh census, never by the map's count.
   non-bisectable two-commit unit (the retired row's hand-deletion must precede
   the promote that regenerates the lock; the first is red on the
   one-catalog-entry census). Accepted wart; do not bisect between them.
+- **x2g LANDED** (`ai/r28-loom-x2g` @ `cd40b015`; both legs green, Win 1693 /
+  WSL 1689; folds after x2f). Faces 35 → 65 of 100 `why-*` (the ledger's "40" had
+  counted ownership only). Five measured worlds (survival/claims · guarded-opener ·
+  render-refused · two-claims · CASCADE); cascades DONE not ledgered — fourth
+  lib-seam extraction (`cli/src/fixpoint.rs`, ~347 lines verbatim, pure;
+  `analyze_measured` settles + attributes; zero churn across 133 looms =
+  empty-world-byte-identical holding). Authoring frictions: the digest refusal
+  worked as designed (every case bootstrapped through it); `sites=` semantics
+  cost 20 minutes (teaching line ordered, x2h); the loom receipt hardcoded
+  `risk_profile: None` (fixed in-lane); `sections` has NO first-replay limitation
+  (x2e's caveat corrected — the worldless-derivation fns are the limited ones,
+  already documented). LEDGER CORRECTION: `why-receipt-when-replayed` is NOT
+  clock-blocked (renders today from the durable's `started=`); its blocker is
+  class A. Ownership precedence change ACCEPTED: explicit `owns:` outranks a
+  filename's implicit claim (the refusal alternative left components homed where
+  only refusal was possible; collisions surface at edit time via ForeignComponent
+  naming the file; pinned).
+- **rul-composed-saids-render-as-own-lines** (conductor; settles
+  `tc-composed-value-has-no-editable-home`, x2g's class A — 18 components, the
+  largest arc-close gap) — the flattening seat (`sentence_runs` rendering a
+  nested `Said` through `.text()` into one immutable ArrangementValue) is the
+  WRONG PLAYER doing the words' job. The recurse-in-place fix is REJECTED (x2g
+  measured it fragmenting a chrome line into sections —
+  `a-chrome-line-is-one-section` violated, regression demonstrated). RULED: the
+  render de-nests — a composed `Said` renders as its OWN chrome line (one
+  section per line, law preserved; an indented because-line is idiomatic on a
+  pull surface). Licensed by render-form-unwelded + the human's standing
+  render-surface-instability directive (correct components, correct players;
+  byte-shape is wasted effort). Goldens churn freely. BUILD: x2h.
+- **rul-dead-prose-components-die** (settles `tc-registry-rows-with-no-render-seat`,
+  class E) — four rows with provably no consuming seat (`why-reason-guarded` ·
+  `why-reason-run-declined` · `why-site-header` · `why-vouch-payload-establish`)
+  are DELETED under strawman-no-compat + the no-tech-debt directive; a future
+  render that wants one re-mints it. x2h.
+- **fnd-migrated-reasons-are-lock-tier** (conductor synthesis, x2f × x2g's class B)
+  — x2f's 93 reason components + class B's 9 render as PARAM VALUES (registry rows
+  read as text into a hole), so they are lock-tier (sanctioned hand-seed), not
+  transcript-faced — the same mechanical class. Facing them needs the transport to
+  learn ONE thing: a value-position span carrying a nested row face
+  (splice-on-value). x2h ATTEMPTS it under a stop-and-size gate; if it balloons,
+  the honest resting state is ledgered lock-tier-by-mechanism and the choice goes
+  to the human at close (with the note that lock-tier hand-seeding is exactly the
+  fingers-in-the-generated-file flow the arc exists to retire — the one place the
+  mandate may have to bend or the transport grow).
+- **x2h QUEUED** (final micro-lane, after the x2f+x2g folds): the de-nest ruling ·
+  the four deletions · splice-on-value attempt (stop-and-size) · the `sites=`
+  teaching line · the `[unnarrated: FactMergeDisagreement]` ~SUSPECT (cheap
+  investigate; deepest-tier only) · prose run-on noted for the human's prose era
+  (aggregate joins reasons with a bare space — not machinery).
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
