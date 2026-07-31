@@ -251,11 +251,13 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 16 = the prior 15 (`289:rul-unwritten-ceiling-one-bump`) plus `28K`'s two loading
-    // refusals, which land unwritten because a builder authors ZERO user-facing prose
-    // (`27V:rul-error-authorship-tier`). The headroom that bump reserved is now spent.
+    // Ceiling 18 = 16 (the prior 15 plus `28K`'s two loading refusals, which spent the headroom
+    // `289:rul-unwritten-ceiling-one-bump` reserved) plus `28K` §2's two positional notices —
+    // the move-it-up hint and the in-book vocabulary refusal. All four land unwritten because a
+    // builder authors ZERO user-facing prose (`27V:rul-error-authorship-tier`); each bump is a
+    // deliberate act and the debt is the conductor's.
     assert!(
-        unwritten.len() <= 16,
+        unwritten.len() <= 18,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()

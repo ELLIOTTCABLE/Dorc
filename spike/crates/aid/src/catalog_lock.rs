@@ -878,4 +878,22 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "in-book-vocabulary-role",
+        when_fires: "a BOOK defines a KIND-OWNER role function — `<kind>__resolve`, `<kind>__disturbance_reaches_only`, or `<kind>__state_stored_only_in`. cli/main.rs positional_loading_notices, one mint per such definition, spanned at the definition's name; `{role}` names which member of the vocabulary tier it is. The command-keyed trio (`predict` / `disturbs` / `is_converged`) is unaffected — a book defining one of those is an ordinary in-book oracle and is exactly what stage 3 asks for.",
+        why: "`28M` §5.3 obl-in-book-vocabulary-role-notice. The vocabulary tier is the ONE ambient exception to the full-positional regime: kind-owner members canonicalize entities and type emissions for OTHER authors' sites, so they must be single-occupancy and load \"before line 1\" rather than answering differently at different lines of somebody's book (`28M` §3 wall-kind-owner-single-occupancy — single occupancy in an owned namespace is what converts multi-author danger into single-author trust). A book cannot supply that: its definitions are positional by construction. So the definition does not load, and the notice exists because silence here reads as \"my resolver is broken\" rather than \"this belongs in a loaded file\". The remediation is to move it into a marked oracle file and name that file on the command line. WARNING, not note: unlike the move-it-up hint, something the author wrote genuinely has no effect.",
+        params: &[],
+        example: "[unwritten: in-book-vocabulary-role]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
+    CatalogEntry {
+        slug: "role-defined-below-its-sites",
+        when_fires: "a BOOK defines a command-keyed role function (`<family>__predict` / `__disturbs` / `__is_converged`) at a point where command sites naming that same family already sit ABOVE it, and nothing else is live for that name at those sites. cli/main.rs positional_loading_notices, one mint per late definition, spanned at the definition's name; `{sites}` counts the sites that lost their answer. Never fires when another unit's definition IS live at those sites — that world is either served or contested, and this note would be noise in both.",
+        why: "`28K` §2 rul-visibility-is-full-positional (ACKED spike-tier, human-typed 2026-07-31). Every site-keyed act reads the function environment AS OF THE SITE'S POSITION, so a definition a shell executing top-to-bottom has not reached yet licenses NOTHING above itself — no elision, no guard, no vouch. That is the design's named, accepted consequence, chosen because expectation-matching beats maximal ergonomics: the naive model of Dorc as a stupid guard-inserter, whose inserted text cannot see a definition loaded below it, now holds uniformly. The cost lands on the stage-3 bottom-appender (`28M` §6, rent-climbed), and this note is their recovery — the remediation is to move the definition above its sites, which costs one cut-and-paste and is a change the engine is uniquely positioned to notice. NOTE severity, never warning: the book is correct sh, applies unchanged, and nothing is wrong; the aid plane is naming value the admin could have (`two-plane-aid-law`).",
+        params: &[],
+        example: "[unwritten: role-defined-below-its-sites]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
