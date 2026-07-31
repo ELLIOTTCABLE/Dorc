@@ -48,6 +48,110 @@ available tasks.
    [errorloom]: <https://github.com/ELLIOTTCABLE/Dorc/tree/main/spike/crates/errorloom> "our format for e2e tests and prose-authorship"
 
 
+### Live-test
+
+There's a (small) automated-test-against-live-machine that can be executed
+againest either a Docker container or a VPS. (On Windows, `wslc.exe` is
+substituted for Docker.)
+
+```sh
+mise run livetest
+```
+
+You should see an initial apply that can't skip much; then a re-apply that
+indeed skips several converged commands (note the `elide=4`):
+
+```console
+livetest: pristine plan matches baseline (sites=12 elide=1 omit=0 guard=0 run=11)
+livetest: apply 1 succeeded in 8s
+livetest: converged plan matches baseline (sites=12 elide=4 omit=4 guard=0 run=4)
+livetest: apply 2 succeeded in 3s
+livetest: OK - probe shipped, plan matched baseline, applied for real, re-planned converged, re-applied clean
+```
+
+Teardown is automated unless it fails (or you pass `LIVETEST_KEEP=1`.)
+
+
+### Use Dorc by hand
+
+<!-- TODO: This section should be dogfooded. Requires local-pivot to be alive;
+            but at the end of the day, this entire setup-section should be a
+            *book*, not Markdown. -->
+
+By hand, if you prefer, using `docker`/`wslc` to stand up a container you can
+point `dorc` at to experiment:
+
+1. **Create a target**. On a *nix box:
+
+   ```sh
+   ssh-keygen -t ed25519 -N '' -f .tmp/temp-ssh-key -q
+   docker run -d --name dorc-target -p 2222:2222 \
+      -e PUBLIC_KEY="$(cat .tmp/temp-ssh-key.pub)" \
+      lscr.io/linuxserver/openssh-server:latest
+   printf 'IdentityFile %s/.tmp/temp-ssh-key\nStrictHostKeyChecking accept-new\nUserKnownHostsFile %s/.tmp/temp-known-hosts\n' "$PWD" "$PWD" > .tmp/temp-ssh-config
+   ```
+
+   ... or, on Windows, one can use the new `wslc` instead of installing Docker
+   explicitly, with some caveats:
+
+    - as of July 2026, ships with a WSL pre-release; `wsl --update --pre-release`
+      from an admin PowerShell;
+    - and, because `wslc` is a sibling-VM to `wsl` itself, you need to bind to
+      `0.0.0.0` to ensure access from *within* WSL.
+
+   ```powershell
+   ssh-keygen -t ed25519 -N '""' -f .tmp\temp-ssh-key -q
+   wslc run -d --name dorc-target -p 0.0.0.0:2222:2222 `
+      -e PUBLIC_KEY="$((Get-Content .tmp\temp-ssh-key.pub -Raw).Trim())" `
+      lscr.io/linuxserver/openssh-server:latest
+   "IdentityFile $PWD\.tmp\temp-ssh-key`nStrictHostKeyChecking accept-new`nUserKnownHostsFile $PWD\.tmp\temp-known-hosts`n" `
+      | Set-Content -NoNewline .tmp\temp-ssh-config
+   ```
+
+   (Note: for this simple example, that's an Alpine image, and the ssh-user
+   isn't root. Adjust as you see fit.)
+
+2. **Bridge into WSL**, if you tend to work inside a WSL terminal:
+
+   ```sh
+   # /mnt/c always looks world-writable to Linux; ssh refuses to load a key with
+   # those permissions. stage a chmod-fixed copy WSL's own ssh client can use:
+   mkdir -p ~/.cache/dorc
+   cp .tmp/temp-ssh-key ~/.cache/dorc/temp-ssh-key
+   chmod 600 ~/.cache/dorc/temp-ssh-key
+   printf 'IdentityFile ~/.cache/dorc/temp-ssh-key\nStrictHostKeyChecking accept-new\nUserKnownHostsFile ~/.cache/dorc/temp-known-hosts\n' \
+      >~/.cache/dorc/temp-ssh-config
+   ```
+
+3. **Run Dorc**, with your config / flags:
+
+   You now have an ssh destination. Point Dorc at it - bring your own book and
+   oracle(s); this repo's own `cp` oracle is small, real, and already sitting in
+   the tree if you'd rather copy-paste something that works than write one
+   first:
+
+   ```sh
+   # demo-book.sh
+   cp /etc/os-release /config/os-release-copy
+   ```
+
+   ```console
+   # WSL2's NAT means 127.0.0.1 does not reach the container from here; resolve
+   # instead thru the Windows host's address as WSL currently sees it.
+   # (this changes across `wsl --shutdown`/reboot; re-run it if stale)
+   ip route show | grep -i default | awk '{print $3}'
+   172.28.0.1
+
+   # - host-address: 127.0.0.1 (or on WSL2, the above-printed IP)
+   # - config-path: must match, either the WSL-specific ~/.cache/dorc *or*
+   #   outside WSL, the platform-native / repo-local .tmp config
+   $ mise run dorc -- plan --book="$PWD/demo-book.sh" \
+      -o "$PWD/Research/trial/r26/oracles/cp.oracle.sh" \
+      --host linuxserver.io@<host-address>:2222 \
+      --ssh-config "<ssh-config-path>"
+   ```
+
+
 ## Authorship, prose, and error-messages
 
 Effectively *all* user-facing prose in this project (error-messages, explanatory
