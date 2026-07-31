@@ -35,6 +35,15 @@ pub struct FrozenModel<'a> {
     pub verdicts: &'a dorc_oracle::verdict::VerdictIndex,
     /// The wrapper peel, per wrapped site.
     pub peeled: &'a BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::PeeledSite>,
+    /// Which definition is live AT each site (`28K` §2 rul-visibility-is-full-positional).
+    ///
+    /// It belongs in the frozen set for the same reason the rest of it does
+    /// (`the-frozen-set-includes-the-function-environment`): the environment is solved ONCE from
+    /// the origin model, and the ratchet erases EFFECTS with no authority over BINDINGS. Carrying
+    /// it here is what lets the loop READ the same answer every round without being able to
+    /// re-derive one — the driver never spells an env entry point inside the loop, which the
+    /// lexical fence in `main.rs` enforces.
+    pub live: dorc_analysis::funcenv::LiveDefinitions<'a>,
 }
 
 /// One round's PURE DERIVATION from (frozen inputs, erasure ledger) — recomputed from
@@ -203,6 +212,7 @@ pub fn classify_round(
         arena,
         degrades,
         verdict_lane,
+        frozen.live,
     );
     ClassifiedRound {
         classes: classified.value,

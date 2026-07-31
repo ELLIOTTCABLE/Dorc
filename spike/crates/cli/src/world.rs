@@ -131,6 +131,23 @@ impl WhyWorld {
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeSet::new();
         let peeled = BTreeMap::new();
+        // `28K` §2 rul-visibility-is-full-positional, on the same rule the binary applies. The
+        // book's own id sits ONE PAST the oracle vector this seat lifts, which is honest rather
+        // than lossy: a book definition really cannot be answered from `checks` here (this seat
+        // does not yet feed the book to the lifts — `28M` §7's stage-F rename rider names the
+        // gap), so a site the book's definition owns withholds instead of answering from the
+        // oracle a shell would no longer call.
+        let definitions = definition_table(
+            oracle_paths,
+            &oracle_refs,
+            source_file_id(oracle_srcs.len()),
+            &parsed.value,
+        );
+        let env = {
+            let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+            dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
+        };
+        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
         let frozen = crate::fixpoint::FrozenModel {
             cfg: &cfg.value,
             value: &value,
@@ -139,6 +156,7 @@ impl WhyWorld {
             checks: &checks,
             verdicts: &verdicts,
             peeled: &peeled,
+            live,
         };
         let origin = crate::fixpoint::classify_round(
             &frozen,
@@ -447,6 +465,79 @@ impl WhyWorld {
 #[must_use]
 pub fn source_file_id(idx: usize) -> dorc_core::SourceFileId {
     dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX))
+}
+
+/// The unit's role definitions, as DATA for the function-environment domain (`28K` §2).
+///
+/// Read through `dorc_syntax::parse` for EVERY input, book and oracle alike, so the environment and
+/// the shadow refusal see exactly the funcdefs the sh parser sees. Only ROLE names are recorded:
+/// the refusal is about role FAMILIES (`28K` §1), and an ordinary helper colliding across files
+/// carries no license to withhold.
+///
+/// Load order is the id order (`28K` §2a): CLI-named sources are the AMBIENT PREFIX, applied
+/// "before line 1" in command-line order, and each is also registered under its own path so a
+/// book's `. oracles/yum.sh` binds the same definitions. The book's own definitions are POSITIONAL
+/// — keyed by the `FuncDef` AST node that writes them, since they execute in the book's stream.
+///
+/// Lives on the lib seam so the binary and [`WhyWorld`] build ONE table by one rule: a why report
+/// that answered from a different environment than the run would be a decoration
+/// (`lib-target-is-a-loom-seam`).
+#[must_use]
+pub fn definition_table(
+    oracle_paths: &[String],
+    source_srcs: &[&str],
+    book_file: dorc_core::SourceFileId,
+    book: &dorc_syntax::Ast,
+) -> dorc_analysis::funcenv::DefinitionTable {
+    use dorc_analysis::funcenv::{Definition, DefinitionTable};
+    use dorc_syntax::ast::NodeKind;
+
+    let mut table = DefinitionTable::default();
+    for (idx, path) in oracle_paths.iter().enumerate() {
+        let Some(src) = source_srcs.get(idx) else {
+            continue;
+        };
+        let parsed = dorc_syntax::parse(src).value;
+        let mut ids = Vec::new();
+        for (_, node) in parsed.iter() {
+            let NodeKind::FuncDef {
+                name, name_span, ..
+            } = &node.kind
+            else {
+                continue;
+            };
+            if dorc_oracle::reserved::role_family(name).is_none() {
+                continue;
+            }
+            ids.push(table.add(Definition {
+                file: source_file_id(idx),
+                name: name.clone(),
+                span: node.span,
+                name_span: *name_span,
+            }));
+        }
+        table.set_loadable(path.clone(), ids.clone());
+        table.extend_ambient(ids);
+    }
+    for (id, node) in book.iter() {
+        let NodeKind::FuncDef {
+            name, name_span, ..
+        } = &node.kind
+        else {
+            continue;
+        };
+        if dorc_oracle::reserved::role_family(name).is_none() {
+            continue;
+        }
+        let def = table.add(Definition {
+            file: book_file,
+            name: name.clone(),
+            span: node.span,
+            name_span: *name_span,
+        });
+        table.set_book_site(id, def);
+    }
+    table
 }
 
 /// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.

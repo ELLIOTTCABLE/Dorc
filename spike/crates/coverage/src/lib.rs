@@ -472,8 +472,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
 
     // Shared interner across oracles + book ⇒ provider symbols match (cli parity).
     // The effect-map is derived from the check bodies (23D §1 — the check is the oracle).
-    let lifted = dorc_oracle::lift(&mut interner, inputs.oracles);
-    let idx = lifted.value;
+    let idx = dorc_oracle::lift(&mut interner, inputs.oracles).value;
     let checks: Vec<dorc_oracle::predict::PredictSet> = inputs
         .oracles
         .iter()
@@ -503,6 +502,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &mut arena,
         &mut BTreeMap::new(),
         &mut std::collections::BTreeSet::new(),
+        // An INSTRUMENT, never a gate: reach is measured ambiently (`28K` §2).
+        dorc_analysis::funcenv::LiveDefinitions::unsolved(),
     );
     let classes = classified.value;
 

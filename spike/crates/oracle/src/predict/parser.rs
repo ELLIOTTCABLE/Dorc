@@ -24,7 +24,11 @@ use dorc_syntax::sem;
 
 /// The provider-name suffix marking a command-keyed check (`apt_get__predict`); the
 /// provider before it maps `_` → `-` ([`map_provider_name`]).
-const PREDICT_SUFFIX: &str = "__predict";
+///
+/// `pub` for the same reason [`VERDICT_SUFFIX`](crate::verdict::VERDICT_SUFFIX) is: the positional
+/// visibility gate (`28K` §2) asks the function environment about the exact NAME a lifted role
+/// would have been authored under, and re-spelling it at the consumer is how a suffix drifts.
+pub const PREDICT_SUFFIX: &str = "__predict";
 
 /// Which role-sibling funcdef this parse scans for (rul-role-split; `277` §4d role menu).
 /// The dialect GRAMMAR is identical across siblings — only the name-suffix differs — so one

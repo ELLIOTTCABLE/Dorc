@@ -82,7 +82,7 @@ use dorc_cli::survival::{
     collect_resolver_coords, dangling_diagnostics, entity_text_of, expand_footprints_via_reaches,
     lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
-use dorc_cli::world::{ship_predict_body, ship_verdict_body, source_file_id};
+use dorc_cli::world::{definition_table, ship_predict_body, ship_verdict_body, source_file_id};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
@@ -817,15 +817,22 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     //
     // Computed ONCE from the ORIGIN model, joining the FROZEN set: the fixpoint's ratchet erases
     // EFFECTS and holds no authority over BINDINGS (`the-frozen-set-includes-the-function-environment`).
-    let definitions = definition_table(&oracle_paths, &source_refs, &parsed.value);
-    let (shadows, unprovable) = {
+    let definitions = definition_table(
+        &oracle_paths,
+        &source_refs,
+        source_file_id(source_refs.len().saturating_sub(1)),
+        &parsed.value,
+    );
+    let env = {
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-        let env = dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane);
-        (
-            dorc_analysis::funcenv::contests(&parsed.value, &cfg.value, &definitions, &env),
-            dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit()),
-        )
+        dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
     };
+    let shadows = dorc_analysis::funcenv::contests(&parsed.value, &cfg.value, &definitions, &env);
+    let unprovable = dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit());
+    // `28K` §2 rul-visibility-is-full-positional — the site-keyed answer every consuming act now
+    // reads. Solved ONCE here, beside the whole-unit refusal, and carried (never re-derived) into
+    // the frozen model.
+    let live_defs = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
     // The license-plane fact is minted FIRST; the diagnostics derive FROM it, never the reverse
     // (`two-plane-aid-law`). Two sources feed it and only the first complains: a PROVEN shadow,
     // and a ⊤ binding (rider 1 `⊤-licenses-nothing`, silent — that is what lets it under-fire).
@@ -911,6 +918,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         checks: &checks,
         verdicts: &verdicts,
         peeled: &peeled_sites,
+        live: live_defs,
     };
     let origin = classify_round(
         &frozen,
@@ -2032,74 +2040,6 @@ fn source_table(
         .chain(std::iter::once(book_src.to_owned()))
         .collect();
     (paths, srcs)
-}
-
-/// The unit's role definitions, as DATA for the function-environment domain (`28K` §2).
-///
-/// Read through `dorc_syntax::parse` for EVERY input, book and oracle alike, so the environment and
-/// the shadow refusal see exactly the funcdefs the sh parser sees. Only ROLE names are recorded:
-/// the refusal is about role FAMILIES (`28K` §1), and an ordinary helper colliding across files
-/// carries no license to withhold.
-///
-/// Load order is the id order (`28K` §2a): CLI-named sources are the AMBIENT PREFIX, applied
-/// "before line 1" in command-line order, and each is also registered under its own path so a
-/// book's `. oracles/yum.sh` binds the same definitions. The book's own definitions are POSITIONAL
-/// — keyed by the `FuncDef` AST node that writes them, since they execute in the book's stream.
-fn definition_table(
-    oracle_paths: &[String],
-    source_srcs: &[&str],
-    book: &dorc_syntax::Ast,
-) -> dorc_analysis::funcenv::DefinitionTable {
-    use dorc_analysis::funcenv::{Definition, DefinitionTable};
-    use dorc_syntax::ast::NodeKind;
-
-    let mut table = DefinitionTable::default();
-    for (idx, path) in oracle_paths.iter().enumerate() {
-        let Some(src) = source_srcs.get(idx) else {
-            continue;
-        };
-        let parsed = dorc_syntax::parse(src).value;
-        let mut ids = Vec::new();
-        for (_, node) in parsed.iter() {
-            let NodeKind::FuncDef {
-                name, name_span, ..
-            } = &node.kind
-            else {
-                continue;
-            };
-            if dorc_oracle::reserved::role_family(name).is_none() {
-                continue;
-            }
-            ids.push(table.add(Definition {
-                file: source_file_id(idx),
-                name: name.clone(),
-                span: node.span,
-                name_span: *name_span,
-            }));
-        }
-        table.set_loadable(path.clone(), ids.clone());
-        table.extend_ambient(ids);
-    }
-    let book_file = source_file_id(source_srcs.len().saturating_sub(1));
-    for (id, node) in book.iter() {
-        let NodeKind::FuncDef {
-            name, name_span, ..
-        } = &node.kind
-        else {
-            continue;
-        };
-        if dorc_oracle::reserved::role_family(name).is_none() {
-            continue;
-        }
-        let def = table.add(Definition {
-            file: book_file,
-            name: name.clone(),
-            span: node.span,
-            name_span: *name_span,
-        });
-        table.set_book_site(id, def);
-    }
-    table
 }
 
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier
@@ -4975,6 +4915,7 @@ apt_get__predict() {
             checks: &checks,
             verdicts: &verdicts,
             peeled: &peeled,
+            live: dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         };
         let origin = classify_round(
             &frozen,

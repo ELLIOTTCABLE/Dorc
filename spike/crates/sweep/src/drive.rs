@@ -75,6 +75,9 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &mut arena,
             &mut std::collections::BTreeMap::new(),
             &mut BTreeSet::new(),
+            // The differential net drives ONE inline oracle against a generated book, so no unit
+            // spans two files and the positional answer could only equal the ambient one.
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
     let classes = classified.value;
 

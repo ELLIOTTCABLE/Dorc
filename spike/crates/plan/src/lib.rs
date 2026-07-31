@@ -5434,6 +5434,7 @@ apt_get__is_converged() { return 0; }
                 &mut dorc_core::ProvArena::new(),
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             );
         let classes = classes.value;
         let derivations = compile_derivations(
@@ -6536,6 +6537,7 @@ apt_get__is_converged() {
             &mut arena,
             &mut BTreeMap::new(),
             &mut BTreeSet::new(),
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
         let classes = classified.value;
         let kills = if walled { kills_found } else { BTreeSet::new() };

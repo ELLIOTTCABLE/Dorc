@@ -216,6 +216,14 @@ pub struct KindIndex {
     /// `MustRun`). An observe with NO co-occurring verdict stays a `Queries` cell (its own row,
     /// "widens nothing"). Safe direction: widening only GROWS a fact's kill-surface.
     widenings: BTreeMap<(ProviderId, Symbol), BTreeSet<SelectorId>>,
+    /// Per provider, the SOURCE INDEX whose `__predict` body these cells were derived from
+    /// (`28K` §2 rul-visibility-is-full-positional). Exactly one file contributes per provider —
+    /// [`live_source`] picks it — and a site-keyed consumer must be able to ask WHICH, because it
+    /// resolves the argv through a positionally-chosen file's argparse and would otherwise read
+    /// cells some OTHER file declared: one cell measured, a different one keyed
+    /// (`271:rul-sin-ordering`, mis-attribution). Empty on a hand-built index (no source text
+    /// exists to name), which reads as "no opinion" at the consumer.
+    sources: BTreeMap<ProviderId, usize>,
 }
 
 impl KindIndex {
@@ -265,6 +273,20 @@ impl KindIndex {
         self.effects.is_empty()
     }
 
+    /// Record that `provider`'s cells came from source index `file`.
+    pub fn set_source(&mut self, provider: ProviderId, file: usize) {
+        self.sources.insert(provider, file);
+    }
+
+    /// Which source index `provider`'s cells were derived from, or `None` when the index carries
+    /// no provenance (a hand-built one). `None` is NO OPINION, never "any file will do": the
+    /// positional consumer treats it as un-checkable and falls back to its other gate
+    /// ([`crate::live_source`] agreement), which is what keeps a source-less test index usable.
+    #[must_use]
+    pub fn source_of(&self, provider: ProviderId) -> Option<usize> {
+        self.sources.get(&provider).copied()
+    }
+
     /// Record that `(provider, verb)`'s predict body carries a co-occurring OBSERVE mark for
     /// `selector` — i.e. an observe INSIDE a verdict body (`277` §5 observe-backing-widening).
     /// It widens the verb's establish fact backing (a sibling cell), never becoming a Query cell.
@@ -303,6 +325,7 @@ impl KindIndex {
             |p: ProviderId| contested.withholds(&to_funcname_segment(interner.resolve(p.0)));
         self.effects.retain(|(p, _), _| !withheld(*p));
         self.widenings.retain(|(p, _), _| !withheld(*p));
+        self.sources.retain(|p, _| !withheld(*p));
         self
     }
 }
@@ -414,6 +437,9 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
                     .push((kind, selector, e.claim));
             }
             let provider = ProviderId(provider);
+            // Which file spoke, kept so a site-keyed consumer can check that the argparse it
+            // resolved through and the cells it reads are the SAME author's.
+            out.value.set_source(provider, index);
             for (verb, cells) in by_verb {
                 // observe-backing-widening (`277` §5): an OBSERVE (`:?`) that co-occurs with a
                 // VERDICT (`:`/`:!`) in one verb's arm is INSIDE a verdict body ⇒ it WIDENS the
