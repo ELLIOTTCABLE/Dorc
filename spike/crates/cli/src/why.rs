@@ -1683,10 +1683,9 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
             Disposition::Run => {
                 if let Some(reason) = authored_decline {
                     (
-                        vec![Said::words(
-                            "why-reason-run-declined",
-                            &[reason.class.token()],
-                        )],
+                        // No reason row: a declined site always has its own `decline_chain`, so
+                        // `plain_chain`'s because-clause is unreachable here.
+                        Vec::new(),
                         if reason.class.an_oracle_could_still_answer() {
                             AggregateClass::Improvement
                         } else {
@@ -1761,7 +1760,9 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                     // casts no wall, so describing the wall is what frees this line.
                     let wall = first_wall.map(|fw| format!("{}|{}", fw.line, fw.word));
                     (
-                        vec![Said::words("why-reason-guarded", &[&kind])],
+                        // No reason row: a guarded site always has its own `guard_chain`, so
+                        // `plain_chain`'s because-clause is unreachable here.
+                        Vec::new(),
                         if wall.is_some() {
                             AggregateClass::Improvement
                         } else {

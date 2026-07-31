@@ -531,13 +531,6 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Words::Migrated(&["the line's form (a heredoc body) cannot be edited safely, so it runs verbatim instead"]),
     },
     ArrangementEntry {
-        slug: "why-reason-guarded",
-        occurrence: None,
-        when_used: "The ANALYSIS row for a guarded site. Value: the vouching oracle's kind.",
-        why: "rul-guard-license: the guard is an INSERTION in front of untouched bytes, and the check re-asks live at apply, which is the whole reason a guard is not a skip.",
-        words: Words::Migrated(&["the ", " oracle vouches this is already satisfied, so your line survives untouched behind the oracle's own live check"]),
-    },
-    ArrangementEntry {
         slug: "why-reason-guard-refused",
         occurrence: None,
         when_used: "The ANALYSIS row for a guard the render had to refuse. Value: the vouching oracle's kind.",
@@ -746,13 +739,6 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         when_used: "The whole `dorc why <addr>` render when the address matched no analyzed command. Value: the address as given.",
         why: "law-lineno-identity: the ONE line-number space is the source file's, so an unmatched address says so rather than silently reporting the wrong surface.",
         words: Words::Migrated(&["dorc why: no analyzed command matched ", " (an address is a SOURCE line: `<book>:<N>` or a bare `<N>`)."]),
-    },
-    ArrangementEntry {
-        slug: "why-site-header",
-        occurrence: None,
-        when_used: "Names the book and the line each `dorc why <addr>` triptych answers for. Values: the book's filename, and the line's `N|command` reference.",
-        why: "28G strawman a-fire-morning opens each answer by naming its subject. The participating-lines block that fills this bracket out is the narration lane's; the header stands alone until then.",
-        words: Words::Migrated(&["[ ", ", ", " ]"]),
     },
     ArrangementEntry {
         slug: "why-next-step-label",
@@ -984,13 +970,6 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         when_used: "The because-clause of a declined line's contrastive OUTCOME. Value: the command word whose oracle declined.",
         why: "28G strawman c-declined-unsound, verbatim: the line runs by its author's JUDGMENT, which is the opposite of the gap a generic ran-blind answer implies.",
         words: Words::Migrated(&["by its author's judgment, not by a gap. ", "'s oracle deliberately declines this key."]),
-    },
-    ArrangementEntry {
-        slug: "why-reason-run-declined",
-        occurrence: None,
-        when_used: "The ANALYSIS row of a declined site in the argless aggregate. Value: the decline class.",
-        why: "A declined line is not an unexplained one: the aggregate names the class so the reader can tell an authored refusal from a gap without opening the site.",
-        words: Words::Unwritten,
     },
     ArrangementEntry {
         slug: "why-improvement-declined-unmodeled",
