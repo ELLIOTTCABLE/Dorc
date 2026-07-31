@@ -4402,8 +4402,7 @@ mod tests {
             comment.contains("site 7"),
             "names the fact-plane site: {comment}"
         );
-        // The literal run before the register's first hole: whatever the help says, none of it is
-        // artifact-plane, and asking the registry keeps that true through a prose edit.
+        // The literal run before the register's first hole; none of the help is artifact-plane.
         let help = crate::catalog::entry("render-heredoc-refused")
             .and_then(|entry| entry.help.written().copied())
             .and_then(|template| template.split("{{").next())
@@ -4433,19 +4432,17 @@ mod tests {
                 slug: "site-unresolvable".to_owned(),
                 when_fires: String::new(),
                 why: String::new(),
-                message: Some(
-                    "{{count}} {{site_word}} unprobed: {{names}} -- see `dorc why`".to_owned(),
+                message: Some("harness {{count}} {{site_word}} <{{names}}>".to_owned()),
+                help: crate::catalog::HelpRegister::Written(
+                    "harness help <{{excerpt}}>".to_owned(),
                 ),
-                help: crate::catalog::HelpRegister::Written("site runs `{{excerpt}}`".to_owned()),
                 params: Vec::new(),
             },
             crate::catalog::OwnedEntry {
                 slug: "render-heredoc-refused".to_owned(),
                 when_fires: String::new(),
                 why: String::new(),
-                message: Some(
-                    "refuses to {{verb}} a heredoc-bearing command (`{{command}}`)".to_owned(),
-                ),
+                message: Some("harness {{verb}} (`{{command}}`)".to_owned()),
                 help: crate::catalog::HelpRegister::Absent,
                 params: Vec::new(),
             },
@@ -4463,8 +4460,8 @@ mod tests {
         assert_eq!(
             render_body_with(&ctx, &pass, &i),
             concat!(
-                "1 site unprobed: 3 sites run unprobed -- see `dorc why`\n",
-                "  = help: site runs `3 sites run unprobed`"
+                "harness 1 site <3 sites run unprobed>\n",
+                "  = help: harness help <3 sites run unprobed>"
             ),
             "the register owns the sentence; the sealed values fill its holes"
         );
@@ -4478,7 +4475,7 @@ mod tests {
         );
         assert_eq!(
             render_body_with(&ctx, &tmpl, &i),
-            "refuses to guard a heredoc-bearing command (`cat <<EOF`)",
+            "harness guard (`cat <<EOF`)",
             "an Absent help register adds no continuation line"
         );
     }
@@ -4527,7 +4524,9 @@ mod tests {
         assert_eq!(d.children.len(), 1);
         assert!(d.suggestion.is_some());
         let cli = render_cli(&d, "01234_56789poisoned_", "book.sh", &Interner::default());
-        assert!(cli.contains("left to run on every apply"), "{cli}");
+        let tail = register_words("cmdsub-operand-top");
+        let tail = flattened(tail.rsplit("}}").next().unwrap_or(&tail));
+        assert!(flattened(&cli).contains(&tail), "{cli}");
         assert!(cli.contains("cannot be elided"), "{cli}");
         assert!(cli.contains("[provide-model]"), "{cli}");
     }

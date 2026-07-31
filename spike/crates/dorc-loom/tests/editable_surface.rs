@@ -55,6 +55,17 @@ fn a_case_whose_register_is_empty(
     register: &str,
     empty: impl Fn(&dorc_aid::catalog::HelpRegister<String>, Option<&String>) -> bool,
 ) -> (String, Case) {
+    a_case_whose_render(consumer, register, empty, |_| true)
+}
+
+/// As above, narrowed by what the case's RENDER has to look like — for a mechanic (a placeholder
+/// long enough to wrap, say) that needs more than an empty register.
+fn a_case_whose_render(
+    consumer: &DorcConsumer,
+    register: &str,
+    empty: impl Fn(&dorc_aid::catalog::HelpRegister<String>, Option<&String>) -> bool,
+    shaped: impl Fn(&str) -> bool,
+) -> (String, Case) {
     let candidates: Vec<String> = consumer
         .mirror()
         .iter()
@@ -75,16 +86,16 @@ fn a_case_whose_register_is_empty(
         .is_ok_and(|results| {
             results
                 .first()
-                .is_some_and(|result| result.editable_render().is_some())
+                .is_some_and(|result| result.editable_render().is_some() && shaped(result.output()))
         });
         if drivable {
             return (slug.clone(), case);
         }
     }
     panic!(
-        "no committed case has an empty `{register}` register the in-process driver can reach \
-         (candidates: {candidates:?}). This test needs one; give it a fresh scaffolded case rather \
-         than deleting somebody's words."
+        "no committed case has an empty `{register}` register the in-process driver can reach in \
+         the shape this test needs (candidates: {candidates:?}). Give it a fresh scaffolded case \
+         rather than deleting somebody's words."
     )
 }
 
@@ -95,6 +106,40 @@ fn help_of(consumer: &DorcConsumer, slug: &str) -> dorc_aid::catalog::HelpRegist
         .find(|entry| entry.slug == slug)
         .map(|entry| entry.help.clone())
         .expect("the mirror carries the code")
+}
+
+/// The CURRENT bytes of one editable section, taken from the render.
+///
+/// Every fixture below that edits a committed sentence starts here rather than from a literal copy
+/// of it. A copy makes the test a second owner of prose the loom flow exists to let someone rewrite,
+/// so authoring better words reddens this crate with no pointer to the flow that did it
+/// (`render-form-unwelded`). What these tests mean is "take whatever it says now and change it",
+/// which is what this expresses.
+fn section_text(baseline: &DorcEditableBaseline, owner: &str, field: &str) -> String {
+    baseline
+        .render()
+        .components()
+        .iter()
+        .find_map(|component| match component {
+            RenderComponent::EditableSection(section)
+                if section.id().owner == owner && section.id().field == field =>
+            {
+                Some(
+                    section
+                        .fragments()
+                        .iter()
+                        .map(|fragment| match fragment {
+                            errorloom::EditableFragment::Text(text)
+                            | errorloom::EditableFragment::Variable { rendered: text, .. } => {
+                                text.as_str()
+                            }
+                        })
+                        .collect::<String>(),
+                )
+            }
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no `{owner}`/`{field}` section in {:?}", sections(baseline)))
 }
 
 fn sections(baseline: &DorcEditableBaseline) -> Vec<(String, &'static str)> {
@@ -348,14 +393,19 @@ fn seeding_an_existing_register_refuses() {
 fn a_backticked_marker_compiles() {
     let (_, _, baseline, transcript) =
         driven(include_str!("../../aid/tests/cli-flag-requires-mode.loom"));
-    let edited = transcript.replace(
-        "sm --whylog is only valid",
-        "sm the flag `{{flag}}` is only valid",
-    );
+    let original = section_text(&baseline, "cli-flag-requires-mode", "message");
+    let flag = baseline
+        .all_variables()
+        .get(&dorc_loom::TemplateVariableName(String::from("flag")))
+        .expect("the payload carries a flag")
+        .clone();
+    // The glued spelling is the thing under test; the words either side of it are the register's.
+    let edited = transcript.replace(&original, &original.replacen(&flag, "`{{flag}}`", 1));
     let edit = compile_section_edit(&baseline, &edited).expect("a glued marker compiles");
     assert_eq!(
         edit.compiled().text(),
-        "sm the flag `--whylog` is only valid with dorc why"
+        original.replacen(&flag, &format!("`{flag}`"), 1),
+        "the marker renders back to its own value, backticks and all"
     );
     assert_eq!(
         edit.compiled().used(),
@@ -392,10 +442,14 @@ fn a_lone_reason_hole_edits_at_the_components_own_entry() {
         sections(&baseline)
     );
 
-    let edited = transcript.replace(
-        "`shift` count must be a literal integer",
-        "`shift` needs a literal integer count",
+    // Whatever the component says now, said differently.
+    let original = section_text(
+        &baseline,
+        "predict-out-of-dialect-shift-count",
+        dorc_loom::ARRANGEMENT_LINE_FIELD,
     );
+    let rewritten = format!("{original}, rephrased");
+    let edited = transcript.replace(&original, &rewritten);
     assert_ne!(edited, transcript, "the fixture must edit the sentence");
     let preview =
         dorc_loom::compile_preview(&baseline, &edited).expect("the component's words compile");
@@ -403,15 +457,17 @@ fn a_lone_reason_hole_edits_at_the_components_own_entry() {
         .apply_preview(&preview)
         .expect("the registry mirror takes it");
 
-    assert_eq!(
-        consumer
-            .arrangements()
-            .iter()
-            .find(|entry| entry.slug == "predict-out-of-dialect-shift-count")
-            .and_then(|entry| entry.words.words())
-            .map(<[String]>::to_vec),
-        Some(vec![String::from("`shift` needs a literal integer count")]),
-        "the COMPONENT's entry is what moved"
+    let stored = consumer
+        .arrangements()
+        .iter()
+        .find(|entry| entry.slug == "predict-out-of-dialect-shift-count")
+        .and_then(|entry| entry.words.words())
+        .map(<[String]>::to_vec)
+        .expect("the component has an entry");
+    assert_eq!(stored.len(), 1, "a pure-hole face stores one word run");
+    assert!(
+        stored[0].ends_with(", rephrased"),
+        "the COMPONENT's entry is what moved: {stored:?}"
     );
     assert_eq!(
         consumer
@@ -426,7 +482,7 @@ fn a_lone_reason_hole_edits_at_the_components_own_entry() {
         consumer
             .render_case(&case)
             .expect("the case re-renders")
-            .contains("`shift` needs a literal integer count"),
+            .contains("rephrased"),
         "the one-step loop holds for a component face too"
     );
 }
@@ -590,22 +646,35 @@ fn variable_insert_move_delete_duplicate() {
             .compiled()
             .clone()
     };
-    let compiled = |from: &str, to: &str| compiled_from(&transcript.replace(from, to));
+    let original = section_text(&baseline, "cmdsub-operand-top", "message");
+    let value = |name: &str| {
+        baseline
+            .all_variables()
+            .get(&dorc_loom::TemplateVariableName(String::from(name)))
+            .unwrap_or_else(|| panic!("the payload carries `{name}`"))
+            .clone()
+    };
+    let (position, command) = (value("position"), value("command"));
+    let rewritten = |section: &str| compiled_from(&transcript.replace(&original, section));
 
-    let moved = compiled_from(
-        &transcript
-            .replace("operand 3 is a", "the operand is a")
-            .replace("to check.", "to check ({{position}})."),
-    );
+    let moved = rewritten(&format!(
+        "{} ({{{{position}}}})",
+        original.replacen(&position, "the operand", 1)
+    ));
     assert!(
-        moved.text().contains("to check (operand 3)."),
-        "a marker relocates a value within its own section"
+        moved.text().ends_with(&format!("({position})")),
+        "a marker relocates a value within its own section: {}",
+        moved.text()
     );
 
-    let duplicated = compiled("operand 3 is a", "{{position}} and {{position}} are a");
-    assert!(duplicated.text().contains("operand 3 and operand 3 are a"));
+    let duplicated = rewritten(&original.replacen(&position, "{{position}} and {{position}}", 1));
+    assert!(
+        duplicated
+            .text()
+            .contains(&format!("{position} and {position}"))
+    );
 
-    let dropped = compiled("operand 3 is a", "the operand is a");
+    let dropped = rewritten(&original.replacen(&position, "the operand", 1));
     assert!(
         !dropped
             .used()
@@ -613,27 +682,34 @@ fn variable_insert_move_delete_duplicate() {
         "omitting the value drops it from the used set"
     );
 
-    let inserted = compiled("on the host", "on the host via {{command}}");
+    let inserted = rewritten(&format!("{original} via {{{{command}}}}"));
     assert!(
-        inserted.text().contains("on the host via apt-get"),
-        "a value the message did not use is reachable from the payload inventory"
+        inserted.text().ends_with(&format!("via {command}")),
+        "a value the message did not use is reachable from the payload inventory: {}",
+        inserted.text()
     );
 }
 
 /// A placeholder long enough to WRAP is still one section: the break weft minted inside it is the
 /// register's own space wearing the renderer's clothes, and a second section here would leave half
 /// the placeholder unaddressable.
+///
+/// The fixture is CHOSEN, like every other empty-register one here: naming a slug pinned both that
+/// its register is still unwritten and where its placeholder happens to break, so writing that
+/// code's first sentence — the burn-down's whole point — reddened this crate.
 #[test]
 fn a_wrapped_placeholder_is_one_section() {
-    let (_, _, baseline, transcript) = driven(include_str!(
-        "../../aid/tests/host-evidence-admission-refused.loom"
-    ));
+    let consumer = DorcConsumer::new();
+    let (slug, case) = a_case_whose_render(
+        &consumer,
+        "message",
+        |_, message| message.is_none(),
+        |transcript| transcript.contains("[unwritten:\n"),
+    );
+    let (baseline, transcript) = drive(&consumer, &case);
     assert!(
-        transcript.contains("[unwritten:\nhost-evidence-admission-refused]"),
-        "the fixture must actually wrap: {transcript:?}"
+        transcript.contains(&format!("[unwritten:\n{slug}]")),
+        "the chosen fixture wraps inside its placeholder: {transcript:?}"
     );
-    assert_eq!(
-        sections(&baseline),
-        vec![(String::from("host-evidence-admission-refused"), "message")]
-    );
+    assert_eq!(sections(&baseline), vec![(slug, "message")]);
 }

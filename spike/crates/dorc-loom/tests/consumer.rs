@@ -356,9 +356,8 @@ fn applied_template_regenerates_complete_multi_replay_case() {
     let baseline = consumer
         .editable_baseline(&case)
         .expect("editable baseline");
-    // Taken from the render rather than spelled here: the seat owns the wrap AND the words are
-    // loom-editable, so a literal copy would go stale the first time either moved. What this run
-    // must be is a real message section carrying the payload's own coordinate.
+    // Taken from the render rather than spelled here: the seat owns the wrap and the words are
+    // loom-editable, so a literal copy would go stale the first time either moved.
     let original = message_section_text(&baseline);
     assert!(
         original.contains("sm.dorc.Package:nginx"),
