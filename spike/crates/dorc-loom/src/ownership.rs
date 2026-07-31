@@ -39,6 +39,24 @@ pub fn edit_loop_hint(slug: &str) -> String {
     )
 }
 
+/// The rescue a blank or drifted replay block always names, armed or not
+/// (`28L:rul-refusals-name-the-next-command`).
+///
+/// Unconditional by construction, which is the whole point: an author who appends `$ some-command`
+/// with no output meets a hygiene failure, and the person who needs to be told about
+/// `DORC_LOOM_DUMP` is by definition the one who has not set it. Minted here rather than in the
+/// runner because the runner is `harness = false` and can hold no test of its own.
+#[must_use]
+pub fn dump_rescue_hint(case: &str) -> String {
+    format!(
+        "to fill or refresh this block, re-run with the dump armed:\n  \
+         DORC_LOOM_DUMP=<dir> mise run test:looms -- {case}\n  \
+         (PowerShell: $env:DORC_LOOM_DUMP='<dir>'; mise run test:looms -- {case})\n\
+         that writes the candidate transcript -- commands re-driven, outputs filled -- to \
+         <dir>/{case}.loom; copy it over the case and re-run"
+    )
+}
+
 /// One prose-component, as an ownership declaration names it: a registry/catalog slug, optionally
 /// narrowed to one occurrence with `slug@N`. A slug with no occurrence claims every occurrence.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -406,6 +424,17 @@ mod tests {
 
     fn every_slug(_: &str) -> bool {
         true
+    }
+
+    /// The blind-authoring rescue is the one line a reader who has never armed the dump needs, so
+    /// it can never be gated on the variable already being set. It names the case, both shell
+    /// spellings, and where the candidate lands.
+    #[test]
+    fn the_dump_rescue_names_the_case_and_both_shell_spellings() {
+        let hint = dump_rescue_hint("whylog-unwritten");
+        assert!(hint.contains("DORC_LOOM_DUMP=<dir> mise run test:looms -- whylog-unwritten"));
+        assert!(hint.contains("$env:DORC_LOOM_DUMP="), "{hint}");
+        assert!(hint.contains("<dir>/whylog-unwritten.loom"), "{hint}");
     }
 
     /// The filename is the default singleton and needs no key: an existing single-owner case keeps

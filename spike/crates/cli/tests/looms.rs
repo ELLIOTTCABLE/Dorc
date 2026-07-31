@@ -149,11 +149,12 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     if let Err(error) = parsed.check_hygiene(Some("code")) {
         // A new replay block is `$ cmd` with no output, which surfaces no slug — so hygiene, not
         // the fixpoint, is where its author stands when they need the candidate.
-        let candidate = DorcConsumer::new()
-            .render_case(&parsed)
-            .map(|rendered| dump_candidate(name, &rendered))
-            .unwrap_or_default();
-        return Err(format!("FAIL  {name}  [hygiene: {error}]{candidate}").into());
+        let candidate = DorcConsumer::new().render_case(&parsed).ok();
+        return Err(format!(
+            "FAIL  {name}  [hygiene: {error}]{}",
+            candidate_rescue(name, candidate.as_deref())
+        )
+        .into());
     }
 
     // A WHOLE-PRODUCT loom's transcript is proven by running the real binary in the e2e runner,
@@ -183,7 +184,7 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     Err(format!(
         "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift]\n{}{}",
         divergence(&text, &rendered),
-        dump_candidate(name, &rendered)
+        candidate_rescue(name, Some(&rendered))
     )
     .into())
 }
@@ -225,20 +226,37 @@ fn transcript_bytes_equal_production_bytes(name: &str, case: &Case) -> Result<()
     Ok(())
 }
 
-/// `DORC_LOOM_DUMP=<dir>` — write each drifted case's CANDIDATE transcript there, so a render
+/// [`dorc_loom::dump_rescue_hint`] indented into the runner's failure block, plus — when the dump
+/// IS armed — where the candidate landed.
+///
+/// `DORC_LOOM_DUMP=<dir>` writes the drifted case's CANDIDATE transcript there, so a render
 /// iteration is `diff` against a file instead of promote-then-`git diff`-then-`git checkout`.
 /// Read-only with respect to the corpus: the dump is a scratch copy, never the committed case,
 /// and only drifted cases are written (an unchanged candidate is the committed bytes).
-fn dump_candidate(name: &str, rendered: &str) -> String {
+fn candidate_rescue(name: &str, rendered: Option<&str>) -> String {
+    let mut out = String::new();
+    for line in dorc_loom::dump_rescue_hint(name).lines() {
+        let _ = write!(out, "\n      {line}");
+    }
     let Some(dir) = std::env::var_os("DORC_LOOM_DUMP") else {
-        return String::new();
+        return out;
+    };
+    let Some(rendered) = rendered else {
+        out.push_str(
+            "\n      the dump is armed, but this case does not render at all, so there is no \
+             candidate to write",
+        );
+        return out;
     };
     let dir = std::path::PathBuf::from(dir);
     let target = dir.join(format!("{name}.loom"));
-    match std::fs::create_dir_all(&dir).and_then(|()| std::fs::write(&target, rendered)) {
-        Ok(()) => format!("\n      candidate written to {}", target.display()),
-        Err(error) => format!("\n      DORC_LOOM_DUMP write failed: {error}"),
-    }
+    let written =
+        match std::fs::create_dir_all(&dir).and_then(|()| std::fs::write(&target, rendered)) {
+            Ok(()) => format!("\n      candidate written to {}", target.display()),
+            Err(error) => format!("\n      DORC_LOOM_DUMP write failed: {error}"),
+        };
+    out.push_str(&written);
+    out
 }
 
 /// An aligned first-divergence window over the committed and re-rendered transcripts, indented
