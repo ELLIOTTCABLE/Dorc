@@ -163,8 +163,8 @@ weld, never licensure.
    AGENTS.md is the human's to edit].
 3. Resolution: no Dorc mechanism; the live binding answers. Site-keyed acts (verdict,
    predict-at-site, probe-ship, vouch, guard eligibility) read the site's positional
-   environment [PROPOSED — the full-positional regime, superseding as-built
-   ambient-for-most and the E→F `ask-guard-eligibility-regime`; UNRATIFIED]. Vocabulary
+   environment [ACKED spike-tier, human-typed 2026-07-31 — see §7; supersedes as-built
+   ambient-for-most and the E→F `ask-guard-eligibility-regime`]. Vocabulary
    acts (kind-owner members) load from the ambient prefix only, single-occupancy;
    in-book vocabulary roles refuse-with-notice (`obl-in-book-vocabulary-role-notice`).
 4. Conflict/consent: cross-unit silent shadowing refuses (complaint + family-wide
@@ -238,3 +238,50 @@ nothing in your name. The verdict/guard tier — most of the product's value —
 to everyone at every rung. That is the price of never minting a sentence with no speaker;
 it is paid mostly by the archetype that other ecosystems subsidize by making their
 composites nobody's fault.
+
+## §7. Ratification state (sitting resumed 2026-07-31; the ack-ledger for this corner)
+
+- **§5.3 full-positional regime — ACKED [TYPED 2026-07-31], spike-tier.** The human's
+  words: "acked hard"; lean hard toward sh-natural over maximal ergonomics ("most
+  real-world ergonomics, when coming under fire, come from expectation-matching — not
+  perfect design, especially with greybeards"); flagged as possibly spike-specific, may
+  revisit. `28K` §2's two-regime wording is superseded-in-direction; the in-doc rewrite
+  of `28K` waits for the sitting's close (the `rat-two-regime-wording` explainer is
+  still owed and may sharpen the residual wording).
+- **§4 rul-committee-never-spares — DELIBERATELY UNRESOLVED [head-state TYPED
+  2026-07-31]; motion authorized anyway.** Neither ack nor nack. The human's lean:
+  "try it that way for the spike, and see how much it sucks" — flagged by them as
+  dangerous precisely because this corner is multi-user/community and will NOT be
+  naturally tested by spiking. Conductor concurrence recorded: the fence is the
+  conservative pole (fails toward lost sparing, never wrong licensure), so building it
+  spike-tier forecloses nothing — softening later is additive, and pre-publication
+  `rul-strawman-formats-no-compat` keeps the change cheap until real users exist. The
+  design-sitting this corner is arguably owed is explicitly UNSCHEDULED under the
+  current arc. Builder status: implement the fence as spiked behavior when the lane
+  reaches its surfaces, marked unratified.
+- **tune-explicit-composition-is-sanctioned [TYPED substance 2026-07-31]** — the "no
+  cross-author merging" phrasing in this note and `28K` §6/§7 is one word too strong:
+  what is refused is *automatic/implicit/engine-owned* merging. Explicitly-spelled
+  composition is sanctioned and community-critical: non-role-named helper functions may
+  live in multiple authors' files and be consumed/composed inside the singular
+  Dorc-mandated role entrypoints; engineers may deliberately work together to offer
+  *sets/flavours* of functionality as alternative composite wholes (where a command
+  merits such overengineering); the admin selects ONE composite whole via `28K` §3's
+  native mechanisms (sourcing, subshell, `unset -f`) — and the selected item may be
+  explicitly composite. The point is that shared meaning is *explicit*, never
+  implicit/engine-owned. Sharpening of §4's fence this implies: the unit-span
+  disqualifier keys on the ROLE members' source units only; helpers reached from a
+  single live role body ride under that body's author's custody (the entrypoint author
+  owns the composite utterance). **COMMISSIONED (suite-tier, human-typed):** the test
+  suite must prove that argparse / interprocedural analysis genuinely COMPOSE across
+  cross-file helper calls inside role bodies — this shape is critical to community
+  ownership and must not silently ⊤. (Conductor ~SUSPECTs the current check-dialect /
+  lift refuses or tops non-role calls inside verdict bodies; the commissioned tests
+  will measure, and any gap becomes named lane work, not a silent wall.)
+- **Stage-F resume riders** (banked here so the checkpoint record carries them):
+  rename `WhyReport.oracle_paths`/`oracle_srcs` (rebase widened them source-wide; the
+  names now understate) · fold-inspection of the load-inert refusal newly firing on
+  three loom-era lint cases (re-blessed as honest per the stage-A precedent; conductor
+  glance owed at fold) · `28O`'s rebase section records a pre-existing Windows-only
+  stack overflow in `mise run loom:compile` on `syntax-unsupported-nesting-bound`
+  (WSL leg fine).

@@ -64,6 +64,17 @@ Needs-and-timings (feature -> first consumer -> when it must land):
   agenda: host x epoch, --target-host, delegate_facts, NodeRestriction).
 - no-tty-refuses-survival (B3's kHALVES-collapse candidate) -> cheap to rule
   during this sitting's design half; rides the agenda, not the batch.
+- terminology-unification rider (human head-state, typed 2026-07-31): the
+  sitting's design half must produce ONE coherent worldview across
+  dimensions / epochs / pivots / transits -- the human is suspicious of this
+  round's "epoch is a temporal cousin of the 27C dimensions, not a fifth
+  sibling" claim, suspects epochs are "just" dimensions-plus-a-temporal-
+  analysis, and names the load-bearing symmetry: both time-passing-across-
+  certain-commands and dimension-crossing-across-certain-commands share the
+  same could / provably-could-not shift-global-state-and-perturb-assumptions
+  structure. Prefer industry-standard PLT terms over the current coinages
+  ("pivot", "epoch") where genuine equivalents exist. Explainers before
+  solutions; not to be settled outside the sitting.
 
 Consumer contexts the batch must not foreclose (one line each; details §2):
 pivot day-N region-fold behind the reachability guard · the boothook's three
