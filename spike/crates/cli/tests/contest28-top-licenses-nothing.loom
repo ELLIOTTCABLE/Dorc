@@ -14,7 +14,7 @@ fixpoint: executed
 # is nothing ⊤ grants. Nothing here complains, deliberately — ⊤ never complains.
 #
 # The condition is a live filesystem test on purpose, so the cell survives the decidable-condition
-# fold banked at `294:res-polyfill-binding-tops-pending-fold`: that fold folds decidable
+# fold banked at `28O:res-polyfill-binding-tops-pending-fold`: that fold folds decidable
 # `command -v` conditions, and this one stays undecidable forever.
 if [ -f /etc/dorc/prefer-local-foobar ]; then
    foobar__is_converged() {
@@ -76,7 +76,7 @@ $ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f412ff9f1ecec8ccf50ab16505429db2901cb5b619fb38119eb8156d11b8a9e0 sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=225e14dcc81faf7e6254ea5c1fbe793bd3cddc2697c25230070a6ab50825e963 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
@@ -94,7 +94,7 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # is nothing ⊤ grants. Nothing here complains, deliberately — ⊤ never complains.
 #
 # The condition is a live filesystem test on purpose, so the cell survives the decidable-condition
-# fold banked at `294:res-polyfill-binding-tops-pending-fold`: that fold folds decidable
+# fold banked at `28O:res-polyfill-binding-tops-pending-fold`: that fold folds decidable
 # `command -v` conditions, and this one stays undecidable forever.
 if [ -f /etc/dorc/prefer-local-foobar ]; then
    foobar__is_converged() {
