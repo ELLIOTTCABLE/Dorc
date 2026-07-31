@@ -1094,6 +1094,13 @@ struct DirectWhyReport<'a> {
     oracles: Vec<&'a str>,
     /// `--all`: the deepest pull tier.
     deepest: bool,
+    /// The `< <path>` probe-results redirect — a MEASURED world, admitted through the real fixture
+    /// intake. Absent ⇒ every fact ⊤ ⇒ every site runs.
+    input: Option<&'a str>,
+    /// Did the invocation consent to the survival tier (`--risk-faultless-skips`)? Read off the
+    /// command rather than the frontmatter, so the world the transcript shows is the world its own
+    /// committed invocation asks for.
+    consented: bool,
 }
 
 fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>> {
@@ -1103,6 +1110,8 @@ fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>>
     let mut book = None;
     let mut oracles = Vec::new();
     let mut deepest = false;
+    let mut input = None;
+    let mut consented = false;
     while let Some(word) = rest.next() {
         if let Some(path) = word.strip_prefix("--book=") {
             book = Some(path);
@@ -1110,19 +1119,31 @@ fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>>
             oracles.push(*rest.next()?);
         } else if *word == "--all" {
             deepest = true;
+        } else if *word == dorc_cli::CONSENT_FLAG {
+            if consented {
+                return None;
+            }
+            consented = true;
+        } else if *word == "<" {
+            if input.replace(*rest.next()?).is_some() {
+                return None;
+            }
         } else {
             return None;
         }
     }
     let book = book?;
-    (case_relative_path(book) && oracles.iter().copied().all(case_relative_path)).then_some(
-        DirectWhyReport {
-            address,
-            book,
-            oracles,
-            deepest,
-        },
-    )
+    (case_relative_path(book)
+        && oracles.iter().copied().all(case_relative_path)
+        && input.is_none_or(case_relative_path))
+    .then_some(DirectWhyReport {
+        address,
+        book,
+        oracles,
+        deepest,
+        input,
+        consented,
+    })
 }
 
 /// The LIVE `dorc why` report, rendered in-process over a world the case materializes.
@@ -1140,7 +1161,21 @@ fn live_why_parts(
         .iter()
         .map(|path| source(path))
         .collect::<Option<Vec<String>>>()?;
-    let world = dorc_cli::world::WhyWorld::analyze(why.book, &book, &oracle_paths, &oracle_srcs);
+    let results = match why.input {
+        Some(path) => {
+            admitted_site_results(why.book, &book, &oracle_paths, &oracle_srcs, &source(path)?)
+                .ok()?
+        }
+        None => dorc_cli::results::SiteResults::default(),
+    };
+    let world = dorc_cli::world::WhyWorld::analyze_measured(
+        why.book,
+        &book,
+        &oracle_paths,
+        &oracle_srcs,
+        &results,
+        why.consented,
+    );
     // Every field is controller-minted, exactly as the binary mints them on a hostless run: the
     // fixture framing supplies the host, the book supplies its own digest, and there is no clock
     // (`28F:rul-probe-instants-host-says-no-times` — an undated receipt says so rather than
@@ -1731,7 +1766,22 @@ fn fire_book_analysis(
         consented,
         dorc_core::EscalationDial::VouchedOnly,
         dorc_core::Capability::Root,
-        &admitted_site_results(filename, source, oracles, results)?,
+        &match results {
+            Some(stream) => admitted_site_results(
+                filename,
+                source,
+                &oracles
+                    .iter()
+                    .map(|(name, _)| name.clone())
+                    .collect::<Vec<_>>(),
+                &oracles
+                    .iter()
+                    .map(|(_, src)| src.clone())
+                    .collect::<Vec<_>>(),
+                stream,
+            )?,
+            None => dorc_cli::results::SiteResults::default(),
+        },
     );
     parsed
         .diags
@@ -1755,20 +1805,16 @@ fn fire_book_analysis(
 fn admitted_site_results(
     filename: &str,
     source: &str,
-    oracles: &[(String, String)],
-    results: Option<&str>,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+    stream: &str,
 ) -> Result<dorc_cli::results::SiteResults, String> {
     use dorc_plan::records::Admission;
-    let Some(stream) = results else {
-        return Ok(dorc_cli::results::SiteResults::default());
-    };
-    let paths: Vec<String> = oracles.iter().map(|(name, _)| name.clone()).collect();
-    let srcs: Vec<String> = oracles.iter().map(|(_, src)| src.clone()).collect();
     let sources = dorc_cli::results::RunSources {
         book_name: filename,
         book: source,
-        oracle_paths: &paths,
-        oracle_sources: &srcs,
+        oracle_paths,
+        oracle_sources: oracle_srcs,
     };
     // No clock: a committed transcript must be a fixpoint, and a fixture stream carries no
     // instants of its own (`inv-determinism`; `seam-tolerated-nondeterminism-stops-at-the-run-log`
@@ -1783,9 +1829,18 @@ fn admitted_site_results(
     ) {
         Admission::Admitted(admitted) => Ok(admitted.scoped.results().clone()),
         Admission::NoObservation => Ok(dorc_cli::results::SiteResults::default()),
+        // The refusal NAMES the header the stream must carry
+        // (`28L:rul-refusals-name-the-next-command`). A framing mismatch is nearly always a book
+        // edit moving the digest, and "refused" alone leaves the author to recompute a hash by
+        // hand; `sites=` stays theirs to count.
         Admission::Refused(reason) => Err(format!(
-            "world-as-pipeline: the declared results stream was refused ({}) -- a measured world \n             cannot rest on a broken channel",
-            reason.spanless_diagnostic().code.slug()
+            "the declared results stream was refused ({}) -- a measured world cannot rest on a \
+             broken channel. Its first line must be:\n  {} sites=<N> {}",
+            reason.spanless_diagnostic().code.slug(),
+            dorc_plan::records::expected_header_prefix(&dorc_plan::records::Framing::spike(
+                dorc_plan::invocation::book_digest(source)
+            )),
+            dorc_plan::records::TERMINAL_TOKEN,
         )),
     }
 }

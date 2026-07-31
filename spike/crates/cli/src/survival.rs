@@ -1208,3 +1208,49 @@ pub fn entity_text_of(coord: dorc_plan::EntityCoord, interner: &Interner) -> Str
         dorc_core::EntityRef::Singleton => String::new(),
     }
 }
+
+/// Collect the RAW coordinate kinds present in this analysis — every establish/query BACKING kind
+/// plus every wall-candidate FOOTPRINT kind. Used to re-key the munged kind-keyed resolver/reaches
+/// maps to the raw kinds coordinates carry (`flag-forward-munge-keying`; `kinds::rekey_to_raw_kinds`).
+///
+/// rider-resolver-coverage-watch (`277` §7b): this collected set is EXACTLY the population the
+/// survival comparison ([`dorc_plan::survival::disjoint`]) ever canonicalizes — backings come from
+/// converged-`Replace` licenses (establish/query classes) and footprints from wall candidates, so
+/// every coordinate that reaches a resolver lookup has its kind collected here. The coverage is
+/// therefore sound (no silent under-cover); it stays collection-based rather than structural because
+/// the resolver-SHIPPING pipeline is a cli-edge concern the comparison-layer re-key does not subsume.
+#[must_use]
+pub fn collect_coord_kinds(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    value: &dorc_analysis::value::ValueFlow,
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
+    interner: &mut Interner,
+) -> BTreeSet<Symbol> {
+    use dorc_analysis::effect::SkipClass;
+    let mut kinds = BTreeSet::new();
+    for (node, class) in classes {
+        if let SkipClass::EstablishAmbient(f)
+        | SkipClass::EstablishWritten(f)
+        | SkipClass::QueryResolvable { fact: f, .. } = class
+        {
+            kinds.insert(f.kind.0);
+        }
+        let is_wall_candidate = matches!(
+            class,
+            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+        ) || kills.contains(node);
+        if is_wall_candidate
+            && let Some((_, fp_coords, _)) =
+                resolve_touches_footprint(*node, value, touches_sets, interner)
+        {
+            for (c, _selector) in fp_coords {
+                kinds.insert(c.kind().0);
+            }
+        }
+    }
+    kinds
+}

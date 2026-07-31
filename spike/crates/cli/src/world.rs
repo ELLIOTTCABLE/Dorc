@@ -7,12 +7,18 @@
 //! committed why transcript an honest render rather than a decoration
 //! (`289:rul-worldless-route-honest-trigger`).
 //!
-//! RESIDUAL SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): this world carries NO
-//! probe records, so every fact is ⊤ and every site RUNS. Feeding records is not a missing
-//! parameter — host evidence is admitted under controller-minted attribution
-//! (`rul-attribution-is-controller-minted`), and those scope types are deliberately private to the
-//! binary. A world with measured facts therefore stays the binary's, and the chain families that
-//! only a measured fact reaches (survival, guard) are unreachable from here BY CONSTRUCTION.
+//! MEASURED worlds arrive through the same intake a run uses. A case's own `dorc-records/1` bytes
+//! are admitted by [`crate::results::admit_fixture_records`] — a second CONTROLLER of its own
+//! hermetic in-process run, never a second scope and never an unframed side door
+//! (`28L:rul-records-seam-approved`) — and the admitted [`SiteResults`] arrive here as a VALUE, so
+//! this seat still opens nothing. With no records the fold is ⊤ everywhere and every site runs,
+//! which is the honest unmeasured world rather than a scope cut.
+//!
+//! RESIDUAL SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): the wrapper PEEL is not
+//! threaded (`peeled` is empty), so a book whose sites sit under a wrapper classifies here as an
+//! ordinary run would classify them unwrapped. A case exercising wrapper adoption belongs on the
+//! diagnostic plane (`crate::survival::survival_diagnostics`) until the peel is threaded through
+//! this seat too.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -21,6 +27,7 @@ use dorc_aid::diag::Diag;
 use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 use crate::Receipt;
+use crate::results::{SiteResults, facts_from_sites, probe_origins};
 use crate::why::{
     CascadeAttribution, FirstWallHint, WallStep, WhyReport, collect_wall_steps, first_wall_hint,
 };
@@ -55,22 +62,52 @@ impl std::fmt::Debug for WhyWorld {
 }
 
 impl WhyWorld {
-    /// Analyze `book_src` against `oracle_srcs` and build the plan a why report explains.
-    ///
-    /// The same call sequence the binary runs — lift, parse, CFG, value-flow, classify, vouch,
-    /// compile the probe, build the plan — minus the record-fed fold. Stage diagnostics are
-    /// DROPPED rather than printed: this seat has no stderr, and a case that wants a diagnostic
-    /// rendered drives the diagnostic route instead.
+    /// Analyze `book_src` against `oracle_srcs` with no measurements — every fact ⊤, every site runs.
     #[must_use]
-    #[expect(
-        clippy::too_many_lines,
-        reason = "one linear pipeline in the binary's own order; splitting it would let the two orders drift, which is the whole thing this seat exists to prevent"
-    )]
     pub fn analyze(
         filename: &str,
         book_src: &str,
         oracle_paths: &[String],
         oracle_srcs: &[String],
+    ) -> Self {
+        Self::analyze_measured(
+            filename,
+            book_src,
+            oracle_paths,
+            oracle_srcs,
+            &SiteResults::default(),
+            false,
+        )
+    }
+
+    /// Analyze `book_src` against `oracle_srcs` and build the plan a why report explains.
+    ///
+    /// The same call sequence the binary runs — lift, parse, CFG, value-flow, classify, vouch,
+    /// compile the probe, fold the records, lift the survival footprints, build the plan. Stage
+    /// diagnostics are DROPPED rather than printed: this seat has no stderr, and a case that wants a
+    /// diagnostic rendered drives the diagnostic route instead.
+    ///
+    /// `results` is the run's ADMITTED records; an empty one is the unmeasured world (⊤ everywhere ⇒
+    /// run), which is what a case with no `< results` redirect asks for. `consented` is
+    /// `--risk-faultless-skips`, and with it off the survival half is not merely quiet but ABSENT:
+    /// no `touches()` is lifted, no footprint exists, and every running mutator is the honest
+    /// Stage-1 total wall (`empty-world-byte-identical`).
+    ///
+    /// NO validity fixpoint runs here (`cascades` stays empty): the fixpoint's product is a
+    /// round-tagged cascade attribution, and re-deriving it would need the binary's whole erasure
+    /// ledger. A cascaded elision therefore renders its outcome without its round.
+    #[must_use]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one linear pipeline in the binary's own order; splitting it would let the two orders drift, which is the whole thing this seat exists to prevent"
+    )]
+    pub fn analyze_measured(
+        filename: &str,
+        book_src: &str,
+        oracle_paths: &[String],
+        oracle_srcs: &[String],
+        results: &SiteResults,
+        consented: bool,
     ) -> Self {
         let mut interner = Interner::default();
         let mut arena = ProvArena::new();
@@ -93,7 +130,7 @@ impl WhyWorld {
 
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeSet::new();
-        let (classified, why_diags, _kills, _kill_coords, _backings, classify_narrative, _inval) =
+        let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative, _inval) =
             dorc_analysis::effect::classify_with_why_diags(
                 &cfg.value,
                 &value,
@@ -136,19 +173,158 @@ impl WhyWorld {
         )
         .with_unresolvable_causes(&parsed.value, &cfg.value, &classes, &degrades);
 
-        let plan = dorc_plan::build_plan(
+        // The records fold, through the run's own firewall (`facts_from_sites`). No fixpoint runs
+        // here, so the validity view is empty and every site keeps the validity the probe recorded.
+        let (by_fact, merge_narrative, _collapsed) =
+            facts_from_sites(&probe, results, &BTreeMap::new());
+        let probe_attributions = probe_origins(&probe, results, &mut arena);
+
+        // The survival tier, flag-gated exactly as a run is (`rul24-mode-gate`, TC-1): unflagged,
+        // the footprint data does not exist at all, so a running mutator walls totally.
+        let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = oracle_refs
+            .iter()
+            .map(|src| {
+                (
+                    *src,
+                    dorc_oracle::touches::TouchesSet::lift(&mut interner, src).value,
+                )
+            })
+            .collect();
+        let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
+        let coord_kinds = crate::survival::collect_coord_kinds(
+            &classes,
+            &kills,
+            &value,
+            &touches_sets,
+            &mut interner,
+        );
+        let kind_resolvers = crate::kinds::build_kind_resolvers(
+            oracle_srcs,
+            &checks,
+            &touches_paired,
+            &coord_kinds,
+            &mut interner,
+        )
+        .value;
+        let resolver_kinds: BTreeSet<Symbol> = kind_resolvers.resolver_kinds().collect();
+        let kind_reaches = crate::kinds::build_kind_reaches(
+            oracle_srcs,
+            &checks,
+            &touches_paired,
+            &coord_kinds,
+            &mut interner,
+        )
+        .value;
+        let reach_kinds: BTreeSet<Symbol> = kind_reaches.reach_kinds().collect();
+
+        let survival = consented.then(|| {
+            let derivations = {
+                let derive = |p, a: &[Symbol]| {
+                    crate::survival::ship_touches_body(&touches_paired, &interner, p, a)
+                };
+                dorc_plan::compile_derivations(
+                    &parsed.value,
+                    &cfg.value,
+                    &value,
+                    &classes,
+                    &kills,
+                    derive,
+                )
+            };
+            let mut footprints = crate::survival::build_survival_footprints(
+                &touches_sets,
+                &classes,
+                &kills,
+                &kill_coords,
+                &value,
+                &cfg.value,
+                &parsed.value,
+                &mut interner,
+            )
+            .value;
+            let derived_node_spans: BTreeMap<_, _> = derivations
+                .derivations
+                .iter()
+                .map(|d| (d.node, parsed.value.node(cfg.value.node(d.node).ast).span))
+                .collect();
+            let _ = crate::survival::merge_derived_footprints(
+                &mut footprints,
+                &derivations,
+                results,
+                &classes,
+                &kill_coords,
+                &derived_node_spans,
+                &mut interner,
+            );
+            // The reach EXPANSION must not be skipped: a footprint is an AT-MOST claim, so an
+            // un-widened one looks disjoint from more cells than it is — the under-execute
+            // direction (`inv-kfail`).
+            crate::survival::expand_footprints_via_reaches(
+                &mut footprints,
+                &kind_reaches,
+                &reach_kinds,
+                results,
+                &mut interner,
+            );
+            footprints
+        });
+
+        let resolver_coords = if consented && !resolver_kinds.is_empty() {
+            crate::survival::collect_resolver_coords(
+                &classes,
+                &kills,
+                &value,
+                &touches_sets,
+                &resolver_kinds,
+                &mut interner,
+            )
+        } else {
+            BTreeSet::new()
+        };
+        let mut resolutions = crate::survival::build_resolutions(
+            &resolver_coords,
+            &resolver_kinds,
+            results,
+            &mut interner,
+        );
+        // `fence-no-disjoint` (`24L` §7): every verdict provider's auto-cell kind is registered so
+        // the survival tier reads an auto coordinate as MAY-touch. Dropping this would let a
+        // synthetic singleton read as provably-disjoint — a wrong survival.
+        let verdict_names: Vec<String> = verdicts
+            .providers()
+            .map(|p| interner.resolve(p.0).to_owned())
+            .collect();
+        for name in verdict_names {
+            let kind = dorc_core::auto_fact(&mut interner, &name).kind;
+            resolutions.add_auto_kind(kind);
+        }
+
+        let plan = dorc_plan::build_plan_walled(
             book_src,
             &parsed.value,
             &cfg.value,
             &classes,
+            &kills,
+            survival.as_ref(),
+            consented.then_some(&resolutions),
+            &dorc_oracle::build_dialect(&idx),
+            &fact_backings,
             &vouches,
-            |_| Observable::verdict_only(Verdict::Unknown),
+            &dorc_plan::ConnectedPipes::default(),
+            &probe_attributions,
+            |f| {
+                by_fact
+                    .get(&f)
+                    .copied()
+                    .unwrap_or(Observable::verdict_only(Verdict::Unknown))
+            },
             &mut arena,
         );
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
         let narrative: Vec<CollapseNarrative> = classify_narrative
             .into_iter()
             .chain(decline_narrative)
+            .chain(merge_narrative)
             .chain(plan.survival_report.collapse_narrative().iter().cloned())
             .chain(plan.render_refusal_narratives(&parsed.value))
             .collect();
@@ -157,7 +333,7 @@ impl WhyWorld {
             &probe,
             &classes,
             &cfg.value,
-            &BTreeSet::new(),
+            &kills,
             &parsed.value,
             book_src,
         );

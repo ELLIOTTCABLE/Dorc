@@ -74,9 +74,9 @@ use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 use dorc_cli::kinds::{KindReaches, KindResolvers, build_kind_reaches, build_kind_resolvers};
 use dorc_cli::results::{ReportRecord, RunClock, SiteResults, facts_from_sites, probe_origins};
 use dorc_cli::survival::{
-    build_resolutions, build_survival_footprints, build_wrapped_analysis, collect_resolver_coords,
-    dangling_diagnostics, entity_text_of, expand_footprints_via_reaches, lift_touches_sets,
-    merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
+    build_resolutions, build_survival_footprints, build_wrapped_analysis, collect_coord_kinds,
+    collect_resolver_coords, dangling_diagnostics, entity_text_of, expand_footprints_via_reaches,
+    lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
 use dorc_cli::world::{ship_predict_body, ship_verdict_body};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
@@ -1975,51 +1975,6 @@ fn ship_predict_stage(
         }
     }
     None
-}
-
-/// Collect the RAW coordinate kinds present in this analysis — every establish/query BACKING kind
-/// plus every wall-candidate FOOTPRINT kind. Used to re-key the munged kind-keyed resolver/reaches
-/// maps to the raw kinds coordinates carry (`flag-forward-munge-keying`; `kinds::rekey_to_raw_kinds`).
-///
-/// rider-resolver-coverage-watch (`277` §7b): this collected set is EXACTLY the population the
-/// survival comparison ([`dorc_plan::survival::disjoint`]) ever canonicalizes — backings come from
-/// converged-`Replace` licenses (establish/query classes) and footprints from wall candidates, so
-/// every coordinate that reaches a resolver lookup has its kind collected here. The coverage is
-/// therefore sound (no silent under-cover); it stays collection-based rather than structural because
-/// the resolver-SHIPPING pipeline is a cli-edge concern the comparison-layer re-key does not subsume.
-fn collect_coord_kinds(
-    classes: &[(
-        dorc_analysis::cfg::CfgNodeId,
-        dorc_analysis::effect::SkipClass,
-    )],
-    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
-    value: &dorc_analysis::value::ValueFlow,
-    touches_sets: &[dorc_oracle::touches::TouchesSet],
-    interner: &mut Interner,
-) -> BTreeSet<Symbol> {
-    use dorc_analysis::effect::SkipClass;
-    let mut kinds = BTreeSet::new();
-    for (node, class) in classes {
-        if let SkipClass::EstablishAmbient(f)
-        | SkipClass::EstablishWritten(f)
-        | SkipClass::QueryResolvable { fact: f, .. } = class
-        {
-            kinds.insert(f.kind.0);
-        }
-        let is_wall_candidate = matches!(
-            class,
-            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
-        ) || kills.contains(node);
-        if is_wall_candidate
-            && let Some((_, fp_coords, _)) =
-                resolve_touches_footprint(*node, value, touches_sets, interner)
-        {
-            for (c, _selector) in fp_coords {
-                kinds.insert(c.kind().0);
-            }
-        }
-    }
-    kinds
 }
 
 /// Compile the resolver-probe (24F §3): for each resolver-bearing coordinate, ship its kind's

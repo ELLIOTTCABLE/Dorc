@@ -234,6 +234,26 @@ pub fn header_line(f: &Framing, sites: usize) -> String {
     )
 }
 
+/// The header line a stream must carry for `framing`, up to the `sites=` census only its writer can
+/// count.
+///
+/// Public so a REFUSAL can name it verbatim (`28L:rul-refusals-name-the-next-command`): the author
+/// of a committed fixture stream who has just edited their book needs the new digest, and that is
+/// exactly the byte a framing mismatch is usually about. It is spelled HERE, beside
+/// [`header_line`] and the parser, because a refusal that derived the expected bytes independently
+/// could drift from the bytes actually demanded.
+#[must_use]
+pub fn expected_header_prefix(f: &Framing) -> String {
+    format!(
+        "{tag} nonce={n} attempt={a} host={h} book={b}",
+        tag = HEADER_TAG,
+        n = f.nonce.0,
+        a = f.attempt,
+        h = f.host,
+        b = f.book_digest,
+    )
+}
+
 /// The end-sentinel printf line (the artifact's LAST output). Emitted after every record lane;
 /// the drain recognizes end-of-stream by THIS line, never by EOF (`notes/141` g5).
 #[must_use]
