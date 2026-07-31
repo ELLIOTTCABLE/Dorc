@@ -15,14 +15,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::{
-    CarriedAcrossSubstrateAxis, DerivFamilyIncomplete, Diag, DiagCode, FootprintIncoherent,
-    TouchesEscalated, WrappedSiteAdoptionHint,
+    CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete, Diag, DiagCode,
+    FootprintIncoherent, TouchesEscalated, WrappedSiteAdoptionHint,
 };
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_core::{Interner, Symbol};
 
-use crate::results::SiteResults;
-use crate::why::oracle_locus;
+use crate::kinds::KindReaches;
+use crate::results::{ResolvOutcome, SiteResults};
+use crate::why::{oracle_locus, render_coord};
 use crate::world::{ship_predict_body, ship_verdict_body};
 
 /// Lift each oracle's `touches()` set for the authored survival lane, carrying the lift's
@@ -1026,4 +1027,184 @@ pub fn survival_diagnostics(
         &mut interner,
     ));
     out
+}
+
+// ---- moved verbatim from `main.rs` (the survival lane's cli-edge half) ----
+/// Collect the coordinates that need canonicalization (24F §3): every establish/query BACKING coord
+/// and every wall-candidate FOOTPRINT coord whose KIND is resolver-bearing. Deduplicated (resolution
+/// is a pure function of `(kind, entity)`) and deterministic (`BTreeSet`). Derived-footprint coords
+/// (escalated walls, resolved only post-results) are NOT covered — a resolver+derived combination is
+/// a second round-trip, deferred (noted `resid-resolve-derived`).
+pub fn collect_resolver_coords(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    value: &dorc_analysis::value::ValueFlow,
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
+    resolver_kinds: &BTreeSet<Symbol>,
+    interner: &mut Interner,
+) -> BTreeSet<dorc_plan::EntityCoord> {
+    use dorc_analysis::effect::SkipClass;
+    let mut coords = BTreeSet::new();
+    let consider = |coord: dorc_plan::EntityCoord, coords: &mut BTreeSet<_>| {
+        if resolver_kinds.contains(&coord.kind().0) {
+            coords.insert(coord);
+        }
+    };
+    for (node, class) in classes {
+        // Backing coords: the cell each establish/query site is about.
+        if let SkipClass::EstablishAmbient(f)
+        | SkipClass::EstablishWritten(f)
+        | SkipClass::QueryResolvable { fact: f, .. } = class
+        {
+            consider(dorc_plan::EntityCoord::new(f.kind, f.entity), &mut coords);
+        }
+        // Footprint coords: a wall-candidate's touches() emissions.
+        let is_wall_candidate = matches!(
+            class,
+            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+        ) || kills.contains(node);
+        if is_wall_candidate
+            && let Some((_, fp_coords, _)) =
+                resolve_touches_footprint(*node, value, touches_sets, interner)
+        {
+            for (c, _selector) in fp_coords {
+                consider(c, &mut coords);
+            }
+        }
+    }
+    coords
+}
+
+/// Build the [`dorc_plan::Resolutions`] map (24F §3) from the resolver-probe readback: mark every
+/// resolver-bearing kind, record each `canon`, and flag each `dangling`. A resolver-bearing coord
+/// with NO readback record degrades to may-alias at canonicalization (§3a — the safe direction).
+/// Interning the canonical form through the SHARED interner keeps it in the one vocabulary (the
+/// fence); the engine compares canonical tokens as symbols, never decoding (`inv-referent-agnostic`).
+pub fn build_resolutions(
+    coords: &BTreeSet<dorc_plan::EntityCoord>,
+    resolver_kinds: &BTreeSet<Symbol>,
+    readback: &SiteResults,
+    interner: &mut Interner,
+) -> dorc_plan::Resolutions {
+    let mut resolutions = dorc_plan::Resolutions::none();
+    for kind in resolver_kinds {
+        resolutions.add_resolver_kind(dorc_core::KindId(*kind));
+    }
+    for coord in coords {
+        let label = render_coord(*coord, interner);
+        match readback.resolutions.get(&label) {
+            Some(ResolvOutcome::Canonical(canon_text)) => {
+                let entity = if canon_text.is_empty() {
+                    dorc_core::EntityRef::Singleton
+                } else {
+                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(
+                        interner.intern(canon_text),
+                    ))
+                };
+                resolutions.record(*coord, entity);
+            }
+            // Dangling OR no record ⇒ leave unrecorded ⇒ may-alias at canonicalization (§3a). A
+            // dangling is additionally flagged for the loud diagnostic (§4).
+            Some(ResolvOutcome::Dangling) => resolutions.record_dangling(*coord),
+            None => {}
+        }
+    }
+    resolutions
+}
+
+/// The DANGLING-reference diagnostics (24F §4): one loud per-coordinate note for each coordinate the
+/// resolver flagged dangling (a reference to a non-existent entity on an enumerable kind — the
+/// resolver's natural `dpkg-query -W` non-zero). Turns the third-party-typo case from silent
+/// value-loss into a pointed hint; the coordinate ALSO rides the may-alias degrade (§3a). ADVISORY —
+/// the apply runs the affected site either way (fail toward run), so no correctness rides on this
+/// readout; it is the render surface (rec-1). `inv-referent-agnostic`: the coord label is display.
+#[must_use]
+pub fn dangling_diagnostics(
+    resolutions: &dorc_plan::Resolutions,
+    interner: &Interner,
+) -> Vec<Diag> {
+    resolutions
+        .dangling()
+        .map(|coord| {
+            Diag::new_spanless_site(DiagCode::DanglingReference(DanglingReference {
+                coord: render_coord(coord, interner),
+            }))
+        })
+        .collect()
+}
+
+/// Expand every reach-bearing footprint coordinate via its kind's `reaches()` (24G §4 — the
+/// compositional half; the cross-author widening). STATIC arms apply to ALL footprint coords
+/// (authored + derived), traced here at the cli (no host); DYNAMIC arms apply to AUTHORED coords only
+/// this pass (their entities come from the `reach` readback — derived coords are known only
+/// post-results, the `resid-kindfn-derived` deferral, 24G §3). Each expanded coord is unioned into
+/// the footprint via [`dorc_plan::Footprint::add_reached`] (attributed to the reach-function KIND),
+/// flowing through the EXISTING `disjoint`/canonicalization path. `inv-referent-agnostic`: the engine
+/// interns the annotated kind (fixed at LIFT — the vocabulary fence) + the raw entities, never
+/// decoding them. `inv-kfail`: widening only ever HITs MORE (demotes toward run), the safe direction.
+pub fn expand_footprints_via_reaches(
+    footprints: &mut dorc_plan::TrustedFootprints,
+    reaches: &KindReaches,
+    reach_kinds: &BTreeSet<Symbol>,
+    readback: &SiteResults,
+    interner: &mut Interner,
+) {
+    use dorc_oracle::reaches::{ArmOutcome, evaluate_reaches};
+    footprints.expand_reaches(|coord, origin| {
+        let kind_sym = coord.kind().0;
+        if !reach_kinds.contains(&kind_sym) {
+            return Vec::new();
+        }
+        let Some((_, reaches_fn)) = reaches.get(kind_sym) else {
+            return Vec::new();
+        };
+        let entity_text = entity_text_of(coord, interner);
+        let coord_label = render_coord(coord, interner);
+        let via = coord.kind();
+        let exp = evaluate_reaches(reaches_fn, &entity_text);
+        let mut out = Vec::new();
+        for arm in &exp.arms {
+            let arm_kind = dorc_core::KindId(interner.intern(&arm.kind));
+            let entities: Vec<String> = match &arm.outcome {
+                // STATIC arms apply to ALL footprint coords (24G §3) — the traced lines, no host.
+                ArmOutcome::Static(lines) => lines.clone(),
+                // DYNAMIC arms apply to AUTHORED coords only this pass (24G §3, resid-kindfn-derived).
+                ArmOutcome::Dynamic { .. } => {
+                    if matches!(origin, dorc_plan::FootprintOrigin::Authored) {
+                        readback
+                            .reaches
+                            .get(&(coord_label.clone(), arm.index))
+                            .cloned()
+                            .unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    }
+                }
+            };
+            for e in entities {
+                if e.is_empty() {
+                    continue; // a blank reached entity is not a coordinate
+                }
+                let ec = dorc_plan::EntityCoord::new(
+                    arm_kind,
+                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(interner.intern(&e))),
+                );
+                out.push((ec, via));
+            }
+        }
+        out
+    });
+}
+
+/// The entity text of a coordinate for a reach/resolver invocation (an operand's text, or the empty
+/// string for a Singleton). `inv-referent-agnostic`: resolved for the invocation, never decoded.
+#[must_use]
+pub fn entity_text_of(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
+    match coord.entity() {
+        dorc_core::EntityRef::Operand(tok) => interner.resolve(tok.0).to_owned(),
+        dorc_core::EntityRef::Singleton => String::new(),
+    }
 }

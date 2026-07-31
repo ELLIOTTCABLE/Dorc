@@ -10,9 +10,10 @@
 //! Two entry points, deliberately not one ([`admit_controller_records`] and
 //! [`admit_fixture_records`]); read the latter's doc for why the split is the fence.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{Interner, OutBytes, Predicted, Rc, Verdict};
+use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
+use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Verdict};
 use dorc_plan::invocation::book_digest;
 use dorc_plan::records::{
     Admission, AdmittedUnscopedHostRecords, BoundedHostBytes, Framing, HostEvidenceLimits,
@@ -702,4 +703,245 @@ pub fn replayed_records(
         |records| parse_admitted_results(records, clock, interner),
     );
     ScopedHostEvidence::new(scope, results)
+}
+
+// ---- moved verbatim from `main.rs` (the records fold + its probe-origin mint) ----
+/// Fold the admitted records into the per-cell [`Observable`]s the plan builder consults, plus the
+/// narrative every safety-narrowing on the way mints and the cells a cross-site disagreement
+/// collapsed.
+///
+/// THE FIREWALL of this edge: a record's Effect verdict always feeds the cell, but its rc becomes
+/// fold-usable Status only for a VALID Query site whose record did not self-contradict — an
+/// establish's rc is the check's, not the mutator's, and a stale rc under an erased branch measured
+/// a question that is no longer asked. Everything else is withheld to ⊤ ⇒ run
+/// (`inv-probe-sourced-values`; `kFAIL-perform`).
+///
+/// `validity` is the fixpoint's per-site view; a caller with no fixpoint passes an empty map and
+/// every site keeps the validity the probe recorded.
+#[must_use]
+pub fn facts_from_sites(
+    probe: &dorc_plan::ProbePlan,
+    results: &SiteResults,
+    validity: &BTreeMap<dorc_plan::LeafId, bool>,
+) -> (
+    BTreeMap<dorc_core::FactKey, Observable>,
+    Vec<CollapseNarrative>,
+    BTreeMap<dorc_core::FactKey, u32>,
+) {
+    use dorc_plan::ProbeSiteKind;
+    let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
+    let mut sites_per_fact: BTreeMap<dorc_core::FactKey, u32> = BTreeMap::new();
+    let mut collapsed: BTreeSet<dorc_core::FactKey> = BTreeSet::new();
+    // C4 (`27V` Lane A): the `Measured` fact-merge narrative minted beside the ⊤-fold. `first_site`
+    // remembers each cell's first establisher so a cross-site conflict names both operands.
+    let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
+    let mut first_site: BTreeMap<dorc_core::FactKey, dorc_aid::diag::SiteId> = BTreeMap::new();
+    for check in &probe.checks {
+        let site_id = dorc_aid::diag::SiteId {
+            leaf: check.site,
+            member: check.member,
+        };
+        // Key the record by (site, member) — a member check (`site N.M`) reads its own
+        // sub-record (task-L2 item-4); an ordinary check (`site N`) reads `member: None`.
+        let record = results.records.get(&RecordKey {
+            site: check.site,
+            member: check.member,
+        });
+        let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
+        let site_kind = match check.site_kind {
+            ProbeSiteKind::Query { valid } => ProbeSiteKind::Query {
+                valid: validity.get(&check.site).copied().unwrap_or(valid),
+            },
+            ProbeSiteKind::Establish => ProbeSiteKind::Establish,
+        };
+        // The firewall: only a VALID Query site's rc is fold-usable as Status — and only when
+        // the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell,
+        // so it must not substitute into the control-flow fold).
+        let status = match site_kind {
+            ProbeSiteKind::Query { valid: true } => record.map_or(Predicted::Top, |r| {
+                if r.conflicted {
+                    Predicted::Top
+                } else {
+                    Predicted::Value(r.rc)
+                }
+            }),
+            // Establish site (check's rc, not the mutator's) OR an invalid Query
+            // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
+            ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
+        };
+        // The reserved Stdout/Stderr claims ride into the tuple verbatim (19F §3 shape).
+        // INERT this round: nothing emits them, and `consumption_ok` blocks a consumed
+        // stdout/stderr UNCONDITIONALLY (16F §3) — never reading the claim value — so a
+        // (hypothetical) non-⊤ claim cannot relax that block. The slot is plumbed so a
+        // future stdout-producing probe + vouch is a value change, not a representation one.
+        let stdout = record.map_or(Predicted::Top, |r| r.stdout);
+        let stderr = record.map_or(Predicted::Top, |r| r.stderr);
+        let obs = Observable {
+            effect,
+            status,
+            stdout,
+            stderr,
+        };
+        // Source 1 — a WITHIN-site conflict: a valid Query whose parse-merged record contradicts
+        // itself (`r.conflicted`), so its fold-usable rc is withheld to ⊤ above.
+        if matches!(site_kind, ProbeSiteKind::Query { valid: true })
+            && record.is_some_and(|r| r.conflicted)
+        {
+            collapse_narrative.push(measured_merge_disagreement(site_id, &[site_id]));
+        }
+        // C5 substitution refusal. tc-substitution-refusal-scope: minted ONLY for the invalid-Query
+        // withhold (a genuine consumed-channel refusal), NOT the establish withhold (firewall-by-
+        // design; it elides via Effect). Flagged UP — a scoping judgment (`inv-superposition`).
+        if matches!(site_kind, ProbeSiteKind::Query { valid: false }) {
+            collapse_narrative.push(CollapseNarrative::new(
+                SpeechAct::Derived,
+                CollapseKind::SubstitutionRefusal {
+                    site: site_id,
+                    top_channel: dorc_core::Channel::StatusRelaxable,
+                },
+            ));
+        }
+        // Runtime EntryFailure (`27C` §3): entry-bearing ≥2 sink-landing, class-only + inert. rc 127
+        // ⇒ missing deps; other ≥2 ⇒ in-context decline. Refused/Impossible unminted (SEAM: a marker).
+        if check.entry.is_some()
+            && let Some(rc) = record.map(|r| r.rc.0)
+            && rc >= 2
+        {
+            let class = if rc == 127 {
+                dorc_aid::narrative::EntryFailureTag::MissingDeps
+            } else {
+                dorc_aid::narrative::EntryFailureTag::InContextDecline
+            };
+            collapse_narrative.push(CollapseNarrative::new(
+                SpeechAct::Measured,
+                CollapseKind::EntryFailure {
+                    site: site_id,
+                    class,
+                },
+            ));
+        }
+        // Source 2 — a CROSS-site conflict: two sites on one cell disagree ⇒ the meet ⊤s the channel.
+        let per_fact = sites_per_fact.entry(check.fact).or_default();
+        *per_fact = per_fact.saturating_add(1);
+        if let Some(prior) = by_fact.get(&check.fact).copied() {
+            if prior != obs {
+                let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);
+                collapse_narrative
+                    .push(measured_merge_disagreement(site_id, &[prior_site, site_id]));
+                collapsed.insert(check.fact);
+            }
+            by_fact.insert(check.fact, merge_observable(prior, obs));
+        } else {
+            first_site.insert(check.fact, site_id);
+            by_fact.insert(check.fact, obs);
+        }
+    }
+    let collapsed = collapsed
+        .into_iter()
+        .map(|fact| (fact, sites_per_fact.get(&fact).copied().unwrap_or_default()))
+        .collect();
+    (by_fact, collapse_narrative, collapsed)
+}
+
+/// C6 (`27V` Lane A · `OriginKind::ProbeResult`): mint one probe-result origin per received record
+/// and key it by the fact it establishes, so [`dorc_plan::build_plan_walled`] can attach it to a
+/// licensing disposition's `Witness` — the why-chain's tie from "why THIS elision" back to the
+/// exact record that measured it. The stamp is the record's stream ordinal (deterministic, no
+/// clock — `inv-determinism`). A fact backed by two records JOINS their origins (two records are
+/// two events). Runs at the cli edge where the arena lives (`io-at-edges-only`); the [`Observable`]
+/// stays receipt-clean (the tc-c6-scope ruling: the receipt rides the record, not the value).
+///
+/// The origin NODE's source span stays `None`: an [`dorc_core::OriginNode`] carries a bare
+/// [`dorc_core::Span`], which is file-ambiguous once >1 oracle is loaded (`law-lineno-identity`).
+/// The file-qualified reporting span therefore rides the [`dorc_plan::ReportedObservation`] beside
+/// the receipt, which is also where the tool-rc and the observation instant live.
+///
+/// A fact measured by SEVERAL records keeps the joined receipt but reports NO single observation:
+/// two records are two events with no one speaker, instant, or rc, and inventing a winner would be
+/// a fabricated measurement.
+pub fn probe_origins(
+    probe: &dorc_plan::ProbePlan,
+    results: &SiteResults,
+    arena: &mut ProvArena,
+) -> BTreeMap<dorc_core::FactKey, dorc_plan::ProbeAttribution> {
+    let mut origins: BTreeMap<dorc_core::FactKey, dorc_plan::ProbeAttribution> = BTreeMap::new();
+    for check in &probe.checks {
+        let Some(record) = results.records.get(&RecordKey {
+            site: check.site,
+            member: check.member,
+        }) else {
+            continue;
+        };
+        let origin = arena.leaf(dorc_core::OriginKind::ProbeResult(record.stamp), None);
+        let reported = Some(dorc_plan::ReportedObservation {
+            stamp: record.stamp,
+            tool_rc: record.rc,
+            predict_span: check.defining_span,
+        });
+        let attribution = match origins.get(&check.fact) {
+            Some(prior) => dorc_plan::ProbeAttribution {
+                origin: arena.join(None, &[prior.origin, origin]).unwrap_or(origin),
+                reported: None,
+            },
+            None => dorc_plan::ProbeAttribution { origin, reported },
+        };
+        origins.insert(check.fact, attribution);
+    }
+    origins
+}
+
+/// Build the `Measured`-tier fact-merge narrative a probe-result disagreement mints (C4;
+/// `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): a host self-contradiction at `cell`,
+/// carrying the participating establisher sites as operands (`minting_line`/`shown` filled by d3).
+/// Decision-inert (`two-plane-aid-law`): the conservative meet already folded the channel to ⊤
+/// (`kFAIL-perform`, the only safe resolution of a self-contradicting host); this only narrates why.
+fn measured_merge_disagreement(
+    cell: dorc_aid::diag::SiteId,
+    sites: &[dorc_aid::diag::SiteId],
+) -> CollapseNarrative {
+    let operands = dorc_aid::narrative::Operands::capped(
+        sites
+            .iter()
+            .map(|&site| dorc_aid::narrative::ValueOperand {
+                site,
+                minting_line: None,
+                shown: None,
+            })
+            .collect(),
+    );
+    CollapseNarrative::new(
+        SpeechAct::Measured,
+        CollapseKind::FactMergeDisagreement { cell, operands },
+    )
+}
+
+/// Conservatively merge two [`Observable`]s reported for the SAME cell (20I find-6a /
+/// item-5). Per channel: equal values pass through; ANY disagreement degrades the
+/// channel to ⊤ (`Verdict::Unknown` for Effect, `Predicted::Top` for status/stdout/
+/// stderr). This is the meet toward ⊤ — never last-write-wins — so a self-contradicting
+/// host folds to run (`kFAIL-perform`), the only safe resolution. Order-independent
+/// (commutative + idempotent): merging in any site order yields the same ⊤-on-conflict.
+fn merge_observable(a: Observable, b: Observable) -> Observable {
+    Observable {
+        effect: if a.effect == b.effect {
+            a.effect
+        } else {
+            Verdict::Unknown
+        },
+        status: if a.status == b.status {
+            a.status
+        } else {
+            Predicted::Top
+        },
+        stdout: if a.stdout == b.stdout {
+            a.stdout
+        } else {
+            Predicted::Top
+        },
+        stderr: if a.stderr == b.stderr {
+            a.stderr
+        } else {
+            Predicted::Top
+        },
+    }
 }

@@ -64,28 +64,27 @@ mod source_match;
 mod transport_edge;
 mod whylog_store;
 
-use dorc_aid::diag::{
-    AidUnloadedSiblingOracle, DanglingReference, Diag, DiagCode, EscalationPolicy,
-};
+use dorc_aid::diag::{AidUnloadedSiblingOracle, Diag, DiagCode, EscalationPolicy};
 use dorc_aid::said::Said;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Severity, SpeechAct};
-use dorc_core::{Interner, Observable, Predicted, ProvArena, Symbol, Verdict};
+use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 use dorc_cli::kinds::{KindReaches, KindResolvers, build_kind_reaches, build_kind_resolvers};
-use dorc_cli::results::{RecordKey, ReportRecord, ResolvOutcome, RunClock, SiteResults};
+use dorc_cli::results::{ReportRecord, RunClock, SiteResults, facts_from_sites, probe_origins};
 use dorc_cli::survival::{
-    build_survival_footprints, build_wrapped_analysis, lift_touches_sets, merge_derived_footprints,
-    resolve_touches_footprint, ship_touches_body,
+    build_resolutions, build_survival_footprints, build_wrapped_analysis, collect_resolver_coords,
+    dangling_diagnostics, entity_text_of, expand_footprints_via_reaches, lift_touches_sets,
+    merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
 use dorc_cli::world::{ship_predict_body, ship_verdict_body};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
 use dorc_cli::results::{
-    REPORT_RAW_CAP, parse_leaf, parse_report_record, parse_site_record, sanitize_report_raw,
-    split_key,
+    REPORT_RAW_CAP, RecordKey, ResolvOutcome, parse_leaf, parse_report_record, parse_site_record,
+    sanitize_report_raw, split_key,
 };
 #[cfg(test)]
 use dorc_cli::survival::own_wall_coord;
@@ -94,7 +93,7 @@ use dorc_cli::{
     humane_read_error, parse_args_from,
 };
 #[cfg(test)]
-use dorc_core::{OutBytes, Rc};
+use dorc_core::{OutBytes, Predicted, Rc};
 // The why REPORT composes across the same seam (`28L:rul-full-driver-this-arc`): this edge builds
 // the world and prints the bytes, the lib turns that world into a stamped part stream.
 use dorc_cli::why::{
@@ -1978,54 +1977,6 @@ fn ship_predict_stage(
     None
 }
 
-/// Collect the coordinates that need canonicalization (24F §3): every establish/query BACKING coord
-/// and every wall-candidate FOOTPRINT coord whose KIND is resolver-bearing. Deduplicated (resolution
-/// is a pure function of `(kind, entity)`) and deterministic (`BTreeSet`). Derived-footprint coords
-/// (escalated walls, resolved only post-results) are NOT covered — a resolver+derived combination is
-/// a second round-trip, deferred (noted `resid-resolve-derived`).
-fn collect_resolver_coords(
-    classes: &[(
-        dorc_analysis::cfg::CfgNodeId,
-        dorc_analysis::effect::SkipClass,
-    )],
-    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
-    value: &dorc_analysis::value::ValueFlow,
-    touches_sets: &[dorc_oracle::touches::TouchesSet],
-    resolver_kinds: &BTreeSet<Symbol>,
-    interner: &mut Interner,
-) -> BTreeSet<dorc_plan::EntityCoord> {
-    use dorc_analysis::effect::SkipClass;
-    let mut coords = BTreeSet::new();
-    let consider = |coord: dorc_plan::EntityCoord, coords: &mut BTreeSet<_>| {
-        if resolver_kinds.contains(&coord.kind().0) {
-            coords.insert(coord);
-        }
-    };
-    for (node, class) in classes {
-        // Backing coords: the cell each establish/query site is about.
-        if let SkipClass::EstablishAmbient(f)
-        | SkipClass::EstablishWritten(f)
-        | SkipClass::QueryResolvable { fact: f, .. } = class
-        {
-            consider(dorc_plan::EntityCoord::new(f.kind, f.entity), &mut coords);
-        }
-        // Footprint coords: a wall-candidate's touches() emissions.
-        let is_wall_candidate = matches!(
-            class,
-            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
-        ) || kills.contains(node);
-        if is_wall_candidate
-            && let Some((_, fp_coords, _)) =
-                resolve_touches_footprint(*node, value, touches_sets, interner)
-        {
-            for (c, _selector) in fp_coords {
-                consider(c, &mut coords);
-            }
-        }
-    }
-    coords
-}
-
 /// Collect the RAW coordinate kinds present in this analysis — every establish/query BACKING kind
 /// plus every wall-candidate FOOTPRINT kind. Used to re-key the munged kind-keyed resolver/reaches
 /// maps to the raw kinds coordinates carry (`flag-forward-munge-keying`; `kinds::rekey_to_raw_kinds`).
@@ -2108,60 +2059,6 @@ fn compile_resolvers(
         });
     }
     dorc_plan::ResolverPlan { probes }
-}
-
-/// Build the [`dorc_plan::Resolutions`] map (24F §3) from the resolver-probe readback: mark every
-/// resolver-bearing kind, record each `canon`, and flag each `dangling`. A resolver-bearing coord
-/// with NO readback record degrades to may-alias at canonicalization (§3a — the safe direction).
-/// Interning the canonical form through the SHARED interner keeps it in the one vocabulary (the
-/// fence); the engine compares canonical tokens as symbols, never decoding (`inv-referent-agnostic`).
-fn build_resolutions(
-    coords: &BTreeSet<dorc_plan::EntityCoord>,
-    resolver_kinds: &BTreeSet<Symbol>,
-    readback: &SiteResults,
-    interner: &mut Interner,
-) -> dorc_plan::Resolutions {
-    let mut resolutions = dorc_plan::Resolutions::none();
-    for kind in resolver_kinds {
-        resolutions.add_resolver_kind(dorc_core::KindId(*kind));
-    }
-    for coord in coords {
-        let label = render_coord(*coord, interner);
-        match readback.resolutions.get(&label) {
-            Some(ResolvOutcome::Canonical(canon_text)) => {
-                let entity = if canon_text.is_empty() {
-                    dorc_core::EntityRef::Singleton
-                } else {
-                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(
-                        interner.intern(canon_text),
-                    ))
-                };
-                resolutions.record(*coord, entity);
-            }
-            // Dangling OR no record ⇒ leave unrecorded ⇒ may-alias at canonicalization (§3a). A
-            // dangling is additionally flagged for the loud diagnostic (§4).
-            Some(ResolvOutcome::Dangling) => resolutions.record_dangling(*coord),
-            None => {}
-        }
-    }
-    resolutions
-}
-
-/// The DANGLING-reference diagnostics (24F §4): one loud per-coordinate note for each coordinate the
-/// resolver flagged dangling (a reference to a non-existent entity on an enumerable kind — the
-/// resolver's natural `dpkg-query -W` non-zero). Turns the third-party-typo case from silent
-/// value-loss into a pointed hint; the coordinate ALSO rides the may-alias degrade (§3a). ADVISORY —
-/// the apply runs the affected site either way (fail toward run), so no correctness rides on this
-/// readout; it is the render surface (rec-1). `inv-referent-agnostic`: the coord label is display.
-fn dangling_diagnostics(resolutions: &dorc_plan::Resolutions, interner: &Interner) -> Vec<Diag> {
-    resolutions
-        .dangling()
-        .map(|coord| {
-            Diag::new_spanless_site(DiagCode::DanglingReference(DanglingReference {
-                coord: render_coord(coord, interner),
-            }))
-        })
-        .collect()
 }
 
 /// The per-arm wrapper funcname a dynamic `reaches()` arm ships and is invoked under. Engine-
@@ -2256,78 +2153,6 @@ fn collect_reach_probes(
     }
     dorc_plan::ReachPlan {
         probes: probes.into_values().collect(),
-    }
-}
-
-/// Expand every reach-bearing footprint coordinate via its kind's `reaches()` (24G §4 — the
-/// compositional half; the cross-author widening). STATIC arms apply to ALL footprint coords
-/// (authored + derived), traced here at the cli (no host); DYNAMIC arms apply to AUTHORED coords only
-/// this pass (their entities come from the `reach` readback — derived coords are known only
-/// post-results, the `resid-kindfn-derived` deferral, 24G §3). Each expanded coord is unioned into
-/// the footprint via [`dorc_plan::Footprint::add_reached`] (attributed to the reach-function KIND),
-/// flowing through the EXISTING `disjoint`/canonicalization path. `inv-referent-agnostic`: the engine
-/// interns the annotated kind (fixed at LIFT — the vocabulary fence) + the raw entities, never
-/// decoding them. `inv-kfail`: widening only ever HITs MORE (demotes toward run), the safe direction.
-fn expand_footprints_via_reaches(
-    footprints: &mut dorc_plan::TrustedFootprints,
-    reaches: &KindReaches,
-    reach_kinds: &BTreeSet<Symbol>,
-    readback: &SiteResults,
-    interner: &mut Interner,
-) {
-    use dorc_oracle::reaches::{ArmOutcome, evaluate_reaches};
-    footprints.expand_reaches(|coord, origin| {
-        let kind_sym = coord.kind().0;
-        if !reach_kinds.contains(&kind_sym) {
-            return Vec::new();
-        }
-        let Some((_, reaches_fn)) = reaches.get(kind_sym) else {
-            return Vec::new();
-        };
-        let entity_text = entity_text_of(coord, interner);
-        let coord_label = render_coord(coord, interner);
-        let via = coord.kind();
-        let exp = evaluate_reaches(reaches_fn, &entity_text);
-        let mut out = Vec::new();
-        for arm in &exp.arms {
-            let arm_kind = dorc_core::KindId(interner.intern(&arm.kind));
-            let entities: Vec<String> = match &arm.outcome {
-                // STATIC arms apply to ALL footprint coords (24G §3) — the traced lines, no host.
-                ArmOutcome::Static(lines) => lines.clone(),
-                // DYNAMIC arms apply to AUTHORED coords only this pass (24G §3, resid-kindfn-derived).
-                ArmOutcome::Dynamic { .. } => {
-                    if matches!(origin, dorc_plan::FootprintOrigin::Authored) {
-                        readback
-                            .reaches
-                            .get(&(coord_label.clone(), arm.index))
-                            .cloned()
-                            .unwrap_or_default()
-                    } else {
-                        Vec::new()
-                    }
-                }
-            };
-            for e in entities {
-                if e.is_empty() {
-                    continue; // a blank reached entity is not a coordinate
-                }
-                let ec = dorc_plan::EntityCoord::new(
-                    arm_kind,
-                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(interner.intern(&e))),
-                );
-                out.push((ec, via));
-            }
-        }
-        out
-    });
-}
-
-/// The entity text of a coordinate for a reach/resolver invocation (an operand's text, or the empty
-/// string for a Singleton). `inv-referent-agnostic`: resolved for the invocation, never decoded.
-fn entity_text_of(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
-    match coord.entity() {
-        dorc_core::EntityRef::Operand(tok) => interner.resolve(tok.0).to_owned(),
-        dorc_core::EntityRef::Singleton => String::new(),
     }
 }
 
@@ -3233,233 +3058,6 @@ fn settle_validity_fixpoint(
             &mut BTreeMap::new(),
             &mut BTreeSet::new(),
         );
-    }
-}
-
-fn facts_from_sites(
-    probe: &dorc_plan::ProbePlan,
-    results: &SiteResults,
-    validity: &BTreeMap<dorc_plan::LeafId, bool>,
-) -> (
-    BTreeMap<dorc_core::FactKey, Observable>,
-    Vec<CollapseNarrative>,
-    BTreeMap<dorc_core::FactKey, u32>,
-) {
-    use dorc_plan::ProbeSiteKind;
-    let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
-    let mut sites_per_fact: BTreeMap<dorc_core::FactKey, u32> = BTreeMap::new();
-    let mut collapsed: BTreeSet<dorc_core::FactKey> = BTreeSet::new();
-    // C4 (`27V` Lane A): the `Measured` fact-merge narrative minted beside the ⊤-fold. `first_site`
-    // remembers each cell's first establisher so a cross-site conflict names both operands.
-    let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
-    let mut first_site: BTreeMap<dorc_core::FactKey, dorc_aid::diag::SiteId> = BTreeMap::new();
-    for check in &probe.checks {
-        let site_id = dorc_aid::diag::SiteId {
-            leaf: check.site,
-            member: check.member,
-        };
-        // Key the record by (site, member) — a member check (`site N.M`) reads its own
-        // sub-record (task-L2 item-4); an ordinary check (`site N`) reads `member: None`.
-        let record = results.records.get(&RecordKey {
-            site: check.site,
-            member: check.member,
-        });
-        let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
-        let site_kind = match check.site_kind {
-            ProbeSiteKind::Query { valid } => ProbeSiteKind::Query {
-                valid: validity.get(&check.site).copied().unwrap_or(valid),
-            },
-            ProbeSiteKind::Establish => ProbeSiteKind::Establish,
-        };
-        // The firewall: only a VALID Query site's rc is fold-usable as Status — and only when
-        // the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell,
-        // so it must not substitute into the control-flow fold).
-        let status = match site_kind {
-            ProbeSiteKind::Query { valid: true } => record.map_or(Predicted::Top, |r| {
-                if r.conflicted {
-                    Predicted::Top
-                } else {
-                    Predicted::Value(r.rc)
-                }
-            }),
-            // Establish site (check's rc, not the mutator's) OR an invalid Query
-            // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
-            ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
-        };
-        // The reserved Stdout/Stderr claims ride into the tuple verbatim (19F §3 shape).
-        // INERT this round: nothing emits them, and `consumption_ok` blocks a consumed
-        // stdout/stderr UNCONDITIONALLY (16F §3) — never reading the claim value — so a
-        // (hypothetical) non-⊤ claim cannot relax that block. The slot is plumbed so a
-        // future stdout-producing probe + vouch is a value change, not a representation one.
-        let stdout = record.map_or(Predicted::Top, |r| r.stdout);
-        let stderr = record.map_or(Predicted::Top, |r| r.stderr);
-        let obs = Observable {
-            effect,
-            status,
-            stdout,
-            stderr,
-        };
-        // Source 1 — a WITHIN-site conflict: a valid Query whose parse-merged record contradicts
-        // itself (`r.conflicted`), so its fold-usable rc is withheld to ⊤ above.
-        if matches!(site_kind, ProbeSiteKind::Query { valid: true })
-            && record.is_some_and(|r| r.conflicted)
-        {
-            collapse_narrative.push(measured_merge_disagreement(site_id, &[site_id]));
-        }
-        // C5 substitution refusal. tc-substitution-refusal-scope: minted ONLY for the invalid-Query
-        // withhold (a genuine consumed-channel refusal), NOT the establish withhold (firewall-by-
-        // design; it elides via Effect). Flagged UP — a scoping judgment (`inv-superposition`).
-        if matches!(site_kind, ProbeSiteKind::Query { valid: false }) {
-            collapse_narrative.push(CollapseNarrative::new(
-                SpeechAct::Derived,
-                CollapseKind::SubstitutionRefusal {
-                    site: site_id,
-                    top_channel: dorc_core::Channel::StatusRelaxable,
-                },
-            ));
-        }
-        // Runtime EntryFailure (`27C` §3): entry-bearing ≥2 sink-landing, class-only + inert. rc 127
-        // ⇒ missing deps; other ≥2 ⇒ in-context decline. Refused/Impossible unminted (SEAM: a marker).
-        if check.entry.is_some()
-            && let Some(rc) = record.map(|r| r.rc.0)
-            && rc >= 2
-        {
-            let class = if rc == 127 {
-                dorc_aid::narrative::EntryFailureTag::MissingDeps
-            } else {
-                dorc_aid::narrative::EntryFailureTag::InContextDecline
-            };
-            collapse_narrative.push(CollapseNarrative::new(
-                SpeechAct::Measured,
-                CollapseKind::EntryFailure {
-                    site: site_id,
-                    class,
-                },
-            ));
-        }
-        // Source 2 — a CROSS-site conflict: two sites on one cell disagree ⇒ the meet ⊤s the channel.
-        let per_fact = sites_per_fact.entry(check.fact).or_default();
-        *per_fact = per_fact.saturating_add(1);
-        if let Some(prior) = by_fact.get(&check.fact).copied() {
-            if prior != obs {
-                let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);
-                collapse_narrative
-                    .push(measured_merge_disagreement(site_id, &[prior_site, site_id]));
-                collapsed.insert(check.fact);
-            }
-            by_fact.insert(check.fact, merge_observable(prior, obs));
-        } else {
-            first_site.insert(check.fact, site_id);
-            by_fact.insert(check.fact, obs);
-        }
-    }
-    let collapsed = collapsed
-        .into_iter()
-        .map(|fact| (fact, sites_per_fact.get(&fact).copied().unwrap_or_default()))
-        .collect();
-    (by_fact, collapse_narrative, collapsed)
-}
-
-/// C6 (`27V` Lane A · `OriginKind::ProbeResult`): mint one probe-result origin per received record
-/// and key it by the fact it establishes, so [`dorc_plan::build_plan_walled`] can attach it to a
-/// licensing disposition's `Witness` — the why-chain's tie from "why THIS elision" back to the
-/// exact record that measured it. The stamp is the record's stream ordinal (deterministic, no
-/// clock — `inv-determinism`). A fact backed by two records JOINS their origins (two records are
-/// two events). Runs at the cli edge where the arena lives (`io-at-edges-only`); the [`Observable`]
-/// stays receipt-clean (the tc-c6-scope ruling: the receipt rides the record, not the value).
-///
-/// The origin NODE's source span stays `None`: an [`dorc_core::OriginNode`] carries a bare
-/// [`dorc_core::Span`], which is file-ambiguous once >1 oracle is loaded (`law-lineno-identity`).
-/// The file-qualified reporting span therefore rides the [`dorc_plan::ReportedObservation`] beside
-/// the receipt, which is also where the tool-rc and the observation instant live.
-///
-/// A fact measured by SEVERAL records keeps the joined receipt but reports NO single observation:
-/// two records are two events with no one speaker, instant, or rc, and inventing a winner would be
-/// a fabricated measurement.
-fn probe_origins(
-    probe: &dorc_plan::ProbePlan,
-    results: &SiteResults,
-    arena: &mut ProvArena,
-) -> BTreeMap<dorc_core::FactKey, dorc_plan::ProbeAttribution> {
-    let mut origins: BTreeMap<dorc_core::FactKey, dorc_plan::ProbeAttribution> = BTreeMap::new();
-    for check in &probe.checks {
-        let Some(record) = results.records.get(&RecordKey {
-            site: check.site,
-            member: check.member,
-        }) else {
-            continue;
-        };
-        let origin = arena.leaf(dorc_core::OriginKind::ProbeResult(record.stamp), None);
-        let reported = Some(dorc_plan::ReportedObservation {
-            stamp: record.stamp,
-            tool_rc: record.rc,
-            predict_span: check.defining_span,
-        });
-        let attribution = match origins.get(&check.fact) {
-            Some(prior) => dorc_plan::ProbeAttribution {
-                origin: arena.join(None, &[prior.origin, origin]).unwrap_or(origin),
-                reported: None,
-            },
-            None => dorc_plan::ProbeAttribution { origin, reported },
-        };
-        origins.insert(check.fact, attribution);
-    }
-    origins
-}
-
-/// Build the `Measured`-tier fact-merge narrative a probe-result disagreement mints (C4;
-/// `27V` Lane A, `AID-NEEDS:law-collapse-mints-narrative`): a host self-contradiction at `cell`,
-/// carrying the participating establisher sites as operands (`minting_line`/`shown` filled by d3).
-/// Decision-inert (`two-plane-aid-law`): the conservative meet already folded the channel to ⊤
-/// (`kFAIL-perform`, the only safe resolution of a self-contradicting host); this only narrates why.
-fn measured_merge_disagreement(
-    cell: dorc_aid::diag::SiteId,
-    sites: &[dorc_aid::diag::SiteId],
-) -> CollapseNarrative {
-    let operands = dorc_aid::narrative::Operands::capped(
-        sites
-            .iter()
-            .map(|&site| dorc_aid::narrative::ValueOperand {
-                site,
-                minting_line: None,
-                shown: None,
-            })
-            .collect(),
-    );
-    CollapseNarrative::new(
-        SpeechAct::Measured,
-        CollapseKind::FactMergeDisagreement { cell, operands },
-    )
-}
-
-/// Conservatively merge two [`Observable`]s reported for the SAME cell (20I find-6a /
-/// item-5). Per channel: equal values pass through; ANY disagreement degrades the
-/// channel to ⊤ (`Verdict::Unknown` for Effect, `Predicted::Top` for status/stdout/
-/// stderr). This is the meet toward ⊤ — never last-write-wins — so a self-contradicting
-/// host folds to run (`kFAIL-perform`), the only safe resolution. Order-independent
-/// (commutative + idempotent): merging in any site order yields the same ⊤-on-conflict.
-fn merge_observable(a: Observable, b: Observable) -> Observable {
-    Observable {
-        effect: if a.effect == b.effect {
-            a.effect
-        } else {
-            Verdict::Unknown
-        },
-        status: if a.status == b.status {
-            a.status
-        } else {
-            Predicted::Top
-        },
-        stdout: if a.stdout == b.stdout {
-            a.stdout
-        } else {
-            Predicted::Top
-        },
-        stderr: if a.stderr == b.stderr {
-            a.stderr
-        } else {
-            Predicted::Top
-        },
     }
 }
 
