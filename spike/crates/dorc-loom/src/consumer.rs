@@ -534,9 +534,7 @@ impl DorcConsumer {
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
             Self::arrangement_row(slug)?;
         }
-        // A case's own inventory block is DECLINED here, and that is what makes the block legal to
-        // write down: this seat is where the inventory comes from, so answering it here would ask
-        // the same question forever (`SelfReference`).
+        // Declining the case's own inventory block is what makes the block legal to write down.
         let driver = DorcReplayDriver::new(self, case).without_self_reference();
         let render = drive_case(case, &RunEnv::new(), |command, context| {
             Ok(driver

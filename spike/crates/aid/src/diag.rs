@@ -3570,11 +3570,8 @@ fn remediation_hint_slug(class: RemediationClass) -> &'static str {
 // arrangement component per reason, and the reason's own fields as that component's values. The
 // map is a single exhaustive `match`, so a new variant is a compile error here — at the seat that
 // decides what the new world says.
-//
-// They answer with the resolved COMPONENT, not with its bytes, so a code whose whole message is the
-// `{{reason}}` hole can be rendered with the component's own face and edited at the entry the words
-// live in (`28L:rul-empty-registers-for-pure-holes`); a code that says something of its own around
-// the hole interpolates the same component as an ordinary value.
+// They answer with the resolved COMPONENT rather than its bytes, which is what lets a whole-hole
+// register wear the component's face (`28L:rul-empty-registers-for-pure-holes`).
 
 /// The registry sentence for one [`CfgTopNodeReason`].
 fn cfg_top_node_text(ctx: &RenderCtx<'_>, reason: CfgTopNodeReason) -> ComponentText {

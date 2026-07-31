@@ -177,10 +177,8 @@ impl CaseOwnership {
         occurrence: Option<usize>,
         editing: &Path,
     ) -> Option<&Path> {
-        // The filename is the identity: it is the only comparison that survives a caller who named
-        // the case by slug rather than by path. Stems are corpus-wide distinct
-        // ([`CaseOwnership::scan_collections`] refuses otherwise), so spanning two collections does
-        // not make this ambiguous.
+        // The filename is the identity — the only comparison that survives a caller who named the
+        // case by slug. Stems stay corpus-wide distinct, so two collections do not blur it.
         self.owner(slug, occurrence)
             .filter(|owner| owner.file_name() != editing.file_name())
     }

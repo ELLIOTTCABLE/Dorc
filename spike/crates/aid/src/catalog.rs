@@ -258,12 +258,9 @@ pub fn fill_template_parts(
     use crate::tagged::{RenderPart, RenderParts};
 
     let template_parts = parse_template(template)?;
-    // A register that is NOTHING but one registry-backed hole holds no words of its own
-    // (`28L:rul-empty-registers-for-pure-holes`), so a section opened over it would be a component's
-    // sentence wearing the code's face — rendered, and uneditable, because every byte in it is a
-    // value. Stamp the COMPONENT's face instead. The section is whole either way: sections open and
-    // close on owner change, and this one has a single owner from first byte to last, so re-keying
-    // it splits nothing.
+    // A register that is NOTHING but a registry-backed hole holds no words of its own, so it wears
+    // the COMPONENT's face (`28L:rul-empty-registers-for-pure-holes`) — one owner throughout, so
+    // re-keying the section splits nothing.
     if let [TemplatePart::Hole(name)] = template_parts.as_slice()
         && let Some((_, crate::ParamText::Component(component))) =
             params.iter().find(|(key, _)| key == name)
@@ -298,10 +295,8 @@ pub fn fill_template_parts(
                         text: text.clone(),
                         source: String::from(*param),
                     }),
-                    // A component sharing its register with words of ours renders as a plain value:
-                    // splitting the register around a faced interior hole is the priced-and-declined
-                    // remedy (`28L:rul-empty-registers-for-pure-holes`), so its own words stay
-                    // editable at the entry and nowhere else.
+                    // A component sharing its register with words of ours stays a plain value:
+                    // facing an INTERIOR hole is the priced-and-declined remedy.
                     crate::ParamText::Ours(_) | crate::ParamText::Component(_) => {
                         parts.push(RenderPart::ParamValue {
                             text: value.text().to_owned(),

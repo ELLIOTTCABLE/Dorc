@@ -132,8 +132,7 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
     ] {
         let case = Case::parse(text).expect("case parses");
         let consumer = DorcConsumer::new();
-        // The FIRST block: the whylog render is what this asserts about, and a case is free to
-        // carry further blocks after it (an inventory of its own values, say).
+        // The FIRST block: a case is free to carry further ones after its whylog render.
         let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
             panic!("exact whylog replay must not fall back")
         })

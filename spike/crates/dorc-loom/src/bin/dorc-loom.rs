@@ -304,11 +304,9 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
             path.display()
         ));
     }
-    // The inventory block ships EMPTY, like the replay above it: a skeleton states the two
-    // questions a case answers — what the world prints, and what an author may type into it — and
-    // one `DORC_LOOM_DUMP` run fills both (`authoring-a-replay-block-is-blind`). It is here rather
-    // than added corpus-wide because it re-churns its case on every change to its own values, so
-    // whether an existing case wants one is the author's judgment.
+    // The inventory block ships EMPTY like the replay above it; one `DORC_LOOM_DUMP` run fills
+    // both. NEW cases only — it re-churns whenever its own values move, so an existing case
+    // carries one at its author's judgment.
     let skeleton = format!(
         "---\ncode: {slug}\nwhen-fires:\nwhy:\n{key}: {loop_hint}\n---\n-- replay --\n\
          $ dorc plan --book=book.sh\n\n$ dorc-loom vars --used {slug}\n",
