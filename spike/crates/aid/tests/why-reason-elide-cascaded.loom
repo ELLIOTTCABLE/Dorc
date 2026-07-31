@@ -1,0 +1,75 @@
+---
+arrangement: why-reason-elide-cascaded
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-elide-cascaded && mise run loom:promote -- why-reason-elide-cascaded`. `mise run loom:vars -- --all why-reason-elide-cascaded` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+# The guard-then-install ladder, twice. Both packages are already installed, so both `dpkg -s`
+# guards hold and neither install ever runs -- but the SECOND rung only becomes removable once
+# the FIRST install is proven dead, because until then a write above it invalidated its guard.
+# That second removal is a round-2 finding, and the report says so.
+dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha
+dpkg -s beta >/dev/null 2>&1 || apt-get install -y beta
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The two halves of the idiom: a QUERY verb that only reads (`:?`) and a mutating verb that
+# establishes (`:`). The fixpoint exists to notice that erasing the second makes the first's
+# answer trustworthy again.
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=06c88fa1c06fbd444cc27a51797c4c92917921f5a66b925875010d7427ee6f43 sites=4 @@dorc@@
+dorc site 0 effect=holds rc=0 @@dorc@@
+dorc site 1 effect=holds rc=0 @@dorc@@
+dorc site 2 effect=holds rc=0 @@dorc@@
+dorc site 3 effect=holds rc=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- replay --
+$ dorc why book.sh:7 --book=book.sh -o package.oracle.sh < probe-results.txt --all
+      [ book.sh, participating lines:
+   7 | dpkg -s beta >/dev/null 2>&1 || apt-get install -y beta
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   7|dpkg skipped RATHER THAN guarded: the probe reported sm.dorc.PkgState:beta@installed
+   already in place, and the site's oracle vouches that is reason enough
+
+   === ANALYSIS ===
+
+   what 7|dpkg rested on:
+
+   * dorc  derives  [unwritten: why-reason-elide-cascaded]
+
+      [ book.sh, participating lines:
+   7 | dpkg -s beta >/dev/null 2>&1 || apt-get install -y beta
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   7|apt-get dropped as dead code RATHER THAN skipped: a guard's known status proves this
+   branch never runs
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
