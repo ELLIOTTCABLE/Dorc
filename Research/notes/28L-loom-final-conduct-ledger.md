@@ -761,6 +761,34 @@ lanes thread by fresh census, never by the map's count.
   guard · declined · render-refused · omitted · cmdsub; ~49 components) +
   cascades attempt-and-size + the FINAL per-component accounting for the
   arc-close ledger.
+- **x2f LANDED** (`ai/r28-loom-x2f` @ `d51ab165` + a ratified rename addendum in
+  flight; both legs green, Win 1689 / WSL 1685). `detail: String` EXITS AT ZERO
+  (was 10): nine codes migrated — the census's six PLUS `escalation-policy` (reuses
+  `core::EscalationDial`/`Capability`, the TopCause shape exactly) + `cfg-top-node`
+  + the `footprint-incoherent` straggler x2c's "ten landed" list had miscounted —
+  93 hand-seeded verbatim components (the census's ~55 undercounted), all a
+  generator fixpoint, plus `every_migrated_reason_renders_words_not_a_placeholder`
+  (walks every variant; proven to bite). Two fixtures had been INVENTING sentences
+  no emitter produces (`escalation-policy`, `syntax-unsupported`) — now real.
+  `transport-not-attempted` RETIRED; world-variant pair minted
+  (`transport-spawn-refused` w/ ForeignBytes detail · `transport-marker-unusable`),
+  typed at the edge (`NotAttempted::{SpawnRefused, MarkerUnusable}`), catalog
+  94 → 95, ratchet unchanged at 8. Metadata sweep: 18 `why` fields de-PASSTHROUGH'd
+  under `--accept-metadata`.
+- **x2f rulings** — `tc-reason-enum-home-is-aid-not-emitter` → ACCEPTED, and
+  `rul-reason-enums-not-sibling-codes` is AMENDED: the enum lives beside its
+  payload in `aid::diag` ("in the emitting crate" was impossible — aid deps only
+  core, emitters dep aid, the payload names the type); the emitter still DECIDES
+  by picking the variant; aid owns types and never decides — the payload-struct
+  precedent · `tc-transport-spawn-error-crosses-as-a-string` → ACCEPTED
+  (dorc-transport's dependency-freedom is a weld; stringify at the boundary, seal
+  at the cli edge via fenced `from_io_edge`) · `tc-reason-hole-is-still-named-
+  detail` → BUILD ordered (the `{{detail}}` → `{{reason}}` rename for the seven
+  carriers; strawman-no-compat; in flight as the lane's addendum).
+  PROCESS NOTE for the close report: commits `5935a6d1`+`f0ed3f5e` are a
+  non-bisectable two-commit unit (the retired row's hand-deletion must precede
+  the promote that regenerates the lock; the first is red on the
+  one-catalog-entry census). Accepted wart; do not bisect between them.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
