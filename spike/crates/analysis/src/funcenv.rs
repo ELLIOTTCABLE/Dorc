@@ -36,9 +36,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::{AstId, Interner, Span, Symbol, ValueGrade};
-use dorc_syntax::ast::{Ast, NodeKind};
+use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 
-use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
+use crate::cfg::{Branch, Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::{Flat, Lattice, MapL};
 use crate::solve::{Direction, Graph, solve};
 use crate::value::{ValueFlow, ValueOf};
@@ -90,6 +90,14 @@ impl<'a> SourceLiteralPlane<'a> {
     pub fn literal_text(&self, node: CfgNodeId, index: usize) -> Option<&'a str> {
         self.literal_word(node, index)
             .map(|sym| self.interner.resolve(sym))
+    }
+
+    /// How many argv words `node` carries. Read by the fold's arity checks, which must
+    /// distinguish "no fourth word" from "a fourth word this plane cannot resolve" — the latter
+    /// is a different command and decides nothing.
+    #[must_use]
+    pub fn argv_len(&self, node: CfgNodeId) -> usize {
+        self.value.argv_values(node).len()
     }
 
     /// Whether the underlying value analysis converged; a capped value solve makes every word ⊤,
@@ -346,6 +354,11 @@ pub struct FuncEnv {
     /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
     /// which definitions that statement bound without re-reading the value plane.
     sourced_paths: BTreeMap<CfgNodeId, String>,
+    /// The edges the decidable-condition fold proved dead (`28M` §9). Kept as data so a pin can
+    /// assert WHICH condition folded rather than only its downstream effect on a binding — an
+    /// empty set is the honest statement that nothing was decidable, and the corpus cell that
+    /// must never fold (`contest28-top-licenses-nothing`) is checkable directly.
+    folded_edges: BTreeSet<(CfgNodeId, CfgNodeId)>,
 }
 
 impl FuncEnv {
@@ -367,7 +380,7 @@ impl FuncEnv {
     /// The binding `name` has immediately before `node`.
     #[must_use]
     pub fn binding_before(&self, node: CfgNodeId, name: &str) -> Flat<Binding> {
-        self.before(node).lookup(name)
+        binding_in(&self.states, self.converged, node, name)
     }
 
     #[must_use]
@@ -380,6 +393,26 @@ impl FuncEnv {
     pub fn unresolvable_loads(&self) -> &BTreeSet<CfgNodeId> {
         &self.unresolvable_loads
     }
+
+    /// The control-flow edges the decidable-condition fold proved dead (`28M` §9), in
+    /// deterministic order. Empty whenever no condition in the unit was decidable.
+    #[must_use]
+    pub fn folded_edges(&self) -> &BTreeSet<(CfgNodeId, CfgNodeId)> {
+        &self.folded_edges
+    }
+}
+
+/// The binding `name` has immediately before `node`, read off a raw solution — the shared body
+/// of [`FuncEnv::binding_before`] and the fold's own per-round queries, so an intermediate round
+/// answers by exactly the rule the finished environment answers by (the ⊤-on-non-convergence
+/// fold included).
+fn binding_in(states: &[EnvStack], converged: bool, node: CfgNodeId, name: &str) -> Flat<Binding> {
+    if !converged {
+        return Flat::Top;
+    }
+    states
+        .get(node.index())
+        .map_or(Flat::Top, |state| state.lookup(name))
 }
 
 // ── The positional visibility oracle (`28K` §2 rul-visibility-is-full-positional) ──
@@ -468,6 +501,11 @@ impl<'a> LiveDefinitions<'a> {
 ///
 /// Pure: `defs` is the whole loaded unit as data and `literals` is the narrow source-literal
 /// window; nothing here reads a clock, a file, or a host answer.
+///
+/// Two passes, not one — the decidable-condition fold (`28M` §9) is pessimistic conditional
+/// constant propagation over this domain: solve, decide whatever conditions the solved
+/// environment makes decidable, mask the edges those decisions prove dead, re-solve. See
+/// [`FOLD_ROUNDS_CAP`] for why it terminates and why every intermediate state is sound.
 #[must_use]
 pub fn analyze(
     ast: &Ast,
@@ -483,19 +521,286 @@ pub fn analyze(
             converged: false,
             unresolvable_loads: BTreeSet::new(),
             sourced_paths: BTreeMap::new(),
+            folded_edges: BTreeSet::new(),
         };
     }
     // Its own pass: independent of the environment, so threading it would buy only interior
     // mutability in a kernel.
     let (unresolvable_loads, sourced_paths) = load_sites(cfg, defs, literals);
-    let solution = solve(cfg, Direction::Forward, |node, incoming: &EnvStack| {
-        transfer(ast, cfg, defs, literals, &universe, node, incoming)
-    });
+    let solve_pruned = |folded: &BTreeSet<(CfgNodeId, CfgNodeId)>| {
+        let graph = PrunedCfg::new(cfg, folded);
+        solve(&graph, Direction::Forward, |node, incoming: &EnvStack| {
+            transfer(ast, cfg, defs, literals, &universe, node, incoming)
+        })
+    };
+
+    let mut folded_edges = BTreeSet::new();
+    let mut solution = solve_pruned(&folded_edges);
+    for _ in 0..FOLD_ROUNDS_CAP {
+        let found = dead_edges(
+            ast,
+            cfg,
+            defs,
+            literals,
+            &solution.states,
+            solution.converged,
+        );
+        // Monotone by construction: the mask only ever grows, which is what bounds the loop and
+        // what makes a decision, once taken, stable (see [`FOLD_ROUNDS_CAP`]).
+        if found.is_subset(&folded_edges) {
+            break;
+        }
+        folded_edges.extend(found);
+        solution = solve_pruned(&folded_edges);
+    }
+
     FuncEnv {
         states: solution.states,
         converged: solution.converged,
         unresolvable_loads,
         sourced_paths,
+        folded_edges,
+    }
+}
+
+// ── The decidable-condition fold (`28M` §9) ──
+
+/// How many times the fold may re-solve.
+///
+/// **Termination.** The masked-edge set only GROWS and is bounded by the graph's edge count, so
+/// the loop settles after at most one round per maskable edge; the cap is a backstop of
+/// [`solve`](crate::solve)'s own flavour, not the real bound. A round is needed only where
+/// deciding one condition is what makes the NEXT one decidable — stacked define-if-absent guards
+/// — so the practical bound is guard-nesting depth.
+///
+/// **Why running out is safe** (`28M:dec-pessimistic-iteration`, "always — pessimism is what we
+/// do here"): every intermediate state is independently sound. Round *n*'s decisions are taken
+/// against an environment solved under round *n-1*'s mask, and masking edges can only remove
+/// paths — so a name whose binding was `Defined(d)` keeps binding `d` or becomes unreached, and
+/// one that was `Undefined` stays `Undefined` or becomes unreached. A decided condition
+/// therefore never flips; running out of rounds loses precision (⊤ ⇒ withhold) and nothing else.
+const FOLD_ROUNDS_CAP: usize = 8;
+
+/// How far the fold will unwrap a condition looking for one simple command. Bounded for the same
+/// reason every other walk here is: a malformed shape must lose precision, never spin.
+const CONDITION_UNWRAP_CAP: usize = 8;
+
+/// A condition this domain can answer — `28M:dec-decidable-set-v0`, CLOSED, and it grows by NAME
+/// only. Anything not in this set is ⊤ and folds nothing (`inv-top-reject`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum DecidableTest {
+    /// `command -v <literal name>`, where the name is one the unit DEFINES somewhere.
+    ///
+    /// Contracted to function-definedness within the analysis unit
+    /// (`28M:rul-command-v-reads-fn-definedness`, human-restated: "for analysis, `command -v`
+    /// will never check for a binary named `cmd__is_converged`"). A PATH executable of the same
+    /// name is pathological-by-construction and is `28K:bitem8`'s reserved differential case.
+    /// The universe restriction is what keeps the ordinary `command -v yum` — a genuine,
+    /// host-dependent PATH question — out: a name the unit never defines has no binding to read.
+    FunctionDefined(String),
+    /// `[ -f <literal> ]` / `test -f <literal>` naming a path the CONTROLLER resolved as a
+    /// loadable source.
+    ///
+    /// Decides TRUE only. Absence from the load set is not filesystem absence — the driver knows
+    /// only what it was told to read — so an unrecognized path stays ⊤ and
+    /// `28K:res-host-conditional-loading` is untouched. Deciding a RESOLVED path true adds no
+    /// assumption the loading model did not already make: `. lib.sh` already binds the
+    /// definitions the controller read from that path.
+    LoadableExists,
+}
+
+/// The edges every decidable condition in `cfg` proves dead, against the environment `states`.
+fn dead_edges(
+    ast: &Ast,
+    cfg: &Cfg,
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    states: &[EnvStack],
+    converged: bool,
+) -> BTreeSet<(CfgNodeId, CfgNodeId)> {
+    let mut out = BTreeSet::new();
+    for branch in cfg.branches() {
+        let Some(held) = decide(ast, cfg, defs, literals, states, converged, branch) else {
+            continue;
+        };
+        for dead in branch.dead_successors(cfg, held) {
+            out.insert((branch.decided_at, dead));
+        }
+    }
+    out
+}
+
+/// Whether `branch`'s condition provably succeeds (`Some(true)`) or provably fails
+/// (`Some(false)`) at its own position. `None` is every other case, which is most of them.
+fn decide(
+    ast: &Ast,
+    cfg: &Cfg,
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    states: &[EnvStack],
+    converged: bool,
+    branch: &Branch,
+) -> Option<bool> {
+    let (test, negated) = decidable_test(ast, cfg, defs, literals, branch)?;
+    let holds = match test {
+        DecidableTest::FunctionDefined(name) => {
+            match binding_in(states, converged, branch.decided_at, &name) {
+                Flat::Elem(Binding::Defined(_)) => true,
+                Flat::Elem(Binding::Undefined) => false,
+                // ⊤ cannot say; ⊥ means the condition itself is unreached, so it decides nothing.
+                Flat::Top | Flat::Bottom => return None,
+            }
+        }
+        DecidableTest::LoadableExists => true,
+    };
+    Some(holds != negated)
+}
+
+/// Classify `branch`'s condition against [`DecidableTest`], with the `!`-negation the shape
+/// carries. `None` unless the condition is exactly one simple command in the closed set.
+fn decidable_test(
+    ast: &Ast,
+    cfg: &Cfg,
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    branch: &Branch,
+) -> Option<(DecidableTest, bool)> {
+    let (simple, negated) = condition_shape(ast, branch.cond)?;
+    let node = branch.decided_at;
+    // The node whose rc the branch reads must BE that simple command. Where it is not — a
+    // compound condition, a pipeline, an `&&` chain whose left arm is itself a branch — the
+    // decision would be keyed to somebody else's status, so there is no decision.
+    if cfg.node(node).kind != CfgNodeKind::Command || cfg.node(node).ast != simple {
+        return None;
+    }
+    let test = match command_head(ast, simple)? {
+        // Redirections are their own CFG nodes, so `>/dev/null 2>&1` never reaches the argv:
+        // "rc-irrelevant redirects ignored" falls out rather than being special-cased.
+        "command" if literals.argv_len(node) == 3 && literals.literal_text(node, 1)? == "-v" => {
+            let name = literals.literal_text(node, 2)?;
+            if !defs.knows(name) {
+                return None;
+            }
+            DecidableTest::FunctionDefined(name.to_owned())
+        }
+        "test" if literals.argv_len(node) == 3 => file_test(defs, literals, node, None)?,
+        "[" if literals.argv_len(node) == 4 => file_test(defs, literals, node, Some("]"))?,
+        _ => return None,
+    };
+    Some((test, negated))
+}
+
+/// The command word of `simple`, when it is one statically-fixed literal
+/// ([`Word::as_literal`](dorc_syntax::ast::Word::as_literal), the analyzer's standing rule for
+/// command names).
+///
+/// Read as PROGRAM TEXT rather than through [`SourceLiteralPlane`] for one reason: `[` carries a
+/// glob metacharacter, so the value plane holds every `[ … ]` head at ⊤ — its correct,
+/// conservative pathname-expansion posture at a use site — and `[` is the spelling this test is
+/// overwhelmingly written in, so honouring only `test` would leave the U-shaped middle the
+/// dialect rules warn about. The narrowness is the safety: only the HEAD comes from here, and
+/// only to name which builtin the command is. Every OPERAND — the role name, the load path —
+/// still resolves through the plane, so `funcenv-reads-source-literal-plane-only`'s actual
+/// subject (a value a HOST spoke siting a load) is untouched.
+fn command_head(ast: &Ast, simple: AstId) -> Option<&str> {
+    let NodeKind::Simple { words, .. } = &ast.node(simple).kind else {
+        return None;
+    };
+    let NodeKind::Word { parts } = &ast.node(*words.first()?).kind else {
+        return None;
+    };
+    match parts.as_slice() {
+        [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s.as_str()),
+        _ => None,
+    }
+}
+
+/// The `-f <loadable path>` half of the decidable set, shared by the `test` and `[` spellings.
+fn file_test(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    closer: Option<&str>,
+) -> Option<DecidableTest> {
+    if literals.literal_text(node, 1)? != "-f" || literals.literal_text(node, 3) != closer {
+        return None;
+    }
+    let path = literals.literal_text(node, 2)?;
+    defs.definitions_of_path(path)
+        .map(|_| DecidableTest::LoadableExists)
+}
+
+/// Peel a condition down to the single simple command whose status decides it, accumulating
+/// `!`-negation. Anything with two commands in it decides nothing: the fold reads ONE rc.
+fn condition_shape(ast: &Ast, cond: AstId) -> Option<(AstId, bool)> {
+    let mut id = cond;
+    let mut negated = false;
+    for _ in 0..CONDITION_UNWRAP_CAP {
+        match &ast.node(id).kind {
+            NodeKind::Script { items } | NodeKind::List { items } => {
+                let [only] = items[..] else { return None };
+                id = only;
+            }
+            NodeKind::Pipeline {
+                negated: flip,
+                stages,
+            } => {
+                let [only] = stages[..] else { return None };
+                negated ^= flip;
+                id = only;
+            }
+            NodeKind::Simple { .. } => return Some((id, negated)),
+            _ => return None,
+        }
+    }
+    None
+}
+
+/// The CFG with the fold's proven-dead edges removed — the graph the environment is actually
+/// solved over.
+///
+/// A view rather than a rewrite of the [`Cfg`]: the graph the rest of the engine sees is
+/// untouched, so the fold's reach is exactly this one domain and no consumer inherits a pruned
+/// CFG it did not ask for.
+struct PrunedCfg {
+    succ: Vec<Vec<usize>>,
+    pred: Vec<Vec<usize>>,
+}
+
+impl PrunedCfg {
+    fn new(cfg: &Cfg, folded: &BTreeSet<(CfgNodeId, CfgNodeId)>) -> Self {
+        let n = cfg.node_count();
+        let node_id = |v: usize| CfgNodeId(u32::try_from(v).unwrap_or(u32::MAX));
+        let succ: Vec<Vec<usize>> = (0..n)
+            .map(|v| {
+                cfg.succ(v)
+                    .iter()
+                    .copied()
+                    .filter(|&w| !folded.contains(&(node_id(v), node_id(w))))
+                    .collect()
+            })
+            .collect();
+        let mut pred = vec![Vec::new(); n];
+        for (v, targets) in succ.iter().enumerate() {
+            for &w in targets {
+                if let Some(preds) = pred.get_mut(w) {
+                    preds.push(v);
+                }
+            }
+        }
+        PrunedCfg { succ, pred }
+    }
+}
+
+impl Graph for PrunedCfg {
+    fn node_count(&self) -> usize {
+        self.succ.len()
+    }
+    fn succ(&self, node: usize) -> &[usize] {
+        &self.succ[node]
+    }
+    fn pred(&self, node: usize) -> &[usize] {
+        &self.pred[node]
     }
 }
 
@@ -698,6 +1003,13 @@ fn transfer(
 ) -> EnvStack {
     let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
     let cfg_node = cfg.node(id);
+    // An UNREACHED node produces ⊥. Havoc is what an EXECUTED unmodeled construct does to the
+    // environment; a node no path reaches executes nothing, so reading ⊤ off one would let a
+    // provably-dead branch poison the join it never reaches — exactly what the fold masks edges
+    // to prevent. `Entry` is exempt because minting the boundary state out of ⊥ is its whole job.
+    if matches!(incoming, EnvStack::Bottom) && cfg_node.kind != CfgNodeKind::Entry {
+        return EnvStack::Bottom;
+    }
     match cfg_node.kind {
         CfgNodeKind::Entry => {
             let mut frame = Frame::default();
@@ -920,6 +1232,7 @@ mod tests {
             converged: false,
             unresolvable_loads: BTreeSet::new(),
             sourced_paths: BTreeMap::new(),
+            folded_edges: BTreeSet::new(),
         };
         assert_eq!(solved.before(CfgNodeId(0)), EnvStack::Top);
         assert_eq!(solved.binding_before(CfgNodeId(0), "f"), Flat::Top);
@@ -1426,6 +1739,207 @@ mod tests {
         let live = LiveDefinitions::unsolved();
         assert!(live.answers_at(CfgNodeId(0), ROLE, 0));
         assert_eq!(live.source_before(CfgNodeId(0), ROLE), None);
+    }
+
+    // ── TABLE 5: the decidable-condition fold (`28M` §9) ──
+
+    /// The exit binding of `ROLE`, plus how many edges the fold proved dead. Every cell below
+    /// reads both: the binding is the deliverable, and an empty fold set is what distinguishes
+    /// "the lattice was read" from "the answer came out right for some other reason".
+    fn folded(book: &str, table: &DefinitionTable) -> (Flat<Binding>, usize) {
+        let (solved, exit) = solve_book(book, table);
+        assert!(
+            solved.converged(),
+            "the fold must still reach a fixed point"
+        );
+        (
+            solved.binding_before(exit, ROLE),
+            solved.folded_edges().len(),
+        )
+    }
+
+    /// A book plus a `lib.sh` the book may source, both defining `ROLE`: file 0 is the loadable,
+    /// file 1 the book. Unlike [`unit`] the loadable is NOT ambient — the book decides when it
+    /// loads, which is what the conditional-sourcing cells need.
+    fn sourceable(book: &str) -> (DefinitionTable, DefId) {
+        let mut table = DefinitionTable::default();
+        let lib = add_def(&mut table, 0, ROLE);
+        table.set_loadable("lib.sh".to_owned(), vec![lib]);
+        for (id, node) in dorc_syntax::parse(book).value.iter() {
+            if let NodeKind::FuncDef { name, .. } = &node.kind {
+                let def = add_def(&mut table, 1, name);
+                table.set_book_site(id, def);
+            }
+        }
+        (table, lib)
+    }
+
+    /// THE P1 CELL (`28O:res-polyfill-binding-tops-pending-fold`, half two — the larger half):
+    /// a polite author's guarded default, loaded AFTER a real oracle. Before the fold this
+    /// joined `Defined(oracle) ⊔ Defined(guard)` to ⊤ and the family went silently sparing-inert
+    /// — "the polite author's file quietly poisons the family it deferred to". The condition is
+    /// decidable-FALSE at its own position, so the guarded edge is dead and the loaded oracle
+    /// survives intact.
+    #[test]
+    fn a_guard_loaded_after_a_real_oracle_leaves_that_oracle_live() {
+        let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\nyum install -y nginx\n";
+        let (table, loaded) = unit(book, &[ROLE]);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(
+            binding,
+            Flat::Elem(Binding::Defined(loaded)),
+            "the unconditional definition wins — the poison is cured, not merely conservative"
+        );
+        assert_eq!(folds, 1, "exactly the guarded arm's edge");
+    }
+
+    /// THE P2 CELL: the same guard with NO prior definition. The condition is decidable-TRUE, so
+    /// the fall-through edge is the dead one and the guard's own definition binds concretely
+    /// where it used to join to ⊤. Without masking the fall-through this reads
+    /// `Defined(guard) ⊔ Undefined = ⊤`, which is the pre-fold answer.
+    #[test]
+    fn a_fresh_polyfill_binds_its_own_definition() {
+        let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let guard = add_def(&mut table, 1, ROLE);
+        table.set_book_site(first_funcdef(book), guard);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(binding, Flat::Elem(Binding::Defined(guard)));
+        assert_eq!(folds, 1);
+    }
+
+    /// The lattice's other textual order, which the fold must not disturb: guard FIRST, real
+    /// oracle sourced after. Specific still beats default — here because the later unconditional
+    /// binding overwrites whatever the guard left, fold or no fold.
+    #[test]
+    fn a_guard_above_the_real_oracle_still_loses_to_it() {
+        let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\n. lib.sh\nyum install -y nginx\n";
+        let (table, lib) = sourceable(book);
+        assert_eq!(folded(book, &table).0, Flat::Elem(Binding::Defined(lib)));
+    }
+
+    /// Guards among themselves resolve FIRST-wins (`28K` §3): the second guard's condition is
+    /// decidable-FALSE because the first one already bound the name.
+    #[test]
+    fn two_guards_resolve_first_wins() {
+        let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\n\
+                    if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { true ;}\nfi\n";
+        let parsed = dorc_syntax::parse(book).value;
+        let mut table = DefinitionTable::default();
+        let mut first = None;
+        for (id, node) in parsed.iter() {
+            if let NodeKind::FuncDef { name, .. } = &node.kind {
+                let def = add_def(&mut table, 1, name);
+                table.set_book_site(id, def);
+                first.get_or_insert(def);
+            }
+        }
+        let first = first.expect("two definitions");
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(
+            binding,
+            Flat::Elem(Binding::Defined(first)),
+            "the FIRST guard's body is the live one — the second guard is dead"
+        );
+        assert_eq!(folds, 2, "one edge per guard, in opposite senses");
+    }
+
+    /// The conditional-sourcing idiom (`28K` §3's admin toolkit) folds on the same rail: with the
+    /// name already live, the `|| . backup.sh` operand is dead.
+    #[test]
+    fn conditional_sourcing_does_not_load_when_the_name_is_already_live() {
+        let book = "command -v yum__is_converged >/dev/null 2>&1 || . lib.sh\n";
+        let (mut table, lib) = sourceable(book);
+        let ambient = add_def(&mut table, 2, ROLE);
+        table.extend_ambient([ambient]);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(
+            binding,
+            Flat::Elem(Binding::Defined(ambient)),
+            "the ambient definition survives; the backup file never loads"
+        );
+        assert_ne!(binding, Flat::Elem(Binding::Defined(lib)));
+        assert_eq!(folds, 1);
+    }
+
+    /// And its live half: with nothing bound, the same line DOES load the backup.
+    #[test]
+    fn conditional_sourcing_loads_when_the_name_is_absent() {
+        let book = "command -v yum__is_converged >/dev/null 2>&1 || . lib.sh\n";
+        let (table, lib) = sourceable(book);
+        assert_eq!(folded(book, &table).0, Flat::Elem(Binding::Defined(lib)));
+    }
+
+    /// `[ -f <loadable> ] && . <loadable>` — the file-test half of the decidable set. The path is
+    /// one the CONTROLLER resolved, so the test is decidable-TRUE and the load is certain.
+    #[test]
+    fn a_file_test_on_a_resolved_loadable_decides_true() {
+        let book = "[ -f lib.sh ] && . lib.sh\n";
+        let (table, lib) = sourceable(book);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(binding, Flat::Elem(Binding::Defined(lib)));
+        assert_eq!(folds, 1, "the short-circuit-to-merge edge is the dead one");
+    }
+
+    /// THE CELL THAT MUST NOT MOVE (`contest28-top-licenses-nothing`): a live FILESYSTEM test on
+    /// a path the controller never resolved. Absence from the load set is not absence from the
+    /// disk — the driver knows only what it was told to read — so this stays ⊤ forever and keeps
+    /// pinning that ⊤ licenses nothing. If this ever folds, the decidable set has been widened.
+    #[test]
+    fn a_file_test_on_an_unresolved_path_never_folds() {
+        let book = "if [ -f /etc/dorc/prefer-local ]; then\nyum__is_converged() { :; }\nfi\n";
+        let (table, _) = unit(book, &[ROLE]);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(binding, Flat::Top);
+        assert_eq!(folds, 0, "nothing about this condition is decidable");
+    }
+
+    /// `command -v` on a name the unit never DEFINES is a genuine, host-dependent PATH question
+    /// and stays ⊤ (`res-host-conditional-loading` untouched). This is the containment on
+    /// `28M:rul-command-v-reads-fn-definedness`: the contract binds role names the unit binds,
+    /// never an arbitrary word.
+    #[test]
+    fn command_v_on_a_name_outside_the_unit_decides_nothing() {
+        let book = "if ! command -v yum >/dev/null 2>&1; then\nyum__is_converged() { :; }\nfi\n";
+        let (table, _) = unit(book, &[ROLE]);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(binding, Flat::Top, "a PATH probe decides no branch");
+        assert_eq!(folds, 0);
+    }
+
+    /// The negation is read, not assumed: define-if-PRESENT is the same test with the `!` gone,
+    /// and its branch is decidable-TRUE where the polyfill's is decidable-FALSE.
+    #[test]
+    fn dropping_the_negation_flips_which_arm_dies() {
+        let book = "if command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\n";
+        let (table, _) = unit(book, &[ROLE]);
+        let (binding, folds) = folded(book, &table);
+        let book_def = match binding {
+            Flat::Elem(Binding::Defined(d)) => d,
+            other => panic!("the book's definition is live, not {other:?}"),
+        };
+        assert_eq!(
+            table.get(book_def).map(|d| d.file),
+            Some(SourceFileId(1)),
+            "the guarded body really does run when its condition holds"
+        );
+        assert_eq!(folds, 1);
+    }
+
+    /// A condition with TWO commands in it decides nothing — the fold reads ONE rc, and a
+    /// compound condition's status is somebody else's. Pessimism, per `dec-pessimistic-iteration`.
+    #[test]
+    fn a_compound_condition_decides_nothing() {
+        let book = "if true; ! command -v yum__is_converged; then\n\
+                    yum__is_converged() { :; }\nfi\n";
+        let (table, _) = unit(book, &[ROLE]);
+        assert_eq!(folded(book, &table).1, 0);
     }
 
     /// The identity the whole gate rests on (`28O:dec-load-order-is-the-id-order`): a source's
