@@ -462,3 +462,44 @@ helper closure intact, AND an admin can discard/swap the entrypoint file
 helpers) without losing the helpers' function. The packaging shape that makes
 custody cheap is itself the thing under test.
 
+## §9. The decidable-condition fold — design SETTLED (duck sitting, 2026-07-31; build
+unscheduled — siting is the implementation-conductor's call, relayed by the human)
+
+Closes the design half of `28O:res-polyfill-binding-tops-pending-fold` (§5.4/§5.7
+here). Mechanism: **pessimistic conditional-constant-propagation** (SCCP's
+assume-live-until-proven-dead variant) over the function-environment domain —
+evaluate decidable conditions against the solved environment at their position, mask
+provably-dead edges, re-solve to a capped fixpoint (terminates: monotone in the
+pruned-edge set). Keyed on condition DECIDABILITY, never guard shape
+(`28K:rul-conflict-pass-is-semantic` holds). Fixes both broken polyfill cells
+positionally: guard-after-stdlib stays Defined(stdlib) (the poison cured); fresh
+polyfill lands Defined(guard). Controller-static only — host-dependent conditions
+(`uname` forks) stay ⊤-refused; `res-host-conditional-loading` untouched.
+
+- **rul-command-v-reads-fn-definedness [ACKED, human-restated 2026-07-31: "for
+  analysis, `command -v` will never check for a binary named `cmd__is_converged`"]**
+  — within an analysis unit, `command -v <literal role-name>` is contracted to
+  function-definedness. The PATH-executable divergence case is
+  pathological-by-construction, lands in `28K` §5-consistency's safe cell
+  (pattern-carry-the-answer: artifact matches plan), and is pinned by
+  `28K:bitem8-differential-load-order-battery`'s reserved case.
+- **dec-decidable-set-v0 [ACKED]** — closed, grows by name: `command -v <literal
+  name>` (plain/negated; rc-irrelevant redirects ignored) · `[ -f <literal
+  controller path> ]` (controller-side stat, already in `28K` §2's domain list). The
+  conditional-sourcing idiom (`command -v f >/dev/null 2>&1 || . backup.sh`) folds
+  on the same rail.
+- **dec-pessimistic-iteration [ACKED: "always — pessimism is what we do here"]** —
+  every intermediate state independently sound; exotic mutually-guarded cycles land
+  ⊤ and withhold.
+- **note-function-only-spelling-scout [PENDING 2026-07-31]** — whether POSIX or the
+  broad shell-commons offers a function-ONLY definedness test (no PATH fallback)
+  fitting, or cheaply raising, the two-binary floor; Sonnet research dispatched. If
+  one exists it becomes an ADDITIONAL decidable read (and a lint-preferred
+  spelling), never a replacement for the command-v contract — the wild idiom must
+  still fold.
+- **note-undefined-probe-enrichment [banked, aid-plane; aid never drives design]** —
+  Undefined stays a domain state DISTINCT from ⊤ (it already is; this bullet is why
+  it must never collapse): its aid-plane consumer is probe-enrichment — "analysis
+  read Undefined, but the host's PATH carries an entry by that name; sh behaviour
+  diverged from analysis; warn." Hint machinery, whenever the aid lane reaches it.
+
