@@ -95,6 +95,7 @@ pub struct SettledFixpoint {
 /// control-flow graph. Computed once, after quiescence, over the frozen CFG — forward
 /// reachability from each erased site, which is exact and cheap next to the network this
 /// whole engine exists to avoid.
+#[must_use]
 pub fn attribute_cascades(
     cfg: &dorc_analysis::cfg::Cfg,
     ast: &dorc_syntax::ast::Ast,
@@ -172,6 +173,7 @@ fn reaches(
 }
 
 /// Classify the residual model named by `erased` (round 1 passes the empty overlay).
+#[must_use]
 pub fn classify_round(
     frozen: &FrozenModel<'_>,
     erased: &dorc_analysis::erase::ErasedSites,
@@ -254,6 +256,7 @@ fn validity_view(
 /// NO RE-PROBE (`26H` §0 v-no-reprobe-needed): invalid-Query checks already ship and their
 /// rcs are already measured, merely withheld. This consumes measurements in hand; it never
 /// asks a host anything, and `probe` is the frozen origin artifact throughout.
+#[must_use]
 pub fn settle_validity_fixpoint(
     frozen: &FrozenModel<'_>,
     probe: &dorc_plan::ProbePlan,

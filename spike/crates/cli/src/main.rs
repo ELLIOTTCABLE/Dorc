@@ -85,20 +85,18 @@ use dorc_cli::world::{ship_predict_body, ship_verdict_body};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
-use dorc_cli::results::{
-    REPORT_RAW_CAP, RecordKey, ResolvOutcome, parse_leaf, parse_report_record, parse_site_record,
-    sanitize_report_raw, split_key,
-};
+use dorc_aid::SpeechAct;
 #[cfg(test)]
 use dorc_cli::fixpoint::SettledFixpoint;
 #[cfg(test)]
 use dorc_cli::results::facts_from_sites;
 #[cfg(test)]
+use dorc_cli::results::{
+    REPORT_RAW_CAP, RecordKey, ResolvOutcome, parse_leaf, parse_report_record, parse_site_record,
+    sanitize_report_raw, split_key,
+};
+#[cfg(test)]
 use dorc_cli::survival::own_wall_coord;
-#[cfg(test)]
-use dorc_aid::SpeechAct;
-#[cfg(test)]
-use dorc_cli::why::CascadeAttribution;
 use dorc_cli::{
     Args, CONSENT_FLAG, DriftedReceipt, Invocation, LintArgs, LintFormat, Mode, PlanTally, Receipt,
     humane_read_error, parse_args_from,
@@ -108,8 +106,8 @@ use dorc_core::{OutBytes, Predicted, Rc};
 // The why REPORT composes across the same seam (`28L:rul-full-driver-this-arc`): this edge builds
 // the world and prints the bytes, the lib turns that world into a stamped part stream.
 use dorc_cli::why::{
-    WhyReport, collect_wall_steps, first_wall_hint, flatten_ws,
-    is_structurally_unprobeable, oracle_locus, render_coord, why_report_parts,
+    WhyReport, collect_wall_steps, first_wall_hint, flatten_ws, is_structurally_unprobeable,
+    oracle_locus, render_coord, why_report_parts,
 };
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
@@ -2680,7 +2678,6 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
         Disposition::Guard(_) => "guard",
     }
 }
-
 
 /// Ship an already-rendered plan to a host and report how it ended.
 ///
