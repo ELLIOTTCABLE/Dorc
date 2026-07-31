@@ -982,7 +982,29 @@ lanes thread by fresh census, never by the map's count.
   gains the prove step (mechanical corpus regen). Macro-checkpoint pre-read:
   ZERO Rust-side repetition chafe in either reviewer round — the no-macro line
   rests at the human's 90.
-- **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
+- **x2k LANDED + FOLDED** (`ai/r28-loom-final` @ `41135038`; both legs green at its
+  tip, Win 1777 / WSL 1773). The round-2 chafe pack whole: the dump rescue is
+  UNCONDITIONAL (minted once, `dump_rescue_hint`, both failure seats, both shell
+  spellings — "the reader who needs telling is the one who has not set the
+  variable") · the non-prose refusal TRIAGES (frontmatter / replay-command /
+  file-section / unnamed residue, each naming its way out; git-diff triage, not
+  byte-shape re-detection) · six per-subcommand usage pages, each ending `next:` ·
+  `dorc-loom keys` + `mise run loom:keys` (and the vocabulary respelled as ONE
+  lib table with the e2e list a GATED projection — tc-run-lane-vocabulary
+  ACCEPTED: kills a hand-maintained subset; the runner keeps its gates, only the
+  data moved) · the code/arrangement split explained in the refusal that needed
+  it · `edit-loop:` gains the prove step (176-case re-mint, zero non-edit-loop
+  lines moved) · the PROSE-PIN SWEEP: 16 tests re-fixtured across 6 files (ask
+  the registry · synthesized registers · derive-from-render; the reviewer's
+  breakage class closed), discriminator now LAW
+  (`aid/CLAUDE.md:prose-pins-live-where-the-prose-does`), the three faceless
+  remediation hints kept as the sanctioned literal residue
+  (tc-faceless-rows-keep-literal-pins ACCEPTED — noted here as the ledger row) ·
+  tc-prose-pin-rule-is-doc-only ACCEPTED as residue (the ~90-line scanner could
+  become an internal-tooling gate; needs a false-positive ruling; post-arc).
+  Steering commit reviewed at fold: correct, stands.
+- **ARC CLOSE SEQUENCE** — X1/X2/X3 + both reviewer gates complete; the final
+  bless choreography + close report follow; the human's ack gates the fold. — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
   mirror-thread (census-corrected seats incl. lint/render.rs:119, cli/main.rs:243/414;
