@@ -286,254 +286,158 @@ composites nobody's fault.
   stack overflow in `mise run loom:compile` on `syntax-unsupported-nesting-bound`
   (WSL leg fine).
 
-## §8. Sitting Q1 (2026-07-31) — "contested family," lowered: what is contested, what that disproves, what survives
+## §8. The contest, lowered: composition, custody, and what survives (design sitting, 2026-07-31)
 
-Rubber-duck round on `rat-blessing-vocabulary-v0` × `28O:dec-withdrawal-is-undescribed-
-not-unlicensed`; grades as in the header.
+Grades as in the header. As-built claims are grounded at `ai/r28-oracle-loading` @
+`ebccaf90`; file:line pointers are that tip's.
 
-- **rul-conflict-between-totals-is-falsification** [ACKED hard] — divergence between
-  judgment-tier claims is legitimate pluralism; divergence between complete-by-contract
-  (`only`) claims is falsification evidence: at least one survey is factually
-  incomplete, and we cannot tell which. Rider [TYPED]: falsification never licenses
-  fail-fast where gradual-enhancement should hold — but the engine should know the two
-  classes apart and tune future handling per class.
-- **totalistic-is-not-a-safety-class** [ACKED; the exemption claim it answered is
-  retracted] — kind-member contest-immunity comes from single-occupancy in an owned
-  namespace (§3 wall-kind-owner-single-occupancy), never from totalism; `only` governs
-  authoring completeness (born-total vs arm-incremental), orthogonal to
-  authorship-plurality. Corollaries: `cmd__disturbs` — the member §4 actually targets —
-  is not `only`-named (arm-incremental, decline-calibrated, judgment-tier); and within
-  the `only` pair, a wrong `reaches_only` fails soft (over-walls) while a wrong
-  `state_stored_only_in`/invariance mark fails sharp (grants carry ⇒ under-execution).
-  Staleness rider: totals rot, and pre-MH2 contest-or-custody are the only displacement
-  paths — contest-inertness would make rot permanent-until-fork.
-- **rul-composite-meets-toward-guard-run** [ACKED hard — "our product rule restated
-  precisely for this domain"] — an engine-assembled cross-author composite is
-  admissible iff it only WITHHOLDS (walls more; grants nothing any single author did
-  not grant); a GRANTING composite needs one speaker, or entailment-by-each-author —
-  and entailment-by-each fails for frame-relative tokens (the concrete
-  res-dialect-word-pooling case: A's claim-token `@synced` read against B's live
-  backing `@current` "disjoint"-spares a cell both authors meant as one state;
-  footprint-union is therefore NOT entailment-safe even though a wider at-most is a
-  weaker sentence). The three strong requirements this implies [TYPED], none easy:
-  (1) composition must be well-formed; (2) the engine must know what-would-happen under
-  each contributor ALONE — construct a view of the universe excluding one fact,
-  evaluate, invert, then compute the meet; (3) a STRUCTURED sense of each property's
-  meaning and its meets-toward direction, checkable at the claims-meet-point (did it
-  ratchet the correct way). Rhymes with inv-must-may · ternary-compare-consumer-map ·
-  set-lifting-universal-meet, but this is a NEW CONSUMER; whether precisely-this
-  machinery exists is unmeasured. Lean [TYPED]: machinery-high and typecheckable — in
-  an LLM-built codebase, invariants held without mechanism scare.
-- **fnd-split-family-composes-unrefused** [conductor analysis; UNACKED] — the contest
-  trigger keys on name-shadowing, but a family can span authors with NO shadowed name
-  (A ships `predict` + `disturbs`; B ships only `is_converged`): stage E cannot fire,
-  and §4's fence catches it only at the sparing tier (span ≠ shadow). At the ELIDE
-  tier this composes B's vouch with A's asserted channel values — a replacement
-  reproduces bytes A asserted under A's convergence sense, licensed under B's — while
-  a GUARD consumes nothing from predict (guards-mint-no-values). Guard is monologue;
-  elide is dialogue — the kHALVES echo on the authorship axis, and evidence that §3's
-  wall-verdict-tier-sovereignty over-claims ∅ (the monologue holds only single-unit).
-  Riders: this resurrects price-union-of-strangers at MEMBER granularity
-  (member-complementary strangers union with zero ceremony, zero refusal); and it
-  leaks `28K` §8-monotonicity in spirit (no one's judgment is reassigned, yet the
-  composite grant is new and dual-authored). Candidate cheap rule, unruled,
-  reshaped by §9: pin the as-built monologue and type the custody demand at the
-  mint, so value-reproduction can never silently re-open the cell. The open
-  measurement is CLOSED (§9, scout-grounded): site-convergence derives wholly from
-  the shipped verdict body, and establish-elides reproduce no predict values — the
-  as-built cell IS a monologue; the license-plane danger is latent, not live.
-- **The retainability matrix** (shadowed-verdict contest; the composite rule applied
-  per member): the verdict seat — nothing retainable; genuinely undecided until
-  blessed (as-built correct). An uncontested `predict` as participant-model in OTHER
-  oracles' composed probes — epistemically retainable (single-author, factual, the
-  consumer never touches the disputed judgment, and every blessing outcome uses it
-  anyway) ⇒ today's family-wide undescribe is conservative-not-principled there;
-  retention is a legitimate ADDITIVE softening, later. `disturbs` + all selector
-  tokens — not retainable (frame-relativity: the contest disputes the frame itself;
-  the fence's collide is right). `lend_map` — licenses withheld; a grammar-tier
-  coherence CHECK retained as aid (peel disagreement is a strong hint). Aid plane —
-  everything retainable as attributed narration (two-plane law).
-- **Overlay via multi-file structure** [direction ACKED; deferred, TYPED] — the §6
-  overlay tax is really a MONOLITH tax: per-family files + deep-sourcing dissolve it
-  at FAMILY granularity, fully natively (the replaced family's file simply never
-  loads: no plurality, no refusal; sole-providership consent stays coherent under
-  `28K` §3). It does NOT unscrew price-patch-author — member-granular patching is
-  exactly the split-family configuration above. Build riders for when it lands:
-  `28K` §4's pin-closure wording widens to "from the live environment, wherever
-  sourced" (cross-file helper closures — same seam as §7's commissioned tests);
-  diamond-loading keys unit-identity to the DEFINING file's `SourceFileId` (pin a
-  test; version-skewed vendored copies then correctly refuse); entrypoint-only
-  constants under deep-require should wall loudly (~SUSPECT, confirm) — lint
-  candidate; and the refusal guards against ACCIDENTAL reassignment only — a
-  vendored-modified "overlay" gains sole-providership with no refusal; supply-chain
-  trust is explicitly not this machinery's job (docs say so, once). Ruling [TYPED]:
-  further overlay discussion needs concrete strawmen or passing tests — revisit
-  mid/post-impl; overlay-writer remedies slide BEHIND the kernel concerns here and in
-  `26K`, never in front.
-- **Task minted** [TYPED]: `cmd__predict` under the composite rule needs its own
-  analysis — too many forking design-paths to settle inline. (Discharged: §9.)
+- **rul-composite-meets-toward-guard-run** [ACKED hard — the product rule restated
+  for multi-author speech] — an engine-assembled cross-author composite is
+  admissible iff it only WITHHOLDS (walls more; grants nothing any single author
+  did not grant). A GRANTING composite needs one speaker, or
+  entailment-by-each-author — and entailment fails for frame-relative tokens: A's
+  claim-token `@synced` read against B's live backing `@current` "disjoint"-spares
+  a cell both authors meant as one state (res-dialect-word-pooling, concretized;
+  footprint-union is not entailment-safe even though a wider at-most is a weaker
+  sentence). Three requirements follow: well-formed composition · known
+  per-contributor alone-outcomes · a structured per-property meet-direction,
+  checkable where claims meet. As-built: alone-outcomes are answered by the
+  per-contributor license ladder (vouch-alone → guard; fact-alone → run;
+  set-quantified properties by set-lifting-universal-meet) plus the
+  family-subtraction (`withdrawing`) and per-site-erasure (`ErasedSites`) seams —
+  no universe-re-evaluation needed; meet-DIRECTION is convention-held with no
+  registry (`Must`/`May`, `analysis/src/lattice.rs:247,284` · the `Flat<T>`
+  ⊤-domain · `core::coord::compare` → `Relation`, `core/src/coord.rs:302,157`).
+  A small direction-registry over properties is the buildable piece; wanted
+  machinery-high and typecheckable [TYPED lean].
+- **rul-fail-fast-union** [TYPED] — fail-fast is licensed in a gradually-enhanced
+  product only by perfect analyzability AND predictably-trivial resolution
+  (something is ACTIVELY wrong — somebody put the `"$@"` in the wrong place; a
+  five-minute fix), together; either leg missing ⇒ best-effort-with-aid (withhold
+  + attribute + apologize + eat the value-loss). Dual-peel coherence passes both
+  legs. Split-family coherence checks pass neither (dialect-reach confounds
+  detection — a partially-lifting member can fake a disagreement,
+  mis-attribution-tier — and repair is not the admin-in-between's to make) ⇒ the
+  shadow-refusal shape or hint-only. Totals-conflict passes leg 1 only ⇒
+  withhold-tier, as a LEAN (tool-knowledge fixes may be five-minute edits; the
+  union needs the PROMISE, unmakeable statically; test under fire).
+- **rul-conflict-between-totals-is-falsification** [ACKED] — judgment-tier
+  divergence is legitimate pluralism; divergence between complete-by-contract
+  (`only`) claims means at least one survey is factually incomplete and we cannot
+  tell which. The engine should know the two divergence classes apart and tune
+  handling per class; never a fail-fast license (above).
+- **rul-predict-feeds-plan-never-apply** [TYPED] — `cmd__predict()` pipes
+  probe-time measurements into PLAN-time abstract interpretation of the book;
+  nothing predict-produced reaches APPLY except through the elide/replace family.
+  Mutators with live-consumed observables always run or guard; predicted bytes
+  never enter the artifact; resolved values are never spliced into live command
+  text (the book's own bytes re-evaluate at apply). One value-materialization
+  cell exists inside the family: a probe-MEASURED rc standing in for a
+  proven-converged read-only command (`QueryGuard`, `plan/src/lib.rs:3786-3793`;
+  measured-never-asserted, single-author, probe-provenance-only). No
+  predictor-substitution at apply, spike or ever. Author-asserted bytes flow only
+  inside probe composition, under per-channel coverage.
 
-## §9. Sitting Q1 follow-on (2026-07-31) — `cmd__predict` under the composite rule
+**Vocabulary** — a license is a MONOLOGUE when every load-bearing utterance behind
+it has one author; a DIALOGUE when the engine combines two authors' utterances
+into one license: a composite sentence nobody uttered, repudiable by both. The
+stake is attribution (`271:rul-sin-ordering`): a monologue failure names one line
+and one author.
 
-Conductor analysis + a read-only scout over `ai/r28-oracle-loading` @ `ebccaf90`;
-as-built claims carry the scout's file:line grounding. UNACKED throughout
-(rubber-duck output; awaiting human eyes).
+**As-built, the license plane is monologue everywhere** [+SURE, scouted]:
 
-- **fnd-establish-elide-is-verdict-monologue** [+SURE, scout-grounded] — the two ship
-  lanes are mutually exclusive per site (`plan/src/lib.rs:2924-2954`): a vouched site
-  ships the VERDICT body, and site-convergence derives solely from that body's own rc
-  (`cli/src/results.rs:465-489,753` → `prove_replaceable`, `plan/src/lib.rs:517-563`);
-  predict's Effect never feeds that site's license. Establish-class sites are
-  firewalled to `Predicted::Top` ⇒ `StandIn::True` (`cli/src/results.rs:763-774`,
-  `plan/src/lib.rs:3661-3664`): a concrete establish-elide reproduces NO
-  predict-derived values, ever — and a byte-consuming establish site can never mint
-  at all (consumed-⊤ forbids), so §8's worst cell (asserted-byte poisoning of
-  downstream value-flow) is structurally unreachable as-built. Guards confirmed
-  value-free (`probe_verdict` display-only, excluded from canonical identity;
-  `plan/src/lib.rs:1076-1091,1162-1178`). Net: §8's split-family elide-dialogue is
-  NOT live at the license plane — the license is a verdict-author monologue.
-- **The catch** [conductor] — the monologue is EMERGENT, not typed: it falls out of
-  lane-exclusivity + the establish-⊤ firewall, and nothing pins it as a CUSTODY
-  property. Re-entry routes: the unground "declared-rc opt-in (19A §5)" comment
-  (`plan/src/lib.rs:3650-3654`, an establish-status-threading path the scout did not
-  chase to ground); any future value-reproduction softening; and the FACT/WALL plane,
-  where the predict lane still owns site classification and effect-modeling while
-  the verdict lane measures the cell (`28O`'s ship-seam-reads-the-lane warnings are
-  the adjacent territory) — the residual cross-author composition surface, unexamined.
-  Cheap hardening per the machinery-high lean [PROPOSED]: pin the monologue (a
-  split-family establish-elide case asserting nothing predict-derived is consumed)
-  and thread `SourceFileId` custody into the `ReplaceLicense` mint demand, so
-  re-entry becomes a type error rather than a drift.
-- **fnd-split-family-unrefused-confirmed** [+SURE] — detection is per-NAME
-  (`funcenv::contests`, `analysis/src/funcenv.rs:459-499`); withholding is per-FAMILY
-  via `role_family` (`cli/src/main.rs:832-840`, `oracle/src/reserved.rs:65-71`); a
-  member-split family (no shadowed name, members from different files) triggers
-  nothing, with ZERO corpus coverage (`contest28-*` exercises same-name shadows
-  only). §8's finding stands, now grounded — and the `role_family` map is the exact
-  seat where the §8 retainability matrix's granular withdrawal would land later
-  (per-member filtering; cheap when wanted).
-- **fnd-verdict-resolution-duplicates-live-source** [scout suspicion; promoted to a
-  stage-F fold item] — `VerdictIndex::from_sets` (`oracle/src/verdict.rs:106-127`)
-  re-implements last-definition-wins independently instead of consulting
-  `live_source`; the "ONE seat… five resolution sites must agree" doc-comment
-  (`oracle/src/lib.rs:345`) is aspirational. An iteration-order divergence would
-  split predict's winner from the verdict's winner SILENTLY — audit/unify at F.
-- **Machinery inventory** (req-3 of rul-composite-meets-toward-guard-run,
-  scout-grounded) — counterfactual "alone-views" exist at two granularities
-  (family-subtraction: the `withdrawing` seats applied once at the cli edge;
-  per-site effect-zeroing: `analysis/src/erase.rs` `ErasedSites` in the validity
-  fixpoint), and for factored licenses the per-contributor ladder already answers
-  (vouch-alone → guard · fact-alone → run, at establish sites) — no
-  universe-re-evaluation needed. Per-property meet-DIRECTION is CONVENTION-HELD, no
-  registry: `Must`/`May` wrappers (`analysis/src/lattice.rs:247,284`; no literal
-  coercion fn found), the `Flat<T>` ⊤-domain, the ternary `core::coord::compare` →
-  `Relation` (`core/src/coord.rs:302,157`), `VerdictTop`/`TopReason` as
-  degrade-reason enums. If req-3 is to be typed, the buildable piece is a small
-  direction-registry over properties; nothing blocks on it today.
-- **Consumer-sweep residue** [conductor] — predict-only families grant nothing
-  (compound participation is day-one-priced per §3
-  wall-cross-family-was-always-priced; display/hints are aid-plane): describing-
-  oracle publication stays custody-free, which is the ecosystem's on-ramp and should
-  stay so. The adequacy gap (converged≠no-op) is the principled WHY any future
-  value-reproducing split-family elide must demand custody: the predict↔verdict
-  coupling is judgment-tier, and per tool-opinion-gradient judgment is never pooled
-  across authors — that cell is custody-only for as long as the judgment-tier
-  reading holds (lean, not weld: human pushback on permanence-surety, Q3). Where
-  split-family members must genuinely cooperate, the instrument is a coherence
-  CHECK, never license composition — but per §10's fail-fast union, split-family
-  checks refuse-with-native-escape or hint only; fail-fast stays reserved for
-  surfaces like dual-peel that pass both union legs.
+- Ship lanes are mutually exclusive per site (`plan/src/lib.rs:2924-2954`): a
+  vouched site ships the VERDICT body, and convergence derives solely from that
+  body's own rc (`cli/src/results.rs:465-489,753` → `prove_replaceable`,
+  `plan/src/lib.rs:517-563`); predict's Effect never feeds the license.
+  Establish sites are firewalled to `Predicted::Top` ⇒ `StandIn::True`
+  (`cli/src/results.rs:763-774`) — the probe phase law wearing value-plane
+  clothes: probe-never-mutates means a mutator's own observables can never
+  acquire probe-provenance. rc-consumption does not block the mint (the
+  stand-in's rc-0 reproduces StatusRelaxable consumers — errexit regions,
+  `&&`/`||`, `if` — riding the VOUCH: act-as-succeeded is inside "re-running
+  this is noise I accept"; dead consumers — omitted arms, elided dependents —
+  don't count either); the genuine establish-elide blockers are captured/piped
+  BYTES (the vouch says nothing about stdout content) and ITERATED status.
+  Guards consume nothing predict-derived (`probe_verdict` display-only, excluded
+  from canonical identity; `plan/src/lib.rs:1076-1091,1162-1178`). Net: every
+  reproduced value has single-author provenance; guard and elide are both
+  monologues.
+- **The monologue is emergent, not typed** — three mechanisms conspire (lane
+  exclusivity · the establish-⊤ firewall · consumed-⊤ forbids-mint); none names
+  custody. Re-entry routes: the unground "declared-rc opt-in (19A §5)" comment
+  (`plan/src/lib.rs:3650-3654`); any widening of measured-value reproduction; and
+  the FACT/WALL plane — the predict lane owns site classification and
+  effect-modeling while the verdict lane measures the cell — which is MAINSTREAM
+  (a stage-3 in-book verdict over a stdlib describing-predict is exactly a split
+  family) and is this corner's one unexamined surface: it fronts the next
+  sitting. Hardening [PROPOSED]: pin the monologue (a split-family
+  establish-elide consumes nothing predict-derived) and thread `SourceFileId`
+  custody into the `ReplaceLicense` mint, making re-entry a type error. Further
+  owed pins: the stdout parallel of the rc firewall (~SUSPECT, untraced) ·
+  vouch-covers-the-stand-in-rc-0. Why custody rather than a coherence check, if
+  reproduction ever widens: the predict↔verdict coupling is the adequacy gap
+  (converged≠no-op) — judgment-tier, never pooled across authors
+  (tool-opinion-gradient) — so that cell stays custody-only while the
+  judgment-tier reading holds [lean].
+- **fnd-split-family-composes-unrefused** [+SURE] — contest detection is per-NAME
+  (`funcenv::contests`, `analysis/src/funcenv.rs:459-499`); withholding is
+  per-FAMILY (`role_family`: `cli/src/main.rs:832-840`,
+  `oracle/src/reserved.rs:65-71`); a family whose live members come from
+  different units with no shadowed name triggers nothing — zero corpus coverage.
+  Member-complementary strangers therefore union with zero ceremony
+  (price-union-of-strangers at member granularity), and `28K` §8-monotonicity
+  holds letter-wise only (no judgment reassigned; the composite is new). §4's
+  fence catches the span at the sparing tier; the monologue above is the only
+  license-tier fence. The `role_family` map is the seat for member-granular
+  withdrawal, if ever wanted (additive).
+- **fnd-verdict-resolution-duplicates-live-source** — `VerdictIndex::from_sets`
+  (`oracle/src/verdict.rs:106-127`) re-implements last-definition-wins rather
+  than consulting `live_source`; the "ONE seat… five sites must agree" comment
+  (`oracle/src/lib.rs:345`) is aspirational; iteration-order divergence would
+  silently split predict's winner from the verdict's. Stage-F audit/unify item.
 
-## §10. Sitting Q2 (2026-07-31) — the fail-fast union, the consumption ladder, and the fence's root
+**Contest retainability, per member** (the composite rule applied): the verdict
+seat — nothing (genuinely undecided until blessed). An uncontested `predict` as
+participant-model in other oracles' composed probes — retainable in principle
+(single-author, factual, the consumer never touches the disputed judgment);
+family-wide undescribe stays the conservative floor, per-member retention an
+additive later softening. `disturbs` and all selector tokens — never (the contest
+disputes the frame the tokens are read in). `lend_map` — licenses withheld; a
+grammar-tier coherence check survives as aid. The aid plane retains everything,
+attributed. Predict-only families grant nothing anywhere (compound participation
+is day-one-priced per §3; display is aid-plane): describing-oracle publication
+stays custody-free — the ecosystem's on-ramp.
 
-- **rul-fail-fast-union** [TYPED substance] — a fail-fast error is licensed in a
-  gradually-enhanced product only by the UNION of (1) perfect analyzability (the
-  detection cannot be wrong) and (2) predictable, trivial resolution (a ~5-minute
-  fix: somebody literally put the `"$@"` in the wrong place; something is ACTIVELY
-  wrong; eventually hint-machinery names it). Either leg missing ⇒ devolve to
-  best-effort-with-aid — withhold + attribute + apologize + eat the value-loss.
-  There is no Complex Residue cell where our fail-fast forces someone out of flow
-  into subtle analysis. Applications, this corner: dual-peel coherence PASSES (the
-  peel position is mechanical; a disagreement is an active wrongness; the
-  admin-in-between escapes in one selection line even when repair is upstream).
-  §9's "extend the dual-peel shape to split families" FAILED the union and is
-  rewritten in place: analyzability there is dialect-reach-confounded (a partially-
-  lifting member can FAKE a disagreement — mis-attributed cause, pope-sin-adjacent)
-  and repair is not the admin's to make ⇒ split-family incoherence gets the
-  shadow-refusal shape (complaint + withhold + native escape) or hint-only, never
-  fail-fast. §8's rul-conflict-between-totals-is-falsification rider gains its
-  mechanism: totals-conflict passes leg 1 and FAILS leg 2 (which total is wrong
-  takes tool knowledge, not a five-minute edit) ⇒ withhold-tier — as a LEAN, not
-  a weld (human softening, Q3: tool-knowledge fixes MAY be five-minute edits; the
-  union needs the PROMISE of trivial resolution, which we cannot make statically;
-  revisit under fire).
-  Corpus check: existing refusals already respect the union (cross-unit shadow =
-  complaint + withhold, never abort; within-file redefinition passes both legs;
-  proven-mutation fail-fast is correctness-mandatory with a quick escape).
-- **The consumption ladder** [general ACK; fit here unsure, human-typed] —
-  unconsumed < rc-consumed (constrained integral set; one consumer's branch) <
-  freeform-text consumed (unbounded downstream dataflow; cross-site blast): a
-  blast-radius grading for REPRODUCED values — the lean-on tool when an unsound
-  concept must be spread across the userbase. Disposition: right shelf, wrong
-  moment — as-built nothing rides it (§9's monologue: the establish lane
-  reproduces nothing; the query lane is single-author). It becomes the pricing
-  instrument the day value-reproduction softening arrives — wider probe-MEASURED
-  reproduction only, e.g. the declared-rc opt-in path ("asserted-stdout
-  stand-ins" RETRACTED as sloppy, Q3: author-asserted bytes live only in probe
-  composition, and apply-side assertion is welded out — §11). Corpus-consistent, not novel: the Status
-  trichotomy and compound per-channel coverage already grade the same axis.
-  Caution [conductor]: the ladder grades reproduction-risk ONLY — no rung ever
-  reads as elide-without-vouch; Effect coverage and the judgment gate are
-  ladder-exempt.
-- **The fence's root** [conductor; the full slow walk lives in the sitting
-  transcript] — the establish-⊤ firewall is the PROBE PHASE LAW wearing
-  value-plane clothes: probe-never-mutates ⇒ a mutator's own observables can
-  never acquire probe-provenance ⇒ `Predicted::Top` is forced ⇒ an establish site
-  can never mint where a channel is consumed that the vouch-covered stand-in
-  cannot reproduce. Precision (human catch, Q2 follow-up): rc-consumption
-  (errexit regions, `&&`/`||`, `if`-guards — StatusRelaxable) does NOT block —
-  the stand-in's rc-0 reproduces the consumer's decision, vouch-tier — else
-  nothing under `set -e` could ever elide; dead consumers (omitted arms, elided
-  dependents) also don't count. The genuine blockers are captured/piped BYTES
-  (the vouch says nothing about stdout content) and ITERATED status. Descends from a weld, which
-  is why the fence is trustworthy — and still emergent, which is why §9's pin is
-  owed. The one value an elide DOES emit — rc 0 via `StandIn::True`, consumed by
-  any errexit region — rides the VOUCH (act-as-succeeded is inside "re-running
-  this is noise I accept"), single-author; ~SUSPECT no as-built pin states this —
-  cheap pin owed. Residuals from the two-by-four sweep: the stdout-channel
-  parallel of the rc firewall is un-traced (~SUSPECT; one-test pin owed);
-  consumption-coverage soundness is an inherited dependency, not a new one; and
-  the fact/wall-plane composition (predict classifies and effect-models while the
-  verdict measures) is MAINSTREAM, not fringe — the stage-3 in-book admin verdict
-  over a stdlib describing-predict is exactly a split family — so that residue
-  fronts the queue for the next sitting.
+**Totalism and the kind members** — kind-member contest-immunity comes from
+single-occupancy in an owned namespace (§3), not from completeness; `only` is an
+authoring-completeness contract (born-total vs arm-incremental), orthogonal to
+plurality — `cmd__disturbs`, the member §4 targets, is arm-incremental and
+decline-calibrated. Within the `only` pair: a wrong `reaches_only` fails soft
+(over-walls); a wrong `state_stored_only_in`/invariance mark fails sharp (grants
+carry). Totals rot, and pre-MH2 contest-or-custody are the only displacement
+paths — contest-inertness would make rot permanent-until-fork.
 
-## §11. Sitting Q3 (2026-07-31) — vocabulary, softenings, and the predict/apply weld
+**The consumption ladder** [ACKED general; fit unsettled] — unconsumed <
+rc-consumed (a constrained integral set; one consumer's branch) <
+freeform-bytes-consumed (unbounded downstream dataflow; cross-site blast): a
+blast-radius grading for REPRODUCED values, the pricing tool if measured-value
+reproduction ever widens. Nothing rides it as-built. It grades reproduction-risk
+only — no rung ever reads as elide-without-vouch. (The Status trichotomy and
+compound per-channel coverage already grade the same axis.)
 
-- **Monologue / dialogue** (vocabulary, from §2's speech-act frame; used throughout
-  §§8–10) — a license is a MONOLOGUE when every load-bearing utterance behind it
-  has ONE author (guard: verdict body + vouch; as-built establish-elide: verdict
-  body measures, vouch licenses, the stand-in's rc-0 rides that same vouch); a
-  DIALOGUE when the engine combines two authors' utterances into one license — a
-  composite sentence nobody uttered, repudiable by both. The stake is attribution:
-  a monologue failure names one line and one author; a dialogue failure is
-  nobody's (`271:rul-sin-ordering`).
-- **Permanence softened** [TYPED, Q3] — the human leans agreement that neither the
-  totals-conflict nor split-family incoherence is a clear fail-fast case, but
-  against PERMANENT/weld phrasing: tool-knowledge may fall under the five-minute
-  edit; subtle; may require trying under fire. §9/§10 rewritten in place to
-  lean-tier accordingly.
-- **rul-predict-feeds-plan-never-apply** [TYPED substance, human; banked because no
-  single corpus rule states it in this form] — `cmd__predict()` pipes probe-time
-  measurements into PLAN-time analysis through abstract interpretation of the
-  book; nothing predict-produced reaches APPLY-time except through the
-  elide/replace decision family. Mutators whose observables are live-consumed
-  always run or guard; predicted bytes never enter the artifact; resolved values
-  are never spliced into live command text (the book's own bytes re-evaluate at
-  apply). The one as-built value-materialization cell, inside the family: a
-  probe-MEASURED rc standing in for a proven-converged read-only command
-  (`QueryGuard`; measured-not-asserted, single-author, probe-provenance-only).
-  There is no aspiration, spike-tier or ever, to substitute predictor outputs for
-  apply-time calls. Consistent with inv-probe-sourced-values · the world-spoken
-  bytes pin · rul-ternary-verdict's never-synthesized-sh · the two-surfaces
-  byte-floor.
+**Overlay via multi-file structure** [deferred behind the kernel concerns here
+and in `26K`; concrete strawmen or passing tests to reopen] — the §6 overlay tax
+is a MONOLITH tax: per-family files plus deep-sourcing dissolve it at FAMILY
+granularity, natively (the replaced family's file never loads: no plurality, no
+refusal; sole-providership consent coherent under `28K` §3). Member-granular
+patching remains the split-family configuration above (price-patch-author
+unchanged). Build riders: `28K` §4's pin-closure captures from the live
+environment, wherever sourced (cross-file helper closures; the §7-commissioned
+tests' seam) · diamond-loading keys unit-identity to the DEFINING file's
+`SourceFileId` (pin; version-skewed vendored copies then correctly refuse) ·
+entrypoint-only constants under deep-require should wall loudly (~SUSPECT; lint
+candidate) · the shadow refusal guards ACCIDENTAL reassignment only —
+supply-chain trust in what you chose to source is out of scope (docs say so
+once).
+
