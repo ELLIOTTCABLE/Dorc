@@ -1,0 +1,57 @@
+---
+arrangement: why-reason-skipped-converged
+owns:
+  - why-receipt-when-undated
+  - why-receipt-risk-profile-none
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-skipped-converged && mise run loom:promote -- why-reason-skipped-converged`. `mise run loom:vars -- --all why-reason-skipped-converged` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+hork add nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = "$1"
+   case $verb in
+      add) hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+   esac
+}
+
+hork__is_converged() {
+   hork --query -- "$1"
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=56eaafb4f5970ae87ddd3ebeea18616885d63b77842a961def427bc69a90e981 sites=1 @@dorc@@
+dorc site 0 effect=holds rc=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- replay --
+$ dorc why book.sh:2 --book=book.sh -o hork.oracle.sh < probe-results.txt --all
+      [ book.sh, participating lines:
+   2 | hork add nginx
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   2|hork skipped RATHER THAN guarded: the probe reported sm.dorc.Package:nginx@installed
+   already in place, and the site's oracle vouches that is reason enough
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why --book=book.sh -o hork.oracle.sh < probe-results.txt --all
+receipt: [unwritten: why-receipt-when-undated], host localhost
+   book book.sh (digest 56eaafb4f5970ae87ddd3ebeea18616885d63b77842a961def427bc69a90e981)
+   oracles: hork.oracle.sh
+   risk-profile: none (no trust flags)
+   plan: 0 ran, 0 guarded, 1 skipped (1 by proof)
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+dorc why: nothing to report for book.sh -- no trust spent, no surprises, nothing dorc could
+do better with more description.

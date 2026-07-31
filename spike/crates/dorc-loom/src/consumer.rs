@@ -603,7 +603,8 @@ impl DorcConsumer {
         if let Some(why) = parse_direct_why_report(&tokens) {
             let parts = live_why_parts(&self.render_ctx(), &why, |path| {
                 materialized_source(case, context, path)
-            })?;
+            })
+            .ok()?;
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if let Some(why) = parse_direct_why(&tokens) {
@@ -1154,18 +1155,25 @@ fn live_why_parts(
     ctx: &RenderCtx<'_>,
     why: &DirectWhyReport<'_>,
     source: impl Fn(&str) -> Option<String>,
-) -> Option<dorc_aid::tagged::RenderParts> {
-    let book = source(why.book)?;
+) -> Result<dorc_aid::tagged::RenderParts, String> {
+    // A `Result`, not an `Option`, so an intake REFUSAL reaches the author verbatim: collapsing it
+    // to "unsupported replay" would hide the one message that names the header they must write
+    // (`28L:rul-refusals-name-the-next-command`).
+    let missing = |path: &str| format!("the case carries no `{path}` section");
+    let book = source(why.book).ok_or_else(|| missing(why.book))?;
     let oracle_paths: Vec<String> = why.oracles.iter().map(|p| (*p).to_owned()).collect();
     let oracle_srcs = oracle_paths
         .iter()
-        .map(|path| source(path))
-        .collect::<Option<Vec<String>>>()?;
+        .map(|path| source(path).ok_or_else(|| missing(path)))
+        .collect::<Result<Vec<String>, String>>()?;
     let results = match why.input {
-        Some(path) => {
-            admitted_site_results(why.book, &book, &oracle_paths, &oracle_srcs, &source(path)?)
-                .ok()?
-        }
+        Some(path) => admitted_site_results(
+            why.book,
+            &book,
+            &oracle_paths,
+            &oracle_srcs,
+            &source(path).ok_or_else(|| missing(path))?,
+        )?,
         None => dorc_cli::results::SiteResults::default(),
     };
     let world = dorc_cli::world::WhyWorld::analyze_measured(
@@ -1194,7 +1202,7 @@ fn live_why_parts(
         deepest_tier: why.deepest,
         narratable: true,
     };
-    Some(dorc_cli::why::why_report_parts(
+    Ok(dorc_cli::why::why_report_parts(
         ctx,
         &world.report(why.address, &receipt),
     ))
@@ -1515,8 +1523,7 @@ impl DorcConsumer {
             return live_why_parts(&self.render_ctx(), &why, |path| {
                 section_source(case, path).map(str::to_owned)
             })
-            .map(|parts| parts.text())
-            .ok_or_else(|| format!("unsupported replay {command:?}"));
+            .map(|parts| parts.text());
         }
         if let Some(why) = parse_direct_why(&words) {
             return self.render_direct_why(case, &why, command);

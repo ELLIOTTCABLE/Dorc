@@ -2,6 +2,33 @@
 arrangement: why-declines-payload
 when-used: The quoted payload of a `declines` speaker row. Value: the author's decline class.
 why: 28G strawman c-declined-unsound quotes the class beside the author's own tail text; the tail is readable only from a RUNTIME report record, so the static tier quotes the class and lets the as-written excerpt carry the author's words.
+owns:
+  - why-addressability-line
+  - why-analysis-heading
+  - why-analysis-opener-plain
+  - why-as-written-locus
+  - why-declines-derives-cannot-say-runs
+  - why-declines-explanation
+  - why-declines-join
+  - why-declines-next-steps-opener
+  - why-improvement-declined-unmodeled
+  - why-improvements-heading
+  - why-item-pointer
+  - why-next-step-label
+  - why-next-step-review
+  - why-next-steps-heading
+  - why-outcome-contrastive
+  - why-outcome-heading
+  - why-participating-lines-closure
+  - why-participating-lines-locus
+  - why-receipt-book
+  - why-receipt-dispositions-predicted
+  - why-receipt-footer
+  - why-receipt-header
+  - why-receipt-oracles
+  - why-receipt-plan-tally-by-proof
+  - why-receipt-risk-profile
+  - why-tier-word
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-declines-payload && mise run loom:promote -- why-declines-payload`. `mise run loom:vars -- --all why-declines-payload` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --

@@ -2,6 +2,8 @@
 arrangement: why-reason-run-unprobed
 when-used: The ANALYSIS row for a site that ran because no read-only check could be shipped for it.
 why: kFAIL-perform (unsure means run) stated in the admin's language rather than the engine's.
+owns:
+  - why-reason-first-wall
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-run-unprobed && mise run loom:promote -- why-reason-run-unprobed`. `mise run loom:vars -- --all why-reason-run-unprobed` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
