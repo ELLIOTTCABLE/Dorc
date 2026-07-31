@@ -30,9 +30,9 @@ use crate::diag::{
     MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker,
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
     SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
-    ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted,
-    TransportSessionLost, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason,
-    WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
+    SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
+    TransportNotAttempted, TransportSessionLost, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
+    WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -86,7 +86,7 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
         (
             "syntax-unsupported",
             DiagCode::SyntaxUnsupported(SyntaxUnsupported {
-                detail: "process substitution `<(...)` is not modeled".to_owned(),
+                reason: SyntaxUnsupportedReason::BackgroundAmp,
             }),
         ),
         (

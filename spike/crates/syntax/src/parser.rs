@@ -21,7 +21,10 @@
 //! as an argument because it is not in command position.
 
 use dorc_aid::Carrier;
-use dorc_aid::diag::{Diag, DiagCode as Code, SyntaxMalformed, SyntaxUnsupported};
+use dorc_aid::diag::{
+    Diag, DiagCode as Code, SyntaxMalformed, SyntaxMalformedReason, SyntaxUnsupported,
+    SyntaxUnsupportedReason,
+};
 use dorc_core::{BytePos, Span};
 
 use crate::ast::{
@@ -147,16 +150,16 @@ impl Parser {
         }
     }
 
-    fn push_unsupported(&mut self, span: Span, msg: impl Into<String>) {
+    fn push_unsupported(&mut self, span: Span, reason: SyntaxUnsupportedReason) {
         self.diags.push(Diag::new(
-            Code::SyntaxUnsupported(SyntaxUnsupported { detail: msg.into() }),
+            Code::SyntaxUnsupported(SyntaxUnsupported { reason }),
             span,
         ));
     }
 
-    fn push_malformed(&mut self, span: Span, msg: impl Into<String>) {
+    fn push_malformed(&mut self, span: Span, reason: SyntaxMalformedReason) {
         self.diags.push(Diag::new(
-            Code::SyntaxMalformed(SyntaxMalformed { detail: msg.into() }),
+            Code::SyntaxMalformed(SyntaxMalformed { reason }),
             span,
         ));
     }
@@ -169,9 +172,9 @@ impl Parser {
         reason: UnsupportedReason,
         span: Span,
         salvaged: Vec<dorc_core::AstId>,
-        msg: impl Into<String>,
+        said: SyntaxUnsupportedReason,
     ) -> dorc_core::AstId {
-        self.push_unsupported(span, msg);
+        self.push_unsupported(span, said);
         self.builder.alloc(Node {
             span,
             kind: NodeKind::Unsupported { reason, salvaged },
@@ -210,7 +213,7 @@ impl Parser {
                     UnsupportedReason::Unmodeled("stalled token"),
                     tok.span,
                     Vec::new(),
-                    "parser made no progress; token skipped",
+                    SyntaxUnsupportedReason::ParserStalled,
                 );
                 items.push(node);
             }
@@ -302,7 +305,7 @@ impl Parser {
                 UnsupportedReason::Unmodeled("nesting too deep"),
                 tok.span,
                 Vec::new(),
-                "nesting exceeds the parser depth bound",
+                SyntaxUnsupportedReason::NestingBound,
             );
         }
         self.depth += 1;
@@ -358,7 +361,7 @@ impl Parser {
                         UnsupportedReason::Unmodeled("misplaced reserved word"),
                         tok.span,
                         Vec::new(),
-                        "reserved word in command position",
+                        SyntaxUnsupportedReason::ReservedWordInCommandPosition,
                     );
                 }
             }
@@ -386,7 +389,7 @@ impl Parser {
     fn reject_construct_trailing_redir(
         &mut self,
         construct: dorc_core::AstId,
-        construct_name: &str,
+        construct_name: &'static str,
     ) -> dorc_core::AstId {
         if !matches!(self.peek(), TokKind::Redir { .. } | TokKind::HereDoc { .. }) {
             return construct;
@@ -406,11 +409,10 @@ impl Parser {
             UnsupportedReason::Unmodeled("construct-trailing redirection"),
             start.to(end),
             vec![construct],
-            format!(
-                "a redirection trailing a `{construct_name}` construct (e.g. `{} < file`) is not \
-                 modeled -- the construct's I/O redirection is outside the modeled subset",
-                construct_close(construct_name),
-            ),
+            SyntaxUnsupportedReason::ConstructTrailingRedirection {
+                construct: construct_name,
+                closer: construct_close(construct_name),
+            },
         )
     }
 
@@ -421,14 +423,14 @@ impl Parser {
     fn parse_if(&mut self) -> dorc_core::AstId {
         let kw = self.bump(); // `if`
         let cond = self.parse_condition_until(&[Reserved::Then]);
-        self.expect_reserved(Reserved::Then, "expected `then` after `if` condition");
+        self.expect_reserved(Reserved::Then, SyntaxMalformedReason::ExpectedThenAfterIf);
         let then_body = self.parse_body_until(&[Reserved::Elif, Reserved::Else, Reserved::Fi]);
 
         let mut elifs = Vec::new();
         while self.peek_reserved() == Some(Reserved::Elif) {
             self.bump(); // `elif`
             let econd = self.parse_condition_until(&[Reserved::Then]);
-            self.expect_reserved(Reserved::Then, "expected `then` after `elif` condition");
+            self.expect_reserved(Reserved::Then, SyntaxMalformedReason::ExpectedThenAfterElif);
             let ebody = self.parse_body_until(&[Reserved::Elif, Reserved::Else, Reserved::Fi]);
             elifs.push(ElseIf {
                 cond: econd,
@@ -443,7 +445,7 @@ impl Parser {
             None
         };
 
-        let end = self.expect_reserved(Reserved::Fi, "expected `fi` to close `if`");
+        let end = self.expect_reserved(Reserved::Fi, SyntaxMalformedReason::ExpectedFiToCloseIf);
         let span = kw.span.to(end);
         self.builder.alloc(Node {
             span,
@@ -490,7 +492,7 @@ impl Parser {
     fn parse_case(&mut self) -> dorc_core::AstId {
         let kw = self.bump(); // `case`
         let word = self.parse_word_or_placeholder();
-        self.expect_reserved(Reserved::In, "expected `in` after `case` word");
+        self.expect_reserved(Reserved::In, SyntaxMalformedReason::ExpectedInAfterCaseWord);
         self.skip_separators();
 
         let mut arms = Vec::new();
@@ -503,7 +505,10 @@ impl Parser {
             self.skip_separators();
         }
 
-        let end = self.expect_reserved(Reserved::Esac, "expected `esac` to close `case`");
+        let end = self.expect_reserved(
+            Reserved::Esac,
+            SyntaxMalformedReason::ExpectedEsacToCloseCase,
+        );
         let span = kw.span.to(end);
         self.builder.alloc(Node {
             span,
@@ -526,7 +531,7 @@ impl Parser {
                 break;
             }
             if self.at_eof() || self.peek_reserved() == Some(Reserved::Esac) {
-                self.push_malformed(arm_lo, "unterminated `case` arm (no `)` before esac/EOF)");
+                self.push_malformed(arm_lo, SyntaxMalformedReason::UnterminatedCaseArm);
                 return None;
             }
             let pat = self.parse_word_or_placeholder();
@@ -541,7 +546,10 @@ impl Parser {
         if matches!(self.peek(), TokKind::RParen) {
             self.bump(); // `)`
         } else {
-            self.push_malformed(arm_lo, "expected `)` after case pattern");
+            self.push_malformed(
+                arm_lo,
+                SyntaxMalformedReason::ExpectedRparenAfterCasePattern,
+            );
             return None;
         }
 
@@ -590,7 +598,7 @@ impl Parser {
         let close_hi = if matches!(self.peek(), TokKind::RParen) {
             self.bump().span
         } else {
-            self.push_malformed(open.span, "unterminated subshell `(` (no `)`)");
+            self.push_malformed(open.span, SyntaxMalformedReason::UnterminatedSubshell);
             self.peek_span()
         };
         let redirs = self.parse_redirs();
@@ -609,7 +617,7 @@ impl Parser {
         let close_hi = if matches!(self.peek(), TokKind::RBrace) {
             self.bump().span
         } else {
-            self.push_malformed(open.span, "unterminated brace group `{` (no `}`)");
+            self.push_malformed(open.span, SyntaxMalformedReason::UnterminatedBraceGroup);
 
             self.peek_span()
         };
@@ -650,7 +658,7 @@ impl Parser {
                 UnsupportedReason::Loop,
                 kw.span.to(end),
                 Vec::new(),
-                "`for` requires an iteration-variable name",
+                SyntaxUnsupportedReason::ForWithoutVariableName,
             );
         };
         let var_span = self.peek_span();
@@ -663,7 +671,7 @@ impl Parser {
                 UnsupportedReason::Loop,
                 kw.span.to(end),
                 Vec::new(),
-                "`for NAME` without `in LIST` iterates runtime \"$@\" (outside the modeled subset)",
+                SyntaxUnsupportedReason::ForWithoutInList,
             );
         }
         self.bump(); // `in`
@@ -688,7 +696,7 @@ impl Parser {
                 UnsupportedReason::Loop,
                 kw.span.to(end),
                 Vec::new(),
-                "`for` list word contains a command-substitution/arithmetic (deferred per HOLE#1)",
+                SyntaxUnsupportedReason::ForListWordHasExpansion,
             );
         }
         // The list must be terminated by `;`/newline followed by `do` (XCU §2.9.4.2). If
@@ -702,8 +710,7 @@ impl Parser {
                 UnsupportedReason::Loop,
                 kw.span.to(end),
                 Vec::new(),
-                "`for` list is not terminated by `;`/newline before `do` (dash requires `do` here; \
-                 a reserved word in list position is an ordinary list word)",
+                SyntaxUnsupportedReason::ForListNotTerminated,
             );
         }
 
@@ -717,8 +724,7 @@ impl Parser {
                 UnsupportedReason::Loop,
                 span,
                 Vec::new(),
-                "`break`/`continue` in the loop body is un-modeled \
-                 (early exit breaks the back-edge fixpoint)",
+                SyntaxUnsupportedReason::LoopJumpInBody,
             );
         }
         self.builder.alloc(Node {
@@ -749,8 +755,7 @@ impl Parser {
                 UnsupportedReason::Loop,
                 span,
                 Vec::new(),
-                "`break`/`continue` in the loop body or condition is un-modeled \
-                 (early exit breaks the back-edge fixpoint)",
+                SyntaxUnsupportedReason::LoopJumpInBodyOrCondition,
             );
         }
         self.builder.alloc(Node {
@@ -764,9 +769,15 @@ impl Parser {
     fn parse_do_done(&mut self) -> dorc_core::AstId {
         // The `;`/newline before `do` (`for x in a b; do …`, or `… in a b\n do …`).
         self.skip_separators();
-        self.expect_reserved(Reserved::Do, "expected `do` to open the loop body");
+        self.expect_reserved(
+            Reserved::Do,
+            SyntaxMalformedReason::ExpectedDoToOpenLoopBody,
+        );
         let body = self.parse_body_until(&[Reserved::Done]);
-        self.expect_reserved(Reserved::Done, "expected `done` to close the loop");
+        self.expect_reserved(
+            Reserved::Done,
+            SyntaxMalformedReason::ExpectedDoneToCloseLoop,
+        );
         body
     }
 
@@ -938,26 +949,26 @@ impl Parser {
         if !had_token {
             // Nothing consumed: emit a ⊤ on the offending token so the caller's
             // anti-stall does not loop, classifying the common cases by kind.
-            let (reason, msg): (UnsupportedReason, &str) = match self.peek() {
+            let (reason, said): (UnsupportedReason, SyntaxUnsupportedReason) = match self.peek() {
                 TokKind::Amp => (
                     UnsupportedReason::Unmodeled("background `&`"),
-                    "background/async `&` is not in the modeled subset",
+                    SyntaxUnsupportedReason::BackgroundAmp,
                 ),
                 TokKind::Pipe | TokKind::OrIf | TokKind::AndIf => (
                     UnsupportedReason::Unmodeled("operator without command"),
-                    "binary operator with no preceding command",
+                    SyntaxUnsupportedReason::OperatorWithoutCommand,
                 ),
                 TokKind::DSemi => (
                     UnsupportedReason::Unmodeled("misplaced `;;`"),
-                    "`;;` outside a case arm",
+                    SyntaxUnsupportedReason::DoubleSemicolonOutsideCase,
                 ),
                 _ => (
                     UnsupportedReason::Unmodeled("unexpected token"),
-                    "expected a command",
+                    SyntaxUnsupportedReason::ExpectedACommand,
                 ),
             };
             let tok = self.bump();
-            return self.unsupported(reason, tok.span, Vec::new(), msg);
+            return self.unsupported(reason, tok.span, Vec::new(), said);
         }
 
         // ⊤-trigger checks on the assembled simple command.
@@ -1037,7 +1048,7 @@ impl Parser {
                 UnsupportedReason::ArithmeticExpansion,
                 span,
                 salvage(),
-                "arithmetic expansion `$(( ... ))` used as a command",
+                SyntaxUnsupportedReason::ArithmeticAsCommand,
             ));
         }
 
@@ -1049,7 +1060,7 @@ impl Parser {
                 UnsupportedReason::DynamicExecution,
                 span,
                 salvage(),
-                "dynamic command name (first word is not a fixed literal)",
+                SyntaxUnsupportedReason::DynamicCommandName,
             ));
         }
         let name = first_literal.unwrap_or_default();
@@ -1059,7 +1070,7 @@ impl Parser {
                 UnsupportedReason::DynamicExecution,
                 span,
                 salvage(),
-                "`eval` executes constructed code (un-analyzable)",
+                SyntaxUnsupportedReason::EvalConstructedCode,
             )),
             "." | "source" => {
                 // `. file` is fine only when the target is a literal path; a dynamic
@@ -1072,7 +1083,7 @@ impl Parser {
                         UnsupportedReason::DynamicExecution,
                         span,
                         salvage(),
-                        "`.`/`source` of a non-literal target",
+                        SyntaxUnsupportedReason::SourceOfNonLiteralTarget,
                     ))
                 } else {
                     None
@@ -1091,7 +1102,7 @@ impl Parser {
                         UnsupportedReason::DynamicLValue,
                         span,
                         salvage(),
-                        "`unset` of a dynamic lvalue",
+                        SyntaxUnsupportedReason::UnsetDynamicLvalue,
                     ))
                 } else {
                     None
@@ -1108,7 +1119,7 @@ impl Parser {
                         UnsupportedReason::DynamicLValue,
                         span,
                         salvage(),
-                        "`printf -v` writes to a variable lvalue",
+                        SyntaxUnsupportedReason::PrintfWritesLvalue,
                     ))
                 } else {
                     None
@@ -1126,7 +1137,7 @@ impl Parser {
                         UnsupportedReason::DynamicLValue,
                         span,
                         salvage(),
-                        "`test -v` / `[ -v ]` references a variable lvalue",
+                        SyntaxUnsupportedReason::TestReferencesLvalue,
                     ))
                 } else {
                     None
@@ -1279,7 +1290,7 @@ impl Parser {
                 UnsupportedReason::Unmodeled("expected word"),
                 span,
                 Vec::new(),
-                "expected a word here",
+                SyntaxUnsupportedReason::ExpectedAWord,
             )
         }
     }
@@ -1371,12 +1382,12 @@ impl Parser {
 
     /// Consume an expected reserved word, emitting a malformed diagnostic if it is
     /// absent (but never blocking — returns the span to use as the construct end).
-    fn expect_reserved(&mut self, want: Reserved, msg: &str) -> Span {
+    fn expect_reserved(&mut self, want: Reserved, reason: SyntaxMalformedReason) -> Span {
         if self.peek_reserved() == Some(want) {
             self.bump().span
         } else {
             let span = self.peek_span();
-            self.push_malformed(span, msg);
+            self.push_malformed(span, reason);
             span
         }
     }

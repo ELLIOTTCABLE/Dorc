@@ -619,21 +619,106 @@ pub struct Depth2PositionalUnthreaded {
     pub name: String,
 }
 
-/// Payload of [`DiagCode::SyntaxUnsupported`]: a parser-level ⊤-reject. The detail is the
-/// parser's own description of what was unmodeled. No `SiteId` (the syntax layer runs before
-/// CFG construction; `site()` returns `None` for this code).
+/// Payload of [`DiagCode::SyntaxUnsupported`]: a parser-level ⊤-reject. No `SiteId` (the syntax
+/// layer runs before CFG construction; `site()` returns `None` for this code).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyntaxUnsupported {
-    /// The parser's description of the unmodeled construct (display only).
-    pub detail: String,
+    /// Which unmodeled construct the parser met.
+    pub reason: SyntaxUnsupportedReason,
 }
 
-/// Payload of [`DiagCode::SyntaxMalformed`]: a parse error. The detail is the parser's
-/// description of the malformed construct. No `SiteId` (pre-CFG).
+/// Which unmodeled construct the parser met (see [`CfgTopNodeReason`] for why the reason enums
+/// live in this crate).
+///
+/// Deliberately NOT `dorc_syntax::UnsupportedReason`: that one classifies the ⊤-TRIGGER for the
+/// AST node (and so for downstream analysis), while this one names the construct for the reader.
+/// Several triggers share one classification and say different things about it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SyntaxUnsupportedReason {
+    /// The list-level anti-stall guard forced progress by rejecting one token.
+    ParserStalled,
+    /// The recursive-descent depth bound was reached.
+    NestingBound,
+    /// A reserved word appeared where a command was required.
+    ReservedWordInCommandPosition,
+    /// A redirection trails a compound construct.
+    ConstructTrailingRedirection {
+        /// The construct's opening keyword.
+        construct: &'static str,
+        /// The keyword that closes it.
+        closer: &'static str,
+    },
+    /// `for` with no iteration-variable name.
+    ForWithoutVariableName,
+    /// `for NAME` with no `in LIST`, which iterates the runtime `"$@"`.
+    ForWithoutInList,
+    /// A `for` list word carries an effect-bearing expansion.
+    ForListWordHasExpansion,
+    /// A `for` list is not terminated where `do` is required.
+    ForListNotTerminated,
+    /// `break`/`continue` in a loop body.
+    LoopJumpInBody,
+    /// `break`/`continue` in a loop body or its condition.
+    LoopJumpInBodyOrCondition,
+    /// Background/async `&`.
+    BackgroundAmp,
+    /// A binary operator with no command in front of it.
+    OperatorWithoutCommand,
+    /// `;;` outside a case arm.
+    DoubleSemicolonOutsideCase,
+    /// A token where a command was required.
+    ExpectedACommand,
+    /// `$(( … ))` in command position.
+    ArithmeticAsCommand,
+    /// The command word is not a fixed literal.
+    DynamicCommandName,
+    /// `eval`.
+    EvalConstructedCode,
+    /// `.`/`source` of a target that is not a literal path.
+    SourceOfNonLiteralTarget,
+    /// `unset` of a dynamic lvalue.
+    UnsetDynamicLvalue,
+    /// `printf -v`, which writes to a variable lvalue.
+    PrintfWritesLvalue,
+    /// `test -v` / `[ -v ]`, which references a variable lvalue.
+    TestReferencesLvalue,
+    /// A token where a word was required.
+    ExpectedAWord,
+}
+
+/// Payload of [`DiagCode::SyntaxMalformed`]: a parse error. No `SiteId` (pre-CFG).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyntaxMalformed {
-    /// The parser's description of the parse error (display only).
-    pub detail: String,
+    /// Which structural expectation the source broke.
+    pub reason: SyntaxMalformedReason,
+}
+
+/// Which structural expectation the source broke (see [`CfgTopNodeReason`] for why the reason
+/// enums live in this crate).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SyntaxMalformedReason {
+    /// No `then` after an `if` condition.
+    ExpectedThenAfterIf,
+    /// No `then` after an `elif` condition.
+    ExpectedThenAfterElif,
+    /// No `fi` closing an `if`.
+    ExpectedFiToCloseIf,
+    /// No `in` after a `case` word.
+    ExpectedInAfterCaseWord,
+    /// No `esac` closing a `case`.
+    ExpectedEsacToCloseCase,
+    /// No `do` opening a loop body.
+    ExpectedDoToOpenLoopBody,
+    /// No `done` closing a loop.
+    ExpectedDoneToCloseLoop,
+    /// A `case` arm never closed.
+    UnterminatedCaseArm,
+    /// No `)` after a case pattern.
+    ExpectedRparenAfterCasePattern,
+    /// A subshell never closed.
+    UnterminatedSubshell,
+    /// A brace group never closed.
+    UnterminatedBraceGroup,
 }
 
 /// Payload of [`DiagCode::CfgTopNode`]: an AST `Unsupported` node became a CFG `Top` node.
@@ -2469,11 +2554,11 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             foreign("names", names),
             foreign("excerpt", excerpt),
         ],
-        DiagCode::SyntaxUnsupported(SyntaxUnsupported { detail }) => {
-            vec![ours("detail", detail.clone())]
+        DiagCode::SyntaxUnsupported(SyntaxUnsupported { reason }) => {
+            vec![ours("detail", syntax_unsupported_text(ctx, *reason))]
         }
-        DiagCode::SyntaxMalformed(SyntaxMalformed { detail }) => {
-            vec![ours("detail", detail.clone())]
+        DiagCode::SyntaxMalformed(SyntaxMalformed { reason }) => {
+            vec![ours("detail", syntax_malformed_text(ctx, *reason))]
         }
         DiagCode::CfgTopNode(CfgTopNode { reason }) => {
             vec![ours("detail", cfg_top_node_text(ctx, *reason))]
@@ -3423,6 +3508,101 @@ fn cfg_inline_refused_text(ctx: &RenderCtx<'_>, reason: &CfgInlineRefusedReason)
             ],
         ),
     }
+}
+
+/// The registry sentence for one [`SyntaxUnsupportedReason`].
+fn syntax_unsupported_text(ctx: &RenderCtx<'_>, reason: SyntaxUnsupportedReason) -> String {
+    let none: Vec<&str> = Vec::new();
+    let (slug, values) = match reason {
+        SyntaxUnsupportedReason::ParserStalled => ("syntax-unsupported-parser-stalled", none),
+        SyntaxUnsupportedReason::NestingBound => ("syntax-unsupported-nesting-bound", none),
+        SyntaxUnsupportedReason::ReservedWordInCommandPosition => {
+            ("syntax-unsupported-reserved-word-in-command-position", none)
+        }
+        SyntaxUnsupportedReason::ConstructTrailingRedirection { construct, closer } => (
+            "syntax-unsupported-construct-trailing-redirection",
+            vec![construct, closer],
+        ),
+        SyntaxUnsupportedReason::ForWithoutVariableName => {
+            ("syntax-unsupported-for-without-variable-name", none)
+        }
+        SyntaxUnsupportedReason::ForWithoutInList => {
+            ("syntax-unsupported-for-without-in-list", none)
+        }
+        SyntaxUnsupportedReason::ForListWordHasExpansion => {
+            ("syntax-unsupported-for-list-word-has-expansion", none)
+        }
+        SyntaxUnsupportedReason::ForListNotTerminated => {
+            ("syntax-unsupported-for-list-not-terminated", none)
+        }
+        SyntaxUnsupportedReason::LoopJumpInBody => ("syntax-unsupported-loop-jump-in-body", none),
+        SyntaxUnsupportedReason::LoopJumpInBodyOrCondition => {
+            ("syntax-unsupported-loop-jump-in-body-or-condition", none)
+        }
+        SyntaxUnsupportedReason::BackgroundAmp => ("syntax-unsupported-background-amp", none),
+        SyntaxUnsupportedReason::OperatorWithoutCommand => {
+            ("syntax-unsupported-operator-without-command", none)
+        }
+        SyntaxUnsupportedReason::DoubleSemicolonOutsideCase => {
+            ("syntax-unsupported-double-semicolon-outside-case", none)
+        }
+        SyntaxUnsupportedReason::ExpectedACommand => {
+            ("syntax-unsupported-expected-a-command", none)
+        }
+        SyntaxUnsupportedReason::ArithmeticAsCommand => {
+            ("syntax-unsupported-arithmetic-as-command", none)
+        }
+        SyntaxUnsupportedReason::DynamicCommandName => {
+            ("syntax-unsupported-dynamic-command-name", none)
+        }
+        SyntaxUnsupportedReason::EvalConstructedCode => {
+            ("syntax-unsupported-eval-constructed-code", none)
+        }
+        SyntaxUnsupportedReason::SourceOfNonLiteralTarget => {
+            ("syntax-unsupported-source-of-non-literal-target", none)
+        }
+        SyntaxUnsupportedReason::UnsetDynamicLvalue => {
+            ("syntax-unsupported-unset-dynamic-lvalue", none)
+        }
+        SyntaxUnsupportedReason::PrintfWritesLvalue => {
+            ("syntax-unsupported-printf-writes-lvalue", none)
+        }
+        SyntaxUnsupportedReason::TestReferencesLvalue => {
+            ("syntax-unsupported-test-references-lvalue", none)
+        }
+        SyntaxUnsupportedReason::ExpectedAWord => ("syntax-unsupported-expected-a-word", none),
+    };
+    crate::arrangement::arrangement_sentence(ctx.arrangements(), slug, None, &values)
+}
+
+/// The registry sentence for one [`SyntaxMalformedReason`].
+fn syntax_malformed_text(ctx: &RenderCtx<'_>, reason: SyntaxMalformedReason) -> String {
+    let slug = match reason {
+        SyntaxMalformedReason::ExpectedThenAfterIf => "syntax-malformed-expected-then-after-if",
+        SyntaxMalformedReason::ExpectedThenAfterElif => "syntax-malformed-expected-then-after-elif",
+        SyntaxMalformedReason::ExpectedFiToCloseIf => "syntax-malformed-expected-fi-to-close-if",
+        SyntaxMalformedReason::ExpectedInAfterCaseWord => {
+            "syntax-malformed-expected-in-after-case-word"
+        }
+        SyntaxMalformedReason::ExpectedEsacToCloseCase => {
+            "syntax-malformed-expected-esac-to-close-case"
+        }
+        SyntaxMalformedReason::ExpectedDoToOpenLoopBody => {
+            "syntax-malformed-expected-do-to-open-loop-body"
+        }
+        SyntaxMalformedReason::ExpectedDoneToCloseLoop => {
+            "syntax-malformed-expected-done-to-close-loop"
+        }
+        SyntaxMalformedReason::UnterminatedCaseArm => "syntax-malformed-unterminated-case-arm",
+        SyntaxMalformedReason::ExpectedRparenAfterCasePattern => {
+            "syntax-malformed-expected-rparen-after-case-pattern"
+        }
+        SyntaxMalformedReason::UnterminatedSubshell => "syntax-malformed-unterminated-subshell",
+        SyntaxMalformedReason::UnterminatedBraceGroup => {
+            "syntax-malformed-unterminated-brace-group"
+        }
+    };
+    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
 }
 
 /// The registry sentence for one [`WhylogCorruptReason`].

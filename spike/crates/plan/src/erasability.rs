@@ -393,6 +393,7 @@ mod tests {
     fn canon_drops_non_error_diagnostics() {
         use dorc_aid::diag::{
             CfgBuiltinShadowed, DiagCode, RedirTargetTop, SiteId, SyntaxMalformed,
+            SyntaxMalformedReason,
         };
         // Only Error-class diagnostics are identity (ru-12). A Note (RedirTargetTop) and a
         // Warning (CfgBuiltinShadowed) are dropped; the Error (SyntaxMalformed) keys on
@@ -411,7 +412,7 @@ mod tests {
         );
         let err = Diag::new(
             DiagCode::SyntaxMalformed(SyntaxMalformed {
-                detail: "an error".to_owned(),
+                reason: SyntaxMalformedReason::ExpectedFiToCloseIf,
             }),
             dorc_core::Span::new(dorc_core::BytePos(1), dorc_core::BytePos(2)),
         );
@@ -426,20 +427,20 @@ mod tests {
 
     #[test]
     fn canon_diag_message_is_exempt() {
-        use dorc_aid::diag::{DiagCode, SyntaxMalformed};
+        use dorc_aid::diag::{DiagCode, SyntaxMalformed, SyntaxMalformedReason};
         // Two errors identical in (code, span, severity) but DIFFERENT in payload detail (⇒
         // different rendered message) canonicalize identically — the message is
         // Exempt::Explanation (identity keys on slug/span/severity only).
         let span = dorc_core::Span::new(dorc_core::BytePos(3), dorc_core::BytePos(7));
         let a = Diag::new(
             DiagCode::SyntaxMalformed(SyntaxMalformed {
-                detail: "message A (receipt foo)".to_owned(),
+                reason: SyntaxMalformedReason::UnterminatedSubshell,
             }),
             span,
         );
         let b = Diag::new(
             DiagCode::SyntaxMalformed(SyntaxMalformed {
-                detail: "message B (receipt bar)".to_owned(),
+                reason: SyntaxMalformedReason::UnterminatedBraceGroup,
             }),
             span,
         );

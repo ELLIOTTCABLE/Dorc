@@ -175,7 +175,7 @@ mod tests {
         let mut c = Carrier::pure(());
         c.push(Diag::new(
             diag::DiagCode::SyntaxMalformed(diag::SyntaxMalformed {
-                detail: "bad input, kept going".to_owned(),
+                reason: diag::SyntaxMalformedReason::ExpectedFiToCloseIf,
             }),
             Span::new(BytePos(0), BytePos(1)),
         ));

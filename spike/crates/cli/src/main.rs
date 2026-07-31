@@ -5297,13 +5297,15 @@ apt_get__predict() {
         // per-severity routing decision — pin BOTH directions so a future edit cannot silently
         // (a) leak advisory disclosure into the off-ramp surface, or (b) swallow an error there.
         // One code per severity, spelled with real catalog variants (registry-Error/Warning/Note).
-        use dorc_aid::diag::{CfgBuiltinShadowed, RedirTargetTop, SiteId, SyntaxMalformed};
+        use dorc_aid::diag::{
+            CfgBuiltinShadowed, RedirTargetTop, SiteId, SyntaxMalformed, SyntaxMalformedReason,
+        };
         use dorc_core::{BytePos, Span};
         let span = Span::new(BytePos(0), BytePos(1));
         let mixed = vec![
             Diag::new(
                 DiagCode::SyntaxMalformed(SyntaxMalformed {
-                    detail: "an error".to_owned(),
+                    reason: SyntaxMalformedReason::ExpectedFiToCloseIf,
                 }),
                 span,
             ),
