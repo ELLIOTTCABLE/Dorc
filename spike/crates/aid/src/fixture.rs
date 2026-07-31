@@ -29,11 +29,11 @@ use crate::diag::{
     LintToolOutputUnparsable, MarkHashcolonMalformed, MarkRcArityExceeded,
     MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker,
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
-    RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
-    SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
-    TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
-    WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
-    WrapperPeelIncoherent,
+    RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable,
+    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
+    TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
+    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten,
+    WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.

@@ -71,6 +71,7 @@ use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
+use dorc_aid::SpeechAct;
 use dorc_cli::fixpoint::{
     FrozenModel, attribute_cascades, classify_round, settle_validity_fixpoint,
 };
@@ -82,7 +83,6 @@ use dorc_cli::survival::{
     lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
 use dorc_cli::world::{ship_predict_body, ship_verdict_body, source_file_id};
-use dorc_aid::SpeechAct;
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
