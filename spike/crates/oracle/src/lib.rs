@@ -365,13 +365,24 @@ pub fn to_funcname_segment(name: &str) -> String {
 /// name, or `None` when none does (`28K` §1 rul-sh-loads-dorc-reads — the oracle answering a site
 /// is exactly the definition a shell would have live).
 ///
-/// The ONE seat for that question, because the five resolution sites that ask it must agree: a
+/// The ONE seat for that question, because the resolution sites that ask it must agree: a
 /// disagreement between which body the analysis picks and which the probe ships measures one cell
-/// while keying the record to another. What this retires is two distinct expedients — first-in-
-/// load-order, and (in `analysis::effect`) first-that-RESOLVES, which was strictly worse: it could
-/// reach PAST a live definition into a shadowed one's arms when the live body declined the argv,
-/// answering from a body no shell would have called (`28K` §6 rej-resurrection-of-dead-definitions).
+/// while keying the record to another. Every site now calls THIS — the effect-map lift, the
+/// verdict index, `analysis::effect`'s predict lane, the three cli ship closures, and
+/// `plan::build_vouches` — so the agreement is a property rather than a convention; the last four
+/// spelled it as a local backwards scan until `28M:fnd-verdict-resolution-duplicates-live-source`
+/// named the drift that let in.
+///
+/// Three expedients died here. First-in-load-order. First-that-RESOLVES, which was strictly worse:
+/// it reached PAST a live definition into a shadowed one's arms whenever the live body declined
+/// the argv, answering from a body no shell would have called (`28K` §6
+/// rej-resurrection-of-dead-definitions) — and it was live in the SHIP lane after
+/// `analysis::effect` retired it. And iteration-order last-wins, which agreed by coincidence.
 /// Only sh's winner exists; a decline by the winner is a decline, full stop.
+///
+/// This answers the WHOLE-UNIT question. The site-keyed acts then narrow it to the definition live
+/// AT the site (`28K` §2 `rul-visibility-is-full-positional`,
+/// `dorc_analysis::funcenv::LiveDefinitions`); the two compose, they do not compete.
 #[must_use]
 pub fn live_source(count: usize, defines: impl Fn(usize) -> bool) -> Option<usize> {
     (0..count).rev().find(|&i| defines(i))

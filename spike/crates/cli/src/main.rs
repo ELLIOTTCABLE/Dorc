@@ -2209,31 +2209,27 @@ fn ship_predict_stage(
         strip_predict,
     };
     let want = map_provider_name(interner.resolve(provider));
+    let named = |cs: &dorc_oracle::predict::PredictSet| {
+        cs.providers()
+            .find(|cp| map_provider_name(interner.resolve(*cp)) == want)
+            .and_then(|cp| cs.get(cp).cloned())
+    };
+    // A composed stage is a SITE like any other (`28K` §2), resolved through the same seat.
+    let idx = dorc_oracle::live_source(checks.len(), |i| checks.get(i).and_then(named).is_some())
+        .filter(|&i| live.answers_at(node, &format!("{want}{PREDICT_SUFFIX}"), i))?;
+    let check = checks.get(idx).and_then(named)?;
     let arg_texts: Vec<String> = argv
         .iter()
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate().rev() {
-        // A composed stage is a SITE like any other (`28K` §2).
-        if !live.answers_at(node, &format!("{want}{PREDICT_SUFFIX}"), idx) {
-            continue;
-        }
-        for cp in cs.providers() {
-            if map_provider_name(interner.resolve(cp)) != want {
-                continue;
-            }
-            let Some(check) = cs.get(cp) else { continue };
-            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(dorc_plan::StageShip {
-                    sh: strip_predict(src, check, interner),
-                    produces_real_stdout: predict_stage_stdout(check, &arg_refs)
-                        == StageStdout::RealBytes,
-                });
-            }
-        }
+    if !matches!(evaluate(&check, &arg_refs), Resolution::Resolved(_)) {
+        return None;
     }
-    None
+    Some(dorc_plan::StageShip {
+        sh: strip_predict(oracle_srcs.get(idx)?, &check, interner),
+        produces_real_stdout: predict_stage_stdout(&check, &arg_refs) == StageStdout::RealBytes,
+    })
 }
 
 /// Compile the resolver-probe (24F §3): for each resolver-bearing coordinate, ship its kind's

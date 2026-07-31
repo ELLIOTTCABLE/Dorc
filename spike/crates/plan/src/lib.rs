@@ -1378,24 +1378,28 @@ pub fn build_vouches(
         // The file INDEX rides along so an arm span crossing to the render carries its file
         // identity (`tc-oracle-file-identity`).
         // The LIVE verdict definition (`28K` §1) AT THIS SITE (`28K` §2): authoring the verdict IS
-        // the vouching act, so one a shell has not reached cannot vouch for a line above it.
+        // the vouching act, so one a shell has not reached cannot vouch for a line above it. Both
+        // halves come from the shared seats, never a local `.rev()` spelling of the same rule
+        // (`28M:fnd-verdict-resolution-duplicates-live-source`).
         let want = map_provider_name(interner.resolve(*provider));
         let verdict_name = format!("{want}{VERDICT_SUFFIX}");
-        let found = verdict_sets
-            .iter()
-            .zip(oracle_srcs)
-            .enumerate()
-            .rev()
-            .filter(|(idx, _)| live.answers_at(node, &verdict_name, *idx))
-            .find_map(|(idx, (set, src))| {
-                set.providers()
-                    .find(|p| map_provider_name(interner.resolve(*p)) == want)
-                    .and_then(|p| set.get(p))
-                    .map(|verdict| (idx, *src, verdict))
-            });
+        let named = |set: &VerdictSet| {
+            set.providers()
+                .find(|p| map_provider_name(interner.resolve(*p)) == want)
+                .and_then(|p| set.get(p).cloned())
+        };
+        let found = dorc_oracle::live_source(verdict_sets.len(), |i| {
+            verdict_sets.get(i).and_then(named).is_some()
+        })
+        .filter(|&i| live.answers_at(node, &verdict_name, i))
+        .and_then(|i| {
+            let set = verdict_sets.get(i)?;
+            Some((i, *oracle_srcs.get(i)?, named(set)?))
+        });
         let Some((file_idx, src, verdict)) = found else {
             continue;
         };
+        let verdict = &verdict;
         let arm_file = SourceFileId(u32::try_from(file_idx).unwrap_or(u32::MAX));
         // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
         // (unhandled path / an inert builtin / a non-converged `return` — hz-refusepath) or ⊤ ⇒ no

@@ -539,14 +539,26 @@ pub fn definition_table(
     table
 }
 
-/// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.
+/// The ONE index a site's role body ships from: sh's live definition ([`dorc_oracle::live_source`],
+/// the single seat), narrowed to the one live AT this site (`28K` §2
+/// rul-visibility-is-full-positional).
 ///
-/// The scan runs BACKWARDS because sh's answer is last-definition-wins (`28K` §1), and each
-/// candidate is then gated on being live AT `node` (`28K` §2 rul-visibility-is-full-positional) —
-/// the same question `command_effect` asked when it decided this site was probeable. Both seats
-/// consult one oracle over one ordered set, which is what makes "the resolution sites must agree"
-/// a property rather than a hope: a disagreement would ship one author's body to measure a cell
-/// another author's body keyed.
+/// `has` asks only "does file `i` define this role for this provider" — never "does its body
+/// answer this argv". That distinction is the point: a backwards scan for the first file that
+/// RESOLVES falls through a declining live body into a shadowed one's arms, which is exactly
+/// `28K` §6 rej-decline-fallthrough-cascade, and `analysis::effect` retired it at stage D. A
+/// decline by the winner is a decline, in the ship lane too.
+fn shipping_source(
+    count: usize,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+    role_name: &str,
+    has: impl Fn(usize) -> bool,
+) -> Option<usize> {
+    dorc_oracle::live_source(count, has).filter(|&i| live.answers_at(node, role_name, i))
+}
+
+/// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.
 #[must_use]
 pub fn ship_predict_body(
     oracle_srcs: &[String],
@@ -561,33 +573,36 @@ pub fn ship_predict_body(
         PREDICT_SUFFIX, Resolution, evaluate, map_provider_name, strip_predict,
     };
     let want = map_provider_name(interner.resolve(provider));
+    let named = |cs: &dorc_oracle::predict::PredictSet| {
+        cs.providers()
+            .find(|cp| map_provider_name(interner.resolve(*cp)) == want)
+            .and_then(|cp| cs.get(cp).cloned())
+    };
+    let idx = shipping_source(
+        checks.len(),
+        node,
+        live,
+        &format!("{want}{PREDICT_SUFFIX}"),
+        |i| checks.get(i).and_then(named).is_some(),
+    )?;
+    let check = checks.get(idx).and_then(named)?;
     let arg_texts: Vec<String> = argv
         .iter()
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate().rev() {
-        if !live.answers_at(node, &format!("{want}{PREDICT_SUFFIX}"), idx) {
-            continue;
-        }
-        for cp in cs.providers() {
-            if map_provider_name(interner.resolve(cp)) != want {
-                continue;
-            }
-            let Some(check) = cs.get(cp) else { continue };
-            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(dorc_plan::ShippedCheck::predict(
-                    strip_predict(src, check, interner),
-                    Some((check.name_span, source_file_id(idx))),
-                ));
-            }
-        }
+    if !matches!(evaluate(&check, &arg_refs), Resolution::Resolved(_)) {
+        return None;
     }
-    None
+    let src = oracle_srcs.get(idx)?;
+    Some(dorc_plan::ShippedCheck::predict(
+        strip_predict(src, &check, interner),
+        Some((check.name_span, source_file_id(idx))),
+    ))
 }
 
 /// `24L` §2 — the stripped `<provider>__is_converged` a typeless-floor auto-cell probe ships.
-/// Positional on the same terms as [`ship_predict_body`].
+/// Resolved through the same [`shipping_source`] seat.
 #[must_use]
 pub fn ship_verdict_body(
     oracle_srcs: &[String],
@@ -598,24 +613,26 @@ pub fn ship_verdict_body(
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
-    use dorc_oracle::verdict::VERDICT_SUFFIX;
+    use dorc_oracle::verdict::{VERDICT_SUFFIX, VerdictSet};
     let want = map_provider_name(interner.resolve(provider));
-    for (idx, (src, set)) in oracle_srcs.iter().zip(verdict_sets).enumerate().rev() {
-        if !live.answers_at(node, &format!("{want}{VERDICT_SUFFIX}"), idx) {
-            continue;
-        }
-        for vp in set.providers() {
-            if map_provider_name(interner.resolve(vp)) != want {
-                continue;
-            }
-            let Some(verdict) = set.get(vp) else { continue };
-            let emits_report = dorc_oracle::report::emits_report(verdict);
-            return Some(dorc_plan::ShippedCheck::verdict(
-                strip_verdict(src, verdict, interner),
-                Some((verdict.name_span, source_file_id(idx))),
-                emits_report,
-            ));
-        }
-    }
-    None
+    let named = |set: &VerdictSet| {
+        set.providers()
+            .find(|vp| map_provider_name(interner.resolve(*vp)) == want)
+            .and_then(|vp| set.get(vp).cloned())
+    };
+    let idx = shipping_source(
+        verdict_sets.len(),
+        node,
+        live,
+        &format!("{want}{VERDICT_SUFFIX}"),
+        |i| verdict_sets.get(i).and_then(named).is_some(),
+    )?;
+    let verdict = verdict_sets.get(idx).and_then(named)?;
+    let src = oracle_srcs.get(idx)?;
+    let emits_report = dorc_oracle::report::emits_report(&verdict);
+    Some(dorc_plan::ShippedCheck::verdict(
+        strip_verdict(src, &verdict, interner),
+        Some((verdict.name_span, source_file_id(idx))),
+        emits_report,
+    ))
 }
