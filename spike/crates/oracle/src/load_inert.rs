@@ -56,7 +56,7 @@ pub fn lint_load_inert(src: &str) -> Vec<Diag> {
 /// Everything else — a command, a pipeline, a conditional, a loop, a subshell, a ⊤-rejected
 /// construct — is refused: `inv-top-reject` biases the unknown toward refusal, and relaxing this
 /// later is cheap where re-tightening would not be (`271:rul-posix-in-spirit-defaults`).
-fn item_is_load_inert(ast: &Ast, item: AstId) -> bool {
+pub(crate) fn item_is_load_inert(ast: &Ast, item: AstId) -> bool {
     match &ast.node(item).kind {
         NodeKind::FuncDef { .. } => true,
         NodeKind::Simple {

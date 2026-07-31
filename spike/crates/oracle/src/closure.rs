@@ -87,6 +87,12 @@ impl HelperIndex {
     /// Index the ordered loaded sources. `srcs` is the SOURCE-wide vector (the book included), in
     /// load order, so an index into it is the [`dorc_core::SourceFileId`]
     /// (`28O:dec-load-order-is-the-id-order`).
+    /// Only a source whose WHOLE top level is provably inert to load contributes — every item a
+    /// funcdef or a bare statically-valued assignment (`rul-marked-file-is-load-inert`'s own
+    /// predicate). That inertness is exactly the license to hoist a declaration above somebody's
+    /// book, and it is also what keeps the BOOK out of the index without threading its id here: a
+    /// runbook has commands at top level, so its helpers stay where its author put them, in the
+    /// artifact's own text, and are never copied above it.
     #[must_use]
     pub fn build(srcs: &[&str]) -> Self {
         let mut index = Self::default();
@@ -95,6 +101,12 @@ impl HelperIndex {
             let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
                 continue;
             };
+            if !items
+                .iter()
+                .all(|&item| crate::load_inert::item_is_load_inert(&ast, item))
+            {
+                continue;
+            }
             for &item in items {
                 index.record(file, src, &ast, item);
             }

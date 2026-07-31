@@ -1097,19 +1097,31 @@ impl GuardInsert {
     /// sole verdict role is `is_converged`; the inverted sense is now spelled with explicit-return
     /// manual inversion inside it). `original` is the site's verbatim command bytes.
     #[must_use]
-    fn render_line(&self, original: &str) -> String {
+    fn render_line(&self, original: &str, invoked: &str) -> String {
         format!(
             "{} || {original}   # dorc: guard [{} converged-vouch; probe: {}]",
-            self.check_form(),
+            self.check_form(invoked),
             self.vouch.kind_label,
             self.probe_word(),
         )
     }
 
-    /// The check as it ships: `( <verdict-fn> <site argv> )`.
+    /// The check as it ships: `( <emitted-fn> <site argv> )`.
+    ///
+    /// `invoked` is the name the ARTIFACT binds this body to, which is the authored funcname in the
+    /// single-definition case and a hash-disambiguated one where the unit holds two distinct bodies
+    /// under one name (`28K` §4 `rul-hash-munge-disambiguation`). The caller resolves it through
+    /// [`Plan::pinned_definitions`], because it is a whole-artifact property no single insert knows.
     #[must_use]
-    pub fn check_form(&self) -> String {
-        format!("( {} )", self.vouch.invocation)
+    pub fn check_form(&self, invoked: &str) -> String {
+        match self
+            .vouch
+            .invocation
+            .strip_prefix(self.vouch.fn_name.as_str())
+        {
+            Some(argv) => format!("( {invoked}{argv} )"),
+            None => format!("( {} )", self.vouch.invocation),
+        }
     }
 
     /// The guarded line as the apply artifact carries it, MINUS its receipt comment — what the why
@@ -1119,10 +1131,69 @@ impl GuardInsert {
     /// Display, never execution (`27W:rul-report-surface-massaging`): dropping the provenance
     /// comment is a repair-directing massage of bytes that are not ours, and the executable plane
     /// keeps reading [`render_line`]. The two-surfaces byte floor is untouched.
+    /// Names the AUTHORED function, never a hash-disambiguated emission: the artifact's munged name
+    /// is engine scaffolding, and the surface a human reads to answer "whose judgment is this?"
+    /// must point at the body its author wrote (`28K` §4 — plan-render attribution names the
+    /// authored function and its `file:line`).
     #[must_use]
     pub fn display_line(&self, original: &str) -> String {
-        format!("{} || {original}", self.check_form())
+        format!("{} || {original}", self.check_form(&self.vouch.fn_name))
     }
+}
+
+/// What the apply artifact hoists, and which name each guarded site's check invokes
+/// (`28K` §4 — see [`Plan::pinned_definitions`], which is the only constructor).
+#[derive(Debug, Default)]
+pub struct PinnedDefinitions {
+    hoisted: String,
+    invoked: BTreeMap<AstId, String>,
+}
+
+impl PinnedDefinitions {
+    /// The definitions to emit above the book, in a deterministic order. EMPTY when every pinned
+    /// body is already in place, which is what keeps a guard-free — and an in-book-oracle — book
+    /// byte-identical to its own text.
+    #[must_use]
+    pub fn hoisted(&self) -> &str {
+        &self.hoisted
+    }
+
+    /// The funcname the guard at `ast` invokes. Absent for a site that guards nothing.
+    #[must_use]
+    pub fn invoked(&self, ast: AstId) -> Option<&str> {
+        self.invoked.get(&ast).map(String::as_str)
+    }
+}
+
+/// The short, deterministic disambiguator a hash-munged name carries (`28K` §4
+/// `rul-hash-munge-disambiguation`).
+///
+/// SHA-256 of the definition BYTES, first 8 hex digits — the same digest `book_digest` uses, not an
+/// FNV drift-detector, because this reaches the shipped artifact
+/// (`rul-fixture-identity-never-production`). It answers "are these the same bytes" and nothing
+/// else; uniqueness WITHIN one artifact is what matters and is checked at the emission seat.
+fn short_digest(body: &str) -> String {
+    invocation::book_digest(body)
+        .get(..8)
+        .unwrap_or_default()
+        .to_owned()
+}
+
+/// Does the book's own text already define `name` at top level with exactly `body`'s bytes?
+///
+/// The test is BYTES, not identity: a definition that matches is the pinned one, sitting where its
+/// author put it, so copying it above the book would put two same-named funcdefs in the shipped
+/// artifact for no gain (`28K` §4 retires that shape by any route). A definition that does NOT
+/// match is a different body under the same name, and the hoist-plus-munge path handles it.
+fn book_already_defines(src: &str, ast: &Ast, name: &str, body: &str) -> bool {
+    let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
+        return false;
+    };
+    items.iter().any(|&item| {
+        let node = ast.node(item);
+        matches!(&node.kind, NodeKind::FuncDef { name: n, .. } if n == name)
+            && src.get(node.span.lo.0 as usize..node.span.hi.0 as usize) == Some(body)
+    })
 }
 
 /// The witness authorising a **guard** — the third verb of rul-ternary-verdict's {elide, guard,
@@ -3988,7 +4059,11 @@ impl Plan {
                 // original bytes survive verbatim as the `||`-right (rul-ternary-verdict). The
                 // preamble defs are emitted once, up front, by [`guard_preamble`](Plan::guard_preamble).
                 Disposition::Guard(license) => {
-                    out.push_str(&license.insert().render_line(&step.sh));
+                    out.push_str(
+                        &license
+                            .insert()
+                            .render_line(&step.sh, license.insert().fn_name()),
+                    );
                     out.push('\n');
                 }
             }
@@ -3996,33 +4071,97 @@ impl Plan {
         out
     }
 
-    /// The guard **preamble** (24D §2 / rul-ternary-verdict): the verdict-function defs the guarded
-    /// lines invoke, each emitted ONCE (deduped by funcname; sh's last-writer-wins + top-to-bottom
-    /// exec means every invocation sees its own def). Empty when no site guards (so HEAD is byte-
-    /// unchanged). The cli prepends this to the apply artifact, above the guarded lines — the guard
-    /// lane's analogue of the probe's wrapper-def emission. The bodies are shipped STRIP-ONLY (the
-    /// oracle's own bytes; no engine-synthesized sh — the two never-clauses).
+    /// The artifact's **pinned definitions** (`28K` §4 `rul-runtime-resolution-never-load-bearing`):
+    /// which body each guard invokes, and under what name.
     ///
-    /// A funcname appearing twice is emitted once; a provider with TWO distinct verdict bodies
-    /// under one funcname (the probe's `apt-get`-as-package-and-pkgindex shape) is not modeled here
-    /// (a verdict function has one body; tc-guard-preamble-reemit flags the re-emit case deferred).
+    /// The property this exists to make STRUCTURAL: the name a guard calls is bound, at that point
+    /// in the artifact, to exactly the bytes the analysis resolved — by construction, not by three
+    /// unrelated mechanisms agreeing. A misalignment there could swap WHOSE judgment executes, which
+    /// is pope-sin tier (`271:rul-sin-ordering`), so the emission decides the binding rather than
+    /// leaving a shell to re-derive it.
+    ///
+    /// Three rules, in the order they apply:
+    ///
+    /// 1. **Content-dedup.** Byte-identical bodies are ONE definition however many sites reach them
+    ///    (vendored copies are the commonest real collision, `28K` §4).
+    /// 2. **Already-in-place wins.** A body the book's own text already defines at top level, under
+    ///    the same name and the same bytes, is not copied: the artifact would otherwise carry two
+    ///    same-named funcdefs, which is the shape `oracle/src/reserved.rs` refuses by another route
+    ///    and which `28K` §4 retires by ANY route. Nothing is re-derived — the definition is the
+    ///    pinned one, sitting where its author put it, and the positional regime already proved it
+    ///    live at every site that guards (`rul-visibility-is-full-positional`: a vouch exists only
+    ///    where the definition it comes from is the one live at the line, so a book-sited definition
+    ///    always PRECEDES its guards).
+    /// 3. **Hash-munge the rest.** Where one name still has two distinct bodies, each is emitted
+    ///    once under `<name>_h<digest>` and the call sites carry the disambiguated name
+    ///    (`rul-hash-munge-disambiguation`). Engine SCAFFOLDING around authored bytes — the same
+    ///    sanctioned category as the guard glue — never a second source of convergence-truth. The
+    ///    munged name cannot parse as a `__role` (the vocabulary is closed and suffix-keyed), so a
+    ///    re-ingested artifact reads the guard as an opaque call ⇒ conservative run, the
+    ///    `23A:P-reingest` floor.
+    ///
+    /// Deterministic throughout (`inv-determinism`): the digest is over the definition BYTES, never
+    /// a runtime source, and both the hoist order and the name assignment iterate sorted maps.
     #[must_use]
-    pub fn guard_preamble(&self, ast: &Ast) -> String {
-        let mut defined: BTreeSet<&str> = BTreeSet::new();
-        let mut out = String::new();
-        for step in &self.steps {
-            // A render-REFUSED guard (heredoc/redirect) emits no invocation, so its preamble def
-            // would be dead — skip it, so a book whose only guard is refused stays byte-clean. The
-            // OOB-safe check tolerates a synthetic test Plan whose `AstId`s index no real node.
-            if let Disposition::Guard(license) = &step.disposition
-                && !(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast))
-                && defined.insert(license.insert().fn_name())
-            {
-                out.push_str(license.insert().preamble());
-                out.push('\n');
+    pub fn pinned_definitions(&self, src: &str, ast: &Ast) -> PinnedDefinitions {
+        // Distinct bodies per funcname, first-seen order preserved within a name.
+        let mut bodies: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+        for insert in self.rendered_guards(ast) {
+            let under = bodies.entry(insert.fn_name()).or_default();
+            if !under.contains(&insert.preamble()) {
+                under.push(insert.preamble());
             }
         }
-        out
+        let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
+        let mut hoisted = String::new();
+        for (name, distinct) in &bodies {
+            let plural = distinct.len() > 1;
+            for body in distinct {
+                let emitted = if plural {
+                    format!("{name}_h{}", short_digest(body))
+                } else {
+                    (*name).to_owned()
+                };
+                if !(plural || book_already_defines(src, ast, name, body)) {
+                    hoisted.push_str(body);
+                    hoisted.push('\n');
+                } else if plural {
+                    // Rename the funcdef HEADER only (`name() {`), never every occurrence: the
+                    // pinned string starts with the closure, whose bytes are somebody else's.
+                    let header = format!("{name}()");
+                    hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
+                    hoisted.push('\n');
+                }
+                emitted_names.insert((name, body), emitted);
+            }
+        }
+        let invoked = self
+            .steps
+            .iter()
+            .filter_map(|step| {
+                let Disposition::Guard(license) = &step.disposition else {
+                    return None;
+                };
+                let insert = license.insert();
+                let emitted = emitted_names.get(&(insert.fn_name(), insert.preamble()))?;
+                Some((step.ast, emitted.clone()))
+            })
+            .collect();
+        PinnedDefinitions { hoisted, invoked }
+    }
+
+    /// The guard inserts whose line the render actually EMITS. A render-REFUSED guard (heredoc /
+    /// blocking redirect) runs verbatim, so pinning its definition would hoist a dead one and take
+    /// a guard-free book off its byte floor.
+    fn rendered_guards<'a>(&'a self, ast: &Ast) -> impl Iterator<Item = &'a GuardInsert> {
+        self.steps.iter().filter_map(move |step| {
+            let Disposition::Guard(license) = &step.disposition else {
+                return None;
+            };
+            // OOB-safe: a synthetic test Plan's `AstId`s may index no real node.
+            (!(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast)))
+                .then(|| license.insert())
+        })
     }
 
     /// The `AstId`s of `Guard` steps whose render is REFUSED ([`guard_render_refused`] — a heredoc
@@ -4076,15 +4215,16 @@ impl Plan {
     /// leaf is run verbatim.
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
-        let edits = self.collect_edits(src, ast);
+        let pinned = self.pinned_definitions(src, ast);
+        let edits = self.collect_edits(src, ast, &pinned);
         let artifact = emit_span_edits(src, &edits);
-        // The GUARD PREAMBLE (24D §2 / rul-ternary-verdict): the verdict-function defs the guarded
+        // The GUARD PREAMBLE (24D §2 / rul-ternary-verdict): the pinned definitions the guarded
         // lines invoke, emitted ONCE between the apply header and the book (the defs must precede
         // their invocations — sh execs top-to-bottom, and the header is pure comments). Empty when
         // no site guards ⇒ a guard-free book stays byte-identical to HEAD. `emit_span_edits` emits
         // `apply_header()` as the artifact's verbatim prefix, so splicing after it lands the defs
         // above the whole book.
-        let preamble = self.guard_preamble(ast);
+        let preamble = pinned.hoisted();
         if preamble.is_empty() {
             return artifact;
         }
@@ -4200,7 +4340,7 @@ impl Plan {
     /// the command span would orphan the heredoc body as stray lines. Multi-line spans are
     /// NOT refused (a span edit may cover multiple lines — the line-render's old refusal
     /// retired); they collapse cleanly to the single-line replacement.
-    fn collect_edits(&self, src: &str, ast: &Ast) -> Vec<SpanEdit> {
+    fn collect_edits(&self, src: &str, ast: &Ast, pinned: &PinnedDefinitions) -> Vec<SpanEdit> {
         // Per-AstId disposition, so an `Omit`'s controller resolves for the omit-safety gate.
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
@@ -4274,7 +4414,14 @@ impl Plan {
                     // heredoc case is already refused at the top of the loop (span cannot cover the
                     // body) — X-heredoc. It carries its OWN `# dorc: guard …` comment ⇒ self-commented.
                     Disposition::Guard(license) => {
-                        (license.insert().render_line(&original), true, false)
+                        let invoked = pinned
+                            .invoked(step.ast)
+                            .unwrap_or(license.insert().fn_name());
+                        (
+                            license.insert().render_line(&original, invoked),
+                            true,
+                            false,
+                        )
                     }
                     // A kept-controller `Omit` (the runtime guard gates it) and a `Run` leaf are
                     // both verbatim — no edit.
@@ -5049,7 +5196,9 @@ apt_get__is_converged() { return 0; }
         )
         .unwrap();
         // The guard_shape law: `( <check> ) || <original verbatim>   # dorc: guard [...]`.
-        let line = license.insert().render_line("apt-get install -y curl");
+        let line = license
+            .insert()
+            .render_line("apt-get install -y curl", "apt_get__is_converged");
         assert!(
             line.starts_with(
                 "( apt_get__is_converged install -y curl ) || apt-get install -y curl"
@@ -5070,6 +5219,8 @@ apt_get__is_converged() { return 0; }
         );
     }
 
+    /// Two sites, one funcname, one BODY ⇒ one hoisted definition under the plain name, and both
+    /// guards invoke it. The content-dedup half of `28K` §4.
     #[test]
     fn guard_preamble_dedups_and_counts() {
         use dorc_core::{ByVouch, Rung};
@@ -5100,23 +5251,122 @@ apt_get__is_converged() { return 0; }
             survival_report: SurvivalReport::default(),
         };
         // A throwaway (empty) Ast: the synthetic `AstId`s index no real node, and the OOB-safe
-        // check in `guard_preamble` treats an out-of-arena id as not-refused (so both guards emit).
+        // check treats an out-of-arena id as not-refused (so both guards pin).
         let ast = dorc_syntax::parse("").value;
-        // Two guards sharing one funcname ⇒ ONE preamble def (sh last-writer-wins; the invocation
-        // sees its own def).
+        let pinned = plan.pinned_definitions("", &ast);
         assert_eq!(
-            plan.guard_preamble(&ast)
-                .matches("apt_get__is_converged()")
-                .count(),
+            pinned.hoisted().matches("apt_get__is_converged()").count(),
             1,
-            "preamble deduped by funcname: {}",
-            plan.guard_preamble(&ast)
+            "one BODY ⇒ one hoist: {}",
+            pinned.hoisted()
         );
+        assert_eq!(
+            pinned.invoked(AstId(0)),
+            Some("apt_get__is_converged"),
+            "the single-definition case keeps the authored name, byte-identical to strip"
+        );
+        assert_eq!(pinned.invoked(AstId(1)), pinned.invoked(AstId(0)));
         // The exhaustive `disposition_counts` match now feeds the guard bucket (the summary's
         // guard column becomes real — DispositionCounts forced this wiring).
         let counts = plan.disposition_counts();
         assert_eq!(counts.guard, 2);
         assert_eq!(counts.sites, 2);
+    }
+
+    /// Build a two-guard plan whose sites carry the given verdict BODIES under one funcname.
+    #[cfg(test)]
+    fn two_guard_plan(bodies: [&str; 2]) -> Plan {
+        use dorc_core::{ByVouch, Rung};
+        let step = |leaf: u32, preamble: &str| {
+            let vouch = VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                preamble.to_string(),
+                "apt_get__is_converged install curl".to_string(),
+                "package".to_string(),
+                Vec::new(),
+            );
+            Step {
+                leaf: LeafId(leaf),
+                ast: AstId(leaf),
+                sh: "apt-get install curl".to_string(),
+                disposition: Disposition::Guard(
+                    GuardLicense::mint(
+                        nginx_fact(),
+                        ByVouch::vouched(vouch, Rung::Both),
+                        Verdict::Converged,
+                    )
+                    .unwrap(),
+                ),
+            }
+        };
+        Plan {
+            steps: vec![step(0, bodies[0]), step(1, bodies[1])],
+            survival_report: SurvivalReport::default(),
+        }
+    }
+
+    /// `28K` §4 `rul-hash-munge-disambiguation`, and the pope-sin it closes.
+    ///
+    /// Two sites whose live definitions are DIFFERENT bodies under one funcname. The retired
+    /// dedup-by-funcname emitted the first body only and let BOTH sites invoke it, so one site ran
+    /// a judgment its author never made for that line — a mis-attribution
+    /// (`271:rul-sin-ordering`'s worst class) that no golden could show. Now each body is emitted
+    /// once under its own disambiguated name and each site invokes its own.
+    #[test]
+    fn two_distinct_bodies_under_one_name_are_hash_munged_apart() {
+        let a = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
+        let b = "apt_get__is_converged() { dpkg-query -W --strict \"$1\" ; }";
+        let plan = two_guard_plan([a, b]);
+        let ast = dorc_syntax::parse("").value;
+        let pinned = plan.pinned_definitions("", &ast);
+        let (first, second) = (
+            pinned.invoked(AstId(0)).expect("site 0 guards"),
+            pinned.invoked(AstId(1)).expect("site 1 guards"),
+        );
+        assert_ne!(first, second, "distinct bodies never share a name");
+        for name in [first, second] {
+            assert!(
+                name.starts_with("apt_get__is_converged_h"),
+                "the authored name stays readable in the munged one: {name}"
+            );
+            assert!(
+                dorc_oracle::reserved::role_family(name).is_none(),
+                "a munged name must not parse as a role, or a re-ingested artifact would read the \
+                 guard as a description instead of an opaque call (`23A:P-reingest`): {name}"
+            );
+            assert_eq!(
+                pinned.hoisted().matches(&format!("{name}()")).count(),
+                1,
+                "each body emitted exactly once, under its own name:\n{}",
+                pinned.hoisted()
+            );
+        }
+        assert!(
+            !pinned.hoisted().contains("apt_get__is_converged()"),
+            "the plain name binds nothing when the unit holds two bodies:\n{}",
+            pinned.hoisted()
+        );
+    }
+
+    /// The artifact never carries two same-named funcdefs BY ANY ROUTE (`28K` §4). When the pinned
+    /// definition is the book's own — the stage-3 in-book oracle — the artifact already holds it at
+    /// its authored position, so hoisting a copy would put the very shape `oracle/src/reserved.rs`
+    /// refuses into the shipped bytes. Nothing is re-derived: the positional regime licenses a
+    /// vouch only where its definition is live, so a book-sited definition always precedes its
+    /// guards.
+    #[test]
+    fn a_definition_the_book_already_carries_is_not_copied_above_it() {
+        let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
+        let src = format!("{body}\napt-get install curl\n");
+        let ast = dorc_syntax::parse(&src).value;
+        let plan = two_guard_plan([body, body]);
+        let pinned = plan.pinned_definitions(&src, &ast);
+        assert_eq!(
+            pinned.hoisted(),
+            "",
+            "the book's own definition IS the pin — no second funcdef ships"
+        );
+        assert_eq!(pinned.invoked(AstId(0)), Some("apt_get__is_converged"));
     }
 
     /// Run the real pipeline (parse → cfg → value-flow → classify → `compile_probe`) on
