@@ -126,10 +126,17 @@ pub(crate) enum ProbeShipment {
         attempts: u32,
     },
     /// No process was ever created, so nothing was contacted.
-    NotAttempted {
-        /// The spawn failure.
-        reason: String,
-    },
+    NotAttempted(NotAttempted),
+}
+
+/// Why a shipment never reached a host at all — the two worlds behind one untouched-host claim
+/// (`296:tc-transport-not-attempted-is-two-worlds`). They mint different codes because the
+/// operator's next move differs: fix the environment, or fix the invocation.
+pub(crate) enum NotAttempted {
+    /// The platform refused to create the session process; these are its own words.
+    SpawnRefused(String),
+    /// The run's nonce could not become a session marker, so nothing was ever shipped.
+    MarkerUnusable,
 }
 
 /// Ship the probe, re-minting the attempt on each try.
@@ -155,9 +162,7 @@ pub(crate) fn ship_probe(
         let framing = Framing::for_remote(&identity, book_digest.to_owned());
         let artifact = render(&framing);
         let Ok(marker) = SessionMarker::new(nonce, attempt) else {
-            return ProbeShipment::NotAttempted {
-                reason: "the run nonce is not a usable marker".to_owned(),
-            };
+            return ProbeShipment::NotAttempted(NotAttempted::MarkerUnusable);
         };
         let outcome = driver.run(&SessionRequest {
             host,
@@ -175,7 +180,7 @@ pub(crate) fn ship_probe(
                 };
             }
             SessionOutcome::NotAttempted { reason } => {
-                return ProbeShipment::NotAttempted { reason };
+                return ProbeShipment::NotAttempted(NotAttempted::SpawnRefused(reason));
             }
             SessionOutcome::LostAfterSend { diagnosis, .. } => last = diagnosis,
         }
@@ -197,19 +202,17 @@ pub(crate) fn ship_apply(
     nonce: &str,
     artifact: &[u8],
     timeout: Option<Duration>,
-) -> SessionOutcome {
+) -> Result<SessionOutcome, NotAttempted> {
     let Ok(marker) = SessionMarker::new(nonce, 1) else {
-        return SessionOutcome::NotAttempted {
-            reason: "the run nonce is not a usable marker".to_owned(),
-        };
+        return Err(NotAttempted::MarkerUnusable);
     };
-    driver.run(&SessionRequest {
+    Ok(driver.run(&SessionRequest {
         host,
         phase: Phase::Apply,
         artifact,
         marker: &marker,
         timeout,
-    })
+    }))
 }
 
 /// Where a CR byte sits in bytes about to be shipped, as a 1-based line number.
@@ -257,10 +260,7 @@ pub(crate) enum AppliedOutcome {
         diagnosis: TransportDiagnosis,
     },
     /// Nothing was contacted.
-    NotAttempted {
-        /// The spawn failure.
-        reason: String,
-    },
+    NotAttempted(NotAttempted),
 }
 
 /// Ship an already-rendered apply artifact and classify the result.
@@ -285,7 +285,11 @@ pub(crate) fn apply_to_host(
     if let Some(line) = first_carriage_return(artifact) {
         return Err(crlf_refusal("the plan", line));
     }
-    match ship_apply(driver, host, nonce, artifact, timeout) {
+    let shipped = match ship_apply(driver, host, nonce, artifact, timeout) {
+        Ok(outcome) => outcome,
+        Err(why) => return Ok(AppliedOutcome::NotAttempted(why)),
+    };
+    match shipped {
         SessionOutcome::Completed {
             status,
             stdout,
@@ -304,7 +308,9 @@ pub(crate) fn apply_to_host(
             echo(&stderr, true);
             Ok(AppliedOutcome::Unknown { diagnosis })
         }
-        SessionOutcome::NotAttempted { reason } => Ok(AppliedOutcome::NotAttempted { reason }),
+        SessionOutcome::NotAttempted { reason } => Ok(AppliedOutcome::NotAttempted(
+            NotAttempted::SpawnRefused(reason),
+        )),
     }
 }
 
@@ -371,14 +377,29 @@ pub(crate) fn apply_failed(host: &str, status: i32) -> Diag {
     ))
 }
 
-/// Report a host that was never contacted.
-pub(crate) fn not_attempted(host: &str, detail: &str) -> Diag {
-    Diag::new_spanless_site(DiagCode::TransportNotAttempted(
-        dorc_aid::diag::TransportNotAttempted {
-            host: host.to_owned(),
-            detail: detail.to_owned(),
-        },
-    ))
+/// Report a host that was never contacted, as one of the two worlds that can claim it.
+///
+/// The platform's spawn words reach us as a `String`: `dorc-transport` is deliberately
+/// dependency-free (its `Cargo.toml` carries the weld), so no `io::Error` can survive the crate
+/// boundary and this edge is the first place that can seal them. That is exactly the relay
+/// `from_io_edge` names.
+pub(crate) fn not_attempted(host: &str, why: &NotAttempted) -> Diag {
+    use dorc_aid::diag::{TransportMarkerUnusable, TransportSpawnRefused};
+    let host = host.to_owned();
+    match why {
+        NotAttempted::SpawnRefused(platform) => {
+            let detail = dorc_aid::ForeignBytes::from_io_edge(platform);
+            Diag::new_spanless_site(DiagCode::TransportSpawnRefused(TransportSpawnRefused {
+                host,
+                detail,
+            }))
+        }
+        NotAttempted::MarkerUnusable => {
+            Diag::new_spanless_site(DiagCode::TransportMarkerUnusable(TransportMarkerUnusable {
+                host,
+            }))
+        }
+    }
 }
 
 /// A one-line reading of what severed a session, for the operator.

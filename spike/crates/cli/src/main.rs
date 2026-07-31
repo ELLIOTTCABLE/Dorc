@@ -1123,12 +1123,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                     );
                     return Ok(RunOutcome::SessionLost);
                 }
-                transport_edge::ProbeShipment::NotAttempted { reason } => {
+                transport_edge::ProbeShipment::NotAttempted(why) => {
                     report_at(
                         advisory,
                         "transport",
                         None,
-                        &[transport_edge::not_attempted(raw, &reason)],
+                        &[transport_edge::not_attempted(raw, &why)],
                     );
                     return Ok(RunOutcome::HostNotReached);
                 }
@@ -3074,12 +3074,12 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
             );
             Ok(RunOutcome::SessionLost)
         }
-        transport_edge::AppliedOutcome::NotAttempted { reason } => {
+        transport_edge::AppliedOutcome::NotAttempted(why) => {
             report_at(
                 true,
                 "apply",
                 None,
-                &[transport_edge::not_attempted(host, &reason)],
+                &[transport_edge::not_attempted(host, &why)],
             );
             Ok(RunOutcome::HostNotReached)
         }

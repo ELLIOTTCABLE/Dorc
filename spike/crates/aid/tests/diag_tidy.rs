@@ -256,7 +256,8 @@ const MIGRATED_SLUGS: &[&str] = &[
     "dorc-sh-exec-failed",
     "transport-crlf-refused",
     "transport-session-lost",
-    "transport-not-attempted",
+    "transport-spawn-refused",
+    "transport-marker-unusable",
     "transport-apply-failed",
 ];
 
@@ -264,6 +265,7 @@ const MIGRATED_SLUGS: &[&str] = &[
 /// codes. Recorded so the git-diff retire-guard reads a rename as intentional, not a silent
 /// deletion (`assert_no_slug_vanished` accepts a committed slug here).
 const RETIRED_SLUGS: &[&str] = &[
+    "transport-not-attempted",
     "dq-cmdsub-operand-top",
     "dq-site-unresolvable",
     "dq-cmdsub-inner-nonleaf",
@@ -343,7 +345,8 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     // rendered plan no parser of ours saw, so its line is a payload value, not an AST span.
     "TransportCrlfRefused",
     "TransportSessionLost",
-    "TransportNotAttempted",
+    "TransportSpawnRefused",
+    "TransportMarkerUnusable",
     "TransportApplyFailed",
 ];
 
@@ -1017,6 +1020,11 @@ fn foreign_edge_constructor_is_fenced() {
         (
             "cli/src/main.rs",
             "names the unprobed book sites and quotes the first one's source",
+        ),
+        (
+            "cli/src/transport_edge.rs",
+            "relays the platform's spawn-refusal words, which cross the dependency-free \
+             `dorc-transport` boundary as a `String` and can be sealed no earlier",
         ),
         (
             "cli/src/why.rs",

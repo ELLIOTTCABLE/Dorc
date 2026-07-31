@@ -31,8 +31,9 @@ use crate::diag::{
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
     SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
     SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
-    TransportNotAttempted, TransportSessionLost, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
-    WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
+    TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
+    WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
+    WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -252,10 +253,16 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             }),
         ),
         (
-            "transport-not-attempted",
-            DiagCode::TransportNotAttempted(TransportNotAttempted {
+            "transport-spawn-refused",
+            DiagCode::TransportSpawnRefused(TransportSpawnRefused {
                 host: "web1.example.net".to_owned(),
-                detail: "program not found".to_owned(),
+                detail: ForeignBytes::from_io_edge("program not found"),
+            }),
+        ),
+        (
+            "transport-marker-unusable",
+            DiagCode::TransportMarkerUnusable(TransportMarkerUnusable {
+                host: "web1.example.net".to_owned(),
             }),
         ),
         (

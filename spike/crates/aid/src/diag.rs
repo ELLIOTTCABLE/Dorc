@@ -339,7 +339,8 @@ pub enum DiagCode {
     /// A session ran and never reported completion, so the host's state is unknown.
     TransportSessionLost(TransportSessionLost),
     /// No session process could be created, so the host was never contacted.
-    TransportNotAttempted(TransportNotAttempted),
+    TransportSpawnRefused(TransportSpawnRefused),
+    TransportMarkerUnusable(TransportMarkerUnusable),
     /// A remote apply ran to completion and its artifact exited non-zero.
     TransportApplyFailed(TransportApplyFailed),
 }
@@ -446,7 +447,8 @@ impl DiagCode {
             DiagCode::CliShimDirUnwritable(_) => "cli-shim-dir-unwritable",
             DiagCode::TransportCrlfRefused(_) => "transport-crlf-refused",
             DiagCode::TransportSessionLost(_) => "transport-session-lost",
-            DiagCode::TransportNotAttempted(_) => "transport-not-attempted",
+            DiagCode::TransportSpawnRefused(_) => "transport-spawn-refused",
+            DiagCode::TransportMarkerUnusable(_) => "transport-marker-unusable",
             DiagCode::TransportApplyFailed(_) => "transport-apply-failed",
         }
     }
@@ -1679,7 +1681,7 @@ pub struct TransportCrlfRefused {
 ///
 /// The world's state is UNKNOWN, which is neither "clean" nor "failed"
 /// (`rul-integrity-failure-withholds-mutation`). It is deliberately NOT a sibling of
-/// [`TransportNotAttempted`] by grammar but by WORLD STATE
+/// [`TransportSpawnRefused`] by grammar but by WORLD STATE
 /// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`): there, nothing ran and the remedy is to fix
 /// the invocation; here, something may have run and the remedy is to re-probe.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1692,21 +1694,32 @@ pub struct TransportSessionLost {
     pub diagnosis: String,
 }
 
-/// Payload of [`DiagCode::TransportNotAttempted`]: no session process was ever created.
+/// Payload of [`DiagCode::TransportSpawnRefused`]: the platform refused to create the session
+/// process, so nothing ran anywhere.
 ///
-/// The one transport outcome licensed to say the host was untouched, because the failure is
-/// local: the controller could not spawn a child at all.
+/// One of two codes licensed to say the host was untouched, because the failure is local. Its
+/// sibling is [`TransportMarkerUnusable`]; the two were one code with a MIXED `detail` until
+/// `296:tc-transport-not-attempted-is-two-worlds` — here the platform speaks and the remedy is
+/// environmental, there we speak and the remedy is the invocation
+/// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TransportNotAttempted {
-    /// The host (`{host}`).
+pub struct TransportSpawnRefused {
+    /// The host that went uncontacted (`{host}`).
     pub host: String,
-    /// Why nothing was attempted (`{detail}`).
-    ///
-    /// MIXED and therefore left a passthrough by the x2c audit: one producer is the platform's
-    /// spawn error, the other a sentence we compose about an unusable run marker. Splitting it is
-    /// a world-variant sibling pair (`AID-NEEDS:law-codes-vary-by-world-not-grammar`), not a hole
-    /// rename.
-    pub detail: String,
+    /// The platform's own words about the refused spawn (`{detail}`), sealed as not-ours.
+    pub detail: ForeignBytes,
+}
+
+/// Payload of [`DiagCode::TransportMarkerUnusable`]: the run's nonce could not become a session
+/// marker, so no artifact was shipped and the host was never contacted.
+///
+/// The sibling of [`TransportSpawnRefused`]: same untouched-host claim, a different world. Nothing
+/// outside the controller participated, so there is nothing to relay — the whole sentence is ours
+/// and lives in the code's register.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TransportMarkerUnusable {
+    /// The host that went uncontacted (`{host}`).
+    pub host: String,
 }
 
 /// Payload of [`DiagCode::TransportApplyFailed`]: a remote apply completed with a non-zero status.
@@ -2413,7 +2426,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         | DiagCode::DorcShExecFailed(_)
         | DiagCode::TransportCrlfRefused(_)
         | DiagCode::TransportSessionLost(_)
-        | DiagCode::TransportNotAttempted(_)
+        | DiagCode::TransportSpawnRefused(_)
+        | DiagCode::TransportMarkerUnusable(_)
         | DiagCode::TransportApplyFailed(_)
         | DiagCode::CliShimDirUnwritable(_) => CodeSpec {
             severity: Severity::Error,
@@ -2851,8 +2865,11 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("attempts", attempts.clone()),
             ours("diagnosis", diagnosis.clone()),
         ],
-        DiagCode::TransportNotAttempted(TransportNotAttempted { host, detail }) => {
-            vec![ours("host", host.clone()), ours("detail", detail.clone())]
+        DiagCode::TransportSpawnRefused(TransportSpawnRefused { host, detail }) => {
+            vec![ours("host", host.clone()), foreign("detail", detail)]
+        }
+        DiagCode::TransportMarkerUnusable(TransportMarkerUnusable { host }) => {
+            vec![ours("host", host.clone())]
         }
         DiagCode::TransportApplyFailed(TransportApplyFailed { host, status }) => {
             vec![ours("host", host.clone()), ours("status", status.clone())]
@@ -4216,9 +4233,14 @@ mod tests {
                 attempts: "3".to_owned(),
                 diagnosis: "timed out after 120s".to_owned(),
             }),
-            DiagCode::TransportNotAttempted(TransportNotAttempted {
+            DiagCode::TransportSpawnRefused(TransportSpawnRefused {
                 host: "web1".to_owned(),
-                detail: "program not found".to_owned(),
+                detail: ForeignBytes::from_os_error(&std::io::Error::from(
+                    std::io::ErrorKind::NotFound,
+                )),
+            }),
+            DiagCode::TransportMarkerUnusable(TransportMarkerUnusable {
+                host: "web1".to_owned(),
             }),
             DiagCode::TransportApplyFailed(TransportApplyFailed {
                 host: "web1".to_owned(),
