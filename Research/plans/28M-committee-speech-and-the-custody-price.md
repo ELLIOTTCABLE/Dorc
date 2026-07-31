@@ -518,3 +518,31 @@ polyfill lands Defined(guard). Controller-static only — host-dependent conditi
   read Undefined, but the host's PATH carries an entry by that name; sh behaviour
   diverged from analysis; warn." Hint machinery, whenever the aid lane reaches it.
 
+## §10. In-sitting bank (token-registration item, 2026-07-31 — item UNRULED; nothing
+here is a verdict)
+
+- **dir-ownership-is-transitive-inclusion [TYPED 2026-07-31; needs-more-attention flag
+  is the human's own]** — "the owner's file" is an insufficient concept everywhere this
+  corner has used it: owners legitimately split code across files, and Dorc has no
+  package/module concept — once material hits the filesystem, correlatedness is opaque.
+  The only ownership-shaped concept available is the TRANSITIVE CLOSURE of literal
+  sourcing from an entry file; and because the engine cannot tell whether you wrote or
+  merely found `. ./some_other.sh`, sourcing is a PROMISE — "I treated this as if I
+  wrote it" — and the closure analyzes as ONE unit. Prefer
+  "inclusion-checkedness"/closure vocabulary over "ownership" throughout. The
+  not-co-author machinery (the committee fence, registration, custody) binds only
+  SIBLING/COUSIN edges in the include-tree — where the authorized minting-site's entry
+  is below/adjacent to another usage, never above it. To re-examine at ruling: the
+  fence's `SourceFileId` span proxy re-keys to entry-closure identity
+  (`28K:bitem4-committee-fence-at-sparing-tier` spec note); `price-multi-file-package`
+  likely SOFTENS (one entry file sourcing its parts = one speaker by
+  inclusion-promise); registration-by-owner-use reads "the owner's CLOSURE mints it".
+  Without this, the extract-helpers-to-shared-files capability of any real oracle
+  package is quietly excluded.
+- **challenge-uniform-fact-plane [human, OPEN — gates this item]** — the human missed
+  the verdict/predict consumption divide entirely ("I had no idea `: some_addr` didn't
+  mint exactly the same meaning regardless of the site it was keyed by") and demands a
+  by-construction defense of the divide before the registration item proceeds; the
+  conductor's defense is in-chat, unratified. If the divide moves, this item's
+  verdict-dialect half moves with it.
+
