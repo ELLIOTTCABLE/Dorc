@@ -12,12 +12,12 @@ $ dorc lint --source=analysis-diagnostics --source=unmodeled-inventory book.sh
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 book.sh:
-  error[cfg-top-node]: sm unsupported construct (unknown): un-probeable and
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
   un-skippable
         [ book.sh:1:1
      1 | eval "apt-get install -y nginx"
        | \__/
-  error[syntax-unsupported]: sm `eval` executes constructed code (un-analyzable)
+  error[syntax-unsupported]: `eval` executes constructed code (un-analyzable)
         [ book.sh:1:1
      1 | eval "apt-get install -y nginx"
        | \__/

@@ -627,8 +627,8 @@ mod lift_failure_tests {
         assert_eq!(d.primary.span(), Some(span), "span flows through unchanged");
         assert_eq!(
             dorc_aid::diag::render_body(&d, &interner),
-            "sm unterminated function body (expected `}`)",
-            "the message is `sm ` + the reason's registry sentence"
+            "unterminated function body (expected `}`)",
+            "the register is a lone `{{reason}}` hole, so the message IS the reason's registry sentence"
         );
 
         let want_dialect = registry(&Code::PredictOutOfDialect(PredictOutOfDialect {
@@ -643,10 +643,7 @@ mod lift_failure_tests {
             "out-of-dialect severity must equal the registry's, not a hardcoded value"
         );
         assert_eq!(d.primary.span(), Some(span));
-        assert_eq!(
-            dorc_aid::diag::render_body(&d, &interner),
-            "sm empty command"
-        );
+        assert_eq!(dorc_aid::diag::render_body(&d, &interner), "empty command");
     }
 
     /// An EOF give-up now carries a REAL zero-width end-of-input span, never a span-less mint

@@ -17,7 +17,7 @@ oracle.sh:
         [ oracle.sh:2:1
      2 | pkg__is_converged() { [ "`dpkg -s "$1"`" = installed ]; }
        | \_______________/
-  error[predict-out-of-dialect]: sm statement does not start with a word
+  error[predict-out-of-dialect]: statement does not start with a word
         [ oracle.sh:2:23
      2 | pkg__is_converged() { [ "`dpkg -s "$1"`" = installed ]; }
        |                       ^

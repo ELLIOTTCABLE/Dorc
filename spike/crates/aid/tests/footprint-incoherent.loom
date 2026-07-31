@@ -34,7 +34,7 @@ hork__is_converged() {
 
 -- replay --
 $ dorc plan --book=book.sh -o hork.oracle.sh --risk-faultless-skips
-warning[footprint-incoherent]: sm touches() footprint omits this command's own
+warning[footprint-incoherent]: touches() footprint omits this command's own
 effect coordinate (at-least not-within at-most) -- footprint refused, the site
 walls
       [ book.sh:2:1

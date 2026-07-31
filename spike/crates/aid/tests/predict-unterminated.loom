@@ -14,7 +14,7 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[syntax-malformed]: sm unterminated brace group `{` (no `}`)
+  error[syntax-malformed]: unterminated brace group `{` (no `}`)
         [ oracle.sh:2:17
      2 | hork__predict() {
        |                 ^
@@ -22,7 +22,7 @@ oracle.sh:
         [ oracle.sh:2:1
      2 | hork__predict() {
        | \___________/
-  error[predict-unterminated]: sm unterminated function body (expected `}`)
+  error[predict-unterminated]: unterminated function body (expected `}`)
         [ oracle.sh:4:1
      4 | 
        | ^

@@ -12,7 +12,7 @@ hork --settle
 
 -- replay --
 $ dorc plan --book=book.sh
-error[cfg-top-node]: sm unsupported construct (unknown): un-probeable and
+error[cfg-top-node]: unsupported construct (unknown): un-probeable and
 un-skippable
       [ book.sh:3:1
    3 | eval "hork --stub"

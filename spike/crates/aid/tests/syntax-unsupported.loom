@@ -6,4 +6,4 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=book.sh
-error[syntax-unsupported]: sm background/async `&` is not in the modeled subset
+error[syntax-unsupported]: background/async `&` is not in the modeled subset

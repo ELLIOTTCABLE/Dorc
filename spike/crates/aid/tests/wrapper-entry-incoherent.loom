@@ -26,12 +26,12 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[cfg-top-node]: sm unsupported construct (unknown): un-probeable and
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
   un-skippable
         [ oracle.sh:9:4
      9 |    "$@"
        |    \__/
-  error[syntax-unsupported]: sm dynamic command name (first word is not a fixed
+  error[syntax-unsupported]: dynamic command name (first word is not a fixed
   literal)
         [ oracle.sh:9:4
      9 |    "$@"

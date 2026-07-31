@@ -21,7 +21,7 @@ oracle.sh:
         [ oracle.sh:2:1
      2 | wombat__predict() {
        | \_____________/
-  error[predict-out-of-dialect]: sm only literal and `*` case patterns are in
+  error[predict-out-of-dialect]: only literal and `*` case patterns are in
   dialect
         [ oracle.sh:3:19
      3 |    case "$1" in -*) return 2 ;; esac

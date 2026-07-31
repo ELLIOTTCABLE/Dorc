@@ -11,7 +11,7 @@ retry
 
 -- replay --
 $ dorc plan --book=book.sh
-warning[cfg-inline-refused]: sm recursive call to `retry` (direct or transitive
+warning[cfg-inline-refused]: recursive call to `retry` (direct or transitive
 within the active inline stack); not inlined -- it runs as an ordinary unmodeled
 command
       [ book.sh:2:11

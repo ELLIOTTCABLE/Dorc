@@ -13,7 +13,7 @@ do
 
 -- replay --
 $ dorc plan --book=book.sh
-error[syntax-malformed]: sm expected `done` to close the loop
+error[syntax-malformed]: expected `done` to close the loop
       [ book.sh:6:1
    6 | 
      | ^
