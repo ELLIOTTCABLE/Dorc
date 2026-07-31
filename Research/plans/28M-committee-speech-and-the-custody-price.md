@@ -482,8 +482,14 @@ as-built claims carry the scout's file:line grounding. UNACKED throughout
 - **The fence's root** [conductor; the full slow walk lives in the sitting
   transcript] — the establish-⊤ firewall is the PROBE PHASE LAW wearing
   value-plane clothes: probe-never-mutates ⇒ a mutator's own observables can
-  never acquire probe-provenance ⇒ `Predicted::Top` is forced ⇒
-  consumed-observable establish sites can never mint. Descends from a weld, which
+  never acquire probe-provenance ⇒ `Predicted::Top` is forced ⇒ an establish site
+  can never mint where a channel is consumed that the vouch-covered stand-in
+  cannot reproduce. Precision (human catch, Q2 follow-up): rc-consumption
+  (errexit regions, `&&`/`||`, `if`-guards — StatusRelaxable) does NOT block —
+  the stand-in's rc-0 reproduces the consumer's decision, vouch-tier — else
+  nothing under `set -e` could ever elide; dead consumers (omitted arms, elided
+  dependents) also don't count. The genuine blockers are captured/piped BYTES
+  (the vouch says nothing about stdout content) and ITERATED status. Descends from a weld, which
   is why the fence is trustworthy — and still emergent, which is why §9's pin is
   owed. The one value an elide DOES emit — rc 0 via `StandIn::True`, consumed by
   any errexit region — rides the VOUCH (act-as-succeeded is inside "re-running
