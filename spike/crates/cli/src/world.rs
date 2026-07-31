@@ -180,9 +180,17 @@ impl WhyWorld {
         // (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`). Its product beyond the settled
         // fold is the round-tagged cascade attribution, which is the only way a why report can
         // answer for an elision that only became legal once something upstream was proven dead.
-        let cap = u32::try_from(origin.classes.len()).unwrap_or(u32::MAX).max(1);
+        let cap = u32::try_from(origin.classes.len())
+            .unwrap_or(u32::MAX)
+            .max(1);
         let settled = crate::fixpoint::settle_validity_fixpoint(
-            &frozen, &probe, results, origin, cap, &mut interner, &mut arena,
+            &frozen,
+            &probe,
+            results,
+            origin,
+            cap,
+            &mut interner,
+            &mut arena,
         );
         let cascades = crate::fixpoint::attribute_cascades(
             &cfg.value,
