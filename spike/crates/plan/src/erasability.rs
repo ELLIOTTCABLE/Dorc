@@ -405,7 +405,7 @@ mod tests {
         );
         let warn = Diag::new(
             DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed {
-                detail: "a warning".to_owned(),
+                name: "cd".to_owned(),
             }),
             dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
         );
