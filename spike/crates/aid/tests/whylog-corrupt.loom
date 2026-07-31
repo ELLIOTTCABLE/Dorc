@@ -4,7 +4,7 @@ when-fires: `dorc why --last` found a durable but it is truncated or otherwise u
 why: inv-no-throw: a corrupt durable is diagnostics, never a crash — the reader refuses politely and names the parse-failure reason. Pull-surface: Warning, Floor::None. The reason is typed: four WhylogCorruptReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes). Remediation register (help) wanted: the durable is damaged — re-run the live analysis to regenerate it.
 owns:
   - whylog-corrupt-end-sentinel-missing
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-corrupt && mise run loom:promote -- whylog-corrupt`. `mise run loom:vars -- --all whylog-corrupt` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-corrupt && mise run loom:promote -- whylog-corrupt`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all whylog-corrupt` lists this case's values; type {{name}} to insert or move one.
 ---
 -- .whylog --
 dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@

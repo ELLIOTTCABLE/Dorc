@@ -18,7 +18,7 @@ owns:
   - why-trust-spent-heading
   - why-trust-spent-item-reason
   - why-receipt-plan-tally
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-claims-payload && mise run loom:promote -- why-claims-payload`. `mise run loom:vars -- --all why-claims-payload` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-claims-payload && mise run loom:promote -- why-claims-payload`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-claims-payload` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

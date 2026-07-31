@@ -2,7 +2,7 @@
 code: cli-strip-got-a-flag
 when-fires: dorc strip got a positional that starts with a dash. cli/lib.rs parse_args_from. {got} is the token found.
 why: AID-NEEDS:law-codes-vary-by-world-not-grammar: the SIBLING of cli-strip-needs-path - an argument WAS given, so the user asked for a surface strip does not have, and the remediation differs.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-strip-got-a-flag && mise run loom:promote -- cli-strip-got-a-flag`. `mise run loom:vars -- --all cli-strip-got-a-flag` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-strip-got-a-flag && mise run loom:promote -- cli-strip-got-a-flag`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-strip-got-a-flag` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc strip --book=webhost.sh

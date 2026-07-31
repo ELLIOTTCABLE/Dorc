@@ -2,7 +2,7 @@
 arrangement: why-reason-run-not-elidable
 when-used: The ANALYSIS row for a site that ran for none of the more specific reasons.
 why: The residual arm: a mutator with no converged report, an inert builtin, or a running wall above it. Named as a set because the render cannot yet say which member applies.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-run-not-elidable && mise run loom:promote -- why-reason-run-not-elidable`. `mise run loom:vars -- --all why-reason-run-not-elidable` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-run-not-elidable && mise run loom:promote -- why-reason-run-not-elidable`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-reason-run-not-elidable` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

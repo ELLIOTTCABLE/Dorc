@@ -2,7 +2,7 @@
 code: transport-marker-unusable
 when-fires: the run's nonce could not become a session marker, so no artifact was shipped and the host was never contacted. cli/transport_edge.rs (SPANLESS). {host} is the destination that went uncontacted.
 why: AID-NEEDS:law-codes-vary-by-world-not-grammar. The sibling of transport-spawn-refused: the same untouched-host claim in a different world. Nothing outside the controller participated, so there is nothing to relay and the whole sentence is ours; the remedy is the invocation, where the spawn-refused remedy is the environment.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- transport-marker-unusable && mise run loom:promote -- transport-marker-unusable`. `mise run loom:vars -- --all transport-marker-unusable` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- transport-marker-unusable && mise run loom:promote -- transport-marker-unusable`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all transport-marker-unusable` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh

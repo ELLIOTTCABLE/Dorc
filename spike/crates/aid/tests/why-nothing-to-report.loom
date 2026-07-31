@@ -2,7 +2,7 @@
 arrangement: why-nothing-to-report
 when-used: The whole zero-argument `dorc why` render when no trust was spent, nothing diverged, and nothing is improvable. Value: the book name.
 why: The quiet case still answers the question asked, rather than printing an empty set of section headings.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-nothing-to-report && mise run loom:promote -- why-nothing-to-report`. `mise run loom:vars -- --all why-nothing-to-report` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-nothing-to-report && mise run loom:promote -- why-nothing-to-report`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-nothing-to-report` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

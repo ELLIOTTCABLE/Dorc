@@ -2,7 +2,7 @@
 code: touches-escalated
 when-fires: a payload-bound touches() escalated to host-derivation. cli/main.rs merge_derived_footprints. `{site}` = node id, `{call}` = the escalated call.
 why: ru-26 SPIKE-ONLY: makes the static→dynamic boundary visible in the render; must not leak into greenfield as a permanent per-escalation requirement.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- touches-escalated && mise run loom:promote -- touches-escalated`. `mise run loom:vars -- --all touches-escalated` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- touches-escalated && mise run loom:promote -- touches-escalated`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all touches-escalated` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

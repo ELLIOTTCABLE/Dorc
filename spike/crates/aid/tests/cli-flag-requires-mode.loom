@@ -2,7 +2,7 @@
 code: cli-flag-requires-mode
 when-fires: a flag scoped to one invocation was given under another (or its required companion was omitted). cli/lib.rs. {flag} and the {mode} it belongs to.
 why: the flag surface is per-invocation, so accepting it elsewhere would imply a capability that mode does not have. tc-whylog-default-off: the spike opt-in siting is the disclosed cut here.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-flag-requires-mode && mise run loom:promote -- cli-flag-requires-mode`. `mise run loom:vars -- --all cli-flag-requires-mode` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-flag-requires-mode && mise run loom:promote -- cli-flag-requires-mode`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-flag-requires-mode` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --whylog=run.whylog --book=webhost.sh

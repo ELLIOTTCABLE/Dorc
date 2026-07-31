@@ -2,7 +2,7 @@
 code: host-evidence-admission-refused
 when-fires: bounded host evidence failed closed admission before entering the decision plane.
 why: host evidence remains controller-owned and decision-inert until admission succeeds.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- host-evidence-admission-refused && mise run loom:promote -- host-evidence-admission-refused`. `mise run loom:vars -- --all host-evidence-admission-refused` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- host-evidence-admission-refused && mise run loom:promote -- host-evidence-admission-refused`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all host-evidence-admission-refused` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

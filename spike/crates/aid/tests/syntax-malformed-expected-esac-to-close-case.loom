@@ -1,6 +1,6 @@
 ---
 arrangement: syntax-malformed-expected-esac-to-close-case
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-expected-esac-to-close-case && mise run loom:promote -- syntax-malformed-expected-esac-to-close-case`. `mise run loom:vars -- --all syntax-malformed-expected-esac-to-close-case` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-expected-esac-to-close-case && mise run loom:promote -- syntax-malformed-expected-esac-to-close-case`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all syntax-malformed-expected-esac-to-close-case` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

@@ -5,7 +5,7 @@ why: no-silent-phantoms disclosure (find-3); the template fills `{position}` fro
 owns:
   - why-operand-position
   - why-top-cause-unmodeled-expansion
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cmdsub-operand-top && mise run loom:promote -- cmdsub-operand-top`. `mise run loom:vars -- --all cmdsub-operand-top` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cmdsub-operand-top && mise run loom:promote -- cmdsub-operand-top`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cmdsub-operand-top` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

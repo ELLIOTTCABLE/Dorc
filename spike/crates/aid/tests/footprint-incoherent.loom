@@ -4,7 +4,7 @@ when-fires: a touches() footprint is incoherent. cli/main.rs — TWO emit paths:
 why: 24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. The reason is typed: two FootprintIncoherentReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).
 owns:
   - footprint-incoherent-omits-own-coordinate
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- footprint-incoherent && mise run loom:promote -- footprint-incoherent`. `mise run loom:vars -- --all footprint-incoherent` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- footprint-incoherent && mise run loom:promote -- footprint-incoherent`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all footprint-incoherent` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

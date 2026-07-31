@@ -4,7 +4,7 @@ when-fires: a function call could not be inlined. cfg.rs — SEVEN distinct emit
 why: the call runs as an ordinary unmodeled command (MustRun, safe). The reason is typed: seven CfgInlineRefusedReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).
 owns:
   - cfg-inline-refused-recursive-call
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cfg-inline-refused && mise run loom:promote -- cfg-inline-refused`. `mise run loom:vars -- --all cfg-inline-refused` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cfg-inline-refused && mise run loom:promote -- cfg-inline-refused`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cfg-inline-refused` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

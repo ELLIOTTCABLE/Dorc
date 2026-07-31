@@ -4,7 +4,7 @@ when-fires: the parser hit an unmodeled/out-of-scope sh construct; it becomes an
 why: inv-top-reject: under-modeling is a loud correctness boundary. The reason is typed: a SyntaxUnsupportedReason variant per unmodeled construct, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).
 owns:
   - syntax-unsupported-background-amp
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported && mise run loom:promote -- syntax-unsupported`. `mise run loom:vars -- --all syntax-unsupported` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported && mise run loom:promote -- syntax-unsupported`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all syntax-unsupported` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

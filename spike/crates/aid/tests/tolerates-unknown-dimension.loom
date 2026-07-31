@@ -2,7 +2,7 @@
 code: tolerates-unknown-dimension
 when-fires: an unknown context-dimension token appears on a `tolerates:` vouch. oracle/entry.rs collect_tolerance. `{expected}` = the known-dimension list.
 why: 27C §2: the mark vouches nothing and the site stays walled on that dimension (engine-owned closed vocabulary).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- tolerates-unknown-dimension && mise run loom:promote -- tolerates-unknown-dimension`. `mise run loom:vars -- --all tolerates-unknown-dimension` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- tolerates-unknown-dimension && mise run loom:promote -- tolerates-unknown-dimension`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all tolerates-unknown-dimension` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

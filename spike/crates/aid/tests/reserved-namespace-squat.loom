@@ -2,7 +2,7 @@
 code: reserved-namespace-squat
 when-fires: a book funcdef coincidentally named `*__<role>` squats the reserved oracle namespace. oracle/reserved.rs lint_book_reserved_names. `{role}` twice.
 why: rul24M-bare-dorcism-names: accepted-not-prevented; the disclosure is loud (warnings tune high this era).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- reserved-namespace-squat && mise run loom:promote -- reserved-namespace-squat`. `mise run loom:vars -- --all reserved-namespace-squat` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- reserved-namespace-squat && mise run loom:promote -- reserved-namespace-squat`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all reserved-namespace-squat` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

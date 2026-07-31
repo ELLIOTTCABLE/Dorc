@@ -1,6 +1,6 @@
 ---
 arrangement: syntax-unsupported-printf-writes-lvalue
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-printf-writes-lvalue && mise run loom:promote -- syntax-unsupported-printf-writes-lvalue`. `mise run loom:vars -- --all syntax-unsupported-printf-writes-lvalue` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-printf-writes-lvalue && mise run loom:promote -- syntax-unsupported-printf-writes-lvalue`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all syntax-unsupported-printf-writes-lvalue` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

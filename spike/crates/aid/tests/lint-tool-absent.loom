@@ -2,7 +2,7 @@
 code: lint-tool-absent
 when-fires: a configured external linter is not on PATH, so its checks did not run. lint/source_external.rs. `{tool}` is the tool name.
 why: 27R §4 dir-absent-is-info - a missing tool is the admin's environment, disclosed rather than silently skipped; --require-tools raises it to a hard CI error. World-as-payload: an honest trigger would have to run a real foreign tool, which replay never does.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-tool-absent && mise run loom:promote -- lint-tool-absent`. `mise run loom:vars -- --all lint-tool-absent` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-tool-absent && mise run loom:promote -- lint-tool-absent`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all lint-tool-absent` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

@@ -2,7 +2,7 @@
 code: dorc-sh-usage
 when-fires: dorc-sh was invoked with no script. cli/bin/dorc-sh.rs. No params.
 why: 288 rul-dorc-sh-not-carved-out: dorc-sh joins the registry like every other surface - slugs, canonical looms, auditable - with only its terse print framing as a surface selection.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- dorc-sh-usage && mise run loom:promote -- dorc-sh-usage`. `mise run loom:vars -- --all dorc-sh-usage` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- dorc-sh-usage && mise run loom:promote -- dorc-sh-usage`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all dorc-sh-usage` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc-sh

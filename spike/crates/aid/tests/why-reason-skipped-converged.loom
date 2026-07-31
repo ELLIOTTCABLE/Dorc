@@ -3,7 +3,7 @@ arrangement: why-reason-skipped-converged
 owns:
   - why-receipt-when-undated
   - why-receipt-risk-profile-none
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-skipped-converged && mise run loom:promote -- why-reason-skipped-converged`. `mise run loom:vars -- --all why-reason-skipped-converged` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-skipped-converged && mise run loom:promote -- why-reason-skipped-converged`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-reason-skipped-converged` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

@@ -2,7 +2,7 @@
 arrangement: why-drift-address-unanswerable
 when-used: The whole `dorc why <addr>` render on a drifted replay. Value: the address as given.
 why: 28F rul-drift-replay-d1: an address is a SOURCE line, and the source that ran is not on disk, so the query is answered by saying why it cannot be answered rather than by naming lines of a file the run never saw.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-drift-address-unanswerable && mise run loom:promote -- why-drift-address-unanswerable`. `mise run loom:vars -- --all why-drift-address-unanswerable` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-drift-address-unanswerable && mise run loom:promote -- why-drift-address-unanswerable`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-drift-address-unanswerable` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

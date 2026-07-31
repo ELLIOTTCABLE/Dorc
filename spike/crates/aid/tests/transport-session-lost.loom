@@ -2,7 +2,7 @@
 code: transport-session-lost
 when-fires: a session produced no completion marker, so whether the remote artifact ran is unknown. cli/transport_edge.rs, both phases. {host} is the destination, {attempts} how many were made, {diagnosis} a decision-inert reading of what severed it.
 why: 26A stop-2 plus rul-integrity-failure-withholds-mutation. Absence of output cannot prove absence of execution, so this is neither clean nor failed. Sibling of transport-spawn-refused by WORLD STATE, not grammar: there nothing ran and the repair is the invocation, here something may have run and the repair is to re-probe.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- transport-session-lost && mise run loom:promote -- transport-session-lost`. `mise run loom:vars -- --all transport-session-lost` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- transport-session-lost && mise run loom:promote -- transport-session-lost`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all transport-session-lost` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh

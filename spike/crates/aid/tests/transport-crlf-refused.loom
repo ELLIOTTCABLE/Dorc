@@ -2,7 +2,7 @@
 code: transport-crlf-refused
 when-fires: bytes about to be shipped to a host carry a carriage return. cli/transport_edge.rs first_carriage_return, at plan time on the book and re-checked at apply time on the already-rendered plan. {which} names the artifact, {line} is the 1-based line of the first CR.
 why: 260 dec-26-crlf. A CRLF shebang is an exec failure the remote kernel raises before any shell of ours exists, so nothing we ship can catch it there - it can only be refused on the controller. Refuses rather than repairs: silently rewriting bytes someone is about to run on a server trades a one-line fix for an invisible edit.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- transport-crlf-refused && mise run loom:promote -- transport-crlf-refused`. `mise run loom:vars -- --all transport-crlf-refused` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- transport-crlf-refused && mise run loom:promote -- transport-crlf-refused`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all transport-crlf-refused` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh

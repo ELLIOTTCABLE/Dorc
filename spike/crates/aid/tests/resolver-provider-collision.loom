@@ -2,7 +2,7 @@
 code: resolver-provider-collision
 when-fires: a resolver is keyed to a name matching a known COMMAND provider. cli/main.rs. `{name}` = the colliding name.
 why: corr-kind-keying §10: resolvers are keyed by KIND, not command — a likely mis-key (kept; the warning surfaces the risk).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- resolver-provider-collision && mise run loom:promote -- resolver-provider-collision`. `mise run loom:vars -- --all resolver-provider-collision` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- resolver-provider-collision && mise run loom:promote -- resolver-provider-collision`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all resolver-provider-collision` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

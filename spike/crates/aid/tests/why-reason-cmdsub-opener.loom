@@ -3,7 +3,7 @@ arrangement: why-reason-cmdsub-opener
 owns:
   - why-reason-cmdsub-closer
   - why-remediation-resolve-dynamism
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-cmdsub-opener && mise run loom:promote -- why-reason-cmdsub-opener`. `mise run loom:vars -- --all why-reason-cmdsub-opener` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-cmdsub-opener && mise run loom:promote -- why-reason-cmdsub-opener`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-reason-cmdsub-opener` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

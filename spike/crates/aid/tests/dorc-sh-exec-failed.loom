@@ -2,7 +2,7 @@
 code: dorc-sh-exec-failed
 when-fires: dorc-sh could not exec stock sh. cli/bin/dorc-sh.rs. PASSTHROUGH {detail}.
 why: the strip succeeded and the environment failed: distinguishing that from a script error is the difference between fixing the host and hunting a bug that is not there.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- dorc-sh-exec-failed && mise run loom:promote -- dorc-sh-exec-failed`. `mise run loom:vars -- --all dorc-sh-exec-failed` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- dorc-sh-exec-failed && mise run loom:promote -- dorc-sh-exec-failed`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all dorc-sh-exec-failed` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=webhost.sh

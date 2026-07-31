@@ -2,7 +2,7 @@
 code: resolver-conflict
 when-fires: two oracle files declare one kind's resolver. cli/main.rs. `{kind}` = the kind, `{count}` = the resolver count.
 why: 24F §3 at-most-one-resolver-per-kind: BOTH refused (never first-wins-silently); the kind keeps token-equality.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- resolver-conflict && mise run loom:promote -- resolver-conflict`. `mise run loom:vars -- --all resolver-conflict` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- resolver-conflict && mise run loom:promote -- resolver-conflict`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all resolver-conflict` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

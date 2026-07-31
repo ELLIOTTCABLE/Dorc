@@ -2,7 +2,7 @@
 code: lend-map-unknown-dimension
 when-fires: an unknown lend_map dimension token appears on a `__lend_map` line. oracle/wrapper.rs walk_lend_body. `{expected}` = the known-dimension list.
 why: 273 §8: the line mints no lend and the dimension it meant to answer walls. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lend-map-unknown-dimension && mise run loom:promote -- lend-map-unknown-dimension`. `mise run loom:vars -- --all lend-map-unknown-dimension` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lend-map-unknown-dimension && mise run loom:promote -- lend-map-unknown-dimension`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all lend-map-unknown-dimension` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

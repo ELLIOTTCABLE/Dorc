@@ -9,7 +9,7 @@ owns:
   - lint-source-oracle-declined-inventory
   - lint-source-shellcheck
   - lint-source-checkbashisms
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-source-analysis-diagnostics && mise run loom:promote -- lint-source-analysis-diagnostics`. `mise run loom:vars -- --all lint-source-analysis-diagnostics` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-source-analysis-diagnostics && mise run loom:promote -- lint-source-analysis-diagnostics`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all lint-source-analysis-diagnostics` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc lint --list-sources

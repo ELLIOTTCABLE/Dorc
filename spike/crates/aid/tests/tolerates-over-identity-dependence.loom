@@ -2,7 +2,7 @@
 code: tolerates-over-identity-dependence
 when-fires: a `tolerates:user` vouch sits over a body that visibly reads identity (`id`/`$USER`/`$HOME`). oracle/entry.rs corroborate_tolerance_over_identity.
 why: 27C §6 corroboration (recognize-never-license): the ask never blocks. Static.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- tolerates-over-identity-dependence && mise run loom:promote -- tolerates-over-identity-dependence`. `mise run loom:vars -- --all tolerates-over-identity-dependence` lists this case's values; type {{name}} to insert or move one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- tolerates-over-identity-dependence && mise run loom:promote -- tolerates-over-identity-dependence`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all tolerates-over-identity-dependence` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2
