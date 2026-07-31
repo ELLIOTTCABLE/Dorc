@@ -438,6 +438,60 @@ as-built claims carry the scout's file:line grounding. UNACKED throughout
   value-reproducing split-family elide must demand custody: the predict↔verdict
   coupling is judgment-tier, and per tool-opinion-gradient judgment is never pooled
   across authors — that cell is PERMANENTLY custody-only, not deferred. Where
-  split-family members must genuinely cooperate, the sanctioned instrument is the
-  dual-peel shape — a static grammar-tier coherence CHECK that fail-fasts on
-  disagreement — never license composition.
+  split-family members must genuinely cooperate, the instrument is a coherence
+  CHECK, never license composition — but per §10's fail-fast union, split-family
+  checks refuse-with-native-escape or hint only; fail-fast stays reserved for
+  surfaces like dual-peel that pass both union legs.
+
+## §10. Sitting Q2 (2026-07-31) — the fail-fast union, the consumption ladder, and the fence's root
+
+- **rul-fail-fast-union** [TYPED substance] — a fail-fast error is licensed in a
+  gradually-enhanced product only by the UNION of (1) perfect analyzability (the
+  detection cannot be wrong) and (2) predictable, trivial resolution (a ~5-minute
+  fix: somebody literally put the `"$@"` in the wrong place; something is ACTIVELY
+  wrong; eventually hint-machinery names it). Either leg missing ⇒ devolve to
+  best-effort-with-aid — withhold + attribute + apologize + eat the value-loss.
+  There is no Complex Residue cell where our fail-fast forces someone out of flow
+  into subtle analysis. Applications, this corner: dual-peel coherence PASSES (the
+  peel position is mechanical; a disagreement is an active wrongness; the
+  admin-in-between escapes in one selection line even when repair is upstream).
+  §9's "extend the dual-peel shape to split families" FAILED the union and is
+  rewritten in place: analyzability there is dialect-reach-confounded (a partially-
+  lifting member can FAKE a disagreement — mis-attributed cause, pope-sin-adjacent)
+  and repair is not the admin's to make ⇒ split-family incoherence gets the
+  shadow-refusal shape (complaint + withhold + native escape) or hint-only, never
+  fail-fast. §8's rul-conflict-between-totals-is-falsification rider gains its
+  mechanism: totals-conflict passes leg 1 and FAILS leg 2 (which total is wrong
+  takes tool knowledge, not a five-minute edit) ⇒ withhold-tier, permanently.
+  Corpus check: existing refusals already respect the union (cross-unit shadow =
+  complaint + withhold, never abort; within-file redefinition passes both legs;
+  proven-mutation fail-fast is correctness-mandatory with a quick escape).
+- **The consumption ladder** [general ACK; fit here unsure, human-typed] —
+  unconsumed < rc-consumed (constrained integral set; one consumer's branch) <
+  freeform-text consumed (unbounded downstream dataflow; cross-site blast): a
+  blast-radius grading for REPRODUCED values — the lean-on tool when an unsound
+  concept must be spread across the userbase. Disposition: right shelf, wrong
+  moment — as-built nothing rides it (§9's monologue: the establish lane
+  reproduces nothing; the query lane is single-author). It becomes the pricing
+  instrument the day value-reproduction softening arrives (the declared-rc opt-in
+  path; asserted-stdout stand-ins). Corpus-consistent, not novel: the Status
+  trichotomy and compound per-channel coverage already grade the same axis.
+  Caution [conductor]: the ladder grades reproduction-risk ONLY — no rung ever
+  reads as elide-without-vouch; Effect coverage and the judgment gate are
+  ladder-exempt.
+- **The fence's root** [conductor; the full slow walk lives in the sitting
+  transcript] — the establish-⊤ firewall is the PROBE PHASE LAW wearing
+  value-plane clothes: probe-never-mutates ⇒ a mutator's own observables can
+  never acquire probe-provenance ⇒ `Predicted::Top` is forced ⇒
+  consumed-observable establish sites can never mint. Descends from a weld, which
+  is why the fence is trustworthy — and still emergent, which is why §9's pin is
+  owed. The one value an elide DOES emit — rc 0 via `StandIn::True`, consumed by
+  any errexit region — rides the VOUCH (act-as-succeeded is inside "re-running
+  this is noise I accept"), single-author; ~SUSPECT no as-built pin states this —
+  cheap pin owed. Residuals from the two-by-four sweep: the stdout-channel
+  parallel of the rc firewall is un-traced (~SUSPECT; one-test pin owed);
+  consumption-coverage soundness is an inherited dependency, not a new one; and
+  the fact/wall-plane composition (predict classifies and effect-models while the
+  verdict measures) is MAINSTREAM, not fringe — the stage-3 in-book admin verdict
+  over a stdlib describing-predict is exactly a split family — so that residue
+  fronts the queue for the next sitting.
