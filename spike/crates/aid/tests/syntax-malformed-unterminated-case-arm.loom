@@ -1,0 +1,26 @@
+---
+arrangement: syntax-malformed-unterminated-case-arm
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-unterminated-case-arm && mise run loom:promote -- syntax-malformed-unterminated-case-arm`. `mise run loom:vars -- --all syntax-malformed-unterminated-case-arm` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+case $1 in
+   ( esac
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[syntax-malformed]: unterminated `case` arm (no `)` before esac/EOF)
+        [ book.sh:3:4
+     3 |    ( esac
+       |    ^
+  error[predict-out-of-dialect]: expected `|` or `)` in case-arm pattern
+        [ book.sh:3:10
+     3 |    ( esac
+       |          ^
+     4 | 
+       | ^
+
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.

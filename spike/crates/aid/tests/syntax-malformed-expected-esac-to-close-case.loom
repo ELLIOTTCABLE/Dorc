@@ -1,0 +1,24 @@
+---
+arrangement: syntax-malformed-expected-esac-to-close-case
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-expected-esac-to-close-case && mise run loom:promote -- syntax-malformed-expected-esac-to-close-case`. `mise run loom:vars -- --all syntax-malformed-expected-esac-to-close-case` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+case $1 in
+   add) hork add nginx ;;
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[syntax-malformed]: expected `esac` to close `case`
+        [ book.sh:4:1
+     4 | 
+       | ^
+  error[predict-out-of-dialect]: unterminated `case` (expected `esac`)
+        [ book.sh:4:1
+     4 | 
+       | ^
+
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.

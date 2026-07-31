@@ -1,0 +1,39 @@
+---
+arrangement: syntax-unsupported-expected-a-word
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-expected-a-word && mise run loom:promote -- syntax-unsupported-expected-a-word`. `mise run loom:vars -- --all syntax-unsupported-expected-a-word` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+case ; in
+   add) hork add nginx ;;
+esac
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[syntax-malformed]: expected `in` after `case` word
+        [ book.sh:2:6
+     2 | case ; in
+       |      ^
+  error[syntax-malformed]: expected `)` after case pattern
+        [ book.sh:2:8
+     2 | case ; in
+       |        \/
+  error[syntax-malformed]: expected `esac` to close `case`
+        [ book.sh:2:10
+     2 | case ; in
+       |          ^
+     3 |    add) hork add nginx ;;
+       | ^
+  error[syntax-unsupported]: expected a word here
+        [ book.sh:2:6
+     2 | case ; in
+       |      ^
+  error[predict-out-of-dialect]: expected a word
+        [ book.sh:2:6
+     2 | case ; in
+       |      ^
+
+dorc lint: 5 errors, 0 warnings, 0 infos across 1 file.

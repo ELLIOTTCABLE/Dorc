@@ -1,0 +1,23 @@
+---
+arrangement: syntax-malformed-unterminated-subshell
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-unterminated-subshell && mise run loom:promote -- syntax-malformed-unterminated-subshell`. `mise run loom:vars -- --all syntax-malformed-unterminated-subshell` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+( hork add nginx
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[syntax-malformed]: unterminated subshell `(` (no `)`)
+        [ book.sh:2:1
+     2 | ( hork add nginx
+       | ^
+  error[predict-out-of-dialect]: statement does not start with a word
+        [ book.sh:2:1
+     2 | ( hork add nginx
+       | ^
+
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.

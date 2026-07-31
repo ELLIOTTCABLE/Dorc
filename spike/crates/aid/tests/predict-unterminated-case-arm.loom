@@ -1,0 +1,33 @@
+---
+arrangement: predict-unterminated-case-arm
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-unterminated-case-arm && mise run loom:promote -- predict-unterminated-case-arm`. `mise run loom:vars -- --all predict-unterminated-case-arm` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   case "$1" in
+      add) hork --query "$2"
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  error[syntax-malformed]: unterminated brace group `{` (no `}`)
+        [ hork.oracle.sh:2:17
+     2 | hork__predict() {
+       |                 ^
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[syntax-malformed]: expected `esac` to close `case`
+        [ hork.oracle.sh:5:1
+     5 | 
+       | ^
+  error[predict-unterminated]: unterminated case arm (expected `;;` or `esac`)
+        [ hork.oracle.sh:5:1
+     5 | 
+       | ^
+
+dorc lint: 3 errors, 1 warning, 0 infos across 1 file.

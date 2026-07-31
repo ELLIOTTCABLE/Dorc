@@ -1,0 +1,45 @@
+---
+arrangement: predict-out-of-dialect-expected-then-after-if
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-expected-then-after-if && mise run loom:promote -- predict-out-of-dialect-expected-then-after-if`. `mise run loom:vars -- --all predict-out-of-dialect-expected-then-after-if` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   if [ "$1" = -f ]
+      shift
+   fi
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[predict-out-of-dialect]: expected `then` after `if` test
+        [ hork.oracle.sh:4:7
+     4 |       shift
+       |       \___/
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ hork.oracle.sh:5:4
+     5 |    fi
+       |    \/
+  error[syntax-unsupported]: reserved word in command position
+        [ hork.oracle.sh:5:4
+     5 |    fi
+       |    \/
+  5:4 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  error[syntax-malformed]: expected `then` after `if` condition
+        [ hork.oracle.sh:6:1
+     6 | }
+       | ^
+  error[syntax-malformed]: expected `fi` to close `if`
+        [ hork.oracle.sh:6:1
+     6 | }
+       | ^
+
+dorc lint: 5 errors, 1 warning, 1 info across 1 file.

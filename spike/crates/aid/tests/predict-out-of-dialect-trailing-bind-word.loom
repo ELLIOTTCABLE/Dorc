@@ -1,0 +1,26 @@
+---
+arrangement: predict-out-of-dialect-trailing-bind-word
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-trailing-bind-word && mise run loom:promote -- predict-out-of-dialect-trailing-bind-word`. `mise run loom:vars -- --all predict-out-of-dialect-trailing-bind-word` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   hork --query "$1" : bind sm.dorc.Package
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[predict-out-of-dialect]: trailing bind marks (`bind`) are not accepted
+  in v0.2 production (`28A:rul-single-mark-production-subset`)
+        [ hork.oracle.sh:3:29
+     3 |    hork --query "$1" : bind sm.dorc.Package
+       |                             \_____________/
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

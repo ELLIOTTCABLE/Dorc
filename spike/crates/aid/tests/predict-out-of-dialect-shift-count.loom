@@ -1,0 +1,27 @@
+---
+arrangement: predict-out-of-dialect-shift-count
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-shift-count && mise run loom:promote -- predict-out-of-dialect-shift-count`. `mise run loom:vars -- --all predict-out-of-dialect-shift-count` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   n=2
+   shift $n
+   hork --query "$1"
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[predict-out-of-dialect]: `shift` count must be a literal integer
+        [ hork.oracle.sh:4:10
+     4 |    shift $n
+       |          \/
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

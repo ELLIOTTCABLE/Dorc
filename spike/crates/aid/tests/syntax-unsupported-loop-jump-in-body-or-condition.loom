@@ -1,0 +1,41 @@
+---
+arrangement: syntax-unsupported-loop-jump-in-body-or-condition
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-loop-jump-in-body-or-condition && mise run loom:promote -- syntax-unsupported-loop-jump-in-body-or-condition`. `mise run loom:vars -- --all syntax-unsupported-loop-jump-in-body-or-condition` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+while hork check
+do
+   hork add nginx || continue
+done
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ book.sh:2:1
+     2 | while hork check
+       | \______________/
+     3 | do
+       | \/
+     4 |    hork add nginx || continue
+       | \___________________________/
+  error[syntax-unsupported]: `break`/`continue` in the loop body or condition is
+  un-modeled (early exit breaks the back-edge fixpoint)
+        [ book.sh:2:1
+     2 | while hork check
+       | \______________/
+     3 | do
+       | \/
+     4 |    hork add nginx || continue
+       | \___________________________/
+  error[predict-out-of-dialect]: expected `[` to open a test
+        [ book.sh:2:7
+     2 | while hork check
+       |       \__/
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+
+dorc lint: 3 errors, 0 warnings, 1 info across 1 file.

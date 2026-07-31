@@ -1,0 +1,41 @@
+---
+arrangement: syntax-unsupported-for-list-not-terminated
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-for-list-not-terminated && mise run loom:promote -- syntax-unsupported-for-list-not-terminated`. `mise run loom:vars -- --all syntax-unsupported-for-list-not-terminated` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+for pkg in nginx redis do
+   hork add "$pkg"
+done
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ book.sh:2:1
+     2 | for pkg in nginx redis do
+       | \_______________________/
+     3 |    hork add "$pkg"
+       | \________________/
+     4 | done
+       | \__/
+  error[syntax-unsupported]: `for` list is not terminated by `;`/newline before
+  `do` (dash requires `do` here; a reserved word in list position is an ordinary
+  list word)
+        [ book.sh:2:1
+     2 | for pkg in nginx redis do
+       | \_______________________/
+     3 |    hork add "$pkg"
+       | \________________/
+     4 | done
+       | \__/
+  error[predict-out-of-dialect]: empty command
+        [ book.sh:2:9
+     2 | for pkg in nginx redis do
+       |         \/
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+
+dorc lint: 3 errors, 0 warnings, 1 info across 1 file.

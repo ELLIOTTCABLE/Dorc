@@ -1,0 +1,26 @@
+---
+arrangement: predict-lex-backtick-substitution
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-lex-backtick-substitution && mise run loom:promote -- predict-lex-backtick-substitution`. `mise run loom:vars -- --all predict-lex-backtick-substitution` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   hork --query `hork list`
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[predict-out-of-dialect]: out-of-dialect token in command: backtick
+  command-substitution is out of dialect
+        [ hork.oracle.sh:3:17
+     3 |    hork --query `hork list`
+       |                 ^
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

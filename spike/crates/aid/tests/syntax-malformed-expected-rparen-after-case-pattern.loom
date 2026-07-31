@@ -1,0 +1,48 @@
+---
+arrangement: syntax-malformed-expected-rparen-after-case-pattern
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-expected-rparen-after-case-pattern && mise run loom:promote -- syntax-malformed-expected-rparen-after-case-pattern`. `mise run loom:vars -- --all syntax-malformed-expected-rparen-after-case-pattern` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+case $1 in
+   add | hork add nginx ;;
+esac
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ book.sh:3:25
+     3 |    add | hork add nginx ;;
+       |                         \/
+  error[syntax-malformed]: expected `)` after case pattern
+        [ book.sh:3:4
+     3 |    add | hork add nginx ;;
+       |    \_/
+  error[syntax-malformed]: expected `esac` to close `case`
+        [ book.sh:3:15
+     3 |    add | hork add nginx ;;
+       |               \_/
+  error[syntax-unsupported]: `;;` outside a case arm
+        [ book.sh:3:25
+     3 |    add | hork add nginx ;;
+       |                         \/
+  error[predict-out-of-dialect]: expected `|` or `)` in case-arm pattern
+        [ book.sh:3:15
+     3 |    add | hork add nginx ;;
+       |               \_/
+  3:25 info [unmodeled-inventory:unmodeled-wall-inventory] sm 2 unmodeled ⊤-walls in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ book.sh:4:1
+     4 | esac
+       | \__/
+  error[syntax-unsupported]: reserved word in command position
+        [ book.sh:4:1
+     4 | esac
+       | \__/
+
+dorc lint: 7 errors, 0 warnings, 1 info across 1 file.

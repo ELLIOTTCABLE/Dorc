@@ -1,0 +1,41 @@
+---
+arrangement: syntax-unsupported-construct-trailing-redirection
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-construct-trailing-redirection && mise run loom:promote -- syntax-unsupported-construct-trailing-redirection`. `mise run loom:vars -- --all syntax-unsupported-construct-trailing-redirection` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+if hork check; then
+   hork add nginx
+fi > /var/log/hork.log
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ book.sh:2:1
+     2 | if hork check; then
+       | \_________________/
+     3 |    hork add nginx
+       | \_______________/
+     4 | fi > /var/log/hork.log
+       | \____________________/
+  error[syntax-unsupported]: a redirection trailing a `if` construct (e.g. `fi <
+  file`) is not modeled -- the construct's I/O redirection is outside the
+  modeled subset
+        [ book.sh:2:1
+     2 | if hork check; then
+       | \_________________/
+     3 |    hork add nginx
+       | \_______________/
+     4 | fi > /var/log/hork.log
+       | \____________________/
+  error[predict-out-of-dialect]: expected `[` to open a test
+        [ book.sh:2:4
+     2 | if hork check; then
+       |    \__/
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+
+dorc lint: 3 errors, 0 warnings, 1 info across 1 file.

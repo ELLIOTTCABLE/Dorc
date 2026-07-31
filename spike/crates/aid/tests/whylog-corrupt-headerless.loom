@@ -1,0 +1,12 @@
+---
+arrangement: whylog-corrupt-headerless
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-corrupt-headerless && mise run loom:promote -- whylog-corrupt-headerless`. `mise run loom:vars -- --all whylog-corrupt-headerless` lists this case's values; type {{name}} to insert or move one.
+---
+-- .whylog --
+
+-- replay --
+$ dorc why --last --whylog=.whylog
+whylog: warning[whylog-corrupt]: the saved why-log is damaged and cannot be read
+back (empty or headerless durable)
+   = help:  this usually means an interrupted write; re-run `dorc why` live, and
+            the next plan or apply will save a fresh why-log

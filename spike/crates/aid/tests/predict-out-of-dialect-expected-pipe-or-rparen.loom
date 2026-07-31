@@ -1,0 +1,54 @@
+---
+arrangement: predict-out-of-dialect-expected-pipe-or-rparen
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-expected-pipe-or-rparen && mise run loom:promote -- predict-out-of-dialect-expected-pipe-or-rparen`. `mise run loom:vars -- --all predict-out-of-dialect-expected-pipe-or-rparen` lists this case's values; type {{name}} to insert or move one.
+---
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__predict() {
+   case "$1" in
+      add hork --query "$2" ;;
+   esac
+}
+
+-- replay --
+$ dorc lint hork.oracle.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+hork.oracle.sh:
+  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+        [ hork.oracle.sh:2:1
+     2 | hork__predict() {
+       | \___________/
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ hork.oracle.sh:4:29
+     4 |       add hork --query "$2" ;;
+       |                             \/
+  error[syntax-malformed]: expected `)` after case pattern
+        [ hork.oracle.sh:4:7
+     4 |       add hork --query "$2" ;;
+       |       \_/
+  error[syntax-malformed]: expected `esac` to close `case`
+        [ hork.oracle.sh:4:11
+     4 |       add hork --query "$2" ;;
+       |           \__/
+  error[syntax-unsupported]: `;;` outside a case arm
+        [ hork.oracle.sh:4:29
+     4 |       add hork --query "$2" ;;
+       |                             \/
+  error[predict-out-of-dialect]: expected `|` or `)` in case-arm pattern
+        [ hork.oracle.sh:4:11
+     4 |       add hork --query "$2" ;;
+       |           \__/
+  4:29 info [unmodeled-inventory:unmodeled-wall-inventory] sm 2 unmodeled ⊤-walls in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ hork.oracle.sh:5:4
+     5 |    esac
+       |    \__/
+  error[syntax-unsupported]: reserved word in command position
+        [ hork.oracle.sh:5:4
+     5 |    esac
+       |    \__/
+
+dorc lint: 7 errors, 1 warning, 1 info across 1 file.

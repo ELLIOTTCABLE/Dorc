@@ -1,0 +1,27 @@
+---
+arrangement: syntax-malformed-expected-in-after-case-word
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-expected-in-after-case-word && mise run loom:promote -- syntax-malformed-expected-in-after-case-word`. `mise run loom:vars -- --all syntax-malformed-expected-in-after-case-word` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+case $1
+   add) hork add nginx ;;
+esac
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[syntax-malformed]: expected `in` after `case` word
+        [ book.sh:2:8
+     2 | case $1
+       |        ^
+     3 |    add) hork add nginx ;;
+       | ^
+  error[predict-out-of-dialect]: expected `in` after `case` scrutinee
+        [ book.sh:3:4
+     3 |    add) hork add nginx ;;
+       |    \_/
+
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.

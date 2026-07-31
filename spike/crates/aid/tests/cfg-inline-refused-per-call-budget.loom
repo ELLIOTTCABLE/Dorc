@@ -1,0 +1,67 @@
+---
+arrangement: cfg-inline-refused-per-call-budget
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cfg-inline-refused-per-call-budget && mise run loom:promote -- cfg-inline-refused-per-call-budget`. `mise run loom:vars -- --all cfg-inline-refused-per-call-budget` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+install_all() {
+   hork add pkg00
+   hork add pkg01
+   hork add pkg02
+   hork add pkg03
+   hork add pkg04
+   hork add pkg05
+   hork add pkg06
+   hork add pkg07
+   hork add pkg08
+   hork add pkg09
+   hork add pkg10
+   hork add pkg11
+   hork add pkg12
+   hork add pkg13
+   hork add pkg14
+   hork add pkg15
+   hork add pkg16
+   hork add pkg17
+   hork add pkg18
+   hork add pkg19
+   hork add pkg20
+   hork add pkg21
+   hork add pkg22
+   hork add pkg23
+   hork add pkg24
+   hork add pkg25
+   hork add pkg26
+   hork add pkg27
+   hork add pkg28
+   hork add pkg29
+   hork add pkg30
+   hork add pkg31
+   hork add pkg32
+   hork add pkg33
+   hork add pkg34
+   hork add pkg35
+   hork add pkg36
+   hork add pkg37
+   hork add pkg38
+   hork add pkg39
+}
+install_all
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[predict-out-of-dialect]: unexpected token in command
+        [ book.sh:2:12
+     2 | install_all() {
+       |            ^
+  warning[cfg-inline-refused]: call to `install_all` exceeds the per-call
+  inline-node budget (162 > 64); not inlined -- it runs as an ordinary unmodeled
+  command
+        [ book.sh:44:1
+     44 | install_all
+        | \_________/
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

@@ -1,0 +1,24 @@
+---
+arrangement: syntax-malformed-expected-fi-to-close-if
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-expected-fi-to-close-if && mise run loom:promote -- syntax-malformed-expected-fi-to-close-if`. `mise run loom:vars -- --all syntax-malformed-expected-fi-to-close-if` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+if hork check; then
+   hork add nginx
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[predict-out-of-dialect]: expected `[` to open a test
+        [ book.sh:2:4
+     2 | if hork check; then
+       |    \__/
+  error[syntax-malformed]: expected `fi` to close `if`
+        [ book.sh:4:1
+     4 | 
+       | ^
+
+dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.

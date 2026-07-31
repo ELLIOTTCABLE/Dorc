@@ -1,0 +1,27 @@
+---
+arrangement: cfg-inline-refused-depth-budget
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cfg-inline-refused-depth-budget && mise run loom:promote -- cfg-inline-refused-depth-budget`. `mise run loom:vars -- --all cfg-inline-refused-depth-budget` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+leaf() { hork add nginx; }
+mid() { leaf; }
+outer() { mid; }
+outer
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[predict-out-of-dialect]: unexpected token in command
+        [ book.sh:2:5
+     2 | leaf() { hork add nginx; }
+       |     ^
+  warning[cfg-inline-refused]: call to `leaf` exceeds the inline-depth budget
+  (2); not inlined -- it runs as an ordinary unmodeled command
+        [ book.sh:3:9
+     3 | mid() { leaf; }
+       |         \__/
+
+dorc lint: 1 error, 1 warning, 0 infos across 1 file.

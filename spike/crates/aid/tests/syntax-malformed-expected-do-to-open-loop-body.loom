@@ -1,0 +1,39 @@
+---
+arrangement: syntax-malformed-expected-do-to-open-loop-body
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-malformed-expected-do-to-open-loop-body && mise run loom:promote -- syntax-malformed-expected-do-to-open-loop-body`. `mise run loom:vars -- --all syntax-malformed-expected-do-to-open-loop-body` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+while hork check
+   hork add nginx
+done
+
+-- replay --
+$ dorc lint book.sh --no-tools
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  error[predict-out-of-dialect]: expected `[` to open a test
+        [ book.sh:2:7
+     2 | while hork check
+       |       \__/
+  error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+  un-skippable
+        [ book.sh:4:1
+     4 | done
+       | \__/
+  error[syntax-unsupported]: reserved word in command position
+        [ book.sh:4:1
+     4 | done
+       | \__/
+  4:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  error[syntax-malformed]: expected `do` to open the loop body
+        [ book.sh:5:1
+     5 | 
+       | ^
+  error[syntax-malformed]: expected `done` to close the loop
+        [ book.sh:5:1
+     5 | 
+       | ^
+
+dorc lint: 5 errors, 0 warnings, 1 info across 1 file.

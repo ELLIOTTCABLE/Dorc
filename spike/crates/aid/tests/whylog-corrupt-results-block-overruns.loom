@@ -1,0 +1,14 @@
+---
+arrangement: whylog-corrupt-results-block-overruns
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-corrupt-results-block-overruns && mise run loom:promote -- whylog-corrupt-results-block-overruns`. `mise run loom:vars -- --all whylog-corrupt-results-block-overruns` lists this case's values; type {{name}} to insert or move one.
+---
+-- .whylog --
+dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@
+results bytes=9999
+
+-- replay --
+$ dorc why --last --whylog=.whylog
+whylog: warning[whylog-corrupt]: the saved why-log is damaged and cannot be read
+back (results block byte-count exceeds the file)
+   = help:  this usually means an interrupted write; re-run `dorc why` live, and
+            the next plan or apply will save a fresh why-log
