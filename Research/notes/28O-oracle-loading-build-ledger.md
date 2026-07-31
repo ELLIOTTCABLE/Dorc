@@ -554,3 +554,16 @@ refuses on any dirty path outside the selected prose edits, and SyncThing confli
 the tidy gates' directory walkers read. Moved aside rather than deleted (conflict cleanup is
 not this lane's). Also: `mise run loom:promote -- <case>` does NOT scope — the task is a
 two-command array, so trailing args reach the `git diff`, not the promote. Run both bare.
+
+## Rebased onto post-loom-final `ai/main` (2026-07-31; base `7068224d` → the loom-final tip)
+
+Mechanical adaptations only: the loom-final lib-seam extractions absorbed the stage-B/D deltas
+(`SourceFileId` rename + `.rev()` last-wins threaded into `cli/src/{world,why,survival}.rs`;
+`source_table` kept in `main.rs`); the two loading-refusal codes respelled to the typed
+`HelpRegister` lock form and given generated `edit-loop:` lines; five aid looms re-blessed via
+`DORC_LOOM_DUMP` (loom-final chrome + the load-inert refusal now also firing on the
+`munge-name-collision` / `predict-out-of-dialect-malformed-function-header` / `mark-rc-arity-exceeded`
+worlds); the funcenv lexical fence re-pointed at `fixpoint.rs`. Locks verified at the generator
+fixpoint (178 cases, 0 touched). Both legs green: Win 1826 / WSL 1822, 1 skipped each.
+NB pre-existing, not this lane's: the dorc-loom CLI overflows the Windows main-thread stack on
+`syntax-unsupported-nesting-bound` (reproduced on `ai/main` 2036c088); the WSL leg compiles it fine.
