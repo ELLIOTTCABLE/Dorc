@@ -35,29 +35,6 @@ use dorc_core::{BytePos, Interner, Span};
 /// without one must add it here with its surface note (the completeness gate enforces the
 /// partition, `ratchet_only_shrinks` guards the direction against the committed baseline).
 const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
-    // ── the survival lane: every one needs the `--risk-faultless-skips` derivation pipeline the
-    //    loom harness does not drive, so each note names the harness work first ──
-    (
-        "footprint-incoherent",
-        "harness: `build_survival_footprints` (cli/main.rs, flag-on); then a touches() footprint \
-         omitting its own effect coordinate",
-    ),
-    (
-        "touches-escalated",
-        "harness: `compile_derivations` + `merge_derived_footprints` (cli/main.rs, flag-on); then a \
-         payload-bound touches() escalating to host-derivation",
-    ),
-    (
-        "deriv-family-incomplete",
-        "harness: the above PLUS admitted probe records in the harness world \
-         (`28L:tc-harness-records-vs-controller-scope`); then a derived family missing its \
-         deriv-end record",
-    ),
-    (
-        "wrapped-site-adoption-hint",
-        "harness: `build_wrapped_analysis` (cli/main.rs) reachable from the book route; then a \
-         `sudo`-wrapped site whose is_converged lacks `safe-across`",
-    ),
     // ── records deframer: inject a mangled `probe-results.txt` frame ──
     (
         "records-headerless-refused",

@@ -881,3 +881,134 @@ fn resolve_inner_check(
     let shipped = ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
     Some((format!("{seg}__is_converged"), shipped.sh))
 }
+
+/// Every diagnostic the WRAPPED-SITE and SURVIVAL lanes raise for one world — the harness half of
+/// this module's seam, and the sibling of [`crate::world::WhyWorld::analyze`] on the diagnostic
+/// plane.
+///
+/// It runs the binary's own call sequence, in the binary's own order (`cli/src/main.rs`'s `run`):
+/// lift the oracles, parse/CFG/value-flow, classify with the wrapped peel threaded in, then — under
+/// `consented` only — lift the authored `disturbs()` sets, build the footprints, compile the
+/// derivation probes, and merge the host-derived footprints back. That order is what makes a
+/// defining case for one of its four codes honest rather than decorative
+/// (`289:rul-worldless-route-honest-trigger`).
+///
+/// `consented` is `--risk-faultless-skips`. With it off the survival half is not merely quiet but
+/// ABSENT: no touches set is lifted, no derivation compiles, and the returned diagnostics are the
+/// wrapped lane's alone (`empty-world-byte-identical` — the flag-off world is the one an ordinary
+/// run sees).
+///
+/// `results` is the run's ADMITTED probe records. A world with none still reaches the derivation
+/// lane (an escalated site announces itself before any readback exists), but the deriv-family
+/// completeness gate can only fire against a FRAMED stream that really carried `deriv` records —
+/// which is what the fixture intake exists to supply (`crate::results::admit_fixture_records`).
+#[must_use]
+pub fn survival_diagnostics(
+    book_src: &str,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+    consented: bool,
+    dial: dorc_core::EscalationDial,
+    capability: dorc_core::Capability,
+    results: &SiteResults,
+) -> Vec<Diag> {
+    let mut interner = Interner::default();
+    let mut arena = dorc_core::ProvArena::new();
+    let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
+
+    let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
+    let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
+        .iter()
+        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+        .collect();
+    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
+        .iter()
+        .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
+        .collect();
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
+
+    let parsed = dorc_syntax::parse(book_src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value);
+    let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
+
+    let wrapped = build_wrapped_analysis(
+        oracle_srcs,
+        &oracle_refs,
+        oracle_paths,
+        &checks,
+        &verdict_sets,
+        &parsed.value,
+        &cfg.value,
+        &value,
+        dial,
+        capability,
+        &mut interner,
+    );
+    let mut out = wrapped.hints;
+
+    let mut degrades = BTreeMap::new();
+    let mut verdict_lane = BTreeSet::new();
+    let (classified, _why, kills, kill_coords, _backings, _narrative, _inval) =
+        dorc_analysis::effect::classify_with_why_diags(
+            &cfg.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &verdicts,
+            &wrapped.peeled,
+            &dorc_analysis::erase::ErasedSites::none(),
+            &mut interner,
+            &mut arena,
+            &mut degrades,
+            &mut verdict_lane,
+        );
+    let classes = classified.value;
+    if !consented {
+        return out;
+    }
+
+    let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = oracle_refs
+        .iter()
+        .map(|src| {
+            (
+                *src,
+                dorc_oracle::touches::TouchesSet::lift(&mut interner, src).value,
+            )
+        })
+        .collect();
+    let derivations = {
+        let derive = |p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a);
+        dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
+    };
+
+    let touches = lift_touches_sets(&oracle_refs, &mut interner);
+    out.extend(touches.diags);
+    let lifted = build_survival_footprints(
+        &touches.value,
+        &classes,
+        &kills,
+        &kill_coords,
+        &value,
+        &cfg.value,
+        &parsed.value,
+        &mut interner,
+    );
+    out.extend(lifted.diags);
+    let mut footprints = lifted.value;
+    let derived_node_spans: BTreeMap<_, _> = derivations
+        .derivations
+        .iter()
+        .map(|d| (d.node, parsed.value.node(cfg.value.node(d.node).ast).span))
+        .collect();
+    out.extend(merge_derived_footprints(
+        &mut footprints,
+        &derivations,
+        results,
+        &classes,
+        &kill_coords,
+        &derived_node_spans,
+        &mut interner,
+    ));
+    out
+}

@@ -1,0 +1,39 @@
+---
+code: deriv-family-incomplete
+when-fires: a derived footprint family did not close completely (missing deriv-end, or a count mismatch). cli/main.rs. `{site}` = node id, `{reason}` = the match.
+why: 262 §2 / 26A stop-1: an at-most family cannot be partial — refuse ⇒ the site walls total.
+---
+-- book.sh --
+#!/bin/sh
+hork add nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = "$1"
+   case $verb in
+      add) hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+   esac
+}
+
+hork__disturbs() {
+   verb=$1; shift
+   case $verb in
+      add) hork --contents -- "$1" : disturbs sm.dorc.File ;;
+   esac
+}
+
+hork__is_converged() {
+   hork --query -- "$1"
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=56eaafb4f5970ae87ddd3ebeea18616885d63b77842a961def427bc69a90e981 sites=1 @@dorc@@
+dorc site 0 effect=cant-tell rc=0 @@dorc@@
+dorc deriv 0 coord=sm.dorc.File:/etc/hork.conf @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- replay --
+$ dorc plan --book=book.sh -o hork.oracle.sh --risk-faultless-skips < probe-results.txt

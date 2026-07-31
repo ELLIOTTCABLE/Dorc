@@ -658,6 +658,17 @@ impl DorcConsumer {
         if let Some(parts) = self.plan_envelope(case, plan.book) {
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
+        self.replay_plan(case, context, &plan)
+    }
+
+    /// The `dorc plan` arm of [`Self::replay`], split out because the dispatch above is a table and
+    /// this one arm carries the whole world derivation.
+    fn replay_plan(
+        &self,
+        case: &Case,
+        context: &ReplayContext<'_>,
+        plan: &DirectPlan<'_>,
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         // World-as-payload, the branch `render_direct_replay` has always had. Without it the
         // driver declined, so `compile`/`promote` never saw provenance for these cases.
         let Some(source) = materialized_source(case, context, plan.book) else {
@@ -684,14 +695,20 @@ impl DorcConsumer {
         };
         // The FRAME source is the world's, not the book's: an oracle-side diagnostic's caret points
         // into the oracle file that raised it.
-        let (diag, framed, filename) =
-            Self::world_of_source(case, plan.book, &source, &oracles, results.as_deref()).ok()?;
+        let (diag, framed, filename) = Self::world_of_source(
+            case,
+            plan.book,
+            &source,
+            &oracles,
+            plan.consented,
+            results.as_deref(),
+        )
+        .ok()?;
         if plan.machine {
             return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
         }
         let parts = self.cli_parts(&diag, &framed, &filename);
-        let render = to_editable_render(&parts);
-        Some(ReplayResult::editable(render))
+        Some(ReplayResult::editable(to_editable_render(&parts)))
     }
 
     /// Reattach the payload inventory to renderer-stamped exact provenance.
@@ -784,13 +801,18 @@ impl DorcConsumer {
             .scalar("code")
             .ok_or_else(|| "case has no `code`".to_owned())?;
         // The BOOK route first: a case carrying both a book and oracles is a `dorc plan` world,
-        // and its oracle sections are that run's loaded set rather than a lint target.
+        // and its oracle sections are that run's loaded set rather than a lint target. The
+        // invocation's own flag and `< results` redirect are read off its first replay, so a
+        // worldless derivation answers the same world the driven one does.
+        let (consented, results) = declared_plan_shape(case);
         if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh")
             && let Ok(world) = fire_book_analysis(
                 slug,
                 section.name(),
                 section.content(),
                 &oracle_sections(case),
+                consented,
+                results,
             )
         {
             return Ok(world);
@@ -831,6 +853,7 @@ impl DorcConsumer {
         path: &str,
         source: &str,
         oracles: &[(String, String)],
+        consented: bool,
         results: Option<&str>,
     ) -> Result<(Diag, String, String), String> {
         let slug = case
@@ -842,7 +865,7 @@ impl DorcConsumer {
             return Ok((diag, source.to_owned(), filename));
         }
         if path == "book.sh"
-            && let Ok(world) = fire_book_analysis(slug, path, source, oracles)
+            && let Ok(world) = fire_book_analysis(slug, path, source, oracles, consented, results)
         {
             return Ok(world);
         }
@@ -1190,6 +1213,8 @@ fn exact_words(command: &str) -> Option<Vec<&str>> {
 
 struct DirectPlan<'a> {
     book: &'a str,
+    /// Did the invocation consent to the survival tier (`--risk-faultless-skips`)?
+    consented: bool,
     /// The `-o <path>` oracle set, in the order the invocation names it — the same order
     /// `law-lineno-identity` keys oracle file indices by, so a threaded span frames into the
     /// section the author expects.
@@ -1212,6 +1237,7 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
     }
     let mut book = None;
     let mut oracles = Vec::new();
+    let mut consented = false;
     let mut input = None;
     let mut verbose = false;
     let mut machine = false;
@@ -1231,6 +1257,11 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
         } else if *word == "--host" {
             index = index.saturating_add(1);
             words.get(index)?;
+        } else if *word == dorc_cli::CONSENT_FLAG {
+            if consented {
+                return None;
+            }
+            consented = true;
         } else if *word == "--verbose" {
             if verbose {
                 return None;
@@ -1254,6 +1285,7 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
     }
     (!verbose || !machine).then_some(DirectPlan {
         book: book?,
+        consented,
         oracles,
         input,
         machine,
@@ -1510,7 +1542,7 @@ impl DorcConsumer {
             None => None,
         };
         let (diag, framed, filename) =
-            Self::world_of_source(case, plan.book, source, &oracles, results)?;
+            Self::world_of_source(case, plan.book, source, &oracles, plan.consented, results)?;
         if plan.machine {
             return Ok(render_diag_jsonl(&diag));
         }
@@ -1635,6 +1667,8 @@ fn fire_book_analysis(
     filename: &str,
     source: &str,
     oracles: &[(String, String)],
+    consented: bool,
+    results: Option<&str>,
 ) -> Result<(Diag, String, String), String> {
     let mut interner = Interner::default();
     let oracle_refs: Vec<&str> = oracles.iter().map(|(_, src)| src.as_str()).collect();
@@ -1676,6 +1710,24 @@ fn fire_book_analysis(
             Some((name, src)) => (diag, src.clone(), name.clone()),
             None => (diag, String::new(), String::new()),
         });
+    // The wrapped-site + survival lanes, over the SAME sources (`cli::survival`). Flag-gated
+    // exactly as a run is: with no `--risk-faultless-skips` in the replay command the survival half
+    // is absent, not quiet.
+    let survival = dorc_cli::survival::survival_diagnostics(
+        source,
+        &oracles
+            .iter()
+            .map(|(name, _)| name.clone())
+            .collect::<Vec<_>>(),
+        &oracles
+            .iter()
+            .map(|(_, src)| src.clone())
+            .collect::<Vec<_>>(),
+        consented,
+        dorc_core::EscalationDial::VouchedOnly,
+        dorc_core::Capability::Root,
+        &admitted_site_results(filename, source, oracles, results)?,
+    );
     parsed
         .diags
         .into_iter()
@@ -1683,10 +1735,54 @@ fn fire_book_analysis(
         .chain(reserved)
         .chain(cfg.diags)
         .chain(effect.diags)
+        .chain(survival)
         .map(|diag| (diag, source.to_owned(), filename.to_owned()))
         .chain(framed)
         .find(|(diag, _, _)| diag.code.slug() == slug)
         .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))
+}
+
+/// The case's declared `< results` bytes, through the REAL fixture intake
+/// (`28L:rul-records-seam-approved`). All three admission outcomes are honoured, and a REFUSED
+/// stream refuses the whole world rather than degrading to an empty one: a case whose measured
+/// facts rest on a broken channel would render a world nothing measured
+/// (`rul-admission-is-a-closed-outcome`).
+fn admitted_site_results(
+    filename: &str,
+    source: &str,
+    oracles: &[(String, String)],
+    results: Option<&str>,
+) -> Result<dorc_cli::results::SiteResults, String> {
+    use dorc_plan::records::Admission;
+    let Some(stream) = results else {
+        return Ok(dorc_cli::results::SiteResults::default());
+    };
+    let paths: Vec<String> = oracles.iter().map(|(name, _)| name.clone()).collect();
+    let srcs: Vec<String> = oracles.iter().map(|(_, src)| src.clone()).collect();
+    let sources = dorc_cli::results::RunSources {
+        book_name: filename,
+        book: source,
+        oracle_paths: &paths,
+        oracle_sources: &srcs,
+    };
+    // No clock: a committed transcript must be a fixpoint, and a fixture stream carries no
+    // instants of its own (`inv-determinism`; `seam-tolerated-nondeterminism-stops-at-the-run-log`
+    // leaves a rendered surface no normalizer to hide behind).
+    let mut clock = dorc_cli::results::RunClock::Absent;
+    let mut interner = Interner::default();
+    match dorc_cli::results::admit_fixture_records(
+        &sources,
+        stream.as_bytes(),
+        &mut clock,
+        &mut interner,
+    ) {
+        Admission::Admitted(admitted) => Ok(admitted.scoped.results().clone()),
+        Admission::NoObservation => Ok(dorc_cli::results::SiteResults::default()),
+        Admission::Refused(reason) => Err(format!(
+            "world-as-pipeline: the declared results stream was refused ({}) -- a measured world \n             cannot rest on a broken channel",
+            reason.spanless_diagnostic().code.slug()
+        )),
+    }
 }
 
 /// The `(book, results)` section bytes a case's own first replay declares through
@@ -1764,6 +1860,25 @@ fn editable_variables(
         }
     }
     Ok(variables)
+}
+
+/// The `(consented, results)` a case's own first replay declares — the survival flag and the
+/// `< file` section bytes. Read off the invocation rather than the frontmatter so the world a
+/// worldless derivation answers is the world the committed command really asks for.
+fn declared_plan_shape(case: &Case) -> (bool, Option<&str>) {
+    let Some(block) = case.replay().blocks().first() else {
+        return (false, None);
+    };
+    let Some(tokens) = exact_words(block.command()) else {
+        return (false, None);
+    };
+    let Some(plan) = parse_direct_plan(&tokens) else {
+        return (false, None);
+    };
+    (
+        plan.consented,
+        plan.input.and_then(|path| section_source(case, path)),
+    )
 }
 
 #[cfg(test)]

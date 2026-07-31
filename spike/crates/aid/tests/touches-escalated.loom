@@ -1,0 +1,35 @@
+---
+code: touches-escalated
+when-fires: a payload-bound touches() escalated to host-derivation. cli/main.rs merge_derived_footprints. `{site}` = node id, `{call}` = the escalated call.
+why: ru-26 SPIKE-ONLY: makes the static→dynamic boundary visible in the render; must not leak into greenfield as a permanent per-escalation requirement.
+---
+-- book.sh --
+#!/bin/sh
+hork add nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = "$1"
+   case $verb in
+      add) hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+   esac
+}
+
+# The footprint asks the host what the package contains, which no static trace can answer, so the
+# body ships and runs read-only instead.
+hork__disturbs() {
+   verb=$1; shift
+   case $verb in
+      add) hork --contents -- "$1" : disturbs sm.dorc.File ;;
+   esac
+}
+
+hork__is_converged() {
+   hork --query -- "$1"
+}
+
+-- replay --
+$ dorc plan --book=book.sh -o hork.oracle.sh --risk-faultless-skips

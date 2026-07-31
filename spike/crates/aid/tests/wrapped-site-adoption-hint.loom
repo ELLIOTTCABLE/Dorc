@@ -1,0 +1,50 @@
+---
+code: wrapped-site-adoption-hint
+when-fires: a wrapped BOOK site degraded on a missing `tolerates:` vouch. cli/main.rs (27N). Spanned (the wrapped site's span).
+why: 27C §2 (recognize-never-license): the one-line adoption hint. PASSTHROUGH — the hint text rides `detail`.
+---
+-- book.sh --
+#!/bin/sh
+runas hork add nginx
+
+-- runas.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# A coherent wrapper: the predict scrubs and execs the guest, the fold enumerates every dimension,
+# and the entry form re-runs the tool non-interactively.
+runas__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   env -i HOME=/root "$@"
+}
+
+runas__lend_map() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   printf '%s\n' root : lends user
+   : lends fs-view
+   : lends netns
+   "$@"
+}
+
+runas__enter() {
+   runas -n "$@"
+}
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The inner tool's verdict carries no `safe-across user`, so the wrapper cannot enter its context
+# and the site falls back to running.
+hork__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = "$1"
+   case $verb in
+      add) hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+   esac
+}
+
+hork__is_converged() {
+   hork --query -- "$1"
+}
+
+-- replay --
+$ dorc plan --book=book.sh -o runas.oracle.sh -o hork.oracle.sh

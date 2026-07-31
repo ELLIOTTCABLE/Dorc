@@ -187,7 +187,7 @@ impl<T> ScopedHostEvidence<T> {
 /// is fold-usable is the FIREWALL's decision ([`facts_from_sites`]), not the parser's —
 /// the parser faithfully carries what the probe reported (`inv-superposition`: the wire
 /// transports the observed rc; the phased caller decides which channel, if any, it feeds).
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SiteResults {
     /// One reported observation per (site, member).
     pub records: BTreeMap<RecordKey, SiteRecord>,

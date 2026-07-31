@@ -1,0 +1,35 @@
+---
+code: footprint-incoherent
+when-fires: a touches() footprint is incoherent. cli/main.rs — TWO emit paths: the SPANNED own-coordinate canary (footprint omits its own effect coordinate), and the SPANLESS malformed-derived-coordinate refusal (the SPANLESS_SITE_PAYLOADS one).
+why: 24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. PASSTHROUGH — the per-path text rides `detail`.
+---
+-- book.sh --
+#!/bin/sh
+hork add nginx
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = "$1"
+   case $verb in
+      add) hork --query "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+   esac
+}
+
+# The at-most claim names a config file but not the package cell the verb itself establishes, so
+# it claims LESS than the site is already known to touch.
+hork__disturbs() {
+   verb=$1; shift
+   case $verb in
+      add) printf '%s\n' /etc/hork.conf : disturbs sm.dorc.File ;;
+   esac
+}
+
+hork__is_converged() {
+   hork --query -- "$1"
+}
+
+-- replay --
+$ dorc plan --book=book.sh -o hork.oracle.sh --risk-faultless-skips
