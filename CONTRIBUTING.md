@@ -103,8 +103,8 @@ over by readers, based on them; their honesty is critical. Please don't
 cargo-cult what you see in previous commits.
 
 *All* AI-assisted work *must* contain the `(AI)` gitlabel. If you wish to
-*differentiate, then, again, granular committing - commit your LLM's work
-*separately, then commit your own tweaks without the label; but if they're
-*mixed, they get the label. Period.
+differentiate, then, again, granular committing - commit your LLM's work
+separately, then commit your own tweaks without the label; but if they're
+mixed, they get the label. Period.
 
    [.gitlabels]: <https://github.com/ELLIOTTCABLE/.gitlabels>

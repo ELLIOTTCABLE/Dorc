@@ -99,6 +99,7 @@ Some terms have shifted throughout the planning documents; be careful of these m
 - this is actively developed across macOS, WSL2, and *nix hosts. both local scripts, and tooling, and your own agent-tool invocations must defensively account for this.
   - be careful of paths, esp. re. WSL2/zsh vs BashTool() (which uses msys)
   - be careful of SyncThing, it's live in a parentdir; don't move/create large vendored subrepos without ensuring they're syncthing-ignored *first* (once created-while-unignored, they start to sync; ignoring-them-afterwards leaves borderline-permanent artifacts)
+  - SyncThing creates conflict-files constantly. I do not have a good way around this. SyncThing is necessary for my workflow. Ignore this.
 - you may be in a git-worktree; be careful. AGENTS/KNOBS/DESIGN/TODO are meant to be central communication channels, make sure you're watching for changes to those *anywhere* (use a permissive glob), and applying any changes I direct you to make (remember, they're human-direct-single-auth-to-edit *only*) must be made to the root ones, not the worktree.
 - run things through `mise run <task>`; `mise tasks` lists them, and `dir`/env come with the task, so it works from anywhere in the tree. add a task rather than re-deriving an invocation twice.
   - `mise run` is *almost always* preferrable to hand-rolling one-off commands. collaborate and pay back: if tooling chafes, *fix the tooling* for future agents, don't work around it. if not authorized, report upwards, don't swallow. tooling matters.
@@ -125,6 +126,7 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - avoid multi-line breakdowns as commit-message-trailers, context discovers in-filesystem-tree, in more discoverable places (work-log or chronological-notes-document that you're probably already keeping, in most cases)
     - single exception: if a commit was *fully mechanical* (commit A -> a single shell-command -> commit B), then including that shell-command as the folded third/later lines of the commit-message is reasonable
 - worktrees are in heavy use; create your own when you have work to do, but also clean up afterself - delete your own worktree when your work is entirely complete, if-and-only-if there is nothing of value left laying around. (*only* delete worktrees *you* created, though.)
+- endeavour to keep Git history mostly linear, unless a merge genuinely earns its place. favoured fold: `(cd <theirs> && git rebase <mine>) && git merge --ff-only <theirs>`. judgement-calls are yours in messy cases
 - our error-looms are *sacrosanct*.
   - AIs do *not* author human-facing prose without explicit, single-case, narrowly-scoped ack from a human (and that, rarely.)
   - when authoring, even placeholder text, read *the entire loom* - the whole point of the complex loom subsystem is to place the *entire* user-story in-context while writing prose. (Never `tail`, never truncate, this is *not* the place to be trying to save tokens.)
