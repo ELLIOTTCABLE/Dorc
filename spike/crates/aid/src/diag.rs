@@ -2260,8 +2260,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
-        // WARNING on the same footing as `role-family-contested`: the refusal only WITHHOLDS, and
-        // erroring would punish an admin for a collision two upstream authors caused.
+        // WARNING on `role-family-contested`'s footing: it withholds, and the collision is two
+        // upstream authors', not the admin's.
         DiagCode::HelperDeclarationContested(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,

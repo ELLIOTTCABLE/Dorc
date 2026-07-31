@@ -1508,10 +1508,8 @@ pub fn build_vouches(
             "{}{VERDICT_SUFFIX}",
             dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
         );
-        // `28K` §4 `rul-pin-by-definition-bytes`: what the guard runs is the definition's bytes PLUS
-        // the closure they need — helpers and file-level constants the funcdef span does not carry.
-        // A contested closure withholds the VOUCH outright rather than shipping a body that cannot
-        // run: no vouch ⇒ no guard and no elide ⇒ the site runs (`inv-kfail`).
+        // `28K` §4: the guard runs the definition's bytes PLUS its closure. A contested closure
+        // withholds the VOUCH — no guard, no elide, the site runs (`inv-kfail`).
         let stripped = strip_verdict(src, verdict, interner);
         let Ok(closure) = helpers.closure_for(file_idx, &stripped) else {
             continue;
@@ -1523,8 +1521,7 @@ pub fn build_vouches(
             format!("{fn_name} {}", op_refs.join(" "))
         };
         let kind_label = interner.resolve(fact.kind.0).to_owned();
-        // The dual-rail ledger allowlists what the SHIPPED check runs, so it has to cover the
-        // closure's commands too — a helper's `wombat cmp` is the guard's real check-command.
+        // The dual-rail ledger allowlists what the SHIPPED check runs — the closure included.
         let mut check_cmds = check_commands(verdict);
         check_cmds.extend(closure.commands.iter().cloned());
         // C7: the reached vouching-arm span (or `name_span` for a check-less `return 0` vouch) +
@@ -4130,8 +4127,7 @@ impl Plan {
                     hoisted.push('\n');
                 } else if plural {
                     hoisted.push_str(&render::apply::pinned_provenance(name));
-                    // Rename the funcdef HEADER only (`name() {`), never every occurrence: the
-                    // pinned string starts with the closure, whose bytes are somebody else's.
+                    // The HEADER only: the pinned string opens with somebody else's closure bytes.
                     let header = format!("{name}()");
                     hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
                     hoisted.push('\n');

@@ -113,8 +113,7 @@ impl WhyWorld {
         let mut arena = ProvArena::new();
         let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
-        // The non-role declarations every pinned body may need (`28K` §4): built ONCE per unit,
-        // beside the lifts, and shared by the ship seams and the vouch lift alike.
+        // One non-role-declaration index per unit, shared by the ship seams and the vouch lift.
         let helpers = dorc_oracle::closure::HelperIndex::build(&oracle_refs);
         let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
         let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs

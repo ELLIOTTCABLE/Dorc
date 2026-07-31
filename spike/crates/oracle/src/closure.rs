@@ -234,9 +234,7 @@ impl HelperIndex {
             reached.extend(inner.iter().cloned());
             pending.extend(inner);
         }
-        // Constants of every contributing file, in load then source order, before any helper: a
-        // funcdef body reads them at CALL time, so definition order is free, but a deterministic
-        // one is not optional (`inv-determinism`).
+        // Load then source order, constants first: definition order is free, determinism is not.
         let mut out = String::new();
         for &contributor in &contributing {
             for declaration in self

@@ -517,8 +517,7 @@ pub fn build_wrapped_analysis(
         enter_defs,
         tolerance,
     } = build_wrapper_index(oracle_refs, verdict_sets, interner);
-    // Built from the SAME slice the inner bodies are sliced out of, so the closure and the body it
-    // precedes can never disagree about which source they came from.
+    // Built from the SAME slice the inner bodies come from, so the two cannot disagree.
     let helper_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
     let helpers = dorc_oracle::closure::HelperIndex::build(&helper_refs);
 

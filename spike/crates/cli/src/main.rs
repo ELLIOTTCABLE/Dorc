@@ -707,8 +707,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let (source_paths, source_srcs) =
         source_table(&oracle_paths, &oracle_srcs, book_name, &book_src);
     let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
-    // The non-role declarations a pinned definition may need (`28K` §4 rul-pin-by-definition-bytes):
-    // one index per unit, consulted by every seat that emits a body.
+    // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
     let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs);
 
     // The book-free oracle-side lints, factored into one entry the lint rung-oracle-solo lane also
@@ -2247,8 +2246,6 @@ fn helper_conflict_diagnostics(
 ) -> Vec<(usize, Vec<Diag>)> {
     let mut by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
     for conflict in helpers.conflicts() {
-        // One mint per NAME, spanned at the second declaration: a third disagreeing source is the
-        // same world with the same repair, and a diagnostic per pair would be a cascade.
         let (Some(&(prior_file, prior_span)), Some(&(later_file, later_span))) =
             (conflict.sites.first(), conflict.sites.get(1))
         else {

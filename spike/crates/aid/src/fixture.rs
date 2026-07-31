@@ -165,8 +165,7 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 role: "__resolve".to_owned(),
             }),
         ),
-        // Same necessity again: two loaded sources spelling one helper differently is a
-        // two-file world, not a one-source one.
+        // Same necessity: one helper spelled two ways is a two-file world.
         (
             "helper-declaration-contested",
             DiagCode::HelperDeclarationContested(HelperDeclarationContested {

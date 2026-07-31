@@ -64,14 +64,7 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
     for (i, src) in oracles.iter().enumerate() {
         let mut diags = crate::predict::lift_predicts(interner, src).diags;
         diags.extend(crate::predict::lift_verdicts_converged(interner, src).diags);
-        // The mark-subset lint reads a file as a bare fragment of marked STATEMENTS, so it only
-        // applies where there is nothing else to read it as. `__`-freedom alone was too crude a
-        // test: `28M` §8's packaging shape splits an oracle into a HELPERS file (bulk logic, non-role
-        // names ⇒ no `__` anywhere) plus a thin entrypoints file, and the helpers half was refused
-        // out of dialect at its first funcdef — measured while pinning the cross-file closure. A
-        // file that DEFINES FUNCTIONS is a definitions file whatever its names look like; the
-        // fragment reading is for files that define none (which is structurally what the `mark-*`
-        // cases are, since wrapping their marks in a funcdef would stop them firing at all).
+        // The mark-subset reading applies only where nothing else can be read (see the predicate).
         if !src.contains("__") && !declares_functions(src) {
             diags.extend(crate::predict::lint_mark_subset(src));
         }
@@ -283,7 +276,17 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
 }
 
 /// Does this source define any function at its top level? The discriminator between a file of
-/// DECLARATIONS (an oracle's helpers half — `28M` §8) and a bare fragment of marked statements.
+/// DECLARATIONS and a bare fragment of marked statements.
+///
+/// `lint_mark_subset` reads a whole file as a fragment of marked STATEMENTS, so it may only run
+/// where there is nothing else to read the file as. `__`-freedom alone was too crude a test:
+/// `28M` §8's packaging shape splits an oracle into a HELPERS file (bulk logic, non-role names ⇒
+/// no `__` anywhere) plus a thin entrypoints file, and the helpers half was refused out of dialect
+/// at its first funcdef — measured while pinning the cross-file closure, on eight corpus cases that
+/// were carrying the same false error over an ordinary BOOK's function. A file that DEFINES
+/// FUNCTIONS is a definitions file whatever its names look like; the fragment reading is for files
+/// that define none, which is structurally what the `mark-*` cases are (wrapping their marks in a
+/// funcdef would stop them firing at all).
 fn declares_functions(src: &str) -> bool {
     use dorc_syntax::ast::NodeKind;
     let ast = dorc_syntax::parse(src).value;
