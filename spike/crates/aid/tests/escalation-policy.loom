@@ -7,4 +7,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 -- replay --
 $ dorc plan --book=book.sh
 note[escalation-policy]: sm escalation policy: probe re-uses connection
-authority for `tolerates:`-vouched functions only (default)
+authority (root) for `tolerates:`-vouched functions only (default); entry forms:
+sudo -n. Forbid with --no-probe-escalation; widen with --escalate-any-probe.

@@ -20,7 +20,7 @@
 //! [`parse`] is total: a truncated / clobbered / wrong-version durable yields diagnostics
 //! ([`DiagCode::WhylogCorrupt`] / [`DiagCode::WhylogVersionRefused`]), never a panic.
 
-use dorc_aid::diag::{Diag, DiagCode, WhylogCorrupt, WhylogVersionRefused};
+use dorc_aid::diag::{Diag, DiagCode, WhylogCorrupt, WhylogCorruptReason, WhylogVersionRefused};
 
 use std::io::Read;
 
@@ -241,7 +241,7 @@ pub fn inspect(
 pub fn parse(raw: &str) -> WhylogParse {
     let mut out = WhylogParse::default();
     let Some(header_end) = raw.find('\n') else {
-        return corrupt(&mut out, "empty or headerless durable");
+        return corrupt(&mut out, WhylogCorruptReason::Headerless);
     };
     let header = strip_token(raw[..header_end].trim_end());
     // Version gate: a different `dorc-whylog/N` refuses politely; anything else ⇒ corrupt.
@@ -259,7 +259,7 @@ pub fn parse(raw: &str) -> WhylogParse {
                 )));
             return out;
         }
-        return corrupt(&mut out, "missing dorc-whylog header tag");
+        return corrupt(&mut out, WhylogCorruptReason::HeaderTagMissing);
     };
 
     let mut doc = WhylogDoc::default();
@@ -283,7 +283,7 @@ pub fn parse(raw: &str) -> WhylogParse {
         {
             let block_end = cursor.saturating_add(n);
             if block_end > bytes.len() {
-                return corrupt(&mut out, "results block byte-count exceeds the file");
+                return corrupt(&mut out, WhylogCorruptReason::ResultsBlockOverruns);
             }
             raw[cursor..block_end].clone_into(&mut doc.raw_results);
             cursor = block_end;
@@ -292,7 +292,7 @@ pub fn parse(raw: &str) -> WhylogParse {
         absorb_line(line, &mut doc);
     }
     if !saw_end {
-        return corrupt(&mut out, "no dorc-whylog-end sentinel (a truncated write?)");
+        return corrupt(&mut out, WhylogCorruptReason::EndSentinelMissing);
     }
     out.doc = Some(doc);
     out
@@ -300,12 +300,10 @@ pub fn parse(raw: &str) -> WhylogParse {
 
 /// Push a [`DiagCode::WhylogCorrupt`] and return the (doc-less) parse. Centralised so every corrupt
 /// exit carries the code the completeness gate demands.
-fn corrupt(out: &mut WhylogParse, detail: &str) -> WhylogParse {
+fn corrupt(out: &mut WhylogParse, reason: WhylogCorruptReason) -> WhylogParse {
     out.diagnostics
         .push(Diag::new_spanless_site(DiagCode::WhylogCorrupt(
-            WhylogCorrupt {
-                detail: detail.to_owned(),
-            },
+            WhylogCorrupt { reason },
         )));
     std::mem::take(out)
 }

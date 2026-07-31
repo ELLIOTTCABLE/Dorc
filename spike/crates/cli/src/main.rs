@@ -3503,28 +3503,12 @@ fn escalation_policy_diagnostics(
         return Vec::new();
     }
     let head_list = heads.values().cloned().collect::<Vec<_>>().join(", ");
-    let cap = match capability {
-        dorc_core::Capability::Root => "root",
-        dorc_core::Capability::NonRootNopasswd => "non-root (NOPASSWD)",
-        dorc_core::Capability::Degraded => "degraded",
-    };
-    let msg = match dial {
-        dorc_core::EscalationDial::NoEscalation => format!(
-            "escalation policy: NO oracle code will context-shift (--no-probe-escalation); \
-             wrapped sites run/guard. Entry-capable wrappers loaded: {head_list}."
-        ),
-        dorc_core::EscalationDial::VouchedOnly => format!(
-            "escalation policy: probe re-uses connection authority ({cap}) for \
-             `tolerates:`-vouched functions only (default); entry forms: {head_list}. \
-             Forbid with --no-probe-escalation; widen with --escalate-any-probe."
-        ),
-        dorc_core::EscalationDial::AnyProbe => format!(
-            "escalation policy: probe re-uses connection authority ({cap}) for ALL oracles \
-             (--escalate-any-probe overrides absent author consent); entry forms: {head_list}."
-        ),
-    };
     vec![Diag::new_spanless_site(DiagCode::EscalationPolicy(
-        EscalationPolicy { detail: msg },
+        EscalationPolicy {
+            dial,
+            capability,
+            entry_forms: head_list,
+        },
     ))]
 }
 

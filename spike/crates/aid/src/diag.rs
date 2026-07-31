@@ -31,7 +31,7 @@ use crate::RenderCtx;
 use crate::Severity;
 use crate::foreign::{ForeignBytes, ParamText};
 use crate::said::Said;
-use dorc_core::{ProvId, Span, TopCause};
+use dorc_core::{Capability, EscalationDial, ProvId, Span, TopCause};
 
 // ===========================================================================
 // The catalog enum (exhaustive spine) + typed per-variant payloads (type-sketch-1)
@@ -1046,12 +1046,19 @@ pub struct DerivFamilyIncomplete {
     pub reason: String,
 }
 
-/// Payload of [`DiagCode::EscalationPolicy`] (PASSTHROUGH `sm {detail}`): the authority-disclosure
-/// line. Spanless.
+/// Payload of [`DiagCode::EscalationPolicy`]: the authority-disclosure line. Spanless.
+///
+/// The dial IS the reason (`28L:rul-reason-enums-not-sibling-codes`), so this carries `core`'s own
+/// [`EscalationDial`] rather than a parallel enum — the `TopCause` shape exactly. `capability` is
+/// known at every dial and mentioned by two of the three sentences.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EscalationPolicy {
-    /// The full policy-disclosure text (display only).
-    pub detail: String,
+    /// Which dial the admin set.
+    pub dial: EscalationDial,
+    /// The connection's entry capability.
+    pub capability: Capability,
+    /// The entry-capable wrappers loaded, `, `-joined (`{entry_forms}`).
+    pub entry_forms: String,
 }
 
 /// Payload of [`DiagCode::CarriedAcrossSubstrateAxis`] (PASSTHROUGH `sm {detail}`): the carry
@@ -1177,11 +1184,25 @@ pub struct WhylogAbsent {
 }
 
 /// Payload of [`DiagCode::WhylogCorrupt`] (`27V` Lane B; `inv-no-throw`): a durable was found but is
-/// truncated / unparseable. `{detail}` = the parse-failure reason.
+/// truncated / unparseable.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WhylogCorrupt {
-    /// The parse-failure reason (`{detail}`).
-    pub detail: String,
+    /// Which parse check refused the durable.
+    pub reason: WhylogCorruptReason,
+}
+
+/// Which parse check refused a durable (see [`CfgTopNodeReason`] for why the reason enums live in
+/// this crate).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WhylogCorruptReason {
+    /// The file is empty, or its first line is not a header.
+    Headerless,
+    /// The header line does not carry the format tag.
+    HeaderTagMissing,
+    /// The records block declares more bytes than the file holds.
+    ResultsBlockOverruns,
+    /// The end sentinel never arrived.
+    EndSentinelMissing,
 }
 
 /// Payload of [`DiagCode::WhylogUnwritten`] (`28D:must-default-durable-lands-with-its-hardening`,
@@ -2484,9 +2505,14 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::FootprintIncoherent(FootprintIncoherent { detail }) => {
             vec![ours("detail", detail.clone())]
         }
-        DiagCode::EscalationPolicy(EscalationPolicy { detail }) => {
-            vec![ours("detail", detail.clone())]
-        }
+        DiagCode::EscalationPolicy(EscalationPolicy {
+            dial,
+            capability,
+            entry_forms,
+        }) => vec![ours(
+            "detail",
+            escalation_policy_text(ctx, *dial, *capability, entry_forms),
+        )],
         DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis { axes, kinds }) => {
             vec![ours("axes", axes.clone()), ours("kinds", kinds.clone())]
         }
@@ -2522,7 +2548,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             vec![ours("which", which.clone())]
         }
         DiagCode::WhylogAbsent(WhylogAbsent { dir }) => vec![ours("dir", dir.clone())],
-        DiagCode::WhylogCorrupt(WhylogCorrupt { detail }) => vec![ours("detail", detail.clone())],
+        DiagCode::WhylogCorrupt(WhylogCorrupt { reason }) => {
+            vec![ours("detail", whylog_corrupt_text(ctx, *reason))]
+        }
         DiagCode::WhylogUnwritten(WhylogUnwritten { dir, reason }) => {
             vec![ours("dir", dir.clone()), ours("reason", reason.clone())]
         }
@@ -3393,6 +3421,57 @@ fn cfg_inline_refused_text(ctx: &RenderCtx<'_>, reason: &CfgInlineRefusedReason)
                 &estimate.to_string(),
                 &budget.to_string(),
             ],
+        ),
+    }
+}
+
+/// The registry sentence for one [`WhylogCorruptReason`].
+fn whylog_corrupt_text(ctx: &RenderCtx<'_>, reason: WhylogCorruptReason) -> String {
+    let slug = match reason {
+        WhylogCorruptReason::Headerless => "whylog-corrupt-headerless",
+        WhylogCorruptReason::HeaderTagMissing => "whylog-corrupt-header-tag-missing",
+        WhylogCorruptReason::ResultsBlockOverruns => "whylog-corrupt-results-block-overruns",
+        WhylogCorruptReason::EndSentinelMissing => "whylog-corrupt-end-sentinel-missing",
+    };
+    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+}
+
+/// The registry sentence disclosing the escalation policy at one [`EscalationDial`].
+fn escalation_policy_text(
+    ctx: &RenderCtx<'_>,
+    dial: EscalationDial,
+    capability: Capability,
+    entry_forms: &str,
+) -> String {
+    use crate::arrangement::arrangement_sentence as sentence;
+    let arrangements = ctx.arrangements();
+    let capability_word = crate::arrangement::arrangement_text(
+        arrangements,
+        match capability {
+            Capability::Root => "escalation-policy-capability-root",
+            Capability::NonRootNopasswd => "escalation-policy-capability-nonroot-nopasswd",
+            Capability::Degraded => "escalation-policy-capability-degraded",
+        },
+        None,
+    );
+    match dial {
+        EscalationDial::NoEscalation => sentence(
+            arrangements,
+            "escalation-policy-no-escalation",
+            None,
+            &[entry_forms],
+        ),
+        EscalationDial::VouchedOnly => sentence(
+            arrangements,
+            "escalation-policy-vouched-only",
+            None,
+            &[&capability_word, entry_forms],
+        ),
+        EscalationDial::AnyProbe => sentence(
+            arrangements,
+            "escalation-policy-any-probe",
+            None,
+            &[&capability_word, entry_forms],
         ),
     }
 }

@@ -16,7 +16,7 @@
 //! pipeline first (`289:rul-worldless-route-honest-trigger`), so an entry whose code gains a real
 //! trigger becomes unreachable rather than wrong; the corpus's render fixpoint is what notices.
 
-use dorc_core::{LeafId, TopCause};
+use dorc_core::{Capability, EscalationDial, LeafId, TopCause};
 
 use crate::ForeignBytes;
 
@@ -31,8 +31,8 @@ use crate::diag::{
     MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
     SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
     ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportNotAttempted,
-    TransportSessionLost, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogUnwritten,
-    WhylogVersionRefused, WrapperPeelIncoherent,
+    TransportSessionLost, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason,
+    WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -106,9 +106,9 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
         (
             "escalation-policy",
             DiagCode::EscalationPolicy(EscalationPolicy {
-                detail: "escalation policy: probe re-uses connection authority for \
-                         `tolerates:`-vouched functions only (default)"
-                    .to_owned(),
+                dial: EscalationDial::VouchedOnly,
+                capability: Capability::Root,
+                entry_forms: "sudo -n".to_owned(),
             }),
         ),
         (
@@ -334,7 +334,7 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
         (
             "whylog-corrupt",
             DiagCode::WhylogCorrupt(WhylogCorrupt {
-                detail: "no end-sentinel — a partial write?".to_owned(),
+                reason: WhylogCorruptReason::EndSentinelMissing,
             }),
         ),
     ]
