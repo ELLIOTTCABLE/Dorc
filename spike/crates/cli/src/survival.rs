@@ -993,9 +993,8 @@ pub fn survival_diagnostics(
             &mut arena,
             &mut degrades,
             &mut verdict_lane,
-            // The HINT lane, so it reads the ambient answer: this seat narrates what an admin
-            // could gain, and narrating a shape whose license the positional regime withholds is
-            // the aid plane failing in its own safe direction (`two-plane-aid-law`).
+            // The HINT lane reads ambiently: narrating a shape whose license the positional
+            // regime withholds is the aid plane failing safe (`two-plane-aid-law`).
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
     let classes = classified.value;

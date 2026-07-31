@@ -131,12 +131,9 @@ impl WhyWorld {
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeSet::new();
         let peeled = BTreeMap::new();
-        // `28K` §2 rul-visibility-is-full-positional, on the same rule the binary applies. The
-        // book's own id sits ONE PAST the oracle vector this seat lifts, which is honest rather
-        // than lossy: a book definition really cannot be answered from `checks` here (this seat
-        // does not yet feed the book to the lifts — `28M` §7's stage-F rename rider names the
-        // gap), so a site the book's definition owns withholds instead of answering from the
-        // oracle a shell would no longer call.
+        // The book's id sits ONE PAST the oracle vector this seat lifts (it does not yet feed the
+        // book to the lifts — `28M` §7's rename rider names the gap), so a site a book definition
+        // owns withholds rather than answering from an oracle a shell would no longer call.
         let definitions = definition_table(
             oracle_paths,
             &oracle_refs,

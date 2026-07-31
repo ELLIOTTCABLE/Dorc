@@ -829,9 +829,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     };
     let shadows = dorc_analysis::funcenv::contests(&parsed.value, &cfg.value, &definitions, &env);
     let unprovable = dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit());
-    // `28K` §2 rul-visibility-is-full-positional — the site-keyed answer every consuming act now
-    // reads. Solved ONCE here, beside the whole-unit refusal, and carried (never re-derived) into
-    // the frozen model.
+    // `28K` §2 rul-visibility-is-full-positional — solved ONCE here, beside the whole-unit
+    // refusal, and carried (never re-derived) into the frozen model.
     let live_defs = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
     // The license-plane fact is minted FIRST; the diagnostics derive FROM it, never the reverse
     // (`two-plane-aid-law`). Two sources feed it and only the first complains: a PROVEN shadow,

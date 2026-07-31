@@ -437,8 +437,8 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
                     .push((kind, selector, e.claim));
             }
             let provider = ProviderId(provider);
-            // Which file spoke, kept so a site-keyed consumer can check that the argparse it
-            // resolved through and the cells it reads are the SAME author's.
+            // Which file spoke, so a site-keyed consumer can check the argparse it resolved
+            // through and the cells it reads are the SAME author's.
             out.value.set_source(provider, index);
             for (verb, cells) in by_verb {
                 // observe-backing-widening (`277` §5): an OBSERVE (`:?`) that co-occurs with a
