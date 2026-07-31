@@ -269,7 +269,6 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
         PredictOutOfDialectReason::ExpectedCaseArmPattern,
         PredictOutOfDialectReason::ShiftCountNotLiteralInteger,
         PredictOutOfDialectReason::StatementDoesNotStartWithWord,
-        PredictOutOfDialectReason::AnnotationKindNotSingleWord,
         PredictOutOfDialectReason::AnnotationNeedsValueWord,
         PredictOutOfDialectReason::OutOfDialectToken {
             lex: PredictLexError::UnmodeledByte,
@@ -289,7 +288,6 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
         PredictOutOfDialectReason::TrailingBindMarkWithValue,
         PredictOutOfDialectReason::MarkNeedsVerbOrCoordinate,
         PredictOutOfDialectReason::TrailingBindMarkWord,
-        PredictOutOfDialectReason::MalformedHashColonMark,
         PredictOutOfDialectReason::MarkNeedsPayload,
         PredictOutOfDialectReason::MalformedMarkTarget,
         PredictOutOfDialectReason::SelectorNotPosixName,

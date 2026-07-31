@@ -797,10 +797,10 @@ impl Parser<'_> {
         if !first_sq
             && sem::is_name(&first)
             && self.next_word_is(":")
-            && self.kind_after_colon_is_bare()
             && self.annotation_tail_is_valid()
+            && let Some((kind, kind_span)) = self.bare_kind_after_colon()
         {
-            return self.parse_annotation(&first, start_span);
+            return self.parse_annotation(&first, start_span, kind, kind_span);
         }
 
         // Otherwise: a plain command (optionally with a trailing ESTABLISH/OBSERVE mark).
@@ -816,14 +816,26 @@ impl Parser<'_> {
         )
     }
 
-    /// Peek: is the word at `pos+2` (after a `name :`) a BARE kind — a plain word with no
-    /// inner `:` (so it is an identity-annotation kind, not a `kind:entity.prop` mark
-    /// target)? Absent/quoted/`:`-bearing ⇒ not bare.
-    fn kind_after_colon_is_bare(&self) -> bool {
-        matches!(
-            self.toks.get(self.pos.saturating_add(2)).map(|t| &t.kind),
-            Some(Tok::Word { lexeme, single_quoted: false, .. }) if !lexeme.contains(':')
-        )
+    /// Peek: the BARE kind word at `pos+2` (after a `name :`) — a plain word with no inner `:`
+    /// (so it is an identity-annotation kind, not a `kind:entity.prop` mark target).
+    /// Absent/quoted/`:`-bearing ⇒ `None`.
+    ///
+    /// It hands the word BACK rather than answering yes/no so that [`Self::parse_annotation`]
+    /// receives a kind it cannot fail to read: the recognition and the take were two acts, and the
+    /// second one carried a refusal reason for a state the first had already excluded.
+    fn bare_kind_after_colon(&self) -> Option<(String, Span)> {
+        match self.toks.get(self.pos.saturating_add(2)) {
+            Some(Token {
+                kind:
+                    Tok::Word {
+                        lexeme,
+                        single_quoted: false,
+                        ..
+                    },
+                span,
+            }) if !lexeme.contains(':') => Some((lexeme.clone(), *span)),
+            _ => None,
+        }
     }
 
     /// A value-less Singleton annotation ends after its kind.
@@ -837,25 +849,20 @@ impl Parser<'_> {
 
     /// Parse the inline annotation `name : kind = value` (the operand form) or
     /// `name : kind` (the **nullary/Singleton** form — a verb whose resource has no
-    /// operand, e.g. `apt-get update`; 202 §2 / task-W §4). The caller verified the
-    /// first word is `name` and the next is `:`.
-    fn parse_annotation(&mut self, name: &str, start_span: Span) -> Result<Stmt, bool> {
+    /// operand, e.g. `apt-get update`; 202 §2 / task-W §4). The caller verified the first word is
+    /// `name`, the next is `:`, and the third is the bare `kind` it hands in — the derivation keys
+    /// the effect-map on that string, so annotation-kind == effect-map kind.
+    fn parse_annotation(
+        &mut self,
+        name: &str,
+        start_span: Span,
+        kind: String,
+        kind_span: Span,
+    ) -> Result<Stmt, bool> {
         let name_sym = self.interner.intern(name);
         self.bump(); // name
         self.bump(); // `:`
-        // kind: a single plain word (reverse-DNS string, or a short kind name — the
-        // derivation keys the effect-map on it, so annotation-kind == effect-map kind).
-        let Some((
-            kind,
-            WordQuoting {
-                single_quoted: false,
-                ..
-            },
-            kind_span,
-        )) = self.take_word()
-        else {
-            return Err(self.fail_here(PredictOutOfDialectReason::AnnotationKindNotSingleWord));
-        };
+        self.bump(); // kind
         // The `= value` tail is OPTIONAL. Present ⇒ the ordinary operand annotation.
         // Absent ⇒ the nullary/Singleton spelling (`value = None`): the evaluator
         // resolves a [`super::ast::AnnotatedValue::Singleton`] and the wiring keys the
@@ -1109,11 +1116,7 @@ impl Parser<'_> {
                         kind
                     } else {
                         if intro.carrier == MarkCarrier::Hash {
-                            return Err(self.fail_mark(
-                                intro,
-                                marker_span,
-                                PredictOutOfDialectReason::MalformedHashColonMark,
-                            ));
+                            return Err(self.fail_hashcolon(marker_span));
                         }
                         self.out.push(Diag::new(
                             DiagCode::MarkUnknownVerb(MarkUnknownVerb {
@@ -1171,14 +1174,21 @@ impl Parser<'_> {
         reason: PredictOutOfDialectReason,
     ) -> bool {
         if intro.carrier == MarkCarrier::Hash {
-            self.out.push(Diag::new(
-                DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
-                marker_span,
-            ));
-            true
+            self.fail_hashcolon(marker_span)
         } else {
             self.fail_here(reason)
         }
+    }
+
+    /// The `#:` carrier's own failure. A block that does not parse stays a plain comment
+    /// (`strip-is-pure-erasure`), so the carrier answers for it and the out-of-dialect reason its
+    /// caller was carrying never reached a reader.
+    fn fail_hashcolon(&mut self, marker_span: Span) -> bool {
+        self.out.push(Diag::new(
+            DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
+            marker_span,
+        ));
+        true
     }
 
     // --- words & tests ------------------------------------------------------

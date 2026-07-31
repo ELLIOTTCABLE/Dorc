@@ -902,8 +902,6 @@ pub enum PredictOutOfDialectReason {
     ShiftCountNotLiteralInteger,
     /// A statement that does not begin with a word.
     StatementDoesNotStartWithWord,
-    /// An annotation kind that is not a single literal word.
-    AnnotationKindNotSingleWord,
     /// An annotation with no value word after `=`.
     AnnotationNeedsValueWord,
     /// The lexer refused a token inside a command.
@@ -929,8 +927,6 @@ pub enum PredictOutOfDialectReason {
     MarkNeedsVerbOrCoordinate,
     /// A trailing `bind` mark.
     TrailingBindMarkWord,
-    /// A `#:` mark that does not parse.
-    MalformedHashColonMark,
     /// A mark with no payload after its verb.
     MarkNeedsPayload,
     /// A mark payload that does not split into a coordinate.
@@ -3767,7 +3763,6 @@ fn predict_out_of_dialect_text(ctx: &RenderCtx<'_>, reason: PredictOutOfDialectR
         R::ExpectedCaseArmPattern => ("predict-out-of-dialect-expected-case-arm-pattern", none),
         R::ShiftCountNotLiteralInteger => ("predict-out-of-dialect-shift-count", none),
         R::StatementDoesNotStartWithWord => ("predict-out-of-dialect-statement-not-a-word", none),
-        R::AnnotationKindNotSingleWord => ("predict-out-of-dialect-annotation-kind", none),
         R::AnnotationNeedsValueWord => ("predict-out-of-dialect-annotation-value", none),
         R::OutOfDialectToken { lex } => (
             "predict-out-of-dialect-token-in-command",
@@ -3782,7 +3777,6 @@ fn predict_out_of_dialect_text(ctx: &RenderCtx<'_>, reason: PredictOutOfDialectR
         R::TrailingBindMarkWithValue => ("predict-out-of-dialect-trailing-bind-with-value", none),
         R::MarkNeedsVerbOrCoordinate => ("predict-out-of-dialect-mark-needs-verb", none),
         R::TrailingBindMarkWord => ("predict-out-of-dialect-trailing-bind-word", none),
-        R::MalformedHashColonMark => ("predict-out-of-dialect-malformed-hashcolon-mark", none),
         R::MarkNeedsPayload => ("predict-out-of-dialect-mark-needs-payload", none),
         R::MalformedMarkTarget => ("predict-out-of-dialect-malformed-mark-target", none),
         R::SelectorNotPosixName => ("predict-out-of-dialect-selector-charset", none),

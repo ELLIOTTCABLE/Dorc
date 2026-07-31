@@ -1469,13 +1469,6 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Words::Migrated(&["statement does not start with a word"]),
     },
     ArrangementEntry {
-        slug: "predict-out-of-dialect-annotation-kind",
-        occurrence: None,
-        when_used: "Fills the `{detail}` hole of predict-out-of-dialect when an annotation kind is not a single literal word.",
-        why: "As predict-out-of-dialect-malformed-function-header.",
-        words: Words::Migrated(&["annotation kind must be a single literal word"]),
-    },
-    ArrangementEntry {
         slug: "predict-out-of-dialect-annotation-value",
         occurrence: None,
         when_used: "Fills the `{detail}` hole of predict-out-of-dialect when an annotation has no value word after `=`.",
@@ -1551,13 +1544,6 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         when_used: "Fills the `{detail}` hole of predict-out-of-dialect on a trailing `bind` mark.",
         why: "As predict-out-of-dialect-malformed-function-header.",
         words: Words::Migrated(&["trailing bind marks (`bind`) are not accepted in v0.2 production (`28A:rul-single-mark-production-subset`)"]),
-    },
-    ArrangementEntry {
-        slug: "predict-out-of-dialect-malformed-hashcolon-mark",
-        occurrence: None,
-        when_used: "Fills the `{detail}` hole of predict-out-of-dialect on a `#:` mark that does not parse.",
-        why: "As predict-out-of-dialect-malformed-function-header.",
-        words: Words::Migrated(&["malformed hash-colon mark"]),
     },
     ArrangementEntry {
         slug: "predict-out-of-dialect-mark-needs-payload",
