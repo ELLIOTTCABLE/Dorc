@@ -858,6 +858,49 @@ lanes thread by fresh census, never by the map's count.
   three-shape design space, lean = interleaved fragments with two-row apply
   routing) · the four dead-row deletions · the sites= teaching line + the
   FactMergeDisagreement investigation.
+- **x2h LANDED** (`ai/r28-loom-x2h` @ `ea2b9fd4`; both legs green, Win 1696 /
+  WSL 1692). De-nest LANDED at the COMPOSING seat (`ChainRender.because`; a weft
+  Banner — contrastive headline + indented because-body; the arity insight is the
+  durable lesson: an entry's word count IS the render's value arity, so a value
+  the render stops emitting inline must leave the ENTRY, not just the line —
+  x2g's revert vindicated at the mechanism level); 6 new faces. THREE dead rows
+  deleted; the fourth (`why-vouch-payload-establish`) correctly DECLINED — my
+  rul-dead-prose-components-die premise was WRONG for it (reachable in the
+  aggregate-survival world; +SURE, measured; it moves to the world-gap set).
+  `sites=` teaching landed at the digest refusal.
+  `[unnarrated: FactMergeDisagreement]` was REAL and is FIXED (the narrative
+  minted for non-record-backed checks; the meet untouched — unmeasured ⇒ ⊤ ⇒ run
+  stands; pin proven to bite; latent, zero golden movement). Splice-on-value:
+  STOPPED on the precise mechanism (sections open/close on OWNER change ⇒ an
+  interior faced hole splits the register's section = refuse-split-field
+  territory; a trailing splice loses the hole from the register's stamped series
+  and a zero-width stand-in cannot exist — weft mints no span for empty text).
+  PROCESS SCAR generalized: never round-trip ANY non-ASCII source through
+  PowerShell text cmdlets (BOM + glyph mojibake; caught by the looms gate).
+- **rul-empty-registers-for-pure-holes** (conductor; the splice ruling, remedy 1)
+  — the 8 pure-reason registers (`"sm {{reason}}"`) become `"{{reason}}"`: no
+  register section exists, nothing can be silently lost, ZERO transport surgery.
+  The migration signal is NOT lost — the actual prose (the 93 components) carries
+  the TYPED `Words::Migrated` marker (arrangement-prose-marker-is-typed); the
+  in-band `sm ` sat on a register holding no words of ours. All 8 are case-owned,
+  so the unprefixed state is legal under prose-three-state. Remedy 2 is obviated
+  by remedy 1 for these; remedy 3 (per-fragment owners — the only reach for
+  INTERIOR holes) is PRICED AND DECLINED this arc: class B′ (11 components:
+  `why-top-cause-*` ×7 · `why-command-name` ×2 · `why-operand-position` ×2) plus
+  the 8 in-sentence substitution components ledger as
+  lock-tier-by-mechanism, remedy named (per-fragment owners), cost stated
+  (EditableSection/compile/apply/refusals/preview/receipts — the transport's
+  identity model generalizes), revisitable post-arc if the lock-tier flow chafes
+  in practice.
+- **x2i DISPATCHED** (the FINAL lane, worktree loom-x2i off the x2h fold) —
+  remedy 1 (8 registers, locks via generator) + the WORLD GRIND: defining worlds
+  for the ~90 unfired reason variants (one case fires one variant — x2h's sizing
+  correction; each is a small dialect/parser-refusal fixture; the x2b/x2f cases
+  are the shape) + the 7 newly-world-blocked cmdsub/remediation components + the
+  world-gap trio (`why-vouch-payload-establish` aggregate-survival ·
+  `why-tier-word#5` Consented · `why-as-written-elided` long-excerpt).
+  Un-fireable variants exit as ledger rows with the mechanical reason — zero
+  silent gaps. After x2i: the census is FINAL and X2 closes.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
