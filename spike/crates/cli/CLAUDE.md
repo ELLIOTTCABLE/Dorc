@@ -8,16 +8,19 @@ discipline: one rule per bullet, slugged; append to the matching section.
 ## Law
 
 - **lib-target-is-a-loom-seam** (`289:rul-worldless-route-honest-trigger`; widened at the W4
-  drifted-driver fold, `28H`) — `src/lib.rs` is the INTERNAL invocation-and-render surface: usage
-  text, `Args`/`LintArgs`/`Mode`, the parsers, `humane_read_error`, and the drifted-why render
-  seat (`drifted_why_parts` + its pure closure — `Receipt`/`PlanTally`/`DriftedReceipt`/
-  `receipt_banner`/`why_parts`/`SourceMatch`-as-data). It exists so `dorc-loom` can drive REAL
-  invocations in-process — an invocation-error or why case is honest rather than decorative. It is
-  NEVER a public API — `publish = false`, and nothing outside `dorc-loom` and the two bins may
-  depend on it. Every I/O edge stays in `main.rs`: VALUES cross the seam, QUERIES do not (the
-  `SourceMatch` precedent — the struct crossed as pure data; `resolve`/git stayed behind). If
-  something in the lib starts wanting a clock, a file, or an env read, it is on the wrong side of
-  the seam.
+  drifted-driver fold, `28H`; the loom-final arc moved SIX regions across it — `28L`) — the lib
+  target is the INTERNAL invocation-and-render surface: usage text, `Args`/`LintArgs`/`Mode`, the
+  parsers, `humane_read_error`, the drifted-why seat, and the extracted modules `why.rs`
+  (`WhyReport` + `why_report_parts`) · `world.rs` (`WhyWorld::analyze`/`analyze_measured` +
+  the shared ship-body helpers) · `kinds.rs` (resolver/reaches) · `survival.rs` (footprints/
+  wrapped-analysis/carry) · `results.rs` (the intake segment: scope types, `parse_admitted_results`,
+  `admit_controller_records` vs the fenced `admit_fixture_records`) · `fixpoint.rs` (validity
+  rounds + cascade attribution). One implementation — `main.rs` keeps call sites and every I/O
+  edge (clock readers, git, terminal width). It exists so `dorc-loom` can drive REAL invocations
+  in-process; it is NEVER a public API — `publish = false`, nothing outside `dorc-loom` and the
+  two bins may depend on it. VALUES cross the seam, QUERIES do not. If something in the lib
+  starts wanting a clock, a file, or an env read, it is on the wrong side of the seam.
+  (`RunClock::Absent` on every loom path — a committed transcript must be a fixpoint.)
 - **invocation-errors-are-registry-codes** (`288` §6) — the parsers return typed `Diag`s, never
   strings. The `dorc: ` / `dorc: lint: ` / `dorc-sh: ` prefixes and the usage synopsis are print-seat
   CHROME the three report seats own, never catalog prose. Exit codes are unchanged and never read
@@ -108,10 +111,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   fixture dir (`mocks/` included, dotfiles included, `expected.ran` as a byte section), and the
   committed transcript instead of `expected.out`. It is NOT a second harness — `run_loom`
   MATERIALIZES the case into exactly the dir shape and runs the unchanged gate battery over it, so
-  a conversion cannot quietly drop a check. The frontmatter key vocabulary is CLOSED (`LOOM_KEYS`)
-  and an unread key is refused: a key no gate reads is an assertion the author only believes they
-  made. The replay COMMAND is compared against the invocation the runner actually drives, so a
-  transcript can never show one command while the gates run another.
+  a conversion cannot quietly drop a check. TWO closed key vocabularies exist, and an unread key
+  is refused in both: the e2e runner's `LOOM_KEYS` (run-lane keys + `owns`, listed there because
+  ownership is corpus-wide even though no e2e gate reads it) and the looms runner's
+  `FRONTMATTER_KEYS` (the full ~22-key set: `code`/`arrangement`/`owns`/`edit-loop`/`envelope`/
+  `tolerate`/`run`/`fixpoint`/…). A new key joins the vocabulary in the same commit that mints it,
+  or its cases go red. The replay COMMAND is compared against the invocation the runner actually
+  drives, so a transcript can never show one command while the gates run another. Corpus walks
+  skip `*.sync-conflict-*` (sync residue is never a case).
 - **one-fixpoint-authority-per-case** — `crates/cli/tests/looms.rs` render-fixpoints every committed
   loom through the in-process consumer; a whole-product loom declares `fixpoint: executed` instead,
   because its transcript is proven by running the REAL binary here (the stricter proof, and the only

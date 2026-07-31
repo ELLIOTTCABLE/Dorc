@@ -119,6 +119,23 @@ crate's charter) · `notes/287` (errorloom as-built).
   bridge in the why report while the plan-stderr lens reads the same rows as plain text —
   edit-home is wherever a DRIVEN transcript stamps them, the lock otherwise. Do not "fix" a
   plain-text seat by stamping a span its surface's transport cannot anchor.
+- **rul-composed-saids-render-as-own-lines** (`28L`, x2h as-built) — a `Said` composed into
+  another sentence renders as its OWN chrome line (its own section; a weft Banner's indented
+  body is the idiom), NEVER flattened through `.text()` into an immutable value. The arity
+  reason is the durable half: an entry's word-run count IS the render's value arity
+  (`apply_arrangement_line_edit` derives `v0…v{n-1}` from it), so a value the render stops
+  emitting inline must leave the ENTRY, not just the line — de-nest at the COMPOSING seat.
+  Scope carve: single WORDS/sentence-TAILS substituted into a host sentence stay values
+  (de-nesting them breaks the host); their components are lock-tier until per-fragment
+  owners exist (`28M` §3).
+- **substitution-face-for-pure-holes** (`28L:rul-empty-registers-for-pure-holes` + x2j
+  as-built) — when a register's compiled template is EXACTLY one hole and the value is
+  registry-backed (`ParamText::Component` carries `(slug, occurrence, words, values, text)`),
+  the render stamps the section as the COMPONENT's own words/values face and the edit routes
+  to the component's entry. Interior holes (words of ours around the hole) deliberately fall
+  back to `ParamValue` — the remedy for those is per-fragment owners, priced and declined
+  (`28M` §3). The reason maps answer with the component, never a bare String, so the slug is
+  never thrown away.
 - **passthrough-is-type-gated** (`282:rul-passthrough-type-gated`; `296` is the census) — a hole is
   foreign because its VALUE is, never because the param is named `detail`. `aid::foreign` seals it:
   `ForeignBytes` is minted only at an I/O edge (`from_os_error`, or the loudly-named and lexically
@@ -193,11 +210,22 @@ crate's charter) · `notes/287` (errorloom as-built).
   `.rs` tests. That siting is deliberate — it makes THIS file the registry that fires on
   every loom edit (`288:rul-claudemd-fires-per-directory`). Cargo compiles only `tests/*.rs`,
   so the data files are inert here; the runners that drive them are
-  `crates/cli/tests/{e2e,looms}.rs`. The first why-faced REPORT cases are the
-  `why-drift-*.loom` pair (W4): each declares `arrangement: <its own slug>` — a BORROWED
-  page key (the report-case key design is open — `28H`) — and owns exactly its namesake
-  row (`is_case_owned` is a filename match; a foreign row edited through a multi-row
-  render refuses via `authored_words_are_case_owned`).
+  `crates/cli/tests/{e2e,looms}.rs`.
+- **ownership-is-declaration-union** (`28L` loom-final; supersedes the old
+  filename-match reading) — a case's owned prose-components are its FILENAME's implicit
+  entry (when the stem matches a registered slug) UNION its `owns:` frontmatter list
+  (`slug` / `slug@occurrence`); `owns:` is needed only in multi-component homes, and an
+  explicit `owns:` OUTRANKS another case's implicit filename claim. One component, one
+  owner, corpus-WIDE (`CaseOwnership::scan_collections` walks every `crates/*/tests`;
+  stem collisions across collections refuse). A foreign-component edit refuses at
+  compile naming the owning file (`ForeignComponent`); an unowned component is not
+  foreign — the mint path stays open. A whole-product (`cli/tests`) home is a real
+  owner (its transcript is fixpoint-proven by the e2e runner), reached by
+  `compile`/`promote` via explicit path.
+- **sync-residue-is-never-a-case** — the corpus lives in a live-synced tree; every
+  corpus walk (both dorc-loom loaders, the ownership scan, the runners' discovery)
+  skips `*.sync-conflict-*` filenames. Conflict-file CLEANUP stays human-owned; the
+  walkers just refuse to call residue a case (it reddened the gate twice, 2026-07-31).
 - **paths-are-manifest-relative** — the case lookup (`is_case_owned`, in both `catalog.rs`
   and `catalog_defining_cases.rs`) is now manifest-LOCAL — `CARGO_MANIFEST_DIR/tests/
   <slug>.loom` — so it survives a crate move. What still reaches ACROSS is `dorc-loom`:
@@ -233,6 +261,15 @@ crate's charter) · `notes/287` (errorloom as-built).
 
 - Diagnostic emission SITES belong in the crate that made the decision, never here. This
   crate owns types, catalog data, and render; it never decides.
-- Never edit `catalog_lock.rs` by hand (see `defining-case-catalog`).
+- The locks are generated; the transcript loop (`loom:compile`/`loom:promote`) is the
+  ordinary edit path. TWO sanctioned hand-edit carves exist, both orchestrator-tier and
+  both proven at the byte-identity fixpoint or refused: the arrangement hand-seed
+  (`arrangement-lock-is-generated-too`) and the direct-metadata catalog edit
+  (`error-prose-conductor-flow`'s carve — pure hole-name/structure changes where the
+  transcript route has a broken window; the x2f rename precedent). Everything else is a
+  hand-edit the gates refuse.
+- Dev-dependency note: `aid` carries a DEV-edge on `dorc-loom` (one ownership resolver for
+  the case-owned gates; production edges unchanged; `aid-is-dst-clean` untouched).
 - Never introduce a second prose home. Every user-facing string ends up loom-editable
-  (`288` §1) — a hardcoded string here is debt with a name.
+  (`288` §1) — a hardcoded string here is debt with a name; the arc-close accounting of
+  every surface (and the law-cited never-loom set) is `notes/28M`.

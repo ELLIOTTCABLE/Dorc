@@ -641,33 +641,36 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   testable bytes only unless an explicit transformation-aware driver preserves
   provenance. A pipeline such as `dorc plan --format=jsonl | jq --pretty` therefore
   carries no edit authority by default.
-- **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining
-  case; the **committed transcript CASE is the authoring surface** and the compiled
-  generated catalog lock/table is DERIVED from it (`282:rul-transcript-is-the-
-  authoring-surface`). Cases live at `crates/aid/tests/<slug>.loom` (txtar +
-  flat-YAML frontmatter; see flat-test-tree-and-loom-placement). The phase-two
-  compiler is split by ownership: errorloom
-  transports renderer-stamped editable sections and opaque variable identities;
-  dorc-loom alone parses strict whole-token `{{name}}`, resolves it against the
-  current typed payload, and compiles catalog fields. The old tagged-region/
-  param-table/re-holing/prose-bless path is dead; never restore it. Durable promotion
-  is LANDED (phase three, `notes/287`): `dorc-loom compile/promote` over a
-  content-bound receipt, publishing the wholly generated `core/src/catalog_lock.rs`
-  plus affected cases. All candidate bytes and both fixpoints precede publication;
-  final per-target temp-file replacements are not a promised crash transaction
-  (interruption is loud in git, repaired by rerun). The legacy `DORC_CATALOG_PROMOTE`
-  writer is retired; hand-edits to the lock are refused or caught. The build parses
-  the catalog and never auto-tracks case files (the lag IS the assertion).
-  The render-level fixpoint has exactly ONE authority — the looms runner, per committed loom
-  (`289:rider-fixpoint-gate-rationalize` retired `dorc-loom`'s stale 4-case allow-list); the
-  lock byte-identity gate stays corpus-global in `dorc-loom`'s own suite.
-  `message`/`help` are
-  `Option<&'static str>` (`None` renders the `[unwritten:]` placeholder at render
-  time, never a stored string); interpolated values use engine-owned canonical
-  formatters; sibling codes come from world-state/license variants ONLY, never
-  grammar-fit (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Both fixpoint gates
-  are live: errorloom render-level + Dorc's generated-lock byte-identity gate
-  (`dorc-loom --test fixpoint`).
+- **defining-case-catalog** (post-`282`-flip; loom-final as-built — `28L`/`28M`) —
+  every code has exactly ONE defining case; the **committed transcript CASE is the
+  authoring surface** and the generated locks are DERIVED from it
+  (`282:rul-transcript-is-the-authoring-surface`). Cases live at
+  `crates/aid/tests/<slug>.loom`; the locks at `crates/aid/src/{catalog,arrangement}_lock.rs`.
+  The split: errorloom transports renderer-stamped editable sections and opaque variable
+  identities; dorc-loom alone parses strict whole-token `{{name}}` (attached/backticked
+  spellings legal since loom-final), resolves against the current typed payload, and
+  compiles the fields. `dorc-loom compile/promote` over a content-bound receipt publishes
+  both locks + affected cases; all candidate bytes and both fixpoints precede publication.
+  THE EDIT FLOW every case teaches in its own `edit-loop:` line: `$EDITOR` the loom →
+  `mise run loom:compile -- <case>` → `loom:promote -- <case>`; `loom:vars`/`loom:sections`
+  discover; `dorc-loom add-register <case> help` seeds a help register (a typed
+  `HelpRegister` tri-state, never silent absorption); `--accept-metadata` acknowledges a
+  deliberate `when-fires`/`why` change (silent metadata drift refuses). `message: None`
+  renders `[unwritten: <slug>]` wearing its register's FACE (overtype IS the words-mint
+  path — the empty loop finally closed); a pure-hole register's section wears its
+  component's face (`aid/CLAUDE.md` substitution-face-for-pure-holes). Sibling codes come
+  from world-state/license variants ONLY, never grammar-fit; N same-world reason-sentences
+  are COMPONENTS via a typed reason enum beside the payload, never sibling codes
+  (`28L:rul-reason-enums-not-sibling-codes`). Foreign text is TYPE-sealed
+  (`aid::foreign`; `is_foreign_param` is dead; `{{detail}}` means passthrough, only).
+  THE LAW UNDER ALL OF IT (`28L:rul-editability-is-stamped-never-re-derived`): a render
+  seat emits a byte-exact, total-cover, stamped part stream; no component re-derives
+  structure/editability/word-boundaries from byte shapes; the committed transcript IS the
+  seat's bytes at the canonical width — gate-held by
+  `transcript_bytes_equal_production_bytes` + both lock byte-identity gates. Render seats
+  take a `RenderCtx` (catalog + arrangement lookup + frame; width is a parameter, the
+  canonical const binds only transcripts). The arc-close accounting of every prose
+  surface, incl. the law-cited never-loom set: `notes/28M`.
 - **flat-test-tree-and-loom-placement** (`288` §3, `rul-flat-test-tree` +
   `rul-slug-decides-loom-placement`) — every case is a peer in a flat
   `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom`
@@ -747,47 +750,31 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   attribution lines. Push stays ruthlessly selected even under the spike's
   kWARN tune-high.
 
-## Where the build stands (dated 2026-07-21 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
+## Where the build stands (dated 2026-07-31 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 
-- LANDED: the round-24 ladder Stages 1–5 + `270:block-rebuild` COMPLETE (eight
-  dispatches, both bless checkpoints stamped; ledger `notes/27D`, landing notes
-  `27E`–`27I`): the dorc-lang v0.1 corpus respell (`#`-selectors, sigil family,
-  disturbs-family names, markers+shebangs) · the typeless floor (auto-cell;
-  verdict-provider kernel seam; marker-gate at the cli edge; totalistic
-  forward-munge) · composed-predict probe emission (the `24J` raw-ship debt
-  REPAIRED — rul-only-oracle-bytes-ship is machine-pinned) · the `277` entity
-  algebra (chokepoints in `core::coord`; `Relation::Overlaps`; dialect sets;
-  context slot reserved) · cause-tagged fragment recipes + `ValueGrade` +
-  backing-SETS with observe-widening producing · `dorc-records/1` framing
-  (production deframer; strict path; `@@dorc@@` terminal token) · e2e
-  de-graduated 154→76 with the `render_corpus.rs` twin tier + the mandatory
-  dash-n net · whole-file `dorc strip` (parser-backed; erases the marker) +
-  `dorc-sh` thin bin.
-- The five old XFAIL specimens are RESOLVED (respell landed); no XFAILs at HEAD.
-- The `24J` raw-ship law-debt is CLEARED — the invariant block above remains
-  binding law; the "HEAD DEBT" annotation inside rul-only-oracle-bytes-ship is
-  historical.
-- LANDED (2026-07-19, the user-aid build phase — `notes/27U` is the ledger;
-  branch `ai/r27-aid` awaiting the human fold): legacy `Diagnostic` dead; the
-  ONE catalog (const-table + three-state prose + defining-cases 17/52 with the
-  shrink-only ratchet + the promote fixpoint tool) · the sealed evidence plane
-  minted at every collapse class · the whylog durable + `dorc why --last`
-  replay · the `27W` report lane's static tiers + ingestion + the runtime drain, the
-  last re-landed on an exclusively-created scratch directory (decline-class-emission
-  above; no e2e case renders a drained probe yet) ·
-  minting-line/file:line attribution end-to-end · the arrangement walker + THE
-  FLAGSHIP GREEN (the naked-trust chain, live and replayed) · lint absorbed
-  (one severity vocabulary; `dorc_oracle::validate` book-free;
-  rung-oracle-solo) · caret plumbing + multi-line frames · `conduct-bless.sh`.
-- ERRORLOOM FOLLOW-ON: phase-two editable transport + strict Dorc template compiler
-  are accepted on `ai/r28-errorloom-phase2`. Phase-three Unit 1 is in REWORK on
-  `ai/r28-phase3-unit1-cli`: its command surface/inventories remain useful, but
-  content-skeleton replay selection is rejected. NEXT is the consumer-neutral
-  replay-driver/result seam + Dorc exact-shape dispatch, then receipts/promotion;
-  durable handoff `28A`, design authority `282`.
-- HORIZON AFTER the errorloom follow-on: `270:block-stdlib` under the human-led
-  conductor (`27Q` on-ramp; the minting-line precondition is now DISCHARGED), then
-  the field-trial revival.
+- THE LOOM-FINAL ARC (2026-07-29→31; conduct ledger `notes/28L`; accounting
+  `notes/28M`) COMPLETE on `ai/r28-loom-final`: the errorloom/dorc-loom pipeline is
+  the project's working prose-edit surface end-to-end. The boundary weld (diagnostic
+  renders compose weft documents; the two-render-chain split and its byte-shape
+  re-detection layer DELETED; `transcript_bytes_equal_production_bytes` is the
+  standing gate) · placeholder overtype + revision + `{{var}}` moves (attached
+  spellings legal) · the Rust-surface contract (a payload field is compile-forced
+  through `params_of_raw`; fixture worlds live beside payloads; loom internals
+  unreachable from the Rust persona's path) · ownership declarations + metadata
+  drift refusal + `edit-loop:` teaching lines · the records-admission seam
+  (`admit_fixture_records`, opaque-ACK'd 28-reviewA) · the foreign-text seal ·
+  reason-enum migrations (`detail: String` extinct) · ~176-case corpus with the
+  measured/survival why-worlds · six main.rs extractions behind the lib seam.
+- Catalog: 95 codes, 87 case-owned; ratchet = 8 `records-*` (no production emitter;
+  HUMAN DECISION pending: delete-under-no-compat vs the r26-revival wiring).
+  Components: ~181 transcript-faced; 31 lock-tier with the remedy priced
+  (per-fragment owners, declined); never-loom set law-cited in `28M`.
+- Blind-reviewer rounds (loom-naive Rust persona, tooling-only) are the standing
+  empirical gate on the flows; round 1 landed its chafe into the build.
+- HORIZON: `270:block-stdlib` under the human-led conductor (`27Q` on-ramp), the
+  field-trial revival, and the r26 records/reactive revival (which inherits the
+  records-8 decision). Post-arc loom residue is enumerated in `28M` §3 — nothing
+  loom-shaped is deferred anywhere else.
 
 ## Build / test / run
 
