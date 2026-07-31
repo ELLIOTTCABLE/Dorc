@@ -2,6 +2,9 @@
 code: cmdsub-operand-top
 when-fires: a `$(…)`/runtime-dynamic operand (or the command word) forced a command to ⊤, so it runs (never elided). effect.rs finalize_cmdsub_tops.
 why: no-silent-phantoms disclosure (find-3); the template fills `{position}` from `OperandPosition::describe()` and `{cause}` from `TopCause::describe()`. Case-owned (the cmdsub flagship, `crates/dorc-loom/cases/cmdsub-operand-top.loom`): prose authored at the transcript surface, awaiting the human rewrite pass.
+owns:
+  - why-operand-position
+  - why-top-cause-unmodeled-expansion
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cmdsub-operand-top && mise run loom:promote -- cmdsub-operand-top`. `mise run loom:vars -- --all cmdsub-operand-top` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --

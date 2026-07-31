@@ -1,0 +1,30 @@
+---
+arrangement: why-reason-cmdsub-opener
+owns:
+  - why-reason-cmdsub-closer
+  - why-remediation-resolve-dynamism
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-reason-cmdsub-opener && mise run loom:promote -- why-reason-cmdsub-opener`. `mise run loom:vars -- --all why-reason-cmdsub-opener` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+# The operand is a command-substitution, so the analyzer cannot know its value until the host
+# runs it -- the site runs, and the why-report's because-line is the whole cause chain.
+apt-get install -y "$(cat /etc/webhost/pkgset)"
+
+-- replay --
+$ dorc why book.sh:4 --book=book.sh
+      [ book.sh, participating lines:
+   4 | apt-get install -y "$(cat /etc/webhost/pkgset)"
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   4|apt-get ran RATHER THAN guarded:
+      ran because operand 3 is a command-substitution `$(...)` or runtime-dynamic value --
+      its value couldn't be resolved (first seen at 192:239 `apt-get install -y "$(cat
+      /etc/webhost/pkgset)"`); so dorc runs it, to stay safe (when unsure, run). to skip it,
+      make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
