@@ -623,6 +623,36 @@ lanes thread by fresh census, never by the map's count.
   the defect to the lint seat. Also exercised live: the lock-not-clean refusal
   (x2d's remediation text — correct, actionable), the loop-hint teaching, vars
   discovery. Full local suite green (1657/1657) at the rehearsal tip.
+- **X2b FOLDED** (`ai/r28-loom-final` @ `16577d6b`; both legs green at its tip,
+  Win 1680 / WSL 1676; self-rebased twice as the target moved, framed-source hunks
+  verified surviving both times). The records seam landed AS RATIFIED:
+  `cli/src/results.rs` behind the loom seam; `admit_controller_records` (production,
+  takes the controller's framing + pre-bounded bytes — the read stays at main.rs) vs
+  `admit_fixture_records` (no Framing/host/nonce/attempt — a fixture caller cannot
+  name a host in principle); scope fields stay private with checks moved ONTO the
+  type (`matches_claims` — the better reading of check-never-mint); rider (b)'s
+  lexical fence `fixture_intake_is_unreachable_from_production` PROVEN TO BITE
+  (needle injected, failed correctly, restored). Survival extraction: ~880 lines
+  verbatim to `cli/src/survival.rs` (third seam instance);
+  `survival_diagnostics(...)` = the binary's own sequence; `< results` traverses the
+  REAL intake honouring all three Admission arms (Refused refuses the world — never
+  an empty degrade); BONUS: X2a's world.rs had COPIED the probe-shipping helpers
+  rather than sharing — duplication collapsed, drift-risk closed (glanced at fold:
+  correct). Four survival cases honestly firing; `deriv-family-incomplete` is the
+  seam's end-to-end proof (full framed records through the production intake path).
+  RATCHET 12 → 8: only the human-flagged records-8 remain. Spent backups awaiting
+  human force-delete: `x2b-prerebase-backup` · `x2b-prerebase2-backup`.
+- **x2e DISPATCHED** (the final why-face sweep, worktree loom-x2e off `16577d6b`;
+  the last build lane besides x2c): (1) the lint-route mirror fix
+  (fnd-lint-route-rerender-reads-const-not-mirror) + a promote-then-immediate-
+  fixpoint pin; (2) `WhyWorld::analyze` gains optional records + `consented` per
+  X2b's §6 spec (RunClock::Absent on the loom path — a transcript must be a
+  fixpoint; the refuse-the-case arm preserved; the stale RESIDUAL-SCOPE-CUT
+  docstring rewritten); (3) mint measured/survival why cases until every reachable
+  `why-*` prose-component has a face — the ~35 records-gated families from X2a's
+  list; un-faceable residue LISTED with mechanical reasons for the ledger;
+  (4) the framed-header admission refusal prints the expected header
+  (rul-refusals-name-the-next-command).
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
