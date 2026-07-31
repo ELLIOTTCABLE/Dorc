@@ -285,3 +285,89 @@ composites nobody's fault.
   glance owed at fold) · `28O`'s rebase section records a pre-existing Windows-only
   stack overflow in `mise run loom:compile` on `syntax-unsupported-nesting-bound`
   (WSL leg fine).
+
+## §8. Sitting Q1 (2026-07-31) — "contested family," lowered: what is contested, what that disproves, what survives
+
+Rubber-duck round on `rat-blessing-vocabulary-v0` × `28O:dec-withdrawal-is-undescribed-
+not-unlicensed`; grades as in the header.
+
+- **rul-conflict-between-totals-is-falsification** [ACKED hard] — divergence between
+  judgment-tier claims is legitimate pluralism; divergence between complete-by-contract
+  (`only`) claims is falsification evidence: at least one survey is factually
+  incomplete, and we cannot tell which. Rider [TYPED]: falsification never licenses
+  fail-fast where gradual-enhancement should hold — but the engine should know the two
+  classes apart and tune future handling per class.
+- **totalistic-is-not-a-safety-class** [ACKED; the exemption claim it answered is
+  retracted] — kind-member contest-immunity comes from single-occupancy in an owned
+  namespace (§3 wall-kind-owner-single-occupancy), never from totalism; `only` governs
+  authoring completeness (born-total vs arm-incremental), orthogonal to
+  authorship-plurality. Corollaries: `cmd__disturbs` — the member §4 actually targets —
+  is not `only`-named (arm-incremental, decline-calibrated, judgment-tier); and within
+  the `only` pair, a wrong `reaches_only` fails soft (over-walls) while a wrong
+  `state_stored_only_in`/invariance mark fails sharp (grants carry ⇒ under-execution).
+  Staleness rider: totals rot, and pre-MH2 contest-or-custody are the only displacement
+  paths — contest-inertness would make rot permanent-until-fork.
+- **rul-composite-meets-toward-guard-run** [ACKED hard — "our product rule restated
+  precisely for this domain"] — an engine-assembled cross-author composite is
+  admissible iff it only WITHHOLDS (walls more; grants nothing any single author did
+  not grant); a GRANTING composite needs one speaker, or entailment-by-each-author —
+  and entailment-by-each fails for frame-relative tokens (the concrete
+  res-dialect-word-pooling case: A's claim-token `@synced` read against B's live
+  backing `@current` "disjoint"-spares a cell both authors meant as one state;
+  footprint-union is therefore NOT entailment-safe even though a wider at-most is a
+  weaker sentence). The three strong requirements this implies [TYPED], none easy:
+  (1) composition must be well-formed; (2) the engine must know what-would-happen under
+  each contributor ALONE — construct a view of the universe excluding one fact,
+  evaluate, invert, then compute the meet; (3) a STRUCTURED sense of each property's
+  meaning and its meets-toward direction, checkable at the claims-meet-point (did it
+  ratchet the correct way). Rhymes with inv-must-may · ternary-compare-consumer-map ·
+  set-lifting-universal-meet, but this is a NEW CONSUMER; whether precisely-this
+  machinery exists is unmeasured. Lean [TYPED]: machinery-high and typecheckable — in
+  an LLM-built codebase, invariants held without mechanism scare.
+- **fnd-split-family-composes-unrefused** [conductor analysis; UNACKED] — the contest
+  trigger keys on name-shadowing, but a family can span authors with NO shadowed name
+  (A ships `predict` + `disturbs`; B ships only `is_converged`): stage E cannot fire,
+  and §4's fence catches it only at the sparing tier (span ≠ shadow). At the ELIDE
+  tier this composes B's vouch with A's asserted channel values — a replacement
+  reproduces bytes A asserted under A's convergence sense, licensed under B's — while
+  a GUARD consumes nothing from predict (guards-mint-no-values). Guard is monologue;
+  elide is dialogue — the kHALVES echo on the authorship axis, and evidence that §3's
+  wall-verdict-tier-sovereignty over-claims ∅ (the monologue holds only single-unit).
+  Riders: this resurrects price-union-of-strangers at MEMBER granularity
+  (member-complementary strangers union with zero ceremony, zero refusal); and it
+  leaks `28K` §8-monotonicity in spirit (no one's judgment is reassigned, yet the
+  composite grant is new and dual-authored). Candidate cheap rule, unruled: elide
+  demands vouch-member and predict-member same-custody; split families guard. Open
+  measurement, beside §7's commissioned composition tests: whether a channel-free
+  elide reads predict's Effect at all — if site-convergence derives wholly from the
+  shipped verdict body, that cell is B-only, a monologue.
+- **The retainability matrix** (shadowed-verdict contest; the composite rule applied
+  per member): the verdict seat — nothing retainable; genuinely undecided until
+  blessed (as-built correct). An uncontested `predict` as participant-model in OTHER
+  oracles' composed probes — epistemically retainable (single-author, factual, the
+  consumer never touches the disputed judgment, and every blessing outcome uses it
+  anyway) ⇒ today's family-wide undescribe is conservative-not-principled there;
+  retention is a legitimate ADDITIVE softening, later. `disturbs` + all selector
+  tokens — not retainable (frame-relativity: the contest disputes the frame itself;
+  the fence's collide is right). `lend_map` — licenses withheld; a grammar-tier
+  coherence CHECK retained as aid (peel disagreement is a strong hint). Aid plane —
+  everything retainable as attributed narration (two-plane law).
+- **Overlay via multi-file structure** [direction ACKED; deferred, TYPED] — the §6
+  overlay tax is really a MONOLITH tax: per-family files + deep-sourcing dissolve it
+  at FAMILY granularity, fully natively (the replaced family's file simply never
+  loads: no plurality, no refusal; sole-providership consent stays coherent under
+  `28K` §3). It does NOT unscrew price-patch-author — member-granular patching is
+  exactly the split-family configuration above. Build riders for when it lands:
+  `28K` §4's pin-closure wording widens to "from the live environment, wherever
+  sourced" (cross-file helper closures — same seam as §7's commissioned tests);
+  diamond-loading keys unit-identity to the DEFINING file's `SourceFileId` (pin a
+  test; version-skewed vendored copies then correctly refuse); entrypoint-only
+  constants under deep-require should wall loudly (~SUSPECT, confirm) — lint
+  candidate; and the refusal guards against ACCIDENTAL reassignment only — a
+  vendored-modified "overlay" gains sole-providership with no refusal; supply-chain
+  trust is explicitly not this machinery's job (docs say so, once). Ruling [TYPED]:
+  further overlay discussion needs concrete strawmen or passing tests — revisit
+  mid/post-impl; overlay-writer remedies slide BEHIND the kernel concerns here and in
+  `26K`, never in front.
+- **Task minted** [TYPED]: `cmd__predict` under the composite rule needs its own
+  analysis — too many forking design-paths to settle inline.
