@@ -7,8 +7,6 @@ expect-why:
   - site 1 survives+elides past wall site 0 && touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Firewall:443/tcp disjoint
 expect-why-chain:
   - === OUTCOME ===
-owns:
-  - why-chain-event-received
 ---
 -- book.sh --
 #!/bin/sh
