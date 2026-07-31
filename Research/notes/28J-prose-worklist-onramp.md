@@ -1,5 +1,15 @@
 # 28J — the prose-authoring worklist + on-ramp (durable home)
 
+<!-- superceded by 28L (the loom-final arc, 2026-07-30): this worklist's editability
+claims were FALSE when written — "the 7 unwritten catalog codes, all loom-editable
+today" refused MarkerOutsideEditableSection for every one (the placeholder rendered as
+immutable chrome), and the written whylog-* entries refused on revision (the reflow
+title-join swallowed `= help:`). The human hit both walls. The loom-final arc rebuilt
+the boundary machinery (28L; the map at `_loom-final-map-DRAFT.md` in that arc's git
+history); every count and flow below is stale — the current flows are the `edit-loop:`
+line carried IN each case file, and the census is `dorc-loom sections`. Read this
+document only as the shape of the human's W5 intent. -->
+
 AI-authored (Fable conductor, 2026-07-26). The lane-prose-onramp inventory (report-only
 lane, banked compressed in `28H` §2), made durable and REFRESHED against the W4 folds
 (carrier/parts/span landed; drifted-driver in flight). This is the human's W5 working
