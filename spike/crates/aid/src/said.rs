@@ -55,9 +55,13 @@ pub enum Said {
     Mark(&'static str, String),
     /// Bytes taken from somebody else's file, ENCODED AT MINT — so a surface that shows them is
     /// safe by construction rather than by each seat remembering (`28D:must-encode-per-surface`).
+    ///
+    /// Typed, not a `String` (`282:rul-passthrough-type-gated`): a variant field is effectively
+    /// public, so a `String` here let any literal in this repo declare itself somebody else's
+    /// bytes.
     Foreign {
         /// The bytes, already encoded.
-        text: String,
+        text: crate::ForeignText,
         /// What they were taken from.
         source: String,
     },
@@ -106,9 +110,9 @@ impl Said {
 
     /// Somebody else's bytes, encoded HERE so no later seat can forget to.
     #[must_use]
-    pub fn foreign(text: &str, source: impl Into<String>) -> Self {
+    pub fn foreign(bytes: &crate::ForeignBytes, source: impl Into<String>) -> Self {
         Said::Foreign {
-            text: encode_foreign(text, WHY_SOURCE_CAP),
+            text: bytes.on_measured_sink(WHY_SOURCE_CAP),
             source: source.into(),
         }
     }
@@ -127,7 +131,8 @@ impl Said {
                 let borrowed: Vec<&str> = interleaved.iter().map(String::as_str).collect();
                 arrangement_sentence(ctx.arrangements(), slug, *occurrence, &borrowed)
             }
-            Said::Value(text) | Said::Mark(_, text) | Said::Foreign { text, .. } => text.clone(),
+            Said::Foreign { text, .. } => text.as_str().to_owned(),
+            Said::Value(text) | Said::Mark(_, text) => text.clone(),
             Said::Parts(parts) => parts.iter().map(|said| said.text(ctx)).collect(),
         }
     }
@@ -149,7 +154,7 @@ impl Said {
             Said::Value(text) => vec![crate::weave::value(text, part, WHY_VALUE_CAP)],
             Said::Mark(mark, text) => vec![crate::weave::mark(text.clone(), mark)],
             Said::Foreign { text, source } => {
-                vec![crate::weave::foreign(text, source.clone(), WHY_SOURCE_CAP)]
+                vec![crate::weave::foreign_run(text, source.clone())]
             }
             Said::Parts(parts) => parts.iter().flat_map(|said| said.runs(ctx, part)).collect(),
         }
@@ -250,7 +255,10 @@ mod tests {
         let stream = Said::Parts(vec![
             Said::Value("6:20".to_owned()),
             Said::Mark("why-cause-quote", " `".to_owned()),
-            Said::foreign("apt-get install -y \"$PKG\"", "book.sh"),
+            Said::foreign(
+                &crate::ForeignBytes::from_io_edge("apt-get install -y \"$PKG\""),
+                "book.sh",
+            ),
             Said::Mark("why-cause-quote", "`".to_owned()),
         ]);
         assert_eq!(
@@ -272,7 +280,10 @@ mod tests {
     /// be: a fragment carrying a terminal escape is already harmless before any seat sees it.
     #[test]
     fn not_ours_bytes_are_encoded_before_any_surface_sees_them() {
-        let said = Said::foreign("red \u{1b}[31m alert", "oracle.sh");
+        let said = Said::foreign(
+            &crate::ForeignBytes::from_io_edge("red \u{1b}[31m alert"),
+            "oracle.sh",
+        );
         assert_eq!(said.text(&RenderCtx::production()), "red \\x1b[31m alert");
         assert!(said.text(&RenderCtx::production()).is_ascii());
     }

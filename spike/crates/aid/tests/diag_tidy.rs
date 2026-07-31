@@ -986,3 +986,81 @@ fn fixture_intake_is_unreachable_from_production() {
          passes vacuously"
     );
 }
+
+/// The FOREIGN-EDGE FENCE (`282:rul-passthrough-type-gated`, the `admit_fixture_records`
+/// precedent). `ForeignBytes::from_os_error` needs no fence — its argument type already says the
+/// words came from the platform — but `from_io_edge` takes a bare `&str`, and an unfenced bare-str
+/// constructor is exactly the hole the seal exists to close: any sentence we composed could reach
+/// it and arrive wearing the not-ours badge, un-editable at the loom and indistinguishable from a
+/// host's bytes to anything reasoning about provenance downstream.
+///
+/// So the constructor is spellable only at the files listed here, each a genuine relay of bytes
+/// somebody else wrote. Adding a file to this list is a claim about that file, reviewed as one.
+#[test]
+fn foreign_edge_constructor_is_fenced() {
+    /// Path suffixes (`/`-spelled) permitted to name the bare-str edge constructor, and why.
+    const ALLOWED: &[(&str, &str)] = &[
+        (
+            "aid/src/diag.rs",
+            "quotes book and oracle source into carets and cause loci",
+        ),
+        (
+            "aid/src/fixture.rs",
+            "the canned stand-in worlds, which stand in for real edges",
+        ),
+        (
+            "aid/src/foreign.rs",
+            "the seal itself: the constructor's own definition and its tests",
+        ),
+        ("aid/src/said.rs", "an inline test's book-line excerpt"),
+        ("aid/src/weave.rs", "an inline test's oracle-arm excerpt"),
+        (
+            "cli/src/main.rs",
+            "names the unprobed book sites and quotes the first one's source",
+        ),
+        (
+            "cli/src/why.rs",
+            "quotes book, oracle and shipped-guard source into the why report",
+        ),
+        (
+            "lint/src/source_external.rs",
+            "captures an external linter's own output",
+        ),
+    ];
+    const NEEDLE: &str = "from_io_edge(";
+
+    let crates = crates_dir();
+    let mut files = Vec::new();
+    for entry in std::fs::read_dir(&crates)
+        .expect("crates/ is readable")
+        .flatten()
+    {
+        rs_files(&entry.path().join("src"), &mut files);
+    }
+    assert!(!files.is_empty(), "the foreign-edge fence scanned no files");
+    let mut seen = 0usize;
+    for file in files {
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            continue;
+        };
+        if !text.contains(NEEDLE) {
+            continue;
+        }
+        let path = file.display().to_string().replace('\\', "/");
+        let allowed = ALLOWED.iter().find(|(suffix, _)| path.ends_with(suffix));
+        assert!(
+            allowed.is_some(),
+            "{path} names `{NEEDLE}` — that constructor declares bytes to be somebody else's, and \
+             a sentence composed here is OURS. Move the words into the code's catalog register \
+             with typed holes (282:rul-passthrough-type-gated); if this really is an I/O relay, \
+             add it to ALLOWED in this test with its reason."
+        );
+        seen += 1;
+    }
+    assert_eq!(
+        seen,
+        ALLOWED.len(),
+        "an ALLOWED entry no longer names the edge constructor — drop it rather than leaving the \
+         fence wider than the code"
+    );
+}

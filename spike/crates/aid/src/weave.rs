@@ -174,12 +174,20 @@ pub fn mark(text: impl Into<String>, part: &'static str) -> Run<Face> {
 ///
 /// The `cap` is the CALLER's, in bytes: a breadcrumb and a quoted source line want very different
 /// budgets, and the seat has no way to tell which it is holding.
+///
+/// Takes [`ForeignBytes`](crate::ForeignBytes) rather than a `&str`
+/// (`282:rul-passthrough-type-gated`): weft cannot hold the seal itself
+/// (`weft-deps-nothing` — it knows no Dorc type), so this adapter seat is where the seal is
+/// checked, and it is the only Dorc-side route into `Run::foreign`.
 #[must_use]
-pub fn foreign(text: &str, source: impl Into<String>, cap: usize) -> Run<Face> {
-    Run::foreign(
-        crate::display::encode_foreign(text, cap),
-        Face::Source(source.into()),
-    )
+pub fn foreign(bytes: &crate::ForeignBytes, source: impl Into<String>, cap: usize) -> Run<Face> {
+    foreign_run(&bytes.on_measured_sink(cap), source)
+}
+
+/// The same run, for bytes a [`Said`](crate::Said) already encoded at mint.
+#[must_use]
+pub fn foreign_run(text: &crate::ForeignText, source: impl Into<String>) -> Run<Face> {
+    Run::foreign(text.as_str().to_owned(), Face::Source(source.into()))
 }
 
 /// A run of catalog or registry prose, as the whitespace-absorption rule compares them.
@@ -392,9 +400,7 @@ pub fn to_runs(parts: &RenderParts) -> Vec<Run<Face>> {
                 },
                 Instance(u32::try_from(*instance).unwrap_or(u32::MAX)),
             ),
-            RenderPart::ForeignText { text, source } => {
-                Run::foreign(text.clone(), Face::Source(source.clone()))
-            }
+            RenderPart::ForeignText { text, source } => foreign_run(text, source.clone()),
             RenderPart::Arrangement { text, slug } | RenderPart::ArrangementPage { text, slug } => {
                 mark(text.clone(), slug)
             }
@@ -535,7 +541,10 @@ fn part_of(facet: Facet, text: String) -> RenderPart {
             param,
             instance,
         },
-        Facet::Foreign(source) => RenderPart::ForeignText { text, source },
+        Facet::Foreign(source) => RenderPart::ForeignText {
+            text: crate::ForeignText::already_encoded(text),
+            source,
+        },
         Facet::Computed(slug) => RenderPart::Arrangement { text, slug },
         Facet::Layout => RenderPart::Arrangement {
             text,
@@ -563,7 +572,7 @@ mod tests {
             lines: vec![CodeLine {
                 gutter: Some(value("31", "excerpt-line", 32)),
                 cells: vec![CodeCell::new(vec![foreign(
-                    "push)\tprintf 'x'\u{7}",
+                    &crate::ForeignBytes::from_io_edge("push)\tprintf 'x'\u{7}"),
                     "certsync.oracle.sh",
                     512,
                 )])],

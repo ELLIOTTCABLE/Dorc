@@ -43,6 +43,9 @@ pub mod chain;
 
 pub mod display;
 
+pub mod foreign;
+pub use foreign::{ForeignBytes, ForeignText, ParamText};
+
 pub mod instant;
 
 pub mod said;
@@ -154,7 +157,7 @@ mod tests {
         // registry-Warning, so `has_errors()` stays false.
         let warn = Diag::new(
             diag::DiagCode::CfgBuiltinShadowed(diag::CfgBuiltinShadowed {
-                detail: "heads up".to_owned(),
+                name: "cd".to_owned(),
             }),
             Span::new(BytePos(0), BytePos(1)),
         );

@@ -250,7 +250,7 @@ pub fn fill_template(template: &str, params: &[(&str, &str)]) -> Result<String, 
 /// Returns [`TemplateRefusal`] for invalid template syntax or an unknown parameter.
 pub fn fill_template_parts(
     template: &str,
-    params: &[(&'static str, &str)],
+    params: &[(&'static str, crate::ParamText)],
     code: &'static str,
     field: crate::tagged::Field,
     instance: usize,
@@ -271,37 +271,29 @@ pub fn fill_template_parts(
             }
             TemplatePart::Literal(_) => {}
             TemplatePart::Hole(name) => {
-                let Some(&(param, value)) = params.iter().find(|(key, _)| *key == name) else {
+                let Some((param, value)) = params.iter().find(|(key, _)| *key == name) else {
                     return Err(TemplateRefusal::UnknownParam(name));
                 };
-                let text = String::from(value);
-                if is_foreign_param(param) {
-                    parts.push(RenderPart::ForeignText {
-                        text,
-                        source: String::from(param),
-                    });
-                } else {
-                    parts.push(RenderPart::ParamValue {
-                        text,
+                // The class comes from the VALUE's type, never from the param's name
+                // (`282:rul-passthrough-type-gated`) — a passthrough is a passthrough because its
+                // payload field is sealed foreign, not because somebody called it `detail`.
+                match value {
+                    crate::ParamText::Foreign(text) => parts.push(RenderPart::ForeignText {
+                        text: text.clone(),
+                        source: String::from(*param),
+                    }),
+                    crate::ParamText::Ours(text) => parts.push(RenderPart::ParamValue {
+                        text: text.clone(),
                         code,
                         field,
                         param,
                         instance,
-                    });
+                    }),
                 }
             }
         }
     }
     Ok(parts)
-}
-
-/// Whether a declared param carries passthrough foreign text (`282:rul-passthrough-type-gated`).
-/// Keyed conservatively on the `detail`
-/// passthrough convention ([`crate::diag::params_of`] yields `detail` for every PASSTHROUGH code);
-/// the type-gated user-sourced distinction is the `282` §8 de-passthrough work, LATER.
-#[must_use]
-pub fn is_foreign_param(param: &str) -> bool {
-    param == "detail"
 }
 
 /// One run in a parsed catalog template.

@@ -40,9 +40,15 @@ pub enum RenderPart {
         instance: usize,
     },
     /// Foreign payload text: bytes that are not ours, and never an edit region.
+    ///
+    /// Typed rather than a `String` (`282:rul-passthrough-type-gated`): an enum variant's fields
+    /// are effectively public, so while these bytes were a `String` any literal in this repo could
+    /// construct one and our own sentence would arrive wearing the not-ours badge. A
+    /// [`ForeignText`](crate::ForeignText) can only be reached from an I/O edge, through the
+    /// display seat.
     ForeignText {
         /// Rendered bytes, which may be empty.
-        text: String,
+        text: crate::ForeignText,
         /// Where the bytes came from — the declared param name on the catalog path, the file
         /// they were quoted out of on the weft path. Runtime-owned because the weft path's
         /// answer is a path a book named, not a name a catalog row declared
@@ -108,9 +114,9 @@ impl RenderPart {
     #[must_use]
     pub fn text(&self) -> &str {
         match self {
+            RenderPart::ForeignText { text, .. } => text.as_str(),
             RenderPart::TemplateLiteral { text, .. }
             | RenderPart::ParamValue { text, .. }
-            | RenderPart::ForeignText { text, .. }
             | RenderPart::Arrangement { text, .. }
             | RenderPart::ArrangementPage { text, .. }
             | RenderPart::ArrangementWords { text, .. }
