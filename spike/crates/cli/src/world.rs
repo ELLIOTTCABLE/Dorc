@@ -444,6 +444,7 @@ impl WhyWorld {
 }
 
 /// The loaded-oracle index a threaded span belongs to (`law-lineno-identity`).
+#[must_use]
 pub fn source_file_id(idx: usize) -> dorc_core::SourceFileId {
     dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX))
 }

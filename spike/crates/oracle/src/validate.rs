@@ -77,42 +77,7 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
         }
     }
 
-    // The tolerance CORROBORATION lints, per file (stage `tolerance`). Both directions of `27C` §6
-    // (a `safe-across user` over a body that visibly reads identity; a body that visibly reads
-    // identity with no vouch at all), recognize-never-license: neither blocks anything, both ask.
-    // They belong here rather than at either consumer because both consumers want them — the author
-    // hot loop through `dorc lint`, and the plan lane through `report_at`.
-    for (i, src) in oracles.iter().enumerate() {
-        let verdicts = crate::predict::lift_verdicts_converged(interner, src).value;
-        let mut diags = Vec::new();
-        for provider in verdicts.providers() {
-            let Some(verdict) = verdicts.get(provider) else {
-                continue;
-            };
-            // The lift's OWN diags are the lint lane's already; taking them again here would
-            // double-report every `safe-across` malformation on the oracle-solo rung.
-            let (vouch, _) = crate::entry::lift_tolerance(verdict);
-            diags.extend(crate::entry::corroborate_tolerance_over_identity(
-                &vouch,
-                verdict,
-                interner,
-                verdict.name_span,
-            ));
-            diags.extend(crate::entry::hint_heavy_context_no_vouch(
-                &vouch,
-                verdict,
-                interner,
-                verdict.name_span,
-            ));
-        }
-        if !diags.is_empty() {
-            stages.push(StageDiags {
-                stage: "tolerance",
-                file: Some(i),
-                diags,
-            });
-        }
-    }
+    push_tolerance_stages(&mut stages, interner, oracles);
 
     // The lend-map dimension lint, per file (stage `lend`). `derive_lend_map`'s diags had no
     // consumer at all: the wrapper index takes its VALUE and drops them, so an unknown dimension
@@ -185,6 +150,45 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
     OracleValidation {
         stages,
         wrapper_incoherent,
+    }
+}
+
+/// The tolerance CORROBORATION lints, per file (stage `tolerance`). Both directions of `27C` §6
+/// (a `safe-across user` over a body that visibly reads identity; a body that visibly reads
+/// identity with no vouch at all), recognize-never-license: neither blocks anything, both ask.
+/// They belong here rather than at either consumer because both consumers want them — the author
+/// hot loop through `dorc lint`, and the plan lane through `report_at`.
+fn push_tolerance_stages(stages: &mut Vec<StageDiags>, interner: &mut Interner, oracles: &[&str]) {
+    for (i, src) in oracles.iter().enumerate() {
+        let verdicts = crate::predict::lift_verdicts_converged(interner, src).value;
+        let mut diags = Vec::new();
+        for provider in verdicts.providers() {
+            let Some(verdict) = verdicts.get(provider) else {
+                continue;
+            };
+            // The lift's OWN diags are the lint lane's already; taking them again here would
+            // double-report every `safe-across` malformation on the oracle-solo rung.
+            let (vouch, _) = crate::entry::lift_tolerance(verdict);
+            diags.extend(crate::entry::corroborate_tolerance_over_identity(
+                &vouch,
+                verdict,
+                interner,
+                verdict.name_span,
+            ));
+            diags.extend(crate::entry::hint_heavy_context_no_vouch(
+                &vouch,
+                verdict,
+                interner,
+                verdict.name_span,
+            ));
+        }
+        if !diags.is_empty() {
+            stages.push(StageDiags {
+                stage: "tolerance",
+                file: Some(i),
+                diags,
+            });
+        }
     }
 }
 
