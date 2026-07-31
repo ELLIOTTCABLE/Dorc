@@ -1,4 +1,4 @@
-# 295 — Committee speech: the multi-author-family corner, its fence, and its price
+# 28M — Committee speech: the multi-author-family corner, its fence, and its price
 
 > Tier: LLM-authored, conductor-synthesized from a human design dialogue (2026-07-28/29,
 > session `r28-name-resolution-and-conflicts-impl`), the sitting that scope-crept out of the
@@ -7,7 +7,7 @@
 >
 > **This note is the authoritative home for the multi-author-family / committee-speech /
 > vocabulary-keying corner of the design** (human direction, typed). Supersession markers
-> into `28K` (§3 polyfill wording, §7 premise), `294` (the collide-on-plural framing, the
+> into `28K` (§3 polyfill wording, §7 premise), `28O` (the collide-on-plural framing, the
 > res-polyfill item), and the E→F checkpoint asks will be added HERE AND THERE only once the
 > human ratifies — not before; the corner is still settling. Until then, on conflict, this
 > note records the latest thinking and `28K` remains the ruled plan.
@@ -79,7 +79,7 @@ already queued as the registered-verdict-selector dispatch, `analysis/CLAUDE.md`
 
 Set aside first: **sub-different-tool** [TYPED] — every instance downstream of "the
 descriptions refer to different actual tools" (platform variants, versions). MH2-owned;
-its re-entry trigger sharpened to "the first real stdlib fork" (`294` banked the same
+its re-entry trigger sharpened to "the first real stdlib fork" (`28O` banked the same
 direction). And **sub-unit-custody-general** [TYPED set-aside] — whole-file-as-speaker as
 a GENERAL mechanism: majority-language solution, gradual-enhancement-hostile in a world of
 unevenly-attended third-party descriptors; not adopted as a rule (but see the narrow
@@ -132,7 +132,7 @@ Explicitly NOT the set-aside unit-custody-general rule: unit-boundary is a narro
 DISQUALIFIER in an opt-in tier, never a trust mechanism. Escape is native and
 speech-shaped: fork-the-file = taking custody of the whole utterance (vendoring-with-
 custody, already §3-sanctioned in `28K`), which converts the committee back into an
-author. Supersedes-when-ratified: `294`'s collide-on-plural framing (this is its
+author. Supersedes-when-ratified: `28O`'s collide-on-plural framing (this is its
 generalization to members) and the DefId-by-content lean (rejected: bytes are the wrong
 proxy — a one-arm fork severs a genuinely shared language; names too coarse, bytes too
 fine, positions orthogonal; only custody and, eventually, kind-registration speak).
@@ -171,7 +171,7 @@ weld, never licensure.
    withdrawal) until spelled consent; provable-shadow-only (ruling (ii)); ⊤ licenses
    nothing (pinned); subshell scoping is consent-by-boundedness; polyfill guards exempt
    today by ⊤-abstention, properly by the banked decidable-condition fold
-   (`294:res-polyfill-binding-tops-pending-fold`).
+   (`28O:res-polyfill-binding-tops-pending-fold`).
 5. Emission: licensure never rides runtime name-resolution; pin-by-definition-bytes;
    content-dedup; hash-munge plurality; provenance blocks; the reingest floor (munged
    names opaque; plain-name relicensing eyes-open and pinned).
