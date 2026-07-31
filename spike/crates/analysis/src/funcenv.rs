@@ -176,6 +176,19 @@ impl DefinitionTable {
         self.defs.iter().map(|d| d.name.clone()).collect()
     }
 
+    /// Whether the unit holds ANY definition of `name` — the positional gate's APPLICABILITY test
+    /// (see [`LiveDefinitions::answers_at`]).
+    ///
+    /// The environment's universe is exactly these names, so a name outside it has no positional
+    /// answer to give and the gate must not manufacture one. In production the table records every
+    /// role funcdef `dorc_syntax` sees in every input, so the only names outside the universe are
+    /// the ones the two parsers disagree about — a class `reserved.rs` refuses at Error severity
+    /// before it can ship (`28O:fnd-two-parsers-disagree-on-funcdefs`).
+    #[must_use]
+    pub fn knows(&self, name: &str) -> bool {
+        self.defs.iter().any(|d| d.name == name)
+    }
+
     fn definitions_of_path(&self, path: &str) -> Option<&[DefId]> {
         self.by_path.get(path).map(Vec::as_slice)
     }
@@ -366,6 +379,88 @@ impl FuncEnv {
     #[must_use]
     pub fn unresolvable_loads(&self) -> &BTreeSet<CfgNodeId> {
         &self.unresolvable_loads
+    }
+}
+
+// ── The positional visibility oracle (`28K` §2 rul-visibility-is-full-positional) ──
+
+/// What every SITE-KEYED consuming act — verdict, predict-at-site, probe-ship, vouch, guard
+/// eligibility — reads instead of the lifted sets' own load order (`28K` §2
+/// `rul-visibility-is-full-positional`, ACKED spike-tier, human-typed 2026-07-31).
+///
+/// The rule in one sentence: an act answers at a site only if the definition it would answer FROM
+/// is the one a shell executing the book top-to-bottom would have live AT THAT LINE. The naive
+/// mental model this preserves is Dorc as a stupid guard-inserter whose inserted text cannot see a
+/// definition loaded below it — now applied uniformly, not only to guards. Its named consequence:
+/// a definition introduced late in a book licenses NOTHING above itself, no elision, no guard, no
+/// vouch.
+///
+/// VOCABULARY acts (the kind-owner families — `resolve` / `disturbance_reaches_only` /
+/// `state_stored_only_in`) are deliberately NOT routed through here: they load from the ambient
+/// prefix, single-occupancy, and an in-book vocabulary role refuses with a notice instead
+/// (`28M:obl-in-book-vocabulary-role-notice`).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct LiveDefinitions<'a> {
+    bound: Option<(&'a FuncEnv, &'a DefinitionTable)>,
+}
+
+impl<'a> LiveDefinitions<'a> {
+    /// The positional oracle over a solved environment.
+    #[must_use]
+    pub fn new(env: &'a FuncEnv, defs: &'a DefinitionTable) -> Self {
+        Self {
+            bound: Some((env, defs)),
+        }
+    }
+
+    /// The UNSOLVED unit: no name is known, so every act falls back to the lifted sets' own load
+    /// order.
+    ///
+    /// This is for kernels driven WITHOUT a definition table — the crate's own unit tests, which
+    /// build a [`KindIndex`](dorc_oracle::KindIndex) by hand from no source text at all. It is not
+    /// a production posture: both drivers construct a real one, and
+    /// `both_drivers_solve_a_real_function_environment` fails if either stops.
+    #[must_use]
+    pub fn unsolved() -> Self {
+        Self { bound: None }
+    }
+
+    /// The input file whose definition of `name` a shell would have live immediately before
+    /// `node` — `None` when nothing is live there (`Undefined`), when the environment cannot say
+    /// (⊤), or when the point is unreached (⊥).
+    #[must_use]
+    pub fn source_before(&self, node: CfgNodeId, name: &str) -> Option<dorc_core::SourceFileId> {
+        let (env, defs) = self.bound?;
+        match env.binding_before(node, name) {
+            Flat::Elem(Binding::Defined(def)) => defs.get(def).map(|d| d.file),
+            Flat::Elem(Binding::Undefined) | Flat::Top | Flat::Bottom => None,
+        }
+    }
+
+    /// Whether source index `file`'s definition of `name` is the one live at `node` — the gate an
+    /// act consults before answering from that file's lifted set.
+    ///
+    /// `file` is an index into the source-ordered vectors, which IS the [`dorc_core::SourceFileId`]
+    /// value (`28O:dec-load-order-is-the-id-order`); `source_index_is_the_file_id` pins that.
+    ///
+    /// **The one permissive answer, stated loudly:** a name the unit has NO definition of answers
+    /// `true`, because the environment holds no opinion about it and inventing one would wall every
+    /// hand-built index in the workspace. In production that reaches only names the sh parser and
+    /// the dialect parser disagree about, which `reserved.rs` refuses before they can ship
+    /// (`28O:fnd-two-parsers-disagree-on-funcdefs`); `an_unknown_name_is_not_gated_and_a_known_one_is`
+    /// pins both halves.
+    #[must_use]
+    pub fn answers_at(&self, node: CfgNodeId, name: &str, file: usize) -> bool {
+        let Some((_, defs)) = self.bound else {
+            return true;
+        };
+        if !defs.knows(name) {
+            return true;
+        }
+        self.source_before(node, name)
+            == Some(dorc_core::SourceFileId(
+                u32::try_from(file).unwrap_or(u32::MAX),
+            ))
     }
 }
 
@@ -697,9 +792,10 @@ fn command_transfer(
 #[cfg(test)]
 mod tests {
     use super::{
-        Binding, DefId, Definition, DefinitionTable, EnvStack, FuncEnv, SourceLiteralPlane, analyze,
+        Binding, DefId, Definition, DefinitionTable, EnvStack, FuncEnv, LiveDefinitions,
+        SourceLiteralPlane, analyze,
     };
-    use crate::cfg::{self, CfgNodeId};
+    use crate::cfg::{self, Cfg, CfgNodeId, CfgNodeKind};
     use crate::lattice::{Flat, Lattice, MapL};
     use dorc_core::{BytePos, Interner, SourceFileId, Span};
     use dorc_syntax::ast::NodeKind;
@@ -1161,7 +1257,7 @@ mod tests {
     /// under-caught shadow can then grant nothing either.
     ///
     /// The negative half is on the same test on purpose: an ordinary, unconditional definition is
-    /// NOT unprovable, so the withholding cannot be vacuously总-on.
+    /// NOT unprovable, so the withholding cannot be vacuously always-on.
     #[test]
     fn an_unprovable_binding_is_named_and_a_proven_one_is_not() {
         let guarded = "if [ -f /etc/x ]; then yum__is_converged() { :; }; fi\n";
@@ -1190,5 +1286,162 @@ mod tests {
             "an ambient, unconditional definition is provable — otherwise this withholds \
              everything and pins nothing"
         );
+    }
+
+    // ── TABLE 4: the full-positional regime (`28K` §2 rul-visibility-is-full-positional) ──
+
+    /// Solve `book` and hand back the pieces a POSITIONAL query needs: the environment, the CFG
+    /// (to name a site), and the parsed book.
+    fn solve_positional(
+        book: &str,
+        table: &DefinitionTable,
+    ) -> (FuncEnv, Cfg, dorc_syntax::ast::Ast) {
+        let mut interner = Interner::default();
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = cfg::build(&ast).value;
+        let value = crate::value::analyze(&cfg, &ast, &mut interner);
+        let plane = SourceLiteralPlane::new(&value, &interner);
+        let env = analyze(&ast, &cfg, table, &plane);
+        (env, cfg, ast)
+    }
+
+    /// The `Command` node whose source text is exactly `needle` — named by its bytes rather than
+    /// by an ordinal, because a funcdef's own body contributes command nodes too and an ordinal
+    /// silently slides onto one of those.
+    fn command_at(cfg: &Cfg, ast: &dorc_syntax::ast::Ast, book: &str, needle: &str) -> CfgNodeId {
+        use crate::solve::Graph as _;
+        (0..cfg.node_count())
+            .map(|i| CfgNodeId(u32::try_from(i).unwrap_or(u32::MAX)))
+            .find(|id| {
+                let node = cfg.node(*id);
+                let span = ast.node(node.ast).span;
+                node.kind == CfgNodeKind::Command
+                    && book.get(span.lo.0 as usize..span.hi.0 as usize) == Some(needle)
+            })
+            .expect("the book carries that command site")
+    }
+
+    /// THE SHARPENED CONSEQUENCE CELL (`28K` §2, human-ACKED 2026-07-31): a definition introduced
+    /// LATE in a book licenses NOTHING above itself. The site above it is answered by no file at
+    /// all, so every act — elide, guard, vouch, probe-ship — declines there.
+    ///
+    /// The site BELOW is asserted on the same test so the cell cannot pass by the machinery simply
+    /// never answering: the identical definition DOES answer once it is above the site.
+    #[test]
+    fn a_late_book_definition_answers_below_itself_and_never_above() {
+        let book = "yum install -y nginx\nyum__is_converged() { :; }\nyum install -y curl\n";
+        let mut table = DefinitionTable::default();
+        let def = add_def(&mut table, 1, ROLE);
+        table.set_book_site(first_funcdef(book), def);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        let live = LiveDefinitions::new(&env, &table);
+        let above = command_at(&cfg, &ast, book, "yum install -y nginx");
+        let below = command_at(&cfg, &ast, book, "yum install -y curl");
+        assert_eq!(
+            live.source_before(above, ROLE),
+            None,
+            "a shell reaching line 1 has no such function yet — so nothing may be licensed there"
+        );
+        assert_eq!(
+            live.source_before(below, ROLE),
+            Some(SourceFileId(1)),
+            "and below the definition it answers, or the cell above pins nothing"
+        );
+    }
+
+    /// The overwhelmingly common shape, pinned so the conversion cannot quietly wall the world: a
+    /// CLI-named oracle loads "before line 1", so its definition is live at EVERY book site and
+    /// the positional answer equals the ambient one everywhere.
+    #[test]
+    fn an_ambient_prefix_definition_answers_at_every_site() {
+        let book = "yum install -y nginx\nyum install -y curl\n";
+        let (table, loaded) = unit(book, &[ROLE]);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        let live = LiveDefinitions::new(&env, &table);
+        let file = table.get(loaded).expect("the loaded definition").file;
+        for site in ["yum install -y nginx", "yum install -y curl"] {
+            assert_eq!(
+                live.source_before(command_at(&cfg, &ast, book, site), ROLE),
+                Some(file)
+            );
+        }
+    }
+
+    /// The regional-preference idiom (`28K` §1 `rul-scope-by-subshell-resource`) read POSITIONALLY:
+    /// the re-sourced definition answers INSIDE the subshell and the outer one answers after it.
+    /// This is the cell where a positional read and the ambient last-in-load-order read genuinely
+    /// disagree, and it is the reason the query is per-site rather than per-unit.
+    #[test]
+    fn a_subshell_re_source_answers_only_within_its_scope() {
+        let book = "( . lib.sh; yum install -y nginx )\nyum install -y curl\n";
+        let mut table = DefinitionTable::default();
+        let outer = add_def(&mut table, 0, ROLE);
+        table.extend_ambient([outer]);
+        let inner = add_def(&mut table, 1, ROLE);
+        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        let live = LiveDefinitions::new(&env, &table);
+        let inside = command_at(&cfg, &ast, book, "yum install -y nginx");
+        let after = command_at(&cfg, &ast, book, "yum install -y curl");
+        assert_eq!(
+            live.source_before(inside, ROLE),
+            Some(SourceFileId(1)),
+            "inside the subshell the re-sourced definition is live"
+        );
+        assert_eq!(
+            live.source_before(after, ROLE),
+            Some(SourceFileId(0)),
+            "and the pop restores the outer one EXACTLY — an ambient last-in-load-order read \
+             would answer the inner file at both sites"
+        );
+    }
+
+    /// The gate's applicability rule, both halves. A name the unit has no definition of is NOT
+    /// gated (the environment holds no opinion, and walling it would take out every hand-built
+    /// index); a name it DOES know is gated by position.
+    #[test]
+    fn an_unknown_name_is_not_gated_and_a_known_one_is() {
+        let book = "yum install -y nginx\nyum__is_converged() { :; }\n";
+        let mut table = DefinitionTable::default();
+        let def = add_def(&mut table, 1, ROLE);
+        table.set_book_site(first_funcdef(book), def);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        let live = LiveDefinitions::new(&env, &table);
+        let site = command_at(&cfg, &ast, book, "yum install -y nginx");
+        assert!(
+            live.answers_at(site, "apt_get__predict", 0),
+            "an unrecorded name defers to the lifted sets' own load order"
+        );
+        assert!(
+            !live.answers_at(site, ROLE, 1),
+            "a recorded name is answered by POSITION — file 1 defines it below this site"
+        );
+    }
+
+    /// An UNSOLVED oracle answers permissively for every name, which is what lets a kernel unit
+    /// test drive `classify` with a hand-built index and no source text. Pinned so the fallback
+    /// stays a deliberate, named posture rather than something a caller discovers by accident.
+    #[test]
+    fn an_unsolved_oracle_gates_nothing() {
+        let live = LiveDefinitions::unsolved();
+        assert!(live.answers_at(CfgNodeId(0), ROLE, 0));
+        assert_eq!(live.source_before(CfgNodeId(0), ROLE), None);
+    }
+
+    /// The identity the whole gate rests on (`28O:dec-load-order-is-the-id-order`): a source's
+    /// INDEX in the ordered vectors IS its [`SourceFileId`] value. Every consumer converts one to
+    /// the other by hand, so a drift here would silently mis-key every positional answer.
+    #[test]
+    fn source_index_is_the_file_id() {
+        let book = "yum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let second = add_def(&mut table, 1, ROLE);
+        table.extend_ambient([second]);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        let live = LiveDefinitions::new(&env, &table);
+        let site = command_at(&cfg, &ast, book, "yum install -y nginx");
+        assert_eq!(live.source_before(site, ROLE), Some(SourceFileId(1)));
+        assert!(live.answers_at(site, ROLE, 1));
+        assert!(!live.answers_at(site, ROLE, 0));
     }
 }
