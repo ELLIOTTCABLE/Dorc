@@ -29,8 +29,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::Carrier;
 use dorc_aid::diag::{
-    CfgBuiltinShadowed, CfgErexitUnknown, CfgInlineRefused, CfgTopNode, Depth2PositionalUnthreaded,
-    Diag, DiagCode as Code, SiteId,
+    CfgBuiltinShadowed, CfgErexitUnknown, CfgInlineRefused, CfgInlineRefusedReason, CfgTopNode,
+    CfgTopNodeReason, Depth2PositionalUnthreaded, Diag, DiagCode as Code, SiteId,
+    UnmodeledWriteRedirect,
 };
 use dorc_core::{AstId, BytePos, Channel, LeafId, Span};
 use dorc_syntax::{
@@ -560,8 +561,7 @@ impl<'a> Builder<'a> {
             // the spine unifies at Error (louder, safer). Human disposes at PR.
             self.diags.push(Diag::new(
                 Code::CfgTopNode(CfgTopNode {
-                    detail: "CFG nesting bound hit; construct treated as unknown (un-probeable)"
-                        .to_string(),
+                    reason: CfgTopNodeReason::NestingBound,
                 }),
                 self.span(id),
             ));
@@ -775,13 +775,12 @@ impl<'a> Builder<'a> {
 
         let call_lo = self.span(id).lo;
         if defs.len() > 1 {
-            let detail = format!(
-                "function `{name}` is defined more than once; the call is not inlined \
-                 (redefinition tracking is out of the modeled subset) -- it runs as an \
-                 ordinary unmodeled command"
-            );
             self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                Code::CfgInlineRefused(CfgInlineRefused {
+                    reason: CfgInlineRefusedReason::Redefined {
+                        name: name.to_owned(),
+                    },
+                }),
                 self.span(id),
             ));
             return None;
@@ -795,24 +794,24 @@ impl<'a> Builder<'a> {
             .map(|(body, _)| *body)?;
 
         if self.inline_stack.contains(&body) {
-            let detail = format!(
-                "recursive call to `{name}` (direct or transitive within the active inline \
-                 stack); not inlined -- it runs as an ordinary unmodeled command"
-            );
             self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                Code::CfgInlineRefused(CfgInlineRefused {
+                    reason: CfgInlineRefusedReason::RecursiveCall {
+                        name: name.to_owned(),
+                    },
+                }),
                 self.span(id),
             ));
             return None;
         }
         if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
-            let detail = format!(
-                "call to `{name}` exceeds the inline-depth budget ({}); not inlined -- it \
-                 runs as an ordinary unmodeled command",
-                inline_budget::MAX_DEPTH
-            );
             self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                Code::CfgInlineRefused(CfgInlineRefused {
+                    reason: CfgInlineRefusedReason::DepthBudget {
+                        name: name.to_owned(),
+                        budget: inline_budget::MAX_DEPTH,
+                    },
+                }),
                 self.span(id),
             ));
             return None;
@@ -837,25 +836,27 @@ impl<'a> Builder<'a> {
             return None;
         }
         if let Some(construct) = self.body_uses_unmodeled_positional(body) {
-            let detail = format!(
-                "call to `{name}` not inlined: its body uses `{construct}` (out of the \
-                 modeled subset) -- it runs as an ordinary unmodeled command"
-            );
             self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                Code::CfgInlineRefused(CfgInlineRefused {
+                    reason: CfgInlineRefusedReason::UnmodeledPositional {
+                        name: name.to_owned(),
+                        construct,
+                    },
+                }),
                 self.span(id),
             ));
             return None;
         }
         // tc-M2: inlining would EXPOSE an invisible body file-write as wrong-ambience
         // (redirect-effects are unmodeled, y-1); `/dev/null` stays exempt (devnull-exemption).
-        if let Some(detail) = self.body_has_unmodeled_write_redirect(body) {
-            let detail = format!(
-                "call to `{name}` not inlined: its body has an unmodeled write-redirect \
-                 ({detail}) -- it runs as an ordinary unmodeled command (tc-M2)"
-            );
+        if let Some(redirect) = self.body_has_unmodeled_write_redirect(body) {
             self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                Code::CfgInlineRefused(CfgInlineRefused {
+                    reason: CfgInlineRefusedReason::WriteRedirect {
+                        name: name.to_owned(),
+                        redirect,
+                    },
+                }),
                 self.span(id),
             ));
             return None;
@@ -890,28 +891,28 @@ impl<'a> Builder<'a> {
         // leaves a body lowers to). Checked BEFORE allocation so refusal needs no rollback.
         let estimate = subtree_node_count(self.ast, body);
         if estimate > inline_budget::MAX_NODES_PER_SITE {
-            let detail = format!(
-                "call to `{name}` exceeds the per-call inline-node budget ({} > {}); not \
-                 inlined -- it runs as an ordinary unmodeled command",
-                estimate,
-                inline_budget::MAX_NODES_PER_SITE
-            );
             self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                Code::CfgInlineRefused(CfgInlineRefused {
+                    reason: CfgInlineRefusedReason::PerCallNodeBudget {
+                        name: name.to_owned(),
+                        estimate,
+                        budget: inline_budget::MAX_NODES_PER_SITE,
+                    },
+                }),
                 self.span(id),
             ));
             return None;
         }
         if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
-            let detail = format!(
-                "call to `{name}` exceeds the per-book inline-node budget ({} spliced + {} \
-                 more > {}); not inlined -- it runs as an ordinary unmodeled command",
-                self.spliced_node_total,
-                estimate,
-                inline_budget::MAX_NODES_PER_BOOK
-            );
             self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                Code::CfgInlineRefused(CfgInlineRefused {
+                    reason: CfgInlineRefusedReason::PerBookNodeBudget {
+                        name: name.to_owned(),
+                        spliced: self.spliced_node_total,
+                        estimate,
+                        budget: inline_budget::MAX_NODES_PER_BOOK,
+                    },
+                }),
                 self.span(id),
             ));
             return None;
@@ -1338,8 +1339,7 @@ impl<'a> Builder<'a> {
         self.add_edge(entry_pred, top);
         self.diags.push(Diag::new(
             Code::CfgTopNode(CfgTopNode {
-                detail: "unsupported construct (unknown): un-probeable and un-skippable"
-                    .to_string(),
+                reason: CfgTopNodeReason::UnsupportedConstruct,
             }),
             self.span(id),
         ));
@@ -1757,13 +1757,13 @@ impl<'a> Builder<'a> {
     }
 
     /// arch-2 (tc-M2): does the funcdef `body`'s AST subtree carry a WRITE-shaped redirect
-    /// (`>`/`>>`/`<>`) to anything OTHER than `/dev/null`? Returns a short detail for the
+    /// (`>`/`>>`/`<>`) to anything OTHER than `/dev/null`? Returns the typed reason for the
     /// refusal diagnostic, or `None`. A body file-write is an unmodeled effect (y-1) that
     /// inlining alone would EXPOSE as wrong-ambience — so the call refuses (the wrapper-pun
     /// population redirects only to `/dev/null`, which stays exempt, keeping it alive). `2>&1`
     /// fd-dups and here-docs are NOT write-to-file redirects (a `Dup`/`HereDoc` op), so they
     /// are exempt; only `Write`/`Append`/`<>`-class file targets fence. Span-contained scan.
-    fn body_has_unmodeled_write_redirect(&self, body: AstId) -> Option<String> {
+    fn body_has_unmodeled_write_redirect(&self, body: AstId) -> Option<UnmodeledWriteRedirect> {
         for (aid, node) in self.ast.iter() {
             if !node_within(self.ast, aid, body) {
                 continue;
@@ -1781,8 +1781,12 @@ impl<'a> Builder<'a> {
             };
             match word_text(self.ast, *w) {
                 Some("/dev/null") => {} // the discard sink stays exempt (devnull-exemption)
-                Some(path) => return Some(format!("`> {path}`")),
-                None => return Some("`>` to a dynamic/unresolved target".to_string()),
+                Some(path) => {
+                    return Some(UnmodeledWriteRedirect::ToPath {
+                        path: path.to_owned(),
+                    });
+                }
+                None => return Some(UnmodeledWriteRedirect::ToDynamicTarget),
             }
         }
         None

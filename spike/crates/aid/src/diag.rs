@@ -637,13 +637,34 @@ pub struct SyntaxMalformed {
 }
 
 /// Payload of [`DiagCode::CfgTopNode`]: an AST `Unsupported` node became a CFG `Top` node.
-/// The detail is the CFG builder's reason. No `SiteId` at this level (the CFG node's own
-/// index is not surfaced to the CFG builder at the point it emits this; `site()` returns
-/// `None`).
+/// No `SiteId` at this level (the CFG node's own index is not surfaced to the CFG builder at
+/// the point it emits this; `site()` returns `None`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CfgTopNode {
-    /// The CFG builder's description of the ⊤-trigger (display only).
-    pub detail: String,
+    /// Which ⊤-trigger fired.
+    pub reason: CfgTopNodeReason,
+}
+
+/// Which ⊤-trigger minted a CFG `Top` node.
+///
+/// The first of the typed REASON enums (`28L:rul-reason-enums-not-sibling-codes`): a code whose
+/// one `detail` hole carried N genuinely different sentences gets a typed reason instead, an
+/// enum→slug map here, and one arrangement prose-component per reason — so every sentence lands
+/// in a registry an author can edit, with zero new codes (the `TopCause`/`RemediationClass`
+/// shape, one tier down).
+///
+/// The reason enums live HERE, beside the payloads they ride on, rather than in the crate that
+/// decides which one to construct: `aid` depends on `core` and on nothing else
+/// (`aid-is-the-describe-plane`), so a type named by a payload struct cannot live in an emitting
+/// crate that already depends on `aid`. The DECISION still belongs to the emit site — which
+/// variant fires is the analyzer's call, exactly as which payload struct fires already was;
+/// `aid` only owns the vocabulary and its words.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CfgTopNodeReason {
+    /// An AST `Unsupported` node lowered to an absorbing ⊤ node.
+    UnsupportedConstruct,
+    /// The CFG builder's own nesting bound was reached.
+    NestingBound,
 }
 
 /// Payload of [`DiagCode::CfgErexitUnknown`]: the errexit pass encountered an unknown command;
@@ -654,12 +675,83 @@ pub struct CfgTopNode {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CfgErexitUnknown;
 
-/// Payload of [`DiagCode::CfgInlineRefused`]: a call could not be inlined. The detail names
-/// which budget or constraint was exceeded. No `SiteId` (`site()` returns `None`).
+/// Payload of [`DiagCode::CfgInlineRefused`]: a call could not be inlined. No `SiteId`
+/// (`site()` returns `None`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CfgInlineRefused {
-    /// The CFG builder's description of the refusal reason (display only).
-    pub detail: String,
+    /// Which budget or constraint refused the inline.
+    pub reason: CfgInlineRefusedReason,
+}
+
+/// Which budget or constraint refused an inline (see [`CfgTopNodeReason`] for why the reason
+/// enums live in this crate).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CfgInlineRefusedReason {
+    /// The callee has more than one definition.
+    Redefined {
+        /// The called function's name.
+        name: String,
+    },
+    /// The callee is already on the active inline stack.
+    RecursiveCall {
+        /// The called function's name.
+        name: String,
+    },
+    /// The inline-depth budget is spent.
+    DepthBudget {
+        /// The called function's name.
+        name: String,
+        /// The depth budget.
+        budget: u32,
+    },
+    /// The callee's body uses a positional construct outside the modeled subset.
+    UnmodeledPositional {
+        /// The called function's name.
+        name: String,
+        /// The construct the body used.
+        construct: &'static str,
+    },
+    /// The callee's body carries a write-redirect inlining would expose as wrong-ambience.
+    WriteRedirect {
+        /// The called function's name.
+        name: String,
+        /// Which redirect fenced the call.
+        redirect: UnmodeledWriteRedirect,
+    },
+    /// The callee's estimated node count exceeds the per-call splice budget.
+    PerCallNodeBudget {
+        /// The called function's name.
+        name: String,
+        /// The body's conservative node estimate.
+        estimate: usize,
+        /// The per-call budget.
+        budget: usize,
+    },
+    /// The book's running splice tally plus this body exceeds the per-book budget.
+    PerBookNodeBudget {
+        /// The called function's name.
+        name: String,
+        /// Nodes already spliced across the book.
+        spliced: usize,
+        /// The body's conservative node estimate.
+        estimate: usize,
+        /// The per-book budget.
+        budget: usize,
+    },
+}
+
+/// Which write-redirect fenced an inline — the inner reason of
+/// [`CfgInlineRefusedReason::WriteRedirect`], with its own components because it too was a
+/// composed sentence.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UnmodeledWriteRedirect {
+    /// A write to a resolved path.
+    ToPath {
+        /// The redirect target as the book spells it (display only).
+        path: String,
+    },
+    /// A write to a target that does not resolve statically.
+    ToDynamicTarget,
 }
 
 /// Payload of [`DiagCode::CfgBuiltinShadowed`]: a book funcdef shadows a shell builtin the
@@ -2362,10 +2454,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::SyntaxMalformed(SyntaxMalformed { detail }) => {
             vec![ours("detail", detail.clone())]
         }
-        DiagCode::CfgTopNode(CfgTopNode { detail }) => vec![ours("detail", detail.clone())],
+        DiagCode::CfgTopNode(CfgTopNode { reason }) => {
+            vec![ours("detail", cfg_top_node_text(ctx, *reason))]
+        }
         DiagCode::CfgErexitUnknown(CfgErexitUnknown) => vec![],
-        DiagCode::CfgInlineRefused(CfgInlineRefused { detail }) => {
-            vec![ours("detail", detail.clone())]
+        DiagCode::CfgInlineRefused(CfgInlineRefused { reason }) => {
+            vec![ours("detail", cfg_inline_refused_text(ctx, reason))]
         }
         DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed { name }) => {
             vec![ours("name", name.clone())]
@@ -3221,6 +3315,104 @@ fn remediation_hint_slug(class: RemediationClass) -> &'static str {
         RemediationClass::DeclareIdentity => "why-remediation-declare-identity",
         RemediationClass::ResolveDynamism => "why-remediation-resolve-dynamism",
         RemediationClass::Structural => "why-remediation-structural",
+    }
+}
+
+// ===========================================================================
+// Reason → sentence maps (`28L:rul-reason-enums-not-sibling-codes`)
+// ===========================================================================
+//
+// Each map below is the [`top_cause_slug`] shape extended to reasons that INTERPOLATE: one
+// arrangement component per reason, and the reason's own fields as that component's values. The
+// map is a single exhaustive `match`, so a new variant is a compile error here — at the seat that
+// decides what the new world says.
+
+/// The registry sentence for one [`CfgTopNodeReason`].
+fn cfg_top_node_text(ctx: &RenderCtx<'_>, reason: CfgTopNodeReason) -> String {
+    let slug = match reason {
+        CfgTopNodeReason::UnsupportedConstruct => "cfg-top-node-unsupported-construct",
+        CfgTopNodeReason::NestingBound => "cfg-top-node-nesting-bound",
+    };
+    crate::arrangement::arrangement_text(ctx.arrangements(), slug, None)
+}
+
+/// The registry sentence for one [`CfgInlineRefusedReason`].
+fn cfg_inline_refused_text(ctx: &RenderCtx<'_>, reason: &CfgInlineRefusedReason) -> String {
+    use crate::arrangement::arrangement_sentence as sentence;
+    let arrangements = ctx.arrangements();
+    match reason {
+        CfgInlineRefusedReason::Redefined { name } => {
+            sentence(arrangements, "cfg-inline-refused-redefined", None, &[name])
+        }
+        CfgInlineRefusedReason::RecursiveCall { name } => sentence(
+            arrangements,
+            "cfg-inline-refused-recursive-call",
+            None,
+            &[name],
+        ),
+        CfgInlineRefusedReason::DepthBudget { name, budget } => sentence(
+            arrangements,
+            "cfg-inline-refused-depth-budget",
+            None,
+            &[name, &budget.to_string()],
+        ),
+        CfgInlineRefusedReason::UnmodeledPositional { name, construct } => sentence(
+            arrangements,
+            "cfg-inline-refused-unmodeled-positional",
+            None,
+            &[name, construct],
+        ),
+        CfgInlineRefusedReason::WriteRedirect { name, redirect } => sentence(
+            arrangements,
+            "cfg-inline-refused-write-redirect",
+            None,
+            &[name, &unmodeled_write_redirect_text(ctx, redirect)],
+        ),
+        CfgInlineRefusedReason::PerCallNodeBudget {
+            name,
+            estimate,
+            budget,
+        } => sentence(
+            arrangements,
+            "cfg-inline-refused-per-call-budget",
+            None,
+            &[name, &estimate.to_string(), &budget.to_string()],
+        ),
+        CfgInlineRefusedReason::PerBookNodeBudget {
+            name,
+            spliced,
+            estimate,
+            budget,
+        } => sentence(
+            arrangements,
+            "cfg-inline-refused-per-book-budget",
+            None,
+            &[
+                name,
+                &spliced.to_string(),
+                &estimate.to_string(),
+                &budget.to_string(),
+            ],
+        ),
+    }
+}
+
+/// The registry sentence for one [`UnmodeledWriteRedirect`] — the inner clause of
+/// [`CfgInlineRefusedReason::WriteRedirect`].
+fn unmodeled_write_redirect_text(ctx: &RenderCtx<'_>, redirect: &UnmodeledWriteRedirect) -> String {
+    let arrangements = ctx.arrangements();
+    match redirect {
+        UnmodeledWriteRedirect::ToPath { path } => crate::arrangement::arrangement_sentence(
+            arrangements,
+            "cfg-inline-refused-redirect-to-path",
+            None,
+            &[path],
+        ),
+        UnmodeledWriteRedirect::ToDynamicTarget => crate::arrangement::arrangement_text(
+            arrangements,
+            "cfg-inline-refused-redirect-dynamic",
+            None,
+        ),
     }
 }
 
