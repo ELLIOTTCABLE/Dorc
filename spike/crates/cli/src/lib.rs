@@ -21,6 +21,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod fixpoint;
 pub mod kinds;
 pub mod results;
 pub mod survival;
