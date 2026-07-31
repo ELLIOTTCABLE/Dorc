@@ -876,6 +876,6 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &[],
         example: "[unwritten: role-family-contested]",
         message: None,
-        help: None,
+        help: HelpRegister::Absent,
     },
 ];
