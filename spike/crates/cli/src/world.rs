@@ -27,7 +27,7 @@ use dorc_aid::diag::Diag;
 use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 use crate::Receipt;
-use crate::results::{SiteResults, facts_from_sites, probe_origins};
+use crate::results::{SiteResults, probe_origins};
 use crate::why::{
     CascadeAttribution, FirstWallHint, WallStep, WhyReport, collect_wall_steps, first_wall_hint,
 };
@@ -93,9 +93,9 @@ impl WhyWorld {
     /// no `touches()` is lifted, no footprint exists, and every running mutator is the honest
     /// Stage-1 total wall (`empty-world-byte-identical`).
     ///
-    /// NO validity fixpoint runs here (`cascades` stays empty): the fixpoint's product is a
-    /// round-tagged cascade attribution, and re-deriving it would need the binary's whole erasure
-    /// ledger. A cascaded elision therefore renders its outcome without its round.
+    /// The validity fixpoint runs here, the binary's own rounds over the binary's own frozen model
+    /// (`crate::fixpoint`), so a cascaded elision can be explained with the round that caused it
+    /// rather than merely reported.
     #[must_use]
     #[expect(
         clippy::too_many_lines,
@@ -130,22 +130,25 @@ impl WhyWorld {
 
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeSet::new();
-        let (classified, why_diags, kills, kill_coords, fact_backings, classify_narrative, _inval) =
-            dorc_analysis::effect::classify_with_why_diags(
-                &cfg.value,
-                &value,
-                &parsed.value,
-                &idx,
-                &checks,
-                &verdicts,
-                &BTreeMap::new(),
-                &dorc_analysis::erase::ErasedSites::none(),
-                &mut interner,
-                &mut arena,
-                &mut degrades,
-                &mut verdict_lane,
-            );
-        let classes = classified.value;
+        let peeled = BTreeMap::new();
+        let frozen = crate::fixpoint::FrozenModel {
+            cfg: &cfg.value,
+            value: &value,
+            ast: &parsed.value,
+            idx: &idx,
+            checks: &checks,
+            verdicts: &verdicts,
+            peeled: &peeled,
+        };
+        let origin = crate::fixpoint::classify_round(
+            &frozen,
+            &dorc_analysis::erase::ErasedSites::none(),
+            &mut interner,
+            &mut arena,
+            &mut degrades,
+            &mut verdict_lane,
+        );
+        let classes = origin.classes.clone();
 
         let (vouch_lift, decline_narrative) =
             dorc_plan::build_vouches(&oracle_refs, &classes, &value, &mut interner);
@@ -173,10 +176,28 @@ impl WhyWorld {
         )
         .with_unresolvable_causes(&parsed.value, &cfg.value, &classes, &degrades);
 
-        // The records fold, through the run's own firewall (`facts_from_sites`). No fixpoint runs
-        // here, so the validity view is empty and every site keeps the validity the probe recorded.
-        let (by_fact, merge_narrative, _collapsed) =
-            facts_from_sites(&probe, results, &BTreeMap::new());
+        // The validity fixpoint, to quiescence, over the frozen origin — the binary's own rounds
+        // (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`). Its product beyond the settled
+        // fold is the round-tagged cascade attribution, which is the only way a why report can
+        // answer for an elision that only became legal once something upstream was proven dead.
+        let cap = u32::try_from(origin.classes.len()).unwrap_or(u32::MAX).max(1);
+        let settled = crate::fixpoint::settle_validity_fixpoint(
+            &frozen, &probe, results, origin, cap, &mut interner, &mut arena,
+        );
+        let cascades = crate::fixpoint::attribute_cascades(
+            &cfg.value,
+            &parsed.value,
+            book_src,
+            &settled.round.classes,
+            &settled.ledger,
+            &settled.origin_validity,
+        );
+        let round = settled.round;
+        let classes = round.classes;
+        let (kills, kill_coords, fact_backings) =
+            (round.kills, round.kill_coords, round.fact_backings);
+        let (why_diags, classify_narrative) = (round.why_diags, round.classify_narrative);
+        let (by_fact, merge_narrative) = (settled.by_fact, settled.merge_narrative);
         let probe_attributions = probe_origins(&probe, results, &mut arena);
 
         // The survival tier, flag-gated exactly as a run is (`rul24-mode-gate`, TC-1): unflagged,
@@ -354,9 +375,7 @@ impl WhyWorld {
             refusals,
             wall_steps,
             first_wall,
-            // No fixpoint runs here: with nothing measured, no round-2 validity flip exists to
-            // attribute, so an empty map is the honest answer rather than a missing one.
-            cascades: BTreeMap::new(),
+            cascades,
         }
     }
 
