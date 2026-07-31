@@ -14,6 +14,26 @@
 
 ---
 
+## THE LOOM-FINAL ARC — CLOSED (2026-07-31, branch `ai/r28-loom-final`; awaiting the human's fold ack)
+
+The human's now-or-never order (2026-07-29) executed whole: looms are the working
+prose-edit surface, end-to-end, empirically gated. Conduct ledger **`notes/28L`**
+(every directive, ruling, and lane landing); the arc-close accounting of EVERY prose
+surface **`notes/28M`** (transcript-faced ~181 components + 87/95 catalog codes ·
+lock-tier 31 with the remedy priced · never-loom law-cited · records-8 pending the
+human's emitter decision). Headline machinery: the stamped-provenance boundary weld
+(byte-shape re-detection DELETED; `transcript_bytes_equal_production_bytes` standing) ·
+placeholder-overtype IS the words-mint path · the Rust persona never touches loom
+internals (compile-forced params; fixture worlds beside payloads) · ownership
+declarations · the records seam (opaque-ACK'd, 28-reviewA) · the foreign-text seal
+(`is_foreign_param` dead) · reason enums (`detail: String` extinct) · 176-case corpus
+incl. measured/survival why-worlds · six `main.rs` lib-seam extractions · SyncThing
+residue excluded from every corpus walk. The two-render-chain diagnosis and the whole
+map: `_loom-final-map-DRAFT.md` in the arc's git history. `28J`'s false
+"editable-today" claim carries its supersession note. Blind-reviewer round 1 chafe
+built in; round 2 pending at close. Superseded/backup branches for the human's
+force-delete are listed in the close report.
+
 ## ops-glue-residue RESEARCH ROUND -- CLOSED (2026-07-28, on `ai/main`; interactive, human-adjudicated throughout)
 
 Direction-setting round on the glue phase (pre-ssh lifecycle  /  transport reach  / 
