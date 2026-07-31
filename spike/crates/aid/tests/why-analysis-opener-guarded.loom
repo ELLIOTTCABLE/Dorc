@@ -1,0 +1,227 @@
+---
+arrangement: why-analysis-opener-guarded
+owns:
+  - why-analysis-join-guarded
+  - why-next-steps-opener-guarded
+  - why-next-step-describe-walls
+  - why-wall-payload
+  - why-improvement-guarded-past-wall
+  - why-improvement-quantified
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-analysis-opener-guarded && mise run loom:promote -- why-analysis-opener-guarded`. `mise run loom:vars -- --all why-analysis-opener-guarded` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+# What unmodeled commands cost. `hork` and `wombat` have no oracle, so their effect is unknown;
+# `apt-get` is described but diverged, so it honestly runs. Everything after them loses the
+# elision license: the converged service line drops to the GUARD tier, its own bytes verbatim
+# behind its oracle's check. The firewall line above the walls keeps its elision.
+ufw allow 80/tcp
+hork tune --profile web
+systemctl start nginx
+wombat sync --profile web
+apt-get install -y nginx
+systemctl enable nginx
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+ufw__is_converged() {
+   verb=$1; shift
+   case $verb in
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- service.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# The verdict member below is what ships as the guard body when a converged site sits past a
+# wall: the author's own bytes, strip-only, and no engine-written sh anywhere.
+systemctl__predict() {
+   verb=$1; shift
+   svc : sm.dorc.Service = "$1"
+   case $verb in
+      start)  systemctl is-active  -- "$svc" : sm.dorc.Service:"$svc"@active ;;
+      enable) systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"@enabled ;;
+   esac
+}
+
+systemctl__is_converged() {
+   verb=$1; shift
+   case $verb in
+      start)  systemctl is-active  -- "$1" ;;
+      enable) systemctl is-enabled -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# Described, so its install is an HONEST wall rather than an opaque one: dorc knows exactly what
+# it establishes and knows the host disagrees, which is a different thing to tell the reader.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=3d32f18cce8c302bac28a0e455e9db103a3f0b639c40e6e801f2f2b8b4773cd3 sites=4 @@dorc@@
+dorc site 0 effect=holds rc=0 @@dorc@@
+dorc site 2 effect=holds rc=0 @@dorc@@
+dorc site 4 effect=absent rc=1 @@dorc@@
+dorc site 5 effect=holds rc=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- replay --
+$ dorc why book.sh:11 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh -o package.oracle.sh < probe-results.txt --all
+      [ book.sh, participating lines:
+    7 | hork tune --profile web
+    9 | wombat sync --profile web
+   10 | apt-get install -y nginx
+   11 | systemctl enable nginx
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   11|systemctl guarded RATHER THAN skipped: 7|hork, 9|wombat, 10|apt-get really ran above
+   it. A fact reported before they ran cannot be trusted after; the guard re-asks the
+   question live, in place, where nothing can go stale.
+
+   === ANALYSIS ===
+
+   what was known, and why it was not enough:
+
+   * service.oracle.sh:5   reported  "sm.dorc.Service:nginx@enabled" (rc 0)
+   * service.oracle.sh:18  vouches   "re-running this line adds nothing worth running while
+                                     sm.dorc.Service:nginx@enabled holds"
+   ! 7|hork                ran       undescribed: no author has said what it touches, so it
+                                     may touch anything
+   ! 9|wombat              ran       undescribed: no author has said what it touches, so it
+                                     may touch anything
+   ! 10|apt-get            ran       [unwritten: why-wall-payload]
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: the report was good when it ran, but each wall above stands between it and
+   11|systemctl's turn. What dorc shipped instead of a skip -- your line, untouched, behind
+   the oracle's own live check:
+
+   ( systemctl__is_converged enable nginx ) || systemctl enable nginx
+
+   === NEXT STEPS ===
+
+   nothing is wrong. to make this line skippable:
+
+   describe:  7|hork, 9|wombat are the walls. a convergence check for either (~2 lines of
+              sh) removes its wall whenever it is converged; describing them all lets this
+              line skip on proof
+   review:    `dorc why book.sh:11 --all` (every link, unselected, exhaustive)
+
+   [unnarrated: FactMergeDisagreement]
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why --book=book.sh -o firewall.oracle.sh -o service.oracle.sh -o package.oracle.sh < probe-results.txt
+receipt: [unwritten: why-receipt-when-undated], host localhost
+   book book.sh (digest 3d32f18cce8c302bac28a0e455e9db103a3f0b639c40e6e801f2f2b8b4773cd3)
+   oracles: firewall.oracle.sh, service.oracle.sh, package.oracle.sh
+   risk-profile: none (no trust flags)
+   plan: 3 ran, 2 guarded, 1 skipped (1 by proof)
+   [unwritten: why-receipt-dispositions-predicted]
+   read top-down; every item is addressable: dorc why <line>
+
+=== IMPROVEMENTS: dorc can do better, with your help ===
+
+book.sh:7 | hork tune --profile web
+   ran blind, as on every apply: no read-only check could be shipped for hork
+   (dorc why book.sh:7)
+
+book.sh:8 | systemctl start nginx
+   guarded live instead of skipping: sits past the wall at 7|hork
+   (dorc why book.sh:8)
+
+book.sh:9 | wombat sync --profile web
+   ran blind, as on every apply: no read-only check could be shipped for wombat
+   (dorc why book.sh:9)
+
+book.sh:11 | systemctl enable nginx
+   guarded live instead of skipping: sits past the wall at 7|hork
+   (dorc why book.sh:11)
+
+~2 lines of sh: a convergence check for hork would recover 1 line(s) whenever it is
+converged
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc why book.sh:8 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh -o package.oracle.sh < probe-results.txt
+      [ book.sh, participating lines:
+   7 | hork tune --profile web
+   8 | systemctl start nginx
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   8|systemctl guarded RATHER THAN skipped: 7|hork really ran above it. A fact reported
+   before they ran cannot be trusted after; the guard re-asks the question live, in place,
+   where nothing can go stale.
+
+   === ANALYSIS ===
+
+   what was known, and why it was not enough:
+
+   * service.oracle.sh:5   reported  "sm.dorc.Service:nginx@active" (rc 0)
+   * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
+                                     sm.dorc.Service:nginx@active holds"
+   ! 7|hork                ran       undescribed: no author has said what it touches, so it
+                                     may touch anything
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: the report was good when it ran, but each wall above stands between it and
+   8|systemctl's turn. What dorc shipped instead of a skip -- your line, untouched, behind
+   the oracle's own live check:
+
+   ( systemctl__is_converged start nginx ) || systemctl start nginx
+
+   === NEXT STEPS ===
+
+   nothing is wrong. to make this line skippable:
+
+   describe:  [unwritten: why-next-step-describe-walls]
+   review:    `dorc why book.sh:8 --all` (every link, unselected, exhaustive)
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
