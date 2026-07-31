@@ -5,6 +5,7 @@ why: 28F rul-drift-replay-d1: those sections are re-derived through the kernel f
 owns:
   - why-receipt-book-drifted
   - why-receipt-plan-tally-unsplit
+  - why-receipt-when-replayed
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-drift-analysis-suppressed && mise run loom:promote -- why-drift-analysis-suppressed`. `mise run loom:vars -- --all why-drift-analysis-suppressed` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
