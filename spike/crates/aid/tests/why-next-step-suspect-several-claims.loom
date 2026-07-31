@@ -1,0 +1,171 @@
+---
+arrangement: why-next-step-suspect-several-claims
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-next-step-suspect-several-claims && mise run loom:promote -- why-next-step-suspect-several-claims`. `mise run loom:vars -- --all why-next-step-suspect-several-claims` lists this case's values; type {{name}} to insert or move one.
+---
+-- book.sh --
+#!/bin/sh
+# TWO running walls, each spending its own author's at-most claim, and one converged firewall line
+# surviving both of them. With more than one claim in the chain no single link can be blamed, so
+# the remediation names the count rather than the claimant. Every tool here is an inert stand-in.
+apt-get install -y oldpkg
+hork sync --profile web
+ufw allow 443/tcp
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+ufw__is_converged() {
+   verb=$1; shift
+   case $verb in
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
+   esac
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   prof : sm.dorc.Profile = "$1"
+   case $verb in
+      sync) hork --query "$prof" >/dev/null 2>&1 : sm.dorc.Profile:"$prof"@synced ;;
+   esac
+}
+
+hork__disturbs() {
+   verb=$1; shift
+   case $verb in
+      # The comment lines above an emission are quoted with it, so the reader sees the author's
+      # own reasoning beside the claim rather than a bare line torn out of a file.
+      sync) printf '%s\n' "$1" : disturbs sm.dorc.Profile ;;
+   esac
+}
+
+hork__is_converged() {
+   verb=$1; shift
+   case $verb in
+      sync) hork --query -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=5c9291c63828db9a1e072e84a0a1d9d57aaba6d268a4677af8f9447137b6a817 sites=3 @@dorc@@
+dorc site 0 effect=absent rc=1 @@dorc@@
+dorc site 1 effect=absent rc=1 @@dorc@@
+dorc site 2 effect=holds rc=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- replay --
+$ dorc why book.sh:7 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o hork.oracle.sh --risk-faultless-skips < probe-results.txt --all
+      [ book.sh, participating lines:
+   5 | apt-get install -y oldpkg
+   6 | hork sync --profile web
+   7 | ufw allow 443/tcp
+
+   [unwritten: why-participating-lines-closure]
+
+   === OUTCOME ===
+
+   7|ufw skipped RATHER THAN guarded: 5|apt-get, 6|hork ran above it, which normally forces
+   an apply-time guard-clause; but --risk-faultless-skips activates acting on authors'
+   at-most claims, and that claim does not reach what the skip was reported on.
+
+   === ANALYSIS ===
+
+   7|ufw being skipped stood on all of the following, together:
+
+   * firewall.oracle.sh:3   reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
+   * firewall.oracle.sh:14  vouches   "re-running this line adds nothing worth running
+                                      while sm.dorc.Firewall:443/tcp holds"
+   ! package.oracle.sh:20   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
+
+      This speaks for everything it did NOT measure. Fact derived from as-written contract
+      only; no run can back it.
+
+         [ package.oracle.sh, as-written:
+      20 |       install) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
+
+   ! hork.oracle.sh:16      claims    "`hork` touches AT MOST {sm.dorc.Profile:--profile}"
+
+      This speaks for everything it did NOT measure. Fact derived from as-written contract
+      only; no run can back it.
+
+         [ hork.oracle.sh, as-written:
+      14 |       # The comment lines above an emission are quoted with it, so the reader sees the author's
+      15 |       # own reasoning beside the claim rather than a bare line torn out of a file.
+      16 |       sync) printf '%s\n' "$1" : disturbs sm.dorc.Profile ;;
+
+   * dorc                   derives   that claim is proven disjoint from
+                                      sm.dorc.Firewall:443/tcp -- it does not overlap what
+                                      was reported
+
+   `!` marks the link that covers unmeasurable things; the class of information no runnable
+   command could test.
+
+   so: nothing 5|apt-get, 6|hork claims to touch overlaps sm.dorc.Firewall:443/tcp, which is
+   what the skip was reported on; the skip stood.
+
+   === NEXT STEPS ===
+
+   if 7|ufw SHOULD have run:
+
+      suspect:  2 links speak for unmeasured state. if any of them also touches
+                sm.dorc.Firewall:443/tcp, it is what wrongly kept this line out.
+
+      fix:      package.oracle.sh:20 (widen the claim; every consumer heals)
+   OR
+      fix:      `dorc plan <book> <host>` (run without --risk-faultless-skips, to distrust
+                oracle-authored claims)
+
+      verify:   `dorc plan <book> <host>` (re-measures the world as it is now; a fact that
+                came back wrong comes back diverged, and the line returns)
+      review:   `dorc why book.sh:7 --all` (every link, unselected, exhaustive)
+
+   [unnarrated: WallFormation]
+
+(Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
+relevance; `--all` enumerates everything the engine holds.)
