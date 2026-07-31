@@ -132,12 +132,15 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
     ] {
         let case = Case::parse(text).expect("case parses");
         let consumer = DorcConsumer::new();
+        // The FIRST block: the whylog render is what this asserts about, and a case is free to
+        // carry further blocks after it (an inventory of its own values, say).
         let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
             panic!("exact whylog replay must not fall back")
         })
         .expect("case replays")
-        .pop()
-        .expect("one replay");
+        .into_iter()
+        .next()
+        .expect("a replay");
         let raw = case
             .sections()
             .iter()
@@ -695,6 +698,44 @@ fn vars_replay_reads_only_the_named_materialized_case() {
             "dorc-loom vars --all 'self.txt'",
         ]
     );
+}
+
+/// A case's inventory OF ITSELF, on both chains.
+///
+/// A case cannot contain itself, so the block a case carries about its own values names the case
+/// rather than a section, and both chains resolve it against the case being rendered. What makes it
+/// terminate is not a depth count: the baseline seat — the one place an inventory comes from —
+/// declines the block, so the question is asked exactly once.
+#[test]
+fn a_case_answers_its_own_inventory_on_both_chains() {
+    for spelling in ["render-heredoc-refused", "render-heredoc-refused.loom"] {
+        let case = Case::parse(&format!(
+            "---\ncode: render-heredoc-refused\n---\n-- replay --\n\
+             $ dorc plan --book=book.sh\nold\n\
+             $ dorc-loom vars --used {spelling}\nold\n"
+        ))
+        .expect("case parses");
+        let consumer = DorcConsumer::new();
+        let results = replay_case(&case, &consumer, &RunEnv::new(), |command, _context| {
+            panic!("the in-process driver must claim {command:?}")
+        })
+        .expect("replays route");
+        let inventory = results[1].output();
+        assert!(
+            inventory.starts_with(&format!("case: {spelling}\n")),
+            "`{spelling}`: {inventory}"
+        );
+        assert!(
+            inventory.contains("{{verb}} = \"elide\""),
+            "`{spelling}`: the inventory is the payload's, not an empty answer: {inventory}"
+        );
+        let rendered = consumer.render_case(&case).expect("the case re-renders");
+        assert_eq!(
+            rendered.matches("{{verb}} = \"elide\"").count(),
+            1,
+            "`{spelling}`: the fixpoint chain answers the same block once: {rendered}"
+        );
+    }
 }
 
 /// The two chains a case travels — `DorcConsumer::replay` (the EDIT chain, which `compile` and

@@ -534,10 +534,16 @@ impl DorcConsumer {
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
             Self::arrangement_row(slug)?;
         }
-        let render = replay_case(case, self, &RunEnv::new(), |_command, _context| {
-            Ok(ReplayResult::bytes(String::new()))
+        // A case's own inventory block is DECLINED here, and that is what makes the block legal to
+        // write down: this seat is where the inventory comes from, so answering it here would ask
+        // the same question forever (`SelfReference`).
+        let driver = DorcReplayDriver::new(self, case).without_self_reference();
+        let render = drive_case(case, &RunEnv::new(), |command, context| {
+            Ok(driver
+                .drive(command, context)
+                .unwrap_or_else(|| ReplayResult::bytes(String::new())))
         })
-        .map_err(|error| error.to_string())?
+        .map_err(|error: RunError| error.to_string())?
         .into_iter()
         .find_map(|result| result.editable_render().cloned())
         .ok_or_else(|| {
@@ -555,7 +561,18 @@ impl DorcConsumer {
     /// (`282:rul-used-inventory-is-committed`).
     fn vars_inventory(&self, target_source: &str, path: &str, used: bool) -> Option<String> {
         let target = Case::parse(target_source).ok()?;
-        let baseline = self.editable_baseline(&target).ok()?;
+        self.vars_inventory_of(&target, path, used)
+    }
+
+    /// The same inventory over a case already in hand — the seat a case's inventory of ITSELF goes
+    /// through.
+    ///
+    /// A case cannot contain itself, so the block a case carries about its own values has no
+    /// section to read: the answer is the case being rendered. Everything downstream is unchanged,
+    /// which is the whole point — the inventory an author reads is the one an edit compiles
+    /// against, whichever case named it.
+    fn vars_inventory_of(&self, target: &Case, path: &str, used: bool) -> Option<String> {
+        let baseline = self.editable_baseline(target).ok()?;
         let mut output = String::new();
         output.push_str("case: ");
         output.push_str(path);
@@ -583,18 +600,39 @@ impl DorcConsumer {
         command: &str,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        self.replay_within(case, command, context, SelfReference::Allowed)
+    }
+
+    fn replay_within(
+        &self,
+        case: &Case,
+        command: &str,
+        context: &ReplayContext<'_>,
+        self_reference: SelfReference,
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens = exact_words(command)?;
         if let Some(slug) = arrangement_page_slug(case, &tokens) {
             let parts = self.arrangement_page(slug).ok()?;
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
-        if let ["dorc-loom", "vars", mode, path] = tokens.as_slice()
+        if let ["dorc-loom", "vars", mode, target] = tokens.as_slice()
             && matches!(*mode, "--used" | "--all")
-            && case_relative_path(path)
         {
-            return self
-                .vars_inventory(context.materialized_input(path)?, path, *mode == "--used")
-                .map(ReplayResult::bytes);
+            let used = *mode == "--used";
+            if names_this_case(case, target) {
+                if self_reference == SelfReference::Forbidden {
+                    return None;
+                }
+                return self
+                    .vars_inventory_of(case, target, used)
+                    .map(ReplayResult::bytes);
+            }
+            if case_relative_path(target) {
+                return self
+                    .vars_inventory(context.materialized_input(target)?, target, used)
+                    .map(ReplayResult::bytes);
+            }
+            return None;
         }
         if tokens.as_slice() == ["dorc", "lint", "--list-sources"] {
             let parts = dorc_cli::lint_sources_parts(&self.render_ctx());
@@ -1340,6 +1378,20 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
     })
 }
 
+/// Whether `target` names the case being rendered, rather than a section of it.
+///
+/// A case's identity is the slug it DEFINES, which is also the filename it must carry
+/// (`288:rul-slug-decides-loom-placement`), so the two spellings a reader would reach for — the bare
+/// slug and the filename — both resolve here. A case cannot contain itself, so this is the only way
+/// a `vars` block inside a case can be about that case.
+fn names_this_case(case: &Case, target: &str) -> bool {
+    let named = target.strip_suffix(".loom").unwrap_or(target);
+    ["code", "arrangement"]
+        .iter()
+        .filter_map(|key| case.frontmatter().scalar(key))
+        .any(|slug| slug == named)
+}
+
 fn case_relative_path(path: &str) -> bool {
     !path.is_empty()
         && !path.starts_with('/')
@@ -1397,13 +1449,37 @@ fn materialized_input(case: &Case, context: &ReplayContext<'_>, path: &str) -> O
 pub struct DorcReplayDriver<'a> {
     consumer: &'a DorcConsumer,
     case: &'a Case,
+    self_reference: SelfReference,
+}
+
+/// Whether a replay may answer a case's inventory of ITSELF.
+///
+/// A case's inventory is derived from the render an edit compiles against, and that render comes
+/// from driving the case — so answering the inventory block while computing the inventory would ask
+/// the same question forever. The baseline seat drives with [`SelfReference::Forbidden`] and the
+/// block contributes nothing there; every other caller allows it, which is what lets a case carry
+/// its own values without a section to read them from.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum SelfReference {
+    Allowed,
+    Forbidden,
 }
 
 impl<'a> DorcReplayDriver<'a> {
     /// Bind one case to its production-render consumer.
     #[must_use]
     pub fn new(consumer: &'a DorcConsumer, case: &'a Case) -> Self {
-        Self { consumer, case }
+        Self {
+            consumer,
+            case,
+            self_reference: SelfReference::Allowed,
+        }
+    }
+
+    /// The same driver, declining the case's own inventory block (see [`SelfReference`]).
+    fn without_self_reference(mut self) -> Self {
+        self.self_reference = SelfReference::Forbidden;
+        self
     }
 }
 
@@ -1413,7 +1489,8 @@ impl ReplayDriver<SectionKey, SectionVariableId> for DorcReplayDriver<'_> {
         command: &str,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.consumer.replay(self.case, command, context)
+        self.consumer
+            .replay_within(self.case, command, context, self.self_reference)
     }
 }
 
@@ -1508,13 +1585,19 @@ impl DorcConsumer {
         if let Some(slug) = arrangement_page_slug(case, &words) {
             return Ok(self.arrangement_page(slug)?.text());
         }
-        if let ["dorc-loom", "vars", mode, path] = words.as_slice()
+        if let ["dorc-loom", "vars", mode, target] = words.as_slice()
             && matches!(*mode, "--used" | "--all")
-            && case_relative_path(path)
         {
-            return section_source(case, path)
-                .and_then(|source| self.vars_inventory(source, path, *mode == "--used"))
-                .ok_or_else(|| format!("unsupported replay {command:?}"));
+            let used = *mode == "--used";
+            let inventory = if names_this_case(case, target) {
+                self.vars_inventory_of(case, target, used)
+            } else if case_relative_path(target) {
+                section_source(case, target)
+                    .and_then(|source| self.vars_inventory(source, target, used))
+            } else {
+                None
+            };
+            return inventory.ok_or_else(|| format!("unsupported replay {command:?}"));
         }
         if words.as_slice() == ["dorc", "lint", "--list-sources"] {
             return Ok(dorc_cli::lint_sources_parts(&self.render_ctx()).text());
