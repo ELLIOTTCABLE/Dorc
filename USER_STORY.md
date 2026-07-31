@@ -226,7 +226,7 @@ hint: 'foobar' (line 8) is unmodeled: it is the first wall - an oracle vouching 
 
 No new hat, and no new file. This is the stage-1 habit -- the hand-written guard -- taken
 one step further: `foobar` already has a status query (most tools do), so the admin writes
-the check they would have written anyway, as a function, in the book, right before to the
+the check they would have written anyway, as a function, in the book, right before the
 line that keeps showing up in the plan -- and gives it the one name Dorc recognizes:
 
 ```sh

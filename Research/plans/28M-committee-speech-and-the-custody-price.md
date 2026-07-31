@@ -443,5 +443,13 @@ tests' seam) · diamond-loading keys unit-identity to the DEFINING file's
 entrypoint-only constants under deep-require should wall loudly (~SUSPECT; lint
 candidate) · the shadow refusal guards ACCIDENTAL reassignment only —
 supply-chain trust in what you chose to source is out of scope (docs say so
-once).
+once). The §7-commissioned composition tests gain a REQUIRED shape [TYPED
+substance 2026-07-31]: a semi-authoritative, well-engineered oracle package
+deliberately split as a helpers file (the bulk of the logic, non-role names)
+plus ONE thin, opt-out-able entrypoints file (the `__role` collision surface);
+the suite must prove BOTH halves — the entrypoints lift with their cross-file
+helper closure intact, AND an admin can discard/swap the entrypoint file
+(`unset -f`, not-sourcing it, or supplying their own entrypoints over the same
+helpers) without losing the helpers' function. The packaging shape that makes
+custody cheap is itself the thing under test.
 
