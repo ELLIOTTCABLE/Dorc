@@ -1,6 +1,6 @@
 //! One deterministic production-shaped lint invocation for transcript replay.
 
-use dorc_aid::tagged::RenderParts;
+use dorc_aid::{RenderCtx, tagged::RenderParts};
 
 use crate::{LintInput, LintOptions, LintReport, NoToolsRunner, lint, render};
 
@@ -11,11 +11,10 @@ pub struct SourcePolicy {
     pub tools_enabled: bool,
 }
 
-/// The one report and exact tagged human render produced for one materialized source.
+/// The one report produced for one materialized source, plus the render seat over it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProductionLintResult {
     report: LintReport,
-    human: RenderParts,
 }
 
 impl ProductionLintResult {
@@ -25,10 +24,17 @@ impl ProductionLintResult {
         &self.report
     }
 
-    /// Exact human bytes with renderer-owned editable provenance.
+    /// Exact human bytes with renderer-owned editable provenance, through the caller's tables.
+    ///
+    /// The context is demanded HERE, at the render, rather than baked in when the report was
+    /// produced: a stored render can only carry the tables whoever ran the lint happened to hold,
+    /// and `dorc-loom` re-renders a lint-route case against its EDITED mirror before anything is
+    /// rebuilt (`28L:rul-render-context-struct`). Rendering eagerly against the compiled-in catalog
+    /// left promote publishing a lock and a transcript that disagreed
+    /// (`28L:fnd-lint-route-rerender-reads-const-not-mirror`).
     #[must_use]
-    pub fn human(&self) -> &RenderParts {
-        &self.human
+    pub fn human(&self, ctx: &RenderCtx<'_>) -> RenderParts {
+        render::render_human_parts(ctx, &self.report)
     }
 }
 
@@ -51,6 +57,5 @@ pub fn lint_materialized_source(
         &NoToolsRunner,
         None,
     );
-    let human = render::render_human_parts(&dorc_aid::RenderCtx::production(), &report);
-    ProductionLintResult { report, human }
+    ProductionLintResult { report }
 }

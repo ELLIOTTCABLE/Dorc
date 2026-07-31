@@ -15,10 +15,10 @@
 use std::path::{Path, PathBuf};
 
 use dorc_loom::{
-    DorcConsumer, generate_arrangement_lock, generate_catalog_lock, load_arrangement_corpus,
-    load_corpus_by_slug, replay_case,
+    DorcConsumer, compile_section_edit, generate_arrangement_lock, generate_catalog_lock,
+    load_arrangement_corpus, load_corpus_by_slug, replay_case,
 };
-use errorloom::{Case, RunEnv};
+use errorloom::{Case, CaseRenderer, RunEnv};
 
 fn corpus_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
@@ -387,11 +387,65 @@ fn lint_cases_replay_the_complete_production_report() {
             "lint case `{filename}` keeps exact renderer provenance"
         );
         assert_eq!(
-            production.human().text(),
+            production.human(&dorc_aid::RenderCtx::production()).text(),
             replay[0].output(),
             "lint case `{filename}` uses the production render"
         );
     }
+}
+
+/// `28L:fnd-lint-route-rerender-reads-const-not-mirror`, reproduced end-to-end by the conductor's
+/// rehearsal: promote flips a register in the MIRROR and re-renders the case's transcript from it,
+/// so a re-render that reads the compiled-in catalog publishes a lock and a transcript that
+/// disagree — green at promote, red at the next rebuild. The why and arrangement routes always
+/// threaded the mirror through `RenderCtx`; the lint route rendered eagerly inside
+/// `lint_materialized_source`, before any caller could hand it one.
+///
+/// Both directions are STAGED on the mirror rather than borrowed from whichever code still happens
+/// to be unwritten (`28L:fnd-shared-fixture-collision`): first the placeholder a `None` register
+/// renders, then the words an overtype mints — each visible in the re-rendered transcript with no
+/// rebuild in between, which is the promote-then-immediate-fixpoint shape.
+#[test]
+fn a_lint_route_re_render_reads_the_edited_mirror() {
+    const CASE: &str = "mark-unknown-verb.loom";
+    let text = std::fs::read_to_string(corpus_dir().join(CASE))
+        .unwrap_or_else(|error| panic!("read `{CASE}`: {error}"));
+    let case = Case::parse(&text).unwrap_or_else(|error| panic!("parse `{CASE}`: {error}"));
+    let slug = case
+        .frontmatter()
+        .scalar("code")
+        .unwrap_or_else(|| panic!("`{CASE}` declares a code"))
+        .to_owned();
+    let placeholder = format!("[unwritten: {slug}]");
+
+    let mut consumer = DorcConsumer::new();
+    consumer.set_message(&slug, None);
+    let emptied = consumer.render_case(&case).expect("the case re-renders");
+    assert!(
+        emptied.contains(&placeholder),
+        "an emptied register must re-render as its placeholder, not as the compiled-in words:\n\
+         {emptied}"
+    );
+
+    let words = "fixture words the mirror alone carries";
+    let baseline = consumer
+        .editable_baseline(&case)
+        .expect("the lint render carries editable provenance");
+    let edited = baseline.render().text().replace(&placeholder, words);
+    let edit = compile_section_edit(&baseline, &edited).expect("the overtype compiles");
+    consumer
+        .apply_section_edit(&edit)
+        .expect("the mirror takes it");
+
+    let overtyped = consumer.render_case(&case).expect("the case re-renders");
+    assert!(
+        overtyped.contains(words),
+        "the re-render must carry the edited words with no rebuild:\n{overtyped}"
+    );
+    assert!(
+        !overtyped.contains(&placeholder),
+        "the placeholder must not survive its own overtype:\n{overtyped}"
+    );
 }
 
 /// The production mark validator receives source bytes, not a defining-case slug. Removing each

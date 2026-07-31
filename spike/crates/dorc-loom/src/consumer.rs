@@ -641,7 +641,9 @@ impl DorcConsumer {
                     tools_enabled: false,
                 },
             );
-            return Some(ReplayResult::editable(to_editable_render(result.human())));
+            return Some(ReplayResult::editable(to_editable_render(
+                &result.human(&self.render_ctx()),
+            )));
         }
         if let Some(diag) = fire_invocation_error(case, &tokens) {
             let parts = self.invocation_parts(&diag, tokens.first().copied().unwrap_or_default());
@@ -1499,7 +1501,7 @@ impl DorcConsumer {
                     tools_enabled: false,
                 },
             )
-            .human()
+            .human(&self.render_ctx())
             .text());
         }
         if let Some(diag) = fire_invocation_error(case, &words) {

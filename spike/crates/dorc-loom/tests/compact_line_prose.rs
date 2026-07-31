@@ -56,7 +56,10 @@ fn baseline(case: &Case) -> dorc_loom::DorcEditableBaseline {
         },
     );
     DorcConsumer::new()
-        .baseline_from_render(case, to_editable_render(result.human()))
+        .baseline_from_render(
+            case,
+            to_editable_render(&result.human(&dorc_aid::RenderCtx::production())),
+        )
         .expect("the lint render carries editable provenance")
 }
 
