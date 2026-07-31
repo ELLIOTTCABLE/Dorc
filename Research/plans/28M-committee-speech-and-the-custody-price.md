@@ -491,12 +491,27 @@ polyfill lands Defined(guard). Controller-static only — host-dependent conditi
 - **dec-pessimistic-iteration [ACKED: "always — pessimism is what we do here"]** —
   every intermediate state independently sound; exotic mutually-guarded cycles land
   ⊤ and withhold.
-- **note-function-only-spelling-scout [PENDING 2026-07-31]** — whether POSIX or the
-  broad shell-commons offers a function-ONLY definedness test (no PATH fallback)
-  fitting, or cheaply raising, the two-binary floor; Sonnet research dispatched. If
-  one exists it becomes an ADDITIONAL decidable read (and a lint-preferred
-  spelling), never a replacement for the command-v contract — the wild idiom must
-  still fold.
+- **note-function-only-spelling-scout [RESOLVED NEGATIVE, researched 2026-07-31]** —
+  no portable function-only definedness test exists, at the SPEC level, not as an
+  implementation accident: POSIX `command -v` writes functions, special builtins,
+  regular builtins, and reserved words all "as just their names" (four categories,
+  one shape), and `command -V`'s output is formatted `"%s\n", <unspecified>` with
+  APPLICATION USAGE explicitly disclaiming parseability
+  [P: pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html, Issue 8].
+  Dispositive at the floor: posh 0.14.1 has NO `type` builtin at all (Debian
+  #397601, closed 2020 by adding `command -v/-V` instead; bookworm posh(1) builtin
+  list confirms no type/typeset/declare/hash) — so every type-grep idiom is dead on
+  the floor, and the grep is a U-shape trap anyway (wording diverges: dash "is a
+  shell function" vs bash/busybox "is a function"; busybox's `describe_command`
+  source deliberately chose bash's wording over dash's, ~SUSPECT on full context).
+  `declare -F` is bash-only; raising the floor to admit ANY function-only construct
+  eliminates posh, the floor's minimal anchor. Conclusion: the
+  rul-command-v-reads-fn-definedness contract stands alone — no additional
+  decidable read arrives, and the wild has none to teach us (surveyed portable
+  projects either don't discriminate or gate on bash + `declare -F`). Residual
+  trivium, human-as-debugger candidate: posh's literal `command -V` wording for a
+  function is unverified (salsa GitLab unfetchable); `posh -c 'f(){ :; };
+  command -V f'` answers it in one line if ever wanted.
 - **note-undefined-probe-enrichment [banked, aid-plane; aid never drives design]** —
   Undefined stays a domain state DISTINCT from ⊤ (it already is; this bullet is why
   it must never collapse): its aid-plane consumer is probe-enrichment — "analysis
