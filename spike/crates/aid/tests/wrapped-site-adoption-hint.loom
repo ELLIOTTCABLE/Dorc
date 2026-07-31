@@ -48,3 +48,8 @@ hork__is_converged() {
 
 -- replay --
 $ dorc plan --book=book.sh -o runas.oracle.sh -o hork.oracle.sh
+note[wrapped-site-adoption-hint]: sm would elide if hork's oracle vouched
+context-tolerance (one line: `: safe-across user`)
+      [ book.sh:2:1
+   2 | runas hork add nginx
+     | \__________________/
