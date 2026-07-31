@@ -596,6 +596,33 @@ lanes thread by fresh census, never by the map's count.
   `cases-live-here` ("filename match") + the dev-dep note; cli/CLAUDE.md
   loom-form-is-the-same-battery (key vocabulary now closed + 22-key list home);
   28L already carries the ownership/loop-hint/envelope entries above.
+- **x2d FOLDED** (`ai/r28-loom-final` @ `6b23c5d8`, ff after the two follow-ons landed
+  at `2817e200`: the per-edit ForeignComponent refusal naming the owning file, and the
+  metadata promote-refusal + `--accept-metadata` with per-item disclosure — suite gate
+  KEPT as the unpromoted-drift net). x2c DISPATCHED (worktree loom-x2c, off
+  `6b23c5d8`): de-passthrough + the foreign-text seal, per the fnd-284-landed-state
+  work-list; reads 284 under the builders-only protocol. X2b recovered from a
+  transient crash + a rate-limit interruption (seam commit landed; survival
+  extraction resumes; rebases over the x2d fold at its close).
+- **CONDUCTOR REHEARSAL EXECUTED** (2026-07-30, own hands, loom-final worktree;
+  landings `d26bdbb4` + the whylog-absent revision commit; prose landed under the
+  bend). Part 1, overtype `mark-unknown-verb`'s placeholder with two `{{var}}`s:
+  compile interpreted both, promote flipped the lock `None → Some` with params +
+  concrete example — AND CAUGHT A REAL DEFECT: **fnd-lint-route-rerender-reads-const-
+  not-mirror** (+SURE, reproduced end-to-end) — promote re-rendered the TRANSCRIPT
+  with the stale compiled-in catalog (placeholder), leaving lock and transcript
+  disagreeing; after rebuild the fixpoint went red as predicted; recovered via the
+  sanctioned DORC_LOOM_DUMP two-step. The lint-route re-render seat misses the
+  mirror thread D2 landed elsewhere — the exact class `28H:finding-why-render-reads-
+  the-const-not-the-mirror` named, one seat left. FIX ROUTED to X2b's fold (or a
+  micro-lane if X2b closes without it): thread the mirror ctx through the lint-route
+  re-render in `render_direct_replay`/`replay`'s lint branch; pin with a
+  promote-then-immediate-fixpoint test on a lint-rendered catalog code. Part 2,
+  revise WRITTEN prose + move `{{dir}}` mid-sentence on `whylog-absent` (why
+  route): one-step, transcript re-rendered correctly with no rebuild — isolating
+  the defect to the lint seat. Also exercised live: the lock-not-clean refusal
+  (x2d's remediation text — correct, actionable), the loop-hint teaching, vars
+  discovery. Full local suite green (1657/1657) at the rehearsal tip.
 - **D2/D3 dispatched in parallel worktrees** off the post-landing tip — D2
   editable-surface pack (`ai/r28-loom-d2`): placeholder face · absorption→refusal +
   help scaffold-affordance · attached markers (`282` §13 amendment) · RenderCtx
