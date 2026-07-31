@@ -150,7 +150,7 @@ impl Said {
                 slug,
                 occurrence,
                 values,
-            } => sentence_runs(ctx, slug, *occurrence, values, part),
+            } => sentence_runs(ctx, slug, *occurrence, values),
             Said::Value(text) => vec![crate::weave::value(text, part, WHY_VALUE_CAP)],
             Said::Mark(mark, text) => vec![crate::weave::mark(text.clone(), mark)],
             Said::Foreign { text, source } => {
@@ -182,18 +182,11 @@ fn interleaved_values(ctx: &RenderCtx<'_>, values: &[Said]) -> Vec<String> {
 ///
 /// Byte-identical to [`arrangement_sentence`] by construction — runs carry their own spacing and
 /// weft inserts nothing between them — so giving a line a face never moves a rendered byte.
-///
-/// A value that is itself COMPOSED recurses instead of flattening: a because-clause, an outcome
-/// word, a receipt's when-clause are registry rows in their own right, and stamping one as its
-/// parent's value would hand the transport a row the render is holding the identity of and
-/// dropping (`28L:rul-editability-is-stamped-never-re-derived`). Bytes are unchanged either way —
-/// [`Said::text`] concatenates the same fragments this concatenates runs for.
 fn sentence_runs(
     ctx: &RenderCtx<'_>,
     slug: &'static str,
     occurrence: Option<usize>,
     values: &[Said],
-    part: &'static str,
 ) -> Vec<Run<Face>> {
     let interleaved = interleaved_values(ctx, values);
     let Some(words) = sentence_words(ctx.arrangements(), slug, occurrence, values.len()) else {
@@ -208,19 +201,25 @@ fn sentence_runs(
     let mut runs = Vec::new();
     for (index, word) in words.iter().enumerate() {
         runs.push(crate::weave::words((*word).to_owned(), slug, occurrence));
-        match (values.get(index), interleaved.get(index)) {
-            (Some(Said::Value(_)), Some(text)) => runs.push(crate::weave::sentence_value(
+        if let (Some(value), Some(text)) = (values.get(index), interleaved.get(index)) {
+            runs.push(crate::weave::sentence_value(
                 text,
                 slug,
                 occurrence,
                 index,
-                WHY_VALUE_CAP,
-            )),
-            (Some(composed), _) => runs.extend(composed.runs(ctx, part)),
-            (None, _) => {}
+                value_cap(value),
+            ));
         }
     }
     runs
+}
+
+/// A raw value is capped; a composed one is not (see [`Said::sentence`]).
+fn value_cap(said: &Said) -> usize {
+    match said {
+        Said::Value(_) => WHY_VALUE_CAP,
+        _ => usize::MAX,
+    }
 }
 
 /// One registry-sourced why-surface line, values interleaved between the entry's words.
@@ -274,40 +273,6 @@ mod tests {
                 .collect::<String>(),
             stream.text(&RenderCtx::production()),
             "the run seat and the text seat agree byte for byte"
-        );
-    }
-
-    /// A registry row used as another row's VALUE keeps its own face. Flattening it was how a
-    /// because-clause, an outcome word and a receipt's when-clause all reached the transport as
-    /// their parent's value: rendered from a row the seat could name, stamped as one that could
-    /// not be edited.
-    #[test]
-    fn a_composed_value_keeps_its_own_rows_face() {
-        let ctx = RenderCtx::production();
-        let outer = Said::sentence(
-            "why-outcome-contrastive",
-            None,
-            vec![
-                Said::Value("2|hork".to_owned()),
-                Said::Value("skipped".to_owned()),
-                Said::Value("guarded".to_owned()),
-                Said::words("why-reason-run-not-elidable", &[]),
-            ],
-        );
-        let runs = outer.runs(&ctx, "why-outcome");
-        assert_eq!(
-            runs.iter().map(|run| run.text.clone()).collect::<String>(),
-            outer.text(&ctx),
-            "recursing into a composed value moves no byte"
-        );
-        assert!(
-            runs.iter().any(|run| matches!(
-                &run.provenance,
-                weft::Provenance::Arrangement {
-                    key: Some(Face::Row { slug, .. })
-                } if *slug == "why-reason-run-not-elidable"
-            )),
-            "the nested row is stamped with its own slug, not swallowed as a value"
         );
     }
 
