@@ -2237,8 +2237,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
-        // WARNING: the definition genuinely does not load, so silence would leave the author
-        // wondering why their kind-owner body never answers.
+        // WARNING: the definition genuinely does not load, and silence reads as a broken resolver.
         DiagCode::InBookVocabularyRole(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
