@@ -32,7 +32,31 @@ plan is `28K` §10 (bitem0–bitem9 + fold checklist); on committee-corner confl
 
 ## Findings / deviations
 
-(none yet)
+### Conductor adjudications at the bitem0/2 close (2026-07-31)
+
+- **adj-positional-plural-value-loss-carries-to-bitem4** — builder-1's flagged
+  `tc-positional-plural-value-loss` (the withhold-not-re-resolve cut dilutes BOTH sanctioned
+  plural idioms at the verdict tier: sites above a blessing `unset -f`, and inside a
+  regional-preference subshell, answer NOTHING rather than answering from the positionally-live
+  file). Adjudicated: the withhold STANDS spike-tier — conservative direction, zero corpus
+  coverage, softening is additive under `rul-strawman-formats-no-compat` — and the question
+  carries into bitem4's brief, whose committee-fence surface (per-family/per-file maps) is the
+  same seam; build the per-file effect map only if the fence work makes it near-free. DISCLOSED
+  TENSION for the human: `28K` §1 `rul-scope-by-subshell-resource` sells the subshell idiom as
+  answering from the re-sourced file, and `28M` §3 `wall-verdict-tier-sovereignty` premises
+  per-position sovereignty — the spike under-delivers both until the seam closes. ~SUSPECT
+  acceptable; awaiting typed ack or overrule.
+- **adj-positional-gate-is-bitem3s-seam** — builder-1's §8 doubt (the agreement-gate is a
+  FOURTH untyped mechanism holding the license-plane monologue) rides into builder-2's brief:
+  bitem3's `SourceFileId`-into-`ReplaceLicense` threading should SUBSUME the gate, not sit
+  beside it.
+- **bank-decidable-fold-sited-post-bitem1** — `28M` §9 landed (design settled, sibling
+  conductor); the fold runs as its own small lane after bitem1, before bitem3–5 (funcenv is
+  quiet then, and bitem4/5 want the un-poisoned polyfill world as input). The
+  function-only-definedness scout came back NEGATIVE (human-relayed 2026-07-31): all
+  alternatives are shell-specific (`read`/`declare`/grepping `-V`); the `command -v`
+  fn-definedness contract stands alone, decidable-set v0 is final, and bitem8's reserved
+  battery case is THE pin for the contract's one divergence cell.
 
 ## bitem0 — the full-positional regime (LANDED)
 
