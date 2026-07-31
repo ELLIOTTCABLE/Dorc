@@ -1,0 +1,117 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - role-defined-below-its-sites
+---
+-- book.sh --
+#!/bin/sh
+# contest28-late-definition-licenses-nothing-above (`28K` §2 rul-visibility-is-full-positional,
+# ACKED spike-tier 2026-07-31) — THE sharpened consequence cell, end to end.
+#
+# ONE in-book verdict definition, TWO sites of the same command, one on each side of it. A shell
+# executing this book top-to-bottom has no `foobar__is_converged` at the FIRST site and has one at
+# the SECOND, so Dorc answers nothing at the first — it ships no check (`site:0
+# unresolvable-no-probe`), inserts no guard, and runs verbatim — and answers at the second.
+#
+# The second GUARDS rather than elides, and that is the honest outcome rather than a weaker pin:
+# the first site is an unmodeled establish that really runs, so it walls (`opaque-poison-is-the-
+# product`) and no downstream elision survives it without the survival flag. The vouch still
+# holds, so the guard is minted from the book's own verdict body — the definition live at THAT
+# line, which is the whole property under test.
+foobar sync-certs /etc/nginx/certs
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+# `role-defined-below-its-sites` fires on the definition above (declared in the frontmatter): one
+# site lost its answer, and moving those four lines to the top of the book is the remediation.
+foobar sync-certs /etc/nginx/other
+
+-- probe-results.txt --
+# Only the BELOW site is probed at all: the above one ships no check, because no definition is
+# live at its line. rc 0 ⇒ converged ⇒ its guard is minted.
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock. It answers for BOTH roles here: the probe's `foobar status …` (rc 0 ⇒ converged)
+# and the un-elided first site's own `foobar sync-certs …`, which really does run. Mutates
+# nothing either way — the run-log is the whole observable.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: foobar sync-certs /etc/nginx/certs
+ran: foobar status --certs-current -- /etc/nginx/other
+
+-- replay --
+$ dorc --book=book.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=136bcbc56111093f684dfc635f110fce509c8b61c2d94c6e58ee12d3bdfc426a sites=1 @@dorc@@\n'
+# site 1: dorc-auto:foobar@converged
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/other'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+
+#!/bin/sh
+# contest28-late-definition-licenses-nothing-above (`28K` §2 rul-visibility-is-full-positional,
+# ACKED spike-tier 2026-07-31) — THE sharpened consequence cell, end to end.
+#
+# ONE in-book verdict definition, TWO sites of the same command, one on each side of it. A shell
+# executing this book top-to-bottom has no `foobar__is_converged` at the FIRST site and has one at
+# the SECOND, so Dorc answers nothing at the first — it ships no check (`site:0
+# unresolvable-no-probe`), inserts no guard, and runs verbatim — and answers at the second.
+#
+# The second GUARDS rather than elides, and that is the honest outcome rather than a weaker pin:
+# the first site is an unmodeled establish that really runs, so it walls (`opaque-poison-is-the-
+# product`) and no downstream elision survives it without the survival flag. The vouch still
+# holds, so the guard is minted from the book's own verdict body — the definition live at THAT
+# line, which is the whole property under test.
+foobar sync-certs /etc/nginx/certs
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+# `role-defined-below-its-sites` fires on the definition above (declared in the frontmatter): one
+# site lost its answer, and moving those four lines to the top of the book is the remediation.
+( foobar__is_converged sync-certs /etc/nginx/other ) || foobar sync-certs /etc/nginx/other   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]
