@@ -4548,6 +4548,34 @@ mod tests {
         assert!(evidence.is_empty(), "agreeing records mint no disagreement");
     }
 
+    /// SILENCE IS NOT A SECOND OPINION. Two sites on one cell where only ONE reported: the meet
+    /// still ⊤s the cell — an unmeasured site contributes `Unknown` and unsure ⇒ run — but nothing
+    /// was contradicted, so the `Measured` narrative must not claim the host said two things. It
+    /// used to, because the fold compared every check's observable whether a record backed it or
+    /// not, and the reader got an `[unnarrated: FactMergeDisagreement]` for a cell no two records
+    /// ever shared.
+    #[test]
+    fn one_measured_site_and_one_silent_one_mint_no_disagreement() {
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
+
+        for stream in ["site 0 effect=holds rc=0\n", "site 1 effect=holds rc=0\n"] {
+            let results = parse_str(stream, &mut i);
+            let (facts, evidence, _collapsed) =
+                facts_from_sites(&probe, &results, &BTreeMap::new());
+            assert!(
+                evidence.is_empty(),
+                "one record and one silence is not a contradiction: {evidence:?} ({stream})"
+            );
+            assert_eq!(
+                facts[&fact].effect,
+                Verdict::Unknown,
+                "the meet still ⊤s the cell, so the licence is withheld ({stream})"
+            );
+        }
+    }
+
     /// The shared-cell readout is CELL-keyed, not pair-keyed (`26G:fnd-shared-auto-cell-collides`):
     /// three sites on one cell disagreeing pairwise is ONE collapse an admin can act on, and three
     /// lines would read as three unrelated problems. The count travels so the line can say how wide

@@ -732,10 +732,13 @@ pub fn facts_from_sites(
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
     let mut sites_per_fact: BTreeMap<dorc_core::FactKey, u32> = BTreeMap::new();
     let mut collapsed: BTreeSet<dorc_core::FactKey> = BTreeSet::new();
-    // C4 (`27V` Lane A): the `Measured` fact-merge narrative minted beside the ⊤-fold. `first_site`
-    // remembers each cell's first establisher so a cross-site conflict names both operands.
+    // C4 (`27V` Lane A): the `Measured` fact-merge narrative minted beside the ⊤-fold.
+    // `first_measured` remembers each cell's first RECORD-BACKED establisher, so a cross-site
+    // conflict names both operands — and so a cell only narrates when the HOST really said two
+    // things. A check with no record contributes ⊤ to the meet (correctly: unmeasured ⇒ run), and
+    // disagreeing with ⊤-from-silence is a measurement that never happened, not a contradiction.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
-    let mut first_site: BTreeMap<dorc_core::FactKey, dorc_aid::diag::SiteId> = BTreeMap::new();
+    let mut first_measured: BTreeMap<dorc_core::FactKey, dorc_aid::diag::SiteId> = BTreeMap::new();
     for check in &probe.checks {
         let site_id = dorc_aid::diag::SiteId {
             leaf: check.site,
@@ -825,15 +828,20 @@ pub fn facts_from_sites(
         *per_fact = per_fact.saturating_add(1);
         if let Some(prior) = by_fact.get(&check.fact).copied() {
             if prior != obs {
-                let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);
-                collapse_narrative
-                    .push(measured_merge_disagreement(site_id, &[prior_site, site_id]));
+                if record.is_some()
+                    && let Some(prior_site) = first_measured.get(&check.fact).copied()
+                {
+                    collapse_narrative
+                        .push(measured_merge_disagreement(site_id, &[prior_site, site_id]));
+                }
                 collapsed.insert(check.fact);
             }
             by_fact.insert(check.fact, merge_observable(prior, obs));
         } else {
-            first_site.insert(check.fact, site_id);
             by_fact.insert(check.fact, obs);
+        }
+        if record.is_some() {
+            first_measured.entry(check.fact).or_insert(site_id);
         }
     }
     let collapsed = collapsed
