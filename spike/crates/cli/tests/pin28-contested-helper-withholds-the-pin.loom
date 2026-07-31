@@ -1,0 +1,116 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - helper-declaration-contested
+---
+-- book.sh --
+#!/bin/sh
+# pin28-contested-helper-withholds-the-pin (`28K` §4 rul-pin-by-definition-bytes; `28M` §8's
+# diamond rider) — two loaded sources, one helper name, two different bodies.
+#
+# sh would resolve this by last-definition-wins and silently rebind `_wombat_dest` to whichever
+# file loaded second, which would make the shipped check run a body its author never wrote against
+# — the committee-speech hazard `28M` §2 fences, and unlike the role lane no admin spelling picks
+# between two helpers of the same name. So the pin is WITHHELD: no vouch, no shipped check, no
+# guard preamble, and the site runs verbatim (`inv-kfail` — every ambiguity resolves toward run).
+# The warning names the collision so the admin can load one of the two, or take custody of a
+# merged copy.
+#
+# What to read in the transcript: `sites=0` — even the probe declines, because a check that cannot
+# carry its closure is a check that cannot run — and the apply is the book, byte for byte.
+hork provision
+wombat sync a.conf
+
+-- a-wombat.oracle.sh --
+# dorc-lang/v0.2
+# The EARLIER declaration. Loaded first (the runner passes `-o` per `*.oracle.sh` in sorted order),
+# so it is the `{prior}` the warning names.
+_wombat_dest() {
+   wombat cmp -- "$1" "/etc/wombat/$1"
+}
+
+-- b-wombat.oracle.sh --
+# dorc-lang/v0.2
+# The LATER declaration, and a role entrypoint that depends on it. The bodies differ by one flag —
+# a version skew, not a vendored copy — which is precisely the case content-dedup must NOT collapse.
+_wombat_dest() {
+   wombat cmp --strict -- "$1" "/etc/wombat/$1"
+}
+
+wombat__is_converged() {
+   _wombat_dest "$2"
+}
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock for the unmodeled wall command.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock. Only the BOOK's own `wombat sync` should reach it here: no check ships, so no
+# `wombat cmp` appears in the run-log — which is how the withheld pin is observable.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: wombat sync a.conf
+
+-- replay --
+$ dorc --book=book.sh -o a-wombat.oracle.sh -o b-wombat.oracle.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=28e3c26560280b4aa491cb3552b49f1e3a4ab022ef764c13cd2ade57b2a327ed sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# pin28-contested-helper-withholds-the-pin (`28K` §4 rul-pin-by-definition-bytes; `28M` §8's
+# diamond rider) — two loaded sources, one helper name, two different bodies.
+#
+# sh would resolve this by last-definition-wins and silently rebind `_wombat_dest` to whichever
+# file loaded second, which would make the shipped check run a body its author never wrote against
+# — the committee-speech hazard `28M` §2 fences, and unlike the role lane no admin spelling picks
+# between two helpers of the same name. So the pin is WITHHELD: no vouch, no shipped check, no
+# guard preamble, and the site runs verbatim (`inv-kfail` — every ambiguity resolves toward run).
+# The warning names the collision so the admin can load one of the two, or take custody of a
+# merged copy.
+#
+# What to read in the transcript: `sites=0` — even the probe declines, because a check that cannot
+# carry its closure is a check that cannot run — and the apply is the book, byte for byte.
+hork provision
+wombat sync a.conf
