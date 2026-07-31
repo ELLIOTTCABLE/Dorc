@@ -113,6 +113,9 @@ impl WhyWorld {
         let mut arena = ProvArena::new();
         let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
+        // The non-role declarations every pinned body may need (`28K` §4): built ONCE per unit,
+        // beside the lifts, and shared by the ship seams and the vouch lift alike.
+        let helpers = dorc_oracle::closure::HelperIndex::build(&oracle_refs);
         let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
         let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
             .iter()
@@ -164,18 +167,41 @@ impl WhyWorld {
         );
         let classes = origin.classes.clone();
 
-        let (vouch_lift, decline_narrative) =
-            dorc_plan::build_vouches(&oracle_refs, &classes, &value, &mut interner, live);
+        let (vouch_lift, decline_narrative) = dorc_plan::build_vouches(
+            &oracle_refs,
+            &helpers,
+            &classes,
+            &value,
+            &mut interner,
+            live,
+        );
         let vouches = vouch_lift.value;
 
         let ship = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, argv: &[Symbol]| {
-            ship_predict_body(oracle_srcs, &checks, &interner, provider, argv, node, live)
+            ship_predict_body(
+                oracle_srcs,
+                &helpers,
+                &checks,
+                &interner,
+                provider,
+                argv,
+                node,
+                live,
+            )
         };
         let ship_auto = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, _: &[Symbol]| {
             verdict_lane
                 .contains(&node)
                 .then(|| {
-                    ship_verdict_body(oracle_srcs, &verdict_sets, &interner, provider, node, live)
+                    ship_verdict_body(
+                        oracle_srcs,
+                        &helpers,
+                        &verdict_sets,
+                        &interner,
+                        provider,
+                        node,
+                        live,
+                    )
                 })
                 .flatten()
         };
@@ -557,10 +583,20 @@ fn shipping_source(
     dorc_oracle::live_source(count, has).filter(|&i| live.answers_at(node, role_name, i))
 }
 
-/// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.
+/// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships,
+/// preceded by its CLOSURE (`28K` §4 `rul-pin-by-definition-bytes`) — the helpers and file-level
+/// constants the body needs, which do not travel with the funcdef span. A body whose closure the
+/// loaded sources contest ships NOTHING (`None` ⇒ the site runs): the ambiguity resolves toward
+/// run, and the load edge already named the collision.
 #[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the shipped unit is now the definition PLUS its closure (`28K` §4), so the source \
+              set, its non-role index, and the lifted checks all reach one seat by construction"
+)]
 pub fn ship_predict_body(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: Symbol,
@@ -594,17 +630,21 @@ pub fn ship_predict_body(
         return None;
     }
     let src = oracle_srcs.get(idx)?;
+    let body = strip_predict(src, &check, interner);
+    let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::ShippedCheck::predict(
-        strip_predict(src, &check, interner),
+        format!("{closure}{body}"),
         Some((check.name_span, source_file_id(idx))),
     ))
 }
 
-/// `24L` §2 — the stripped `<provider>__is_converged` a typeless-floor auto-cell probe ships.
-/// Resolved through the same [`shipping_source`] seat.
+/// `24L` §2 — the stripped `<provider>__is_converged` a typeless-floor auto-cell probe ships,
+/// closure included on the same terms as [`ship_predict_body`]. Resolved through the same
+/// [`shipping_source`] seat.
 #[must_use]
 pub fn ship_verdict_body(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     interner: &Interner,
     provider: Symbol,
@@ -629,8 +669,10 @@ pub fn ship_verdict_body(
     let verdict = verdict_sets.get(idx).and_then(named)?;
     let src = oracle_srcs.get(idx)?;
     let emits_report = dorc_oracle::report::emits_report(&verdict);
+    let body = strip_verdict(src, &verdict, interner);
+    let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::ShippedCheck::verdict(
-        strip_verdict(src, &verdict, interner),
+        format!("{closure}{body}"),
         Some((verdict.name_span, source_file_id(idx))),
         emits_report,
     ))

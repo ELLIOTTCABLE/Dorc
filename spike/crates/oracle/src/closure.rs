@@ -60,8 +60,9 @@ struct Declaration {
 pub struct ClosureRefusal {
     /// The name the loaded sources disagree about.
     pub name: String,
-    /// The source indices that declare it, in load order — at least two, by construction.
-    pub files: Vec<usize>,
+    /// Where each disagreeing source declares it, in load order — at least two, by construction.
+    /// The caller resolves `(source index, span)` to the `file:line` a diagnostic points at.
+    pub sites: Vec<(usize, Span)>,
 }
 
 /// Every non-role top-level declaration in the loaded source set, indexed by name.
@@ -153,6 +154,23 @@ impl HelperIndex {
         self.helpers.is_empty() && self.constants.is_empty()
     }
 
+    /// Every name the loaded sources declare with DIFFERING bytes, in name order.
+    ///
+    /// Reported at the load edge rather than per pinned definition, and reported whether or not a
+    /// closure reaches the name, because the collision is real either way: loading both sources
+    /// means sh binds the later body for EVERY caller, so the earlier author's helper is already
+    /// rebound out from under them. A per-definition report would also be a correlated cascade —
+    /// one collision, N families, N-1 of them pointed at the wrong repair
+    /// (`28O:dec-one-diagnostic-per-file-not-per-item`).
+    #[must_use]
+    pub fn conflicts(&self) -> Vec<ClosureRefusal> {
+        self.helpers
+            .iter()
+            .chain(&self.constants)
+            .filter_map(|(name, declarations)| agree(name, declarations).err())
+            .collect()
+    }
+
     /// The closure PREFIX for a role definition authored in source `file` with body text `body`.
     ///
     /// `body` is the definition's own text (stripped or authored alike — the walk reads command
@@ -232,16 +250,14 @@ fn agree<'a>(
     name: &str,
     declarations: &'a [Declaration],
 ) -> Result<&'a Declaration, ClosureRefusal> {
-    let mut iter = declarations.iter();
-    let first = iter.next().ok_or_else(|| ClosureRefusal {
+    let refusal = || ClosureRefusal {
         name: name.to_owned(),
-        files: Vec::new(),
-    })?;
+        sites: declarations.iter().map(|d| (d.file, d.span)).collect(),
+    };
+    let mut iter = declarations.iter();
+    let first = iter.next().ok_or_else(refusal)?;
     if iter.any(|other| other.bytes != first.bytes) {
-        return Err(ClosureRefusal {
-            name: name.to_owned(),
-            files: declarations.iter().map(|d| d.file).collect(),
-        });
+        return Err(refusal());
     }
     Ok(first)
 }
@@ -374,7 +390,7 @@ fn literal_word(ast: &Ast, id: dorc_core::AstId) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{ClosureRefusal, HelperIndex};
+    use super::HelperIndex;
 
     const MARKER: &str = "# dorc-lang/v0.2\n";
 
@@ -493,12 +509,23 @@ mod tests {
             "{MARKER}_wombat_check() {{\n   wombat cmp --strict -- \"$1\"\n}}\n\
              wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n"
         );
+        let index = index(&[&a, &b]);
+        let refused = index
+            .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .expect_err("skewed copies are not one definition");
+        assert_eq!(refused.name, "_wombat_check");
         assert_eq!(
-            index(&[&a, &b]).closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}"),
-            Err(ClosureRefusal {
-                name: "_wombat_check".to_owned(),
-                files: vec![0, 1],
-            })
+            refused.sites.iter().map(|(f, _)| *f).collect::<Vec<_>>(),
+            vec![0, 1]
+        );
+        assert_eq!(
+            index
+                .conflicts()
+                .iter()
+                .map(|c| c.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["_wombat_check"],
+            "the load edge reports the collision once, by name"
         );
     }
 

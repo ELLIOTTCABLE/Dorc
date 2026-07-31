@@ -517,6 +517,10 @@ pub fn build_wrapped_analysis(
         enter_defs,
         tolerance,
     } = build_wrapper_index(oracle_refs, verdict_sets, interner);
+    // Built from the SAME slice the inner bodies are sliced out of, so the closure and the body it
+    // precedes can never disagree about which source they came from.
+    let helper_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
+    let helpers = dorc_oracle::closure::HelperIndex::build(&helper_refs);
 
     let mut out = WrappedAnalysis {
         peeled: BTreeMap::new(),
@@ -574,6 +578,7 @@ pub fn build_wrapped_analysis(
         // shape `compile_probe` would ship, now composed inside the entry chain.
         let Some((inner_fn, inner_sh)) = resolve_inner_check(
             oracle_srcs,
+            &helpers,
             checks,
             verdict_sets,
             inner_word,
@@ -877,6 +882,7 @@ fn build_wrapper_index(
 )]
 fn resolve_inner_check(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     inner_word: &str,
@@ -890,6 +896,7 @@ fn resolve_inner_check(
     let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
     if let Some(shipped) = ship_predict_body(
         oracle_srcs,
+        helpers,
         checks,
         interner,
         inner_provider,
@@ -903,6 +910,7 @@ fn resolve_inner_check(
     // round: the composed body has no single defining funcdef to name, so its site stays span-less.
     let shipped = ship_verdict_body(
         oracle_srcs,
+        helpers,
         verdict_sets,
         interner,
         inner_provider,

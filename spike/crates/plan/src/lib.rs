@@ -1312,6 +1312,7 @@ fn resolve_vouch_operands(
 )]
 pub fn build_vouches(
     oracle_srcs: &[&str],
+    helpers: &dorc_oracle::closure::HelperIndex,
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
     interner: &mut Interner,
@@ -1436,7 +1437,15 @@ pub fn build_vouches(
             "{}{VERDICT_SUFFIX}",
             dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
         );
-        let preamble = strip_verdict(src, verdict, interner);
+        // `28K` §4 `rul-pin-by-definition-bytes`: what the guard runs is the definition's bytes PLUS
+        // the closure they need — helpers and file-level constants the funcdef span does not carry.
+        // A contested closure withholds the VOUCH outright rather than shipping a body that cannot
+        // run: no vouch ⇒ no guard and no elide ⇒ the site runs (`inv-kfail`).
+        let stripped = strip_verdict(src, verdict, interner);
+        let Ok(closure) = helpers.closure_for(file_idx, &stripped) else {
+            continue;
+        };
+        let preamble = format!("{closure}{stripped}");
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
         } else {
@@ -5368,6 +5377,7 @@ apt_get__is_converged() { return 0; }
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
         let (_vouches, narrative) = build_vouches(
             &[verdict_src],
+            &dorc_oracle::closure::HelperIndex::default(),
             &classes,
             &value,
             &mut i,
@@ -5410,6 +5420,7 @@ apt_get__is_converged() { return 0; }
         let vouching_src = "apt_get__is_converged() { dpkg -s \"$2\" : package:\"$2\"@installed ;}";
         let (_vouches, none) = build_vouches(
             &[vouching_src],
+            &dorc_oracle::closure::HelperIndex::default(),
             &classes,
             &value,
             &mut i,
@@ -6196,6 +6207,7 @@ apt_get__is_converged() {
         .value;
         let mut vouches = build_vouches(
             &[CORPUS_VERDICT_SRC],
+            &dorc_oracle::closure::HelperIndex::default(),
             &classes,
             &value,
             &mut i,

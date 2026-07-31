@@ -555,10 +555,16 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // under-report elision vs the shipped tool. Lift diags are dropped (the dashboard is a readout,
     // not gate-3). Kill-aware, survival-OFF (`None`): dashboard parity with the honest baseline.
     let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
-    let vouches =
-        dorc_plan::build_vouches(inputs.oracles, &classes, &value, &mut interner, ambient)
-            .0
-            .value;
+    let vouches = dorc_plan::build_vouches(
+        inputs.oracles,
+        &dorc_oracle::closure::HelperIndex::build(inputs.oracles),
+        &classes,
+        &value,
+        &mut interner,
+        ambient,
+    )
+    .0
+    .value;
     let plan = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,

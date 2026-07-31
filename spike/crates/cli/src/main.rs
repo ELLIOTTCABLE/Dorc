@@ -707,6 +707,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let (source_paths, source_srcs) =
         source_table(&oracle_paths, &oracle_srcs, book_name, &book_src);
     let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
+    // The non-role declarations a pinned definition may need (`28K` §4 rul-pin-by-definition-bytes):
+    // one index per unit, consulted by every seat that emits a body.
+    let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs);
 
     // The book-free oracle-side lints, factored into one entry the lint rung-oracle-solo lane also
     // uses (`27S:seam-oracle-validate-factoring`); `wrapper_incoherent` is the pre-network fail-fast.
@@ -858,6 +861,13 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         book_source,
         &positional_loading_notices(&parsed.value, &cfg.value, &value, &interner, live_defs),
     );
+    for (file, diags) in helper_conflict_diagnostics(&helpers, &source_paths, &source_refs) {
+        let source = source_paths
+            .get(file)
+            .zip(source_refs.get(file))
+            .map(|(path, src)| (path.as_str(), *src));
+        report_at(advisory, "loading", source, &diags);
+    }
     // The withdrawal, applied ONCE to the lifted sets so no downstream consumer has to remember to
     // ask: a contested family becomes indistinguishable from one nobody described.
     let idx = idx.withdrawing(&contested, &interner);
@@ -943,7 +953,14 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // the verdict) and, converged, mints a `Disposition::Guard`.
     // Lift diags drop here: `validate` above surfaces them per-file. This lane could only report
     // them sourceless, which framed every verdict give-up at a fileless `1:1`.
-    let vouch_lift = build_vouches(&source_refs, &classes, &value, &mut interner, live_defs);
+    let vouch_lift = build_vouches(
+        &source_refs,
+        &helpers,
+        &classes,
+        &value,
+        &mut interner,
+        live_defs,
+    );
     let (mut vouches, decline_narrative) = vouch_lift.value;
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
@@ -963,7 +980,16 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // no such pipe. Threaded into BOTH the probe compiler (ship the composed body) and the plan
     // builder (omit the subsumed members).
     let ship_stage = |n, p, a: &[Symbol]| {
-        ship_predict_stage(&source_srcs, &checks, &interner, p, a, n, live_defs)
+        ship_predict_stage(
+            &source_srcs,
+            &helpers,
+            &checks,
+            &interner,
+            p,
+            a,
+            n,
+            live_defs,
+        )
     };
     let connected =
         dorc_plan::connected_check_pipes(&parsed.value, &cfg.value, &value, &classes, ship_stage);
@@ -973,7 +999,16 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
     // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
     let ship = |n, p, a: &[Symbol]| {
-        ship_predict_body(&source_srcs, &checks, &interner, p, a, n, live_defs)
+        ship_predict_body(
+            &source_srcs,
+            &helpers,
+            &checks,
+            &interner,
+            p,
+            a,
+            n,
+            live_defs,
+        )
     };
     // `24L` §2 — a VERDICT-LANE site ships the oracle.s own `is_converged` funcdef, strip-only
     // (rul-only-oracle-bytes-ship). Keyed on the SITE.s lane, never its fact.s KIND (`26H` §3.5):
@@ -988,7 +1023,15 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         if !verdict_lane.contains(&node) {
             return None;
         }
-        ship_verdict_body(&source_srcs, &verdict_sets, &interner, p, node, live_defs)
+        ship_verdict_body(
+            &source_srcs,
+            &helpers,
+            &verdict_sets,
+            &interner,
+            p,
+            node,
+            live_defs,
+        )
     };
     let probe = dorc_plan::compile_probe(
         &parsed.value,
@@ -2189,14 +2232,60 @@ fn shadow_diagnostics(
     by_file.into_iter().collect()
 }
 
+/// The closure refusal's diagnostics, grouped by the file the LATER declaration lives in — the
+/// sibling of [`shadow_diagnostics`] one namespace down (`28K` §4; `28M` §8's diamond rider). The
+/// earlier declaration rides the payload as `path:line`, since one `report_at` threads one source.
+///
+/// Reported at the LOAD edge, not per pinned definition: the collision rebinds the name for every
+/// caller the moment both sources load, so it is one claim about the loaded set with one
+/// remediation, and a per-definition report would point N-1 authors at somebody else's file
+/// (`271:rul-sin-ordering`).
+fn helper_conflict_diagnostics(
+    helpers: &dorc_oracle::closure::HelperIndex,
+    source_paths: &[String],
+    source_srcs: &[&str],
+) -> Vec<(usize, Vec<Diag>)> {
+    let mut by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
+    for conflict in helpers.conflicts() {
+        // One mint per NAME, spanned at the second declaration: a third disagreeing source is the
+        // same world with the same repair, and a diagnostic per pair would be a cascade.
+        let (Some(&(prior_file, prior_span)), Some(&(later_file, later_span))) =
+            (conflict.sites.first(), conflict.sites.get(1))
+        else {
+            continue;
+        };
+        let (Some(prior_path), Some(prior_src), true) = (
+            source_paths.get(prior_file),
+            source_srcs.get(prior_file),
+            later_file < source_paths.len(),
+        ) else {
+            continue;
+        };
+        let (line, _) = dorc_aid::diag::line_col(prior_src, prior_span.lo.0 as usize);
+        by_file.entry(later_file).or_default().push(Diag::new(
+            DiagCode::HelperDeclarationContested(dorc_aid::diag::HelperDeclarationContested {
+                name: conflict.name.clone(),
+                prior: format!("{prior_path}:{line}"),
+            }),
+            later_span,
+        ));
+    }
+    by_file.into_iter().collect()
+}
+
 /// Resolve a connected pipe STAGE's stripped `<provider>__predict` body PLUS its STDOUT coverage
 /// (`271:rul-only-oracle-bytes-ship` rider 1 — the composed-probe repair). Mirrors
 /// [`ship_predict_body`]'s check-resolution, then asks
 /// [`predict_stage_stdout`](dorc_oracle::predict::predict_stage_stdout) whether the arm this argv
 /// selects produces REAL (delegation-produced) stdout bytes — the coverage a downstream byte-consumer
 /// requires. `None` ⇒ no check resolves ⇒ the stage is un-shippable ⇒ the compound refuses (⇒ runs).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "a composed stage ships the same definition-plus-closure unit as an ordinary site (`28K` §4), so the source set and its non-role index arrive together"
+)]
 fn ship_predict_stage(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: Symbol,
@@ -2226,8 +2315,10 @@ fn ship_predict_stage(
     if !matches!(evaluate(&check, &arg_refs), Resolution::Resolved(_)) {
         return None;
     }
+    let body = strip_predict(oracle_srcs.get(idx)?, &check, interner);
+    let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::StageShip {
-        sh: strip_predict(oracle_srcs.get(idx)?, &check, interner),
+        sh: format!("{closure}{body}"),
         produces_real_stdout: predict_stage_stdout(&check, &arg_refs) == StageStdout::RealBytes,
     })
 }
@@ -2390,6 +2481,7 @@ fn collect_reach_probes(
 /// never decoded for meaning; the vouch travels the site's own value-flow (the 24A §1b fence).
 fn build_vouches(
     oracle_refs: &[&str],
+    helpers: &dorc_oracle::closure::HelperIndex,
     classes: &[(
         dorc_analysis::cfg::CfgNodeId,
         dorc_analysis::effect::SkipClass,
@@ -2403,7 +2495,7 @@ fn build_vouches(
     // the tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
     // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
     let (lifted, decline_narrative) =
-        dorc_plan::build_vouches(oracle_refs, classes, value, interner, live);
+        dorc_plan::build_vouches(oracle_refs, helpers, classes, value, interner, live);
     lifted.map(|vouches| (vouches, decline_narrative))
 }
 
@@ -5012,6 +5104,7 @@ apt_get__predict() {
             let ship = |n, p, a: &[Symbol]| {
                 ship_predict_body(
                     &oracle_srcs,
+                    &dorc_oracle::closure::HelperIndex::default(),
                     &checks,
                     &interner,
                     p,

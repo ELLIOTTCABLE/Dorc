@@ -152,9 +152,9 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // The elide-weld (24D §3): a converged ambient site elides ONLY with a reached vouch. Thread
     // them via the shared `dorc_plan::build_vouches` (the SAME composition the cli drives), or
     // every `install` victim would run and the net's elision coverage would vanish. Always-on
-    // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped
-    // (the net asserts on behaviour, not stderr text).
-    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &classes, &value, i, ambient)
+    // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped.
+    let helpers = dorc_oracle::closure::HelperIndex::build(&[ORACLE_SH]);
+    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &helpers, &classes, &value, i, ambient)
         .0
         .value;
 
