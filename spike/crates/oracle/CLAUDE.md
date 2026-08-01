@@ -25,6 +25,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   never inverted, never licenses. Never collapse statuses out of a
   verdict-function; a tool with a non-test exit vocabulary needs an explicit
   `case $? in` remap arm in the delegation body.
+- **bind-is-identity-never-authority** (`28O` tbl-ambient-annotation-sites; the principle,
+  promoted at the r28 resume fold) — an inline bind is an entity-identity channel: it
+  resolves entity REFERENCES and kind-tags them for the book-site back-map; it is never a
+  kind authority and never a cell authority. A mark's own coordinate is authoritative for
+  its cell in full; ambient state may fill ONLY what a coordinate genuinely lacks. Known
+  residue, named not chased: a shared bind's unresolvable value still ⊤s a nullary-verb
+  check whose cell needed nothing from it (`28O:fnd-unresolved-bind-value-tops-the-whole-check`;
+  the one-rule sweep is specified there, unstarted).
 - **effect-check-falsification-first** — proven-mutation ⇒ fails fast and lifts
   NOWHERE (not probe, not guard — `271:rul-no-mutating-guards`); the unprovable
   region rides the authored vouch; the check is never a completeness gate.

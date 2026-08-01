@@ -10,6 +10,11 @@ Stage order, as ruled: A load-inert · B source-file identity · C-v0 function-e
 **[conductor checkpoint]** · F pin-by-definition-bytes · G two-kind fixture respell ·
 H differential load-order battery · C2 value-flow source targets (budget permitting).
 
+<!-- superceded: the E→F checkpoint's asks were closed by the `28M` §7 ack-ledger and the
+`28K` §10 rewrite; stages F/H/C2 (+ the `28M` §9 fold) were executed by the resume lane —
+ledger `Research/notes/28P`. This note is historical from here down. -->
+
+
 ## Stage A — the marked-file load-inertness gate (LANDED)
 
 `28K` §2a `rul-marked-file-is-load-inert`, implementing this crate's long-standing but unbuilt
@@ -445,6 +450,12 @@ Gate 1654/1654 green (from 1637 at the stage base). Golden churn: NONE outside t
 cells — `guard23-reingest-collision-verbatim`'s artifact bytes are byte-identical, and it now
 carries an `expected-diagnostics` declaring the general refusal that governs it, which is the
 pin that the bespoke route is gone.
+
+<!-- superceded in part: the contested/plural framing below (name-keyed collision ⇒
+family-wide withdrawal) is generalized by `28M` §4's committee fence (MEMBER-span, not
+name-collision) and sharpened by the `28P` custody typing; the fence itself is
+build-as-spiked, UNRATIFIED, and its keying is under re-design (`28M` §10
+dir-ownership-is-transitive-inclusion). On conflict, 28M then 28P govern. -->
 
 ### dec-withdrawal-is-undescribed-not-unlicensed
 
