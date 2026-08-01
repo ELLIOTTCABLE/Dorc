@@ -722,8 +722,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     }
 
     // The per-file PredictSets (the entity-resolution mechanism; shared interner — 204 seam #2). The
-    // per-file `check`-dialect diags were emitted by `validate` above. The effect map (23D §1 —
-    // the check is the oracle) is built from these, below, once they are withdrawn.
+    // per-file `check`-dialect diags were emitted by `validate` above; the effect map (23D §1) is
+    // built from these below, once they are withdrawn.
     let checks: Vec<dorc_oracle::predict::PredictSet> = source_refs
         .iter()
         .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
@@ -867,13 +867,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     }
     // The withdrawal, applied ONCE to the lifted sets so no downstream consumer has to remember to
     // ask: a contested family becomes indistinguishable from one nobody described.
-    //
-    // TWO withdrawals ride this seat now. The family-wide one above; and, per file, the roles
-    // whose definition THERE the function environment proves binds nowhere (`28M` §9). The second
-    // is what keeps `dorc_oracle::live_source`'s whole-unit answer and the site-keyed agreement
-    // gate two readings of one environment: without it a define-if-absent guard the fold proved
-    // dead still wins the ambient answer by being LAST, and every site then withholds on
-    // disagreement — the same silent wall the fold removes, one seat further along.
+    // TWO withdrawals ride this seat: the family-wide one above, and per file the roles whose
+    // definition THERE the environment proves binds nowhere — which is what keeps `live_source`'s
+    // whole-unit answer and the positional gate two readings of one environment (`28M` §9).
     let never_live = dorc_analysis::funcenv::never_live(&definitions, &env);
     let dead_predicts = never_live_withdrawals(
         &never_live,
@@ -2524,6 +2520,9 @@ fn collect_reach_probes(
 ///
 /// `inv-referent-agnostic`: the kind label + operands are resolved for the invocation/attribution,
 /// never decoded for meaning; the vouch travels the site's own value-flow (the 24A §1b fence).
+///
+/// The `verdict_sets` are the driver's WITHDRAWN ones. This seat re-lifting them from source read
+/// a population every other seat had already narrowed (`28P:fnd-build-vouches-relifted-the-verdict-sets`).
 fn build_vouches(
     oracle_refs: &[&str],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
@@ -2540,8 +2539,7 @@ fn build_vouches(
     // sweep/coverage DSTs share its re-lifting sibling). This edge only RESHAPES the lift: its
     // diagnostics ride out AS-IS (inv-top-reject — the tc-verdict-return softening is reverted,
     // find-return-vouches 24C), so a genuinely out-of-dialect verdict body fails gate-3's
-    // error-floor rather than degrading silently. The SETS are the driver's WITHDRAWN ones: this
-    // seat re-lifting from source read a population every other seat had already narrowed.
+    // error-floor rather than degrading silently.
     let (lifted, decline_narrative) = dorc_plan::build_vouches_from_sets(
         oracle_refs,
         verdict_sets,

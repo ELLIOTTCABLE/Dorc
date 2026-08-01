@@ -545,8 +545,6 @@ pub fn analyze(
             &solution.states,
             solution.converged,
         );
-        // Monotone by construction: the mask only ever grows, which is what bounds the loop and
-        // what makes a decision, once taken, stable (see [`FOLD_ROUNDS_CAP`]).
         if found.is_subset(&folded_edges) {
             break;
         }
@@ -658,6 +656,12 @@ fn decide(
 
 /// Classify `branch`'s condition against [`DecidableTest`], with the `!`-negation the shape
 /// carries. `None` unless the condition is exactly one simple command in the closed set.
+///
+/// Two structural refusals earn their place. The decisive CFG node must BE the simple command the
+/// AST names — where it is not (a compound condition, a pipeline, an `&&` chain whose left arm is
+/// itself a branch) the decision would be keyed to somebody else's status. And redirections are
+/// their own CFG nodes, so `>/dev/null 2>&1` never reaches the argv: `dec-decidable-set-v0`'s
+/// "rc-irrelevant redirects ignored" falls out rather than being special-cased.
 fn decidable_test(
     ast: &Ast,
     cfg: &Cfg,
@@ -667,15 +671,10 @@ fn decidable_test(
 ) -> Option<(DecidableTest, bool)> {
     let (simple, negated) = condition_shape(ast, branch.cond)?;
     let node = branch.decided_at;
-    // The node whose rc the branch reads must BE that simple command. Where it is not — a
-    // compound condition, a pipeline, an `&&` chain whose left arm is itself a branch — the
-    // decision would be keyed to somebody else's status, so there is no decision.
     if cfg.node(node).kind != CfgNodeKind::Command || cfg.node(node).ast != simple {
         return None;
     }
     let test = match command_head(ast, simple)? {
-        // Redirections are their own CFG nodes, so `>/dev/null 2>&1` never reaches the argv:
-        // "rc-irrelevant redirects ignored" falls out rather than being special-cased.
         "command" if literals.argv_len(node) == 3 && literals.literal_text(node, 1)? == "-v" => {
             let name = literals.literal_text(node, 2)?;
             if !defs.knows(name) {
@@ -861,6 +860,10 @@ pub fn unprovable(defs: &DefinitionTable, env: &FuncEnv, exit: CfgNodeId) -> BTr
 /// is not a conservative filter, it must be RIGHT. It is — a definition no program point binds
 /// is one no execution can call. Empty when the solve did not converge, since every binding is
 /// then ⊤ and [`unprovable`] withholds those families outright.
+///
+/// Grouped per `(name, file)` because a file may hold two definitions of one name — the
+/// within-file redefinition the `216` e-1 refusal owns — and the pair is dead only when every one
+/// of them is.
 #[must_use]
 pub fn never_live(
     defs: &DefinitionTable,
@@ -878,8 +881,6 @@ pub fn never_live(
             }
         }
     }
-    // A file may hold two definitions of one name (the within-file redefinition the `216` e-1
-    // refusal owns); the pair is dead only when EVERY one of them is.
     let mut per_key: BTreeMap<(String, dorc_core::SourceFileId), Vec<DefId>> = BTreeMap::new();
     for (index, def) in defs.defs.iter().enumerate() {
         per_key
@@ -1042,6 +1043,11 @@ fn load_sites(
 }
 
 /// The per-node transfer.
+///
+/// An UNREACHED node produces ⊥. Havoc is what an EXECUTED unmodeled construct does to the
+/// environment; a node no path reaches executes nothing, so reading ⊤ off one would let a
+/// provably-dead branch poison the join it never reaches — exactly what the fold masks edges to
+/// prevent. `Entry` is exempt because minting the boundary state out of ⊥ is its whole job.
 fn transfer(
     ast: &Ast,
     cfg: &Cfg,
@@ -1053,10 +1059,6 @@ fn transfer(
 ) -> EnvStack {
     let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
     let cfg_node = cfg.node(id);
-    // An UNREACHED node produces ⊥. Havoc is what an EXECUTED unmodeled construct does to the
-    // environment; a node no path reaches executes nothing, so reading ⊤ off one would let a
-    // provably-dead branch poison the join it never reaches — exactly what the fold masks edges
-    // to prevent. `Entry` is exempt because minting the boundary state out of ⊥ is its whole job.
     if matches!(incoming, EnvStack::Bottom) && cfg_node.kind != CfgNodeKind::Entry {
         return EnvStack::Bottom;
     }

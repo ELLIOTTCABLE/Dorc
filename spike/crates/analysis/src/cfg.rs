@@ -1149,8 +1149,6 @@ impl<'a> Builder<'a> {
         self.add_edge(left_exit, merge);
         // Fall-through edge: right's exit reaches the merge.
         self.add_edge(right_exit, merge);
-        // `&&` runs the right operand on SUCCESS, `||` on failure; the other answer
-        // short-circuits to the merge, which is why one arm is always empty here.
         let (on_success, on_failure) = match op {
             dorc_syntax::ast::AndOrOp::And => (right_lo..right_hi, right_hi..right_hi),
             dorc_syntax::ast::AndOrOp::Or => (right_hi..right_hi, right_lo..right_hi),
@@ -1205,9 +1203,8 @@ impl<'a> Builder<'a> {
         self.add_edge(then_exit, merge);
         let then_hi = self.nodes.len();
 
-        // Failure path: the next elif, else, or (no else) straight to the merge. The whole
-        // remainder is ONE failure arm — a decided-true outer condition kills the elif chain
-        // and its conditions along with it.
+        // Failure path: the next elif, else, or (no else) straight to the merge — and the whole
+        // remainder is ONE failure arm, elif conditions included.
         match elifs.split_first() {
             Some((head, rest)) => {
                 self.lower_if_chain(head.cond, head.body, rest, else_body, cond_exit, merge);
