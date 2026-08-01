@@ -84,6 +84,37 @@ plan is `28K` §10 (bitem0–bitem9 + fold checklist); on committee-corner confl
   bitem4's per-file surface is what makes it reachable, and funcname-dedup would then
   silently mis-bind. No corpus pin owed until then.
 
+### Conductor adjudications at the fold close (2026-07-31)
+
+- **amend-plural-value-loss-hold** — supersedes the routing half of
+  `adj-positional-plural-value-loss-carries-to-bitem4` (the ruling half stands): the human
+  corrected the seam's granularity (typed, in-chat) — there is NO whole-file analysis unit;
+  the ask is indexed per-environment-frame (borderline per-line; abstractable at most to the
+  piecewise-constant intervals between env-mutating statements), and the corner is under
+  PARALLEL human adjudication (`28M` §10 `dir-ownership-is-transitive-inclusion`, unruled,
+  re-keys the fence's `SourceFileId` span proxy to entry-closure identity). Standing order:
+  bitem4 + bitem5 + any withhold-softening/re-resolution work are HELD until the human
+  replies; nothing builds toward the restructure.
+- **adj-never-live-exactness-accepted** — the fold's second seat (`funcenv::never_live`
+  subtracting provably-never-live definitions from the whole-unit resolution population) is
+  EXACT, not conservative: a wrong subtraction would SHIFT a winner, i.e. grant, not lose.
+  Accepted because it is a closed-form proof over decidable-set v0 only, empty-by-construction
+  on non-convergence, and wrong-but-consistent holds through bitem1's pinning (the artifact
+  carries the answer; runtime cannot re-derive). Standing consequence, permanent: any future
+  widening of `28M:dec-decidable-set-v0` now widens a WINNER-SHIFTING surface, not merely a
+  disclosure surface — decidable-set growth is license-review-tier, never a convenience patch.
+  Fold-close checklist gains: confirm this sentence is in `analysis/CLAUDE.md`, add if not.
+- **adj-command-v-blessing-routed-to-human** — builder-3's… builder-fold's
+  `tc-command-v-blessing-would-convert-guards-to-elisions` NOT taken: the delivered P1 cell
+  guards rather than elides because the polyfill's own `command -v` line is an unmodeled
+  running command (an honest wall). Blessing it target-state-pure would upgrade guard→elide —
+  a licensure widening. Routed to the human as one design question COVERING ITS FAMILY:
+  engine-blessed target-state-pure builtins in BOOK position (`command -v`; also
+  `28O:res-book-sourcing-walls-at-the-site`'s `.`-of-a-proven-load-inert-file). Not built.
+- **bank-28m-stale-wording-at-merge** — `res-28m-pre-fold-wording-is-stale` (§5.4/§6 pre-fold
+  lines) is the SIBLING's document; flagged to the human/sibling rather than edited from this
+  lane. The lane's own `28K` §3 disclosure was rewritten in place by the fold builder.
+
 ## bitem0 — the full-positional regime (LANDED)
 
 `28K` §2 `rul-visibility-is-full-positional`. Every site-keyed consuming act now reads the
