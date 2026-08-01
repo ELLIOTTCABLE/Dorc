@@ -1621,19 +1621,26 @@ pub fn build_vouches_from_sets(
 /// poddle`) so an in-context guard renders correctly; the elide (`Replace`) consumes only the
 /// license. Merge the result into [`build_vouches`]'s map at the cli edge (wrapped nodes are
 /// disjoint from ambient ones).
+///
+/// It takes the DRIVER's already-lifted sets for the reason
+/// [`build_vouches_from_sets`] does: re-lifting from raw source read a population every other seat
+/// had already narrowed, so this seat's whole-unit winner could be a definition the run had
+/// withdrawn — and the positional gate below would then withhold, a silent wall nothing else in
+/// the run agreed with (`28P:fnd-build-vouches-relifted-the-verdict-sets`, the same fault one seat
+/// further out).
 #[must_use]
 pub fn build_wrapped_vouches(
-    oracle_srcs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     classes: &[(CfgNodeId, SkipClass)],
     wrapped: &WrappedProbes,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Vouches {
-    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, check_commands, evaluate_verdict};
+    use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::verdict::{
+        VERDICT_SUFFIX, VerdictResolution, check_commands, evaluate_verdict,
+    };
 
-    let verdict_sets: Vec<VerdictSet> = oracle_srcs
-        .iter()
-        .map(|src| VerdictSet::lift(interner, src).value)
-        .collect();
     let mut vouches = Vouches::new();
     for (node, wp) in wrapped {
         // Enter and Carry both mint an elide/guard vouch from the inner verdict over the peeled argv
@@ -1659,13 +1666,24 @@ pub fn build_wrapped_vouches(
             .collect();
         let op_slices: Vec<&str> = op_refs.iter().map(String::as_str).collect();
         // Scanned FORWARD until `28P:fnd-the-wrapped-vouch-seat-resolved-forwards`:
-        // first-definition-wins, the INVERSE of sh's answer.
+        // first-definition-wins, the INVERSE of sh's answer. Then NARROWED positionally, the
+        // sixth and last seat to join the regime (`28P:tc-wrapped-vouch-seat-has-no-positional-
+        // gate`): the whole-unit winner vouches here only where it is the definition a shell
+        // would have live AT the wrapped site — the withhold-not-re-resolve shape bitem0 ruled
+        // (`analysis/CLAUDE.md visibility-is-full-positional`), through bitem3's ONE custody
+        // crossing. Custody was already honest about WHOSE judgment speaks; this makes it honest
+        // about WHERE.
+        let verdict_name = format!(
+            "{}{VERDICT_SUFFIX}",
+            map_provider_name(interner.resolve(*provider))
+        );
         let Some(file_idx) = dorc_oracle::live_source(verdict_sets.len(), |i| {
             verdict_sets
                 .get(i)
                 .and_then(|set| set.get(*provider))
                 .is_some()
-        }) else {
+        })
+        .filter(|&i| live.answers_at(*node, &verdict_name, i)) else {
             continue;
         };
         let Some(verdict) = verdict_sets

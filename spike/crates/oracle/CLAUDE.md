@@ -52,9 +52,9 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (`analysis/CLAUDE.md never-live-subtracts-from-the-whole-unit-answer`). A seat that re-lifts is
   a seat that will disagree. The seat list is SIX, not five: `plan::build_wrapped_vouches` scanned
   FORWARD (`iter().find_map`) — first-definition-wins, the INVERSE of sh's answer — until `28P`
-  bitem3 (`fnd-the-wrapped-vouch-seat-resolved-forwards`). It remains the one seat with no
-  POSITIONAL gate, because it receives no `LiveDefinitions`
-  (`28P:tc-wrapped-vouch-seat-has-no-positional-gate`).
+  bitem3 (`fnd-the-wrapped-vouch-seat-resolved-forwards`), and resolved over its own re-lift of the
+  raw sources until `28P:dec-the-wrapped-seat-takes-the-drivers-sets`. All six now take the
+  driver's WITHDRAWN sets and all six narrow positionally.
 - **closure-travels-with-the-definition** (`28K` §4 `rul-pin-by-definition-bytes`) — a role funcdef's
   span does not carry the helpers it calls or the file-level constants it reads, so `crate::closure`
   is what every emitting seat asks before shipping a body: `HelperIndex::build` over the ordered

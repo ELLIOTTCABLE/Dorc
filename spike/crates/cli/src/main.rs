@@ -987,10 +987,11 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
     vouches.extend(dorc_plan::build_wrapped_vouches(
-        &source_refs,
+        &verdict_sets,
         &classes,
         &wrapped_probes,
         &mut interner,
+        live_defs,
     ));
 
     // The CONNECTED check-pipes (`24J` §2, repaired — `271:rul-only-oracle-bytes-ship`): a simple
