@@ -616,6 +616,79 @@ here is a verdict)
     confirmed, prn-vocabulary-is-output-side indicts it and the fix is a
     conservative TIGHTENING (dialect = gen-minted tokens only, both lanes' reads
     out) — cheap, collide-more direction, candidate rider for the stage-F lane.
+
+## §11. The vocabulary corner, condensed for ruling (2026-08-01 — the human is on the
+fence and moving on; THIS section is the re-entry point; §§7–10 hold the full record)
+
+**The problem.** Selector-granular sparing is the survival tier's value: without any
+token vocabulary, every same-kind-same-entity comparison collides and drifted days
+re-check everything (safe, less attention saved). With a vocabulary, the engine must
+judge, from two STRINGS, whether a wall's at-most claim `@a` touches a protected
+fact `@b` — and strings cannot distinguish "two aspects of one thing" (spare is
+right) from "two names for one state" (spare silently under-executes). Broken
+example, post-fence, two honest authors:
+
+```sh
+# the postgres family DESCRIBES two aspects:
+#   pg_isready ...      : sm.dorc.Service:postgres@accepting
+#   pgrep -x postgres   : sm.dorc.Service:postgres@running      (process-up, narrow)
+# a stranger's pgbouncer oracle claims, meaning "the whole service lifecycle":
+#   reload) printf '%s\n' postgres    : disturbs sm.dorc.Service:postgres@running
+```
+
+Claim `@running` vs backing `@accepting`: both words in the postgres family's
+dialect, distinct ⇒ spare — while the reload genuinely bounced
+connection-acceptance. The stranger never surveyed the family's word-meanings;
+nobody lied; the elision that needed to fall, stood.
+
+**The standing mechanic (rules in force after this sitting):**
+1. One fact plane: a fact is a cell `(kind, entity, selector[, context])`;
+   `FactKey` is lane-erased; distinct selectors are distinct cells by construction.
+   Verdict-body and predict-body gen-marks mint the same trust class (at-least).
+   The `is_converged` function-rc is the judgment/license and never becomes a fact.
+2. Sparing: claim-token spares a backing iff BOTH tokens ∈ dialect(the backing's
+   family, kind) AND they differ; everything else collides. Membership is a
+   DISTINCTNESS WARRANT resting on single-author lexical discipline ("one author
+   does not keep two words for one state").
+3. The dialect is the family's DESCRIPTION vocabulary: gen-marks from predict
+   bodies enroll; verdict-body gen-marks mint facts but their words do NOT enroll —
+   THE EXCLUSION UNDER JUDGMENT (a logged conservative fallback, not doctrine).
+   Single-token dialects can never spare (both-and-distinct), so the exclusion
+   costs verdict-only single-word authors nothing; its cost lands on multi-arm
+   authors (the stage-4½ hill).
+4. `:?` reads are INPUT confessions: they widen the declarer's own backing
+   (conservative-only, forever — prn-vocabulary-is-output-side) and never enroll.
+5. Cross-author walls, standing whatever is ruled: the committee fence
+   (inclusion-closure-keyed) makes multi-speaker families sparing-inert;
+   unregistered stranger words (the cve_clean tier) collide with everything —
+   blanket-wipe is derived from rule 2's backing-side keying, preserved under
+   every option below.
+6. The perimeter, settled/owed regardless: conflict-to-⊤ on disagreeing
+   measurements of one cell (trace + pin owed) · merge/collapse narratives ·
+   closure/shared-bytes permission (dialect permission infects the sourcing
+   closure) · transport-by-identity stays fenced (`selector_identifies` unwired) ·
+   the attribution render debt (`DisjointnessProof::family()` unconsumed).
+
+**The open verdicts (independent):**
+- **keep-vs-lift the verdict-word exclusion** (within-family: whose gen-acts
+  enroll). KEEP = the exclusion stands; multi-arm authors enroll by describing in
+  predict (one delegating line per aspect when factored); softened by the
+  counterfactual hint (prop-collided-for-vocabulary-hint) + closure-permission;
+  value-loss thin. LIFT = uniform gen-mark semantics; value concentrated in
+  multi-arm verdict-only families; risk concentrated in undeclared-read proxy
+  checks (the two-grades cell, Example-walk act 3 in-chat 2026-07-31/08-01);
+  pre-lift checklist = rule 6's perimeter. Human lean at close: keep-for-now;
+  re-open at spike end on the fires-often × bites-rarely instrument.
+- **registration** (cross-family: whether deliberate co-reference can exist at
+  all). Kind-owner curates the kind's words; co-reference iff BOTH words
+  registered; unregistered keeps the wipe tier. The ONLY fix for the broken
+  example above — keep and lift both leave it to fence-divergent-meaning's
+  documented cap. Spelling lean: registration-by-owner-use over the owner's
+  closure (no new construct); mark-verb fallback. Design-shaped, UNRULED, build
+  unscheduled.
+- **the KNOBS commons-axis name** — the human's to mint or decline
+  (`28K:res-knobs-entry-owed` + this corner, one axis: collision-as-success
+  commons ↔ owned adjudicated speech).
   - **prop-collided-for-vocabulary-hint [PROPOSED, aid-plane]** — the noise-killer:
     mint the counterfactual detection "this comparison collided SOLELY because token
     T is outside family F's descriptive vocabulary; a `:?` observation (or predict
