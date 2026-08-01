@@ -1,0 +1,163 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# pin28-helper-package-entrypoints-discarded (`28M` §7/§8, the COMMISSIONED package shape) — half
+# TWO of two, and the half that decides whether the packaging is worth anything.
+#
+# Half one proved the package's own entrypoints lift with their cross-file helper closure intact.
+# This one proves the OTHER direction the human asked for: that an admin can discard or swap the
+# entrypoints file and keep the helpers' function. If that fails, the split is decoration — the
+# thin file is only worth being thin if replacing it is cheap.
+#
+# The spelling here is the bluntest of the three the design offers (`unset -f` per member, not
+# sourcing it, or supplying your own): the entrypoints file is simply NOT LOADED. Only
+# `wombat-helpers.oracle.sh` is on the command line, and this book supplies its own
+# `wombat__is_converged` over that package's helpers — a stricter check than swapping the file,
+# since the replacement is not even an oracle file, just a function in a runbook.
+#
+# Two properties ride on it. The book's entrypoint is a first-class definition source (`28K` §2a:
+# an in-book role function is an ordinary oracle, recognized by name alone), and its closure
+# resolves into a DIFFERENT author's helpers file. And there is no contest: the helpers carry no
+# `__` names, so nothing the package ships can collide with what the admin wrote — which is the
+# property that makes co-residence safe, stated as a passing test rather than as prose.
+#
+# Note the definition sits ABOVE its site, which the full-positional regime requires
+# (`28K` §2 rul-visibility-is-full-positional): a definition below licenses nothing above it.
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+
+hork provision
+wombat sync a.conf
+
+-- wombat-helpers.oracle.sh --
+# dorc-lang/v0.2
+# THE SAME HELPERS FILE as half one, byte-for-byte in substance: the bulk of the package under
+# non-role names. The admin kept this and threw the entrypoints away.
+WOMBAT_ROOT=/etc/wombat
+
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+
+-- probe-results.txt --
+# The walled site's own auto-cell: rc 0 ⇒ converged ⇒ its guard is minted from the BOOK's entrypoint.
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock for the unmodeled wall command.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock. Reached through the discarded-entrypoint path: the BOOK's own role function into the
+# package's helpers. An unresolved cross-author helper makes this rc 127 and the run-log stays empty.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: wombat cmp -- a.conf /etc/wombat/a.conf
+
+-- replay --
+$ dorc --book=book.sh -o wombat-helpers.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f3ba18a7be81ce9b3295ffa8d5ba7d386fab221cb6964f83b7bbc7ae41428f16 sites=1 @@dorc@@\n'
+# site 1: dorc-auto:wombat@converged
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+
+#!/bin/sh
+# pin28-helper-package-entrypoints-discarded (`28M` §7/§8, the COMMISSIONED package shape) — half
+# TWO of two, and the half that decides whether the packaging is worth anything.
+#
+# Half one proved the package's own entrypoints lift with their cross-file helper closure intact.
+# This one proves the OTHER direction the human asked for: that an admin can discard or swap the
+# entrypoints file and keep the helpers' function. If that fails, the split is decoration — the
+# thin file is only worth being thin if replacing it is cheap.
+#
+# The spelling here is the bluntest of the three the design offers (`unset -f` per member, not
+# sourcing it, or supplying your own): the entrypoints file is simply NOT LOADED. Only
+# `wombat-helpers.oracle.sh` is on the command line, and this book supplies its own
+# `wombat__is_converged` over that package's helpers — a stricter check than swapping the file,
+# since the replacement is not even an oracle file, just a function in a runbook.
+#
+# Two properties ride on it. The book's entrypoint is a first-class definition source (`28K` §2a:
+# an in-book role function is an ordinary oracle, recognized by name alone), and its closure
+# resolves into a DIFFERENT author's helpers file. And there is no contest: the helpers carry no
+# `__` names, so nothing the package ships can collide with what the admin wrote — which is the
+# property that makes co-residence safe, stated as a passing test rather than as prose.
+#
+# Note the definition sits ABOVE its site, which the full-positional regime requires
+# (`28K` §2 rul-visibility-is-full-positional): a definition below licenses nothing above it.
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+
+hork provision
+( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]

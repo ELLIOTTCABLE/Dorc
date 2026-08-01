@@ -1,0 +1,168 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# pin28-helper-package-entrypoints-lift (`28M` §7 tune-explicit-composition-is-sanctioned, the
+# COMMISSIONED package shape) — half ONE of two: do the entrypoints lift with their cross-file
+# helper closure intact?
+#
+# The shape under test is the one the human named as community-critical: a well-engineered oracle
+# package split into a HELPERS file carrying the bulk of the logic under non-role names, plus ONE
+# thin, opt-out-able ENTRYPOINTS file carrying the `__role` collision surface. It is the packaging
+# that makes custody cheap — an admin who wants different entrypoints over the same logic replaces
+# one small file — so the packaging itself is what has to work.
+#
+# Two things had to hold for this to lift at all, and both are recent. A helpers file has no `__`
+# anywhere and defines only functions, which the mark-subset lint used to read as a bare fragment of
+# marked statements and error at the first funcdef (`28P:fnd-a-helpers-only-file-was-refused-out-of-
+# dialect`). And a role body's helper call has to resolve ACROSS files, not just within the
+# defining one — the conductor ~SUSPECTED the check-dialect would ⊤ a non-role call inside a verdict
+# body, which is exactly what this measures.
+#
+# The load order is deliberately adversarial: `wombat-entrypoints` sorts BEFORE `wombat-helpers`, so
+# the entrypoint's helper is declared in a file loaded AFTER it. A closure that scanned only a
+# prefix, or only the defining file, would come up empty here and the probe would 127.
+#
+# `hork` is unmodeled, so it walls; the site below it guards rather than elides, which is what puts
+# the pinned definition and its cross-file closure on the apply surface where they can be read.
+hork provision
+wombat sync a.conf
+
+-- wombat-entrypoints.oracle.sh --
+# dorc-lang/v0.2
+# THE THIN ENTRYPOINTS FILE: the `__role` collision surface and nothing else. Every line an admin
+# might want to replace lives here, and it is deliberately trivial to replace — the logic is next
+# door. This file carries no logic of its own on purpose.
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+
+-- wombat-helpers.oracle.sh --
+# dorc-lang/v0.2
+# THE HELPERS FILE: the bulk of the package, under non-role names, with no `__` anywhere. Nothing
+# here is a family member, so nothing here can collide with another author's family — which is the
+# property that makes the package safe to co-reside with somebody else's entrypoints.
+WOMBAT_ROOT=/etc/wombat
+
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+
+-- probe-results.txt --
+# The walled site's own auto-cell: rc 0 ⇒ converged ⇒ its guard is minted.
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock for the unmodeled wall command.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock. It answers the probe's `wombat cmp -- …`, reached through TWO cross-file helper hops
+# (`_wombat_same` → `_wombat_dest`), which is the whole point: an unshipped helper at either hop
+# makes this rc 127 and the run-log stays empty. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: wombat cmp -- a.conf /etc/wombat/a.conf
+
+-- replay --
+$ dorc --book=book.sh -o wombat-entrypoints.oracle.sh -o wombat-helpers.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f2ceef982ff223ef9bbdf313a1585deda4cebbc948b8b6ad98161847c47c6b8e sites=1 @@dorc@@\n'
+# site 1: dorc-auto:wombat@converged
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+
+#!/bin/sh
+# pin28-helper-package-entrypoints-lift (`28M` §7 tune-explicit-composition-is-sanctioned, the
+# COMMISSIONED package shape) — half ONE of two: do the entrypoints lift with their cross-file
+# helper closure intact?
+#
+# The shape under test is the one the human named as community-critical: a well-engineered oracle
+# package split into a HELPERS file carrying the bulk of the logic under non-role names, plus ONE
+# thin, opt-out-able ENTRYPOINTS file carrying the `__role` collision surface. It is the packaging
+# that makes custody cheap — an admin who wants different entrypoints over the same logic replaces
+# one small file — so the packaging itself is what has to work.
+#
+# Two things had to hold for this to lift at all, and both are recent. A helpers file has no `__`
+# anywhere and defines only functions, which the mark-subset lint used to read as a bare fragment of
+# marked statements and error at the first funcdef (`28P:fnd-a-helpers-only-file-was-refused-out-of-
+# dialect`). And a role body's helper call has to resolve ACROSS files, not just within the
+# defining one — the conductor ~SUSPECTED the check-dialect would ⊤ a non-role call inside a verdict
+# body, which is exactly what this measures.
+#
+# The load order is deliberately adversarial: `wombat-entrypoints` sorts BEFORE `wombat-helpers`, so
+# the entrypoint's helper is declared in a file loaded AFTER it. A closure that scanned only a
+# prefix, or only the defining file, would come up empty here and the probe would 127.
+#
+# `hork` is unmodeled, so it walls; the site below it guards rather than elides, which is what puts
+# the pinned definition and its cross-file closure on the apply surface where they can be read.
+hork provision
+( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]

@@ -1,0 +1,192 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# pin28-split-family-lane-separation (`28M` §8, COMMISSIONED beside the custody pin) — the W-B
+# lane-separation pins (`verdict-lane-is-site-keyed`, `ship-seam-reads-the-lane-not-the-kind`)
+# exercised as a STEADY-STATE configuration rather than as a regression guard.
+#
+# Those two pins guard against the ship seam picking a lane by the fact's kind, or by which closure
+# happens to answer first, instead of by the caller's per-SITE lane declaration. Under a
+# single-author world that is a latent bug: get it wrong and you measure a different cell than the
+# record keys, but both cells belong to the same author and the same file, so almost nothing looks
+# wrong. `28M` §8's `fnd-split-family-composes-unrefused` is what turns it into a standing world —
+# a family whose live members come from DIFFERENT units with no shadowed name triggers no contest
+# and unions with zero ceremony.
+#
+# So: `apt_get__predict` is one author's, `apt_get__is_converged` is another's. The site below has a
+# perfectly resolvable predict AND a reached verdict vouch.
+#
+# WHAT THIS MEASURED, which is not what the pins' single-author reading predicts
+# (`28P:fnd-a-split-family-elides-on-two-authors`). The verdict lane is reached only as a FALLBACK
+# — `command_effect` takes it when nothing resolved the argv, or when something resolved it but
+# declared no cells for the verb (`verdict-lane-is-site-keyed`). Here author one's predict resolves
+# the cell, so this is an ordinary PREDICT-lane site: the transcript ships the predict body, and the
+# `effect=holds` that licenses the elision is that body's rc. Author two's verdict function is never
+# run at all; its contribution is the VOUCH, admitted because their own argparse accepted this argv.
+#
+# The elision therefore rests on two authors — a measurement from one, a permission from the other —
+# and `28M` §8's scouted "ship lanes are mutually exclusive per site … convergence derives solely
+# from that body's own rc" describes the single-author world it was scouted in. The split family is
+# the configuration where those come apart, which is the whole reason it was commissioned. Whether
+# that composite is admissible is the conductor's (`tc-split-family-elides-on-two-authors`); it is
+# not obviously wrong — author two consented to this argv statically, and author one's model is
+# factual — but it is not a monologue, and the custody the license now carries says so: it reads
+# `Vouched(author two)` over a fact author one measured.
+#
+# There is deliberately NO contest and no diagnostic: the two files declare DIFFERENT members of one
+# family, so no name is shadowed and nothing is withheld. That silence is part of the pin — this is
+# the composition the design permits, not the collision it refuses.
+apt-get install -y nginx
+
+-- pkgindex-predict.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# AUTHOR ONE: the read-only model. Owns `predict` for this family and nothing else.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+-- pkgindex-verdict.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# AUTHOR TWO: the convergence judgment. Owns `is_converged` for the SAME family, in a different
+# file, with no name in common with author one — so sh shadows nothing and Dorc refuses nothing.
+# Its body is deliberately DISTINGUISHABLE from the predict's (`aptcheck`, not `dpkg-query`), so the
+# transcript says which author's bytes shipped rather than leaving it to be argued.
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# The site is converged ⇒ with the vouch reached, it elides.
+site 0 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/aptcheck --
+#!/bin/sh
+# INERT probe shim — the VERDICT author's check, and the discriminator this case turns on. It is
+# NEVER invoked, and that is the measurement: the predict resolves the cell, so the verdict lane is
+# not reached and author two's body never runs. Kept shimmed so its absence is a decision rather
+# than an rc 127.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim — the PREDICT author's check, and the one that actually runs. Its rc is the
+# `effect=holds` that licenses the elision, under author TWO's vouch.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh -o pkgindex-predict.oracle.sh -o pkgindex-verdict.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=93a4db5f6d24314ea7624a13f30d25c86814d7c6b011c401cdb7e724905a8ef5 sites=1 @@dorc@@\n'
+# site 0: sm.dorc.Package:nginx@installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# pin28-split-family-lane-separation (`28M` §8, COMMISSIONED beside the custody pin) — the W-B
+# lane-separation pins (`verdict-lane-is-site-keyed`, `ship-seam-reads-the-lane-not-the-kind`)
+# exercised as a STEADY-STATE configuration rather than as a regression guard.
+#
+# Those two pins guard against the ship seam picking a lane by the fact's kind, or by which closure
+# happens to answer first, instead of by the caller's per-SITE lane declaration. Under a
+# single-author world that is a latent bug: get it wrong and you measure a different cell than the
+# record keys, but both cells belong to the same author and the same file, so almost nothing looks
+# wrong. `28M` §8's `fnd-split-family-composes-unrefused` is what turns it into a standing world —
+# a family whose live members come from DIFFERENT units with no shadowed name triggers no contest
+# and unions with zero ceremony.
+#
+# So: `apt_get__predict` is one author's, `apt_get__is_converged` is another's. The site below has a
+# perfectly resolvable predict AND a reached verdict vouch.
+#
+# WHAT THIS MEASURED, which is not what the pins' single-author reading predicts
+# (`28P:fnd-a-split-family-elides-on-two-authors`). The verdict lane is reached only as a FALLBACK
+# — `command_effect` takes it when nothing resolved the argv, or when something resolved it but
+# declared no cells for the verb (`verdict-lane-is-site-keyed`). Here author one's predict resolves
+# the cell, so this is an ordinary PREDICT-lane site: the transcript ships the predict body, and the
+# `effect=holds` that licenses the elision is that body's rc. Author two's verdict function is never
+# run at all; its contribution is the VOUCH, admitted because their own argparse accepted this argv.
+#
+# The elision therefore rests on two authors — a measurement from one, a permission from the other —
+# and `28M` §8's scouted "ship lanes are mutually exclusive per site … convergence derives solely
+# from that body's own rc" describes the single-author world it was scouted in. The split family is
+# the configuration where those come apart, which is the whole reason it was commissioned. Whether
+# that composite is admissible is the conductor's (`tc-split-family-elides-on-two-authors`); it is
+# not obviously wrong — author two consented to this argv statically, and author one's model is
+# factual — but it is not a monologue, and the custody the license now carries says so: it reads
+# `Vouched(author two)` over a fact author one measured.
+#
+# There is deliberately NO contest and no diagnostic: the two files declare DIFFERENT members of one
+# family, so no name is shadowed and nothing is withheld. That silence is part of the pin — this is
+# the composition the design permits, not the collision it refuses.
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
