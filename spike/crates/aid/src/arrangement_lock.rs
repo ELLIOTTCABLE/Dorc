@@ -1259,11 +1259,11 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Words::Migrated(&["`eval` executes constructed code (un-analyzable)"]),
     },
     ArrangementEntry {
-        slug: "syntax-unsupported-source-of-non-literal-target",
+        slug: "syntax-unsupported-source-of-dynamic-target",
         occurrence: None,
-        when_used: "Fills the `{detail}` hole of syntax-unsupported on a `.`/`source` whose target is not a literal path.",
+        when_used: "Fills the `{detail}` hole of syntax-unsupported on a `.`/`source` whose target is built by running something (a command substitution or arithmetic expansion).",
         why: "As syntax-unsupported-parser-stalled.",
-        words: Words::Migrated(&["`.`/`source` of a non-literal target"]),
+        words: Words::Unwritten,
     },
     ArrangementEntry {
         slug: "syntax-unsupported-unset-dynamic-lvalue",
