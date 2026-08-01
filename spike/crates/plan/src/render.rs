@@ -355,18 +355,38 @@ pub mod deriv {
     /// `262` §2 / `26A` stop-1 — THE at-most family close: deriv is a variable-count family
     /// with no inherent completion marker, so a mid-family cut is otherwise undetectable and
     /// would SHRINK the at-most footprint (⇒ MORE survivals — the under-execution direction).
-    /// Each family closes with `deriv-end {site} n=<K>` where K is the count emitted; the
-    /// consumer refuses a family whose received count ≠ K (or that has no end-record) ⇒
-    /// wall-total. The count `_n` is scoped INSIDE the pipe's `{ … }` subshell — a bare
-    /// `while` on the RHS of a pipe runs in a subshell whose variable increments never reach
-    /// the parent (POSIX), so the end-record is emitted from within the SAME group.
+    /// Each family closes with `deriv-end {site} n=<K> body-rc=<R>`; the consumer refuses a family
+    /// whose received count ≠ K, that has no end-record, or whose R is non-zero ⇒ wall-total.
+    /// The count `_n` is scoped INSIDE the pipe's `{ … }` subshell — a bare `while` on the RHS
+    /// of a pipe runs in a subshell whose variable increments never reach the parent (POSIX),
+    /// so the end-record is emitted from within the SAME group.
+    ///
+    /// TWO INDEPENDENT ATOMICITIES, and K alone only carries the first
+    /// (`28P:fnd-the-count-gate-cannot-see-a-body-death`). K is computed from the lines
+    /// RECEIVED, so a body that emits three coordinates and then dies on an unbound helper
+    /// closes at `n=3` and agrees with itself: TRANSPORT is intact and the at-most claim is
+    /// still wrongly NARROW. Hence `R`, the emitting body's own termination status, captured
+    /// BEFORE the pipe — a pipeline's status is its RHS's, so the old form discarded the body's
+    /// entirely. Abnormal termination refuses the whole family (whole-body-atomic): conservative,
+    /// and it asks the author for no new spelling. What R cannot see is a body that truncates its
+    /// survey and still exits 0 — that residue is the at-most completion-signal design
+    /// (`ANALYZER-NEEDS:an-atmost-completion-signal`), deliberately not built here.
+    ///
+    /// The capture buffers the body's whole output in a shell variable rather than streaming it;
+    /// the controller bounds it again at intake (`rul-host-bytes-bounded-before-admission`). The
+    /// empty arm exists because `printf '%s\n' "$_d"` on an empty capture would emit one blank
+    /// line, and a blank coordinate refuses the footprint — turning every legitimately-silent
+    /// body into a refusal.
     #[must_use]
     pub fn record_scaffold(invocation: &str, site: LeafId, nonce: &Nonce) -> String {
         let coord = records::frame(nonce, &format!("deriv {} coord=%s", site.0));
-        let end = records::frame(nonce, &format!("deriv-end {} n=%s", site.0));
+        let end = records::frame(nonce, &format!("deriv-end {} n=%s body-rc=%s", site.0));
         format!(
-            "{invocation} | {{ _n=0; while IFS= read -r _c; do printf '{coord}\\n' \"$_c\"; \
-             _n=$((_n+1)); done; printf '{end}\\n' \"$_n\"; }}\n"
+            "_d=$({invocation}); _dr=$?\n\
+             if [ -z \"$_d\" ]; then printf '{end}\\n' 0 \"$_dr\"; \
+             else printf '%s\\n' \"$_d\" | {{ _n=0; while IFS= read -r _c; do \
+             printf '{coord}\\n' \"$_c\"; _n=$((_n+1)); done; \
+             printf '{end}\\n' \"$_n\" \"$_dr\"; }}; fi\n"
         )
     }
 }

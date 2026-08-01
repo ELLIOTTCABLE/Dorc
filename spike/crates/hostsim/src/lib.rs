@@ -1551,7 +1551,7 @@ grep__predict() {
              {nonce} site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n\
              {nonce} site 1 effect=absent rc=1 {TERMINAL_TOKEN}\n\
              {nonce} deriv 0 coord=/etc/a file/with spaces {TERMINAL_TOKEN}\n\
-             {nonce} deriv-end 0 n=1 {TERMINAL_TOKEN}\n\
+             {nonce} deriv-end 0 n=1 body-rc=0 {TERMINAL_TOKEN}\n\
              dorc-records-end/1 nonce={nonce} {TERMINAL_TOKEN}\n"
         );
         let admit = |raw: &str| match read_host_evidence(

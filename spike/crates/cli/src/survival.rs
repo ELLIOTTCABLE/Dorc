@@ -353,13 +353,15 @@ pub fn merge_derived_footprints(
             // Legacy (unframed) fixtures carry no `deriv-end`; they are trusted-complete, so the
             // gate is framed-only (the framed round-trip + DST enforce the real contract).
             _ if !results.framed => {}
-            Some(&k) if k as usize == coord_strs.len() => {}
+            Some(close) if close.count as usize == coord_strs.len() => {}
             reason => {
                 diags.push(Diag::new(
                     DiagCode::DerivFamilyIncomplete(DerivFamilyIncomplete {
                         site: d.site.0,
                         reason: match reason {
-                            Some(&k) => format!("declared n={k}, received {}", coord_strs.len()),
+                            Some(close) => {
+                                format!("declared n={}, received {}", close.count, coord_strs.len())
+                            }
                             None => "no deriv-end close-record".to_string(),
                         },
                     }),
@@ -367,6 +369,30 @@ pub fn merge_derived_footprints(
                 ));
                 continue;
             }
+        }
+        // `28P:dec-whole-body-atomic-refusal` — the SECOND, independent atomicity. The count gate
+        // above proves only that the record STREAM arrived whole; it is computed from the lines
+        // received, so a body that emitted three coordinates and then died on an unbound helper
+        // closes at `n=3` and agrees with itself. What that agreement hides is a survey that never
+        // finished, i.e. an at-most claim that is wrongly NARROW — and a narrower at-most spares
+        // MORE, the priority-1 under-execute, inside the survival tier's one naked-trust cell.
+        // So the emitting body's own termination status refuses the WHOLE family: whole-body-atomic,
+        // failing toward the wall, and asking the author for no new spelling. Deliberately NOT
+        // closed here: a body that truncates its survey and still exits 0 (the residue
+        // `ANALYZER-NEEDS:an-atmost-completion-signal` owns, human-designed, not built).
+        if results.framed
+            && let Some(close) = results.derivation_ends.get(&d.site)
+            && close.body_rc != 0
+        {
+            diags.push(Diag::new(
+                DiagCode::FootprintIncoherent(FootprintIncoherent {
+                    reason: FootprintIncoherentReason::EmittingBodyDiedMidSurvey {
+                        body_rc: close.body_rc,
+                    },
+                }),
+                span,
+            ));
+            continue;
         }
         let mut coords = Vec::with_capacity(coord_strs.len());
         let mut malformed = false;

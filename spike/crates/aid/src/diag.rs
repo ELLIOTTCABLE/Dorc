@@ -1307,6 +1307,12 @@ pub enum FootprintIncoherentReason {
     OmitsOwnCoordinate,
     /// A derived emission carried a coordinate that does not parse.
     MalformedDerivedCoordinate,
+    /// The derived emission's body terminated abnormally, so its survey never finished and the
+    /// at-most claim it produced is wrongly NARROW (`28P:dec-whole-body-atomic-refusal`). Distinct
+    /// from the transport-tier `deriv-family-incomplete`: the record stream arrived whole and
+    /// agreed with its own count — it is the BODY that stopped. `body_rc` is the emitting body's
+    /// termination status (127 = a helper the shipped body did not carry).
+    EmittingBodyDiedMidSurvey { body_rc: u32 },
 }
 
 /// Payload of [`DiagCode::TouchesEscalated`] (TEMPLATIZED): the escalated site number and the call.
@@ -3879,15 +3885,20 @@ fn footprint_incoherent_text(
     ctx: &RenderCtx<'_>,
     reason: FootprintIncoherentReason,
 ) -> ComponentText {
-    let slug = match reason {
+    let (slug, values) = match reason {
         FootprintIncoherentReason::OmitsOwnCoordinate => {
-            "footprint-incoherent-omits-own-coordinate"
+            ("footprint-incoherent-omits-own-coordinate", Vec::new())
         }
-        FootprintIncoherentReason::MalformedDerivedCoordinate => {
-            "footprint-incoherent-malformed-derived-coordinate"
-        }
+        FootprintIncoherentReason::MalformedDerivedCoordinate => (
+            "footprint-incoherent-malformed-derived-coordinate",
+            Vec::new(),
+        ),
+        FootprintIncoherentReason::EmittingBodyDiedMidSurvey { body_rc } => (
+            "footprint-incoherent-emitting-body-died-mid-survey",
+            vec![body_rc.to_string()],
+        ),
     };
-    component_text(ctx.arrangements(), slug, None, &[])
+    component_text(ctx.arrangements(), slug, None, &borrowed(&values))
 }
 
 /// The registry sentence for one [`PredictOutOfDialectReason`].

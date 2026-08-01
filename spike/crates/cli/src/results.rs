@@ -198,13 +198,13 @@ pub struct SiteResults {
     /// collides with a site's `effect=`/`rc=` record — `inv-site-keyed-results`). Read back into a
     /// `Derived` [`dorc_plan::Footprint`] before the survival walk (24E §2 corr-§2).
     pub derivations: BTreeMap<dorc_plan::LeafId, Vec<String>>,
-    /// The DERIV FAMILY end-records (`262` §2 / `26A` stop-1): per escalated wall-site, the `n=<K>`
-    /// declared by its `deriv-end <leafid> n=<K>` close-record. THE SAFETY INVERSION: a deriv
-    /// footprint is an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the
-    /// under-execution direction). The consumer ([`merge_derived_footprints`]) refuses a family
-    /// whose received coord count ≠ this `K` (or that has no end-record) ⇒ wall-total. Absent key
+    /// The DERIV FAMILY end-records (`262` §2 / `26A` stop-1): per escalated wall-site, its
+    /// `deriv-end <leafid> n=<K> body-rc=<R>` close-record. THE SAFETY INVERSION: a deriv footprint
+    /// is an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the under-execution
+    /// direction). The consumer ([`merge_derived_footprints`]) refuses a family whose received coord
+    /// count ≠ `K`, whose `R` is non-zero, or that has no end-record at all ⇒ wall-total. Absent key
     /// ⇒ the family never closed ⇒ refused.
-    pub derivation_ends: BTreeMap<dorc_plan::LeafId, u32>,
+    pub derivation_ends: BTreeMap<dorc_plan::LeafId, DerivClose>,
     /// The RESOLVER canonicalization lane (24F §3): per `kind:entity` coordinate label, the readback
     /// of running its `<kind>.resolve()` host-side — a [`ResolvOutcome`]. Demuxed SEPARATELY from the
     /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
@@ -252,6 +252,22 @@ pub struct ReportRecord {
 /// tail longer than this is truncated with an ellipsis; a curious admin still sees the head at max
 /// verbosity, and the full text never reaches a decision (decision-inert).
 pub const REPORT_RAW_CAP: usize = 200;
+
+/// One escalated site's deriv-family close-record (`262` §2 / `26A` stop-1). The two fields answer
+/// two INDEPENDENT questions, and conflating them was the hole
+/// (`28P:fnd-the-count-gate-cannot-see-a-body-death`): `count` proves the RECORD STREAM arrived
+/// whole, while `body_rc` proves the EMITTING BODY ran to completion. A body that emits three
+/// coordinates and then dies on an unbound helper closes at `n=3` — self-consistent transport
+/// carrying a wrongly-NARROW at-most claim. Both must pass before the footprint is trusted.
+#[derive(Debug, Clone, Copy)]
+pub struct DerivClose {
+    /// The `n=<K>` the family declared: how many coordinate records the scaffold emitted.
+    pub count: u32,
+    /// The `body-rc=<R>` the family declared: the emitting body's own termination status,
+    /// captured before the record pipe (a pipeline's status is its RHS's, so the pre-`28P`
+    /// scaffold discarded it). Non-zero ⇒ the survey did not finish ⇒ refuse the family.
+    pub body_rc: u32,
+}
 
 /// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
 /// [`Dangling`](ResolvOutcome::Dangling) — the resolver's natural failure on an enumerable kind (§4,
@@ -341,8 +357,13 @@ fn parse_admitted_results(
                     .or_default()
                     .push(coord.to_owned());
             }
-            dorc_plan::records::AdmittedHostRecord::DerivationEnd { site, count } => {
-                out.derivation_ends.insert(dorc_plan::LeafId(site), count);
+            dorc_plan::records::AdmittedHostRecord::DerivationEnd {
+                site,
+                count,
+                body_rc,
+            } => {
+                out.derivation_ends
+                    .insert(dorc_plan::LeafId(site), DerivClose { count, body_rc });
             }
             dorc_plan::records::AdmittedHostRecord::Resolution { coord, canonical } => {
                 out.resolutions.insert(

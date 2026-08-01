@@ -740,6 +740,7 @@ pub enum AdmittedHostRecord<'a> {
     DerivationEnd {
         site: u32,
         count: u32,
+        body_rc: u32,
     },
     Resolution {
         coord: &'a str,
@@ -781,9 +782,14 @@ impl AdmittedUnscopedHostRecords {
             TypedHostRecord::Derivation { site, coord } => {
                 AdmittedHostRecord::Derivation { site: *site, coord }
             }
-            TypedHostRecord::DerivationEnd { site, count } => AdmittedHostRecord::DerivationEnd {
+            TypedHostRecord::DerivationEnd {
+                site,
+                count,
+                body_rc,
+            } => AdmittedHostRecord::DerivationEnd {
                 site: *site,
                 count: *count,
+                body_rc: *body_rc,
             },
             TypedHostRecord::Resolution { coord, canonical } => AdmittedHostRecord::Resolution {
                 coord,
@@ -816,6 +822,7 @@ enum TypedHostRecord {
     DerivationEnd {
         site: u32,
         count: u32,
+        body_rc: u32,
     },
     Resolution {
         coord: String,
@@ -1046,10 +1053,14 @@ fn parse_record(
             })
         }
         "deriv-end" => {
-            let (site, count) = rest.split_once(" n=").ok_or(AdmissionRefusal::Grammar)?;
+            let (site, tail) = rest.split_once(" n=").ok_or(AdmissionRefusal::Grammar)?;
+            let (count, body_rc) = tail
+                .split_once(" body-rc=")
+                .ok_or(AdmissionRefusal::Grammar)?;
             Ok(ParsedRecord::DerivationEnd {
                 site: number_u32(site, limits)?,
                 count: number_u32(count, limits)?,
+                body_rc: number_u32(body_rc, limits)?,
             })
         }
         "resolv" => {
@@ -1137,6 +1148,7 @@ enum ParsedRecord<'a> {
     DerivationEnd {
         site: u32,
         count: u32,
+        body_rc: u32,
     },
     Resolution {
         coord: &'a str,
@@ -1245,7 +1257,15 @@ impl<'a> ParsedRecord<'a> {
                 site,
                 coord: coord.to_owned(),
             },
-            Self::DerivationEnd { site, count } => TypedHostRecord::DerivationEnd { site, count },
+            Self::DerivationEnd {
+                site,
+                count,
+                body_rc,
+            } => TypedHostRecord::DerivationEnd {
+                site,
+                count,
+                body_rc,
+            },
             Self::Resolution { coord, canonical } => TypedHostRecord::Resolution {
                 coord: coord.to_owned(),
                 canonical: canonical.map(str::to_owned),
@@ -1967,7 +1987,7 @@ mod tests {
 
         for records in [
             strict_stream(&["site 0 effect=holds rc=0", "site 0 effect=absent rc=1"]),
-            strict_stream(&["deriv-end 0 n=1", "deriv-end 0 n=2"]),
+            strict_stream(&["deriv-end 0 n=1 body-rc=0", "deriv-end 0 n=2 body-rc=0"]),
             strict_stream(&["resolv source canon=one", "resolv source canon=two"]),
             strict_stream(&[
                 "reach source arm=0 entity=one",
@@ -2140,7 +2160,7 @@ mod tests {
         for records in [
             strict_stream(&["site 0 effect=holds rc=0", "site 1 effect=holds rc=0"]),
             strict_stream(&["deriv 0 coord=one", "deriv 1 coord=two"]),
-            strict_stream(&["deriv-end 0 n=0", "deriv-end 1 n=0"]),
+            strict_stream(&["deriv-end 0 n=0 body-rc=0", "deriv-end 1 n=0 body-rc=0"]),
             strict_stream(&["resolv one dangling", "resolv two dangling"]),
             strict_stream(&["reach one arm=0 entity=x", "reach two arm=0 entity=x"]),
             strict_stream(&["report one", "report two"]),
@@ -2232,7 +2252,9 @@ mod tests {
         let cases: [(&str, RecordFactory); 6] = [
             ("site", |index| format!("site {index} effect=holds rc=0")),
             ("deriv", |index| format!("deriv {index} coord=d{index}")),
-            ("deriv-end", |index| format!("deriv-end {index} n=0")),
+            ("deriv-end", |index| {
+                format!("deriv-end {index} n=0 body-rc=0")
+            }),
             ("resolv", |index| format!("resolv c{index} dangling")),
             ("reach", |index| {
                 format!("reach c{index} arm=0 entity=e{index}")
@@ -2404,7 +2426,7 @@ mod tests {
         let exact = [
             "site 0 effect=holds rc=0",
             "deriv 0 coord=one",
-            "deriv-end 0 n=1",
+            "deriv-end 0 n=1 body-rc=0",
             "resolv one dangling",
             "reach one arm=0 entity=e",
             "report note",
@@ -2422,7 +2444,7 @@ mod tests {
         }
         for (left, right) in [
             ("site 0 effect=holds rc=0", "site 0 effect=absent rc=1"),
-            ("deriv-end 0 n=0", "deriv-end 0 n=1"),
+            ("deriv-end 0 n=0 body-rc=0", "deriv-end 0 n=1 body-rc=0"),
             ("resolv one dangling", "resolv one canon=two"),
             ("reach one arm=0 entity=e", "reach one arm=0 entity=f"),
         ] {

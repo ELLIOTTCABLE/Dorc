@@ -1629,4 +1629,11 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "As footprint-incoherent-omits-own-coordinate.",
         words: Words::Migrated(&["derived touches() emitted a malformed coordinate (not kind:entity) -- footprint refused, the site walls (an at-most claim cannot be partial)"]),
     },
+    ArrangementEntry {
+        slug: "footprint-incoherent-emitting-body-died-mid-survey",
+        occurrence: None,
+        when_used: "Fills the `{detail}` hole of footprint-incoherent when the derived emission's body terminated abnormally; the one value is that body's termination status (127 = a helper the shipped body did not carry).",
+        why: "28P dec-whole-body-atomic-refusal: distinct from the transport-tier deriv-family-incomplete, whose count gate is computed from the lines received and therefore agrees with a truncated survey.",
+        words: Words::Unwritten,
+    },
 ];

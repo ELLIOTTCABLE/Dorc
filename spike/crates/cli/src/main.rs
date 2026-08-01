@@ -3471,17 +3471,26 @@ fn parse_results(
                         .push(coord.to_owned());
                 }
             }
-            // `262` §2 / `26A` stop-1: `deriv-end <leafid> n=<K>` — the at-most family close.
-            // Records the declared count; the consumer refuses a family whose received count
-            // ≠ K (or that never closed) ⇒ wall-total (never a shrunken at-most footprint).
+            // `262` §2 / `26A` stop-1: `deriv-end <leafid> n=<K> body-rc=<R>` — the at-most family
+            // close. Records BOTH declarations; the consumer refuses a family whose received count
+            // ≠ K, whose emitting body terminated abnormally, or that never closed ⇒ wall-total
+            // (never a shrunken at-most footprint). A malformed close leaves the key absent, which
+            // the consumer already reads as never-closed.
             "deriv-end" => {
                 let mut it = rest.split_whitespace();
                 if let Some(site) = it.next().and_then(parse_leaf) {
+                    let mut count = None;
+                    let mut body_rc = None;
                     for tok in it {
-                        if let Some(n) = tok.strip_prefix("n=").and_then(|n| n.parse::<u32>().ok())
-                        {
-                            out.derivation_ends.insert(site, n);
+                        if let Some(n) = tok.strip_prefix("n=") {
+                            count = n.parse::<u32>().ok();
+                        } else if let Some(r) = tok.strip_prefix("body-rc=") {
+                            body_rc = r.parse::<u32>().ok();
                         }
+                    }
+                    if let (Some(count), Some(body_rc)) = (count, body_rc) {
+                        out.derivation_ends
+                            .insert(site, dorc_cli::results::DerivClose { count, body_rc });
                     }
                 }
             }
@@ -4022,14 +4031,15 @@ mod tests {
         use dorc_analysis::cfg::CfgNodeId;
         use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
 
-        // A framed deriv stream for site 5: `n` coord records + an OPTIONAL `deriv-end N n=<end>`.
-        let framed = |coords: usize, end: Option<usize>| -> String {
+        // A framed deriv stream for site 5: `n` coord records + an OPTIONAL
+        // `deriv-end N n=<end> body-rc=<R>`.
+        let framed_rc = |coords: usize, end: Option<usize>, body_rc: u32| -> String {
             let coord_recs = (0..coords)
                 .map(|c| format!("{DEFAULT_NONCE} deriv 5 coord=package:pkg{c} {TERMINAL_TOKEN}\n"))
                 .collect::<Vec<_>>()
                 .concat();
             let end_rec = end.map_or(String::new(), |n| {
-                format!("{DEFAULT_NONCE} deriv-end 5 n={n} {TERMINAL_TOKEN}\n")
+                format!("{DEFAULT_NONCE} deriv-end 5 n={n} body-rc={body_rc} {TERMINAL_TOKEN}\n")
             });
             format!(
                 "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites=0 {TERMINAL_TOKEN}\n\
@@ -4071,6 +4081,8 @@ mod tests {
             fps.contains(CfgNodeId(5))
         };
 
+        let framed = |coords: usize, end: Option<usize>| framed_rc(coords, end, 0);
+
         let mut i = Interner::default();
         // COMPLETE (2 coords, deriv-end n=2) ⇒ footprint lifted (the site can spare).
         assert!(
@@ -4093,6 +4105,17 @@ mod tests {
         assert!(
             !merged_contains(&framed(0, Some(0)), &mut i),
             "an empty family walls — the engine never manufactures a claim from silence"
+        );
+        // BODY DEATH (`28P:dec-whole-body-atomic-refusal`) — the second, independent atomicity, and
+        // the one the count alone cannot see. This stream is TRANSPORT-PERFECT: two coords, closing
+        // at n=2, self-consistent. What it also carries is `body-rc=127` — the emitting body reached
+        // an unbound helper and its survey stopped there. The count gate above PASSES on these exact
+        // bytes (the cell one line up proves it), so if this asserted nothing the wrongly-NARROW
+        // at-most claim would be trusted and spare a cell the command really disturbs.
+        assert!(
+            !merged_contains(&framed_rc(2, Some(2), 127), &mut i),
+            "an abnormally-terminated emission body walls the site TOTAL, however well its record \
+             stream agrees with itself"
         );
     }
 

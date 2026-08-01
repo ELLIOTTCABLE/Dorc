@@ -5805,8 +5805,16 @@ apt_get__is_converged() { return 0; }
             "the per-site deriv readback scaffold renders (framed, counting subshell): {sh}"
         );
         assert!(
-            sh.contains("printf 'dorc deriv-end 0 n=%s @@dorc@@\\n' \"$_n\"; }"),
-            "the at-most family closes with a `deriv-end` count record (262 §2 / 26A stop-1): {sh}"
+            sh.contains(
+                "printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\\n' \"$_n\" \"$_dr\"; }"
+            ),
+            "the at-most family closes with a count AND the emitting body's termination status \
+             (262 §2 / 26A stop-1 + 28P dec-whole-body-atomic-refusal): {sh}"
+        );
+        assert!(
+            sh.contains("_dr=$?"),
+            "the body's status is captured BEFORE the record pipe — a pipeline's status is its \
+             RHS's, so the pre-28P scaffold could not see a body death: {sh}"
         );
         assert!(
             !sh.starts_with("#!/bin/sh"),
@@ -5863,7 +5871,7 @@ apt_get__disturbs() {
             "the def ships under the mangled name: {sh}"
         );
         assert!(
-            sh.contains(&format!("\n{def_name} 'install' |")),
+            sh.contains(&format!("_d=$({def_name} 'install');")),
             "the invocation calls that exact name: {sh}"
         );
     }
