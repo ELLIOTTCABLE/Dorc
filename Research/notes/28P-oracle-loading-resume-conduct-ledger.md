@@ -115,6 +115,35 @@ plan is `28K` §10 (bitem0–bitem9 + fold checklist); on committee-corner confl
   lines) is the SIBLING's document; flagged to the human/sibling rather than edited from this
   lane. The lane's own `28K` §3 disclosure was rewritten in place by the fold builder.
 
+### Conductor adjudications at the builder-3 close (2026-07-31)
+
+- **adj-reach-atomicity-fix-commissioned** — builder-3's `tc-reach-expansion-has-no-atomicity`
+  is TAKEN as build work (builder-4): the dynamic `disturbance_reaches_only` lane has NO
+  body-death gate, and a truncated reach-closure is the SAME wrongly-narrow-survey hazard the
+  human confirmed critical-tier — a downstream fact whose backing lives in an uncovered file
+  wrongly survives. The fix does not overrule `an-kind-reach`'s "widens claims only" row:
+  that row describes the operator's direction WHEN COMPLETE; atomicity-on-death is
+  orthogonal, and the fix moves survival outcomes only toward walls (conservative,
+  spelling-free, `body-rc`-shaped like item0's). The exit-0-truncation residue stays the
+  human's completion-signal design, unchanged.
+- **route-split-family-two-author-elision-to-sitting** — builder-3's
+  `tc-split-family-elides-on-two-authors` is COMMITTEE-CORNER ADJUDICATION MATERIAL, routed
+  to the human's parallel sitting, nothing changed in-lane: bitem6 measured that a
+  member-complementary split family's elision rests on author-1's measurement (predict) plus
+  author-2's vouch (verdict) — a two-author license. `28M` §8's "monologue everywhere" was
+  scouted in a single-author world and its per-utterance reading survives (each utterance
+  has one author; no value crosses provenance); whether the COMPOSITE license needs
+  `28M:rul-composite-meets-toward-guard-run` treatment (grant-tier ⇒ one speaker or
+  per-author entailment) is exactly the fence sitting's question. The custody typing now
+  makes the two-author case visible at the type level — load-bearing input for the re-key.
+- **adj-meet-direction-registry-deferred-to-fence-revival** — builder-3's stop CONFIRMED:
+  an unwired registry in the license plane reads like a gate, and wiring it spans three
+  mechanisms across two crates — past "small" per the brief's own rule. It is `28M` §8's
+  machinery and lands naturally with the held fence work; deferred there by name.
+- **adj-wrapped-vouch-positional-gate-to-builder-4** — `tc-wrapped-vouch-seat-has-no-
+  positional-gate`: the sixth (wrapped-vouch) seat joins the positional regime in builder-4's
+  lane — withhold-only, the bitem0 gate's shape, no new mechanism.
+
 ## bitem0 — the full-positional regime (LANDED)
 
 `28K` §2 `rul-visibility-is-full-positional`. Every site-keyed consuming act now reads the
