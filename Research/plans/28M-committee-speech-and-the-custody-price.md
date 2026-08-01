@@ -544,5 +544,41 @@ here is a verdict)
   mint exactly the same meaning regardless of the site it was keyed by") and demands a
   by-construction defense of the divide before the registration item proceeds; the
   conductor's defense is in-chat, unratified. If the divide moves, this item's
-  verdict-dialect half moves with it.
+  verdict-dialect half moves with it. Sitting progress: the divide's doctrine reading
+  DISSOLVED under mechanical audit (marks mean the same everywhere; `FactKey` is
+  lane-erased; the residual is one consumer-gate — verdict-minted tokens outside the
+  sparing dialect, a logged conservative fallback); the lift decision is OPEN, framed
+  by the human as user-surprise vs value-loss, synthesis in-chat.
+- **Typed corrections banked mid-sitting (2026-07-31), standing whatever the ruling:**
+  - **cor-trust-sentence-at-least-not-measurements** [TYPED] — "nothing in Dorc is
+    about measurements, everything is about claims": the flag's pricing sentence
+    corrects to "Everywhere else, only their AT-LEAST claims and your own eyes" — the
+    load-bearing cut is at-most (they *cannot* have mechanically checked; the frame
+    problem's residue) vs at-least (they *can demonstrably* have checked). Both
+    predict- and verdict-minted facts are at-least-class. USER_STORY's closing
+    "trusting their *measurements*" line is a human-edit-someday to match.
+  - **cor-render-must-not-upsell-marks** [TYPED substance] — "authors will mark for
+    pretty output" is circular as a danger argument: if our hints/renders push marking
+    where it shouldn't happen, fix the hint layer. Design note for the aid plane:
+    attribution-render improvements must never be the advertised reason to mark.
+  - **cor-hermeticity-is-consumption-distance-not-lane** — the lanes are NOT
+    hermeticity classes (engine enforces none anywhere; scout-verified). The real
+    grading attaches to CONSUMPTION DISTANCE: live guard (in-sequence, volatility
+    harmless by construction) < plan-time verdict/elision (probe→apply staleness,
+    disclosed) < survival sparing (stale + past a running wall + no net). A volatile
+    check is a fine guard and must never be MARKED — the duty attaches to the marked
+    line's reach, wherever it lives.
+  - **ack-shared-bytes-transitive-permission** [ACKED, "if we opt not to lift, this
+    sounds like a good plan"] — basis-equivalence by shared bytes composes with
+    dir-ownership-is-transitive-inclusion: dialect-permission infects the transitive
+    closure of the permission-licensed entry point, so an otherwise-unpermitted
+    verdict tail calling a transitively-permitted helper gains the permission
+    mechanically. Fully-correct machinery, no trust added.
+  - **fnd-single-token-dialects-cannot-spare** [conductor, from the scout's flip-set +
+    the algebra] — sparing needs BOTH tokens in the backing family's dialect AND
+    distinct; a one-token dialect therefore never spares. Consequence: lifting the
+    exclusion buys ZERO new spares for single-token verdict-only families (the
+    greenest population); the lift's entire effect concentrates in multi-token
+    families — multi-arm verdict-only oracles (systemctl-shaped; real value) and
+    mixed predict+verdict vocabularies (where the two-grades risk lives).
 
