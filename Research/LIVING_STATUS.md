@@ -27,9 +27,11 @@ single home for the analysis-kernel refactor, by human order NO MORE PIECEMEAL: 
 definition-factored positional indices (frames) · P2 entry-closure as the speaker · P3
 universal context-availability, staged i–iii. It supersedes the `28P` bitem4/bitem5 hold,
 absorbs `26K` §0b (local-exec/scopes/wait-loops → stage-iii), and discharges the
-terminology rider; §11 (the authored surface — how users spell these concepts in oracles)
-is RESERVED for the next human-led design dig; two term slots ([TERM-A]/[TERM-B], né
-epoch/transit) await a dispatched terminology survey. Execution awaits the human's ack.
+terminology rider — vocabulary ACKED: **incarnation** (context lifetime marker, softened
+per `28Q` §3's correlation door) · **lifecycle begins/ends** (re-creation = their
+composition) · **availability window**; "epoch"/"pivot"/"transit" retired. §10 (the
+authored surface — how users spell these concepts in oracles) is RESERVED for the next
+human-led design dig. The plan is ACKED; stage-i/ii dispatchable.
 
 **`ai/r28-oracle-loading`: the `28K` lane is EXECUTED and CLOSED on its branch** (resume
 conduct-ledger **`notes/28P`**; build ledger `notes/28O`): bitem0–3 and 6–9 LANDED, both
@@ -38,7 +40,7 @@ and now inherited by `28Q` stages i–ii. Live rulings routed OUT of the lane:
 `tc-split-family-elides-on-two-authors` (composite-license admissibility — the
 committee-corner sitting's) · `tc-inert-mocks-rail-is-dash-shaped` (posh has never
 executed a corpus emitter body; separate lane) · the blessing pair — `command -v`
-RESOLVED 2026-08-01 as a stdlib-oracle answer (`28Q` §5), `.`-of-proven-load-inert still
+RESOLVED 2026-08-01 as a stdlib-oracle answer (`28Q` §4), `.`-of-proven-load-inert still
 human-owned (`28Q:res-dot-blessing-is-engine-side`). `ai/r28-cli-inputs`' two commits
 were cherry-picked into the lane (branch tip-redundant → advisory-delete queue).
 

@@ -1,27 +1,30 @@
 # 28Q — The context-kernel unification: frames, closures, availability (THE refactor plan)
 
-> Tier: LLM-authored plan (Fable conductor, human design dialogue 2026-08-01, session
-> `r28-megamerge`); subordinate to root docs and `spike/CLAUDE.md`. Grades as in `28K`/`28M`:
-> **[TYPED]** human typed it · **[ACKED]** substance confirmed in dialogue · **[PROPOSED]**
-> conductor-derived, awaiting ratification. The three-pillar synthesis as a whole is
-> ACKED-in-direction ("this all sounds coherent to me", 2026-08-01, after four typed
-> refinements banked in §5); mechanics below are PROPOSED unless marked otherwise.
+> Tier: LLM-authored plan (Fable conductor, from a human design dialogue, session
+> `r28-megamerge`); subordinate to root docs and `spike/CLAUDE.md`. Grades as in
+> `28K`/`28M`: **[TYPED]** human typed it · **[ACKED]** substance confirmed in dialogue ·
+> **[PROPOSED]** conductor-derived, awaiting ratification. The three-pillar direction is
+> ACKED; §4 is this plan's ack-ledger; mechanics are PROPOSED unless marked otherwise.
 >
-> **This is the single home for the analysis-kernel refactor** — the human's standing order
-> is NO MORE PIECEMEAL work on this territory. It SUPERSEDES: the `28P:amend-plural-value-
-> loss-hold` standing order (bitem4/bitem5/withhold-softening were held for exactly this
-> plan; they land here as stage work), `26K` §0b's kernel-batch agenda (absorbed into
-> stage-iii; `26K` remains live for its §0a fruit arc and §5 sittings queue), and the
-> chat-tier reach-mode taxonomy from the 2026-08-01 sitting's first synthesis message
-> (corrected in §4). It does NOT supersede `plans/27C` (still THE wrapper/context-entry
-> spec — §4 generalizes its availability behavior, touching none of its consent machinery)
-> nor `28M` (still the committee-corner authority; §3 here consumes its §10 direction).
+> **This is the single home for the analysis-kernel refactor** — the human's standing
+> order is NO MORE PIECEMEAL work on this territory. It SUPERSEDES: the
+> `28P:amend-plural-value-loss-hold` standing order (bitem4/bitem5/withhold-softening
+> were held for exactly this plan; they land here as stage work) and `26K` §0b's
+> kernel-batch agenda (absorbed into stage-iii; `26K` remains live for its §0a fruit arc
+> and §5 sittings queue). It does NOT supersede `plans/27C` (still THE
+> wrapper/context-entry spec — §3 here generalizes its availability behavior, touching
+> none of its consent machinery) nor `28M` (still the committee-corner authority; §2 here
+> consumes its §10 direction).
 >
-> Two term slots are deliberately unsettled pending a terminology survey (dispatched
-> 2026-08-01): **[TERM-A]** = the context re-creation/lifetime marker (currently "epoch",
-> overloaded) and **[TERM-B]** = the availability-changing event class (currently
-> "transit"/"pivot", both disliked). This document uses the bracketed placeholders where
-> precision matters and the old words only when citing older documents.
+> Vocabulary, fixed for this territory [ACKED]: an **incarnation** is the lifetime
+> marker of a re-creatable context (nearest precedent: TCP's connection incarnations,
+> RFC 9293 — same identity coordinates, new lifetime; see §3 for the deliberately
+> softer Dorc definition). A **lifecycle event** is the class of commands that change a
+> context's availability, with exactly two primitives — a context **begins** or
+> **ends** — and re-creation defined as their composition. An **availability window**
+> is the interval of plan positions over which a context is available. "Epoch",
+> "pivot", and "transit" are retired from this territory; older documents using them
+> read through this vocabulary.
 
 ## §0 — The design in one screen
 
@@ -33,11 +36,11 @@ file inside a subshell appends/shadows engine knowledge for questions asked in t
 region. (P2) Every "owner"-keyed concept re-keys from single-file to the **entry-closure**
 — the transitive closure of literal `.`-sourcing from an entry file — so authors factor
 helpers into second files with no registry, package name, or manifest: sourcing IS the
-package boundary, spelled in sh. (P3) World contexts (user, fs-view, netns, host, and the
-[TERM-A] axis) gain a single **availability predicate** over plan position; probing enters
-only currently-available contexts; commands that create/destroy/re-create contexts are
-ordinary oracle-described commands; the transit-relative epoch law generalizes to every
-dimension.
+package boundary, spelled in sh. (P3) World contexts (user, fs-view, netns, host, and
+the incarnation axis) gain a single **availability predicate** over plan position;
+probing enters only currently-available contexts; commands that begin or end contexts
+are ordinary oracle-described commands; the old epoch-specific transit-relative law
+generalizes to every dimension.
 
 The unifying claim, `syn-one-context-two-planes`: every kernel query carries a two-sided
 context — *where in the text am I asking from* (the load plane) and *where/when in the
@@ -47,10 +50,10 @@ crossing claims for what survives an event.
 
 | | load plane (P1) | world plane (P3) |
 |---|---|---|
-| events | funcdef · `unset -f` · `.`-source · subshell open/close | walls (unmodeled mutators) · [TERM-B] events (create/destroy/re-create) · context entry/exit |
-| regions | environment frames | intervals where a probed fact stays trustworthy (the wall machinery already computes these) |
+| events | funcdef · `unset -f` · `.`-source · subshell open/close | walls (unmodeled mutators) · lifecycle events (a context begins/ends) · context entry/exit |
+| regions | environment frames | availability windows; the intervals where a probed fact stays trustworthy (the wall machinery already computes these) |
 | scoped shadowing | subshell re-source (dies at the paren) | an entered context (`sudo`/`chroot` region; an ssh'd host region) |
-| crossing claims | a name survives events that do not touch it (sh-given) | a fact survives a [TERM-B] iff its kind-owner marked `undivided-by-transit-across <axis>`; survives a wall iff footprint-disjoint |
+| crossing claims | a name survives events that do not touch it (sh-given) | a fact survives a lifecycle boundary iff its kind-owner marked `undivided-by-transit-across <axis>`; survives a wall iff footprint-disjoint |
 | silence | unresolvable load ⇒ ⊤, walls | unmodeled command / unmarked kind ⇒ wall |
 
 `syn-frame-tree-is-fork-semantics` — the load plane's "resolution DAG" is literally sh's
@@ -58,13 +61,14 @@ fork semantics: a subshell is a forked child environment whose mutations are inv
 the parent; `.` is in-process mutation. The DAG is the fork tree crossed with linear
 program order. PLT-standard vocabulary: these are scoped environments over a program
 order; no coinage needed. The world plane is the same shape one level up: the apply is a
-program order over world state; hosts and [TERM-A]-lifetimes are the scopes; [TERM-B]
-events are the mutations. Retire "pivot" everywhere.
+program order over world state; hosts and incarnations are the scopes; lifecycle events
+are the mutations.
 
 `syn-zero-new-spellings` — all three pillars consume EXISTING sh acts: sourcing,
 subshells, `unset -f`, creator/destroyer commands with ordinary oracles, ssh lines.
-No new authored surface anywhere (the §11 language dig may add *oracle-member vocabulary*
-for describing creators; it must clear the sent-language-is-becoming-crufty bar).
+No new authored surface anywhere (the §10 language dig may add *oracle-member
+vocabulary* for describing lifecycle events; it must clear the
+sent-language-is-becoming-crufty bar).
 
 ## §1 — P1: definition-factored indices (`syn-definition-factored-indices`)
 
@@ -155,9 +159,9 @@ Re-keyed seats:
   (version-skewed vendored copies refuse rather than dedup — the bitem1 rider restated
   closure-relative).
 
-**`rul-blessing-flows-from-best-caller` [TYPED substance 2026-08-01]** — custody and
-GRADE are different relations and flow in different directions. Custody: the speaker is
-the closure; helpers are subordinate for fence/attribution purposes. Grade
+**`rul-blessing-flows-from-best-caller` [TYPED substance]** — custody and GRADE are
+different relations and flow in different directions. Custody: the speaker is the
+closure; helpers are subordinate for fence/attribution purposes. Grade
 (trustworthiness-for-purpose): INFECTIOUS, outward from the blessed use — `predict()` and
 `is_converged()` carry mildly-opposite care-leans (description-tier lexical discipline vs
 judgment-tier proxy-checking; the ground for `28M` §11's verdict-word enrollment
@@ -186,57 +190,78 @@ over sh semantics only — referent-agnostic-clean (`res-dot-blessing-is-engine-
 ## §3 — P3: availability over all contexts (`syn-availability-is-universal`)
 
 Every world-context — the folded per-dimension key of `27C`'s composition algebra, now
-including a host coordinate and a [TERM-A] lifetime marker — carries an **availability
+including a host coordinate and an incarnation marker — carries an **availability
 status as a function of plan position**: available · arrives-at(p) · departed-at(p) ·
 never. Probe-time entry is availability at position zero. Everything else derives:
 
-- **Entry is uniform across dimensions** [ACKED 2026-08-01,
-  `rul-host-entry-is-ordinary-entry`]: a wrapper chain, an ssh line, or ambience denotes
-  a context; probing enters it if available, under `27C`'s unchanged consent machinery
-  (dial × vouch × entry form). `ssh host …` IS a peeling wrapper whose entry form is the
-  connection dance (`ack-connection-dance-oracles-core` unchanged: the ssh oracle's own
-  arms mint reachability facts; the engine mints nothing). The wrapper-law's "execs the
-  remainder locally" fence is mechanical, not categorical — ssh's genuine extra
-  obligation is the remote-shell RE-PARSE round-trip, which is exactly its entry-siting
-  vouch discharge (and why the engine's own transport ships artifacts on stdin, `260` §5).
-  Host ALIASING (`~/.ssh/config`, short names, IPs) is package-name aliasing's cousin:
-  host identity is resolve-machinery territory, never string comparison
+**The incarnation, defined softly and on purpose** [the definitional paragraph;
+human-directed]: an incarnation distinguishes LIFETIMES of one context — same identity
+coordinates, new instance — for *keying* and *default distrust*, never as a hard
+partition. The prior art this word comes from gets to divorce lifetimes completely (an
+old TCP incarnation's segments are simply dead); Dorc deliberately does not, because
+much of this design's value lives in CORRELATING instances across a lifecycle boundary.
+The default is the ordinary floor: silence walls — a fact keyed to incarnation N
+licenses nothing in N+1. Carry is the ordinary claims surface: the kind-owner's
+crossing marks, unchanged (hardware/arch kinds survive a reboot; package state does
+not). And one door is held open, named and NOT designed here
+(`res-incarnation-correlation-door`, §9): cross-incarnation correlation/equivalence —
+assessing a recreated instance as "the same thing" (the input-addressed-identity
+family: built from the same recipe, converged as the same state). Without some such
+semantic, a book containing an UNCONDITIONAL destroy-recreate can never be converged
+downstream of it, on any day. Both poles are real: there are books where hard divorce
+is precisely the hole this model closes, and books where the recreated instance must
+be assessable as continuous; the subtleties belong to a later sitting.
+
+- **Entry is uniform across dimensions** [ACKED, `rul-host-entry-is-ordinary-entry`]: a
+  wrapper chain, an ssh line, or ambience denotes a context; probing enters it if
+  available, under `27C`'s unchanged consent machinery (dial × vouch × entry form).
+  `ssh host …` IS a peeling wrapper whose entry form is the connection dance
+  (`ack-connection-dance-oracles-core` unchanged: the ssh oracle's own arms mint
+  reachability facts; the engine mints nothing). The wrapper-law's "execs the remainder
+  locally" fence is mechanical, not categorical — ssh's genuine extra obligation is the
+  remote-shell RE-PARSE round-trip, which is exactly its entry-siting vouch discharge
+  (and why the engine's own transport ships artifacts on stdin, `260` §5). Host ALIASING
+  (`~/.ssh/config`, short names, IPs) is package-name aliasing's cousin: host identity is
+  resolve-machinery territory, never string comparison
   (`res-host-identity-wants-resolve`).
-- **[TERM-B] events are not a reach-mode** — they are world-mutations that move contexts'
-  availability: creators (`useradd`, `mount`, `doctl compute droplet create`), destroyers
-  (`userdel`, `umount`, destroy), re-creators (`reboot`, kexec, reinstall — identity
-  churn: a new [TERM-A] lifetime of the same coordinates). You never enter a departed
-  lifetime; a wrapper cannot denote a [TERM-B] because an event is not a place questions
-  are asked about. `lend_map` correctly never grows a time key (nothing lends time).
-- **Creators are ordinary oracle-described commands** [ACKED 2026-08-01,
-  `rul-availability-is-universal`, via the useradd strawman]: `useradd alice` at line 6
-  makes the user-alice context arrives-at(6); `sudo -u alice foo` at line 40 guards on
-  build days and — the generalized law — **elides on day N, because a CONVERGED creator
-  elides, so its context is available at probe time, so entry-probing proceeds
-  downstream**. One theorem, previously three instances: the epoch transit-relative law,
-  `27C`'s pre-mount chroot story, and the pivot's day-N fold. Silence is today's floor,
-  byte-identical: an unmodeled creator means arrival is unknown; probe entry simply fails
-  dynamically; can't-say ⇒ guard/run. Guards in arriving contexts are sound BY
-  CONSTRUCTION (in-sequence; the context has arrived when the guard runs) — the epoch
-  bank's "guards are epoch-proof" becomes a theorem. Destroyers symmetric: sites denoted
-  in departed contexts are honestly can't-say ⇒ run. The inverse wait is the trajectory
-  available→departed→available; wait-loops with pure-delay bodies mint no events ⇒
-  wall-transparency derives (the `26K` sit-wall-transparent-delay-loops ratification
-  becomes a corollary to ack, not a standalone rule).
+- **Lifecycle events are not a reach-mode** — they are world-mutations that move
+  contexts' availability, and there are exactly two primitives: a context **begins**
+  (`useradd`, `mount`, `doctl compute droplet create`) or **ends** (`userdel`, `umount`,
+  destroy). A re-creation (`reboot`, reimage, kexec) is an end composed with a begin —
+  and a begin following an end is what MINTS a fresh incarnation of the same
+  coordinates. You never enter an ended lifetime; a wrapper cannot denote a lifecycle
+  event because an event is not a place questions are asked about. `lend_map` never
+  grows a time key — nothing lends time (the surviving kernel of the older
+  cousin-not-sibling reading; the rest of that separation is dissolved by this plan).
+- **Begin/end-describing commands are ordinary oracle-described commands** [ACKED,
+  `rul-availability-is-universal`]: `useradd alice` at line 6 makes the user-alice
+  context arrives-at(6); `sudo -u alice foo` at line 40 guards on build days and — the
+  generalized law — **elides on day N, because a CONVERGED creator elides, so its
+  context is available at probe time, so entry-probing proceeds downstream**. One
+  theorem, previously three instances: the old epoch transit-relative law, `27C`'s
+  pre-mount chroot story, and the pivot-book day-N fold. Silence is today's floor,
+  byte-identical: an unmodeled creator means arrival is unknown; probe entry simply
+  fails dynamically; can't-say ⇒ guard/run. Guards in arriving contexts are sound BY
+  CONSTRUCTION (in-sequence; the context has arrived when the guard runs). Destroyers
+  symmetric: sites denoted in departed contexts are honestly can't-say ⇒ run. The
+  inverse wait is the trajectory available→departed→available; wait-loops with
+  pure-delay bodies mint no events ⇒ wall-transparency derives (the `26K`
+  sit-wall-transparent-delay-loops ratification becomes a corollary to ack, not a
+  standalone rule).
 - **The integrity/analysis split is preserved, and reconciles `an-toctou-window`**: a
-  planned [TERM-B] is an IDENTIFIED-CAUSE, in-book event (the creator line is the cause)
-  — analysis-plane, fails toward run. UNPLANNED lifetime churn (boot-id/host-key
+  planned lifecycle event is an IDENTIFIED-CAUSE, in-book event (the creator line is the
+  cause) — analysis-plane, fails toward run. UNPLANNED lifetime churn (boot-id/host-key
   mismatch) is the integrity plane's withhold
   (`rul-integrity-failure-withholds-mutation`), never drift accounting. The welded
   WONTFIX on unattributed drift stands untouched.
-- **Facts carry their context including the [TERM-A] marker**; the controller mints
-  lifetime identity (the reserved generation-identity slot in
-  `rul-attribution-is-controller-minted` — this plan IS its named re-entry trigger: a
-  second scope becomes representable, so carrying scope becomes checking scope;
-  `WidthOneAttemptScope` goes multi, deliberately, at stage-iii). Crossing stays the
-  kind-owner's `undivided-by-transit-across <axis>` mark — time is one more axis,
-  consuming `272` §6's reserved slot. `an-host-as-adversary` honored: availability facts
-  are host-scoped intake, bounded; no host speaks for another's availability.
+- **Facts carry their context including the incarnation marker**; the controller mints
+  incarnation identity (the slot `rul-attribution-is-controller-minted` reserves — this
+  plan IS its named re-entry trigger: a second scope becomes representable, so carrying
+  scope becomes checking scope; `WidthOneAttemptScope` goes multi, deliberately, at
+  stage-iii). Crossing stays the kind-owner's `undivided-by-transit-across <axis>` mark
+  — the lifetime axis consumes `272` §6's reserved time slot. `an-host-as-adversary`
+  honored: availability facts are host-scoped intake, bounded; no host speaks for
+  another's availability.
 - **Residual host-specialness**, named and fenced: transport mechanics (channel
   capability, `kBOOT`) and the quarantined security concerns (cross-host fact custody,
   hostile-host intake; the kSTATE unparking coupling). Orthogonal to the model.
@@ -248,26 +273,12 @@ never. Probe-time entry is availability at position zero. Everything else derive
 - **kSTATE untouched**: availability is computed per-run from the plan's own structure
   plus probe-time reachability. Nothing persists; nothing is a cache.
 
-## §4 — Corrections to the first synthesis (superseded chat-tier claims)
+## §4 — Rulings banked (this plan's ack-ledger; grades exact)
 
-- The three-way reach-mode split (entered/connected/traversed) is DEAD: two concepts
-  only — entry (all dimensions, host included) and [TERM-B] availability events.
-- "Helpers ride under the calling entrypoint's closure" was HALF the story (custody);
-  the grade direction is the opposite (`rul-blessing-flows-from-best-caller`, §2).
-- Host/epoch as "the dimensions with availability" is DEAD: availability is universal
-  (§3); host and [TERM-A] are ordinary coordinates whose availability trajectories are
-  merely the most *interesting*.
-- The prior conductor's "epoch is a temporal cousin, not a fifth sibling" resolves
-  with precision: right about `lend_map` membership only; wrong as architectural
-  separation. (The `26K` §0b terminology rider is discharged by this document + the
-  pending term survey.)
-
-## §5 — Rulings banked this sitting (ack-ledger; grades exact)
-
-- **`rul-blessing-flows-from-best-caller`** [TYPED substance 2026-08-01] — §2. Open:
+- **`rul-blessing-flows-from-best-caller`** [TYPED substance] — §2. Open:
   `pin-blessing-keying`.
-- **`rul-command-v-is-a-stdlib-oracle`** [ACKED 2026-08-01] — no engine blessing beyond
-  the one narrow, referent-aware, load-plane capability ("do not analyze `command -v
+- **`rul-command-v-is-a-stdlib-oracle`** [ACKED] — no engine blessing beyond the one
+  narrow, referent-aware, load-plane capability ("do not analyze `command -v
   <unit-defined-fn>` as a PATH question"; the decidable-set v0 contract, unchanged) plus
   dorc-lang top-level load-inert whitelisting. World-plane `command -v <tool>` questions
   are an ordinary stdlib oracle's cell — probe-measured, self-vouched-by-existence,
@@ -276,28 +287,30 @@ never. Probe-time entry is availability at position zero. Everything else derive
   definedness` already pins the load-plane contract's narrowness. This retires the
   engine-blessing half of `28P:adj-command-v-blessing-routed-to-human`; the `.`-blessing
   sibling stays a separate, small, engine-side human ruling (§2).
-- **`rul-host-entry-is-ordinary-entry`** [ACKED 2026-08-01] — §3, with the re-parse
-  siting rider and `res-host-identity-wants-resolve`.
-- **`rul-availability-is-universal`** [ACKED 2026-08-01] — §3, the useradd strawman.
-- The three-pillar synthesis direction as a whole [ACKED 2026-08-01: "this all sounds
-  coherent to me"].
+- **`rul-host-entry-is-ordinary-entry`** [ACKED] — §3, with the re-parse siting rider
+  and `res-host-identity-wants-resolve`.
+- **`rul-availability-is-universal`** [ACKED] — §3, the useradd strawman.
+- **The vocabulary family** [ACKED] — incarnation · lifecycle begins/ends with
+  re-creation as their composition · availability window; with the softened incarnation
+  definition (§3) and its correlation door held open.
+- The three-pillar direction as a whole [ACKED].
 
-## §6 — What this plan subsumes (the anti-piecemeal ledger)
+## §5 — What this plan subsumes (the anti-piecemeal ledger)
 
 Inherited and landed here: bitem4 (the fence build → stage-ii) · bitem5 (split-family
 coherence detection, aid-plane, sized per `28M:lean-demotion-is-not-deletion` →
 stage-ii) · the withhold-softening (→ stage-i, as true resolution) · the meet-direction
 registry (`28P:tc-meet-direction-registry-not-built` → stage-ii, where the lattice
-refactor has company) · `26K` §0b entire (local-exec, scope/[TERM-A] slot, wait-loops,
-inverse wait → stage-iii) · the wrapped-vouch and whyworld/survival seat asymmetries
-(→ stage-i) · `res-host-conditional-loading` gains its eventual story (per-host frames
-keyed by decidable host facts) but STAYS v0-refused — named, not scheduled. Made-visible
-but NOT ruled here: `tc-split-family-elides-on-two-authors` (composite-license
-admissibility; the fence sitting's) · `28M` §11's keep/lift + registration verdicts ·
-the tabled word-pooling corner (closure-keyed dialects are its eventual hook; nothing
-more).
+refactor has company) · `26K` §0b entire (local-exec, scope/incarnation slot,
+wait-loops, inverse wait → stage-iii) · the wrapped-vouch and whyworld/survival seat
+asymmetries (→ stage-i) · `res-host-conditional-loading` gains its eventual story
+(per-host frames keyed by decidable host facts) but STAYS v0-refused — named, not
+scheduled. Made-visible but NOT ruled here: `tc-split-family-elides-on-two-authors`
+(composite-license admissibility; the fence sitting's) · `28M` §11's keep/lift +
+registration verdicts · the tabled word-pooling corner (closure-keyed dialects are its
+eventual hook; nothing more).
 
-## §7 — What does not change (the preserved-invariant wall)
+## §6 — What does not change (the preserved-invariant wall)
 
 All license-plane law: `silence-licenses-nothing` · `inv-top-reject` · the
 monologue/custody discipline (`28P` bitem3's types are consumed, not altered — until the
@@ -308,7 +321,7 @@ machinery (dial, vouches, entry-siting, composition algebra) · `two-plane-aid-l
 hermeticity-precondition · `rul-strawman-formats-no-compat` (every identity type minted
 here renames freely pre-publication). And `syn-zero-new-spellings` (§0).
 
-## §8 — Constraint reconciliations (from the 2026-08-01 needs-ledger extraction)
+## §7 — Constraint reconciliations (against the needs-ledgers and as-built law)
 
 - `an-flat-domain`/`an-context-key`: reconciled §1; ANALYZER-NEEDS owes the paragraph.
 - `funcenv-reads-source-literal-plane-only`: preserved §1.
@@ -324,7 +337,7 @@ here renames freely pre-publication). And `syn-zero-new-spellings` (§0).
 - `AID:law-lineno-identity` · `law-whylog-is-sensitive`: untouched by all three pillars;
   any stage that persists availability or frame state violates rec-5 and is out.
 
-## §9 — Staging (each stage independently green; gates named)
+## §8 — Staging (each stage independently green; gates named)
 
 - **stage-i-definition-factoring** (P1): DefinitionId keying of derived rows; the frame
   indirection at every resolution seat; retire the agreement veto, `live_source`, and
@@ -337,22 +350,23 @@ here renames freely pre-publication). And `syn-zero-new-spellings` (§0).
   vocab-minting (pending `pin-blessing-keying`); bitem5's coherence detection; the
   meet-direction registry. Gate: single-closure byte-identity + the fence's six stage-E
   cells re-verified closure-keyed.
-- **stage-iii-world-scopes** (P3): the context-slot host×[TERM-A] coordinates;
-  availability computation from creator/destroyer/re-creator descriptions; scope-entry
-  (ssh as entry; local-exec as the controller context); the scope types go multi with
-  checking; wait-loop wall-transparency and the inverse wait as derived behavior. This
-  stage IS the former `26K` §0b batch, human-led at its design edges (the §11 authored
-  surface must be settled first for creator description). Gate: a no-[TERM-B] book is
-  byte-identical; the pivot strawman book renders honestly in both world-states.
+- **stage-iii-world-scopes** (P3): the context-slot host×incarnation coordinates;
+  availability computation from begin/end descriptions; scope-entry (ssh as entry;
+  local-exec as the controller context); the scope types go multi with checking;
+  wait-loop wall-transparency and the inverse wait as derived behavior. This stage IS
+  the former `26K` §0b batch, human-led at its design edges (the §10 authored surface
+  must be settled first for lifecycle description). Gate: a book with no lifecycle
+  events is byte-identical; the pivot strawman book renders honestly in both
+  world-states.
 
 Builder on-ramp (read in order): this document → `28M` §§7–11 → `28K` (executed lane
 record; §10's as-built bitem ledger `28P`) → `27C` → the `spike/CLAUDE.md` invariant
-sections cited in §7/§8. Unchanged pending work lives where it lived: `26K` §0a fruit
+sections cited in §6/§7. Unchanged pending work lives where it lived: `26K` §0a fruit
 arc + §5 sittings queue · the three parked rulings (guard-tier classed-decline ·
 records-8 · D9) in LIVING_STATUS · `tc-inert-mocks-rail-is-dash-shaped` (separate lane) ·
 the loom Windows stack-overflow (separate small fix).
 
-## §10 — Open pins and owed rulings (the complete list; nothing else is open here)
+## §9 — Open pins and owed rulings (the complete list; nothing else is open here)
 
 1. `pin-blessing-keying` — family-rooted vs closure-global (§2; one line).
 2. `res-dot-blessing-is-engine-side` — the `.`-of-proven-load-inert blessing (§2;
@@ -360,19 +374,24 @@ the loom Windows stack-overflow (separate small fix).
 3. The stdlib `command` oracle — authoring rides the stdlib revival (which remains
    ALSO gated on the dialect-reach decision, `28O:fnd-dialect-tests-admit-only-string-
    comparison`; unchanged).
-4. [TERM-A]/[TERM-B] — the terminology survey's recommendation, human-picked; this
-   document then renames in place (`rul-strawman-formats-no-compat`).
+4. `res-incarnation-correlation-door` — cross-incarnation correlation/equivalence
+   semantics (§3): when may a recreated instance be assessed as continuous with its
+   predecessor, so that a book with an unconditional destroy-recreate can still
+   converge downstream? Human head-state: sometimes yes (equivalent-by-construction),
+   sometimes the hard divorce is exactly right; wants its own sitting; nothing here
+   builds toward either pole.
 5. The composite-license admissibility ruling (`tc-split-family-elides-on-two-authors`)
    and the fence's permanence — the committee-corner sitting, parallel, unscheduled.
 6. `28M` §11's keep/lift + registration verdicts — parallel, human's.
 7. The ANALYZER-NEEDS flat-domain reconciliation paragraph — conductor, at stage-i fold.
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
-   unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing it.
+   unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
+   it.
 
-## §11 — The authored surface (RESERVED)
+## §10 — The authored surface (RESERVED)
 
-How users express these concepts in oracles — creator/destroyer description members or
-marks, the [TERM-B] classing spelling, whether `undivided-by-transit-across` gains the
-time axis by mark or by kind-owner member, the ssh entry-form's authored half, and the
-sent-language-is-becoming-crufty ceremony budget for all of it — is the next design dig,
-human-led. Deliberately empty until that sitting.
+How users express these concepts in oracles — begin/end description members or marks,
+whether lifetime-crossing rides the existing `undivided-by-transit-across` mark spelling
+or that token itself renames with this vocabulary, the ssh entry-form's authored half,
+and the sent-language-is-becoming-crufty ceremony budget for all of it — is the next
+design dig, human-led. Deliberately empty until that sitting.
