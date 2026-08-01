@@ -25,20 +25,23 @@ wiring) — human's.
 **THE kernel plan: `plans/28Q` — context-kernel unification (minted 2026-08-01).** The
 single home for the analysis-kernel refactor, by human order NO MORE PIECEMEAL: P1
 definition-factored positional indices (frames) · P2 entry-closure as the speaker · P3
-universal context-availability, staged i–iii. It supersedes the `28P` bitem4/bitem5 hold,
+universal context-availability, staged 0+i–iii (stage-0, added 2026-08-01: the ship-seam
+verdict-primacy re-cut — the verdict body ships and answers at vouched sites; rulings
+banked `28Q` §4; retires the license-tier half of `tc-split-family-elides-on-two-authors`). It supersedes the `28P` bitem4/bitem5 hold,
 absorbs `26K` §0b (local-exec/scopes/wait-loops → stage-iii), and discharges the
 terminology rider — vocabulary ACKED: **incarnation** (context lifetime marker, softened
 per `28Q` §3's correlation door) · **lifecycle begins/ends** (re-creation = their
 composition) · **availability window**; "epoch"/"pivot"/"transit" retired. §10 (the
 authored surface — how users spell these concepts in oracles) is RESERVED for the next
-human-led design dig. The plan is ACKED; stage-i/ii dispatchable.
+human-led design dig. The plan is ACKED; stage-0 leads, then stage-i/ii dispatchable.
 
 **`ai/r28-oracle-loading`: the `28K` lane is EXECUTED and CLOSED on its branch** (resume
 conduct-ledger **`notes/28P`**; build ledger `notes/28O`): bitem0–3 and 6–9 LANDED, both
 legs green; bitem4/bitem5/withhold-softening/meet-direction-registry HELD by human order
 and now inherited by `28Q` stages i–ii. Live rulings routed OUT of the lane:
-`tc-split-family-elides-on-two-authors` (composite-license admissibility — the
-committee-corner sitting's) · `tc-inert-mocks-rail-is-dash-shaped` (posh has never
+`tc-split-family-elides-on-two-authors` (license-tier half RESOLVED by `28Q` §4
+verdict-primacy; sparing-tier residue stays the committee-corner sitting's) ·
+`tc-inert-mocks-rail-is-dash-shaped` (posh has never
 executed a corpus emitter body; separate lane) · the blessing pair — `command -v`
 RESOLVED 2026-08-01 as a stdlib-oracle answer (`28Q` §4), `.`-of-proven-load-inert still
 human-owned (`28Q:res-dot-blessing-is-engine-side`). `ai/r28-cli-inputs`' two commits

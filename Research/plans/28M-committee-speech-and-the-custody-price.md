@@ -372,6 +372,12 @@ and one author.
   from canonical identity; `plan/src/lib.rs:1076-1091,1162-1178`). Net: every
   reproduced value has single-author provenance; guard and elide are both
   monologues.
+  [Correction, 2026-08-01: the ship-lane half was falsified as-built — where a
+  predict resolves the site's cell the PREDICT lane shipped and the verdict was
+  consumed statically (`28P:fnd-a-split-family-elides-on-two-authors`, a
+  two-author license in split families). Restored as law by `28Q` §4
+  `rul-verdict-primacy-at-the-ship-seat`, re-cut at its stage-0; the monologue
+  claim above is then true by construction rather than by scouting.]
 - **The monologue is emergent, not typed** — three mechanisms conspire (lane
   exclusivity · the establish-⊤ firewall · consumed-⊤ forbids-mint); none names
   custody. Re-entry routes: the unground "declared-rc opt-in (19A §5)" comment
