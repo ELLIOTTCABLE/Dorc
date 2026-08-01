@@ -1039,3 +1039,275 @@ its size suggests.
   buildable piece is a table; the VALUE is in consulting it at the meet sites, which are three
   mechanisms across two crates. Wants either a real (lattice-tier) dispatch or an explicit ruling
   that a convention-held direction is the resting point.
+
+## reach-atomicity — the second consumer of item0's mechanism (LANDED)
+
+`28P:adj-reach-atomicity-fix-commissioned`. The dynamic `kind__disturbance_reaches_only()` lane had
+no body-death gate — and, measured by builder-3, no transport gate either — so an arm that died or
+was cut simply contributed no expansion, and the un-widened at-most footprint spared a site that
+should have run. Repaired on item0's shape, deliberately not a second mechanism.
+
+### dec-reach-expansion-refuses-whole-footprint
+
+The repair, and the two decisions inside it worth defending.
+
+WHAT CLOSES: the scaffold captures the arm's status BEFORE the record pipe (`_r=$(<arm> <entity>);
+_rr=$?`) and closes with `reach-end <coord> arm=<n> n=<K> body-rc=<R>` — the deriv close's grammar
+at a second key. Three refusal triggers, all independent and all typed: no close record at all
+(the wire shape builder-3 actually measured), a count that disagrees with the records received, and
+a non-zero body-rc. Framed streams only, exactly as the deriv gate is; the legacy unframed fixtures
+carry no closes and stay trusted-complete.
+
+WHAT IS REFUSED: the WHOLE footprint, not the coordinate. A `reaches_only` survey is
+complete-by-contract, so an arm that cannot show it finished leaves the claim wrongly NARROW, and
+narrow SPARES MORE — refusing only the arm's own coordinate would leave exactly the partial at-most
+claim the whole gate exists to forbid. Refusal is immediate per footprint (the remaining coords are
+not expanded either) and removes the entry from `TrustedFootprints`, so the site walls total on the
+one path where absence already means wall.
+
+`DerivClose` became `EmissionClose` and both lanes read it. The brief's "one mechanism, two
+consumers, don't fork it" is a claim about the TYPE as much as the shape: two structurally
+identical closes under two names is how the two gates drift apart later.
+
+### dec-the-refusal-seat-is-a-return-value-not-a-node-lookup
+
+The seat builder-3 sized as "a small signature change in `plan::survival` plus the cli consumer".
+Built slightly smaller than that sizing: `expand_reaches`'s closure now answers a typed
+`ReachExpansion` (`Expanded(coords)` | `Refused`) and the node key is threaded ALONGSIDE it rather
+than instead of it. The closure never removes anything — `TrustedFootprints` owns its own map and
+does the removal after the walk — so the one seat that can shrink the survival tier's data stays
+inside the type that holds it. The node is threaded only so the cli can SPAN its diagnostic at the
+wall site (`aid-caret-span-precision`), which is the same reason `merge_derived_footprints` takes a
+`node_spans` map; `TrustedFootprints::nodes()` is the small accessor that feeds it.
+
+An empty `Expanded` therefore means "this coordinate reaches nothing", an ANSWER, and is now
+type-level distinct from "the survey could not be trusted". Before the repair those were the same
+value, which is precisely why the hole was invisible.
+
+### The aid surface (`Words::Unwritten`; no new `DiagCode`, no ceiling bump)
+
+Three new `FootprintIncoherentReason` variants beside item0's — `ReachArmNeverClosed`,
+`ReachArmStreamCut`, `ReachArmDiedMidSurvey` — each with its own hand-seeded arrangement row. NO new
+code, on item0's own reasoning: the refusal is a footprint-coherence failure and
+`footprint-incoherent` already owns that, and N same-world reason-sentences are COMPONENTS
+(`28L:rul-reason-enums-not-sibling-codes`). So the unwritten CEILING is untouched at 19 — neither of
+the lane's two conscious bumps is spent by this item.
+
+They are three variants rather than one because the attribution differs, and mis-attribution
+outranks the other sins (`271:rul-sin-ordering`): telling an author their arm body died when their
+stream was cut is the same error item0 avoided by siting body-death under `footprint-incoherent`
+rather than `deriv-family-incomplete`. Note the reach lane has no transport-tier CODE of its own and
+does not want one — a reach arm is not a family the site owns, it is a kind-owner's survey the
+engine applied to somebody else's footprint, and refusing that footprint is the whole consequence.
+
+### Survival-churn accounting
+
+Predicted before building: the scaffold bytes move in every case that compiles a reach probe, and
+nothing else — the repair only ever ADDS a refusal, and the corpus's one reach arm exits 0.
+
+Actual: exactly that, and the corpus has exactly ONE such case.
+
+| cause | cases | delta |
+|---|---|---|
+| scaffold bytes in a committed golden | 1 (`strawman24-reach-crossauthor`) | probe bytes only; its apply artifact is BYTE-IDENTICAL, and its downstream site still demotes |
+| survival outcomes moved | 0 | no corpus arm terminates abnormally or fails to close |
+| net-new | 2 e2e looms + 1 unit cell + 2 record-grammar cells | additive |
+
+The authored-fixture harness SYNTHESIZES a clean `reach-end` for any fixture that spells `reach`
+records without one, exactly as it already did for `deriv-end`, so authoring alone never trips the
+new gate and a case exercising it spells its own close.
+
+### The behaviour pins: an A/B pair, one field apart
+
+`pin28-reach-arm-survey-complete-spares` and `pin28-reach-arm-death-walls-total` are byte-identical
+except for `body-rc` in one record, and the admin's `installfile` goes from elided to run. The pair
+is two cases rather than one book because the refusal makes the wall total, and a total wall would
+guard everything below it for a reason unrelated to what is being pinned. Non-vacuous BY
+CONSTRUCTION rather than by argument: the A half's elision is real and committed, and it is exactly
+what the B half's refusal costs.
+
+The unit twin `pin_reach_arm_atomicity_refuses_the_whole_footprint` runs all four cells (complete /
+dead body / cut stream / never closed) through the PRODUCTION deframer over one stream builder, so
+the independent gates are asserted over identical bytes.
+
+### `an-kind-reach` is now status B, not B-with-an-open
+
+The row's "widens claims only — the safe direction" is kept and RE-SITED: it describes the operator
+WHEN COMPLETE. The row now carries the atomicity clause and drops its `(dynamic-arm atomicity OPEN)`
+status. The exit-0-truncation residue is NOT closed and is not this item's — a body that truncates
+its survey and exits 0 stays invisible to both lanes, and that is
+`ANALYZER-NEEDS:an-atmost-completion-signal`, human-owned. Nothing here builds toward it.
+
+## wrapped-vouch-gate — the sixth seat joins the regime (LANDED)
+
+`28P:adj-wrapped-vouch-positional-gate-to-builder-4`. `build_wrapped_vouches` now filters its
+`live_source` answer through `live.answers_at(node, …)`, the bitem0 shape, through bitem3's one
+custody crossing. Withhold-only; no re-resolution; no new mechanism.
+
+### dec-the-wrapped-seat-takes-the-drivers-sets
+
+The part that was NOT in the brief and had to be done anyway. The seat re-lifted `VerdictSet`s from
+raw source text, which is `28P:fnd-build-vouches-relifted-the-verdict-sets` one seat further out —
+and adding the gate ON TOP of a re-lift would have MANUFACTURED that bug rather than merely left it:
+the re-lifted population still contains the contested and never-live definitions every other seat
+dropped, so `live_source` could pick a file the run had withdrawn and the new gate would then refuse
+the vouch — a silent wall nothing else in the run agreed with. So the seat takes the driver's
+withdrawn sets, `oracle_srcs` leaves its signature, and all six seats now resolve over one
+population and narrow on one rule. `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` is
+updated to say so.
+
+### fnd-the-wrapped-gate-is-unreachable-today
+
+Honest, and the same shape bitem1 recorded for hash-munge. A wrapped site above its definition never
+reaches this seat at all: `resolve_inner_check` is already positional (bitem0), so it answers `None`,
+the site becomes `WrappedProbe::Degrade`, and the vouch builder skips Degrade sites before the gate
+can speak. The gate therefore cannot change an outcome on any world reachable today.
+
+It is built anyway for bitem1's reason: the seat was safe by a SIBLING's agreement rather than by
+its own answer, which is the "emergent, not typed" shape `28M` §8 complains about, and the two seats
+are one widening apart from disagreeing. +SURE it cannot mis-bind on the current corpus.
+
+### fnd-the-wrapped-lane-cannot-lift-a-case-bodied-in-book-verdict
+
+Found while building the fixture, not by reasoning, and reported rather than chased. An in-book
+`hork__is_converged` DOES reach the wrapped lane and ship — but only in the plain-delegation body
+shape. The same function written as `case "$1" in install) hork query "$2" ;; *) return 2 ;; esac`
+resolves to nothing at all at a wrapped site (measured through the built binary: both sites
+`unresolvable-no-probe`, with the dial widened, with and without an oracle loaded), while the
+byte-identical body in an ORACLE FILE ships fine. So the divergence is book-vs-oracle for the
+CASE-bodied shape specifically. ~SUSPECT it is the same `res-why-world-lifts-no-book-definitions`
+family (a seat reading an oracle-only vector) rather than anything positional; NOT diagnosed
+further, because it is outside this item and the fixture had a working shape available. Worth a
+named lane: the case-bodied verdict is THE canonical authored shape, so a book-sited one silently
+answering nothing under a wrapper is a real coverage hole.
+
+### The behaviour pins
+
+`pin28-wrapped-vouch-answers-at-a-live-site` (definition first ⇒ the sudo-wrapped site elides, empty
+run-set) and `pin28-wrapped-vouch-withholds-above-its-definition` (the SAME two statements swapped ⇒
+`site:0 unresolvable-no-probe`, the line runs verbatim, `role-defined-below-its-sites` fires). Two
+cases for the same reason the reach pair is two: the un-licensed site runs, and a running site is a
+wall.
+
+### Golden churn
+
+ZERO. No existing `expected.out`, `expected.ran`, or loom transcript moved a byte across either
+change — the expected result for a corpus whose wrapped verdicts all live in oracle files, where
+positional and ambient are the same answer.
+
+## bitem8 — the differential load-order battery (LANDED; the model held everywhere)
+
+Ruled stage H. Six sentinel manifests, and the headline is that every predicted answer was
+CONFIRMED by both floor binaries: `dash 0.5.12` ∩ `posh 0.14.1`, measured under WSL where both are
+installed. Nothing in the load-order model needed correcting.
+
+### The lane, and why it is a gate rather than an instrument
+
+`mise run test:floor` / `DORC_E2E_FLOOR_SHELLS=dash,posh`, the SECOND opt-in real-invocation lane
+after `real-tools-lane-opt-in`, with the same discipline: default UNSET ⇒ zero invocations,
+listed-but-absent ⇒ loud refusal. A case opts in by carrying an `expected.emitted` section — no new
+frontmatter key, because the flat-tree law already classifies by SHAPE and a section's presence is
+the existing idiom. gate-9 strips the book (`276:rul-spec-two-binary-floor`'s own prescription:
+strip-then-run-under-both IS the executable off-ramp test), runs it under each named binary, and
+requires them to agree with each other AND with the committed bytes. Disagreement BETWEEN the
+binaries is its own verdict — the construct is outside the base dialect — which is what made the
+`||`-operand case safe to measure at all.
+
+Resolution goes through a new `internal_tooling::Posix::floor`, beside `find` rather than in the
+runner (`one-shell-answer`: a second copy is how the first rotted). It differs from `find` in
+exactly one way and deliberately: `find` wants any POSIX shell and will take `sh`, while this wants
+a NAMED binary and refuses rather than substituting — a differential answered by the wrong shell is
+worse than one not run.
+
+### fnd-printf-is-not-a-builtin-in-posh
+
+The measurement that nearly made the whole battery read as a floor disagreement, and the finding
+with reach beyond this item. `printf` is a BUILTIN in dash 0.5.12 and an EXTERNAL COMMAND in
+posh 0.14.1 (measured: `env -i PATH=/nonexistent posh` ⇒ `printf: not found`, rc 127; dash ⇒ fine).
+Under the corpus's ordinary `PATH=mocks-only` rail, a posh body therefore emits NOTHING AT ALL.
+
+Two consequences. Local: this lane alone joins the floor binary's own userland to the mocks, scoped
+to gate-9, rail otherwise intact. Standing, and flagged below: the corpus's inert-mocks rail is
+DASH-SHAPED, so no oracle body's `printf` emissions — which is every `disturbs`, `reaches` and
+`resolve` body we ship — have ever been executed under posh. The `printf`-doctrine
+(`dialect-quality-law`) is sound and this does not dent it; what it dents is the belief that the
+existing corpus exercises the floor.
+
+### tbl-the-six-shapes-measured
+
+| case | shape | dash 0.5.12 | posh 0.14.1 | model |
+|---|---|---|---|---|
+| `floor28-load-order-last-definition-wins` | both orders, isolated in subshells | `b` / `a` | same | CONFIRMED (`28K` §1 rul-sh-loads-dorc-reads) |
+| `floor28-unset-f-and-redefinition` | removal · post-unset redefinition · unset-of-absent | `gone` / `b` / ok | same | CONFIRMED (the blessing is behaviourally what `28K` §1 says) |
+| `floor28-subshell-scoped-re-source` | preference dies at the `)` | `a` / `b` / `a` | same | CONFIRMED (`28K` §1 rul-scope-by-subshell-resource) |
+| `floor28-define-if-absent-polyfill` | P1 and P2 textual orders | `real` / `real` | same | CONFIRMED — the guarded incoming definition cannot override in EITHER order ("exempt as a consequence, not a blessing") |
+| `floor28-command-v-reads-fn-definedness` | one spelling, three species | `fn: yes` / `path: yes` / `absent: no` | same | the DIVERGENCE, pinned (below) |
+| `floor28-funcdef-as-or-operand` | a funcdef as the RHS of `\|\|` | parses AND behaves | same | measured, documents only (below) |
+
+### res-the-command-v-divergence-is-pinned-with-its-consistency
+
+The contract's sole divergence cell (`28M:rul-command-v-reads-fn-definedness`; the
+function-only-spelling scout came back negative, so `command -v` has to carry a question narrower
+than it answers). Measured: one spelling reaches a defined FUNCTION and a PATH EXECUTABLE alike, and
+`dec-decidable-set-v0` reads only the first — a name the analysed unit DEFINES.
+
+Pinned as the brief required: the divergence AND its consistency, never its absence. The divergence
+runs in the safe direction (an undecided condition loses precision and can never mask an arm a shell
+would take), and it is tolerable rather than a bug because the analysis's answer is PINNED into the
+artifact (`28K` §4) rather than re-derived by the landing shell — `28K` §5
+`pattern-carry-the-answer`, wrong-but-consistent. The case states all of that in its own prose,
+because the next reader of that cell will be reading the case and not this ledger.
+
+### res-the-or-operand-form-parses-across-the-floor
+
+Measured, both binaries agreeing, and BOTH halves: the terse guard form parses, and it also behaves
+as the polyfill idiom intends (the definition lands only in a free slot; an existing one is
+untouched). Dorc's own parser accepts it too — the case runs the full round-trip with no diagnostic.
+
+THE RULING IS UNCHANGED BY THE ANSWER, and the case says so: the `if` form is canonical regardless.
+This documents; it never licenses. Worth recording that the answer was not the expected one — a
+function definition is a compound command and the natural guess is that it may not be an operand
+there, which is exactly why the question was on the list to MEASURE rather than to reason about.
+
+### Where it actually executed, honestly
+
+Both legs run gate-9, and they measure different things:
+
+- WSL (`dash 0.5.12` + `posh 0.14.1`): the REAL floor. The full 133-case e2e corpus is green with
+  the lane on, and all six differential cases pass under both binaries.
+- Windows (`mise run test:floor`): a HALF floor. `posh` is not in git's userland, so the lane
+  resolves `dash` alone and says so in the task description. Not a substitute for the WSL run.
+
+The default gates on both platforms leave the lane OFF, so the committed `expected.emitted` bytes
+are proven by the opt-in run only — the same standing as the real-tools lane's assertions, and
+disclosed here rather than implied.
+
+## bitem9 — value-flow source targets (NOT STARTED)
+
+Ruled stage C2, budget-permitting and last. Not started, and therefore not half-built: nothing in
+this lane touched `funcenv`'s source-statement targets, and `28K` §1 `rul-unloadable-is-unlicensed`'s
+richness half is exactly as it was.
+
+## Flagged upward (builder-4)
+
+- **`tc-inert-mocks-rail-is-dash-shaped`** — `fnd-printf-is-not-a-builtin-in-posh`. Every shipped
+  emitting body (`disturbs`, `reaches`, `resolve`) is a `printf` emitter, and under the corpus's
+  `PATH=mocks-only` rail posh cannot run one. So the two-binary floor has never been exercised over
+  the corpus's own oracle bodies — only over the six manifests this item added, which are given the
+  floor's userland deliberately. Cross-cutting (it touches the determinism rail every executing gate
+  shares), so flagged rather than taken. The cheap first move is probably a `printf` shim in the
+  standard mocks set, which would make the whole corpus posh-runnable; whether that is a FAITHFUL
+  measurement is the judgment call, since a shimmed `printf` is not the floor's `printf`.
+- **`tc-wrapped-lane-drops-a-case-bodied-in-book-verdict`** —
+  `fnd-the-wrapped-lane-cannot-lift-a-case-bodied-in-book-verdict`. The canonical authored verdict
+  shape, sited in a book, answers nothing at a wrapped site while the same bytes in an oracle file
+  ship. Measured, not diagnosed. It costs coverage, never a license (the site runs), which is why it
+  is flagged rather than fixed inside an item that owns neither seat.
+- **`res-strip-leaves-a-bare-colon-for-a-standalone-mark`** (observation, LOW confidence) — the
+  shipped verdict body for a standalone `safe-across` mark carries a bare `:` where the mark was,
+  visible in `context-entry-babby-elides` and both new wrapped pins. `strip-is-pure-erasure` says a
+  bare-mark statement is an annotation LINE that erases to NOTHING, never a null command; the
+  competing reading is that the author wrote a POSIX `:` carrying a TRAILING mark, under which the
+  command correctly survives. Genuinely ambiguous by construction, inert where it appears (never the
+  last status-affecting statement in any corpus body), pre-existing, and NOT this lane's — recorded
+  only because three cases now display it.
