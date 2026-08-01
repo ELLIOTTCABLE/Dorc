@@ -293,6 +293,30 @@ be assessable as continuous; the subtleties belong to a later sitting.
 - **The vocabulary family** [ACKED] — incarnation · lifecycle begins/ends with
   re-creation as their composition · availability window; with the softened incarnation
   definition (§3) and its correlation door held open.
+- **`rul-verdict-primacy-at-the-ship-seat`** [TYPED substance, 2026-08-01 sitting] — at a
+  vouched, mutation-capable site the VERDICT body ships as the probe check and its own
+  reached answer is the convergence measurement; prediction never licenses elision. The
+  as-built predict-wins preference (`verdict-lane-is-site-keyed`'s fallback ordering) is
+  an unratified expedient inherited from the round-23 single-function era — re-cut at
+  stage-0. The W-B keying-coherence half (the record keys the cell the shipped body
+  measures) survives the inversion. Retires `28P:tc-split-family-elides-on-two-authors`
+  at the license tier: the elide is a monologue again (one author's body, rc, and vouch);
+  the cross-author residue is the sparing tier's, where the fence already stands.
+- **`rul-erasure-license-splits-by-effect-class`** [ACKED] — every erasure rests on an
+  authored license plus a probe measurement. Write-shapes (derived Establishes/Kills)
+  elide only on the verdict's own answer + vouch; consumed-status stand-ins stay
+  vouch-derived act-as-succeeded at the built conservative boundary
+  (only-where-no-consumer-can-tell). Read-shapes (derived Pure — the model
+  self-delegates the shape; the structural self-vouch) replace only with probe-MEASURED,
+  delegation-produced values (`271:rul-composed-bytes-defer-and-floor`). Opaque/⊤ walls.
+  Composes existing law (`an-elide-weld` · `rul-every-erased-establish-is-vouched` ·
+  `28M:rul-predict-feeds-plan-never-apply`); banked so the split is citable in one place.
+- **`rul-declared-observable-substitution-is-dead`** [TYPED substance] — `19A` §5's
+  declared would-produce substitution and `20V` door-2 are dead-on-principle, not merely
+  unbuilt: predict authors are trusted for convergence-tier promises that provably fail
+  toward run, never for changes-what-your-book-does-at-runtime authorship.
+  `28M:rul-predict-feeds-plan-never-apply` is the standing law; supersession markers sit
+  at the sources, and the four stale `plan/src/lib.rs` comments die at stage-0.
 - The three-pillar direction as a whole [ACKED].
 
 ## §5 — What this plan subsumes (the anti-piecemeal ledger)
@@ -303,10 +327,10 @@ stage-ii) · the withhold-softening (→ stage-i, as true resolution) · the mee
 registry (`28P:tc-meet-direction-registry-not-built` → stage-ii, where the lattice
 refactor has company) · `26K` §0b entire (local-exec, scope/incarnation slot,
 wait-loops, inverse wait → stage-iii) · the wrapped-vouch and whyworld/survival seat
-asymmetries (→ stage-i) · `res-host-conditional-loading` gains its eventual story
+asymmetries (→ stage-i) · the ship-seam verdict-primacy re-cut (→ stage-0; rulings in
+§4) · `res-host-conditional-loading` gains its eventual story
 (per-host frames keyed by decidable host facts) but STAYS v0-refused — named, not
-scheduled. Made-visible but NOT ruled here: `tc-split-family-elides-on-two-authors`
-(composite-license admissibility; the fence sitting's) · `28M` §11's keep/lift +
+scheduled. Made-visible but NOT ruled here: `28M` §11's keep/lift +
 registration verdicts · the tabled word-pooling corner (closure-keyed dialects are its
 eventual hook; nothing more).
 
@@ -339,6 +363,16 @@ here renames freely pre-publication). And `syn-zero-new-spellings` (§0).
 
 ## §8 — Staging (each stage independently green; gates named)
 
+- **stage-0-ship-seam** (the verdict-primacy re-cut; a deliberate behavior change,
+  deliberately OUTSIDE stage-i's byte-identity gate): invert the ship-seat preference —
+  at a vouched site the verdict body ships and measures (via its own marks or the
+  auto-cell); the predict's argparse/cells keep feeding the static concern topology
+  unchanged; ship-predict-alone stays licensed only where elision is already statically
+  unavailable. Rip the four `19A`-era `plan/src/lib.rs` comments; re-bless
+  `pin28-split-family-lane-separation` (the verdict body now runs — the monologue
+  restored). Gate: churn confined to probe-artifact bytes/records plus the flipped
+  fixture; site OUTCOMES byte-stable across the corpus (an outcome move is a finding,
+  never churn).
 - **stage-i-definition-factoring** (P1): DefinitionId keying of derived rows; the frame
   indirection at every resolution seat; retire the agreement veto, `live_source`, and
   `never_live` as separate mechanisms; unify the wrapped-vouch and whyworld/survival
@@ -380,8 +414,9 @@ the loom Windows stack-overflow (separate small fix).
    converge downstream? Human head-state: sometimes yes (equivalent-by-construction),
    sometimes the hard divorce is exactly right; wants its own sitting; nothing here
    builds toward either pole.
-5. The composite-license admissibility ruling (`tc-split-family-elides-on-two-authors`)
-   and the fence's permanence — the committee-corner sitting, parallel, unscheduled.
+5. The fence's permanence and the sparing-tier composite questions — the
+   committee-corner sitting, parallel, unscheduled. (The license-tier half,
+   `tc-split-family-elides-on-two-authors`, is RESOLVED by §4's verdict-primacy ruling.)
 6. `28M` §11's keep/lift + registration verdicts — parallel, human's.
 7. The ANALYZER-NEEDS flat-domain reconciliation paragraph — conductor, at stage-i fold.
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
