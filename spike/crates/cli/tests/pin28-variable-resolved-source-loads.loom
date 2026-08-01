@@ -1,0 +1,110 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# pin28-variable-resolved-source-loads (`28K` §1 rul-unloadable-is-unlicensed, the RICHNESS half;
+# `28K` §10 bitem9) — a load target built through resolvable variable-flow is analyzed exactly as
+# a literal path is. The spelling is the one `28K` §1 names: "a source path through resolvable
+# variable-flow (`LIB=./oracles; . "$LIB/yum.sh"`) loads fine, exactly as `"$CERTS"` has always
+# resolved".
+#
+# WHAT THIS PINS, precisely: this book renders the SAME PLAN as the same book spelling its source
+# line as the literal `. foobar.oracle.sh` — measured both ways, identical apart from the book's own
+# bytes and the digest taken over them (`sites=0`, the same three sites unresolvable). Parity IS the
+# ruling — "exactly as a literal path does" — so a case showing the variable spelling doing
+# something SPECIAL would be pinning a bug. Nothing in `funcenv` knows about the variable form: the
+# target resolves through `SourceLiteralPlane`, the same one-word window every other operand
+# already used, so there is exactly one resolver and the two spellings cannot drift apart.
+#
+# NON-VACUOUS, and gate-3 is what makes it so: before bitem9 the parser ⊤-rejected this line as
+# `DynamicExecution`, so the book carried TWO undeclared error-severity diagnostics
+# (`syntax-unsupported` + `cfg-top-node`) and gate-3 would have failed this case outright. The line
+# lowered to a `Top` CFG node and HAVOC'd the function environment with it. Clean stderr here is
+# the whole difference.
+#
+# WHY NOTHING SHIPS, stated so the next reader does not misread the empty probe as this item
+# failing: a top-level `.` is an unmodeled command in book position, so it walls
+# (`opaque-poison-is-the-product`) and the site below it resolves nothing — for the LITERAL
+# spelling equally, today and before. That is `28O:res-book-sourcing-walls-at-the-site`, whose
+# blessing question (`.`-of-a-proven-load-inert-file) is already routed to the human alongside
+# `command -v`. Until it is answered, a book that sources an oracle walls its own remainder by
+# every spelling; bitem9 widened what RESOLVES, which is a different question, pinned at the
+# domain tier (`analysis::funcenv` TABLE 5).
+#
+# NO `mocks/`, deliberately: `.` is a SPECIAL builtin, so a non-interactive shell that cannot find
+# what it sources EXITS, and the exec rail's cwd is an empty throwaway sandbox. That is why no
+# executing corpus case has ever carried a top-level `.`, and it is `28K` §8
+# `res-book-ships-its-load-closure` — named there, unbuilt.
+PKG=foobar
+. "$PKG.oracle.sh"
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+# dorc-lang/v0.2
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# Nothing is probed (see the book's header), so this stream carries no site records.
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5aa3a53148d8492e75cc51f8941733f4bc18522b54029bfe1b3e285e922a9b4c sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# pin28-variable-resolved-source-loads (`28K` §1 rul-unloadable-is-unlicensed, the RICHNESS half;
+# `28K` §10 bitem9) — a load target built through resolvable variable-flow is analyzed exactly as
+# a literal path is. The spelling is the one `28K` §1 names: "a source path through resolvable
+# variable-flow (`LIB=./oracles; . "$LIB/yum.sh"`) loads fine, exactly as `"$CERTS"` has always
+# resolved".
+#
+# WHAT THIS PINS, precisely: this book renders the SAME PLAN as the same book spelling its source
+# line as the literal `. foobar.oracle.sh` — measured both ways, identical apart from the book's own
+# bytes and the digest taken over them (`sites=0`, the same three sites unresolvable). Parity IS the
+# ruling — "exactly as a literal path does" — so a case showing the variable spelling doing
+# something SPECIAL would be pinning a bug. Nothing in `funcenv` knows about the variable form: the
+# target resolves through `SourceLiteralPlane`, the same one-word window every other operand
+# already used, so there is exactly one resolver and the two spellings cannot drift apart.
+#
+# NON-VACUOUS, and gate-3 is what makes it so: before bitem9 the parser ⊤-rejected this line as
+# `DynamicExecution`, so the book carried TWO undeclared error-severity diagnostics
+# (`syntax-unsupported` + `cfg-top-node`) and gate-3 would have failed this case outright. The line
+# lowered to a `Top` CFG node and HAVOC'd the function environment with it. Clean stderr here is
+# the whole difference.
+#
+# WHY NOTHING SHIPS, stated so the next reader does not misread the empty probe as this item
+# failing: a top-level `.` is an unmodeled command in book position, so it walls
+# (`opaque-poison-is-the-product`) and the site below it resolves nothing — for the LITERAL
+# spelling equally, today and before. That is `28O:res-book-sourcing-walls-at-the-site`, whose
+# blessing question (`.`-of-a-proven-load-inert-file) is already routed to the human alongside
+# `command -v`. Until it is answered, a book that sources an oracle walls its own remainder by
+# every spelling; bitem9 widened what RESOLVES, which is a different question, pinned at the
+# domain tier (`analysis::funcenv` TABLE 5).
+#
+# NO `mocks/`, deliberately: `.` is a SPECIAL builtin, so a non-interactive shell that cannot find
+# what it sources EXITS, and the exec rail's cwd is an empty throwaway sandbox. That is why no
+# executing corpus case has ever carried a top-level `.`, and it is `28K` §8
+# `res-book-ships-its-load-closure` — named there, unbuilt.
+PKG=foobar
+. "$PKG.oracle.sh"
+foobar sync-certs /etc/nginx/certs
