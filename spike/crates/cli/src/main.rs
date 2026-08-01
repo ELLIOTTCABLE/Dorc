@@ -1033,8 +1033,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             live_defs,
         )
     };
-    // `24L` §2 — a VERDICT-LANE site ships the oracle.s own `is_converged` funcdef, strip-only
-    // (rul-only-oracle-bytes-ship). Keyed on the SITE.s lane, never its fact.s KIND (`26H` §3.5):
+    // `24L` §2 — a VERDICT-LANE site ships the oracle's own `is_converged` funcdef, strip-only
+    // (rul-only-oracle-bytes-ship). Keyed on the SITE's lane, never its fact's KIND (`26H` §3.5):
     // an authored verdict cell is an ordinary kind, so `is_auto_kind` would route it to the
     // predict lane, find nothing, and run the site. Try-order cannot stand in either —
     // `command_effect` reaches this lane from two fallbacks, and the second leaves a shippable
@@ -4972,8 +4972,8 @@ mod tests {
 
     #[test]
     fn record_observation_instants_come_from_the_injected_clock_not_wall_time() {
-        // A record.s instant must be EXACTLY what the injected source yielded, and a stepping
-        // source must distinguish records. Wall time never enters a test.s answer.
+        // A record's instant must be EXACTLY what the injected source yielded, and a stepping
+        // source must distinguish records. Wall time never enters a test's answer.
         let mut i = Interner::default();
         let results = parse_str_clocked(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
