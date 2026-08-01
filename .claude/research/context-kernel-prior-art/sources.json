@@ -635,5 +635,70 @@
     "sha256": "d36edddeac8fb42df10efcfe2d20500df17ab71e3e2c893c0784f53cfbc89377",
     "acquired": "url",
     "via": "A-boot-id-per-kernel-instance-2026"
+  },
+  "A-vault-keys-held-set-2001": {
+    "url": "https://web.cs.ucla.edu/~palsberg/course/purdue/cs661/F01/papers/deline-fahndrich-pldi01.pdf",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "read-depth. Two mirrors extract the running prose completely, but every code figure and every inline identifier renders as whitespace — the argument is fully recoverable, the concrete syntax is not. A real gap against a clean A, but grading down to B would misname the defect: this is still the originating primary description of its own mechanism, not a secondary or tangential account.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The closest structural analogue to P3 in the whole round. The held-key set IS an availability environment: compile-time tokens each carrying a local state name, computed per-CFG-node, created by allocation and destroyed by revocation, neither duplicable nor losable — which maps onto arrives-at(p)/departed-at(p) with useradd/userdel as the primitives. Four transfers: function effect clauses as pre/post over the key set (the shape an oracle's contract should take); key STATES layered on mere presence, so 'the user exists' and 'the user is in the sudo group' are one machinery at two granularities; keyed variants as the mechanism turning static key-held knowledge into a runtime value and back (what a guard on a probe's exit status must do); and the anonymization result, which is the hard news — once a tracked resource enters a collection the checker knows SOME key guards it but not WHICH, so any construct putting hosts in a list and iterating loses per-host identity the same way. Also carries the honest join-point limitation and the cross-thread key-transfer story, the right prior art for a context migrating across an ssh boundary.",
+    "graded-by": "subagent",
+    "published": "2001-06",
+    "retrieved": "2026-08-01",
+    "sha256": "4036d12f41c2e3342b8ec57f7ba5227c5c293232571508e975207ddf804d0320",
+    "acquired": "url",
+    "via": "subagent read-and-grade pass on state-over-positions analyses"
+  },
+  "A-typestate-frame-alias-confinement-2004": {
+    "url": "https://www.microsoft.com/en-us/research/wp-content/uploads/2004/06/ecoop04.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "primary-vs-secondary. The authors' own account of the system they built, not a survey or retrospective — the deciding fact against B. It does NOT slide to B for being under-proved: the paper admits it has no formal proof and believes the system sound, but an author-declared open metatheory is a claim to weigh, not a provenance defect.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Delivers what aliasing does to a state-over-positions analysis, in a form that is directly a 28Q decision. Their answer is a two-mode discipline with a ONE-WAY transition, and the consequence is brutal and clarifying: the moment an object leaks, its typestate FREEZES — no further transitions are trackable. Translated: the instant Dorc cannot enumerate every path that could mutate a world context (a cron entry, a second admin's session, a detached subshell), every fact about it becomes read-only-forever rather than merely stale. That is far stronger than 'we lose precision', and §3 should accept or refuse the freeze deliberately. Three further transfers: non-uniformity (a state change is a SEQUENCE of field updates, so intermediate configurations exist and the analysis must be able to NAME partial states — a host mid-useradd is neither absent nor provisioned); frames plus an abstract rest-state covering statically-unknown extensions, a ready-made shape for modelled-layer versus assumed-everything-below; and pack/unpack as the explicit coercion between an abstract state name and the concrete field view, a good model for the seam between an oracle's declared abstraction and raw command observation.",
+    "graded-by": "subagent",
+    "published": "2004-06",
+    "retrieved": "2026-08-01",
+    "sha256": "7bdbb766acefe508682bbbf5a2b7de13b1f1c709997eccf9717119b0fe5c4efa",
+    "acquired": "url",
+    "via": "subagent read-and-grade pass on state-over-positions analyses"
+  },
+  "A-access-permissions-modular-typestate-2007": {
+    "url": "https://www.cs.cmu.edu/~kbierhof/papers/typestate-verification.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "corroboration. Unlike its 2004 predecessor this one carries an actual soundness proof for a stated fragment, and its central claim is backed by a reproducible external finding — a real array-bounds break in a Java standard-library class that the method surfaced. Independently checkable consequences are what separate this from a B.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The paper that prices MODULARITY, which is the question 28Q faces in deciding how much an oracle must declare. Three concrete costs. (1) Aliasing is not binary: a five-way taxonomy over two independent axes — what THIS reference may do and what OTHERS may do — which is the right vocabulary for 'we hold the only session', 'we mutate but a monitoring agent reads', and 'we read while something may write'. (2) Weak permissions get only TEMPORARY state knowledge, discarded after any effectful expression because the object may have changed without this reference's knowledge — the precise formal shape of what a probe fact is worth when the host is not exclusively held: not stale-after-a-timeout, but invalidated by the very next effectful step. (3) The escape hatch is the STATE GUARANTEE — a permission rooted at a node of a hierarchical state space guarantees the object cannot leave that subtree even under concurrent modification, so coarse knowledge survives while fine knowledge is surrendered. That is the only graceful-degradation primitive in the round: 'the user still exists' can outlive an unmodelled mutation that destroys 'the user is still in group docker'. Also supplies state DIMENSIONS (orthogonal decompositions, so netns facts need not be invalidated by a filesystem mutation) and fractions as the accounting device permitting a split permission to be rejoined.",
+    "graded-by": "subagent",
+    "published": "2007-10",
+    "retrieved": "2026-08-01",
+    "sha256": "0f1aaa18a9e7f41de2190bfeb720da39233b96ee223b0b716c375b9c86eb04b0",
+    "acquired": "url",
+    "via": "A-typestate-frame-alias-confinement-2004"
+  },
+  "A-lifetimes-as-program-points-2017": {
+    "url": "https://rust-lang.github.io/rfcs/2094-nll.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "provenance. The normative first-party design document in the official RFC repository — the thing the implementation was built from — not a blog write-up or a retrospective explainer. It is not academically peer-reviewed, which is what would otherwise argue B, but the canonical-first-party-spec clause governs and the document is primary, versioned, and the accepted artifact.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The source that most directly licenses P3's reframing, and it corrects it on one point. The whole RFC is the move from 'a lifetime is a lexical region of the AST' to 'a lifetime is a SET OF POINTS in the control-flow graph' — and critically a set that MAY HAVE GAPS, because the same variable can be written, used and rewritten. So an availability window is not an interval; typing it as one silently over-approximates every re-creation, and the RFC records that Rust's EARLIER design required continuous regions and that this is exactly what made one of its problem cases unfixable. Four further transfers: liveness rather than scope is the driver (a window should be driven by whether a LATER command consumes a fact, not by where the creating command sits); location-aware subtyping, with an explicit rejection of both SSA and per-point-types as alternatives — the pre-existing argument against 'just SSA the script'; false edges for non-terminating regions, the same hazard Dorc has with supervisor loops and exec; and may_dangle, a two-track liveness where DESTRUCTION requires weaker freshness than use. Its appendix on what could not be fixed is unusually candid and all three failures are cross-procedural, the middle one — disjoint fields inexpressible across a function boundary, fixed by refactoring the signature so disjointness is visible at the call site — being the same shape as requiring an oracle to declare which contexts it touches rather than taking the host wholesale.",
+    "graded-by": "subagent",
+    "published": "2017-08-02",
+    "retrieved": "2026-08-01",
+    "sha256": "caf082b2ebe3723f0fb17f05fb6cd7761c302531aa01366371ab5c4b51338c17",
+    "acquired": "url",
+    "via": "subagent read-and-grade pass on state-over-positions analyses"
+  },
+  "A-definite-assignment-syntactic-conservatism-2023": {
+    "url": "https://docs.oracle.com/javase/specs/jls/se21/html/jls-16.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "primary-vs-secondary. This is the normative text itself — the rules a conforming compiler must implement, not a description of them. Nothing about a language specification published by its own steward argues for B here.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Answers why a position-indexed availability analysis should be SYNTACTIC, and the reason is not tractability — it is that the analysis must be identically decidable by every conforming implementation. A rule of the form 'reject unless you can prove it' makes the accept/reject boundary a property of the TOOLCHAIN rather than of the language, so the same program compiles under one compiler and fails under another. Read onto Dorc: an analyzer whose acceptance set drifts with its own improvements is one whose users cannot write portable books. Also supplies the judgement shape (four position-relative predicates, split into after-when-true and after-when-false for boolean expressions, so flow-sensitivity survives without consulting values), a four-valued lattice whose fourth cell — definitely-assigned AND definitely-unassigned — is reserved for unreachable code, which 28Q's `never` cell should be checked against. Its loop rule breaks the naive circularity with a HYPOTHETICAL judgement (assume, then discharge) rather than a fixpoint over iterations — the move any 'this context survives the loop' rule will need. And it states its own over-rejections outright, including the uncorrelated-guards case that is a Dorc book's daily bread.",
+    "graded-by": "subagent",
+    "published": "2023",
+    "retrieved": "2026-08-01",
+    "sha256": "377736dc61690af9369c6a11ddf955f4bbe820feb24deba763068d158e9146d4",
+    "acquired": "url",
+    "via": "subagent read-and-grade pass on state-over-positions analyses"
   }
 }
