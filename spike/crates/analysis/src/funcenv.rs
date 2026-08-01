@@ -845,6 +845,56 @@ pub fn unprovable(defs: &DefinitionTable, env: &FuncEnv, exit: CfgNodeId) -> BTr
         .collect()
 }
 
+/// Every `(role name, source file)` whose definition the environment proves binds at NO program
+/// point — a definition no execution of this unit could call, however late it sits in load order.
+///
+/// **Why the whole-unit resolution seat needs this.** `dorc_oracle::live_source` answers "which
+/// file's definition would a shell have live" by taking the LAST file that DECLARES the role.
+/// That reads text, not bindings — so a define-if-absent guard whose condition the fold proves
+/// false still won the whole-unit answer, and the site-keyed agreement gate
+/// (`28P:dec-the-gate-is-agreement-not-re-resolution`) then withheld: the same silent wall the
+/// fold exists to remove, one seat further along. Subtracting these pairs is what keeps the
+/// ambient winner and the positional read two answers off ONE environment (`28M` §9), rather
+/// than making the site-keyed seats re-resolve — which is the shape that ruling rejected.
+///
+/// The exactness matters, because removal SHIFTS the winner rather than merely withholding: this
+/// is not a conservative filter, it must be RIGHT. It is — a definition no program point binds
+/// is one no execution can call. Empty when the solve did not converge, since every binding is
+/// then ⊤ and [`unprovable`] withholds those families outright.
+#[must_use]
+pub fn never_live(
+    defs: &DefinitionTable,
+    env: &FuncEnv,
+) -> BTreeSet<(String, dorc_core::SourceFileId)> {
+    let mut out = BTreeSet::new();
+    if !env.converged() {
+        return out;
+    }
+    let mut live: BTreeSet<DefId> = BTreeSet::new();
+    for name in defs.names() {
+        for state in &env.states {
+            if let Flat::Elem(Binding::Defined(def)) = state.lookup(&name) {
+                live.insert(def);
+            }
+        }
+    }
+    // A file may hold two definitions of one name (the within-file redefinition the `216` e-1
+    // refusal owns); the pair is dead only when EVERY one of them is.
+    let mut per_key: BTreeMap<(String, dorc_core::SourceFileId), Vec<DefId>> = BTreeMap::new();
+    for (index, def) in defs.defs.iter().enumerate() {
+        per_key
+            .entry((def.name.clone(), def.file))
+            .or_default()
+            .push(DefId(u32::try_from(index).unwrap_or(u32::MAX)));
+    }
+    for (key, ids) in per_key {
+        if ids.iter().all(|id| !live.contains(id)) {
+            out.insert(key);
+        }
+    }
+    out
+}
+
 /// Every proven cross-unit shadow in the unit, in a deterministic order (ambient prefix first,
 /// then CFG node order).
 ///
