@@ -780,3 +780,233 @@ two gates are asserted over identical bytes.
   absence now walls loudly instead of silently narrowing an at-most claim. Extending bitem1's
   `HelperIndex` to the three survival ship seats stays cheap and stays somebody's dispatch
   (`cli/CLAUDE.md one-helper-index-two-lanes` already names it).
+
+## bitem3 — custody and monologue pins (LANDED, one sub-thread STOPPED)
+
+`28K` §10 / `28M` §8's "Hardening [PROPOSED]", made real. Strictly pin-shaped: typing a monologue
+that already exists, never extending resolution.
+
+### dec-custody-is-one-newtype-and-one-crossing
+
+`28M` §8 found the license plane monologue EVERYWHERE but emergently — three unrelated mechanisms
+agreeing (lane exclusivity · the establish-⊤ firewall · consumed-⊤ forbids-mint), none of which
+names custody. `core::DefinitionCustody` is that name: a newtype over `SourceFileId` with ONE
+constructor, and consumers that only ever COMPARE custodies, never read the file id to decide
+anything. That is the whole design constraint, and it is `28M` §10's doing rather than tidiness — if
+`dir-ownership-is-transitive-inclusion` re-keys custody from the defining file to an entry file's
+transitive sourcing-closure, the re-key is a change to this type's internals and nothing else.
+Nothing NEW keys off a raw `SourceFileId`; `defining_file()` exists for provenance and display and
+says so.
+
+The second half is `funcenv::custody_of_source_index` — the ONE crossing from a positional
+vector-index into the custody vocabulary. The agreement gate had been comparing bare `usize`
+indices, which is why `28P:adj-positional-gate-is-bitem3s-seam` called it a FOURTH untyped mechanism
+holding the monologue: the gate and the license mint were two spellings of one question — whose
+definition is speaking here — with nothing making them the same question. They are now one type and
+one comparison, and `build_vouches` takes the license's custody from the SAME index the gate
+admitted, so the two cannot drift.
+
+### dec-license-custody-names-what-a-widening-would-have-to-add
+
+`core::LicenseCustody` on `ReplaceLicense`, stamped by every mint. Three variants, and the third is
+the one that does the work:
+
+- `Vouched(DefinitionCustody)` — a converged-establish elision, read OFF the consumed vouch rather
+  than passed beside it, so a license cannot be stamped with a custody its vouch did not supply.
+- `VouchedSeverally` — an aggregate erasure (member-loop, inlined call): several establishes vanish
+  under one license, each carrying its own author's reached vouch, cardinality-matched
+  (`rul-every-erased-establish-is-vouched`). A CONJUNCTION of monologues, admissible for that
+  reason, and named apart anyway because the day anything reads ACROSS those establishes rather than
+  conjoining them, that read is a dialogue and it will be sitting here.
+- `MeasuredSelf` — a read-only Query substitution, which rests on no authored vouch at all: its
+  reproduced value is the probe's own measurement OF THE SUBSTITUTED COMMAND, so there is no second
+  speaker. Documented as unusable the moment reproduction reaches beyond that cell.
+
+This is where "re-entry becomes a type error" actually lives. A widening that reproduced a value
+measured by a DIFFERENT author's `predict` under this author's license fits NONE of the three, so it
+cannot be written without adding a variant — a visible, reviewable act in the one file that defines
+what custody means, rather than a quiet edit at a mint site. The named re-entry routes (`28M` §8's
+unground declared-rc opt-in comment, and any widening of measured-value reproduction) both land
+exactly there.
+
+### fnd-the-wrapped-vouch-seat-resolved-forwards
+
+Found while threading custody, not by reasoning about it, and it is the same fault one seat further
+out than bitem2 reached. `build_wrapped_vouches` picked the inner verdict with
+`verdict_sets.iter().find_map(...)` — a FORWARD scan, i.e. FIRST-definition-wins, which is the
+INVERSE of sh's own answer and precisely
+`28M:fnd-verdict-resolution-duplicates-live-source` at a sixth seat that
+`oracle/CLAUDE.md live-source-is-the-only-resolution-seat` does not list. Retired for
+`dorc_oracle::live_source`, which also asks only whether a file DEFINES the role rather than whether
+its body answers this argv (the retired decline-fallthrough cascade, `28K` §6).
+
+Unreachable today for the same reason bitem1's hash-munge is: a contested family is withdrawn before
+it arrives, and a non-contested plural one needs the fold to leave two live definitions standing.
++SURE it could not mis-bind on the current corpus; the point is that it was one silent seat away
+from doing so, and the class had already been found twice.
+
+Still MISSING at that seat and flagged below: the positional agreement gate. `build_wrapped_vouches`
+receives no `LiveDefinitions`, so it resolves whole-unit and never asks whether the winner is live
+AT the wrapped site. Custody there is honest about WHO but not about WHERE.
+
+### dec-the-stdout-firewall-is-structural-too
+
+`28M` §8 named the stdout parallel of the rc firewall ~SUSPECT and untraced; the brief asked to
+trace it and pin only what the trace found missing. The trace: the property HOLDS — an establish
+site's out-channels never carry a believed value — but not by the rc firewall's mechanism. The rc is
+withheld structurally, keyed on `ProbeSiteKind::Establish`. The out-channels were held by two
+accidents instead: nothing emits `stdout=` today, and `consumption_ok` blocks a consumed stdout
+unconditionally without ever reading the value. So what was missing is the firewall itself, and that
+is what landed — an Establish site's out-channels are ⊤ by CONSTRUCTION now, on the same line and
+for the same reason as its rc (the probe never ran the mutator, so the mutator's own observables
+cannot have probe-provenance). Inert today; the point is that it stays true when the values stop
+being ⊤.
+
+The whole firewall also moved into one named seat (`measured_channels`) rather than two `match`es on
+one discriminant forty lines apart — a reader could previously satisfy themselves about the rc
+without ever meeting the out-channels.
+
+### The three commissioned pins
+
+`an_establish_elide_speaks_for_its_vouching_author_and_a_query_for_none` (custody follows the vouch,
+across two different authors, and a Query names none) · `a_split_family_establish_elide_reproduces_
+nothing_predict_derived` (the elide's stand-in is `True`, reproducing no measured value — pinned at
+the mint because the intake firewall and the mint are separate crates and neither alone states it) ·
+`the_vouch_covers_the_stand_in_rc_zero_only_where_no_consumer_can_tell` (the pair: rc-0 rides where
+nothing reads it, and the SAME inputs refuse with a ⊤-status branch consumer — if that half ever
+passed, the stand-in's rc 0 would be a fabricated success suppressing a `|| fallback`).
+
+### STOPPED: the meet-direction registry
+
+`28M:rul-composite-meets-toward-guard-run`'s buildable piece, invoked under the brief's own
+stop-rule rather than built. A `MeetDirection` table over properties is cheap to WRITE and worthless
+unless it is CONSULTED where claims meet, and the meet sites are `Must`/`May` (`analysis/lattice.rs`),
+the `Flat<T>` ⊤-domain, and `core::coord::compare` — three different mechanisms in two crates whose
+meet-direction is currently convention-held in their type choices. Wiring a registry through them is
+a lattice refactor, not a table; leaving it unwired would put a decorative structure in the license
+plane that READS like a gate, which is worse than the convention it replaces. Flagged below with
+that sizing rather than half-built.
+
+## bitem6 — the commissioned composition suites (BOTH LANDED; the verdict is COMPOSES, with one finding)
+
+`28M` §7/§8, human-typed. These MEASURE; the answers matter more than the cases.
+
+### res-cross-file-helper-composition-works
+
+The conductor's standing ~SUSPECT — "the current check-dialect / lift refuses or tops non-role calls
+inside verdict bodies" — is REFUTED, measured through the built engine in both lanes.
+`pin28-helper-package-entrypoints-lift` is the required package shape (a helpers file carrying the
+bulk of the logic under non-role names, plus ONE thin entrypoints file carrying the `__role`
+collision surface) and it lifts with its cross-file closure intact: the constant and BOTH helper
+hops ship above the check in the probe and above the book in the apply preamble, and the mocked run
+reaches `wombat cmp` through two hops, which an unresolved helper at either hop would have turned
+into an rc 127 and an empty run-log.
+
+Three things make the result stronger than the bare pass. The closure is TRANSITIVE (the entrypoint
+calls `_wombat_same`, which calls `_wombat_dest`) — resolution is not one hop deep. The load order
+is adversarial: the entrypoints file sorts BEFORE the helpers file, so the helper is declared in a
+file loaded AFTER the body that calls it, which a prefix-scanning or defining-file-only closure
+would miss. And the helpers file has no `__` anywhere and defines only functions, which is exactly
+the shape that errored `predict-out-of-dialect` at its first funcdef until bitem1's
+`fnd-a-helpers-only-file-was-refused-out-of-dialect`; this case is now that fix's corpus guard.
+
+`pin28-helper-package-entrypoints-discarded` proves the other half the human demanded — that the
+entrypoint file can be discarded without losing the helpers' function. The spelling chosen is the
+bluntest of the three offered: the entrypoints file is simply not loaded, and the BOOK supplies its
+own `wombat__is_converged` over the package's helpers. That is stricter than swapping the file,
+since the replacement is not an oracle file at all, and it lands two properties at once — a book is
+a first-class definition source whose closure resolves into a DIFFERENT author's file, and the
+helpers cannot collide with what the admin wrote because they carry no `__` names. The guard mints
+from the book's entrypoint with the package's helpers in its preamble.
+
+So the packaging shape that makes custody cheap works, in both directions, and it is now standing
+corpus rather than an argument.
+
+### fnd-a-split-family-elides-on-two-authors
+
+The other commissioned suite, and it did NOT confirm what it was written to confirm — which is why
+it was worth commissioning. `pin28-split-family-lane-separation` puts `apt_get__predict` in one
+author's file and `apt_get__is_converged` in another's (different MEMBERS, no shadowed name, so
+nothing contests — `28M:fnd-split-family-composes-unrefused`) and gives the site a resolvable predict
+AND a reached vouch.
+
+Measured: the PREDICT lane ships. The verdict lane is reached only as a FALLBACK
+(`verdict-lane-is-site-keyed`: nothing resolved the argv, or something resolved it but declared no
+cells for the verb), and here author one's predict resolves the cell — so author one's body runs, its
+rc becomes the `effect=holds`, and author TWO's verdict function is never executed at all. Its
+contribution is the vouch, admitted because their own argparse accepted this argv statically. The
+site elides.
+
+The elision therefore rests on two authors: a measurement from one, a permission from the other.
+`28M` §8's scouted "Ship lanes are mutually exclusive per site: a vouched site ships the VERDICT
+body, and convergence derives solely from that body's own rc" is true of the single-author world it
+was scouted in and NOT of this one. That is the configuration the suite was commissioned to create,
+so the finding is the deliverable rather than a failure of it.
+
++SURE of the mechanism (the transcript ships the predict body; the run-log never reaches the
+verdict's `aptcheck`; a vouch was nonetheless consumed, since `no_license_for_ambient_without_vouch`
+pins that an unvouched ambient establish does not elide). NOT ruled on admissibility: it is not
+obviously wrong — author two consented to this argv through their own arms, and author one's model
+is factual, which is the ordinary fact-plus-vouch architecture. But it is not a MONOLOGUE, and
+bitem3's custody now says so out loud: the license reads `Vouched(author two)` over a fact author one
+measured. Flagged as `tc-split-family-elides-on-two-authors`.
+
+## bitem7 — renames and small riders (LANDED)
+
+`WhyReport.oracle_paths`/`oracle_srcs` → `source_paths`/`source_srcs`. The rebase widened them
+source-wide (the binary fills them from `source_table`, book included, since `28K` §2a made a book a
+first-class definition source), so the names understated their contents. No aliases
+(`rul-strawman-formats-no-compat`).
+
+Module-driven, not grep-driven (`rul-host-evidence-is-not-the-narrative-plane` demands it, and the
+demand earned itself here): of 187 workspace occurrences of those two names, most are NOT this
+vector. `RunSources.oracle_paths` and the whylog/attempt-scope record are genuinely oracle-only —
+they are about the oracle SET as such — and a blind rename would have made them lie. The rename is
+confined to the `WhyReport` field family and its one construction site.
+
+### res-the-why-world-cut-is-now-visible
+
+bitem7's second rider, and the rename is what made it cheap: `WhyWorld` fills those two fields
+ORACLE-only while the binary fills them source-wide, so after the rename the field names say
+`source_` and the values at that seat are not. The mismatch is now annotated in place as the
+disclosed cut (`churn-avoidance-disclosure`), with the coincidence stated: the seat agrees with the
+binary today only because nothing in the corpus resolves a locus to a book-sited definition, so it
+withholds where the binary would answer — safe direction, identical output on everything that
+exists, and a property of the current vector choice rather than of the design. Full unification was
+priced and declined: it means re-lifting that seat's whole world, which is a dispatch and not a
+rename (`28P:res-why-world-lifts-no-book-definitions` · the fold builder's
+`res-whyworld-and-survival-do-not-withdraw`).
+
+The optional `entrypoint-only-constants-under-deep-require` lint is SKIPPED, per the brief's
+"skip if it drags" — it drags: the constant-capture story is `dec-constants-ride-per-contributing-file`,
+whose whole point is that a reference-driven capture cannot prove itself complete while
+`ParamComplex` discards the name, and a lint over that surface would be the imperfect mechanical net
+`271:rul-net-quality-u-curve` warns against.
+
+## bitem8 — the differential load-order battery (NOT STARTED)
+
+Ruled stage H, untouched: no sentinel-body load-order manifests, no `command -v` PATH-reach-vs-
+fn-definedness case, no `||`-operand funcdef parse question. It is the lane's remaining commissioned
+work and it is intact — nothing here half-built it, and nothing here depends on it. Note for whoever
+takes it that its `command -v` case is now the SOLE pin of `28M:rul-command-v-reads-fn-definedness`'s
+divergence cell (the function-only-spelling scout came back negative), so it carries more weight than
+its size suggests.
+
+## Flagged upward (bitem3/6/7)
+
+- **`tc-split-family-elides-on-two-authors`** — `fnd-a-split-family-elides-on-two-authors`. A
+  measured, standing configuration in which an establish-elide's convergence FACT and its VOUCH come
+  from different authors, contradicting `28M` §8's scouted monologue claim. Not adjudicated here:
+  whether the composite is admissible is a license-plane ruling, and `28M` §8 explicitly reserved
+  the custody-vs-coherence question for the human ("why custody rather than a coherence check, if
+  reproduction ever widens"). The custody type makes it visible; it does not decide it.
+- **`tc-wrapped-vouch-seat-has-no-positional-gate`** — `fnd-the-wrapped-vouch-seat-resolved-forwards`
+  closed the forward-scan half at that seat, but `build_wrapped_vouches` still takes no
+  `LiveDefinitions` and so never asks whether its whole-unit winner is the definition live AT the
+  wrapped site. Every other resolution seat does (`28P:tbl-the-five-seats-after-the-conversion`).
+  Threading it is a parameter and a filter, i.e. small; it is flagged rather than done because it
+  makes a SIXTH seat of the positional regime and `bitem0` deliberately enumerated its seats.
+- **`tc-meet-direction-registry-not-built`** — see `STOPPED: the meet-direction registry`. The
+  buildable piece is a table; the VALUE is in consulting it at the meet sites, which are three
+  mechanisms across two crates. Wants either a real (lattice-tier) dispatch or an explicit ruling
+  that a convention-held direction is the resting point.

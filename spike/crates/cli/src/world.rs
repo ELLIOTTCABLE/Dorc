@@ -476,20 +476,10 @@ impl WhyWorld {
             filename: &self.filename,
             interner: &self.interner,
             // THE DISCLOSED CUT (`churn-avoidance-disclosure`; `28P:res-why-world-lifts-no-book-
-            // definitions` + the fold builder's `res-whyworld-and-survival-do-not-withdraw`). The
-            // binary fills these two fields SOURCE-WIDE — book included, since `28K` §2a made a
-            // book a first-class definition source — and this seat fills them ORACLE-ONLY, because
-            // `WhyWorld` never fed the book to its lifts. The field names say `source_` and the
-            // values here are not; that mismatch is deliberate and is the whole disclosure.
-            //
-            // It agrees with the binary TODAY only because nothing in the corpus resolves a locus
-            // to a book-sited definition: an in-book role function is invisible to this seat, so it
-            // withholds where the binary would answer, which is the safe direction and produces
-            // identical output on everything that exists. That is a coincidence of the current
-            // vector choice, not a property — it breaks the day this seat widens to the source-wide
-            // list, and widening it is its own dispatch (`cli/CLAUDE.md
-            // one-definition-table-two-drivers` prices it). Left as a cut rather than closed here
-            // because closing it means re-lifting this seat's whole world, which is not a rename.
+            // definitions`): the binary fills these SOURCE-wide, this seat ORACLE-only, and the
+            // name/value mismatch IS the disclosure. It agrees today only because a book-sited
+            // definition is invisible here, so it withholds where the binary answers — safe, and a
+            // coincidence. Closing it means re-lifting this seat's world: a dispatch, not a rename.
             source_paths: &self.oracle_paths,
             source_srcs: &self.oracle_srcs,
             narrative: &self.narrative,

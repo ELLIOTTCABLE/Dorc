@@ -535,9 +535,7 @@ impl ReplaceLicense {
                 // C7: read the vouch's defining span (display-only) BEFORE it drops, for the
                 // survival render's `file:line` (a vouch informs, never becomes a fact — TC-tier-3).
                 let vouch_span = vouch.vouch().defining_span();
-                // `28M` §8: the elision speaks for the vouching author, and ONLY them. Read off the
-                // consumed vouch rather than passed in beside it, so the license cannot be stamped
-                // with a custody that is not the one whose vouch just licensed it.
+                // Read off the CONSUMED vouch, never passed beside it (`28M` §8).
                 let custody = dorc_core::LicenseCustody::Vouched(vouch.vouch().custody());
                 if grade != Grade::Must {
                     return None;
@@ -1599,9 +1597,7 @@ pub fn build_vouches_from_sets(
         // C7: the reached vouching-arm span (or `name_span` for a check-less `return 0` vouch) +
         // its oracle-file id, for the guard render.
         let defining = vouch_site(verdict, &op_refs).unwrap_or(verdict.name_span);
-        // `28M` §8: custody comes from the SAME source index the positional agreement gate above
-        // admitted (`live.answers_at(node, &verdict_name, i)`), through the one crossing from index
-        // to custody — so the gate and the license cannot disagree about whose definition spoke.
+        // The SAME index the agreement gate above admitted, so the two cannot disagree.
         let vouch = VerdictVouch::new(
             fn_name,
             preamble,
@@ -1662,12 +1658,8 @@ pub fn build_wrapped_vouches(
             .map(|s| interner.resolve(*s).to_owned())
             .collect();
         let op_slices: Vec<&str> = op_refs.iter().map(String::as_str).collect();
-        // `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` — this seat scanned FORWARD
-        // (`iter().find_map`), i.e. FIRST-definition-wins, which is the inverse of sh's own answer
-        // and the identical fault `28M:fnd-verdict-resolution-duplicates-live-source` found at the
-        // verdict index (`28P:fnd-the-wrapped-vouch-seat-resolved-forwards`). It asks only whether a
-        // file DEFINES the provider's verdict, never whether that body answers this argv — the
-        // decline-fallthrough cascade `28K` §6 rejects.
+        // Scanned FORWARD until `28P:fnd-the-wrapped-vouch-seat-resolved-forwards`:
+        // first-definition-wins, the INVERSE of sh's answer.
         let Some(file_idx) = dorc_oracle::live_source(verdict_sets.len(), |i| {
             verdict_sets
                 .get(i)
@@ -1701,11 +1693,8 @@ pub fn build_wrapped_vouches(
             preamble.push('\n');
         }
         preamble.push_str(&composed.inner_sh);
-        // Custody is the INNER verdict author's, not the wrapper's, and the split is the point: the
-        // wrapper's entry form carries the check into a context, the inner body JUDGES convergence,
-        // and only a judgment can license. A wrapper that cannot enter fails its own rc and the site
-        // runs, so the wrapper never contributes a sentence to the license — it is transport
-        // (`27C` §3; `28M` §8's monologue holds here for that reason, not by accident).
+        // The INNER author's: a wrapper entry form is TRANSPORT (it cannot enter ⇒ the site runs),
+        // and only the inner body's JUDGMENT licenses — so `28M` §8's monologue holds by that.
         let vouch = VerdictVouch::new(
             composed.inner_fn.clone(),
             preamble,

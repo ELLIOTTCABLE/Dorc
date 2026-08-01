@@ -23,6 +23,17 @@ new entries to the matching section.
 - **vouch-never-a-fact** — a vouch informs a license and never enters the
   fact-plane; fact-plane exits ride `ByObservation`. Inadmissible in any other
   site's elide/poison reasoning.
+- **custody-is-one-newtype-and-one-crossing** (`28M` §8; `28P` bitem3) — `DefinitionCustody`
+  names WHOSE utterance a license rests on, and `LicenseCustody` names which of the three
+  single-author shapes a `ReplaceLicense` is (`Vouched` / `VouchedSeverally` / `MeasuredSelf`).
+  Construction is ONE seat and consumers only ever COMPARE custodies — never read the file id to
+  decide anything — because `28M` §10 `dir-ownership-is-transitive-inclusion` (UNRULED) may re-key
+  custody from the defining file to an entry file's transitive sourcing-closure, and that re-key
+  must stay a change to this type's internals. **Never key a NEW decision off a raw
+  `SourceFileId`.** `defining_file()` is provenance and display only. The variant set is the fence:
+  a widening that reproduced ANOTHER author's measured value under this author's license fits none
+  of the three, so it cannot compile without adding a variant here — which is the point, and the
+  only place that decision should ever be visible.
 - **contested-is-write-once** (`28K` §1 `rul-silent-shadowing-refuses`) —
   `ContestedFamilies` is the license-plane fact naming the role families whose licenses
   are WITHHELD for a run: built once from the function environment's own answer, keyed by

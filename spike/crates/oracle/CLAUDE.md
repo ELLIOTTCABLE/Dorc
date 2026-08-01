@@ -50,7 +50,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   resolved over a population every other seat had already narrowed — a definition the function
   environment proves binds nowhere still won this answer and every site then withheld
   (`analysis/CLAUDE.md never-live-subtracts-from-the-whole-unit-answer`). A seat that re-lifts is
-  a seat that will disagree.
+  a seat that will disagree. The seat list is SIX, not five: `plan::build_wrapped_vouches` scanned
+  FORWARD (`iter().find_map`) — first-definition-wins, the INVERSE of sh's answer — until `28P`
+  bitem3 (`fnd-the-wrapped-vouch-seat-resolved-forwards`). It remains the one seat with no
+  POSITIONAL gate, because it receives no `LiveDefinitions`
+  (`28P:tc-wrapped-vouch-seat-has-no-positional-gate`).
 - **closure-travels-with-the-definition** (`28K` §4 `rul-pin-by-definition-bytes`) — a role funcdef's
   span does not carry the helpers it calls or the file-level constants it reads, so `crate::closure`
   is what every emitting seat asks before shipping a body: `HelperIndex::build` over the ordered

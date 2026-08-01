@@ -370,16 +370,10 @@ pub fn merge_derived_footprints(
                 continue;
             }
         }
-        // `28P:dec-whole-body-atomic-refusal` — the SECOND, independent atomicity. The count gate
-        // above proves only that the record STREAM arrived whole; it is computed from the lines
-        // received, so a body that emitted three coordinates and then died on an unbound helper
-        // closes at `n=3` and agrees with itself. What that agreement hides is a survey that never
-        // finished, i.e. an at-most claim that is wrongly NARROW — and a narrower at-most spares
-        // MORE, the priority-1 under-execute, inside the survival tier's one naked-trust cell.
-        // So the emitting body's own termination status refuses the WHOLE family: whole-body-atomic,
-        // failing toward the wall, and asking the author for no new spelling. Deliberately NOT
-        // closed here: a body that truncates its survey and still exits 0 (the residue
-        // `ANALYZER-NEEDS:an-atmost-completion-signal` owns, human-designed, not built).
+        // `28P:dec-whole-body-atomic-refusal` — the SECOND atomicity, invisible to the count above:
+        // `n` counts lines RECEIVED, so a body that died mid-survey closes self-consistently while
+        // its at-most claim is wrongly NARROW, and narrow spares MORE. Still open by design: a body
+        // that truncates and exits 0 (`ANALYZER-NEEDS:an-atmost-completion-signal`).
         if results.framed
             && let Some(close) = results.derivation_ends.get(&d.site)
             && close.body_rc != 0

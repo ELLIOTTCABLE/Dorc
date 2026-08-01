@@ -730,10 +730,8 @@ fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
     }
     for site in &deriv_order {
         if !deriv_closed.contains(site) {
-            // A hand-authored fixture states the coords it means; the close is SYNTHESIZED to
-            // agree with them, so the count gate cannot fire on authoring alone. `body-rc=0`
-            // likewise asserts a body that finished — a fixture exercising the abnormal-termination
-            // refusal (`28P:dec-whole-body-atomic-refusal`) spells its own `deriv-end` line.
+            // The close is SYNTHESIZED to agree with the authored coords, so neither gate fires on
+            // authoring alone; a case exercising the body-death refusal spells its own `deriv-end`.
             body.push(format!(
                 "deriv-end {site} n={} body-rc=0",
                 deriv_counts.get(site).copied().unwrap_or_default()

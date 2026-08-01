@@ -3471,11 +3471,8 @@ fn parse_results(
                         .push(coord.to_owned());
                 }
             }
-            // `262` §2 / `26A` stop-1: `deriv-end <leafid> n=<K> body-rc=<R>` — the at-most family
-            // close. Records BOTH declarations; the consumer refuses a family whose received count
-            // ≠ K, whose emitting body terminated abnormally, or that never closed ⇒ wall-total
-            // (never a shrunken at-most footprint). A malformed close leaves the key absent, which
-            // the consumer already reads as never-closed.
+            // The at-most family close, BOTH declarations (`262` §2 / `26A` stop-1 +
+            // `28P:dec-whole-body-atomic-refusal`); a malformed one reads as never-closed.
             "deriv-end" => {
                 let mut it = rest.split_whitespace();
                 if let Some(site) = it.next().and_then(parse_leaf) {
@@ -4031,8 +4028,7 @@ mod tests {
         use dorc_analysis::cfg::CfgNodeId;
         use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
 
-        // A framed deriv stream for site 5: `n` coord records + an OPTIONAL
-        // `deriv-end N n=<end> body-rc=<R>`.
+        // A framed deriv stream for site 5: coords + an OPTIONAL `deriv-end N n=<end> body-rc=<R>`.
         let framed_rc = |coords: usize, end: Option<usize>, body_rc: u32| -> String {
             let coord_recs = (0..coords)
                 .map(|c| format!("{DEFAULT_NONCE} deriv 5 coord=package:pkg{c} {TERMINAL_TOKEN}\n"))
@@ -4106,12 +4102,8 @@ mod tests {
             !merged_contains(&framed(0, Some(0)), &mut i),
             "an empty family walls — the engine never manufactures a claim from silence"
         );
-        // BODY DEATH (`28P:dec-whole-body-atomic-refusal`) — the second, independent atomicity, and
-        // the one the count alone cannot see. This stream is TRANSPORT-PERFECT: two coords, closing
-        // at n=2, self-consistent. What it also carries is `body-rc=127` — the emitting body reached
-        // an unbound helper and its survey stopped there. The count gate above PASSES on these exact
-        // bytes (the cell one line up proves it), so if this asserted nothing the wrongly-NARROW
-        // at-most claim would be trusted and spare a cell the command really disturbs.
+        // BODY DEATH (`28P:dec-whole-body-atomic-refusal`): the cell one line up proves the count
+        // gate ACCEPTS these exact bytes, so only `body-rc` stands between them and a spared cell.
         assert!(
             !merged_contains(&framed_rc(2, Some(2), 127), &mut i),
             "an abnormally-terminated emission body walls the site TOTAL, however well its record \
