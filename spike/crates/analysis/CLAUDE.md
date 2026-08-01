@@ -92,6 +92,28 @@ discipline: one rule per bullet, slugged; append to the matching section.
   reason the refusal may under-fire soundly, since an uncaught shadow can then grant
   nothing either. Anything that lets a ⊤ binding license — a probe ship, a vouch, a guard,
   an elide — breaks the soundness argument, not merely a test.
+- **the-fold-decides-conditions-never-shapes** (`28M` §9) — `funcenv::analyze` is pessimistic
+  conditional-constant-propagation over this domain: solve, decide the conditions the solved
+  environment makes decidable, mask the arms those decisions prove dead (`cfg::Branch`,
+  recorded by the lowering that wired the arm edges — never re-derived from adjacency), re-solve
+  under a capped, MONOTONE mask. The decidable set is `dec-decidable-set-v0`, CLOSED and growing
+  by NAME only: `command -v <literal name the unit DEFINES>` (the universe restriction is what
+  keeps an ordinary host PATH probe out) and `[ -f <path the controller resolved as loadable> ]`,
+  which decides TRUE only. Keyed on condition DECIDABILITY, never guard SHAPE
+  (`28K:rul-conflict-pass-is-semantic`). Two riders carry the correctness: an UNREACHED node's
+  transfer produces ⊥, not ⊤, or a masked-dead region still poisons the join it never reaches;
+  and a decision, once taken, is stable under further masking (masking only removes paths, so a
+  `Defined(d)` stays `d` or becomes unreached), which is what makes every intermediate state
+  independently sound and running out of rounds a precision loss only.
+- **never-live-subtracts-from-the-whole-unit-answer** (`28M` §9) — the fold reaches the BINDING;
+  `funcenv::never_live` is what carries it to the LICENSE. `dorc_oracle::live_source` answers
+  the whole-unit winner by taking the last file that DECLARES the role, which counts text and
+  not bindings — so a guard the fold proved dead still won that answer by being last, and the
+  site-keyed agreement gate then withheld: the same silent wall, one seat along. The cli
+  subtracts these `(role name, file)` pairs per file, beside the contested withdrawal, so every
+  seat resolves over one population. This one is EXACT, not conservative: removal SHIFTS the
+  winner rather than withholding, so it must be right — and it is, because a definition no
+  program point binds is one no execution can call. Never widen it to "probably dead".
 
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 

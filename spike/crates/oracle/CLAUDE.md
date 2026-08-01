@@ -45,6 +45,12 @@ discipline: one rule per bullet, slugged; append to the matching section.
   decline-fallthrough cascade (`28K` §6), which outlived its stage-D fix inside the ship lane. A
   decline by the winner is a decline. The site-keyed acts then NARROW that answer positionally
   (`analysis/CLAUDE.md visibility-is-full-positional`); the two compose, they never compete.
+  Its predicate reads the driver's WITHDRAWN per-file sets, never raw source: `lift_from_sets`
+  and `dorc_plan::build_vouches_from_sets` exist because both seats re-lifted from text and so
+  resolved over a population every other seat had already narrowed — a definition the function
+  environment proves binds nowhere still won this answer and every site then withheld
+  (`analysis/CLAUDE.md never-live-subtracts-from-the-whole-unit-answer`). A seat that re-lifts is
+  a seat that will disagree.
 - **closure-travels-with-the-definition** (`28K` §4 `rul-pin-by-definition-bytes`) — a role funcdef's
   span does not carry the helpers it calls or the file-level constants it reads, so `crate::closure`
   is what every emitting seat asks before shipping a body: `HelperIndex::build` over the ordered

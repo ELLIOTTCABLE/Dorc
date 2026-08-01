@@ -190,11 +190,17 @@ rulings are durable here now.
   rejected (§6), a guard's Dorc-meaning is *pure load-time sh* — nothing layered on text
   a shell would treat as dead. Etiquette (lint/hint lane): publishing an oracle for a
   tool outside your project's own scope ⇒ guard it; costs the author nothing standalone.
-  *(As-built disclosure, 2026-07-31: the reads-the-lattice sentence is not yet
-  delivered — the analyzer cannot fold `command -v` conditions, so guarded definitions
-  are exempt by ⊤-abstention, and a loaded guard joins its family to ⊤: conservative,
-  sparing-inert, silently walls. The banked decidable-condition fold is the repair —
-  `28O:res-polyfill-binding-tops-pending-fold`, `28M` §5.4.)*
+
+  *As-built: the lattice is READ, by the decidable-condition fold (`28M` §9). The guard's
+  condition is evaluated against the solved function environment at its own position; the
+  arm a decided condition proves dead has its edge masked and the environment re-solved, so
+  a guard loaded after a real oracle leaves that oracle's binding intact instead of joining
+  the family to ⊤. Two seats, not one: the same environment also subtracts every definition
+  it proves binds at NO program point from the whole-unit resolution
+  (`dorc_oracle::live_source`), because a guard that is textually last still won that answer
+  and the site-keyed agreement gate then withheld — the same silent wall one seat further
+  along. A condition outside the closed decidable set (`28M:dec-decidable-set-v0`) folds
+  nothing and its family stays ⊤: conservative, sparing-inert, walls.*
 - **The admin's toolkit, all native, none requiring the oracle author's cooperation:**
   global surgical removal (`. a-repo/tools.sh` then `unset -f yum__is_converged …` per
   family member); regional preference (rul-scope-by-subshell-resource — and re-sourcing a
@@ -468,8 +474,13 @@ refusal on the three loom-era lint cases; promote `28O`'s routed-to-fold items i
 the registries; place the remaining supersession markers (`28O` collide-on-plural; the
 E→F checkpoint asks); LIVING_STATUS re-measure; dispose of `ai/r28-cli-inputs`.
 
-**Explicitly NOT this lane's** (deferred by name, do not scope-creep): the
-decidable-condition fold (`28M` §5.7 named futures) · the committee-fence design
-sitting · kind-level token registration · MH2 target-identity · richer blessing
+**bitemF-decidable-condition-fold** (`28M` §9; LANDED, sited into this lane by the
+implementation conductor): pessimistic conditional-constant-propagation over the
+function-environment domain, plus the whole-unit resolution's never-live subtraction that
+carries the cure past the agreement gate. §3's as-built paragraph is the semantics; the
+ledger is `28P`. Widening `dec-decidable-set-v0` is NOT part of it and stays closed.
+
+**Explicitly NOT this lane's** (deferred by name, do not scope-creep): the committee-fence
+design sitting · kind-level token registration · MH2 target-identity · richer blessing
 vocabulary (field-evidence-gated) · `res-host-conditional-loading` ·
 the dialect-reach widening for unary file-tests (gates stdlib revival, not this lane).

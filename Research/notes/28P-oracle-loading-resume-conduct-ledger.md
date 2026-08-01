@@ -432,3 +432,152 @@ No site's verdict, license, or disposition moved anywhere in the corpus. 1836 �
 - **`res-book-span-consumers-arrive-in-stages-d-to-f` is discharged** — the guard attribution's
   `file:line` locus already resolves through the SOURCE-wide table, so a book-sited vouch names the
   book. No new consumer was needed; recorded so the item is not re-opened.
+
+## decidable-condition fold — the polyfill lattice, READ (LANDED)
+
+`28M` §9, sited into this lane by the conductor (`bank-decidable-fold-sited-post-bitem1`). Closes
+BOTH halves of `28O:res-polyfill-binding-tops-pending-fold`: the under-complaint half (a
+define-if-PRESENT override is now a PROVABLE shadow and draws the refusal) and the larger half (a
+guard loaded after a real oracle no longer poisons the family it deferred to). `28K` §3's as-built
+paragraph is rewritten in place to describe what is; `28O` is untouched (historical).
+
+The mechanism as built: `funcenv::analyze` is pessimistic conditional-constant-propagation over
+its own domain — solve, decide the conditions the solved environment makes decidable, mask the
+arms those decisions prove dead, re-solve under a capped monotone mask (`FOLD_ROUNDS_CAP`). Arms
+come from `cfg::Branch`, recorded by the lowering that wired the arm edges rather than re-derived
+from adjacency order. Decidable-set v0 is built exactly as ruled and no wider.
+
+### fnd-the-fold-alone-cures-the-binding-and-nothing-else
+
+The measurement that reframed the item, taken before the second half was written. With only the
+domain-side fold in, the P1 book's exit binding was `Defined(oracle)` and `unprovable` named
+nothing — and the site still shipped no check, ran raw, and looked byte-identical to the pre-fold
+world. +SURE, measured through the built binary.
+
+The cause is that `dorc_oracle::live_source` answers the whole-unit winner by taking the LAST file
+that DECLARES the role, which counts text and not bindings. The dialect parser is line-oriented
+and lifts a funcdef nested inside an `if` (measured: `VerdictSet::lift` returns `["foobar"]` with
+zero diagnostics for the guarded shape), so the guard's file still won that answer, and
+`dec-the-gate-is-agreement-not-re-resolution`'s agreement gate then withheld at every site. The
+fold moved the withhold's REASON from ⊤ to disagreement and delivered nothing.
+
+This is why the brief's "never fold one consumer's view without the other's" is the load-bearing
+sentence of the item: the two consumers are not both `FuncEnv` readers. One of them is a text scan.
+
+### dec-subtract-the-never-live-rather-than-re-resolve-positionally
+
+The repair, and the alternative it refuses. Making the site-keyed seats resolve FROM the
+positionally-live file is option (A), rejected at bitem0 as pope-sin tier — the identity traced
+through one author's argparse while the cells come from another's, invisible to every golden. That
+ruling stands and this does not touch it.
+
+Instead `funcenv::never_live` names every `(role name, source file)` the environment proves binds
+at NO program point, and the cli subtracts those per file, beside the contested withdrawal. Nothing
+becomes positional: the whole-unit answer stays whole-unit, it simply stops counting definitions no
+execution can call, so `KindIndex`, `VerdictIndex`, the ship seats, `build_vouches` and
+`answers_at` all resolve over one population and AGREE. Two reads of one environment, as ruled.
+
+Load-bearing distinction, and the reason this needs care: unlike every other withdrawal in the
+tree, this one is EXACT rather than conservative. Removal SHIFTS the winner to a different file
+rather than merely withholding, so a wrong answer here grants a license rather than losing one.
+The justification is that the fact is a proof, not an estimate — a definition no program point
+binds is one no shell execution reaches — and it is empty by construction whenever the solve did
+not converge (every binding ⊤ ⇒ `unprovable` withholds the family outright).
+
+### fnd-build-vouches-relifted-the-verdict-sets
+
+Found by the P1 fixture, not by reasoning, and it cost most of the item's debugging budget. With
+`checks`/`verdict_sets`/`KindIndex` all withdrawn correctly, the site STILL shipped nothing:
+`dorc_plan::build_vouches` re-lifted the verdict sets from raw source text itself, so its own
+`live_source` read a FOURTH population — the un-withdrawn one — picked the guard's file, and its
+positional filter then refused the vouch. No vouch, no license, no probe candidate.
+
+Retired the same way `VerdictIndex::from_sets` was: `build_vouches_from_sets` takes the driver's
+sets, `build_vouches` stays the re-lifting wrapper the DSTs use, and `dorc_oracle::lift_from_sets`
+gives the effect map the same treatment. Zero churn at the nine-plus call sites.
+`oracle/CLAUDE.md live-source-is-the-only-resolution-seat` complained about the RULE being spelled
+twice; this was the LIFT being spelled twice, one layer under it, which produces the identical
+failure and is harder to see.
+
+### dec-an-unreached-node-produces-bottom
+
+The one transfer change, and the one with reach beyond the fold. `CfgNodeKind::Top` and
+`command_transfer`'s two havoc paths returned ⊤ unconditionally, ignoring their in-state — so a
+masked-dead region containing an unmodeled construct or an unresolvable `.` would still have
+poisoned the join it never reaches, and the mask would have bought nothing in exactly the books
+that need it most. Now every non-`Entry` node with a ⊥ in-state produces ⊥ (`Entry` is exempt:
+minting the boundary state out of ⊥ is its whole job). Monotone (⊥ ⊑ everything), and it also
+corrects a pre-existing case nobody had priced — code after an `exit` is an island wired to the
+program exit, so a ⊤ node there used to poison the exit binding. Zero corpus churn either way.
+
+### res-command-v-is-its-own-poison-wall (disclosed, not chased)
+
+The delivered P1 cell GUARDS rather than elides, and the reason is orthogonal to this item: the
+polyfill's own `command -v` line is an unmodeled command that really runs, so it walls
+(`opaque-poison-is-the-product`) and nothing below it can elide. The fold's delivery is that the
+family answers AT ALL — before it, the site ran raw with no check. Blessing `command -v` as a pure
+builtin would convert the guard into an elision for every polyfilled book; that is a
+decidable-set-adjacent widening, NOT ruled, and deliberately left alone. ~SUSPECT worth a cheap
+look when the stdlib revival makes polyfills common.
+
+### res-the-file-test-head-reads-program-text
+
+`[` carries a glob metacharacter, so the value plane holds every `[ … ]` HEAD at ⊤ — its correct,
+conservative pathname-expansion posture at a use site. Honouring only `test -f` would have left
+exactly the confusingly-similar middle the U-shape law warns against, so `command_head` reads the
+head word from the AST as program text. The narrowness is the safety: only the HEAD, only to name
+which builtin the command is; every OPERAND still resolves through `SourceLiteralPlane`, so
+`funcenv-reads-source-literal-plane-only`'s actual subject — a value a HOST spoke siting a load —
+is untouched. Recorded because it is the one place the fold reads outside the plane.
+
+### Stage-E re-check (the six cells, under the fold)
+
+No outcome regressed. Cell 3 now holds TWO ways and both are pinned separately, per the brief:
+`a_guarded_define_if_absent_draws_no_complaint` (the decidable subcase — exempt by dead-edge
+PROOF, so `28K` §1's "exempt as a consequence, not a blessing" is delivered as written rather than
+reached by abstention) and `an_undecidable_guard_draws_no_complaint_by_joining_to_top` (the ⊤
+subcase, with the ⊤ itself asserted so the twin cannot silently become the only route). Cells
+1/2/4/5/6a/6b are byte-unchanged. `contest28-top-licenses-nothing` does not move, and the
+unit-tier `a_file_test_on_an_unresolved_path_never_folds` asserts `folded_edges().is_empty()` for
+that shape directly — a sharper pin than the case, because it fails if the decidable set is ever
+widened to decide an unresolved path FALSE.
+
+New alongside them: `a_define_if_present_guard_proves_the_shadow` — the under-complaint half
+closing.
+
+### Golden churn, predicted vs actual
+
+Predicted: ZERO outside the one new cell. The corpus is single-definition-per-role and
+define-before-use (stage G's respell), and the fold only fires where a decidable condition guards
+a definition — no corpus book has one. The never-live subtraction is empty unless something is
+provably dead, which needs the fold.
+
+Actual: exactly that. No `expected.out`, `expected.ran`, or loom transcript moved a byte. 1852 →
+1865 trials, all additive.
+
+| cause | cases | delta |
+|---|---|---|
+| the fold masking an arm | 0 | no corpus book guards a definition on a decidable condition |
+| never-live subtraction | 0 | nothing is provably dead without the fold |
+| ⊥-preserving transfer | 0 | no corpus book has a ⊤ node in unreachable code |
+| net-new | 1 e2e loom + 12 unit | additive |
+
+Comment budget: 15 net-new non-doc `//` lines against a cap of 15, after moving the load-bearing
+reasoning onto the items' doc-comments where it belongs.
+
+### Flagged upward
+
+- **`tc-command-v-blessing-would-convert-guards-to-elisions`** — see
+  `res-command-v-is-its-own-poison-wall`. Cross-cutting (it touches the blessed-builtin table,
+  which is a licensure surface), so flagged rather than taken.
+- **`res-28m-pre-fold-wording-is-stale`** — `28M` §5.4 ("exempt today by ⊤-abstention, properly by
+  the banked fold") and §6's "polyfill authors, pre-fold" rent line both describe the pre-fold
+  world. NOT edited here: this worktree's `28M` predates its own §9/§10 by three commits on
+  `ai/main`, so editing it would fight the fold rather than help it. Conductor's, at the merge.
+- **`res-whyworld-and-survival-do-not-withdraw`** — `WhyWorld` and `survival` build their own
+  lifted sets and apply NEITHER withdrawal (contested or never-live). Pre-existing for the
+  contested one (`res-why-world-lifts-no-book-definitions`); the never-live one inherits the same
+  gap. Benign today because both seats lift from the ORACLE-only vector, so a book-sited guard is
+  invisible to them and they happen to agree — but that is a coincidence of the current vector
+  choice, not a property, and it breaks the day either widens to the source-wide list (which
+  bitem7's rename rider contemplates). Named, not chased.

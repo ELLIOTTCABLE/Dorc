@@ -28,10 +28,13 @@ new entries to the matching section.
   are WITHHELD for a run: built once from the function environment's own answer, keyed by
   the MUNGED family base (so `apt-get`/`apt_get` are one family and every `__role` member
   is covered by one key), and read-only thereafter. There is no `un_contest`, no `remove`,
-  no `&mut` accessor, and there must never be one — the refusal is sound while shipping
-  ahead of the decidable-condition fold ONLY because it can under-fire but never
-  un-withhold. The DiagCode derives FROM the fact; licensure never reads a diagnostic
-  (`two-plane-aid-law`).
+  no `&mut` accessor, and there must never be one — the refusal is sound because it can
+  under-fire but never un-withhold, and that property is what let it ship ahead of the
+  decidable-condition fold (`28M` §9, since landed) and what must survive every later
+  sharpening of what the environment can prove. The same type now also carries the cli's
+  per-file never-live withdrawal, which is why "write-once" is a property of the VALUE and
+  not of how many are built. The DiagCode derives FROM the fact; licensure never reads a
+  diagnostic (`two-plane-aid-law`).
 
 ## Law — the coordinate (`notes/277` is THE spec; `plans/271` the rulings)
 
