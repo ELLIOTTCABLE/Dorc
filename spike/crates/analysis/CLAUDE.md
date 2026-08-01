@@ -100,7 +100,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   by NAME only: `command -v <literal name the unit DEFINES>` (the universe restriction is what
   keeps an ordinary host PATH probe out) and `[ -f <path the controller resolved as loadable> ]`,
   which decides TRUE only. Keyed on condition DECIDABILITY, never guard SHAPE
-  (`28K:rul-conflict-pass-is-semantic`). Two riders carry the correctness: an UNREACHED node's
+  (`28K:rul-conflict-pass-is-semantic`). Because `funcenv::never_live` subtracts EXACTLY
+  (a wrong subtraction SHIFTS a winner — grants, never merely loses), any widening of the
+  decidable set is a WINNER-SHIFTING licensure surface: license-review-tier, never a
+  convenience patch (`28P:adj-never-live-exactness-accepted`). Two riders carry the
+  correctness: an UNREACHED node's
   transfer produces ⊥, not ⊤, or a masked-dead region still poisons the join it never reaches;
   and a decision, once taken, is stable under further masking (masking only removes paths, so a
   `Defined(d)` stays `d` or becomes unreached), which is what makes every intermediate state

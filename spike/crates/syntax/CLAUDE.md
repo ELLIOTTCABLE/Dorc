@@ -18,8 +18,13 @@ bullet, slugged; append to the matching section.
   elision). The parser is the engine's highest-risk surface: bias every ambiguity
   to ⊤-reject-with-diagnostic.
 - **syntactic-top-triggers** (fixed; shrinking one is a deliberate design act) —
-  `eval` · dynamic command name · dynamic source target (literal `. /etc/x` is
-  kept) · `$(( ))` in command position · lvalue-taking builtins (`unset "$x"`,
+  `eval` · dynamic command name · NO-FLOW-COULD-HOLD-IT source target (literal
+  `. /etc/x` kept; parameter-expansion targets like `. "$LIB/x.sh"` route to the
+  analyzer's value plane — the r28 bitem9 shrink, licensed by the human-acked
+  `28K` §1 `rul-unloadable-is-unlicensed` richness half, keyed on
+  `word_has_expansion_effect` exactly as the for-list trigger; command-substitution
+  and arithmetic targets stay parse-⊤) · `$(( ))` in command position ·
+  lvalue-taking builtins (`unset "$x"`,
   `printf -v`, `test -v`) · background `&` · over-deep nesting · the residual
   loop shapes (no-`in` `for`; `break`/`continue`; command-subst/arithmetic in a
   for-list word).
