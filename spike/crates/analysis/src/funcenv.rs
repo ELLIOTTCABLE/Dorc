@@ -832,9 +832,9 @@ pub struct Contest {
 /// contested one is — silently, since ⊤ never complains — so the two halves together mean a
 /// license requires a PROVEN, uncontested definition and nothing weaker.
 ///
-/// Reached by the half-defining branch, the define-if-absent polyfill the domain cannot fold yet,
-/// an unequal-depth join, an unresolvable load, and a non-converged solve alike: they are one
-/// world-state ("we cannot say") with one consequence.
+/// Reached by the half-defining branch, a guard whose condition falls outside the fold's closed
+/// decidable set, an unequal-depth join, an unresolvable load, and a non-converged solve alike:
+/// they are one world-state ("we cannot say") with one consequence.
 #[must_use]
 pub fn unprovable(defs: &DefinitionTable, env: &FuncEnv, exit: CfgNodeId) -> BTreeSet<String> {
     let at_exit = env.before(exit);
@@ -900,12 +900,16 @@ pub fn never_live(
 /// then CFG node order).
 ///
 /// **Ruling (ii), the binding one** (`28O:res-polyfill-binding-tops-pending-fold`): the refusal
-/// fires only on a PROVABLE shadow. A ⊤ prior binding — a half-defining branch, a guarded
-/// define-if-absent whose condition the domain cannot fold, a capped solve — complains NOT, and
-/// (this is the load-bearing half) licenses NOT either: ⊤ reaches no consumer as a definition, so
+/// fires only on a PROVABLE shadow. A ⊤ prior binding — a half-defining branch, a guard whose
+/// condition falls outside the fold's decidable set, a capped solve — complains NOT, and (this is
+/// the load-bearing half) licenses NOT either: ⊤ reaches no consumer as a definition, so
 /// under-firing here grants nothing. A same-file redefinition is NOT a contest: that is the
 /// pre-existing within-file refusal (`216` e-1), and minting a second code for it would
 /// mis-attribute one world-state to two remediations.
+///
+/// The fold narrows what stays ⊤ in BOTH directions, deliberately: a define-if-absent guard the
+/// fold proves dead now draws no complaint by PROOF rather than by abstention, and a
+/// define-if-PRESENT override it proves live now draws the complaint the rule always meant.
 #[must_use]
 pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> Vec<Contest> {
     let mut out = Vec::new();
