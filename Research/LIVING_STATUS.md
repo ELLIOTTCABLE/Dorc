@@ -22,26 +22,40 @@
 from that arc: the **records-8 emitter decision** (delete-under-no-compat vs the r26-revival
 wiring) — human's.
 
-**THE live build lane: `ai/r28-oracle-loading`** (worktree `r28-oracle-loading`), plan
-**`plans/28K`** (the function-environment pass). Stages A/B/G/D/E are LANDED and the lane was
-freshly REBASED onto post-loom `ai/main` (2026-07-31; tip "Bank the rebase adaptations"; both
-legs green, Win 1826 / WSL 1822, locks verified at the generator fixpoint). Build ledger
-**`notes/28O`** (né `294`; renumbered out of a quarantine collision — its rebase section lists
-what adapted). The lane is PARKED at the E→F conductor checkpoint, pending the human's
-ratification of **`plans/28M`** (the committee-speech sitting; by 28M's own governance, `28K`
-remains the ruled plan until ratified) plus `28K` §9's five ratification items. Stages F/H/C2
-remain deliberately unbuilt — **but the checkpoint is now CLEARED (2026-07-31)**: all
-`28K` §9 ratifications typed-closed (see the in-doc `> human:` answers); the
-full-positional regime ACKED spike-tier; the committee fence unresolved-but-motion-
-authorized (build-as-spiked); explicit cross-author composition sanctioned with the
-commissioned two-file helper-package suite. Ack-ledger + stage-F riders: **`28M` §7**;
-license-plane ground truth: **`28M` §8**. **`28K` §10 is rewritten as THE resume plan**
-(F0–F7/H/C2 + fold checklist) — a fresh implementation-conductor executes from it; the
-design-leavings (committee-fence sitting · decidable-condition fold · `res-knobs-entry-
-owed` naming · named futures) run as a concurrent human sitting.
+**`ai/r28-oracle-loading` — the `28K` §10 resume arc is EXECUTED** (2026-07-31, session
+`r28-megamerge-continuation-impl`; conduct ledger **`notes/28P`** — every adjudication and
+`tc-` disposition lives there; predecessor ledger `notes/28O` is historical, markers placed).
+Landed, five Opus lanes, serial, all gates green throughout: bitem0 full-positional regime
+(the agreement-gate cut — withhold-not-re-resolve, disclosed) · bitem1
+pin-by-definition-bytes + closure capture (a live under-execute route closed: helper-calling
+verdict bodies shipped helperless) · bitem2/3 all six resolution seats unified onto
+`live_source` + custody typed (`DefinitionCustody`, newtype-shallow for the `28M` §10 re-key;
+two more duplicated seats found live: ship-lane decline-fallthrough, wrapped-vouch forward
+scan) · **the `28M` §9 decidable-condition fold** (needed an unspecified second seat,
+`funcenv::never_live`; both polyfill cells cured; `28K` §3 disclosure rewritten) · **the
+survival at-most body-death atomicity fixes** (the human-confirmed critical finding: a
+mid-emission death yielded a self-consistent wrongly-narrow at-most claim that demonstrably
+survived-and-elided; deriv + reach lanes now close with `body-rc`, whole-footprint refusal;
+the exit-0-truncation residue is the human's open completion-signal design,
+`ANALYZER-NEEDS:an-atmost-completion-signal`) · bitem6 commissioned suites (**COMPOSES**,
+both halves; the two-file helper-package shape works) · bitem7 renames + disclosed why-seat
+cut · bitem8 two-binary-floor battery (every load-order prediction confirmed by real
+`dash 0.5.12` + `posh 0.14.1`; opt-in `mise run test:floor`; found: `printf` is not a posh
+builtin ⇒ the corpus mocks-rail is dash-shaped — TODO-ADDTL) · bitem9 variable-resolved
+source targets (a ratified `syntactic-top-triggers` shrink; payoff gated on the
+`.`-blessing ruling).
 
-**Live-small: `ai/r28-cli-inputs`** (2 doc commits, the positional-input surface ruling;
-rebased clean onto post-loom `ai/main` 2026-07-31).
+**HELD by human order** (the parallel committee-corner re-design, `28M` §10): bitem4 fence ·
+bitem5 coherence aid · withhold-softening / per-frame re-resolution · the meet-direction
+registry. **Open human queue:** the withhold-spike-tier ack
+(`28P:adj-positional-plural-value-loss-carries-to-bitem4`, as amended) · the
+`command -v` + `.`-of-load-inert blessing family (gates bitem9's and P1's elide-tier
+payoff) · the at-most completion-signal design · posh-leg floor coverage · `28M` §5.4/§6
+pre-fold wording (sibling's doc).
+
+`ai/r28-cli-inputs`: its 2 doc commits are cherry-picked onto the lane (content reachable
+there); branch tip-redundant, advisory-delete (its worktree `r29-cli-inputs` is
+sibling-minted — not this conductor's to remove).
 
 **NOT STARTED, despite `plans/26K` §0 billing them as the actionable head**: the §0a fruit arc
 and the §0b kernel sitting (local-exec-as-supported-mode / epochs / scopes) — zero code, zero

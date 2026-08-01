@@ -8,6 +8,22 @@ plan is `28K` §10 (bitem0–bitem9 + fold checklist); on committee-corner confl
 `28M` governs (§7 ack-ledger, §8 license-plane ground truth). Confidence marks per
 `spike/CLAUDE.md`.
 
+## LANE CLOSE (2026-07-31)
+
+The `28K` §10 arc is executed: bitem0–3 and 6–9, the `28M` §9 fold, and the survival
+atomicity fixes are LANDED; bitem4/bitem5/withhold-softening/meet-direction registry are
+HELD by human order for the parallel committee-corner re-design. Fold checklist discharged:
+loom-glance (scout-extracted, all refusals honest; the 8 lint-fix cases confirmed
+false-positive-only) · `res-strip-leaves-a-bare-colon` REFUTED by direct strip inspection
+(body-statement and case-arm shapes both erase clean) · `mise run test:floor` green on WSL
+(134 passed, real dash+posh) · decidable-set widening warning stamped in
+`analysis/CLAUDE.md` · the bitem9 trigger shrink ratified into `syntax/CLAUDE.md` ·
+28O supersession markers placed · fold-routed items promoted (oracle/CLAUDE.md
+bind-principle; TODO-ADDTL posh-leg entry; main.rs apostrophe mangle fixed) ·
+`ai/r28-cli-inputs`' two commits cherry-picked (branch tip-redundant, advisory-delete) ·
+LIVING_STATUS re-measured. Final acceptance: `mise run both gate:full-quiet` at the close
+commit. Open human queue: collated in LIVING_STATUS's CURRENT STATE.
+
 ## Standing state at resume
 
 - Lane re-rebased onto `ai/main` tip "(AI dsn re) Rewrite the build shape into the
