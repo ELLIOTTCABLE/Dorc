@@ -1,0 +1,141 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# contest28-polyfill-guard-defers-to-the-oracle (`28M` §9, the decidable-condition fold) — the
+# P1 cell of `28O:res-polyfill-binding-tops-pending-fold`, end to end.
+#
+# A polite author's define-if-absent default, loaded AFTER a real oracle for the same tool. Under
+# plain sh the guard simply does not fire and the loaded oracle answers; before the fold the
+# analyzer could not read that, joined the family to ⊤, and the polite file quietly poisoned the
+# family it had deferred to — no probe, no vouch, no elision, silently.
+#
+# The condition is decidable-FALSE at its own position (`command -v <role name>` is contracted to
+# function-definedness within the unit, `28M:rul-command-v-reads-fn-definedness`), so the guarded
+# arm's edge is masked dead and the loaded definition survives intact — the lattice `28K` §3
+# promised, read rather than abstained from.
+#
+# The site GUARDS rather than elides, and that is honest: the guard's own `command -v` line is an
+# unmodeled command that really runs, so it walls (`opaque-poison-is-the-product`). What the fold
+# delivers is that the family answers AT ALL — before it, the whole family joined to ⊤ and the
+# site ran raw with no check at all.
+#
+# ANTI-MASKING: the two bodies invoke DIFFERENT commands, so `expected.ran` alone distinguishes
+# which one won. `foobar guard-fallback` appearing anywhere below means the dead arm licensed.
+if ! command -v foobar__is_converged >/dev/null 2>&1; then
+   foobar__is_converged() {
+      foobar guard-fallback --certs "$2"
+   }
+fi
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# site 1 = `foobar sync-certs …`, answered by the ORACLE's definition — the guard never fired.
+# rc 0 ⇒ converged; past the wall the unmodeled `command -v` raises, that mints a guard.
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: foobar status --certs-current -- /etc/nginx/certs
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=be7a2cb3f36c458250b02c6f97dbd6264996ed875e0f8ac87348bffe1d0f2097 sites=1 @@dorc@@\n'
+# site 1: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+#!/bin/sh
+# contest28-polyfill-guard-defers-to-the-oracle (`28M` §9, the decidable-condition fold) — the
+# P1 cell of `28O:res-polyfill-binding-tops-pending-fold`, end to end.
+#
+# A polite author's define-if-absent default, loaded AFTER a real oracle for the same tool. Under
+# plain sh the guard simply does not fire and the loaded oracle answers; before the fold the
+# analyzer could not read that, joined the family to ⊤, and the polite file quietly poisoned the
+# family it had deferred to — no probe, no vouch, no elision, silently.
+#
+# The condition is decidable-FALSE at its own position (`command -v <role name>` is contracted to
+# function-definedness within the unit, `28M:rul-command-v-reads-fn-definedness`), so the guarded
+# arm's edge is masked dead and the loaded definition survives intact — the lattice `28K` §3
+# promised, read rather than abstained from.
+#
+# The site GUARDS rather than elides, and that is honest: the guard's own `command -v` line is an
+# unmodeled command that really runs, so it walls (`opaque-poison-is-the-product`). What the fold
+# delivers is that the family answers AT ALL — before it, the whole family joined to ⊤ and the
+# site ran raw with no check at all.
+#
+# ANTI-MASKING: the two bodies invoke DIFFERENT commands, so `expected.ran` alone distinguishes
+# which one won. `foobar guard-fallback` appearing anywhere below means the dead arm licensed.
+if ! command -v foobar__is_converged >/dev/null 2>&1; then
+   foobar__is_converged() {
+      foobar guard-fallback --certs "$2"
+   }
+fi
+( foobar__is_converged sync-certs /etc/nginx/certs ) || foobar sync-certs /etc/nginx/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]
