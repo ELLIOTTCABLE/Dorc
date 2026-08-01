@@ -154,16 +154,17 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `licence_mint_has_exactly_one_caller` in `dorc-plan` fails if a second caller appears anywhere
   in the workspace. A new caller is not a refactor; it is a second, unproven route to shrinking
   the analyzer model.
-- **verdict-lane-is-site-keyed** (`26H` §3) — `command_effect` reaches the verdict lane
-  from TWO fallbacks (nothing resolved this argv; something RESOLVED but declared no cells
-  for its verb) and answers with the author's coordinate when the reached path carries
-  exactly one fully-resolved verdict mark, else the `24L` §2 auto-cell, else `Opaque`. It
-  reports the lane as a per-SITE out-param, because the second fallback leaves a shippable
-  predict on a site whose cell the VERDICT body owns — try-order over the ship closures
-  would measure the wrong cell. Selection is narrow on purpose: kind+entity from the
-  reached BIND (never the mark's own entity text — `identity-declared-never-inferred`),
-  selector from the mark, verdict marks only (an observe widens, never keys), and TWO
-  marks on one path key NOTHING (one rc witnesses one cell — `281` §7 rc-arity).
+- **verdict-lane-is-site-keyed** (`26H` §3; `28Q` §4 rul-verdict-primacy-at-the-ship-seat,
+  built at stage-0) — the lane is a per-SITE out-param, never derived from the fact's kind
+  and never by try-order over the ship closures (the shipped body's measurement must be
+  the cell the record keys). A vouched, mutation-capable site is verdict-lane: the verdict
+  body measures, keyed by the author's coordinate when the reached path carries exactly
+  one fully-resolved verdict mark, else the `24L` §2 auto-cell, else `Opaque`. Prediction
+  never licenses elision; predict cells feed the static concern topology whatever ships.
+  Selection stays narrow: kind+entity from the reached BIND (never the mark's own entity
+  text — `identity-declared-never-inferred`), selector from the mark, verdict marks only
+  (an observe widens, never keys), and TWO marks on one path key NOTHING (one rc
+  witnesses one cell — `281` §7 rc-arity).
 - **verdict-minted-facts-thread-their-family** — a verdict-lane fact carries
   `family = Some(provider)` EXACTLY. `build_dialect` mints only from predict-derived cells,
   so a verdict-minted selector sits outside the sparing dialect and COLLIDES (the disclosed

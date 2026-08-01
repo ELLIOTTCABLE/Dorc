@@ -43,12 +43,16 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   (`StatusRelaxable` substitutes an exact known rc, ⊤ blocks; `StatusInvariant`
   never blocks, still recorded, mark-union — any other blocking mark wins;
   `StatusIterated` blocks unconditionally).
-- **ship-seam-reads-the-lane-not-the-kind** (`26H` §3.5) — `compile_probe` takes TWO ship
+- **ship-seam-reads-the-lane-not-the-kind** (`26H` §3.5; `28Q` §4
+  rul-verdict-primacy-at-the-ship-seat, built at stage-0) — `compile_probe` takes TWO ship
   closures, and the verdict-body one is gated on the caller's per-SITE verdict-lane set:
-  never on the fact's kind, never on try-order. It must keep PRECEDING the predict lane —
-  a verdict-lane site can also carry a resolvable predict, and shipping that would measure
-  a different cell than the record keys. The vouch gate stays on the verdict branch alone
-  (the verdict IS the probe, so a declined argv has nothing to measure and must ship no
+  never on the fact's kind, never on try-order. Every vouched, mutation-capable site is
+  verdict-lane: the verdict body IS the probe check, its own reached answer is the
+  convergence measurement, and it PRECEDES the predict lane — shipping a resolvable
+  predict there would measure a different cell than the record keys, and prediction never
+  licenses elision. A predict ships alone only where elision is statically unavailable;
+  its cells feed the static concern topology whatever ships. The vouch gate stays on the
+  verdict branch alone (a declined argv has nothing to measure and must ship no
   record — `guard23-refusepath-rc0-never-passes`).
 - **erasure-demands-a-proof-and-a-rendered-death** (`26H` §4 — W-C; `erase.rs` is THE transform
   where this can be wrong, and its tests are the review's centre of gravity) — `prove_dead_branches`
