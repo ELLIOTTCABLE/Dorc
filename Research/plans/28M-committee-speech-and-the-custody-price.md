@@ -587,24 +587,35 @@ here is a verdict)
     constructs that already exist over new functions/entry-points/ceremony;
     ceremony-to-value is now a watched ratio. (Candidate for elevation into a root
     doc in the human's own voice, their call.)
-  - **prop-observe-marks-feed-the-dialect [PROPOSED, the keep-but-better design;
-    human lean "keep, at least for now" pending this]** — under keep, dialect
-    membership re-keys from LANE to MARK FORM: the sparing vocabulary =
-    predict-minted tokens ∪ `:?`-observe-minted tokens FROM ANY BODY. Rationale: the
-    observe mark's existing semantic ("this line reads/measures this cell") IS a
-    description act; `:`/`:!` on a verdict tail is a judgment-role annotation. The
-    consumption gate stops keying on which function encloses the line (the thing the
-    human rightly balked at) and keys on which mark-form the author chose, per line,
-    in place. The verdict-only author's hill flattens to the ONE discipline they
-    already owe for backing-honesty: `:?`-declare what your check reads, and your
-    words enroll. Monotonic both ways: each `:?` only shrinks the collide-set
-    relative to the keep-floor (collide-always → collide-where-declared-reads-
-    intersect) and adds only standard at-least token exposure. Composes with
-    ack-shared-bytes-transitive-permission (closure-permission) and the
-    counterfactual hint below. One grammar question routed to the build: whether one
-    line may carry `: X` and `:? X` together (if not, the same-line co-mark is the
-    tweak — still no new construct). Guard-seat cost note: `:?` lines in a verdict
-    body ride the shipped guard bytes; extra reads are author-priced check-tax.
+  - **prop-observe-marks-feed-the-dialect [WITHDRAWN same-day — human caught the
+    hole]** — the proposal re-keyed dialect membership to the `:?` observe mark as a
+    "description act." Wrong, per the human's input/output frame: a read-mark is an
+    INPUT confession, a gen-mark is an OUTPUT act, and vocabulary membership is an
+    output-side warrant (see the principle below). Enrolling read-words would (a)
+    manufacture distinctness warrants out of honesty confessions — two declared
+    reads warrant nothing about whether they name disjoint states — and (b) poison
+    the honesty channel: `:?`'s only consequence today (backing-widening) is purely
+    conservative, which is what makes "when in doubt, declare the read"
+    unconditionally safe advice; giving reads a liberalizing side-effect makes
+    honest authors hesitate. The conductor's monotonicity claim was computed against
+    the wrong baseline (the enrolled token's own fact only, ignoring
+    vocabulary-growth's effect across the family's other enrolled words).
+  - **prn-vocabulary-is-output-side [human-articulated 2026-07-31; bank as standing
+    principle]** — the read-mark is input, the gen-mark is output; they are not
+    related surfaces. Dialect/vocabulary membership is a distinctness warrant ("my
+    words name separate states I answer for") and only an OUTPUT act can carry it —
+    a gen is the author answering for a cell; a read answers for nothing. Corollary,
+    the honesty-channel law: `:?` must remain consequence-free-except-conservative
+    forever — its engine effects may only ever make the declarer's own facts EASIER
+    to invalidate, never liberalize anything for anyone. Any future feature that
+    hangs value on `:?` re-runs this check.
+  - **flag-predict-lane-observes-may-already-enroll [~SUSPECT, needs a ten-minute
+    scout]** — the scout's §4 reading ("the index holds exactly the
+    verdict/observe-mark cells", KindIndex.effects → build_dialect) suggests
+    predict-BODY `:?` observations may already feed the dialect as-built. If
+    confirmed, prn-vocabulary-is-output-side indicts it and the fix is a
+    conservative TIGHTENING (dialect = gen-minted tokens only, both lanes' reads
+    out) — cheap, collide-more direction, candidate rider for the stage-F lane.
   - **prop-collided-for-vocabulary-hint [PROPOSED, aid-plane]** — the noise-killer:
     mint the counterfactual detection "this comparison collided SOLELY because token
     T is outside family F's descriptive vocabulary; a `:?` observation (or predict
