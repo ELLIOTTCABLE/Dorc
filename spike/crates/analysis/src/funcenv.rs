@@ -470,11 +470,28 @@ impl<'a> LiveDefinitions<'a> {
         }
     }
 
+    /// The CUSTODY of `name`'s live definition immediately before `node` — whose utterance an act
+    /// answering here would be resting on (`28M` §8; [`dorc_core::DefinitionCustody`]).
+    #[must_use]
+    pub fn custody_before(
+        &self,
+        node: CfgNodeId,
+        name: &str,
+    ) -> Option<dorc_core::DefinitionCustody> {
+        self.source_before(node, name)
+            .map(dorc_core::DefinitionCustody::of_defining_file)
+    }
+
     /// Whether source index `file`'s definition of `name` is the one live at `node` — the gate an
     /// act consults before answering from that file's lifted set.
     ///
     /// `file` is an index into the source-ordered vectors, which IS the [`dorc_core::SourceFileId`]
     /// value (`28O:dec-load-order-is-the-id-order`); `source_index_is_the_file_id` pins that.
+    ///
+    /// The comparison itself runs over [`dorc_core::DefinitionCustody`] rather than the raw ids
+    /// (`28P:dec-the-agreement-gate-is-a-custody-comparison`): this gate and the license mint were
+    /// two separate untyped spellings of ONE question — whose definition is speaking here — and
+    /// `28M` §8's re-key risk lands on both. One type, one comparison, one place to re-key.
     ///
     /// **The one permissive answer, stated loudly:** a name the unit has NO definition of answers
     /// `true`, because the environment holds no opinion about it and inventing one would wall every
@@ -490,11 +507,19 @@ impl<'a> LiveDefinitions<'a> {
         if !defs.knows(name) {
             return true;
         }
-        self.source_before(node, name)
-            == Some(dorc_core::SourceFileId(
-                u32::try_from(file).unwrap_or(u32::MAX),
-            ))
+        self.custody_before(node, name) == Some(custody_of_source_index(file))
     }
+}
+
+/// The custody a source-ordered vector index denotes (`28O:dec-load-order-is-the-id-order`: the
+/// index IS the [`dorc_core::SourceFileId`]). The ONE place the engine crosses from a positional
+/// index into the custody vocabulary — every seat that used to compare bare indices routes here,
+/// so `28M` §10's possible re-key has one crossing to inspect rather than five.
+#[must_use]
+pub fn custody_of_source_index(file: usize) -> dorc_core::DefinitionCustody {
+    dorc_core::DefinitionCustody::of_defining_file(dorc_core::SourceFileId(
+        u32::try_from(file).unwrap_or(u32::MAX),
+    ))
 }
 
 /// Solve the function environment over `cfg`.

@@ -707,6 +707,7 @@ apt_get__predict() {
                     "apt_get__is_converged".to_string(),
                     "package".to_string(),
                     vec!["dpkg-query".to_string()],
+                    dorc_core::DefinitionCustody::of_defining_file(dorc_core::SourceFileId(0)),
                 );
                 vouches.insert(
                     *node,

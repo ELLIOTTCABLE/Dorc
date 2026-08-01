@@ -444,6 +444,10 @@ impl AllEstablishesVouched {
 pub struct ReplaceLicense {
     fact: FactKey,
     derivation: Derivation,
+    /// WHOSE utterance this replacement rests on (`28M` §8 — the monologue, typed). Every mint
+    /// stamps it, so "which author is this license speaking for" has an answer that is read off the
+    /// value rather than re-derived from three unrelated mechanisms agreeing.
+    custody: dorc_core::LicenseCustody,
 }
 
 impl ReplaceLicense {
@@ -531,6 +535,10 @@ impl ReplaceLicense {
                 // C7: read the vouch's defining span (display-only) BEFORE it drops, for the
                 // survival render's `file:line` (a vouch informs, never becomes a fact — TC-tier-3).
                 let vouch_span = vouch.vouch().defining_span();
+                // `28M` §8: the elision speaks for the vouching author, and ONLY them. Read off the
+                // consumed vouch rather than passed in beside it, so the license cannot be stamped
+                // with a custody that is not the one whose vouch just licensed it.
+                let custody = dorc_core::LicenseCustody::Vouched(vouch.vouch().custody());
                 if grade != Grade::Must {
                     return None;
                 }
@@ -538,6 +546,7 @@ impl ReplaceLicense {
                     return None;
                 }
                 consumption_ok(&consumed, status).then_some(ReplaceLicense {
+                    custody,
                     fact: *fact,
                     derivation: Derivation {
                         fact: *fact,
@@ -591,6 +600,7 @@ impl ReplaceLicense {
         status: Predicted<Rc>,
     ) -> Option<ReplaceLicense> {
         query_substitutes(valid, consumed, status).then_some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::MeasuredSelf,
             fact,
             derivation: Derivation {
                 fact,
@@ -653,6 +663,7 @@ impl ReplaceLicense {
         }
         let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::VouchedSeverally,
             fact: representative,
             derivation: Derivation {
                 fact: representative,
@@ -742,6 +753,7 @@ impl ReplaceLicense {
         }
         let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::VouchedSeverally,
             fact,
             derivation: Derivation {
                 fact,
@@ -763,6 +775,7 @@ impl ReplaceLicense {
         consumed: &May<Powerset<Channel>>,
     ) -> Option<ReplaceLicense> {
         consumption_ok(consumed, proof.status).then_some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::MeasuredSelf,
             fact: proof.fact,
             derivation: Derivation {
                 fact: proof.fact,
@@ -813,6 +826,12 @@ impl ReplaceLicense {
     #[must_use]
     pub fn fact(&self) -> FactKey {
         self.fact
+    }
+
+    /// WHOSE utterance this license rests on (`28M` §8 — the monologue, typed).
+    #[must_use]
+    pub fn custody(&self) -> dorc_core::LicenseCustody {
+        self.custody
     }
 
     /// The audit trail (the greyed-out "why" for the plan UI).
@@ -979,6 +998,11 @@ pub struct VerdictVouch {
     /// apply-only line. Display/attribution, NOT decision data: EXCLUDED from
     /// [`GuardInsert::canonical`] (it derives from `preamble`, which the canon already covers).
     check_cmds: Vec<String>,
+    /// WHOSE utterance this is (`28M` §8 — the monologue, typed). Decision-plane, unlike
+    /// `defining_span` beside it: the elide mint reads this to stamp the license's custody, so a
+    /// future widening that reproduced another author's measured value cannot silently inherit
+    /// this author's provenance.
+    custody: dorc_core::DefinitionCustody,
     /// The vouch's DEFINING span (C7 `27V:mech-minting-line-threading`): the reached vouching
     /// arm + which oracle file it indexes (`tc-oracle-file-identity`), for the guard attribution's
     /// `file:line`. `None` when the caller did not thread it (the DST/test constructors) or the
@@ -994,6 +1018,12 @@ impl VerdictVouch {
     /// for attribution; `check_cmds` the verdict body's own command names (gate-6 attribution). The
     /// defining span is threaded separately by [`with_defining_span`](Self::with_defining_span)
     /// (only the plan driver has the oracle-file index; DST/test constructors omit it).
+    ///
+    /// `custody` is REQUIRED rather than threaded post-construction like the defining span, and the
+    /// asymmetry is deliberate (`28M` §8): the span is display, custody is decision. Every
+    /// constructor — DST and test constructors included — has to answer whose utterance this vouch
+    /// is, because a vouch with no owner is exactly the composite-nobody-said that the monologue
+    /// property exists to forbid.
     #[must_use]
     pub fn new(
         fn_name: String,
@@ -1001,6 +1031,7 @@ impl VerdictVouch {
         invocation: String,
         kind_label: String,
         check_cmds: Vec<String>,
+        custody: dorc_core::DefinitionCustody,
     ) -> Self {
         Self {
             fn_name,
@@ -1008,8 +1039,17 @@ impl VerdictVouch {
             invocation,
             kind_label,
             check_cmds,
+            custody,
             defining_span: None,
         }
+    }
+
+    /// WHOSE utterance this vouch is (`28M` §8). By construction the same custody the positional
+    /// agreement gate compared when it admitted this definition — one question, one type, and now
+    /// one answer rather than two spellings that could drift apart.
+    #[must_use]
+    pub fn custody(&self) -> dorc_core::DefinitionCustody {
+        self.custody
     }
 
     /// Thread the vouch's defining span + oracle-file id post-construction (C7). Low-churn: only
@@ -1559,8 +1599,18 @@ pub fn build_vouches_from_sets(
         // C7: the reached vouching-arm span (or `name_span` for a check-less `return 0` vouch) +
         // its oracle-file id, for the guard render.
         let defining = vouch_site(verdict, &op_refs).unwrap_or(verdict.name_span);
-        let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds)
-            .with_defining_span(defining, arm_file);
+        // `28M` §8: custody comes from the SAME source index the positional agreement gate above
+        // admitted (`live.answers_at(node, &verdict_name, i)`), through the one crossing from index
+        // to custody — so the gate and the license cannot disagree about whose definition spoke.
+        let vouch = VerdictVouch::new(
+            fn_name,
+            preamble,
+            invocation,
+            kind_label,
+            check_cmds,
+            dorc_analysis::funcenv::custody_of_source_index(file_idx),
+        )
+        .with_defining_span(defining, arm_file);
         vouches.insert(node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
     (Carrier::new(vouches, diags), collapse_narrative)
@@ -1612,8 +1662,24 @@ pub fn build_wrapped_vouches(
             .map(|s| interner.resolve(*s).to_owned())
             .collect();
         let op_slices: Vec<&str> = op_refs.iter().map(String::as_str).collect();
-        let inner_verdict = verdict_sets.iter().find_map(|set| set.get(*provider));
-        let Some(verdict) = inner_verdict else {
+        // `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` — this seat scanned FORWARD
+        // (`iter().find_map`), i.e. FIRST-definition-wins, which is the inverse of sh's own answer
+        // and the identical fault `28M:fnd-verdict-resolution-duplicates-live-source` found at the
+        // verdict index (`28P:fnd-the-wrapped-vouch-seat-resolved-forwards`). It asks only whether a
+        // file DEFINES the provider's verdict, never whether that body answers this argv — the
+        // decline-fallthrough cascade `28K` §6 rejects.
+        let Some(file_idx) = dorc_oracle::live_source(verdict_sets.len(), |i| {
+            verdict_sets
+                .get(i)
+                .and_then(|set| set.get(*provider))
+                .is_some()
+        }) else {
+            continue;
+        };
+        let Some(verdict) = verdict_sets
+            .get(file_idx)
+            .and_then(|set| set.get(*provider))
+        else {
             continue;
         };
         if !matches!(
@@ -1635,12 +1701,18 @@ pub fn build_wrapped_vouches(
             preamble.push('\n');
         }
         preamble.push_str(&composed.inner_sh);
+        // Custody is the INNER verdict author's, not the wrapper's, and the split is the point: the
+        // wrapper's entry form carries the check into a context, the inner body JUDGES convergence,
+        // and only a judgment can license. A wrapper that cannot enter fails its own rc and the site
+        // runs, so the wrapper never contributes a sentence to the license — it is transport
+        // (`27C` §3; `28M` §8's monologue holds here for that reason, not by accident).
         let vouch = VerdictVouch::new(
             composed.inner_fn.clone(),
             preamble,
             invocation.join(" "),
             interner.resolve(fact.kind.0).to_owned(),
             check_commands(verdict),
+            dorc_analysis::funcenv::custody_of_source_index(file_idx),
         );
         vouches.insert(*node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
@@ -5131,6 +5203,7 @@ apt_get__is_converged() { return 0; }
                 "apt_get__is_converged install -y nginx".to_string(),
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
             ),
             Rung::Both,
         )
@@ -5179,6 +5252,7 @@ apt_get__is_converged() { return 0; }
                 "apt_get__is_converged install -y curl".to_string(),
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
             )
         };
         // jc-mint-policy m-a: a diverged/unknown probe-verdict NEVER guards (a guard at a
@@ -5220,6 +5294,7 @@ apt_get__is_converged() { return 0; }
             "apt_get__is_converged install -y curl".to_string(),
             "package".to_string(),
             vec!["dpkg-query".to_string()],
+            dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
         );
         let license = GuardLicense::mint(
             nginx_fact(),
@@ -5263,6 +5338,7 @@ apt_get__is_converged() { return 0; }
                 "apt_get__is_converged install curl".to_string(),
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
             );
             Step {
                 leaf: LeafId(leaf),
@@ -5316,6 +5392,7 @@ apt_get__is_converged() { return 0; }
                 "apt_get__is_converged install curl".to_string(),
                 "package".to_string(),
                 Vec::new(),
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
             );
             Step {
                 leaf: LeafId(leaf),
@@ -6194,6 +6271,141 @@ apt_get__is_converged() {
             )
             .is_none(),
             "a converged ambient Must fact WITHOUT a vouch must not elide (no vouch ⇒ run)"
+        );
+    }
+
+    /// `28M` §8's monologue, now read off the value instead of argued from three mechanisms
+    /// agreeing. An establish-elide speaks for the author whose vouch it consumed — and for nobody
+    /// else — while a Query substitution speaks for no author at all, because its reproduced value
+    /// is the probe's own measurement of the very command being substituted.
+    ///
+    /// Non-vacuous in the direction that matters: the custody is read from the CONSUMED vouch, so
+    /// this fails the moment a mint stamps a license with a custody its vouch did not supply, which
+    /// is precisely the shape a measured-value widening would take.
+    #[test]
+    fn an_establish_elide_speaks_for_its_vouching_author_and_a_query_for_none() {
+        use dorc_core::{ByVouch, DefinitionCustody, LicenseCustody, Rung, SourceFileId};
+        let f = nginx_fact();
+        let vouch_from = |file: u32| {
+            ByVouch::vouched(
+                VerdictVouch::new(
+                    "apt_get__is_converged".to_string(),
+                    "apt_get__is_converged() { :; }".to_string(),
+                    "apt_get__is_converged install -y nginx".to_string(),
+                    "package".to_string(),
+                    vec!["dpkg-query".to_string()],
+                    DefinitionCustody::of_defining_file(SourceFileId(file)),
+                ),
+                Rung::Both,
+            )
+        };
+        for file in [0_u32, 3] {
+            let lic = ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::Must,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                quiet(),
+                Predicted::Top,
+                Some(vouch_from(file)),
+            )
+            .expect("a converged ambient Must fact WITH a vouch elides");
+            assert_eq!(
+                lic.custody(),
+                LicenseCustody::Vouched(DefinitionCustody::of_defining_file(SourceFileId(file))),
+                "the elision must speak for the author whose vouch licensed it, and follow it when \
+                 that author changes"
+            );
+        }
+        let query = ReplaceLicense::prove_replaceable(
+            &SkipClass::QueryResolvable {
+                fact: f,
+                valid: true,
+            },
+            Grade::Must,
+            PhasedVerdict::<Probe>::new(Verdict::Converged),
+            quiet(),
+            Predicted::Value(Rc(0)),
+            None,
+        )
+        .expect("a valid known-rc Query substitutes");
+        assert_eq!(
+            query.custody(),
+            LicenseCustody::MeasuredSelf,
+            "a read-substitution rests on no authored vouch — it reproduces the substituted \
+             command's OWN measurement, so there is no second speaker to name"
+        );
+    }
+
+    /// `28M` §8's hardening, the half that is about VALUES rather than authors: a split family —
+    /// one author's `predict` resolving the site, another's `is_converged` vouching it — must not
+    /// let the elision reproduce anything the predict measured. The firewall is upstream (an
+    /// Establish site's status is withheld to ⊤ at intake, `results.rs`), so the mint sees
+    /// `Predicted::Top` and the stand-in is `True`. Pinned HERE because the intake firewall and the
+    /// mint are separate crates and neither one alone states the property.
+    ///
+    /// Read the two assertions together: the license exists, AND its stand-in carries no measured
+    /// value. A split family therefore cannot smuggle author A's measurement into author B's
+    /// sentence — the elision reproduces the vouch and nothing else.
+    #[test]
+    fn a_split_family_establish_elide_reproduces_nothing_predict_derived() {
+        let f = nginx_fact();
+        let lic = ReplaceLicense::prove_replaceable(
+            &SkipClass::EstablishAmbient(f),
+            Grade::Must,
+            PhasedVerdict::<Probe>::new(Verdict::Converged),
+            quiet(),
+            // What an Establish site always arrives with: the rc firewall withheld it.
+            Predicted::Top,
+            Some(test_vouch()),
+        )
+        .expect("the establish elide mints");
+        assert!(
+            matches!(lic.custody(), dorc_core::LicenseCustody::Vouched(_)),
+            "the licence is the verdict author's alone"
+        );
+        let stand_in = match Predicted::<Rc>::Top {
+            Predicted::Value(rc) => StandIn::from_rc(rc),
+            Predicted::Top => StandIn::True,
+        };
+        assert_eq!(
+            stand_in,
+            StandIn::True,
+            "an establish-elide's stand-in reproduces NO measured value: `true` is the vouch \
+             acting-as-succeeded, never a predict-derived rc (`guards-mint-no-values`' elide twin)"
+        );
+    }
+
+    /// `28M` §8 `vouch-covers-the-stand-in-rc-0`. The rc-0 an establish-elide leaves behind is not
+    /// a claim that the command exits 0 — it is the VOUCH's act-as-succeeded, which is why a
+    /// consumer that would notice the difference blocks the mint instead of relaxing it.
+    ///
+    /// So the pin is the pair: rc-0 rides through for a consumer that cannot tell (`quiet`), and
+    /// the SAME inputs with a ⊤-status branch consumer refuse. If the second half ever passed, the
+    /// stand-in's rc-0 would be a fabricated success suppressing a `|| fallback` — the round-19
+    /// under-execute, and the exact reason the vouch's coverage stops at the consumers it can speak
+    /// for.
+    #[test]
+    fn the_vouch_covers_the_stand_in_rc_zero_only_where_no_consumer_can_tell() {
+        let f = nginx_fact();
+        let mint = |consumed| {
+            ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::Must,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                consumed,
+                Predicted::Top,
+                Some(test_vouch()),
+            )
+        };
+        assert!(
+            mint(quiet()).is_some(),
+            "with nothing consuming the status, the stand-in's rc 0 is inside what the vouch \
+             covers — 're-running this is noise I accept'"
+        );
+        assert!(
+            mint(May(Powerset::singleton(Channel::StatusRelaxable))).is_none(),
+            "a branch that READS the status is outside the vouch's coverage at ⊤: the stand-in's \
+             rc 0 would decide somebody else's line, so the site runs"
         );
     }
 

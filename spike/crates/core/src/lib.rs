@@ -101,6 +101,79 @@ impl SiteId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SourceFileId(pub u32);
 
+/// WHOSE utterance a license rests on (`28M` §8 — the monologue, typed).
+///
+/// A license is a MONOLOGUE when every load-bearing utterance behind it has one author, and a
+/// DIALOGUE when the engine combines two authors' utterances into a composite sentence nobody
+/// uttered and both may repudiate. `28M` §8 scouted the license plane and found it monologue
+/// EVERYWHERE — but emergently, by three unrelated mechanisms agreeing (lane exclusivity, the
+/// establish-⊤ firewall, consumed-⊤ forbids-mint), none of which NAMES custody. This type is that
+/// name, so the property is held by the type system rather than by a coincidence that a later
+/// widening could quietly break.
+///
+/// **Construction is deliberately a single seat** ([`of_defining_file`](Self::of_defining_file)),
+/// and that is the load-bearing design constraint rather than tidiness. Custody is keyed to the
+/// DEFINING FILE today, but `28M` §10 `dir-ownership-is-transitive-inclusion` (UNRULED, under live
+/// human adjudication) may re-key it to the transitive sourcing-closure of an entry file. Because
+/// every consumer compares custodies (`==`) and none reads the file id to decide anything, that
+/// re-key is a change to this type's internals and nothing else. **Never key a NEW decision off a
+/// raw [`SourceFileId`]** — reach for this type, or the re-key becomes a workspace-wide edit and
+/// the fence stops being movable.
+///
+/// [`defining_file`](Self::defining_file) exists for PROVENANCE AND DISPLAY only — a diagnostic
+/// naming which file spoke. Branching on it re-creates exactly the untyped keying this exists to
+/// retire.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct DefinitionCustody(SourceFileId);
+
+impl DefinitionCustody {
+    /// The ONE constructor: custody belongs to the file that DEFINED the utterance.
+    #[must_use]
+    pub const fn of_defining_file(file: SourceFileId) -> Self {
+        Self(file)
+    }
+
+    /// The defining file, for provenance and display ONLY (see the type doc — never a decision).
+    #[must_use]
+    pub const fn defining_file(self) -> SourceFileId {
+        self.0
+    }
+}
+
+/// Whose utterance a replacement license rests on (`28M` §8's monologue, made a type).
+///
+/// The variants are the only two ways a replacement is currently single-author, and naming them
+/// apart is the whole mechanism: a widening that reproduced a value measured by a DIFFERENT
+/// author's `predict()` under this author's license fits NEITHER, so it cannot be written without
+/// adding a variant here — a visible, reviewable act in the one file that defines what custody
+/// means, instead of a quiet edit at a mint site. That is the "re-entry becomes a type error"
+/// property `28M` §8 asked for, sited where it is cheap to keep.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LicenseCustody {
+    /// A converged-establish elision: it rests on ONE author's reached verdict vouch, and this is
+    /// that author. The agreement gate already proved this definition is the one live at the site,
+    /// so the custody here and the custody the gate compared are the same value by construction.
+    Vouched(DefinitionCustody),
+    /// An AGGREGATE erasure (a member-loop, an inlined call): several establishes vanish under one
+    /// license, and each carries its OWN author's reached vouch, cardinality- and identity-matched
+    /// (`rul-every-erased-establish-is-vouched`). So this is a CONJUNCTION of monologues — each
+    /// author independently licensed their own line — and not a composite sentence, which is why it
+    /// is admissible. It is named apart from [`Vouched`](Self::Vouched) anyway, because the day
+    /// anything reads ACROSS these establishes rather than merely conjoining them, that read IS a
+    /// dialogue and this variant is where it will be sitting. The per-establish custodies ride the
+    /// aggregate's own vouch receipts.
+    VouchedSeverally,
+    /// A read-only Query-guard substitution: it rests on no authored vouch at all. Its reproduced
+    /// value is the probe's own measurement OF THE VERY COMMAND being substituted, so there is no
+    /// second utterance to combine with and no author to attribute it to but the site itself
+    /// (`28M` §8's `QueryGuard` cell — measured-never-asserted, probe-provenance-only).
+    ///
+    /// Reproduction that reaches BEYOND that cell must never reuse this variant: the moment a
+    /// reproduced value comes from somewhere other than the substituted command's own measurement,
+    /// "self" is a lie and the composite needs a custody that names both speakers.
+    MeasuredSelf,
+}
+
 // ===========================================================================
 // Source positions
 // ===========================================================================

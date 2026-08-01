@@ -269,6 +269,55 @@ pub struct DerivClose {
     pub body_rc: u32,
 }
 
+/// THE PROBE-PROVENANCE FIREWALL, whole, in one seat: which of a site's measured channels may be
+/// believed, keyed on the site's kind (`28M` §8; `inv-probe-sourced-values`).
+///
+/// The Status half is long-standing — only a VALID Query site's rc is fold-usable, and only when
+/// the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell, so it must
+/// not substitute into the control-flow fold). An Establish site's rc is the CHECK's, not the
+/// mutator's, and an invalid Query's is a stale resting rc; both are withheld to ⊤.
+///
+/// The out-channel half is `28P:dec-the-stdout-firewall-is-structural-too`. `28M` §8 named the
+/// stdout parallel of the rc firewall ~SUSPECT and untraced; the trace found the property TRUE but
+/// held by two accidents rather than by this mechanism — nothing emits `stdout=` today, and
+/// `consumption_ok` blocks a consumed stdout UNCONDITIONALLY (16F §3) without ever reading the
+/// value. That is exactly the "emergent, not typed" shape the custody work exists to retire: the day
+/// a probe starts producing establish stdout, absence stops holding and only the consumption block
+/// is left standing. So an Establish site's out-channels are ⊤ BY CONSTRUCTION, on the same line and
+/// for the same reason as its rc — the probe never ran the mutator, so the mutator's own observables
+/// cannot have probe-provenance. Inert today (the values are already ⊤); the point is that it stays
+/// true when they stop being.
+///
+/// Extracted rather than inlined so the whole firewall reads as one thing: it was two `match`es on
+/// one discriminant, forty lines apart, and a reader could satisfy themselves about the rc without
+/// ever meeting the out-channels.
+fn measured_channels(
+    site_kind: dorc_plan::ProbeSiteKind,
+    record: Option<&SiteRecord>,
+) -> (Predicted<Rc>, Predicted<OutBytes>, Predicted<OutBytes>) {
+    match site_kind {
+        dorc_plan::ProbeSiteKind::Query { valid: true } => (
+            record.map_or(Predicted::Top, |r| {
+                if r.conflicted {
+                    Predicted::Top
+                } else {
+                    Predicted::Value(r.rc)
+                }
+            }),
+            record.map_or(Predicted::Top, |r| r.stdout),
+            record.map_or(Predicted::Top, |r| r.stderr),
+        ),
+        // An invalid Query still carries reserved out-claims (its BYTES are not stale the way its
+        // resting rc is); only the rc is withheld.
+        dorc_plan::ProbeSiteKind::Query { valid: false } => (
+            Predicted::Top,
+            record.map_or(Predicted::Top, |r| r.stdout),
+            record.map_or(Predicted::Top, |r| r.stderr),
+        ),
+        dorc_plan::ProbeSiteKind::Establish => (Predicted::Top, Predicted::Top, Predicted::Top),
+    }
+}
+
 /// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
 /// [`Dangling`](ResolvOutcome::Dangling) — the resolver's natural failure on an enumerable kind (§4,
 /// a reference to a non-existent entity), which rides the may-alias degrade + a loud diagnostic.
@@ -778,28 +827,7 @@ pub fn facts_from_sites(
             },
             ProbeSiteKind::Establish => ProbeSiteKind::Establish,
         };
-        // The firewall: only a VALID Query site's rc is fold-usable as Status — and only when
-        // the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell,
-        // so it must not substitute into the control-flow fold).
-        let status = match site_kind {
-            ProbeSiteKind::Query { valid: true } => record.map_or(Predicted::Top, |r| {
-                if r.conflicted {
-                    Predicted::Top
-                } else {
-                    Predicted::Value(r.rc)
-                }
-            }),
-            // Establish site (check's rc, not the mutator's) OR an invalid Query
-            // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
-            ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
-        };
-        // The reserved Stdout/Stderr claims ride into the tuple verbatim (19F §3 shape).
-        // INERT this round: nothing emits them, and `consumption_ok` blocks a consumed
-        // stdout/stderr UNCONDITIONALLY (16F §3) — never reading the claim value — so a
-        // (hypothetical) non-⊤ claim cannot relax that block. The slot is plumbed so a
-        // future stdout-producing probe + vouch is a value change, not a representation one.
-        let stdout = record.map_or(Predicted::Top, |r| r.stdout);
-        let stderr = record.map_or(Predicted::Top, |r| r.stderr);
+        let (status, stdout, stderr) = measured_channels(site_kind, record);
         let obs = Observable {
             effect,
             status,
