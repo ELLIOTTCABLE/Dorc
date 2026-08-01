@@ -2089,6 +2089,127 @@ mod tests {
         assert_eq!(folded(book, &table).1, 0);
     }
 
+    // ── TABLE 5: value-flow source targets (`28K` §1 rul-unloadable-is-unlicensed, the
+    // richness half; `28K` §10 bitem9) ──
+
+    /// THE ITEM, as an A/B pair one spelling apart. `LIB=./oracles; . "$LIB/lib.sh"` binds
+    /// exactly what `. ./oracles/lib.sh` binds — same definition, same positional answer at a
+    /// site below it — because the target resolves through the SAME
+    /// [`SourceLiteralPlane`] window every other operand already used. No second resolver
+    /// exists, and this test fails if one is ever introduced beside it: the two spellings
+    /// would then be free to disagree.
+    #[test]
+    fn a_variable_resolved_source_target_binds_what_the_literal_spelling_binds() {
+        let spellings = [
+            ". ./oracles/lib.sh\nyum install -y nginx\n",
+            "LIB=./oracles\n. \"$LIB/lib.sh\"\nyum install -y nginx\n",
+        ];
+        for book in spellings {
+            let mut table = DefinitionTable::default();
+            let lib = add_def(&mut table, 0, ROLE);
+            table.set_loadable("./oracles/lib.sh".to_owned(), vec![lib]);
+            let (env, cfg, ast) = solve_positional(book, &table);
+            assert_eq!(
+                env.binding_before(cfg.exit(), ROLE),
+                Flat::Elem(Binding::Defined(lib)),
+                "{book:?} must bind the loaded definition"
+            );
+            let live = LiveDefinitions::new(&env, &table);
+            let site = command_at(&cfg, &ast, book, "yum install -y nginx");
+            assert_eq!(
+                live.source_before(site, ROLE),
+                Some(SourceFileId(0)),
+                "{book:?}: the whole positional regime applies — nothing is special-cased for \
+                 the variable spelling, so the resolved path carries the SAME SourceFileId \
+                 provenance a literal one does"
+            );
+        }
+    }
+
+    /// The other half, and the one that must never move: a target the value plane cannot
+    /// resolve stays ⊤ and is disclosed as an unresolvable load. Here `LIB` is never assigned,
+    /// so `"$LIB/lib.sh"` is ⊤ at the site — the richness cut widens what RESOLVES, never what
+    /// is decidable, and an unresolved target walls exactly as it did before (`28K` §1
+    /// rul-unloadable-is-unlicensed).
+    #[test]
+    fn an_unresolvable_variable_source_target_still_tops_the_family() {
+        let book = ". \"$LIB/lib.sh\"\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let lib = add_def(&mut table, 0, ROLE);
+        table.set_loadable("./oracles/lib.sh".to_owned(), vec![lib]);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
+        assert!(
+            super::unprovable(&table, &env, cfg.exit()).contains(ROLE),
+            "⊤ licenses nothing, and the family must be named so the driver withholds it"
+        );
+        assert_eq!(
+            env.unresolvable_loads(),
+            &BTreeSet::from([command_at(&cfg, &ast, book, ". \"$LIB/lib.sh\"")]),
+            "and the site is disclosed rather than silently walling"
+        );
+    }
+
+    /// A resolvable target the CONTROLLER never read is the same ⊤ by a different route, and it
+    /// is the cell that keeps the richness cut honest: resolving a PATH is not learning what
+    /// lives at it. Absence from the load set is not filesystem absence
+    /// (`28K:res-host-conditional-loading` untouched).
+    #[test]
+    fn a_resolved_target_the_controller_never_read_is_an_unresolvable_load() {
+        let book = "LIB=/etc/hork\n. \"$LIB/env\"\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let lib = add_def(&mut table, 0, ROLE);
+        table.set_loadable("./oracles/lib.sh".to_owned(), vec![lib]);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
+        assert_eq!(
+            env.unresolvable_loads(),
+            &BTreeSet::from([command_at(&cfg, &ast, book, ". \"$LIB/env\"")]),
+        );
+    }
+
+    /// The shadow refusal reads a variable-resolved load exactly as it reads a literal one —
+    /// the regime applies whole, so a cross-unit override arriving through `"$LIB/lib.sh"`
+    /// draws the same complaint `a_top_level_re_source_trips_the_refusal` pins for `. lib.sh`.
+    /// Without this, widening the resolvable set would have widened the SILENT set with it.
+    #[test]
+    fn a_variable_resolved_load_trips_the_shadow_refusal() {
+        let book = "LIB=.\n. \"$LIB/lib.sh\"\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let outer = add_def(&mut table, 0, ROLE);
+        table.extend_ambient([outer]);
+        let inner = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./lib.sh".to_owned(), vec![inner]);
+        let found = contests_of(book, &table);
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert_eq!((found[0].prior, found[0].shadowing), (outer, inner));
+    }
+
+    /// The fence, asserted rather than argued (`28M:dec-decidable-set-v0`, CLOSED): the file
+    /// test's operand ALREADY resolved through the plane, so a variable-spelled `[ -f … ]`
+    /// decides exactly what a literal-spelled one decides, and bitem9 widened nothing here.
+    /// The book carries no `.` statement at all, which is what makes that claim checkable —
+    /// this cell is untouched by the source-target cut and must read identically to
+    /// `a_file_test_on_a_resolved_loadable_decides_true`.
+    #[test]
+    fn a_variable_spelled_file_test_decides_what_the_literal_one_decides() {
+        let book = "LIB=.\n[ -f \"$LIB/lib.sh\" ] && yum__is_converged() { :; }\n";
+        let mut table = DefinitionTable::default();
+        let lib = add_def(&mut table, 0, ROLE);
+        table.set_loadable("./lib.sh".to_owned(), vec![lib]);
+        for (id, node) in dorc_syntax::parse(book).value.iter() {
+            if let NodeKind::FuncDef { name, .. } = &node.kind {
+                let def = add_def(&mut table, 1, name);
+                table.set_book_site(id, def);
+            }
+        }
+        assert_eq!(
+            folded(book, &table).1,
+            1,
+            "the short-circuit edge folds, exactly as the literal spelling's does"
+        );
+    }
+
     /// The identity the whole gate rests on (`28O:dec-load-order-is-the-id-order`): a source's
     /// INDEX in the ordered vectors IS its [`SourceFileId`] value. Every consumer converts one to
     /// the other by hand, so a drift here would silently mis-key every positional answer.
