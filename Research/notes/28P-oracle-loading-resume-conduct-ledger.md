@@ -144,6 +144,29 @@ plan is `28K` §10 (bitem0–bitem9 + fold checklist); on committee-corner confl
   positional-gate`: the sixth (wrapped-vouch) seat joins the positional regime in builder-4's
   lane — withhold-only, the bitem0 gate's shape, no new mechanism.
 
+### Conductor adjudications at the builder-4 close (2026-07-31)
+
+- **adj-floor-lane-bullet-kept; route-posh-printf-coverage-to-human** — builder-4's
+  `spike/CLAUDE.md` floor-differential bullet KEPT verbatim (load-bearing). The
+  `tc-inert-mocks-rail-is-dash-shaped` finding routes to the human as a standing gap
+  BEYOND this lane: `printf` is not a posh 0.14.1 builtin, so under `PATH=mocks-only` no
+  shipped oracle body's emissions have ever been exercised under posh — the corpus half of
+  the `kWHICHSH` weld's "dash, posh, and our evaluator perform identically" promise is
+  dash-shaped. Gate-9 (`mise run test:floor`) closes it for its own six manifests only;
+  corpus-wide posh coverage of emitter bodies is un-commissioned, sized beyond lane scope.
+- **res-case-bodied-wrapped-verdict-coverage** — builder-4's measured
+  `tc-wrapped-lane-drops-a-case-bodied-in-book-verdict` banked as named residue (coverage
+  loss only, never a license); candidate small item for the fence-revival lane.
+- **fold-checklist additions** — verify `res-strip-leaves-a-bare-colon-for-a-standalone-mark`
+  (low-confidence; if real it violates `strip-is-pure-erasure`'s marks-erase-to-NOTHING
+  clause — a stripped-in `:` clobbers the tool-rc to 0; one `dorc strip` inspection settles
+  it) · run `mise run test:floor` once on the WSL leg (gate-9 is opt-in; the committed
+  `expected.emitted` bytes are otherwise unproven) · confirm the decidable-set-widening
+  warning reached `analysis/CLAUDE.md`.
+- **adj-wrapped-gate-unreachable-accepted** — the wrapped-vouch gate is unreachable on the
+  current corpus (the ship seat degrades first); built anyway on the hash-munge precedent,
+  unit-pinned. Accepted.
+
 ## bitem0 — the full-positional regime (LANDED)
 
 `28K` §2 `rul-visibility-is-full-positional`. Every site-keyed consuming act now reads the
