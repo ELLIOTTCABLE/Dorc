@@ -1538,19 +1538,85 @@ mod tests {
         );
     }
 
-    /// CELL 3 — a guarded define-if-absent incoming definition draws NO complaint.
+    /// CELL 3 — a guarded define-if-absent incoming definition draws NO complaint. The DECIDABLE
+    /// subcase, which is now exempt by PROOF rather than by abstention: the fold reads the
+    /// condition false at its own position, the guarded arm's edge is dead, and no shadow ever
+    /// occurred. `28K` §1's "guarded incoming definitions are exempt as a consequence, not a
+    /// blessing" is delivered as written.
     ///
-    /// Written against the OBSERVABLE, not the mechanism, deliberately: today the abstention is
-    /// join-⊤ (the domain cannot fold a `command -v` condition, so neither arm is proven and the
-    /// binding is ⊤, which never complains); when the decidable-condition fold lands the mechanism
-    /// becomes a PROVABLE exemption — the guard is dead, the loaded definition survives — with the
-    /// identical outcome, and this test must not move.
+    /// Written against the OBSERVABLE, not the mechanism, deliberately — it did not move when the
+    /// mechanism under it changed, which is the property that made it worth writing that way.
     #[test]
     fn a_guarded_define_if_absent_draws_no_complaint() {
         let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
                     yum__is_converged() { :; }\nfi\n";
         let (table, _) = unit(book, &[ROLE]);
         assert!(contests_of(book, &table).is_empty());
+    }
+
+    /// CELL 3, the UNDECIDABLE subcase, pinned beside its twin because the exemption now has two
+    /// independent sources and losing either would be a silent regression. Here the condition is
+    /// outside the decidable set, so nothing folds and the binding joins to ⊤ — which complains
+    /// not, and (rider 1) licenses not either.
+    #[test]
+    fn an_undecidable_guard_draws_no_complaint_by_joining_to_top() {
+        let book = "if [ -f /etc/dorc/prefer-local ]; then\nyum__is_converged() { :; }\nfi\n";
+        let (table, _) = unit(book, &[ROLE]);
+        assert!(contests_of(book, &table).is_empty());
+        let (solved, exit) = solve_book(book, &table);
+        assert_eq!(
+            solved.binding_before(exit, ROLE),
+            Flat::Top,
+            "and it is ⊤ that is doing the work here, not a dead edge"
+        );
+    }
+
+    /// The refusal's UNDER-complaint half closing (`28O:res-polyfill-binding-tops-pending-fold`,
+    /// gap one): a define-if-PRESENT guard over a loaded oracle really does override it, and the
+    /// fold makes that shadow PROVABLE — so a cross-unit override that previously slipped past
+    /// under ⊤ now draws the complaint the rule always meant it to.
+    #[test]
+    fn a_define_if_present_guard_proves_the_shadow() {
+        let book = "if command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\n";
+        let (table, loaded) = unit(book, &[ROLE]);
+        let found = contests_of(book, &table);
+        assert_eq!(found.len(), 1, "the override is now proven: {found:?}");
+        assert_eq!(found[0].prior, loaded);
+    }
+
+    /// The whole-unit resolution's half of the fold: a definition the environment proves binds
+    /// nowhere is named, so `dorc_oracle::live_source` stops counting it as this file DECLARING
+    /// the role. Without this the P1 cure reaches the binding and stops there — the guard file
+    /// still wins the ambient answer by being last, and every site withholds on disagreement.
+    ///
+    /// The negative half rides along: the definition that IS live is never named, so the
+    /// subtraction cannot be vacuously everything.
+    #[test]
+    fn a_dead_guard_is_named_never_live_and_the_live_one_is_not() {
+        let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
+                    yum__is_converged() { :; }\nfi\nyum install -y nginx\n";
+        let (table, _) = unit(book, &[ROLE]);
+        let (solved, _) = solve_book(book, &table);
+        let dead = super::never_live(&table, &solved);
+        assert!(
+            dead.contains(&(ROLE.to_owned(), SourceFileId(1))),
+            "the book's guarded definition binds at no program point: {dead:?}"
+        );
+        assert!(
+            !dead.contains(&(ROLE.to_owned(), SourceFileId(0))),
+            "the loaded oracle's definition is live everywhere and must survive"
+        );
+    }
+
+    /// And its containment: with nothing folded, NOTHING is named never-live. A subtraction that
+    /// fired on an ordinary single-definition unit would silently re-key every site in the corpus.
+    #[test]
+    fn an_ordinary_unit_names_nothing_never_live() {
+        let book = "yum install -y nginx\n";
+        let (table, _) = unit(book, &[ROLE]);
+        let (solved, _) = solve_book(book, &table);
+        assert!(super::never_live(&table, &solved).is_empty());
     }
 
     /// CELL 4 — two definitions of one name in ONE file are not a cross-unit shadow: that world
