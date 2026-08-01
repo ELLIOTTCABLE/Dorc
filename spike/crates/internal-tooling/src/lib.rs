@@ -68,6 +68,35 @@ impl Posix {
         }
     }
 
+    /// Resolve one NAMED base-dialect floor binary (`two-binary-floor`: `posh 0.14.1` ∩
+    /// `dash 0.5.12`) for the differential lane, or say why it is unavailable.
+    ///
+    /// It sits beside [`Self::find`] rather than in the e2e runner because `one-shell-answer` is
+    /// about there being ONE place that answers "where is a shell", and a second copy is how the
+    /// first one silently rotted. What it does NOT share with `find` is the fallback: `find` wants
+    /// any POSIX shell and will take `sh`, while the floor lane wants a SPECIFIC binary and an
+    /// absence is a refusal, never a substitution — a differential answered by the wrong shell is
+    /// worse than one not run.
+    ///
+    /// Windows resolves through git's own userland exactly as `find` does (never a PATH search:
+    /// there, PATH order can hand you `%SystemRoot%\System32\bash.exe`, the WSL launcher). `posh`
+    /// is not part of git's userland, so on Windows this lane resolves `dash` alone and the caller
+    /// reports the half-floor honestly.
+    ///
+    /// # Errors
+    /// When the named binary is not present in the platform's resolution seat.
+    pub fn floor(name: &str) -> Result<PathBuf, String> {
+        if cfg!(windows) {
+            let dir = git_usr_bin()?;
+            let candidate = dir.join(format!("{name}.exe"));
+            return candidate
+                .is_file()
+                .then_some(candidate)
+                .ok_or_else(|| format!("git ships no {name}.exe in {}", dir.display()));
+        }
+        which(name).ok_or_else(|| format!("no {name} on PATH"))
+    }
+
     /// The PATH a child of this shell needs, given the caller's own environment.
     ///
     /// Scoped to one child by construction: the return value goes into a single

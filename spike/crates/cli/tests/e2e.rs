@@ -288,7 +288,19 @@ impl Harness {
         path: &std::ffi::OsStr,
         script: Option<&Path>,
     ) -> Command {
-        let mut command = Command::new(&self.checker);
+        Self::rail_under(&self.checker.clone(), sandbox, log, path, script)
+    }
+
+    /// [`Self::rail`] under a NAMED shell rather than the harness's own checker — the floor
+    /// differential's seat (gate-9), where which binary runs the text IS the measurement.
+    fn rail_under(
+        shell: &Path,
+        sandbox: &Path,
+        log: &Path,
+        path: &std::ffi::OsStr,
+        script: Option<&Path>,
+    ) -> Command {
+        let mut command = Command::new(shell);
         command
             .current_dir(sandbox)
             .env_clear()
@@ -297,20 +309,17 @@ impl Harness {
             .env("LC_ALL", "C")
             .env("TZ", "UTC");
         if cfg!(unix) {
-            let checker = self.checker.display().to_string();
+            let shell = shell.display().to_string();
             match script {
                 Some(script) => {
                     command
                         .arg("-c")
                         .arg("umask 022; exec \"$0\" \"$1\"")
-                        .arg(&checker)
+                        .arg(&shell)
                         .arg(script);
                 }
                 None => {
-                    command
-                        .arg("-c")
-                        .arg("umask 022; exec \"$0\"")
-                        .arg(&checker);
+                    command.arg("-c").arg("umask 022; exec \"$0\"").arg(&shell);
                 }
             }
         } else if let Some(script) = script {
@@ -355,6 +364,50 @@ impl Harness {
                 .collect::<Vec<_>>()
                 .join("\n"),
         )
+    }
+}
+
+/// Run `text` under one NAMED floor shell on the determinism rail and return its STDOUT
+/// (gate-9). The sibling of [`Harness::capture_run`], which reads the mock run-LOG: a sentinel
+/// manifest's whole product is what it printed, and nothing it prints comes from a shim.
+///
+/// The sandbox is a COPY of the case's own top-level files, because a load-order manifest's
+/// whole subject is `. ./defs.sh` and a manifest that cannot find what it sources measures
+/// nothing. A copy rather than the case dir itself: the throwaway-cwd rule is what keeps a
+/// misbehaving manifest from writing into the corpus.
+fn capture_floor_stdout(shell: &Path, text: &str, case: &Path, mocks: &Path) -> String {
+    {
+        let scratch = Scratch::new("floor");
+        let log = scratch.path.join("dorc.log");
+        std::fs::write(&log, "").expect("seed log");
+        let sandbox = scratch.path.join("sand");
+        std::fs::create_dir_all(&sandbox).expect("create sandbox");
+        for entry in std::fs::read_dir(case).into_iter().flatten().flatten() {
+            if entry.file_type().is_ok_and(|t| t.is_file()) {
+                let _ = std::fs::copy(entry.path(), sandbox.join(entry.file_name()));
+            }
+        }
+        let script = scratch.path.join("manifest.sh");
+        std::fs::write(&script, format!("{text}\n")).expect("write manifest");
+        // The floor binary's OWN userland joins the mocks on PATH, and it has to: measured,
+        // `printf` is a BUILTIN in dash 0.5.12 and an external command in posh 0.14.1, so under the
+        // corpus's ordinary mocks-only PATH a posh manifest emits nothing at all and every case
+        // would read as a floor disagreement. This lane is the opt-in real-binary one, so the
+        // widening is in character — but it is the lane's alone, and the rail is otherwise intact
+        // (cleared env, sandbox cwd).
+        let path = shell.parent().map_or_else(
+            || mocks.as_os_str().to_owned(),
+            |dir| {
+                std::env::join_paths([mocks.to_path_buf(), dir.to_path_buf()])
+                    .unwrap_or_else(|_| mocks.as_os_str().to_owned())
+            },
+        );
+        let out = capture(
+            Harness::rail_under(shell, &sandbox, &log, &path, Some(&script))
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null()),
+        );
+        strip_trailing_newlines(&strip_cr(&out.stdout))
     }
 }
 
@@ -1625,6 +1678,8 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
         }
     }
 
+    floor_differential(harness, name, dir, &mocks, &mut run.failures);
+
     scan_diagnostics(name, &out.stderr, dir, &mut run.failures);
     scan_why(name, &out.stderr, dir, &mut run.failures);
     scan_hint(name, &out.stderr, dir, &mut run.failures);
@@ -2104,6 +2159,90 @@ fn debug_argv(harness: &Harness, dir: &Path, args: &[String], framed: &Path) -> 
             .stderr(Stdio::piped()),
     )
     .stderr
+}
+
+/// The lane that opts a run into executing the base-dialect floor binaries: a comma-list of names
+/// (`DORC_E2E_FLOOR_SHELLS=dash,posh`). UNSET ⇒ zero external shell invocations beyond the ones the
+/// harness already makes, exactly the `real-tools-lane-opt-in` default; listed-but-absent ⇒ a loud
+/// failure, because opt-in implies require-tools and a differential answered by fewer shells than
+/// the operator asked for is a differential that measured something else.
+const FLOOR_SHELLS_ENV: &str = "DORC_E2E_FLOOR_SHELLS";
+
+/// gate-9: the two-binary-floor DIFFERENTIAL (`28K` §5 model-calibration; `276:rul-spec-two-binary-
+/// floor`'s own prescription — strip-then-run-under-both IS the executable off-ramp test).
+///
+/// A case opts in by carrying an `expected.emitted` section: its book is then a SENTINEL MANIFEST,
+/// a which-am-I emitter whose stdout says which definition a real shell actually had live at each
+/// point. The gate strips the book to stock POSIX sh (the off-ramp cleaner, so no dialect construct
+/// reaches the floor binaries), runs the result under every named floor shell on the determinism
+/// rail, and requires them to agree with each other AND with the committed bytes.
+///
+/// What it measures is the half the corpus cannot otherwise reach. Dorc's own answer for the same
+/// shape is the committed transcript beside it — the analyzer half, proven on every platform by the
+/// ordinary run. This gate proves the SHELL half, so a divergence between the two is a measured
+/// fact rather than an argument, and the `command -v` case can pin its documented divergence
+/// instead of asserting its absence.
+fn floor_differential(
+    harness: &Harness,
+    name: &str,
+    dir: &Path,
+    mocks: &Path,
+    failures: &mut Vec<String>,
+) {
+    let want_path = dir.join("expected.emitted");
+    if !want_path.is_file() {
+        return;
+    }
+    let Ok(list) = std::env::var(FLOOR_SHELLS_ENV) else {
+        return;
+    };
+    let stripped = capture(
+        harness
+            .dorc()
+            .arg("strip")
+            .arg(dir.join("book.sh"))
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null()),
+    )
+    .stdout;
+    let mut emitted: Vec<(String, String)> = Vec::new();
+    for shell_name in list.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+        match Posix::floor(shell_name) {
+            Ok(shell) => emitted.push((
+                shell_name.to_owned(),
+                capture_floor_stdout(&shell, &stripped, dir, mocks),
+            )),
+            Err(why) => failures.push(format!(
+                "FAIL  {name}  [gate-9: floor shell `{shell_name}` named in {FLOOR_SHELLS_ENV} is absent — {why}]"
+            )),
+        }
+    }
+    if emitted.is_empty() {
+        return;
+    }
+    // Disagreement BETWEEN the floor binaries is the dialect's own answer: the construct is outside
+    // it (`276:rul-spec-two-binary-floor`), and no committed byte can be right for both.
+    if let Some((first_name, first)) = emitted.first()
+        && let Some((other_name, other)) = emitted.iter().find(|(_, text)| text != first)
+    {
+        failures.push(format!(
+            "FAIL  {name}  [gate-9: the floor binaries disagree, so this construct is OUTSIDE the base dialect]\n{}",
+            indent(&[format!("{first_name}: {first}"), format!("{other_name}: {other}")])
+        ));
+        return;
+    }
+    let got = &emitted[0].1;
+    if harness.bless {
+        std::fs::write(&want_path, format!("{got}\n")).expect("bless expected.emitted");
+        return;
+    }
+    let want = strip_trailing_newlines(&strip_cr(&read_or_empty(&want_path)));
+    if got != &want {
+        failures.push(format!(
+            "FAIL  {name}  [gate-9: the floor shells emit something other than the committed manifest]\n{}",
+            divergence(&want, got)
+        ));
+    }
 }
 
 /// gate-6: the apply/bare run-set delta must be covered by the engine's own

@@ -1,0 +1,114 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor28-command-v-reads-fn-definedness — THE divergence pin of the whole battery
+# (`28K` §10 bitem8; §5's reserved battery case; `28M:rul-command-v-reads-fn-definedness`).
+#
+# `28M:dec-decidable-set-v0` decides exactly one `command -v` shape: the literal name the analysed
+# unit DEFINES. That universe restriction is the whole safety of the set — it is what keeps an
+# ordinary host PATH probe from being decided by a controller that has never seen the host's PATH.
+# The function-only-spelling scout came back NEGATIVE (`28P:bank-decidable-fold-sited-post-bitem1`):
+# every alternative spelling for "is this name a defined FUNCTION" is shell-specific, so the
+# contract has to ride `command -v`, which in a real shell answers for a WIDER question than the
+# contract reads. This case is the sole pin of that one divergence cell, so it pins the divergence
+# and its consistency — never its absence.
+#
+# Measured here, one spelling over three species:
+#   fn     — a name the unit defines. IN the decidable universe; shell and analysis agree.
+#   path   — a name that is only an executable on PATH. The shell finds it; the analysis does not
+#            look, and holds the condition undecidable (⊤ ⇒ both arms live ⇒ walls). That is the
+#            divergence, and it runs in the SAFE direction: an undecided condition loses precision
+#            and can never mask an arm that a shell would take.
+#   absent — neither. Both answer no.
+#
+# Why the divergence is tolerable rather than a bug is `28K` §5 pattern-carry-the-answer: the
+# analysis's answer is PINNED into the artifact (`28K` §4 rul-runtime-resolution-never-load-bearing)
+# rather than re-derived by the landing shell, so a model that misreads a condition produces a plan
+# that is wrong-but-consistent — the artifact does what the plan said, on the host, every time.
+hork__is_converged() { printf 'a\n' ;}
+if command -v hork__is_converged >/dev/null 2>&1; then printf 'fn: yes\n'; else printf 'fn: no\n'; fi
+if command -v hork >/dev/null 2>&1; then printf 'path: yes\n'; else printf 'path: no\n'; fi
+if command -v wombat >/dev/null 2>&1; then printf 'absent: yes\n'; else printf 'absent: no\n'; fi
+
+-- expected.emitted --
+fn: yes
+path: yes
+absent: no
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_out="$_dl_out $_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+
+-- mocks/hork --
+#!/bin/sh
+# INERT strawman mock. This case never RUNS it — `command -v` resolves a name without executing it,
+# which is why the run-log below is empty. Its whole job is to BE on PATH.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7ec6322a1ef0f492edc725e235302397a09dbe2fba997d3de6ba3e9fc1a7904a sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+# site:7 unresolvable-no-probe
+# site:8 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor28-command-v-reads-fn-definedness — THE divergence pin of the whole battery
+# (`28K` §10 bitem8; §5's reserved battery case; `28M:rul-command-v-reads-fn-definedness`).
+#
+# `28M:dec-decidable-set-v0` decides exactly one `command -v` shape: the literal name the analysed
+# unit DEFINES. That universe restriction is the whole safety of the set — it is what keeps an
+# ordinary host PATH probe from being decided by a controller that has never seen the host's PATH.
+# The function-only-spelling scout came back NEGATIVE (`28P:bank-decidable-fold-sited-post-bitem1`):
+# every alternative spelling for "is this name a defined FUNCTION" is shell-specific, so the
+# contract has to ride `command -v`, which in a real shell answers for a WIDER question than the
+# contract reads. This case is the sole pin of that one divergence cell, so it pins the divergence
+# and its consistency — never its absence.
+#
+# Measured here, one spelling over three species:
+#   fn     — a name the unit defines. IN the decidable universe; shell and analysis agree.
+#   path   — a name that is only an executable on PATH. The shell finds it; the analysis does not
+#            look, and holds the condition undecidable (⊤ ⇒ both arms live ⇒ walls). That is the
+#            divergence, and it runs in the SAFE direction: an undecided condition loses precision
+#            and can never mask an arm that a shell would take.
+#   absent — neither. Both answer no.
+#
+# Why the divergence is tolerable rather than a bug is `28K` §5 pattern-carry-the-answer: the
+# analysis's answer is PINNED into the artifact (`28K` §4 rul-runtime-resolution-never-load-bearing)
+# rather than re-derived by the landing shell, so a model that misreads a condition produces a plan
+# that is wrong-but-consistent — the artifact does what the plan said, on the host, every time.
+hork__is_converged() { printf 'a\n' ;}
+if command -v hork__is_converged >/dev/null 2>&1; then printf 'fn: yes\n'; else printf 'fn: no\n'; fi
+if command -v hork >/dev/null 2>&1; then printf 'path: yes\n'; else printf 'path: no\n'; fi
+if command -v wombat >/dev/null 2>&1; then printf 'absent: yes\n'; else printf 'absent: no\n'; fi

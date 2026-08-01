@@ -923,6 +923,21 @@ no task covers, and consider adding the task instead.
   `shellcheck` on Windows and run the checkbashisms half on *nix
   (`e2e/lint-real-tools-setup.sh` documents the discovery-vs-spawn mismatch).
 
+- **floor-differential-lane-opt-in** (`28K` §10 bitem8; `mise run test:floor`) — the SECOND opt-in
+  real-invocation lane, and the executable half of `two-binary-floor`. A case opts in by carrying an
+  `expected.emitted` section: its book is a SENTINEL MANIFEST (a which-am-I emitter), and gate-9
+  strips it, runs it under every binary named in `DORC_E2E_FLOOR_SHELLS` (default UNSET ⇒ the gate
+  does not fire), and requires them to agree with each other AND with the committed bytes.
+  Disagreement BETWEEN the binaries is itself the verdict: the construct is outside the base
+  dialect. Resolution goes through `internal_tooling::Posix::floor` — `one-shell-answer`'s seat —
+  which REFUSES rather than substituting, because a differential answered by the wrong shell is
+  worse than one not run. Windows has no `posh` in git's userland, so there the lane measures a HALF
+  floor (dash alone) and the WSL leg is where the real `posh ∩ dash` answer comes from.
+  **`printf` IS NOT A BUILTIN IN `posh` 0.14.1** (measured 2026-07-31; it is one in dash): under the
+  ordinary mocks-only PATH a posh body emits NOTHING, so this lane alone joins the floor binary's own
+  userland to the mocks. The corpus's inert-mocks rail is therefore dash-shaped, and no oracle body's
+  `printf` emissions have ever been exercised under posh.
+
 ## Code style
 
 - Newtypes over bare integers/strings; make illegal states unrepresentable.

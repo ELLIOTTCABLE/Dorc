@@ -244,6 +244,12 @@ dir = "spike"
 env = { DORC_E2E_REAL_TOOLS = "{% if os() == 'windows' %}shellcheck{% else %}shellcheck,checkbashisms{% endif %}" }
 run = "cargo test -p dorc-cli --test e2e"
 
+[tasks."test:floor"]
+description = "The opt-in two-binary-floor DIFFERENTIAL (gate-9): every case carrying an expected.emitted section has its STRIPPED book run as a sentinel manifest under each named floor binary, and they must agree with each other and with the committed bytes. Off in every default gate. posh is not in git's Windows userland, so there the lane is dash alone and measures a HALF floor — run it under WSL for the real posh-∩-dash answer."
+dir = "spike"
+env = { DORC_E2E_FLOOR_SHELLS = "{% if os() == 'windows' %}dash{% else %}dash,posh{% endif %}" }
+run = "cargo test -p dorc-cli --test e2e"
+
 [tasks.clippy]
 description = "Clippy over the workspace with warnings-as-errors — the inner-loop subset of `check`, minus fmt/deny/typos. The -D warnings gate lives in the task, never in the manifest, so mid-work builds don't break on a toolchain bump."
 dir = "spike"
