@@ -713,8 +713,10 @@ pub enum SyntaxUnsupportedReason {
     DynamicCommandName,
     /// `eval`.
     EvalConstructedCode,
-    /// `.`/`source` of a target that is not a literal path.
-    SourceOfNonLiteralTarget,
+    /// `.`/`source` of a target built by running something (a command substitution or
+    /// arithmetic expansion). A parameter-expansion target is NOT this: its value is
+    /// ordinary value-flow, resolved in `funcenv` and walled there when unresolvable.
+    SourceOfDynamicTarget,
     /// `unset` of a dynamic lvalue.
     UnsetDynamicLvalue,
     /// `printf -v`, which writes to a variable lvalue.
@@ -3853,8 +3855,8 @@ fn syntax_unsupported_text(ctx: &RenderCtx<'_>, reason: SyntaxUnsupportedReason)
         SyntaxUnsupportedReason::EvalConstructedCode => {
             ("syntax-unsupported-eval-constructed-code", none)
         }
-        SyntaxUnsupportedReason::SourceOfNonLiteralTarget => {
-            ("syntax-unsupported-source-of-non-literal-target", none)
+        SyntaxUnsupportedReason::SourceOfDynamicTarget => {
+            ("syntax-unsupported-source-of-dynamic-target", none)
         }
         SyntaxUnsupportedReason::UnsetDynamicLvalue => {
             ("syntax-unsupported-unset-dynamic-lvalue", none)

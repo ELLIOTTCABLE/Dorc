@@ -1026,7 +1026,7 @@ impl Parser {
 
     /// Apply the ⊤-triggers that depend on the *whole* simple command. Returns a
     /// replacement ⊤-node id if one fires (the already-built children are salvaged).
-    /// Triggers (synthesis ⊤-set): `eval`; `.`/`source` of a non-literal target;
+    /// Triggers (synthesis ⊤-set): `eval`; `.`/`source` of a dynamic target;
     /// dynamic command name (first word not a literal); `$(( ))` as the command;
     /// lvalue-taking builtins (`unset "$x"`, `printf -v`, `test -v`).
     fn check_simple_triggers(
@@ -1073,17 +1073,21 @@ impl Parser {
                 SyntaxUnsupportedReason::EvalConstructedCode,
             )),
             "." | "source" => {
-                // `. file` is fine only when the target is a literal path; a dynamic
-                // target (`. "$x"`) is a ⊤-trigger. With no second word it is malformed.
-                let target_literal = words
+                // A target the analyzer can never hold a value for — one built by running
+                // something (`. "$(pick-host).sh"`) — is a ⊤-trigger here, on the same
+                // predicate and for the same reason as a for-list word. A target built from
+                // literals and PARAMETER expansions is not: its value is ordinary value-flow
+                // (`28K` §1 rul-unloadable-is-unlicensed's richness half), resolved by
+                // `funcenv` through `SourceLiteralPlane` and walling there when it cannot be.
+                let dynamic = words
                     .get(1)
-                    .is_some_and(|&w| self.word_single_literal(w).is_some());
-                if words.len() >= 2 && !target_literal {
+                    .is_some_and(|&w| self.word_has_expansion_effect(w));
+                if dynamic {
                     Some(self.unsupported(
                         UnsupportedReason::DynamicExecution,
                         span,
                         salvage(),
-                        SyntaxUnsupportedReason::SourceOfNonLiteralTarget,
+                        SyntaxUnsupportedReason::SourceOfDynamicTarget,
                     ))
                 } else {
                     None

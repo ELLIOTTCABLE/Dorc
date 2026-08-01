@@ -728,15 +728,27 @@ fn reject_dynamic_command_name_is_dynamic_execution() {
 }
 
 #[test]
-fn reject_dynamic_source_target_but_allow_literal() {
-    // Why: `. "$x"` pulls in code chosen at runtime (⊤); `. /literal` is a fixed
-    // include the analyzer could in principle follow, so it must NOT reject.
-    assert_rejects(". \"$x\"", UnsupportedReason::DynamicExecution);
-    assert_rejects("source $f", UnsupportedReason::DynamicExecution);
+fn reject_source_target_built_by_running_something_but_allow_expansion() {
+    // Why: the trigger asks whether the analyzer could ever hold a VALUE for the target,
+    // which is the same question the for-list word trigger asks and shares a predicate
+    // with. A command substitution or arithmetic expansion answers no under every possible
+    // value-flow, so it stays a parse-tier ⊤; a PARAMETER expansion is ordinary value-flow
+    // (`28K` §1 rul-unloadable-is-unlicensed's richness half — `LIB=./oracles; . "$LIB/y.sh"`
+    // loads exactly as a literal does), so it parses and `funcenv` resolves or walls it.
+    assert_rejects(". \"$(pick)\"", UnsupportedReason::DynamicExecution);
+    assert_rejects("source $(pick).sh", UnsupportedReason::DynamicExecution);
+    assert_rejects(". \"$((n)).sh\"", UnsupportedReason::DynamicExecution);
 
-    let ok = parse(". /etc/profile");
-    assert!(!ok.has_errors(), "literal-target source must parse clean");
-    assert!(first_unsupported(&ok.value).is_none());
+    for accepted in [
+        ". /etc/profile",
+        ". \"$x\"",
+        "source $f",
+        ". \"$LIB/yum.sh\"",
+    ] {
+        let ok = parse(accepted);
+        assert!(!ok.has_errors(), "{accepted} must parse clean");
+        assert!(first_unsupported(&ok.value).is_none(), "{accepted}");
+    }
 }
 
 #[test]
