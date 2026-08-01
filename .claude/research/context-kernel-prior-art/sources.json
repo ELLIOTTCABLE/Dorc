@@ -1,0 +1,28 @@
+{
+  "A-neron-scope-graphs-2015": {
+    "url": "https://eelcovisser.org/publications/2015/NeronTVW15.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: peer-reviewed ESOP 2015 primary result, read end-to-end including the resolution calculus, the algorithm, and its soundness/completeness proof sketch; the formalism is the load-bearing artifact, not a survey of others' work. No rot (a pure formalism), and it is the acknowledged root of the scope-graph line Spoofax/Statix later built on.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Closest academic formalisation of P1's positionally-indexed resolution: 'scope' is DEFINED as a minimal program region behaving uniformly w.r.t. name resolution, with three checkable uniformity properties; the seen-imports set, the specificity ordering D<I<P, and the WF(p) in P*.I* restriction each map onto a decision 28Q must make about `.`-sourcing. Its Fig.13 include-variant is the direct model for sh's `.` (textual inclusion, NOT import) and it warns the efficient algorithm does not survive that variant.",
+    "graded-by": "subagent",
+    "published": "2015-04",
+    "retrieved": "2026-08-01",
+    "sha256": "9d05a4260f2404579b8f242f38c0832e55e5ed481a70dbbf2885a59a54759c8d",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['scope graphs theory of name resolution Neron Tolmach Visser ESOP 2015'])"
+  },
+  "A-wegman-zadeck-sccp-1991": {
+    "url": "https://bears.ece.ucsb.edu/class/ece253/papers/wegman91.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: the primary TOPLAS 13(2) result (the 1985 POPL paper's journal version), read end-to-end including the conservativeness theorem, the implementation-pitfalls section, and the interprocedural extension; the algorithm is the artifact, and it is the algorithm every subsequent SCCP implementation cites. OCR is lossy on figures/subscripts but the prose is intact and checkable, which is the part I depend on.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Carries three constraints 28Q's kernel inherits whether or not it notices: (1) §5.1's optimistic-vs-pessimistic split — an optimistic fixpoint is WRONG if halted early, a pessimistic one is merely poor, which prices any analysis-budget/timeout the kernel might want; (2) §5.3's nodes-vs-edges result — the executable flag must key to EDGES, node-keying silently loses facts, the direct analogue of keying availability to positions-between-statements rather than statements; (3) §5.2's def-use-vs-SSA result — a def-use-chain-shaped index is quadratic AND less precise than an SSA-shaped one, which is exactly the shape 28Q §1's DefinitionId keying risks. Also a positive data point for the unification thesis: combining constant-propagation with unreachable-code elimination beats iterating them separately.",
+    "graded-by": "subagent",
+    "published": "1991-04",
+    "retrieved": "2026-08-01",
+    "sha256": "f05341e6c4c1cc16c2e85a7ea049807e8febef85b78bd7b03094394c6be502c0",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Wegman Zadeck constant propagation with conditional branches SCCP paper'])"
+  }
+}
