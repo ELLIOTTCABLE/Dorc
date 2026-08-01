@@ -121,6 +121,8 @@ Open (human):
 
 ## 5. Corrected realization (supersedes §3's C-2/C-3/C-4 framing) — it's just abstract interpretation over probed observables
 
+<!-- /* superseded: the declared would-produce substitution for mutators is dead-on-principle (rul-declared-observable-substitution-is-dead); predict never licenses apply-time values — 28M §8 rul-predict-feeds-plan-never-apply; see Research/plans/28Q §4 */ -->
+
 The human dissolved most of §3's complexity. The clean model (+SURE, human-ruled):
 
 **Probe → concrete observables → abstract-interpret the apply-CFG → omit what can't run.** The probe

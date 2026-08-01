@@ -475,6 +475,7 @@ impl ReplaceLicense {
     ///      single predicted rc reproduces, and a constant-substituted loop condition is an
     ///      infinite/zero-iteration disaster (arch-1, note 214 — the honest successor to the
     ///      retired render-floor, keyed on iteration not render capability).
+    // <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
     ///    * `StatusRelaxable` (a `&&`/`||` left operand, an errexit-region command, a
     ///      `$?`-reader's predecessor, or — since arch-1 — an `if`/`elif` guard) — blocks
     ///      **only when the rc is ⊤** (`status == Predicted::Top`): then the stand-in would
@@ -925,6 +926,7 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
 /// parallel one (`inv-site-keyed-results`).
 pub use dorc_core::LeafId;
 
+// <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
 /// The cheapest sh stand-in that reproduces a leaf's **exact** observed exit status
 /// (`19A §5` observable-value-MAINTAINING substitution / DESIGN `16F`/`16P-T10`).
 /// NOT always `:`: the value the downstream fold/guard reads must be preserved, so a
@@ -3372,6 +3374,7 @@ fn push_inline_predicts(
     checks.extend(staged);
 }
 
+// <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
 /// Build a plan from the analysis result + an injected host **observation** oracle.
 ///
 /// `observe` is the host probe (the real host / `hostsim` is a later seam): it
@@ -4291,6 +4294,7 @@ impl Plan {
             .collect()
     }
 
+    // <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
     /// Render the apply as the ORIGINAL book with each elided leaf's **exact byte-span**
     /// substituted in-situ (arch-1, note 214 — the leaf-exact / span-based render). A
     /// `Replace`d leaf's command span becomes its value-preserving [`StandIn`]; a

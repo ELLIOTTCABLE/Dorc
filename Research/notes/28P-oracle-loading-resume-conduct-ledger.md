@@ -992,6 +992,8 @@ corpus rather than an argument.
 
 ### fnd-a-split-family-elides-on-two-authors
 
+<!-- /* superseded: resolved at the license tier by 28Q §4 rul-verdict-primacy-at-the-ship-seat (stage-0: the verdict body ships and answers — a monologue); sparing-tier residue stays the fence sitting's; see Research/plans/28Q §4 */ -->
+
 The other commissioned suite, and it did NOT confirm what it was written to confirm — which is why
 it was worth commissioning. `pin28-split-family-lane-separation` puts `apt_get__predict` in one
 author's file and `apt_get__is_converged` in another's (different MEMBERS, no shadowed name, so
@@ -1018,6 +1020,8 @@ obviously wrong — author two consented to this argv through their own arms, an
 is factual, which is the ordinary fact-plus-vouch architecture. But it is not a MONOLOGUE, and
 bitem3's custody now says so out loud: the license reads `Vouched(author two)` over a fact author one
 measured. Flagged as `tc-split-family-elides-on-two-authors`.
+
+<!-- /* superseded: resolved at the license tier by 28Q §4 rul-verdict-primacy-at-the-ship-seat (stage-0: the verdict body ships and answers — a monologue); sparing-tier residue stays the fence sitting's; see Research/plans/28Q §4 */ -->
 
 ## bitem7 — renames and small riders (LANDED)
 
@@ -1068,6 +1072,7 @@ its size suggests.
   whether the composite is admissible is a license-plane ruling, and `28M` §8 explicitly reserved
   the custody-vs-coherence question for the human ("why custody rather than a coherence check, if
   reproduction ever widens"). The custody type makes it visible; it does not decide it.
+  <!-- /* superseded: resolved at the license tier by 28Q §4 rul-verdict-primacy-at-the-ship-seat (stage-0: the verdict body ships and answers — a monologue); sparing-tier residue stays the fence sitting's; see Research/plans/28Q §4 */ -->
 - **`tc-wrapped-vouch-seat-has-no-positional-gate`** — `fnd-the-wrapped-vouch-seat-resolved-forwards`
   closed the forward-scan half at that seat, but `build_wrapped_vouches` still takes no
   `LiveDefinitions` and so never asks whether its whole-unit winner is the definition live AT the

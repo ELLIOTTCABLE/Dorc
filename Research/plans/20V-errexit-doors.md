@@ -66,6 +66,7 @@ constructed (door-4). Each arm is the negation of the others; no sixth arm.
   disaster-class-shaped when wrong). Static: trusts the probe lane's freshness
   (TOCTOU-WONTFIX parity with today's plain elision). Spelling is kTYANNOT-adjacent:
   acceptable-debt inline form for the spike; ratification OPEN.
+  <!-- /* superseded: door-2 (declared converged-run observable) is dead-on-principle — never ratified, never built (rul-declared-observable-substitution-is-dead); see Research/plans/28Q §4 */ -->
 - **door-4 — the constructed guard (BUILD; the keystone).** Transform a bare oracled
   mutator: `apt-get install -y nginx` ⇒ `dpkg -s nginx >/dev/null 2>&1 || apt-get
   install -y nginx` — the left side is the kind's own structurally-vouched probe body.

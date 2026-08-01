@@ -221,6 +221,7 @@ Mechanism (the seam is `command_effect`'s inputs — extend the existing `24L` �
      "which body ships" must become "verdict-provider with no predict-resolution", not
      "kind is auto". This is the likeliest silent-breakage point of the whole fix; enumerate
      the consumers (`grep is_auto_kind`) in the builder's first commit.
+     <!-- /* superseded in part: the predict-wins ship discriminator preserved here is inverted by 28Q stage-0 (rul-verdict-primacy-at-the-ship-seat); the keying-coherence half stands; see Research/plans/28Q §4 */ -->
 6. Tests (from `26G` §4, consolidated): two same-command sites, distinct authored entities —
    distinct cells, independent licensing, ORDER-INDEPENDENT (kills the F1 tie-break mystery
    behaviorally; its mechanism stays unquoted); same-command SAME-entity — shared cell, ⊤ on
