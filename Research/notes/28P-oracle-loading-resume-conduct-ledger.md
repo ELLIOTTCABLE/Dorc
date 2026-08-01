@@ -612,3 +612,171 @@ reasoning onto the items' doc-comments where it belongs.
   invisible to them and they happen to agree — but that is a coincidence of the current vector
   choice, not a property, and it breaks the day either widens to the source-wide list (which
   bitem7's rename rider contemplates). Named, not chased.
+
+## item0 — the survival-closure consumption measurement (MEASURED; deriv half LANDED)
+
+`28P:adj-survival-closure-gap-measure-then-fix`, the measure-first item ahead of bitem3. bitem1
+closed the closure gap in the guard/probe lanes; the survival lanes still ship closure-less bodies,
+so the question was what a survival-lane body's death mid-emission does to the at-most claim it was
+writing. Measured through the built engine on fixtures, never reasoned: a `disturbs` body that emits
+from a payload-bound pipe and then calls a helper the ship lane does not carry.
+
+### tbl-the-four-tiers-measured
+
+The brief's required split — TRANSPORT atomicity (`an-derived-footprint`'s all-or-nothing readback:
+did the record stream arrive whole) vs BODY-DEATH atomicity (did the body that wrote those records
+finish its survey). They are independent, and only the first was ever gated.
+
+| tier | transport | body-death | as-built |
+|---|---|---|---|
+| static per-arm `disturbs` | n/a (never leaves the controller) | **ATOMIC by construction** | safe |
+| dynamic derived `disturbs` (the deriv lane) | ATOMIC (`deriv-end n=<K>`) | **PARTIAL — measured** | FIXED here |
+| `kind__resolve` (the resolv lane) | n/a (one value, not a set) | **ATOMIC by construction** | safe |
+| dynamic `disturbance_reaches_only` (the reach lane) | **NO GATE AT ALL** | **PARTIAL — measured** | REPORTED, not built |
+
+Static tier: `evaluate_touches` tops the WHOLE body on any non-printf command (TC-4), so a body that
+statically emits two coordinates and then calls a helper discards both and escalates — a partial
+static footprint is unrepresentable, not merely unobserved. +SURE (the property is pinned by
+`multi_stage_pipeline_and_leading_printf_arm_escalate`, which asserts exactly the printf-then-opaque
+shape).
+
+Resolv tier: its scaffold already captures the body's status (`_rr=$?` off a `$()` capture) and
+answers `dangling` on non-zero or empty, which canonicalizes to `MayAlias(Unresolved)` then demotes
+to run. A resolver that dies fails toward run, loudly. +SURE. Worth noting for the next reader that
+this lane was the PRECEDENT for the deriv repair below — the shape already existed one module away.
+
+### fnd-the-count-gate-cannot-see-a-body-death
+
+The measurement, and the reason the deriv lane looked safe. `deriv-end <site> n=<K>` reads as a
+completeness gate, and `26A` stop-1 describes it as one — but K is computed by the SCAFFOLD from the
+lines it received, not declared by the body about its own survey. The pre-repair emission was a
+single pipeline: the body on the left, and on the right a counting group that printed one record per
+line received and then closed the family at its own running total.
+
+So a body that emits one coordinate and then dies on an unbound helper closes at `n=1` and AGREES
+WITH ITSELF. Transport is intact; the survey is not. And the body's own status was not merely
+ignored, it was unreachable: the body sat on the LHS of a pipeline, whose status is its RHS's.
+
+Measured, through `mise run test:e2e`, in two halves. First the runtime half — the shipped
+closure-less body produced exactly its pre-helper coordinate and nothing else (gate-1(d) reported
+`produced: deriv 0 coord=sm.dorc.File:/etc/oldpkg.conf` against an authored complete set naming the
+helper's `sm.dorc.Package:nginx` too). Then the consumer half — feeding back exactly those truncated
+records, the wall's footprint was ACCEPTED at its narrow width and the converged `apt-get install -y
+nginx` SURVIVED past the running wall and elided, where the complete footprint collides and runs it.
+A wrongly-NARROW at-most claim spares more; the site that should have run did not. +SURE, and it is
+the priority-1 under-execute inside the survival tier's one naked-trust cell.
+
+### dec-whole-body-atomic-refusal
+
+The repair, deliberately the smallest one that closes the measured cell. The scaffold captures the
+emission body's status BEFORE the record pipe (the resolv lane's capture shape) and carries it on the
+close record, which becomes `deriv-end <site> n=<K> body-rc=<R>`; `merge_derived_footprints` refuses
+the WHOLE family on non-zero `R`, on the same path and with the same outcome as the
+malformed-coordinate refusal — no footprint, the site walls total. Whole-body-atomic, failing toward
+the wall, and it asks the oracle author for NO new spelling.
+
+Three things it deliberately is not. It is not a completion SIGNAL: a body that truncates its survey
+and still exits 0 stays invisible, and that residue is the human's open design
+(`ANALYZER-NEEDS:an-atmost-completion-signal`) — nothing here builds toward it. It is not a verdict
+rc: `rul-rc-partition`'s 0/1/>=2 table binds verdict functions, and this reads a binary
+did-the-body-finish, which is why the wire spells it `body-rc=` rather than joining the site record's
+`rc=` (`rc-naming-discipline` — two different rcs one field-name apart is exactly the confusion that
+ban exists for). And it is not a closure fix: the helper still does not travel. Closing THAT is the
+value-add half of the adjudication and is now unblocked, but it is a widening, and a widening is
+never what should land in front of a measured under-execute.
+
+Honest cost, disclosed: the refusal also fires where a body legitimately finished its survey and
+merely ended on a failing command (an author whose last pipeline stage exits non-zero). That loses
+sparing — walls — never a license. Conservative direction, zero corpus instances.
+
+The two gates are now independent and both necessary, which is the shape the measurement asked for:
+`count` proves the stream, `body_rc` proves the body. `results::DerivClose` carries them as one typed
+close record so a future reader cannot satisfy one and believe both.
+
+### fnd-the-reach-lane-has-no-completeness-gate-at-all (REPORTED, not built)
+
+Measured on the same footing and NOT repaired — flagged below as `tc-reach-expansion-has-no-atomicity`
+because repairing it would overrule a built doctrine, which is not a builder's call.
+
+A DYNAMIC `disturbance_reaches_only` arm runs under the identical pre-repair scaffold — the arm piped
+into a per-line record printer, its status discarded by the same pipeline rule — and its consumer
+(`expand_footprints_via_reaches`) reads the readback through `.unwrap_or_default()`. There is no close
+record, no count, and therefore not even the transport-tier gate the deriv lane had. Measured: with
+the reach family absent from the stream — the wire shape a truncated or aborted arm produces —
+`strawman24-reach-crossauthor`'s downstream `installfile /etc/nginx/nginx.conf` stopped running and
+elided, silently, with no diagnostic. That is the same cardinal sin: reaches EXPAND a footprint, so a
+missing expansion narrows it, and narrow spares more.
+
+Why it is not repaired here. `ANALYZER-NEEDS:an-kind-reach` is a BUILT (status B) doctrine reading
+"widens claims only — the safe direction", and the reach scaffold's own doc-comment documents an
+un-shimmed arm's silent empty expansion as safe on that basis. The measurement says that reading is
+wrong whenever the disturbs claim is not independently total — which is precisely when a kind-owner
+`reaches_only` is needed at all. Correcting it changes survival OUTCOMES for existing corpus cases
+(every arm that fails or 127s would begin refusing its footprint) and contradicts a ruled row, so it
+is a doctrine correction rather than a bug fix (`inv-superposition`: a cross-cutting judgment is
+flagged UP, never settled inside a component).
+
+Sizing for whoever takes it, since the mechanism is now built once and can be copied: the scaffold
+edit and a `reach-end <coord> arm=<n> n=<K> body-rc=<R>` record are the same shape as this item's,
+but the REFUSAL SEAT does not exist — `TrustedFootprints::expand_reaches` hands its closure no node
+key and offers no removal, so the closure cannot wall the footprint it is expanding. That is the real
+cost (a small signature change in `plan::survival` plus the cli consumer), and it is why this is a
+lane item rather than a rider.
+
+### Golden churn, predicted vs actual
+
+Predicted before building: the scaffold bytes move in every case that compiles a derivation, and
+nothing else — the repair only ever ADDS a refusal, and no corpus body terminates abnormally.
+
+Actual: exactly that. Two cases, both content-only, each blessed scoped and inspected:
+`strawman24-derived-survive` (the transcript's two scaffold lines; its apply artifact is
+byte-identical, correctly — its body exits 0 and its footprint is complete) and the new pin. No
+site's verdict, license, or disposition moved anywhere in the corpus.
+
+| cause | cases | delta |
+|---|---|---|
+| scaffold bytes in a committed transcript | 1 | probe bytes only; apply artifact byte-identical |
+| net-new | 1 e2e loom + 1 unit cell | additive |
+| behavioural drift elsewhere | 0 | full e2e: 118 passed, 2 content diffs, nothing else |
+
+### The behaviour pin: `pin28-survival-body-death-walls-total`
+
+The consequence cell end to end, and it is worth reading over the unit test because the committed
+transcript SHOWS the two atomicities pulling apart: the probe carries `deriv-end 0 n=1 body-rc=127`
+— a family whose count is perfectly self-consistent and whose body never finished — and the apply
+artifact runs BOTH installs. Non-vacuous by construction: before the repair this exact fixture elided
+the nginx install, which is how the hole was measured in the first place.
+
+The unit-tier twin extends `pin_partial_deriv_family_demotes_to_wall_total` with a
+transport-perfect/body-dead cell, deliberately sharing the stream builder with the count cells so the
+two gates are asserted over identical bytes.
+
+### The aid surface (`Words::Unwritten`; no new code, no ceiling bump)
+
+- **`footprint-incoherent-emitting-body-died-mid-survey`** — a new `FootprintIncoherentReason`
+  variant beside `MalformedDerivedCoordinate`, carrying the body's termination status (127 = a helper
+  the shipped body did not carry — the actionable datum). It mints NO new `DiagCode`: the refusal is
+  a footprint-coherence failure, which `footprint-incoherent` already owns, and the typed-reason enum
+  is the shape `28L:rul-reason-enums-not-sibling-codes` requires. So the unwritten CEILING is
+  untouched — `28O:res-unwritten-ceiling-spent` and bitem1's second bump both stand unspent by this
+  item. Words are `Unwritten` (hand-seeded arrangement row, the sanctioned carve; builders author
+  zero prose).
+
+  Sited under `footprint-incoherent` rather than `deriv-family-incomplete` ON PURPOSE, and the choice
+  is the measurement's whole point: `deriv-family-incomplete` is the TRANSPORT code, and filing a
+  body-death under it would tell the author their stream was cut when their stream was perfect.
+  Mis-attribution is the sin that outranks the others (`271:rul-sin-ordering`).
+
+### Flagged upward
+
+- **`tc-reach-expansion-has-no-atomicity`** — `fnd-the-reach-lane-has-no-completeness-gate-at-all`,
+  above. Measured under-execute; unrepaired because the repair overrules `an-kind-reach`'s built
+  "widens claims only — the safe direction" row and moves existing survival outcomes. Wants a
+  conductor ruling, then the mechanism copies from this item.
+- **`res-survival-lanes-still-ship-closure-less`** — the adjudication's value-add half
+  (`adj-survival-closure-gap-measure-then-fix`: "if atomic, extend closure capture there") is NOT
+  taken, because the answer was PARTIAL, not atomic, and the refusal was the ruled first item. The
+  helper still does not travel with a `disturbs`/`resolve`/`reaches` body; what changed is that its
+  absence now walls loudly instead of silently narrowing an at-most claim. Extending bitem1's
+  `HelperIndex` to the three survival ship seats stays cheap and stays somebody's dispatch
+  (`cli/CLAUDE.md one-helper-index-two-lanes` already names it).

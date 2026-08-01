@@ -119,6 +119,21 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   (whose claim licensed it, line-level first link); the why-lens names them.
 - **empty-world-byte-identical** — no oracles loaded ⇒ output byte-identical;
   rung-0 pin in every brief touching this crate.
+- **an-at-most-claim-has-two-atomicities** (`28P:dec-whole-body-atomic-refusal`) — a derived
+  footprint must prove BOTH that its record stream arrived whole AND that the body which wrote
+  it finished. They are independent and only the first reads like a gate: `deriv-end n=<K>` is
+  counted by the SCAFFOLD from lines received, so a body that emits three coordinates and dies
+  on an unbound helper closes at `n=3` and agrees with itself — transport intact, survey false,
+  at-most claim wrongly NARROW, and narrow SPARES MORE (measured wrong-elision). So the
+  scaffold captures the emitting body's status BEFORE the record pipe (a pipeline's status is
+  its RHS's, which is why the body's was previously unreachable) and carries it as
+  `body-rc=<R>`; non-zero refuses the WHOLE family ⇒ the site walls total. Never file a
+  body-death under the transport code `deriv-family-incomplete` — the stream was perfect, and
+  saying otherwise mis-attributes (`271:rul-sin-ordering`). Two things this is NOT: a verdict
+  rc (`rul-rc-partition` binds verdict functions; this is a binary did-the-body-finish, spelled
+  `body-rc=` so it can never be read as the site record's `rc=`), and a completion signal —
+  a body that truncates and exits 0 stays invisible, and that residue is human-owned design
+  (`ANALYZER-NEEDS:an-atmost-completion-signal`). Do not build toward it.
 
 ## Law — render
 
