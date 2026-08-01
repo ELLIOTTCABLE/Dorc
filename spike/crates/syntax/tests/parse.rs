@@ -729,12 +729,10 @@ fn reject_dynamic_command_name_is_dynamic_execution() {
 
 #[test]
 fn reject_source_target_built_by_running_something_but_allow_expansion() {
-    // Why: the trigger asks whether the analyzer could ever hold a VALUE for the target,
-    // which is the same question the for-list word trigger asks and shares a predicate
-    // with. A command substitution or arithmetic expansion answers no under every possible
-    // value-flow, so it stays a parse-tier ⊤; a PARAMETER expansion is ordinary value-flow
-    // (`28K` §1 rul-unloadable-is-unlicensed's richness half — `LIB=./oracles; . "$LIB/y.sh"`
-    // loads exactly as a literal does), so it parses and `funcenv` resolves or walls it.
+    // Why: the trigger asks whether any value-flow could ever hold the target — the for-list
+    // word's question, sharing its predicate. Running something answers no always, so it stays
+    // a parse-tier ⊤; a parameter expansion is ordinary value-flow, so `funcenv` resolves it or
+    // walls (`28K` §1 rul-unloadable-is-unlicensed: `LIB=./oracles; . "$LIB/y.sh"` loads).
     assert_rejects(". \"$(pick)\"", UnsupportedReason::DynamicExecution);
     assert_rejects("source $(pick).sh", UnsupportedReason::DynamicExecution);
     assert_rejects(". \"$((n)).sh\"", UnsupportedReason::DynamicExecution);

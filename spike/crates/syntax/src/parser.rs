@@ -1073,12 +1073,10 @@ impl Parser {
                 SyntaxUnsupportedReason::EvalConstructedCode,
             )),
             "." | "source" => {
-                // A target the analyzer can never hold a value for — one built by running
-                // something (`. "$(pick-host).sh"`) — is a ⊤-trigger here, on the same
-                // predicate and for the same reason as a for-list word. A target built from
-                // literals and PARAMETER expansions is not: its value is ordinary value-flow
-                // (`28K` §1 rul-unloadable-is-unlicensed's richness half), resolved by
-                // `funcenv` through `SourceLiteralPlane` and walling there when it cannot be.
+                // A target built by RUNNING something is a ⊤-trigger, on the for-list word's
+                // own predicate and for its reason: no value-flow can ever hold it. A
+                // parameter expansion can, so it belongs to `funcenv`, which resolves it
+                // through `SourceLiteralPlane` or walls (`28K` §1 rul-unloadable-is-unlicensed).
                 let dynamic = words
                     .get(1)
                     .is_some_and(|&w| self.word_has_expansion_effect(w));
