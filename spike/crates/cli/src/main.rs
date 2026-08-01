@@ -1461,12 +1461,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 &mut interner,
             ),
         );
-        // 24G §4: EXPAND each reach-bearing footprint coord via reaches() — STATIC arms (cli-traced,
-        // all coords) + DYNAMIC arms (the `reach` readback, authored coords only). Runs AFTER the
-        // authored/derived merge and BEFORE the walk, so the wider footprint flows the EXISTING
-        // disjoint/canonicalize path (no new interplay code). A dynamic arm that cannot show it
-        // finished REFUSES the footprint (`28P` item0's mechanism at its second consumer): the walls
-        // the expansion serves are the survival tier's, so an un-widened claim spares more.
+        // 24G §4: EXPAND each reach-bearing footprint coord via reaches(), after the
+        // authored/derived merge and before the walk. An arm that cannot show it finished refuses
+        // the footprint — see `expand_footprints_via_reaches`.
         let reach_node_spans: BTreeMap<_, _> = fps
             .nodes()
             .map(|n| (n, parsed.value.node(cfg.value.node(n).ast).span))
@@ -3453,9 +3450,9 @@ fn book_digest(book_src: &str) -> String {
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
 #[cfg(test)]
+/// The reach arm's close, both declarations (`28P` item0's mechanism at its second consumer); a
+/// malformed one reads as never-closed ⇒ the footprint is refused.
 fn parse_reach_end_record(rest: &str, out: &mut SiteResults) {
-    // The reach arm's close, both declarations (`28P` item0's mechanism at its second consumer);
-    // a malformed one reads as never-closed ⇒ the footprint is refused.
     let mut it = rest.split_whitespace();
     let Some(coord) = it.next() else { return };
     let (mut arm, mut count, mut body_rc) = (None, None, None);
@@ -4184,8 +4181,7 @@ mod tests {
             )
         };
 
-        // The footprint SURVIVES the expansion pass ⇒ its wall can still spare a disjoint
-        // downstream cell; its absence ⇒ the wall walls total.
+        // Survives ⇒ its wall can still spare a disjoint downstream cell; absent ⇒ wall-total.
         let footprint_survives = |stream: &str| -> bool {
             let mut i = Interner::default();
             let src = "sm_dorc_Package__disturbance_reaches_only() {\n   \

@@ -375,6 +375,12 @@ impl Harness {
 /// whole subject is `. ./defs.sh` and a manifest that cannot find what it sources measures
 /// nothing. A copy rather than the case dir itself: the throwaway-cwd rule is what keeps a
 /// misbehaving manifest from writing into the corpus.
+///
+/// PATH is the mocks PLUS the floor binary's own userland, and it has to be: measured, `printf` is
+/// a BUILTIN in dash 0.5.12 and an EXTERNAL command in posh 0.14.1, so under the corpus's ordinary
+/// mocks-only PATH a posh manifest emits nothing at all and every case would read as a floor
+/// disagreement. This is the opt-in real-binary lane, so the widening is in character — but it is
+/// this lane's alone, and the rest of the rail (cleared env, sandbox cwd) is intact.
 fn capture_floor_stdout(shell: &Path, text: &str, case: &Path, mocks: &Path) -> String {
     {
         let scratch = Scratch::new("floor");
@@ -389,12 +395,6 @@ fn capture_floor_stdout(shell: &Path, text: &str, case: &Path, mocks: &Path) -> 
         }
         let script = scratch.path.join("manifest.sh");
         std::fs::write(&script, format!("{text}\n")).expect("write manifest");
-        // The floor binary's OWN userland joins the mocks on PATH, and it has to: measured,
-        // `printf` is a BUILTIN in dash 0.5.12 and an external command in posh 0.14.1, so under the
-        // corpus's ordinary mocks-only PATH a posh manifest emits nothing at all and every case
-        // would read as a floor disagreement. This lane is the opt-in real-binary one, so the
-        // widening is in character — but it is the lane's alone, and the rail is otherwise intact
-        // (cleared env, sandbox cwd).
         let path = shell.parent().map_or_else(
             || mocks.as_os_str().to_owned(),
             |dir| {

@@ -1625,9 +1625,17 @@ pub fn build_vouches_from_sets(
 /// It takes the DRIVER's already-lifted sets for the reason
 /// [`build_vouches_from_sets`] does: re-lifting from raw source read a population every other seat
 /// had already narrowed, so this seat's whole-unit winner could be a definition the run had
-/// withdrawn — and the positional gate below would then withhold, a silent wall nothing else in
-/// the run agreed with (`28P:fnd-build-vouches-relifted-the-verdict-sets`, the same fault one seat
-/// further out).
+/// withdrawn — and the positional gate would then withhold, a silent wall nothing else in the run
+/// agreed with (`28P:fnd-build-vouches-relifted-the-verdict-sets`, the same fault one seat further
+/// out).
+///
+/// Its resolution scanned FORWARD until `28P:fnd-the-wrapped-vouch-seat-resolved-forwards`
+/// (first-definition-wins, the INVERSE of sh's answer) and is now NARROWED positionally as well —
+/// the sixth and last seat to join the regime (`28P:tc-wrapped-vouch-seat-has-no-positional-gate`).
+/// The whole-unit winner vouches here only where it is the definition a shell would have live AT
+/// the wrapped site: the withhold-not-re-resolve shape bitem0 ruled
+/// (`analysis/CLAUDE.md visibility-is-full-positional`), through bitem3's ONE custody crossing.
+/// Custody was already honest about WHOSE judgment speaks; this makes it honest about WHERE.
 #[must_use]
 pub fn build_wrapped_vouches(
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
@@ -1665,14 +1673,6 @@ pub fn build_wrapped_vouches(
             .map(|s| interner.resolve(*s).to_owned())
             .collect();
         let op_slices: Vec<&str> = op_refs.iter().map(String::as_str).collect();
-        // Scanned FORWARD until `28P:fnd-the-wrapped-vouch-seat-resolved-forwards`:
-        // first-definition-wins, the INVERSE of sh's answer. Then NARROWED positionally, the
-        // sixth and last seat to join the regime (`28P:tc-wrapped-vouch-seat-has-no-positional-
-        // gate`): the whole-unit winner vouches here only where it is the definition a shell
-        // would have live AT the wrapped site — the withhold-not-re-resolve shape bitem0 ruled
-        // (`analysis/CLAUDE.md visibility-is-full-positional`), through bitem3's ONE custody
-        // crossing. Custody was already honest about WHOSE judgment speaks; this makes it honest
-        // about WHERE.
         let verdict_name = format!(
             "{}{VERDICT_SUFFIX}",
             map_provider_name(interner.resolve(*provider))
