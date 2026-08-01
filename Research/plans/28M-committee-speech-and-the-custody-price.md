@@ -581,4 +581,39 @@ here is a verdict)
     greenest population); the lift's entire effect concentrates in multi-token
     families — multi-arm verdict-only oracles (systemctl-shaped; real value) and
     mixed predict+verdict vocabularies (where the two-grades risk lives).
+  - **sent-language-is-becoming-crufty [TYPED 2026-07-31, stated outright at the
+    human's direction]** — "the language is becoming crufty." Standing pressure on
+    every further addition in this corner and beyond: prefer semantically enriching
+    constructs that already exist over new functions/entry-points/ceremony;
+    ceremony-to-value is now a watched ratio. (Candidate for elevation into a root
+    doc in the human's own voice, their call.)
+  - **prop-observe-marks-feed-the-dialect [PROPOSED, the keep-but-better design;
+    human lean "keep, at least for now" pending this]** — under keep, dialect
+    membership re-keys from LANE to MARK FORM: the sparing vocabulary =
+    predict-minted tokens ∪ `:?`-observe-minted tokens FROM ANY BODY. Rationale: the
+    observe mark's existing semantic ("this line reads/measures this cell") IS a
+    description act; `:`/`:!` on a verdict tail is a judgment-role annotation. The
+    consumption gate stops keying on which function encloses the line (the thing the
+    human rightly balked at) and keys on which mark-form the author chose, per line,
+    in place. The verdict-only author's hill flattens to the ONE discipline they
+    already owe for backing-honesty: `:?`-declare what your check reads, and your
+    words enroll. Monotonic both ways: each `:?` only shrinks the collide-set
+    relative to the keep-floor (collide-always → collide-where-declared-reads-
+    intersect) and adds only standard at-least token exposure. Composes with
+    ack-shared-bytes-transitive-permission (closure-permission) and the
+    counterfactual hint below. One grammar question routed to the build: whether one
+    line may carry `: X` and `:? X` together (if not, the same-line co-mark is the
+    tweak — still no new construct). Guard-seat cost note: `:?` lines in a verdict
+    body ride the shipped guard bytes; extra reads are author-priced check-tax.
+  - **prop-collided-for-vocabulary-hint [PROPOSED, aid-plane]** — the noise-killer:
+    mint the counterfactual detection "this comparison collided SOLELY because token
+    T is outside family F's descriptive vocabulary; a `:?` observation (or predict
+    line) minting T would have spared this re-check" — fires only when the
+    counterfactual flips the outcome (precise-or-silent satisfied even outside the
+    kWARN spike-era weld); renders in `dorc why` and the hint lane.
+  - **re-open-at-spike-end** [human]: the lift question joins the see-how-it-feels
+    ledger — same instrument as `kSURVIVAL` (`252` B4 fires-often × bites-rarely);
+    the flip evidence named in-chat: multi-arm delegation-style verdict-only oracles
+    dominating real authoring with forfeited spares carrying the bulk of drifted-day
+    attention value.
 
