@@ -751,6 +751,12 @@ pub enum AdmittedHostRecord<'a> {
         arm: usize,
         entity: &'a str,
     },
+    ReachEnd {
+        coord: &'a str,
+        arm: usize,
+        count: u32,
+        body_rc: u32,
+    },
     Report {
         body: &'a str,
     },
@@ -800,6 +806,17 @@ impl AdmittedUnscopedHostRecords {
                 arm: *arm,
                 entity,
             },
+            TypedHostRecord::ReachEnd {
+                coord,
+                arm,
+                count,
+                body_rc,
+            } => AdmittedHostRecord::ReachEnd {
+                coord,
+                arm: *arm,
+                count: *count,
+                body_rc: *body_rc,
+            },
             TypedHostRecord::Report { body } => AdmittedHostRecord::Report { body },
         })
     }
@@ -832,6 +849,12 @@ enum TypedHostRecord {
         coord: String,
         arm: usize,
         entity: String,
+    },
+    ReachEnd {
+        coord: String,
+        arm: usize,
+        count: u32,
+        body_rc: u32,
     },
     Report {
         body: String,
@@ -1098,6 +1121,32 @@ fn parse_record(
                 entity,
             })
         }
+        "reach-end" => {
+            let mut words = rest.split_whitespace();
+            let coord = words.next().ok_or(AdmissionRefusal::Grammar)?;
+            let arm = words
+                .next()
+                .and_then(|word| word.strip_prefix("arm="))
+                .ok_or(AdmissionRefusal::Grammar)?;
+            let count = words
+                .next()
+                .and_then(|word| word.strip_prefix("n="))
+                .ok_or(AdmissionRefusal::Grammar)?;
+            let body_rc = words
+                .next()
+                .and_then(|word| word.strip_prefix("body-rc="))
+                .ok_or(AdmissionRefusal::Grammar)?;
+            if words.next().is_some() {
+                return Err(AdmissionRefusal::Grammar);
+            }
+            checked_field(coord, limits)?;
+            Ok(ParsedRecord::ReachEnd {
+                coord,
+                arm: number(arm, limits)?,
+                count: number_u32(count, limits)?,
+                body_rc: number_u32(body_rc, limits)?,
+            })
+        }
         "report" => {
             checked_field(rest, limits)?;
             Ok(ParsedRecord::Report { body: rest })
@@ -1159,6 +1208,12 @@ enum ParsedRecord<'a> {
         arm: usize,
         entity: &'a str,
     },
+    ReachEnd {
+        coord: &'a str,
+        arm: usize,
+        count: u32,
+        body_rc: u32,
+    },
     Report {
         body: &'a str,
     },
@@ -1171,6 +1226,7 @@ enum RecordIdentity<'a> {
     DerivationEnd(u32),
     Resolution(&'a str),
     Reach(&'a str, usize),
+    ReachEnd(&'a str, usize),
     Report(&'a str),
 }
 
@@ -1181,6 +1237,7 @@ enum Collection {
     DerivationEnd,
     Resolution,
     Reach,
+    ReachEnd,
     Report,
 }
 
@@ -1191,6 +1248,7 @@ struct CollectionCounts {
     derivation_end: usize,
     resolution: usize,
     reach: usize,
+    reach_end: usize,
     report: usize,
 }
 
@@ -1202,6 +1260,7 @@ impl CollectionCounts {
             Collection::DerivationEnd => self.derivation_end < limit,
             Collection::Resolution => self.resolution < limit,
             Collection::Reach => self.reach < limit,
+            Collection::ReachEnd => self.reach_end < limit,
             Collection::Report => self.report < limit,
         }
     }
@@ -1213,6 +1272,7 @@ impl CollectionCounts {
             Collection::DerivationEnd => self.derivation_end += 1,
             Collection::Resolution => self.resolution += 1,
             Collection::Reach => self.reach += 1,
+            Collection::ReachEnd => self.reach_end += 1,
             Collection::Report => self.report += 1,
         }
     }
@@ -1226,6 +1286,7 @@ impl<'a> ParsedRecord<'a> {
             Self::DerivationEnd { site, .. } => RecordIdentity::DerivationEnd(site),
             Self::Resolution { coord, .. } => RecordIdentity::Resolution(coord),
             Self::Reach { coord, arm, .. } => RecordIdentity::Reach(coord, arm),
+            Self::ReachEnd { coord, arm, .. } => RecordIdentity::ReachEnd(coord, arm),
             Self::Report { body } => RecordIdentity::Report(body),
         }
     }
@@ -1237,6 +1298,7 @@ impl<'a> ParsedRecord<'a> {
             Self::DerivationEnd { .. } => Collection::DerivationEnd,
             Self::Resolution { .. } => Collection::Resolution,
             Self::Reach { .. } => Collection::Reach,
+            Self::ReachEnd { .. } => Collection::ReachEnd,
             Self::Report { .. } => Collection::Report,
         }
     }
@@ -1274,6 +1336,17 @@ impl<'a> ParsedRecord<'a> {
                 coord: coord.to_owned(),
                 arm,
                 entity: entity.to_owned(),
+            },
+            Self::ReachEnd {
+                coord,
+                arm,
+                count,
+                body_rc,
+            } => TypedHostRecord::ReachEnd {
+                coord: coord.to_owned(),
+                arm,
+                count,
+                body_rc,
             },
             Self::Report { body } => TypedHostRecord::Report {
                 body: body.to_owned(),
@@ -1405,7 +1478,9 @@ fn charge_retained(
                 charge(value)?;
             }
         }
-        ParsedRecord::Derivation { coord, .. } => charge(coord)?,
+        ParsedRecord::Derivation { coord, .. } | ParsedRecord::ReachEnd { coord, .. } => {
+            charge(coord)?;
+        }
         ParsedRecord::DerivationEnd { .. } => {}
         ParsedRecord::Resolution { coord, canonical } => {
             charge(coord)?;
@@ -2249,7 +2324,7 @@ mod tests {
             Admission::Refused(AdmissionRefusal::RecordLimit)
         ));
 
-        let cases: [(&str, RecordFactory); 6] = [
+        let cases: [(&str, RecordFactory); 7] = [
             ("site", |index| format!("site {index} effect=holds rc=0")),
             ("deriv", |index| format!("deriv {index} coord=d{index}")),
             ("deriv-end", |index| {
@@ -2258,6 +2333,9 @@ mod tests {
             ("resolv", |index| format!("resolv c{index} dangling")),
             ("reach", |index| {
                 format!("reach c{index} arm=0 entity=e{index}")
+            }),
+            ("reach-end", |index| {
+                format!("reach-end c{index} arm=0 n=0 body-rc=0")
             }),
             ("report", |index| format!("report r{index}")),
         ];
@@ -2429,6 +2507,7 @@ mod tests {
             "deriv-end 0 n=1 body-rc=0",
             "resolv one dangling",
             "reach one arm=0 entity=e",
+            "reach-end one arm=0 n=1 body-rc=0",
             "report note",
         ];
         for record in exact {
@@ -2447,6 +2526,12 @@ mod tests {
             ("deriv-end 0 n=0 body-rc=0", "deriv-end 0 n=1 body-rc=0"),
             ("resolv one dangling", "resolv one canon=two"),
             ("reach one arm=0 entity=e", "reach one arm=0 entity=f"),
+            // A close is IDENTIFIED by (coord, arm) alone, so two disagreeing closes for one arm
+            // are ambiguous rather than last-wins — the gate must never pick the permissive one.
+            (
+                "reach-end one arm=0 n=1 body-rc=0",
+                "reach-end one arm=0 n=1 body-rc=127",
+            ),
         ] {
             assert!(matches!(
                 admitted(&stream(0, &[left, right]), strict_limits()),

@@ -1,0 +1,171 @@
+---
+run: round-trip
+fixpoint: executed
+flags: --risk-faultless-skips
+probe-results: authored
+expect-diagnostic:
+  - footprint-incoherent
+---
+-- book.sh --
+# pin28-reach-arm-death-walls-total — the B half of the reach lane's atomicity pair
+# (`28P:dec-reach-expansion-refuses-whole-footprint`). Byte-identical to
+# pin28-reach-arm-survey-complete-spares except for `body-rc` in one record, and the admin's
+# installfile goes from elided to run.
+#
+# The measured hole (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`): the reach lane had
+# NO close record at all, so an arm that 127'd on an unbound helper — the survival lanes still ship
+# closure-less bodies — simply contributed no expansion, and the un-widened footprint looked
+# disjoint from more cells than it was. `an-kind-reach`'s built row read that as safe ("widens
+# claims only"), and it is safe only while the disturbs claim is independently total, which is when
+# a kind-owner `reaches_only` is not needed at all. Narrow SPARES MORE: the twin's elision below
+# would ride an expansion nobody finished computing.
+#
+# So an arm that cannot show it finished refuses the WHOLE footprint — not just its own coordinate
+# — and the wall walls total. Conservative, spelling-free, and it moves survival outcomes only
+# toward run. What it still cannot see is an arm that truncates its survey and exits 0; that
+# residue is ANALYZER-NEEDS:an-atmost-completion-signal, a design question and not this gate.
+hork tune nginx
+installfile /etc/nginx/nginx.conf
+
+-- crossauthor.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = "$1"
+   case $verb in tune) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@tuned ;; esac
+}
+hork__disturbs() {
+   verb=$1; shift
+   case $verb in tune) printf '%s\n' "$1" : disturbs sm.dorc.Package ;; esac
+}
+
+# The kind-owner's survey: `only` = complete-by-contract. Its arm is DYNAMIC (a host query), so it
+# ships into the probe and its answer arrives as `reach` records.
+sm_dorc_Package__disturbance_reaches_only() {
+   dpkg -L "$1"    : disturbs sm.dorc.File
+}
+
+installfile__predict() {
+   f : sm.dorc.File = "$1"
+   stat -- "$1" >/dev/null 2>&1 : sm.dorc.File:"$1"@present
+}
+installfile__is_converged() {
+   stat -- "$1" >/dev/null 2>&1
+}
+installfile__disturbs() {
+   printf '%s\n' "$1" : disturbs sm.dorc.File
+}
+
+-- probe-results.txt --
+# The dangerous shape, and note that NOTHING here disagrees with itself: the arm emitted one line,
+# the scaffold counted one line, and the family closes at n=1. Transport is perfect. The survey is
+# not — the arm died at 127 partway through, and every file it had not reached yet is missing from
+# a claim that says `only`.
+site 0 effect=absent
+site 1 effect=holds
+reach sm.dorc.Package:nginx arm=0 entity=/etc/other.conf
+reach-end sm.dorc.Package:nginx arm=0 n=1 body-rc=127
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/installfile --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork tune nginx
+ran: installfile /etc/nginx/nginx.conf
+
+-- replay --
+$ dorc --book=book.sh -o crossauthor.oracle.sh --risk-faultless-skips < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=d071b0dfafe65773f4e4f088cabf623b48a3a739e9253da055fdfbf08794fa72 sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Package:nginx@tuned
+hork__predict() {
+   verb=$1; shift
+   pkg="$1"
+   case $verb in tune) dpkg-query -W "$pkg" >/dev/null 2>&1 ;; esac
+}
+hork__predict 'tune' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.File:/etc/nginx/nginx.conf@present
+installfile__predict() {
+   f="$1"
+   stat -- "$1" >/dev/null 2>&1
+}
+installfile__predict '/etc/nginx/nginx.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# dorc reach-probe (read-only, 24G section 4): owner-declared reaches() expansion. Each dynamic
+# reaches() arm of a reach-bearing footprint coord runs with the ENTITY; when run it prints
+# the RAW ENTITIES it drags (its stdout lines), re-keyed by the coord AND the arm index,
+# then closes the arm with its line-count and its own termination status:
+#   reach <kind:entity> arm=<n> entity=<reached>
+#   reach-end <kind:entity> arm=<n> n=<K> body-rc=<R>
+# The controller joins arm->kind statically (the kind is fixed at lift -- never host-minted).
+
+# reach sm.dorc.Package:nginx via sm.dorc.Package.reaches() arm 0
+sm_dorc_Package__disturbance_reaches_only_0() { dpkg -L "$1" ; }
+_r=$(sm_dorc_Package__disturbance_reaches_only_0 'nginx'); _rr=$?
+if [ -z "$_r" ]; then printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' 0 "$_rr"; else printf '%s\n' "$_r" | { _n=0; while IFS= read -r _re; do printf 'dorc reach sm.dorc.Package:nginx arm=0 entity=%s @@dorc@@\n' "$_re"; _n=$((_n+1)); done; printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_rr"; }; fi
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# pin28-reach-arm-death-walls-total — the B half of the reach lane's atomicity pair
+# (`28P:dec-reach-expansion-refuses-whole-footprint`). Byte-identical to
+# pin28-reach-arm-survey-complete-spares except for `body-rc` in one record, and the admin's
+# installfile goes from elided to run.
+#
+# The measured hole (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`): the reach lane had
+# NO close record at all, so an arm that 127'd on an unbound helper — the survival lanes still ship
+# closure-less bodies — simply contributed no expansion, and the un-widened footprint looked
+# disjoint from more cells than it was. `an-kind-reach`'s built row read that as safe ("widens
+# claims only"), and it is safe only while the disturbs claim is independently total, which is when
+# a kind-owner `reaches_only` is not needed at all. Narrow SPARES MORE: the twin's elision below
+# would ride an expansion nobody finished computing.
+#
+# So an arm that cannot show it finished refuses the WHOLE footprint — not just its own coordinate
+# — and the wall walls total. Conservative, spelling-free, and it moves survival outcomes only
+# toward run. What it still cannot see is an arm that truncates its survey and exits 0; that
+# residue is ANALYZER-NEEDS:an-atmost-completion-signal, a design question and not this gate.
+hork tune nginx
+installfile /etc/nginx/nginx.conf

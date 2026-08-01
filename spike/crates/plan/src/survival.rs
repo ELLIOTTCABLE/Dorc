@@ -862,31 +862,74 @@ impl TrustedFootprints {
         self.map.contains_key(&node)
     }
 
+    /// Every wall-site holding a footprint (the reach lane's span lookup; a `BTreeMap` key walk, so
+    /// the order is the deterministic node order).
+    pub fn nodes(&self) -> impl Iterator<Item = CfgNodeId> + '_ {
+        self.map.keys().copied()
+    }
+
     /// 24G Part B — widen every footprint by `reaches()` EXPANSION, in place. For each footprint,
-    /// `expand(coord, origin)` returns the coords `<kind>.reaches()` drags from `coord` (+ the
-    /// reach-function KIND for attribution); the CALLER encodes the 24G §2/§3 policy through `origin`
-    /// — STATIC arms apply to ALL footprint coords (authored + derived), DYNAMIC arms to AUTHORED
-    /// coords only this pass (derived coords are known only post-results — the SAME deferral as
-    /// `resid-resolve-derived`, generalized here as `resid-kindfn-derived`). SINGLE-STEP (24G — no
-    /// fixpoint for the spike): only the BASE coords present before this call are expanded, never the
-    /// coords the expansion itself adds (snapshotted below). Runs AFTER the coherence check (widening
-    /// keeps `own-establish ⊆ footprint` true) and BEFORE the survival walk (so the wider footprint
-    /// flows through the EXISTING `disjoint`/canonicalization path — no new resolve/reach interplay).
+    /// `expand(node, coord, origin)` answers with the coords `<kind>.reaches()` drags from `coord`
+    /// (+ the reach-function KIND for attribution), or REFUSES; the CALLER encodes the 24G §2/§3
+    /// policy through `origin` — STATIC arms apply to ALL footprint coords (authored + derived),
+    /// DYNAMIC arms to AUTHORED coords only this pass (derived coords are known only post-results —
+    /// the SAME deferral as `resid-resolve-derived`, generalized here as `resid-kindfn-derived`).
+    /// SINGLE-STEP (24G — no fixpoint for the spike): only the BASE coords present before this call
+    /// are expanded, never the coords the expansion itself adds (snapshotted below). Runs AFTER the
+    /// coherence check (widening keeps `own-establish ⊆ footprint` true) and BEFORE the survival walk
+    /// (so the wider footprint flows through the EXISTING `disjoint`/canonicalization path — no new
+    /// resolve/reach interplay).
+    ///
+    /// The `node` seat and the refusal exist together and only for
+    /// [`ReachExpansion::Refused`](ReachExpansion::Refused): an expansion the host could not finish
+    /// leaves the footprint wrongly NARROW, and this is the only place that can REMOVE the footprint
+    /// the closure is widening (absence ⇒ the site walls total). Refusal is per-FOOTPRINT and
+    /// immediate — one unfinished arm taints the whole at-most claim, so the remaining coords are not
+    /// expanded either.
     pub fn expand_reaches(
         &mut self,
-        mut expand: impl FnMut(EntityCoord, &FootprintOrigin) -> Vec<(EntityCoord, KindId)>,
+        mut expand: impl FnMut(CfgNodeId, EntityCoord, &FootprintOrigin) -> ReachExpansion,
     ) {
-        for fp in self.map.values_mut() {
+        let mut refused = Vec::new();
+        for (node, fp) in &mut self.map {
             let origin = fp.origin().clone();
             // Snapshot the base coords so the expansion is SINGLE-STEP (added coords are not re-expanded).
             let base: Vec<EntityCoord> = fp.coords().to_vec();
             for coord in base {
-                for (reached, via) in expand(coord, &origin) {
-                    fp.add_reached(reached, via);
+                match expand(*node, coord, &origin) {
+                    ReachExpansion::Expanded(reached) => {
+                        for (coord, via) in reached {
+                            fp.add_reached(coord, via);
+                        }
+                    }
+                    ReachExpansion::Refused => {
+                        refused.push(*node);
+                        break;
+                    }
                 }
             }
         }
+        for node in refused {
+            self.map.remove(&node);
+        }
     }
+}
+
+/// What one footprint coordinate's `reaches()` expansion answered
+/// (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`, repaired).
+///
+/// A `disturbance_reaches_only` survey is complete-by-contract, and its expansion WIDENS an at-most
+/// footprint — so a survey that did not finish leaves the claim wrongly NARROW, and narrow SPARES
+/// MORE (the priority-1 under-execute). An empty `Expanded` therefore means "this coordinate reaches
+/// nothing", an ANSWER; a survey that could not be trusted to be complete must say `Refused` instead
+/// and take the whole footprint down with it.
+#[derive(Debug, Clone)]
+pub enum ReachExpansion {
+    /// The coords this one drags, each attributed to the reach-function KIND that dragged it.
+    Expanded(Vec<(EntityCoord, KindId)>),
+    /// An arm's survey is untrustworthy (it never closed, its stream was cut, or its body died):
+    /// refuse the WHOLE footprint — the site walls total.
+    Refused,
 }
 
 /// One accumulated running wall during the survival walk: its leaf + footprint. Internal to

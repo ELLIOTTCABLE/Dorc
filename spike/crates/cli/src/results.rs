@@ -204,7 +204,7 @@ pub struct SiteResults {
     /// direction). The consumer ([`merge_derived_footprints`]) refuses a family whose received coord
     /// count ≠ `K`, whose `R` is non-zero, or that has no end-record at all ⇒ wall-total. Absent key
     /// ⇒ the family never closed ⇒ refused.
-    pub derivation_ends: BTreeMap<dorc_plan::LeafId, DerivClose>,
+    pub derivation_ends: BTreeMap<dorc_plan::LeafId, EmissionClose>,
     /// The RESOLVER canonicalization lane (24F §3): per `kind:entity` coordinate label, the readback
     /// of running its `<kind>.resolve()` host-side — a [`ResolvOutcome`]. Demuxed SEPARATELY from the
     /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
@@ -216,6 +216,16 @@ pub struct SiteResults {
     /// [`dorc_plan::Footprint::add_reached`]) before the survival walk. NB the arm index re-keys each
     /// line back to the arm's LIFTED kind (the vocabulary fence — the kind is never host-minted).
     pub reaches: BTreeMap<(String, usize), Vec<String>>,
+    /// The REACH ARM close-records (`28P` item0's mechanism at its second consumer): per
+    /// `(coordinate label, arm index)`, that arm's `reach-end <coord> arm=<n> n=<K> body-rc=<R>`.
+    /// SAME safety inversion as the deriv close, arrived at from the opposite direction: a
+    /// `disturbance_reaches_only` arm WIDENS an at-most footprint, so a cut or aborted arm leaves
+    /// it wrongly NARROW, and narrow SPARES MORE. [`expand_footprints_via_reaches`] refuses the
+    /// whole FOOTPRINT (the site walls total) when an arm's received count ≠ `K`, its `R` is
+    /// non-zero, or it never closed at all.
+    ///
+    /// [`expand_footprints_via_reaches`]: crate::survival::expand_footprints_via_reaches
+    pub reach_ends: BTreeMap<(String, usize), EmissionClose>,
     /// The REPORT lane (`27W` §2 tier-3): the `<verb> <class> <tail>` emissions an oracle wrote on
     /// its declining paths, re-keyed to their emitting site by the probe scaffold (`report site=<key>
     /// …`). Decision-inert (`two-plane-aid-law`): classes route AID only, never the license plane.
@@ -253,15 +263,20 @@ pub struct ReportRecord {
 /// verbosity, and the full text never reaches a decision (decision-inert).
 pub const REPORT_RAW_CAP: usize = 200;
 
-/// One escalated site's deriv-family close-record (`262` §2 / `26A` stop-1). The two fields answer
-/// two INDEPENDENT questions, and conflating them was the hole
+/// One host-run emission family's close-record — `deriv-end` for an escalated site's derivation
+/// (`262` §2 / `26A` stop-1) and `reach-end` for one dynamic `disturbance_reaches_only` arm. ONE
+/// type for both because they answer one question in one grammar: the two lanes write the same
+/// kind of open-ended, complete-by-contract survey, and forking the close would let the two gates
+/// drift apart.
+///
+/// The two fields answer two INDEPENDENT questions, and conflating them was the hole
 /// (`28P:fnd-the-count-gate-cannot-see-a-body-death`): `count` proves the RECORD STREAM arrived
 /// whole, while `body_rc` proves the EMITTING BODY ran to completion. A body that emits three
 /// coordinates and then dies on an unbound helper closes at `n=3` — self-consistent transport
 /// carrying a wrongly-NARROW at-most claim. Both must pass before the footprint is trusted.
 #[derive(Debug, Clone, Copy)]
-pub struct DerivClose {
-    /// The `n=<K>` the family declared: how many coordinate records the scaffold emitted.
+pub struct EmissionClose {
+    /// The `n=<K>` the family declared: how many records the scaffold emitted.
     pub count: u32,
     /// The `body-rc=<R>` the family declared: the emitting body's own termination status,
     /// captured before the record pipe (a pipeline's status is its RHS's, so the pre-`28P`
@@ -412,7 +427,7 @@ fn parse_admitted_results(
                 body_rc,
             } => {
                 out.derivation_ends
-                    .insert(dorc_plan::LeafId(site), DerivClose { count, body_rc });
+                    .insert(dorc_plan::LeafId(site), EmissionClose { count, body_rc });
             }
             dorc_plan::records::AdmittedHostRecord::Resolution { coord, canonical } => {
                 out.resolutions.insert(
@@ -427,6 +442,15 @@ fn parse_admitted_results(
                     .entry((coord.to_owned(), arm))
                     .or_default()
                     .push(entity.to_owned());
+            }
+            dorc_plan::records::AdmittedHostRecord::ReachEnd {
+                coord,
+                arm,
+                count,
+                body_rc,
+            } => {
+                out.reach_ends
+                    .insert((coord.to_owned(), arm), EmissionClose { count, body_rc });
             }
             dorc_plan::records::AdmittedHostRecord::Report { body } => {
                 parse_report_record(body, &mut out);

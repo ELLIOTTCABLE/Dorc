@@ -1636,4 +1636,25 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "28P dec-whole-body-atomic-refusal: distinct from the transport-tier deriv-family-incomplete, whose count gate is computed from the lines received and therefore agrees with a truncated survey.",
         words: Words::Unwritten,
     },
+    ArrangementEntry {
+        slug: "footprint-incoherent-reach-arm-never-closed",
+        occurrence: None,
+        when_used: "Fills the `{detail}` hole of footprint-incoherent when a dynamic disturbance_reaches_only arm emitted no close record; the one value is the arm index.",
+        why: "28P dec-reach-expansion-refuses-whole-footprint: a reaches_only survey is complete-by-contract, so an arm that cannot show it finished leaves the at-most footprint wrongly narrow, and narrow spares more.",
+        words: Words::Unwritten,
+    },
+    ArrangementEntry {
+        slug: "footprint-incoherent-reach-arm-stream-cut",
+        occurrence: None,
+        when_used: "Fills the `{detail}` hole of footprint-incoherent when a dynamic disturbance_reaches_only arm's record count disagrees with its close; the values are the arm index, the declared count, and the received count.",
+        why: "As footprint-incoherent-reach-arm-never-closed: the transport half of the same two-atomicity gate the derivation lane carries.",
+        words: Words::Unwritten,
+    },
+    ArrangementEntry {
+        slug: "footprint-incoherent-reach-arm-died-mid-survey",
+        occurrence: None,
+        when_used: "Fills the `{detail}` hole of footprint-incoherent when a dynamic disturbance_reaches_only arm's body terminated abnormally; the values are the arm index and that body's termination status.",
+        why: "As footprint-incoherent-emitting-body-died-mid-survey, one lane over: the stream was whole and self-consistent and it is the arm body that stopped.",
+        words: Words::Unwritten,
+    },
 ];

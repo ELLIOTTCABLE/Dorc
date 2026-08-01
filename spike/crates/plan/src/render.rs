@@ -482,8 +482,10 @@ pub mod reach {
     pub const fn header() -> &'static str {
         "# dorc reach-probe (read-only, 24G section 4): owner-declared reaches() expansion. Each dynamic\n\
          # reaches() arm of a reach-bearing footprint coord runs with the ENTITY; when run it prints\n\
-         # the RAW ENTITIES it drags (its stdout lines), re-keyed by the coord AND the arm index:\n\
+         # the RAW ENTITIES it drags (its stdout lines), re-keyed by the coord AND the arm index,\n\
+         # then closes the arm with its line-count and its own termination status:\n\
          #   reach <kind:entity> arm=<n> entity=<reached>\n\
+         #   reach-end <kind:entity> arm=<n> n=<K> body-rc=<R>\n\
          # The controller joins arm->kind statically (the kind is fixed at lift -- never host-minted).\n\n"
     }
 
@@ -506,16 +508,34 @@ pub mod reach {
     }
 
     /// The self-report scaffold: invoke `<arm_fn> '<entity>'` (the entity F-QUOTE-bound — the SAME
-    /// guarantee as [`super::probe::invocation`]: exactly one inert positional, no word-split/re-parse)
-    /// and pipe its stdout lines through a per-line `printf`, re-keying each as a `reach <coord>
-    /// arm=<index> entity=<line>` record. `_re` is a reach-local name (unlikely to clash).
+    /// guarantee as [`super::probe::invocation`]: exactly one inert positional, no word-split/re-parse),
+    /// capture its stdout and its own status, then re-key each captured line as a `reach <coord>
+    /// arm=<index> entity=<line>` record and CLOSE the arm with `reach-end <coord> arm=<index>
+    /// n=<K> body-rc=<R>`. `_re` is a reach-local name (unlikely to clash).
     ///
-    /// GUARANTEE: dash-n-clean — a pipeline into a `while read` loop, valid at script top level. An
-    /// arm that prints NOTHING ⇒ no records ⇒ no expansion for this coord (the footprint stays narrow
-    /// — the safe direction: a narrower footprint elides MORE, but that is the un-expanded floor, not
-    /// a wrong-elision beyond it; the wall still walls on its own coords). An UN-SHIMMED reach command
-    /// under `PATH=mocks-only` (the fork-4A layer-3 mocks net) 127s ⇒ prints nothing ⇒ no expansion —
-    /// never a wrong-reach (`kFAIL-perform`: an omitted reach only fails to WIDEN, the honest floor).
+    /// GUARANTEE: dash-n-clean — a `$(...)`-capture, an `if`, and a pipeline into a `{ … }` group,
+    /// all valid at script top level.
+    ///
+    /// THE SAFETY INVERSION, and why this lane is NOT the "silence is the honest floor" case its
+    /// first cut assumed (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`). A
+    /// `disturbance_reaches_only` arm is `only`-named: complete-by-contract. Its expansion WIDENS an
+    /// at-most footprint, so a MISSING expansion leaves the footprint wrongly NARROW, and narrow
+    /// SPARES MORE — the priority-1 under-execute, measured. An un-answering arm therefore cannot be
+    /// read as "no expansion, the honest floor"; it is an unfinished survey, and the consumer refuses
+    /// the whole footprint (the site walls total) rather than trusting the narrow claim.
+    ///
+    /// TWO INDEPENDENT ATOMICITIES, exactly as the derivation lane's close carries them
+    /// (`28P:dec-whole-body-atomic-refusal` — one mechanism, two consumers). `K` proves the record
+    /// STREAM arrived whole; `R`, the arm body's own termination status captured BEFORE the record
+    /// pipe (a pipeline's status is its RHS's, so the pre-`28P` form discarded it entirely), proves
+    /// the BODY finished. An UN-SHIMMED reach command under `PATH=mocks-only` 127s ⇒ `R=127` ⇒ the
+    /// footprint is refused ⇒ the site walls, where the old form silently declined to widen. What `R`
+    /// cannot see is an arm that truncates its survey and still exits 0 — the at-most
+    /// completion-signal residue (`ANALYZER-NEEDS:an-atmost-completion-signal`), not built here.
+    ///
+    /// The empty arm exists for the same reason the derivation lane's does: `printf '%s\n' "$_r"` on
+    /// an empty capture emits one blank line, and a blank `entity=` field is refused at intake
+    /// (`checked_field`) — which would turn every legitimately-silent arm into a stream refusal.
     #[must_use]
     pub fn record_scaffold(
         arm_fn: &str,
@@ -529,7 +549,17 @@ pub mod reach {
         // (last-to-token) so a reached entity with spaces survives (the old single-token
         // truncation is fixed — `279f` rider generalization).
         let rec = records::frame(nonce, &format!("reach {coord} arm={arm_index} entity=%s"));
-        format!("{arm_fn} {q} | while IFS= read -r _re; do printf '{rec}\\n' \"$_re\"; done\n")
+        let end = records::frame(
+            nonce,
+            &format!("reach-end {coord} arm={arm_index} n=%s body-rc=%s"),
+        );
+        format!(
+            "_r=$({arm_fn} {q}); _rr=$?\n\
+             if [ -z \"$_r\" ]; then printf '{end}\\n' 0 \"$_rr\"; \
+             else printf '%s\\n' \"$_r\" | {{ _n=0; while IFS= read -r _re; do \
+             printf '{rec}\\n' \"$_re\"; _n=$((_n+1)); done; \
+             printf '{end}\\n' \"$_n\" \"$_rr\"; }}; fi\n"
+        )
     }
 }
 

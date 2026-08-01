@@ -108,8 +108,8 @@ pub mod shim;
 pub mod survival;
 pub use survival::{
     Backing, CanonicalCoord, Crossing, DisjointOutcome, DisjointnessProof, EntityCoord, Footprint,
-    FootprintOrigin, MayAliasReason, Resolution, Resolutions, SurvivalWitness, TrustedFootprints,
-    disjoint,
+    FootprintOrigin, MayAliasReason, ReachExpansion, Resolution, Resolutions, SurvivalWitness,
+    TrustedFootprints, disjoint,
 };
 
 // ===========================================================================
@@ -6007,8 +6007,15 @@ apt_get__is_converged() {
             "the per-arm wrapper ships under arm_fn: {sh}"
         );
         assert!(
-            sh.contains(&format!("{arm_fn} 'nginx' |")),
+            sh.contains(&format!("_r=$({arm_fn} 'nginx')")),
             "the invocation calls that exact name: {sh}"
+        );
+        // The arm's status is captured off the invocation itself, never off the record pipe — a
+        // pipeline's status is its RHS's, which is what made the body's death unobservable
+        // (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`).
+        assert!(
+            sh.contains("); _rr=$?") && sh.contains("n=%s body-rc=%s"),
+            "the arm closes with its count AND its own termination status: {sh}"
         );
     }
 

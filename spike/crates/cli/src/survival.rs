@@ -1189,22 +1189,38 @@ pub fn dangling_diagnostics(
 /// the footprint via [`dorc_plan::Footprint::add_reached`] (attributed to the reach-function KIND),
 /// flowing through the EXISTING `disjoint`/canonicalization path. `inv-referent-agnostic`: the engine
 /// interns the annotated kind (fixed at LIFT — the vocabulary fence) + the raw entities, never
-/// decoding them. `inv-kfail`: widening only ever HITs MORE (demotes toward run), the safe direction.
+/// decoding them.
+///
+/// THE ATOMICITY GATE (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`, repaired here). The
+/// retired reading was that widening "only ever HITs MORE, the safe direction", so an arm that
+/// answered nothing was the honest un-expanded floor. Measured, that is false whenever the `disturbs`
+/// claim is not independently total — which is exactly when a kind-owner's `reaches_only` is needed:
+/// a missing expansion leaves the at-most footprint wrongly NARROW, and narrow SPARES MORE (a
+/// downstream converged site survived a running wall it should have collided with). So a DYNAMIC arm
+/// must now CLOSE, with its stream intact and its body finished; anything less refuses the whole
+/// footprint and the site walls total. The gate is framed-only, exactly as the deriv lane's is —
+/// legacy unframed fixtures carry no close records and are trusted-complete.
+///
+/// Diagnostics are the product alongside the `&mut` expansion, so a caller that drops them drops the
+/// only trace of a refusal.
+#[must_use]
 pub fn expand_footprints_via_reaches(
     footprints: &mut dorc_plan::TrustedFootprints,
     reaches: &KindReaches,
     reach_kinds: &BTreeSet<Symbol>,
     readback: &SiteResults,
+    node_spans: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::Span>,
     interner: &mut Interner,
-) {
+) -> Vec<Diag> {
     use dorc_oracle::reaches::{ArmOutcome, evaluate_reaches};
-    footprints.expand_reaches(|coord, origin| {
+    let mut diags = Vec::new();
+    footprints.expand_reaches(|node, coord, origin| {
         let kind_sym = coord.kind().0;
         if !reach_kinds.contains(&kind_sym) {
-            return Vec::new();
+            return dorc_plan::ReachExpansion::Expanded(Vec::new());
         }
         let Some((_, reaches_fn)) = reaches.get(kind_sym) else {
-            return Vec::new();
+            return dorc_plan::ReachExpansion::Expanded(Vec::new());
         };
         let entity_text = entity_text_of(coord, interner);
         let coord_label = render_coord(coord, interner);
@@ -1218,15 +1234,23 @@ pub fn expand_footprints_via_reaches(
                 ArmOutcome::Static(lines) => lines.clone(),
                 // DYNAMIC arms apply to AUTHORED coords only this pass (24G §3, resid-kindfn-derived).
                 ArmOutcome::Dynamic { .. } => {
-                    if matches!(origin, dorc_plan::FootprintOrigin::Authored) {
-                        readback
-                            .reaches
-                            .get(&(coord_label.clone(), arm.index))
-                            .cloned()
-                            .unwrap_or_default()
-                    } else {
-                        Vec::new()
+                    if !matches!(origin, dorc_plan::FootprintOrigin::Authored) {
+                        continue;
                     }
+                    let key = (coord_label.clone(), arm.index);
+                    let received = readback.reaches.get(&key).cloned().unwrap_or_default();
+                    if let Some(reason) =
+                        reach_arm_refusal(readback, &key, received.len(), arm.index)
+                    {
+                        if let Some(&span) = node_spans.get(&node) {
+                            diags.push(Diag::new(
+                                DiagCode::FootprintIncoherent(FootprintIncoherent { reason }),
+                                span,
+                            ));
+                        }
+                        return dorc_plan::ReachExpansion::Refused;
+                    }
+                    received
                 }
             };
             for e in entities {
@@ -1240,8 +1264,42 @@ pub fn expand_footprints_via_reaches(
                 out.push((ec, via));
             }
         }
-        out
+        dorc_plan::ReachExpansion::Expanded(out)
     });
+    diags
+}
+
+/// Why one dynamic `reaches()` arm's survey may not be trusted, or `None` if it closed cleanly. The
+/// two conditions are INDEPENDENT and both necessary, exactly as the deriv lane's are
+/// (`28P:dec-whole-body-atomic-refusal`): the count proves the record STREAM arrived whole, the
+/// `body-rc` proves the arm BODY finished. An unframed stream carries neither and is
+/// trusted-complete (the legacy authored fixtures).
+fn reach_arm_refusal(
+    readback: &SiteResults,
+    key: &(String, usize),
+    received: usize,
+    arm: usize,
+) -> Option<FootprintIncoherentReason> {
+    if !readback.framed {
+        return None;
+    }
+    match readback.reach_ends.get(key) {
+        None => Some(FootprintIncoherentReason::ReachArmNeverClosed { arm }),
+        Some(close) if close.count as usize != received => {
+            Some(FootprintIncoherentReason::ReachArmStreamCut {
+                arm,
+                declared: close.count,
+                received: u32::try_from(received).unwrap_or(u32::MAX),
+            })
+        }
+        Some(close) if close.body_rc != 0 => {
+            Some(FootprintIncoherentReason::ReachArmDiedMidSurvey {
+                arm,
+                body_rc: close.body_rc,
+            })
+        }
+        Some(_) => None,
+    }
 }
 
 /// The entity text of a coordinate for a reach/resolver invocation (an operand's text, or the empty

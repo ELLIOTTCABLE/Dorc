@@ -1313,6 +1313,26 @@ pub enum FootprintIncoherentReason {
     /// agreed with its own count — it is the BODY that stopped. `body_rc` is the emitting body's
     /// termination status (127 = a helper the shipped body did not carry).
     EmittingBodyDiedMidSurvey { body_rc: u32 },
+    /// A dynamic `disturbance_reaches_only` arm emitted no close record at all, so nothing shows
+    /// its survey ran to the end. The three reach variants below have no `deriv-family-incomplete`
+    /// twin because a reach arm is not a family the site OWNS — it is a kind-owner's survey the
+    /// engine applied to somebody else's footprint, and refusing that footprint is the whole
+    /// consequence, so it belongs beside the other coherence refusals rather than in a lane of
+    /// its own.
+    ReachArmNeverClosed { arm: usize },
+    /// A dynamic `disturbance_reaches_only` arm closed at a count the received records do not
+    /// match: the stream was cut, so the expansion is partial and the footprint it would widen is
+    /// wrongly NARROW.
+    ReachArmStreamCut {
+        arm: usize,
+        declared: u32,
+        received: u32,
+    },
+    /// A dynamic `disturbance_reaches_only` arm's body terminated abnormally. As
+    /// [`Self::EmittingBodyDiedMidSurvey`] but one lane over: the stream was whole and self-
+    /// consistent, and it is the arm BODY that stopped mid-survey (127 = a helper the shipped
+    /// body did not carry — the survival lanes still ship closure-less bodies).
+    ReachArmDiedMidSurvey { arm: usize, body_rc: u32 },
 }
 
 /// Payload of [`DiagCode::TouchesEscalated`] (TEMPLATIZED): the escalated site number and the call.
@@ -3896,6 +3916,22 @@ fn footprint_incoherent_text(
         FootprintIncoherentReason::EmittingBodyDiedMidSurvey { body_rc } => (
             "footprint-incoherent-emitting-body-died-mid-survey",
             vec![body_rc.to_string()],
+        ),
+        FootprintIncoherentReason::ReachArmNeverClosed { arm } => (
+            "footprint-incoherent-reach-arm-never-closed",
+            vec![arm.to_string()],
+        ),
+        FootprintIncoherentReason::ReachArmStreamCut {
+            arm,
+            declared,
+            received,
+        } => (
+            "footprint-incoherent-reach-arm-stream-cut",
+            vec![arm.to_string(), declared.to_string(), received.to_string()],
+        ),
+        FootprintIncoherentReason::ReachArmDiedMidSurvey { arm, body_rc } => (
+            "footprint-incoherent-reach-arm-died-mid-survey",
+            vec![arm.to_string(), body_rc.to_string()],
         ),
     };
     component_text(ctx.arrangements(), slug, None, &borrowed(&values))

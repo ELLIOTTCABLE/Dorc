@@ -21,13 +21,16 @@ installfile__predict() {
 installfile__predict '/etc/nginx/nginx.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # dorc reach-probe (read-only, 24G section 4): owner-declared reaches() expansion. Each dynamic
 # reaches() arm of a reach-bearing footprint coord runs with the ENTITY; when run it prints
-# the RAW ENTITIES it drags (its stdout lines), re-keyed by the coord AND the arm index:
+# the RAW ENTITIES it drags (its stdout lines), re-keyed by the coord AND the arm index,
+# then closes the arm with its line-count and its own termination status:
 #   reach <kind:entity> arm=<n> entity=<reached>
+#   reach-end <kind:entity> arm=<n> n=<K> body-rc=<R>
 # The controller joins arm->kind statically (the kind is fixed at lift -- never host-minted).
 
 # reach sm.dorc.Package:nginx via sm.dorc.Package.reaches() arm 0
 sm_dorc_Package__disturbance_reaches_only_0() { dpkg -L "$1" ; }
-sm_dorc_Package__disturbance_reaches_only_0 'nginx' | while IFS= read -r _re; do printf 'dorc reach sm.dorc.Package:nginx arm=0 entity=%s @@dorc@@\n' "$_re"; done
+_r=$(sm_dorc_Package__disturbance_reaches_only_0 'nginx'); _rr=$?
+if [ -z "$_r" ]; then printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' 0 "$_rr"; else printf '%s\n' "$_r" | { _n=0; while IFS= read -r _re; do printf 'dorc reach sm.dorc.Package:nginx arm=0 entity=%s @@dorc@@\n' "$_re"; _n=$((_n+1)); done; printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_rr"; }; fi
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

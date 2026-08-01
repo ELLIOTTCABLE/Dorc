@@ -329,11 +329,16 @@ impl WhyWorld {
             // The reach EXPANSION must not be skipped: a footprint is an AT-MOST claim, so an
             // un-widened one looks disjoint from more cells than it is — the under-execute
             // direction (`inv-kfail`).
-            crate::survival::expand_footprints_via_reaches(
+            let reach_node_spans: BTreeMap<_, _> = footprints
+                .nodes()
+                .map(|n| (n, parsed.value.node(cfg.value.node(n).ast).span))
+                .collect();
+            let _ = crate::survival::expand_footprints_via_reaches(
                 &mut footprints,
                 &kind_reaches,
                 &reach_kinds,
                 results,
+                &reach_node_spans,
                 &mut interner,
             );
             footprints

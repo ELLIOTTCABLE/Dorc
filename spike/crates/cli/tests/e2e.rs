@@ -113,6 +113,14 @@ fn read_or_empty(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
 }
 
+/// The `<coord> arm=<n>` key a `reach`/`reach-end` record line carries, for the authored-fixture
+/// close synthesis. Whitespace-split, so a coord bearing spaces is not a fixture shape here.
+fn reach_arm_key(fields: &[&str]) -> Option<String> {
+    let coord = fields.get(1)?;
+    let arm = fields.get(2).filter(|f| f.starts_with("arm="))?;
+    Some(format!("{coord} {arm}"))
+}
+
 /// A file exists and is non-empty (`[ -f x ] && [ -s x ]`).
 fn nonempty_file(path: &Path) -> bool {
     std::fs::metadata(path).is_ok_and(|meta| meta.is_file() && meta.len() > 0)
@@ -693,6 +701,9 @@ fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
     let mut deriv_counts: BTreeMap<String, usize> = BTreeMap::new();
     let mut deriv_order: Vec<String> = Vec::new();
     let mut deriv_closed: BTreeSet<String> = BTreeSet::new();
+    let mut reach_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut reach_order: Vec<String> = Vec::new();
+    let mut reach_closed: BTreeSet<String> = BTreeSet::new();
     for raw_line in raw.lines() {
         if raw_line.starts_with("dorc-records/1 ") || raw_line.starts_with("dorc-records-end/1 ") {
             continue;
@@ -724,6 +735,19 @@ fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
                     deriv_closed.insert((*site).to_owned());
                 }
             }
+            Some("reach") => {
+                if let Some(key) = reach_arm_key(&fields) {
+                    *reach_counts.entry(key.clone()).or_default() += 1;
+                    if !reach_order.contains(&key) {
+                        reach_order.push(key);
+                    }
+                }
+            }
+            Some("reach-end") => {
+                if let Some(key) = reach_arm_key(&fields) {
+                    reach_closed.insert(key);
+                }
+            }
             _ => {}
         }
         body.push(line);
@@ -735,6 +759,14 @@ fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
             body.push(format!(
                 "deriv-end {site} n={} body-rc=0",
                 deriv_counts.get(site).copied().unwrap_or_default()
+            ));
+        }
+    }
+    for key in &reach_order {
+        if !reach_closed.contains(key) {
+            body.push(format!(
+                "reach-end {key} n={} body-rc=0",
+                reach_counts.get(key).copied().unwrap_or_default()
             ));
         }
     }

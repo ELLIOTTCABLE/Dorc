@@ -1461,15 +1461,27 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             ),
         );
         // 24G §4: EXPAND each reach-bearing footprint coord via reaches() — STATIC arms (cli-traced,
-        // all coords) + DYNAMIC arms (the `reach` readback, authored coords only). Widening is
-        // monotone-safe (`inv-kfail`); runs AFTER the authored/derived merge and BEFORE the walk, so
-        // the wider footprint flows the EXISTING disjoint/canonicalize path (no new interplay code).
-        expand_footprints_via_reaches(
-            &mut fps,
-            &kind_reaches,
-            &reach_kinds,
-            results,
-            &mut interner,
+        // all coords) + DYNAMIC arms (the `reach` readback, authored coords only). Runs AFTER the
+        // authored/derived merge and BEFORE the walk, so the wider footprint flows the EXISTING
+        // disjoint/canonicalize path (no new interplay code). A dynamic arm that cannot show it
+        // finished REFUSES the footprint (`28P` item0's mechanism at its second consumer): the walls
+        // the expansion serves are the survival tier's, so an un-widened claim spares more.
+        let reach_node_spans: BTreeMap<_, _> = fps
+            .nodes()
+            .map(|n| (n, parsed.value.node(cfg.value.node(n).ast).span))
+            .collect();
+        report_at(
+            advisory,
+            "reach",
+            book_source,
+            &expand_footprints_via_reaches(
+                &mut fps,
+                &kind_reaches,
+                &reach_kinds,
+                results,
+                &reach_node_spans,
+                &mut interner,
+            ),
         );
         fps
     });
@@ -3440,6 +3452,30 @@ fn book_digest(book_src: &str) -> String {
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
 #[cfg(test)]
+fn parse_reach_end_record(rest: &str, out: &mut SiteResults) {
+    // The reach arm's close, both declarations (`28P` item0's mechanism at its second consumer);
+    // a malformed one reads as never-closed ⇒ the footprint is refused.
+    let mut it = rest.split_whitespace();
+    let Some(coord) = it.next() else { return };
+    let (mut arm, mut count, mut body_rc) = (None, None, None);
+    for tok in it {
+        if let Some(a) = tok.strip_prefix("arm=") {
+            arm = a.parse::<usize>().ok();
+        } else if let Some(n) = tok.strip_prefix("n=") {
+            count = n.parse::<u32>().ok();
+        } else if let Some(r) = tok.strip_prefix("body-rc=") {
+            body_rc = r.parse::<u32>().ok();
+        }
+    }
+    if let (Some(arm), Some(count), Some(body_rc)) = (arm, count, body_rc) {
+        out.reach_ends.insert(
+            (coord.to_owned(), arm),
+            dorc_cli::results::EmissionClose { count, body_rc },
+        );
+    }
+}
+
+#[cfg(test)]
 fn parse_results(
     records: &[String],
     framed: bool,
@@ -3487,7 +3523,7 @@ fn parse_results(
                     }
                     if let (Some(count), Some(body_rc)) = (count, body_rc) {
                         out.derivation_ends
-                            .insert(site, dorc_cli::results::DerivClose { count, body_rc });
+                            .insert(site, dorc_cli::results::EmissionClose { count, body_rc });
                     }
                 }
             }
@@ -3530,6 +3566,7 @@ fn parse_results(
                     }
                 }
             }
+            "reach-end" => parse_reach_end_record(rest, &mut out),
             "site" => parse_site_record(rest, stamp, &mut out, interner),
             "report" => parse_report_record(rest, &mut out), // `27W` §2 tier-3 (decision-inert lane)
             _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
@@ -4108,6 +4145,104 @@ mod tests {
             !merged_contains(&framed_rc(2, Some(2), 127), &mut i),
             "an abnormally-terminated emission body walls the site TOTAL, however well its record \
              stream agrees with itself"
+        );
+    }
+
+    /// The reach lane's twin of the pin above (`28P:dec-reach-expansion-refuses-whole-footprint`),
+    /// over one stream builder so both gates are asserted on identical bytes.
+    ///
+    /// The inversion is the same one arrived at from the opposite side: a `disturbance_reaches_only`
+    /// survey is complete-by-contract and its expansion WIDENS an at-most footprint, so an arm that
+    /// cannot show it finished leaves the claim wrongly NARROW, and narrow SPARES MORE. The retired
+    /// reading — that a silent arm is the honest un-expanded floor — is what
+    /// `an-kind-reach`'s "widens claims only" row licensed, and it holds only while the `disturbs`
+    /// claim is independently total, which is when a `reaches_only` is not wanted at all.
+    #[test]
+    fn pin_reach_arm_atomicity_refuses_the_whole_footprint() {
+        use dorc_analysis::cfg::CfgNodeId;
+        use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
+
+        let coord = "sm.dorc.Package:nginx";
+        let framed = |entities: usize, close: Option<(usize, u32)>| -> String {
+            let recs = (0..entities)
+                .map(|e| {
+                    format!(
+                        "{DEFAULT_NONCE} reach {coord} arm=0 entity=/etc/f{e}.conf {TERMINAL_TOKEN}\n"
+                    )
+                })
+                .collect::<Vec<_>>()
+                .concat();
+            let close = close.map_or(String::new(), |(n, body_rc)| {
+                format!(
+                    "{DEFAULT_NONCE} reach-end {coord} arm=0 n={n} body-rc={body_rc} {TERMINAL_TOKEN}\n"
+                )
+            });
+            format!(
+                "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites=0 {TERMINAL_TOKEN}\n\
+                 {recs}{close}dorc-records-end/1 nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n"
+            )
+        };
+
+        // The footprint SURVIVES the expansion pass ⇒ its wall can still spare a disjoint
+        // downstream cell; its absence ⇒ the wall walls total.
+        let footprint_survives = |stream: &str| -> bool {
+            let mut i = Interner::default();
+            let src = "sm_dorc_Package__disturbance_reaches_only() {\n   \
+                       dpkg -L \"$1\"    : disturbs sm.dorc.File\n}"
+                .to_string();
+            let kind = i.intern("sm.dorc.Package");
+            let coord_kinds: BTreeSet<Symbol> = [kind].into_iter().collect();
+            let reaches = build_kind_reaches(&[src], &[], &[], &coord_kinds, &mut i).value;
+            let reach_kinds: BTreeSet<Symbol> = reaches.reach_kinds().collect();
+            assert!(
+                reach_kinds.contains(&kind),
+                "the fixture kind must be reach-bearing, or the cells below are vacuous"
+            );
+            let d = dorc_plan::records::deframe(
+                stream,
+                &dorc_plan::records::Framing::spike("bk".to_owned()).expect(),
+                dorc_plan::records::LegacyPolicy::Refuse,
+            );
+            let results = parse_results(&d.records, d.framed, &mut RunClock::Absent, &mut i);
+            let provider = i.intern("hork");
+            let entity = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+            let fp = dorc_plan::Footprint::authored(
+                provider,
+                vec![dorc_plan::EntityCoord::new(KindId(kind), entity)],
+            )
+            .expect("a one-coordinate footprint is non-empty");
+            let mut fps = dorc_plan::TrustedFootprints::new();
+            fps.insert(CfgNodeId(3), fp);
+            let node_spans = BTreeMap::from([(
+                CfgNodeId(3),
+                dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
+            )]);
+            drop(expand_footprints_via_reaches(
+                &mut fps,
+                &reaches,
+                &reach_kinds,
+                &results,
+                &node_spans,
+                &mut i,
+            ));
+            fps.contains(CfgNodeId(3))
+        };
+
+        assert!(
+            footprint_survives(&framed(1, Some((1, 0)))),
+            "a complete arm expands the footprint and leaves it standing"
+        );
+        assert!(
+            !footprint_survives(&framed(1, Some((1, 127)))),
+            "a dead arm body refuses the WHOLE footprint, however well its stream agrees with itself"
+        );
+        assert!(
+            !footprint_survives(&framed(1, Some((2, 0)))),
+            "a cut stream refuses the whole footprint, never a partly-widened one"
+        );
+        assert!(
+            !footprint_survives(&framed(1, None)),
+            "an arm that never closed refuses the whole footprint"
         );
     }
 

@@ -432,14 +432,18 @@ fn build_resolutions(s0: &Host) -> dorc_plan::Resolutions {
 /// (a derived footprint's coords are known only post-results; the `resid-kindfn-derived` deferral).
 /// The reach-function KIND (`coord.kind()`) rides each expanded coord for the demote attribution.
 fn expand_reaches(footprints: &mut TrustedFootprints, reach_kinds: &BTreeSet<Symbol>, s0: &Host) {
-    footprints.expand_reaches(|coord, origin| {
+    // The sweep's declared reach answer is a total in-memory lookup, so no arm can fail to close and
+    // the atomicity refusal (`28P` item0's second consumer) has no input here.
+    footprints.expand_reaches(|_node, coord, origin| {
         if !matches!(origin, FootprintOrigin::Authored) || !reach_kinds.contains(&coord.kind().0) {
-            return Vec::new();
+            return dorc_plan::ReachExpansion::Expanded(Vec::new());
         }
-        s0.reach(coord.kind(), coord.entity())
-            .into_iter()
-            .map(|(k, e)| (EntityCoord::new(k, e), coord.kind()))
-            .collect()
+        dorc_plan::ReachExpansion::Expanded(
+            s0.reach(coord.kind(), coord.entity())
+                .into_iter()
+                .map(|(k, e)| (EntityCoord::new(k, e), coord.kind()))
+                .collect(),
+        )
     });
 }
 
