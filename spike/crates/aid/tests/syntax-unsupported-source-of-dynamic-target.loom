@@ -16,8 +16,7 @@ book.sh:
         [ book.sh:2:1
      2 | . "$(hork profile)"
        | ^
-  error[syntax-unsupported]: [unwritten:
-  syntax-unsupported-source-of-dynamic-target]
+  error[syntax-unsupported]: `.`/`source` of a non-literal target
         [ book.sh:2:1
      2 | . "$(hork profile)"
        | ^
