@@ -415,17 +415,30 @@ fn dorc_oracle_live_source(sets: &[predict::PredictSet], provider: Symbol) -> Op
 /// (`inv-determinism`): sources are walked in argument order, the index is
 /// `BTreeMap`-backed, and nothing here touches clock/RNG/IO.
 pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindIndex> {
-    let mut out = Carrier::pure(KindIndex::default());
     // Lift diags belong to the caller's separate `lift_predicts` pass; a malformed check simply
     // contributes no cells (safe).
     let per_source: Vec<predict::PredictSet> = oracle_sources
         .iter()
         .map(|src| predict::lift_predicts(interner, src).value)
         .collect();
+    lift_from_sets(interner, &per_source)
+}
+
+/// [`lift`] over already-lifted per-file [`PredictSet`](predict::PredictSet)s, for a driver that
+/// holds them for other reasons — the [`verdict::VerdictIndex::from_sets`] shape, and the same
+/// two reasons. One lift instead of two; and, load-bearing since `28M` §9, the driver's sets are
+/// the WITHDRAWN ones, so the effect map resolves over the same population every other seat does
+/// (`analysis::effect`'s third condition compares this index's `source_of` against the checks'
+/// live answer — built from different populations they would disagree and withhold).
+pub fn lift_from_sets(
+    interner: &mut Interner,
+    per_source: &[predict::PredictSet],
+) -> Carrier<KindIndex> {
+    let mut out = Carrier::pure(KindIndex::default());
     for (index, checks) in per_source.iter().enumerate() {
         for provider in checks.providers() {
             // Only the LIVE definition contributes cells (`28K` §1); every one used to merge in.
-            if dorc_oracle_live_source(&per_source, provider) != Some(index) {
+            if dorc_oracle_live_source(per_source, provider) != Some(index) {
                 continue;
             }
             let Some(c) = checks.get(provider) else {

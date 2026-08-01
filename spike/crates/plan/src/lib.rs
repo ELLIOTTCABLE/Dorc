@@ -1376,13 +1376,53 @@ fn resolve_vouch_operands(
 /// absence. Fail-soft ([`Carrier`]): the verdict-lift diagnostics ride out for the caller to
 /// surface (the cli's gate-3 error-floor; the DSTs drop them). `inv-referent-agnostic`: the kind
 /// label + operands are resolved for the invocation/attribution, never decoded (the 24A §1b fence).
+pub fn build_vouches(
+    oracle_srcs: &[&str],
+    helpers: &dorc_oracle::closure::HelperIndex,
+    classes: &[(CfgNodeId, SkipClass)],
+    value: &ValueFlow,
+    interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
+    let mut diags = Vec::new();
+    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_srcs
+        .iter()
+        .map(|src| {
+            let lifted = dorc_oracle::verdict::VerdictSet::lift(interner, src);
+            diags.extend(lifted.diags);
+            lifted.value
+        })
+        .collect();
+    let (lifted, narrative) = build_vouches_from_sets(
+        oracle_srcs,
+        &verdict_sets,
+        helpers,
+        classes,
+        value,
+        interner,
+        live,
+    );
+    diags.extend(lifted.diags);
+    (Carrier::new(lifted.value, diags), narrative)
+}
+
+/// [`build_vouches`] over already-lifted per-file
+/// [`VerdictSet`](dorc_oracle::verdict::VerdictSet)s — the `VerdictIndex::from_sets` shape, for
+/// the same reason it exists there and one more.
+///
+/// The driver's sets are the WITHDRAWN ones (contested families, and per `28M` §9 the definitions
+/// the function environment proves are never live). Re-lifting here read a fourth population off
+/// the raw source text, so a definition every other seat had dropped still won this seat's
+/// whole-unit answer — and the positional gate below then refused the vouch, which is a silent
+/// wall nothing else in the run agreed with (`28P:fnd-build-vouches-relifted-the-verdict-sets`).
 #[expect(
     clippy::too_many_lines,
     reason = "the ONE composition every driver shares (vouch lift + decline-narrative mint); \
               splitting it would scatter the single vouch-authoring path"
 )]
-pub fn build_vouches(
+pub fn build_vouches_from_sets(
     oracle_srcs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     helpers: &dorc_oracle::closure::HelperIndex,
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
@@ -1395,17 +1435,9 @@ pub fn build_vouches(
         evaluate_verdict, vouch_site,
     };
 
-    let mut diags = Vec::new();
+    let diags: Vec<Diag> = Vec::new();
     // C5 (`27V` Lane A): the decision-inert VerdictDecline narrative beside the no-vouch-⇒-run collapse.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
-    let verdict_sets: Vec<VerdictSet> = oracle_srcs
-        .iter()
-        .map(|src| {
-            let lifted = VerdictSet::lift(interner, src);
-            diags.extend(lifted.diags);
-            lifted.value
-        })
-        .collect();
 
     let mut vouches = Vouches::new();
     // `leaf_idx` IS the site's `LeafId` — the SAME positional assignment `build_plan` makes, so a
