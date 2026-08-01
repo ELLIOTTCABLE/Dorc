@@ -76,7 +76,7 @@ use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
     AstId, ByVouch, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId, Observable,
-    OracleFileId, Predicted, Rc, Rung, Symbol, Verdict,
+    Predicted, Rc, Rung, SourceFileId, Symbol, Verdict,
 };
 use dorc_oracle::touches::DISTURBS_SUFFIX;
 use dorc_oracle::verdict::VERDICT_SUFFIX;
@@ -108,8 +108,8 @@ pub mod shim;
 pub mod survival;
 pub use survival::{
     Backing, CanonicalCoord, Crossing, DisjointOutcome, DisjointnessProof, EntityCoord, Footprint,
-    FootprintOrigin, MayAliasReason, Resolution, Resolutions, SurvivalWitness, TrustedFootprints,
-    disjoint,
+    FootprintOrigin, MayAliasReason, ReachExpansion, Resolution, Resolutions, SurvivalWitness,
+    TrustedFootprints, disjoint,
 };
 
 // ===========================================================================
@@ -303,7 +303,7 @@ pub struct Derivation {
     /// provenance — EXEMPT from the erasability identity comparison (like [`witness`]/[`survival`]):
     /// a vouch informs a license and never becomes a fact (TC-tier-3), and this reaches only the
     /// why-lens render, never the byte-floored artifact.
-    pub vouch_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub vouch_span: Option<(dorc_core::Span, SourceFileId)>,
     /// Ordered attribution for every establish erased by an aggregate replacement.
     pub establish_vouches: Vec<EstablishVouchReceipt>,
     /// The REPORTED half of the chain, beside `vouch_span`'s VOUCHED half: which record measured
@@ -332,7 +332,7 @@ pub struct ReportedObservation {
     /// The defining span (+ oracle file) of the funcdef whose body produced this observation —
     /// `ProbePredict::defining_span` carried through. `None` when the shipped body had no single
     /// defining funcdef (entry-composed, connected pipes).
-    pub predict_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub predict_span: Option<(dorc_core::Span, SourceFileId)>,
 }
 
 /// The probe-side provenance for one fact: its receipt origin plus, when a single record reported
@@ -356,7 +356,7 @@ pub struct ProbeAttribution {
 pub struct EstablishVouchReceipt {
     pub site: CfgNodeId,
     pub fact: FactKey,
-    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub defining_span: Option<(dorc_core::Span, SourceFileId)>,
 }
 
 #[derive(Debug, Clone)]
@@ -444,6 +444,10 @@ impl AllEstablishesVouched {
 pub struct ReplaceLicense {
     fact: FactKey,
     derivation: Derivation,
+    /// WHOSE utterance this replacement rests on (`28M` §8 — the monologue, typed). Every mint
+    /// stamps it, so "which author is this license speaking for" has an answer that is read off the
+    /// value rather than re-derived from three unrelated mechanisms agreeing.
+    custody: dorc_core::LicenseCustody,
 }
 
 impl ReplaceLicense {
@@ -531,6 +535,8 @@ impl ReplaceLicense {
                 // C7: read the vouch's defining span (display-only) BEFORE it drops, for the
                 // survival render's `file:line` (a vouch informs, never becomes a fact — TC-tier-3).
                 let vouch_span = vouch.vouch().defining_span();
+                // Read off the CONSUMED vouch, never passed beside it (`28M` §8).
+                let custody = dorc_core::LicenseCustody::Vouched(vouch.vouch().custody());
                 if grade != Grade::Must {
                     return None;
                 }
@@ -538,6 +544,7 @@ impl ReplaceLicense {
                     return None;
                 }
                 consumption_ok(&consumed, status).then_some(ReplaceLicense {
+                    custody,
                     fact: *fact,
                     derivation: Derivation {
                         fact: *fact,
@@ -591,6 +598,7 @@ impl ReplaceLicense {
         status: Predicted<Rc>,
     ) -> Option<ReplaceLicense> {
         query_substitutes(valid, consumed, status).then_some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::MeasuredSelf,
             fact,
             derivation: Derivation {
                 fact,
@@ -653,6 +661,7 @@ impl ReplaceLicense {
         }
         let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::VouchedSeverally,
             fact: representative,
             derivation: Derivation {
                 fact: representative,
@@ -742,6 +751,7 @@ impl ReplaceLicense {
         }
         let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::VouchedSeverally,
             fact,
             derivation: Derivation {
                 fact,
@@ -763,6 +773,7 @@ impl ReplaceLicense {
         consumed: &May<Powerset<Channel>>,
     ) -> Option<ReplaceLicense> {
         consumption_ok(consumed, proof.status).then_some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::MeasuredSelf,
             fact: proof.fact,
             derivation: Derivation {
                 fact: proof.fact,
@@ -813,6 +824,12 @@ impl ReplaceLicense {
     #[must_use]
     pub fn fact(&self) -> FactKey {
         self.fact
+    }
+
+    /// WHOSE utterance this license rests on (`28M` §8 — the monologue, typed).
+    #[must_use]
+    pub fn custody(&self) -> dorc_core::LicenseCustody {
+        self.custody
     }
 
     /// The audit trail (the greyed-out "why" for the plan UI).
@@ -979,12 +996,17 @@ pub struct VerdictVouch {
     /// apply-only line. Display/attribution, NOT decision data: EXCLUDED from
     /// [`GuardInsert::canonical`] (it derives from `preamble`, which the canon already covers).
     check_cmds: Vec<String>,
+    /// WHOSE utterance this is (`28M` §8 — the monologue, typed). Decision-plane, unlike
+    /// `defining_span` beside it: the elide mint reads this to stamp the license's custody, so a
+    /// future widening that reproduced another author's measured value cannot silently inherit
+    /// this author's provenance.
+    custody: dorc_core::DefinitionCustody,
     /// The vouch's DEFINING span (C7 `27V:mech-minting-line-threading`): the reached vouching
     /// arm + which oracle file it indexes (`tc-oracle-file-identity`), for the guard attribution's
     /// `file:line`. `None` when the caller did not thread it (the DST/test constructors) or the
     /// vouch located no check (an explicit `return 0` — the render falls back to no locus). Display
     /// tier only — decision-inert (a vouch informs a license and never becomes a fact, TC-tier-3).
-    defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    defining_span: Option<(dorc_core::Span, SourceFileId)>,
 }
 
 impl VerdictVouch {
@@ -994,6 +1016,12 @@ impl VerdictVouch {
     /// for attribution; `check_cmds` the verdict body's own command names (gate-6 attribution). The
     /// defining span is threaded separately by [`with_defining_span`](Self::with_defining_span)
     /// (only the plan driver has the oracle-file index; DST/test constructors omit it).
+    ///
+    /// `custody` is REQUIRED rather than threaded post-construction like the defining span, and the
+    /// asymmetry is deliberate (`28M` §8): the span is display, custody is decision. Every
+    /// constructor — DST and test constructors included — has to answer whose utterance this vouch
+    /// is, because a vouch with no owner is exactly the composite-nobody-said that the monologue
+    /// property exists to forbid.
     #[must_use]
     pub fn new(
         fn_name: String,
@@ -1001,6 +1029,7 @@ impl VerdictVouch {
         invocation: String,
         kind_label: String,
         check_cmds: Vec<String>,
+        custody: dorc_core::DefinitionCustody,
     ) -> Self {
         Self {
             fn_name,
@@ -1008,22 +1037,31 @@ impl VerdictVouch {
             invocation,
             kind_label,
             check_cmds,
+            custody,
             defining_span: None,
         }
+    }
+
+    /// WHOSE utterance this vouch is (`28M` §8). By construction the same custody the positional
+    /// agreement gate compared when it admitted this definition — one question, one type, and now
+    /// one answer rather than two spellings that could drift apart.
+    #[must_use]
+    pub fn custody(&self) -> dorc_core::DefinitionCustody {
+        self.custody
     }
 
     /// Thread the vouch's defining span + oracle-file id post-construction (C7). Low-churn: only
     /// `build_vouches` (which holds the oracle-file index) calls it; every other constructor leaves
     /// it `None` and the render omits the locus.
     #[must_use]
-    pub fn with_defining_span(mut self, arm: dorc_core::Span, file: OracleFileId) -> Self {
+    pub fn with_defining_span(mut self, arm: dorc_core::Span, file: SourceFileId) -> Self {
         self.defining_span = Some((arm, file));
         self
     }
 
     /// The vouch's defining span + oracle-file id (C7), if threaded — the guard render's `file:line`.
     #[must_use]
-    pub fn defining_span(&self) -> Option<(dorc_core::Span, OracleFileId)> {
+    pub fn defining_span(&self) -> Option<(dorc_core::Span, SourceFileId)> {
         self.defining_span
     }
 }
@@ -1055,7 +1093,7 @@ impl GuardInsert {
 
     /// The vouch's defining span + oracle-file id (C7 `file:line`), if the plan driver threaded it.
     #[must_use]
-    pub fn defining_span(&self) -> Option<(dorc_core::Span, OracleFileId)> {
+    pub fn defining_span(&self) -> Option<(dorc_core::Span, SourceFileId)> {
         self.vouch.defining_span()
     }
 
@@ -1097,19 +1135,31 @@ impl GuardInsert {
     /// sole verdict role is `is_converged`; the inverted sense is now spelled with explicit-return
     /// manual inversion inside it). `original` is the site's verbatim command bytes.
     #[must_use]
-    fn render_line(&self, original: &str) -> String {
+    fn render_line(&self, original: &str, invoked: &str) -> String {
         format!(
             "{} || {original}   # dorc: guard [{} converged-vouch; probe: {}]",
-            self.check_form(),
+            self.check_form(invoked),
             self.vouch.kind_label,
             self.probe_word(),
         )
     }
 
-    /// The check as it ships: `( <verdict-fn> <site argv> )`.
+    /// The check as it ships: `( <emitted-fn> <site argv> )`.
+    ///
+    /// `invoked` is the name the ARTIFACT binds this body to, which is the authored funcname in the
+    /// single-definition case and a hash-disambiguated one where the unit holds two distinct bodies
+    /// under one name (`28K` §4 `rul-hash-munge-disambiguation`). The caller resolves it through
+    /// [`Plan::pinned_definitions`], because it is a whole-artifact property no single insert knows.
     #[must_use]
-    pub fn check_form(&self) -> String {
-        format!("( {} )", self.vouch.invocation)
+    pub fn check_form(&self, invoked: &str) -> String {
+        match self
+            .vouch
+            .invocation
+            .strip_prefix(self.vouch.fn_name.as_str())
+        {
+            Some(argv) => format!("( {invoked}{argv} )"),
+            None => format!("( {} )", self.vouch.invocation),
+        }
     }
 
     /// The guarded line as the apply artifact carries it, MINUS its receipt comment — what the why
@@ -1119,10 +1169,69 @@ impl GuardInsert {
     /// Display, never execution (`27W:rul-report-surface-massaging`): dropping the provenance
     /// comment is a repair-directing massage of bytes that are not ours, and the executable plane
     /// keeps reading [`render_line`]. The two-surfaces byte floor is untouched.
+    /// Names the AUTHORED function, never a hash-disambiguated emission: the artifact's munged name
+    /// is engine scaffolding, and the surface a human reads to answer "whose judgment is this?"
+    /// must point at the body its author wrote (`28K` §4 — plan-render attribution names the
+    /// authored function and its `file:line`).
     #[must_use]
     pub fn display_line(&self, original: &str) -> String {
-        format!("{} || {original}", self.check_form())
+        format!("{} || {original}", self.check_form(&self.vouch.fn_name))
     }
+}
+
+/// What the apply artifact hoists, and which name each guarded site's check invokes
+/// (`28K` §4 — see [`Plan::pinned_definitions`], which is the only constructor).
+#[derive(Debug, Default)]
+pub struct PinnedDefinitions {
+    hoisted: String,
+    invoked: BTreeMap<AstId, String>,
+}
+
+impl PinnedDefinitions {
+    /// The definitions to emit above the book, in a deterministic order. EMPTY when every pinned
+    /// body is already in place, which is what keeps a guard-free — and an in-book-oracle — book
+    /// byte-identical to its own text.
+    #[must_use]
+    pub fn hoisted(&self) -> &str {
+        &self.hoisted
+    }
+
+    /// The funcname the guard at `ast` invokes. Absent for a site that guards nothing.
+    #[must_use]
+    pub fn invoked(&self, ast: AstId) -> Option<&str> {
+        self.invoked.get(&ast).map(String::as_str)
+    }
+}
+
+/// The short, deterministic disambiguator a hash-munged name carries (`28K` §4
+/// `rul-hash-munge-disambiguation`).
+///
+/// SHA-256 of the definition BYTES, first 8 hex digits — the same digest `book_digest` uses, not an
+/// FNV drift-detector, because this reaches the shipped artifact
+/// (`rul-fixture-identity-never-production`). It answers "are these the same bytes" and nothing
+/// else; uniqueness WITHIN one artifact is what matters and is checked at the emission seat.
+fn short_digest(body: &str) -> String {
+    invocation::book_digest(body)
+        .get(..8)
+        .unwrap_or_default()
+        .to_owned()
+}
+
+/// Does the book's own text already define `name` at top level with exactly `body`'s bytes?
+///
+/// The test is BYTES, not identity: a definition that matches is the pinned one, sitting where its
+/// author put it, so copying it above the book would put two same-named funcdefs in the shipped
+/// artifact for no gain (`28K` §4 retires that shape by any route). A definition that does NOT
+/// match is a different body under the same name, and the hoist-plus-munge path handles it.
+fn book_already_defines(src: &str, ast: &Ast, name: &str, body: &str) -> bool {
+    let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
+        return false;
+    };
+    items.iter().any(|&item| {
+        let node = ast.node(item);
+        matches!(&node.kind, NodeKind::FuncDef { name: n, .. } if n == name)
+            && src.get(node.span.lo.0 as usize..node.span.hi.0 as usize) == Some(body)
+    })
 }
 
 /// The witness authorising a **guard** — the third verb of rul-ternary-verdict's {elide, guard,
@@ -1305,34 +1414,68 @@ fn resolve_vouch_operands(
 /// absence. Fail-soft ([`Carrier`]): the verdict-lift diagnostics ride out for the caller to
 /// surface (the cli's gate-3 error-floor; the DSTs drop them). `inv-referent-agnostic`: the kind
 /// label + operands are resolved for the invocation/attribution, never decoded (the 24A §1b fence).
+pub fn build_vouches(
+    oracle_srcs: &[&str],
+    helpers: &dorc_oracle::closure::HelperIndex,
+    classes: &[(CfgNodeId, SkipClass)],
+    value: &ValueFlow,
+    interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
+    let mut diags = Vec::new();
+    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_srcs
+        .iter()
+        .map(|src| {
+            let lifted = dorc_oracle::verdict::VerdictSet::lift(interner, src);
+            diags.extend(lifted.diags);
+            lifted.value
+        })
+        .collect();
+    let (lifted, narrative) = build_vouches_from_sets(
+        oracle_srcs,
+        &verdict_sets,
+        helpers,
+        classes,
+        value,
+        interner,
+        live,
+    );
+    diags.extend(lifted.diags);
+    (Carrier::new(lifted.value, diags), narrative)
+}
+
+/// [`build_vouches`] over already-lifted per-file
+/// [`VerdictSet`](dorc_oracle::verdict::VerdictSet)s — the `VerdictIndex::from_sets` shape, for
+/// the same reason it exists there and one more.
+///
+/// The driver's sets are the WITHDRAWN ones (contested families, and per `28M` §9 the definitions
+/// the function environment proves are never live). Re-lifting here read a fourth population off
+/// the raw source text, so a definition every other seat had dropped still won this seat's
+/// whole-unit answer — and the positional gate below then refused the vouch, which is a silent
+/// wall nothing else in the run agreed with (`28P:fnd-build-vouches-relifted-the-verdict-sets`).
 #[expect(
     clippy::too_many_lines,
     reason = "the ONE composition every driver shares (vouch lift + decline-narrative mint); \
               splitting it would scatter the single vouch-authoring path"
 )]
-pub fn build_vouches(
+pub fn build_vouches_from_sets(
     oracle_srcs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    helpers: &dorc_oracle::closure::HelperIndex,
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
-        VerdictResolution, VerdictSet, check_commands, classify_decline, evaluate_verdict,
-        vouch_site,
+        VERDICT_SUFFIX, VerdictResolution, VerdictSet, check_commands, classify_decline,
+        evaluate_verdict, vouch_site,
     };
 
-    let mut diags = Vec::new();
+    let diags: Vec<Diag> = Vec::new();
     // C5 (`27V` Lane A): the decision-inert VerdictDecline narrative beside the no-vouch-⇒-run collapse.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
-    let verdict_sets: Vec<VerdictSet> = oracle_srcs
-        .iter()
-        .map(|src| {
-            let lifted = VerdictSet::lift(interner, src);
-            diags.extend(lifted.diags);
-            lifted.value
-        })
-        .collect();
 
     let mut vouches = Vouches::new();
     // `leaf_idx` IS the site's `LeafId` — the SAME positional assignment `build_plan` makes, so a
@@ -1376,22 +1519,29 @@ pub fn build_vouches(
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
         // The file INDEX rides along so an arm span crossing to the render carries its file
         // identity (`tc-oracle-file-identity`).
+        // The LIVE verdict definition (`28K` §1) AT THIS SITE (`28K` §2), from the SHARED seats —
+        // authoring the verdict IS the vouching act, so one a shell has not reached cannot vouch
+        // for a line above it (`28M:fnd-verdict-resolution-duplicates-live-source`).
         let want = map_provider_name(interner.resolve(*provider));
-        let found =
-            verdict_sets
-                .iter()
-                .zip(oracle_srcs)
-                .enumerate()
-                .find_map(|(idx, (set, src))| {
-                    set.providers()
-                        .find(|p| map_provider_name(interner.resolve(*p)) == want)
-                        .and_then(|p| set.get(p))
-                        .map(|verdict| (idx, *src, verdict))
-                });
+        let verdict_name = format!("{want}{VERDICT_SUFFIX}");
+        let named = |set: &VerdictSet| {
+            set.providers()
+                .find(|p| map_provider_name(interner.resolve(*p)) == want)
+                .and_then(|p| set.get(p).cloned())
+        };
+        let found = dorc_oracle::live_source(verdict_sets.len(), |i| {
+            verdict_sets.get(i).and_then(named).is_some()
+        })
+        .filter(|&i| live.answers_at(node, &verdict_name, i))
+        .and_then(|i| {
+            let set = verdict_sets.get(i)?;
+            Some((i, *oracle_srcs.get(i)?, named(set)?))
+        });
         let Some((file_idx, src, verdict)) = found else {
             continue;
         };
-        let arm_file = OracleFileId(u32::try_from(file_idx).unwrap_or(u32::MAX));
+        let verdict = &verdict;
+        let arm_file = SourceFileId(u32::try_from(file_idx).unwrap_or(u32::MAX));
         // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
         // (unhandled path / an inert builtin / a non-converged `return` — hz-refusepath) or ⊤ ⇒ no
         // vouch ⇒ run.
@@ -1428,19 +1578,35 @@ pub fn build_vouches(
             "{}{VERDICT_SUFFIX}",
             dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
         );
-        let preamble = strip_verdict(src, verdict, interner);
+        // `28K` §4: the guard runs the definition's bytes PLUS its closure. A contested closure
+        // withholds the VOUCH — no guard, no elide, the site runs (`inv-kfail`).
+        let stripped = strip_verdict(src, verdict, interner);
+        let Ok(closure) = helpers.closure_for(file_idx, &stripped) else {
+            continue;
+        };
+        let preamble = format!("{}{stripped}", closure.sh);
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
         } else {
             format!("{fn_name} {}", op_refs.join(" "))
         };
         let kind_label = interner.resolve(fact.kind.0).to_owned();
-        let check_cmds = check_commands(verdict);
+        // The dual-rail ledger allowlists what the SHIPPED check runs — the closure included.
+        let mut check_cmds = check_commands(verdict);
+        check_cmds.extend(closure.commands.iter().cloned());
         // C7: the reached vouching-arm span (or `name_span` for a check-less `return 0` vouch) +
         // its oracle-file id, for the guard render.
         let defining = vouch_site(verdict, &op_refs).unwrap_or(verdict.name_span);
-        let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds)
-            .with_defining_span(defining, arm_file);
+        // The SAME index the agreement gate above admitted, so the two cannot disagree.
+        let vouch = VerdictVouch::new(
+            fn_name,
+            preamble,
+            invocation,
+            kind_label,
+            check_cmds,
+            dorc_analysis::funcenv::custody_of_source_index(file_idx),
+        )
+        .with_defining_span(defining, arm_file);
         vouches.insert(node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
     (Carrier::new(vouches, diags), collapse_narrative)
@@ -1455,19 +1621,34 @@ pub fn build_vouches(
 /// poddle`) so an in-context guard renders correctly; the elide (`Replace`) consumes only the
 /// license. Merge the result into [`build_vouches`]'s map at the cli edge (wrapped nodes are
 /// disjoint from ambient ones).
+///
+/// It takes the DRIVER's already-lifted sets for the reason
+/// [`build_vouches_from_sets`] does: re-lifting from raw source read a population every other seat
+/// had already narrowed, so this seat's whole-unit winner could be a definition the run had
+/// withdrawn — and the positional gate would then withhold, a silent wall nothing else in the run
+/// agreed with (`28P:fnd-build-vouches-relifted-the-verdict-sets`, the same fault one seat further
+/// out).
+///
+/// Its resolution scanned FORWARD until `28P:fnd-the-wrapped-vouch-seat-resolved-forwards`
+/// (first-definition-wins, the INVERSE of sh's answer) and is now NARROWED positionally as well —
+/// the sixth and last seat to join the regime (`28P:tc-wrapped-vouch-seat-has-no-positional-gate`).
+/// The whole-unit winner vouches here only where it is the definition a shell would have live AT
+/// the wrapped site: the withhold-not-re-resolve shape bitem0 ruled
+/// (`analysis/CLAUDE.md visibility-is-full-positional`), through bitem3's ONE custody crossing.
+/// Custody was already honest about WHOSE judgment speaks; this makes it honest about WHERE.
 #[must_use]
 pub fn build_wrapped_vouches(
-    oracle_srcs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     classes: &[(CfgNodeId, SkipClass)],
     wrapped: &WrappedProbes,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Vouches {
-    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, check_commands, evaluate_verdict};
+    use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::verdict::{
+        VERDICT_SUFFIX, VerdictResolution, check_commands, evaluate_verdict,
+    };
 
-    let verdict_sets: Vec<VerdictSet> = oracle_srcs
-        .iter()
-        .map(|src| VerdictSet::lift(interner, src).value)
-        .collect();
     let mut vouches = Vouches::new();
     for (node, wp) in wrapped {
         // Enter and Carry both mint an elide/guard vouch from the inner verdict over the peeled argv
@@ -1492,8 +1673,23 @@ pub fn build_wrapped_vouches(
             .map(|s| interner.resolve(*s).to_owned())
             .collect();
         let op_slices: Vec<&str> = op_refs.iter().map(String::as_str).collect();
-        let inner_verdict = verdict_sets.iter().find_map(|set| set.get(*provider));
-        let Some(verdict) = inner_verdict else {
+        let verdict_name = format!(
+            "{}{VERDICT_SUFFIX}",
+            map_provider_name(interner.resolve(*provider))
+        );
+        let Some(file_idx) = dorc_oracle::live_source(verdict_sets.len(), |i| {
+            verdict_sets
+                .get(i)
+                .and_then(|set| set.get(*provider))
+                .is_some()
+        })
+        .filter(|&i| live.answers_at(*node, &verdict_name, i)) else {
+            continue;
+        };
+        let Some(verdict) = verdict_sets
+            .get(file_idx)
+            .and_then(|set| set.get(*provider))
+        else {
             continue;
         };
         if !matches!(
@@ -1515,12 +1711,15 @@ pub fn build_wrapped_vouches(
             preamble.push('\n');
         }
         preamble.push_str(&composed.inner_sh);
+        // The INNER author's: a wrapper entry form is TRANSPORT (it cannot enter ⇒ the site runs),
+        // and only the inner body's JUDGMENT licenses — so `28M` §8's monologue holds by that.
         let vouch = VerdictVouch::new(
             composed.inner_fn.clone(),
             preamble,
             invocation.join(" "),
             interner.resolve(fact.kind.0).to_owned(),
             check_commands(verdict),
+            dorc_analysis::funcenv::custody_of_source_index(file_idx),
         );
         vouches.insert(*node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
@@ -1712,7 +1911,7 @@ pub struct ShippedCheck {
     /// The stripped funcdef the site ships (strip-only — `271:rul-only-oracle-bytes-ship`).
     pub sh: String,
     /// The funcdef's defining span + which loaded oracle it indexes into; `None` when unthreaded.
-    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub defining_span: Option<(dorc_core::Span, SourceFileId)>,
     /// `27W` §3 tier-3: the shipped body emits report-lane lines. Only the auto-cell verdict seam
     /// ever sets this (a `__predict` model never emits reports).
     pub emits_report: bool,
@@ -1721,7 +1920,7 @@ pub struct ShippedCheck {
 impl ShippedCheck {
     /// A `<provider>__predict` body — never report-emitting (`27W` §3 scopes tier-3 to auto-cell).
     #[must_use]
-    pub fn predict(sh: String, defining_span: Option<(dorc_core::Span, OracleFileId)>) -> Self {
+    pub fn predict(sh: String, defining_span: Option<(dorc_core::Span, SourceFileId)>) -> Self {
         Self {
             sh,
             defining_span,
@@ -1733,7 +1932,7 @@ impl ShippedCheck {
     #[must_use]
     pub fn verdict(
         sh: String,
-        defining_span: Option<(dorc_core::Span, OracleFileId)>,
+        defining_span: Option<(dorc_core::Span, SourceFileId)>,
         emits_report: bool,
     ) -> Self {
         Self {
@@ -1819,7 +2018,7 @@ pub struct ProbePredict {
     /// provenance: the erasability gate exempts it, so two plans differing only here digest
     /// identically. `None` for a body with no single defining funcdef (entry-composed, connected
     /// pipes) — absence is typed, never guessed.
-    pub defining_span: Option<(dorc_core::Span, OracleFileId)>,
+    pub defining_span: Option<(dorc_core::Span, SourceFileId)>,
     /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
     /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
     /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
@@ -2601,7 +2800,7 @@ pub fn connected_check_pipes(
     cfg: &Cfg,
     value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
-    ship_stage: impl Fn(Symbol, &[Symbol]) -> Option<StageShip>,
+    ship_stage: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<StageShip>,
 ) -> ConnectedPipes {
     // AstId → (CfgNodeId, is-QueryResolvable). A simple-pipe stage is a single leaf, so the map is
     // 1:1 for the shapes we recognise; a stage whose AstId is absent (opaque/mutator/nested) fails
@@ -2655,7 +2854,7 @@ pub fn connected_check_pipes(
         let mut refused = false;
         for (idx, &stage_node) in nodes.iter().enumerate() {
             let Some((provider, argv, ship)) =
-                ship_stage_for_argv(&value.argv_values(stage_node), &ship_stage)
+                ship_stage_for_argv(&value.argv_values(stage_node), stage_node, &ship_stage)
             else {
                 refused = true;
                 break;
@@ -2697,7 +2896,8 @@ pub fn connected_check_pipes(
 /// word or operand ⇒ no concrete stage ⇒ `None` (refuses the compound, `kFAIL-perform`).
 fn ship_stage_for_argv(
     argv: &[ValueOf],
-    ship_stage: &impl Fn(Symbol, &[Symbol]) -> Option<StageShip>,
+    node: CfgNodeId,
+    ship_stage: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<StageShip>,
 ) -> Option<(Symbol, Vec<Symbol>, StageShip)> {
     let (first, rest) = argv.split_first()?;
     let &ValueOf::Literal(provider) = first else {
@@ -2710,7 +2910,7 @@ fn ship_stage_for_argv(
         };
         operands.push(s);
     }
-    let ship = ship_stage(provider, &operands)?;
+    let ship = ship_stage(node, provider, &operands)?;
     Some((provider, operands, ship))
 }
 
@@ -2765,7 +2965,7 @@ pub fn compile_probe(
     classes: &[(CfgNodeId, SkipClass)],
     wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
-    ship_body: impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_body: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
     ship_auto: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
     is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
@@ -2955,7 +3155,7 @@ pub fn compile_probe(
         // R3: ship the provider's stripped `check()` invoked with the site's argv. A ⊤ command word or
         // operand, or no check resolving this argv, ⇒ un-shippable (no concrete invocation ⇒
         // `can't-probe ⇒ can't-elide`, `kFAIL-perform`).
-        match ship_for_argv(&value.argv_values(node), &ship_body) {
+        match ship_for_argv(&value.argv_values(node), node, &ship_body) {
             Some((provider, argv, shipped)) => checks.push(ProbePredict {
                 site,
                 member: None,
@@ -3006,12 +3206,16 @@ fn ship_auto_for_argv(
     Some((provider, operands, shipped))
 }
 
+/// `node` is the SITE, not a decoration: the ship closure resolves the body positionally
+/// (`28K` §2 rul-visibility-is-full-positional), so it must ship the definition live at the line
+/// the check will guard — the same answer the classify lane already read there.
 fn ship_for_argv(
     argv: &[ValueOf],
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    node: CfgNodeId,
+    ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) -> Option<(Symbol, Vec<Symbol>, ShippedCheck)> {
     let (provider, operands) = literal_invocation(argv)?;
-    let shipped = ship_body(provider, &operands)?;
+    let shipped = ship_body(node, provider, &operands)?;
     Some((provider, operands, shipped))
 }
 
@@ -3046,7 +3250,7 @@ fn push_member_predicts(
     node: CfgNodeId,
     members: &[FactKey],
     value: &ValueFlow,
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) {
     // R3: the per-member argvs (aligned with `members`, list order, dups kept —
     // [`ValueFlow::member_argv`]). Absent, or a length mismatch, means the Members
@@ -3062,7 +3266,7 @@ fn push_member_predicts(
     }
     let mut staged = Vec::with_capacity(members.len());
     for (idx, (fact, argv)) in members.iter().zip(member_argvs).enumerate() {
-        let Some((provider, args, shipped)) = ship_for_argv(argv, ship_body) else {
+        let Some((provider, args, shipped)) = ship_for_argv(argv, node, ship_body) else {
             // One member un-shippable ⇒ the whole site is unresolvable (all or none).
             unresolvable.push(site);
             return;
@@ -3104,7 +3308,7 @@ fn push_inline_predicts(
     site: LeafId,
     sites: &[InlineSite],
     value: &ValueFlow,
-    ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) {
     let mut staged = Vec::new();
     for (idx, body) in sites.iter().enumerate() {
@@ -3114,7 +3318,9 @@ fn push_inline_predicts(
         let body_argv = value.argv_values(body.node);
         match &body.class {
             SkipClass::EstablishAmbient(fact) => {
-                let Some((provider, args, shipped)) = ship_for_argv(&body_argv, ship_body) else {
+                let Some((provider, args, shipped)) =
+                    ship_for_argv(&body_argv, body.node, ship_body)
+                else {
                     // An un-shippable ESTABLISH ⇒ the whole call is unresolvable (all or none).
                     unresolvable.push(site);
                     return;
@@ -3137,7 +3343,9 @@ fn push_inline_predicts(
             SkipClass::QueryResolvable { fact, valid } => {
                 // A read-only guard: ship its check if resolvable (it does NOT gate the call's
                 // elision, so an un-shippable guard is simply omitted, never a blocker).
-                if let Some((provider, args, shipped)) = ship_for_argv(&body_argv, ship_body) {
+                if let Some((provider, args, shipped)) =
+                    ship_for_argv(&body_argv, body.node, ship_body)
+                {
                     staged.push(ProbePredict {
                         site,
                         member,
@@ -3962,7 +4170,11 @@ impl Plan {
                 // original bytes survive verbatim as the `||`-right (rul-ternary-verdict). The
                 // preamble defs are emitted once, up front, by [`guard_preamble`](Plan::guard_preamble).
                 Disposition::Guard(license) => {
-                    out.push_str(&license.insert().render_line(&step.sh));
+                    out.push_str(
+                        &license
+                            .insert()
+                            .render_line(&step.sh, license.insert().fn_name()),
+                    );
                     out.push('\n');
                 }
             }
@@ -3970,33 +4182,97 @@ impl Plan {
         out
     }
 
-    /// The guard **preamble** (24D §2 / rul-ternary-verdict): the verdict-function defs the guarded
-    /// lines invoke, each emitted ONCE (deduped by funcname; sh's last-writer-wins + top-to-bottom
-    /// exec means every invocation sees its own def). Empty when no site guards (so HEAD is byte-
-    /// unchanged). The cli prepends this to the apply artifact, above the guarded lines — the guard
-    /// lane's analogue of the probe's wrapper-def emission. The bodies are shipped STRIP-ONLY (the
-    /// oracle's own bytes; no engine-synthesized sh — the two never-clauses).
+    /// The artifact's **pinned definitions** (`28K` §4 `rul-runtime-resolution-never-load-bearing`):
+    /// which body each guard invokes, and under what name.
     ///
-    /// A funcname appearing twice is emitted once; a provider with TWO distinct verdict bodies
-    /// under one funcname (the probe's `apt-get`-as-package-and-pkgindex shape) is not modeled here
-    /// (a verdict function has one body; tc-guard-preamble-reemit flags the re-emit case deferred).
+    /// The property this exists to make STRUCTURAL: the name a guard calls is bound, at that point
+    /// in the artifact, to exactly the bytes the analysis resolved — by construction, not by three
+    /// unrelated mechanisms agreeing. A misalignment there could swap WHOSE judgment executes, which
+    /// is pope-sin tier (`271:rul-sin-ordering`), so the emission decides the binding rather than
+    /// leaving a shell to re-derive it.
+    ///
+    /// Three rules, in the order they apply:
+    ///
+    /// 1. **Content-dedup.** Byte-identical bodies are ONE definition however many sites reach them
+    ///    (vendored copies are the commonest real collision, `28K` §4).
+    /// 2. **Already-in-place wins.** A body the book's own text already defines at top level, under
+    ///    the same name and the same bytes, is not copied: the artifact would otherwise carry two
+    ///    same-named funcdefs, which is the shape `oracle/src/reserved.rs` refuses by another route
+    ///    and which `28K` §4 retires by ANY route. Nothing is re-derived — the definition is the
+    ///    pinned one, sitting where its author put it, and the positional regime already proved it
+    ///    live at every site that guards (`rul-visibility-is-full-positional`: a vouch exists only
+    ///    where the definition it comes from is the one live at the line, so a book-sited definition
+    ///    always PRECEDES its guards).
+    /// 3. **Hash-munge the rest.** Where one name still has two distinct bodies, each is emitted
+    ///    once under `<name>_h<digest>` and the call sites carry the disambiguated name
+    ///    (`rul-hash-munge-disambiguation`). Engine SCAFFOLDING around authored bytes — the same
+    ///    sanctioned category as the guard glue — never a second source of convergence-truth. The
+    ///    munged name cannot parse as a `__role` (the vocabulary is closed and suffix-keyed), so a
+    ///    re-ingested artifact reads the guard as an opaque call ⇒ conservative run, the
+    ///    `23A:P-reingest` floor.
+    ///
+    /// Deterministic throughout (`inv-determinism`): the digest is over the definition BYTES, never
+    /// a runtime source, and both the hoist order and the name assignment iterate sorted maps.
     #[must_use]
-    pub fn guard_preamble(&self, ast: &Ast) -> String {
-        let mut defined: BTreeSet<&str> = BTreeSet::new();
-        let mut out = String::new();
-        for step in &self.steps {
-            // A render-REFUSED guard (heredoc/redirect) emits no invocation, so its preamble def
-            // would be dead — skip it, so a book whose only guard is refused stays byte-clean. The
-            // OOB-safe check tolerates a synthetic test Plan whose `AstId`s index no real node.
-            if let Disposition::Guard(license) = &step.disposition
-                && !(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast))
-                && defined.insert(license.insert().fn_name())
-            {
-                out.push_str(license.insert().preamble());
-                out.push('\n');
+    pub fn pinned_definitions(&self, src: &str, ast: &Ast) -> PinnedDefinitions {
+        // Distinct bodies per funcname, first-seen order preserved within a name.
+        let mut bodies: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+        for insert in self.rendered_guards(ast) {
+            let under = bodies.entry(insert.fn_name()).or_default();
+            if !under.contains(&insert.preamble()) {
+                under.push(insert.preamble());
             }
         }
-        out
+        let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
+        let mut hoisted = String::new();
+        for (name, distinct) in &bodies {
+            let plural = distinct.len() > 1;
+            for body in distinct {
+                let emitted = if plural {
+                    format!("{name}_h{}", short_digest(body))
+                } else {
+                    (*name).to_owned()
+                };
+                if !(plural || book_already_defines(src, ast, name, body)) {
+                    hoisted.push_str(body);
+                    hoisted.push('\n');
+                } else if plural {
+                    hoisted.push_str(&render::apply::pinned_provenance(name));
+                    // The HEADER only: the pinned string opens with somebody else's closure bytes.
+                    let header = format!("{name}()");
+                    hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
+                    hoisted.push('\n');
+                }
+                emitted_names.insert((name, body), emitted);
+            }
+        }
+        let invoked = self
+            .steps
+            .iter()
+            .filter_map(|step| {
+                let Disposition::Guard(license) = &step.disposition else {
+                    return None;
+                };
+                let insert = license.insert();
+                let emitted = emitted_names.get(&(insert.fn_name(), insert.preamble()))?;
+                Some((step.ast, emitted.clone()))
+            })
+            .collect();
+        PinnedDefinitions { hoisted, invoked }
+    }
+
+    /// The guard inserts whose line the render actually EMITS. A render-REFUSED guard (heredoc /
+    /// blocking redirect) runs verbatim, so pinning its definition would hoist a dead one and take
+    /// a guard-free book off its byte floor.
+    fn rendered_guards<'a>(&'a self, ast: &Ast) -> impl Iterator<Item = &'a GuardInsert> {
+        self.steps.iter().filter_map(move |step| {
+            let Disposition::Guard(license) = &step.disposition else {
+                return None;
+            };
+            // OOB-safe: a synthetic test Plan's `AstId`s may index no real node.
+            (!(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast)))
+                .then(|| license.insert())
+        })
     }
 
     /// The `AstId`s of `Guard` steps whose render is REFUSED ([`guard_render_refused`] — a heredoc
@@ -4050,15 +4326,16 @@ impl Plan {
     /// leaf is run verbatim.
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
-        let edits = self.collect_edits(src, ast);
+        let pinned = self.pinned_definitions(src, ast);
+        let edits = self.collect_edits(src, ast, &pinned);
         let artifact = emit_span_edits(src, &edits);
-        // The GUARD PREAMBLE (24D §2 / rul-ternary-verdict): the verdict-function defs the guarded
+        // The GUARD PREAMBLE (24D §2 / rul-ternary-verdict): the pinned definitions the guarded
         // lines invoke, emitted ONCE between the apply header and the book (the defs must precede
         // their invocations — sh execs top-to-bottom, and the header is pure comments). Empty when
         // no site guards ⇒ a guard-free book stays byte-identical to HEAD. `emit_span_edits` emits
         // `apply_header()` as the artifact's verbatim prefix, so splicing after it lands the defs
         // above the whole book.
-        let preamble = self.guard_preamble(ast);
+        let preamble = pinned.hoisted();
         if preamble.is_empty() {
             return artifact;
         }
@@ -4174,7 +4451,7 @@ impl Plan {
     /// the command span would orphan the heredoc body as stray lines. Multi-line spans are
     /// NOT refused (a span edit may cover multiple lines — the line-render's old refusal
     /// retired); they collapse cleanly to the single-line replacement.
-    fn collect_edits(&self, src: &str, ast: &Ast) -> Vec<SpanEdit> {
+    fn collect_edits(&self, src: &str, ast: &Ast, pinned: &PinnedDefinitions) -> Vec<SpanEdit> {
         // Per-AstId disposition, so an `Omit`'s controller resolves for the omit-safety gate.
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
@@ -4248,7 +4525,14 @@ impl Plan {
                     // heredoc case is already refused at the top of the loop (span cannot cover the
                     // body) — X-heredoc. It carries its OWN `# dorc: guard …` comment ⇒ self-commented.
                     Disposition::Guard(license) => {
-                        (license.insert().render_line(&original), true, false)
+                        let invoked = pinned
+                            .invoked(step.ast)
+                            .unwrap_or(license.insert().fn_name());
+                        (
+                            license.insert().render_line(&original, invoked),
+                            true,
+                            false,
+                        )
                     }
                     // A kept-controller `Omit` (the runtime guard gates it) and a `Run` leaf are
                     // both verbatim — no edit.
@@ -4889,7 +5173,7 @@ apt_get__is_converged() { return 0; }
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                     return Some(ShippedCheck::predict(
                         strip_predict(CORPUS_PREDICT_SRC, check, interner),
-                        Some((check.name_span, OracleFileId(0))),
+                        Some((check.name_span, SourceFileId(0))),
                     ));
                 }
             }
@@ -4926,6 +5210,7 @@ apt_get__is_converged() { return 0; }
                 "apt_get__is_converged install -y nginx".to_string(),
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
             ),
             Rung::Both,
         )
@@ -4974,6 +5259,7 @@ apt_get__is_converged() { return 0; }
                 "apt_get__is_converged install -y curl".to_string(),
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
             )
         };
         // jc-mint-policy m-a: a diverged/unknown probe-verdict NEVER guards (a guard at a
@@ -5015,6 +5301,7 @@ apt_get__is_converged() { return 0; }
             "apt_get__is_converged install -y curl".to_string(),
             "package".to_string(),
             vec!["dpkg-query".to_string()],
+            dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
         );
         let license = GuardLicense::mint(
             nginx_fact(),
@@ -5023,7 +5310,9 @@ apt_get__is_converged() { return 0; }
         )
         .unwrap();
         // The guard_shape law: `( <check> ) || <original verbatim>   # dorc: guard [...]`.
-        let line = license.insert().render_line("apt-get install -y curl");
+        let line = license
+            .insert()
+            .render_line("apt-get install -y curl", "apt_get__is_converged");
         assert!(
             line.starts_with(
                 "( apt_get__is_converged install -y curl ) || apt-get install -y curl"
@@ -5044,6 +5333,8 @@ apt_get__is_converged() { return 0; }
         );
     }
 
+    /// Two sites, one funcname, one BODY ⇒ one hoisted definition under the plain name, and both
+    /// guards invoke it. The content-dedup half of `28K` §4.
     #[test]
     fn guard_preamble_dedups_and_counts() {
         use dorc_core::{ByVouch, Rung};
@@ -5054,6 +5345,7 @@ apt_get__is_converged() { return 0; }
                 "apt_get__is_converged install curl".to_string(),
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
             );
             Step {
                 leaf: LeafId(leaf),
@@ -5074,23 +5366,133 @@ apt_get__is_converged() { return 0; }
             survival_report: SurvivalReport::default(),
         };
         // A throwaway (empty) Ast: the synthetic `AstId`s index no real node, and the OOB-safe
-        // check in `guard_preamble` treats an out-of-arena id as not-refused (so both guards emit).
+        // check treats an out-of-arena id as not-refused (so both guards pin).
         let ast = dorc_syntax::parse("").value;
-        // Two guards sharing one funcname ⇒ ONE preamble def (sh last-writer-wins; the invocation
-        // sees its own def).
+        let pinned = plan.pinned_definitions("", &ast);
         assert_eq!(
-            plan.guard_preamble(&ast)
-                .matches("apt_get__is_converged()")
-                .count(),
+            pinned.hoisted().matches("apt_get__is_converged()").count(),
             1,
-            "preamble deduped by funcname: {}",
-            plan.guard_preamble(&ast)
+            "one BODY ⇒ one hoist: {}",
+            pinned.hoisted()
         );
+        assert_eq!(
+            pinned.invoked(AstId(0)),
+            Some("apt_get__is_converged"),
+            "the single-definition case keeps the authored name, byte-identical to strip"
+        );
+        assert_eq!(pinned.invoked(AstId(1)), pinned.invoked(AstId(0)));
         // The exhaustive `disposition_counts` match now feeds the guard bucket (the summary's
         // guard column becomes real — DispositionCounts forced this wiring).
         let counts = plan.disposition_counts();
         assert_eq!(counts.guard, 2);
         assert_eq!(counts.sites, 2);
+    }
+
+    /// Build a two-guard plan whose sites carry the given verdict BODIES under one funcname.
+    #[cfg(test)]
+    fn two_guard_plan(bodies: [&str; 2]) -> Plan {
+        use dorc_core::{ByVouch, Rung};
+        let step = |leaf: u32, preamble: &str| {
+            let vouch = VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                preamble.to_string(),
+                "apt_get__is_converged install curl".to_string(),
+                "package".to_string(),
+                Vec::new(),
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
+            );
+            Step {
+                leaf: LeafId(leaf),
+                ast: AstId(leaf),
+                sh: "apt-get install curl".to_string(),
+                disposition: Disposition::Guard(
+                    GuardLicense::mint(
+                        nginx_fact(),
+                        ByVouch::vouched(vouch, Rung::Both),
+                        Verdict::Converged,
+                    )
+                    .unwrap(),
+                ),
+            }
+        };
+        Plan {
+            steps: vec![step(0, bodies[0]), step(1, bodies[1])],
+            survival_report: SurvivalReport::default(),
+        }
+    }
+
+    /// `28K` §4 `rul-hash-munge-disambiguation`, and the pope-sin it closes.
+    ///
+    /// Two sites whose live definitions are DIFFERENT bodies under one funcname. The retired
+    /// dedup-by-funcname emitted the first body only and let BOTH sites invoke it, so one site ran
+    /// a judgment its author never made for that line — a mis-attribution
+    /// (`271:rul-sin-ordering`'s worst class) that no golden could show. Now each body is emitted
+    /// once under its own disambiguated name and each site invokes its own.
+    #[test]
+    fn two_distinct_bodies_under_one_name_are_hash_munged_apart() {
+        let a = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
+        let b = "apt_get__is_converged() { dpkg-query -W --strict \"$1\" ; }";
+        let plan = two_guard_plan([a, b]);
+        let ast = dorc_syntax::parse("").value;
+        let pinned = plan.pinned_definitions("", &ast);
+        let (first, second) = (
+            pinned.invoked(AstId(0)).expect("site 0 guards"),
+            pinned.invoked(AstId(1)).expect("site 1 guards"),
+        );
+        assert_ne!(first, second, "distinct bodies never share a name");
+        for name in [first, second] {
+            assert!(
+                name.starts_with("apt_get__is_converged_h"),
+                "the authored name stays readable in the munged one: {name}"
+            );
+            assert!(
+                dorc_oracle::reserved::role_family(name).is_none(),
+                "a munged name must not parse as a role, or a re-ingested artifact would read the \
+                 guard as a description instead of an opaque call (`23A:P-reingest`): {name}"
+            );
+            assert_eq!(
+                pinned.hoisted().matches(&format!("{name}()")).count(),
+                1,
+                "each body emitted exactly once, under its own name:\n{}",
+                pinned.hoisted()
+            );
+        }
+        assert!(
+            !pinned.hoisted().contains("apt_get__is_converged()"),
+            "the plain name binds nothing when the unit holds two bodies:\n{}",
+            pinned.hoisted()
+        );
+        assert_eq!(
+            pinned
+                .hoisted()
+                .matches("# dorc: pinned definition of `apt_get__is_converged`")
+                .count(),
+            2,
+            "each munged body names the AUTHORED function it is, or a reader cannot answer whose \
+             judgment runs:\n{}",
+            pinned.hoisted()
+        );
+    }
+
+    /// The artifact never carries two same-named funcdefs BY ANY ROUTE (`28K` §4). When the pinned
+    /// definition is the book's own — the stage-3 in-book oracle — the artifact already holds it at
+    /// its authored position, so hoisting a copy would put the very shape `oracle/src/reserved.rs`
+    /// refuses into the shipped bytes. Nothing is re-derived: the positional regime licenses a
+    /// vouch only where its definition is live, so a book-sited definition always precedes its
+    /// guards.
+    #[test]
+    fn a_definition_the_book_already_carries_is_not_copied_above_it() {
+        let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
+        let src = format!("{body}\napt-get install curl\n");
+        let ast = dorc_syntax::parse(&src).value;
+        let plan = two_guard_plan([body, body]);
+        let pinned = plan.pinned_definitions(&src, &ast);
+        assert_eq!(
+            pinned.hoisted(),
+            "",
+            "the book's own definition IS the pin — no second funcdef ships"
+        );
+        assert_eq!(pinned.invoked(AstId(0)), Some("apt_get__is_converged"));
     }
 
     /// Run the real pipeline (parse → cfg → value-flow → classify → `compile_probe`) on
@@ -5130,7 +5532,7 @@ apt_get__is_converged() { return 0; }
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| {
+            |_, provider, argv| {
                 if probeable {
                     ship_corpus(&checks, &i, provider, argv)
                 } else {
@@ -5141,6 +5543,107 @@ apt_get__is_converged() { return 0; }
             |_| false,
         );
         (probe, i)
+    }
+
+    /// `ship-seam-reads-the-lane-not-the-kind` (`26H` §3.5): where a site is in the VERDICT lane
+    /// AND also carries a resolvable predict, the verdict body ships. The two closures are tried
+    /// in order and that order is load-bearing — a verdict-lane site's cell is owned by the
+    /// verdict body, so shipping the predict would MEASURE a different cell than the record KEYS.
+    ///
+    /// That failure is invisible to every golden in the corpus: the artifact still contains a
+    /// well-formed check and a well-formed record, the site count is unchanged, and only the
+    /// coordinate the measurement actually answers has moved. Nothing else pinned this ordering,
+    /// so the fixture-level evidence for it was zero (`28K` build; pin added before the
+    /// resolution rewiring touches these closures).
+    #[test]
+    fn a_verdict_lane_site_ships_the_verdict_body_over_a_resolvable_predict() {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse("apt-get install -y nginx\n");
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &dorc_oracle::verdict::VerdictIndex::default(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &BTreeMap::new(),
+            &ConnectedPipes::default(),
+            |_, _, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
+            |_, _, _| {
+                Some(ShippedCheck::verdict(
+                    "VERDICT_BODY".to_owned(),
+                    None,
+                    false,
+                ))
+            },
+            |_| true,
+        );
+        let shipped = probe
+            .checks
+            .iter()
+            .find(|c| c.site_kind == ProbeSiteKind::Establish)
+            .expect("the establish site ships a check");
+        assert!(
+            shipped.verdict,
+            "the verdict lane must win the try-order: {shipped:?}"
+        );
+        assert_eq!(shipped.sh, "VERDICT_BODY", "{shipped:?}");
+    }
+
+    /// The same seam's negative half, and what makes the pin above non-vacuous: with the site NOT
+    /// declared verdict-lane, the identical inputs ship the PREDICT. So the discriminator really is
+    /// the caller's per-SITE lane declaration (`verdict-lane-is-site-keyed`) — not the fact's kind,
+    /// and not which closure happens to answer first.
+    #[test]
+    fn the_same_site_ships_the_predict_when_it_is_not_verdict_lane() {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse("apt-get install -y nginx\n");
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &dorc_oracle::verdict::VerdictIndex::default(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &BTreeMap::new(),
+            &ConnectedPipes::default(),
+            |_, _, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
+            |_, _, _| None,
+            |_| true,
+        );
+        let shipped = probe
+            .checks
+            .iter()
+            .find(|c| c.site_kind == ProbeSiteKind::Establish)
+            .expect("the establish site ships a check");
+        assert!(!shipped.verdict, "{shipped:?}");
+        assert_eq!(shipped.sh, "PREDICT_BODY", "{shipped:?}");
     }
 
     #[test]
@@ -5248,7 +5751,14 @@ apt_get__is_converged() { return 0; }
         )
         .value;
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
-        let (_vouches, narrative) = build_vouches(&[verdict_src], &classes, &value, &mut i);
+        let (_vouches, narrative) = build_vouches(
+            &[verdict_src],
+            &dorc_oracle::closure::HelperIndex::default(),
+            &classes,
+            &value,
+            &mut i,
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+        );
         let mut decline_leaves: Vec<u32> = narrative
             .iter()
             .filter_map(|ev| match ev.kind() {
@@ -5270,7 +5780,7 @@ apt_get__is_converged() { return 0; }
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| ship_corpus(&checks, &i, provider, argv),
+            |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
             |_, _, _| None,
             |_| false,
         );
@@ -5284,7 +5794,14 @@ apt_get__is_converged() { return 0; }
         // The AGREEMENT direction (`289:rul-mint-hardening-package` item 4a): a body that REACHES
         // its check vouches rather than declines, so the same two sites mint no `VerdictDecline`.
         let vouching_src = "apt_get__is_converged() { dpkg -s \"$2\" : package:\"$2\"@installed ;}";
-        let (_vouches, none) = build_vouches(&[vouching_src], &classes, &value, &mut i);
+        let (_vouches, none) = build_vouches(
+            &[vouching_src],
+            &dorc_oracle::closure::HelperIndex::default(),
+            &classes,
+            &value,
+            &mut i,
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+        );
         assert!(
             !none
                 .iter()
@@ -5332,6 +5849,7 @@ apt_get__is_converged() { return 0; }
                 &mut dorc_core::ProvArena::new(),
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             );
         let classes = classes.value;
         let derivations = compile_derivations(
@@ -5371,8 +5889,16 @@ apt_get__is_converged() { return 0; }
             "the per-site deriv readback scaffold renders (framed, counting subshell): {sh}"
         );
         assert!(
-            sh.contains("printf 'dorc deriv-end 0 n=%s @@dorc@@\\n' \"$_n\"; }"),
-            "the at-most family closes with a `deriv-end` count record (262 §2 / 26A stop-1): {sh}"
+            sh.contains(
+                "printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\\n' \"$_n\" \"$_dr\"; }"
+            ),
+            "the at-most family closes with a count AND the emitting body's termination status \
+             (262 §2 / 26A stop-1 + 28P dec-whole-body-atomic-refusal): {sh}"
+        );
+        assert!(
+            sh.contains("_dr=$?"),
+            "the body's status is captured BEFORE the record pipe — a pipeline's status is its \
+             RHS's, so the pre-28P scaffold could not see a body death: {sh}"
         );
         assert!(
             !sh.starts_with("#!/bin/sh"),
@@ -5429,7 +5955,7 @@ apt_get__disturbs() {
             "the def ships under the mangled name: {sh}"
         );
         assert!(
-            sh.contains(&format!("\n{def_name} 'install' |")),
+            sh.contains(&format!("_d=$({def_name} 'install');")),
             "the invocation calls that exact name: {sh}"
         );
     }
@@ -5499,8 +6025,15 @@ apt_get__is_converged() {
             "the per-arm wrapper ships under arm_fn: {sh}"
         );
         assert!(
-            sh.contains(&format!("{arm_fn} 'nginx' |")),
+            sh.contains(&format!("_r=$({arm_fn} 'nginx')")),
             "the invocation calls that exact name: {sh}"
+        );
+        // The arm's status is captured off the invocation itself, never off the record pipe — a
+        // pipeline's status is its RHS's, which is what made the body's death unobservable
+        // (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`).
+        assert!(
+            sh.contains("); _rr=$?") && sh.contains("n=%s body-rc=%s"),
+            "the arm closes with its count AND its own termination status: {sh}"
         );
     }
 
@@ -5679,7 +6212,7 @@ apt_get__is_converged() {
             &classes,
             &BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| ship_corpus(&checks, &i, provider, argv),
+            |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
             |_, _, _| None,
             |_| false,
         );
@@ -5752,6 +6285,141 @@ apt_get__is_converged() {
             )
             .is_none(),
             "a converged ambient Must fact WITHOUT a vouch must not elide (no vouch ⇒ run)"
+        );
+    }
+
+    /// `28M` §8's monologue, now read off the value instead of argued from three mechanisms
+    /// agreeing. An establish-elide speaks for the author whose vouch it consumed — and for nobody
+    /// else — while a Query substitution speaks for no author at all, because its reproduced value
+    /// is the probe's own measurement of the very command being substituted.
+    ///
+    /// Non-vacuous in the direction that matters: the custody is read from the CONSUMED vouch, so
+    /// this fails the moment a mint stamps a license with a custody its vouch did not supply, which
+    /// is precisely the shape a measured-value widening would take.
+    #[test]
+    fn an_establish_elide_speaks_for_its_vouching_author_and_a_query_for_none() {
+        use dorc_core::{ByVouch, DefinitionCustody, LicenseCustody, Rung, SourceFileId};
+        let f = nginx_fact();
+        let vouch_from = |file: u32| {
+            ByVouch::vouched(
+                VerdictVouch::new(
+                    "apt_get__is_converged".to_string(),
+                    "apt_get__is_converged() { :; }".to_string(),
+                    "apt_get__is_converged install -y nginx".to_string(),
+                    "package".to_string(),
+                    vec!["dpkg-query".to_string()],
+                    DefinitionCustody::of_defining_file(SourceFileId(file)),
+                ),
+                Rung::Both,
+            )
+        };
+        for file in [0_u32, 3] {
+            let lic = ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::Must,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                quiet(),
+                Predicted::Top,
+                Some(vouch_from(file)),
+            )
+            .expect("a converged ambient Must fact WITH a vouch elides");
+            assert_eq!(
+                lic.custody(),
+                LicenseCustody::Vouched(DefinitionCustody::of_defining_file(SourceFileId(file))),
+                "the elision must speak for the author whose vouch licensed it, and follow it when \
+                 that author changes"
+            );
+        }
+        let query = ReplaceLicense::prove_replaceable(
+            &SkipClass::QueryResolvable {
+                fact: f,
+                valid: true,
+            },
+            Grade::Must,
+            PhasedVerdict::<Probe>::new(Verdict::Converged),
+            quiet(),
+            Predicted::Value(Rc(0)),
+            None,
+        )
+        .expect("a valid known-rc Query substitutes");
+        assert_eq!(
+            query.custody(),
+            LicenseCustody::MeasuredSelf,
+            "a read-substitution rests on no authored vouch — it reproduces the substituted \
+             command's OWN measurement, so there is no second speaker to name"
+        );
+    }
+
+    /// `28M` §8's hardening, the half that is about VALUES rather than authors: a split family —
+    /// one author's `predict` resolving the site, another's `is_converged` vouching it — must not
+    /// let the elision reproduce anything the predict measured. The firewall is upstream (an
+    /// Establish site's status is withheld to ⊤ at intake, `results.rs`), so the mint sees
+    /// `Predicted::Top` and the stand-in is `True`. Pinned HERE because the intake firewall and the
+    /// mint are separate crates and neither one alone states the property.
+    ///
+    /// Read the two assertions together: the license exists, AND its stand-in carries no measured
+    /// value. A split family therefore cannot smuggle author A's measurement into author B's
+    /// sentence — the elision reproduces the vouch and nothing else.
+    #[test]
+    fn a_split_family_establish_elide_reproduces_nothing_predict_derived() {
+        let f = nginx_fact();
+        let lic = ReplaceLicense::prove_replaceable(
+            &SkipClass::EstablishAmbient(f),
+            Grade::Must,
+            PhasedVerdict::<Probe>::new(Verdict::Converged),
+            quiet(),
+            // What an Establish site always arrives with: the rc firewall withheld it.
+            Predicted::Top,
+            Some(test_vouch()),
+        )
+        .expect("the establish elide mints");
+        assert!(
+            matches!(lic.custody(), dorc_core::LicenseCustody::Vouched(_)),
+            "the licence is the verdict author's alone"
+        );
+        let stand_in = match Predicted::<Rc>::Top {
+            Predicted::Value(rc) => StandIn::from_rc(rc),
+            Predicted::Top => StandIn::True,
+        };
+        assert_eq!(
+            stand_in,
+            StandIn::True,
+            "an establish-elide's stand-in reproduces NO measured value: `true` is the vouch \
+             acting-as-succeeded, never a predict-derived rc (`guards-mint-no-values`' elide twin)"
+        );
+    }
+
+    /// `28M` §8 `vouch-covers-the-stand-in-rc-0`. The rc-0 an establish-elide leaves behind is not
+    /// a claim that the command exits 0 — it is the VOUCH's act-as-succeeded, which is why a
+    /// consumer that would notice the difference blocks the mint instead of relaxing it.
+    ///
+    /// So the pin is the pair: rc-0 rides through for a consumer that cannot tell (`quiet`), and
+    /// the SAME inputs with a ⊤-status branch consumer refuse. If the second half ever passed, the
+    /// stand-in's rc-0 would be a fabricated success suppressing a `|| fallback` — the round-19
+    /// under-execute, and the exact reason the vouch's coverage stops at the consumers it can speak
+    /// for.
+    #[test]
+    fn the_vouch_covers_the_stand_in_rc_zero_only_where_no_consumer_can_tell() {
+        let f = nginx_fact();
+        let mint = |consumed| {
+            ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::Must,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                consumed,
+                Predicted::Top,
+                Some(test_vouch()),
+            )
+        };
+        assert!(
+            mint(quiet()).is_some(),
+            "with nothing consuming the status, the stand-in's rc 0 is inside what the vouch \
+             covers — 're-running this is noise I accept'"
+        );
+        assert!(
+            mint(May(Powerset::singleton(Channel::StatusRelaxable))).is_none(),
+            "a branch that READS the status is outside the vouch's coverage at ⊤: the stand-in's \
+             rc 0 would decide somebody else's line, so the site runs"
         );
     }
 
@@ -6063,9 +6731,16 @@ apt_get__is_converged() {
             &mut dorc_core::ProvArena::new(),
         )
         .value;
-        let mut vouches = build_vouches(&[CORPUS_VERDICT_SRC], &classes, &value, &mut i)
-            .0
-            .value;
+        let mut vouches = build_vouches(
+            &[CORPUS_VERDICT_SRC],
+            &dorc_oracle::closure::HelperIndex::default(),
+            &classes,
+            &value,
+            &mut i,
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+        )
+        .0
+        .value;
         let supplied = classes.iter().find_map(|(node, class)| match class {
             SkipClass::EstablishMembers { members, .. } => {
                 members.first().map(|fact| (*node, *fact))
@@ -6434,6 +7109,7 @@ apt_get__is_converged() {
             &mut arena,
             &mut BTreeMap::new(),
             &mut BTreeSet::new(),
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
         let classes = classified.value;
         let kills = if walled { kills_found } else { BTreeSet::new() };
@@ -7484,7 +8160,7 @@ apt_get__is_converged() {
         clippy::unnecessary_wraps,
         reason = "must match the `ship_stage: Fn(..) -> Option<StageShip>` closure signature"
     )]
-    fn ship_all_real(_p: Symbol, _a: &[Symbol]) -> Option<StageShip> {
+    fn ship_all_real(_n: CfgNodeId, _p: Symbol, _a: &[Symbol]) -> Option<StageShip> {
         Some(StageShip {
             sh: "stub__predict() { :; }".to_owned(),
             produces_real_stdout: true,
@@ -7554,7 +8230,7 @@ apt_get__is_converged() {
         // coverage rule bites: the FIRST stage `otelcol` declines stdout, so nothing ships.
         let src = "otelcol --version | grep -q x || curl y\n";
         let (ast, cfg, value, classes, i) = pipe_fixture(src, &["otelcol", "grep"]);
-        let ship = |p: Symbol, _a: &[Symbol]| {
+        let ship = |_n: CfgNodeId, p: Symbol, _a: &[Symbol]| {
             Some(StageShip {
                 sh: "stub__predict() { :; }".to_owned(),
                 // otelcol declines stdout (rc-only / redirect-void); grep is fine — but grep is LAST.
@@ -7585,7 +8261,7 @@ apt_get__is_converged() {
         // sinks the whole pipe to run. Here `grep` (the governor) has no shippable predict.
         let src = "otelcol --version | grep -q x\n";
         let (ast, cfg, value, classes, i) = pipe_fixture(src, &["otelcol", "grep"]);
-        let ship = |p: Symbol, _a: &[Symbol]| {
+        let ship = |_n: CfgNodeId, p: Symbol, _a: &[Symbol]| {
             (i.resolve(p) != "grep").then(|| StageShip {
                 sh: "stub__predict() { :; }".to_owned(),
                 produces_real_stdout: true,

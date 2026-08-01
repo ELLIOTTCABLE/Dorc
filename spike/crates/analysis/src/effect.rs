@@ -36,7 +36,7 @@ use dorc_core::{
     Span,
 };
 use dorc_oracle::predict::{self, PredictSet, ResolvedEntity, TopReason};
-use dorc_oracle::verdict::VerdictIndex;
+use dorc_oracle::verdict::{VERDICT_SUFFIX, VerdictIndex};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -273,7 +273,11 @@ fn verdict_cell_or_auto(
     interner: &mut Interner,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     verdict_keyed: &mut bool,
+    visible: &VisibleRole<'_>,
 ) -> Vec<CommandEffect> {
+    if !visible.role_answers(verdicts.source_of(provider), VERDICT_SUFFIX) {
+        return vec![CommandEffect::Opaque];
+    }
     let Some(verdict) = verdicts.get(provider) else {
         return vec![CommandEffect::Opaque];
     };
@@ -300,12 +304,77 @@ fn verdict_cell_or_auto(
     vec![CommandEffect::Establishes(fact)]
 }
 
+/// The positional gate at ONE site, for ONE command family (`28K` §2
+/// `rul-visibility-is-full-positional`): the definition a role act would answer FROM must be the
+/// one a shell would have live AT THIS LINE.
+///
+/// Bundled because both lanes of [`command_effect`] ask the same question of different roles, and
+/// because the family segment is derived once per site rather than per role.
+struct VisibleRole<'a> {
+    live: crate::funcenv::LiveDefinitions<'a>,
+    node: CfgNodeId,
+    /// The munged family segment — `apt_get` for a book word `apt-get`.
+    family: String,
+}
+
+impl<'a> VisibleRole<'a> {
+    fn at(
+        live: crate::funcenv::LiveDefinitions<'a>,
+        node: CfgNodeId,
+        provider: ProviderId,
+        interner: &Interner,
+    ) -> Self {
+        let family = dorc_oracle::to_funcname_segment(interner.resolve(provider.0));
+        Self { live, node, family }
+    }
+
+    /// Whether the source that spoke for `suffix` is the one live here.
+    ///
+    /// `spoke` is the source index the lifted index took the body from. `None` means the index
+    /// carries NO provenance — a hand-built one, with no source text for the environment to have
+    /// an opinion about — so nothing is withheld; it is never "any file will do".
+    fn role_answers(&self, spoke: Option<usize>, suffix: &str) -> bool {
+        let Some(file) = spoke else { return true };
+        let name = format!("{}{suffix}", self.family);
+        self.live.answers_at(self.node, &name, file)
+    }
+}
+
+/// The predict check that answers at THIS site, or `None`.
+///
+/// Three conditions, and each retired or guards a distinct wrong answer. (1) sh's LIVE definition
+/// and only its (`28K` §1) — retiring a first-that-RESOLVES scan that reached past a live
+/// definition into a shadowed one's arms whenever the live body declined the argv (`28K` §6
+/// rej-decline-fallthrough-cascade, live in-tree). (2) it is live AT THIS LINE (`28K` §2
+/// rul-visibility-is-full-positional) — a definition sitting below the site licenses nothing at
+/// it, no elision, no guard, no vouch. (3) the effect map's row for this provider came from the
+/// SAME file: one seat picks both over one ordered set so they agree by construction, but
+/// unchecked that would resolve the identity through one author's arms while reading the cells
+/// another author declared — one cell measured, a different one keyed (`271:rul-sin-ordering`,
+/// the worst class).
+fn live_predict_source(
+    checks: &[PredictSet],
+    idx: &KindIndex,
+    provider: ProviderId,
+    visible: &VisibleRole<'_>,
+) -> Option<usize> {
+    let live = dorc_oracle::live_source(checks.len(), |i| {
+        checks.get(i).is_some_and(|cs| cs.get(provider.0).is_some())
+    })
+    .filter(|&i| visible.role_answers(Some(i), predict::PREDICT_SUFFIX))?;
+    idx.source_of(provider)
+        .is_none_or(|spoke| spoke == live)
+        .then_some(live)
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "the typeless-floor seam (`24L` §7) threads the verdict index alongside the \
               existing effect-map/checks/argv/interner/diag inputs; each is a distinct kernel \
               input, not a bundle-able struct. `degrade` and `verdict_keyed` are the reason and \
-              lane channels, on the same out-param footing as `diags`/`cmdsub_tops`/`backings`"
+              lane channels, on the same out-param footing as `diags`/`cmdsub_tops`/`backings`; \
+              `node`+`live` are the `28K` §2 positional-visibility pair, which is a fact about \
+              WHERE the site is and cannot be recovered from the argv"
 )]
 pub fn command_effect(
     idx: &KindIndex,
@@ -319,6 +388,8 @@ pub fn command_effect(
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrade: &mut Option<TopReason>,
     verdict_keyed: &mut bool,
+    node: CfgNodeId,
+    live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Vec<CommandEffect> {
     // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
     // system-state effect (value::analyze yields `[]` for words.is_empty()).
@@ -387,22 +458,15 @@ pub fn command_effect(
     }
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
-    // Run the oracle's own argparse. Multiple oracle files may each declare a check
-    // for this provider (`apt-get` install/purge in one file, `apt-get update` in
-    // another — different kinds, different authors); try each and take the FIRST that
-    // resolves concretely. A check that does not handle this verb falls through to its
-    // own `Top` (no annotation reached / positional past end), so the partition is
-    // clean for the corpus. (tc-*: if two checks both resolve, first-in-file-order
-    // wins — flagged; no corpus case is ambiguous.) The `PredictSet` key is the same
-    // provider symbol (interning is idempotent; `ProviderId` wraps it).
-    let resolved = checks
-        .iter()
-        .filter_map(|cs| cs.get(provider.0))
-        .find_map(|c| match predict::evaluate(c, &arg_refs) {
+    let visible = VisibleRole::at(live_defs, node, provider, interner);
+    let live = live_predict_source(checks, idx, provider, &visible);
+    let resolved = live
+        .and_then(|i| checks.get(i))
+        .and_then(|cs| cs.get(provider.0))
+        .and_then(|c| match predict::evaluate(c, &arg_refs) {
             predict::Resolution::Resolved(r) => Some(r),
             // The reason used to die here, which is why an unresolvable site could name itself but
-            // never its cause. FIRST candidate wins, mirroring the first-resolves-wins rule above:
-            // several checks may degrade for several reasons and only one line gets rendered.
+            // never its cause.
             predict::Resolution::Top(reason) => {
                 degrade.get_or_insert(reason);
                 None
@@ -430,6 +494,7 @@ pub fn command_effect(
             interner,
             backings,
             verdict_keyed,
+            &visible,
         );
     };
     let cells = idx.effect_of(provider, verb_key);
@@ -508,6 +573,12 @@ fn record_backing(
 ///
 /// The kind-disagreement diagnostics each member's check may raise accumulate in `diags`
 /// (shared with the straight-line path). Deterministic; never panics (`inv-no-throw`).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the `28K` §2 positional oracle is one more distinct kernel input: a member resolves \
+              through the same site's environment as the single-cell path, and recovering that \
+              from the argv is exactly what the rule forbids"
+)]
 fn member_family(
     id: CfgNodeId,
     cfg: &Cfg,
@@ -516,6 +587,7 @@ fn member_family(
     checks: &[PredictSet],
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
+    live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Option<Vec<FactKey>> {
     if cfg.node(id).kind != CfgNodeKind::Command {
         return None;
@@ -554,6 +626,8 @@ fn member_family(
             // single-cell path below, which re-runs `command_effect` and records the reason there.
             &mut None,
             &mut false,
+            id,
+            live_defs,
         )
         .as_slice()
         {
@@ -976,6 +1050,7 @@ fn node_effects(
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
     verdict_lane: &mut BTreeSet<CfgNodeId>,
+    live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Vec<CommandEffect> {
     if let Some(family) = member_family {
         return family
@@ -1014,6 +1089,8 @@ fn node_effects(
                 backings,
                 &mut degrade,
                 &mut keyed_by_verdict,
+                id,
+                live_defs,
             );
             if let Some(reason) = degrade {
                 degrades.insert(id, reason);
@@ -1198,6 +1275,7 @@ fn peeled_node_effects(
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
     verdict_lane: &mut BTreeSet<CfgNodeId>,
+    live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Vec<CommandEffect> {
     let diag_site = DiagSite::of(ast.node(cfg.node(id).ast).span, id);
     let mut local: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
@@ -1215,6 +1293,8 @@ fn peeled_node_effects(
         &mut local,
         &mut degrade,
         &mut keyed_by_verdict,
+        id,
+        live_defs,
     );
     if let Some(reason) = degrade {
         degrades.insert(id, reason);
@@ -1266,6 +1346,7 @@ fn resolve_node_effects(
     diags: &mut Vec<Diag>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
     verdict_lane: &mut BTreeSet<CfgNodeId>,
+    live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> (
     Vec<Option<Vec<FactKey>>>,
     Vec<Vec<CommandEffect>>,
@@ -1283,6 +1364,7 @@ fn resolve_node_effects(
                 checks,
                 interner,
                 diags,
+                live_defs,
             )
         })
         .collect();
@@ -1310,6 +1392,7 @@ fn resolve_node_effects(
                     &mut backings,
                     degrades,
                     verdict_lane,
+                    live_defs,
                 );
             }
             node_effects(
@@ -1327,6 +1410,7 @@ fn resolve_node_effects(
                 &mut backings,
                 degrades,
                 verdict_lane,
+                live_defs,
             )
         })
         .collect();
@@ -1361,6 +1445,11 @@ fn resolve_node_effects(
               classify entry points as DATA (the kernel stays verdict-unaware); one more distinct \
               input, not a bundle"
 )]
+/// This is the thin wrapper's OWN caveat: it drives an UNSOLVED function environment
+/// ([`crate::funcenv::LiveDefinitions::unsolved`]), so the `28K` §2 positional gate is inert on
+/// this path. That is right for its callers — kernel unit tests over hand-built indices, where no
+/// source text exists for an environment to be solved over — and wrong for a driver, which is why
+/// both real drivers call [`classify_with_why_diags`] with a solved one.
 pub fn classify(
     cfg: &Cfg,
     value: &ValueFlow,
@@ -1384,6 +1473,7 @@ pub fn classify(
         arena,
         &mut BTreeMap::new(),
         &mut BTreeSet::new(),
+        crate::funcenv::LiveDefinitions::unsolved(),
     )
     .0
 }
@@ -1447,6 +1537,7 @@ pub fn classify_with_why_diags(
     arena: &mut dorc_core::ProvArena,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
     verdict_lane: &mut BTreeSet<CfgNodeId>,
+    live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> (
     Carrier<Vec<(CfgNodeId, SkipClass)>>,
     Vec<Diag>,
@@ -1473,6 +1564,7 @@ pub fn classify_with_why_diags(
         &mut diags,
         degrades,
         verdict_lane,
+        live_defs,
     );
 
     // THE erasure seam (`26H` §4), applied ONCE. `Pure` deliberately: an `Erased` variant would
@@ -1901,6 +1993,7 @@ command__predict() {
                 &mut arena,
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                crate::funcenv::LiveDefinitions::unsolved(),
             );
         assert_eq!(kills.len(), 1, "the purge is the sole kill node");
         let node = *kills.iter().next().expect("one kill node");
@@ -1937,6 +2030,7 @@ command__predict() {
                 &mut arena,
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                crate::funcenv::LiveDefinitions::unsolved(),
             )
             .5
         };
@@ -2305,6 +2399,8 @@ command__predict() {
                 &mut backings,
                 &mut None,
                 &mut false,
+                node,
+                crate::funcenv::LiveDefinitions::unsolved(),
             )
         }
         let (mut i, idx, s) = package_setup();
@@ -2420,6 +2516,8 @@ command__predict() {
                 &mut backings,
                 &mut None,
                 &mut keyed,
+                node,
+                crate::funcenv::LiveDefinitions::unsolved(),
             );
             sites.push(LaneSite { cells, keyed });
         }
@@ -2564,20 +2662,35 @@ foobar__is_converged() {
         );
     }
 
-    /// Two candidate checks for one provider, each degrading for a DIFFERENT reason: the FIRST in
-    /// file order wins, matching the first-resolves-wins rule the resolution scan already uses. The
-    /// note renders one cause, so which one it is must be pinned rather than incidental.
+    /// Two definitions of one provider, each degrading for a DIFFERENT reason: the reason reported
+    /// is the LIVE definition's — the LAST loaded — because under `28K` §1 rul-sh-loads-dorc-reads
+    /// the earlier one does not exist at this site at all. Its reason must never surface, or the
+    /// note would attribute a give-up to a body no shell would have called
+    /// (`271:rul-sin-ordering`: a mis-attributed cause outranks every other sin, and a why-note
+    /// pointing at sh-dead source is exactly that).
+    ///
+    /// The order-swap is the whole test: the same two definitions, loaded either way round, report
+    /// whichever is last. It previously pinned the opposite — first-in-file-order — which was the
+    /// resolution expedient this round retired.
     #[test]
-    fn the_first_candidate_checks_reason_is_the_one_reported() {
+    fn the_live_definitions_reason_is_the_one_reported() {
         let or_list = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat query \"$1\" || wombat sync \"$1\"\n}\n";
         let pipeline = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat list | wombat count\n}\n";
         let mut i = Interner::default();
         let a = lift_predicts(&mut i, or_list).value;
         let b = lift_predicts(&mut i, pipeline).value;
-        let (_, or_first) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
-        let (_, pipe_first) = degrade_of("wombat sync\n", &[b, a], &mut i);
-        assert_eq!(or_first, Some(TopReason::OrList));
-        assert_eq!(pipe_first, Some(TopReason::Pipeline));
+        let (_, pipeline_last) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
+        let (_, or_list_last) = degrade_of("wombat sync\n", &[b, a], &mut i);
+        assert_eq!(
+            pipeline_last,
+            Some(TopReason::Pipeline),
+            "the LAST definition is the live one"
+        );
+        assert_eq!(
+            or_list_last,
+            Some(TopReason::OrList),
+            "and swapping the load order swaps which body answers"
+        );
     }
 
     /// Run `command_effect` over a one-command book; return its effects plus the degrade reason.
@@ -2608,6 +2721,8 @@ foobar__is_converged() {
             &mut BTreeMap::new(),
             &mut reason,
             &mut false,
+            node,
+            crate::funcenv::LiveDefinitions::unsolved(),
         );
         (effects, reason)
     }
@@ -3467,6 +3582,7 @@ command__predict() {
             &mut diags,
             &mut BTreeMap::new(),
             &mut BTreeSet::new(),
+            crate::funcenv::LiveDefinitions::unsolved(),
         );
         let mut arena = dorc_core::ProvArena::new();
         let (top_causes, fallback) =

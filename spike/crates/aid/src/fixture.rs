@@ -24,11 +24,12 @@ use crate::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
     CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
     DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
-    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, LintFileCountDrift, LintNoLintableFiles,
-    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
-    LintToolOutputUnparsable, MarkHashcolonMalformed, MarkRcArityExceeded,
-    MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker,
-    MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused,
+    HelperDeclarationContested, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind,
+    InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing,
+    LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable,
+    MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
+    MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
+    RecordsFactTruncated, RenderHeredocRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
     SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
     SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
     TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
@@ -137,6 +138,39 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "dangling-reference",
             DiagCode::DanglingReference(DanglingReference {
                 coord: "sm.dorc.Package:nginx".to_owned(),
+            }),
+        ),
+        // World-as-payload by necessity: the trigger is a whole LOADED UNIT (two files defining one
+        // role family), and a case materializes its world one source at a time.
+        (
+            "role-family-contested",
+            DiagCode::RoleFamilyContested(RoleFamilyContested {
+                family: "yum".to_owned(),
+                name: "yum__is_converged".to_owned(),
+                prior: "vendor/yum.oracle.sh:4".to_owned(),
+            }),
+        ),
+        // Same necessity: the trigger is a whole BOOK read positionally.
+        (
+            "role-defined-below-its-sites",
+            DiagCode::RoleDefinedBelowItsSites(RoleDefinedBelowItsSites {
+                name: "yum__is_converged".to_owned(),
+                sites: 2,
+            }),
+        ),
+        (
+            "in-book-vocabulary-role",
+            DiagCode::InBookVocabularyRole(InBookVocabularyRole {
+                name: "sm_dorc_Package__resolve".to_owned(),
+                role: "__resolve".to_owned(),
+            }),
+        ),
+        // Same necessity: one helper spelled two ways is a two-file world.
+        (
+            "helper-declaration-contested",
+            DiagCode::HelperDeclarationContested(HelperDeclarationContested {
+                name: "_yum_installed".to_owned(),
+                prior: "vendor/yum.oracle.sh:4".to_owned(),
             }),
         ),
         // Read back from a RECORDS stream: a replay drives no host and admits no records.

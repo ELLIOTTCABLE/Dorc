@@ -251,11 +251,11 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 15 = the prior 6 + the 7 lint codes `288` §5 moved into the registry + 2 headroom
-    // (`289:rul-unwritten-ceiling-one-bump`, the lane's ONE conscious bump). All seven `sm `-migrated
-    // (`289:rul-sm-where-ancestor-exists`), so this is expected to sit slack at 6, never met.
+    // Ceiling 19 = 16 (`28K`'s loading refusals, spending `289:rul-unwritten-ceiling-one-bump`)
+    // + `28K` §2's two positional notices + §4's closure refusal. Unwritten because a builder
+    // authors ZERO prose (`27V:rul-error-authorship-tier`).
     assert!(
-        unwritten.len() <= 15,
+        unwritten.len() <= 19,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()

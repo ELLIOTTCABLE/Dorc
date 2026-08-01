@@ -113,6 +113,8 @@ impl WhyWorld {
         let mut arena = ProvArena::new();
         let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
+        // One non-role-declaration index per unit, shared by the ship seams and the vouch lift.
+        let helpers = dorc_oracle::closure::HelperIndex::build(&oracle_refs);
         let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
         let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
             .iter()
@@ -131,6 +133,19 @@ impl WhyWorld {
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeSet::new();
         let peeled = BTreeMap::new();
+        // The book's id sits ONE PAST the vector this seat lifts (it does not feed the book to the
+        // lifts — `28M` §7's rename rider names the gap), so a book-owned site withholds.
+        let definitions = definition_table(
+            oracle_paths,
+            &oracle_refs,
+            source_file_id(oracle_srcs.len()),
+            &parsed.value,
+        );
+        let env = {
+            let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+            dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
+        };
+        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
         let frozen = crate::fixpoint::FrozenModel {
             cfg: &cfg.value,
             value: &value,
@@ -139,6 +154,7 @@ impl WhyWorld {
             checks: &checks,
             verdicts: &verdicts,
             peeled: &peeled,
+            live,
         };
         let origin = crate::fixpoint::classify_round(
             &frozen,
@@ -150,17 +166,42 @@ impl WhyWorld {
         );
         let classes = origin.classes.clone();
 
-        let (vouch_lift, decline_narrative) =
-            dorc_plan::build_vouches(&oracle_refs, &classes, &value, &mut interner);
+        let (vouch_lift, decline_narrative) = dorc_plan::build_vouches(
+            &oracle_refs,
+            &helpers,
+            &classes,
+            &value,
+            &mut interner,
+            live,
+        );
         let vouches = vouch_lift.value;
 
-        let ship = |provider: Symbol, argv: &[Symbol]| {
-            ship_predict_body(oracle_srcs, &checks, &interner, provider, argv)
+        let ship = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, argv: &[Symbol]| {
+            ship_predict_body(
+                oracle_srcs,
+                &helpers,
+                &checks,
+                &interner,
+                provider,
+                argv,
+                node,
+                live,
+            )
         };
         let ship_auto = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, _: &[Symbol]| {
             verdict_lane
                 .contains(&node)
-                .then(|| ship_verdict_body(oracle_srcs, &verdict_sets, &interner, provider))
+                .then(|| {
+                    ship_verdict_body(
+                        oracle_srcs,
+                        &helpers,
+                        &verdict_sets,
+                        &interner,
+                        provider,
+                        node,
+                        live,
+                    )
+                })
                 .flatten()
         };
         let probe = dorc_plan::compile_probe(
@@ -288,11 +329,16 @@ impl WhyWorld {
             // The reach EXPANSION must not be skipped: a footprint is an AT-MOST claim, so an
             // un-widened one looks disjoint from more cells than it is — the under-execute
             // direction (`inv-kfail`).
-            crate::survival::expand_footprints_via_reaches(
+            let reach_node_spans: BTreeMap<_, _> = footprints
+                .nodes()
+                .map(|n| (n, parsed.value.node(cfg.value.node(n).ast).span))
+                .collect();
+            let _ = crate::survival::expand_footprints_via_reaches(
                 &mut footprints,
                 &kind_reaches,
                 &reach_kinds,
                 results,
+                &reach_node_spans,
                 &mut interner,
             );
             footprints
@@ -434,8 +480,13 @@ impl WhyWorld {
             book_src: &self.book_src,
             filename: &self.filename,
             interner: &self.interner,
-            oracle_paths: &self.oracle_paths,
-            oracle_srcs: &self.oracle_srcs,
+            // THE DISCLOSED CUT (`churn-avoidance-disclosure`; `28P:res-why-world-lifts-no-book-
+            // definitions`): the binary fills these SOURCE-wide, this seat ORACLE-only, and the
+            // name/value mismatch IS the disclosure. It agrees today only because a book-sited
+            // definition is invisible here, so it withholds where the binary answers — safe, and a
+            // coincidence. Closing it means re-lifting this seat's world: a dispatch, not a rename.
+            source_paths: &self.oracle_paths,
+            source_srcs: &self.oracle_srcs,
             narrative: &self.narrative,
             cascades: &self.cascades,
             receipt,
@@ -444,66 +495,194 @@ impl WhyWorld {
 }
 
 /// The loaded-oracle index a threaded span belongs to (`law-lineno-identity`).
-fn oracle_file_id(idx: usize) -> dorc_core::OracleFileId {
-    dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX))
+#[must_use]
+pub fn source_file_id(idx: usize) -> dorc_core::SourceFileId {
+    dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX))
 }
 
-/// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships.
+/// The unit's role definitions, as DATA for the function-environment domain (`28K` §2).
+///
+/// Read through `dorc_syntax::parse` for EVERY input, book and oracle alike, so the environment and
+/// the shadow refusal see exactly the funcdefs the sh parser sees. Only ROLE names are recorded:
+/// the refusal is about role FAMILIES (`28K` §1), and an ordinary helper colliding across files
+/// carries no license to withhold.
+///
+/// Load order is the id order (`28K` §2a): CLI-named sources are the AMBIENT PREFIX, applied
+/// "before line 1" in command-line order, and each is also registered under its own path so a
+/// book's `. oracles/yum.sh` binds the same definitions. The book's own definitions are POSITIONAL
+/// — keyed by the `FuncDef` AST node that writes them, since they execute in the book's stream.
+///
+/// Lives on the lib seam so the binary and [`WhyWorld`] build ONE table by one rule: a why report
+/// that answered from a different environment than the run would be a decoration
+/// (`lib-target-is-a-loom-seam`).
 #[must_use]
+pub fn definition_table(
+    oracle_paths: &[String],
+    source_srcs: &[&str],
+    book_file: dorc_core::SourceFileId,
+    book: &dorc_syntax::Ast,
+) -> dorc_analysis::funcenv::DefinitionTable {
+    use dorc_analysis::funcenv::{Definition, DefinitionTable};
+    use dorc_syntax::ast::NodeKind;
+
+    let mut table = DefinitionTable::default();
+    for (idx, path) in oracle_paths.iter().enumerate() {
+        let Some(src) = source_srcs.get(idx) else {
+            continue;
+        };
+        let parsed = dorc_syntax::parse(src).value;
+        let mut ids = Vec::new();
+        for (_, node) in parsed.iter() {
+            let NodeKind::FuncDef {
+                name, name_span, ..
+            } = &node.kind
+            else {
+                continue;
+            };
+            if dorc_oracle::reserved::role_family(name).is_none() {
+                continue;
+            }
+            ids.push(table.add(Definition {
+                file: source_file_id(idx),
+                name: name.clone(),
+                span: node.span,
+                name_span: *name_span,
+            }));
+        }
+        table.set_loadable(path.clone(), ids.clone());
+        table.extend_ambient(ids);
+    }
+    for (id, node) in book.iter() {
+        let NodeKind::FuncDef {
+            name, name_span, ..
+        } = &node.kind
+        else {
+            continue;
+        };
+        if dorc_oracle::reserved::role_family(name).is_none() {
+            continue;
+        }
+        let def = table.add(Definition {
+            file: book_file,
+            name: name.clone(),
+            span: node.span,
+            name_span: *name_span,
+        });
+        table.set_book_site(id, def);
+    }
+    table
+}
+
+/// The ONE index a site's role body ships from: sh's live definition ([`dorc_oracle::live_source`],
+/// the single seat), narrowed to the one live AT this site (`28K` §2
+/// rul-visibility-is-full-positional).
+///
+/// `has` asks only "does file `i` define this role for this provider" — never "does its body
+/// answer this argv". That distinction is the point: a backwards scan for the first file that
+/// RESOLVES falls through a declining live body into a shadowed one's arms, which is exactly
+/// `28K` §6 rej-decline-fallthrough-cascade, and `analysis::effect` retired it at stage D. A
+/// decline by the winner is a decline, in the ship lane too.
+fn shipping_source(
+    count: usize,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+    role_name: &str,
+    has: impl Fn(usize) -> bool,
+) -> Option<usize> {
+    dorc_oracle::live_source(count, has).filter(|&i| live.answers_at(node, role_name, i))
+}
+
+/// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships,
+/// preceded by its CLOSURE (`28K` §4 `rul-pin-by-definition-bytes`) — the helpers and file-level
+/// constants the body needs, which do not travel with the funcdef span. A body whose closure the
+/// loaded sources contest ships NOTHING (`None` ⇒ the site runs): the ambiguity resolves toward
+/// run, and the load edge already named the collision.
+#[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the shipped unit is now the definition PLUS its closure (`28K` §4), so the source \
+              set, its non-role index, and the lifted checks all reach one seat by construction"
+)]
 pub fn ship_predict_body(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
-    use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
+    use dorc_oracle::predict::{
+        PREDICT_SUFFIX, Resolution, evaluate, map_provider_name, strip_predict,
+    };
     let want = map_provider_name(interner.resolve(provider));
+    let named = |cs: &dorc_oracle::predict::PredictSet| {
+        cs.providers()
+            .find(|cp| map_provider_name(interner.resolve(*cp)) == want)
+            .and_then(|cp| cs.get(cp).cloned())
+    };
+    let idx = shipping_source(
+        checks.len(),
+        node,
+        live,
+        &format!("{want}{PREDICT_SUFFIX}"),
+        |i| checks.get(i).and_then(named).is_some(),
+    )?;
+    let check = checks.get(idx).and_then(named)?;
     let arg_texts: Vec<String> = argv
         .iter()
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (idx, (src, cs)) in oracle_srcs.iter().zip(checks).enumerate() {
-        for cp in cs.providers() {
-            if map_provider_name(interner.resolve(cp)) != want {
-                continue;
-            }
-            let Some(check) = cs.get(cp) else { continue };
-            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(dorc_plan::ShippedCheck::predict(
-                    strip_predict(src, check, interner),
-                    Some((check.name_span, oracle_file_id(idx))),
-                ));
-            }
-        }
+    if !matches!(evaluate(&check, &arg_refs), Resolution::Resolved(_)) {
+        return None;
     }
-    None
+    let src = oracle_srcs.get(idx)?;
+    let body = strip_predict(src, &check, interner);
+    let closure = helpers.closure_for(idx, &body).ok()?;
+    Some(dorc_plan::ShippedCheck::predict(
+        format!("{}{body}", closure.sh),
+        Some((check.name_span, source_file_id(idx))),
+    ))
 }
 
-/// `24L` §2 — the stripped `<provider>__is_converged` a typeless-floor auto-cell probe ships.
+/// `24L` §2 — the stripped `<provider>__is_converged` a typeless-floor auto-cell probe ships,
+/// closure included on the same terms as [`ship_predict_body`]. Resolved through the same
+/// [`shipping_source`] seat.
 #[must_use]
 pub fn ship_verdict_body(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     interner: &Interner,
     provider: Symbol,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
+    use dorc_oracle::verdict::{VERDICT_SUFFIX, VerdictSet};
     let want = map_provider_name(interner.resolve(provider));
-    for (idx, (src, set)) in oracle_srcs.iter().zip(verdict_sets).enumerate() {
-        for vp in set.providers() {
-            if map_provider_name(interner.resolve(vp)) != want {
-                continue;
-            }
-            let Some(verdict) = set.get(vp) else { continue };
-            let emits_report = dorc_oracle::report::emits_report(verdict);
-            return Some(dorc_plan::ShippedCheck::verdict(
-                strip_verdict(src, verdict, interner),
-                Some((verdict.name_span, oracle_file_id(idx))),
-                emits_report,
-            ));
-        }
-    }
-    None
+    let named = |set: &VerdictSet| {
+        set.providers()
+            .find(|vp| map_provider_name(interner.resolve(*vp)) == want)
+            .and_then(|vp| set.get(vp).cloned())
+    };
+    let idx = shipping_source(
+        verdict_sets.len(),
+        node,
+        live,
+        &format!("{want}{VERDICT_SUFFIX}"),
+        |i| verdict_sets.get(i).and_then(named).is_some(),
+    )?;
+    let verdict = verdict_sets.get(idx).and_then(named)?;
+    let src = oracle_srcs.get(idx)?;
+    let emits_report = dorc_oracle::report::emits_report(&verdict);
+    let body = strip_verdict(src, &verdict, interner);
+    let closure = helpers.closure_for(idx, &body).ok()?;
+    Some(dorc_plan::ShippedCheck::verdict(
+        format!("{}{body}", closure.sh),
+        Some((verdict.name_span, source_file_id(idx))),
+        emits_report,
+    ))
 }

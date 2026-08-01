@@ -170,9 +170,11 @@ apt_get__disturbs() {                              # PAYLOAD-BOUND footprint (24
       ;;
    esac
 }
-apt_get__disturbs 'install' '-y' 'oldpkg' | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 0 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 0 n=%s @@dorc@@\n' "$_n"; }
+_d=$(apt_get__disturbs 'install' '-y' 'oldpkg'); _dr=$?
+if [ -z "$_d" ]; then printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 0 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
 # deriv 1: apt-get (host-derivation via apt-get.touches())
-apt_get__disturbs 'install' '-y' 'nginx' | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 1 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 1 n=%s @@dorc@@\n' "$_n"; }
+_d=$(apt_get__disturbs 'install' '-y' 'nginx'); _dr=$?
+if [ -z "$_d" ]; then printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 1 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

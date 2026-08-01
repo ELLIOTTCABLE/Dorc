@@ -65,19 +65,19 @@ pub fn flatten_ws(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Resolve a threaded oracle `(Span, OracleFileId)` to a `path:line` locus (C7 `file:line`;
+/// Resolve a threaded oracle `(Span, SourceFileId)` to a `path:line` locus (C7 `file:line`;
 /// `law-lineno-identity` — the file id disambiguates WHICH oracle's line-number space, since a
 /// bare span is file-ambiguous once >1 oracle is loaded). `None` when the vouch/claim was
 /// unthreaded, or the id is out of range (the render omits the locus — never fabricates one).
 #[must_use]
 pub fn oracle_locus(
-    defining: Option<(dorc_core::Span, dorc_core::OracleFileId)>,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
+    defining: Option<(dorc_core::Span, dorc_core::SourceFileId)>,
+    source_paths: &[String],
+    source_srcs: &[String],
 ) -> Option<String> {
     let (span, file) = defining?;
     let i = file.0 as usize;
-    let (path, src) = (oracle_paths.get(i)?, oracle_srcs.get(i)?);
+    let (path, src) = (source_paths.get(i)?, source_srcs.get(i)?);
     let (line, _col) = dorc_aid::diag::line_col(src, span.lo.0 as usize);
     Some(format!("{path}:{line}"))
 }
@@ -98,13 +98,13 @@ const EXCERPT_COMMENT_LINES: usize = 4;
 /// `None` when the span was unthreaded or its file is out of range: an absent excerpt is an
 /// omission, never a fabrication.
 fn oracle_excerpt(
-    defining: Option<(dorc_core::Span, dorc_core::OracleFileId)>,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
+    defining: Option<(dorc_core::Span, dorc_core::SourceFileId)>,
+    source_paths: &[String],
+    source_srcs: &[String],
 ) -> Option<Excerpt> {
     let (span, file) = defining?;
     let index = file.0 as usize;
-    let (path, src) = (oracle_paths.get(index)?, oracle_srcs.get(index)?);
+    let (path, src) = (source_paths.get(index)?, source_srcs.get(index)?);
     let source: Vec<&str> = src.lines().collect();
     // A span ending at end-of-file resolves PAST the last line, so both ends clamp.
     let first = dorc_aid::diag::line_col(src, span.lo.0 as usize)
@@ -623,8 +623,8 @@ fn survival_chain(
     license: &dorc_plan::ReplaceLicense,
     walls: &BTreeMap<dorc_plan::LeafId, String>,
     interner: &Interner,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
+    source_paths: &[String],
+    source_srcs: &[String],
 ) -> Option<ChainRender> {
     let witness = license.derivation().survival.as_ref()?;
     let backing = render_coord(witness.backing(), interner);
@@ -632,7 +632,7 @@ fn survival_chain(
     let reported = license.derivation().probe.and_then(|p| p.reported);
     let report = ChainLink {
         tier: SpeechAct::Measured,
-        speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
+        speaker: reported_speaker(reference, reported, source_paths, source_srcs),
         payload: Said::Value(dorc_plan::fact_label(interner, license.fact())),
         quoted: true,
         event: reported.map(reported_event),
@@ -642,7 +642,7 @@ fn survival_chain(
     let vouches: Vec<ChainLink> = if license.derivation().establish_vouches.is_empty() {
         vec![ChainLink {
             tier: SpeechAct::Vouched,
-            speaker: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
+            speaker: oracle_locus(license.derivation().vouch_span, source_paths, source_srcs),
             payload: Said::words("why-vouch-payload-site", &[&backing]),
             quoted: true,
             event: None,
@@ -652,7 +652,7 @@ fn survival_chain(
     } else {
         let mut by_speaker: Vec<(Option<String>, Vec<String>)> = Vec::new();
         for receipt in &license.derivation().establish_vouches {
-            let speaker = oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs);
+            let speaker = oracle_locus(receipt.defining_span, source_paths, source_srcs);
             let label = dorc_plan::fact_label(interner, receipt.fact);
             match by_speaker.iter_mut().find(|(who, _)| *who == speaker) {
                 Some((_, labels)) => labels.push(label),
@@ -690,7 +690,7 @@ fn survival_chain(
             .iter()
             .map(|fc| render_coord(*fc, interner))
             .collect();
-        let locus = oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs);
+        let locus = oracle_locus(c.footprint_span(), source_paths, source_srcs);
         leverage = leverage.or_else(|| locus.clone());
         claims.push(ChainLink {
             tier: SpeechAct::Claimed,
@@ -699,7 +699,7 @@ fn survival_chain(
             quoted: true,
             event: None,
             explanation: Some(Said::words("why-claims-covers-unmeasured", &[])),
-            excerpt: oracle_excerpt(c.footprint_span(), oracle_paths, oracle_srcs),
+            excerpt: oracle_excerpt(c.footprint_span(), source_paths, source_srcs),
         });
     }
     let derivation = ChainLink {
@@ -819,15 +819,15 @@ fn guard_chain(
     license: &dorc_plan::GuardLicense,
     walls_above: &[&WallStep],
     interner: &Interner,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
+    source_paths: &[String],
+    source_srcs: &[String],
 ) -> ChainRender {
     let backing = dorc_plan::fact_label(interner, license.fact());
     let reported = license.reported();
     let mut links = vec![
         ChainLink {
             tier: SpeechAct::Measured,
-            speaker: reported_speaker(reference, reported, oracle_paths, oracle_srcs),
+            speaker: reported_speaker(reference, reported, source_paths, source_srcs),
             payload: Said::Value(backing.clone()),
             quoted: true,
             event: reported.map(reported_event),
@@ -836,7 +836,7 @@ fn guard_chain(
         },
         ChainLink {
             tier: SpeechAct::Vouched,
-            speaker: oracle_locus(license.insert().defining_span(), oracle_paths, oracle_srcs),
+            speaker: oracle_locus(license.insert().defining_span(), source_paths, source_srcs),
             payload: Said::words("why-vouch-payload-site", &[&backing]),
             quoted: true,
             event: None,
@@ -1081,8 +1081,8 @@ fn decline_chain(
     address: &str,
     word: &str,
     reason: &dorc_aid::narrative::AuthoredReason,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
+    source_paths: &[String],
+    source_srcs: &[String],
 ) -> ChainRender {
     let class = reason.class;
     let occurrence = Some(class.occurrence());
@@ -1091,12 +1091,12 @@ fn decline_chain(
     let links = vec![
         ChainLink {
             tier: SpeechAct::Declined,
-            speaker: oracle_locus(arm, oracle_paths, oracle_srcs),
+            speaker: oracle_locus(arm, source_paths, source_srcs),
             payload: Said::words("why-declines-payload", &[class.token()]),
             quoted: true,
             event: None,
             explanation: Some(class_said("why-declines-explanation")),
-            excerpt: oracle_excerpt(arm, oracle_paths, oracle_srcs),
+            excerpt: oracle_excerpt(arm, source_paths, source_srcs),
         },
         ChainLink {
             tier: SpeechAct::Derived,
@@ -1142,11 +1142,11 @@ fn decline_chain(
 fn reported_speaker(
     reference: &str,
     reported: Option<dorc_plan::ReportedObservation>,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
+    source_paths: &[String],
+    source_srcs: &[String],
 ) -> Option<String> {
     reported
-        .and_then(|r| oracle_locus(r.predict_span, oracle_paths, oracle_srcs))
+        .and_then(|r| oracle_locus(r.predict_span, source_paths, source_srcs))
         .or_else(|| Some(predict_speaker(reference)))
 }
 
@@ -1549,10 +1549,14 @@ pub struct WhyReport<'a> {
     pub filename: &'a str,
     /// The shared interner coordinates resolve through, for display only.
     pub interner: &'a Interner,
-    /// The loaded oracle paths, in argv order.
-    pub oracle_paths: &'a [String],
-    /// Those oracles' sources, positionally matched, for excerpts and loci.
-    pub oracle_srcs: &'a [String],
+    /// Every loaded DEFINITION SOURCE's path, in load order — oracles then the book. Named
+    /// `source_` rather than `oracle_` since `28K` §2a: a book is a first-class definition source
+    /// (an in-book role function is an ordinary oracle, recognized by name alone), so a locus this
+    /// report resolves can land in the book, and `oracle_paths` understated the vector's contents.
+    /// The one filler that is still oracle-only discloses itself at its own seat (`world.rs`).
+    pub source_paths: &'a [String],
+    /// Those sources' bytes, positionally matched, for excerpts and loci.
+    pub source_srcs: &'a [String],
     /// The run's collapse narratives — declines and the `--all` census.
     pub narrative: &'a [CollapseNarrative],
     /// Per-leaf cascade attribution from the validity fixpoint.
@@ -1581,8 +1585,8 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         book_src,
         filename,
         interner,
-        oracle_paths,
-        oracle_srcs,
+        source_paths,
+        source_srcs,
         narrative,
         cascades,
         receipt,
@@ -1633,8 +1637,8 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                 license,
                 &walls,
                 interner,
-                oracle_paths,
-                oracle_srcs,
+                source_paths,
+                source_srcs,
             )
         {
             let crossed = license
@@ -1660,8 +1664,8 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                 license,
                 &above,
                 interner,
-                oracle_paths,
-                oracle_srcs,
+                source_paths,
+                source_srcs,
             );
             chain.participants = participants(line, above.iter().map(|wall| wall.line));
             chains.push((line, chain));
@@ -1674,8 +1678,8 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                 &format!("{filename}:{line}"),
                 &word,
                 reason,
-                oracle_paths,
-                oracle_srcs,
+                source_paths,
+                source_srcs,
             );
             chain.participants = participants(line, std::iter::empty());
             chains.push((line, chain));
@@ -2500,7 +2504,7 @@ mod first_wall_tests {
         oracle_excerpt(
             Some((
                 dorc_core::Span::new(dorc_core::BytePos(lo), dorc_core::BytePos(hi)),
-                dorc_core::OracleFileId(0),
+                dorc_core::SourceFileId(0),
             )),
             &["certsync.oracle.sh".to_owned()],
             &[ARM_SOURCE.to_owned()],
@@ -2937,7 +2941,7 @@ mod not_ours_bytes_tests {
             &classes,
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
-            |_, _| None,
+            |_, _, _| None,
             |_, _, _| None,
             |_| false,
         );

@@ -29,6 +29,10 @@ oracle.sh:
         [ oracle.sh:4:1
      4 | hork.tool__predict() {
        | \________________/
+  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+        [ oracle.sh:4:1
+     4 | hork.tool__predict() {
+       | \________________/
   error[munge-name-collision]: sm `hork-tool` munges to the sh function name
   `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool)
   -- REFUSED, never silently merged (the shipped artifact would carry 2
@@ -38,4 +42,4 @@ oracle.sh:
      8 | hork-tool__predict() {
        | \________________/
 
-dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.
+dorc lint: 3 errors, 0 warnings, 0 infos across 1 file.

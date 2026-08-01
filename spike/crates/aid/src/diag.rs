@@ -158,6 +158,31 @@ pub enum DiagCode {
     /// version (distinct from a wholly-missing marker).
     MarkerVersionUnrecognized(MarkerVersionUnrecognized),
 
+    // ── oracle/load_inert.rs (the marked-file load-inertness gate) ──────────
+    /// A marker-carrying file's top level holds something other than a function definition or a
+    /// bare assignment, so LOADING it is not provably a no-op (`28K` §2a
+    /// `rul-marked-file-is-load-inert`). Spanned at the offending top-level item.
+    OracleFileNotLoadInert(OracleFileNotLoadInert),
+
+    // ── cli (the cross-unit shadow refusal) ─────────────────────────────────
+    /// One unit's role definition overrode a family a DIFFERENT unit defined, with no intervening
+    /// `unset -f` (`28K` §1 `rul-silent-shadowing-refuses`). The family's licenses are withheld;
+    /// its sites run. Spanned at the shadowing definition's name.
+    RoleFamilyContested(RoleFamilyContested),
+    /// A book defines a role function BELOW sites its family could otherwise have answered
+    /// (`28K` §2 `rul-visibility-is-full-positional`): the definition licenses nothing above
+    /// itself, and moving it up recovers those sites. Spanned at the definition's name.
+    RoleDefinedBelowItsSites(RoleDefinedBelowItsSites),
+    /// A book defines a KIND-OWNER role — the vocabulary tier, which loads from the ambient prefix
+    /// only (`28M:obl-in-book-vocabulary-role-notice`). It is refused with a notice rather than
+    /// silently ignored. Spanned at the definition's name.
+    InBookVocabularyRole(InBookVocabularyRole),
+    /// Two loaded sources declare one NON-role name — a helper function or a file-level constant —
+    /// with differing bytes, so no pinned definition needing it can carry it (`28K` §4
+    /// `rul-pin-by-definition-bytes`; `28M` §8's diamond rider: version-skewed vendored copies
+    /// refuse rather than dedup). Spanned at the later declaration.
+    HelperDeclarationContested(HelperDeclarationContested),
+
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
     ToleratesUnknownDimension(ToleratesUnknownDimension),
@@ -354,6 +379,12 @@ impl DiagCode {
     /// `Diagnostic` strings the migrated sites used, so existing `expected-diagnostics`
     /// fixtures and the coverage bridge keep matching.
     #[must_use]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one arm per code, and that ONE-TO-ONE shape is the property: a wildcard or a \
+                  derived spelling would let a new code ship without a deliberate slug, which is a \
+                  wire-format commitment (`288:rul-error-slugs-are-semantic`)"
+    )]
     pub fn slug(&self) -> &'static str {
         match self {
             DiagCode::CmdsubOperandTop(_) => "cmdsub-operand-top",
@@ -376,6 +407,11 @@ impl DiagCode {
             DiagCode::MungeNameInvalid(_) => "munge-name-invalid",
             DiagCode::MungeNameCollision(_) => "munge-name-collision",
             DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
+            DiagCode::OracleFileNotLoadInert(_) => "oracle-file-not-load-inert",
+            DiagCode::RoleFamilyContested(_) => "role-family-contested",
+            DiagCode::RoleDefinedBelowItsSites(_) => "role-defined-below-its-sites",
+            DiagCode::InBookVocabularyRole(_) => "in-book-vocabulary-role",
+            DiagCode::HelperDeclarationContested(_) => "helper-declaration-contested",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -677,8 +713,10 @@ pub enum SyntaxUnsupportedReason {
     DynamicCommandName,
     /// `eval`.
     EvalConstructedCode,
-    /// `.`/`source` of a target that is not a literal path.
-    SourceOfNonLiteralTarget,
+    /// `.`/`source` of a target built by running something (a command substitution or
+    /// arithmetic expansion). A parameter-expansion target is NOT this: its value is
+    /// ordinary value-flow, resolved in `funcenv` and walled there when unresolvable.
+    SourceOfDynamicTarget,
     /// `unset` of a dynamic lvalue.
     UnsetDynamicLvalue,
     /// `printf -v`, which writes to a variable lvalue.
@@ -1026,6 +1064,61 @@ pub struct ReservedNamespaceSquat {
     pub role: String,
 }
 
+/// Payload of [`DiagCode::OracleFileNotLoadInert`] (static): none. The SPAN is the whole
+/// remediation — it lands on the FIRST top-level item that would run — and the shapes that trip it
+/// (a command; an assignment whose value expands one) are one world-state, not two, so they share
+/// one code (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Fires at most once per file: the
+/// claim is about the file, so per-item mints would be a correlated cascade.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleFileNotLoadInert;
+
+/// Payload of [`DiagCode::RoleFamilyContested`] (TEMPLATIZED): the shadowed FAMILY, the role member
+/// whose two definitions collided, and where the overridden one lives. Spanned at the shadowing
+/// definition's name; `site()` returns `None` — a contest is about two DEFINITIONS, not about any
+/// command site that later runs because of it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RoleFamilyContested {
+    /// The munged family base whose licenses are withheld (`{family}`).
+    pub family: String,
+    /// The role function both definitions bind (`{name}`).
+    pub name: String,
+    /// Where the OVERRIDDEN definition was authored, `file:line`-shaped (`{prior}`).
+    pub prior: String,
+}
+
+/// Payload of [`DiagCode::RoleDefinedBelowItsSites`] (TEMPLATIZED): the move-it-up hint's
+/// operands — the role function defined too late, and how many sites above it its family would
+/// otherwise have answered. Spanned at the definition's name; `site()` returns `None`, because
+/// the remediation is at the DEFINITION, not at any one site that lost its answer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RoleDefinedBelowItsSites {
+    /// The role function whose definition sits too low (`{name}`).
+    pub name: String,
+    /// How many command sites above it name this family (`{sites}`).
+    pub sites: usize,
+}
+
+/// Payload of [`DiagCode::HelperDeclarationContested`] (TEMPLATIZED): the non-role name two
+/// loaded sources spell differently, and where the earlier one sits. Spanned at the LATER
+/// declaration — the one whose arrival changed the answer; `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HelperDeclarationContested {
+    /// The non-role name the loaded sources disagree about (`{name}`).
+    pub name: String,
+    /// Where the EARLIER declaration was authored, `file:line`-shaped (`{prior}`).
+    pub prior: String,
+}
+
+/// Payload of [`DiagCode::InBookVocabularyRole`] (TEMPLATIZED): the in-book kind-owner definition
+/// the vocabulary tier refuses. Spanned at the definition's name; `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InBookVocabularyRole {
+    /// The kind-owner role function the book defined (`{name}`).
+    pub name: String,
+    /// Its role suffix — which member of the vocabulary tier it is (`{role}`).
+    pub role: String,
+}
+
 /// Payload of [`DiagCode::MissingDialectMarker`] (static): the file-level marker refusal. The
 /// marker text is inline in the template. Spanned (the first dialect construct); `site()` = `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1216,6 +1309,32 @@ pub enum FootprintIncoherentReason {
     OmitsOwnCoordinate,
     /// A derived emission carried a coordinate that does not parse.
     MalformedDerivedCoordinate,
+    /// The derived emission's body terminated abnormally, so its survey never finished and the
+    /// at-most claim it produced is wrongly NARROW (`28P:dec-whole-body-atomic-refusal`). Distinct
+    /// from the transport-tier `deriv-family-incomplete`: the record stream arrived whole and
+    /// agreed with its own count — it is the BODY that stopped. `body_rc` is the emitting body's
+    /// termination status (127 = a helper the shipped body did not carry).
+    EmittingBodyDiedMidSurvey { body_rc: u32 },
+    /// A dynamic `disturbance_reaches_only` arm emitted no close record at all, so nothing shows
+    /// its survey ran to the end. The three reach variants below have no `deriv-family-incomplete`
+    /// twin because a reach arm is not a family the site OWNS — it is a kind-owner's survey the
+    /// engine applied to somebody else's footprint, and refusing that footprint is the whole
+    /// consequence, so it belongs beside the other coherence refusals rather than in a lane of
+    /// its own.
+    ReachArmNeverClosed { arm: usize },
+    /// A dynamic `disturbance_reaches_only` arm closed at a count the received records do not
+    /// match: the stream was cut, so the expansion is partial and the footprint it would widen is
+    /// wrongly NARROW.
+    ReachArmStreamCut {
+        arm: usize,
+        declared: u32,
+        received: u32,
+    },
+    /// A dynamic `disturbance_reaches_only` arm's body terminated abnormally. As
+    /// [`Self::EmittingBodyDiedMidSurvey`] but one lane over: the stream was whole and self-
+    /// consistent, and it is the arm BODY that stopped mid-survey (127 = a helper the shipped
+    /// body did not carry — the survival lanes still ship closure-less bodies).
+    ReachArmDiedMidSurvey { arm: usize, body_rc: u32 },
 }
 
 /// Payload of [`DiagCode::TouchesEscalated`] (TEMPLATIZED): the escalated site number and the call.
@@ -2142,6 +2261,40 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // Refuses rather than degrades: a partial load is a WRONG environment, not a narrow one
+        // (`inv-top-reject`; `oracle/CLAUDE.md declarations-only-files`).
+        DiagCode::OracleFileNotLoadInert(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
+        },
+        // WARNING, not error: the refusal only WITHHOLDS, and failing the run would punish an
+        // admin for a collision two upstream authors caused.
+        DiagCode::RoleFamilyContested(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
+        // NOTE: nothing is wrong — the book is correct sh and applies unchanged; the aid plane is
+        // naming value the admin could recover by moving one line.
+        DiagCode::RoleDefinedBelowItsSites(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
+        // WARNING: the definition genuinely does not load, and silence reads as a broken resolver.
+        DiagCode::InBookVocabularyRole(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
+        // WARNING on `role-family-contested`'s footing: it withholds, and the collision is two
+        // upstream authors', not the admin's.
+        DiagCode::HelperDeclarationContested(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -2981,9 +3134,28 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::ReachesProviderCollision(ReachesProviderCollision { name }) => {
             vec![ours("name", name.clone())]
         }
+        DiagCode::RoleFamilyContested(RoleFamilyContested {
+            family,
+            name,
+            prior,
+        }) => vec![
+            ours("family", family.clone()),
+            ours("name", name.clone()),
+            ours("prior", prior.clone()),
+        ],
+        DiagCode::RoleDefinedBelowItsSites(RoleDefinedBelowItsSites { name, sites }) => {
+            vec![ours("name", name.clone()), ours("sites", sites.to_string())]
+        }
+        DiagCode::InBookVocabularyRole(InBookVocabularyRole { name, role }) => {
+            vec![ours("name", name.clone()), ours("role", role.clone())]
+        }
+        DiagCode::HelperDeclarationContested(HelperDeclarationContested { name, prior }) => {
+            vec![ours("name", name.clone()), ours("prior", prior.clone())]
+        }
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.
         DiagCode::RedirTargetTop(RedirTargetTop { site: _ })
+        | DiagCode::OracleFileNotLoadInert(OracleFileNotLoadInert)
         | DiagCode::MissingDialectMarker(MissingDialectMarker)
         | DiagCode::ToleratesOverIdentityDependence(ToleratesOverIdentityDependence)
         | DiagCode::HeavyContextNoTolerance(HeavyContextNoTolerance)
@@ -3683,8 +3855,8 @@ fn syntax_unsupported_text(ctx: &RenderCtx<'_>, reason: SyntaxUnsupportedReason)
         SyntaxUnsupportedReason::EvalConstructedCode => {
             ("syntax-unsupported-eval-constructed-code", none)
         }
-        SyntaxUnsupportedReason::SourceOfNonLiteralTarget => {
-            ("syntax-unsupported-source-of-non-literal-target", none)
+        SyntaxUnsupportedReason::SourceOfDynamicTarget => {
+            ("syntax-unsupported-source-of-dynamic-target", none)
         }
         SyntaxUnsupportedReason::UnsetDynamicLvalue => {
             ("syntax-unsupported-unset-dynamic-lvalue", none)
@@ -3735,15 +3907,36 @@ fn footprint_incoherent_text(
     ctx: &RenderCtx<'_>,
     reason: FootprintIncoherentReason,
 ) -> ComponentText {
-    let slug = match reason {
+    let (slug, values) = match reason {
         FootprintIncoherentReason::OmitsOwnCoordinate => {
-            "footprint-incoherent-omits-own-coordinate"
+            ("footprint-incoherent-omits-own-coordinate", Vec::new())
         }
-        FootprintIncoherentReason::MalformedDerivedCoordinate => {
-            "footprint-incoherent-malformed-derived-coordinate"
-        }
+        FootprintIncoherentReason::MalformedDerivedCoordinate => (
+            "footprint-incoherent-malformed-derived-coordinate",
+            Vec::new(),
+        ),
+        FootprintIncoherentReason::EmittingBodyDiedMidSurvey { body_rc } => (
+            "footprint-incoherent-emitting-body-died-mid-survey",
+            vec![body_rc.to_string()],
+        ),
+        FootprintIncoherentReason::ReachArmNeverClosed { arm } => (
+            "footprint-incoherent-reach-arm-never-closed",
+            vec![arm.to_string()],
+        ),
+        FootprintIncoherentReason::ReachArmStreamCut {
+            arm,
+            declared,
+            received,
+        } => (
+            "footprint-incoherent-reach-arm-stream-cut",
+            vec![arm.to_string(), declared.to_string(), received.to_string()],
+        ),
+        FootprintIncoherentReason::ReachArmDiedMidSurvey { arm, body_rc } => (
+            "footprint-incoherent-reach-arm-died-mid-survey",
+            vec![arm.to_string(), body_rc.to_string()],
+        ),
     };
-    component_text(ctx.arrangements(), slug, None, &[])
+    component_text(ctx.arrangements(), slug, None, &borrowed(&values))
 }
 
 /// The registry sentence for one [`PredictOutOfDialectReason`].

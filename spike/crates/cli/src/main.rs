@@ -71,6 +71,7 @@ use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
+use dorc_aid::SpeechAct;
 use dorc_cli::fixpoint::{
     FrozenModel, attribute_cascades, classify_round, settle_validity_fixpoint,
 };
@@ -81,11 +82,9 @@ use dorc_cli::survival::{
     collect_resolver_coords, dangling_diagnostics, entity_text_of, expand_footprints_via_reaches,
     lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
-use dorc_cli::world::{ship_predict_body, ship_verdict_body};
+use dorc_cli::world::{definition_table, ship_predict_body, ship_verdict_body, source_file_id};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
-#[cfg(test)]
-use dorc_aid::SpeechAct;
 #[cfg(test)]
 use dorc_cli::fixpoint::SettledFixpoint;
 #[cfg(test)]
@@ -693,6 +692,24 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .collect::<Result<_, _>>()?;
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
+    // Acquired HERE, above the lifts, because `28K` §2a's in-book lift makes the book a definition
+    // source like any other — and it sorts LAST, which is also its ambient-load position.
+    let replay_books: Vec<String>;
+    let books: &[String] = match &replay {
+        Some(r) => {
+            replay_books = vec![r.book_path.clone()];
+            &replay_books
+        }
+        None => &args.books,
+    };
+    let book_src = read_books(books)?;
+    let book_name = books.first().map_or("book.sh", String::as_str);
+    let (source_paths, source_srcs) =
+        source_table(&oracle_paths, &oracle_srcs, book_name, &book_src);
+    let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
+    // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
+    let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs);
+
     // The book-free oracle-side lints, factored into one entry the lint rung-oracle-solo lane also
     // uses (`27S:seam-oracle-validate-factoring`); `wrapper_incoherent` is the pre-network fail-fast.
     let validation = dorc_oracle::validate::validate(&mut interner, &oracle_refs);
@@ -704,12 +721,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         report_at(advisory, stage.stage, source, &stage.diags);
     }
 
-    // The effect-map value (23D §1 — the check is the oracle); its diags were emitted by `validate`.
-    let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
-
     // The per-file PredictSets (the entity-resolution mechanism; shared interner — 204 seam #2). The
-    // per-file `check`-dialect diags were emitted by `validate` above.
-    let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
+    // per-file `check`-dialect diags were emitted by `validate` above; the effect map (23D §1) is
+    // built from these below, once they are withdrawn.
+    let checks: Vec<dorc_oracle::predict::PredictSet> = source_refs
         .iter()
         .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
         .collect();
@@ -717,13 +732,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // Pre-lift each file's verdict funcdefs so the (immutable-interner) probe ship-closure can
     // strip a verdict-lane site's body without a mutating re-lift (`24L` §2 probe emission). Diags
     // drop here — `validate` surfaces them once, per-file, for gate-3.
-    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
+    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = source_refs
         .iter()
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
         .collect();
-    // The `24L` §7 kernel seam, widened by `26H` §3: the kernel stays verdict-unaware, so the edge
-    // keys the role by provider and threads it in as DATA. From the sets above ⇒ ONE lift.
-    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
 
     // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
     // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
@@ -739,16 +751,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
     // are exact source lines; a multi-book unit's line numbers are into the concatenation.
-    let replay_books: Vec<String>;
-    let books: &[String] = match &replay {
-        Some(r) => {
-            replay_books = vec![r.book_path.clone()];
-            &replay_books
-        }
-        None => &args.books,
-    };
-    let book_src = read_books(books)?;
-    let book_name = books.first().map_or("book.sh", String::as_str);
+    //
     // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
     report_at(
         advisory,
@@ -809,6 +812,98 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // Book-side value-flow: resolve each command-site's argv (constant/variable
     // propagation) — the input entity-resolution consumes (19H §1 / 202 §1).
     let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
+
+    // ── `28K` §1/§2: the function environment, and the cross-unit shadow refusal ──
+    //
+    // Computed ONCE from the ORIGIN model, joining the FROZEN set: the fixpoint's ratchet erases
+    // EFFECTS and holds no authority over BINDINGS (`the-frozen-set-includes-the-function-environment`).
+    let definitions = definition_table(
+        &oracle_paths,
+        &source_refs,
+        source_file_id(source_refs.len().saturating_sub(1)),
+        &parsed.value,
+    );
+    let env = {
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
+    };
+    let shadows = dorc_analysis::funcenv::contests(&parsed.value, &cfg.value, &definitions, &env);
+    let unprovable = dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit());
+    // `28K` §2 rul-visibility-is-full-positional — solved ONCE here, beside the whole-unit
+    // refusal, and carried (never re-derived) into the frozen model.
+    let live_defs = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
+    // The license-plane fact is minted FIRST; the diagnostics derive FROM it, never the reverse
+    // (`two-plane-aid-law`). Two sources feed it and only the first complains: a PROVEN shadow,
+    // and a ⊤ binding (rider 1 `⊤-licenses-nothing`, silent — that is what lets it under-fire).
+    let contested = dorc_core::ContestedFamilies::new(
+        shadows
+            .iter()
+            .map(|c| c.name.as_str())
+            .chain(unprovable.iter().map(String::as_str))
+            .filter_map(|name| {
+                dorc_oracle::reserved::role_family(name).map(|(base, _)| base.to_owned())
+            }),
+    );
+    let shadow_narrative = shadow_narratives(&shadows, &definitions);
+    for (file, diags) in shadow_diagnostics(&shadows, &definitions, &source_paths, &source_refs) {
+        let source = source_paths
+            .get(file)
+            .zip(source_refs.get(file))
+            .map(|(path, src)| (path.as_str(), *src));
+        report_at(advisory, "loading", source, &diags);
+    }
+    report_at(
+        advisory,
+        "loading",
+        book_source,
+        &positional_loading_notices(&parsed.value, &cfg.value, &value, &interner, live_defs),
+    );
+    for (file, diags) in helper_conflict_diagnostics(&helpers, &source_paths, &source_refs) {
+        let source = source_paths
+            .get(file)
+            .zip(source_refs.get(file))
+            .map(|(path, src)| (path.as_str(), *src));
+        report_at(advisory, "loading", source, &diags);
+    }
+    // The withdrawal, applied ONCE to the lifted sets so no downstream consumer has to remember to
+    // ask: a contested family becomes indistinguishable from one nobody described.
+    // TWO withdrawals ride this seat: the family-wide one above, and per file the roles whose
+    // definition THERE the environment proves binds nowhere — which is what keeps `live_source`'s
+    // whole-unit answer and the positional gate two readings of one environment (`28M` §9).
+    let never_live = dorc_analysis::funcenv::never_live(&definitions, &env);
+    let dead_predicts = never_live_withdrawals(
+        &never_live,
+        source_refs.len(),
+        dorc_oracle::predict::PREDICT_SUFFIX,
+    );
+    let dead_verdicts = never_live_withdrawals(
+        &never_live,
+        source_refs.len(),
+        dorc_oracle::verdict::VERDICT_SUFFIX,
+    );
+    let checks: Vec<dorc_oracle::predict::PredictSet> = checks
+        .into_iter()
+        .zip(dead_predicts)
+        .map(|(set, dead)| {
+            set.withdrawing(&contested, &interner)
+                .withdrawing(&dead, &interner)
+        })
+        .collect();
+    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = verdict_sets
+        .into_iter()
+        .zip(dead_verdicts)
+        .map(|(set, dead)| {
+            set.withdrawing(&contested, &interner)
+                .withdrawing(&dead, &interner)
+        })
+        .collect();
+    let idx = dorc_oracle::lift_from_sets(&mut interner, &checks)
+        .value
+        .withdrawing(&contested, &interner);
+    // The `24L` §7 kernel seam, widened by `26H` §3: the kernel stays verdict-unaware, so the edge
+    // keys the role by provider and threads it in as DATA. From the sets above ⇒ ONE lift.
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
+
     // The per-run receipts plane (arch-1): give-up causes (`Top(cause)`) and license
     // witnesses land here. EXEMPT — it informs no decision (the `plan::erasability` gate
     // proves the apply/probe artifacts are byte-identical with it stripped); the cli holds it
@@ -828,9 +923,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // `27N` — peel wrapped BOOK sites into (inner command, composed context) + decide entry. Empty
     // for a wrapper-free run ⇒ the whole pipeline is byte-identical (`empty-world-byte-identical`).
     let wrapped_analysis = build_wrapped_analysis(
-        &oracle_srcs,
-        &oracle_refs,
-        &oracle_paths,
+        &source_srcs,
+        &source_refs,
+        &source_paths,
         &checks,
         &verdict_sets,
         &parsed.value,
@@ -839,6 +934,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         args.dial,
         args.capability,
         &mut interner,
+        live_defs,
     );
     let peeled_sites = wrapped_analysis.peeled;
     let wrapped_probes = wrapped_analysis.wrapped;
@@ -859,6 +955,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         checks: &checks,
         verdicts: &verdicts,
         peeled: &peeled_sites,
+        live: live_defs,
     };
     let origin = classify_round(
         &frozen,
@@ -877,15 +974,24 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // the verdict) and, converged, mints a `Disposition::Guard`.
     // Lift diags drop here: `validate` above surfaces them per-file. This lane could only report
     // them sourceless, which framed every verdict give-up at a fileless `1:1`.
-    let vouch_lift = build_vouches(&oracle_refs, &classes, &value, &mut interner);
+    let vouch_lift = build_vouches(
+        &source_refs,
+        &verdict_sets,
+        &helpers,
+        &classes,
+        &value,
+        &mut interner,
+        live_defs,
+    );
     let (mut vouches, decline_narrative) = vouch_lift.value;
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
     vouches.extend(dorc_plan::build_wrapped_vouches(
-        &oracle_refs,
+        &verdict_sets,
         &classes,
         &wrapped_probes,
         &mut interner,
+        live_defs,
     ));
 
     // The CONNECTED check-pipes (`24J` §2, repaired — `271:rul-only-oracle-bytes-ship`): a simple
@@ -896,7 +1002,18 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // any compound whose stage can't be model-substituted (⇒ its stages run). Empty for a book with
     // no such pipe. Threaded into BOTH the probe compiler (ship the composed body) and the plan
     // builder (omit the subsumed members).
-    let ship_stage = |p, a: &[Symbol]| ship_predict_stage(&oracle_srcs, &checks, &interner, p, a);
+    let ship_stage = |n, p, a: &[Symbol]| {
+        ship_predict_stage(
+            &source_srcs,
+            &helpers,
+            &checks,
+            &interner,
+            p,
+            a,
+            n,
+            live_defs,
+        )
+    };
     let connected =
         dorc_plan::connected_check_pipes(&parsed.value, &cfg.value, &value, &classes, ship_stage);
 
@@ -904,9 +1021,20 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
     // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
-    let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
-    // `24L` §2 — a VERDICT-LANE site ships the oracle.s own `is_converged` funcdef, strip-only
-    // (rul-only-oracle-bytes-ship). Keyed on the SITE.s lane, never its fact.s KIND (`26H` §3.5):
+    let ship = |n, p, a: &[Symbol]| {
+        ship_predict_body(
+            &source_srcs,
+            &helpers,
+            &checks,
+            &interner,
+            p,
+            a,
+            n,
+            live_defs,
+        )
+    };
+    // `24L` §2 — a VERDICT-LANE site ships the oracle's own `is_converged` funcdef, strip-only
+    // (rul-only-oracle-bytes-ship). Keyed on the SITE's lane, never its fact's KIND (`26H` §3.5):
     // an authored verdict cell is an ordinary kind, so `is_auto_kind` would route it to the
     // predict lane, find nothing, and run the site. Try-order cannot stand in either —
     // `command_effect` reaches this lane from two fallbacks, and the second leaves a shippable
@@ -918,7 +1046,15 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         if !verdict_lane.contains(&node) {
             return None;
         }
-        ship_verdict_body(&oracle_srcs, &verdict_sets, &interner, p)
+        ship_verdict_body(
+            &source_srcs,
+            &helpers,
+            &verdict_sets,
+            &interner,
+            p,
+            node,
+            live_defs,
+        )
     };
     let probe = dorc_plan::compile_probe(
         &parsed.value,
@@ -1325,16 +1461,25 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 &mut interner,
             ),
         );
-        // 24G §4: EXPAND each reach-bearing footprint coord via reaches() — STATIC arms (cli-traced,
-        // all coords) + DYNAMIC arms (the `reach` readback, authored coords only). Widening is
-        // monotone-safe (`inv-kfail`); runs AFTER the authored/derived merge and BEFORE the walk, so
-        // the wider footprint flows the EXISTING disjoint/canonicalize path (no new interplay code).
-        expand_footprints_via_reaches(
-            &mut fps,
-            &kind_reaches,
-            &reach_kinds,
-            results,
-            &mut interner,
+        // 24G §4: EXPAND each reach-bearing footprint coord via reaches(), after the
+        // authored/derived merge and before the walk. An arm that cannot show it finished refuses
+        // the footprint — see `expand_footprints_via_reaches`.
+        let reach_node_spans: BTreeMap<_, _> = fps
+            .nodes()
+            .map(|n| (n, parsed.value.node(cfg.value.node(n).ast).span))
+            .collect();
+        report_at(
+            advisory,
+            "reach",
+            book_source,
+            &expand_footprints_via_reaches(
+                &mut fps,
+                &kind_reaches,
+                &reach_kinds,
+                results,
+                &reach_node_spans,
+                &mut interner,
+            ),
         );
         fps
     });
@@ -1434,6 +1579,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .cloned()
         .chain(paired_declines)
         .chain(entry_narrative.iter().cloned())
+        .chain(shadow_narrative.iter().cloned())
         .chain(merge_narrative.iter().cloned())
         .chain(plan.survival_report.collapse_narrative().iter().cloned())
         .chain(plan.render_refusal_narratives(&parsed.value))
@@ -1449,20 +1595,20 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         emit_sigpipe_race_notes(results);
         emit_report_lane_notes(results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
         // `27W` §3 tier-2 STATIC decline classes at plan time, with the emitting arm's file:line.
-        emit_static_decline_notes(&collapse_narrative, &oracle_paths, &oracle_srcs);
+        emit_static_decline_notes(&collapse_narrative, &source_paths, &source_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
         // a wrong footprint silently under-executes someone else's line, so the render surface
         // must always say whose footprint you trusted. Empty when unflagged (no survivals).
-        emit_survival_attribution(&plan, &interner, &oracle_paths, &oracle_srcs);
+        emit_survival_attribution(&plan, &interner, &source_paths, &source_srcs);
         // 24G Part B: every converged elision a reaches() expansion DEMOTED names the reach-function
         // (the cross-author demote); empty when no reach expansion poisoned an elision.
         emit_reach_poisonings(&plan, &interner);
         // Stage 3 (rul-guard-license / X-why): every GUARDED site names, on the same lane, the
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
-        emit_guard_attribution(&plan, &parsed.value, &interner, &oracle_paths, &oracle_srcs);
+        emit_guard_attribution(&plan, &parsed.value, &interner, &source_paths, &source_srcs);
         // `27C` §4(a): every pure-predicate-CARRY elision names its cross-context attribution chain
         // on this same lane (the crossed substrate axes, each backing kind's owner `invariant:` line,
         // the read-set-closure proof). Empty when no site carried.
@@ -1570,8 +1716,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                     book_src: &book_src,
                     filename: book_name,
                     interner: &interner,
-                    oracle_paths: &oracle_paths,
-                    oracle_srcs: &oracle_srcs,
+                    source_paths: &source_paths,
+                    source_srcs: &source_srcs,
                     narrative: &collapse_narrative,
                     cascades: &cascades,
                     receipt: &receipt,
@@ -1946,44 +2092,286 @@ fn assemble_whylog_metadata(
     }
 }
 
+/// The ONE `SourceFileId` space over every input (`28K` §2a Provenance) as parallel path/source
+/// vectors a [`dorc_core::SourceFileId`] indexes directly.
+///
+/// Order is LOAD order and that is load-bearing twice: CLI-named oracles first — so every id
+/// already minted keeps its value, and the book joining the space moves no existing span — then
+/// the book, which is exactly the order the function environment reads (`28K` §2: CLI files are
+/// the ambient prefix "before line 1", the book's own text executes after). An id comparison is
+/// therefore a load-order comparison, which is what the cross-unit shadow refusal needs.
+///
+/// The predict/verdict lift and ship lanes consume THESE vectors, not the oracle-only ones: the
+/// book is a definition source (`28K` §2a in-book lift), and those lanes zip per-file lifted sets
+/// POSITIONALLY — so feeding them an `oracle_srcs` shorter than `checks` would silently truncate
+/// the book's own definitions away rather than fail. The survival lanes (`touches`, the kind
+/// resolvers/reaches) stay oracle-only, coherently among themselves; widening them is its own
+/// dispatch. What genuinely stays oracle-keyed is the whylog/attempt-scope record of what was
+/// LOADED, which is about the oracle set as such.
+fn source_table(
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+    book_name: &str,
+    book_src: &str,
+) -> (Vec<String>, Vec<String>) {
+    let paths = oracle_paths
+        .iter()
+        .cloned()
+        .chain(std::iter::once(book_name.to_owned()))
+        .collect();
+    let srcs = oracle_srcs
+        .iter()
+        .cloned()
+        .chain(std::iter::once(book_src.to_owned()))
+        .collect();
+    (paths, srcs)
+}
+
+/// The two notices the full-positional regime owes a book author (`28K` §2
+/// `rul-visibility-is-full-positional`), both aid-plane and neither changing any license.
+///
+/// **The move-it-up hint** — a book defines a COMMAND role below sites its family could otherwise
+/// have answered. The design's named, accepted consequence is that such a definition licenses
+/// nothing above itself; the recovery is one line of cut-and-paste, and the engine is the only
+/// party positioned to notice. Fired only where NOTHING answers the site: if some other unit's
+/// definition is live there the family is contested (or genuinely served) and this would be noise.
+///
+/// **The in-book vocabulary refusal** (`28M:obl-in-book-vocabulary-role-notice`) — kind-owner
+/// members load from the ambient prefix only, so an in-book one never takes effect. Refused WITH a
+/// notice rather than silently, since silence here reads as "my resolver is broken".
+fn positional_loading_notices(
+    book: &dorc_syntax::Ast,
+    cfg: &dorc_analysis::cfg::Cfg,
+    value: &dorc_analysis::value::ValueFlow,
+    interner: &Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+) -> Vec<Diag> {
+    use dorc_analysis::cfg::CfgNodeKind;
+    use dorc_analysis::value::ValueOf;
+    use dorc_syntax::ast::NodeKind;
+
+    let mut diags = Vec::new();
+    for (_, node) in book.iter() {
+        let NodeKind::FuncDef {
+            name, name_span, ..
+        } = &node.kind
+        else {
+            continue;
+        };
+        let Some((family, role)) = dorc_oracle::reserved::role_family(name) else {
+            continue;
+        };
+        if dorc_oracle::reserved::is_vocabulary_role(role) {
+            diags.push(Diag::new(
+                DiagCode::InBookVocabularyRole(dorc_aid::diag::InBookVocabularyRole {
+                    name: name.clone(),
+                    role: role.to_owned(),
+                }),
+                *name_span,
+            ));
+            continue;
+        }
+        let unanswered = cfg
+            .iter()
+            .filter(|(id, n)| n.kind == CfgNodeKind::Command && !cfg.is_expansion_internal(*id))
+            .filter(|(id, _)| live.source_before(*id, name).is_none())
+            .filter(|(id, _)| match value.argv_values(*id).first() {
+                Some(ValueOf::Literal(word)) => {
+                    dorc_oracle::to_funcname_segment(interner.resolve(*word)) == family
+                }
+                _ => false,
+            })
+            .count();
+        if unanswered > 0 {
+            diags.push(Diag::new(
+                DiagCode::RoleDefinedBelowItsSites(dorc_aid::diag::RoleDefinedBelowItsSites {
+                    name: name.clone(),
+                    sites: unanswered,
+                }),
+                *name_span,
+            ));
+        }
+    }
+    diags
+}
+
+/// Per source file, the role FAMILIES whose `suffix` member that file declares and the function
+/// environment proves is never live ([`dorc_analysis::funcenv::never_live`]).
+///
+/// Applied per FILE to a per-ROLE lifted vector, so it withdraws exactly one role of one family
+/// from one file: the family-wide reading the contest withdrawal uses would take a live sibling
+/// member down with a dead one.
+fn never_live_withdrawals(
+    never_live: &BTreeSet<(String, dorc_core::SourceFileId)>,
+    files: usize,
+    suffix: &str,
+) -> Vec<dorc_core::ContestedFamilies> {
+    (0..files)
+        .map(|i| {
+            dorc_core::ContestedFamilies::new(never_live.iter().filter_map(|(name, file)| {
+                let (base, role) = dorc_oracle::reserved::role_family(name)?;
+                (role == suffix && file.0 as usize == i).then(|| base.to_owned())
+            }))
+        })
+        .collect()
+}
+
+/// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier
+/// `Derived`: this is the engine's own reading of the environment, not anybody's claim.
+fn shadow_narratives(
+    shadows: &[dorc_analysis::funcenv::Contest],
+    definitions: &dorc_analysis::funcenv::DefinitionTable,
+) -> Vec<CollapseNarrative> {
+    use dorc_aid::narrative::{DefinitionSite, MintSpan};
+    shadows
+        .iter()
+        .filter_map(|contest| {
+            let prior = definitions.get(contest.prior)?;
+            let shadowing = definitions.get(contest.shadowing)?;
+            let site = |d: &dorc_analysis::funcenv::Definition| DefinitionSite {
+                file: d.file,
+                name: MintSpan(d.name_span),
+            };
+            Some(CollapseNarrative::new(
+                SpeechAct::Derived,
+                CollapseKind::RoleFamilyShadowed {
+                    prior: site(prior),
+                    shadowing: site(shadowing),
+                },
+            ))
+        })
+        .collect()
+}
+
+/// The shadow refusal's diagnostics, grouped by the file the SHADOWING definition lives in — the
+/// one file whose frame can carry the caret. The overridden definition rides the payload as
+/// `path:line` text, since one `report_at` threads one source (`AID-NEEDS:law-lineno-identity`).
+fn shadow_diagnostics(
+    shadows: &[dorc_analysis::funcenv::Contest],
+    definitions: &dorc_analysis::funcenv::DefinitionTable,
+    source_paths: &[String],
+    source_srcs: &[&str],
+) -> Vec<(usize, Vec<Diag>)> {
+    let mut by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
+    for contest in shadows {
+        let (Some(prior), Some(shadowing)) = (
+            definitions.get(contest.prior),
+            definitions.get(contest.shadowing),
+        ) else {
+            continue;
+        };
+        let Some((family, _)) = dorc_oracle::reserved::role_family(&contest.name) else {
+            continue;
+        };
+        let prior_file = prior.file.0 as usize;
+        let shadowing_file = shadowing.file.0 as usize;
+        let (Some(prior_path), Some(prior_src), true) = (
+            source_paths.get(prior_file),
+            source_srcs.get(prior_file),
+            shadowing_file < source_paths.len(),
+        ) else {
+            continue;
+        };
+        let (line, _) = dorc_aid::diag::line_col(prior_src, prior.name_span.lo.0 as usize);
+        by_file.entry(shadowing_file).or_default().push(Diag::new(
+            DiagCode::RoleFamilyContested(dorc_aid::diag::RoleFamilyContested {
+                family: family.to_owned(),
+                name: contest.name.clone(),
+                prior: format!("{prior_path}:{line}"),
+            }),
+            shadowing.name_span,
+        ));
+    }
+    by_file.into_iter().collect()
+}
+
+/// The closure refusal's diagnostics, grouped by the file the LATER declaration lives in — the
+/// sibling of [`shadow_diagnostics`] one namespace down (`28K` §4; `28M` §8's diamond rider). The
+/// earlier declaration rides the payload as `path:line`, since one `report_at` threads one source.
+///
+/// Reported at the LOAD edge, not per pinned definition: the collision rebinds the name for every
+/// caller the moment both sources load, so it is one claim about the loaded set with one
+/// remediation, and a per-definition report would point N-1 authors at somebody else's file
+/// (`271:rul-sin-ordering`).
+fn helper_conflict_diagnostics(
+    helpers: &dorc_oracle::closure::HelperIndex,
+    source_paths: &[String],
+    source_srcs: &[&str],
+) -> Vec<(usize, Vec<Diag>)> {
+    let mut by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
+    for conflict in helpers.conflicts() {
+        let (Some(&(prior_file, prior_span)), Some(&(later_file, later_span))) =
+            (conflict.sites.first(), conflict.sites.get(1))
+        else {
+            continue;
+        };
+        let (Some(prior_path), Some(prior_src), true) = (
+            source_paths.get(prior_file),
+            source_srcs.get(prior_file),
+            later_file < source_paths.len(),
+        ) else {
+            continue;
+        };
+        let (line, _) = dorc_aid::diag::line_col(prior_src, prior_span.lo.0 as usize);
+        by_file.entry(later_file).or_default().push(Diag::new(
+            DiagCode::HelperDeclarationContested(dorc_aid::diag::HelperDeclarationContested {
+                name: conflict.name.clone(),
+                prior: format!("{prior_path}:{line}"),
+            }),
+            later_span,
+        ));
+    }
+    by_file.into_iter().collect()
+}
+
 /// Resolve a connected pipe STAGE's stripped `<provider>__predict` body PLUS its STDOUT coverage
 /// (`271:rul-only-oracle-bytes-ship` rider 1 — the composed-probe repair). Mirrors
 /// [`ship_predict_body`]'s check-resolution, then asks
 /// [`predict_stage_stdout`](dorc_oracle::predict::predict_stage_stdout) whether the arm this argv
 /// selects produces REAL (delegation-produced) stdout bytes — the coverage a downstream byte-consumer
 /// requires. `None` ⇒ no check resolves ⇒ the stage is un-shippable ⇒ the compound refuses (⇒ runs).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "a composed stage ships the same definition-plus-closure unit as an ordinary site (`28K` §4), so the source set and its non-role index arrive together"
+)]
 fn ship_predict_stage(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::StageShip> {
     use dorc_oracle::predict::{
-        Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout, strip_predict,
+        PREDICT_SUFFIX, Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout,
+        strip_predict,
     };
     let want = map_provider_name(interner.resolve(provider));
+    let named = |cs: &dorc_oracle::predict::PredictSet| {
+        cs.providers()
+            .find(|cp| map_provider_name(interner.resolve(*cp)) == want)
+            .and_then(|cp| cs.get(cp).cloned())
+    };
+    // A composed stage is a SITE like any other (`28K` §2), resolved through the same seat.
+    let idx = dorc_oracle::live_source(checks.len(), |i| checks.get(i).and_then(named).is_some())
+        .filter(|&i| live.answers_at(node, &format!("{want}{PREDICT_SUFFIX}"), i))?;
+    let check = checks.get(idx).and_then(named)?;
     let arg_texts: Vec<String> = argv
         .iter()
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    for (src, cs) in oracle_srcs.iter().zip(checks) {
-        for cp in cs.providers() {
-            if map_provider_name(interner.resolve(cp)) != want {
-                continue;
-            }
-            let Some(check) = cs.get(cp) else { continue };
-            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(dorc_plan::StageShip {
-                    sh: strip_predict(src, check, interner),
-                    produces_real_stdout: predict_stage_stdout(check, &arg_refs)
-                        == StageStdout::RealBytes,
-                });
-            }
-        }
+    if !matches!(evaluate(&check, &arg_refs), Resolution::Resolved(_)) {
+        return None;
     }
-    None
+    let body = strip_predict(oracle_srcs.get(idx)?, &check, interner);
+    let closure = helpers.closure_for(idx, &body).ok()?;
+    Some(dorc_plan::StageShip {
+        sh: format!("{}{body}", closure.sh),
+        produces_real_stdout: predict_stage_stdout(&check, &arg_refs) == StageStdout::RealBytes,
+    })
 }
 
 /// Compile the resolver-probe (24F §3): for each resolver-bearing coordinate, ship its kind's
@@ -2142,21 +2530,35 @@ fn collect_reach_probes(
 ///
 /// `inv-referent-agnostic`: the kind label + operands are resolved for the invocation/attribution,
 /// never decoded for meaning; the vouch travels the site's own value-flow (the 24A §1b fence).
+///
+/// The `verdict_sets` are the driver's WITHDRAWN ones. This seat re-lifting them from source read
+/// a population every other seat had already narrowed (`28P:fnd-build-vouches-relifted-the-verdict-sets`).
 fn build_vouches(
     oracle_refs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    helpers: &dorc_oracle::closure::HelperIndex,
     classes: &[(
         dorc_analysis::cfg::CfgNodeId,
         dorc_analysis::effect::SkipClass,
     )],
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Carrier<(dorc_plan::Vouches, Vec<CollapseNarrative>)> {
-    // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
-    // share it). This edge only RESHAPES the lift: its diagnostics ride out AS-IS (inv-top-reject —
-    // the tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
-    // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
-    let (lifted, decline_narrative) =
-        dorc_plan::build_vouches(oracle_refs, classes, value, interner);
+    // The composition lives in `dorc_plan::build_vouches_from_sets` (the ONE home — the
+    // sweep/coverage DSTs share its re-lifting sibling). This edge only RESHAPES the lift: its
+    // diagnostics ride out AS-IS (inv-top-reject — the tc-verdict-return softening is reverted,
+    // find-return-vouches 24C), so a genuinely out-of-dialect verdict body fails gate-3's
+    // error-floor rather than degrading silently.
+    let (lifted, decline_narrative) = dorc_plan::build_vouches_from_sets(
+        oracle_refs,
+        verdict_sets,
+        helpers,
+        classes,
+        value,
+        interner,
+        live,
+    );
     lifted.map(|vouches| (vouches, decline_narrative))
 }
 
@@ -2601,6 +3003,106 @@ fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_aid::diag::
 }
 
 #[cfg(test)]
+mod fixpoint_freezes_the_environment_tests {
+    /// The validity fixpoint must not reach the function environment (`28K` §2; `cli/CLAUDE.md`
+    /// the-fixpoint-owns-the-rounds-and-builds-nothing-else).
+    ///
+    /// Env resolution is computed ONCE from the ORIGIN model and joins the frozen set alongside
+    /// the book, the CFG, value-flow, the admitted records, the vouches, and the compiled probe.
+    /// The forbidden scenario is concrete: a records-proven-dead branch containing a funcdef must
+    /// not re-run resolution and un-contest a family mid-run. The fold's ratchet erases EFFECTS;
+    /// it holds no authority over BINDINGS, and a license once withheld is never regained by a
+    /// later round.
+    ///
+    /// Lexical, deliberately — the property is "the loop body cannot even spell it", which a type
+    /// bound cannot express (`dorc_plan::erase`'s `licence_mint_has_exactly_one_caller` is the
+    /// precedent). Its twin lives in `dorc_analysis::funcenv` and guards the other direction: that
+    /// module cannot name a fixpoint-reachable type either.
+    #[test]
+    fn the_fixpoint_loop_body_calls_no_funcenv_entry_point() {
+        let src = include_str!("fixpoint.rs");
+        // Column-0 anchored (`spanless-gate-is-lexical`); the driver moved to the lib seam's
+        // `fixpoint.rs` at the loom-final fold, so that is the file the fence scans.
+        let start = src
+            .find("\npub fn settle_validity_fixpoint(")
+            .expect("the fixpoint driver is still a column-0 item of this name");
+        // Bounded at the column-0 closer; a slice running to EOF would make the gate worthless.
+        let rest = &src[start..];
+        let end = rest
+            .find("\n}\n")
+            .expect("the fixpoint driver has a column-0 closing brace");
+        let body = &rest[..end];
+        for forbidden in [
+            "funcenv",
+            "FuncEnv",
+            "SourceLiteralPlane",
+            "DefinitionTable",
+        ] {
+            assert!(
+                !body.contains(forbidden),
+                "`{forbidden}` appears inside the validity fixpoint — env resolution is frozen \
+                 pre-loop, and re-deriving it per round would let a later round change which \
+                 definition was live"
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod source_table_tests {
+    use super::{oracle_locus, source_file_id, source_table};
+
+    fn table() -> (Vec<String>, Vec<String>) {
+        source_table(
+            &["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()],
+            &["# a\n".to_owned(), "# b\nsecond\n".to_owned()],
+            "webhost.sh",
+            "# book\n",
+        )
+    }
+
+    /// The load-order property the whole space rests on (`28K` §2a): oracles keep their positions,
+    /// so joining the book to the id space cannot move a span any already-minted id points at.
+    /// A future edit that sorted the book first would silently re-point every threaded oracle
+    /// span at the wrong file — the failure this pins is unreadable from any golden.
+    #[test]
+    fn oracle_ids_are_unmoved_by_the_book_joining_the_space() {
+        let (paths, srcs) = table();
+        assert_eq!(paths[0], "a.oracle.sh");
+        assert_eq!(paths[1], "b.oracle.sh");
+        assert_eq!(srcs[0], "# a\n");
+        assert_eq!(srcs[1], "# b\nsecond\n");
+    }
+
+    /// The book sorts last, which is also the order the function environment reads (CLI files are
+    /// the ambient prefix, the book's text executes after), so an id comparison IS a load-order
+    /// comparison.
+    #[test]
+    fn the_book_sorts_after_every_oracle() {
+        let (paths, srcs) = table();
+        assert_eq!(paths.len(), 3);
+        assert_eq!(paths[2], "webhost.sh");
+        assert_eq!(srcs[2], "# book\n");
+    }
+
+    /// A span threaded with the BOOK's id now resolves to a real locus. Before the space was
+    /// widened the book had no id at all, so a book-sited definition — which `28K` makes
+    /// first-class — could not be cited by the shadow refusal or by pinned-definition attribution.
+    #[test]
+    fn a_book_sited_span_resolves_to_a_locus() {
+        let (paths, srcs) = table();
+        let second_line = dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1));
+        assert_eq!(
+            oracle_locus(Some((second_line, source_file_id(2))), &paths, &srcs),
+            Some("webhost.sh:1".to_owned())
+        );
+        assert_eq!(
+            oracle_locus(Some((second_line, source_file_id(9))), &paths, &srcs),
+            None
+        );
+    }
+}
+#[cfg(test)]
 mod why_lens_dedup_tests {
     //! `x2-fd1` (`22E`, `224` §10): the stage-4 render-dedup must key on `(cause, site)`, not the
     //! cause `ProvId` alone — else two inlined call-sites sharing one body-span cause collapse and
@@ -2948,6 +3450,30 @@ fn book_digest(book_src: &str) -> String {
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
 #[cfg(test)]
+/// The reach arm's close, both declarations (`28P` item0's mechanism at its second consumer); a
+/// malformed one reads as never-closed ⇒ the footprint is refused.
+fn parse_reach_end_record(rest: &str, out: &mut SiteResults) {
+    let mut it = rest.split_whitespace();
+    let Some(coord) = it.next() else { return };
+    let (mut arm, mut count, mut body_rc) = (None, None, None);
+    for tok in it {
+        if let Some(a) = tok.strip_prefix("arm=") {
+            arm = a.parse::<usize>().ok();
+        } else if let Some(n) = tok.strip_prefix("n=") {
+            count = n.parse::<u32>().ok();
+        } else if let Some(r) = tok.strip_prefix("body-rc=") {
+            body_rc = r.parse::<u32>().ok();
+        }
+    }
+    if let (Some(arm), Some(count), Some(body_rc)) = (arm, count, body_rc) {
+        out.reach_ends.insert(
+            (coord.to_owned(), arm),
+            dorc_cli::results::EmissionClose { count, body_rc },
+        );
+    }
+}
+
+#[cfg(test)]
 fn parse_results(
     records: &[String],
     framed: bool,
@@ -2979,17 +3505,23 @@ fn parse_results(
                         .push(coord.to_owned());
                 }
             }
-            // `262` §2 / `26A` stop-1: `deriv-end <leafid> n=<K>` — the at-most family close.
-            // Records the declared count; the consumer refuses a family whose received count
-            // ≠ K (or that never closed) ⇒ wall-total (never a shrunken at-most footprint).
+            // The at-most family close, BOTH declarations (`262` §2 / `26A` stop-1 +
+            // `28P:dec-whole-body-atomic-refusal`); a malformed one reads as never-closed.
             "deriv-end" => {
                 let mut it = rest.split_whitespace();
                 if let Some(site) = it.next().and_then(parse_leaf) {
+                    let mut count = None;
+                    let mut body_rc = None;
                     for tok in it {
-                        if let Some(n) = tok.strip_prefix("n=").and_then(|n| n.parse::<u32>().ok())
-                        {
-                            out.derivation_ends.insert(site, n);
+                        if let Some(n) = tok.strip_prefix("n=") {
+                            count = n.parse::<u32>().ok();
+                        } else if let Some(r) = tok.strip_prefix("body-rc=") {
+                            body_rc = r.parse::<u32>().ok();
                         }
+                    }
+                    if let (Some(count), Some(body_rc)) = (count, body_rc) {
+                        out.derivation_ends
+                            .insert(site, dorc_cli::results::EmissionClose { count, body_rc });
                     }
                 }
             }
@@ -3032,6 +3564,7 @@ fn parse_results(
                     }
                 }
             }
+            "reach-end" => parse_reach_end_record(rest, &mut out),
             "site" => parse_site_record(rest, stamp, &mut out, interner),
             "report" => parse_report_record(rest, &mut out), // `27W` §2 tier-3 (decision-inert lane)
             _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
@@ -3530,14 +4063,14 @@ mod tests {
         use dorc_analysis::cfg::CfgNodeId;
         use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
 
-        // A framed deriv stream for site 5: `n` coord records + an OPTIONAL `deriv-end N n=<end>`.
-        let framed = |coords: usize, end: Option<usize>| -> String {
+        // A framed deriv stream for site 5: coords + an OPTIONAL `deriv-end N n=<end> body-rc=<R>`.
+        let framed_rc = |coords: usize, end: Option<usize>, body_rc: u32| -> String {
             let coord_recs = (0..coords)
                 .map(|c| format!("{DEFAULT_NONCE} deriv 5 coord=package:pkg{c} {TERMINAL_TOKEN}\n"))
                 .collect::<Vec<_>>()
                 .concat();
             let end_rec = end.map_or(String::new(), |n| {
-                format!("{DEFAULT_NONCE} deriv-end 5 n={n} {TERMINAL_TOKEN}\n")
+                format!("{DEFAULT_NONCE} deriv-end 5 n={n} body-rc={body_rc} {TERMINAL_TOKEN}\n")
             });
             format!(
                 "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites=0 {TERMINAL_TOKEN}\n\
@@ -3579,6 +4112,8 @@ mod tests {
             fps.contains(CfgNodeId(5))
         };
 
+        let framed = |coords: usize, end: Option<usize>| framed_rc(coords, end, 0);
+
         let mut i = Interner::default();
         // COMPLETE (2 coords, deriv-end n=2) ⇒ footprint lifted (the site can spare).
         assert!(
@@ -3601,6 +4136,110 @@ mod tests {
         assert!(
             !merged_contains(&framed(0, Some(0)), &mut i),
             "an empty family walls — the engine never manufactures a claim from silence"
+        );
+        // BODY DEATH (`28P:dec-whole-body-atomic-refusal`): the cell one line up proves the count
+        // gate ACCEPTS these exact bytes, so only `body-rc` stands between them and a spared cell.
+        assert!(
+            !merged_contains(&framed_rc(2, Some(2), 127), &mut i),
+            "an abnormally-terminated emission body walls the site TOTAL, however well its record \
+             stream agrees with itself"
+        );
+    }
+
+    /// The reach lane's twin of the pin above (`28P:dec-reach-expansion-refuses-whole-footprint`),
+    /// over one stream builder so both gates are asserted on identical bytes.
+    ///
+    /// The inversion is the same one arrived at from the opposite side: a `disturbance_reaches_only`
+    /// survey is complete-by-contract and its expansion WIDENS an at-most footprint, so an arm that
+    /// cannot show it finished leaves the claim wrongly NARROW, and narrow SPARES MORE. The retired
+    /// reading — that a silent arm is the honest un-expanded floor — is what
+    /// `an-kind-reach`'s "widens claims only" row licensed, and it holds only while the `disturbs`
+    /// claim is independently total, which is when a `reaches_only` is not wanted at all.
+    #[test]
+    fn pin_reach_arm_atomicity_refuses_the_whole_footprint() {
+        use dorc_analysis::cfg::CfgNodeId;
+        use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
+
+        let coord = "sm.dorc.Package:nginx";
+        let framed = |entities: usize, close: Option<(usize, u32)>| -> String {
+            let recs = (0..entities)
+                .map(|e| {
+                    format!(
+                        "{DEFAULT_NONCE} reach {coord} arm=0 entity=/etc/f{e}.conf {TERMINAL_TOKEN}\n"
+                    )
+                })
+                .collect::<Vec<_>>()
+                .concat();
+            let close = close.map_or(String::new(), |(n, body_rc)| {
+                format!(
+                    "{DEFAULT_NONCE} reach-end {coord} arm=0 n={n} body-rc={body_rc} {TERMINAL_TOKEN}\n"
+                )
+            });
+            format!(
+                "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites=0 {TERMINAL_TOKEN}\n\
+                 {recs}{close}dorc-records-end/1 nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n"
+            )
+        };
+
+        // Survives ⇒ its wall can still spare a disjoint downstream cell; absent ⇒ wall-total.
+        let footprint_survives = |stream: &str| -> bool {
+            let mut i = Interner::default();
+            let src = "sm_dorc_Package__disturbance_reaches_only() {\n   \
+                       dpkg -L \"$1\"    : disturbs sm.dorc.File\n}"
+                .to_string();
+            let kind = i.intern("sm.dorc.Package");
+            let coord_kinds: BTreeSet<Symbol> = [kind].into_iter().collect();
+            let reaches = build_kind_reaches(&[src], &[], &[], &coord_kinds, &mut i).value;
+            let reach_kinds: BTreeSet<Symbol> = reaches.reach_kinds().collect();
+            assert!(
+                reach_kinds.contains(&kind),
+                "the fixture kind must be reach-bearing, or the cells below are vacuous"
+            );
+            let d = dorc_plan::records::deframe(
+                stream,
+                &dorc_plan::records::Framing::spike("bk".to_owned()).expect(),
+                dorc_plan::records::LegacyPolicy::Refuse,
+            );
+            let results = parse_results(&d.records, d.framed, &mut RunClock::Absent, &mut i);
+            let provider = i.intern("hork");
+            let entity = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+            let fp = dorc_plan::Footprint::authored(
+                provider,
+                vec![dorc_plan::EntityCoord::new(KindId(kind), entity)],
+            )
+            .expect("a one-coordinate footprint is non-empty");
+            let mut fps = dorc_plan::TrustedFootprints::new();
+            fps.insert(CfgNodeId(3), fp);
+            let node_spans = BTreeMap::from([(
+                CfgNodeId(3),
+                dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
+            )]);
+            drop(expand_footprints_via_reaches(
+                &mut fps,
+                &reaches,
+                &reach_kinds,
+                &results,
+                &node_spans,
+                &mut i,
+            ));
+            fps.contains(CfgNodeId(3))
+        };
+
+        assert!(
+            footprint_survives(&framed(1, Some((1, 0)))),
+            "a complete arm expands the footprint and leaves it standing"
+        );
+        assert!(
+            !footprint_survives(&framed(1, Some((1, 127)))),
+            "a dead arm body refuses the WHOLE footprint, however well its stream agrees with itself"
+        );
+        assert!(
+            !footprint_survives(&framed(1, Some((2, 0)))),
+            "a cut stream refuses the whole footprint, never a partly-widened one"
+        );
+        assert!(
+            !footprint_survives(&framed(1, None)),
+            "an arm that never closed refuses the whole footprint"
         );
     }
 
@@ -3683,7 +4322,7 @@ mod tests {
                         dorc_core::BytePos(4),
                         dorc_core::BytePos(9),
                     )),
-                    arm_file: dorc_core::OracleFileId(0),
+                    arm_file: dorc_core::SourceFileId(0),
                     gate: DeclineGate::Return,
                     authored_reason: reason,
                 },
@@ -3695,7 +4334,7 @@ mod tests {
                 dorc_core::BytePos(1),
                 dorc_core::BytePos(2),
             )),
-            arm_file: dorc_core::OracleFileId(0),
+            arm_file: dorc_core::SourceFileId(0),
         };
         let evidence = vec![
             decline(5, None), // site 5 — a dynamic-format decline (class unread statically)
@@ -3944,6 +4583,7 @@ mod tests {
                 dial,
                 dorc_core::Capability::Root,
                 &mut interner,
+                dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             )
             .collapse_narrative
             .iter()
@@ -4332,8 +4972,8 @@ mod tests {
 
     #[test]
     fn record_observation_instants_come_from_the_injected_clock_not_wall_time() {
-        // A record.s instant must be EXACTLY what the injected source yielded, and a stepping
-        // source must distinguish records. Wall time never enters a test.s answer.
+        // A record's instant must be EXACTLY what the injected source yielded, and a stepping
+        // source must distinguish records. Wall time never enters a test's answer.
         let mut i = Interner::default();
         let results = parse_str_clocked(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
@@ -4374,7 +5014,7 @@ mod tests {
         let fact = pkg(&mut i, "nginx");
         let mut probe = probe1(fact, ProbeSiteKind::Establish);
         let span = dorc_core::Span::new(dorc_core::BytePos(40), dorc_core::BytePos(52));
-        probe.checks[0].defining_span = Some((span, dorc_core::OracleFileId(3)));
+        probe.checks[0].defining_span = Some((span, dorc_core::SourceFileId(3)));
         let results = parse_str_clocked("site 0 effect=holds rc=7\n", 1_234, 0, &mut i);
         let mut arena = ProvArena::new();
         let origins = probe_origins(&probe, &results, &mut arena);
@@ -4385,7 +5025,7 @@ mod tests {
         assert_eq!(reported.tool_rc, Rc(7), "the rc is this record's, verbatim");
         assert_eq!(
             reported.predict_span,
-            Some((span, dorc_core::OracleFileId(3))),
+            Some((span, dorc_core::SourceFileId(3))),
             "the reporting line is the shipped check's own defining span, file-qualified"
         );
         assert_eq!(
@@ -4650,6 +5290,7 @@ apt_get__predict() {
             checks: &checks,
             verdicts: &verdicts,
             peeled: &peeled,
+            live: dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         };
         let origin = classify_round(
             &frozen,
@@ -4660,7 +5301,18 @@ apt_get__predict() {
             &mut BTreeSet::new(),
         );
         let probe = {
-            let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
+            let ship = |n, p, a: &[Symbol]| {
+                ship_predict_body(
+                    &oracle_srcs,
+                    &dorc_oracle::closure::HelperIndex::default(),
+                    &checks,
+                    &interner,
+                    p,
+                    a,
+                    n,
+                    dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+                )
+            };
             dorc_plan::compile_probe(
                 &parsed.value,
                 &cfg,
@@ -4948,7 +5600,7 @@ apt_get__predict() {
             &classes,
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
-            |_, _| None,
+            |_, _, _| None,
             |_, _, _| None,
             |_| false,
         );

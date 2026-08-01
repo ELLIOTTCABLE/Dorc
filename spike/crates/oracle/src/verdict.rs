@@ -88,6 +88,11 @@ use crate::predict::{
 #[derive(Debug, Clone, Default)]
 pub struct VerdictIndex {
     by_provider: BTreeMap<ProviderId, Predict>,
+    /// Per provider, the SOURCE INDEX its verdict body came from — the twin of
+    /// [`KindIndex::source_of`](crate::KindIndex::source_of), and for the same reason: a
+    /// site-keyed act must be able to ask whether the file that spoke is the one live at its line
+    /// (`28K` §2 rul-visibility-is-full-positional). Empty on a hand-built index ⇒ no opinion.
+    sources: BTreeMap<ProviderId, usize>,
 }
 
 impl VerdictIndex {
@@ -106,22 +111,55 @@ impl VerdictIndex {
     /// Key already-lifted [`VerdictSet`]s, for a driver that holds them for other reasons (the cli
     /// pre-lifts them for the probe ship-closure) — one lift, not two.
     ///
-    /// A provider authored by TWO files keeps the FIRST (source order), matching the
-    /// first-in-file-order rule `command_effect` applies to competing predict checks.
+    /// A provider authored by TWO files keeps the LAST — sh's last-definition-wins
+    /// (`28K` §1 rul-sh-loads-dorc-reads), the same rule `command_effect` applies to competing
+    /// predict checks. That answer is taken from the ONE seat, [`crate::live_source`], rather than
+    /// re-derived from iteration order: the two spellings agree today, and an
+    /// iteration-order-derived one would split the verdict's winner from the predict's SILENTLY —
+    /// the site would then measure one author's cell and key the record to another's
+    /// (`28M:fnd-verdict-resolution-duplicates-live-source`).
+    ///
+    /// The chosen source INDEX rides along, because a site-keyed consumer must be able to ask
+    /// whether the file that spoke here is the one live at its line (`28K` §2
+    /// rul-visibility-is-full-positional).
     #[must_use]
     pub fn from_sets(interner: &mut Interner, sets: &[VerdictSet]) -> Self {
         let mut by_provider = BTreeMap::new();
-        for set in sets {
+        let mut sources = BTreeMap::new();
+        // Keyed by the MAPPED name — the same key `command_effect` looks a command word up under,
+        // so two files spelling one provider differently still contest for one slot.
+        let mapped_of = |interner: &mut Interner, set: &VerdictSet| -> Vec<(ProviderId, Symbol)> {
             let providers: Vec<Symbol> = set.providers().collect();
-            for p in providers {
-                let mapped = map_provider_name(interner.resolve(p));
-                let key = ProviderId(interner.intern(&mapped));
-                if let Some(verdict) = set.get(p) {
-                    by_provider.entry(key).or_insert_with(|| verdict.clone());
+            providers
+                .into_iter()
+                .map(|p| {
+                    let mapped = map_provider_name(interner.resolve(p));
+                    (ProviderId(interner.intern(&mapped)), p)
+                })
+                .collect()
+        };
+        let keyed: Vec<Vec<(ProviderId, Symbol)>> =
+            sets.iter().map(|set| mapped_of(interner, set)).collect();
+        for (index, per_file) in keyed.iter().enumerate() {
+            for &(key, raw) in per_file {
+                let live = crate::live_source(keyed.len(), |i| {
+                    keyed
+                        .get(i)
+                        .is_some_and(|f| f.iter().any(|(k, _)| *k == key))
+                });
+                if live != Some(index) {
+                    continue;
+                }
+                if let Some(verdict) = sets.get(index).and_then(|set| set.get(raw)) {
+                    by_provider.insert(key, verdict.clone());
+                    sources.insert(key, index);
                 }
             }
         }
-        Self { by_provider }
+        Self {
+            by_provider,
+            sources,
+        }
     }
 
     /// Does this provider bear a verdict funcdef? The `24L` §2 auto-cell mint's own gate.
@@ -134,6 +172,13 @@ impl VerdictIndex {
     #[must_use]
     pub fn get(&self, provider: ProviderId) -> Option<&Predict> {
         self.by_provider.get(&provider)
+    }
+
+    /// Which source index this provider's verdict body came from, or `None` on a provenance-less
+    /// (hand-built) index — no opinion, never "any file will do".
+    #[must_use]
+    pub fn source_of(&self, provider: ProviderId) -> Option<usize> {
+        self.sources.get(&provider).copied()
     }
 
     /// The keyed providers, in deterministic order (`inv-determinism`).
@@ -177,6 +222,18 @@ impl VerdictSet {
     /// Providers with a lifted verdict funcdef, in deterministic order.
     pub fn providers(&self) -> impl Iterator<Item = Symbol> + '_ {
         self.converged.providers()
+    }
+
+    /// Withhold a contested family's verdict members ([`PredictSet::withdrawing`]).
+    #[must_use]
+    pub fn withdrawing(
+        self,
+        contested: &dorc_core::ContestedFamilies,
+        interner: &Interner,
+    ) -> Self {
+        Self {
+            converged: self.converged.withdrawing(contested, interner),
+        }
     }
 
     #[must_use]

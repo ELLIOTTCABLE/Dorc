@@ -149,7 +149,7 @@ type FootprintCoord = (dorc_plan::EntityCoord, Option<dorc_core::SelectorId>);
 type ResolvedFootprint = (
     Symbol,
     Vec<FootprintCoord>,
-    Option<(dorc_core::Span, dorc_core::OracleFileId)>,
+    Option<(dorc_core::Span, dorc_core::SourceFileId)>,
 );
 
 /// Resolve one wall-candidate site's authored `disturbs()` footprint (see the type doc above).
@@ -189,7 +189,7 @@ pub fn resolve_touches_footprint(
                         arm.map(|span| {
                             (
                                 span,
-                                dorc_core::OracleFileId(u32::try_from(index).unwrap_or(u32::MAX)),
+                                dorc_core::SourceFileId(u32::try_from(index).unwrap_or(u32::MAX)),
                             )
                         }),
                     )),
@@ -221,7 +221,7 @@ pub fn resolve_touches_footprint(
     Some((*provider, entity_coords, arm))
 }
 
-/// The `disturbs` funcdef's defining `(Span, OracleFileId)` for a provider (`tc-disturbs-span-
+/// The `disturbs` funcdef's defining `(Span, SourceFileId)` for a provider (`tc-disturbs-span-
 /// threading`; `27V:mech-minting-line-threading`) — a NAME-keyed lookup (no argv trace): the touches
 /// funcdef's `name_span` is the leverage point a survival's `claimed` link points at ("the line to
 /// widen"). The funcdef `name_span` is the honest coarsest-true span; per-arm precision is deferred.
@@ -230,7 +230,7 @@ fn touches_defining_span(
     provider: Symbol,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &Interner,
-) -> Option<(dorc_core::Span, dorc_core::OracleFileId)> {
+) -> Option<(dorc_core::Span, dorc_core::SourceFileId)> {
     use dorc_oracle::predict::map_provider_name;
     let want = map_provider_name(interner.resolve(provider));
     touches_sets.iter().enumerate().find_map(|(idx, set)| {
@@ -240,7 +240,7 @@ fn touches_defining_span(
             .map(|t| {
                 (
                     t.name_span,
-                    dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
+                    dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
                 )
             })
     })
@@ -353,13 +353,15 @@ pub fn merge_derived_footprints(
             // Legacy (unframed) fixtures carry no `deriv-end`; they are trusted-complete, so the
             // gate is framed-only (the framed round-trip + DST enforce the real contract).
             _ if !results.framed => {}
-            Some(&k) if k as usize == coord_strs.len() => {}
+            Some(close) if close.count as usize == coord_strs.len() => {}
             reason => {
                 diags.push(Diag::new(
                     DiagCode::DerivFamilyIncomplete(DerivFamilyIncomplete {
                         site: d.site.0,
                         reason: match reason {
-                            Some(&k) => format!("declared n={k}, received {}", coord_strs.len()),
+                            Some(close) => {
+                                format!("declared n={}, received {}", close.count, coord_strs.len())
+                            }
                             None => "no deriv-end close-record".to_string(),
                         },
                     }),
@@ -367,6 +369,24 @@ pub fn merge_derived_footprints(
                 ));
                 continue;
             }
+        }
+        // `28P:dec-whole-body-atomic-refusal` — the SECOND atomicity, invisible to the count above:
+        // `n` counts lines RECEIVED, so a body that died mid-survey closes self-consistently while
+        // its at-most claim is wrongly NARROW, and narrow spares MORE. Still open by design: a body
+        // that truncates and exits 0 (`ANALYZER-NEEDS:an-atmost-completion-signal`).
+        if results.framed
+            && let Some(close) = results.derivation_ends.get(&d.site)
+            && close.body_rc != 0
+        {
+            diags.push(Diag::new(
+                DiagCode::FootprintIncoherent(FootprintIncoherent {
+                    reason: FootprintIncoherentReason::EmittingBodyDiedMidSurvey {
+                        body_rc: close.body_rc,
+                    },
+                }),
+                span,
+            ));
+            continue;
         }
         let mut coords = Vec::with_capacity(coord_strs.len());
         let mut malformed = false;
@@ -504,6 +524,7 @@ pub fn build_wrapped_analysis(
     dial: dorc_core::EscalationDial,
     capability: dorc_core::Capability,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> WrappedAnalysis {
     use dorc_aid::narrative::EntryDegradeTag;
     use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
@@ -516,6 +537,9 @@ pub fn build_wrapped_analysis(
         enter_defs,
         tolerance,
     } = build_wrapper_index(oracle_refs, verdict_sets, interner);
+    // Built from the SAME slice the inner bodies come from, so the two cannot disagree.
+    let helper_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
+    let helpers = dorc_oracle::closure::HelperIndex::build(&helper_refs);
 
     let mut out = WrappedAnalysis {
         peeled: BTreeMap::new(),
@@ -573,12 +597,15 @@ pub fn build_wrapped_analysis(
         // shape `compile_probe` would ship, now composed inside the entry chain.
         let Some((inner_fn, inner_sh)) = resolve_inner_check(
             oracle_srcs,
+            &helpers,
             checks,
             verdict_sets,
             inner_word,
             inner_provider,
             &inner_operands,
             interner,
+            node,
+            live,
         ) else {
             // No inner check ⇒ run; the fact is still born in-context for classify.
             out.peeled.insert(
@@ -867,29 +894,48 @@ fn build_wrapper_index(
 /// body if the inner is a modeled command, else the auto-cell `__is_converged` verdict body (the
 /// markless shape). `None` ⇒ no inner check ⇒ the site can't be probed ⇒ runs. Returns
 /// `(mangled funcname, stripped funcdef)` — the funcname matches the strip's mangled name byte-for-byte.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the entry-composed ship is a SITE-keyed act like every other (`28K` §2), so it takes \
+              the site node and the positional oracle beside the already-threaded inner argv"
+)]
 fn resolve_inner_check(
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     inner_word: &str,
     inner_provider: Symbol,
     inner_operands: &[Symbol],
     interner: &Interner,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<(String, String)> {
     use dorc_oracle::predict::map_provider_name;
     let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
     if let Some(shipped) = ship_predict_body(
         oracle_srcs,
+        helpers,
         checks,
         interner,
         inner_provider,
         inner_operands,
+        node,
+        live,
     ) {
         return Some((format!("{seg}__predict"), shipped.sh));
     }
     // Entry-composition is out of both the tier-3 drain scope and the span-threading scope this
     // round: the composed body has no single defining funcdef to name, so its site stays span-less.
-    let shipped = ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
+    let shipped = ship_verdict_body(
+        oracle_srcs,
+        helpers,
+        verdict_sets,
+        interner,
+        inner_provider,
+        node,
+        live,
+    )?;
     Some((format!("{seg}__is_converged"), shipped.sh))
 }
 
@@ -954,6 +1000,7 @@ pub fn survival_diagnostics(
         dial,
         capability,
         &mut interner,
+        dorc_analysis::funcenv::LiveDefinitions::unsolved(),
     );
     let mut out = wrapped.hints;
 
@@ -973,6 +1020,9 @@ pub fn survival_diagnostics(
             &mut arena,
             &mut degrades,
             &mut verdict_lane,
+            // The HINT lane reads ambiently: narrating a shape whose license the positional
+            // regime withholds is the aid plane failing safe (`two-plane-aid-law`).
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
     let classes = classified.value;
     if !consented {
@@ -1139,22 +1189,38 @@ pub fn dangling_diagnostics(
 /// the footprint via [`dorc_plan::Footprint::add_reached`] (attributed to the reach-function KIND),
 /// flowing through the EXISTING `disjoint`/canonicalization path. `inv-referent-agnostic`: the engine
 /// interns the annotated kind (fixed at LIFT — the vocabulary fence) + the raw entities, never
-/// decoding them. `inv-kfail`: widening only ever HITs MORE (demotes toward run), the safe direction.
+/// decoding them.
+///
+/// THE ATOMICITY GATE (`28P:fnd-the-reach-lane-has-no-completeness-gate-at-all`, repaired here). The
+/// retired reading was that widening "only ever HITs MORE, the safe direction", so an arm that
+/// answered nothing was the honest un-expanded floor. Measured, that is false whenever the `disturbs`
+/// claim is not independently total — which is exactly when a kind-owner's `reaches_only` is needed:
+/// a missing expansion leaves the at-most footprint wrongly NARROW, and narrow SPARES MORE (a
+/// downstream converged site survived a running wall it should have collided with). So a DYNAMIC arm
+/// must now CLOSE, with its stream intact and its body finished; anything less refuses the whole
+/// footprint and the site walls total. The gate is framed-only, exactly as the deriv lane's is —
+/// legacy unframed fixtures carry no close records and are trusted-complete.
+///
+/// Diagnostics are the product alongside the `&mut` expansion, so a caller that drops them drops the
+/// only trace of a refusal.
+#[must_use]
 pub fn expand_footprints_via_reaches(
     footprints: &mut dorc_plan::TrustedFootprints,
     reaches: &KindReaches,
     reach_kinds: &BTreeSet<Symbol>,
     readback: &SiteResults,
+    node_spans: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::Span>,
     interner: &mut Interner,
-) {
+) -> Vec<Diag> {
     use dorc_oracle::reaches::{ArmOutcome, evaluate_reaches};
-    footprints.expand_reaches(|coord, origin| {
+    let mut diags = Vec::new();
+    footprints.expand_reaches(|node, coord, origin| {
         let kind_sym = coord.kind().0;
         if !reach_kinds.contains(&kind_sym) {
-            return Vec::new();
+            return dorc_plan::ReachExpansion::Expanded(Vec::new());
         }
         let Some((_, reaches_fn)) = reaches.get(kind_sym) else {
-            return Vec::new();
+            return dorc_plan::ReachExpansion::Expanded(Vec::new());
         };
         let entity_text = entity_text_of(coord, interner);
         let coord_label = render_coord(coord, interner);
@@ -1168,15 +1234,23 @@ pub fn expand_footprints_via_reaches(
                 ArmOutcome::Static(lines) => lines.clone(),
                 // DYNAMIC arms apply to AUTHORED coords only this pass (24G §3, resid-kindfn-derived).
                 ArmOutcome::Dynamic { .. } => {
-                    if matches!(origin, dorc_plan::FootprintOrigin::Authored) {
-                        readback
-                            .reaches
-                            .get(&(coord_label.clone(), arm.index))
-                            .cloned()
-                            .unwrap_or_default()
-                    } else {
-                        Vec::new()
+                    if !matches!(origin, dorc_plan::FootprintOrigin::Authored) {
+                        continue;
                     }
+                    let key = (coord_label.clone(), arm.index);
+                    let received = readback.reaches.get(&key).cloned().unwrap_or_default();
+                    if let Some(reason) =
+                        reach_arm_refusal(readback, &key, received.len(), arm.index)
+                    {
+                        if let Some(&span) = node_spans.get(&node) {
+                            diags.push(Diag::new(
+                                DiagCode::FootprintIncoherent(FootprintIncoherent { reason }),
+                                span,
+                            ));
+                        }
+                        return dorc_plan::ReachExpansion::Refused;
+                    }
+                    received
                 }
             };
             for e in entities {
@@ -1190,8 +1264,42 @@ pub fn expand_footprints_via_reaches(
                 out.push((ec, via));
             }
         }
-        out
+        dorc_plan::ReachExpansion::Expanded(out)
     });
+    diags
+}
+
+/// Why one dynamic `reaches()` arm's survey may not be trusted, or `None` if it closed cleanly. The
+/// two conditions are INDEPENDENT and both necessary, exactly as the deriv lane's are
+/// (`28P:dec-whole-body-atomic-refusal`): the count proves the record STREAM arrived whole, the
+/// `body-rc` proves the arm BODY finished. An unframed stream carries neither and is
+/// trusted-complete (the legacy authored fixtures).
+fn reach_arm_refusal(
+    readback: &SiteResults,
+    key: &(String, usize),
+    received: usize,
+    arm: usize,
+) -> Option<FootprintIncoherentReason> {
+    if !readback.framed {
+        return None;
+    }
+    match readback.reach_ends.get(key) {
+        None => Some(FootprintIncoherentReason::ReachArmNeverClosed { arm }),
+        Some(close) if close.count as usize != received => {
+            Some(FootprintIncoherentReason::ReachArmStreamCut {
+                arm,
+                declared: close.count,
+                received: u32::try_from(received).unwrap_or(u32::MAX),
+            })
+        }
+        Some(close) if close.body_rc != 0 => {
+            Some(FootprintIncoherentReason::ReachArmDiedMidSurvey {
+                arm,
+                body_rc: close.body_rc,
+            })
+        }
+        Some(_) => None,
+    }
 }
 
 /// The entity text of a coordinate for a reach/resolver invocation (an operand's text, or the empty

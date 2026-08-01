@@ -1,0 +1,97 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# contest28-unset-f-blesses-elision (`28K` §1) — CELL 2, the blessed twin of
+# contest28-cross-unit-shadow-runs. The same two definitions of one role function, with one
+# `unset -f` textually between them: the book's definition now lands in a FREE slot, so nothing
+# was silently overridden, the family keeps its licenses, and the converged site elides.
+#
+# That single line is the whole blessing vocabulary at v0 (`28K` §9 rat-blessing-vocabulary-v0).
+unset -f foobar__is_converged
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# site 1 = `foobar sync-certs …`, answered by the BOOK's definition (sh's last-wins, blessed by
+# the `unset -f` above it). rc 0 ⇒ converged ⇒ elides.
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock: the verdict body's `foobar status …` answers rc 0 (converged). The book's
+# `sync-certs` mutation is never invoked, because the site elides. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7ab822fd40ae5c1cb4d2fbd29e6e2993e56e39b9dafc3b56d9446e35716db544 sites=1 @@dorc@@\n'
+# site 1: dorc-auto:foobar@converged
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# contest28-unset-f-blesses-elision (`28K` §1) — CELL 2, the blessed twin of
+# contest28-cross-unit-shadow-runs. The same two definitions of one role function, with one
+# `unset -f` textually between them: the book's definition now lands in a FREE slot, so nothing
+# was silently overridden, the family keeps its licenses, and the converged site elides.
+#
+# That single line is the whole blessing vocabulary at v0 (`28K` §9 rat-blessing-vocabulary-v0).
+unset -f foobar__is_converged
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+# foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)

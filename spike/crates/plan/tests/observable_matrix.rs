@@ -114,7 +114,7 @@ fn ship_corpus(
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(dorc_plan::ShippedCheck::predict(
                     strip_predict(CORPUS_PREDICT_SRC, check, interner),
-                    Some((check.name_span, dorc_core::OracleFileId(0))),
+                    Some((check.name_span, dorc_core::SourceFileId(0))),
                 ));
             }
         }
@@ -221,9 +221,16 @@ fn vouch_all(
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
 ) -> dorc_plan::Vouches {
-    dorc_plan::build_vouches(&[CORPUS_VERDICT_SRC], classes, value, interner)
-        .0
-        .value
+    dorc_plan::build_vouches(
+        &[CORPUS_VERDICT_SRC],
+        &dorc_oracle::closure::HelperIndex::default(),
+        classes,
+        value,
+        interner,
+        dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+    )
+    .0
+    .value
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a value-
@@ -1496,7 +1503,7 @@ fn inline_call_emits_site_n_m_probe_records() {
         &classes,
         &std::collections::BTreeMap::new(),
         &dorc_plan::ConnectedPipes::default(),
-        |p, a| ship_corpus(&checks, &i, p, a),
+        |_, p, a| ship_corpus(&checks, &i, p, a),
         |_, _, _| None,
         |_| false,
     );
@@ -1557,7 +1564,7 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &classes,
         &std::collections::BTreeMap::new(),
         &dorc_plan::ConnectedPipes::default(),
-        |_p, _a| None,
+        |_, _p, _a| None,
         |_, _, _| None,
         |_| false,
     );

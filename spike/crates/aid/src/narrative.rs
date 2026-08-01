@@ -50,7 +50,7 @@
 //! Nothing in THIS module iterates a fixpoint, so its own `Eq` is free.
 
 use dorc_core::SiteId;
-use dorc_core::{Channel, JOIN_PARENT_CAP, LeafId, OracleFileId, OutBytes, Span};
+use dorc_core::{Channel, JOIN_PARENT_CAP, LeafId, OutBytes, SourceFileId, Span};
 
 /// The typed speech-act kind of a rendered link (`27V:mech-trust-tier-typed`;
 /// `AID-NEEDS:law-trust-tier-is-syntax`). Rendered UNIFORMLY by arrangement code (d4) — prose
@@ -337,7 +337,18 @@ pub struct AuthoredReason {
     /// Which oracle file `arm` indexes into (`tc-oracle-file-identity`): the arm span crosses out
     /// of its owning file's context to the render, so it carries the same file id the vouch span
     /// does — a bare span is ambiguous once >1 oracle is loaded.
-    pub arm_file: OracleFileId,
+    pub arm_file: SourceFileId,
+}
+
+/// One role-function DEFINITION, as a narrative operand: which input file authored it and where
+/// its name token sits (`28K` §2a Provenance — a bare [`Span`] is ambiguous once >1 file is
+/// loaded). Pure `Copy` scalars, per `operands-are-pure-and-capped`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DefinitionSite {
+    /// Which input the definition was authored in.
+    pub file: SourceFileId,
+    /// The function-name span within that input.
+    pub name: MintSpan,
 }
 
 /// Which channel-coverage failure formed a wall (`rul-only-oracle-bytes-ship` per-channel
@@ -431,7 +442,7 @@ pub enum CollapseKind {
     VerdictDecline {
         site: SiteId,
         arm: MintSpan,
-        arm_file: OracleFileId,
+        arm_file: SourceFileId,
         gate: DeclineGate,
         authored_reason: Option<AuthoredReason>,
     },
@@ -464,6 +475,14 @@ pub enum CollapseKind {
     /// (`law-collapse-mints-narrative`), even though the path is unreachable while erasure stays
     /// monotone. Carries how many rounds ran and how many erasures were thrown away.
     FixpointCapDegrade { rounds: u32, discarded: u32 },
+    /// A role FAMILY's licenses were withheld because one unit's definition provably shadowed a
+    /// DIFFERENT unit's, unblessed by an intervening `unset -f` (`28K` §1
+    /// `rul-silent-shadowing-refuses`) ⇒ every site of that family runs. Carries BOTH definitions,
+    /// because the whole repair is choosing between them: neither one alone names the conflict.
+    RoleFamilyShadowed {
+        prior: DefinitionSite,
+        shadowing: DefinitionSite,
+    },
     /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
 }
@@ -496,6 +515,7 @@ impl CollapseKind {
             CollapseKind::Demotion { .. } => "Demotion",
             CollapseKind::RenderRefusal { .. } => "RenderRefusal",
             CollapseKind::FixpointCapDegrade { .. } => "FixpointCapDegrade",
+            CollapseKind::RoleFamilyShadowed { .. } => "RoleFamilyShadowed",
             CollapseKind::Cancellation(_) => "Cancellation",
         }
     }
@@ -588,7 +608,7 @@ mod tests {
 
     /// A fixed non-zero oracle-file id for the tests (the id disambiguates >1 loaded oracle; a
     /// single-file test just needs a stable value).
-    const F: OracleFileId = OracleFileId(1);
+    const F: SourceFileId = SourceFileId(1);
 
     fn span(lo: u32, hi: u32) -> Span {
         Span::new(BytePos(lo), BytePos(hi))

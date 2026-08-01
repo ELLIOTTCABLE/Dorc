@@ -55,6 +55,38 @@ pub const RESERVED_ROLE_SUFFIXES: &[&str] = &[
     "__state_stored_only_in",
 ];
 
+/// Split a function name into `(family base, role suffix)` iff it names a role member.
+///
+/// The ONE reader of [`RESERVED_ROLE_SUFFIXES`] outside the lints, because two things now key on
+/// it: the squat lint below, and `28K` §1's cross-unit shadow refusal, whose withdrawal is
+/// FAMILY-wide — one member contested withholds every member, so the base name is the license key
+/// (`271:rul-family`: membership is by name-construction only, never file or author).
+#[must_use]
+pub fn role_family(name: &str) -> Option<(&str, &'static str)> {
+    RESERVED_ROLE_SUFFIXES.iter().find_map(|suffix| {
+        name.strip_suffix(*suffix)
+            .filter(|base| !base.is_empty())
+            .map(|base| (base, *suffix))
+    })
+}
+
+/// Whether a role suffix names a KIND-OWNER member — the vocabulary tier.
+///
+/// The three kind-keyed roles (`kind__resolve`, `kind__disturbance_reaches_only`,
+/// `kind__state_stored_only_in`) canonicalize entities and type emissions for OTHER authors' sites,
+/// so they are single-occupancy and load from the ambient prefix only; the command-keyed trio
+/// (`predict` / `disturbs` / `is_converged`) answer their own sites and are positional
+/// (`28K` §2 rul-visibility-is-full-positional, `28M` §5.3). Keyed on the suffix because that IS
+/// the species distinction — a family is COMMAND or KIND by name-construction alone
+/// (`271:rul-family`).
+#[must_use]
+pub fn is_vocabulary_role(suffix: &str) -> bool {
+    matches!(
+        suffix,
+        "__resolve" | "__state_stored_only_in" | crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX
+    )
+}
+
 /// Why a munged name is not a legal POSIX NAME (`XBD §3.216`: a NAME is `[A-Za-z_][A-Za-z0-9_]*`
 /// — character-class + no-leading-digit, no length bound). The `ca-strict-set` posture (24M §4b):
 /// dash/busybox hold the strict letters/digits/underscore set, so we stay strict for cross-shell
@@ -269,16 +301,13 @@ pub fn lint_book_reserved_names(ast: &dorc_syntax::Ast) -> Vec<Diag> {
         else {
             continue;
         };
-        let Some(role) = RESERVED_ROLE_SUFFIXES.iter().find(|suffix| {
-            name.strip_suffix(**suffix)
-                .is_some_and(|base| !base.is_empty())
-        }) else {
+        let Some((_, role)) = role_family(name) else {
             continue;
         };
         diags.push(Diag::new(
             DiagCode::ReservedNamespaceSquat(ReservedNamespaceSquat {
                 name: name.clone(),
-                role: (*role).to_owned(),
+                role: role.to_owned(),
             }),
             *name_span,
         ));

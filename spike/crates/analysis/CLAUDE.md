@@ -37,6 +37,87 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `plan` honors — no in-loop license).
 - **pure-kernel** — ordered collections only; no clock/RNG/fs/net, directly or
   transitively; that purity is what lets DST run with no DI ceremony.
+- **funcenv-reads-source-literal-plane-only** (`28K` §2) — the function-environment
+  domain consumes resolved values ONLY through `funcenv::SourceLiteralPlane`, which
+  admits a word solely when it is a literal graded `ValueGrade::ProgramText`. A
+  probe-provenance value may never site a load, resolve a `.`/`source` target, or
+  answer an env construct: which oracle answers a site would then depend on what a
+  HOST said, making oracle loading world-dependent and the plan unreproducible from
+  its inputs. Today the restriction is trivially total (every non-⊤ word is
+  `ProgramText` at this stage) — which is precisely why the door is closed NOW,
+  ahead of `core`'s `seam-re-bind` folding captured values back into the value plane.
+  Never widen the accessor; never read `ValueFlow` directly from that domain.
+- **funcenv-is-a-pre-pass-not-a-round** (`28K` §2; `cli/CLAUDE.md`
+  the-fixpoint-owns-the-rounds-and-builds-nothing-else) — env resolution is computed
+  ONCE from the ORIGIN model and joins the frozen set; the validity fixpoint's ratchet
+  erases EFFECTS and holds NO authority over BINDINGS. A records-proven-dead branch
+  containing a funcdef must never re-run resolution, and a license once withheld is
+  never regained by a later round. Enforced structurally at both ends, lexically:
+  `funcenv`'s own `this_module_names_no_fixpoint_reachable_type` (it cannot import a
+  records/effect/erasure/verdict type) and the cli's
+  `the_fixpoint_loop_body_calls_no_funcenv_entry_point`. Sh-dead definitions
+  (overridden unconditionals, unset names) are BINDING facts, value-flow-tier: they
+  never enter the erasure ledger, never spell `CommandEffect::Pure`, and never become
+  plan-line outcomes — a dead definition's book text ships verbatim and executes.
+- **shadow-refusal-is-provable-at-both-ends** (`28K` §1 `rul-silent-shadowing-refuses`) —
+  `funcenv::contests` complains ONLY where both halves are proven: the WRITE side, that
+  the INNERMOST frame held a DIFFERENT unit's `Defined` (an outer-frame binding is a
+  bounded subshell shadow — the sanctioned regional-preference idiom — and `Undefined` is
+  the `unset -f` blessing); and the READ side, that the environment can name the winner at
+  the unit's exit (a conditional definition joins ⊤ there and provably shadowed nothing).
+  Never guard-SHAPE recognition around load sites (`28K` §2 `rul-conflict-pass-is-semantic`);
+  a same-FILE redefinition belongs to the pre-existing `216` e-1 refusal, not here.
+- **visibility-is-full-positional** (`28K` §2, ACKED spike-tier 2026-07-31) — every SITE-KEYED
+  consuming act (verdict, predict-at-site, probe-ship, vouch, guard eligibility) answers only when
+  the definition it would answer FROM is the one live AT the site, read through
+  `funcenv::LiveDefinitions`. A definition below a site licenses NOTHING at it. The mechanism is
+  AGREEMENT, never re-resolution: the whole-unit winner is computed as before and the act WITHHOLDS
+  when the site disagrees, because resolving a site's identity through one file's argparse while
+  reading another file's cells measures one cell and keys the record to another — pope-sin tier
+  (`271:rul-sin-ordering`), and no golden can see it. `KindIndex`/`VerdictIndex` carry `source_of`
+  so that agreement is CHECKED rather than assumed. Two escapes exist and both are named: a name the
+  `DefinitionTable` does not know is un-gated (the environment holds no opinion; the containment is
+  `28O:fnd-two-parsers-disagree-on-funcdefs`), and `LiveDefinitions::unsolved()` is the explicit
+  no-environment posture for hand-built indices and the instrument/hint lanes. Never re-derive
+  positionality from spans or argv — it is a fact about the CFG node.
+- **vocabulary-acts-stay-ambient** (`28M` §5.3) — the kind-owner trio (`__resolve`,
+  `__disturbance_reaches_only`, `__state_stored_only_in`) is the ONE exception: single-occupancy,
+  loaded from the ambient prefix, never routed through the positional oracle. They canonicalize and
+  type for OTHER authors' sites, so answering differently at different lines of somebody's book is
+  incoherent. The species test is `oracle::reserved::is_vocabulary_role`, keyed on the SUFFIX
+  because that IS the distinction (`271:rul-family`); an in-book one refuses with a notice.
+- **top-licenses-nothing** (rider 1; `28O:res-polyfill-binding-tops-pending-fold`) —
+  `funcenv::unprovable` names every role name whose exit binding is ⊤, and the driver
+  withholds those families SILENTLY (⊤ never complains). Not decoration: it is the entire
+  reason the refusal may under-fire soundly, since an uncaught shadow can then grant
+  nothing either. Anything that lets a ⊤ binding license — a probe ship, a vouch, a guard,
+  an elide — breaks the soundness argument, not merely a test.
+- **the-fold-decides-conditions-never-shapes** (`28M` §9) — `funcenv::analyze` is pessimistic
+  conditional-constant-propagation over this domain: solve, decide the conditions the solved
+  environment makes decidable, mask the arms those decisions prove dead (`cfg::Branch`,
+  recorded by the lowering that wired the arm edges — never re-derived from adjacency), re-solve
+  under a capped, MONOTONE mask. The decidable set is `dec-decidable-set-v0`, CLOSED and growing
+  by NAME only: `command -v <literal name the unit DEFINES>` (the universe restriction is what
+  keeps an ordinary host PATH probe out) and `[ -f <path the controller resolved as loadable> ]`,
+  which decides TRUE only. Keyed on condition DECIDABILITY, never guard SHAPE
+  (`28K:rul-conflict-pass-is-semantic`). Because `funcenv::never_live` subtracts EXACTLY
+  (a wrong subtraction SHIFTS a winner — grants, never merely loses), any widening of the
+  decidable set is a WINNER-SHIFTING licensure surface: license-review-tier, never a
+  convenience patch (`28P:adj-never-live-exactness-accepted`). Two riders carry the
+  correctness: an UNREACHED node's
+  transfer produces ⊥, not ⊤, or a masked-dead region still poisons the join it never reaches;
+  and a decision, once taken, is stable under further masking (masking only removes paths, so a
+  `Defined(d)` stays `d` or becomes unreached), which is what makes every intermediate state
+  independently sound and running out of rounds a precision loss only.
+- **never-live-subtracts-from-the-whole-unit-answer** (`28M` §9) — the fold reaches the BINDING;
+  `funcenv::never_live` is what carries it to the LICENSE. `dorc_oracle::live_source` answers
+  the whole-unit winner by taking the last file that DECLARES the role, which counts text and
+  not bindings — so a guard the fold proved dead still won that answer by being last, and the
+  site-keyed agreement gate then withheld: the same silent wall, one seat along. The cli
+  subtracts these `(role name, file)` pairs per file, beside the contested withdrawal, so every
+  seat resolves over one population. This one is EXACT, not conservative: removal SHIFTS the
+  winner rather than withholding, so it must be right — and it is, because a definition no
+  program point binds is one no execution can call. Never widen it to "probably dead".
 
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 

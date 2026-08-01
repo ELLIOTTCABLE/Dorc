@@ -132,6 +132,60 @@ pub enum CfgNodeKind {
 // `StatusIterated` (a `while`/`until` condition — the per-pass SEQUENCE no single rc
 // reproduces, an unconditional block). See `core::Channel`.
 
+/// A two-armed control-flow decision, recorded by the builder that wired it: which node's exit
+/// status decides it, which condition text produced that status, and which arena ranges each
+/// answer makes live.
+///
+/// Recorded because the successor list alone cannot say which edge is the `then` arm and which
+/// the fall-through, and a consumer that guessed from adjacency order would be reading an
+/// implementation detail of the lowering. The one consumer today is
+/// [`funcenv`](crate::funcenv)'s decidable-condition fold (`28M` §9), which masks the edge a
+/// decided condition proves dead; it needs the arms named by the code that built them, exactly
+/// as `visibility-is-full-positional` needs position named by the CFG rather than re-derived.
+///
+/// Arms are half-open arena ranges (the `clear_fallible_range` / `mark_consumed_range` idiom):
+/// every node a region's lowering minted is contiguous. An arm with no region of its own is
+/// EMPTY and its edge runs straight to [`join`](Branch::join) — `if c; then …; fi` has no
+/// failure region, `a || b` no success region.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Branch {
+    /// The condition's AST — a consumer decides the condition by reading this, never the arms.
+    pub cond: AstId,
+    /// The node whose exit status decides the branch (the condition region's exit).
+    pub decided_at: CfgNodeId,
+    /// Node ids reached only when the condition SUCCEEDED (rc 0). Empty ⇒ the success edge is
+    /// `decided_at → join`.
+    pub on_success: std::ops::Range<u32>,
+    /// Node ids reached only when the condition FAILED. Empty ⇒ the failure edge is
+    /// `decided_at → join`.
+    pub on_failure: std::ops::Range<u32>,
+    /// The join both arms converge on — the target of whichever arm has no region.
+    pub join: CfgNodeId,
+}
+
+impl Branch {
+    /// The successors of [`decided_at`](Branch::decided_at) that a condition answering
+    /// `condition_succeeded` proves unreachable.
+    ///
+    /// Named explicitly rather than by set-complement: an edge in NEITHER arm (an errexit
+    /// failure-edge, say) is left alone, because masking an edge we did not wire is how a fold
+    /// turns into a wrong license.
+    #[must_use]
+    pub fn dead_successors(&self, cfg: &Cfg, condition_succeeded: bool) -> Vec<CfgNodeId> {
+        let dead = if condition_succeeded {
+            &self.on_failure
+        } else {
+            &self.on_success
+        };
+        cfg.succ_ids(self.decided_at)
+            .filter(|w| {
+                u32::try_from(w.index()).is_ok_and(|n| dead.contains(&n))
+                    || (dead.is_empty() && *w == self.join)
+            })
+            .collect()
+    }
+}
+
 /// One CFG node: its role plus the [`AstId`] it derives from (provenance). For
 /// synthetic nodes (`Entry`/`Exit`/`Merge`/scope) the `ast` points at the nearest
 /// meaningful construct (the enclosing compound, or the script root) so a
@@ -188,6 +242,8 @@ pub struct Cfg {
     /// set means "visited, nothing consumes it" (provably quiet), never "not
     /// examined". The phased caller wraps it `May<_>` and collapses it.
     consumed: Vec<Powerset<Channel>>,
+    /// Every two-armed decision the lowering wired, in creation order ([`Branch`]).
+    branches: Vec<Branch>,
 }
 
 impl Cfg {
@@ -286,6 +342,14 @@ impl Cfg {
     #[must_use]
     pub fn consumed_observables(&self, id: CfgNodeId) -> &Powerset<Channel> {
         &self.consumed[id.index()]
+    }
+
+    /// Every two-armed decision this graph wired ([`Branch`]), in lowering order
+    /// (`inv-determinism`). `if`/`elif` chains and `&&`/`||` both appear; `case` arms and loop
+    /// conditions do not — neither is a two-armed rc decision.
+    #[must_use]
+    pub fn branches(&self) -> &[Branch] {
+        &self.branches
     }
 }
 
@@ -458,6 +522,10 @@ struct Builder<'a> {
     /// same arena-range trick `expansion_internal` uses). Emitted on the [`Cfg`]
     /// un-collapsed (`inv-superposition`).
     consumed: Vec<Powerset<Channel>>,
+    /// Every two-armed decision wired so far ([`Branch`]), emitted on the [`Cfg`] as
+    /// [`Cfg::branches`]. Recorded by the lowering that added the arm edges, because nothing
+    /// downstream can tell a `then` edge from a fall-through by adjacency alone.
+    branches: Vec<Branch>,
     /// `ScopeExit` node → its matching `ScopeEnter` (find-4): the errexit forward
     /// pass restores the *pre-subshell* state at the exit, so a `set -e`/`set +e`
     /// toggle inside `( )`/`$( )` never leaks out. Both directions are kept so the
@@ -509,6 +577,7 @@ impl<'a> Builder<'a> {
             spliced_node_total: 0,
             call_body_sites: BTreeMap::new(),
             consumed: Vec::new(),
+            branches: Vec::new(),
             exit_to_enter: BTreeMap::new(),
             enter_to_exit: BTreeMap::new(),
             while_exit_to_body: BTreeMap::new(),
@@ -1071,13 +1140,20 @@ impl<'a> Builder<'a> {
             &Powerset::singleton(left_status),
         );
 
+        let right_lo = self.nodes.len();
         let right_exit = self.lower_node(right, left_exit);
+        let right_hi = self.nodes.len();
         // Hang the join's provenance on the left operand (a reasonable locator).
         let merge = self.fresh(left, CfgNodeKind::Merge);
         // Short-circuit edge: left may skip right and go straight to the merge.
         self.add_edge(left_exit, merge);
         // Fall-through edge: right's exit reaches the merge.
         self.add_edge(right_exit, merge);
+        let (on_success, on_failure) = match op {
+            dorc_syntax::ast::AndOrOp::And => (right_lo..right_hi, right_hi..right_hi),
+            dorc_syntax::ast::AndOrOp::Or => (right_hi..right_hi, right_lo..right_hi),
+        };
+        self.record_branch(left, left_exit, on_success, on_failure, merge);
         merge
     }
 
@@ -1122,10 +1198,13 @@ impl<'a> Builder<'a> {
             self.lower_condition_region(cond, entry_pred, Some(Channel::StatusRelaxable));
 
         // Success path: then_body.
+        let then_lo = self.nodes.len();
         let then_exit = self.lower_node(then_body, cond_exit);
         self.add_edge(then_exit, merge);
+        let then_hi = self.nodes.len();
 
-        // Failure path: the next elif, else, or (no else) straight to the merge.
+        // Failure path: the next elif, else, or (no else) straight to the merge — and the whole
+        // remainder is ONE failure arm, elif conditions included.
         match elifs.split_first() {
             Some((head, rest)) => {
                 self.lower_if_chain(head.cond, head.body, rest, else_body, cond_exit, merge);
@@ -1141,6 +1220,42 @@ impl<'a> Builder<'a> {
                 }
             },
         }
+        self.record_branch(
+            cond,
+            cond_exit,
+            then_lo..then_hi,
+            then_hi..self.nodes.len(),
+            merge,
+        );
+    }
+
+    /// Record a two-armed decision for [`Cfg::branches`], skipping the degenerate shapes no
+    /// consumer can act on: a decision whose arms are BOTH empty (both edges run to the join, so
+    /// deciding it removes nothing), and any range that overflowed the id width.
+    fn record_branch(
+        &mut self,
+        cond: AstId,
+        decided_at: CfgNodeId,
+        on_success: std::ops::Range<usize>,
+        on_failure: std::ops::Range<usize>,
+        join: CfgNodeId,
+    ) {
+        let narrow = |r: std::ops::Range<usize>| -> Option<std::ops::Range<u32>> {
+            Some(u32::try_from(r.start).ok()?..u32::try_from(r.end).ok()?)
+        };
+        let (Some(on_success), Some(on_failure)) = (narrow(on_success), narrow(on_failure)) else {
+            return;
+        };
+        if on_success.is_empty() && on_failure.is_empty() {
+            return;
+        }
+        self.branches.push(Branch {
+            cond,
+            decided_at,
+            on_success,
+            on_failure,
+            join,
+        });
     }
 
     /// `case word in (pat) body ;; … esac`. The scrutinee is evaluated (its word
@@ -1916,6 +2031,7 @@ impl<'a> Builder<'a> {
             spliced_internal: self.spliced_internal,
             call_body_sites: self.call_body_sites,
             consumed: self.consumed,
+            branches: self.branches,
         };
         debug_assert!(
             cfg_is_consistent(&cfg),

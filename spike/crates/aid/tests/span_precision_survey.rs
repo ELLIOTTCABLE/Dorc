@@ -7,7 +7,7 @@
 //!
 //! Columns: code · current primary-span granularity · is a tighter honest span cheaply available at
 //! the emit site? · verdict. Pins: `never-synthesize-a-span` (no code ever gets a fabricated span to
-//! satisfy a count) · `law-lineno-identity` (`OracleFileId` disambiguates which file a span indexes)
+//! satisfy a count) · `law-lineno-identity` (`SourceFileId` disambiguates which file a span indexes)
 //! · "coarsest-true beats precise-wrong" (a whole-mark/whole-command span that is CERTAINLY right
 //! outranks a sub-token span that requires fragile source re-derivation).
 //!
@@ -59,10 +59,10 @@
 //! | touches-escalated | book command span | `d.node` → `ast.node(cfg.node(node).ast).span` in `merge_derived_footprints` |
 //! | deriv-family-incomplete | book command span | same (`d.node`) |
 //! | footprint-incoherent (malformed-derived site) | book command span | same (`d.node`); now matches its own-coord canary sibling, which was already spanned |
-//! | resolver-conflict | oracle funcdef `name_span` (first declaring file) + `OracleFileId` | `ResolverSet::get(kind).name_span`; report bucketed per oracle file |
-//! | resolver-provider-collision | oracle funcdef `name_span` + `OracleFileId` | same |
-//! | reaches-conflict | oracle funcdef `name_span` (first declaring file) + `OracleFileId` | `ReachesSet::get(kind).name_span`; report bucketed per oracle file |
-//! | reaches-provider-collision | oracle funcdef `name_span` + `OracleFileId` | same |
+//! | resolver-conflict | oracle funcdef `name_span` (first declaring file) + `SourceFileId` | `ResolverSet::get(kind).name_span`; report bucketed per oracle file |
+//! | resolver-provider-collision | oracle funcdef `name_span` + `SourceFileId` | same |
+//! | reaches-conflict | oracle funcdef `name_span` (first declaring file) + `SourceFileId` | `ReachesSet::get(kind).name_span`; report bucketed per oracle file |
+//! | reaches-provider-collision | oracle funcdef `name_span` + `SourceFileId` | same |
 //!
 //! # C. Spanless codes that STAY spanless (never synthesize)
 //!

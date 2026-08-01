@@ -79,6 +79,52 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (erasure is monotone, bound = site count) and DISCARDS the ledger to re-derive from origin
   rather than ship a partial fixpoint, so the degraded answer is exactly the pre-W-C one —
   `solve`'s own unenforceable-termination bargain, `debug_assert`-loud in dev and under DST.
+- **the-frozen-set-includes-the-function-environment** (`28K` §2) — env resolutions (both
+  visibility regimes) and the contested-family verdicts join the FROZEN set named above
+  (book/CFG/value-flow/admitted-records/vouches/probe): computed ONCE from the origin model,
+  before the loop. The fixpoint's ratchet erases EFFECTS; it has no authority over BINDINGS.
+  Named forbidden scenario: a records-proven-dead branch containing a funcdef must NOT re-run
+  env resolution and un-contest a family mid-run — a license once withheld is never regained by
+  a later round. Enforced lexically at both ends (`the_fixpoint_loop_body_calls_no_funcenv_entry_point`
+  here; `dorc_analysis::funcenv`'s `this_module_names_no_fixpoint_reachable_type` there), because
+  the property is "the loop body cannot even spell it", which no type bound expresses.
+- **the-book-is-a-definition-source** (`28K` §2a in-book lift) — the predict/verdict LIFT and
+  SHIP lanes consume the SOURCE-wide vectors (`source_srcs`/`source_refs`/`source_paths` from
+  `source_table`), never the oracle-only ones: a book's `foobar__is_converged` is an ordinary
+  oracle recognized by name alone (USER_STORY stage 3), and those lanes zip per-file lifted sets
+  POSITIONALLY — handing them a shorter `oracle_srcs` truncates the book's definitions away
+  SILENTLY rather than failing, which is how the first cut of this shipped the wrong body.
+  Oracle-only is still right for the whylog/attempt-scope record of what was LOADED; the
+  survival lanes (`touches`, kind resolvers/reaches) stay oracle-only coherently among
+  themselves, and widening them is its own dispatch.
+- **one-definition-table-two-drivers** (`28K` §2) — `world::definition_table` is the ONE reader of
+  role funcdefs, and the binary and `WhyWorld` both call it: a why report answering from a different
+  function environment than the run would be a decoration, which is the failure
+  `lib-target-is-a-loom-seam` exists to prevent. `WhyWorld` sites the book's `SourceFileId` one PAST
+  the oracle vector it lifts, because that seat genuinely does not feed the book to the lifts
+  (bitem7's rename rider owns the gap) — so a site a book definition owns WITHHOLDS there rather
+  than answering from an oracle a shell would no longer call. Widening that seat to the source-wide
+  vectors is its own dispatch; siting the book id honestly is not.
+- **withdrawal-is-applied-once-never-consulted** (`28K` §1) — a contested family is removed from
+  the lifted sets (`idx`/`checks`/`verdict_sets`) at THIS edge, before `classify` sees them, so
+  the family is indistinguishable from one nobody described and no downstream seat has to
+  remember to ask. Its sites fall to `Opaque` ⇒ `MustRun` ⇒ no vouch candidate, no probe ship,
+  no license — the `erasure-is-applied-once-never-consulted` shape. Never re-plumb this as a
+  per-seat predicate: a flag every present and future consumer must remember is the surface
+  that rule exists to refuse.
+- **one-helper-index-two-lanes** (`28K` §4) — `dorc_oracle::closure::HelperIndex` is built ONCE at
+  this edge, from the same source vector the bodies are sliced out of, and threaded into BOTH the
+  guard lane (`build_vouches`) and the probe's three ship seats (`ship_predict_body` /
+  `ship_verdict_body` / `ship_predict_stage`). Building it per site would re-parse every source per
+  site and, worse, leave two copies of the resolution rule to drift — the failure
+  `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` records for the role lane. The
+  SURVIVAL/kind lanes (`touches`, resolvers, reaches) still ship closure-less bodies; widening them
+  is its own dispatch, exactly as widening them to the source-wide vectors is.
+- **helper-conflicts-report-at-the-load-edge** — `helper_conflict_diagnostics` mints one
+  `helper-declaration-contested` per NAME, spanned at the second declaration, whether or not any
+  pinned definition reaches it: loading both sources already rebound the name for every caller. A
+  per-definition report would be a correlated cascade pointing N-1 authors at somebody else's file
+  (`28O:dec-one-diagnostic-per-file-not-per-item`).
 - **speculate-and-intercept** — the probe model resolves probe-gated branches by
   running the read-only check for real (oracles intercept; not Ansible
   check-mode blindness).

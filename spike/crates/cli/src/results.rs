@@ -198,13 +198,13 @@ pub struct SiteResults {
     /// collides with a site's `effect=`/`rc=` record — `inv-site-keyed-results`). Read back into a
     /// `Derived` [`dorc_plan::Footprint`] before the survival walk (24E §2 corr-§2).
     pub derivations: BTreeMap<dorc_plan::LeafId, Vec<String>>,
-    /// The DERIV FAMILY end-records (`262` §2 / `26A` stop-1): per escalated wall-site, the `n=<K>`
-    /// declared by its `deriv-end <leafid> n=<K>` close-record. THE SAFETY INVERSION: a deriv
-    /// footprint is an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the
-    /// under-execution direction). The consumer ([`merge_derived_footprints`]) refuses a family
-    /// whose received coord count ≠ this `K` (or that has no end-record) ⇒ wall-total. Absent key
+    /// The DERIV FAMILY end-records (`262` §2 / `26A` stop-1): per escalated wall-site, its
+    /// `deriv-end <leafid> n=<K> body-rc=<R>` close-record. THE SAFETY INVERSION: a deriv footprint
+    /// is an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the under-execution
+    /// direction). The consumer ([`merge_derived_footprints`]) refuses a family whose received coord
+    /// count ≠ `K`, whose `R` is non-zero, or that has no end-record at all ⇒ wall-total. Absent key
     /// ⇒ the family never closed ⇒ refused.
-    pub derivation_ends: BTreeMap<dorc_plan::LeafId, u32>,
+    pub derivation_ends: BTreeMap<dorc_plan::LeafId, EmissionClose>,
     /// The RESOLVER canonicalization lane (24F §3): per `kind:entity` coordinate label, the readback
     /// of running its `<kind>.resolve()` host-side — a [`ResolvOutcome`]. Demuxed SEPARATELY from the
     /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
@@ -216,6 +216,16 @@ pub struct SiteResults {
     /// [`dorc_plan::Footprint::add_reached`]) before the survival walk. NB the arm index re-keys each
     /// line back to the arm's LIFTED kind (the vocabulary fence — the kind is never host-minted).
     pub reaches: BTreeMap<(String, usize), Vec<String>>,
+    /// The REACH ARM close-records (`28P` item0's mechanism at its second consumer): per
+    /// `(coordinate label, arm index)`, that arm's `reach-end <coord> arm=<n> n=<K> body-rc=<R>`.
+    /// SAME safety inversion as the deriv close, arrived at from the opposite direction: a
+    /// `disturbance_reaches_only` arm WIDENS an at-most footprint, so a cut or aborted arm leaves
+    /// it wrongly NARROW, and narrow SPARES MORE. [`expand_footprints_via_reaches`] refuses the
+    /// whole FOOTPRINT (the site walls total) when an arm's received count ≠ `K`, its `R` is
+    /// non-zero, or it never closed at all.
+    ///
+    /// [`expand_footprints_via_reaches`]: crate::survival::expand_footprints_via_reaches
+    pub reach_ends: BTreeMap<(String, usize), EmissionClose>,
     /// The REPORT lane (`27W` §2 tier-3): the `<verb> <class> <tail>` emissions an oracle wrote on
     /// its declining paths, re-keyed to their emitting site by the probe scaffold (`report site=<key>
     /// …`). Decision-inert (`two-plane-aid-law`): classes route AID only, never the license plane.
@@ -252,6 +262,76 @@ pub struct ReportRecord {
 /// tail longer than this is truncated with an ellipsis; a curious admin still sees the head at max
 /// verbosity, and the full text never reaches a decision (decision-inert).
 pub const REPORT_RAW_CAP: usize = 200;
+
+/// One host-run emission family's close-record — `deriv-end` for an escalated site's derivation
+/// (`262` §2 / `26A` stop-1) and `reach-end` for one dynamic `disturbance_reaches_only` arm. ONE
+/// type for both because they answer one question in one grammar: the two lanes write the same
+/// kind of open-ended, complete-by-contract survey, and forking the close would let the two gates
+/// drift apart.
+///
+/// The two fields answer two INDEPENDENT questions, and conflating them was the hole
+/// (`28P:fnd-the-count-gate-cannot-see-a-body-death`): `count` proves the RECORD STREAM arrived
+/// whole, while `body_rc` proves the EMITTING BODY ran to completion. A body that emits three
+/// coordinates and then dies on an unbound helper closes at `n=3` — self-consistent transport
+/// carrying a wrongly-NARROW at-most claim. Both must pass before the footprint is trusted.
+#[derive(Debug, Clone, Copy)]
+pub struct EmissionClose {
+    /// The `n=<K>` the family declared: how many records the scaffold emitted.
+    pub count: u32,
+    /// The `body-rc=<R>` the family declared: the emitting body's own termination status,
+    /// captured before the record pipe (a pipeline's status is its RHS's, so the pre-`28P`
+    /// scaffold discarded it). Non-zero ⇒ the survey did not finish ⇒ refuse the family.
+    pub body_rc: u32,
+}
+
+/// THE PROBE-PROVENANCE FIREWALL, whole, in one seat: which of a site's measured channels may be
+/// believed, keyed on the site's kind (`28M` §8; `inv-probe-sourced-values`).
+///
+/// The Status half is long-standing — only a VALID Query site's rc is fold-usable, and only when
+/// the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell, so it must
+/// not substitute into the control-flow fold). An Establish site's rc is the CHECK's, not the
+/// mutator's, and an invalid Query's is a stale resting rc; both are withheld to ⊤.
+///
+/// The out-channel half is `28P:dec-the-stdout-firewall-is-structural-too`. `28M` §8 named the
+/// stdout parallel of the rc firewall ~SUSPECT and untraced; the trace found the property TRUE but
+/// held by two accidents rather than by this mechanism — nothing emits `stdout=` today, and
+/// `consumption_ok` blocks a consumed stdout UNCONDITIONALLY (16F §3) without ever reading the
+/// value. That is exactly the "emergent, not typed" shape the custody work exists to retire: the day
+/// a probe starts producing establish stdout, absence stops holding and only the consumption block
+/// is left standing. So an Establish site's out-channels are ⊤ BY CONSTRUCTION, on the same line and
+/// for the same reason as its rc — the probe never ran the mutator, so the mutator's own observables
+/// cannot have probe-provenance. Inert today (the values are already ⊤); the point is that it stays
+/// true when they stop being.
+///
+/// Extracted rather than inlined so the whole firewall reads as one thing: it was two `match`es on
+/// one discriminant, forty lines apart, and a reader could satisfy themselves about the rc without
+/// ever meeting the out-channels.
+fn measured_channels(
+    site_kind: dorc_plan::ProbeSiteKind,
+    record: Option<&SiteRecord>,
+) -> (Predicted<Rc>, Predicted<OutBytes>, Predicted<OutBytes>) {
+    match site_kind {
+        dorc_plan::ProbeSiteKind::Query { valid: true } => (
+            record.map_or(Predicted::Top, |r| {
+                if r.conflicted {
+                    Predicted::Top
+                } else {
+                    Predicted::Value(r.rc)
+                }
+            }),
+            record.map_or(Predicted::Top, |r| r.stdout),
+            record.map_or(Predicted::Top, |r| r.stderr),
+        ),
+        // An invalid Query still carries reserved out-claims (its BYTES are not stale the way its
+        // resting rc is); only the rc is withheld.
+        dorc_plan::ProbeSiteKind::Query { valid: false } => (
+            Predicted::Top,
+            record.map_or(Predicted::Top, |r| r.stdout),
+            record.map_or(Predicted::Top, |r| r.stderr),
+        ),
+        dorc_plan::ProbeSiteKind::Establish => (Predicted::Top, Predicted::Top, Predicted::Top),
+    }
+}
 
 /// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
 /// [`Dangling`](ResolvOutcome::Dangling) — the resolver's natural failure on an enumerable kind (§4,
@@ -341,8 +421,13 @@ fn parse_admitted_results(
                     .or_default()
                     .push(coord.to_owned());
             }
-            dorc_plan::records::AdmittedHostRecord::DerivationEnd { site, count } => {
-                out.derivation_ends.insert(dorc_plan::LeafId(site), count);
+            dorc_plan::records::AdmittedHostRecord::DerivationEnd {
+                site,
+                count,
+                body_rc,
+            } => {
+                out.derivation_ends
+                    .insert(dorc_plan::LeafId(site), EmissionClose { count, body_rc });
             }
             dorc_plan::records::AdmittedHostRecord::Resolution { coord, canonical } => {
                 out.resolutions.insert(
@@ -357,6 +442,15 @@ fn parse_admitted_results(
                     .entry((coord.to_owned(), arm))
                     .or_default()
                     .push(entity.to_owned());
+            }
+            dorc_plan::records::AdmittedHostRecord::ReachEnd {
+                coord,
+                arm,
+                count,
+                body_rc,
+            } => {
+                out.reach_ends
+                    .insert((coord.to_owned(), arm), EmissionClose { count, body_rc });
             }
             dorc_plan::records::AdmittedHostRecord::Report { body } => {
                 parse_report_record(body, &mut out);
@@ -757,28 +851,7 @@ pub fn facts_from_sites(
             },
             ProbeSiteKind::Establish => ProbeSiteKind::Establish,
         };
-        // The firewall: only a VALID Query site's rc is fold-usable as Status — and only when
-        // the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell,
-        // so it must not substitute into the control-flow fold).
-        let status = match site_kind {
-            ProbeSiteKind::Query { valid: true } => record.map_or(Predicted::Top, |r| {
-                if r.conflicted {
-                    Predicted::Top
-                } else {
-                    Predicted::Value(r.rc)
-                }
-            }),
-            // Establish site (check's rc, not the mutator's) OR an invalid Query
-            // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
-            ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
-        };
-        // The reserved Stdout/Stderr claims ride into the tuple verbatim (19F §3 shape).
-        // INERT this round: nothing emits them, and `consumption_ok` blocks a consumed
-        // stdout/stderr UNCONDITIONALLY (16F §3) — never reading the claim value — so a
-        // (hypothetical) non-⊤ claim cannot relax that block. The slot is plumbed so a
-        // future stdout-producing probe + vouch is a value change, not a representation one.
-        let stdout = record.map_or(Predicted::Top, |r| r.stdout);
-        let stderr = record.map_or(Predicted::Top, |r| r.stderr);
+        let (status, stdout, stderr) = measured_channels(site_kind, record);
         let obs = Observable {
             effect,
             status,

@@ -25,11 +25,66 @@ discipline: one rule per bullet, slugged; append to the matching section.
   never inverted, never licenses. Never collapse statuses out of a
   verdict-function; a tool with a non-test exit vocabulary needs an explicit
   `case $? in` remap arm in the delegation body.
+- **bind-is-identity-never-authority** (`28O` tbl-ambient-annotation-sites; the principle,
+  promoted at the r28 resume fold) — an inline bind is an entity-identity channel: it
+  resolves entity REFERENCES and kind-tags them for the book-site back-map; it is never a
+  kind authority and never a cell authority. A mark's own coordinate is authoritative for
+  its cell in full; ambient state may fill ONLY what a coordinate genuinely lacks. Known
+  residue, named not chased: a shared bind's unresolvable value still ⊤s a nullary-verb
+  check whose cell needed nothing from it (`28O:fnd-unresolved-bind-value-tops-the-whole-check`;
+  the one-rule sweep is specified there, unstarted).
 - **effect-check-falsification-first** — proven-mutation ⇒ fails fast and lifts
   NOWHERE (not probe, not guard — `271:rul-no-mutating-guards`); the unprovable
   region rides the authored vouch; the check is never a completeness gate.
   vouch-scope-is-the-body-never-the-tool: a body-vouch mints no command-family
   fact.
+- **withdrawing-drops-detected-too** (`28K` §1) — `PredictSet::withdrawing` (and the
+  `VerdictSet`/`TouchesSet` forwarders) removes a contested family from `checks` AND
+  `detected`. Dropping only `checks` would leave the header behind, so the marks-lost
+  backstop (`crate::validate`) would report a WITHDRAWN funcdef as a lift failure and
+  point the author at the wrong repair (`271:rul-sin-ordering`).
+- **live-source-is-the-only-resolution-seat** (`28K` §1;
+  `28M:fnd-verdict-resolution-duplicates-live-source`) — `crate::live_source` answers "which
+  definition would a shell have live" for the WHOLE unit, and every site that asks calls it: the
+  effect-map lift, `VerdictIndex::from_sets`, `analysis::effect`'s predict lane, the three cli ship
+  closures, `plan::build_vouches`. A local backwards scan is the SAME rule spelled twice and is how
+  the verdict's winner silently split from the predict's. Its predicate asks only "does this file
+  DEFINE the role", never "does its body answer this argv" — the second question is the retired
+  decline-fallthrough cascade (`28K` §6), which outlived its stage-D fix inside the ship lane. A
+  decline by the winner is a decline. The site-keyed acts then NARROW that answer positionally
+  (`analysis/CLAUDE.md visibility-is-full-positional`); the two compose, they never compete.
+  Its predicate reads the driver's WITHDRAWN per-file sets, never raw source: `lift_from_sets`
+  and `dorc_plan::build_vouches_from_sets` exist because both seats re-lifted from text and so
+  resolved over a population every other seat had already narrowed — a definition the function
+  environment proves binds nowhere still won this answer and every site then withheld
+  (`analysis/CLAUDE.md never-live-subtracts-from-the-whole-unit-answer`). A seat that re-lifts is
+  a seat that will disagree. The seat list is SIX, not five: `plan::build_wrapped_vouches` scanned
+  FORWARD (`iter().find_map`) — first-definition-wins, the INVERSE of sh's answer — until `28P`
+  bitem3 (`fnd-the-wrapped-vouch-seat-resolved-forwards`), and resolved over its own re-lift of the
+  raw sources until `28P:dec-the-wrapped-seat-takes-the-drivers-sets`. All six now take the
+  driver's WITHDRAWN sets and all six narrow positionally.
+- **closure-travels-with-the-definition** (`28K` §4 `rul-pin-by-definition-bytes`) — a role funcdef's
+  span does not carry the helpers it calls or the file-level constants it reads, so `crate::closure`
+  is what every emitting seat asks before shipping a body: `HelperIndex::build` over the ordered
+  sources ONCE per unit, `closure_for` per definition. Measured before it existed: a verdict body
+  calling a helper lifted clean and shipped alone, which is usually a safe rc-127 decline and is NOT
+  reliably one (a body that ignores the helper's status and answers 0 from a later test reports
+  converged off a helper that never ran — priority-1 under-execute). Three sub-rules: helpers resolve
+  across the WHOLE loaded set (`28M` §7 `tune-explicit-composition-is-sanctioned` — the helpers-file +
+  thin-entrypoints package shape is the community-critical one); byte-identical declarations
+  content-dedup while DIFFERING ones REFUSE (`28M` §8's diamond rider — sh's own last-wins would
+  silently rebind an author's helper, and no admin spelling picks between two helpers of one name);
+  and constants ride per CONTRIBUTING FILE rather than per reference, because `ParamComplex` discards
+  the name so a reference-driven capture could not prove itself complete.
+- **only-load-inert-sources-contribute** (`28K` §2a) — `HelperIndex` indexes a source only when its
+  WHOLE top level is provably inert to load. That inertness IS the license to hoist a declaration
+  above somebody's book, and it is also what keeps the BOOK out of the index without threading its
+  id: a runbook has commands at top level, so its helpers stay where its author put them.
+- **a-definitions-file-is-not-a-mark-fragment** — `validate` runs `lint_mark_subset` only for a
+  source with no `__` AND no top-level funcdef. `__`-freedom alone read every helpers-only file — and
+  every ordinary BOOK carrying a function — as a bare marked-statement fragment and errored
+  `predict-out-of-dialect` at the funcdef header (eight corpus cases carried that false error). The
+  fragment reading is for files that define nothing, which is structurally what the `mark-*` cases are.
 - **safe-across-vouch** (né tolerates-vouch; `27C` §2, mark spelled `: safe-across
   <dim>` per `281` §5) — per-function, per-dimension; asserts "this
   body's effects are read-only BY DESIGN, not by privilege-starvation"; gates

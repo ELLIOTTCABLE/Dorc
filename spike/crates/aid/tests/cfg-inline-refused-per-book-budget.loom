@@ -82,10 +82,6 @@ $ dorc lint book.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 book.sh:
-  error[predict-out-of-dialect]: unexpected token in command
-        [ book.sh:2:12
-     2 | install_all() {
-       |            ^
   warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
   inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
   an ordinary unmodeled command
@@ -129,4 +125,4 @@ book.sh:
      73 | install_all
         | \_________/
 
-dorc lint: 1 error, 7 warnings, 0 infos across 1 file.
+dorc lint: 0 errors, 7 warnings, 0 infos across 1 file.

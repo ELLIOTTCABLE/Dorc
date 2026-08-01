@@ -8,7 +8,7 @@
 //! ```sh
 //! apt_get__predict() {
 //!    verb=$1; shift
-//!    pkg : package = "$1"                                    # the kind annotation
+//!    pkg : sm.dorc.Package = "$1"                            # the kind annotation
 //!    case $verb in
 //!       install) dpkg-query -W "$pkg" : package:"$pkg"@installed ;;   # establish
 //!       purge)   dpkg-query -W "$pkg" : package:"$pkg"@installed! ;;  # inverted
@@ -141,6 +141,11 @@ pub mod reserved;
 /// trailing marks) in an UNMARKED file are a loud error; bare `__role` floor bodies work markerless.
 pub mod marker;
 
+/// The marked-file load-inertness gate (`28K` §2a `rul-marked-file-is-load-inert`): a marked
+/// file's top level holds definitions and bare assignments only, so both the abstract load
+/// (`28K` §2) and the executed subshell re-source (`28K` §3) are provably no-ops.
+pub mod load_inert;
+
 /// The book-free oracle-side validation surface (`27S:seam-oracle-validate-factoring`): the cli's
 /// inline oracle lints, factored into one entry the cli and the lint rung-oracle-solo lane share.
 pub mod validate;
@@ -148,6 +153,11 @@ pub mod validate;
 /// The whole-file off-ramp cleaner (`dorc strip` / `dorc-sh`): parser-backed erasure of every
 /// dialect construct, yielding runnable stock sh (`strip-is-pure-erasure`, `274` §13).
 pub mod strip;
+
+/// What a pinned role definition needs BESIDES itself (`28K` §4 `rul-pin-by-definition-bytes`):
+/// the helper funcdefs it calls and the file-level constants of every source contributing that
+/// code, resolved across the loaded set and REFUSED where two sources disagree.
+pub mod closure;
 
 pub use strip::strip_file;
 
@@ -211,6 +221,14 @@ pub struct KindIndex {
     /// `MustRun`). An observe with NO co-occurring verdict stays a `Queries` cell (its own row,
     /// "widens nothing"). Safe direction: widening only GROWS a fact's kill-surface.
     widenings: BTreeMap<(ProviderId, Symbol), BTreeSet<SelectorId>>,
+    /// Per provider, the SOURCE INDEX whose `__predict` body these cells were derived from
+    /// (`28K` §2 rul-visibility-is-full-positional). Exactly one file contributes per provider —
+    /// [`live_source`] picks it — and a site-keyed consumer must be able to ask WHICH, because it
+    /// resolves the argv through a positionally-chosen file's argparse and would otherwise read
+    /// cells some OTHER file declared: one cell measured, a different one keyed
+    /// (`271:rul-sin-ordering`, mis-attribution). Empty on a hand-built index (no source text
+    /// exists to name), which reads as "no opinion" at the consumer.
+    sources: BTreeMap<ProviderId, usize>,
 }
 
 impl KindIndex {
@@ -260,6 +278,20 @@ impl KindIndex {
         self.effects.is_empty()
     }
 
+    /// Record that `provider`'s cells came from source index `file`.
+    pub fn set_source(&mut self, provider: ProviderId, file: usize) {
+        self.sources.insert(provider, file);
+    }
+
+    /// Which source index `provider`'s cells were derived from, or `None` when the index carries
+    /// no provenance (a hand-built one). `None` is NO OPINION, never "any file will do": the
+    /// positional consumer treats it as un-checkable and falls back to its other gate
+    /// ([`crate::live_source`] agreement), which is what keeps a source-less test index usable.
+    #[must_use]
+    pub fn source_of(&self, provider: ProviderId) -> Option<usize> {
+        self.sources.get(&provider).copied()
+    }
+
     /// Record that `(provider, verb)`'s predict body carries a co-occurring OBSERVE mark for
     /// `selector` — i.e. an observe INSIDE a verdict body (`277` §5 observe-backing-widening).
     /// It widens the verb's establish fact backing (a sibling cell), never becoming a Query cell.
@@ -279,6 +311,27 @@ impl KindIndex {
     pub fn widening_of(&self, provider: ProviderId, verb: Symbol) -> &BTreeSet<SelectorId> {
         static EMPTY: BTreeSet<SelectorId> = BTreeSet::new();
         self.widenings.get(&(provider, verb)).unwrap_or(&EMPTY)
+    }
+
+    /// Drop every contested family's cells and widenings (`28K` §1 `rul-silent-shadowing-refuses`).
+    /// Belt-and-braces beside [`predict::PredictSet::withdrawing`] — a withdrawn provider's argparse
+    /// no longer resolves, so these cells are already unreachable — but leaving live cells behind a
+    /// withdrawn family is exactly the kind of half-withdrawal a later consumer would find.
+    #[must_use]
+    pub fn withdrawing(
+        mut self,
+        contested: &dorc_core::ContestedFamilies,
+        interner: &Interner,
+    ) -> Self {
+        if contested.is_empty() {
+            return self;
+        }
+        let withheld =
+            |p: ProviderId| contested.withholds(&to_funcname_segment(interner.resolve(p.0)));
+        self.effects.retain(|(p, _), _| !withheld(*p));
+        self.widenings.retain(|(p, _), _| !withheld(*p));
+        self.sources.retain(|p, _| !withheld(*p));
+        self
     }
 }
 
@@ -313,6 +366,41 @@ pub fn to_funcname_segment(name: &str) -> String {
     }
 }
 
+/// sh's last-definition-wins, over an ordered load: the index of the LAST source that defines a
+/// name, or `None` when none does (`28K` §1 rul-sh-loads-dorc-reads — the oracle answering a site
+/// is exactly the definition a shell would have live).
+///
+/// The ONE seat for that question, because the resolution sites that ask it must agree: a
+/// disagreement between which body the analysis picks and which the probe ships measures one cell
+/// while keying the record to another. Every site now calls THIS — the effect-map lift, the
+/// verdict index, `analysis::effect`'s predict lane, the three cli ship closures, and
+/// `plan::build_vouches` — so the agreement is a property rather than a convention; the last four
+/// spelled it as a local backwards scan until `28M:fnd-verdict-resolution-duplicates-live-source`
+/// named the drift that let in.
+///
+/// Three expedients died here. First-in-load-order. First-that-RESOLVES, which was strictly worse:
+/// it reached PAST a live definition into a shadowed one's arms whenever the live body declined
+/// the argv, answering from a body no shell would have called (`28K` §6
+/// rej-resurrection-of-dead-definitions) — and it was live in the SHIP lane after
+/// `analysis::effect` retired it. And iteration-order last-wins, which agreed by coincidence.
+/// Only sh's winner exists; a decline by the winner is a decline, full stop.
+///
+/// This answers the WHOLE-UNIT question. The site-keyed acts then narrow it to the definition live
+/// AT the site (`28K` §2 `rul-visibility-is-full-positional`,
+/// `dorc_analysis::funcenv::LiveDefinitions`); the two compose, they do not compete.
+#[must_use]
+pub fn live_source(count: usize, defines: impl Fn(usize) -> bool) -> Option<usize> {
+    (0..count).rev().find(|&i| defines(i))
+}
+
+/// [`live_source`] over a slice of per-file [`PredictSet`](predict::PredictSet)s, keyed by the
+/// provider symbol as each set spells it.
+fn dorc_oracle_live_source(sets: &[predict::PredictSet], provider: Symbol) -> Option<usize> {
+    live_source(sets.len(), |i| {
+        sets.get(i).is_some_and(|s| s.get(provider).is_some())
+    })
+}
+
 /// Lift a set of oracle sh sources into the kind index, interning kind/provider/verb
 /// names through the shared `interner` (so they match the names the book analysis
 /// interns). The effect-map is DERIVED from each oracle's `<provider>__predict` bodies
@@ -327,13 +415,32 @@ pub fn to_funcname_segment(name: &str) -> String {
 /// (`inv-determinism`): sources are walked in argument order, the index is
 /// `BTreeMap`-backed, and nothing here touches clock/RNG/IO.
 pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindIndex> {
+    // Lift diags belong to the caller's separate `lift_predicts` pass; a malformed check simply
+    // contributes no cells (safe).
+    let per_source: Vec<predict::PredictSet> = oracle_sources
+        .iter()
+        .map(|src| predict::lift_predicts(interner, src).value)
+        .collect();
+    lift_from_sets(interner, &per_source)
+}
+
+/// [`lift`] over already-lifted per-file [`PredictSet`](predict::PredictSet)s, for a driver that
+/// holds them for other reasons — the [`verdict::VerdictIndex::from_sets`] shape, and the same
+/// two reasons. One lift instead of two; and, load-bearing since `28M` §9, the driver's sets are
+/// the WITHDRAWN ones, so the effect map resolves over the same population every other seat does
+/// (`analysis::effect`'s third condition compares this index's `source_of` against the checks'
+/// live answer — built from different populations they would disagree and withhold).
+pub fn lift_from_sets(
+    interner: &mut Interner,
+    per_source: &[predict::PredictSet],
+) -> Carrier<KindIndex> {
     let mut out = Carrier::pure(KindIndex::default());
-    for src in oracle_sources {
-        // The check-lift's own diagnostics are reported by the caller's separate
-        // `lift_predicts` pass (cli/coverage); here we consume only the parsed checks to
-        // derive the effect-map, so a malformed check contributes no cells (safe).
-        let checks = predict::lift_predicts(interner, src).value;
+    for (index, checks) in per_source.iter().enumerate() {
         for provider in checks.providers() {
+            // Only the LIVE definition contributes cells (`28K` §1); every one used to merge in.
+            if dorc_oracle_live_source(per_source, provider) != Some(index) {
+                continue;
+            }
             let Some(c) = checks.get(provider) else {
                 continue;
             };
@@ -359,6 +466,9 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
                     .push((kind, selector, e.claim));
             }
             let provider = ProviderId(provider);
+            // Which file spoke — so a site-keyed consumer can check its argparse and its cells
+            // came from the SAME author.
+            out.value.set_source(provider, index);
             for (verb, cells) in by_verb {
                 // observe-backing-widening (`277` §5): an OBSERVE (`:?`) that co-occurs with a
                 // VERDICT (`:`/`:!`) in one verb's arm is INSIDE a verdict body ⇒ it WIDENS the
@@ -423,7 +533,7 @@ mod tests {
     fn index_lookups_round_trip() {
         // Pins the hand-built index API the consumer relies on (independent of lift).
         let mut interner = Interner::default();
-        let package = KindId(interner.intern("package"));
+        let package = KindId(interner.intern("sm.dorc.Package"));
         let apt = ProviderId(interner.intern("apt_get"));
         let install = interner.intern("install");
         let installed = SelectorId(interner.intern("installed"));
@@ -451,7 +561,7 @@ mod tests {
         let mut i = Interner::default();
         let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
 
         let mut idx = KindIndex::default();
@@ -504,7 +614,7 @@ mod tests {
             out.diags
         );
 
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
 
         assert_eq!(
@@ -532,13 +642,13 @@ mod tests {
     fn multiple_sources_accumulate_deterministically() {
         // dn-1's whole point: many oracle files contribute to one index, in argument
         // order, with no cross-file interference. Two providers, same kind (the Seam).
-        let a = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+        let a = "apt_get__predict() { verb=$1; shift; pkg : sm.dorc.Package = \"$1\"; \
                  case $verb in install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;; esac; }";
-        let b = "yum__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+        let b = "yum__predict() { verb=$1; shift; pkg : sm.dorc.Package = \"$1\"; \
                  case $verb in install) rpm -q \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;; esac; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[a, b]);
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             effect(&out.value, &mut i, "apt_get", "install"),
@@ -554,12 +664,12 @@ mod tests {
     fn verbless_predict_keys_the_epsilon_verb() {
         // A verbless check (`command -v`) derives its effect on the ε-verb — the key the
         // wiring uses for a check that binds no verb (202 §2 / task-W §4).
-        let src = "command__predict() { case $1 in -v) shift ;; esac; tool : tool = \"$1\"; \
+        let src = "command__predict() { case $1 in -v) shift ;; esac; tool : sm.dorc.Tool = \"$1\"; \
                    command -v -- \"$tool\" >/dev/null 2>&1 :? sm.dorc.Tool:\"$tool\"@present; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         assert!(!out.value.is_empty(), "the verbless guard lifts a cell");
-        let tool = KindId(i.intern("tool"));
+        let tool = KindId(i.intern("sm.dorc.Tool"));
         let present = SelectorId(i.intern("present"));
         let eps = empty_verb(&mut i);
         let cells = out.value.effect_of(ProviderId(i.intern("command")), eps);
@@ -581,7 +691,7 @@ mod tests {
         // SELECTOR, NOT emitted as a `Queries` cell (a mixed establish+query slice at the book
         // site would fall to `MustRun`). Here `install` establishes `@installed` AND observes
         // `@indexed`: the effect map keeps ONLY the establish cell; `@indexed` is a widening.
-        let src = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+        let src = "apt_get__predict() { verb=$1; shift; pkg : sm.dorc.Package = \"$1\"; \
                    case $verb in install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed; \
                    dpkg-query -s \"$pkg\" :? sm.dorc.Package:\"$pkg\"@indexed ;; esac; }";
         let mut i = Interner::default();
@@ -589,7 +699,7 @@ mod tests {
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
         let indexed = SelectorId(i.intern("indexed"));
         // The effect map keeps only the establish cell (NOT a Query cell for @indexed).
@@ -614,13 +724,13 @@ mod tests {
         // The corpus reality: a verbless `:?` observe with NO co-occurring verdict is standalone
         // ⇒ it stays a `Queries` cell (its own row) and widens NOTHING (`277` §5). This is why the
         // whole corpus is byte-identical: every corpus observe is exactly this shape.
-        let src = "dpkg__predict() { case $1 in -s) shift ;; esac; pkg : package = \"$1\"; \
+        let src = "dpkg__predict() { case $1 in -s) shift ;; esac; pkg : sm.dorc.Package = \"$1\"; \
                    dpkg -s -- \"$pkg\" >/dev/null 2>&1 :? sm.dorc.Package:\"$pkg\"@installed; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         let dpkg = ProviderId(i.intern("dpkg"));
         let eps = empty_verb(&mut i);
-        let package = KindId(i.intern("package"));
+        let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             out.value.effect_of(dpkg, eps),

@@ -1,0 +1,228 @@
+---
+run: round-trip
+fixpoint: executed
+flags: --risk-faultless-skips
+expect-diagnostic:
+  - footprint-incoherent
+---
+-- book.sh --
+# pin28-survival-body-death-walls-total (`28P:dec-whole-body-atomic-refusal`) — the SECOND
+# atomicity of an at-most claim, and the one a record count cannot see.
+#
+# The oldpkg install is diverged, so it RUNS: a wall. The nginx install is converged, so under
+# --risk-faultless-skips it is a survival candidate — it may stay elided past that wall only if the
+# wall's at-most footprint is provably disjoint from sm.dorc.Package:nginx.
+#
+# The wall's footprint is DERIVED: apt_get__disturbs is payload-bound, so it escalates and ships
+# strip-only into the probe. It emits its file coordinates from a pipe, and then calls
+# _apt_displaced_packages for the packages the install replaces — a helper the survival lanes do NOT
+# carry with the shipped body. At probe time that call is unbound, so the survey stops one
+# coordinate in, having never emitted sm.dorc.Package:nginx.
+#
+# What makes this the dangerous shape rather than a merely lossy one is that NOTHING in the record
+# stream disagrees with itself: the scaffold counts the lines it received and closes at n=1, so the
+# `262` §2 family-completeness gate is satisfied exactly. The claim is intact as TRANSPORT and false
+# as a SURVEY, and a false at-most claim is narrow, and narrow spares more. Before the body-rc gate
+# this cell elided the nginx install off a footprint whose author's own body never finished writing
+# it — a mechanical under-execute inside the survival tier's one naked-trust cell.
+#
+# So the emitting body's own termination status refuses the WHOLE family: no footprint, the site
+# walls total, nginx runs. Conservative, and it asks the oracle author for no new spelling. What it
+# still cannot see is a body that truncates its survey and exits 0 — that residue belongs to
+# ANALYZER-NEEDS:an-atmost-completion-signal, which is a design question, not this gate.
+apt-get install -y oldpkg
+apt-get install -y nginx
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# A payload-bound package oracle whose disturbs() body factors half its survey into a helper.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+   install|purge)
+      dpkg -L "$1" | sed 's|^|sm.dorc.File:|'   # emits, then escalates the whole body (TC-4)
+      _apt_displaced_packages "$1"              # NOT carried by the survival ship lane ⇒ unbound
+      ;;
+   esac
+}
+
+_apt_displaced_packages() {
+   printf 'sm.dorc.Package:%s\n' nginx
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# The records the shipped body really produces, measured through the built engine: each site's pipe
+# stage emits its one file coordinate, then the unbound helper stops the survey at 127. Both close
+# records are spelled out rather than left to the harness's synthesis, because `body-rc` is exactly
+# what this case is about — the counts agree, and the bodies still did not finish.
+site 0 effect=absent
+site 1 effect=holds
+deriv 0 coord=sm.dorc.File:/etc/oldpkg.conf
+deriv-end 0 n=1 body-rc=127
+deriv 1 coord=sm.dorc.File:/etc/nginx.conf
+deriv-end 1 n=1 body-rc=127
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT strawman mock — `dpkg -L <pkg>` ($1=-L, $2=pkg) lists the package's installed FILES.
+# HOST model: <pkg> lays down exactly /etc/<pkg>.conf. Read-only; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+printf '/etc/%s.conf\n' "$2"
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim — `dpkg-query -W <pkg>` ($1=-W, $2=pkg). HOST: oldpkg NOT installed
+# (rc 1 ⇒ absent ⇒ diverged ⇒ `apt-get install oldpkg` RUNS, the wall); nginx installed
+# (rc 0 ⇒ holds ⇒ converged ⇒ the survival candidate). Read-only; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${2:-} in oldpkg) exit 1 ;; *) exit 0 ;; esac
+
+-- mocks/sed --
+#!/bin/sh
+# INERT strawman mock — the `sed 's|^|sm.dorc.File:|'` stage of the derivation pipe: prepend
+# `sm.dorc.File:` to each stdin line. A canned transform for THIS fixture (the expression arg is
+# not interpreted — a spike mock, ru-26). Read-only; logs its args for symmetry. Pure-sh.
+. "${0%/*}/.log"; _dorc_logged "$@"
+while IFS= read -r _l; do printf 'sm.dorc.File:%s\n' "$_l"; done
+
+-- expected.ran --
+ran: apt-get install -y oldpkg
+ran: apt-get install -y nginx
+
+-- replay --
+$ dorc --book=book.sh -o package.oracle.sh --risk-faultless-skips < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=487acdeeeba54c16ac3ab4cf40c6801ac5dda40c30d4856d265c17be28d60d54 sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Package:oldpkg@installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Package:nginx@installed
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# dorc derivation-probe (read-only, 24E section 2): payload-bound footprints the static
+# tracer could not resolve. Each escalated wall-candidate ships its touches() body
+# strip-only; when run it prints its footprint coordinates, re-keyed per site:
+#   deriv <leafid> coord=<kind:entity>
+# (the SAME leaf-id the apply plan assigns -- inv-site-keyed-results).
+
+# deriv 0: apt-get (host-derivation via apt-get.touches())
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+   install|purge)
+      dpkg -L "$1" | sed 's|^|sm.dorc.File:|'   # emits, then escalates the whole body (TC-4)
+      _apt_displaced_packages "$1"              # NOT carried by the survival ship lane ⇒ unbound
+      ;;
+   esac
+}
+_d=$(apt_get__disturbs 'install' '-y' 'oldpkg'); _dr=$?
+if [ -z "$_d" ]; then printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 0 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
+# deriv 1: apt-get (host-derivation via apt-get.touches())
+_d=$(apt_get__disturbs 'install' '-y' 'nginx'); _dr=$?
+if [ -z "$_d" ]; then printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 1 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# pin28-survival-body-death-walls-total (`28P:dec-whole-body-atomic-refusal`) — the SECOND
+# atomicity of an at-most claim, and the one a record count cannot see.
+#
+# The oldpkg install is diverged, so it RUNS: a wall. The nginx install is converged, so under
+# --risk-faultless-skips it is a survival candidate — it may stay elided past that wall only if the
+# wall's at-most footprint is provably disjoint from sm.dorc.Package:nginx.
+#
+# The wall's footprint is DERIVED: apt_get__disturbs is payload-bound, so it escalates and ships
+# strip-only into the probe. It emits its file coordinates from a pipe, and then calls
+# _apt_displaced_packages for the packages the install replaces — a helper the survival lanes do NOT
+# carry with the shipped body. At probe time that call is unbound, so the survey stops one
+# coordinate in, having never emitted sm.dorc.Package:nginx.
+#
+# What makes this the dangerous shape rather than a merely lossy one is that NOTHING in the record
+# stream disagrees with itself: the scaffold counts the lines it received and closes at n=1, so the
+# `262` §2 family-completeness gate is satisfied exactly. The claim is intact as TRANSPORT and false
+# as a SURVEY, and a false at-most claim is narrow, and narrow spares more. Before the body-rc gate
+# this cell elided the nginx install off a footprint whose author's own body never finished writing
+# it — a mechanical under-execute inside the survival tier's one naked-trust cell.
+#
+# So the emitting body's own termination status refuses the WHOLE family: no footprint, the site
+# walls total, nginx runs. Conservative, and it asks the oracle author for no new spelling. What it
+# still cannot see is a body that truncates its survey and exits 0 — that residue belongs to
+# ANALYZER-NEEDS:an-atmost-completion-signal, which is a design question, not this gate.
+apt-get install -y oldpkg
+apt-get install -y nginx

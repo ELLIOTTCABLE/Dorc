@@ -707,6 +707,7 @@ apt_get__predict() {
                     "apt_get__is_converged".to_string(),
                     "package".to_string(),
                     vec!["dpkg-query".to_string()],
+                    dorc_core::DefinitionCustody::of_defining_file(dorc_core::SourceFileId(0)),
                 );
                 vouches.insert(
                     *node,
@@ -742,7 +743,7 @@ apt_get__predict() {
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                     return Some(dorc_plan::ShippedCheck::predict(
                         strip_predict(CORPUS_PREDICT_SRC, check, interner),
-                        Some((check.name_span, dorc_core::OracleFileId(0))),
+                        Some((check.name_span, dorc_core::SourceFileId(0))),
                     ));
                 }
             }
@@ -1154,7 +1155,7 @@ apt_get__predict() {
                 // hostsim's corpus has no all-Query pipeline ⇒ no connected check-pipe (24J §2);
                 // default keeps compile_probe consistent with the `build_plan` wrapper it uses below.
                 &dorc_plan::ConnectedPipes::default(),
-                |provider, argv| ship_corpus(&checks, &i, provider, argv),
+                |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
                 |_, _, _| None,
                 // hostsim exercises elision soundness, not guards — no vouched past-wall probes.
                 |_| false,
@@ -1276,7 +1277,7 @@ apt_get__predict() {
             &classes,
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
-            |_provider, _argv| None,
+            |_, _provider, _argv| None,
             |_, _, _| None,
             |_| false,
         );
@@ -1398,7 +1399,7 @@ grep__predict() {
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                     return Some(dorc_plan::ShippedCheck::predict(
                         strip_predict(src, check, interner),
-                        Some((check.name_span, dorc_core::OracleFileId(0))),
+                        Some((check.name_span, dorc_core::SourceFileId(0))),
                     ));
                 }
             }
@@ -1441,7 +1442,7 @@ grep__predict() {
             &cfg,
             &value,
             &classes,
-            |p, a: &[dorc_core::Symbol]| ship_stage_from(CONNECTED_ORACLE, &checks, &i, p, a),
+            |_n, p, a: &[dorc_core::Symbol]| ship_stage_from(CONNECTED_ORACLE, &checks, &i, p, a),
         );
         let probe = compile_probe(
             &parsed.value,
@@ -1450,7 +1451,7 @@ grep__predict() {
             &classes,
             &BTreeMap::new(),
             &connected,
-            |p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
+            |_n, p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
             |_, _, _| None,
             |_| false,
         );
@@ -1551,7 +1552,7 @@ grep__predict() {
              {nonce} site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n\
              {nonce} site 1 effect=absent rc=1 {TERMINAL_TOKEN}\n\
              {nonce} deriv 0 coord=/etc/a file/with spaces {TERMINAL_TOKEN}\n\
-             {nonce} deriv-end 0 n=1 {TERMINAL_TOKEN}\n\
+             {nonce} deriv-end 0 n=1 body-rc=0 {TERMINAL_TOKEN}\n\
              dorc-records-end/1 nonce={nonce} {TERMINAL_TOKEN}\n"
         );
         let admit = |raw: &str| match read_host_evidence(

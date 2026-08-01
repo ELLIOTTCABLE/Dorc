@@ -51,7 +51,7 @@ pub use derive::{DerivedEffect, ValueClaim, derive_predict};
 pub use eval::{
     Resolution, Resolved, ResolvedEntity, StageStdout, TopReason, evaluate, predict_stage_stdout,
 };
-pub use parser::lift_predicts;
+pub use parser::{PREDICT_SUFFIX, lift_predicts};
 
 // The touches-footprint lift (`crate::touches`, 24A §1b) reuses the predict dialect: the
 // same funcdef AST ([`ast`]) and the same word-resolution ([`eval`]) so footprint fragments

@@ -117,9 +117,11 @@ fn vouch_all(
         VouchMode::Reached => {
             dorc_plan::build_vouches(
                 &[CORPUS_VERDICT_SRC, SERVICE_VERDICT_SRC, YUM_VERDICT_SRC],
+                &dorc_oracle::closure::HelperIndex::default(),
                 classes,
                 value,
                 i,
+                dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             )
             .0
             .value
@@ -553,9 +555,16 @@ fn render_scoped(
     if vkinds.contains(&KindId(i.intern("service"))) {
         verdict_srcs.push(SERVICE_VERDICT_SRC);
     }
-    let vouches = dorc_plan::build_vouches(&verdict_srcs, &classes, &value, &mut i)
-        .0
-        .value;
+    let vouches = dorc_plan::build_vouches(
+        &verdict_srcs,
+        &dorc_oracle::closure::HelperIndex::default(),
+        &classes,
+        &value,
+        &mut i,
+        dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+    )
+    .0
+    .value;
     let observe = move |f: FactKey| {
         if conv.contains(&f) {
             Observable::verdict_only(Verdict::Converged)

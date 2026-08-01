@@ -81,6 +81,7 @@ fn vouch_all(
                 "apt_get__is_converged".to_string(),
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
+                dorc_core::DefinitionCustody::of_defining_file(dorc_core::SourceFileId(0)),
             );
             vouches.insert(
                 *node,
@@ -118,7 +119,7 @@ fn ship_from(
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(dorc_plan::ShippedCheck::predict(
                     strip_predict(src, check, interner),
-                    Some((check.name_span, dorc_core::OracleFileId(0))),
+                    Some((check.name_span, dorc_core::SourceFileId(0))),
                 ));
             }
         }
@@ -236,7 +237,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &classes,
         &std::collections::BTreeMap::new(),
         &ConnectedPipes::default(),
-        |provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
+        |_, provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
         |_, _, _| None,
         |_| false,
     );
@@ -414,7 +415,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &classes,
             &std::collections::BTreeMap::new(),
             &ConnectedPipes::default(),
-            |provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
+            |_, provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
             |_, _, _| None,
             |_| false,
         );

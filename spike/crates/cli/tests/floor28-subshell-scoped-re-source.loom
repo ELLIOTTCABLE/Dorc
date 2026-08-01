@@ -1,0 +1,68 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor28-subshell-scoped-re-source — the differential battery's scoping shape (`28K` §10 bitem8).
+#
+# `28K` §1 rul-scope-by-subshell-resource is the WHOLE of Dorc's answer to "I want a different
+# oracle for this region": re-source its file inside `( … )` and sh's own scoping does the rest.
+# That sells a shell behaviour as a Dorc feature, so the shell behaviour is the thing to measure —
+# the preference must die at the `)`, or the idiom silently leaks a definition into the rest of the
+# book and every site below it answers from the wrong author.
+#
+# Three measurements: the ambient definition before the region; the region's own; and the ambient
+# one again after the `)`, which is the property the idiom rests on.
+. ./defs-a.sh
+hork__is_converged
+( . ./defs-b.sh; hork__is_converged )
+hork__is_converged
+
+-- defs-a.sh --
+hork__is_converged() { printf 'a\n' ;}
+
+-- defs-b.sh --
+hork__is_converged() { printf 'b\n' ;}
+
+-- expected.emitted --
+a
+b
+a
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=91510af220993114581ba0de369bab9d5eaec73ce64f6f5e3594b10d8640a1b1 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor28-subshell-scoped-re-source — the differential battery's scoping shape (`28K` §10 bitem8).
+#
+# `28K` §1 rul-scope-by-subshell-resource is the WHOLE of Dorc's answer to "I want a different
+# oracle for this region": re-source its file inside `( … )` and sh's own scoping does the rest.
+# That sells a shell behaviour as a Dorc feature, so the shell behaviour is the thing to measure —
+# the preference must die at the `)`, or the idiom silently leaks a definition into the rest of the
+# book and every site below it answers from the wrong author.
+#
+# Three measurements: the ambient definition before the region; the region's own; and the ambient
+# one again after the `)`, which is the property the idiom rests on.
+. ./defs-a.sh
+hork__is_converged
+( . ./defs-b.sh; hork__is_converged )
+hork__is_converged

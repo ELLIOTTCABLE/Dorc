@@ -61,6 +61,8 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let verdicts = dorc_oracle::verdict::VerdictIndex::of(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
+    // ONE inline oracle, so no unit spans two files and positional == ambient (`28K` §2).
+    let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
     let (classified, _why, kills, _kill_coords, fact_backings, _narrative, _invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
@@ -75,6 +77,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &mut arena,
             &mut std::collections::BTreeMap::new(),
             &mut BTreeSet::new(),
+            ambient,
         );
     let classes = classified.value;
 
@@ -89,10 +92,10 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &cfg,
         &value,
         &classes,
-        |p, a: &[Symbol]| ship_predict_stage(ORACLE_SH, &checks, i, p, a),
+        |_n, p, a: &[Symbol]| ship_predict_stage(ORACLE_SH, &checks, i, p, a),
     );
     let probe = {
-        let ship = |provider: Symbol, argv: &[Symbol]| {
+        let ship = |_n: CfgNodeId, provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
         };
         // The sweep exercises the elision/survival soundness net, not the GUARD tier: no
@@ -149,9 +152,9 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // The elide-weld (24D §3): a converged ambient site elides ONLY with a reached vouch. Thread
     // them via the shared `dorc_plan::build_vouches` (the SAME composition the cli drives), or
     // every `install` victim would run and the net's elision coverage would vanish. Always-on
-    // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped
-    // (the net asserts on behaviour, not stderr text).
-    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &classes, &value, i)
+    // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped.
+    let helpers = dorc_oracle::closure::HelperIndex::build(&[ORACLE_SH]);
+    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &helpers, &classes, &value, i, ambient)
         .0
         .value;
 
@@ -251,7 +254,7 @@ fn ship_predict_body(
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(dorc_plan::ShippedCheck::predict(
                     strip_predict(oracle_src, check, interner),
-                    Some((check.name_span, dorc_core::OracleFileId(0))),
+                    Some((check.name_span, dorc_core::SourceFileId(0))),
                 ));
             }
         }
@@ -429,14 +432,18 @@ fn build_resolutions(s0: &Host) -> dorc_plan::Resolutions {
 /// (a derived footprint's coords are known only post-results; the `resid-kindfn-derived` deferral).
 /// The reach-function KIND (`coord.kind()`) rides each expanded coord for the demote attribution.
 fn expand_reaches(footprints: &mut TrustedFootprints, reach_kinds: &BTreeSet<Symbol>, s0: &Host) {
-    footprints.expand_reaches(|coord, origin| {
+    // The sweep's declared reach answer is a total in-memory lookup, so no arm can fail to close and
+    // the atomicity refusal (`28P` item0's second consumer) has no input here.
+    footprints.expand_reaches(|_node, coord, origin| {
         if !matches!(origin, FootprintOrigin::Authored) || !reach_kinds.contains(&coord.kind().0) {
-            return Vec::new();
+            return dorc_plan::ReachExpansion::Expanded(Vec::new());
         }
-        s0.reach(coord.kind(), coord.entity())
-            .into_iter()
-            .map(|(k, e)| (EntityCoord::new(k, e), coord.kind()))
-            .collect()
+        dorc_plan::ReachExpansion::Expanded(
+            s0.reach(coord.kind(), coord.entity())
+                .into_iter()
+                .map(|(k, e)| (EntityCoord::new(k, e), coord.kind()))
+                .collect(),
+        )
     });
 }
 

@@ -64,7 +64,8 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
     for (i, src) in oracles.iter().enumerate() {
         let mut diags = crate::predict::lift_predicts(interner, src).diags;
         diags.extend(crate::predict::lift_verdicts_converged(interner, src).diags);
-        if !src.contains("__") {
+        // The mark-subset reading applies only where nothing else can be read (see the predicate).
+        if !src.contains("__") && !declares_functions(src) {
             diags.extend(crate::predict::lint_mark_subset(src));
         }
         diags.extend(unlifted_role_fns(interner, src));
@@ -77,42 +78,7 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
         }
     }
 
-    // The tolerance CORROBORATION lints, per file (stage `tolerance`). Both directions of `27C` §6
-    // (a `safe-across user` over a body that visibly reads identity; a body that visibly reads
-    // identity with no vouch at all), recognize-never-license: neither blocks anything, both ask.
-    // They belong here rather than at either consumer because both consumers want them — the author
-    // hot loop through `dorc lint`, and the plan lane through `report_at`.
-    for (i, src) in oracles.iter().enumerate() {
-        let verdicts = crate::predict::lift_verdicts_converged(interner, src).value;
-        let mut diags = Vec::new();
-        for provider in verdicts.providers() {
-            let Some(verdict) = verdicts.get(provider) else {
-                continue;
-            };
-            // The lift's OWN diags are the lint lane's already; taking them again here would
-            // double-report every `safe-across` malformation on the oracle-solo rung.
-            let (vouch, _) = crate::entry::lift_tolerance(verdict);
-            diags.extend(crate::entry::corroborate_tolerance_over_identity(
-                &vouch,
-                verdict,
-                interner,
-                verdict.name_span,
-            ));
-            diags.extend(crate::entry::hint_heavy_context_no_vouch(
-                &vouch,
-                verdict,
-                interner,
-                verdict.name_span,
-            ));
-        }
-        if !diags.is_empty() {
-            stages.push(StageDiags {
-                stage: "tolerance",
-                file: Some(i),
-                diags,
-            });
-        }
-    }
+    push_tolerance_stages(&mut stages, interner, oracles);
 
     // The lend-map dimension lint, per file (stage `lend`). `derive_lend_map`'s diags had no
     // consumer at all: the wrapper index takes its VALUE and drops them, so an unknown dimension
@@ -171,9 +137,59 @@ pub fn validate(interner: &mut Interner, oracles: &[&str]) -> OracleValidation {
         }
     }
 
+    for (i, src) in oracles.iter().enumerate() {
+        let diags = crate::load_inert::lint_load_inert(src);
+        if !diags.is_empty() {
+            stages.push(StageDiags {
+                stage: "load",
+                file: Some(i),
+                diags,
+            });
+        }
+    }
+
     OracleValidation {
         stages,
         wrapper_incoherent,
+    }
+}
+
+/// The tolerance CORROBORATION lints, per file (stage `tolerance`). Both directions of `27C` §6
+/// (a `safe-across user` over a body that visibly reads identity; a body that visibly reads
+/// identity with no vouch at all), recognize-never-license: neither blocks anything, both ask.
+/// They belong here rather than at either consumer because both consumers want them — the author
+/// hot loop through `dorc lint`, and the plan lane through `report_at`.
+fn push_tolerance_stages(stages: &mut Vec<StageDiags>, interner: &mut Interner, oracles: &[&str]) {
+    for (i, src) in oracles.iter().enumerate() {
+        let verdicts = crate::predict::lift_verdicts_converged(interner, src).value;
+        let mut diags = Vec::new();
+        for provider in verdicts.providers() {
+            let Some(verdict) = verdicts.get(provider) else {
+                continue;
+            };
+            // The lift's OWN diags are the lint lane's already; taking them again here would
+            // double-report every `safe-across` malformation on the oracle-solo rung.
+            let (vouch, _) = crate::entry::lift_tolerance(verdict);
+            diags.extend(crate::entry::corroborate_tolerance_over_identity(
+                &vouch,
+                verdict,
+                interner,
+                verdict.name_span,
+            ));
+            diags.extend(crate::entry::hint_heavy_context_no_vouch(
+                &vouch,
+                verdict,
+                interner,
+                verdict.name_span,
+            ));
+        }
+        if !diags.is_empty() {
+            stages.push(StageDiags {
+                stage: "tolerance",
+                file: Some(i),
+                diags,
+            });
+        }
     }
 }
 
@@ -257,6 +273,29 @@ fn peel_and_entry_coherence(interner: &mut Interner, oracles: &[&str]) -> (Vec<D
 
     let incoherent = !diags.is_empty();
     (diags, incoherent)
+}
+
+/// Does this source define any function at its top level? The discriminator between a file of
+/// DECLARATIONS and a bare fragment of marked statements.
+///
+/// `lint_mark_subset` reads a whole file as a fragment of marked STATEMENTS, so it may only run
+/// where there is nothing else to read the file as. `__`-freedom alone was too crude a test:
+/// `28M` §8's packaging shape splits an oracle into a HELPERS file (bulk logic, non-role names ⇒
+/// no `__` anywhere) plus a thin entrypoints file, and the helpers half was refused out of dialect
+/// at its first funcdef — measured while pinning the cross-file closure, on eight corpus cases that
+/// were carrying the same false error over an ordinary BOOK's function. A file that DEFINES
+/// FUNCTIONS is a definitions file whatever its names look like; the fragment reading is for files
+/// that define none, which is structurally what the `mark-*` cases are (wrapping their marks in a
+/// funcdef would stop them firing at all).
+fn declares_functions(src: &str) -> bool {
+    use dorc_syntax::ast::NodeKind;
+    let ast = dorc_syntax::parse(src).value;
+    match &ast.node(ast.root()).kind {
+        NodeKind::Script { items } => items
+            .iter()
+            .any(|&item| matches!(ast.node(item).kind, NodeKind::FuncDef { .. })),
+        _ => false,
+    }
 }
 
 /// The MARKS-LOST BACKSTOP (`26G:haz-silence-is-the-common-cause`): every role a marked file can

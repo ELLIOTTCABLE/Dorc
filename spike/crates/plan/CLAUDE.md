@@ -82,6 +82,26 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
 - **never-synthesized-never-mutating** — never engine-synthesized sh; never
   declared/claimed output in guard position; a body that provably mutates lifts
   nowhere (`271:rul-no-mutating-guards`).
+- **pinned-definitions-are-the-artifact's-binding** (`28K` §4
+  `rul-runtime-resolution-never-load-bearing`) — `Plan::pinned_definitions` decides, for the whole
+  artifact, which body each guard invokes and under what name; the render consults it and nothing
+  re-derives a binding at runtime. A misalignment there could swap WHOSE judgment executes, which is
+  pope-sin tier (`271:rul-sin-ordering`), so it is structural rather than three mechanisms agreeing.
+  Three rules in order: CONTENT-DEDUP (byte-identical bodies are one definition); ALREADY-IN-PLACE
+  (a body the book's own text defines at top level with the same bytes is not copied — the artifact
+  never carries two same-named funcdefs by ANY route, which is what dissolves the `reserved.rs`
+  tension; the positional regime guarantees a book-sited definition PRECEDES its guards, so nothing
+  is re-derived); HASH-MUNGE (two distinct bodies under one name each emit once as
+  `<name>_h<digest>`, digest over the definition BYTES). The retired dedup-by-funcname emitted the
+  first body and let both sites invoke it. A munged name cannot parse as a `__role`, so a
+  re-ingested artifact reads the guard as an opaque call ⇒ conservative run (`23A:P-reingest`).
+  `Plan::render_sh` is the flat DST render and emits no preamble at all — never wire a second
+  binding authority there.
+- **the-pinned-unit-includes-the-closure** — what a guard's preamble ships is the stripped definition
+  PLUS `dorc_oracle::closure`'s prefix (helpers + file-level constants). Two riders: a CONTESTED
+  closure withholds the VOUCH (no guard, no elide, the site runs), and the vouch's `check_cmds` —
+  the dual-rail `guardcmd` allowlist — must cover the closure's own commands, because once a helper
+  travels with the definition the real check-command lives in the helper.
 - **check-tax-awareness** — a guarded site pays its check on every apply,
   forever (`KNOBS:kPROBING`): an expensive check must earn its vouch or
   just-run. Planner economics, never a license question.
@@ -99,6 +119,21 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   (whose claim licensed it, line-level first link); the why-lens names them.
 - **empty-world-byte-identical** — no oracles loaded ⇒ output byte-identical;
   rung-0 pin in every brief touching this crate.
+- **an-at-most-claim-has-two-atomicities** (`28P:dec-whole-body-atomic-refusal`) — a derived
+  footprint must prove BOTH that its record stream arrived whole AND that the body which wrote
+  it finished. They are independent and only the first reads like a gate: `deriv-end n=<K>` is
+  counted by the SCAFFOLD from lines received, so a body that emits three coordinates and dies
+  on an unbound helper closes at `n=3` and agrees with itself — transport intact, survey false,
+  at-most claim wrongly NARROW, and narrow SPARES MORE (measured wrong-elision). So the
+  scaffold captures the emitting body's status BEFORE the record pipe (a pipeline's status is
+  its RHS's, which is why the body's was previously unreachable) and carries it as
+  `body-rc=<R>`; non-zero refuses the WHOLE family ⇒ the site walls total. Never file a
+  body-death under the transport code `deriv-family-incomplete` — the stream was perfect, and
+  saying otherwise mis-attributes (`271:rul-sin-ordering`). Two things this is NOT: a verdict
+  rc (`rul-rc-partition` binds verdict functions; this is a binary did-the-body-finish, spelled
+  `body-rc=` so it can never be read as the site record's `rc=`), and a completion signal —
+  a body that truncates and exits 0 stays invisible, and that residue is human-owned design
+  (`ANALYZER-NEEDS:an-atmost-completion-signal`). Do not build toward it.
 
 ## Law — render
 

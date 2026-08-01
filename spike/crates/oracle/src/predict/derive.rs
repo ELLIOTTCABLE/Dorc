@@ -178,13 +178,12 @@ fn push_effect(
         | MarkKind::StoredIn
         | MarkKind::Undivided => return,
     };
-    // The kind comes from the inline annotation reached on this path, or — when NO annotation was
-    // reached (the value-less nullary Singleton form, `28A:rul-singleton-bind-drops`: the bind is
-    // dropped and the coordinate names the kind directly) — from the mark's own coordinate.
-    let kind_str = ctx
-        .kind
-        .clone()
-        .or_else(|| (!target.kind.is_empty()).then(|| target.kind.clone()));
+    // A mark's OWN coordinate names its kind and outranks the ambient bind (`281` §4 keystone;
+    // `28K` §7). `ctx.kind` survives only for a coordinate parsing kindless — no form does, so in
+    // practice the nullary-Singleton path alone (`28A:rul-singleton-bind-drops`).
+    let kind_str = (!target.kind.is_empty())
+        .then(|| target.kind.clone())
+        .or_else(|| ctx.kind.clone());
     let (Some(kind_str), Some(selector)) = (kind_str, target.prop.clone()) else {
         return;
     };
@@ -390,5 +389,67 @@ apt_get__predict() {
             "only the literal `install` arm keys a cell: {set:?}"
         );
         assert!(set.iter().all(|(v, ..)| v == "install"));
+    }
+
+    /// A mark's OWN spelled coordinate kind beats the ambient bind's kind (`28K` §7: marks are
+    /// per-line, so nothing ties one body to one kind; `281` §4's keystone is that a coordinate
+    /// names its kind).
+    ///
+    /// This is the shape `28K` §7's respell needs: one `apt-get` body spanning the package and
+    /// the package INDEX. Before the precedence fix the bind silently re-keyed the `update` arm's
+    /// `sm.dorc.PkgIndex@fresh` under `sm.dorc.Package`, and the whole check then resolved
+    /// NOTHING — measured end-to-end as 0 sites where the two-file pair gave 2.
+    #[test]
+    fn a_marks_own_kind_beats_the_ambient_bind_kind() {
+        let src = "\
+apt_get__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = \"$1\"
+   case $verb in
+      update) test -n fresh : sm.dorc.PkgIndex@fresh ;;
+      install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;;
+   esac
+}";
+        let set = derived_set(src, "apt_get");
+        assert!(
+            set.contains(&(
+                "update".to_owned(),
+                "sm.dorc.PkgIndex".to_owned(),
+                "fresh".to_owned(),
+                "establish"
+            )),
+            "the update arm keys under its OWN kind, not the bind's: {set:?}"
+        );
+        assert!(
+            set.contains(&(
+                "install".to_owned(),
+                "sm.dorc.Package".to_owned(),
+                "installed".to_owned(),
+                "establish"
+            )),
+            "and the bind-agreeing arm is untouched: {set:?}"
+        );
+    }
+
+    /// The zero-churn half, and the reason the flip moves no golden: where the bind's kind and the
+    /// mark's kind AGREE — every body in the corpus — the answer is identical either way.
+    #[test]
+    fn agreeing_bind_and_mark_kinds_are_unchanged_by_precedence() {
+        let src = "\
+apt_get__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = \"$1\"
+   case $verb in
+      install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;;
+   esac
+}";
+        let set = derived_set(src, "apt_get");
+        assert_eq!(set.len(), 1, "{set:?}");
+        assert!(set.contains(&(
+            "install".to_owned(),
+            "sm.dorc.Package".to_owned(),
+            "installed".to_owned(),
+            "establish"
+        )));
     }
 }
