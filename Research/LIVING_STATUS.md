@@ -22,30 +22,28 @@
 from that arc: the **records-8 emitter decision** (delete-under-no-compat vs the r26-revival
 wiring) — human's.
 
-**THE live build lane: `ai/r28-oracle-loading`** (worktree `r28-oracle-loading`), plan
-**`plans/28K`** (the function-environment pass). Stages A/B/G/D/E are LANDED and the lane was
-freshly REBASED onto post-loom `ai/main` (2026-07-31; tip "Bank the rebase adaptations"; both
-legs green, Win 1826 / WSL 1822, locks verified at the generator fixpoint). Build ledger
-**`notes/28O`** (né `294`; renumbered out of a quarantine collision — its rebase section lists
-what adapted). The lane is PARKED at the E→F conductor checkpoint, pending the human's
-ratification of **`plans/28M`** (the committee-speech sitting; by 28M's own governance, `28K`
-remains the ruled plan until ratified) plus `28K` §9's five ratification items. Stages F/H/C2
-remain deliberately unbuilt — **but the checkpoint is now CLEARED (2026-07-31)**: all
-`28K` §9 ratifications typed-closed (see the in-doc `> human:` answers); the
-full-positional regime ACKED spike-tier; the committee fence unresolved-but-motion-
-authorized (build-as-spiked); explicit cross-author composition sanctioned with the
-commissioned two-file helper-package suite. Ack-ledger + stage-F riders: **`28M` §7**;
-license-plane ground truth: **`28M` §8**. **`28K` §10 is rewritten as THE resume plan**
-(F0–F7/H/C2 + fold checklist) — a fresh implementation-conductor executes from it; the
-design-leavings (committee-fence sitting · decidable-condition fold · `res-knobs-entry-
-owed` naming · named futures) run as a concurrent human sitting.
+**THE kernel plan: `plans/28Q` — context-kernel unification (minted 2026-08-01).** The
+single home for the analysis-kernel refactor, by human order NO MORE PIECEMEAL: P1
+definition-factored positional indices (frames) · P2 entry-closure as the speaker · P3
+universal context-availability, staged i–iii. It supersedes the `28P` bitem4/bitem5 hold,
+absorbs `26K` §0b (local-exec/scopes/wait-loops → stage-iii), and discharges the
+terminology rider; §11 (the authored surface — how users spell these concepts in oracles)
+is RESERVED for the next human-led design dig; two term slots ([TERM-A]/[TERM-B], né
+epoch/transit) await a dispatched terminology survey. Execution awaits the human's ack.
 
-**Live-small: `ai/r28-cli-inputs`** (2 doc commits, the positional-input surface ruling;
-rebased clean onto post-loom `ai/main` 2026-07-31).
+**`ai/r28-oracle-loading`: the `28K` lane is EXECUTED and CLOSED on its branch** (resume
+conduct-ledger **`notes/28P`**; build ledger `notes/28O`): bitem0–3 and 6–9 LANDED, both
+legs green; bitem4/bitem5/withhold-softening/meet-direction-registry HELD by human order
+and now inherited by `28Q` stages i–ii. Live rulings routed OUT of the lane:
+`tc-split-family-elides-on-two-authors` (composite-license admissibility — the
+committee-corner sitting's) · `tc-inert-mocks-rail-is-dash-shaped` (posh has never
+executed a corpus emitter body; separate lane) · the blessing pair — `command -v`
+RESOLVED 2026-08-01 as a stdlib-oracle answer (`28Q` §5), `.`-of-proven-load-inert still
+human-owned (`28Q:res-dot-blessing-is-engine-side`). `ai/r28-cli-inputs`' two commits
+were cherry-picked into the lane (branch tip-redundant → advisory-delete queue).
 
-**NOT STARTED, despite `plans/26K` §0 billing them as the actionable head**: the §0a fruit arc
-and the §0b kernel sitting (local-exec-as-supported-mode / epochs / scopes) — zero code, zero
-commits anywhere (conductor-verified 2026-07-31).
+**NOT STARTED**: the `26K` §0a fruit arc (still zero code; parallel-anytime). The §0b
+kernel sitting is no longer a separate item — superseded into `28Q` stage-iii.
 
 ## CLEANUP QUEUE (branch deletion is human force-delete gated; verdicts below are advisory)
 
