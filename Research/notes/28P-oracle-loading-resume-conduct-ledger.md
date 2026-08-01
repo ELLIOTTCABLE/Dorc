@@ -1305,11 +1305,174 @@ The default gates on both platforms leave the lane OFF, so the committed `expect
 are proven by the opt-in run only — the same standing as the real-tools lane's assertions, and
 disclosed here rather than implied.
 
-## bitem9 — value-flow source targets (NOT STARTED)
+## bitem9 — value-flow source targets (LANDED; the item was in a different crate than its brief)
 
-Ruled stage C2, budget-permitting and last. Not started, and therefore not half-built: nothing in
-this lane touched `funcenv`'s source-statement targets, and `28K` §1 `rul-unloadable-is-unlicensed`'s
-richness half is exactly as it was.
+Ruled stage C2, last. `28K` §1 `rul-unloadable-is-unlicensed`'s richness half is delivered:
+`LIB=./oracles; . "$LIB/yum.sh"` now loads exactly as the literal spelling does. The headline is
+that it took ZERO lines of `funcenv`: the domain was never the blocker.
+
+### fnd-the-refusal-was-in-the-parser-not-the-domain
+
+The measurement that reframed the item, taken before any code was written, and it inverts the
+brief. `funcenv`'s `load_sites`/`command_transfer` already read their target through
+`SourceLiteralPlane`, and the value plane already resolves `"$LIB/lib.sh"` to a concatenated
+literal — so the domain would have answered all along. It never got the chance: `dorc_syntax`'s
+`check_simple_triggers` ⊤-rejected `.`/`source` of any non-literal target as
+`DynamicExecution`, so the statement became an `Unsupported` node, lowered to `CfgNodeKind::Top`,
+and HAVOC'd the environment. Measured through the built engine: the site's argv was `[]` and the
+node was `Top`, so `unresolvable_loads` did not even record it. +SURE.
+
+That is why the brief's "reuse the existing machinery, never a second resolver" was satisfiable
+literally rather than approximately — the machinery was already correct and merely starved. After
+the parser cut the same book reads `argv=[".", "./oracles/lib.sh"]` and binds `Defined(d)`, with
+no diff in `analysis/` outside its test module.
+
+### dec-the-trigger-asks-for-value-existence-not-literalness
+
+The cut, and it is a deliberate shrink of a FIXED `syntactic-top-triggers` entry
+(`syntax/CLAUDE.md`), which `inv-top-reject` says is never an accident. The warrant is `28K` §1
+itself — human-ACKED at `28K` §9 rat-four-rules-wording, and its text names this exact spelling as
+one that must load — so the design act was already taken; this is its implementation.
+
+The trigger now asks whether ANY value-flow could ever hold the target, not whether the word is a
+literal: a command substitution or arithmetic expansion answers no under every possible flow and
+stays a parse-tier ⊤; a parameter expansion is ordinary value-flow and belongs to the analyzer.
+The predicate is not new — it is `word_has_expansion_effect`, reused verbatim from the FOR-LIST
+word trigger, which is the same question (a word whose VALUE the analyzer must know to model
+control flow) in the same structural position. So the two-tier answer is a convention the parser
+already keeps, not the confusingly-similar middle `271:rul-net-quality-u-curve` warns against; and
+`semantic-top-not-here` ("the dynamic-word/expansion surface is the analyzer's ⊤, not the
+parser's") already said expansions in argument position are not the parser's business. The
+source-target trigger was the exception to its own crate's rule, minted before the
+function-environment domain existed to take the question.
+
+### fnd-parity-is-the-deliverable-and-the-e2e-tier-can-only-show-it-negatively
+
+Measured, and it changed the shape of the commissioned pin. `. "$PKG.oracle.sh"` and
+`. foobar.oracle.sh` in the same book render the SAME PLAN — `sites=0`, the same three sites
+`unresolvable-no-probe` — identical apart from the book's own bytes and the digest over them.
+Parity IS the ruling ("exactly as a literal path does"), so a case showing the variable spelling
+doing something SPECIAL would be pinning a bug.
+
+But both spellings ship nothing, and the reason is orthogonal to this item: a top-level `.` is an
+unmodeled command in book position, so it walls (`opaque-poison-is-the-product`) and nothing below
+it resolves — for the literal spelling equally, today and before bitem9. That is
+`28O:res-book-sourcing-walls-at-the-site`, whose blessing question
+(`.`-of-a-proven-load-inert-file) is ALREADY routed to the human beside `command -v`
+(`adj-command-v-blessing-routed-to-human`). Standing consequence worth the conductor's attention:
+until that question is answered, a book that sources an oracle walls its own remainder by every
+spelling, so bitem9's admin-visible payoff is gated behind a decision this lane did not own.
+bitem9 widened what RESOLVES; the wall is a different question.
+
+`pin28-variable-resolved-source-loads` is therefore non-vacuous through GATE-3 rather than through
+its transcript: before the cut this book carried two undeclared error-severity diagnostics
+(`syntax-unsupported` + `cfg-top-node`) and the case would have failed outright. Clean stderr is
+the whole difference, and the transcript carries the parity claim in prose.
+
+### fnd-an-executing-corpus-case-cannot-carry-a-top-level-source
+
+Found by the harness, not by reasoning, and it explains an absence nobody had named: NO executing
+corpus case has ever had a book-level `.`. `.` is a SPECIAL builtin, so a non-interactive shell
+that cannot find what it sources EXITS — and the exec rail's cwd is an empty throwaway sandbox, so
+the rendered apply exits rc 2 and `ap-2-exec` fails the case. (gate-5 fails too: the BARE book dies
+at the same line, so the site below never runs.) The floor lane already copies the case dir into
+its sandbox for exactly this reason, scoped to gate-9. This is `28K` §8
+`res-book-ships-its-load-closure` — named there, unbuilt — wearing harness clothes; the new pin
+carries no `mocks/` and says so.
+
+### res-the-load-set-lookup-is-exact-string (disclosed)
+
+`definitions_of_path` is a `BTreeMap<String, _>` keyed on the path AS THE CONTROLLER SPELLED IT, so
+`. "$LIB/x.sh"` with `LIB=./oracles` resolves only when the driver was handed `./oracles/x.sh`
+spelled identically; `oracles/x.sh` misses and walls. Conservative (a miss is an unresolvable load
+⇒ ⊤ ⇒ withhold), never a wrong license. NOT normalized here on purpose: lexical `./`-collapsing is
+guessing at a filesystem question from a pure kernel, and `28K` §8 already sites
+relative-path-vs-cwd robustness as a build concern. ~SUSPECT it bites the first real admin who
+tries this; the honest repair is at the input surface, not in the domain.
+
+### res-unresolvable-loads-is-computed-and-never-consumed (pre-existing, now load-bearing)
+
+`FuncEnv::unresolvable_loads` documents itself as "reported by the caller" and NO caller reports
+it — the accessor has one reference in the workspace, the field's own getter. Pre-existing and
+reachable before this item (`. never-given.sh` with a literal target hits it), but bitem9 widens
+the population that lands there, so it is worth naming. NOT a license bug: an unresolvable load
+havocs the environment, `unprovable` names every family, and the driver withholds — ⊤ licenses
+nothing, exactly as `rul-unloadable-is-unlicensed` requires. What is missing is the NARRATION
+(`two-plane-aid-law`: the aid plane should be telling the admin which families went quiet and
+why), which is a code + defining case + ceiling bump, i.e. its own small item. Named, not built.
+
+### The aid surface (no new code, no ceiling bump)
+
+The reason variant and its slug renamed in place, no alias (`rul-strawman-formats-no-compat`):
+`SourceOfNonLiteralTarget` → `SourceOfDynamicTarget`, `syntax-unsupported-source-of-non-literal-
+target` → `syntax-unsupported-source-of-dynamic-target`, with the defining case renamed and its
+book moved to `. "$(hork profile)"` — a target that still fires the narrowed trigger, so the case
+proves the trigger rather than the old one's memory.
+
+The WORDS were deliberately NOT rewritten. `Words::Unwritten` was tried first and is the right
+builder posture (`error-authorship-tier`: builders author ZERO prose), but
+`every_migrated_reason_renders_words_not_a_placeholder` refuses a placeholder for this family — it
+is a WIRING gate whose failure signal is `[unwritten:`, so an intentionally-unwritten row trips it
+for the wrong reason. Landed instead: the pre-bitem9 migrated text stands verbatim (authoring
+nothing), and the row's `when_used` METADATA now records that the words are still true of every
+firing but wider than the trigger, and are owed a sharpening. Flagged below.
+
+### Golden churn, predicted vs actual
+
+Predicted before building: the parser cut moves any corpus case whose book carries a `.` with a
+non-literal target — a survey found exactly one, the renamed defining case — and nothing else,
+since no corpus book sources through a variable.
+
+Actual: exactly that.
+
+| cause | cases | delta |
+|---|---|---|
+| the defining case's rename + new book | 1 | slug, filename, book, transcript; the diagnostic still fires |
+| every other loom transcript | 0 | 231 unchanged, byte-identical |
+| `expected.out` / `expected.ran` | 0 | no e2e golden moved a byte |
+| net-new | 1 e2e loom + 6 unit cells | additive |
+
+Windows 1908 passed / WSL 1904 passed, both legs, full gate. Comment budget: 10 net-new non-doc
+`//` lines against a cap of 12.
+
+### The behaviour pins
+
+Unit tier is where this item actually lives (`analysis::funcenv` TABLE 5), and the load-bearing
+one is `a_variable_resolved_source_target_binds_what_the_literal_spelling_binds`, which loops the
+SAME assertions over BOTH spellings — so it fails the day a second resolver appears beside the
+first and lets them disagree. Beside it: the two ⊤ cells (an unresolved variable, and a resolved
+path the controller never read — resolving a PATH is not learning what lives at it), the shadow
+refusal reading a variable-resolved load exactly as it reads a literal one (widening the
+resolvable set must not widen the SILENT set), and the fence cell below.
+
+`a_variable_spelled_file_test_decides_what_the_literal_one_decides` is the fence, and it is
+MEASURED rather than argued: run against the OLD trigger it still passes, while the two
+source-target cells fail. So the file test's operand already resolved through the plane and
+`28M:dec-decidable-set-v0` was untouched by this item — the decidable-CONDITION set did not move,
+only the RESOLVABLE-target set. That distinction is the brief's own fence and it is now checkable
+by anyone who doubts it.
+
+## Flagged upward (bitem9)
+
+- **`tc-source-target-trigger-shrank-a-fixed-syntactic-top`** — the item could not be done inside
+  `analysis/` at all; it required shrinking a FIXED entry of `syntax/CLAUDE.md`'s
+  `syntactic-top-triggers`, which `inv-top-reject` reserves as a deliberate design act. My read is
+  that `28K` §1 (human-ACKED) already took that act and this is merely its implementation, and the
+  shrink is the narrowest one available (the for-list word's own predicate, reused). But it is a
+  parser-tier licensure-adjacent widening in the crate its own file calls "the engine's
+  highest-risk surface", it landed from a single-crate brief that did not anticipate it, and the
+  conductor should decide whether `syntax/CLAUDE.md`'s trigger list wants updating in the same
+  breath (this lane did NOT edit it — the entry now reads wider than the code).
+- **`tc-migrated-words-now-overshoot-their-trigger`** — `syntax-unsupported-source-of-dynamic-
+  target` renders "`.`/`source` of a non-literal target", which is true of every firing but
+  describes a trigger three times wider than the live one. A builder may not author the
+  replacement and the placeholder route is gate-refused (above), so the sharpening is a
+  conductor/human prose act with the precise description already sitting in the row's `when_used`.
+- **`res-book-sourcing-wall-gates-this-item's-payoff`** — not new, and not mine to rule: the
+  `.`-of-a-proven-load-inert-file blessing question (routed at
+  `adj-command-v-blessing-routed-to-human`) is what stands between bitem9's delivered capability
+  and an admin ever seeing value from it. Worth the human knowing that a second item now waits on
+  that same answer.
 
 ## Flagged upward (builder-4)
 
