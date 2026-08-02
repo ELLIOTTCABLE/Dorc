@@ -94,12 +94,24 @@ weighted accordingly.
   machine-id-like properties on long-uptime hosts. Neither is sufficient alone as an
   incarnation signal. systemd's per-service invocation-ID is the nearest shipped
   finer-grained marker, unexplored this round.
-- **fnd-lifecycle-contagion-vs-statelessness** (~SUSPECT; CHECK-ITEM) — Terraform's one
-  lifecycle flag that *must* persist to state is exactly the one that propagates across
-  the dependency graph (create_before_destroy), because selectively reversing edges
-  makes cycles. If any Dorc incarnation-sensitivity marking turns out to propagate
-  object-to-object, it will generate pressure against the nothing-persists posture.
-  Stage-iii should look for this failure-shape deliberately rather than discover it.
+- **fnd-lifecycle-contagion-vs-statelessness** (~SUSPECT; CHECK-ITEM; full-read
+  verified 2026-08-01) — Terraform's one lifecycle flag that *must* persist to state is
+  exactly the one that propagates across the dependency graph (create_before_destroy),
+  because selectively reversing edges makes cycles (maintainer: overriding it on a
+  subset "amounts to reversing the dependencies"). Full-read carves: the persistence
+  pressure routes through delete-by-undeclare (destroy of a thing whose config is
+  gone must remember its creation semantics), a product surface Dorc structurally
+  refuses — so the *persistence* half likely dissolves for us; and the cycles arise
+  because Terraform *derives* ordering, which no-reorder-ever forecloses. What
+  survives as the CHECK-ITEM: declared per-object lifecycle/correlation policy that
+  propagates along dependency/reach edges, where a per-object opt-out is incoherent —
+  the coherent postures are derive-the-propagation-and-refuse-overrides-loudly, or
+  don't offer the per-object knob. Full-read rider (+SURE, in-source): the propagated
+  flag also *suppresses destroy-time provisioners* on nodes that never opted in —
+  implicit propagation of a semantics-bearing mark changed behaviour on a node whose
+  author never chose it, with no attribution; any propagating Dorc mark must carry
+  whose declaration forced it. [B-create-before-destroy-propagates-2026] ·
+  [B-cycle-argument-maintainer-explanation-2019]
 - **fnd-reify-guard-correlation** (~SUSPECT; book-analysis flavor) — two systems two
   decades apart reject correlated-but-separate guards (`if t; then …; fi` … later …
   `if ! t; then …; fi`) and prescribe the same repair: reify the correlation into a
