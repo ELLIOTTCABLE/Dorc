@@ -428,3 +428,120 @@ consent-gated act — the gate-then-27C order is coherent, per `28Rf`'s own did-
 6. The small batch (timens; mapping table; umbrella-ACK scoping; §5 ledger addition;
    literal-plane amendment sentence; two-planes fence + PRE citation; USER_STORY
    wording list).
+
+## §snapshot-emission-adjudication — the helper-plurality arc, adjudicated (lane: human sitting w/ conductor, 2026-08-01)
+
+Adjudicated resolution of `adj-helper-closure-frame-plurality` (above), superseding its
+disposition as the whole story: the conservative withhold survives as a permanent tier
+and the stage-i behavior, inside the larger design below. Current-truth only; grades as
+`28Q` ([TYPED] / [ACKED]); nothing here is proposed-pending. The `28Q` §1/§8 fold is
+owed at stage-brief time — read 28Q's helper-closure sentence and amendment-set item 1
+through this section.
+
+- **rul-munge-oracle-names-only** [TYPED] — the no-in-body-renames weld opens, narrowly:
+  the engine may rename function names of ORACLE-CUSTODY components — definitions
+  transitively reachable from a contracted `__role` entry point, i.e. material already
+  under the vouch/read-only contract — in SHIPPED artifacts only. Book bytes are never
+  rewritten (insert/remove stay the only book operations); on-disk oracle files and
+  `dorc strip` are untouched.
+- **rul-resolution-matches-shell-loading** [TYPED] — the resolution model IS sh's late
+  binding over the fork tree (`28Q:syn-frame-tree-is-fork-semantics`, now governing
+  helpers too). 28Q §1's "helper closures computed once, whole-unit" sentence is DEAD —
+  early binding smuggled into a late-binding model, and the actual source of the
+  finding. Munging never encodes an engine-chosen resolution (the edge-linking variant —
+  compiling per-edge model choices into the artifact — is rejected: it deletes sh's
+  coherence floor and promotes a linker into the license plane). Munging's sole job is
+  PACKAGING: one flat shipped file cannot reproduce the separations real execution gets
+  from time (redefinition order) and process (fork death at the paren). sh has no
+  per-file namespaces; the rename key is the frame snapshot, never the source file.
+- **rul-snapshot-transplant-emission** [ACKED] — a probe site ships the WHOLE
+  environment snapshot of its frame (the funcenv the kernel already computes),
+  alpha-renamed uniformly as a unit; a definition live at several frames with differing
+  neighbors ships per-snapshot. No per-edge decision exists anywhere: within a snapshot
+  everything resolves to the snapshot, which is what a forked shell at that position
+  would hold. Trusted-base consequence: adds NO judgment beyond funcenv itself (already
+  license-review-tier, per the §crosscheck rider); the worst funcenv bug ships a
+  coherent-but-misplaced environment, never a cross-environment chimera. Guard checks
+  carry the same closures into the apply artifact.
+- **rul-instantiation-hash-dedup** [ACKED] — dedup identity = definition bytes × the
+  identities its own calls resolved to (`fnd-dedup-keys-to-resolution`'s key, now
+  consumed at the ship seam too), computed as hash-consing over the SCC-condensed call
+  graph (mutual recursion hashes as a unit). A hash match must be confirmed by
+  structural equality — hash-trust alone would let a collision resurrect the chimera.
+  Cost: ~linear in bytes+edges; instantiation count hard-capped at frames×definitions;
+  controller-local. Three emission tiers: (1) **bare** — a globally-singleton
+  instantiation ships under its own name; a bare name is thereby a PROOF of
+  artifact-wide uniqueness, so a missed or runtime-computed call either binds to the
+  unique right definition or lands command-not-found → rc≥2 → flat sink → run. The
+  singleton census runs over shipped material ∪ the book's visible definitions.
+  (2) **munged** — a name with ≥2 instantiations munges ALL copies (`_d_`-short,
+  deterministic, human-meaningful qualifiers); on static collision with a book name the
+  book's name survives and ours munges, always. (3) **withheld** — a closure with
+  statically-unenumerable internal calls neither shares nor rewrites; it declines.
+  Withheld is PERMANENT (the bottom rung, not scaffolding). A single-frame,
+  collision-free world ships byte-identical to today — the migration gate.
+- **rul-defensive-mode-definition-vectors** [TYPED] — whole-artifact defensive emission
+  (munge-everything) triggers ONLY on an unresolved in-process DEFINITION VECTOR —
+  `eval` · `.` of an unreadable/computed target · `alias` — never on any-⊤: an unmodeled
+  command is an external binary and cannot define a function in the executing shell;
+  `hork` must not flip the mode. Corpus pricing: eval 30/31k files, alias 2 ⇒ bare-mode
+  is the overwhelming case. The APPLY artifact is the product's face and fights for
+  bareness; the probe lane may prefix uniformly. Mode and munge explanations are
+  why-plane PULL-ONLY [TYPED nack]: no plan-inserted prose, ever; enhancement pressure
+  here is structural only. Off-ramp note (a book depending on our munging breaks the
+  day Dorc leaves): `dorc lint` tier, not even a warning [TYPED].
+- **rul-mixed-custody-suspends-vouch** [TYPED full ack — BUILD] — a vouch attaches to
+  the code that will actually run: the verdict body's reached closure, resolved at the
+  site's frame. If every reached definition lies within the vouching engineer's closure
+  (transitive `.`-inclusion included — the positive half of
+  `28M:dir-ownership-is-transitive-inclusion`), the vouch covers elide and guard. If ANY
+  reached name resolves to foreign custody (the book's redefinition; another closure's
+  helper), the executed composition is not the region of sh the engineer vouched: the
+  vouch does not attach — no elide, NO guard (guards are vouch-licensed), the site runs.
+  Per-site: above a book redefinition the vouch attaches; below it, suspends — the
+  munged author-copy never substitutes where the book's definition is positionally live
+  (that would be a silent referent swap). Held-together consequences: piecemeal
+  helper-injection under someone else's entry point degrades honestly (modeled,
+  unadvertised, never forbidden); whole-entry-point replacement re-aligns voucher and
+  body structurally (the blessed granularity); calling a helper neither defined nor
+  sourced suspends, and the fix is the one `.` line that converts foreign custody into
+  declared inclusion. License-plane only; the rule can only suspend, never mint. Human
+  framing, banked: **MH2 for in-shell semantics we CAN see** — "the oracle vouched a
+  composition that is not present," rejected statically where visible; the
+  binary-referent form of the same question is invisible and owed to MH2. BUILD riders:
+  day-one user-visible decline class — every suspension mints narrative at every step
+  (`law-collapse-mints-narrative`) and the why-chain renders end-to-end (site, name,
+  whose definition is live, whose custody, what suspended, the one-line fix); prose via
+  the standard authorship tier.
+- **rul-contested-name-never-resolved** [TYPED] — at a command-position tool name that a
+  book function-definition collides with (visible via the same census), the engine NEVER
+  chooses the referent: honoring the wrapper and bypassing it (unset-in-subshell,
+  clean-process — both retracted as defaults) are engine referent-choices between two
+  humans' meanings, each unsound in a real cell (bypass under-executes in
+  context-wrapper books; honor runs unvouched, possibly mutating, code inside a
+  read-only check). Sole sound act: decline — no license, original bytes run, both
+  humans pointed at each other; promotion path = spell the wrapper as a wrapper-oracle
+  with an entry form (`27C` restores probe-entry). The structural self-vouch's referent
+  assumption is now explicit law: "a command inside the author's body" means the
+  documented external utility. Invisible wrappers exist only downstream of definition
+  vectors, where the fact-plane wall already forecloses elision; guard-tier interception
+  there is disclosed residue (contract clause + horizon entries: invisible-vector
+  wrappers, PATH shadowing, parse-time aliases, cross-name check/mutation
+  lens-asymmetry).
+- **rul-canary-rides-mh2-tether** [TYPED] — the runtime referent-identity check ("is
+  this name still an external utility / THE artifact vouched against") ships only as
+  MH2's tether, or standalone iff MH2 permanently closes; strict subsumption (the weak
+  form of the tether's question). Seam reserved now, one sentence's worth: guard
+  emission stays tether-ready (per-name preamble room inside the paren; the
+  enumerated-external-commands list reachable at emission time).
+- **dec-stage-sequencing-withhold-floor** (conductor, human-delegated) — stage-i lands
+  the per-frame model with WITHHOLD as its emission behavior (one behavior in the
+  resolution seats already under edit; it survives as the permanent withheld tier);
+  transplant+dedup emission is its own stage between stage-i and stage-ii. Both named
+  here so it cannot read as piecemeal.
+- **Residue** — `pin-interim-post-vector-guards`: until MH2, post-vector
+  invisible-wrapper interception is disclosed residue, no degrade machinery [ACKED].
+  `task-verify-definition-vector-walls`: confirm as-built ⊤-walling at book-level
+  definition vectors (stage-i brief). Deep-stack caller-cone + plural-idiom
+  differential fixtures join the stage-i gate rebuild; `command -v` floor behavior and
+  ops-book vector-frequency re-home as MH2-sitting inputs.
