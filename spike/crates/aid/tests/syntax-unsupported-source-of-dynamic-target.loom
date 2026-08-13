@@ -20,6 +20,6 @@ book.sh:
         [ book.sh:2:1
      2 | . "$(hork profile)"
        | ^
-  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~0 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] this book carries 1 unmodeled wall -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~0 command site(s) after it fall back to runtime guards instead of full elision.
 
 dorc lint: 2 errors, 0 warnings, 1 info across 1 file.

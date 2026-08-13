@@ -39,16 +39,8 @@ use dorc_aid::catalog::CATALOG;
 const ASCII_SWEEP_ALLOWLIST: &[(&str, &str)] = &[
     // ── JARGON: ⊤/⊄ in user prose, awaiting authored words ──
     (
-        "depth-2-positional-unthreaded",
-        "JARGON ⊤: `the inner body's positional is ⊤`",
-    ),
-    (
         "lend-map-unknown-dimension",
         "JARGON ⊤: `the dimension it meant to answer stays ⊤ (walls)`",
-    ),
-    (
-        "unmodeled-wall-inventory",
-        "JARGON ⊤: `N modeled ⊤-walls in this book`",
     ),
     (
         "cli-help-page",

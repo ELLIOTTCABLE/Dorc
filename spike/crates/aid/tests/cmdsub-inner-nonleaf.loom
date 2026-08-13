@@ -12,9 +12,9 @@ hork --owner "$uid"
 
 -- replay --
 $ dorc plan --book=book.sh
-note[cmdsub-inner-nonleaf]: sm command `id -u` runs inside a `$(...)`
-substitution => effect-bearing but not independently elidable (it runs whenever
-its enclosing line runs)
+note[cmdsub-inner-nonleaf]: Dorc cannot elide `id -u` on its own: it runs inside
+a `$(...)` substitution as part of evaluating its enclosing line, so it runs
+whenever that line does.
       [ book.sh:1:1
    1 | #!/bin/sh
      | \___/

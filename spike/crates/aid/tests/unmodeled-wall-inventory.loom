@@ -33,7 +33,7 @@ oracle.sh:
         [ oracle.sh:2:1
      2 | eval "one"
        | \__/
-  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] sm 2 unmodeled ⊤-walls in this book; the first is here. Downstream commands (~3 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
+  2:1 info [unmodeled-inventory:unmodeled-wall-inventory] this book carries 2 unmodeled walls -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~3 command site(s) after it fall back to runtime guards instead of full elision.
   error[cfg-top-node]: unsupported construct (unknown): un-probeable and
   un-skippable
         [ oracle.sh:3:1

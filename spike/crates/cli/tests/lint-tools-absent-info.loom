@@ -12,7 +12,7 @@ $ dorc lint --source=shellcheck --source=checkbashisms book.sh
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 (run):
-  - info [checkbashisms:lint-tool-absent] sm `checkbashisms` was not found on PATH -- its checks were skipped. Install it, pass --no-tools to silence this, or --require-tools to make it a hard CI error. (raw)
-  - info [shellcheck:lint-tool-absent] sm `shellcheck` was not found on PATH -- its checks were skipped. Install it, pass --no-tools to silence this, or --require-tools to make it a hard CI error. (raw)
+  - info [checkbashisms:lint-tool-absent] Dorc did not find `checkbashisms` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error. (raw)
+  - info [shellcheck:lint-tool-absent] Dorc did not find `shellcheck` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error. (raw)
 
 dorc lint: 0 errors, 0 warnings, 2 infos across 1 file.

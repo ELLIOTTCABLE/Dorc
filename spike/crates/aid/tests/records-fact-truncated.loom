@@ -6,5 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=book.sh < probe-results.txt
-note[records-fact-truncated]: sm fact lane truncated: 3 of 5 declared site
-records received -- the 2 unseen site(s) fold Unknown (run)
+note[records-fact-truncated]: the probe's records ended early: 3 of 5 declared
+site records arrived, so Dorc treats the 2 unseen site(s) as unanswered and
+leaves their commands to run.
