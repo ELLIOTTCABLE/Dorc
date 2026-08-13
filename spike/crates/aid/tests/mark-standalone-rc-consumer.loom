@@ -13,7 +13,10 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[mark-standalone-rc-consumer]: [unwritten: mark-standalone-rc-consumer]
+  error[mark-standalone-rc-consumer]: This mark stands on no command, so the
+  cell it names has nothing to back it: `asserts`, `refutes`, and `reads` must
+  trail the command whose exit code and execution they read. A standalone line
+  may carry only non-rc verbs such as `disturbs`, `lends`, or `safe-across`.
         [ oracle.sh:2:3
      2 | : sm.a.B@x
        |   \______/

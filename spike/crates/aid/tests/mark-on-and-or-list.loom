@@ -16,7 +16,11 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  warning[mark-on-and-or-list]: [unwritten: mark-on-and-or-list]
+  warning[mark-on-and-or-list]: This mark trails an item of an `&&`/`||` list,
+  whose exit code belongs to the list as a whole, so the mark reads nothing and
+  mints no cell; the list itself ships untouched. Give the marked probe its own
+  line, with the gate above it, so the mark reads that one command's own exit
+  code.
         [ oracle.sh:4:26
      4 |    wombat query "$thing" : sm.dorc.Thing:"$thing"@present || return 2
        |                          \______________________________/

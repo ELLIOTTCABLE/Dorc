@@ -13,7 +13,9 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  warning[mark-hashcolon-malformed]: [unwritten: mark-hashcolon-malformed]
+  warning[mark-hashcolon-malformed]: This `#:` comment looks like a mark block
+  but does not parse as one, so it mints nothing; Dorc leaves it as a plain
+  comment -- `dorc strip` will not erase it -- rather than guess at its meaning.
         [ oracle.sh:2:1
      2 | #: frobnicate
        | \/

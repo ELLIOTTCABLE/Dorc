@@ -22,7 +22,10 @@ oracle.sh:
         [ oracle.sh:2:1
      2 | dpkg -s nginx : sm.a.B@x
        | \______________________/
-  error[mark-rc-arity-exceeded]: [unwritten: mark-rc-arity-exceeded]
+  error[mark-rc-arity-exceeded]: One exit code witnesses one cell, and this
+  mark's command already binds its exit code to a verdict; a second rc-consuming
+  mark cannot be measured. Give each verdict its own probe line -- one command,
+  one exit code, one cell.
         [ oracle.sh:3:11
      3 | : refutes sm.a.C@y
        |           \______/
