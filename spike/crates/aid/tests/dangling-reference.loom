@@ -6,6 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[dangling-reference]: sm coordinate sm.dorc.Package:nginx resolved DANGLING
--- the kind's resolver reports no such entity (a likely typo / stale name); it
-degrades to may-alias (the site runs)
+note[dangling-reference]: Coordinate sm.dorc.Package:nginx names an entity its
+kind's resolver does not recognize -- a likely typo or stale name -- so Dorc
+treats it as possibly aliasing anything, and the site runs.
