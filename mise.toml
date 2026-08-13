@@ -229,12 +229,16 @@ run = [
 ]
 
 [tasks."test:e2e"]
-description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact."
+description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
 dir = "spike"
-run = "cargo test -p dorc-cli --test e2e"
+# The trailing `--` is load-bearing: without it mise's passthrough lands on `cargo test`, whose
+# own `[TESTNAME]` takes exactly one positional and refuses a second before the runner ever sees
+# it. The runner itself resolves any number of case paths (`split_path_selectors`), which is how
+# the pre-commit hook scopes a run — so the ceiling was cargo's, not ours.
+run = "cargo test -p dorc-cli --test e2e --"
 
 [tasks."test:looms"]
-description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint."
+description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint. Trailing args: ONE bare substring (unlike test:e2e, this runner has no path selection)."
 dir = "spike"
 run = "cargo test -p dorc-cli --test looms"
 
@@ -314,7 +318,7 @@ description = "Install hk's git hooks: the pre-commit lint gate AND the commit-m
 run = "hk install --mise"
 
 [tasks.bless]
-description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. Trailing case substrings SCOPE it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
+description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. A trailing case substring SCOPES it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. SEVERAL cases at once are spelled as PATHS (`crates/aid/tests/a.loom crates/cli/tests/b.loom`), which the runner resolves to exact trial names; the bare-substring form is libtest's own filter and takes exactly one. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless"
 
