@@ -241,7 +241,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "mark-unknown-verb",
-        when_fires: "the new-grammar mark parser hit a period-free head/continuation token that is not a known verb (`281` §4 rule-3 miss). oracle/predict/mark_grammar.rs.",
+        when_fires: "the new-grammar mark parser hit a period-free head/continuation token that is not a known verb (`281` §4 rule-3 miss). oracle/predict/parser.rs parse_mark.",
         why: "281 §4 keystone (rul-verbs-dotless-kinds-dotted): a dotless mark token is a verb; an unknown one is malformed committed syntax ⇒ the block drops to ⊤ (`inv-top-reject`). `{token}` = the bad token, `{expected}` = the known-verb vocabulary.",
         params: &["token", "expected"],
         example: "`frobnicate` is not a mark verb I know; a dotless token in mark position must be one of asserts, refutes, reads, bind, safe-across, disturbs, lends, stored-in, undivided-by-transit-across",
@@ -250,7 +250,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "mark-rc-arity-exceeded",
-        when_fires: "the new-grammar mark parser found two rc-consuming marks (`asserts`/`refutes`) in one block, incl. continuations (`281` §7). oracle/predict/mark_grammar.rs.",
+        when_fires: "the new-grammar mark parser found two rc-consuming marks (`asserts`/`refutes`) in one block, incl. continuations (`281` §7). oracle/predict/parser.rs validate_mark_block.",
         why: "281 §7 rc-arity: one exit code witnesses one cell, so two verdicts on one block is unmeasurable ⇒ the block drops to ⊤ (`inv-top-reject`).",
         params: &[],
         example: "One exit code witnesses one cell, and this mark's command already binds its exit code to a verdict; a second rc-consuming mark cannot be measured. Give each verdict its own probe line -- one command, one exit code, one cell.",
@@ -259,7 +259,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "mark-standalone-rc-consumer",
-        when_fires: "the new-grammar mark parser found a standalone mark-block (no command to bind) carrying an rc-consumer or `reads`. oracle/predict/mark_grammar.rs.",
+        when_fires: "the new-grammar mark parser found a standalone mark-block (no command to bind) carrying an rc-consumer or `reads`. oracle/predict/parser.rs validate_mark_block.",
         why: "28A:rul-continuation-attachment: a standalone block has no statement to measure/back, so a verdict/observe there is unbacked ⇒ the block drops to ⊤ (`inv-top-reject`).",
         params: &[],
         example: "This mark stands on no command, so the cell it names has nothing to back it: `asserts`, `refutes`, and `reads` must trail the command whose exit code and execution they read. A standalone line may carry only non-rc verbs such as `disturbs`, `lends`, or `safe-across`.",
@@ -268,7 +268,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "mark-hashcolon-malformed",
-        when_fires: "the new-grammar mark parser found a `#:` comment that looks like a mark-block but did not parse (`281` §9). oracle/predict/mark_grammar.rs.",
+        when_fires: "the new-grammar mark parser found a `#:` comment that looks like a mark-block but did not parse (`281` §9). oracle/predict/parser.rs fail_hashcolon.",
         why: "281 §9 graceful degradation: the hash-colon carrier is left a plain comment (never mis-erased) but diagnosed (Warning) so a broken one is never silently ignored.",
         params: &[],
         example: "This `#:` comment looks like a mark block but does not parse as one, so it mints nothing; Dorc leaves it as a plain comment -- `dorc strip` will not erase it -- rather than guess at its meaning.",
@@ -367,7 +367,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "footprint-incoherent",
-        when_fires: "a touches() footprint is incoherent. cli/main.rs — TWO emit paths: the SPANNED own-coordinate canary (footprint omits its own effect coordinate), and the SPANLESS malformed-derived-coordinate refusal (the SPANLESS_SITE_PAYLOADS one).",
+        when_fires: "a touches() footprint is incoherent. cli/survival.rs — FOUR emit paths, all SPANNED, told apart by the typed reason: the own-coordinate canary (the footprint omits its own effect coordinate), the emitting body dying mid-survey, a malformed derived coordinate, and the reaches-expansion re-emit.",
         why: "24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. The reason is typed: two FootprintIncoherentReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "touches() footprint omits this command's own effect coordinate (at-least not-within at-most) -- footprint refused, the site walls",
@@ -376,7 +376,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "touches-escalated",
-        when_fires: "a payload-bound touches() escalated to host-derivation. cli/main.rs merge_derived_footprints. `{site}` = node id, `{call}` = the escalated call.",
+        when_fires: "a payload-bound touches() escalated to host-derivation. cli/survival.rs merge_derived_footprints. `{site}` = node id, `{call}` = the escalated call.",
         why: "ru-26 SPIKE-ONLY: makes the static→dynamic boundary visible in the render; must not leak into greenfield as a permanent per-escalation requirement.",
         params: &["site", "call"],
         example: "site 0: this footprint could not be derived statically, so hork.touches() shipped with the probe and answered from the host, read-only.",
@@ -385,7 +385,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "deriv-family-incomplete",
-        when_fires: "a derived footprint family did not close completely (missing deriv-end, or a count mismatch). cli/main.rs. `{site}` = node id, `{reason}` = the match.",
+        when_fires: "a derived footprint family did not close completely (missing deriv-end, or a count mismatch). cli/survival.rs merge_derived_footprints. `{site}` = node id, `{reason}` = the match.",
         why: "262 §2 / 26A stop-1: an at-most family cannot be partial — refuse ⇒ the site walls total.",
         params: &["site", "reason"],
         example: "site 0: the footprint derived on the host arrived incomplete (no deriv-end close-record), and an at-most claim cannot be partial, so Dorc refuses it whole and the site walls, as if nothing had been claimed.",
@@ -403,7 +403,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "carried-across-substrate-axis",
-        when_fires: "a cross-context elision carried a substrate-axis fact via pure-predicate carry. cli/main.rs. Spanned (the carried site's span).",
+        when_fires: "a cross-context elision carried a substrate-axis fact via pure-predicate carry. cli/survival.rs build_wrapped_analysis. Spanned (the carried site's span).",
         why: "27C §9: every cross-context elision renders its attribution chain from day one. The holes are typed: `{axes}` are the crossed axes and `{kinds}` the read kinds with their invariant loci; the sentence is the code's own register.",
         params: &["axes", "kinds"],
         example: "This elision carried across fs-view: Dorc proved the verdict body reads nothing beyond the site's own arguments and sm_dorc_File (invariant: line at certsync.oracle.sh:12), whose owners vouch that state does not divide across fs-view.",
@@ -412,7 +412,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "wrapped-site-adoption-hint",
-        when_fires: "a wrapped BOOK site degraded on a missing `tolerates:` vouch. cli/main.rs (27N). Spanned (the wrapped site's span).",
+        when_fires: "a wrapped BOOK site degraded on a missing `tolerates:` vouch. cli/survival.rs build_wrapped_analysis (27N). Spanned (the wrapped site's span).",
         why: "27C §2 (recognize-never-license): the one-line adoption hint. The holes are typed: `{provider}` and `{dimension}` name the missing vouch.",
         params: &["provider", "dimension"],
         example: "This site would elide if hork's oracle vouched its verdict across the wrapped context -- one line in the verdict function: `: safe-across user`.",
@@ -421,7 +421,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "resolver-conflict",
-        when_fires: "two oracle files declare one kind's resolver. cli/main.rs. `{kind}` = the kind, `{count}` = the resolver count.",
+        when_fires: "two oracle files declare one kind's resolver. cli/kinds.rs build_kind_resolvers. `{kind}` = the kind, `{count}` = the resolver count.",
         why: "24F §3 at-most-one-resolver-per-kind: BOTH refused (never first-wins-silently); the kind keeps token-equality.",
         params: &["kind", "count"],
         example: "Kind `sm_dorc_Package` has 2 resolvers across the loaded oracle files, and a kind has one identity, so Dorc refuses them all -- entities of this kind compare by name alone until exactly one `__resolve` remains.",
@@ -430,7 +430,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "resolver-provider-collision",
-        when_fires: "a resolver is keyed to a name matching a known COMMAND provider. cli/main.rs. `{name}` = the colliding name.",
+        when_fires: "a resolver is keyed to a name matching a known COMMAND provider. cli/kinds.rs build_kind_resolvers. `{name}` = the colliding name.",
         why: "corr-kind-keying §10: resolvers are keyed by KIND, not command — a likely mis-key (kept; the warning surfaces the risk).",
         params: &["name"],
         example: "`hork__resolve()` is keyed by a command name, but a resolver belongs to a kind -- as written it mints identity for a kind no coordinate can name (a likely mis-key).",
@@ -439,7 +439,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "dangling-reference",
-        when_fires: "a coordinate resolved DANGLING (no such entity on an enumerable kind). cli/main.rs dangling_diagnostics. `{coord}` = the rendered coordinate.",
+        when_fires: "a coordinate resolved DANGLING (no such entity on an enumerable kind). cli/survival.rs dangling_diagnostics. `{coord}` = the rendered coordinate.",
         why: "24F §4: turns a third-party-typo from silent value-loss into a pointed hint; the coord rides the may-alias degrade (the site runs). ADVISORY (fail toward run).",
         params: &["coord"],
         example: "Coordinate sm.dorc.Package:nginx names an entity its kind's resolver does not recognize -- a likely typo or stale name -- so Dorc treats it as possibly aliasing anything, and the site runs.",
@@ -448,7 +448,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "reaches-conflict",
-        when_fires: "two oracle files declare one kind's reach-function. cli/main.rs. `{kind}` = the kind, `{count}` = the reach-function count.",
+        when_fires: "two oracle files declare one kind's reach-function. cli/kinds.rs build_kind_reaches. `{kind}` = the kind, `{count}` = the reach-function count.",
         why: "24G §4 at-most-one-reaches-per-kind: BOTH refused (never first-wins-silently); the kind's footprints do not expand.",
         params: &["kind", "count"],
         example: "Kind `sm_dorc_Package` has 2 reach-functions across the loaded oracle files, and `only` is a completeness contract two surveys cannot both hold, so Dorc refuses them all -- the kind's footprints stay exactly as emitted until one remains.",
@@ -457,7 +457,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "reaches-provider-collision",
-        when_fires: "a reach-function is keyed to a name matching a known COMMAND provider. cli/main.rs. `{name}` = the colliding name.",
+        when_fires: "a reach-function is keyed to a name matching a known COMMAND provider. cli/kinds.rs build_kind_reaches. `{name}` = the colliding name.",
         why: "24G §4: reaches is keyed by KIND, not command — a likely mis-key.",
         params: &["name"],
         example: "`hork__disturbance_reaches_only()` is keyed by a command name, but a reach-function belongs to a kind -- as written it widens a kind no coordinate can name (a likely mis-key).",
@@ -466,7 +466,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "wrapper-entry-incoherent",
-        when_fires: "a wrapper's `__enter` and `__lend_map` disagree on argv flow. cli/main.rs. Spanned (the entry name_span).",
+        when_fires: "a wrapper's `__enter` and `__lend_map` disagree on argv flow. oracle/validate.rs peel_and_entry_coherence. Spanned (the entry name_span).",
         why: "27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "entry_shifts", "lend_shifts"],
         example: "Wrapper `runas`'s `__enter` and `__lend_map` disagree on argv flow: the entry form consumes 1 leading argument(s) where the lend-fold consumes 2, so the guest the entry runs is not the guest the fold measured, and Dorc stops before contacting any host. Make the entry form pass the fold's guest verbatim -- both argparses must peel to the same tail.",
@@ -475,7 +475,7 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "wrapper-peel-incoherent",
-        when_fires: "a wrapper's `__predict` and `__lend_map` disagree on the peel tail position. cli/main.rs. Spanned (the predict name_span).",
+        when_fires: "a wrapper's `__predict` and `__lend_map` disagree on the peel tail position. oracle/validate.rs peel_and_entry_coherence. Spanned (the predict name_span).",
         why: "273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "predict_depth", "lend_map_depth"],
         example: "Wrapper `sudo`'s `__predict` and `__lend_map` disagree on where the guest begins: `__predict` reaches `\"$@\"` after 1 argv token(s), `__lend_map` after 0, so the guest would start at a different token depending on which member dispatched, and Dorc stops before contacting any host. Fix whichever argparse is wrong so both members peel to the same tail.",
@@ -548,9 +548,9 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "lint-tool-absent",
         when_fires: "a configured external linter is not on PATH, so its checks did not run. lint/source_external.rs. `{tool}` is the tool name.",
-        why: "27R §4 dir-absent-is-info - a missing tool is the admin's environment, disclosed rather than silently skipped; --require-tools raises it to a hard CI error. World-as-payload: an honest trigger would have to run a real foreign tool, which replay never does.",
+        why: "27R §4 dir-absent-is-info - a missing tool is the admin's environment, disclosed rather than silently skipped; --require-tools raises it to a hard CI error. The replay is the real `dorc lint` surface with tools left ENABLED; the injected runner (the one external-tool DI seam) answers every tool absent, so an airgapped machine's own output is reached with no PATH probe and no process.",
         params: &["tool"],
-        example: "Dorc did not find `shellcheck` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error.",
+        example: "Dorc did not find `checkbashisms` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error.",
         message: Some(ProseTier::Authored("Dorc did not find `{{tool}}` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error.")),
         help: HelpRegister::Absent,
     },
