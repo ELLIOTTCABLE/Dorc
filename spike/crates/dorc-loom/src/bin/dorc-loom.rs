@@ -16,8 +16,8 @@ use dorc_loom::{
 #[cfg(test)]
 use errorloom::EditableSection;
 use errorloom::{
-    Case, EditableFragment, RenderComponent, ReplayInput, ReplayResult, RunEnv, RunError,
-    execute_generic, read_case, read_case_text,
+    Case, CaseRenderer, EditableFragment, RenderComponent, ReplayInput, ReplayResult, RunEnv,
+    RunError, execute_generic, read_case, read_case_text,
 };
 
 const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
@@ -776,7 +776,53 @@ fn publish(
         writeln!(out, "promote: corpus already at the generated fixpoint")
             .map_err(|e| e.to_string())?;
     }
-    Ok(())
+    note_stale_siblings(consumer, &corpus, &arrangements, affected, out)
+}
+
+/// The cases this publication does not rewrite, but does invalidate.
+///
+/// Promote republishes only what it was handed, and that is the right blast radius to WRITE. It is
+/// the wrong one to stay silent about: a reworded shared component moves every render that spends
+/// it, and one such edit left 37 sibling transcripts stale with nothing to say so until
+/// `test:looms` went red much later, by which time nothing connected the failure to the promote
+/// that caused it. Naming them keeps the write narrow and the cause attached.
+fn note_stale_siblings(
+    consumer: &DorcConsumer,
+    corpus: &std::collections::BTreeMap<String, Case>,
+    arrangements: &std::collections::BTreeMap<String, Case>,
+    affected: &std::collections::BTreeMap<String, Case>,
+    out: &mut impl Write,
+) -> Result<(), String> {
+    let published = DorcConsumer::new();
+    let stale: Vec<&str> = corpus
+        .iter()
+        .chain(arrangements)
+        .filter(|(slug, _)| !affected.contains_key(slug.as_str()))
+        .filter(|(_, case)| {
+            // A case that will not render at all is somebody else's red, not this note's.
+            matches!(
+                (published.render_case(case), consumer.render_case(case)),
+                (Ok(before), Ok(after)) if before != after
+            )
+        })
+        .map(|(slug, _)| slug.as_str())
+        .collect();
+    if stale.is_empty() {
+        return Ok(());
+    }
+    writeln!(
+        out,
+        "promote: {} other case(s) now render differently and were NOT republished: {}",
+        stale.len(),
+        stale.join(", ")
+    )
+    .map_err(|e| e.to_string())?;
+    writeln!(
+        out,
+        "  they spend a component this promote reworded; `mise run test:looms` is where their \
+         stale transcripts surface"
+    )
+    .map_err(|e| e.to_string())
 }
 
 fn file_differs(path: &Path, bytes: &str) -> bool {
@@ -1397,6 +1443,85 @@ mod tests {
         assert!(out.contains("text: \"do the \""), "{out}");
         assert!(out.contains("var {{thing}} = \"widget\""), "{out}");
         assert!(out.contains("text: \" now\""), "{out}");
+    }
+
+    /// The incident this exists for, reproduced on the corpus's own shared component: eleven
+    /// invocation-error cases render the usage synopsis, `cli-no-book-given` homes it, and a
+    /// reword through that home moves every other one's committed bytes without republishing any
+    /// of them.
+    #[test]
+    fn a_reworded_component_names_the_cases_it_stales() {
+        let read = |slug: &str| {
+            let text = std::fs::read_to_string(
+                Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../aid/tests/{slug}.loom")),
+            )
+            .expect("read the case");
+            Case::parse(&text).expect("case parses")
+        };
+        let home = read("cli-no-book-given");
+        let borrower = read("cli-unknown-flag");
+
+        let mut consumer = DorcConsumer::new();
+        let words = consumer
+            .arrangements()
+            .iter()
+            .find(|entry| entry.slug == "cli-usage-synopsis")
+            .and_then(|entry| entry.words.words())
+            .map(<[String]>::to_vec)
+            .expect("the synopsis component has words");
+        // Same arity, different bytes: an arity change is a different failure with its own refusal.
+        let mut reworded = words.clone();
+        reworded[0] = format!("{}, really", words[0]);
+        consumer.set_arrangement_words(
+            "cli-usage-synopsis",
+            dorc_aid::arrangement::OwnedWords::Authored(reworded),
+        );
+
+        let corpus = std::collections::BTreeMap::from([
+            ("cli-no-book-given".to_owned(), home.clone()),
+            ("cli-unknown-flag".to_owned(), borrower),
+        ]);
+        let affected = std::collections::BTreeMap::from([("cli-no-book-given".to_owned(), home)]);
+        let mut out = Vec::new();
+        note_stale_siblings(
+            &consumer,
+            &corpus,
+            &std::collections::BTreeMap::new(),
+            &affected,
+            &mut out,
+        )
+        .expect("the note writes");
+        let out = String::from_utf8(out).expect("notes are utf-8");
+        assert!(out.contains("cli-unknown-flag"), "{out}");
+        assert!(
+            !out.contains("cli-no-book-given"),
+            "the republished case is not stale: {out}"
+        );
+        assert!(
+            out.contains("test:looms"),
+            "the note names where it surfaces: {out}"
+        );
+    }
+
+    /// The other half: an unedited consumer stales nothing, so an ordinary promote stays quiet.
+    #[test]
+    fn an_unreworded_promote_names_nothing() {
+        let text = std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests/cli-unknown-flag.loom"),
+        )
+        .expect("read the case");
+        let case = Case::parse(&text).expect("case parses");
+        let corpus = std::collections::BTreeMap::from([("cli-unknown-flag".to_owned(), case)]);
+        let mut out = Vec::new();
+        note_stale_siblings(
+            &DorcConsumer::new(),
+            &corpus,
+            &std::collections::BTreeMap::new(),
+            &std::collections::BTreeMap::new(),
+            &mut out,
+        )
+        .expect("the note writes");
+        assert!(out.is_empty(), "{}", String::from_utf8_lossy(&out));
     }
 
     /// A hand-seeded row's arity mismatch panics deep inside the shared renderer
