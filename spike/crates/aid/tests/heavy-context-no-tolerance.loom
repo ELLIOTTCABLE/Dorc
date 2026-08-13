@@ -15,10 +15,10 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  note[heavy-context-no-tolerance]: sm this `is_converged` reads the caller's
-  identity but carries no tolerance vouch -- a wrapped site (`sudo ...`) will
-  run/guard instead of eliding. One line makes it context-shiftable: `:
-  safe-across user` (`27C` section 2).
+  note[heavy-context-no-tolerance]: This `is_converged` reads the caller's
+  identity but carries no `safe-across` vouch, so a wrapped site (`sudo ...`)
+  runs or guards instead of eliding; if the body stays read-only under a user
+  shift, one `: safe-across user` line makes it context-shiftable.
         [ oracle.sh:2:1
      2 | hork__is_converged() {
        | \________________/
