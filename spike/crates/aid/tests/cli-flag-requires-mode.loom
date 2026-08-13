@@ -6,5 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --whylog=run.whylog --book=webhost.sh
-dorc: error[cli-flag-requires-mode]: sm --whylog is only valid with dorc why
+dorc: error[cli-flag-requires-mode]: The `--whylog` flag is only valid with dorc
+why.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

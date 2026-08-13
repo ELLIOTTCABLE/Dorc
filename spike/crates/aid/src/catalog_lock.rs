@@ -631,8 +631,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a flag scoped to one invocation was given under another (or its required companion was omitted). cli/lib.rs. {flag} and the {mode} it belongs to.",
         why: "the flag surface is per-invocation, so accepting it elsewhere would imply a capability that mode does not have. tc-whylog-default-off: the spike opt-in siting is the disclosed cut here.",
         params: &["flag", "mode"],
-        example: "sm --whylog is only valid with dorc why",
-        message: Some(ProseTier::Migrated("sm {{flag}} is only valid with {{mode}}")),
+        example: "The `--whylog` flag is only valid with dorc why.",
+        message: Some(ProseTier::Authored("The `{{flag}}` flag is only valid with {{mode}}.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -640,8 +640,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a numeric flag was given a non-number. cli/lib.rs parse_expect_count (--expect-files). {flag} and the {got} token.",
         why: "27R section 8b: --expect-files is a CI scope assertion, so a malformed count is refused rather than coerced - a silently-zero expectation would pass vacuously.",
         params: &["flag", "got"],
-        example: "sm --expect-files needs a non-negative integer, got `many`",
-        message: Some(ProseTier::Migrated("sm {{flag}} needs a non-negative integer, got `{{got}}`")),
+        example: "The `--expect-files` flag takes a non-negative integer, not `many`.",
+        message: Some(ProseTier::Authored("The `{{flag}}` flag takes a non-negative integer, not `{{got}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -649,8 +649,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a flag value outside its closed vocabulary. cli/lib.rs (--probe-capability, --format, --fail-on). {flag}, {got}, and the accepted {expected} set.",
         why: "27C axis-1 and 27R section 5: these vocabularies are engine-owned and closed, so naming the whole accepted set is both possible and the fastest repair.",
         params: &["flag", "got", "expected"],
-        example: "sm unknown --probe-capability `wat` (expected root|nopasswd|degraded)",
-        message: Some(ProseTier::Migrated("sm unknown {{flag}} `{{got}}` (expected {{expected}})")),
+        example: "The `--probe-capability` flag does not accept `wat`; the choices are root|nopasswd|degraded.",
+        message: Some(ProseTier::Authored("The `{{flag}}` flag does not accept `{{got}}`; the choices are {{expected}}.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -658,8 +658,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "two flags that cannot both hold were both given. cli/lib.rs parse_args_from. {first} and {second} name them.",
         why: "declarations-genuinely-contradict: a pre-network fail-fast rather than a precedence rule, because either silent winner would be a guess at intent.",
         params: &["first", "second"],
-        example: "sm --whylog and --whylog-dir are mutually exclusive",
-        message: Some(ProseTier::Migrated("sm {{first}} and {{second}} are mutually exclusive")),
+        example: "The `--whylog` and `--whylog-dir` flags cannot both be given.",
+        message: Some(ProseTier::Authored("The `{{first}}` and `{{second}}` flags cannot both be given.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {

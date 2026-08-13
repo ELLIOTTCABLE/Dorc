@@ -6,6 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --probe-capability=wat --book=webhost.sh
-dorc: error[cli-flag-value-not-recognized]: sm unknown --probe-capability `wat`
-(expected root|nopasswd|degraded)
+dorc: error[cli-flag-value-not-recognized]: The `--probe-capability` flag does
+not accept `wat`; the choices are root|nopasswd|degraded.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

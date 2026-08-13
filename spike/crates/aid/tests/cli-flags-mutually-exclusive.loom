@@ -6,6 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc why --last --whylog=run.whylog --whylog-dir=logs
-dorc: error[cli-flags-mutually-exclusive]: sm --whylog and --whylog-dir are
-mutually exclusive
+dorc: error[cli-flags-mutually-exclusive]: The `--whylog` and `--whylog-dir`
+flags cannot both be given.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
