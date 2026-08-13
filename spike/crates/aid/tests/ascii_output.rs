@@ -38,7 +38,6 @@ use dorc_aid::catalog::CATALOG;
 /// moment an entry stops being needed.
 const ASCII_SWEEP_ALLOWLIST: &[(&str, &str)] = &[
     // ── JARGON: ⊤/⊄ in user prose, awaiting authored words ──
-    ("redir-target-top", "JARGON ⊤: `the write joins ⊤`"),
     (
         "depth-2-positional-unthreaded",
         "JARGON ⊤: `the inner body's positional is ⊤`",
