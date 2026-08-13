@@ -576,19 +576,36 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
         return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
     }
     std::fs::create_dir_all(dir).map_err(|e| shim_dir_unwritable(dir, &e))?;
+    let mut staged: Vec<(std::path::PathBuf, std::path::PathBuf)> = Vec::new();
     for (name, content) in files {
         let path = std::path::Path::new(dir).join(name);
-        std::fs::write(&path, content)
-            .map_err(|e| shim_dir_unwritable(&path.display().to_string(), &e))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt as _;
-            // Same edge, same world-state as the write above (the shim dir cannot be made
-            // usable), so it carries the same code rather than minting a grammar-driven sibling
-            // — `AID-NEEDS:law-codes-vary-by-world-not-grammar`. The io error rides `detail`.
-            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))
-                .map_err(|e| shim_dir_unwritable(&path.display().to_string(), &e))?;
+        let temp = std::path::Path::new(dir).join(format!(".{name}.dorc-shim-tmp"));
+        if let Err(error) = write_shim(&temp, content) {
+            for (temp, _) in &staged {
+                let _ = std::fs::remove_file(temp);
+            }
+            let _ = std::fs::remove_file(&temp);
+            return Err(shim_dir_unwritable(&path.display().to_string(), &error));
         }
+        staged.push((temp, path));
+    }
+    for (temp, path) in staged {
+        std::fs::rename(&temp, &path)
+            .map_err(|e| shim_dir_unwritable(&path.display().to_string(), &e))?;
+    }
+    Ok(())
+}
+
+/// Every shim lands on a sibling temp first, and only a complete set is renamed into place. A
+/// direct write left a failed run's dir holding this run's first shims beside the last run's rest —
+/// a set nobody authored, under the names the next PATH lookup will find. The temps are ours by
+/// name, so a failed set removes only what it just wrote and never a byte that was already there.
+fn write_shim(temp: &std::path::Path, content: &str) -> std::io::Result<()> {
+    std::fs::write(temp, content)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(temp, std::fs::Permissions::from_mode(0o755))?;
     }
     Ok(())
 }
