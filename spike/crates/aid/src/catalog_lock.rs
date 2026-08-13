@@ -855,9 +855,9 @@ pub const CATALOG: &[CatalogEntry] = &[
         slug: "transport-spawn-refused",
         when_fires: "the controller could not spawn a session process for `--host`, so no artifact was shipped and the host was never contacted. cli/transport_edge.rs (SPANLESS). {host} is the destination that went uncontacted; {detail} is the platform's own words about the refused spawn, relayed.",
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar. One of the two outcomes licensed to claim the host was untouched, because the failure is local and provable. Its sibling transport-marker-unusable is the same claim in a different world: there nothing outside the controller participated, so nothing is relayed and the remedy is the invocation rather than the environment.",
-        params: &[],
-        example: "[unwritten: transport-spawn-refused]",
-        message: None,
+        params: &["host"],
+        example: "Dorc could not start the session process for web1.example.net, so nothing was shipped and the host was never contacted.",
+        message: Some(ProseTier::Authored("Dorc could not start the session process for {{host}}, so nothing was shipped and the host was never contacted.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
