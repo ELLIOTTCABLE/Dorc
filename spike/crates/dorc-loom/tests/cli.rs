@@ -120,8 +120,8 @@ fn all_inventory_excludes_foreign_detail() {
 
     assert!(output.status.success(), "{stdout}");
     assert!(!stdout.contains("{{detail}}"));
-    // Omitting it silently is what cost three authoring agents real turns: the listing says it
-    // holds the whole payload, and the hole they can see in the transcript is not in it.
+    // Omitting it silently is the trap: the listing claims the whole payload, and the hole an
+    // author can see in the transcript is not in it.
     assert!(
         stdout.contains("foreign passthrough values are omitted deliberately"),
         "the inventory must own its own gap: {stdout}"

@@ -256,10 +256,8 @@ fn parse_args() -> Result<Command, String> {
 /// asks THE VERB for help. The bare word `help` is a VERB, and is read only in verb position: a
 /// subcommand's own positional argument is never a global request. That distinction is
 /// load-bearing rather than tidy — `add-register CASE help` ends in the literal token `help`, so
-/// while the scan took the bare word anywhere, every legal invocation of that verb was
-/// indistinguishable from a help request and printed its own usage page at exit 0, having minted
-/// nothing. It was the only documented way to seed a `help` register, and it was uninvokable for
-/// as long as it existed.
+/// while the scan took the bare word anywhere, the verb's only legal invocation was
+/// indistinguishable from a help request: usage page, exit 0, nothing minted.
 fn parse_argv(argv: Vec<String>) -> Result<Command, String> {
     let asks_for_help = argv
         .iter()
@@ -1325,7 +1323,6 @@ mod tests {
     /// The bare word `help` is `add-register`'s own second positional, so a scan that read it
     /// anywhere made the verb's ONLY legal invocation indistinguishable from a help request — it
     /// printed the page and exited 0 having minted nothing, for as long as the command existed.
-    /// Three authoring agents each found it the same way and none could seed a register.
     #[test]
     fn a_verbs_own_positional_help_is_not_a_help_request() {
         let argv = |args: &[&str]| args.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();
