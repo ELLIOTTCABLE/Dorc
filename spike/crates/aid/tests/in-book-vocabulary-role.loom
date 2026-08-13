@@ -6,4 +6,7 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=book.sh
-warning[in-book-vocabulary-role]: [unwritten: in-book-vocabulary-role]
+warning[in-book-vocabulary-role]: `sm_dorc_Package__resolve` has no effect here:
+a kind-owner function (`__resolve`) answers for every author's sites, so it
+loads only from a marked oracle file named on the invocation -- move it into
+one.

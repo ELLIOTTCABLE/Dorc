@@ -6,4 +6,8 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=book.sh
-warning[helper-declaration-contested]: [unwritten: helper-declaration-contested]
+warning[helper-declaration-contested]: Two differing declarations of
+`_yum_installed` are loaded (the earlier at vendor/yum.oracle.sh:4), and nothing
+can choose between same-named helpers, so Dorc withholds them all and the sites
+needing `_yum_installed` run -- load a single source, or take custody of a
+merged copy.
