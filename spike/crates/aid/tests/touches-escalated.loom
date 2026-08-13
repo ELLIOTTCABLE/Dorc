@@ -34,8 +34,8 @@ hork__is_converged() {
 
 -- replay --
 $ dorc plan --book=book.sh -o hork.oracle.sh --risk-faultless-skips
-note[touches-escalated]: sm site 0: touches() escalated to host-derivation
-(hork.touches())
+note[touches-escalated]: site 0: this footprint could not be derived statically,
+so hork.touches() shipped with the probe and answered from the host, read-only.
       [ book.sh:2:1
    2 | hork add nginx
      | \____________/

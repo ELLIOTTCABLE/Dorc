@@ -11,9 +11,10 @@ hork --emit >"$LOG_DEST"
 
 -- replay --
 $ dorc plan --book=book.sh
-note[redir-target-top]: sm write-redirect to a dynamic/unresolved target => no
-per-path `file` cell can be keyed, so the write joins ⊤ and the command runs
-(never elided)
+note[redir-target-top]: This write-redirect's target cannot be resolved
+statically, so the write cannot be tied to any one file and the command always
+runs (never elided) -- a literal target, or a variable assigned from one, would
+let Dorc track the write.
       [ book.sh:3:13
    3 | hork --emit >"$LOG_DEST"
      |             \__________/

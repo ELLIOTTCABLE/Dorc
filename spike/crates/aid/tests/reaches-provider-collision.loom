@@ -23,10 +23,9 @@ hork__disturbance_reaches_only() {
 
 -- replay --
 $ dorc plan --book=book.sh -o hork.oracle.sh
-warning[reaches-provider-collision]: sm reach-function 'hork.reaches()' is keyed
-to a name matching a known COMMAND provider -- reaches is keyed by KIND, not
-command (24G section 4); this expands a kind no coordinate may use (a likely
-mis-key)
+warning[reaches-provider-collision]: `hork__disturbance_reaches_only()` is keyed
+by a command name, but a reach-function belongs to a kind -- as written it
+widens a kind no coordinate can name (a likely mis-key).
       [ hork.oracle.sh:9:1
    9 | hork__disturbance_reaches_only() {
      | \____________________________/

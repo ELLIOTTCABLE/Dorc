@@ -31,9 +31,10 @@ sm_dorc_Package__disturbance_reaches_only() {
 
 -- replay --
 $ dorc plan --book=book.sh -o hork.oracle.sh -o wombat.oracle.sh
-error[reaches-conflict]: sm kind 'sm_dorc_Package' has 2 reach-functions across
-oracle files -- at-most-one-reaches-per-kind (24G section 4): BOTH refused, the
-kind's footprints do not expand (never first-wins-silently)
+error[reaches-conflict]: Kind `sm_dorc_Package` has 2 reach-functions across the
+loaded oracle files, and `only` is a completeness contract two surveys cannot
+both hold, so Dorc refuses them all -- the kind's footprints stay exactly as
+emitted until one remains.
       [ hork.oracle.sh:8:1
    8 | sm_dorc_Package__disturbance_reaches_only() {
      | \_______________________________________/

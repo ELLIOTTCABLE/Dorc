@@ -6,4 +6,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh
-error[transport-spawn-refused]: [unwritten: transport-spawn-refused]
+error[transport-spawn-refused]: Dorc could not start the session process for
+web1.example.net, so nothing was shipped and the host was never contacted.

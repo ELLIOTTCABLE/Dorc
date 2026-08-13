@@ -38,9 +38,10 @@ dorc-records-end/1 nonce=dorc @@dorc@@
 
 -- replay --
 $ dorc plan --book=book.sh -o hork.oracle.sh --risk-faultless-skips < probe-results.txt
-warning[deriv-family-incomplete]: sm site 0: derived footprint family incomplete
-(no deriv-end close-record) -- footprint refused, the site walls total (an
-at-most claim cannot be partial)
+warning[deriv-family-incomplete]: site 0: the footprint derived on the host
+arrived incomplete (no deriv-end close-record), and an at-most claim cannot be
+partial, so Dorc refuses it whole and the site walls, as if nothing had been
+claimed.
       [ book.sh:2:1
    2 | hork add nginx
      | \____________/

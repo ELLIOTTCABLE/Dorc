@@ -13,10 +13,9 @@ fi
 
 -- replay --
 $ dorc plan --book=book.sh
-warning[cfg-builtin-shadowed]: sm function `test` shadows a shell builtin the
-engine relies on (dash resolves a function before a regular builtin): analysis
-treats the bare word `test` as the builtin when classifying effects and minting
-stand-ins, so builtin-dependent conclusions may be unsound for this book
+warning[cfg-builtin-shadowed]: Function `test` shadows a shell builtin Dorc
+relies on: analysis keeps reading the bare word `test` as the builtin, so
+conclusions that lean on it may be unsound for this book.
       [ book.sh:2:1
    2 | test() { hork --stub; }
      | \__/

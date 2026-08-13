@@ -6,5 +6,7 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[shared-cell-measurements-disagree]: [unwritten:
-shared-cell-measurements-disagree]
+note[shared-cell-measurements-disagree]: 2 probe sites all measure one shared
+coordinate (dorc-auto:cp@converged) and their reports did not agree, so Dorc
+holds it unknown and every site on it runs -- the cleanly-reporting ones
+included (an authored verdict coordinate would split them apart).
