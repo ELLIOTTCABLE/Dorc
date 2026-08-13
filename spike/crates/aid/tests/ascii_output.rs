@@ -73,10 +73,10 @@ fn product_prose() -> Vec<(&'static str, &'static str, &'static str)> {
     for entry in CATALOG {
         rows.push((entry.slug, "example", entry.example));
         if let Some(message) = entry.message {
-            rows.push((entry.slug, "message", message));
+            rows.push((entry.slug, "message", *message.text()));
         }
         if let Some(help) = entry.help.written() {
-            rows.push((entry.slug, "help", help));
+            rows.push((entry.slug, "help", *help.text()));
         }
     }
     for entry in ARRANGEMENTS {

@@ -12,7 +12,7 @@ use std::fmt::Write;
 use std::fs;
 
 use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
-use dorc_aid::catalog::{HelpRegister, OwnedEntry, owned_catalog, parse_template};
+use dorc_aid::catalog::{HelpRegister, OwnedEntry, ProseTier, owned_catalog, parse_template};
 use dorc_aid::diag::{Diag, DiagCode, render_cli_parts, render_staged_cli_parts};
 use dorc_aid::{RenderCtx, Severity};
 use dorc_core::{Interner, ProvArena};
@@ -188,7 +188,7 @@ impl DorcConsumer {
     }
 
     /// Overwrite a code's message in the mirror (models a raw catalog hand-edit for the fixpoint gate).
-    pub fn set_message(&mut self, slug: &str, message: Option<String>) {
+    pub fn set_message(&mut self, slug: &str, message: Option<ProseTier<String>>) {
         if let Some(e) = self.mirror.iter_mut().find(|e| e.slug == slug) {
             e.message = message;
         }
@@ -318,15 +318,15 @@ impl DorcConsumer {
             })
             .collect();
         if key.field == "message" {
-            entry.message = Some(template);
+            entry.message = Some(ProseTier::Authored(template));
         } else {
-            entry.help = HelpRegister::Written(template);
+            entry.help = HelpRegister::Written(ProseTier::Authored(template));
         }
         entry.params = entry
             .message
             .iter()
             .chain(entry.help.written())
-            .flat_map(|template| parse_template(template).unwrap_or_default())
+            .flat_map(|tier| parse_template(tier.text()).unwrap_or_default())
             .filter_map(|part| match part {
                 dorc_aid::catalog::TemplatePart::Hole(name) => Some(name),
                 dorc_aid::catalog::TemplatePart::Literal(_) => None,
@@ -2654,7 +2654,8 @@ mod tests {
                 .mirror()
                 .iter()
                 .find(|entry| entry.slug == "dangling-reference")
-                .and_then(|entry| entry.message.as_deref()),
+                .and_then(|entry| entry.message.as_ref())
+                .map(|tier| tier.text().as_str()),
             Some("{{nul}} {{empty}} {{nul}}")
         );
     }

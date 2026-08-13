@@ -8,6 +8,7 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
+use dorc_aid::catalog::ProseTier;
 use dorc_aid::diag::render_staged_cli_parts;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
@@ -27,7 +28,8 @@ fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
         .mirror()
         .iter()
         .find(|e| e.slug == slug)
-        .and_then(|e| e.message.clone())
+        .and_then(|e| e.message.as_ref())
+        .map(|tier| tier.text().clone())
         .expect("mirror has the code's message")
 }
 
@@ -294,7 +296,10 @@ fn fixpoint_gate_catches_a_catalog_hand_edit() {
         .render_case(&case)
         .expect("case renders");
     let mut consumer = DorcConsumer::new();
-    consumer.set_message("whylog-absent", Some("sm tampered message".to_owned()));
+    consumer.set_message(
+        "whylog-absent",
+        Some(ProseTier::Migrated("sm tampered message".to_owned())),
+    );
     let corpus = vec![CaseFile::new(CASE_PATH, committed)];
     let err = fixpoint_check(&consumer, &corpus).unwrap_err();
     assert!(matches!(err, BlessError::Fixpoint(_)), "got {err:?}");
@@ -438,7 +443,10 @@ fn explicit_marker_can_introduce_an_unused_typed_payload_value() {
         .iter()
         .find(|entry| entry.slug == "cmdsub-operand-top")
         .expect("entry");
-    assert_eq!(entry.message.as_deref(), Some("run {{command}}"));
+    assert_eq!(
+        entry.message.as_ref().map(|tier| tier.text().as_str()),
+        Some("run {{command}}")
+    );
     assert_eq!(entry.params, ["command"]);
     assert!(
         consumer

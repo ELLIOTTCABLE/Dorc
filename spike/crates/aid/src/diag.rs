@@ -4324,7 +4324,10 @@ mod tests {
         flattened(
             crate::catalog::entry(slug)
                 .and_then(|entry| entry.message)
-                .unwrap_or_else(|| panic!("`{slug}` has no written message register")),
+                .map_or_else(
+                    || panic!("`{slug}` has no written message register"),
+                    |tier| *tier.text(),
+                ),
         )
     }
 
@@ -4598,7 +4601,7 @@ mod tests {
         // The literal run before the register's first hole; none of the help is artifact-plane.
         let help = crate::catalog::entry("render-heredoc-refused")
             .and_then(|entry| entry.help.written().copied())
-            .and_then(|template| template.split("{{").next())
+            .and_then(|template| template.text().split("{{").next())
             .expect("the help register is written");
         assert!(
             !comment.contains(help),
@@ -4614,9 +4617,9 @@ mod tests {
     /// bytes made this test the second owner of two case-owned sentences, so the sanctioned prose
     /// loop broke it from a crate its author never opens — `render-form-unwelded`'s own failure
     /// mode. The composition is what this seat is responsible for, and a two-row fixture states it
-    /// exactly, holes and all. (Whether the COMMITTED registers still carry their `sm ` migration
-    /// prefix is `message_registers_are_sm_or_unwritten`'s corpus-wide job, keyed to
-    /// `is_case_owned` — never a byte copy here.)
+    /// exactly, holes and all. (Whether the COMMITTED registers are still `ProseTier::Migrated` is
+    /// `authored_registers_are_case_owned`'s corpus-wide job, keyed to `is_case_owned` — never a
+    /// byte copy here.)
     #[test]
     fn a_register_owns_the_sentence_and_the_payload_fills_its_holes() {
         let i = Interner::default();
@@ -4625,17 +4628,21 @@ mod tests {
                 slug: "site-unresolvable".to_owned(),
                 when_fires: String::new(),
                 why: String::new(),
-                message: Some("harness {{count}} {{site_word}} <{{names}}>".to_owned()),
-                help: crate::catalog::HelpRegister::Written(
+                message: Some(crate::catalog::ProseTier::Authored(
+                    "harness {{count}} {{site_word}} <{{names}}>".to_owned(),
+                )),
+                help: crate::catalog::HelpRegister::Written(crate::catalog::ProseTier::Authored(
                     "harness help <{{excerpt}}>".to_owned(),
-                ),
+                )),
                 params: Vec::new(),
             },
             crate::catalog::OwnedEntry {
                 slug: "render-heredoc-refused".to_owned(),
                 when_fires: String::new(),
                 why: String::new(),
-                message: Some("harness {{verb}} (`{{command}}`)".to_owned()),
+                message: Some(crate::catalog::ProseTier::Authored(
+                    "harness {{verb}} (`{{command}}`)".to_owned(),
+                )),
                 help: crate::catalog::HelpRegister::Absent,
                 params: Vec::new(),
             },

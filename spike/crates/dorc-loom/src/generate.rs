@@ -97,7 +97,9 @@ pub fn generate_catalog_lock(
     for entry in consumer.mirror() {
         let message = entry.message.clone();
         let help = entry.help.clone();
-        let params = refreshed_params(message.as_deref(), help.written().map(String::as_str));
+        let message_text = message.as_ref().map(|tier| tier.text().as_str());
+        let help_text = help.written().map(|tier| tier.text().as_str());
+        let params = refreshed_params(message_text, help_text);
         let carried = CATALOG.iter().find(|c| c.slug == entry.slug);
         let (when_fires, why, example) = if let Some(case) = cases.get(&entry.slug) {
             (
@@ -108,7 +110,7 @@ pub fn generate_catalog_lock(
                     &entry.slug,
                 )?,
                 kept_or_declared(case, "why", carried.map(|c| c.why), &entry.slug)?,
-                case_example(consumer, case, message.as_deref(), &entry.slug)?,
+                case_example(consumer, case, message_text, &entry.slug)?,
             )
         } else {
             let carried = carried.ok_or_else(|| {

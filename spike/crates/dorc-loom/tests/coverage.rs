@@ -30,6 +30,7 @@ fn every_catalog_template_maps_through_render_parts() {
             (Field::Help, entry.help.written().copied()),
         ] {
             let Some(template) = template else { continue };
+            let template = *template.text();
             let parts = fill_template_parts(template, &values, entry.slug, field, 0)
                 .unwrap_or_else(|error| panic!("{}: {error:?}", entry.slug));
             assert_eq!(fill_template(template, &refs), Ok(parts.text()));

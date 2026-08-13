@@ -53,7 +53,10 @@ fn corpus_dir() -> std::path::PathBuf {
 fn a_case_whose_register_is_empty(
     consumer: &DorcConsumer,
     register: &str,
-    empty: impl Fn(&dorc_aid::catalog::HelpRegister<String>, Option<&String>) -> bool,
+    empty: impl Fn(
+        &dorc_aid::catalog::HelpRegister<dorc_aid::catalog::ProseTier<String>>,
+        Option<&dorc_aid::catalog::ProseTier<String>>,
+    ) -> bool,
 ) -> (String, Case) {
     a_case_whose_render(consumer, register, empty, |_| true)
 }
@@ -63,7 +66,10 @@ fn a_case_whose_register_is_empty(
 fn a_case_whose_render(
     consumer: &DorcConsumer,
     register: &str,
-    empty: impl Fn(&dorc_aid::catalog::HelpRegister<String>, Option<&String>) -> bool,
+    empty: impl Fn(
+        &dorc_aid::catalog::HelpRegister<dorc_aid::catalog::ProseTier<String>>,
+        Option<&dorc_aid::catalog::ProseTier<String>>,
+    ) -> bool,
     shaped: impl Fn(&str) -> bool,
 ) -> (String, Case) {
     let candidates: Vec<String> = consumer
@@ -99,7 +105,10 @@ fn a_case_whose_render(
     )
 }
 
-fn help_of(consumer: &DorcConsumer, slug: &str) -> dorc_aid::catalog::HelpRegister<String> {
+fn help_of(
+    consumer: &DorcConsumer,
+    slug: &str,
+) -> dorc_aid::catalog::HelpRegister<dorc_aid::catalog::ProseTier<String>> {
     consumer
         .mirror()
         .iter()
@@ -184,7 +193,7 @@ fn overtype_placeholder_mints_words() {
             .iter()
             .find(|entry| entry.slug == slug)
             .and_then(|entry| entry.message.clone()),
-        Some(String::from(words))
+        Some(dorc_aid::catalog::ProseTier::Authored(String::from(words)))
     );
 }
 
@@ -363,7 +372,9 @@ fn help_register_edit_round_trips() {
         .expect("the mirror takes it");
     assert_eq!(
         help_of(&consumer, &slug),
-        dorc_aid::catalog::HelpRegister::Written(String::from(words))
+        dorc_aid::catalog::HelpRegister::Written(dorc_aid::catalog::ProseTier::Authored(
+            String::from(words)
+        ))
     );
 }
 
@@ -474,7 +485,8 @@ fn a_lone_reason_hole_edits_at_the_components_own_entry() {
             .mirror()
             .iter()
             .find(|entry| entry.slug == "predict-out-of-dialect")
-            .and_then(|entry| entry.message.as_deref()),
+            .and_then(|entry| entry.message.as_ref())
+            .map(|tier| tier.text().as_str()),
         Some("{{reason}}"),
         "the register that is nothing but a hole stays nothing but a hole"
     );

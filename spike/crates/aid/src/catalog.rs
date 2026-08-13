@@ -16,19 +16,76 @@
 //! # The three legal states of a `message` (mechanically gated)
 //!
 //! Every [`CatalogEntry::message`] (and [`CatalogEntry::help`]) is ONE of:
-//! * `sm `-prefixed prior-builder prose migrated VERBATIM from the base tip (`380f2fa`) — the
-//!   `sm ` marker means "builder prose awaiting human rewrite" (`27V:rul-error-authorship-tier`,
-//!   sharpened by `amendment-prose-boundary`);
-//! * `None`, rendering the exact placeholder `[unwritten: <slug>]`, for any user-facing string that
-//!   did NOT exist at the base tip (a new or split code) — builders author ZERO new user-facing
-//!   prose; or
-//! * conductor/human-authored prose, unprefixed, for a CASE-OWNED code (a defining case exists in
-//!   the dorc-loom corpus, so the render-level fixpoint protects it). The `CONDUCTOR_AUTHORED`
-//!   roster that used to police this is retired; `message_registers_are_sm_or_unwritten` keys to
-//!   `is_case_owned` instead.
+//! * `None`, rendering the exact placeholder `[unwritten: <slug>]`, for any user-facing string
+//!   that has never been written — builders author ZERO new user-facing prose; or
+//! * `Some(`[`ProseTier::Migrated`]`(text))` — prior-builder text migrated VERBATIM from the base
+//!   tip (`380f2fa`), awaiting a conductor/human rewrite (`27V:rul-error-authorship-tier`); or
+//! * `Some(`[`ProseTier::Authored`]`(text))` — conductor/human-authored prose, for a CASE-OWNED
+//!   code (a defining case exists in the dorc-loom corpus, so the render-level fixpoint protects
+//!   it).
+//!
+//! The authorship tier used to live IN-BAND, as an `sm `-string-prefix convention the gate
+//! re-derived by substring match. It is now a TYPE (`ProseTier`, generalizing
+//! `arrangement::Words`'s Migrated/Authored split to the catalog's single-string registers,
+//! `amendment-prose-boundary` retired in favor of `authored_registers_are_case_owned`): the
+//! `dorc-loom` compile/promote path is the ONLY place that mints `Authored` (mirroring
+//! [`arrangement`]'s `apply_arrangement_page_edit`), so the tier is minted by the act of running
+//! the authoring loop, not inferred from what the string happens to start with. Existing
+//! `Migrated` text is left byte-for-byte as migrated (including any literal `sm ` still inside
+//! it) until it is actually rewritten through that loop — retyping the discriminant does not, by
+//! itself, change a single rendered byte.
 //!
 //! The metadata fields (`when_fires` / `why` / `params` / `example`) are conductor/machine-facing,
 //! authored by the builder, and carry NO prefix.
+
+/// The authorship tier of one written prose register — the typed replacement for the catalog's
+/// old `sm `-string-prefix convention (see the module docs). Generic so it can wrap either a
+/// `&'static str` (the compiled-in [`CatalogEntry`]) or an owned `String` (the promote-time
+/// [`OwnedEntry`] mirror) without a second enum, unlike `arrangement`'s non-generic
+/// `Words`/`OwnedWords` pair — a shape worth revisiting there someday, not attempted here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProseTier<T> {
+    /// Prior-builder text, migrated verbatim from the pre-typed-system base tip; awaiting a
+    /// conductor/human rewrite (`27V:rul-error-authorship-tier`). Minted exactly once, at the
+    /// migration that introduced this type; never re-minted by any code path.
+    Migrated(T),
+    /// Conductor/human-authored prose. Minted ONLY by the `dorc-loom` compile/promote path
+    /// (`consumer::apply_compiled_section`), never by hand.
+    Authored(T),
+}
+
+impl<T> ProseTier<T> {
+    /// The wrapped text, tier-erased.
+    #[must_use]
+    pub fn text(&self) -> &T {
+        match self {
+            ProseTier::Migrated(text) | ProseTier::Authored(text) => text,
+        }
+    }
+
+    /// Whether this register has been through the conductor/human authoring loop.
+    #[must_use]
+    pub fn is_authored(&self) -> bool {
+        matches!(self, ProseTier::Authored(_))
+    }
+}
+
+impl ProseTier<&str> {
+    /// The owned twin — the [`OwnedEntry`] mirror's carry-forward conversion.
+    #[must_use]
+    pub fn to_owned_tier(self) -> ProseTier<String> {
+        match self {
+            ProseTier::Migrated(text) => ProseTier::Migrated(text.to_owned()),
+            ProseTier::Authored(text) => ProseTier::Authored(text.to_owned()),
+        }
+    }
+}
+
+impl<T: AsRef<str>> AsRef<str> for ProseTier<T> {
+    fn as_ref(&self) -> &str {
+        self.text().as_ref()
+    }
+}
 
 /// One catalog entry: the code linkage + the structured metadata + the user-facing prose
 /// registers (`27V` §3). Keyed to a [`crate::diag::DiagCode`] by its stable [`slug`](Self::slug)
@@ -47,14 +104,14 @@ pub struct CatalogEntry {
     pub params: &'static [&'static str],
     /// One concrete example instantiation of the rendered message (metadata; builder-authored).
     pub example: &'static str,
-    /// The user-facing PRIMARY message template — `sm `-prefixed base-tip prose, or `None` when
+    /// The user-facing PRIMARY message template, tiered by [`ProseTier`], or `None` when
     /// unwritten (`283:dec-message-becomes-option`): the render synthesizes the `[unwritten: <slug>]`
     /// placeholder, never a stored string. `{name}` holes are filled from the payload; `{{`/`}}`
     /// escape literal braces.
-    pub message: Option<&'static str>,
+    pub message: Option<ProseTier<&'static str>>,
     /// The optional user-facing remediation/help register — the same prose states as
     /// [`message`](Self::message), plus the fact that the code may carry no help register at all.
-    pub help: HelpRegister<&'static str>,
+    pub help: HelpRegister<ProseTier<&'static str>>,
 }
 
 /// The three states of the optional HELP register.
@@ -114,6 +171,19 @@ impl HelpRegister<&str> {
     }
 }
 
+impl HelpRegister<ProseTier<&str>> {
+    /// The tiered twin of [`HelpRegister::<&str>::to_owned_register`] — the [`OwnedEntry`]
+    /// mirror's carry-forward conversion for a help register.
+    #[must_use]
+    pub fn to_owned_register(self) -> HelpRegister<ProseTier<String>> {
+        match self {
+            HelpRegister::Absent => HelpRegister::Absent,
+            HelpRegister::Unwritten => HelpRegister::Unwritten,
+            HelpRegister::Written(tier) => HelpRegister::Written(tier.to_owned_tier()),
+        }
+    }
+}
+
 #[path = "catalog_lock.rs"]
 mod catalog_lock;
 pub use catalog_lock::CATALOG;
@@ -152,7 +222,7 @@ pub const CONST_CATALOG: ConstCatalog = ConstCatalog;
 
 impl CatalogLookup for ConstCatalog {
     fn message(&self, slug: &str) -> Option<&str> {
-        entry(slug).and_then(|e| e.message)
+        entry(slug).and_then(|e| e.message).map(|tier| *tier.text())
     }
     fn help(&self, slug: &str) -> HelpRegister<&str> {
         entry(slug).map_or(HelpRegister::Absent, |e| e.help.as_deref())
@@ -172,10 +242,10 @@ pub struct OwnedEntry {
     pub when_fires: String,
     /// Why the code exists (machine-facing metadata).
     pub why: String,
-    /// The primary message template, or `None` when unwritten.
-    pub message: Option<String>,
+    /// The primary message template, tiered by [`ProseTier`], or `None` when unwritten.
+    pub message: Option<ProseTier<String>>,
     /// The help register's state.
-    pub help: HelpRegister<String>,
+    pub help: HelpRegister<ProseTier<String>>,
     /// Template holes in first-use order across message then help.
     pub params: Vec<String>,
 }
@@ -191,8 +261,8 @@ pub fn owned_catalog() -> Vec<OwnedEntry> {
             slug: e.slug.to_owned(),
             when_fires: e.when_fires.to_owned(),
             why: e.why.to_owned(),
-            message: e.message.map(str::to_owned),
-            help: e.help.as_deref().to_owned_register(),
+            message: e.message.map(ProseTier::to_owned_tier),
+            help: e.help.to_owned_register(),
             params: e.params.iter().map(|param| (*param).to_owned()).collect(),
         })
         .collect()
@@ -202,7 +272,8 @@ impl CatalogLookup for Vec<OwnedEntry> {
     fn message(&self, slug: &str) -> Option<&str> {
         self.iter()
             .find(|e| e.slug == slug)
-            .and_then(|e| e.message.as_deref())
+            .and_then(|e| e.message.as_ref())
+            .map(AsRef::as_ref)
     }
     fn help(&self, slug: &str) -> HelpRegister<&str> {
         self.iter()
@@ -417,10 +488,10 @@ pub struct LockRow {
     pub params: Vec<String>,
     /// One concrete example render.
     pub example: String,
-    /// The primary message template, or `None` when unwritten.
-    pub message: Option<String>,
+    /// The primary message template, tiered by [`ProseTier`], or `None` when unwritten.
+    pub message: Option<ProseTier<String>>,
     /// The help register's state.
-    pub help: HelpRegister<String>,
+    pub help: HelpRegister<ProseTier<String>>,
 }
 
 /// Serialize the wholly-generated `catalog_lock.rs` from ordered [`LockRow`]s
@@ -434,7 +505,7 @@ pub fn serialize_lock(rows: &[LockRow]) -> String {
     let mut out = String::from(
         "// @generated by dorc-loom; DO NOT EDIT.\n\
          // This whole file is overwritten by catalog promotion.\n\n\
-         use super::{CatalogEntry, HelpRegister};\n\n\
+         use super::{CatalogEntry, HelpRegister, ProseTier};\n\n\
          #[rustfmt::skip]\n\
          pub const CATALOG: &[CatalogEntry] = &[\n",
     );
@@ -453,16 +524,28 @@ pub fn serialize_lock(rows: &[LockRow]) -> String {
         out.push_str("],\n");
         let _ = writeln!(out, "        example: {:?},", r.example);
         match &r.message {
-            Some(m) => {
-                let _ = writeln!(out, "        message: Some({m:?}),");
+            Some(ProseTier::Migrated(m)) => {
+                let _ = writeln!(out, "        message: Some(ProseTier::Migrated({m:?})),");
+            }
+            Some(ProseTier::Authored(m)) => {
+                let _ = writeln!(out, "        message: Some(ProseTier::Authored({m:?})),");
             }
             None => out.push_str("        message: None,\n"),
         }
         match &r.help {
             HelpRegister::Absent => out.push_str("        help: HelpRegister::Absent,\n"),
             HelpRegister::Unwritten => out.push_str("        help: HelpRegister::Unwritten,\n"),
-            HelpRegister::Written(h) => {
-                let _ = writeln!(out, "        help: HelpRegister::Written({h:?}),");
+            HelpRegister::Written(ProseTier::Migrated(h)) => {
+                let _ = writeln!(
+                    out,
+                    "        help: HelpRegister::Written(ProseTier::Migrated({h:?})),"
+                );
+            }
+            HelpRegister::Written(ProseTier::Authored(h)) => {
+                let _ = writeln!(
+                    out,
+                    "        help: HelpRegister::Written(ProseTier::Authored({h:?})),"
+                );
             }
         }
         out.push_str("    },\n");
@@ -538,7 +621,7 @@ mod tests {
     fn template_holes_are_declared_params() {
         for e in CATALOG {
             for template in e.message.into_iter().chain(e.help.written().copied()) {
-                for hole in template_holes(template).expect("catalog template syntax") {
+                for hole in template_holes(template.text()).expect("catalog template syntax") {
                     assert!(
                         e.params.contains(&hole.as_str()),
                         "catalog `{}`: template hole `{{{hole}}}` is not a declared param {:?}",
@@ -560,7 +643,7 @@ mod tests {
             assert!(!e.why.is_empty(), "`{}`: empty why", e.slug);
             assert!(!e.example.is_empty(), "`{}`: empty example", e.slug);
             assert!(
-                e.message != Some(""),
+                e.message.map(|tier| *tier.text()) != Some(""),
                 "`{}`: empty message — unwritten is None, not \"\"",
                 e.slug
             );
@@ -569,20 +652,20 @@ mod tests {
 
     use crate::case_ownership::is_case_owned;
 
-    /// Gate (`amendment-prose-boundary`, re-keyed at the `283` flip): every WRITTEN user-facing
-    /// register is `sm `-prefixed base-tip prose or CASE-OWNED (a defining case in the dorc-loom
-    /// corpus, fixpoint-protected) — the mechanical enforcement that builders author no new
-    /// user-facing prose (`27V:rul-error-authorship-tier`). Unwritten is `None`
-    /// (`283:dec-message-becomes-option`), so a stored `[unwritten:]` string is not legal either.
+    /// Gate (the catalog twin of `arrangement::authored_words_are_case_owned`; retired
+    /// `message_registers_are_sm_or_unwritten`'s substring check at the `ProseTier` migration):
+    /// `Authored` prose exists only for a case-owned slug, so every string a human wrote is
+    /// fixpoint-protected — `Migrated` needs no such check, since it is never re-minted by any
+    /// code path (`27V:rul-error-authorship-tier` — builders migrate, they never author).
     #[test]
-    fn message_registers_are_sm_or_unwritten() {
+    fn authored_registers_are_case_owned() {
         for e in CATALOG {
-            for (field, text) in [("message", e.message), ("help", e.help.written().copied())] {
-                let Some(text) = text else { continue };
+            for (field, tier) in [("message", e.message), ("help", e.help.written().copied())] {
+                let Some(tier) = tier else { continue };
                 assert!(
-                    text.starts_with("sm ") || is_case_owned(e.slug),
-                    "catalog `{}` {field}: a written register must be `sm `-prefixed base-tip prose \
-                     or case-owned (a dorc-loom corpus case; unwritten prose is `None`), got: {text:?}",
+                    matches!(tier, ProseTier::Migrated(_)) || is_case_owned(e.slug),
+                    "catalog `{}` {field}: authored prose needs a defining case; builder-migrated \
+                     text is `ProseTier::Migrated`, got: {tier:?}",
                     e.slug
                 );
             }
@@ -614,7 +697,10 @@ mod tests {
     #[test]
     fn promote_regenerates_params_byte_identical() {
         for e in CATALOG {
-            let refreshed = refreshed_params(e.message, e.help.written().copied());
+            let refreshed = refreshed_params(
+                e.message.map(|tier| *tier.text()),
+                e.help.written().map(|tier| *tier.text()),
+            );
             let refreshed: Vec<&str> = refreshed.iter().map(String::as_str).collect();
             assert_eq!(
                 refreshed, e.params,
@@ -629,7 +715,10 @@ mod tests {
     #[test]
     fn refreshed_params_dedups_repeated_holes() {
         let coll = entry("munge-name-collision").expect("collision entry");
-        let cp = refreshed_params(coll.message, coll.help.written().copied());
+        let cp = refreshed_params(
+            coll.message.map(|tier| *tier.text()),
+            coll.help.written().map(|tier| *tier.text()),
+        );
         assert_eq!(
             cp.iter().filter(|p| *p == "count").count(),
             1,
@@ -647,12 +736,12 @@ mod tests {
             why: "y".to_owned(),
             params: vec!["a".to_owned()],
             example: "e".to_owned(),
-            message: Some("m {{a}}".to_owned()),
+            message: Some(ProseTier::Authored("m {{a}}".to_owned())),
             help: HelpRegister::Unwritten,
         }]);
         assert!(src.starts_with("// @generated by dorc-loom; DO NOT EDIT.\n"));
         assert!(src.contains("#[rustfmt::skip]\npub const CATALOG: &[CatalogEntry] = &[\n"));
-        assert!(src.contains("        message: Some(\"m {{a}}\"),\n"));
+        assert!(src.contains("        message: Some(ProseTier::Authored(\"m {{a}}\")),\n"));
         assert!(src.contains("        help: HelpRegister::Unwritten,\n"));
         assert!(src.trim_end().ends_with("];"));
     }
