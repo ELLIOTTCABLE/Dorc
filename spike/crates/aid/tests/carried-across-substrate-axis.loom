@@ -6,8 +6,7 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[carried-across-substrate-axis]: sm pure-predicate carry across fs-view
-(unflagged, 27C section 4(a)): sm_dorc_File (invariant: line at
-certsync.oracle.sh:12) -- each vouched invariant across fs-view by its
-kind-owner's `invariant:` line (vouch-species); the verdict body is
-engine-proved read-set-closed
+note[carried-across-substrate-axis]: This elision carried across fs-view: Dorc
+proved the verdict body reads nothing beyond the site's own arguments and
+sm_dorc_File (invariant: line at certsync.oracle.sh:12), whose owners vouch that
+state does not divide across fs-view.
