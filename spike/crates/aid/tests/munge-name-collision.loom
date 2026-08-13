@@ -21,23 +21,27 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[munge-name-collision]: sm `hork.tool` munges to the sh function name
-  `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool)
-  -- REFUSED, never silently merged (the shipped artifact would carry 2
-  same-named funcdefs, last-writer-wins; align with the reingest-collision
-  floor: refuse-and-run)
+  error[munge-name-collision]: Dorc munges `hork.tool` into the sh function name
+  `hork_tool__predict`, shared by 2 distinct source names (hork.tool,
+  hork-tool); rather than let the last same-named definition silently win, Dorc
+  refuses them all. Rename one family so the munged names diverge -- `.`, `-`,
+  and `_` all munge to `_`.
         [ oracle.sh:4:1
      4 | hork.tool__predict() {
        | \________________/
-  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+  error[oracle-file-not-load-inert]: A `# dorc-lang/v0.2`-marked oracle file
+  must be inert to load -- nothing but function definitions and static
+  assignments at top level -- and this is the first item that does more. Move
+  top-level work into a role function or into the book; an oracle file is loaded
+  for its definitions, never run.
         [ oracle.sh:4:1
      4 | hork.tool__predict() {
        | \________________/
-  error[munge-name-collision]: sm `hork-tool` munges to the sh function name
-  `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool)
-  -- REFUSED, never silently merged (the shipped artifact would carry 2
-  same-named funcdefs, last-writer-wins; align with the reingest-collision
-  floor: refuse-and-run)
+  error[munge-name-collision]: Dorc munges `hork-tool` into the sh function name
+  `hork_tool__predict`, shared by 2 distinct source names (hork.tool,
+  hork-tool); rather than let the last same-named definition silently win, Dorc
+  refuses them all. Rename one family so the munged names diverge -- `.`, `-`,
+  and `_` all munge to `_`.
         [ oracle.sh:8:1
      8 | hork-tool__predict() {
        | \________________/

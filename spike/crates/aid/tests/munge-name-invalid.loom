@@ -13,16 +13,20 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[munge-name-invalid]: sm `\xc3\xa4\xc2\xb8\xc2\xadpkg` munges to the sh
-  function name `\xc3\xa4\xc2\xb8\xc2\xadpkg__predict`, which is not a legal
+  error[munge-name-invalid]: Dorc munges `\xc3\xa4\xc2\xb8\xc2\xadpkg` into the
+  sh function name `\xc3\xa4\xc2\xb8\xc2\xadpkg__predict`, which is not a legal
   NAME: non-ASCII character `\xc3\xa4` (a NAME admits only ASCII
-  letters/digits/`_`) (ca-munge-charclass, 24M section 4b) -- REFUSED (a broken
-  function name cannot ship; the munger must transliterate or the name must be
-  renamed)
+  letters/digits/`_`). A broken function name cannot ship; rename
+  `\xc3\xa4\xc2\xb8\xc2\xadpkg` to spell only ASCII letters, digits, `_`, `.`,
+  or `-`.
         [ oracle.sh:2:1
      2 | \xe4\xb8\xadpkg__predict() { :; }
        | \______________________/
-  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+  error[oracle-file-not-load-inert]: A `# dorc-lang/v0.2`-marked oracle file
+  must be inert to load -- nothing but function definitions and static
+  assignments at top level -- and this is the first item that does more. Move
+  top-level work into a role function or into the book; an oracle file is loaded
+  for its definitions, never run.
         [ oracle.sh:2:1
      2 | \xe4\xb8\xadpkg__predict() { :; }
        | \______________________/

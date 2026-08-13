@@ -17,11 +17,18 @@ hork.oracle.sh:
         [ hork.oracle.sh:2:15
      2 | hork__predict (
        |               ^
-  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+  error[oracle-file-not-load-inert]: A `# dorc-lang/v0.2`-marked oracle file
+  must be inert to load -- nothing but function definitions and static
+  assignments at top level -- and this is the first item that does more. Move
+  top-level work into a role function or into the book; an oracle file is loaded
+  for its definitions, never run.
         [ hork.oracle.sh:2:1
      2 | hork__predict (
        | \___________/
-  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+  warning[oracle-role-fn-unlifted]: Dorc recognized `hork__predict` as a role
+  function but could not lift it: its binds and marks are not in effect, and it
+  vouches for nothing. The file parsing clean is not evidence the function
+  lifted; a companion diagnostic usually names the exact line that took it down.
         [ hork.oracle.sh:2:1
      2 | hork__predict (
        | \___________/

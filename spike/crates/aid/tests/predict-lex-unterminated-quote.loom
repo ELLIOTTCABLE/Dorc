@@ -17,7 +17,10 @@ hork.oracle.sh:
         [ hork.oracle.sh:2:17
      2 | hork__predict() {
        |                 ^
-  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+  warning[oracle-role-fn-unlifted]: Dorc recognized `hork__predict` as a role
+  function but could not lift it: its binds and marks are not in effect, and it
+  vouches for nothing. The file parsing clean is not evidence the function
+  lifted; a companion diagnostic usually names the exact line that took it down.
         [ hork.oracle.sh:2:1
      2 | hork__predict() {
        | \___________/

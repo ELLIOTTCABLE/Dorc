@@ -15,7 +15,11 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  warning[oracle-role-fn-unlifted]: [unwritten: oracle-role-fn-unlifted]
+  warning[oracle-role-fn-unlifted]: Dorc recognized `pkg__is_converged` as a
+  role function but could not lift it: its binds and marks are not in effect,
+  and it vouches for nothing. The file parsing clean is not evidence the
+  function lifted; a companion diagnostic usually names the exact line that took
+  it down.
         [ oracle.sh:2:1
      2 | pkg__is_converged() { [ "`dpkg -s "$1"`" = installed ]; }
        | \_______________/

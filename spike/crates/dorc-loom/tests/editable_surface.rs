@@ -58,7 +58,7 @@ fn a_case_whose_register_is_empty(
         Option<&dorc_aid::catalog::ProseTier<String>>,
     ) -> bool,
 ) -> (String, Case) {
-    a_case_whose_render(consumer, register, empty, |_| true)
+    a_case_whose_render(consumer, register, empty, |_, _| true)
 }
 
 /// As above, narrowed by what the case's RENDER has to look like — for a mechanic (a placeholder
@@ -70,7 +70,7 @@ fn a_case_whose_render(
         &dorc_aid::catalog::HelpRegister<dorc_aid::catalog::ProseTier<String>>,
         Option<&dorc_aid::catalog::ProseTier<String>>,
     ) -> bool,
-    shaped: impl Fn(&str) -> bool,
+    shaped: impl Fn(&str, &str) -> bool,
 ) -> (String, Case) {
     let candidates: Vec<String> = consumer
         .mirror()
@@ -90,9 +90,9 @@ fn a_case_whose_render(
             Err(errorloom::RunError::ShellNotConfigured)
         })
         .is_ok_and(|results| {
-            results
-                .first()
-                .is_some_and(|result| result.editable_render().is_some() && shaped(result.output()))
+            results.first().is_some_and(|result| {
+                result.editable_render().is_some() && shaped(slug, result.output())
+            })
         });
         if drivable {
             return (slug.clone(), case);
@@ -171,8 +171,12 @@ fn sections(baseline: &DorcEditableBaseline) -> Vec<(String, &'static str)> {
 #[test]
 fn overtype_placeholder_mints_words() {
     let mut consumer = DorcConsumer::new();
-    let (slug, case) =
-        a_case_whose_register_is_empty(&consumer, "message", |_, message| message.is_none());
+    let (slug, case) = a_case_whose_render(
+        &consumer,
+        "message",
+        |_, message| message.is_none(),
+        |slug, transcript| transcript.contains(&format!("[unwritten: {slug}]")),
+    );
     let (baseline, transcript) = drive(&consumer, &case);
     assert!(
         sections(&baseline).contains(&(slug.clone(), "message")),
@@ -716,7 +720,7 @@ fn a_wrapped_placeholder_is_one_section() {
         &consumer,
         "message",
         |_, message| message.is_none(),
-        |transcript| transcript.contains("[unwritten:\n"),
+        |_, transcript| transcript.contains("[unwritten:\n"),
     );
     let (baseline, transcript) = drive(&consumer, &case);
     assert!(

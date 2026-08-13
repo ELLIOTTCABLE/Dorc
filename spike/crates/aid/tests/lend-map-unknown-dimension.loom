@@ -15,10 +15,9 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  warning[lend-map-unknown-dimension]: sm `frobnicate` is not a known lend_map
-  dimension (expected one of user, fs-view, netns); the line mints no lend and
-  the dimension it meant to answer stays ⊤ (walls). Dimension marks are an
-  engine-owned closed vocabulary (`273` section 8).
+  warning[lend-map-unknown-dimension]: `frobnicate` is not a context dimension
+  Dorc knows; a `__lend_map` line names one of user, fs-view, netns, so this
+  line lends nothing and the dimension it meant to answer stays walled.
         [ oracle.sh:3:23
      3 |    printf '%s\n' "$1" : lends frobnicate
        |                       \________________/

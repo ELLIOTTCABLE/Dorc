@@ -18,9 +18,11 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  note[carry-netns-on-net-kernel-forbidden]: sm `invariant:netns` is forbidden
-  on the per-netns `net-kernel` store of `sm_dorc_Route` -- network kernel state
-  is namespaced, never netns-invariant
+  note[carry-netns-on-net-kernel-forbidden]: `undivided-by-transit-across netns`
+  cannot hold for the `net-kernel` store of `sm_dorc_Route` -- every network
+  namespace keeps its own copy of network kernel state -- so Dorc drops the
+  invariance line. Delete the line, or if the invariance is real, correct the
+  `stored-in` label to the substrate the state actually lives in.
         [ oracle.sh:4:1
      4 | sm_dorc_Route__state_stored_only_in() {
        | \_________________________________/

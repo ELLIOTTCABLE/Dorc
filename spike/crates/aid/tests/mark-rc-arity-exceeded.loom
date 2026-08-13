@@ -14,11 +14,18 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+  error[oracle-file-not-load-inert]: A `# dorc-lang/v0.2`-marked oracle file
+  must be inert to load -- nothing but function definitions and static
+  assignments at top level -- and this is the first item that does more. Move
+  top-level work into a role function or into the book; an oracle file is loaded
+  for its definitions, never run.
         [ oracle.sh:2:1
      2 | dpkg -s nginx : sm.a.B@x
        | \______________________/
-  error[mark-rc-arity-exceeded]: [unwritten: mark-rc-arity-exceeded]
+  error[mark-rc-arity-exceeded]: One exit code witnesses one cell, and this
+  mark's command already binds its exit code to a verdict; a second rc-consuming
+  mark cannot be measured. Give each verdict its own probe line -- one command,
+  one exit code, one cell.
         [ oracle.sh:3:11
      3 | : refutes sm.a.C@y
        |           \______/

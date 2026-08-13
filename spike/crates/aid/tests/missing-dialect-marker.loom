@@ -12,11 +12,10 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[missing-dialect-marker]: sm this file uses a dorc-lang dialect construct
-  (a bind `name : kind = ...` or a trailing `:`/`:!`/`:?` mark) but lacks the `#
-  dorc-lang/v0.2` version marker (marker-gates-syntax-only): add `#
-  dorc-lang/v0.2` as a standalone comment in the first 10 lines, or drop the
-  dialect (the bare `__role` floor works markerless)
+  error[missing-dialect-marker]: This file uses dorc-lang dialect constructs (a
+  bind or a `:` mark) but never declares the `# dorc-lang/v0.2` version marker
+  that licenses that syntax. Add the marker as a standalone comment in the first
+  10 lines, or drop the dialect -- bare `__role` functions lift without one.
         [ oracle.sh:1:18
      1 | foo__predict() { pkg : sm.dorc.Package = "$1"; foo l -- "$pkg"; }
        |                  \__________________________/
