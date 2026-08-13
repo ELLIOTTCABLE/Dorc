@@ -22,8 +22,8 @@ use errorloom::{
 };
 
 use crate::{
-    DorcSectionEdit, ENVELOPE_KEY, ENVELOPE_STDERR, SectionKey, SectionVariableId,
-    TemplateVariableName, to_editable_render,
+    DorcSectionEdit, ENVELOPE_INVOCATION, ENVELOPE_KEY, ENVELOPE_STDERR, SectionKey,
+    SectionVariableId, TemplateVariableName, to_editable_render,
 };
 
 /// Exact current values by editable section and semantic variable name.
@@ -506,6 +506,19 @@ impl DorcConsumer {
         ))
     }
 
+    /// The seat a case DECLARES, when the command shape would pick the wrong one
+    /// (`envelope: invocation`). A code `run` returns as `Err` prints through the invocation seat
+    /// whatever the invocation was, so a plan-shaped replay showing the bare framed diagnostic
+    /// under-shows the prefix, the synopsis, and the usage exit code that come with it.
+    fn declared_seat_parts(
+        &self,
+        case: &Case,
+        diag: &Diag,
+    ) -> Option<dorc_aid::tagged::RenderParts> {
+        (case.frontmatter().scalar(ENVELOPE_KEY) == Some(ENVELOPE_INVOCATION))
+            .then(|| self.invocation_parts(diag, "dorc"))
+    }
+
     /// [`Self::cli_parts`] for a source-staged diagnostic.
     fn staged_cli_parts(&self, stage: &str, diag: &Diag) -> dorc_aid::tagged::RenderParts {
         render_staged_cli_parts(
@@ -686,7 +699,9 @@ impl DorcConsumer {
         }
         if parse_direct_remote_apply(&tokens) {
             let diag = Self::world_of(case).ok()?.0;
-            let parts = self.cli_parts(&diag, "", "");
+            let parts = self
+                .declared_seat_parts(case, &diag)
+                .unwrap_or_else(|| self.cli_parts(&diag, "", ""));
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         let plan = parse_direct_plan(&tokens)?;
@@ -711,7 +726,9 @@ impl DorcConsumer {
             if plan.machine {
                 return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
             }
-            let parts = self.cli_parts(&diag, "", "");
+            let parts = self
+                .declared_seat_parts(case, &diag)
+                .unwrap_or_else(|| self.cli_parts(&diag, "", ""));
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         };
         let oracles: Vec<(String, String)> = plan
@@ -1644,8 +1661,10 @@ impl DorcConsumer {
         }
         if parse_direct_remote_apply(&words) {
             let diag = Self::world_of(case)?.0;
-            let parts = self.cli_parts(&diag, "", "");
-            return Ok(parts.text());
+            return Ok(self
+                .declared_seat_parts(case, &diag)
+                .unwrap_or_else(|| self.cli_parts(&diag, "", ""))
+                .text());
         }
         let plan =
             parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
@@ -1664,7 +1683,10 @@ impl DorcConsumer {
             if plan.machine {
                 return Ok(render_diag_jsonl(&diag));
             }
-            return Ok(self.cli_parts(&diag, "", "").text());
+            return Ok(self
+                .declared_seat_parts(case, &diag)
+                .unwrap_or_else(|| self.cli_parts(&diag, "", ""))
+                .text());
         };
         let oracles: Vec<(String, String)> = plan
             .oracles

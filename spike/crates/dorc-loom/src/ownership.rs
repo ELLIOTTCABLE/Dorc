@@ -17,11 +17,19 @@ pub const OWNS_KEY: &str = "owns";
 /// The frontmatter key carrying the case's own editing loop.
 pub const EDIT_LOOP_KEY: &str = "edit-loop";
 
-/// The frontmatter key opting a plan-route replay into a wider stderr surface.
+/// The frontmatter key naming which of the CLI's report seats really prints this case's code.
+///
+/// The driver otherwise picks a seat from the replay's command SHAPE, which is right whenever the
+/// command reaches the code for real and wrong for every code `run` returns as `Err`: those print
+/// through the invocation seat's prefix and usage synopsis, however the invocation was spelled
+/// (`crates/cli/CLAUDE.md` invocation-errors-are-registry-codes).
 pub const ENVELOPE_KEY: &str = "envelope";
 
-/// The one [`ENVELOPE_KEY`] value: render the plan route's whole stderr envelope.
+/// [`ENVELOPE_KEY`]: render the plan route's whole stderr envelope.
 pub const ENVELOPE_STDERR: &str = "stderr";
+
+/// [`ENVELOPE_KEY`]: render through the invocation-error seat, prefix and usage synopsis included.
+pub const ENVELOPE_INVOCATION: &str = "invocation";
 
 /// The loop, spelled out inside the case that needs it — GENERATED, never authored.
 ///

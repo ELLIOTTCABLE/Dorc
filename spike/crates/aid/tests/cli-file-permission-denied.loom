@@ -1,10 +1,12 @@
 ---
 code: cli-file-permission-denied
+envelope: invocation
 when-fires: an input file exists but this process may not read it. cli/lib.rs humane_read_error, PermissionDenied arm. {kind} and {path}.
 why: the read-error trichotomys second arm: the file is there, so the repair is permissions, not the path - a distinction the raw OS string buries.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-file-permission-denied && mise run loom:promote -- cli-file-permission-denied`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-file-permission-denied` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[cli-file-permission-denied]: Dorc found the oracle at
+dorc: error[cli-file-permission-denied]: Dorc found the oracle at
 `/etc/dorc/nginx.oracle.sh`, but is not allowed to read it.
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]

@@ -146,7 +146,9 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 22] = [
     },
     FrontmatterKey {
         name: "envelope",
-        read_by: "`stderr`: render the plan route's whole stderr envelope in this case's replays",
+        read_by: "which report seat really prints this code -- `stderr`: the plan route's whole \
+                  stderr envelope; `invocation`: the invocation-error seat, prefix and usage \
+                  synopsis included",
         run_lane: false,
     },
 ];

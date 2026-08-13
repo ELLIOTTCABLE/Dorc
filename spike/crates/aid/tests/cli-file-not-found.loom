@@ -1,9 +1,11 @@
 ---
 code: cli-file-not-found
+envelope: invocation
 when-fires: an input file does not exist. cli/lib.rs humane_read_error, NotFound arm. {kind} names what we were reading, {path} is the users own spelling.
 why: AID-NEEDS:law-codes-vary-by-world-not-grammar: one of THREE sibling codes over io::ErrorKind - a missing file, an unreadable one, and an unclassed OS failure are different world-states with different repairs. Never the platforms raw phrasing.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-file-not-found && mise run loom:promote -- cli-file-not-found`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-file-not-found` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[cli-file-not-found]: Dorc cannot find the book at `webhost.sh`.
+dorc: error[cli-file-not-found]: Dorc cannot find the book at `webhost.sh`.
+usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
