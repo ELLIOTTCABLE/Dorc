@@ -6,4 +6,4 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc-sh
-dorc-sh: error[dorc-sh-usage]: sm usage: dorc-sh <script> [args...]
+dorc-sh: error[dorc-sh-usage]: usage: dorc-sh <script> [args...]

@@ -6,5 +6,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[lint-no-lintable-files]: sm no lintable files given (operational, not
-clean)
+error[lint-no-lintable-files]: Dorc was given no files to lint; an empty lint
+counts as a failure, not a clean pass.

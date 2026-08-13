@@ -7,6 +7,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan
-dorc: error[cli-no-book-given]: sm no book given (a positional path or
---book=PATH)
+dorc: error[cli-no-book-given]: Dorc was given no book to work on; name one as a
+positional path or with `--book=PATH`.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
