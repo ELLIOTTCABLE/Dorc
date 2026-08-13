@@ -23,8 +23,8 @@ oracle.sh:
   namespace keeps its own copy of network kernel state -- so Dorc drops the
   invariance line. Delete the line, or if the invariance is real, correct the
   `stored-in` label to the substrate the state actually lives in.
-        [ oracle.sh:4:1
-     4 | sm_dorc_Route__state_stored_only_in() {
-       | \_________________________________/
+        [ oracle.sh:6:4
+     6 |    : undivided-by-transit-across netns
+       |    ^
 
 dorc lint: 0 errors, 0 warnings, 1 info across 1 file.

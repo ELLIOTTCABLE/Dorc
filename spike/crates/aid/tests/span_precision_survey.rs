@@ -36,7 +36,7 @@
 //! | tolerates-over-identity-dependence | vouch/mark span | no | KEEP |
 //! | heavy-context-no-tolerance | body span | no | KEEP |
 //! | lend-map-unknown-dimension | whole mark span | same as tolerates-unknown-dimension | KEEP |
-//! | carry-netns-on-net-kernel-forbidden | store funcdef `name_span` | the `invariant:netns` line is not in scope; the store funcdef IS the offending declarant | KEEP |
+//! | carry-netns-on-net-kernel-forbidden | the refused mark's own command span | no | TIGHTENED (the survey read "the line is not in scope"; the scan hands the loop that very span, and the sibling arm two lines down already stores it) |
 //! | mark-brace-verdict-single-cell | mark span | the mark is already the small offending unit | KEEP |
 //! | wrapper-entry-incoherent | entry funcdef `name_span` | no | KEEP |
 //! | wrapper-peel-incoherent | predict funcdef `name_span` | no | KEEP |

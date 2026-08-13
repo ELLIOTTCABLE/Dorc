@@ -111,7 +111,10 @@ impl InvarianceIndex {
                                     kind_munged: kind_munged.clone(),
                                 },
                             ),
-                            body.name_span,
+                            // The offending mark's own line, which the sibling arm below already
+                            // carries: the funcdef header pointed a reader at a declaration that
+                            // may be many lines from the claim being refused.
+                            span,
                         ));
                         continue;
                     }
@@ -636,6 +639,14 @@ mod tests {
         );
         assert_eq!(diags.len(), 1, "the caveat is diagnosed loudly");
         assert_eq!(diags[0].code.slug(), "carry-netns-on-net-kernel-forbidden");
+        // The caret sits on the refused mark, not on the funcdef header many lines above it.
+        let source = "sm_dorc_Fw__state_stored_only_in() { printf 'nft\\n' : stored-in net-kernel ; : undivided-by-transit-across netns ; }";
+        let at = diags[0].primary.span().expect("a spanned refusal").lo.0 as usize;
+        assert!(
+            source[at..].starts_with(": undivided-by-transit-across netns"),
+            "the caret points at {:?}",
+            &source[at..]
+        );
     }
 
     /// A NON-net `kernel` store CAN be netns-invariant (`vm.swappiness`-class) — the caveat is
