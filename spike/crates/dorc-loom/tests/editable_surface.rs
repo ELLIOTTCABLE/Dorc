@@ -90,11 +90,9 @@ fn a_case_whose_render(
             Err(errorloom::RunError::ShellNotConfigured)
         })
         .is_ok_and(|results| {
-            results
-                .first()
-                .is_some_and(|result| {
-                    result.editable_render().is_some() && shaped(slug, result.output())
-                })
+            results.first().is_some_and(|result| {
+                result.editable_render().is_some() && shaped(slug, result.output())
+            })
         });
         if drivable {
             return (slug.clone(), case);
