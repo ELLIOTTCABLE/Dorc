@@ -14,7 +14,10 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[marker-version-unrecognized]: [unwritten: marker-version-unrecognized]
+  error[marker-version-unrecognized]: The marker `# dorc-lang/v0.1` names a
+  dorc-lang version this build of Dorc does not recognize; the one version it
+  reads is `# dorc-lang/v0.2`. Correct the marker if the file is v0.2 material,
+  or run it under a Dorc that knows its declared version.
         [ oracle.sh:2:22
      2 | apt_get__predict() { pkg : sm.dorc.Package = "$1"; dpkg-query -W "$pkg"; }
        |                      \__________________________/

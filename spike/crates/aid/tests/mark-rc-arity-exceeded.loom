@@ -14,7 +14,11 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+  error[oracle-file-not-load-inert]: A `# dorc-lang/v0.2`-marked oracle file
+  must be inert to load -- nothing but function definitions and static
+  assignments at top level -- and this is the first item that does more. Move
+  top-level work into a role function or into the book; an oracle file is loaded
+  for its definitions, never run.
         [ oracle.sh:2:1
      2 | dpkg -s nginx : sm.a.B@x
        | \______________________/

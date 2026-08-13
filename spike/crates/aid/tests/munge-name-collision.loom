@@ -29,7 +29,11 @@ oracle.sh:
         [ oracle.sh:4:1
      4 | hork.tool__predict() {
        | \________________/
-  error[oracle-file-not-load-inert]: [unwritten: oracle-file-not-load-inert]
+  error[oracle-file-not-load-inert]: A `# dorc-lang/v0.2`-marked oracle file
+  must be inert to load -- nothing but function definitions and static
+  assignments at top level -- and this is the first item that does more. Move
+  top-level work into a role function or into the book; an oracle file is loaded
+  for its definitions, never run.
         [ oracle.sh:4:1
      4 | hork.tool__predict() {
        | \________________/
