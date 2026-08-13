@@ -6,4 +6,4 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --book=webhost.sh
-error[cli-file-not-found]: sm cannot read book `webhost.sh`: no such file
+error[cli-file-not-found]: Dorc cannot find the book at `webhost.sh`.

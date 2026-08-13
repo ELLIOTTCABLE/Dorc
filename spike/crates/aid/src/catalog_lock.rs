@@ -595,8 +595,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "an input file does not exist. cli/lib.rs humane_read_error, NotFound arm. {kind} names what we were reading, {path} is the users own spelling.",
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar: one of THREE sibling codes over io::ErrorKind - a missing file, an unreadable one, and an unclassed OS failure are different world-states with different repairs. Never the platforms raw phrasing.",
         params: &["kind", "path"],
-        example: "sm cannot read book `webhost.sh`: no such file",
-        message: Some(ProseTier::Migrated("sm cannot read {{kind}} `{{path}}`: no such file")),
+        example: "Dorc cannot find the book at `webhost.sh`.",
+        message: Some(ProseTier::Authored("Dorc cannot find the {{kind}} at `{{path}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -604,8 +604,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "an input file exists but this process may not read it. cli/lib.rs humane_read_error, PermissionDenied arm. {kind} and {path}.",
         why: "the read-error trichotomys second arm: the file is there, so the repair is permissions, not the path - a distinction the raw OS string buries.",
         params: &["kind", "path"],
-        example: "sm cannot read oracle `/etc/dorc/nginx.oracle.sh`: permission denied",
-        message: Some(ProseTier::Migrated("sm cannot read {{kind}} `{{path}}`: permission denied")),
+        example: "Dorc found the oracle at `/etc/dorc/nginx.oracle.sh`, but is not allowed to read it.",
+        message: Some(ProseTier::Authored("Dorc found the {{kind}} at `{{path}}`, but is not allowed to read it.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
