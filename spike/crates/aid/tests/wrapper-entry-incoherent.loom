@@ -37,11 +37,11 @@ oracle.sh:
      9 |    "$@"
        |    \__/
   9:4 info [unmodeled-inventory:unmodeled-wall-inventory] sm 1 unmodeled ⊤-wall in this book; the first is here. Downstream commands (~2 leaf site(s) after it) lose full-elision and fall back to runtime guards until each wall's tool has an oracle.
-  error[wrapper-entry-incoherent]: sm wrapper `runas`: __enter and __lend_map
-  disagree on argv flow (entry consumes 1 leading arg(s), the lend-fold consumes
-  2) -- static incoherence (27C:rul-fold-entry-coherence-failfast,
-  declarations-genuinely-contradict). The entry form drops/transforms args the
-  fold relied on; make the entry pass the fold's guest verbatim.
+  error[wrapper-entry-incoherent]: Wrapper `runas`'s `__enter` and `__lend_map`
+  disagree on argv flow: the entry form consumes 1 leading argument(s) where the
+  lend-fold consumes 2, so the guest the entry runs is not the guest the fold
+  measured, and Dorc stops before contacting any host. Make the entry form pass
+  the fold's guest verbatim -- both argparses must peel to the same tail.
         [ oracle.sh:12:1
      12 | runas__enter() {
         | \__________/

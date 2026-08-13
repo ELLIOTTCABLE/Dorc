@@ -469,8 +469,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a wrapper's `__enter` and `__lend_map` disagree on argv flow. cli/main.rs. Spanned (the entry name_span).",
         why: "27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "entry_shifts", "lend_shifts"],
-        example: "sm wrapper `runas`: __enter and __lend_map disagree on argv flow (entry consumes 1 leading arg(s), the lend-fold consumes 2) -- static incoherence (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). The entry form drops/transforms args the fold relied on; make the entry pass the fold's guest verbatim.",
-        message: Some(ProseTier::Migrated("sm wrapper `{{wrapper}}`: __enter and __lend_map disagree on argv flow (entry consumes {{entry_shifts}} leading arg(s), the lend-fold consumes {{lend_shifts}}) -- static incoherence (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). The entry form drops/transforms args the fold relied on; make the entry pass the fold's guest verbatim.")),
+        example: "Wrapper `runas`'s `__enter` and `__lend_map` disagree on argv flow: the entry form consumes 1 leading argument(s) where the lend-fold consumes 2, so the guest the entry runs is not the guest the fold measured, and Dorc stops before contacting any host. Make the entry form pass the fold's guest verbatim -- both argparses must peel to the same tail.",
+        message: Some(ProseTier::Authored("Wrapper `{{wrapper}}`'s `__enter` and `__lend_map` disagree on argv flow: the entry form consumes {{entry_shifts}} leading argument(s) where the lend-fold consumes {{lend_shifts}}, so the guest the entry runs is not the guest the fold measured, and Dorc stops before contacting any host. Make the entry form pass the fold's guest verbatim -- both argparses must peel to the same tail.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -478,8 +478,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a wrapper's `__predict` and `__lend_map` disagree on the peel tail position. cli/main.rs. Spanned (the predict name_span).",
         why: "273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "predict_depth", "lend_map_depth"],
-        example: "sm wrapper `sudo`: __predict and __lend_map disagree on the peel tail position (predict reaches \"$@\" after 1 argv token(s), lend_map after 0) -- static incoherence (273 section 5, declarations-genuinely-contradict). The guest would start at a different token depending on which member dispatched; fix the argparse so both peel to the same tail.",
-        message: Some(ProseTier::Migrated("sm wrapper `{{wrapper}}`: __predict and __lend_map disagree on the peel tail position (predict reaches \"$@\" after {{predict_depth}} argv token(s), lend_map after {{lend_map_depth}}) -- static incoherence (273 section 5, declarations-genuinely-contradict). The guest would start at a different token depending on which member dispatched; fix the argparse so both peel to the same tail.")),
+        example: "Wrapper `sudo`'s `__predict` and `__lend_map` disagree on where the guest begins: `__predict` reaches `\"$@\"` after 1 argv token(s), `__lend_map` after 0, so the guest would start at a different token depending on which member dispatched, and Dorc stops before contacting any host. Fix whichever argparse is wrong so both members peel to the same tail.",
+        message: Some(ProseTier::Authored("Wrapper `{{wrapper}}`'s `__predict` and `__lend_map` disagree on where the guest begins: `__predict` reaches `\"$@\"` after {{predict_depth}} argv token(s), `__lend_map` after {{lend_map_depth}}, so the guest would start at a different token depending on which member dispatched, and Dorc stops before contacting any host. Fix whichever argparse is wrong so both members peel to the same tail.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
