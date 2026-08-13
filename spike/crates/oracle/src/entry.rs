@@ -380,7 +380,7 @@ fn arm_pattern_literals(arm: &crate::predict::CaseArm) -> (Vec<String>, bool) {
 /// `{user,fs-view}` ⇒ `[user, fs-view]` (`27C` §2 brace-alternation). Trims whitespace; empty
 /// members are dropped. Referent-agnostic string surgery (the tokens are validated against the
 /// closed dimension vocabulary by the caller).
-fn expand_dimension_set(raw: &str) -> Vec<String> {
+pub(crate) fn expand_dimension_set(raw: &str) -> Vec<String> {
     let raw = raw.trim();
     if let Some(inner) = raw.strip_prefix('{').and_then(|r| r.strip_suffix('}')) {
         inner

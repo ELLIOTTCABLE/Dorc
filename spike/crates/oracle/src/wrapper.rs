@@ -31,7 +31,7 @@ use dorc_aid::diag::{Diag, DiagCode, LendMapUnknownDimension};
 use dorc_core::{Interner, Symbol};
 
 use crate::predict::{
-    Command, Predict, PredictSet, Stmt, Word, eval_test, lift_lend_maps, pattern_matches,
+    Command, MarkKind, Predict, PredictSet, Stmt, Word, eval_test, lift_lend_maps, pattern_matches,
     resolve_word,
 };
 use dorc_syntax::sem::UnsetPolicy;
@@ -349,18 +349,12 @@ fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<Diag>) {
                     map.peels = true;
                 }
                 let Some(mark) = &c.mark else { continue };
-                // A dimension entry: the mark's `kind` fragment is the dimension token (`: lends user`).
-                let token = &mark.target.kind;
-                let Some(dim) = Dimension::from_token(token) else {
-                    diags.push(Diag::new(
-                        DiagCode::LendMapUnknownDimension(LendMapUnknownDimension {
-                            token: token.clone(),
-                            expected: Dimension::ALL.map(Dimension::as_token).join(", "),
-                        }),
-                        mark.span,
-                    ));
+                // The VERB decides, not the payload's shape: this body may carry any mark, and one
+                // whose token happened to spell a dimension used to enter the map as a lend. Its
+                // sibling `safe-across` walk has always guarded (`entry::collect_tolerance`).
+                if mark.kind != MarkKind::Lends {
                     continue;
-                };
+                }
                 // A bare `:` colon-line = full lend; any producing command (printf …) = mapped
                 // lend. `inv-referent-agnostic`: keyed on the command's own head, never the value.
                 let entry = if is_colon_line(c) {
@@ -368,8 +362,22 @@ fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<Diag>) {
                 } else {
                     LendEntry::Mapped
                 };
-                // First entry per dimension wins (a duplicate is dropped — the safe direction).
-                map.entries.entry(dim).or_insert(entry);
+                // The brace-set is the same token payload `safe-across` takes (`281` §5/§6), so it
+                // expands through the same seat rather than failing the whole set as one token.
+                for token in crate::entry::expand_dimension_set(&mark.target.kind) {
+                    let Some(dim) = Dimension::from_token(&token) else {
+                        diags.push(Diag::new(
+                            DiagCode::LendMapUnknownDimension(LendMapUnknownDimension {
+                                token,
+                                expected: Dimension::ALL.map(Dimension::as_token).join(", "),
+                            }),
+                            mark.span,
+                        ));
+                        continue;
+                    };
+                    // First entry per dimension wins (a duplicate is dropped — the safe direction).
+                    map.entries.entry(dim).or_insert(entry);
+                }
             }
             Stmt::Case { arms, .. } => {
                 for arm in arms {
@@ -991,6 +999,22 @@ mod tests {
         assert!(
             map.missing_dimensions().len() == 3,
             "the unknown token minted no dimension"
+        );
+    }
+
+    /// The walk keys on the VERB and expands the brace-set, exactly as `safe-across`'s does. Both
+    /// halves were open: any mark whose token spelled a dimension entered the map as a lend, and a
+    /// brace-set failed whole as one unknown token.
+    #[test]
+    fn only_a_lends_mark_lends_and_a_brace_set_expands() {
+        let (_i, check) =
+            one_lend_map("x__lend_map() { : disturbs sm.dorc.Netns; : lends {user,netns}; }");
+        let (map, diags) = derive_lend_map(&check);
+        assert!(diags.is_empty(), "no unknown-dimension refusal: {diags:?}");
+        assert_eq!(
+            map.missing_dimensions().len(),
+            1,
+            "both braced dimensions lend; only fs-view is missing"
         );
     }
 
