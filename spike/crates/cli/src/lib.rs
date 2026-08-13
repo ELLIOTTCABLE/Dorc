@@ -565,6 +565,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             );
         } else if let Some(path) = arg.strip_prefix("--whylog=") {
             whylog = Some(path.to_owned());
+        } else if arg == "--whylog" {
+            whylog = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--whylog", "a durable path"))?,
+            );
         } else if arg == "--all" {
             all = true;
         } else if arg == "--last" {
@@ -766,11 +771,14 @@ fn seconds_value(flag: &str, v: &str) -> Result<u64, InvocationError> {
 }
 /// A tiny did-you-mean: the nearest `candidate` to `word` within edit-distance 2 (a typo, not a
 /// wholly different word), or `None`. Case-sensitive; ASCII. Used for mode + flag suggestions.
+///
+/// A candidate EQUAL to the word is refused: reaching here means the tables and the parse arms
+/// disagree, and "did you mean `--whylog`?" for `--whylog` teaches nothing while hiding the gap.
 fn nearest<'a>(word: &str, candidates: &[&'a str]) -> Option<&'a str> {
     candidates
         .iter()
         .map(|c| (levenshtein(word, c), *c))
-        .filter(|(d, _)| *d <= 2)
+        .filter(|(d, _)| *d <= 2 && *d > 0)
         .min_by_key(|(d, _)| *d)
         .map(|(_, c)| c)
 }
@@ -1440,6 +1448,28 @@ mod tests {
         assert!(
             !analyzed(&["plan", "book.sh"]).reads_the_receipt(),
             "plan without --last is a live analysis, untouched by the fold"
+        );
+    }
+
+    /// Both spellings of a value-taking flag parse, and nothing in the flag table can suggest
+    /// itself. `--whylog` had only the `=` form while sitting in the did-you-mean candidates, so
+    /// the space form fell through to "unknown flag `--whylog`; did you mean `--whylog`?".
+    #[test]
+    fn a_flag_never_suggests_the_word_that_was_typed() {
+        assert_eq!(
+            analyzed(&["why", "--whylog", "run.whylog"])
+                .whylog
+                .as_deref(),
+            Some("run.whylog")
+        );
+        assert_eq!(
+            analyzed(&["why", "--whylog=run.whylog"]).whylog.as_deref(),
+            Some("run.whylog")
+        );
+        assert_eq!(nearest("--whylog", &["--whylog", "--whylog-dir"]), None);
+        assert_eq!(
+            nearest("--whylo", &["--whylog", "--book"]),
+            Some("--whylog")
         );
     }
 

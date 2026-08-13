@@ -1801,6 +1801,36 @@ enum ReplayLoad {
 const WHYLOG_KEEP: usize = 64;
 const WHYLOG_CAP: usize = 4_000_000;
 
+/// [`durable_destination`] answers `None` on two unrelated grounds, and a replay has to tell them
+/// apart: `--no-whylog` is a refusal the admin typed and contradicts asking to read a receipt back,
+/// while an unresolvable state root is an environment with no default directory to look in — which
+/// is a missing companion flag, not a mode error. One hardcoded "only valid with dorc why" answered
+/// both, and was true of neither: `--last` replays under plan/apply/probe too.
+fn receipt_has_nowhere_to_read(args: &Args) -> Diag {
+    match (args.no_whylog, args.last) {
+        (true, true) => Diag::new_spanless_site(DiagCode::CliFlagsMutuallyExclusive(
+            dorc_aid::diag::CliFlagsMutuallyExclusive {
+                first: "--no-whylog",
+                second: "--last",
+            },
+        )),
+        // `--no-whylog` suppresses WRITING a receipt, so under a read-only mode it is the flag in
+        // the wrong invocation rather than half of a contradiction.
+        (true, false) => Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+            dorc_aid::diag::CliFlagRequiresMode {
+                flag: "--no-whylog",
+                mode: "dorc plan or dorc apply",
+            },
+        )),
+        (false, _) => Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+            dorc_aid::diag::CliFlagRequiresMode {
+                flag: if args.last { "--last" } else { "dorc why" },
+                mode: "--whylog-dir=DIR",
+            },
+        )),
+    }
+}
+
 #[expect(
     clippy::result_large_err,
     reason = "cold invocation path; see dorc_cli::parse_args_from"
@@ -1815,14 +1845,7 @@ fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
     let path = if let Some(exact) = args.whylog.as_deref() {
         std::path::PathBuf::from(exact)
     } else {
-        let dir = durable_destination(args).ok_or_else(|| {
-            Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
-                dorc_aid::diag::CliFlagRequiresMode {
-                    flag: "--whylog-dir=DIR",
-                    mode: "dorc why",
-                },
-            ))
-        })?;
+        let dir = durable_destination(args).ok_or_else(|| receipt_has_nowhere_to_read(args))?;
         let dir = dir.as_str();
         let Some(path) = whylog_store::newest(dir) else {
             return Ok(Carrier::new(
