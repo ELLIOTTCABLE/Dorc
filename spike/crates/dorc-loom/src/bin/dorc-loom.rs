@@ -1085,6 +1085,17 @@ fn print_variables(
 ) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
     writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;
+    if !used {
+        // "The whole typed payload" is not quite whole, and the gap is invisible from here: a
+        // foreign-valued hole renders, so an author sees `{{name}}` in the transcript and then
+        // fails to find it in the listing that claims to hold everything.
+        writeln!(
+            out,
+            "foreign passthrough values are omitted deliberately — they render but cannot be \
+             typed; `dorc-loom sections` shows them as computed spans"
+        )
+        .map_err(|error| error.to_string())?;
+    }
     for path in cases {
         let case = load(path)?;
         let baseline = consumer
@@ -1169,10 +1180,18 @@ fn print_component(
         RenderComponent::Structure(text) => {
             writeln!(out, "  computed: {text:?}").map_err(|error| error.to_string())
         }
-        RenderComponent::FixedVariable { id, rendered } => {
-            writeln!(out, "  computed {{{{{}}}}} = {rendered:?}", id.name.0)
-                .map_err(|error| error.to_string())
-        }
+        // Every fixed value in a Dorc render is a `RenderPart::ForeignText` — the ONE thing that
+        // mints this component (`passthrough-is-type-gated`). Saying so is the difference between
+        // an author reading `{{detail}}` here and reaching for it, and knowing not to: the name
+        // looks exactly like an insertable hole, `vars --all` deliberately omits it, and typing it
+        // earns an `UnknownVariable` with nothing to point at.
+        RenderComponent::FixedVariable { id, rendered } => writeln!(
+            out,
+            "  computed {{{{{}}}}} = {rendered:?} — foreign passthrough: absent from `vars`, and \
+             typing the name is refused",
+            id.name.0
+        )
+        .map_err(|error| error.to_string()),
         RenderComponent::EditableSection(section) => {
             let key = section.id();
             writeln!(
@@ -1365,7 +1384,12 @@ mod tests {
         }
         let out = String::from_utf8(out).expect("utf8");
         assert!(out.contains("computed: \"error[\""), "{out}");
-        assert!(out.contains("computed {{code}} = \"some-code\""), "{out}");
+        // The annotation is the whole point of naming a fixed value at all: it is the only place
+        // an author learns that a `{{name}}` they can see is one they cannot type.
+        assert!(
+            out.contains("computed {{code}} = \"some-code\" — foreign passthrough"),
+            "{out}"
+        );
         assert!(
             out.contains("section some-code/message#0 (segment 0):"),
             "{out}"
