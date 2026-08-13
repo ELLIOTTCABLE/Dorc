@@ -6,6 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc strip --book=webhost.sh
-dorc: error[cli-strip-got-a-flag]: sm strip needs a file path, got the flag
-`--book=webhost.sh`
+dorc: error[cli-strip-got-a-flag]: `dorc strip` takes only a file path, but was
+given the flag `--book=webhost.sh`.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
