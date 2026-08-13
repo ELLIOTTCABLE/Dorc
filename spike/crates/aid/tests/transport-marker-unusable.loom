@@ -6,4 +6,5 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh
-error[transport-marker-unusable]: [unwritten: transport-marker-unusable]
+error[transport-marker-unusable]: Dorc could not turn this run's nonce into a
+session marker, so nothing was shipped and web1.example.net was never contacted.

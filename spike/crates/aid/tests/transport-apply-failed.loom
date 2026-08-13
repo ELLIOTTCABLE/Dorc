@@ -6,4 +6,6 @@ edit-loop: edit a sentence in the transcript below, then run `mise run loom:comp
 ---
 -- replay --
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
-error[transport-apply-failed]: [unwritten: transport-apply-failed]
+error[transport-apply-failed]: The apply artifact on web1.example.net ran to
+completion and exited 2; the status is the artifact's own, and a fresh `dorc
+plan` measures what actually converged.
