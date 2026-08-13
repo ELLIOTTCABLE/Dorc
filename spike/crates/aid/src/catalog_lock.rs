@@ -622,8 +622,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a flag that takes a value was given without one. cli/lib.rs, every value-taking flag. {flag} is the flag, {wants} what it wants.",
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar: ONE code for the whole family - the flags differ, the failure does not, so this is grammar-fit and takes a hole rather than a sibling per flag.",
         params: &["flag", "wants"],
-        example: "sm --book needs a path",
-        message: Some(ProseTier::Migrated("sm {{flag}} needs {{wants}}")),
+        example: "The `--book` flag needs a path, and none was given.",
+        message: Some(ProseTier::Authored("The `{{flag}}` flag needs {{wants}}, and none was given.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
