@@ -374,7 +374,7 @@ description = "Mint a code's `help` register (HelpRegister::Unwritten) so the or
 dir = "spike"
 raw = true
 usage = '''
-arg "case" help="the defining-case .loom path"
+arg "case" help="the defining case: a bare slug, a filename, or a path"
 arg "register" help="the register to add; only `help` exists today"
 '''
 run = "cargo run --quiet -p dorc-loom -- add-register {{ usage.case }} {{ usage.register }}"
