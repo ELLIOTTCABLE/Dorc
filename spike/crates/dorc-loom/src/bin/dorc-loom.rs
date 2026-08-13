@@ -115,8 +115,26 @@ const ADD_REGISTER_USAGE: &str = "usage: dorc-loom add-register CASE help
 const VALUE_SYNTAX_NOTE: &str = "type {{name}} in a sentence to insert or move one of these values; omitting one bakes it to \
      literal text";
 
+/// Deep enough for the corpus's deliberately over-nested books (the CFG nesting-bound case is ~300
+/// subshells deep) to clear a recursive-descent parse. Reserved address space, committed on use.
+const WORKER_STACK_BYTES: usize = 64 * 1024 * 1024;
+
+/// Everything runs on a worker thread with an explicit stack, because the MAIN thread's is
+/// whatever the platform gave it: on Windows the nesting-bound case overflowed it, and since the
+/// bare invocation is the whole corpus, ONE such case took every `compile` and `promote` down with
+/// it — a stack overflow, not a diagnostic, so `inv-no-throw` never got a say.
 fn main() -> ExitCode {
-    match run() {
+    let outcome = std::thread::Builder::new()
+        .stack_size(WORKER_STACK_BYTES)
+        .spawn(run)
+        .map_err(|error| format!("start the worker thread: {error}"))
+        .and_then(|worker| {
+            worker
+                .join()
+                .map_err(|_| "the worker thread panicked".to_owned())
+        })
+        .and_then(|result| result);
+    match outcome {
         Ok(code) => code,
         Err(message) => {
             let _ = writeln!(io::stderr(), "dorc-loom: {message}");
