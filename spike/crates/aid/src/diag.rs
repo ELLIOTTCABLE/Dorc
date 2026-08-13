@@ -298,8 +298,9 @@ pub enum DiagCode {
     AidUnloadedSiblingOracle(AidUnloadedSiblingOracle),
 
     // ── dorc-lint's own findings (`288` §5) — the lane-local namespace retired ────────────────
-    /// The book carries unmodeled ⊤-walls; downstream sites lose full elision until each wall's
-    /// tool has an oracle.
+    /// The book carries unmodeled ⊤-walls — CFG top-nodes from a construct the parser does not
+    /// model, or from the nesting bound; downstream sites lose full elision until one is respelled.
+    /// An un-oracled COMMAND never mints one of these.
     UnmodeledWallInventory(UnmodeledWallInventory),
     /// A verdict body answers with a PIPELINE's tail status, so the rc may not be the described
     /// tool's (`rul-rc-partition`).

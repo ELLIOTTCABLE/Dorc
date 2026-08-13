@@ -1,6 +1,6 @@
 ---
 code: wrapper-entry-incoherent
-when-fires: a wrapper's `__enter` and `__lend_map` disagree on argv flow. cli/main.rs. Spanned (the entry name_span).
+when-fires: a wrapper's `__enter` and `__lend_map` disagree on argv flow. oracle/validate.rs peel_and_entry_coherence. Spanned (the entry name_span).
 why: 27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- wrapper-entry-incoherent && mise run loom:promote -- wrapper-entry-incoherent`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all wrapper-entry-incoherent` lists this case's values; type {{name}} to insert or move one.
 ---

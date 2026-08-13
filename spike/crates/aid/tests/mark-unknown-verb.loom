@@ -1,6 +1,6 @@
 ---
 code: mark-unknown-verb
-when-fires: the new-grammar mark parser hit a period-free head/continuation token that is not a known verb (`281` §4 rule-3 miss). oracle/predict/mark_grammar.rs.
+when-fires: the new-grammar mark parser hit a period-free head/continuation token that is not a known verb (`281` §4 rule-3 miss). oracle/predict/parser.rs parse_mark.
 why: 281 §4 keystone (rul-verbs-dotless-kinds-dotted): a dotless mark token is a verb; an unknown one is malformed committed syntax ⇒ the block drops to ⊤ (`inv-top-reject`). `{token}` = the bad token, `{expected}` = the known-verb vocabulary.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- mark-unknown-verb && mise run loom:promote -- mark-unknown-verb`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all mark-unknown-verb` lists this case's values; type {{name}} to insert or move one.
 ---
