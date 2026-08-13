@@ -340,7 +340,7 @@ usage = 'arg "[cases]" var=#true help="case paths scoping the run; bare takes th
 run = "cargo run --quiet -p dorc-loom -- compile --quiet {{ usage.cases | join(sep=' ') }}"
 
 [tasks."loom:promote"]
-description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases, and word-diff what it wrote. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise. Nothing is staged or committed: the diff is yours to review and revert."
+description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases, and word-diff what it wrote. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise. Nothing is staged or committed: the diff is yours to review and revert. A promote leaves both locks dirty and the NEXT compile refuses until they are committed, so put every in-flight case in ONE compile/promote pair rather than promoting them one at a time."
 dir = "spike"
 # See loom:compile's `raw` comment — the same timed-output swallow applies here.
 raw = true
