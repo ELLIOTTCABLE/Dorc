@@ -39,43 +39,21 @@ fn driven(text: &str) -> (Case, DorcConsumer, DorcEditableBaseline, String) {
     (case, consumer, baseline, transcript)
 }
 
-/// The primary collection, read at RUN time — see [`a_case_whose_register_is_empty`].
+/// The primary collection, read at RUN time — see [`a_case_whose_blanked_message_renders`].
 fn corpus_dir() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
 }
 
-/// A committed, in-process-drivable case for a code whose `register` is still empty.
+/// A committed, in-process-drivable case for a code that has no `help` register yet.
 ///
-/// CHOSEN rather than named: a test that hardcodes "this case has no words yet" asserts a fact the
-/// sanctioned prose burn-down exists to falsify, and when it does the failure lands in a crate the
-/// author who wrote the words may not open. The mechanism under test is the EMPTY register, not any
-/// particular code, so the fixture is whichever code still has one.
-fn a_case_whose_register_is_empty(
-    consumer: &DorcConsumer,
-    register: &str,
-    empty: impl Fn(
-        &dorc_aid::catalog::HelpRegister<dorc_aid::catalog::ProseTier<String>>,
-        Option<&dorc_aid::catalog::ProseTier<String>>,
-    ) -> bool,
-) -> (String, Case) {
-    a_case_whose_render(consumer, register, empty, |_, _| true)
-}
-
-/// As above, narrowed by what the case's RENDER has to look like — for a mechanic (a placeholder
-/// long enough to wrap, say) that needs more than an empty register.
-fn a_case_whose_render(
-    consumer: &DorcConsumer,
-    register: &str,
-    empty: impl Fn(
-        &dorc_aid::catalog::HelpRegister<dorc_aid::catalog::ProseTier<String>>,
-        Option<&dorc_aid::catalog::ProseTier<String>>,
-    ) -> bool,
-    shaped: impl Fn(&str, &str) -> bool,
-) -> (String, Case) {
+/// CHOSEN rather than named: the mechanism under test is the ABSENT register, not any particular
+/// code, so the fixture is whichever code still lacks one. Unlike a message register, this pool is
+/// not the prose burn-down's to empty — a help register is minted deliberately, one code at a time.
+fn a_case_whose_help_register_is_absent(consumer: &DorcConsumer) -> (String, Case) {
     let candidates: Vec<String> = consumer
         .mirror()
         .iter()
-        .filter(|entry| empty(&entry.help, entry.message.as_ref()))
+        .filter(|entry| matches!(entry.help, dorc_aid::catalog::HelpRegister::Absent))
         .map(|entry| entry.slug.clone())
         .collect();
     for slug in &candidates {
@@ -86,23 +64,79 @@ fn a_case_whose_render(
         let Ok(case) = Case::parse(&text) else {
             continue;
         };
-        let drivable = dorc_loom::replay_case(&case, consumer, &RunEnv::new(), |_, _| {
-            Err(errorloom::RunError::ShellNotConfigured)
-        })
-        .is_ok_and(|results| {
-            results.first().is_some_and(|result| {
-                result.editable_render().is_some() && shaped(slug, result.output())
-            })
-        });
-        if drivable {
+        if drivable_output(consumer, &case).is_some() {
             return (slug.clone(), case);
         }
     }
     panic!(
-        "no committed case has an empty `{register}` register the in-process driver can reach in \
-         the shape this test needs (candidates: {candidates:?}). Give it a fresh scaffolded case \
-         rather than deleting somebody's words."
+        "no committed case names a code that still lacks a `help` register and that the in-process \
+         driver can reach (candidates: {candidates:?})"
     )
+}
+
+/// A committed case whose render — with its own message register BLANKED in the mirror — takes the
+/// shape a placeholder mechanic needs, handed back with that blanking already applied.
+///
+/// SYNTHESIZED, not found. `[unwritten:]` is a legal resting state rather than a pin, and
+/// `aid/CLAUDE.md`'s `prose-pins-live-where-the-prose-does` puts the placeholder MECHANIC on a
+/// synthesized row for exactly this reason: hunting the corpus for a code nobody has words for yet
+/// made these tests hostages of the prose burn-down, and when its last unwritten message register
+/// was authored the candidate pool went empty and both of them panicked. Blanking a mirror row
+/// keeps the fixture CHOSEN rather than named — no slug is pinned, so writing prose still cannot
+/// redden this crate — while the pool it chooses from is every drivable case in the collection.
+fn a_case_whose_blanked_message_renders(
+    shaped: impl Fn(&str, &str) -> bool,
+) -> (String, Case, DorcConsumer) {
+    let mut paths: Vec<std::path::PathBuf> = std::fs::read_dir(corpus_dir())
+        .expect("the corpus dir is readable")
+        .filter_map(|entry| Some(entry.ok()?.path()))
+        .filter(|path| path.extension().is_some_and(|kind| kind == "loom"))
+        .collect();
+    // Directory order is not an order, and a fixture that flaps between runs is worse than none.
+    paths.sort();
+    for path in &paths {
+        // `sync-residue-is-never-a-case`: a conflict copy keeps the extension.
+        if path
+            .to_str()
+            .is_some_and(|name| name.contains(".sync-conflict-"))
+        {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(path) else {
+            continue;
+        };
+        let Ok(case) = Case::parse(&text) else {
+            continue;
+        };
+        // An `arrangement:` case owns chrome, which has no message register to blank.
+        let Some(slug) = case.frontmatter().scalar("code").map(str::to_owned) else {
+            continue;
+        };
+        let mut consumer = DorcConsumer::new();
+        consumer.set_message(&slug, None);
+        if drivable_output(&consumer, &case).is_some_and(|output| shaped(&slug, &output)) {
+            return (slug, case, consumer);
+        }
+    }
+    panic!(
+        "no case in the collection renders a blanked message register in the shape this test needs \
+         ({} cases tried)",
+        paths.len()
+    )
+}
+
+/// The transcript [`drive`] would hand a test, or `None` where it would panic instead.
+///
+/// The LAST block, because that is the one `drive` pops: a case closing on a machine format has no
+/// editable render there and is not a fixture for anything here.
+fn drivable_output(consumer: &DorcConsumer, case: &Case) -> Option<String> {
+    dorc_loom::replay_case(case, consumer, &RunEnv::new(), |_, _| {
+        Err(errorloom::RunError::ShellNotConfigured)
+    })
+    .ok()?
+    .last()
+    .filter(|result| result.editable_render().is_some())
+    .map(|result| result.output().to_owned())
 }
 
 fn help_of(
@@ -170,13 +204,9 @@ fn sections(baseline: &DorcEditableBaseline) -> Vec<(String, &'static str)> {
 /// no catalog hand-edit, no stored placeholder row.
 #[test]
 fn overtype_placeholder_mints_words() {
-    let mut consumer = DorcConsumer::new();
-    let (slug, case) = a_case_whose_render(
-        &consumer,
-        "message",
-        |_, message| message.is_none(),
-        |slug, transcript| transcript.contains(&format!("[unwritten: {slug}]")),
-    );
+    let (slug, case, mut consumer) = a_case_whose_blanked_message_renders(|slug, transcript| {
+        transcript.contains(&format!("[unwritten: {slug}]"))
+    });
     let (baseline, transcript) = drive(&consumer, &case);
     assert!(
         sections(&baseline).contains(&(slug.clone(), "message")),
@@ -354,9 +384,7 @@ fn an_unowned_component_is_not_foreign() {
 #[test]
 fn help_register_edit_round_trips() {
     let mut consumer = DorcConsumer::new();
-    let (slug, case) = a_case_whose_register_is_empty(&consumer, "help", |help, _| {
-        matches!(help, dorc_aid::catalog::HelpRegister::Absent)
-    });
+    let (slug, case) = a_case_whose_help_register_is_absent(&consumer);
     consumer
         .seed_help_register(&slug)
         .expect("the register is absent");
@@ -386,9 +414,7 @@ fn help_register_edit_round_trips() {
 #[test]
 fn seeding_an_existing_register_refuses() {
     let mut consumer = DorcConsumer::new();
-    let (slug, _) = a_case_whose_register_is_empty(&consumer, "help", |help, _| {
-        matches!(help, dorc_aid::catalog::HelpRegister::Absent)
-    });
+    let (slug, _) = a_case_whose_help_register_is_absent(&consumer);
     consumer.seed_help_register(&slug).expect("absent");
     assert_eq!(
         consumer.seed_help_register(&slug),
@@ -710,22 +736,29 @@ fn variable_insert_move_delete_duplicate() {
 /// register's own space wearing the renderer's clothes, and a second section here would leave half
 /// the placeholder unaddressable.
 ///
-/// The fixture is CHOSEN, like every other empty-register one here: naming a slug pinned both that
-/// its register is still unwritten and where its placeholder happens to break, so writing that
-/// code's first sentence — the burn-down's whole point — reddened this crate.
+/// The fixture is CHOSEN, like every other blanked-register one here: naming a slug would pin where
+/// that code's placeholder happens to break, so a rename or a width change would redden this crate
+/// from a distance.
 #[test]
 fn a_wrapped_placeholder_is_one_section() {
-    let consumer = DorcConsumer::new();
-    let (slug, case) = a_case_whose_render(
-        &consumer,
-        "message",
-        |_, message| message.is_none(),
-        |_, transcript| transcript.contains("[unwritten:\n"),
-    );
+    let (slug, case, consumer) =
+        a_case_whose_blanked_message_renders(|_, transcript| transcript.contains("[unwritten:\n"));
     let (baseline, transcript) = drive(&consumer, &case);
+    // Indent-agnostic: the break carries whatever continuation indent the seat lays out, and which
+    // seat the chosen case renders through is not this test's business.
     assert!(
-        transcript.contains(&format!("[unwritten:\n{slug}]")),
+        transcript
+            .split_once("[unwritten:\n")
+            .is_some_and(|(_, tail)| tail.trim_start().starts_with(&format!("{slug}]"))),
         "the chosen fixture wraps inside its placeholder: {transcript:?}"
     );
-    assert_eq!(sections(&baseline), vec![(slug, "message")]);
+    let sections = sections(&baseline);
+    assert_eq!(
+        sections
+            .iter()
+            .filter(|(owner, field)| owner == &slug && *field == "message")
+            .count(),
+        1,
+        "the wrapped placeholder is ONE section, not one per laid-out line: {sections:?}"
+    );
 }
