@@ -145,8 +145,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "an emitted `<munged>__<role>` funcname is not a legal sh NAME (leading digit, dot, non-ASCII). oracle/reserved.rs lint_oracle_reserved_names.",
         why: "ca-munge-charclass (24M §4b): a broken function name cannot ship — REFUSED. `{problem}` is `ShNameProblem::describe()`.",
         params: &["source", "funcname", "problem"],
-        example: "sm `ä¸\u{ad}pkg` munges to the sh function name `ä¸\u{ad}pkg__predict`, which is not a legal NAME: non-ASCII character `ä` (a NAME admits only ASCII letters/digits/`_`) (ca-munge-charclass, 24M section 4b) -- REFUSED (a broken function name cannot ship; the munger must transliterate or the name must be renamed)",
-        message: Some(ProseTier::Migrated("sm `{{source}}` munges to the sh function name `{{funcname}}`, which is not a legal NAME: {{problem}} (ca-munge-charclass, 24M section 4b) -- REFUSED (a broken function name cannot ship; the munger must transliterate or the name must be renamed)")),
+        example: "Dorc munges `ä¸\u{ad}pkg` into the sh function name `ä¸\u{ad}pkg__predict`, which is not a legal NAME: non-ASCII character `ä` (a NAME admits only ASCII letters/digits/`_`). A broken function name cannot ship; rename `ä¸\u{ad}pkg` to spell only ASCII letters, digits, `_`, `.`, or `-`.",
+        message: Some(ProseTier::Authored("Dorc munges `{{source}}` into the sh function name `{{funcname}}`, which is not a legal NAME: {{problem}}. A broken function name cannot ship; rename `{{source}}` to spell only ASCII letters, digits, `_`, `.`, or `-`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -154,8 +154,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "two DISTINCT source names munge to one sh funcname. oracle/reserved.rs. `{count}` interpolates twice (the count and the funcdef count).",
         why: "non-injective munge: refuse-and-run (never silently last-writer-wins).",
         params: &["source", "funcname", "count", "names"],
-        example: "sm `hork.tool` munges to the sh function name `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool) -- REFUSED, never silently merged (the shipped artifact would carry 2 same-named funcdefs, last-writer-wins; align with the reingest-collision floor: refuse-and-run)",
-        message: Some(ProseTier::Migrated("sm `{{source}}` munges to the sh function name `{{funcname}}`, shared by {{count}} distinct source names ({{names}}) -- REFUSED, never silently merged (the shipped artifact would carry {{count}} same-named funcdefs, last-writer-wins; align with the reingest-collision floor: refuse-and-run)")),
+        example: "Dorc munges `hork.tool` into the sh function name `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool); rather than let the last same-named definition silently win, Dorc refuses them all. Rename one family so the munged names diverge -- `.`, `-`, and `_` all munge to `_`.",
+        message: Some(ProseTier::Authored("Dorc munges `{{source}}` into the sh function name `{{funcname}}`, shared by {{count}} distinct source names ({{names}}); rather than let the last same-named definition silently win, Dorc refuses them all. Rename one family so the munged names diverge -- `.`, `-`, and `_` all munge to `_`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -163,8 +163,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "a book funcdef coincidentally named `*__<role>` squats the reserved oracle namespace. oracle/reserved.rs lint_book_reserved_names. `{role}` twice.",
         why: "rul24M-bare-dorcism-names: accepted-not-prevented; the disclosure is loud (warnings tune high this era).",
         params: &["name", "role"],
-        example: "sm book function `hork__predict` squats the reserved `__predict` oracle namespace (rul24M-bare-dorcism-names): if unintended, it coincidentally matches an emitted oracle function name -- it is treated as an ordinary opaque command here (run-verbatim), but a shipped oracle preamble of the same name would collide (last-writer-wins). Rename it to stay clear of `*__predict`.",
-        message: Some(ProseTier::Migrated("sm book function `{{name}}` squats the reserved `{{role}}` oracle namespace (rul24M-bare-dorcism-names): if unintended, it coincidentally matches an emitted oracle function name -- it is treated as an ordinary opaque command here (run-verbatim), but a shipped oracle preamble of the same name would collide (last-writer-wins). Rename it to stay clear of `*{{role}}`.")),
+        example: "Book function `hork__predict` sits in the `__predict` namespace reserved for oracle functions; Dorc treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble defining the same name would collide with it. Rename it to stay clear of `*__predict`.",
+        message: Some(ProseTier::Authored("Book function `{{name}}` sits in the `{{role}}` namespace reserved for oracle functions; Dorc treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble defining the same name would collide with it. Rename it to stay clear of `*{{role}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
