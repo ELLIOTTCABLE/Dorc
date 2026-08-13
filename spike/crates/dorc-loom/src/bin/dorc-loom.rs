@@ -103,9 +103,10 @@ const KEYS_USAGE: &str = "usage: dorc-loom keys
         runners, because a key no gate reads is an assertion you only believe you made";
 
 const ADD_REGISTER_USAGE: &str = "usage: dorc-loom add-register CASE help
-  Mint a code's `help` register, so the ordinary transcript loop can fill it. `help` is the only
-  addable register -- `message` exists on every code already. Refuses when the case carries an
-  unpromoted prose edit, or when the register is already there.
+  Mint a code's `help` register, so the ordinary transcript loop can fill it. The CASE spelling is
+  every other verb's -- a bare slug, a filename, or a path. `help` is the only addable register --
+  `message` exists on every code already. Refuses when the case carries an unpromoted prose edit,
+  or when the register is already there.
   next: rebuild, overtype the printed [unwritten: SLUG.help] placeholder, then compile and promote";
 
 /// The `{{name}}` mechanism has no other trace: every committed case is fully rendered, so a
@@ -246,12 +247,25 @@ fn chosen_verb(argv: &[String]) -> Option<&str> {
 }
 
 fn parse_args() -> Result<Command, String> {
-    let argv: Vec<String> = std::env::args().skip(1).collect();
-    // Anywhere, not only first: a reader who has already typed a verb asks THE VERB for help.
-    if argv
+    parse_argv(std::env::args().skip(1).collect())
+}
+
+/// Split from [`parse_args`] so the grammar is reachable from a test without a process.
+///
+/// `--help`/`-h` are FLAGS and are read anywhere, because a reader who has already typed a verb
+/// asks THE VERB for help. The bare word `help` is a VERB, and is read only in verb position: a
+/// subcommand's own positional argument is never a global request. That distinction is
+/// load-bearing rather than tidy — `add-register CASE help` ends in the literal token `help`, so
+/// while the scan took the bare word anywhere, every legal invocation of that verb was
+/// indistinguishable from a help request and printed its own usage page at exit 0, having minted
+/// nothing. It was the only documented way to seed a `help` register, and it was uninvokable for
+/// as long as it existed.
+fn parse_argv(argv: Vec<String>) -> Result<Command, String> {
+    let asks_for_help = argv
         .iter()
-        .any(|arg| matches!(arg.as_str(), "--help" | "-h" | "help"))
-    {
+        .any(|arg| matches!(arg.as_str(), "--help" | "-h"))
+        || argv.first().is_some_and(|arg| arg == "help");
+    if asks_for_help {
         return Ok(Command::Help {
             verb: chosen_verb(&argv).map(str::to_owned),
         });
@@ -303,7 +317,7 @@ fn parse_args() -> Result<Command, String> {
         Some("add-register") => {
             let case = argv
                 .next()
-                .ok_or_else(|| format!("add-register needs a case path\n{ADD_REGISTER_USAGE}"))?;
+                .ok_or_else(|| format!("add-register needs a CASE\n{ADD_REGISTER_USAGE}"))?;
             let register = argv.next().ok_or_else(|| {
                 format!("add-register needs a register name\n{ADD_REGISTER_USAGE}")
             })?;
@@ -1241,6 +1255,38 @@ mod tests {
         assert_eq!(chosen_verb(&argv(&["help"])), None);
         assert_eq!(chosen_verb(&argv(&["--help"])), None);
         assert_eq!(chosen_verb(&argv(&["nonesuch", "-h"])), None);
+    }
+
+    /// The bare word `help` is `add-register`'s own second positional, so a scan that read it
+    /// anywhere made the verb's ONLY legal invocation indistinguishable from a help request — it
+    /// printed the page and exited 0 having minted nothing, for as long as the command existed.
+    /// Three authoring agents each found it the same way and none could seed a register.
+    #[test]
+    fn a_verbs_own_positional_help_is_not_a_help_request() {
+        let argv = |args: &[&str]| args.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.loom");
+        let spelled = path.to_str().expect("the fixture path is UTF-8");
+
+        match parse_argv(argv(&["add-register", spelled, "help"])) {
+            Ok(Command::AddRegister { case, register }) => {
+                assert_eq!(case, path);
+                assert_eq!(register, "help");
+            }
+            _ => panic!("`add-register CASE help` must parse as the verb it spells"),
+        }
+
+        // The flag spelling still asks the verb, from that same trailing position.
+        assert!(
+            matches!(
+                parse_argv(argv(&["add-register", spelled, "--help"])),
+                Ok(Command::Help { verb: Some(verb) }) if verb == "add-register"
+            ),
+            "`--help` after a verb still asks the verb"
+        );
+        assert!(matches!(
+            parse_argv(argv(&["help"])),
+            Ok(Command::Help { verb: None })
+        ));
     }
 
     /// Under-naming is the failure that matters: a rewritten case's staged bytes are the author's

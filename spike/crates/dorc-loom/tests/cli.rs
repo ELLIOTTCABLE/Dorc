@@ -150,6 +150,48 @@ fn clean_cases_do_not_trigger_marker_compilation() {
     assert_eq!(unreadable.status.code(), Some(2));
 }
 
+/// The process half of `a_verbs_own_positional_help_is_not_a_help_request`: `add-register` was
+/// uninvokable for its whole life and no test noticed, because the mint was covered at the library
+/// seat (`seed_help_register`) and nothing ever ran the verb's argv.
+///
+/// The case here declares no `code`, which refuses inside the verb BEFORE the mint. That is
+/// deliberate and is as far as a test may go: the mint publishes the generated lock and rewrites a
+/// corpus case at paths fixed to the real tree, so a test that reached it would write sources.
+#[test]
+fn add_register_reaches_its_verb_rather_than_the_help_page() {
+    let dir = std::env::temp_dir().join(format!("dorc-loom-verb-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join("registerless.loom");
+    std::fs::write(
+        &path,
+        "---\narrangement: registerless\n---\n-- replay --\n$ dorc plan --book=book.sh\nnothing\n",
+    )
+    .expect("write the registerless case");
+    let path = path.to_str().unwrap_or("test path is UTF-8");
+
+    let reached = run(&["add-register", path, "help"]);
+    let stdout = String::from_utf8_lossy(&reached.stdout).into_owned();
+    assert!(
+        !stdout.contains("usage: dorc-loom"),
+        "the verb's own positional must not print a usage page: {stdout}"
+    );
+    assert_eq!(reached.status.code(), Some(2), "{stdout}");
+    assert!(
+        String::from_utf8_lossy(&reached.stderr).contains("declares no `code`"),
+        "the refusal must come from inside add-register: {}",
+        String::from_utf8_lossy(&reached.stderr)
+    );
+
+    let asked = run(&["add-register", path, "--help"]);
+    let page = String::from_utf8_lossy(&asked.stdout).into_owned();
+    assert!(asked.status.success(), "{page}");
+    assert!(
+        page.starts_with("usage: dorc-loom add-register"),
+        "the flag spelling still asks the verb: {page}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn compile_refuses_bounded_case_input_before_edit_compilation() {
     let dir = std::env::temp_dir().join(format!("dorc-loom-limit-{}", std::process::id()));
