@@ -40,12 +40,15 @@ use std::collections::BTreeMap;
 
 use crate::predict::PredictSet;
 
-/// The reserved role-suffixes of the emitted `<munge>__<role>` function namespace — the six
-/// role members (`277` §4d; rul24-ditch-is-diverged removed `is_diverged`): the probe body, the
-/// at-most footprint (`disturbs`, né touches), the converged-verdict, the identity canonicalizer,
-/// the reach-expander (`disturbance_reaches_only`, né reaches), and the substrate/invariance member
-/// (`state_stored_only_in`). KEEP IN SYNC with the parser's per-role suffix ([`crate::predict`]'s
-/// `FnRole::mangled_suffix`); the [`suffixes_match_lifted_roles`](tests) test ties the two.
+/// The reserved role-suffixes of the emitted `<munge>__<role>` function namespace — every role
+/// member (`277` §4d; rul24-ditch-is-diverged removed `is_diverged`): the probe body, the at-most
+/// footprint (`disturbs`, né touches), the converged-verdict, the identity canonicalizer, the
+/// reach-expander (`disturbance_reaches_only`, né reaches), the substrate/invariance member
+/// (`state_stored_only_in`), and the wrapper pair (`lend_map`, `enter`). KEEP IN SYNC with the
+/// parser's per-role suffix ([`crate::predict`]'s `FnRole::mangled_suffix`); the
+/// [`suffixes_match_lifted_roles`](tests) test ties the two, in both directions — the wrapper pair
+/// arrived on `FnRole` and never reached this list, so a book squatting `foo__lend_map` went
+/// unremarked while `foo__predict` did not.
 pub const RESERVED_ROLE_SUFFIXES: &[&str] = &[
     "__predict",
     crate::touches::DISTURBS_SUFFIX,
@@ -53,6 +56,8 @@ pub const RESERVED_ROLE_SUFFIXES: &[&str] = &[
     "__resolve",
     crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX,
     "__state_stored_only_in",
+    "__lend_map",
+    "__enter",
 ];
 
 /// Split a function name into `(family base, role suffix)` iff it names a role member.
@@ -179,7 +184,7 @@ fn emitted_names(interner: &mut Interner, src: &str) -> Vec<EmittedName> {
     // (suffix, lifted set). The `provider` symbol a set is keyed by is the source name that
     // munges into the funcname — a command word for predict/touches/verdicts, a KIND for
     // resolve/reaches (both route through the same `to_funcname_segment`, so the lint is uniform).
-    let roles: [(&str, PredictSet); 6] = [
+    let roles: [(&str, PredictSet); 8] = [
         (
             "__predict",
             crate::predict::lift_predicts(interner, src).value,
@@ -204,6 +209,11 @@ fn emitted_names(interner: &mut Interner, src: &str) -> Vec<EmittedName> {
             "__state_stored_only_in",
             crate::predict::lift_state_stored_only_in(interner, src).value,
         ),
+        (
+            "__lend_map",
+            crate::predict::lift_lend_maps(interner, src).value,
+        ),
+        ("__enter", crate::predict::lift_enters(interner, src).value),
     ];
     let mut out = Vec::new();
     for (suffix, set) in &roles {
@@ -516,5 +526,30 @@ apt_get__predict install -y nginx || apt-get install -y nginx
                  (RESERVED_ROLE_SUFFIXES vs FnRole drift)"
             );
         }
+    }
+
+    /// The other direction, and the one that actually drifted: a role the parser recognizes but
+    /// this list does not is a name a book may squat unremarked. The backstop that walks EVERY
+    /// role lift is `validate::unlifted_role_fns`, so its arity is the count to hold this list to.
+    #[test]
+    fn every_recognized_role_is_reserved() {
+        let mut i = Interner::default();
+        let mut src = String::new();
+        for suffix in RESERVED_ROLE_SUFFIXES {
+            src.push_str("foo");
+            src.push_str(suffix);
+            src.push_str("() { dpkg-query -W \"$1\"; }\n");
+        }
+        let lifted = emitted_names(&mut i, &src).len();
+        assert_eq!(
+            lifted,
+            RESERVED_ROLE_SUFFIXES.len(),
+            "a role lift recognizes a suffix this list does not reserve, or vice versa"
+        );
+        assert_eq!(
+            RESERVED_ROLE_SUFFIXES.len(),
+            8,
+            "the role vocabulary is closed at a version and extends BY NEW NAME ONLY; a change here is a language change"
+        );
     }
 }
