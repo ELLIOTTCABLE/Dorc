@@ -12,5 +12,7 @@ hork --settle
 
 -- replay --
 $ dorc plan --book=book.sh
-warning[cfg-errexit-unknown]: sm errexit state is unknown at one or more
-commands; failure-edges added conservatively (over-approximate, sound)
+warning[cfg-errexit-unknown]: Dorc could not tell whether `set -e` is in effect
+at one or more commands (a non-literal `set` argument, or paths that disagree),
+so it plans as though each might abort the book on failure -- the cautious
+reading; it can cost elisions, never correctness.

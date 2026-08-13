@@ -19,6 +19,6 @@ $ dorc lint oracle.sh --no-tools
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 oracle.sh:
-  4:9 info [oracle-declined-inventory:authored-decline-class] sm this verdict arm authors a deliberate decline classed `unsound` (a `decline unsound` report emission) -- the site will run; the class routes the enhancement nags (advisory only).
+  4:9 info [oracle-declined-inventory:authored-decline-class] this verdict arm deliberately declines to answer, classed `unsound`: any site it matches is left to run, and the class only shapes Dorc's advisory hints, never what executes.
 
 dorc lint: 0 errors, 0 warnings, 1 info across 1 file.

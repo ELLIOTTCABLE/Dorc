@@ -70,10 +70,10 @@ fn an_edited_compact_line_compiles_and_re_holes_its_params() {
     let committed = case.replay().blocks()[0].output();
 
     // Edit ONLY the compact line's prose, exactly as a prose sitting would.
-    let edited = committed.replace("unmodeled ⊤-", "unmodeled top-");
+    let edited = committed.replace("cannot analyze", "cannot see");
     assert_ne!(
         edited, committed,
-        "the fixture still carries the ⊤ spelling"
+        "the fixture still carries the expected fixed words"
     );
 
     let edits = compile_section_edits(&baseline, &edited).expect("the compact-line edit compiles");

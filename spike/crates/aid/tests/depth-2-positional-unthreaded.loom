@@ -12,11 +12,10 @@ deploy nginx
 
 -- replay --
 $ dorc plan --book=book.sh
-note[depth-2-positional-unthreaded]: sm call `install_one` not inlined: its
-argument references a positional (`$1`..`$9`/`$#`) that does not thread through
-two inline levels => the inner body's positional is ⊤ -- it runs as an
-ordinary unmodeled command (depth-2 positional threading is out of the modeled
-subset)
+note[depth-2-positional-unthreaded]: Dorc did not inline the call to
+`install_one`: its argument passes a positional (`$1`..`$9`/`$#`) down a second
+level of function calls, which Dorc does not model, so the call runs as an
+ordinary unmodeled command.
       [ book.sh:3:12
    3 | deploy() { install_one "$1"; }
      |            \______________/
