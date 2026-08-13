@@ -68,6 +68,101 @@ pub(crate) fn case_root_names(roots: &[PathBuf]) -> BTreeSet<String> {
         .collect()
 }
 
+/// The case name a `crates/<c>/tests/<case>[.loom][/...]` path belongs to.
+pub(crate) fn case_from_path(argument: &str) -> Option<String> {
+    let normalized = argument.replace('\\', "/");
+    let segment = normalized.split_once("/tests/")?.1.split('/').next()?;
+    let case = segment.strip_suffix(".loom").unwrap_or(segment);
+    (!case.is_empty()).then(|| case.to_owned())
+}
+
+/// Split argv into libtest's own arguments and the case paths a caller wants scoped.
+///
+/// A pre-commit hook knows which files are staged but not which trials they name, and libtest's
+/// single substring filter cannot express a set — which is why selection happens here.
+pub(crate) fn split_path_selectors<I: Iterator<Item = String>>(
+    argv: I,
+) -> (Vec<String>, BTreeSet<String>) {
+    let (mut passthrough, mut cases) = (Vec::new(), BTreeSet::new());
+    for argument in argv {
+        if let Some(case) = case_from_path(&argument) {
+            cases.insert(case);
+        } else {
+            passthrough.push(argument);
+        }
+    }
+    (passthrough, cases)
+}
+
+/// What one path-selected case name resolves to in this run.
+#[derive(PartialEq, Eq, Debug)]
+pub(crate) enum Selection {
+    /// A trial of this run answers to the name.
+    Runs,
+    /// A case root answers to the name, but this runner mints no trial for it: an `aid` catalog
+    /// loom under the e2e runner, an `.rs` test's fixture dir, a lane that is off. Benign.
+    NoTrial,
+    /// Nothing under any case root answers to the name: a typo, a stale path, or a collection
+    /// that moved. A caller bug, and silence is its failure mode.
+    Unknown,
+}
+
+/// Resolve one path-selected case name against the run set and the case roots' own vocabulary.
+pub(crate) fn resolve_selection(
+    name: &str,
+    minted: &BTreeSet<&str>,
+    present: &BTreeSet<String>,
+) -> Selection {
+    if minted.contains(name) {
+        Selection::Runs
+    } else if present.contains(name) {
+        Selection::NoTrial
+    } else {
+        Selection::Unknown
+    }
+}
+
+/// Resolve a path selection against one runner's minted trial names, reporting the two ways it
+/// can select nothing. Returns whether any retained trial remains to run.
+///
+/// The discovery floor, applied to scoping: selecting by path and running nothing must never be
+/// SILENT — that is how a hook reports success for work it never ran. A name no case root answers
+/// to is a caller bug and aborts; a real case this runner drives no trial for is benign and
+/// reports. Shared because the second copy is how the first rots: the looms runner had no path
+/// selection at all, so a case PATH fell through to libtest's substring filter, matched no trial
+/// name, and exited green.
+pub(crate) fn report_path_selection(
+    selected: &BTreeSet<String>,
+    minted: &BTreeSet<&str>,
+    roots: &[PathBuf],
+) -> bool {
+    let present = case_root_names(roots);
+    let (mut no_trial, mut unknown): (Vec<&str>, Vec<&str>) = (Vec::new(), Vec::new());
+    for name in selected {
+        match resolve_selection(name, minted, &present) {
+            Selection::Runs => {}
+            Selection::NoTrial => no_trial.push(name),
+            Selection::Unknown => unknown.push(name),
+        }
+    }
+    if !unknown.is_empty() {
+        eprintln!(
+            "FATAL  path selection names no case: {} — no `crates/*/tests/` entry answers to it (a typo, a stale path, or a collection that moved).",
+            unknown.join(", ")
+        );
+        eprintln!("aborting.");
+        std::process::exit(3);
+    }
+    if no_trial.len() == selected.len() {
+        eprintln!(
+            "no trial here for: {} — a path this runner drives nothing for (no `run:` key, or an `.rs` test's fixture space).",
+            no_trial.join(", ")
+        );
+        return false;
+    }
+    true
+}
+
 /// What a discovered dir-form case is driven as.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum E2eKind {

@@ -42,8 +42,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use support::{
-    E2eCase, E2eKind, LoomCase, case_root_names, case_roots, discover_e2e, discover_looms,
-    spike_root,
+    E2eCase, E2eKind, LoomCase, Selection, case_from_path, case_roots, discover_e2e,
+    discover_looms, report_path_selection, resolve_selection, spike_root, split_path_selectors,
 };
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
@@ -3099,56 +3099,6 @@ fn preflight(harness: &Harness, discovered: usize) {
 /// The case is the segment after `tests/`, so a file nested in a case's `mocks/` attributes to its
 /// case rather than to `mocks`. Both separators are accepted because the caller is a git hook and
 /// git reports forward slashes even on Windows.
-fn case_from_path(argument: &str) -> Option<String> {
-    let normalized = argument.replace('\\', "/");
-    let segment = normalized.split_once("/tests/")?.1.split('/').next()?;
-    let case = segment.strip_suffix(".loom").unwrap_or(segment);
-    (!case.is_empty()).then(|| case.to_owned())
-}
-
-/// What one path-selected case name resolves to in this run.
-#[derive(PartialEq, Eq, Debug)]
-enum Selection {
-    /// A trial of this run answers to the name.
-    Runs,
-    /// Something under a case root answers to the name, but this runner mints no trial for it:
-    /// an `aid` catalog loom (no `run:` key), an `.rs` test's fixture dir, a lane that is off.
-    /// Benign — the caller named a real path and there is honestly nothing here to run.
-    NoTrial,
-    /// Nothing under any case root answers to the name at all: a typo, a stale path, or a
-    /// collection that moved. A caller bug, and silence is its failure mode.
-    Unknown,
-}
-
-/// Resolve one path-selected case name against the run set and the case roots' own vocabulary.
-fn resolve_selection(name: &str, minted: &BTreeSet<&str>, present: &BTreeSet<String>) -> Selection {
-    if minted.contains(name) {
-        Selection::Runs
-    } else if present.contains(name) {
-        Selection::NoTrial
-    } else {
-        Selection::Unknown
-    }
-}
-
-/// Split argv into libtest's own arguments and the case paths a caller wants scoped.
-///
-/// A pre-commit hook knows which files are staged but not which trials they name, and the whole
-/// corpus costs ~7x one case. Taking PATHS lets the hook pay only for what changed without
-/// teaching it our trial-naming scheme. libtest's single substring filter cannot express a set,
-/// which is why this selects here rather than deferring to `Arguments`.
-fn split_path_selectors<I: Iterator<Item = String>>(argv: I) -> (Vec<String>, BTreeSet<String>) {
-    let (mut passthrough, mut cases) = (Vec::new(), BTreeSet::new());
-    for argument in argv {
-        if let Some(case) = case_from_path(&argument) {
-            cases.insert(case);
-        } else {
-            passthrough.push(argument);
-        }
-    }
-    (passthrough, cases)
-}
-
 fn main() {
     let (passthrough, changed) = split_path_selectors(std::env::args());
     let mut args = Arguments::from_iter(passthrough);
@@ -3238,36 +3188,11 @@ fn main() {
     }
 
     if !changed.is_empty() {
-        trials.retain(|trial| changed.contains(trial.name()));
         let minted: BTreeSet<&str> = trials.iter().map(Trial::name).collect();
-        let present = case_root_names(&case_roots());
-        let mut no_trial: Vec<&str> = Vec::new();
-        let mut unknown: Vec<&str> = Vec::new();
-        for name in &changed {
-            match resolve_selection(name, &minted, &present) {
-                Selection::Runs => {}
-                Selection::NoTrial => no_trial.push(name),
-                Selection::Unknown => unknown.push(name),
-            }
-        }
-        // The discovery floor, applied to scoping: selecting by path and running nothing must
-        // never be SILENT, because that is how a hook reports success for work it never ran. The
-        // two ways it happens differ in who is wrong, so they differ in what they cost.
-        if !unknown.is_empty() {
-            eprintln!(
-                "FATAL  path selection names no case: {} — no `crates/*/tests/` entry answers to it (a typo, a stale path, or a collection that moved).",
-                unknown.join(", ")
-            );
-            eprintln!("aborting.");
-            std::process::exit(3);
-        }
-        if trials.is_empty() {
-            eprintln!(
-                "no trial here for: {} — a path this runner drives nothing for (no `run:` key, or an `.rs` test's fixture space).",
-                no_trial.join(", ")
-            );
+        if !report_path_selection(&changed, &minted, &case_roots()) {
             return;
         }
+        trials.retain(|trial| changed.contains(trial.name()));
     }
     libtest_mimic::run(&args, trials).exit();
 }

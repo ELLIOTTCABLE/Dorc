@@ -238,9 +238,11 @@ dir = "spike"
 run = "cargo test -p dorc-cli --test e2e --"
 
 [tasks."test:looms"]
-description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint. Trailing args: ONE bare substring (unlike test:e2e, this runner has no path selection)."
+description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint. Trailing args: ONE bare substring, or any number of case PATHS — the same selection test:e2e takes."
 dir = "spike"
-run = "cargo test -p dorc-cli --test looms"
+# The trailing `--` is load-bearing for the same reason it is on test:e2e: cargo's own `[TESTNAME]`
+# takes exactly one positional and refuses a second before the runner sees it.
+run = "cargo test -p dorc-cli --test looms --"
 
 [tasks."test:real-tools"]
 description = "The opt-in real-external-linter lane — the one sanctioned real-invocation path, read-only tools over repo-local fixtures. Off in every default gate. checkbashisms is a perl script Command::new cannot spawn on Windows, so the tool list narrows there; the *nix half provisions it via e2e/lint-real-tools-setup.sh."

@@ -27,6 +27,7 @@
 
 mod support;
 
+use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::sync::Arc;
 
@@ -37,7 +38,12 @@ use errorloom::{
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use dorc_loom::{DorcConsumer, replay_case};
-use support::{LoomCase, case_roots, discover_looms};
+use support::{LoomCase, case_roots, discover_looms, report_path_selection, split_path_selectors};
+
+/// The case name inside a trial name, which [`trial_name`] may have suffixed.
+fn case_of(trial: &str) -> &str {
+    trial.split_once(' ').map_or(trial, |(case, _)| case)
+}
 
 /// A `run:`-bearing loom's transcript is proven by `e2e.rs`, not this runner's render fixpoint
 /// (`one-fixpoint-authority-per-case`) — marks that up front so a hygiene-only trial reads
@@ -246,7 +252,8 @@ fn divergence(want: &str, got: &str) -> String {
 }
 
 fn main() {
-    let mut args = Arguments::from_args();
+    let (passthrough, changed) = split_path_selectors(std::env::args());
+    let mut args = Arguments::from_iter(passthrough);
     if args.format.is_none() && std::env::var("DORC_E2E_QUIET").as_deref() == Ok("1") {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
@@ -260,7 +267,7 @@ fn main() {
         );
         std::process::exit(3);
     }
-    let trials: Vec<Trial> = discovered
+    let mut trials: Vec<Trial> = discovered
         .into_iter()
         .map(|case| {
             let name = trial_name(&case);
@@ -268,5 +275,12 @@ fn main() {
             Trial::test(name, move || run_case(&case))
         })
         .collect();
+    if !changed.is_empty() {
+        let minted: BTreeSet<&str> = trials.iter().map(|trial| case_of(trial.name())).collect();
+        if !report_path_selection(&changed, &minted, &case_roots()) {
+            return;
+        }
+        trials.retain(|trial| changed.contains(case_of(trial.name())));
+    }
     libtest_mimic::run(&args, trials).exit();
 }
