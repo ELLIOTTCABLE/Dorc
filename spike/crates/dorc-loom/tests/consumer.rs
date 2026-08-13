@@ -248,8 +248,11 @@ fn whylog_driver_claims_only_the_exact_single_file_shape() {
     );
 }
 
+/// Two lint shapes are claimed and nothing else is: `dorc lint P` (external tools enabled, the
+/// injected runner answering every one absent) and `dorc lint P --no-tools`. A flag order, a
+/// repeat, or a path outside the case is somebody else's command.
 #[test]
-fn lint_driver_claims_only_the_exact_no_tools_shape() {
+fn lint_driver_claims_exactly_two_shapes() {
     let case = Case::parse(
         "---\ncode: marker-version-unrecognized\n---\n\
          -- oracle.sh --\n# dorc-lang/v0.1\n\
@@ -274,14 +277,17 @@ fn lint_driver_claims_only_the_exact_no_tools_shape() {
     )
     .expect("replays route");
     assert!(results[0].editable_render().is_some());
-    for result in &results[1..] {
+    assert!(results[1].editable_render().is_some());
+    // Tools enabled reports both configured linters absent; the airgapped spelling reports neither.
+    assert!(results[1].output().contains("lint-tool-absent"));
+    assert!(!results[0].output().contains("lint-tool-absent"));
+    for result in &results[2..] {
         assert!(result.editable_render().is_none());
         assert!(result.output().starts_with("fallback:"));
     }
     assert_eq!(
         calls.into_inner(),
         [
-            "dorc lint oracle.sh",
             "dorc lint --no-tools oracle.sh",
             "dorc lint oracle.sh --no-tools --no-tools",
             "dorc lint ../oracle.sh --no-tools",
@@ -615,14 +621,14 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
         results[5].editable_render().is_some(),
         "the payload world answers, as the case renderer does for the same command"
     );
-    for declined in [2usize, 3, 4, 6, 7, 8, 9] {
+    assert!(results[2].editable_render().is_some());
+    for declined in [3usize, 4, 6, 7, 8, 9] {
         assert!(results[declined].editable_render().is_none());
         assert!(results[declined].output().contains("{{command}}"));
     }
     assert_eq!(
         calls.into_inner(),
         [
-            "dorc lint book.sh",
             "dorc why --last",
             "dorc plan --book=book.sh | jq --pretty",
             "dorc plan --book=book.sh --book=book.sh",

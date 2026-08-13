@@ -669,14 +669,12 @@ impl DorcConsumer {
             let parts = self.staged_cli_parts("whylog", &diag);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
-        if let Some(path) = parse_direct_lint(&tokens) {
+        if let Some((path, tools_enabled)) = parse_direct_lint(&tokens) {
             let source = materialized_source(case, context, path)?;
             let result = dorc_lint::lint_materialized_source(
                 path.to_owned(),
                 source,
-                dorc_lint::SourcePolicy {
-                    tools_enabled: false,
-                },
+                dorc_lint::SourcePolicy { tools_enabled },
             );
             return Some(ReplayResult::editable(to_editable_render(
                 &result.human(&self.render_ctx()),
@@ -864,7 +862,12 @@ impl DorcConsumer {
             .iter()
             .find(|s| s.name().ends_with("oracle.sh"))
         {
-            return fire_lint_case(slug, section.name(), section.content());
+            return fire_lint_case(
+                slug,
+                section.name(),
+                section.content(),
+                declared_lint_tools(case),
+            );
         }
         if let Some((book, results)) = declared_plan_inputs(case)
             && let Ok(diag) = fire_records_admission(slug, book, results)
@@ -903,7 +906,8 @@ impl DorcConsumer {
             .scalar("code")
             .ok_or_else(|| "case has no `code`".to_owned())?;
         if path.ends_with("oracle.sh") {
-            let (diag, _, filename) = fire_lint_case(slug, path, source)?;
+            let (diag, _, filename) =
+                fire_lint_case(slug, path, source, declared_lint_tools(case))?;
             return Ok((diag, source.to_owned(), filename));
         }
         if path == "book.sh"
@@ -1273,11 +1277,19 @@ fn fire_dorc_sh_error(slug: &str, rest: &[&str]) -> Option<Diag> {
         .then(|| Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage)))
 }
 
-fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<&'a str> {
-    let ["dorc", "lint", path, "--no-tools"] = words else {
-        return None;
+/// The `dorc lint` route, and whether the run leaves external tools ENABLED.
+///
+/// `--no-tools` is the airgapped spelling. The bare form is the default invocation, and the
+/// injected runner (`NoToolsRunner`, the ONE external-tool DI seam) answers every tool absent — a
+/// real world, reached with no PATH probe and no process, which is what lets the tool-absence
+/// findings replay their own production surface instead of a `dorc plan` that never fires them.
+fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<(&'a str, bool)> {
+    let (path, tools_enabled) = match words {
+        ["dorc", "lint", path, "--no-tools"] => (path, false),
+        ["dorc", "lint", path] => (path, true),
+        _ => return None,
     };
-    case_relative_path(path).then_some(path)
+    case_relative_path(path).then_some((path, tools_enabled))
 }
 
 fn exact_words(command: &str) -> Option<Vec<&str>> {
@@ -1609,7 +1621,7 @@ impl DorcConsumer {
         if let Some(why) = parse_direct_why(&words) {
             return self.render_direct_why(case, &why, command);
         }
-        if let Some(path) = parse_direct_lint(&words) {
+        if let Some((path, tools_enabled)) = parse_direct_lint(&words) {
             let source = case
                 .sections()
                 .iter()
@@ -1620,9 +1632,7 @@ impl DorcConsumer {
             return Ok(dorc_lint::lint_materialized_source(
                 path.to_owned(),
                 source.to_owned(),
-                dorc_lint::SourcePolicy {
-                    tools_enabled: false,
-                },
+                dorc_lint::SourcePolicy { tools_enabled },
             )
             .human(&self.render_ctx())
             .text());
@@ -1753,13 +1763,12 @@ fn fire_lint_case(
     slug: &str,
     filename: &str,
     source: &str,
+    tools_enabled: bool,
 ) -> Result<(Diag, String, String), String> {
     let result = dorc_lint::lint_materialized_source(
         filename.to_owned(),
         source.to_owned(),
-        dorc_lint::SourcePolicy {
-            tools_enabled: false,
-        },
+        dorc_lint::SourcePolicy { tools_enabled },
     );
     let finding = result
         .report()
@@ -2015,6 +2024,17 @@ fn editable_variables(
 /// The `(consented, results)` a case's own first replay declares — the survival flag and the
 /// `< file` section bytes. Read off the invocation rather than the frontmatter so the world a
 /// worldless derivation answers is the world the committed command really asks for.
+/// Whether the case's own first replay leaves external tools enabled — the worldless lint route's
+/// half of `declared_plan_shape`, so `world_of` answers the world the driven render does.
+fn declared_lint_tools(case: &Case) -> bool {
+    case.replay()
+        .blocks()
+        .first()
+        .and_then(|block| exact_words(block.command()))
+        .and_then(|tokens| parse_direct_lint(&tokens).map(|(_, tools)| tools))
+        .unwrap_or(false)
+}
+
 fn declared_plan_shape(case: &Case) -> (bool, Option<&str>) {
     let Some(block) = case.replay().blocks().first() else {
         return (false, None);
