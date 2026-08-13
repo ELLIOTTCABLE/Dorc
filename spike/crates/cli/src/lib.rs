@@ -1451,9 +1451,8 @@ mod tests {
         );
     }
 
-    /// Both spellings of a value-taking flag parse, and nothing in the flag table can suggest
-    /// itself. `--whylog` had only the `=` form while sitting in the did-you-mean candidates, so
-    /// the space form fell through to "unknown flag `--whylog`; did you mean `--whylog`?".
+    /// Both spellings of a value-taking flag parse, and nothing in the table can suggest itself:
+    /// `--whylog` had only the `=` form, so the space form answered "did you mean `--whylog`?".
     #[test]
     fn a_flag_never_suggests_the_word_that_was_typed() {
         assert_eq!(

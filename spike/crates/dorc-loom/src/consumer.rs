@@ -506,10 +506,9 @@ impl DorcConsumer {
         ))
     }
 
-    /// The seat a case DECLARES, when the command shape would pick the wrong one
-    /// (`envelope: invocation`). A code `run` returns as `Err` prints through the invocation seat
-    /// whatever the invocation was, so a plan-shaped replay showing the bare framed diagnostic
-    /// under-shows the prefix, the synopsis, and the usage exit code that come with it.
+    /// The seat a case DECLARES, when the command shape would pick the wrong one. A code `run`
+    /// returns as `Err` prints through the invocation seat whatever the invocation was, so a
+    /// plan-shaped replay under-shows the prefix and the synopsis that come with it.
     fn declared_seat_parts(
         &self,
         case: &Case,
@@ -1294,12 +1293,10 @@ fn fire_dorc_sh_error(slug: &str, rest: &[&str]) -> Option<Diag> {
         .then(|| Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage)))
 }
 
-/// The `dorc lint` route, and whether the run leaves external tools ENABLED.
-///
-/// `--no-tools` is the airgapped spelling. The bare form is the default invocation, and the
-/// injected runner (`NoToolsRunner`, the ONE external-tool DI seam) answers every tool absent — a
-/// real world, reached with no PATH probe and no process, which is what lets the tool-absence
-/// findings replay their own production surface instead of a `dorc plan` that never fires them.
+/// The `dorc lint` route, and whether the run leaves external tools ENABLED. The bare form is the
+/// default invocation, and the injected runner answers every tool absent — a real world reached
+/// with no PATH probe and no process, which is what lets the tool-absence findings replay their own
+/// production surface instead of a `dorc plan` that never fires them.
 fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<(&'a str, bool)> {
     let (path, tools_enabled) = match words {
         ["dorc", "lint", path, "--no-tools"] => (path, false),

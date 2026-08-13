@@ -596,10 +596,10 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
     Ok(())
 }
 
-/// Every shim lands on a sibling temp first, and only a complete set is renamed into place. A
-/// direct write left a failed run's dir holding this run's first shims beside the last run's rest —
-/// a set nobody authored, under the names the next PATH lookup will find. The temps are ours by
-/// name, so a failed set removes only what it just wrote and never a byte that was already there.
+/// Every shim lands on a sibling temp first, and only a complete set is renamed into place: a
+/// direct write left a failed run's dir holding this run's first shims beside the last run's rest,
+/// under the names the next PATH lookup finds. The temps are ours by name, so a failed set removes
+/// only what it just wrote.
 fn write_shim(temp: &std::path::Path, content: &str) -> std::io::Result<()> {
     std::fs::write(temp, content)?;
     #[cfg(unix)]
@@ -1818,11 +1818,9 @@ enum ReplayLoad {
 const WHYLOG_KEEP: usize = 64;
 const WHYLOG_CAP: usize = 4_000_000;
 
-/// [`durable_destination`] answers `None` on two unrelated grounds, and a replay has to tell them
-/// apart: `--no-whylog` is a refusal the admin typed and contradicts asking to read a receipt back,
-/// while an unresolvable state root is an environment with no default directory to look in — which
-/// is a missing companion flag, not a mode error. One hardcoded "only valid with dorc why" answered
-/// both, and was true of neither: `--last` replays under plan/apply/probe too.
+/// [`durable_destination`] answers `None` on two unrelated grounds — a typed `--no-whylog`, and an
+/// environment with no default state directory — and one hardcoded "only valid with dorc why"
+/// answered both while being true of neither (`--last` replays under plan/apply/probe too).
 fn receipt_has_nowhere_to_read(args: &Args) -> Diag {
     match (args.no_whylog, args.last) {
         (true, true) => Diag::new_spanless_site(DiagCode::CliFlagsMutuallyExclusive(

@@ -111,9 +111,8 @@ impl InvarianceIndex {
                                     kind_munged: kind_munged.clone(),
                                 },
                             ),
-                            // The offending mark's own line, which the sibling arm below already
-                            // carries: the funcdef header pointed a reader at a declaration that
-                            // may be many lines from the claim being refused.
+                            // The refused mark's own line, which the sibling arm below already
+                            // carries; the funcdef header can be many lines from the claim.
                             span,
                         ));
                         continue;

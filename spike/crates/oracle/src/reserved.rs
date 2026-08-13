@@ -46,9 +46,8 @@ use crate::predict::PredictSet;
 /// reach-expander (`disturbance_reaches_only`, né reaches), the substrate/invariance member
 /// (`state_stored_only_in`), and the wrapper pair (`lend_map`, `enter`). KEEP IN SYNC with the
 /// parser's per-role suffix ([`crate::predict`]'s `FnRole::mangled_suffix`); the
-/// [`suffixes_match_lifted_roles`](tests) test ties the two, in both directions — the wrapper pair
-/// arrived on `FnRole` and never reached this list, so a book squatting `foo__lend_map` went
-/// unremarked while `foo__predict` did not.
+/// [`suffixes_match_lifted_roles`](tests) test ties the two, in BOTH directions — the wrapper pair
+/// arrived on `FnRole` and never reached this list, so a book could squat `foo__lend_map` unseen.
 pub const RESERVED_ROLE_SUFFIXES: &[&str] = &[
     "__predict",
     crate::touches::DISTURBS_SUFFIX,
@@ -529,8 +528,7 @@ apt_get__predict install -y nginx || apt-get install -y nginx
     }
 
     /// The other direction, and the one that actually drifted: a role the parser recognizes but
-    /// this list does not is a name a book may squat unremarked. The backstop that walks EVERY
-    /// role lift is `validate::unlifted_role_fns`, so its arity is the count to hold this list to.
+    /// this list does not is a name a book may squat unremarked.
     #[test]
     fn every_recognized_role_is_reserved() {
         let mut i = Interner::default();

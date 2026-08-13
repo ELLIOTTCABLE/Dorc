@@ -145,13 +145,9 @@ impl Repository for GitRepository {
     }
 }
 
-/// A dirty generated lock means a PRIOR promote is still uncommitted, and a reader who has never
-/// seen this tool's two-file publication has no way to guess that from the path alone.
-///
-/// `compile` refusing on `promote`'s condition reads as over-reach until you know the receipt binds
-/// the lock's bytes. And the way out most readers want is not to commit between cases but to stop
-/// promoting one at a time — nothing else in the tool says a CASE list is legal at all, so the
-/// batched shape is learnable only by being refused first.
+/// A dirty generated lock means a PRIOR promote is still uncommitted, which a reader cannot guess
+/// from the path — nor that `compile` refuses on the same condition, nor that the batched CASE list
+/// avoids the serialization entirely. Nothing else in the tool says either.
 fn lock_not_clean(path: &str) -> String {
     format!(
         "the generated lock {path} differs from HEAD, which means an earlier `dorc-loom promote` \

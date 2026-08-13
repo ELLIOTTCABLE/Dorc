@@ -349,9 +349,8 @@ fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<Diag>) {
                     map.peels = true;
                 }
                 let Some(mark) = &c.mark else { continue };
-                // The VERB decides, not the payload's shape: this body may carry any mark, and one
-                // whose token happened to spell a dimension used to enter the map as a lend. Its
-                // sibling `safe-across` walk has always guarded (`entry::collect_tolerance`).
+                // The VERB decides, not the payload's shape: any mark whose token happened to spell
+                // a dimension used to enter the map as a lend (`entry::collect_tolerance` guards).
                 if mark.kind != MarkKind::Lends {
                     continue;
                 }
@@ -362,8 +361,8 @@ fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<Diag>) {
                 } else {
                     LendEntry::Mapped
                 };
-                // The brace-set is the same token payload `safe-across` takes (`281` §5/§6), so it
-                // expands through the same seat rather than failing the whole set as one token.
+                // The brace-set is `safe-across`'s own token payload (`281` §5/§6), so it expands
+                // through the same seat rather than failing the whole set as one unknown token.
                 for token in crate::entry::expand_dimension_set(&mark.target.kind) {
                     let Some(dim) = Dimension::from_token(&token) else {
                         diags.push(Diag::new(
@@ -1002,9 +1001,7 @@ mod tests {
         );
     }
 
-    /// The walk keys on the VERB and expands the brace-set, exactly as `safe-across`'s does. Both
-    /// halves were open: any mark whose token spelled a dimension entered the map as a lend, and a
-    /// brace-set failed whole as one unknown token.
+    /// The walk keys on the VERB and expands the brace-set, exactly as `safe-across`'s does.
     #[test]
     fn only_a_lends_mark_lends_and_a_brace_set_expands() {
         let (_i, check) =

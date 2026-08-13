@@ -2,10 +2,9 @@
 //! machinery. Per book, the unmodeled ⊤-walls (`inv-top-reject` nodes) and the first-wall position —
 //! the `27R` §3 demonstrator (plan/apply-adjacent reasoning with ZERO probe input). A ⊤-wall degrades
 //! Dorc from "full elision" to "runtime guard" for downstream commands (the poison-wall, DESIGN.md).
-//! "Unmodeled" is NARROW here and the narrowness is the whole reading: a ⊤-node mints from a
-//! construct the PARSER does not model, or from the nesting bound — never from an ordinary command
-//! nobody wrote an oracle for, which goes opaque in the effect lattice and is invisible to this
-//! census. So a wall names a construct to respell; it is not an oracle-shaped nag.
+//! "Unmodeled" is NARROW here: a ⊤-node mints from a construct the PARSER does not model, or from
+//! the nesting bound — never from an ordinary command nobody wrote an oracle for, which goes opaque
+//! in the effect lattice and is invisible to this census. A wall names a construct to respell.
 //!
 //! SPIKE SCOPE (`churn-avoidance-disclosure`): the PRECISE "downstream MODELED sites each wall
 //! degrades" count (`27R` §2 item-2) needs the effect classification threaded with the loaded

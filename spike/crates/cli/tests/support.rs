@@ -76,10 +76,9 @@ pub(crate) fn case_from_path(argument: &str) -> Option<String> {
     (!case.is_empty()).then(|| case.to_owned())
 }
 
-/// Split argv into libtest's own arguments and the case paths a caller wants scoped.
-///
-/// A pre-commit hook knows which files are staged but not which trials they name, and libtest's
-/// single substring filter cannot express a set — which is why selection happens here.
+/// Split argv into libtest's own arguments and the case paths a caller wants scoped. A hook knows
+/// which files are staged but not which trials they name, and libtest's single substring filter
+/// cannot express a set — which is why selection happens here.
 pub(crate) fn split_path_selectors<I: Iterator<Item = String>>(
     argv: I,
 ) -> (Vec<String>, BTreeSet<String>) {
@@ -122,15 +121,11 @@ pub(crate) fn resolve_selection(
     }
 }
 
-/// Resolve a path selection against one runner's minted trial names, reporting the two ways it
-/// can select nothing. Returns whether any retained trial remains to run.
-///
-/// The discovery floor, applied to scoping: selecting by path and running nothing must never be
-/// SILENT — that is how a hook reports success for work it never ran. A name no case root answers
-/// to is a caller bug and aborts; a real case this runner drives no trial for is benign and
-/// reports. Shared because the second copy is how the first rots: the looms runner had no path
-/// selection at all, so a case PATH fell through to libtest's substring filter, matched no trial
-/// name, and exited green.
+/// Resolve a path selection against one runner's minted trial names; returns whether any retained
+/// trial remains. The discovery floor applied to scoping: selecting by path and running nothing
+/// must never be SILENT — that is how a hook reports success for work it never ran. Shared because
+/// the second copy is how the first rots (the looms runner had none, so a case PATH fell through to
+/// libtest's substring filter, matched no trial, and exited green).
 pub(crate) fn report_path_selection(
     selected: &BTreeSet<String>,
     minted: &BTreeSet<&str>,
