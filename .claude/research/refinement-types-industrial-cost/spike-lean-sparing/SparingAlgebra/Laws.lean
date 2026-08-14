@@ -80,6 +80,39 @@ theorem vacuous_spare_over_empty_backing
       sparesRaw E D true F ([] : List Member) = true := by
    simp [sparesRaw]
 
+/-- The SYMMETRIC hazard the spec does not pin (REPORT.md
+gap-footprint-empty-set-unpinned): the universal meet is vacuous over an empty
+FOOTPRINT too — and this holds of the GUARDED encoding, whose guards protect
+only the backing side. Legitimate iff an empty footprint can only arise from an
+authored empty at-most claim — never as an encoding of unknown/⊤ disturbance.
+`277` §5 states no such invariant for the footprint side. -/
+theorem vacuous_spare_over_empty_footprint
+      (E : EntityCmp) (D : Dialects) (S : BackingSet) :
+      sparesSet E D true ([] : List Coord) S = true := by
+   simp [sparesSet]
+
+/-! ### The pre-amendment falsehood, checkably (`279f:fix-spare-top-backing`) -/
+
+/-- `277` §3's PRE-amendment wording, reconstructed: only the claim side's ⊤ was
+special-cased ("a ⊤ claim spares nothing"); a whole-entity (⊤) backing fell
+through to the dialect test, sparable by any dialect-member claim. -/
+def selectorTierPreAmendment (row : DialectRow) (k : Kind) : Selector → Selector → Verdict
+   | .top, _ => .unknown
+   | .tok c, .tok b =>
+      if c = b then .same
+      else if row k c && row k b then .provablyDisjoint
+      else .unknown
+   | .tok c, .top => if row k c then .provablyDisjoint else .unknown
+
+/-- 279a-A5 as an inhabitant: under the pre-amendment wording a minted claim
+SPARES a whole-entity backing — kill-traffic dismissed against the very cell
+the fact sits on, the under-execution path the amendment closed. (Contrast
+`top_never_spares` for the amended tier.) -/
+theorem pre_amendment_spares_top_backing :
+      ∃ (row : DialectRow) (k : Kind) (c : SelectorTok),
+         selectorTierPreAmendment row k (.tok c) .top = .provablyDisjoint :=
+   ⟨fun _ _ => true, ⟨0⟩, ⟨0⟩, rfl⟩
+
 /-! ## 2 — `set_meet_order_independent` (`277` §5 pin-set-meet-order-independence) -/
 
 /-- `List.all` is invariant under permutation (self-contained; no mathlib). -/
