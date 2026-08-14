@@ -99,7 +99,16 @@ run = [
    "cp lattice/lean-proj/Lattice/FunsExternal_Template.lean lattice/lean-proj/Lattice/FunsExternal.lean",
 ]
 
-[tasks."lean:build"]
-description = "Typecheck the emitted Lean. First run downloads a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental."
+[tasks."lean:stage"]
+description = "Copy the emitted package to a WSL-local build root. Lake's dependency store is a mathlib clone plus gigabytes of oleans; unpacking that onto drvfs (/mnt/c) is minutes-to-hours slower than ext4, and none of it belongs in the tree anyway. Sources stay committed here; only the build moves."
 dir = "{{config_root}}/lattice/lean-proj"
+run = [
+   "mkdir -p {{xdg_cache_home}}/dorc-aeneas-leanproj",
+   "cp -r Lattice Lattice.lean Laws.lean lakefile.toml lean-toolchain {{xdg_cache_home}}/dorc-aeneas-leanproj/",
+]
+
+[tasks."lean:build"]
+description = "Typecheck the emitted Lean. First run downloads a Lean toolchain and clones mathlib for its olean cache (gigabytes, tens of minutes); later runs are incremental."
+depends = ["lean:stage"]
+dir = "{{xdg_cache_home}}/dorc-aeneas-leanproj"
 run = ["lake exe cache get", "lake build"]

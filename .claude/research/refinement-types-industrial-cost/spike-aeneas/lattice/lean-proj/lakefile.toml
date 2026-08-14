@@ -1,5 +1,5 @@
 name = "LatticeProbe"
-defaultTargets = ["Lattice"]
+defaultTargets = ["Lattice", "Laws"]
 
 # The SAME release the `aeneas` binary came from — one pin, two consumers, so the
 # generated code and the library it imports cannot drift.
@@ -11,3 +11,8 @@ subDir = "backends/lean"
 
 [[lean_lib]]
 name = "Lattice"
+
+# Hand-written, and the whole point: whether the LAWS can be stated against the
+# extraction. Kept a separate root so `lean:emit` can overwrite `Lattice.lean`.
+[[lean_lib]]
+name = "Laws"
