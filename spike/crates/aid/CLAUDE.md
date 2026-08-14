@@ -63,10 +63,17 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and case
   structure with EXPLICITLY-EMPTY prose (`message: None`, rendering `[unwritten: <slug>]`);
   prose is a conductor/human act. Builders author ZERO user-facing strings, ever.
-- **prose-three-state** (`27U` §4/§5; `28A` §2p) — a written register is `sm `-prefixed
-  migrated builder text, or `[unwritten: <slug>]` (`None`), or unprefixed prose for a
-  CASE-OWNED code. `message_registers_are_sm_or_unwritten` enforces it against
-  `is_case_owned(slug)`. `[unwritten:]` is a legal resting state.
+- **prose-provenance-states** (`27U` §4/§5; `28A` §2p) — BOTH registries key on one type,
+  `aid::prose::ProseTier`, under one absence idiom (`Option`): a message register or an
+  arrangement row is `None` (`[unwritten: <slug>]`, a legal resting state), or
+  `Some(ProseTier::Migrated(…))` (pre-pipeline builder text, frozen verbatim, never re-minted), or
+  `Some(ProseTier::Slop(…))` (loom-authored without `--human` — AI-tier by definition, and the
+  DEFAULT mint whoever is driving), or `Some(ProseTier::WrittenByHumanOnly(…))` (minted only under
+  `dorc-loom promote --human`, which REFUSES in an agent-marked environment; `DORC_HUMAN_COMMIT=1`
+  is the human-at-the-keyboard escape). `loom_minted_registers_are_case_owned` and its arrangement
+  twin bind every non-`Migrated` register to `is_case_owned(slug)`; the commit-msg hook refuses an
+  AI-labelled commit that grows the human census. The tier NEVER renders — retyping a discriminant
+  moves no byte, which is what lets `mise run prose:census` be the whole burn-down view.
 - **arrangement-registry-is-the-chrome-home** (`289:rul-arrangement-home-is-registry-plus-transcripts`)
   — render-owned CHROME (help/usage pages, structure words, preambles, summary lines) lives in a
   SECOND generated table, `arrangement.rs` + the generated `arrangement_lock.rs`, keyed by
@@ -91,10 +98,10 @@ crate's charter) · `notes/287` (errorloom as-built).
   frame — stay `RenderPart::Arrangement`, and are deliberately NOT migrated. `render-form-unwelded`
   already keeps arrangement SHAPE free to churn; putting shape in an editable entry would weld it.
 - **arrangement-prose-marker-is-typed** — the catalog's three prose states carry over, but the
-  migrated marker is the `Words::Migrated` VARIANT, not an in-band `sm ` prefix: chrome renders
+  migrated marker is the `ProseTier::Migrated` VARIANT, not an in-band `sm ` prefix: chrome renders
   verbatim into product bytes, so an in-band marker would make a migration a visible product
-  change. `authored_words_are_case_owned` is the gate (the `message_registers_are_sm_or_unwritten`
-  twin).
+  change. `loom_minted_words_are_case_owned` is the gate (the
+  `loom_minted_registers_are_case_owned` twin).
 - **arrangement-words-are-a-sequence-nothing-splits** (`289:rider-arrangement-home-anticipates-chains`;
   re-cut at the W4 span fold, `28H`) — entries store ORDERED WORDS: a chrome line with interpolated
   values stores its fixed runs and the seat interleaves the computed values
@@ -155,7 +162,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   state the mechanic over a SYNTHESIZED register (`Vec<OwnedEntry>` / `Vec<OwnedArrangement>` through
   `RenderCtx::new`) · for a committed sentence a test must EDIT, take its current bytes from the
   render and mutate those (`editable_surface.rs`'s `section_text`). Two corollaries: never assert a
-  real slug still renders `[unwritten:]` (`prose-three-state` makes that a resting state, not a pin —
+  real slug still renders `[unwritten:]` (`prose-provenance-states` makes that a resting state, not a pin —
   the placeholder MECHANIC belongs on a synthesized row), and never identify a diagnostic by its
   rendered WORDS from another crate — match the typed payload or reason enum (`analysis`'s
   `inline_refusals` is the pattern). The residue that legitimately keeps a literal is the FACELESS
@@ -210,9 +217,9 @@ crate's charter) · `notes/287` (errorloom as-built).
   exactly as `catalog_lock.rs` is; hand-edits are caught by
   `generated_arrangement_lock_reproduces_the_committed_bytes`. Seeding a MIGRATED row by hand is
   the one sanctioned hand-write (the `sm `-row precedent), and the gate proves the seed is a
-  generator fixpoint. Seeding `Words::Unwritten` by hand is sanctioned on the same footing and is
+  generator fixpoint. Seeding an unwritten `None` by hand is sanctioned on the same footing and is
   the ordinary way a new chrome slug arrives before anyone has words for it: the generator carries
-  the variant straight through from the mirror, `authored_words_are_case_owned` does not bind it,
+  the absence straight through from the mirror, `loom_minted_words_are_case_owned` does not bind it,
   and the render shows the greppable placeholder until a case owns the row.
 - **hand-seeded-rows-match-the-serializer-order** — a hand-seeded row is only a fixpoint if it is
   spelled in the SERIALIZER's field order, because the gate compares BYTES, not fields: arrangement

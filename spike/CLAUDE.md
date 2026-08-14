@@ -733,18 +733,27 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   (two-surfaces) and the executable-plane never-synthesized-sh law are untouched;
   display-sh must never masquerade as runnable.
 - **error-prose-conductor-flow** (`27U` §4/§5; `282`-flip retired the roster,
-  `28A` §2p) — catalog prose is three-state: `sm `-prefixed migrated-verbatim
-  builder text (awaiting human rewrite) · `[unwritten: <slug>]` (`message: None`,
-  awaiting conductor/human prose) · unprefixed prose for a **case-owned** code (a
-  `dorc-loom` case file exists for its slug). The `CONDUCTOR_AUTHORED` roster is
-  GONE; enforcement is `message_registers_are_sm_or_unwritten` re-keyed to
-  `is_case_owned(slug)` + the two fixpoint gates. Builders author ZERO user-facing
+  `28A` §2p) — prose provenance is FOUR typed states, shared by the catalog and the
+  arrangement registry under one absence idiom (`aid/CLAUDE.md`
+  prose-provenance-states): `None` → `[unwritten: <slug>]` · `ProseTier::Migrated`
+  (pre-pipeline builder text, frozen verbatim, never re-minted) ·
+  `ProseTier::Slop` (loom-authored without `--human`; the DEFAULT mint, whoever is
+  driving) · `ProseTier::WrittenByHumanOnly` (only under `dorc-loom promote
+  --human`, which refuses in an agent-marked environment; `DORC_HUMAN_COMMIT=1` is
+  the escape). Re-minting over a human register PROCEEDS with an informational
+  notice in an agent environment (reworking prose is what re-marks it; nothing is
+  owed) and REFUSES for a person, naming `--human` to keep the mark and `--slop` to
+  drop it. The `CONDUCTOR_AUTHORED` roster is GONE; enforcement is
+  `loom_minted_registers_are_case_owned` (+ its arrangement twin) keyed to
+  `is_case_owned(slug)`, the two fixpoint gates, and a commit-msg hook that refuses
+  an AI-labelled commit growing the human census. Builders author ZERO user-facing
   strings, ever; prose is a conductor/human act (`27V:rul-error-authorship-tier`),
   authored at the transcript surface (looking at the rendered case) or, still
   sanctioned, by direct catalog edit from the structured metadata — promote-v2
   carries it behind the fixpoint gate, orchestrator-only. Prose burn-down is
   LAZY-by-design (`282:lean-machinery-now-prose-lazy`); `[unwritten:]` is a legal
-  resting state (the prose-quality sprint is human-owned).
+  resting state (the prose-quality sprint is human-owned), and
+  `mise run prose:census` is its instrument.
 - **rul-chain-is-pull-only** (`27U` d4a) — the full numbered why-chain renders only
   on pull surfaces (`dorc why N` live / `--last`); plan stderr keeps compact
   attribution lines. Push stays ruthlessly selected even under the spike's
