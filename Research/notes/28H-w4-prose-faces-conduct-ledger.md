@@ -51,7 +51,7 @@ is the human's; untouched.
 
 ## §2 — Rulings / landings (accretes)
 
-- (seat) Ledger ID 28H claimed (28G taken by the plan + strawmen; 289/290/291 taken).
+- (seat) Ledger ID 28H claimed (28G taken by the plan + strawmen; 289/28Va (née 290)/28Vb (née 291) taken).
   W4 accretes on `ai/r28-unify` — the human fast-forwarded this worktree for the
   purpose; one eventual fold, theirs.
 - (seat) **ack-prose-pass-executor RESOLVED** — `288:rul-prose-pass-is-fable-this-
