@@ -1,0 +1,13 @@
+name = "LatticeProbe"
+defaultTargets = ["Lattice"]
+
+# The SAME release the `aeneas` binary came from — one pin, two consumers, so the
+# generated code and the library it imports cannot drift.
+[[require]]
+name = "aeneas"
+git = "https://github.com/AeneasVerif/aeneas.git"
+rev = "nightly-2026.08.13-daa85d7"
+subDir = "backends/lean"
+
+[[lean_lib]]
+name = "Lattice"
