@@ -759,8 +759,15 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   attribution lines. Push stays ruthlessly selected even under the spike's
   kWARN tune-high.
 
-## Where the build stands (dated 2026-07-31 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
+## Where the build stands (dated 2026-08-13 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 
+- THE AUTHORSHIP ARC (2026-08-12→13; ledger `notes/28S`): 71 catalog codes prose-authored
+  through the loom; prose provenance is TYPED (`aid::prose::ProseTier` {Migrated, Slop,
+  WrittenByHumanOnly} across both registries; loom edits mint Slop; `promote --human` is
+  the one env-guarded human mint; the commit-msg census gate refuses AI-labelled growth;
+  `mise run prose:census` is the burn-down instrument). Agent sessions now run pre-commit
+  check-only/stash-free (`HK_FIX=0`+`HK_STASH=none`). Chafe repairs: `test:looms` path
+  filtering, shim staging, squat-lint role gaps, the `loom:compile` Windows stack fix.
 - THE LOOM-FINAL ARC (2026-07-29→31; conduct ledger `notes/28L`; accounting
   `notes/28N`) COMPLETE on `ai/r28-loom-final`: the errorloom/dorc-loom pipeline is
   the project's working prose-edit surface end-to-end. The boundary weld (diagnostic

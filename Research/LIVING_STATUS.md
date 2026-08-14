@@ -14,7 +14,18 @@
 
 ---
 
-## CURRENT STATE (measured 2026-07-31)
+## CURRENT STATE (measured 2026-08-13)
+
+**The error-message-authorship arc is CLOSED and FOLDED into `ai/main` (2026-08-13;
+ledger `notes/28S`)**: 71 catalog codes prose-authored via the loom (census 15 migrated /
+93 slop / 0 human — `mise run prose:census`); the ProseTier provenance ratchet landed
+(`aid::prose` three-tier enum unifying both registries · `promote --human` as the one
+env-guarded human mint · the commit-msg census gate); the loom-chafe repair lane (10/14
+fixed, incl. `test:looms` filtering and the `loom:compile` Windows stack fix); agent
+sessions now run pre-commit check-only and stash-free (`HK_FIX=0` + `HK_STASH=none`;
+`HK_SKIP_HOOK` retired). Open from the arc: the `tc-dorc-sh-shell-resolution` law ruling
+(human-owed) and the `28S` residue ledger. NB a sibling session's
+`ai/r29-lean-sparing-spike` lane is live/locked concurrently — not this arc's work.
 
 **The loom-final arc is CLOSED and FOLDED**: `ai/r28-loom-final` == `ai/main` (the earlier
 "awaiting the human's fold ack" claim here was stale — the fold happened). Conduct ledger
