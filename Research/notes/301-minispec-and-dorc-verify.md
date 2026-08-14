@@ -107,14 +107,25 @@ keeps loom churn in builder-space, cleanly outside `law-spec-touch-frontier-huma
   stays many-to-many: several looms may exercise one law in the course of their
   primary interface-pinning duty, and one loom may bear on several laws.
 - **the binding is a ratchet, and it carries assertions** — a binding is never a bare
-  pointer: the catalogue row records the law-relevant ASSERTION SUBSET of the loom —
-  the specific site-outcomes the law needs (per-site `{elide, guard, run, survive}`),
-  the reach-of-seat requirement, and the recorded kill (§4 `demonstrated`) — and the
-  binder re-verifies that subset at gate, independent of the loom's own goldens. So
-  unrelated loom churn (render text, other lines) never touches the law, while a
-  re-bless or deletion that breaks a bound subset trips the BINDER, whose badge
-  demotion routes through promote ceremony. Demo assertions sit at the OUTCOME tier;
-  rendered transcripts stay illustrative and re-bless freely (`render-form-unwelded`).
+  pointer: the catalogue row records the law-relevant ASSERTION SUBSET of the loom,
+  and the binder re-verifies that subset at gate, independent of the loom's own
+  goldens. So unrelated loom churn (render text, other lines) never touches the law,
+  while a re-bless or deletion that breaks a bound subset trips the BINDER, whose
+  badge demotion routes through promote ceremony. Rendered transcripts stay
+  illustrative and re-bless freely (`render-form-unwelded`).
+- **the assertion subset is existing machinery, tied together** [TYPED direction] — a
+  subset is a set of `(SiteId → {elide | guard | run | survive})` pairs, checked
+  against the PRODUCT'S OWN machine-readable per-decision record for the bound loom's
+  invocation (the whylog's decision digest, or a minimal machine dump-mode of the
+  plan — whichever proves fittest; builder confirms, §7). `SiteId` is already the
+  shared decide-plane identity across plan steps, probe records, and diagnostics
+  (`site-identity-is-decide-plane`), and the decision record already exists for
+  replay. NO harness-specific format exists anywhere in this design; if the record
+  needs a trivial read-mode to be consumable, that is a small product feature useful
+  to any consumer, never testing scaffolding. The reach and kill riders (§5
+  `demonstrated`) are certifications ABOUT this check, not part of the format. The
+  errorloom transport is deliberately NOT the substrate — it is render-plane and
+  churny, which is exactly what a binding must not couple to.
 - **the loom-side key** — a bound loom declares its duty in frontmatter with a
   deliberately alarming name: `tests-critical-law: UnknownMemberCollides` (STRAWMAN
   spelling; kebab key style per the existing vocabulary; joins `FRONTMATTER_KEYS` in
@@ -225,7 +236,18 @@ of truth; everything else is derived and gate-checked; review is git diff.**
   - per-badge **`excepted(reason)`** / **`todo`** — typed non-coverage (duvet's
     steal): deliberate absence rendered with the same mechanical weight as presence.
 - **anchors** — v0 is `fn-seat` (the cited chokepoint function), and v0 builds only
-  that. **Witnessed-counterfactual** is the named evidence CATEGORY [ACKED] with two
+  that. A seat is not minted by this system: it is the chokepoint the house
+  architecture already mandates per behavior (`relational-compare-chokepoint` ·
+  `selector-chokepoint` · one-named-seat-per-invariant), cited here, and mostly
+  DERIVABLE — the statement's `Prop` already names the derived definition of the same
+  function, so the citation is a checked confirmation, not new information. Its three
+  consumers are each simple because a seat is one function: the reach check (rustc's
+  own `-C instrument-coverage`, one boolean region-hit per seat — compilers do the
+  hard work wherever one exists), the mutant scope (`cargo-mutants` filtered to the
+  function), and the rustdoc backlink (§6). A law whose truth has NO chokepoint is a
+  finding, not a gap: either the chokepoint discipline was violated (repair per
+  `post-checkable-states-are-a-feature`) or the law is not fn-seat-shaped and does not
+  enter at v0. **Witnessed-counterfactual** is the named evidence CATEGORY [ACKED] with two
   known mechanisms: mutant-kills (behavioral seats) and `compile_fail` doctests
   (type-seals — committed ablation witnesses: "here is the forbidden program, verified
   rejected on every build"). Further anchor kinds arrive only when an admitted law
@@ -262,8 +284,11 @@ the same report.
 
 1. Verso genre feasibility for the unit format + cross-directory loom-transcript
    transclusion — builder confirms during the build; fallback named in §1.
-2. The reach-certification instrumentation choice (llvm-cov-style, scoped
-   per-binding).
+2. The reach-certification wiring (rustc `-C instrument-coverage`, boolean per
+   seat-per-binding — the mechanism is settled, the lane wiring is the builder's).
+2a. The decision-record surface for assertion subsets — whylog decision digest vs a
+   minimal machine dump-mode of the plan: builder confirms schema fitness and picks
+   the minimal one.
 3. The `tests-critical-law:` frontmatter key spelling + its `FRONTMATTER_KEYS` entry —
    lands in one commit with the first binding.
 4. The byte-budget tripwire threshold — builder-calibrated against the first real
