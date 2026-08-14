@@ -170,15 +170,13 @@ weld, never licensure.
 4. Conflict/consent: cross-unit silent shadowing refuses (complaint + family-wide
    withdrawal) until spelled consent; provable-shadow-only (ruling (ii)); ⊤ licenses
    nothing (pinned); subshell scoping is consent-by-boundedness; polyfill guards exempt
-   properly via the decidable-condition fold (LANDED — `28P` §decidable-condition-fold
-   closes both halves of `28O:res-polyfill-binding-tops-pending-fold`).
+   via the decidable-condition fold (`28P` §decidable-condition-fold).
 5. Emission: licensure never rides runtime name-resolution; pin-by-definition-bytes;
    content-dedup; hash-munge plurality; provenance blocks; the reingest floor (munged
    names opaque; plain-name relicensing eyes-open and pinned).
 6. The committee fence (§4) at the survival tier; everything else per the walls (§3).
 7. Named futures: kind-level token registration · MH2 target-identity · the
-   duplicated-claims-coherence tool · chimera-incoherence narration. (The
-   decidable-condition fold LANDED — `28P`.)
+   duplicated-claims-coherence tool · chimera-incoherence narration.
 
 ## §6. The price (human-demanded honest pricing; general ops terms)
 
@@ -215,9 +213,6 @@ weld, never licensure.
   human edit someday.
 - regional-preference admins: the sanctioned subshell re-source now makes the family
   plural ⇒ sparing-inert; extra guards on drifted days, why-chains explaining why.
-- polyfill authors: rent RETIRED — the decidable-condition fold landed (`28P`): a guarded
-  default the solved environment proves dead no longer joins ⊤, and a define-if-present
-  override is now a provable shadow drawing the refusal.
 - whole-file forkers: full value, plus the universal fork-maintenance rent (tracking
   upstream by hand).
 - deliberate overriders: one `unset -f` ceremony line per replaced member, plus the
