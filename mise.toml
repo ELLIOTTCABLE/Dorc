@@ -60,7 +60,21 @@ typos = "latest"
 # backend — the lane provisions it out-of-band into the git-ignored `spike/e2e/.real-tools/`.)
 shellcheck = "0.11.0"
 
+# Lean 4, for the sparing-algebra formalization under
+# .claude/research/refinement-types-industrial-cost/spike-lean-sparing/. The registry has
+# no lean/elan entry, so ubi installs elan (the ecosystem's rustup-alike) from the
+# official releases; the [env] block below gives it a home outside the repo tree and
+# puts its proxy binaries (lean/lake) on PATH. The LEAN version is pinned where the
+# ecosystem expects it — the spike's `lean-toolchain` file — and elan fetches it on
+# first `lake build`. (A direct `ubi:leanprover/lean4` pin was tried first and fails
+# native-Windows bin-path detection; see the spike's REPORT.md.)
+"ubi:leanprover/elan" = { version = "4.2.3", exe = "elan-init" }
+
 [env]
+# elan's toolchain store: mise-adjacent user-local state, deliberately OUTSIDE the
+# repo/Sync tree (toolchains are ~1GB of churn no sync or backup should see).
+ELAN_HOME = "{{xdg_data_home}}/elan"
+_.path = ["{{xdg_data_home}}/elan/bin"]
 # Route hk's hook invocation + step commands through mise, so `cargo`/`typos`/`cargo-deny`
 # resolve inside a step without an activated shell. This is WHY no step in hk.pkl spells
 # `mise x --`: hk resolves the mise environment per step itself, and the prefix only bought a
