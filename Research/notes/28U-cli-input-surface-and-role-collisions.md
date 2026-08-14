@@ -1,4 +1,4 @@
-# 293 — the CLI input surface, and the role-function collision it exposes
+# 28U (née 293) — the CLI input surface, and the role-function collision it exposes
 
 Round scope: retire the input FLAGS in favour of positionals, make the dialect marker the
 book/oracle discriminator, and make in-book role functions real. Two phases, landed
@@ -144,6 +144,13 @@ outside any funcdef, exercising `lint_mark_subset`,
 imagination-tier)".
 
 ## 5. DEFERRED, for a focused sitting — two definitions of one role function
+
+<!-- superseded 2026-08-13 (human-typed ruling): conflicting contracted names in
+     loaded scope FAIL-FAST, plan-time pre-network ONLY — never once probing begins;
+     past that point the engine must best-effort through to some `plan` output.
+     Start-simple; caveats/allowances may evolve. Rides the kernel work as
+     `28Q:rul-name-collision-fails-fast`. The sitting below did not happen; §5c is
+     settled toward flat-name-collision-fails-fast for now. -->
 
 Human's framing, which the evidence supports: there must be a SINGLE function to
 literally call at runtime; engine source-generation is ruled out

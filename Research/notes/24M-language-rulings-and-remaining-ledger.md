@@ -55,7 +55,7 @@ The typeless-oracle floor is **IN** (the anonymous/auto-minted cell), restated a
        so a marked share-a-file is no longer expressible. What survives of the floor: an
        UNMARKED book may still host bare `__role` functions, which is USER_STORY stage 3
        and exactly the goal this rule stamps. Only the marker-gated share-a-file half is
-       dead. See 293 §1, §3, §4. -->
+       dead. See 28U (née 293) §1, §3, §4. -->
 
   <!-- Also note, for a trawling agent: the sentence above is the ONLY reversal here. The
        goal-statement in the blockquote, rul24M-version-comment's syntax-vs-name-semantics
