@@ -242,8 +242,10 @@
   was?". Conductor mapping (mine, offered back for confirmation): (1) the two-plane
   firewall's separate per-kernel-change votes (aid gate + license gate), (2) the
   solve-certifier's post-fixpoint walk, (3) the sparing reference re-derivation — the
-  elision-purposes walk. The trailing "?" invites correction; if the mapping is wrong the
-  ack attaches to the human's intent, not this mapping.
+  elision-purposes walk. Mapping CONFIRMED after an explicit evaluation pass (see §4's
+  checker-expansion rejection): the aid half of the per-transition vote is gates + pins +
+  render-totality, deliberately not a runtime module; the post-probe walk is
+  survival-scoped, deliberately not a whole-chain re-walk.
 - [TYPED] **the verified mini-model** — a small machine-checked model of the sparing
   algebra is a maintained artifact of this codebase.
 - [TYPED] **the Vec restructuring** — w1-latticemap-facade acked.
@@ -276,6 +278,19 @@
   framing/closure/DST territory.
 - The operational load-bearing test for assurance priority: conceded and replaced (§0).
 - Treating the certifier as foreign ground truth: it is not (shares the transfer model).
+- Expanding the checker set by symmetry: a per-phase-product results-checker beyond the
+  solve seat, a whole-chain re-walk of every elision's license conjuncts, and a RUNTIME
+  aid-plane checker module were each evaluated and rejected. The admission tests a checker
+  must pass: (T1) large find/check asymmetry in the producer (only the fixpoint qualifies —
+  classify/erasure/wall-walk are single-pass deterministic code, where a "checker" is
+  N-version programming with `22W` fb-same-model correlated-blind-spot risk), or (T2)
+  maximal severity × invisibility (only the survival lane qualifies; ordinary elisions'
+  conjuncts are covered at their sources — reach by the certifier, the vouch by the
+  by-value type seal, the verdict by the single classify seat — and fail attributed).
+  The aid plane additionally fails a third way: decision-inert by law, a runtime check has
+  no decision to protect; its real protections are structurally non-runtime
+  (class-total census gates, cross-run permutation pins, render-totality with a loud
+  `[unexplained:]` face).
 
 ## §5 · Pointers
 
