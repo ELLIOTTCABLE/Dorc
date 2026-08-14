@@ -80,13 +80,26 @@ kernel sitting is no longer a separate item — superseded into `28Q` stage-iii.
   `ai/r26-strawmen-{k8s,osnix}` twins are already reachable from main; the
   `ai/r28-declined-rerank` and `worktree-agent-aba0f…` twins are tip-identical to their base
   branches.
+- **A FIFTH sync-conflict twin WITH unique content** (found at the 2026-08-13 catch-up):
+  `ai/r28-loom-review2.sync-conflict-…-PHNHRER` — its base branch was deleted at the loom-final
+  fold, but this twin carries 5 commits (all 2026-07-31) with NO patch-equivalent on `ai/main`
+  (verified: `git cherry` 149−/5+, plus content diff). Three are prose-tier fixes ~superseded by
+  the 28S re-authoring; two are substantive and absent from main in any form: nonce-threading
+  into the `transport-marker-unusable` diagnostic (`43c26f64`) + a vars-listing replay block
+  appended to that case (`aeef7689`). Disposition is the human's: harvest (likely re-implement —
+  28S rewrote the file) or declare superseded, then delete.
+- `worktree-bridge-cse_*`: one divergent bridge branch of unknown provenance, previously
+  unregistered; ~inert.
 - **13 orphan `worktree-agent-*` branches** (round-23/24/27-era; 6 reachable from main, 7 not —
   ~SUSPECT superseded rebase leftovers, unverified; verdict-free, pre-established).
 - Loom-final backup/review branches: NONE remain (`git branch --list '*backup*' '*review1*'
   '*review2*'` is empty).
 - `git worktree prune` DONE 2026-07-31 (removed the 4 stale entries: r26-accept, r28-impl,
   spike3-r26, spike3-r27). `ai/r26-executor-blocked` no longer exists (human deleted).
-- Untracked in the primary checkout, flagged to the human: `dorc-temp-key{,.pub}` +
+- Untracked junk INSIDE two lingering merged worktrees (`loom-final`: 15 sync-conflict `.loom`
+  twins; `agent-a869…`/r28q-prior-art: one sync-conflict `sources.json`) — SyncThing cleanup is
+  human-owned; the worktrees themselves are prunable once emptied. (`dorc-temp-key{,.pub}` is
+  resolved — the primary checkout is clean as of 2026-08-13.)
 
 ## r26 — CLOSED (live-execution + kernel arc + glue-residue research; compressed 2026-07-31)
 
@@ -107,16 +120,24 @@ survive the close:
   §0 is the actionable head) · `notes/r26-glue-strawmen/` (frozen evidence, never execute) ·
   full adjudication ledger `.claude/research/ops-glue-residue/round-charter.md`.
 
-## BRANCH / FOLD STATE (re-measured 2026-07-31)
+## BRANCH / FOLD STATE (re-measured 2026-08-13)
 
-- **Live, unmerged:** `ai/r28-oracle-loading` (38 ahead; rebased, gate-green, parked at E→F) ·
-  `ai/r28-cli-inputs` (2 ahead; rebased clean).
-- **Queued for human deletion:** the cleanup-queue branches above (siblings-audit, the three
-  strawmen lanes, the four sync-conflict twins, the worktree-agent orphans).
+- **Live, unmerged:** `ai/research-lean-sparing-spike` · `ai/research-aeneas-spike` — both
+  self-describe COMPLETE-awaiting-disposition (proofs green, zero `sorry`/walls); the
+  merge/promote/archive call is `28T` §3's, human-owed.
+- **Folded since the last measure:** `ai/r28-oracle-loading` (into `ai/main` 2026-08-01,
+  `231859b2`) — advisory-delete. `ai/r28-cli-inputs` is tip-redundant (both commits
+  patch-equivalent on `ai/main`, verified `git cherry`) — advisory-delete, plus its
+  `r29-cli-inputs` worktree. Merged-worktree leftovers also prunable: `loom-final`,
+  r28q-prior-art (`agent-a869…`), r26-siblings-integrate (`agent-a8aa…`) — see the untracked-junk
+  note in the cleanup queue.
+- **Queued for human deletion:** the cleanup-queue branches above (the sync-conflict twins — NB
+  the fifth one carries unique content — and the worktree-agent orphans).
 - **Unreviewed residue, disposition with the human:** `ai/r28-declined-rerank` (3 ahead) · the
   five `ai/r28-xcheck-*` report branches · relics `ai/24Ka-langreview`, `ai/r22-x3a`/`-x3fix`/
   `-xcheck1`, `ai/r27-review-base`, `ai/snapshot`, `ai/spike3-r23-*` (report/review branches).
-- **Everything else is folded** (loom-final, the whole r26 chain, r28-impl, spike3-r26/r27).
+- **Everything else is folded** (the 28S authorship arc, loom-final, oracle-loading, the whole
+  r26 chain, r28-impl, spike3-r26/r27). `main` sits 1 behind `ai/main` (normal rebase cadence).
 
 ## GENTLY HELD (live work, deliberately waiting on the human's live experimentation)
 
