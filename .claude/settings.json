@@ -3,6 +3,7 @@
     "rust-analyzer-lsp@claude-plugins-official": true
   },
   "env": {
-    "HK_SKIP_HOOK": "pre-commit"
+    "HK_FIX": "0",
+    "HK_STASH": "none"
   }
 }

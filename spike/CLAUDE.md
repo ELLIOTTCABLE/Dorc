@@ -841,9 +841,14 @@ no task covers, and consider adding the task instead.
   2026-07-26). On Windows also skip `2>&1` on a native command: PowerShell wraps each
   stderr line in a NativeCommandError and can flip `$?` on a process that exited 0.
 - Pre-commit gate set — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check
-  licenses bans sources` · `typos`. Agent shells carry `HK_SKIP_HOOK=pre-commit`, so it
-  does NOT run automatically on you: run `mise run check` yourself before every commit,
-  or `mise run gate` for that plus a fresh build and the whole suite. Never `--no-verify`.
+  licenses bans sources` · `typos` · the staged-path loom/e2e corpora. Agent shells carry
+  `HK_FIX=0` + `HK_STASH=none` (settings env), so the hook RUNS on your commits, check-only:
+  refusals are loud, and it never rewrites files or stashes the tree under a running
+  harness (fix-mode and stashing stay on for humans). Verified falsifiably 2026-08-13:
+  fix-off refuses without rewriting; stash-none skips the stash cycle; default mode
+  rewrites. Still run `mise run check` yourself before every commit (`mise run gate` for
+  that plus a fresh build and the whole suite) — the hook is the backstop, not the habit.
+  Never `--no-verify`.
 - **hk-drives-the-hooks** — `hk.pkl` is the one home for every hook step; `mise run
   check`/`fmt` are thin wrappers over `hk check`/`hk fix --all`, so no step is spelled
   twice. `mise run hk-install` is human-gated (it writes the shared `.git/config`).

@@ -313,7 +313,7 @@ description = "cargo-deny advisories (network: fetches the RustSec DB; not part 
 run = "cargo deny --manifest-path spike/Cargo.toml check advisories"
 
 [tasks.hk-install]
-description = "Install hk's git hooks: the pre-commit lint gate AND the commit-msg gitlabels gate (which refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config (affects main and every worktree) — human-gated; read the round-19 spike note first. Agent sessions skip pre-commit via HK_SKIP_HOOK but still get commit-msg."
+description = "Install hk's git hooks: the pre-commit lint gate AND the commit-msg gitlabels gate (which refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config (affects main and every worktree) — human-gated; read the round-19 spike note first. Agent sessions run pre-commit check-only and stash-free (HK_FIX=0 + HK_STASH=none in .claude/settings.json) and get commit-msg in full."
 # `--mise` wraps the installed hook in `mise x`, which is what lets a contributor who has never
 # activated mise in their shell still get the pinned toolchain — and what carries HK_MISE into
 # the hook, without which every step's bare `cargo` would be unresolvable.
