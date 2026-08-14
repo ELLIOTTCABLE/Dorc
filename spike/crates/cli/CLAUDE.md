@@ -111,7 +111,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   remember to ask. Its sites fall to `Opaque` ⇒ `MustRun` ⇒ no vouch candidate, no probe ship,
   no license — the `erasure-is-applied-once-never-consulted` shape. Never re-plumb this as a
   per-seat predicate: a flag every present and future consumer must remember is the surface
-  that rule exists to refuse.
+  that rule exists to refuse. Known seats OUTSIDE the edge
+  (`28P:res-whyworld-and-survival-do-not-withdraw`): `WhyWorld` and `survival` lift their own
+  ORACLE-only vectors and apply NEITHER withdrawal — benign only while those vectors stay
+  oracle-only; widening either seat to the source-wide list must route it through this edge
+  first.
 - **one-helper-index-two-lanes** (`28K` §4) — `dorc_oracle::closure::HelperIndex` is built ONCE at
   this edge, from the same source vector the bodies are sliced out of, and threaded into BOTH the
   guard lane (`build_vouches`) and the probe's three ship seats (`ship_predict_body` /
