@@ -400,6 +400,9 @@ be assessable as continuous; the subtleties belong to a later sitting.
   toward run, never for changes-what-your-book-does-at-runtime authorship.
   `28M:rul-predict-feeds-plan-never-apply` is the standing law; supersession markers sit
   at the sources, and the four stale `plan/src/lib.rs` comments die at stage-0.
+- **`rul-name-collision-fails-fast`** [TYPED 2026-08-13] — conflicting contracted names
+  in loaded scope fail-fast, pre-network only; start-simple, caveats may evolve
+  (priced background: `28U` §5).
 - The three-pillar direction as a whole [ACKED — the DIRECTION only, never the
   mechanics; the per-item grades above govern, and this line is not citable for any
   PROPOSED mechanism].
@@ -570,8 +573,6 @@ the loom Windows stack-overflow (separate small fix).
    committee-corner sitting, parallel, unscheduled. (The license-tier half,
    `tc-split-family-elides-on-two-authors`, is RESOLVED by §4's verdict-primacy ruling.)
 6. `28M` §11's keep/lift + registration verdicts — parallel, human's.
-7. The ANALYZER-NEEDS flat-domain reconciliation paragraph — DISCHARGED (conductor,
-   2026-08-13 catch-up pass; `an-flat-domain`/`an-context-key` now carry the §1 text).
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
    unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
    it.
