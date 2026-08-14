@@ -75,7 +75,7 @@ and carries the license-contamination map.
 - **Oracle loading & name-resolution (custody, committee speech, one-name-two-definitions)** —
   `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`;
   same-role-name collisions fail-fast pre-network (the `28Q` §4 rider; priced background
-  `notes/28U` §5).
+  `notes/28U` (née 293) §5).
 - **Correctness-tooling (checker triad · Lean mini-model · Aeneas)** — **`notes/28T`** (the
   adoption plan); evidence base `.claude/research/refinement-types-industrial-cost/`; the two
   proof spikes live on `ai/research-{lean-sparing,aeneas}-spike` (disposition pending).
@@ -241,7 +241,7 @@ and carries the license-contamination map.
   taint work). Deferred (human-owned, `28A`): the `sm `-prose Fable pass · catalog
   canonicalization · glued-param seam · errorloom LICENSE/publish. The post-charter
   arcs, each with its own durable: errorloom phase-three `notes/287` · the aid/loom
-  unification `plans/288` → `notes/289` (+ maps `28Va`/`28Vb`) · the why-surface
+  unification `plans/288` → `notes/289` (+ maps `28Va` (née 290)/`28Vb` (née 291)) · the why-surface
   sitting + W1→W4 build `notes/28E`/`plans/28G` → ledgers `notes/28F`/`28H`
   (red-lines `28I`, W5 worklist `28J`) · THE LOOM-FINAL ARC (stamped provenance;
   the ~176-case loom corpus) — conduct `notes/28L`, prose accounting `notes/28N` ·

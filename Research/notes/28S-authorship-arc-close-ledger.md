@@ -77,7 +77,7 @@
 - **Routing/taxonomy debts** — `tolerates-unknown-dimension` surfaces on the lint rung
   only (the discard in `oracle::validate` is deliberate; plan-lane routing is a `27R`
   rung-ownership decision) · I/O invocation errors exit through the usage synopsis
-  (`EXIT_USAGE`) — the `28Vb` §5a invocation-error-taxonomy change is owed ·
+  (`EXIT_USAGE`) — the `28Vb` (née 291) §5a invocation-error-taxonomy change is owed ·
   `lint-tool-failed-without-findings` / `lint-tool-output-unparsable` need a
   scripted external-tool loom vocabulary (deliberately unbuilt: a fake keyed off the
   case's own `code:` would derive the answer from itself) ·

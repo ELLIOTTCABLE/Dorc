@@ -145,7 +145,7 @@ as the quarantined r29 (the `289`→`290` rollover is the trap).
 Six sub-arcs, all BUILT: **the `280` charter** (errorloom standalone · `281` mark-grammar v0.2 ·
 the `282` generation flip) — ledger `notes/28A`; **errorloom phase-three** — ledger `notes/287`;
 **the aid/loom unification** (`plans/288`: `crates/aid` extracted · flat test tree + central
-runners · the arrangement registry) — ledger `notes/289` (+ maps `28Va`/`28Vb`); **the
+runners · the arrangement registry) — ledger `notes/289` (+ maps `28Va` (née 290)/`28Vb` (née 291)); **the
 why-surface sitting + W1→W4 build** (`notes/28E` rulings · `plans/28G` · ledgers `notes/28F`
 and `notes/28H`, red-lines `28I`, W5 worklist `28J` — re-audit caveat above); **THE LOOM-FINAL
 ARC** (2026-07-29→31: the stamped-provenance boundary weld · placeholder-overtype as the

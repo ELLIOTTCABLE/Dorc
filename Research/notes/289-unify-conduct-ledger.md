@@ -51,7 +51,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   (builder must check + report which is as-built). Named escalation seam, build
   NOTHING now: if the census gate ever leaks a real under-narration,
   value-carriage-in-the-join is the priced next rung. Rides phase-1-exec or the
-  2–4 lane, whichever `notes/28Va` says is cheapest.
+  2–4 lane, whichever `notes/28Va` (née 290) says is cheapest.
 
 ## §2b — Phase-0 landing (conductor, 2026-07-24)
 
@@ -118,7 +118,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 | phase 0: lint-tally-pluralization | `ai/r28-unify-p0` | single dispatch, worktree | LANDED+FOLDED 2026-07-24 @ `2bf13785` → merge `c45be8b8` |
 | phase 1 map: aid-crate extraction spec (`notes/28Va`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | LANDED+FOLDED 2026-07-24 @ `00155aaf` |
 | phase 1 exec: the extraction cutover | `ai/r28-unify-p1x` | fresh executor per `28Va` + `289` §2c | LANDED+FOLDED @ `2ac85127` (§2e) |
-| phases 2–4: mint/lint/cli-errors (map `notes/28Vb`) | `ai/r28-unify-p24` + `-p24x` | map-then-execute, mid-lane checkpoint | LANDED+FOLDED @ `7948a0cb` (§2i/§2j) |
+| phases 2–4: mint/lint/cli-errors (map `notes/28Vb` (née 291)) | `ai/r28-unify-p24` + `-p24x` | map-then-execute, mid-lane checkpoint | LANDED+FOLDED @ `7948a0cb` (§2i/§2j) |
 | touches-fix: disturbs-family name pin | `ai/r28-unify-touches` | parallel small lane | LANDED+FOLDED @ `d9ff7b81` (§2h) |
 | phase 5: flat tree + central runners + run.sh retirement | `ai/r28-unify-p5` | two-stop | LANDED+FOLDED @ `e3a74744` (§2k/§2l) |
 | phase 6: e2e→loom conversion + riders | `ai/r28-unify-p6` | single stop + follow-up | LANDED+FOLDED @ `950ffe7e` (§2n) |
@@ -145,7 +145,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   hand-edits.
 - 2026-07-24: phase-1 MAP (Opus, fresh worktree, bg) — mechanical extraction spec →
   `notes/28Va` on `ai/r28-unify-p1`; no engine edits.
-- 2026-07-24: phase-1 EXECUTOR (Opus, fresh worktree, bg) — the 290 cutover as amended by 289 §2c, on `ai/r28-unify-p1x` off `c1cab82a`.
+- 2026-07-24: phase-1 EXECUTOR (Opus, fresh worktree, bg) — the 28Va cutover as amended by 289 §2c, on `ai/r28-unify-p1x` off `c1cab82a`.
 
 ## §2d — r29 evidence-types fence (HUMAN-TYPED 2026-07-24)
 
@@ -786,9 +786,9 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   they were named by relative path).
 - The comparison corpus is COMPLETE: as-built truth committed in the five
   gallery looms; the conductor's unpoisoned aspirations in
-  `notes/28Vc-why-output-strawmen/` (written+committed BEFORE this landing was
+  `notes/28Vc-why-output-strawmen/` (née 292) (written+committed BEFORE this landing was
   read, `7ab5e497`); the human's editing round is next — in-place uncommitted
-  edits (harvested as diff) or 292-style copies, their choice.
+  edits (harvested as diff) or 28Vc-style copies, their choice.
 
 ## §2z — The human's first strawmen-reaction round (typed 2026-07-25; pre-reading the as-built)
 

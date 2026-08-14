@@ -47,7 +47,7 @@ The typeless-oracle floor is **IN** (the anonymous/auto-minted cell), restated a
   file-ceremony); the version-comment (rul24M-version-comment) is the gate, per-file, not
   per-location. Share-a-file lives, marker-gated; the erasure/off-ramp doc language scopes
   accordingly (unmarked book = plain sh; marked file = strips to plain sh via `dorc strip`).
-  <!-- superseded 2026-07-28 by 293:rul-book-is-plain-sh-always: the location-gating
+  <!-- superseded 2026-07-28 by 28U (née 293):rul-book-is-plain-sh-always: the location-gating
        supersession above is itself reversed. The root docs now weld books to plain sh —
        USER_STORY.md stage 4 ("the book itself stays plain sh, always; dorc-lang and its
        marker live only in oracle files") and the same sentence in KNOBS:kTYANNOT — and a
@@ -55,12 +55,12 @@ The typeless-oracle floor is **IN** (the anonymous/auto-minted cell), restated a
        so a marked share-a-file is no longer expressible. What survives of the floor: an
        UNMARKED book may still host bare `__role` functions, which is USER_STORY stage 3
        and exactly the goal this rule stamps. Only the marker-gated share-a-file half is
-       dead. See 28U (née 293) §1, §3, §4. -->
+       dead. See 28U §1, §3, §4. -->
 
   <!-- Also note, for a trawling agent: the sentence above is the ONLY reversal here. The
        goal-statement in the blockquote, rul24M-version-comment's syntax-vs-name-semantics
        split, and the permanence of `__role` name-recognition in unmarked files all stand
-       unchanged and are load-bearing for 293. -->
+       unchanged and are load-bearing for 28U. -->
 
 
 ### rul24M-bare-dorcism-names

@@ -663,7 +663,7 @@ lanes thread by fresh census, never by the map's count.
   reads a hole's class off the TYPE). Bounded deviation accepted: weft's own
   `Run::foreign` stays stringly (weft-deps-nothing); the seal binds at
   `aid::weave::foreign`, the only Dorc-side route in. Census durable at
-  `notes/28W`: 23 sites (not the hand-off's 18), and the name-heuristic itself
+  `notes/28W` (née 296): 23 sites (not the hand-off's 18), and the name-heuristic itself
   missed a genuine foreign relay — (a) 5 foreign / (b) 17 ours (6 carrying ~55
   N-sentence details) / (c) 2 mixed; the "syntax-*/predict-* relay foreign bytes"
   claim is FALSE (our own format!ed sentences). Ten codes de-passthrough'd

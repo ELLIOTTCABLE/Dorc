@@ -11,8 +11,8 @@ Companions: `plans/288` (the unification arc) · `289` §2t–§2z (conduct trai
 hint-homing · gallery · strawmen · fold verifies · findings) · the corpus this
 sitting stares at — five `spike/crates/cli/tests/whygallery-*.loom` (as-built
 committed truth, incl. per-line and zero-arg `dorc why` transcripts) +
-`notes/28Vc-why-output-strawmen/` (conductor aspirations, written unpoisoned) + the
-human's in-progress hand-edits of 292 · `plans/286` (the explain/teaching tier this
+`notes/28Vc-why-output-strawmen/` (née 292) (conductor aspirations, written unpoisoned) + the
+human's in-progress hand-edits of 28Vc · `plans/286` (the explain/teaching tier this
 sitting leans on) · `plans/282` (loom transport) · root `AID-NEEDS.md` (surface law).
 
 ## §0 — Ledger
@@ -457,7 +457,7 @@ The strawman corpus of record: `notes/28G-why-strawmen-v2/` — `a-fire-morning`
 (authored refusal as answer; anti-nag; model-offer) · `d-guard-fell-through`
 (SURPRISES; then-vs-now; positive-pointer suspicion with the ceiling named) ·
 `e-skipped-quiet` (restraint; the admin's own guard as speaker; triptych
-collapse). The 292 corpus is superseded by 28G.
+collapse). The 28Vc corpus is superseded by 28G.
 
 LIVING GOAL, restated so it survives the session boundary: every render above
 stays RENDERING-ASSEMBLED FROM EDITABLE SPANS — reverse-inferred from loom text
