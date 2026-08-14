@@ -49,7 +49,15 @@ terminology rider — vocabulary ACKED: **incarnation** (context lifetime marker
 per `28Q` §3's correlation door) · **lifecycle begins/ends** (re-creation = their
 composition) · **availability window**; "epoch"/"pivot"/"transit" retired. §10 (the
 authored surface — how users spell these concepts in oracles) is RESERVED for the next
-human-led design dig. The plan is ACKED; stage-0 leads, then stage-i/ii dispatchable.
+human-led design dig. The `28R` review round (six-lane crosscheck + prior-art; verdict:
+no kill-shot, definitional repairs) is FOLDED into the plan 2026-08-13: §1's helper
+exception + winner-shifting rider, §2's closure-rooting rule, the gate rebuild
+(fixtures-first differential cells; stage-0's retroactive records-diff audit), §3's
+availability-domain statement + host carves, and the new
+**stage-emission-snapshot-transplant** between i and ii (the `28R:§snapshot` rulings).
+§9 grew pins 9–13; open for the human: pin 12 (two-position sparing — PROPOSED line on
+file) and pin 13 (blessing × keep-verdict), both parkable to stage-ii. The plan is
+ACKED; stage-0 landed; stage-i dispatchable AFTER its fixtures-first commissioning.
 
 **`ai/r28-oracle-loading`: the `28K` lane is EXECUTED and CLOSED on its branch** (resume
 conduct-ledger **`notes/28P`**; build ledger `notes/28O`): bitem0–3 and 6–9 LANDED, both

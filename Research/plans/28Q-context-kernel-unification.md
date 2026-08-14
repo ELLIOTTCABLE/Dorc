@@ -24,7 +24,11 @@
 > **ends** — and re-creation defined as their composition. An **availability window**
 > is the interval of plan positions over which a context is available. "Epoch",
 > "pivot", and "transit" are retired from this territory; older documents using them
-> read through this vocabulary.
+> read through this vocabulary — via this map, since the old words SPLIT: "epoch" →
+> incarnation (the lifetime) or availability window (the interval), by context;
+> "transit" → a lifecycle event where reboot-shaped, context entry/exit where
+> wrapper-shaped (`26K`'s transit-relative law reads under the first); "pivot" → host
+> arrival + scope-entry.
 
 ## §0 — The design in one screen
 
@@ -66,9 +70,11 @@ are the mutations.
 
 `syn-zero-new-spellings` — all three pillars consume EXISTING sh acts: sourcing,
 subshells, `unset -f`, creator/destroyer commands with ordinary oracles, ssh lines.
-No new authored surface anywhere (the §10 language dig may add *oracle-member
-vocabulary* for describing lifecycle events; it must clear the
-sent-language-is-becoming-crufty bar).
+Scope, sharpened at the `28R` review (every lane converged on the overclaim): this
+binds the ADMIN/book surface only. P3's load-bearing input — how an oracle says a
+command begins or ends a context — has NO existing spelling; that oracle-member
+vocabulary is §10's priced budget, and this slug is never citable against it. It must
+clear the sent-language-is-becoming-crufty bar.
 
 ## §1 — P1: definition-factored indices (`syn-definition-factored-indices`)
 
@@ -79,9 +85,18 @@ merged indices risks the chimera (identity through one author's argparse, cells 
 another's; pope-sin, invisible to goldens). The fix is a FACTORING, not per-frame copies:
 
 1. Every derived row — a check, a cell declaration, an argparse arm-model, an enrolled
-   dialect token, a footprint claim, a helper closure — is keyed by the **DefinitionId**
-   that produced it: (SourceFileId, span, custody). Computed once, whole-unit, exactly as
-   today. No index multiplication.
+   dialect token, a footprint claim — is keyed by the **DefinitionId** that produced it:
+   (SourceFileId, span, custody). Computed once, whole-unit, exactly as today. No index
+   multiplication. HELPER CLOSURES are the ruled exception
+   (`28R:§snapshot-emission-adjudication`, TYPED/ACKED): sh binds a body's calls at
+   INVOCATION, so a closure is a property of the consuming FRAME, never of the
+   definition — "computed once, whole-unit" is DEAD for closures
+   (`rul-resolution-matches-shell-loading`). Stage-i ships the WITHHOLD floor (a frame
+   whose live definition closes over a helper name that is plural-with-differing-bytes
+   across frames withholds; `helper-declaration-contested` stands; constants per
+   `28P:dec-constants-ride-per-contributing-file` likewise); the snapshot-transplant +
+   instantiation-hash-dedup emission (`rul-snapshot-transplant-emission` ·
+   `rul-instantiation-hash-dedup`) is its own stage between i and ii (§8).
 2. The ONLY per-frame structure is the frame → live-definition map, which `funcenv`
    already computes (positional, scope-stacked, frozen).
 3. A query at site S = `live_definition(frame(S), name)` → read THAT definition's rows.
@@ -99,19 +114,26 @@ Consequences:
   finally delivered as written.
 - `live_source`'s whole-unit text-scan winner and the fold's `never_live` subtraction are
   SUBSUMED: under frame-keyed liveness, a never-live definition is simply live at no
-  frame; the exact-subtraction hazard (`28P:adj-never-live-exactness-accepted`) dissolves
-  into the general mechanism. `oracle/CLAUDE.md live-source-is-the-only-resolution-seat`
-  becomes "the frame-lookup is the only resolution seat".
+  frame. The exact-subtraction consequence (`28P:adj-never-live-exactness-accepted`) is
+  NOT dissolved — it GENERALIZES: under true resolution every funcenv precision bug is
+  winner-shifting (it selects whose judgment governs a site, with no agreement veto
+  behind it), so the whole frame solver is license-review-tier forever; funcenv
+  precision work is never ordinary value-add. `oracle/CLAUDE.md
+  live-source-is-the-only-resolution-seat` becomes "the frame-lookup is the only
+  resolution seat".
 - bitem1's built-but-unreachable hash-munge becomes reachable exactly as its ledger
   predicted (two frames, two live bodies, two munged names); the pinned-definitions
   machinery needs no redesign — `plan/CLAUDE.md pinned-definitions-are-the-artifact's-
   binding` already handles per-guard-site binding, and the positional regime already
   guarantees definition-precedes-guard.
 - The seventh seat (`build_wrapped_vouches`, `28P:tc-wrapped-vouch-seat-has-no-positional-
-  gate`) unifies with the other six for free; so do the whyworld/survival seats that today
-  neither withdraw nor lift book definitions (`28P:res-whyworld-and-survival-do-not-
-  withdraw`, `tc-wrapped-lane-drops-a-case-bodied-in-book-verdict` — both are
-  oracle-only-vector coincidences that the one-lookup design deletes).
+  gate`) unifies with the other six. The whyworld/survival seats are NOT free riders:
+  `28P` priced their unification as a dispatch ("re-lifting that seat's whole world" —
+  `res-the-why-world-cut-is-now-visible`), and stage-i carries that price tag. And
+  `tc-wrapped-lane-drops-a-case-bodied-in-book-verdict` was measured, never diagnosed —
+  the oracle-only-vector reading is a HYPOTHESIS, so the case-bodied in-book wrapped
+  fixture rides stage-i as an EXPECTED-TO-FLIP cell (the asserted cause gets tested,
+  not trusted).
 
 Constraints honored, verbatim commitments:
 
@@ -137,6 +159,19 @@ the book). Sourcing is the promise "I treated this as if I wrote it"
 (`28M:dir-ownership-is-transitive-inclusion` [TYPED]); the closure is the package boundary
 spelled in sh — no registry, no owner-name, no manifest file, ever.
 
+Closure-identity, stated as a function (the `28R` review found the bare
+one-identity-per-entry reading DISSOLVES the fence — a book sourcing two strangers'
+files would make them one speaker): custody units root PER SOURCED SUBTREE, never per
+top entry. `28M` §10's carve is the rule — the not-co-author machinery binds only
+SIBLING/COUSIN edges in the include-tree; an ANCESTOR edge takes custody of what it
+sources — so the two-strangers book holds two mutually-FENCED sibling units under its
+own custody of the composition. Three cells stay OPEN and are §9's, owed before
+stage-ii: overlap/diamond identity (one shared helper file under two entries;
+byte-dedup does not pick a speaker); closure MEMBERSHIP (sourcing-only vs the
+CLI-sibling-loaded package shape bitem6 proved — `28M` §7 keys helper custody to the
+CALLING entrypoint, which is caller-keyed, not closure-keyed); and the oracle-side
+spelling itself (the payoff-gate paragraph below).
+
 Re-keyed seats:
 
 - **`core::DefinitionCustody` internals** — bitem3 designed this seam explicitly
@@ -153,7 +188,12 @@ Re-keyed seats:
   one entry sourcing its parts is one speaker; the bitem6-proven two-file helper-package
   shape becomes the canonical packaging story. `price-patch-author` is UNCHANGED
   (member-granular patching across closures is still committee; honesty preserved).
-- **Diamond loading**: byte-identical files dedup (built); differing bytes refuse (built);
+- **Diamond loading**: byte-identical files dedup (built) — sound TODAY only because
+  every closure is a singleton (no oracle-side `.` exists); once sourcing lands, dedup
+  re-keys to RESOLUTION-identity (bytes × what the file's own sourcing resolved to —
+  `28R:fnd-dedup-keys-to-resolution`, the key `rul-instantiation-hash-dedup` already
+  consumes at the ship seam) or the divergence is shown unrepresentable; differing
+  bytes refuse (built);
   the fence binds only sibling/cousin edges in the include-tree, never above/below
   (`28M` §10 direction). Unit-identity keys to the defining file within the closure
   (version-skewed vendored copies refuse rather than dedup — the bitem1 rider restated
@@ -185,14 +225,28 @@ blessing — until a book's top-level source stops walling, book-side closures a
 analysis-real but value-dead (the gate bitem9 hit). This is an ENGINE ruling, not an
 oracle: the property doing the work (load-inertness) is engine-proven, and the
 classification "sourcing a proven-inert file disturbs nothing world-side" is a judgment
-over sh semantics only — referent-agnostic-clean (`res-dot-blessing-is-engine-side`).
+over sh semantics only — referent-agnostic-clean (`res-dot-blessing-is-engine-side`). Two sibling gates the
+review surfaced: the ORACLE-side spelling does not exist either — a marked file's
+load-inertness refuses top-level `.` (verified in code:
+`oracle::load_inert::item_is_load_inert` admits only funcdefs + static assigns), so
+every closure today is a singleton and the load-inert `.`-amendment is a §9 owed
+ruling; and the RUNTIME prerequisite `28K:res-book-ships-its-load-closure` (a sourced
+book needs its closure present at apply; named there, unbuilt) joins stage-ii's scope —
+without it the dot-blessing lands analysis-green and runtime-dead.
 
 ## §3 — P3: availability over all contexts (`syn-availability-is-universal`)
 
 Every world-context — the folded per-dimension key of `27C`'s composition algebra, now
 including a host coordinate and an incarnation marker — carries an **availability
 status as a function of plan position**: available · arrives-at(p) · departed-at(p) ·
-never. Probe-time entry is availability at position zero. Everything else derives:
+never. Probe-time entry is availability at position zero. The domain statement,
+sharpened at review (`28R`): those statuses are consumed MUST/MAY-split — entry
+consumes only MUST-available (a conditionally-reached begin never licenses entry; a
+MAY-run end conservatively distrusts — the wall machinery's existing direction); CFG
+joins and loops land on unknown ⇒ guard/run; and a window is a position-SET (an
+interval LIST with gaps — the re-creation gap is structural), never a (start, end)
+pair (`28R:vd-window-is-point-set`). A converged (elided) lifecycle command mints NO
+event: no boundary, no fresh incarnation. Everything else derives:
 
 **The incarnation, defined softly and on purpose** [the definitional paragraph;
 human-directed]: an incarnation distinguishes LIFETIMES of one context — same identity
@@ -223,7 +277,23 @@ be assessable as continuous; the subtleties belong to a later sitting.
   (and why the engine's own transport ships artifacts on stdin, `260` §5). Host ALIASING
   (`~/.ssh/config`, short names, IPs) is package-name aliasing's cousin: host identity is
   resolve-machinery territory, never string comparison
-  (`res-host-identity-wants-resolve`).
+  (`res-host-identity-wants-resolve`). Three review carves bind this bullet: (1) the
+  AMBIENT-HOST carve — the CLI-named target is entered by consent-of-invocation
+  (running `dorc plan book.sh web1` IS the consent); dial × vouch × entry govern only
+  in-book host shifts (without the carve, uniform entry would demand vouches for
+  baseline probing — reductio). (2) Host identity must NOT ride the kind-resolver
+  CONTRACT: for hosts a wrong MERGE is not conservative — it lets one host's
+  measurement license another host's elision (the inverted failure direction vs
+  USER_STORY's resolver pricing; `260`'s HostId-verbatim law and
+  `an-host-as-adversary` both bind). v0: no host merging, duplicate probing is the
+  price; any future merge is controller-authenticated identity, never string- or
+  resolver-tier. (3) The ssh entry form CANNOT be `"$@"`-verbatim across the remote
+  re-parse — this bullet and `27C`'s only-entry-shape ruling genuinely conflict; an
+  owed ruling (§9), and the re-parse is `24T`'s payload-decomposition problem in
+  network clothing. Probing hosts named IN books also widens the probe's network
+  footprint onto the plan critical path — the side-host entry policy
+  (lazy / opt-in / timeout budget) is stage-iii brief material, and
+  `27C:render-authority-disclosure` grows a host coordinate.
 - **Lifecycle events are not a reach-mode** — they are world-mutations that move
   contexts' availability, and there are exactly two primitives: a context **begins**
   (`useradd`, `mount`, `doctl compute droplet create`) or **ends** (`userdel`, `umount`,
@@ -245,7 +315,9 @@ be assessable as continuous; the subtleties belong to a later sitting.
   CONSTRUCTION (in-sequence; the context has arrived when the guard runs). Destroyers
   symmetric: sites denoted in departed contexts are honestly can't-say ⇒ run. The
   inverse wait is the trajectory available→departed→available; wait-loops with
-  pure-delay bodies mint no events ⇒ wall-transparency derives (the `26K`
+  MODELED-PURE delay bodies mint no events ⇒ wall-transparency derives — positively
+  modeled purity only; an unmodeled body walls as ever, absence-of-events is never the
+  license (the `26K`
   sit-wall-transparent-delay-loops ratification becomes a corollary to ack, not a
   standalone rule).
 - **The integrity/analysis split is preserved, and reconciles `an-toctou-window`**: a
@@ -259,7 +331,8 @@ be assessable as continuous; the subtleties belong to a later sitting.
   plan IS its named re-entry trigger: a second scope becomes representable, so carrying
   scope becomes checking scope; `WidthOneAttemptScope` goes multi, deliberately, at
   stage-iii). Crossing stays the kind-owner's `undivided-by-transit-across <axis>` mark
-  — the lifetime axis consumes `272` §6's reserved time slot. `an-host-as-adversary`
+  — the lifetime axis mints a NEW axis value (`272` §6's "time" row is the Linux
+  time-NAMESPACE, pidns's sibling, not a temporal slot; it stays reserved for timens). `an-host-as-adversary`
   honored: availability facts are host-scoped intake, bounded; no host speaks for
   another's availability.
 - **Residual host-specialness**, named and fenced: transport mechanics (channel
@@ -317,7 +390,9 @@ be assessable as continuous; the subtleties belong to a later sitting.
   toward run, never for changes-what-your-book-does-at-runtime authorship.
   `28M:rul-predict-feeds-plan-never-apply` is the standing law; supersession markers sit
   at the sources, and the four stale `plan/src/lib.rs` comments die at stage-0.
-- The three-pillar direction as a whole [ACKED].
+- The three-pillar direction as a whole [ACKED — the DIRECTION only, never the
+  mechanics; the per-item grades above govern, and this line is not citable for any
+  PROPOSED mechanism].
 
 ## §5 — What this plan subsumes (the anti-piecemeal ledger)
 
@@ -328,9 +403,13 @@ registry (`28P:tc-meet-direction-registry-not-built` → stage-ii, where the lat
 refactor has company) · `26K` §0b entire (local-exec, scope/incarnation slot,
 wait-loops, inverse wait → stage-iii) · the wrapped-vouch and whyworld/survival seat
 asymmetries (→ stage-i) · the ship-seam verdict-primacy re-cut (→ stage-0; rulings in
-§4) · `res-host-conditional-loading` gains its eventual story
+§4) · `res-survival-lanes-still-ship-closure-less` (`cli/CLAUDE.md
+one-helper-index-two-lanes` → a rider on the emission stage's closure machinery) ·
+`res-host-conditional-loading` gains its eventual story
 (per-host frames keyed by decidable host facts) but STAYS v0-refused — named, not
-scheduled. Made-visible but NOT ruled here: `28M` §11's keep/lift +
+scheduled; NB that eventual story is an AMENDMENT of
+`funcenv-reads-source-literal-plane-only`, never an extension — the law's edge stays
+crisp until then. Made-visible but NOT ruled here: `28M` §11's keep/lift +
 registration verdicts · the tabled word-pooling corner (closure-keyed dialects are its
 eventual hook; nothing more).
 
@@ -343,7 +422,14 @@ algebra, ternary compare, set-lifting-universal-meet · `never-derive-separation
 `rul-only-oracle-bytes-ship` / `rul-argv-flows-bytes-do-not` · the `27C` consent
 machinery (dial, vouches, entry-siting, composition algebra) · `two-plane-aid-law` ·
 hermeticity-precondition · `rul-strawman-formats-no-compat` (every identity type minted
-here renames freely pre-publication). And `syn-zero-new-spellings` (§0).
+here renames freely pre-publication). And `syn-zero-new-spellings` (§0). Plus the
+two-planes fence, stated once so no later lane misreads §0: the unification is
+DISCIPLINE, never implementation — the load plane never grows a probe-data input
+(`funcenv-reads-source-literal-plane-only` is permanent) and the world plane never
+inherits load-plane certainty (its truths are measured/vouched/claimed, not
+sh-given). The world plane's own precedent is the project's founding one:
+available-expressions/PRE — piecewise truth over program points with kill events
+(README's lazy-code-motion frame) — worth handing stage-iii builders by name.
 
 ## §7 — Constraint reconciliations (against the needs-ledgers and as-built law)
 
@@ -385,26 +471,62 @@ byte-identity gate.
   `pin28-split-family-lane-separation` (the verdict body now runs — the monologue
   restored). Gate: churn confined to probe-artifact bytes/records plus the flipped
   fixture; site OUTCOMES byte-stable across the corpus (an outcome move is a finding,
-  never churn).
-- **stage-i-definition-factoring** (P1): DefinitionId keying of derived rows; the frame
+  never churn). RETROACTIVE fold audit (stage-0 is built; `28R` found the outcome gate
+  blind to this class): a records/fact-set diff over the corpus — site outcomes can
+  hold while a named predict cell silently becomes an unmeasured auto-cell, and
+  backings, survival, and why-chains consume those records; a lost measurement is a
+  finding.
+- **stage-i-definition-factoring** (P1): FIRST, commission the plural-idiom fixtures as
+  DIFFERENTIAL cells (sentinel bodies under the two-binary floor — the bitem8 pattern:
+  blessed-override above/below its `unset -f` · subshell re-source in/out · the
+  helper-collision cell · munge reachability · the deep-stack caller-cone per the
+  `28R:§snapshot` residue) — the byte-identity gate is VACUOUS on today's
+  single-definition corpus exactly where the new machinery decides, so the fixtures
+  land BEFORE the conversion, never as unblocks (the lane's own measure-first
+  precedent: bitem6, item0). Then: DefinitionId keying of derived rows; the frame
   indirection at every resolution seat; retire the agreement veto, `live_source`, and
   `never_live` as separate mechanisms; unify the wrapped-vouch and whyworld/survival
-  seats. Gate: `syn-single-frame-byte-identical` (full corpus, both legs). Unblocks:
-  plural-idiom fixtures (expect new corpus cells, not churn).
+  seats (priced per `28P` — a re-lift dispatch, not a rename); helper closures take
+  the WITHHOLD floor (§1); the case-bodied in-book wrapped fixture rides as
+  EXPECTED-TO-FLIP; `task-verify-definition-vector-walls` (`28R:§snapshot` residue).
+  Gate: `syn-single-frame-byte-identical` (full corpus, both legs) AND the
+  differential cells agreeing with the frame answer.
+- **stage-emission-snapshot-transplant** (between i and ii;
+  `28R:dec-stage-sequencing-withhold-floor` — named here so it cannot read as
+  piecemeal): the `28R:§snapshot-emission-adjudication` rulings, TYPED/ACKED —
+  snapshot-transplant emission + instantiation-hash dedup (bare/munged/withheld tiers;
+  oracle-custody names only, book bytes never rewritten); defensive mode keyed to real
+  in-process definition vectors only; mixed-custody vouch suspension (BUILD, with its
+  day-one decline class and end-to-end why-chain); contested-name decline. Rider:
+  `res-survival-lanes-still-ship-closure-less` (the cheap `HelperIndex` extension).
+  Gate: a single-frame, collision-free world ships byte-identical (the sitting's own
+  migration gate).
 - **stage-ii-closure-custody** (P2): the `DefinitionCustody` internal re-key; the
   frame-relative, closure-keyed fence (build-as-spiked, UNRATIFIED marker stands until
   the fence sitting); kind-owner occupancy per closure; blessing-reachability for
   vocab-minting (pending `pin-blessing-keying`); bitem5's coherence detection; the
   meet-direction registry. Gate: single-closure byte-identity + the fence's six stage-E
-  cells re-verified closure-keyed.
+  cells re-verified closure-keyed, PLUS the runtime half:
+  `28K:res-book-ships-its-load-closure` (closure materialization at apply) with an
+  EXECUTING e2e cell — the original book under its sourced tree, the artifact from an
+  isolated cwd, and a missing sourced file failing honestly. Split discipline: the
+  custody INFRASTRUCTURE (types, provenance, closure computation) is buildable now and
+  license-inert; the POLICY consumers (the fence's permanence, `pin-blessing-keying`,
+  the §9 membership cells) land only with their rulings — green on infrastructure
+  never asserts policy.
 - **stage-iii-world-scopes** (P3): the context-slot host×incarnation coordinates;
   availability computation from begin/end descriptions; scope-entry (ssh as entry;
   local-exec as the controller context); the scope types go multi with checking;
   wait-loop wall-transparency and the inverse wait as derived behavior. This stage IS
   the former `26K` §0b batch, human-led at its design edges (the §10 authored surface
-  must be settled first for lifecycle description). Gate: a book with no lifecycle
-  events is byte-identical; the pivot strawman book renders honestly in both
-  world-states.
+  must be settled first for lifecycle description). Structure: definite-availability
+  mechanics build against §3's domain statement; the authored begin/end surface is
+  §10-gated; the correlation door stays its own sitting. Named dependency: ssh-as-entry
+  needs the ssh oracle, which rides the stdlib revival (itself gated on the
+  dialect-reach decision — §9 pin 3). Gate: a book with no lifecycle events, no
+  host-denoting lines, and no local-exec is byte-identical (the stage's own
+  ssh/local-exec behavior is deliberately outside the byte gate); the pivot strawman
+  book renders honestly in both world-states.
 
 Builder on-ramp (read in order): this document → `28M` §§7–11 → `28K` (executed lane
 record; §10's as-built bitem ledger `28P`) → `27C` → the `spike/CLAUDE.md` invariant
@@ -436,11 +558,31 @@ the loom Windows stack-overflow (separate small fix).
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
    unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
    it.
+9. The oracle-side load-inert `.` amendment (a marked file sourcing a proven-load-inert
+   file) — without it P2's closures stay singletons; a dialect-surface widening,
+   human's (§2).
+10. Closure MEMBERSHIP + overlap/diamond identity — the §2 open cells; owed before
+    stage-ii's policy half.
+11. The ssh entry-shape ruling — `"$@"`-verbatim-only vs a carved ssh shape (`27C`'s
+    punted in-guest-preamble decision reopened, or ssh carved out; `24T` is the
+    prior) — rides the §10 dig's agenda (§3).
+12. The two-position sparing rule — which position's closure/dialect governs the
+    claim@p × backing@q meet once liveness goes frame-relative. PROPOSED conservative
+    line on file (`28R`): collide unless both positions agree on the backing family's
+    closure and dialect. Lands first in `28T`'s sparing mini-model; ack owed.
+13. `rul-blessing-flows-from-best-caller` × the `28M` §11 keep-verdict — the
+    reachability-elevation tension (`28R:adj-blessing-vs-keep-verdict`: enrollment
+    becomes refactor-sensitive call-graph topology; the reverse-flow cell sits inside
+    one closure); one typed line owed (re-affirm knowingly · fold into the spike-end
+    instrument · key elevation to marks-reached-from-predict). Bites at stage-ii
+    vocab-minting, not before.
 
 ## §10 — The authored surface (RESERVED)
 
 How users express these concepts in oracles — begin/end description members or marks,
 whether lifetime-crossing rides the existing `undivided-by-transit-across` mark spelling
-or that token itself renames with this vocabulary, the ssh entry-form's authored half,
-and the sent-language-is-becoming-crufty ceremony budget for all of it — is the next
-design dig, human-led. Deliberately empty until that sitting.
+or that token itself renames with this vocabulary, the ssh entry-form's authored half
+(read `plans/24T` first — the remote re-parse is payload decomposition wearing a
+network hat, never a vouch rider), and the sent-language-is-becoming-crufty ceremony
+budget for all of it — is the next design dig, human-led. Deliberately empty until
+that sitting.
