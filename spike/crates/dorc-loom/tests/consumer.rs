@@ -295,13 +295,8 @@ fn lint_driver_claims_exactly_two_shapes() {
     );
 }
 
-/// The tier an edit MINTS, and the demotion it records on the way past.
-///
-/// Stated over the mirror rather than through the CLI, because this is where the mark is actually
-/// made: the flag only chooses a `Mint`, and everything downstream — the notice, the refusal, the
-/// commit-msg census — reads what this seat wrote. Both directions are staged on one register, so
-/// the test also says the thing that makes the ratchet worth having: the human mark survives only
-/// while nobody re-mints over it.
+/// The tier an edit MINTS and the demotion it records — stated at the mirror, where the mark is
+/// actually made and everything downstream (notice, refusal, census) reads it from.
 #[test]
 fn an_edit_mints_its_tier_and_names_what_it_re_marked() {
     const BEFORE: &str = "a sentence somebody typed";

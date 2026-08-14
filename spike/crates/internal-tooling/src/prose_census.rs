@@ -1,25 +1,15 @@
-//! The prose burn-down instrument: who wrote the registers in the two generated locks.
-//!
-//! A TEXTUAL read of a Rust source file, which is sanctioned only because these two files are
-//! generated whole by one serializer, one register per line — the same property that lets the
-//! commit-msg ratchet count them. Anything else would have to link `dorc-aid`, and this crate is
-//! deliberately dependency-free.
-//!
-//! Never a gate. It reports; the gates are `loom_minted_registers_are_case_owned`, the two
-//! byte-identity fixpoints, and the commit-msg ratchet.
+//! The prose burn-down instrument: who wrote the registers in the two generated locks. NEVER a
+//! gate. Reading generated Rust textually is sanctioned here for the reason the commit-msg ratchet
+//! shares — one serializer, one register per line — and keeps this crate dependency-free.
 
 use std::process::ExitCode;
 
-/// The lock files, in the order the report lists them.
 const LOCKS: [&str; 2] = [
     "spike/crates/aid/src/catalog_lock.rs",
     "spike/crates/aid/src/arrangement_lock.rs",
 ];
 
-/// The tier constructors as the serializers spell them.
 const TIERS: [&str; 3] = ["Migrated(", "Slop(", HUMAN_TIER];
-
-/// The one tier a census READER is looking for.
 const HUMAN_TIER: &str = "WrittenByHumanOnly(";
 
 /// One lock's per-tier occurrence counts, and the slug of every human-written register in it.
@@ -76,9 +66,8 @@ pub(crate) fn run() -> ExitCode {
 mod tests {
     use super::census;
 
-    /// Two registers on one row (a catalog message and its help), the slug they belong to, and
-    /// the arrangement's `Some(...)` wrapping — the shapes a real lock actually carries. Stated
-    /// over a synthesized lock, so writing prose can never redden this.
+    /// Two registers per row, attributed to the slug above them — the shape a real lock carries,
+    /// stated over a synthesized one so writing prose can never redden this.
     #[test]
     fn the_census_counts_per_register_and_names_every_human_slug() {
         let lock = "// @generated\n    CatalogEntry {\n        slug: \"a-code\",\n        \

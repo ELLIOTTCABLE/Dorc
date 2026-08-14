@@ -181,11 +181,8 @@ enum Command {
     },
 }
 
-/// What the author said about provenance on this promote — the `--human` / `--slop` pair.
-///
-/// [`Default`](Self::Default) and [`Slop`](Self::Slop) mint the same tier and differ only in what
-/// happens when the edit lands on a human-written register: unsaid, that is worth a word; said, it
-/// is the point.
+/// What the author said about provenance — the `--human` / `--slop` pair. `Default` and `Slop`
+/// mint the same tier, and differ only over an edit landing on a human-written register.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Provenance {
     Default,
@@ -514,7 +511,6 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
     Ok(ExitCode::SUCCESS)
 }
 
-/// What `compile` and `promote` share: the same options, parsed once.
 struct CompileArgs {
     cases: Vec<PathBuf>,
     env: RunEnv,
@@ -579,11 +575,7 @@ fn collect_compile_args(
 
 /// The one acknowledgement `promote` takes: yes, replace the committed metadata.
 const ACCEPT_METADATA: &str = "--accept-metadata";
-
-/// Mint the edited registers as a human's words, rather than as the default slop.
 const HUMAN: &str = "--human";
-
-/// Yes, re-mark that human-written register as slop — the deliberate half of the demotion pair.
 const SLOP: &str = "--slop";
 
 /// Environment variables an agent harness announces itself with. One line to extend.
@@ -592,11 +584,9 @@ const AGENT_MARKERS: [&str; 2] = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT"];
 /// The human-at-the-keyboard escape, shared verbatim with `.githooks/commit-msg`.
 const HUMAN_ESCAPE: &str = "DORC_HUMAN_COMMIT";
 
-/// Whether this invocation looks like an agent's rather than a person's.
-///
-/// The lookup is a parameter because the answer is the one non-hermetic input this tool's
-/// provenance decisions read, and a test may not set a process environment variable under
-/// `forbid(unsafe_code)`.
+/// Whether this invocation looks like an agent's. The lookup is a PARAMETER because this is the
+/// one non-hermetic input a provenance decision reads, and `forbid(unsafe_code)` puts
+/// `set_var` out of a test's reach.
 fn looks_like_an_agent(var: &impl Fn(&str) -> Option<String>) -> bool {
     if var(HUMAN_ESCAPE).is_some_and(|value| value == "1") {
         return false;
@@ -606,7 +596,6 @@ fn looks_like_an_agent(var: &impl Fn(&str) -> Option<String>) -> bool {
         .any(|marker| var(marker).is_some_and(|value| !value.is_empty()))
 }
 
-/// The production lookup: the real process environment.
 fn process_env(name: &str) -> Option<String> {
     std::env::var(name).ok()
 }
@@ -782,8 +771,7 @@ fn promote_cases(
     Ok(ExitCode::SUCCESS)
 }
 
-/// `--human` is a claim about who typed the words, so the one environment that can falsify it
-/// wins: an agent harness announcing itself.
+/// `--human` claims who typed the words; the one environment that can falsify it wins.
 fn refuse_human_mint_from_an_agent(provenance: Provenance, agent: bool) -> Result<(), String> {
     if provenance != Provenance::Human || !agent {
         return Ok(());
@@ -796,12 +784,9 @@ fn refuse_human_mint_from_an_agent(provenance: Provenance, agent: bool) -> Resul
     ))
 }
 
-/// What to say when this promote re-marks a human-written register as slop.
-///
-/// An AGENT reading this is being told the truth about a consequence of its own prose work, not
-/// asked to do anything: reworking words IS what re-marks them. A PERSON is instead most likely to
-/// have forgotten `--human` mid-sprint, and losing their own mark to a missing flag is the failure
-/// worth a stop — so there the same state refuses and names both ways forward.
+/// What to say when this promote re-marks a human-written register as slop. An AGENT is told the
+/// truth about a consequence of its own work and asked for nothing; a PERSON has most likely
+/// forgotten `--human` mid-sprint, and losing their mark to a missing flag is worth a stop.
 fn report_demotions(
     demoted: &[String],
     provenance: Provenance,
@@ -1535,8 +1520,8 @@ mod tests {
         }
     }
 
-    /// Both markers answer, an empty one does not (the hook neutralises by emptying rather than
-    /// unsetting, and this reads the same variables), and the escape outranks every marker.
+    /// Both markers answer; an empty one does not (the hook's self-test neutralises by emptying
+    /// these same variables); the escape outranks every marker.
     #[test]
     fn an_agent_session_is_recognized_by_its_markers_and_overridden_by_the_escape() {
         assert!(!looks_like_an_agent(&env_of(&[])));
@@ -1554,9 +1539,8 @@ mod tests {
         ])));
     }
 
-    /// `--human` is the ONE claim this tool takes on trust, so the environment that contradicts it
-    /// wins; every other combination proceeds. The refusal names the escape, because a person
-    /// hitting it in a session has no other way past.
+    /// `--human` is the ONE claim this tool takes on trust, so an environment that contradicts it
+    /// wins; the refusal names the escape, since a person hitting it has no other way past.
     #[test]
     fn the_human_mint_refuses_only_from_an_agent_session() {
         let refusal = refuse_human_mint_from_an_agent(Provenance::Human, true)
@@ -1567,8 +1551,8 @@ mod tests {
         assert!(refuse_human_mint_from_an_agent(Provenance::Slop, true).is_ok());
     }
 
-    /// The two demotion branches, and the wording law over the agent one: it is a NOTICE about a
-    /// consequence, so it may not read as a failure and must say that nothing is owed.
+    /// Both demotion branches, and the wording law over the agent one: a NOTICE about a
+    /// consequence may not read as a failure, and must say that nothing is owed.
     #[test]
     fn a_demotion_notifies_an_agent_and_stops_a_person() {
         let demoted = vec!["site-unresolvable".to_owned()];
@@ -1601,8 +1585,8 @@ mod tests {
             .expect("no demotion, nothing to say");
     }
 
-    /// The flags are a promote-time MARKING decision, so compile — which publishes nothing — takes
-    /// neither, and the two of them together are a contradiction rather than a last-one-wins.
+    /// A promote-time MARKING decision: compile publishes nothing so it takes neither, and the two
+    /// together are a contradiction rather than a last-one-wins.
     #[test]
     fn the_provenance_flags_belong_to_promote_and_exclude_each_other() {
         let argv = |args: &[&str]| args.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();

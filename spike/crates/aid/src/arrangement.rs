@@ -25,11 +25,9 @@
 //!
 //! # Prose states, out of band
 //!
-//! An entry's words are `None` (unwritten) or a [`ProseTier`], exactly as a catalog register is —
-//! one absence idiom and one provenance type across both registries. The tier is a TYPE rather
-//! than the catalog's old in-band `sm ` prefix because chrome renders verbatim into product
-//! output, so an in-band marker would change the shipped bytes. The trade is that the marker is
-//! invisible in a transcript; the gate reads the type instead.
+//! An entry's words are `None` or a [`ProseTier`], exactly as a catalog register is. The tier is a
+//! TYPE rather than the catalog's old in-band `sm ` prefix because chrome renders verbatim into
+//! product bytes; the trade is that a transcript cannot show it, so the gate reads the type.
 //!
 //! Nothing here decides anything (`two-plane-aid-law`), and nothing here reads the world:
 //! the registry is const data plus a pure render (`aid-is-dst-clean`).
@@ -409,9 +407,7 @@ pub fn serialize_arrangement_lock(rows: &[ArrangementRow]) -> String {
     out
 }
 
-/// The `Some(ProseTier::<Variant>(&["…"]))` spelling every written chrome row carries — the
-/// arrangement twin of `catalog::tier_literal`, kept a writer because a page's word is a whole
-/// help screen.
+/// The arrangement twin of `catalog::tier_literal`, kept a writer because a page is one long word.
 fn write_words(out: &mut String, tier: &ProseTier<Vec<String>>) {
     use std::fmt::Write as _;
     let (variant, words) = match tier {
@@ -470,10 +466,8 @@ mod tests {
 
     use crate::case_ownership::is_case_owned;
 
-    /// Gate (the arrangement twin of `catalog::loom_minted_registers_are_case_owned`): every
-    /// row the loom loop minted — `Slop` or `WrittenByHumanOnly` alike — exists only for a
-    /// case-owned slug, so every string anyone wrote through the pipeline is fixpoint-protected
-    /// and every string a BUILDER put here is `ProseTier::Migrated`.
+    /// Gate (the `catalog::loom_minted_registers_are_case_owned` twin): a row the loom minted —
+    /// `Slop` or `WrittenByHumanOnly` alike — needs a case, so its bytes are fixpoint-protected.
     #[test]
     fn loom_minted_words_are_case_owned() {
         for entry in ARRANGEMENTS {

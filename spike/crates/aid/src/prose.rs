@@ -1,21 +1,15 @@
 //! The provenance tier BOTH prose registries key on — who wrote a written register, as a type.
 
-/// Who authored one written prose register.
-///
-/// The mint table is the whole point, and it is one-way: [`Migrated`](Self::Migrated) was minted
-/// once by the migration and is never re-minted; [`Slop`](Self::Slop) is what the `dorc-loom`
-/// compile/promote loop mints by default, whoever is driving; and
-/// [`WrittenByHumanOnly`](Self::WrittenByHumanOnly) is minted ONLY under `dorc-loom promote
-/// --human`, which refuses in an agent-marked environment. Generic over the text so the catalog's
-/// single strings and the arrangement registry's word sequences share one enum, compiled-in or
-/// owned.
+/// Who authored one written prose register. Generic so the catalog's single strings and the
+/// arrangement registry's word sequences share one enum, compiled-in or owned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProseTier<T> {
-    /// Pre-pipeline builder text, frozen verbatim from the base tip and never re-minted.
+    /// Pre-pipeline builder text, frozen verbatim; minted once by the migration, never re-minted.
     Migrated(T),
-    /// Loom-authored without `--human` — AI-tier by definition, and the default mint.
+    /// Loom-authored without `--human`: AI-tier by definition, and the default mint.
     Slop(T),
-    /// A human at the keyboard, through `dorc-loom promote --human`.
+    /// A human at the keyboard — minted ONLY by `dorc-loom promote --human`, which refuses in an
+    /// agent-marked environment.
     WrittenByHumanOnly(T),
 }
 
@@ -30,7 +24,7 @@ impl<T> ProseTier<T> {
         }
     }
 
-    /// The same tier over transformed text — the owned-mirror conversions' one seat.
+    /// The same tier over transformed text — the owned mirrors' one conversion seat.
     pub fn map<U>(self, transform: impl FnOnce(T) -> U) -> ProseTier<U> {
         match self {
             ProseTier::Migrated(text) => ProseTier::Migrated(transform(text)),
@@ -39,8 +33,7 @@ impl<T> ProseTier<T> {
         }
     }
 
-    /// Whether the loom loop minted this — true for everything but [`Migrated`](Self::Migrated),
-    /// which is exactly the set the case-ownership gates bind.
+    /// Everything but `Migrated` — exactly the set the case-ownership gates bind.
     #[must_use]
     pub fn is_loom_minted(&self) -> bool {
         !matches!(self, ProseTier::Migrated(_))

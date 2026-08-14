@@ -15,10 +15,9 @@
 //!
 //! # The legal states of a `message` (mechanically gated)
 //!
-//! Every [`CatalogEntry::message`] (and [`CatalogEntry::help`]) is `None` — rendering the exact
-//! placeholder `[unwritten: <slug>]`, a legal resting state — or a [`crate::prose::ProseTier`],
-//! whose variants carry the provenance the old in-band `sm ` prefix used to imply. Retyping a
-//! discriminant changes no rendered byte; the tier never renders.
+//! `None` renders the exact placeholder `[unwritten: <slug>]`, a legal resting state; otherwise a
+//! [`crate::prose::ProseTier`] carries the provenance the old in-band `sm ` prefix implied. The
+//! tier never renders, so retyping a discriminant moves no byte.
 //!
 //! The metadata fields (`when_fires` / `why` / `params` / `example`) are conductor/machine-facing,
 //! authored by the builder, and carry NO prefix.
@@ -484,8 +483,8 @@ pub fn serialize_lock(rows: &[LockRow]) -> String {
     out
 }
 
-/// One `ProseTier::<Variant>("…")` constructor call, the one spelling every generated register
-/// carries — so a new tier is a compile error here rather than a silently-unserialized row.
+/// The one constructor spelling every generated register carries — a new tier breaks the build
+/// here rather than serializing to nothing.
 fn tier_literal(tier: &ProseTier<String>) -> String {
     let (variant, text) = match tier {
         ProseTier::Migrated(text) => ("Migrated", text),
@@ -593,10 +592,8 @@ mod tests {
 
     use crate::case_ownership::is_case_owned;
 
-    /// Gate (the catalog twin of `arrangement::loom_minted_words_are_case_owned`): every register
-    /// the loom loop minted — `Slop` or `WrittenByHumanOnly` alike — exists only for a case-owned
-    /// slug, so every string anyone wrote through the pipeline is fixpoint-protected. `Migrated`
-    /// needs no such check, since no code path re-mints it.
+    /// Gate (the `arrangement::loom_minted_words_are_case_owned` twin): a register the loom minted
+    /// — `Slop` or `WrittenByHumanOnly` alike — needs a case. `Migrated` is never re-minted.
     #[test]
     fn loom_minted_registers_are_case_owned() {
         for e in CATALOG {

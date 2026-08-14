@@ -23,11 +23,8 @@ struct Case {
     census: Option<Census>,
 }
 
-/// How many human-written registers a fixture repository's lock carries at HEAD and staged.
-///
-/// A real repository rather than a stubbed `git`, because the fail-OPEN half of this gate is the
-/// READ: a mis-spelled revision or path answers empty, both counts land on zero, and a growing
-/// census sails through green. Only real plumbing over a real index can catch that.
+/// A fixture lock.s human-register counts at HEAD and staged. A real repository rather than a
+/// stubbed `git`: the fail-OPEN half is the READ, and a mis-spelled path answers zero to zero.
 struct Census {
     /// `None` puts the lock in the index alone — the absent-from-HEAD arm, counted as zero.
     head: Option<usize>,
@@ -149,9 +146,8 @@ const CASES: &[Case] = &[
         message: "(AI doc) Explain the seam\n\n# Please enter the commit message for your changes.\n# Lines starting with '#' will be ignored.\n",
         census: None,
     },
-    // The prose ratchet, both directions. Growth is the only refused shape, and it is refused on
-    // the LABEL rather than on the session, so the last case is what says the gate is about the
-    // claim a commit makes and not about who typed it.
+    // The prose ratchet, both directions. Growth is the only refused shape, and it is keyed on the
+    // LABEL rather than the session — which is what the last case says.
     Case {
         name: "refuses-a-growing-human-census",
         want_pass: false,
@@ -207,10 +203,8 @@ const CASES: &[Case] = &[
 /// The lock the ratchet reads, spelled exactly as the hook spells it.
 const LOCK: &str = "spike/crates/aid/src/catalog_lock.rs";
 
-/// A throwaway repository whose lock carries `census`'s counts at HEAD and in the index.
-///
-/// Nothing here is signed or hooked: a fixture commit that waited on a passphrase, or fired the
-/// developer's own global hooks, would make this gate hang on somebody else's configuration.
+/// A throwaway repository carrying `census`.s counts. Unsigned and unhooked deliberately: a
+/// fixture commit waiting on a passphrase would hang this gate on somebody else.s configuration.
 fn fixture_repo(census: &Census, at: &std::path::Path) -> Result<(), String> {
     let git = |args: &[&str]| -> Result<(), String> {
         let status = Command::new("git")
