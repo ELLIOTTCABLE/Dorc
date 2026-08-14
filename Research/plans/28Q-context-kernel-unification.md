@@ -579,7 +579,17 @@ the loom Windows stack-overflow (separate small fix).
    file) — without it P2's closures stay singletons; a dialect-surface widening,
    human's (§2).
 10. Closure MEMBERSHIP + overlap/diamond identity — the §2 open cells; owed before
-    stage-ii's policy half.
+    stage-ii's policy half. The diamond half is MECHANICALLY ACKED [human, 2026-08-13,
+    skepticism recorded]: no single global rule is built — which inferred traits of
+    sourced-ness propagate along `.`-edges, and where composing such speech is proper,
+    is decided PER-SPECIFIC-QUESTION-asked-of-the-dependency, each consumer with its
+    own must/may conservatism (three instances already ruled this way: custody-by-path ·
+    grade-by-best-caller · dialect-by-licensed-closure). The conductor's
+    sourcing-is-a-claim reframe and its consequences (e.g. one-utterance-one-speaker
+    under resolution-keyed dedup dissolving `28R:fnd-diamond-fires-the-fence`) are
+    NOT settled — the human is explicitly suspicious they close everything; revisit at
+    the membership sitting; nothing builds on the reframe beyond the no-global-rule
+    floor.
 11. The ssh entry-shape ruling — `"$@"`-verbatim-only vs a carved ssh shape (`27C`'s
     punted in-guest-preamble decision reopened, or ssh carved out; `24T` is the
     prior) — rides the §10 dig's agenda (§3).
