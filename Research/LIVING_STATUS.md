@@ -32,8 +32,7 @@ sessions now run pre-commit check-only and stash-free (`HK_FIX=0` + `HK_STASH=no
 `HK_SKIP_HOOK` retired). Open from the arc: the `tc-dorc-sh-shell-resolution` law ruling
 (human-owed) and the `28S` residue ledger.
 
-**The loom-final arc is CLOSED and FOLDED**: `ai/r28-loom-final` == `ai/main` (the earlier
-"awaiting the human's fold ack" claim here was stale — the fold happened). Conduct ledger
+**The loom-final arc is CLOSED and FOLDED.** Conduct ledger
 **`notes/28L`**; the arc-close accounting of every prose surface **`notes/28N`**. Still pending
 from that arc: the **records-8 emitter decision** (delete-under-no-compat vs the r26-revival
 wiring) — human's.
@@ -59,7 +58,7 @@ availability-domain statement + host carves, and the new
 file) and pin 13 (blessing × keep-verdict), both parkable to stage-ii. The plan is
 ACKED; stage-0 landed; stage-i dispatchable AFTER its fixtures-first commissioning.
 
-**`ai/r28-oracle-loading`: the `28K` lane is EXECUTED and CLOSED on its branch** (resume
+**The `28K` oracle-loading lane is EXECUTED, CLOSED, and FOLDED** (resume
 conduct-ledger **`notes/28P`**; build ledger `notes/28O`): bitem0–3 and 6–9 LANDED, both
 legs green; bitem4/bitem5/withhold-softening/meet-direction-registry HELD by human order
 and now inherited by `28Q` stages i–ii. Live rulings routed OUT of the lane:
@@ -68,40 +67,14 @@ verdict-primacy; sparing-tier residue stays the committee-corner sitting's) ·
 `tc-inert-mocks-rail-is-dash-shaped` (posh has never
 executed a corpus emitter body; separate lane) · the blessing pair — `command -v`
 RESOLVED 2026-08-01 as a stdlib-oracle answer (`28Q` §4), `.`-of-proven-load-inert still
-human-owned (`28Q:res-dot-blessing-is-engine-side`). `ai/r28-cli-inputs`' two commits
-were cherry-picked into the lane (branch tip-redundant → advisory-delete queue).
+human-owned (`28Q:res-dot-blessing-is-engine-side`).
 
 **NOT STARTED**: the `26K` §0a fruit arc (still zero code; parallel-anytime). The §0b
 kernel sitting is no longer a separate item — superseded into `28Q` stage-iii.
 
-## CLEANUP QUEUE (branch deletion is human force-delete gated; verdicts below are advisory)
-
-- **Four `*.sync-conflict-*-PHNHRER` branches** (SyncThing incursions, no unique content): the
-  `ai/r26-strawmen-{k8s,osnix}` twins are already reachable from main; the
-  `ai/r28-declined-rerank` and `worktree-agent-aba0f…` twins are tip-identical to their base
-  branches.
-- **A FIFTH sync-conflict twin WITH unique content** (found at the 2026-08-13 catch-up):
-  `ai/r28-loom-review2.sync-conflict-…-PHNHRER` — its base branch was deleted at the loom-final
-  fold, but this twin carries 5 commits (all 2026-07-31) with NO patch-equivalent on `ai/main`
-  (verified: `git cherry` 149−/5+, plus content diff). Three are prose-tier fixes ~superseded by
-  the 28S re-authoring; two are substantive and absent from main in any form: nonce-threading
-  into the `transport-marker-unusable` diagnostic (`43c26f64`) + a vars-listing replay block
-  appended to that case (`aeef7689`). Disposition is the human's: harvest (likely re-implement —
-  28S rewrote the file) or declare superseded, then delete.
-- `worktree-bridge-cse_*`: one divergent bridge branch of unknown provenance, previously
-  unregistered; ~inert.
-- **13 orphan `worktree-agent-*` branches** (round-23/24/27-era; 6 reachable from main, 7 not —
-  ~SUSPECT superseded rebase leftovers, unverified; verdict-free, pre-established).
-- Loom-final backup/review branches: NONE remain (`git branch --list '*backup*' '*review1*'
-  '*review2*'` is empty).
-- `git worktree prune` DONE 2026-07-31 (removed the 4 stale entries: r26-accept, r28-impl,
-  spike3-r26, spike3-r27). `ai/r26-executor-blocked` no longer exists (human deleted).
-- Untracked junk INSIDE two lingering merged worktrees (`loom-final`: 15 sync-conflict `.loom`
-  twins; `agent-a869…`/r28q-prior-art: one sync-conflict `sources.json`) — SyncThing cleanup is
-  human-owned; the worktrees themselves are prunable once emptied. (`dorc-temp-key{,.pub}` is
-  resolved — the primary checkout is clean as of 2026-08-13.)
-
-## r26 — CLOSED (live-execution + kernel arc + glue-residue research; compressed 2026-07-31)
+## r26 — executed arcs closed, round OPEN (live-execution + kernel + glue-residue landed,
+compressed 2026-07-31; the `26K` §0a fruit arc and the reactive/capture + multi-host
+revival return after the r28/`28Q` push)
 
 Dorc ran against a real machine and the numbers held (real-ssh probe → real apply → converged
 re-plan byte-identical; `mise run livetest` = the containerized acceptance loop). What must
@@ -119,25 +92,6 @@ survive the close:
   ops-glue-residue round: `KNOBS.md:kBOOT` · root `SIBLINGS.md` · **`plans/26K`** (THE plan;
   §0 is the actionable head) · `notes/r26-glue-strawmen/` (frozen evidence, never execute) ·
   full adjudication ledger `.claude/research/ops-glue-residue/round-charter.md`.
-
-## BRANCH / FOLD STATE (re-measured 2026-08-13)
-
-- **Live, unmerged:** `ai/research-lean-sparing-spike` · `ai/research-aeneas-spike` — both
-  self-describe COMPLETE-awaiting-disposition (proofs green, zero `sorry`/walls); the
-  merge/promote/archive call is `28T` §3's, human-owed.
-- **Folded since the last measure:** `ai/r28-oracle-loading` (into `ai/main` 2026-08-01,
-  `231859b2`) — advisory-delete. `ai/r28-cli-inputs` is tip-redundant (both commits
-  patch-equivalent on `ai/main`, verified `git cherry`) — advisory-delete, plus its
-  `r29-cli-inputs` worktree. Merged-worktree leftovers also prunable: `loom-final`,
-  r28q-prior-art (`agent-a869…`), r26-siblings-integrate (`agent-a8aa…`) — see the untracked-junk
-  note in the cleanup queue.
-- **Queued for human deletion:** the cleanup-queue branches above (the sync-conflict twins — NB
-  the fifth one carries unique content — and the worktree-agent orphans).
-- **Unreviewed residue, disposition with the human:** `ai/r28-declined-rerank` (3 ahead) · the
-  five `ai/r28-xcheck-*` report branches · relics `ai/24Ka-langreview`, `ai/r22-x3a`/`-x3fix`/
-  `-xcheck1`, `ai/r27-review-base`, `ai/snapshot`, `ai/spike3-r23-*` (report/review branches).
-- **Everything else is folded** (the 28S authorship arc, loom-final, oracle-loading, the whole
-  r26 chain, r28-impl, spike3-r26/r27). `main` sits 1 behind `ai/main` (normal rebase cadence).
 
 ## GENTLY HELD (live work, deliberately waiting on the human's live experimentation)
 
@@ -175,7 +129,9 @@ codes · conductor: verify merges by own hand (never-vouch); `sh e2e/conduct-ble
 is the verify entrypoint · a promised clean-room re-derivation gets a slugged ledger
 entry naming who ran it (`27Xf` §4) · naming discipline (`270` §1, HIGH): hyphenated
 full-word slugs; `docID:slug` cross-refs; subscript old labels once ("nee P5") ·
-the deferred-work ledger lives in `23O` §5; residue in `24C`.
+the deferred-work ledger lives in `23O` §5; residue in `24C` · note-ID discipline:
+r28 notes are LETTER-suffixed (`28A`…); never mint another `29x` numeric ID — it reads
+as the quarantined r29 (`290`–`296` are stranded legacy of the `289`→`290` rollover).
 
 ---
 
