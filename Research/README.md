@@ -73,8 +73,9 @@ and carries the license-contamination map.
   **`plans/28Q`** (THE live kernel plan; §9 is its pin ledger) + `notes/28R` (the six-lane
   review round, folded into the plan 2026-08-13).
 - **Oracle loading & name-resolution (custody, committee speech, one-name-two-definitions)** —
-  `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`; the
-  same-role-name collision deferral is `notes/293` §5 (registered in root `TODO-ADDTL.md`).
+  `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`;
+  same-role-name collisions fail-fast pre-network (the `28Q` §4 rider; priced background
+  `notes/28U` §5).
 - **Correctness-tooling (checker triad · Lean mini-model · Aeneas)** — **`notes/28T`** (the
   adoption plan); evidence base `.claude/research/refinement-types-industrial-cost/`; the two
   proof spikes live on `ai/research-{lean-sparing,aeneas}-spike` (disposition pending).
@@ -245,24 +246,26 @@ and carries the license-contamination map.
   (red-lines `28I`, W5 worklist `28J`) · THE LOOM-FINAL ARC (stamped provenance;
   the ~176-case loom corpus) — conduct `notes/28L`, prose accounting `notes/28N` ·
   the name-resolution sitting `plans/28K`/`28M` → ledgers `notes/28O`/`28P` (+ the
-  input-surface/role-collision note `293`) · the error-message-authorship close
+  input-surface/role-collision note `28U`) · the error-message-authorship close
   `notes/28S` (71 codes prose-authored; the ProseTier ratchet) · the kernel arc
   **`plans/28Q`** (LIVE) + its review `notes/28R` · the correctness-tooling
   synthesis **`notes/28T`**. Human queues ride `28F`/`28H`/`28Q` §9.
 
 - **r29** — a quarantined lane (`Research/quarantine-DO-NOT-READ/`); off-limits.
 
-- **r26-revival — live execution (MINTED 2026-07-27; CLOSED 2026-07-31)** — Dorc ran
-  against a real machine and the numbers held: the ssh executor (pipe-completeness —
-  `dorc apply host <plan.sh` does its own ssh'ing), the gate/bless-tier
-  live-acceptance loop (real ssh / real apt, never hot-loop), the Vultr
-  experimentation kit. THE seed: **`notes/26D`**; close-out: conduct `notes/26F` ·
-  the kernel arc `notes/26G`+`26H` (26G only WITH its three appended corrections) ·
-  the adversarial kernel review `notes/26I` (maximum-skepticism law) · builtin-deny
-  `notes/26J` · the ops-glue-residue round: `KNOBS.md:kBOOT` + root `SIBLINGS.md` +
-  **`plans/26K`** (§0 is the actionable head). Stdlib, multi-host, and the why/loom
-  prose tails stay gently held — `LIVING_STATUS.md`. (Same round-id as the tabled
-  multi-host r26 above — branch lineage, not chronology; this entry is its revival.)
+- **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
+  the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the
+  ssh executor (pipe-completeness — `dorc apply host <plan.sh` does its own ssh'ing),
+  the gate/bless-tier live-acceptance loop (real ssh / real apt, never hot-loop), the
+  Vultr experimentation kit. THE seed: **`notes/26D`**; arc ledgers: conduct
+  `notes/26F` · the kernel arc `notes/26G`+`26H` (26G only WITH its three appended
+  corrections) · the adversarial kernel review `notes/26I` (maximum-skepticism law) ·
+  builtin-deny `notes/26J` · the ops-glue-residue round: `KNOBS.md:kBOOT` + root
+  `SIBLINGS.md` + **`plans/26K`** (§0 is the actionable head). NOT complete: the `26K`
+  §0a fruit arc is unstarted, and the reactive/capture + multi-host revival waits
+  behind the r28/`28Q` push; stdlib and the why/loom prose tails stay gently held —
+  `LIVING_STATUS.md`. (Same round-id as the tabled multi-host r26 above — branch
+  lineage, not chronology; this entry is its revival.)
 
 ## Vendor/ (full-history clones)
 
