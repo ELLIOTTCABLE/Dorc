@@ -14,7 +14,24 @@
 
 ---
 
-## CURRENT STATE (measured 2026-08-13)
+## CURRENT STATE (measured 2026-08-14)
+
+**ROUND 30 OPEN — the 28Q-arc implementation; conduct ledger `notes/300`** (conductor
+branch `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct`). Stage one =
+`28T` Wave-1 tooling onboarding: facade/std-dropping · Aeneas churn re-measurement ·
+Kani lane · solve-certifier (spec RESERVED at `plans/301`, conductor-authored) ·
+sparing reference re-derivation (codex-authored from the Lean statements) · Flux
+pilot (measure-first; install-cost claims unverified) · discipline close. Staffing,
+gates, sequencing, and the ack-ledger live in `300` §2/§5. The two research branches
+are FOLDED into `ai/main` (Lean-sparing rebased in; Aeneas merged at `4cbfff4c`, its
+colliding turn07 renumbered to **turn08**) and deleted by the human; three stale
+`turn07`-as-Aeneas references remain in `28T`/the amendments ledger (fix rides
+`300:lane-discipline-close`). The Aeneas-vs-hand-model vehicle ruling is OPEN and
+human-flagged important (`300` §3 carries the banked analysis + evidence plan).
+Named conductor-handoff stopping point: `300:wave-one-close` (§4); the human's rewind
+anchor is the 2026-08-14 plan-ack sitting, pre-dispatch.
+
+## STATE 2026-08-13 (still current except as amended above)
 
 **Correctness-tooling plan: `notes/28T`** — the research arc distilled: checker triad +
 Vec-facade core + verified mini-model acked, Aeneas provisional; Wave-1 riders bind
