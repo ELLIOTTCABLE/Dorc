@@ -183,7 +183,10 @@ out of scope, cited by name only (not read):
 ## (c) Toolchain experience
 
 Total toolchain wall-clock ≈ 35 minutes (inside the 45-minute box), Windows-
-native throughout; WSL never needed. The working, committed spelling:
+native throughout; WSL never needed for the build. The committed spelling was
+additionally verified to RESOLVE on the WSL leg (`mise env` there yields
+`ELAN_HOME=/home/ec/.local/share/elan` with the bin path prepended — correct
+XDG shape; elan itself was not bootstrapped there). The working spelling:
 
 ```toml
 [tools]
