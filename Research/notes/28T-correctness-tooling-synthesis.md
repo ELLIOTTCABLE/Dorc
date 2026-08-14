@@ -47,7 +47,7 @@
 
 ### Wave 1 — now, for keeps (independent of 28Q's blocked stages)
 
-- **w1-latticemap-facade** [LEAN, human leaning yes; unratified] — evict raw std collections
+- **w1-latticemap-facade** [TYPED — "ack the restructuring to Vec"] — evict raw std collections
   from the algebra tier behind a small owned facade (~6 total operations over a sorted
   `Vec<(K,V)>`), strict-core scope only (aid/cli keep std freely). One move serves three
   doors: Flux refines the facade signatures (RVec-style), Kani checks the implementation
@@ -65,9 +65,9 @@
   under worklist/arrival permutation (scope per crosscheck correction: cross-input and
   permutation variance — the deterministic solver already excludes run-to-run variance), and
   deterministic + DISCLOSED k-cap selection.
-- **w1-solve-certifier** [OPEN — needs a FRESH typed ack; the crosscheck found the
-  "corpus-pre-authorized" pedigree stretched: `plans/055` dec-6 names the
-  inert-classification kernel, `plans/021` §1 is GUESS-grade "do not adopt up front"] — the
+- **w1-solve-certifier** [TYPED — acked within the checker triad, §3; pedigree note
+  stands: `plans/055` dec-6 names the inert-classification kernel and `plans/021` §1 is
+  GUESS-grade "do not adopt up front", so this ack is fresh, never inherited] — the
   per-answer post-fixpoint validator at the solve seam: per edge,
   `transfer(v, state[v]) ⊑ state[w]`, plus boundary conditions; `Must<L>` duality covers
   both orientations with one checker. Returns `Certified | Refused(EdgeWitness)` — never a
@@ -101,7 +101,9 @@
 
 ### Wave 2 — with the spec/kernel work (sequencing couples to 28Q/28R rulings)
 
-- **w2-lean-tier-governance** [OPEN — THE ruling this arc leaves on the table] — three
+- **w2-lean-tier-governance** [NARROWED — the verified mini-model is TYPED-acked as a
+  maintained artifact; the Aeneas vehicle is PROVISIONALLY acked (§3); residual: the
+  post-review confirmation + the multi-vehicle budget] — three
   coexisting vehicles for Lean-tier sparing assurance: (a) the extant hand-written model
   (proved, checked, but with divergences beyond its declared gaps — see §2), (b)
   Aeneas-derived definitions from the disciplined Rust core (measured viable: 0 fundamental
@@ -235,16 +237,28 @@
 - [TYPED] everything in §0; property-testing scoped into the check-ladder; the crosscheck
   fleet shape (2×Fable + 2×Sol, suborchestrated); no further spiking; 28-series homing of
   this document; no round-numbered naming for the research artifacts.
-- [LEAN] w1-latticemap-facade (human "should we evict maps?" + conductor yes); Flux
-  add-early-scoped; Aeneas-over-handwritten-Lean preference (with the immediate-with-
-  spike-gate now SATISFIED by the experiment — the remaining gate is w2-lean-tier-
-  governance); the human's parenthetical this-arc: nothing heard so far disliked.
-- [OPEN] the certifier's fresh ack (on corrected framing); w2-lean-tier-governance (+ its
-  budget); the `KNOBS:kSURVIVAL` status-line edit; branch/worktree disposition
-  (`ai/research-lean-sparing-spike`, `ai/research-aeneas-spike` — both additive, unmerged;
-  NOTE both the crosscheck (on `ai/main`) and the Aeneas branch minted a `turn07` note —
-  the Aeneas branch's renumbers at merge); the aid-seam location (deliberately unsettled);
-  AID-NEEDS reconciliation before w2-narrative work.
+- [TYPED] **the checker triad** — human gloss, recorded verbatim: "the three checkers —
+  aid/non-aid per-transition, as well as a final walk for elision purposes, I believe it
+  was?". Conductor mapping (mine, offered back for confirmation): (1) the two-plane
+  firewall's separate per-kernel-change votes (aid gate + license gate), (2) the
+  solve-certifier's post-fixpoint walk, (3) the sparing reference re-derivation — the
+  elision-purposes walk. The trailing "?" invites correction; if the mapping is wrong the
+  ack attaches to the human's intent, not this mapping.
+- [TYPED] **the verified mini-model** — a small machine-checked model of the sparing
+  algebra is a maintained artifact of this codebase.
+- [TYPED] **the Vec restructuring** — w1-latticemap-facade acked.
+- [PROVISIONAL] **the Aeneas vehicle** — acked provisionally; human review owed
+  post-rewind; stated concern: possibly underpowered for the important concepts (the
+  type-guarantees-do-not-cross and lawless-Clone/Eq findings are the live evidence); the
+  named fallback if it cannot model what matters is maintaining the hand-written model.
+- [LEAN] Flux add-early-scoped; the human's parenthetical this-arc: nothing heard so far
+  disliked.
+- [OPEN] the w2-lean-tier-governance residual (post-review Aeneas confirmation + the
+  multi-vehicle budget); the `KNOBS:kSURVIVAL` status-line edit; branch/worktree
+  disposition (`ai/research-lean-sparing-spike`, `ai/research-aeneas-spike` — both
+  additive, unmerged; NOTE both the crosscheck (on `ai/main`) and the Aeneas branch minted
+  a `turn07` note — the Aeneas branch's renumbers at merge); the aid-seam location
+  (deliberately unsettled); AID-NEEDS reconciliation before w2-narrative work.
 
 ## §4 · Considered and rejected (footnote-tier; reasons in the research dir)
 
