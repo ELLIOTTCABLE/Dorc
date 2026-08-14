@@ -235,12 +235,12 @@ fn the_lock_report_names_the_row_and_the_field() {
 fn no_committed_transcript_shows_a_written_arrangement_as_unwritten() {
     let unwritten: std::collections::BTreeSet<&str> = dorc_aid::arrangement::ARRANGEMENTS
         .iter()
-        .filter(|entry| entry.words.words().is_none())
+        .filter(|entry| entry.words.is_none())
         .map(|entry| entry.slug)
         .collect();
     let written: std::collections::BTreeSet<&str> = dorc_aid::arrangement::ARRANGEMENTS
         .iter()
-        .filter(|entry| entry.words.words().is_some())
+        .filter(|entry| entry.words.is_some())
         .map(|entry| entry.slug)
         .filter(|slug| !unwritten.contains(slug))
         .collect();

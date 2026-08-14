@@ -142,7 +142,7 @@ fn drivable_output(consumer: &DorcConsumer, case: &Case) -> Option<String> {
 fn help_of(
     consumer: &DorcConsumer,
     slug: &str,
-) -> dorc_aid::catalog::HelpRegister<dorc_aid::catalog::ProseTier<String>> {
+) -> dorc_aid::catalog::HelpRegister<dorc_aid::prose::ProseTier<String>> {
     consumer
         .mirror()
         .iter()
@@ -227,7 +227,7 @@ fn overtype_placeholder_mints_words() {
             .iter()
             .find(|entry| entry.slug == slug)
             .and_then(|entry| entry.message.clone()),
-        Some(dorc_aid::catalog::ProseTier::Authored(String::from(words)))
+        Some(dorc_aid::prose::ProseTier::Slop(String::from(words)))
     );
 }
 
@@ -404,9 +404,9 @@ fn help_register_edit_round_trips() {
         .expect("the mirror takes it");
     assert_eq!(
         help_of(&consumer, &slug),
-        dorc_aid::catalog::HelpRegister::Written(dorc_aid::catalog::ProseTier::Authored(
-            String::from(words)
-        ))
+        dorc_aid::catalog::HelpRegister::Written(dorc_aid::prose::ProseTier::Slop(String::from(
+            words
+        )))
     );
 }
 
@@ -502,8 +502,8 @@ fn a_lone_reason_hole_edits_at_the_components_own_entry() {
         .arrangements()
         .iter()
         .find(|entry| entry.slug == "predict-out-of-dialect-shift-count")
-        .and_then(|entry| entry.words.words())
-        .map(<[String]>::to_vec)
+        .and_then(|entry| entry.words.as_ref())
+        .map(|tier| tier.text().clone())
         .expect("the component has an entry");
     assert_eq!(stored.len(), 1, "a pure-hole face stores one word run");
     assert!(
@@ -580,7 +580,7 @@ fn one_step_why_row_edit() {
         dorc_aid::arrangement::ARRANGEMENTS
             .iter()
             .any(|entry| entry.slug == "why-receipt-oracles"
-                && entry.words.words() == Some(&["oracles: ", ""][..])),
+                && entry.words.map(|tier| *tier.text()) == Some(&["oracles: ", ""][..])),
         "the compiled-in table is untouched — nothing was rebuilt"
     );
 }
@@ -649,7 +649,9 @@ fn a_rendered_section_header_lookalike_refuses_by_name() {
     let mut consumer = DorcConsumer::new();
     consumer.set_arrangement_words(
         "cli-help-page",
-        dorc_aid::arrangement::OwnedWords::Authored(vec![String::from("-- book.sh --\n")]),
+        Some(dorc_aid::prose::ProseTier::Slop(vec![String::from(
+            "-- book.sh --\n",
+        )])),
     );
     let error = consumer
         .render_case(&case)

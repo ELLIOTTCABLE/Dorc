@@ -13,79 +13,17 @@
 //! final compile takes effect — no per-edit codegen step (`amendment-single-bless-confirmed`).
 //! The d4 promote pipeline writes the whole generated target, staying diffable and committed.
 //!
-//! # The three legal states of a `message` (mechanically gated)
+//! # The legal states of a `message` (mechanically gated)
 //!
-//! Every [`CatalogEntry::message`] (and [`CatalogEntry::help`]) is ONE of:
-//! * `None`, rendering the exact placeholder `[unwritten: <slug>]`, for any user-facing string
-//!   that has never been written — builders author ZERO new user-facing prose; or
-//! * `Some(`[`ProseTier::Migrated`]`(text))` — prior-builder text migrated VERBATIM from the base
-//!   tip (`380f2fa`), awaiting a conductor/human rewrite (`27V:rul-error-authorship-tier`); or
-//! * `Some(`[`ProseTier::Authored`]`(text))` — conductor/human-authored prose, for a CASE-OWNED
-//!   code (a defining case exists in the dorc-loom corpus, so the render-level fixpoint protects
-//!   it).
-//!
-//! The authorship tier used to live IN-BAND, as an `sm `-string-prefix convention the gate
-//! re-derived by substring match. It is now a TYPE (`ProseTier`, generalizing
-//! `arrangement::Words`'s Migrated/Authored split to the catalog's single-string registers,
-//! `amendment-prose-boundary` retired in favor of `authored_registers_are_case_owned`): the
-//! `dorc-loom` compile/promote path is the ONLY place that mints `Authored` (mirroring
-//! [`arrangement`]'s `apply_arrangement_page_edit`), so the tier is minted by the act of running
-//! the authoring loop, not inferred from what the string happens to start with. Existing
-//! `Migrated` text is left byte-for-byte as migrated (including any literal `sm ` still inside
-//! it) until it is actually rewritten through that loop — retyping the discriminant does not, by
-//! itself, change a single rendered byte.
+//! Every [`CatalogEntry::message`] (and [`CatalogEntry::help`]) is `None` — rendering the exact
+//! placeholder `[unwritten: <slug>]`, a legal resting state — or a [`crate::prose::ProseTier`],
+//! whose variants carry the provenance the old in-band `sm ` prefix used to imply. Retyping a
+//! discriminant changes no rendered byte; the tier never renders.
 //!
 //! The metadata fields (`when_fires` / `why` / `params` / `example`) are conductor/machine-facing,
 //! authored by the builder, and carry NO prefix.
 
-/// The authorship tier of one written prose register — the typed replacement for the catalog's
-/// old `sm `-string-prefix convention (see the module docs). Generic so it can wrap either a
-/// `&'static str` (the compiled-in [`CatalogEntry`]) or an owned `String` (the promote-time
-/// [`OwnedEntry`] mirror) without a second enum, unlike `arrangement`'s non-generic
-/// `Words`/`OwnedWords` pair — a shape worth revisiting there someday, not attempted here.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProseTier<T> {
-    /// Prior-builder text, migrated verbatim from the pre-typed-system base tip; awaiting a
-    /// conductor/human rewrite (`27V:rul-error-authorship-tier`). Minted exactly once, at the
-    /// migration that introduced this type; never re-minted by any code path.
-    Migrated(T),
-    /// Conductor/human-authored prose. Minted ONLY by the `dorc-loom` compile/promote path
-    /// (`consumer::apply_compiled_section`), never by hand.
-    Authored(T),
-}
-
-impl<T> ProseTier<T> {
-    /// The wrapped text, tier-erased.
-    #[must_use]
-    pub fn text(&self) -> &T {
-        match self {
-            ProseTier::Migrated(text) | ProseTier::Authored(text) => text,
-        }
-    }
-
-    /// Whether this register has been through the conductor/human authoring loop.
-    #[must_use]
-    pub fn is_authored(&self) -> bool {
-        matches!(self, ProseTier::Authored(_))
-    }
-}
-
-impl ProseTier<&str> {
-    /// The owned twin — the [`OwnedEntry`] mirror's carry-forward conversion.
-    #[must_use]
-    pub fn to_owned_tier(self) -> ProseTier<String> {
-        match self {
-            ProseTier::Migrated(text) => ProseTier::Migrated(text.to_owned()),
-            ProseTier::Authored(text) => ProseTier::Authored(text.to_owned()),
-        }
-    }
-}
-
-impl<T: AsRef<str>> AsRef<str> for ProseTier<T> {
-    fn as_ref(&self) -> &str {
-        self.text().as_ref()
-    }
-}
+use crate::prose::ProseTier;
 
 /// One catalog entry: the code linkage + the structured metadata + the user-facing prose
 /// registers (`27V` §3). Keyed to a [`crate::diag::DiagCode`] by its stable [`slug`](Self::slug)
@@ -524,27 +462,19 @@ pub fn serialize_lock(rows: &[LockRow]) -> String {
         out.push_str("],\n");
         let _ = writeln!(out, "        example: {:?},", r.example);
         match &r.message {
-            Some(ProseTier::Migrated(m)) => {
-                let _ = writeln!(out, "        message: Some(ProseTier::Migrated({m:?})),");
-            }
-            Some(ProseTier::Authored(m)) => {
-                let _ = writeln!(out, "        message: Some(ProseTier::Authored({m:?})),");
+            Some(tier) => {
+                let _ = writeln!(out, "        message: Some({}),", tier_literal(tier));
             }
             None => out.push_str("        message: None,\n"),
         }
         match &r.help {
             HelpRegister::Absent => out.push_str("        help: HelpRegister::Absent,\n"),
             HelpRegister::Unwritten => out.push_str("        help: HelpRegister::Unwritten,\n"),
-            HelpRegister::Written(ProseTier::Migrated(h)) => {
+            HelpRegister::Written(tier) => {
                 let _ = writeln!(
                     out,
-                    "        help: HelpRegister::Written(ProseTier::Migrated({h:?})),"
-                );
-            }
-            HelpRegister::Written(ProseTier::Authored(h)) => {
-                let _ = writeln!(
-                    out,
-                    "        help: HelpRegister::Written(ProseTier::Authored({h:?})),"
+                    "        help: HelpRegister::Written({}),",
+                    tier_literal(tier)
                 );
             }
         }
@@ -552,6 +482,17 @@ pub fn serialize_lock(rows: &[LockRow]) -> String {
     }
     out.push_str("];\n");
     out
+}
+
+/// One `ProseTier::<Variant>("…")` constructor call, the one spelling every generated register
+/// carries — so a new tier is a compile error here rather than a silently-unserialized row.
+fn tier_literal(tier: &ProseTier<String>) -> String {
+    let (variant, text) = match tier {
+        ProseTier::Migrated(text) => ("Migrated", text),
+        ProseTier::Slop(text) => ("Slop", text),
+        ProseTier::WrittenByHumanOnly(text) => ("WrittenByHumanOnly", text),
+    };
+    format!("ProseTier::{variant}({text:?})")
 }
 
 #[cfg(test)]
@@ -652,19 +593,18 @@ mod tests {
 
     use crate::case_ownership::is_case_owned;
 
-    /// Gate (the catalog twin of `arrangement::authored_words_are_case_owned`; retired
-    /// `message_registers_are_sm_or_unwritten`'s substring check at the `ProseTier` migration):
-    /// `Authored` prose exists only for a case-owned slug, so every string a human wrote is
-    /// fixpoint-protected — `Migrated` needs no such check, since it is never re-minted by any
-    /// code path (`27V:rul-error-authorship-tier` — builders migrate, they never author).
+    /// Gate (the catalog twin of `arrangement::loom_minted_words_are_case_owned`): every register
+    /// the loom loop minted — `Slop` or `WrittenByHumanOnly` alike — exists only for a case-owned
+    /// slug, so every string anyone wrote through the pipeline is fixpoint-protected. `Migrated`
+    /// needs no such check, since no code path re-mints it.
     #[test]
-    fn authored_registers_are_case_owned() {
+    fn loom_minted_registers_are_case_owned() {
         for e in CATALOG {
             for (field, tier) in [("message", e.message), ("help", e.help.written().copied())] {
                 let Some(tier) = tier else { continue };
                 assert!(
-                    matches!(tier, ProseTier::Migrated(_)) || is_case_owned(e.slug),
-                    "catalog `{}` {field}: authored prose needs a defining case; builder-migrated \
+                    !tier.is_loom_minted() || is_case_owned(e.slug),
+                    "catalog `{}` {field}: loom-minted prose needs a defining case; builder-migrated \
                      text is `ProseTier::Migrated`, got: {tier:?}",
                     e.slug
                 );
@@ -730,18 +670,33 @@ mod tests {
     /// single-line string emission is `cargo fmt`-stable (the byte-identity fixpoint precondition).
     #[test]
     fn serialize_lock_emits_the_pinned_generated_header() {
-        let src = serialize_lock(&[LockRow {
-            slug: "x".to_owned(),
-            when_fires: "w".to_owned(),
-            why: "y".to_owned(),
-            params: vec!["a".to_owned()],
-            example: "e".to_owned(),
-            message: Some(ProseTier::Authored("m {{a}}".to_owned())),
-            help: HelpRegister::Unwritten,
-        }]);
+        let src = serialize_lock(&[
+            LockRow {
+                slug: "x".to_owned(),
+                when_fires: "w".to_owned(),
+                why: "y".to_owned(),
+                params: vec!["a".to_owned()],
+                example: "e".to_owned(),
+                message: Some(ProseTier::Slop("m {{a}}".to_owned())),
+                help: HelpRegister::Unwritten,
+            },
+            LockRow {
+                slug: "h".to_owned(),
+                when_fires: "w".to_owned(),
+                why: "y".to_owned(),
+                params: Vec::new(),
+                example: "e".to_owned(),
+                message: Some(ProseTier::Migrated("mig".to_owned())),
+                help: HelpRegister::Written(ProseTier::WrittenByHumanOnly("hand".to_owned())),
+            },
+        ]);
         assert!(src.starts_with("// @generated by dorc-loom; DO NOT EDIT.\n"));
         assert!(src.contains("#[rustfmt::skip]\npub const CATALOG: &[CatalogEntry] = &[\n"));
-        assert!(src.contains("        message: Some(ProseTier::Authored(\"m {{a}}\")),\n"));
+        assert!(src.contains("        message: Some(ProseTier::Slop(\"m {{a}}\")),\n"));
+        assert!(src.contains("        message: Some(ProseTier::Migrated(\"mig\")),\n"));
+        assert!(src.contains(
+            "        help: HelpRegister::Written(ProseTier::WrittenByHumanOnly(\"hand\")),\n"
+        ));
         assert!(src.contains("        help: HelpRegister::Unwritten,\n"));
         assert!(src.trim_end().ends_with("];"));
     }

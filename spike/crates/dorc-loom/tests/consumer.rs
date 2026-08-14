@@ -8,8 +8,8 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
-use dorc_aid::catalog::ProseTier;
 use dorc_aid::diag::render_staged_cli_parts;
+use dorc_aid::prose::ProseTier;
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
     replay_case_with_inputs,

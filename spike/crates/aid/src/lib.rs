@@ -35,6 +35,9 @@ pub enum Severity {
 pub mod diag;
 pub use diag::Diag;
 
+pub mod prose;
+pub use prose::{Mint, ProseTier};
+
 pub mod catalog;
 
 pub mod arrangement;

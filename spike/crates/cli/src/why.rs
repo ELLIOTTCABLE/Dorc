@@ -2466,7 +2466,7 @@ mod first_wall_tests {
             if !entry.slug.starts_with("why-") {
                 continue;
             }
-            for word in entry.words.words().unwrap_or(&[]) {
+            for word in entry.words.map_or(&[][..], |tier| *tier.text()) {
                 assert!(
                     word.is_ascii(),
                     "arrangement `{}` carries non-ASCII output: {word:?}",

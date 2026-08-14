@@ -18,7 +18,7 @@
 
 use std::path::Path;
 
-use dorc_aid::arrangement::OwnedWords;
+use dorc_aid::prose::ProseTier;
 use dorc_loom::{
     DorcConsumer, compile_preview, generate_arrangement_lock, load_arrangement_corpus,
 };
@@ -71,7 +71,7 @@ fn an_edited_help_word_reaches_the_lock_and_the_re_rendered_case() {
         .find(|entry| entry.slug == SLUG)
         .expect("the pilot entry");
     match &entry.words {
-        OwnedWords::Authored(words) => assert_eq!(
+        Some(ProseTier::Slop(words)) => assert_eq!(
             words,
             std::slice::from_ref(&edited),
             "the entry now holds exactly the edited page"
@@ -82,7 +82,7 @@ fn an_edited_help_word_reaches_the_lock_and_the_re_rendered_case() {
     let corpus = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");
     let lock = generate_arrangement_lock(&consumer, &corpus).expect("regenerate the lock");
     assert!(
-        lock.contains("Words::Authored(&[\"dorc -- specification-mining"),
+        lock.contains("Some(ProseTier::Slop(&[\"dorc -- specification-mining"),
         "the regenerated lock carries the edited words, no longer marked migrated"
     );
 
@@ -118,7 +118,10 @@ fn an_edit_against_a_word_sequence_refuses() {
 
     consumer.set_arrangement_words(
         SLUG,
-        OwnedWords::Migrated(vec!["one ".to_owned(), "two".to_owned()]),
+        Some(ProseTier::Migrated(vec![
+            "one ".to_owned(),
+            "two".to_owned(),
+        ])),
     );
 
     let refusal = consumer

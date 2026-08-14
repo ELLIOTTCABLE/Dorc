@@ -16,7 +16,7 @@
     reason = "fixture harness over the committed registry; the no-panic lints guard untrusted input"
 )]
 
-use dorc_aid::arrangement::OwnedWords;
+use dorc_aid::prose::ProseTier;
 use dorc_aid::said::Said;
 use dorc_aid::weave::{Face, to_render_parts};
 use dorc_loom::{DorcConsumer, compile_preview, to_editable_render};
@@ -59,7 +59,7 @@ fn applied(
     baseline: &dorc_loom::DorcEditableBaseline,
     edited: &str,
     slug: &str,
-) -> Result<OwnedWords, dorc_loom::DorcApplyRefusal> {
+) -> Result<Option<ProseTier<Vec<String>>>, dorc_loom::DorcApplyRefusal> {
     let preview = compile_preview(baseline, edited).unwrap_or_else(|e| panic!("compile: {e:?}"));
     let mut consumer = DorcConsumer::new();
     consumer.apply_preview(&preview)?;
@@ -91,7 +91,7 @@ fn a_single_value_line_edits_back_into_its_words() {
 
     let edited = text.replace("oracles:", "loaded oracles:");
     match applied(&baseline, &edited, "why-receipt-oracles") {
-        Ok(OwnedWords::Authored(words)) => assert_eq!(words, vec!["loaded oracles: ", ""]),
+        Ok(Some(ProseTier::Slop(words))) => assert_eq!(words, vec!["loaded oracles: ", ""]),
         other => panic!("expected the re-split words, got {other:?}"),
     }
 }
@@ -123,7 +123,7 @@ fn a_multi_value_line_survives_a_wrap_and_edits_back() {
 
     let edited = text.replace("RATHER THAN", "INSTEAD OF");
     match applied(&baseline, &edited, "why-outcome-contrastive") {
-        Ok(OwnedWords::Authored(words)) => assert_eq!(
+        Ok(Some(ProseTier::Slop(words))) => assert_eq!(
             words,
             vec!["", " ", " INSTEAD OF ", ":"],
             "every word boundary the render stamped came back, whitespace collapsed"
@@ -184,7 +184,7 @@ fn a_reword_across_the_break_point_compiles() {
 
     let edited = format!("{}{tail}\n", text.trim_end_matches('\n'));
     match applied(&baseline, &edited, WORDS_ONLY_SLUG) {
-        Ok(OwnedWords::Authored(words)) => {
+        Ok(Some(ProseTier::Slop(words))) => {
             assert_eq!(words, vec![longer], "the wrap never reaches storage");
         }
         other => panic!("a reword across the break must compile, got {other:?}"),
@@ -208,7 +208,7 @@ fn a_value_glued_to_its_closing_word_edits_back() {
 
     let edited = text.replace("(dorc why ", "(ask dorc why ");
     match applied(&baseline, &edited, "why-item-pointer") {
-        Ok(OwnedWords::Authored(words)) => assert_eq!(words, vec!["(ask dorc why ", ")"]),
+        Ok(Some(ProseTier::Slop(words))) => assert_eq!(words, vec!["(ask dorc why ", ")"]),
         other => panic!("expected the re-split words, got {other:?}"),
     }
 }

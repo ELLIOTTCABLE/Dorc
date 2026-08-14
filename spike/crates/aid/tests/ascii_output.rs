@@ -67,7 +67,7 @@ fn product_prose() -> Vec<(&'static str, &'static str, &'static str)> {
         }
     }
     for entry in ARRANGEMENTS {
-        for word in entry.words.words().unwrap_or(&[]) {
+        for word in entry.words.map_or(&[][..], |tier| *tier.text()) {
             rows.push((entry.slug, "words", word));
         }
     }

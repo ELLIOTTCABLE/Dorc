@@ -3,7 +3,7 @@
 //! the catalog never covered: help/usage pages, structural connectives, preambles, summary
 //! lines. It generalizes the proven catalog pipeline rather than inventing a second one:
 //! a generated lock (`arrangement_lock.rs`, the sibling of `catalog_lock.rs`), the same
-//! three-state prose protocol, the same two fixpoint gates, and the same
+//! prose-provenance protocol, the same two fixpoint gates, and the same
 //! renderer-stamped-span edit surface.
 //!
 //! # What an entry is
@@ -23,43 +23,19 @@
 //! entry serves every occurrence that has none of its own. The emitter contract is therefore
 //! ALL-OR-NOTHING per slug: stamp every occurrence of a slug, or stamp none of them.
 //!
-//! # Three prose states, out of band
+//! # Prose states, out of band
 //!
-//! [`Words`] carries the catalog's three states — unwritten / verbatim-migrated /
-//! authored — but as a TYPE rather than the catalog's in-band `sm ` prefix. Chrome is rendered
-//! verbatim into product output, so an in-band marker would change the shipped bytes and the
-//! migration would stop being a pure storage move. The trade is that the marker is invisible in
-//! a transcript; the gate reads the type instead.
+//! An entry's words are `None` (unwritten) or a [`ProseTier`], exactly as a catalog register is —
+//! one absence idiom and one provenance type across both registries. The tier is a TYPE rather
+//! than the catalog's old in-band `sm ` prefix because chrome renders verbatim into product
+//! output, so an in-band marker would change the shipped bytes. The trade is that the marker is
+//! invisible in a transcript; the gate reads the type instead.
 //!
 //! Nothing here decides anything (`two-plane-aid-law`), and nothing here reads the world:
 //! the registry is const data plus a pure render (`aid-is-dst-clean`).
 
+use crate::prose::ProseTier;
 use crate::tagged::{RenderPart, RenderParts};
-
-/// The three legal states of one entry's prose (the catalog's `sm `/`[unwritten:]`/authored
-/// protocol, moved out of band — see the module docs).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Words {
-    /// No words authored yet; renders the greppable `[unwritten: <slug>]` placeholder.
-    Unwritten,
-    /// Shipped text migrated VERBATIM into the registry, awaiting human rewrite. The typed
-    /// twin of the catalog's `sm ` marker (`27V:rul-error-authorship-tier`: builders migrate,
-    /// they never author).
-    Migrated(&'static [&'static str]),
-    /// Human/conductor-authored words, reachable only through a case's transcript.
-    Authored(&'static [&'static str]),
-}
-
-impl Words {
-    /// The words, or `None` when unwritten.
-    #[must_use]
-    pub fn words(&self) -> Option<&'static [&'static str]> {
-        match self {
-            Words::Unwritten => None,
-            Words::Migrated(words) | Words::Authored(words) => Some(words),
-        }
-    }
-}
 
 /// One arrangement-registry entry: the key + the machine-facing metadata + the prose.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,8 +48,8 @@ pub struct ArrangementEntry {
     pub when_used: &'static str,
     /// Why the entry exists — cites the governing slug(s) (machine-facing metadata).
     pub why: &'static str,
-    /// The user-facing prose.
-    pub words: Words,
+    /// The user-facing prose, or `None` while unwritten.
+    pub words: Option<ProseTier<&'static [&'static str]>>,
 }
 
 #[path = "arrangement_lock.rs"]
@@ -112,8 +88,8 @@ impl ArrangementLookup for ConstArrangements {
         ARRANGEMENTS
             .iter()
             .find(|entry| entry.slug == slug && entry.occurrence == occurrence)
-            .and_then(|entry| entry.words.words())
-            .map(<[&str]>::to_vec)
+            .and_then(|entry| entry.words)
+            .map(|tier| tier.text().to_vec())
     }
 }
 
@@ -129,30 +105,8 @@ pub struct OwnedArrangement {
     pub when_used: String,
     /// Why the entry exists (machine-facing metadata).
     pub why: String,
-    /// The user-facing prose.
-    pub words: OwnedWords,
-}
-
-/// The owned twin of [`Words`].
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub enum OwnedWords {
-    /// No words authored yet.
-    Unwritten,
-    /// Shipped text migrated verbatim, awaiting human rewrite.
-    Migrated(Vec<String>),
-    /// Human/conductor-authored words.
-    Authored(Vec<String>),
-}
-
-impl OwnedWords {
-    /// The words, or `None` when unwritten.
-    #[must_use]
-    pub fn words(&self) -> Option<&[String]> {
-        match self {
-            OwnedWords::Unwritten => None,
-            OwnedWords::Migrated(words) | OwnedWords::Authored(words) => Some(words),
-        }
-    }
+    /// The user-facing prose, or `None` while unwritten.
+    pub words: Option<ProseTier<Vec<String>>>,
 }
 
 /// The compiled-in registry as an owned, mutable mirror — the starting state promote edits
@@ -166,11 +120,7 @@ pub fn owned_arrangements() -> Vec<OwnedArrangement> {
             occurrence: entry.occurrence,
             when_used: entry.when_used.to_owned(),
             why: entry.why.to_owned(),
-            words: match entry.words {
-                Words::Unwritten => OwnedWords::Unwritten,
-                Words::Migrated(words) => OwnedWords::Migrated(owned_words(words)),
-                Words::Authored(words) => OwnedWords::Authored(owned_words(words)),
-            },
+            words: entry.words.map(|tier| tier.map(owned_words)),
         })
         .collect()
 }
@@ -183,8 +133,8 @@ impl ArrangementLookup for Vec<OwnedArrangement> {
     fn words_exact(&self, slug: &str, occurrence: Option<usize>) -> Option<Vec<&str>> {
         self.iter()
             .find(|entry| entry.slug == slug && entry.occurrence == occurrence)
-            .and_then(|entry| entry.words.words())
-            .map(|words| words.iter().map(String::as_str).collect())
+            .and_then(|entry| entry.words.as_ref())
+            .map(|tier| tier.text().iter().map(String::as_str).collect())
     }
 }
 
@@ -419,8 +369,8 @@ pub struct ArrangementRow {
     pub when_used: String,
     /// Why the entry exists.
     pub why: String,
-    /// The user-facing prose.
-    pub words: OwnedWords,
+    /// The user-facing prose, or `None` while unwritten.
+    pub words: Option<ProseTier<Vec<String>>>,
 }
 
 /// Serialize the wholly-generated `arrangement_lock.rs` from ordered [`ArrangementRow`]s. Same
@@ -433,7 +383,7 @@ pub fn serialize_arrangement_lock(rows: &[ArrangementRow]) -> String {
     let mut out = String::from(
         "// @generated by dorc-loom; DO NOT EDIT.\n\
          // This whole file is overwritten by arrangement promotion.\n\n\
-         use super::{ArrangementEntry, Words};\n\n\
+         use super::{ArrangementEntry, ProseTier};\n\n\
          #[rustfmt::skip]\n\
          pub const ARRANGEMENTS: &[ArrangementEntry] = &[\n",
     );
@@ -450,13 +400,8 @@ pub fn serialize_arrangement_lock(rows: &[ArrangementRow]) -> String {
         let _ = writeln!(out, "        why: {:?},", row.why);
         out.push_str("        words: ");
         match &row.words {
-            OwnedWords::Unwritten => out.push_str("Words::Unwritten,\n"),
-            OwnedWords::Migrated(words) => {
-                write_words(&mut out, "Migrated", words);
-            }
-            OwnedWords::Authored(words) => {
-                write_words(&mut out, "Authored", words);
-            }
+            None => out.push_str("None,\n"),
+            Some(tier) => write_words(&mut out, tier),
         }
         out.push_str("    },\n");
     }
@@ -464,16 +409,24 @@ pub fn serialize_arrangement_lock(rows: &[ArrangementRow]) -> String {
     out
 }
 
-fn write_words(out: &mut String, variant: &str, words: &[String]) {
+/// The `Some(ProseTier::<Variant>(&["…"]))` spelling every written chrome row carries — the
+/// arrangement twin of `catalog::tier_literal`, kept a writer because a page's word is a whole
+/// help screen.
+fn write_words(out: &mut String, tier: &ProseTier<Vec<String>>) {
     use std::fmt::Write as _;
-    let _ = write!(out, "Words::{variant}(&[");
+    let (variant, words) = match tier {
+        ProseTier::Migrated(words) => ("Migrated", words),
+        ProseTier::Slop(words) => ("Slop", words),
+        ProseTier::WrittenByHumanOnly(words) => ("WrittenByHumanOnly", words),
+    };
+    let _ = write!(out, "Some(ProseTier::{variant}(&[");
     for (index, word) in words.iter().enumerate() {
         if index > 0 {
             out.push_str(", ");
         }
         let _ = write!(out, "{word:?}");
     }
-    out.push_str("]),\n");
+    out.push_str("])),\n");
 }
 
 #[cfg(test)]
@@ -495,20 +448,20 @@ mod tests {
     }
 
     /// Gate: the machine-facing metadata is non-empty, and no entry stores empty prose (the
-    /// unwritten state is [`Words::Unwritten`], never `[""]`).
+    /// unwritten state is `None`, never `[""]`).
     #[test]
     fn required_metadata_is_non_empty() {
         for entry in ARRANGEMENTS {
             assert!(!entry.slug.is_empty(), "empty arrangement slug");
             assert!(!entry.when_used.is_empty(), "`{}`: when_used", entry.slug);
             assert!(!entry.why.is_empty(), "`{}`: why", entry.slug);
-            if let Some(words) = entry.words.words() {
+            if let Some(words) = entry.words.map(|tier| *tier.text()) {
                 // An INDIVIDUAL word may be empty — a line ending in a computed value needs a
                 // trailing empty word to satisfy the words = values + 1 arity. An entry with no
                 // words at all is the unwritten state, which has its own variant.
                 assert!(
                     words.iter().any(|word| !word.is_empty()),
-                    "`{}`: a written entry has at least one word — unwritten is `Words::Unwritten`",
+                    "`{}`: a written entry has at least one word — unwritten is `None`",
                     entry.slug
                 );
             }
@@ -517,18 +470,18 @@ mod tests {
 
     use crate::case_ownership::is_case_owned;
 
-    /// Gate (the arrangement twin of `message_registers_are_sm_or_unwritten`): authored words
-    /// exist only for a case-owned slug, so every string a human wrote is fixpoint-protected
-    /// and every string a BUILDER put here is marked [`Words::Migrated`]
-    /// (`27V:rul-error-authorship-tier` — builders migrate verbatim, they never author).
+    /// Gate (the arrangement twin of `catalog::loom_minted_registers_are_case_owned`): every
+    /// row the loom loop minted — `Slop` or `WrittenByHumanOnly` alike — exists only for a
+    /// case-owned slug, so every string anyone wrote through the pipeline is fixpoint-protected
+    /// and every string a BUILDER put here is `ProseTier::Migrated`.
     #[test]
-    fn authored_words_are_case_owned() {
+    fn loom_minted_words_are_case_owned() {
         for entry in ARRANGEMENTS {
-            if matches!(entry.words, Words::Authored(_)) {
+            if entry.words.is_some_and(|tier| tier.is_loom_minted()) {
                 assert!(
                     is_case_owned(entry.slug),
-                    "arrangement `{}`: authored words need a defining case; builder-migrated \
-                     text is `Words::Migrated`",
+                    "arrangement `{}`: loom-minted words need a defining case; builder-migrated \
+                     text is `ProseTier::Migrated`",
                     entry.slug
                 );
             }
@@ -563,14 +516,14 @@ mod tests {
                 occurrence: None,
                 when_used: "w".to_owned(),
                 why: "y".to_owned(),
-                words: OwnedWords::Migrated(vec!["shared words".to_owned()]),
+                words: Some(ProseTier::Migrated(vec!["shared words".to_owned()])),
             },
             OwnedArrangement {
                 slug: "shared".to_owned(),
                 occurrence: Some(2),
                 when_used: "w".to_owned(),
                 why: "y".to_owned(),
-                words: OwnedWords::Migrated(vec!["third only".to_owned()]),
+                words: Some(ProseTier::Migrated(vec!["third only".to_owned()])),
             },
         ];
         assert_eq!(
@@ -597,11 +550,11 @@ mod tests {
             occurrence: None,
             when_used: "w".to_owned(),
             why: "y".to_owned(),
-            words: OwnedWords::Authored(vec![
+            words: Some(ProseTier::Slop(vec![
                 "found ".to_owned(),
                 " thing".to_owned(),
                 ".".to_owned(),
-            ]),
+            ])),
         }]
     }
 
@@ -638,14 +591,17 @@ mod tests {
             occurrence: Some(1),
             when_used: "w".to_owned(),
             why: "y".to_owned(),
-            words: OwnedWords::Migrated(vec!["one".to_owned(), " two".to_owned()]),
+            words: Some(ProseTier::Migrated(vec![
+                "one".to_owned(),
+                " two".to_owned(),
+            ])),
         }]);
         assert!(src.starts_with("// @generated by dorc-loom; DO NOT EDIT.\n"));
         assert!(
             src.contains("#[rustfmt::skip]\npub const ARRANGEMENTS: &[ArrangementEntry] = &[\n")
         );
         assert!(src.contains("        occurrence: Some(1),\n"));
-        assert!(src.contains("        words: Words::Migrated(&[\"one\", \" two\"]),\n"));
+        assert!(src.contains("        words: Some(ProseTier::Migrated(&[\"one\", \" two\"])),\n"));
         assert!(src.trim_end().ends_with("];"));
     }
 }

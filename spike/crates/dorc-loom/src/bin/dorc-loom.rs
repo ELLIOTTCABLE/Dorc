@@ -1479,15 +1479,15 @@ mod tests {
             .arrangements()
             .iter()
             .find(|entry| entry.slug == "cli-usage-synopsis")
-            .and_then(|entry| entry.words.words())
-            .map(<[String]>::to_vec)
+            .and_then(|entry| entry.words.as_ref())
+            .map(|tier| tier.text().clone())
             .expect("the synopsis component has words");
         // Same arity, different bytes: an arity change is a different failure with its own refusal.
         let mut reworded = words.clone();
         reworded[0] = format!("{}, really", words[0]);
         consumer.set_arrangement_words(
             "cli-usage-synopsis",
-            dorc_aid::arrangement::OwnedWords::Authored(reworded),
+            Some(dorc_aid::prose::ProseTier::Slop(reworded)),
         );
 
         let corpus = std::collections::BTreeMap::from([
@@ -1553,10 +1553,10 @@ mod tests {
         let mut consumer = DorcConsumer::new();
         consumer.set_arrangement_words(
             "cli-help-page",
-            dorc_aid::arrangement::OwnedWords::Authored(vec![
+            Some(dorc_aid::prose::ProseTier::Slop(vec![
                 "one word".to_owned(),
                 "an extra word a page never takes".to_owned(),
-            ]),
+            ])),
         );
         let error = drive_replays(
             &case,

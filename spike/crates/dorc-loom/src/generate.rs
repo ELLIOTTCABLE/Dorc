@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use dorc_aid::arrangement::{ARRANGEMENTS, ArrangementRow, OwnedWords, serialize_arrangement_lock};
+use dorc_aid::arrangement::{ARRANGEMENTS, ArrangementRow, serialize_arrangement_lock};
 use dorc_aid::catalog::{CATALOG, LockRow, fill_template, refreshed_params, serialize_lock};
 use dorc_aid::diag::params_of;
 use dorc_core::Interner;
@@ -204,7 +204,7 @@ pub fn generate_arrangement_lock(
             occurrence: None,
             when_used: frontmatter_scalar(case, "when-used", slug)?,
             why: frontmatter_scalar(case, "why", slug)?,
-            words: OwnedWords::Unwritten,
+            words: None,
         });
     }
     Ok(serialize_arrangement_lock(&rows))

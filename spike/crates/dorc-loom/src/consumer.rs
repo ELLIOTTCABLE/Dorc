@@ -11,9 +11,10 @@ use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::fs;
 
-use dorc_aid::arrangement::{OwnedArrangement, OwnedWords, arrangement_parts, owned_arrangements};
-use dorc_aid::catalog::{HelpRegister, OwnedEntry, ProseTier, owned_catalog, parse_template};
+use dorc_aid::arrangement::{OwnedArrangement, arrangement_parts, owned_arrangements};
+use dorc_aid::catalog::{HelpRegister, OwnedEntry, owned_catalog, parse_template};
 use dorc_aid::diag::{Diag, DiagCode, render_cli_parts, render_staged_cli_parts};
+use dorc_aid::prose::{Mint, ProseTier};
 use dorc_aid::{RenderCtx, Severity};
 use dorc_core::{Interner, ProvArena};
 use errorloom::{
@@ -97,6 +98,8 @@ impl DorcEditableBaseline {
 pub struct DorcConsumer {
     mirror: Vec<OwnedEntry>,
     arrangements: Vec<OwnedArrangement>,
+    mint: Mint,
+    demoted: Vec<String>,
 }
 
 /// Why applying a compiled section to the in-memory mirror refused.
@@ -172,7 +175,22 @@ impl DorcConsumer {
         DorcConsumer {
             mirror: owned_catalog(),
             arrangements: owned_arrangements(),
+            mint: Mint::Slop,
+            demoted: Vec::new(),
         }
+    }
+
+    /// The same consumer minting a different tier — `dorc-loom promote --human`'s one effect.
+    #[must_use]
+    pub fn minting(self, mint: Mint) -> Self {
+        DorcConsumer { mint, ..self }
+    }
+
+    /// The slugs whose human-written register this consumer's edits re-marked as slop, in
+    /// application order — what the CLI turns into a notice or a refusal (`spec-demotion-branches`).
+    #[must_use]
+    pub fn demoted(&self) -> &[String] {
+        &self.demoted
     }
 
     /// The current catalog mirror (test/inspection surface).
@@ -223,7 +241,7 @@ impl DorcConsumer {
 
     /// Overwrite an arrangement entry's words in the mirror (the [`Self::set_message`] twin: it
     /// models a raw registry hand-edit, and stages the word-sequence state nothing authors yet).
-    pub fn set_arrangement_words(&mut self, slug: &str, words: OwnedWords) {
+    pub fn set_arrangement_words(&mut self, slug: &str, words: Option<ProseTier<Vec<String>>>) {
         if let Some(entry) = self.arrangements.iter_mut().find(|e| e.slug == slug) {
             entry.words = words;
         }
@@ -317,11 +335,16 @@ impl DorcConsumer {
                 crate::CompiledFragment::Variable(name) => format!("{{{{{}}}}}", name.0),
             })
             .collect();
-        if key.field == "message" {
-            entry.message = Some(ProseTier::Authored(template));
+        let mint = self.mint;
+        let demoted = if key.field == "message" {
+            let demoted = mint.demotes(entry.message.as_ref());
+            entry.message = Some(mint.tier(template));
+            demoted
         } else {
-            entry.help = HelpRegister::Written(ProseTier::Authored(template));
-        }
+            let demoted = mint.demotes(entry.help.written());
+            entry.help = HelpRegister::Written(mint.tier(template));
+            demoted
+        };
         entry.params = entry
             .message
             .iter()
@@ -337,6 +360,9 @@ impl DorcConsumer {
                 }
                 params
             });
+        if demoted {
+            self.demoted.push(key.owner.clone());
+        }
         Ok(())
     }
 
@@ -359,13 +385,22 @@ impl DorcConsumer {
             ));
         }
         let words = page_words(compiled);
+        let mint = self.mint;
         let entry = self.arrangement_entry(key)?;
-        if entry.words.words().is_some_and(|current| current.len() > 1) {
+        if entry
+            .words
+            .as_ref()
+            .is_some_and(|current| current.text().len() > 1)
+        {
             return Err(DorcApplyRefusal::ArrangementIsSequenceStructured(
                 key.owner.clone(),
             ));
         }
-        entry.words = OwnedWords::Authored(words);
+        let demoted = mint.demotes(entry.words.as_ref());
+        entry.words = Some(mint.tier(words));
+        if demoted {
+            self.demoted.push(key.owner.clone());
+        }
         Ok(())
     }
 
@@ -398,8 +433,10 @@ impl DorcConsumer {
                 crate::CompiledFragment::Text(_) => None,
             })
             .collect();
+        let mint = self.mint;
         let entry = self.arrangement_entry(key)?;
-        let arity = entry.words.words().map_or(words.len(), <[String]>::len);
+        let stored = entry.words.as_ref().map(ProseTier::text);
+        let arity = stored.map_or(words.len(), Vec::len);
         let expected: Vec<String> = (0..arity.saturating_sub(1))
             .map(|index| crate::arrangement_variable(index).0)
             .collect();
@@ -408,10 +445,14 @@ impl DorcConsumer {
                 slug: key.owner.clone(),
                 expected,
                 found,
-                editable_words: entry.words.words().unwrap_or_default().to_vec(),
+                editable_words: stored.cloned().unwrap_or_default(),
             });
         }
-        entry.words = OwnedWords::Authored(words);
+        let demoted = mint.demotes(entry.words.as_ref());
+        entry.words = Some(mint.tier(words));
+        if demoted {
+            self.demoted.push(key.owner.clone());
+        }
         Ok(())
     }
 
@@ -2799,7 +2840,7 @@ mod tests {
                 .iter()
                 .find(|entry| entry.slug == "why-receipt-book-drifted")
                 .map(|entry| entry.words.clone()),
-            Some(OwnedWords::Authored(vec![String::from("agreed words")])),
+            Some(Some(ProseTier::Slop(vec![String::from("agreed words")]))),
         );
     }
 

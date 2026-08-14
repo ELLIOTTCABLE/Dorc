@@ -4619,7 +4619,7 @@ mod tests {
     /// loop broke it from a crate its author never opens — `render-form-unwelded`'s own failure
     /// mode. The composition is what this seat is responsible for, and a two-row fixture states it
     /// exactly, holes and all. (Whether the COMMITTED registers are still `ProseTier::Migrated` is
-    /// `authored_registers_are_case_owned`'s corpus-wide job, keyed to `is_case_owned` — never a
+    /// `loom_minted_registers_are_case_owned`'s corpus-wide job, keyed to `is_case_owned` — never a
     /// byte copy here.)
     #[test]
     fn a_register_owns_the_sentence_and_the_payload_fills_its_holes() {
@@ -4629,10 +4629,10 @@ mod tests {
                 slug: "site-unresolvable".to_owned(),
                 when_fires: String::new(),
                 why: String::new(),
-                message: Some(crate::catalog::ProseTier::Authored(
+                message: Some(crate::prose::ProseTier::Slop(
                     "harness {{count}} {{site_word}} <{{names}}>".to_owned(),
                 )),
-                help: crate::catalog::HelpRegister::Written(crate::catalog::ProseTier::Authored(
+                help: crate::catalog::HelpRegister::Written(crate::prose::ProseTier::Slop(
                     "harness help <{{excerpt}}>".to_owned(),
                 )),
                 params: Vec::new(),
@@ -4641,7 +4641,7 @@ mod tests {
                 slug: "render-heredoc-refused".to_owned(),
                 when_fires: String::new(),
                 why: String::new(),
-                message: Some(crate::catalog::ProseTier::Authored(
+                message: Some(crate::prose::ProseTier::Slop(
                     "harness {{verb}} (`{{command}}`)".to_owned(),
                 )),
                 help: crate::catalog::HelpRegister::Absent,

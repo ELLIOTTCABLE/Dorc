@@ -14,9 +14,8 @@
 //! opens. What is left is the genuinely FACELESS residue: rows no case owns and no transcript
 //! renders, whose only net is a literal.
 
-use dorc_aid::arrangement::{
-    CONST_ARRANGEMENTS, OwnedArrangement, OwnedWords, arrangement_sentence,
-};
+use dorc_aid::arrangement::{CONST_ARRANGEMENTS, OwnedArrangement, arrangement_sentence};
+use dorc_aid::prose::ProseTier;
 
 fn rendered(slug: &str, values: &[&str]) -> String {
     arrangement_sentence(&CONST_ARRANGEMENTS, slug, None, values)
@@ -33,13 +32,13 @@ fn a_chrome_line_interleaves_its_values_between_its_word_runs() {
         occurrence: None,
         when_used: "the interleaving fixture".to_owned(),
         why: "the interleaving fixture".to_owned(),
-        words: OwnedWords::Authored(vec![
+        words: Some(ProseTier::Slop(vec![
             "found ".to_owned(),
             " file".to_owned(),
             " across ".to_owned(),
             " source".to_owned(),
             ".".to_owned(),
-        ]),
+        ])),
     }];
     assert_eq!(
         arrangement_sentence(&registry, "harness-sentence", None, &["3", "s", "1", ""]),

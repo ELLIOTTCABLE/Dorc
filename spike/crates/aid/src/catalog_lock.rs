@@ -11,8 +11,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "no-silent-phantoms disclosure (find-3); the template fills `{position}` from `OperandPosition::describe()` and `{cause}` from `TopCause::describe()`. Case-owned (the cmdsub flagship, `crates/dorc-loom/cases/cmdsub-operand-top.loom`): prose authored at the transcript surface, awaiting the human rewrite pass.",
         params: &["position", "cause"],
         example: "operand 3 is a command-substitution `$(...)` / arithmetic / operator-form expansion, so Dorc cannot know its value until the command runs on the host -- there is nothing to resolve and no read-only probe to check. Dorc elides a command only when it can prove the command's effect is already in place, so this one is left to run on every apply.",
-        message: Some(ProseTier::Authored("{{position}} is {{cause}}, so Dorc cannot know its value until the command runs on the host -- there is nothing to resolve and no read-only probe to check. Dorc elides a command only when it can prove the command's effect is already in place, so this one is left to run on every apply.")),
-        help: HelpRegister::Written(ProseTier::Authored("Give the operand a value Dorc can resolve statically -- a literal, or a variable assigned from one -- so Dorc can probe it and elide the command once it has converged. If the value must stay dynamic, load an oracle that vouches for this command's convergence, and Dorc will guard the command instead of running it every time.")),
+        message: Some(ProseTier::Slop("{{position}} is {{cause}}, so Dorc cannot know its value until the command runs on the host -- there is nothing to resolve and no read-only probe to check. Dorc elides a command only when it can prove the command's effect is already in place, so this one is left to run on every apply.")),
+        help: HelpRegister::Written(ProseTier::Slop("Give the operand a value Dorc can resolve statically -- a literal, or a variable assigned from one -- so Dorc can probe it and elide the command once it has converged. If the value must stay dynamic, load an oracle that vouches for this command's convergence, and Dorc will guard the command instead of running it every time.")),
     },
     CatalogEntry {
         slug: "site-unresolvable",
@@ -29,8 +29,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "kFAIL-perform, arch-1 d-6: substituting the opener span would strand the heredoc body — an Error-class give-up (a broken artifact otherwise). `{verb}` = elide/guard.",
         params: &["verb", "command"],
         example: "Dorc cannot elide `cat <<EOF` as planned: rewriting the line would strand the heredoc body below its `<<` opener, so the command stays in place and runs verbatim.",
-        message: Some(ProseTier::Authored("Dorc cannot {{verb}} `{{command}}` as planned: rewriting the line would strand the heredoc body below its `<<` opener, so the command stays in place and runs verbatim.")),
-        help: HelpRegister::Written(ProseTier::Authored("Move the heredoc's content out of the command -- feed it with printf or redirect from a file -- and Dorc can then elide or guard the site.")),
+        message: Some(ProseTier::Slop("Dorc cannot {{verb}} `{{command}}` as planned: rewriting the line would strand the heredoc body below its `<<` opener, so the command stays in place and runs verbatim.")),
+        help: HelpRegister::Written(ProseTier::Slop("Move the heredoc's content out of the command -- feed it with printf or redirect from a file -- and Dorc can then elide or guard the site.")),
     },
     CatalogEntry {
         slug: "cmdsub-inner-nonleaf",
@@ -38,7 +38,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "q-1.f silent-1/silent-4 disclosure; the inner command runs whenever its enclosing line runs. `{inner}` = the resolved inner argv.",
         params: &["inner"],
         example: "Dorc cannot elide `id -u` on its own: it runs inside a `$(...)` substitution as part of evaluating its enclosing line, so it runs whenever that line does.",
-        message: Some(ProseTier::Authored("Dorc cannot elide `{{inner}}` on its own: it runs inside a `$(...)` substitution as part of evaluating its enclosing line, so it runs whenever that line does.")),
+        message: Some(ProseTier::Slop("Dorc cannot elide `{{inner}}` on its own: it runs inside a `$(...)` substitution as part of evaluating its enclosing line, so it runs whenever that line does.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -47,7 +47,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "y-1 / 21F imp-1: the target is unresolvable so no per-path `file` cell can be keyed. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).",
         params: &[],
         example: "This write-redirect's target cannot be resolved statically, so the write cannot be tied to any one file and the command always runs (never elided) -- a literal target, or a variable assigned from one, would let Dorc track the write.",
-        message: Some(ProseTier::Authored("This write-redirect's target cannot be resolved statically, so the write cannot be tied to any one file and the command always runs (never elided) -- a literal target, or a variable assigned from one, would let Dorc track the write.")),
+        message: Some(ProseTier::Slop("This write-redirect's target cannot be resolved statically, so the write cannot be tied to any one file and the command always runs (never elided) -- a literal target, or a variable assigned from one, would let Dorc track the write.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -56,7 +56,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "216 §1.2 correction: the inner body's positional resolves ⊤, so the call runs verbatim. `{name}` = the refused call's function name. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).",
         params: &["name"],
         example: "Dorc did not inline the call to `install_one`: its argument passes a positional (`$1`..`$9`/`$#`) down a second level of function calls, which Dorc does not model, so the call runs as an ordinary unmodeled command.",
-        message: Some(ProseTier::Authored("Dorc did not inline the call to `{{name}}`: its argument passes a positional (`$1`..`$9`/`$#`) down a second level of function calls, which Dorc does not model, so the call runs as an ordinary unmodeled command.")),
+        message: Some(ProseTier::Slop("Dorc did not inline the call to `{{name}}`: its argument passes a positional (`$1`..`$9`/`$#`) down a second level of function calls, which Dorc does not model, so the call runs as an ordinary unmodeled command.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -65,7 +65,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "inv-top-reject: under-modeling is a loud correctness boundary. The reason is typed: a SyntaxUnsupportedReason variant per unmodeled construct, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "background/async `&` is not in the modeled subset",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -74,7 +74,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "inv-no-throw: errors are data. The reason is typed: a SyntaxMalformedReason variant per structural expectation, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "expected `done` to close the loop",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -83,7 +83,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "the conservative ⊤-absorbing semantics; any command after it may mutate anything. The reason is typed: two CfgTopNodeReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes). NOTE plain-language pass owed: slug carries top/⊤ wording (law-plain-language-surfaces, 24H ack-4).",
         params: &["reason"],
         example: "unsupported construct (unknown): un-probeable and un-skippable",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -92,7 +92,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "over-approximate, sound. The payload is field-less: the reason was one fixed sentence, so it is the code's own register.",
         params: &[],
         example: "Dorc could not tell whether `set -e` is in effect at one or more commands (a non-literal `set` argument, or paths that disagree), so it plans as though each might abort the book on failure -- the cautious reading; it can cost elisions, never correctness.",
-        message: Some(ProseTier::Authored("Dorc could not tell whether `set -e` is in effect at one or more commands (a non-literal `set` argument, or paths that disagree), so it plans as though each might abort the book on failure -- the cautious reading; it can cost elisions, never correctness.")),
+        message: Some(ProseTier::Slop("Dorc could not tell whether `set -e` is in effect at one or more commands (a non-literal `set` argument, or paths that disagree), so it plans as though each might abort the book on failure -- the cautious reading; it can cost elisions, never correctness.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -101,7 +101,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "the call runs as an ordinary unmodeled command (MustRun, safe). The reason is typed: seven CfgInlineRefusedReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "recursive call to `retry` (direct or transitive within the active inline stack); not inlined -- it runs as an ordinary unmodeled command",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -110,7 +110,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "find-I: builtin-dependent conclusions may be unsound for this book. The hole is typed: `{name}` is the shadowing function, which is also the builtin it shadows; the sentence is the code's own register. The primary span is the funcdef name_span.",
         params: &["name"],
         example: "Function `test` shadows a shell builtin Dorc relies on: analysis keeps reading the bare word `test` as the builtin, so conclusions that lean on it may be unsound for this book.",
-        message: Some(ProseTier::Authored("Function `{{name}}` shadows a shell builtin Dorc relies on: analysis keeps reading the bare word `{{name}}` as the builtin, so conclusions that lean on it may be unsound for this book.")),
+        message: Some(ProseTier::Slop("Function `{{name}}` shadows a shell builtin Dorc relies on: analysis keeps reading the bare word `{{name}}` as the builtin, so conclusions that lean on it may be unsound for this book.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -119,7 +119,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "204 §6 open seam: declared identity wins. The holes are typed: `{annotated}` is the kind the annotation declared and `{effect_map}` the kind the effect map holds.",
         params: &["annotated", "effect_map"],
         example: "this verb spells its kind two ways: the identity bind declares `sm.dorc.Package` while the mark's own coordinate names `sm.dorc.Service` -- Dorc files the fact under the declared `sm.dorc.Package`; align the two spellings to clear this.",
-        message: Some(ProseTier::Authored("this verb spells its kind two ways: the identity bind declares `{{annotated}}` while the mark's own coordinate names `{{effect_map}}` -- Dorc files the fact under the declared `{{annotated}}`; align the two spellings to clear this.")),
+        message: Some(ProseTier::Slop("this verb spells its kind two ways: the identity bind declares `{{annotated}}` while the mark's own coordinate names `{{effect_map}}` -- Dorc files the fact under the declared `{{annotated}}`; align the two spellings to clear this.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -128,7 +128,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "out-of-dialect input is a lift failure. The reason is typed: a PredictOutOfDialectReason variant per dialect rule, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "statement does not start with a word",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -137,7 +137,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "the check cannot be lifted. The reason is typed: four PredictUnterminatedReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "unterminated function body (expected `}`)",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -146,7 +146,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "ca-munge-charclass (24M §4b): a broken function name cannot ship — REFUSED. `{problem}` is `ShNameProblem::describe()`.",
         params: &["source", "funcname", "problem"],
         example: "Dorc munges `ä¸\u{ad}pkg` into the sh function name `ä¸\u{ad}pkg__predict`, which is not a legal NAME: non-ASCII character `ä` (a NAME admits only ASCII letters/digits/`_`). A broken function name cannot ship; rename `ä¸\u{ad}pkg` to spell only ASCII letters, digits, `_`, `.`, or `-`.",
-        message: Some(ProseTier::Authored("Dorc munges `{{source}}` into the sh function name `{{funcname}}`, which is not a legal NAME: {{problem}}. A broken function name cannot ship; rename `{{source}}` to spell only ASCII letters, digits, `_`, `.`, or `-`.")),
+        message: Some(ProseTier::Slop("Dorc munges `{{source}}` into the sh function name `{{funcname}}`, which is not a legal NAME: {{problem}}. A broken function name cannot ship; rename `{{source}}` to spell only ASCII letters, digits, `_`, `.`, or `-`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -155,7 +155,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "non-injective munge: refuse-and-run (never silently last-writer-wins).",
         params: &["source", "funcname", "count", "names"],
         example: "Dorc munges `hork.tool` into the sh function name `hork_tool__predict`, shared by 2 distinct source names (hork.tool, hork-tool); rather than let the last same-named definition silently win, Dorc refuses them all. Rename one family so the munged names diverge -- `.`, `-`, and `_` all munge to `_`.",
-        message: Some(ProseTier::Authored("Dorc munges `{{source}}` into the sh function name `{{funcname}}`, shared by {{count}} distinct source names ({{names}}); rather than let the last same-named definition silently win, Dorc refuses them all. Rename one family so the munged names diverge -- `.`, `-`, and `_` all munge to `_`.")),
+        message: Some(ProseTier::Slop("Dorc munges `{{source}}` into the sh function name `{{funcname}}`, shared by {{count}} distinct source names ({{names}}); rather than let the last same-named definition silently win, Dorc refuses them all. Rename one family so the munged names diverge -- `.`, `-`, and `_` all munge to `_`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -164,7 +164,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "rul24M-bare-dorcism-names: accepted-not-prevented; the disclosure is loud (warnings tune high this era).",
         params: &["name", "role"],
         example: "Book function `hork__predict` sits in the `__predict` namespace reserved for oracle functions; Dorc treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble defining the same name would collide with it. Rename it to stay clear of `*__predict`.",
-        message: Some(ProseTier::Authored("Book function `{{name}}` sits in the `{{role}}` namespace reserved for oracle functions; Dorc treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble defining the same name would collide with it. Rename it to stay clear of `*{{role}}`.")),
+        message: Some(ProseTier::Slop("Book function `{{name}}` sits in the `{{role}}` namespace reserved for oracle functions; Dorc treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble defining the same name would collide with it. Rename it to stay clear of `*{{role}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -173,7 +173,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "marker-gates-syntax-only: a loud file-level refusal. Static — the marker text is inline (MARKER / MARKER_WINDOW compile-time constants).",
         params: &[],
         example: "This file uses dorc-lang dialect constructs (a bind or a `:` mark) but never declares the `# dorc-lang/v0.2` version marker that licenses that syntax. Add the marker as a standalone comment in the first 10 lines, or drop the dialect -- bare `__role` functions lift without one.",
-        message: Some(ProseTier::Authored("This file uses dorc-lang dialect constructs (a bind or a `:` mark) but never declares the `# dorc-lang/v0.2` version marker that licenses that syntax. Add the marker as a standalone comment in the first 10 lines, or drop the dialect -- bare `__role` functions lift without one.")),
+        message: Some(ProseTier::Slop("This file uses dorc-lang dialect constructs (a bind or a `:` mark) but never declares the `# dorc-lang/v0.2` version marker that licenses that syntax. Add the marker as a standalone comment in the first 10 lines, or drop the dialect -- bare `__role` functions lift without one.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -182,7 +182,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "marker-gates-syntax-only + versioned-additive: an unrecognized version is a loud file-level refusal SEPARATE from missing-marker, so a vNEXT/typo'd-version file is not mis-blamed as markerless (`28A` §2l). `{found}` = the version tag read from the marker.",
         params: &["found"],
         example: "The marker `# dorc-lang/v0.1` names a dorc-lang version this build of Dorc does not recognize; the one version it reads is `# dorc-lang/v0.2`. Correct the marker if the file is v0.2 material, or run it under a Dorc that knows its declared version.",
-        message: Some(ProseTier::Authored("The marker `{{found}}` names a dorc-lang version this build of Dorc does not recognize; the one version it reads is `# dorc-lang/v0.2`. Correct the marker if the file is v0.2 material, or run it under a Dorc that knows its declared version.")),
+        message: Some(ProseTier::Slop("The marker `{{found}}` names a dorc-lang version this build of Dorc does not recognize; the one version it reads is `# dorc-lang/v0.2`. Correct the marker if the file is v0.2 material, or run it under a Dorc that knows its declared version.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -191,7 +191,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C §2: the mark vouches nothing and the site stays walled on that dimension (engine-owned closed vocabulary).",
         params: &["token", "expected"],
         example: "`netns2` is not a context dimension Dorc knows; a `safe-across` vouch names one of user, fs-view, netns, so this mark vouches nothing and the site stays walled on that dimension.",
-        message: Some(ProseTier::Authored("`{{token}}` is not a context dimension Dorc knows; a `safe-across` vouch names one of {{expected}}, so this mark vouches nothing and the site stays walled on that dimension.")),
+        message: Some(ProseTier::Slop("`{{token}}` is not a context dimension Dorc knows; a `safe-across` vouch names one of {{expected}}, so this mark vouches nothing and the site stays walled on that dimension.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -200,7 +200,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C §6 corroboration (recognize-never-license): the ask never blocks. Static.",
         params: &[],
         example: "This `is_converged` carries `safe-across user` but visibly reads the caller's identity; the vouch promises the body stays read-only under a user shift -- it may answer differently as another user, but it must not mutate as one.",
-        message: Some(ProseTier::Authored("This `is_converged` carries `safe-across user` but visibly reads the caller's identity; the vouch promises the body stays read-only under a user shift -- it may answer differently as another user, but it must not mutate as one.")),
+        message: Some(ProseTier::Slop("This `is_converged` carries `safe-across user` but visibly reads the caller's identity; the vouch promises the body stays read-only under a user shift -- it may answer differently as another user, but it must not mutate as one.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -209,7 +209,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C §6 (recognize-never-license): a one-line vouch would make it context-shiftable. Static.",
         params: &[],
         example: "This `is_converged` reads the caller's identity but carries no `safe-across` vouch, so a wrapped site (`sudo ...`) runs or guards instead of eliding; if the body stays read-only under a user shift, one `: safe-across user` line makes it context-shiftable.",
-        message: Some(ProseTier::Authored("This `is_converged` reads the caller's identity but carries no `safe-across` vouch, so a wrapped site (`sudo ...`) runs or guards instead of eliding; if the body stays read-only under a user shift, one `: safe-across user` line makes it context-shiftable.")),
+        message: Some(ProseTier::Slop("This `is_converged` reads the caller's identity but carries no `safe-across` vouch, so a wrapped site (`sudo ...`) runs or guards instead of eliding; if the body stays read-only under a user shift, one `: safe-across user` line makes it context-shiftable.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -218,7 +218,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "273 §8: the line mints no lend and the dimension it meant to answer walls. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).",
         params: &["token", "expected"],
         example: "`frobnicate` is not a context dimension Dorc knows; a `__lend_map` line names one of user, fs-view, netns, so this line lends nothing and the dimension it meant to answer stays walled.",
-        message: Some(ProseTier::Authored("`{{token}}` is not a context dimension Dorc knows; a `__lend_map` line names one of {{expected}}, so this line lends nothing and the dimension it meant to answer stays walled.")),
+        message: Some(ProseTier::Slop("`{{token}}` is not a context dimension Dorc knows; a `__lend_map` line names one of {{expected}}, so this line lends nothing and the dimension it meant to answer stays walled.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -227,7 +227,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C §4(a): network kernel state is namespaced; the false invariance line is dropped.",
         params: &["kind_munged"],
         example: "`undivided-by-transit-across netns` cannot hold for the `net-kernel` store of `sm_dorc_Route` -- every network namespace keeps its own copy of network kernel state -- so Dorc drops the invariance line. Delete the line, or if the invariance is real, correct the `stored-in` label to the substrate the state actually lives in.",
-        message: Some(ProseTier::Authored("`undivided-by-transit-across netns` cannot hold for the `net-kernel` store of `{{kind_munged}}` -- every network namespace keeps its own copy of network kernel state -- so Dorc drops the invariance line. Delete the line, or if the invariance is real, correct the `stored-in` label to the substrate the state actually lives in.")),
+        message: Some(ProseTier::Slop("`undivided-by-transit-across netns` cannot hold for the `net-kernel` store of `{{kind_munged}}` -- every network namespace keeps its own copy of network kernel state -- so Dorc drops the invariance line. Delete the line, or if the invariance is real, correct the `stored-in` label to the substrate the state actually lives in.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -236,7 +236,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "277 §4c: a verdict/observe mark asserts exactly one cell; the brace mints no cell and the site runs (a role-aware rejection the parser cannot make).",
         params: &[],
         example: "A verdict mark asserts exactly one cell -- one exit code cannot witness an alternation -- so this `@{a,b}` mints no cell and the site will run. Split it into one marked probe line per cell; braces stay legal on observe (`:?`) marks and claim emissions, which fan out.",
-        message: Some(ProseTier::Authored("A verdict mark asserts exactly one cell -- one exit code cannot witness an alternation -- so this `@{a,b}` mints no cell and the site will run. Split it into one marked probe line per cell; braces stay legal on observe (`:?`) marks and claim emissions, which fan out.")),
+        message: Some(ProseTier::Slop("A verdict mark asserts exactly one cell -- one exit code cannot witness an alternation -- so this `@{a,b}` mints no cell and the site will run. Split it into one marked probe line per cell; braces stay legal on observe (`:?`) marks and claim emissions, which fan out.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -245,7 +245,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "281 §4 keystone (rul-verbs-dotless-kinds-dotted): a dotless mark token is a verb; an unknown one is malformed committed syntax ⇒ the block drops to ⊤ (`inv-top-reject`). `{token}` = the bad token, `{expected}` = the known-verb vocabulary.",
         params: &["token", "expected"],
         example: "`frobnicate` is not a mark verb I know; a dotless token in mark position must be one of asserts, refutes, reads, bind, safe-across, disturbs, lends, stored-in, undivided-by-transit-across",
-        message: Some(ProseTier::Authored("`{{token}}` is not a mark verb I know; a dotless token in mark position must be one of {{expected}}")),
+        message: Some(ProseTier::Slop("`{{token}}` is not a mark verb I know; a dotless token in mark position must be one of {{expected}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -254,7 +254,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "281 §7 rc-arity: one exit code witnesses one cell, so two verdicts on one block is unmeasurable ⇒ the block drops to ⊤ (`inv-top-reject`).",
         params: &[],
         example: "One exit code witnesses one cell, and this mark's command already binds its exit code to a verdict; a second rc-consuming mark cannot be measured. Give each verdict its own probe line -- one command, one exit code, one cell.",
-        message: Some(ProseTier::Authored("One exit code witnesses one cell, and this mark's command already binds its exit code to a verdict; a second rc-consuming mark cannot be measured. Give each verdict its own probe line -- one command, one exit code, one cell.")),
+        message: Some(ProseTier::Slop("One exit code witnesses one cell, and this mark's command already binds its exit code to a verdict; a second rc-consuming mark cannot be measured. Give each verdict its own probe line -- one command, one exit code, one cell.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -263,7 +263,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "28A:rul-continuation-attachment: a standalone block has no statement to measure/back, so a verdict/observe there is unbacked ⇒ the block drops to ⊤ (`inv-top-reject`).",
         params: &[],
         example: "This mark stands on no command, so the cell it names has nothing to back it: `asserts`, `refutes`, and `reads` must trail the command whose exit code and execution they read. A standalone line may carry only non-rc verbs such as `disturbs`, `lends`, or `safe-across`.",
-        message: Some(ProseTier::Authored("This mark stands on no command, so the cell it names has nothing to back it: `asserts`, `refutes`, and `reads` must trail the command whose exit code and execution they read. A standalone line may carry only non-rc verbs such as `disturbs`, `lends`, or `safe-across`.")),
+        message: Some(ProseTier::Slop("This mark stands on no command, so the cell it names has nothing to back it: `asserts`, `refutes`, and `reads` must trail the command whose exit code and execution they read. A standalone line may carry only non-rc verbs such as `disturbs`, `lends`, or `safe-across`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -272,7 +272,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "281 §9 graceful degradation: the hash-colon carrier is left a plain comment (never mis-erased) but diagnosed (Warning) so a broken one is never silently ignored.",
         params: &[],
         example: "This `#:` comment looks like a mark block but does not parse as one, so it mints nothing; Dorc leaves it as a plain comment -- `dorc strip` will not erase it -- rather than guess at its meaning.",
-        message: Some(ProseTier::Authored("This `#:` comment looks like a mark block but does not parse as one, so it mints nothing; Dorc leaves it as a plain comment -- `dorc strip` will not erase it -- rather than guess at its meaning.")),
+        message: Some(ProseTier::Slop("This `#:` comment looks like a mark block but does not parse as one, so it mints nothing; Dorc leaves it as a plain comment -- `dorc strip` will not erase it -- rather than guess at its meaning.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -317,7 +317,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "plans/128 fc-2: a computable range, not a refusal — the unseen sites fold Unknown ⇒ run on their own. NOTE plain-language pass owed: Unknown/⊤-join wording (law-plain-language-surfaces, 24H ack-4).",
         params: &["received", "declared", "unseen"],
         example: "the probe's records ended early: 3 of 5 declared site records arrived, so Dorc treats the 2 unseen site(s) as unanswered and leaves their commands to run.",
-        message: Some(ProseTier::Authored("the probe's records ended early: {{received}} of {{declared}} declared site records arrived, so Dorc treats the {{unseen}} unseen site(s) as unanswered and leaves their commands to run.")),
+        message: Some(ProseTier::Slop("the probe's records ended early: {{received}} of {{declared}} declared site records arrived, so Dorc treats the {{unseen}} unseen site(s) as unanswered and leaves their commands to run.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -362,7 +362,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "host evidence remains controller-owned and decision-inert until admission succeeds.",
         params: &[],
         example: "Dorc refused this attempt's probe records before using them: the stream failed an admission check (framing, size, structure, or identity), so none of it became a fact and no plan was produced.",
-        message: Some(ProseTier::Authored("Dorc refused this attempt's probe records before using them: the stream failed an admission check (framing, size, structure, or identity), so none of it became a fact and no plan was produced.")),
+        message: Some(ProseTier::Slop("Dorc refused this attempt's probe records before using them: the stream failed an admission check (framing, size, structure, or identity), so none of it became a fact and no plan was produced.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -371,7 +371,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. The reason is typed: two FootprintIncoherentReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "touches() footprint omits this command's own effect coordinate (at-least not-within at-most) -- footprint refused, the site walls",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -380,7 +380,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "ru-26 SPIKE-ONLY: makes the static→dynamic boundary visible in the render; must not leak into greenfield as a permanent per-escalation requirement.",
         params: &["site", "call"],
         example: "site 0: this footprint could not be derived statically, so hork.touches() shipped with the probe and answered from the host, read-only.",
-        message: Some(ProseTier::Authored("site {{site}}: this footprint could not be derived statically, so {{call}} shipped with the probe and answered from the host, read-only.")),
+        message: Some(ProseTier::Slop("site {{site}}: this footprint could not be derived statically, so {{call}} shipped with the probe and answered from the host, read-only.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -389,7 +389,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "262 §2 / 26A stop-1: an at-most family cannot be partial — refuse ⇒ the site walls total.",
         params: &["site", "reason"],
         example: "site 0: the footprint derived on the host arrived incomplete (no deriv-end close-record), and an at-most claim cannot be partial, so Dorc refuses it whole and the site walls, as if nothing had been claimed.",
-        message: Some(ProseTier::Authored("site {{site}}: the footprint derived on the host arrived incomplete ({{reason}}), and an at-most claim cannot be partial, so Dorc refuses it whole and the site walls, as if nothing had been claimed.")),
+        message: Some(ProseTier::Slop("site {{site}}: the footprint derived on the host arrived incomplete ({{reason}}), and an at-most claim cannot be partial, so Dorc refuses it whole and the site walls, as if nothing had been claimed.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -398,7 +398,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C §2: the disclosure varies by dial (default vs --escalate-any-probe). The reason is typed: the payload carries core's own EscalationDial and Capability, and the `{reason}` hole renders the dial's prose-component with the capability word interleaved (28L rul-reason-enums-not-sibling-codes).",
         params: &["reason"],
         example: "escalation policy: probe re-uses connection authority (root) for `tolerates:`-vouched functions only (default); entry forms: sudo -n. Forbid with --no-probe-escalation; widen with --escalate-any-probe.",
-        message: Some(ProseTier::Authored("{{reason}}")),
+        message: Some(ProseTier::Slop("{{reason}}")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -407,7 +407,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C §9: every cross-context elision renders its attribution chain from day one. The holes are typed: `{axes}` are the crossed axes and `{kinds}` the read kinds with their invariant loci; the sentence is the code's own register.",
         params: &["axes", "kinds"],
         example: "This elision carried across fs-view: Dorc proved the verdict body reads nothing beyond the site's own arguments and sm_dorc_File (invariant: line at certsync.oracle.sh:12), whose owners vouch that state does not divide across fs-view.",
-        message: Some(ProseTier::Authored("This elision carried across {{axes}}: Dorc proved the verdict body reads nothing beyond the site's own arguments and {{kinds}}, whose owners vouch that state does not divide across {{axes}}.")),
+        message: Some(ProseTier::Slop("This elision carried across {{axes}}: Dorc proved the verdict body reads nothing beyond the site's own arguments and {{kinds}}, whose owners vouch that state does not divide across {{axes}}.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -416,7 +416,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C §2 (recognize-never-license): the one-line adoption hint. The holes are typed: `{provider}` and `{dimension}` name the missing vouch.",
         params: &["provider", "dimension"],
         example: "This site would elide if hork's oracle vouched its verdict across the wrapped context -- one line in the verdict function: `: safe-across user`.",
-        message: Some(ProseTier::Authored("This site would elide if {{provider}}'s oracle vouched its verdict across the wrapped context -- one line in the verdict function: `: safe-across {{dimension}}`.")),
+        message: Some(ProseTier::Slop("This site would elide if {{provider}}'s oracle vouched its verdict across the wrapped context -- one line in the verdict function: `: safe-across {{dimension}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -425,7 +425,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "24F §3 at-most-one-resolver-per-kind: BOTH refused (never first-wins-silently); the kind keeps token-equality.",
         params: &["kind", "count"],
         example: "Kind `sm_dorc_Package` has 2 resolvers across the loaded oracle files, and a kind has one identity, so Dorc refuses them all -- entities of this kind compare by name alone until exactly one `__resolve` remains.",
-        message: Some(ProseTier::Authored("Kind `{{kind}}` has {{count}} resolvers across the loaded oracle files, and a kind has one identity, so Dorc refuses them all -- entities of this kind compare by name alone until exactly one `__resolve` remains.")),
+        message: Some(ProseTier::Slop("Kind `{{kind}}` has {{count}} resolvers across the loaded oracle files, and a kind has one identity, so Dorc refuses them all -- entities of this kind compare by name alone until exactly one `__resolve` remains.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -434,7 +434,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "corr-kind-keying §10: resolvers are keyed by KIND, not command — a likely mis-key (kept; the warning surfaces the risk).",
         params: &["name"],
         example: "`hork__resolve()` is keyed by a command name, but a resolver belongs to a kind -- as written it mints identity for a kind no coordinate can name (a likely mis-key).",
-        message: Some(ProseTier::Authored("`{{name}}__resolve()` is keyed by a command name, but a resolver belongs to a kind -- as written it mints identity for a kind no coordinate can name (a likely mis-key).")),
+        message: Some(ProseTier::Slop("`{{name}}__resolve()` is keyed by a command name, but a resolver belongs to a kind -- as written it mints identity for a kind no coordinate can name (a likely mis-key).")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -443,7 +443,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "24F §4: turns a third-party-typo from silent value-loss into a pointed hint; the coord rides the may-alias degrade (the site runs). ADVISORY (fail toward run).",
         params: &["coord"],
         example: "Coordinate sm.dorc.Package:nginx names an entity its kind's resolver does not recognize -- a likely typo or stale name -- so Dorc treats it as possibly aliasing anything, and the site runs.",
-        message: Some(ProseTier::Authored("Coordinate {{coord}} names an entity its kind's resolver does not recognize -- a likely typo or stale name -- so Dorc treats it as possibly aliasing anything, and the site runs.")),
+        message: Some(ProseTier::Slop("Coordinate {{coord}} names an entity its kind's resolver does not recognize -- a likely typo or stale name -- so Dorc treats it as possibly aliasing anything, and the site runs.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -452,7 +452,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "24G §4 at-most-one-reaches-per-kind: BOTH refused (never first-wins-silently); the kind's footprints do not expand.",
         params: &["kind", "count"],
         example: "Kind `sm_dorc_Package` has 2 reach-functions across the loaded oracle files, and `only` is a completeness contract two surveys cannot both hold, so Dorc refuses them all -- the kind's footprints stay exactly as emitted until one remains.",
-        message: Some(ProseTier::Authored("Kind `{{kind}}` has {{count}} reach-functions across the loaded oracle files, and `only` is a completeness contract two surveys cannot both hold, so Dorc refuses them all -- the kind's footprints stay exactly as emitted until one remains.")),
+        message: Some(ProseTier::Slop("Kind `{{kind}}` has {{count}} reach-functions across the loaded oracle files, and `only` is a completeness contract two surveys cannot both hold, so Dorc refuses them all -- the kind's footprints stay exactly as emitted until one remains.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -461,7 +461,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "24G §4: reaches is keyed by KIND, not command — a likely mis-key.",
         params: &["name"],
         example: "`hork__disturbance_reaches_only()` is keyed by a command name, but a reach-function belongs to a kind -- as written it widens a kind no coordinate can name (a likely mis-key).",
-        message: Some(ProseTier::Authored("`{{name}}__disturbance_reaches_only()` is keyed by a command name, but a reach-function belongs to a kind -- as written it widens a kind no coordinate can name (a likely mis-key).")),
+        message: Some(ProseTier::Slop("`{{name}}__disturbance_reaches_only()` is keyed by a command name, but a reach-function belongs to a kind -- as written it widens a kind no coordinate can name (a likely mis-key).")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -470,7 +470,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "entry_shifts", "lend_shifts"],
         example: "Wrapper `runas`'s `__enter` and `__lend_map` disagree on argv flow: the entry form consumes 1 leading argument(s) where the lend-fold consumes 2, so the guest the entry runs is not the guest the fold measured, and Dorc stops before contacting any host. Make the entry form pass the fold's guest verbatim -- both argparses must peel to the same tail.",
-        message: Some(ProseTier::Authored("Wrapper `{{wrapper}}`'s `__enter` and `__lend_map` disagree on argv flow: the entry form consumes {{entry_shifts}} leading argument(s) where the lend-fold consumes {{lend_shifts}}, so the guest the entry runs is not the guest the fold measured, and Dorc stops before contacting any host. Make the entry form pass the fold's guest verbatim -- both argparses must peel to the same tail.")),
+        message: Some(ProseTier::Slop("Wrapper `{{wrapper}}`'s `__enter` and `__lend_map` disagree on argv flow: the entry form consumes {{entry_shifts}} leading argument(s) where the lend-fold consumes {{lend_shifts}}, so the guest the entry runs is not the guest the fold measured, and Dorc stops before contacting any host. Make the entry form pass the fold's guest verbatim -- both argparses must peel to the same tail.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -479,7 +479,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.",
         params: &["wrapper", "predict_depth", "lend_map_depth"],
         example: "Wrapper `sudo`'s `__predict` and `__lend_map` disagree on where the guest begins: `__predict` reaches `\"$@\"` after 1 argv token(s), `__lend_map` after 0, so the guest would start at a different token depending on which member dispatched, and Dorc stops before contacting any host. Fix whichever argparse is wrong so both members peel to the same tail.",
-        message: Some(ProseTier::Authored("Wrapper `{{wrapper}}`'s `__predict` and `__lend_map` disagree on where the guest begins: `__predict` reaches `\"$@\"` after {{predict_depth}} argv token(s), `__lend_map` after {{lend_map_depth}}, so the guest would start at a different token depending on which member dispatched, and Dorc stops before contacting any host. Fix whichever argparse is wrong so both members peel to the same tail.")),
+        message: Some(ProseTier::Slop("Wrapper `{{wrapper}}`'s `__predict` and `__lend_map` disagree on where the guest begins: `__predict` reaches `\"$@\"` after {{predict_depth}} argv token(s), `__lend_map` after {{lend_map_depth}}, so the guest would start at a different token depending on which member dispatched, and Dorc stops before contacting any host. Fix whichever argparse is wrong so both members peel to the same tail.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -488,8 +488,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "whylog-write-only-replay + versioned-additive format: a durable is version-tagged and NOT byte-stable across versions, so a newer/older format is refused politely rather than mis-parsed. Pull-surface (the user asked): Warning, Floor::None. `{found}` = the tag read from the header. Remediation register (help) wanted: re-run the live analysis (`dorc why` without --last) since the old durable cannot be replayed by this binary.",
         params: &["found"],
         example: "the saved why-log uses format `dorc-whylog/2`, which this version of dorc cannot read back",
-        message: Some(ProseTier::Authored("the saved why-log uses format `{{found}}`, which this version of dorc cannot read back")),
-        help: HelpRegister::Written(ProseTier::Authored("ask the question live instead: `dorc why` (without `--last`) re-analyzes the current book directly")),
+        message: Some(ProseTier::Slop("the saved why-log uses format `{{found}}`, which this version of dorc cannot read back")),
+        help: HelpRegister::Written(ProseTier::Slop("ask the question live instead: `dorc why` (without `--last`) re-analyzes the current book directly")),
     },
     CatalogEntry {
         slug: "whylog-book-desync",
@@ -497,8 +497,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "determinism-is-the-replay-license: the durable stores digests, not book/oracle CONTENT, and re-reads them from disk; a changed input breaks the replay tie, so the recorded run is never silently re-derived against the wrong source. Pull-surface: Warning, Floor::None. `{which}` = the diverged input (`book`, an oracle path, or `decision-digest`). Since 28F rul-drift-replay-d1 the `book` case is the ENTRY to a DEGRADED receipt rather than a dead end — the durable-derived header, oracle inventory and disposition tally still render, with the drift stated in them and every source-keyed section suppressed; the other two still refuse outright. Remediation register (help) wanted: the book/oracle changed since that run — re-run the live analysis for a current answer.",
         params: &["which"],
         example: "the saved why-log no longer matches what is on disk: `book` has changed since it was written",
-        message: Some(ProseTier::Authored("the saved why-log no longer matches what is on disk: `{{which}}` has changed since it was written")),
-        help: HelpRegister::Written(ProseTier::Authored("replaying old decisions against changed files would mislead; re-run `dorc why` live for a current answer")),
+        message: Some(ProseTier::Slop("the saved why-log no longer matches what is on disk: `{{which}}` has changed since it was written")),
+        help: HelpRegister::Written(ProseTier::Slop("replaying old decisions against changed files would mislead; re-run `dorc why` live for a current answer")),
     },
     CatalogEntry {
         slug: "whylog-absent",
@@ -506,8 +506,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "the durable is written only when a plan/apply/round-trip run was asked to (spike: the `--whylog-dir` opt-in; product: quietly beside its work); a `--last` with nothing to replay is a benign no-answer, not a crash. Pull-surface: Warning, Floor::None. `{dir}` = the whylog directory searched. Remediation register (help) wanted: run a plan/apply first (or point --whylog-dir at the right directory) to produce a durable to replay.",
         params: &["dir"],
         example: "there is no saved why-log in `.whylog` to read back",
-        message: Some(ProseTier::Authored("there is no saved why-log in `{{dir}}` to read back")),
-        help: HelpRegister::Written(ProseTier::Authored("a why-log is saved when a plan or apply runs with `--whylog-dir`; run one first, or point `--whylog-dir` at the right directory")),
+        message: Some(ProseTier::Slop("there is no saved why-log in `{{dir}}` to read back")),
+        help: HelpRegister::Written(ProseTier::Slop("a why-log is saved when a plan or apply runs with `--whylog-dir`; run one first, or point `--whylog-dir` at the right directory")),
     },
     CatalogEntry {
         slug: "whylog-corrupt",
@@ -515,8 +515,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "inv-no-throw: a corrupt durable is diagnostics, never a crash — the reader refuses politely and names the parse-failure reason. Pull-surface: Warning, Floor::None. The reason is typed: four WhylogCorruptReason variants, each with its own prose-component, which the `{reason}` hole renders (28L rul-reason-enums-not-sibling-codes). Remediation register (help) wanted: the durable is damaged — re-run the live analysis to regenerate it.",
         params: &["reason"],
         example: "the saved why-log is damaged and cannot be read back (no dorc-whylog-end sentinel (a truncated write?))",
-        message: Some(ProseTier::Authored("the saved why-log is damaged and cannot be read back ({{reason}})")),
-        help: HelpRegister::Written(ProseTier::Authored("this usually means an interrupted write; re-run `dorc why` live, and the next plan or apply will save a fresh why-log")),
+        message: Some(ProseTier::Slop("the saved why-log is damaged and cannot be read back ({{reason}})")),
+        help: HelpRegister::Written(ProseTier::Slop("this usually means an interrupted write; re-run `dorc why` live, and the next plan or apply will save a fresh why-log")),
     },
     CatalogEntry {
         slug: "aid-unloaded-sibling-oracle",
@@ -524,8 +524,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common cause of a wall that a present-but-unloaded oracle would lift; the run is unchanged (advisory Note). The hole is typed: `{oracles}` is the sorted unloaded-sibling list, joined by the cli.",
         params: &["oracles"],
         example: "sibling oracle files exist on disk but were not loaded: `redis.oracle.sh`",
-        message: Some(ProseTier::Authored("sibling oracle files exist on disk but were not loaded: {{oracles}}")),
-        help: HelpRegister::Written(ProseTier::Authored("load them with `--oracle <file>` (or point `--oracle-dir` at their directory); dorc never loads an oracle you did not name")),
+        message: Some(ProseTier::Slop("sibling oracle files exist on disk but were not loaded: {{oracles}}")),
+        help: HelpRegister::Written(ProseTier::Slop("load them with `--oracle <file>` (or point `--oracle-dir` at their directory); dorc never loads an oracle you did not name")),
     },
     CatalogEntry {
         slug: "authored-decline-class",
@@ -533,7 +533,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27W decline-class-emission - classing a decline is enhancement, and the inventory is how an author sees what they classed. Advisory only, never gates; the license plane never reads a class.",
         params: &["class"],
         example: "this verdict arm deliberately declines to answer, classed `unsound`: any site it matches is left to run, and the class only shapes Dorc's advisory hints, never what executes.",
-        message: Some(ProseTier::Authored("this verdict arm deliberately declines to answer, classed `{{class}}`: any site it matches is left to run, and the class only shapes Dorc's advisory hints, never what executes.")),
+        message: Some(ProseTier::Slop("this verdict arm deliberately declines to answer, classed `{{class}}`: any site it matches is left to run, and the class only shapes Dorc's advisory hints, never what executes.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -542,7 +542,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar - the sibling of authored-decline-class, split by WORLD-STATE (the class resolves only at runtime) rather than by a template hole. 27W:rul-report-noise-tolerant: an unrecognized header degrades to a note, never an error.",
         params: &[],
         example: "this verdict arm deliberately declines to answer, but its class is not statically readable (a dynamic format string, or an unrecognized class token): matched sites are left to run and the class is only picked up at runtime; a literal, recognized token would make it readable here.",
-        message: Some(ProseTier::Authored("this verdict arm deliberately declines to answer, but its class is not statically readable (a dynamic format string, or an unrecognized class token): matched sites are left to run and the class is only picked up at runtime; a literal, recognized token would make it readable here.")),
+        message: Some(ProseTier::Slop("this verdict arm deliberately declines to answer, but its class is not statically readable (a dynamic format string, or an unrecognized class token): matched sites are left to run and the class is only picked up at runtime; a literal, recognized token would make it readable here.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -551,7 +551,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R §4 dir-absent-is-info - a missing tool is the admin's environment, disclosed rather than silently skipped; --require-tools raises it to a hard CI error. The replay is the real `dorc lint` surface with tools left ENABLED; the injected runner (the one external-tool DI seam) answers every tool absent, so an airgapped machine's own output is reached with no PATH probe and no process.",
         params: &["tool"],
         example: "Dorc did not find `checkbashisms` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error.",
-        message: Some(ProseTier::Authored("Dorc did not find `{{tool}}` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error.")),
+        message: Some(ProseTier::Slop("Dorc did not find `{{tool}}` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -560,7 +560,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a foreign tool-rc beyond zero/nonzero (checkbashisms' additive 1|2|4 codes are the named trap), so an unexplained failure is reported as itself. World-as-payload: replay never runs a foreign tool.",
         params: &["tool", "rc"],
         example: "`shellcheck` exited with status 2 without producing any findings Dorc could read, so its checks contributed nothing here -- run it directly to see its own report.",
-        message: Some(ProseTier::Authored("`{{tool}}` exited with status {{rc}} without producing any findings Dorc could read, so its checks contributed nothing here -- run it directly to see its own report.")),
+        message: Some(ProseTier::Slop("`{{tool}}` exited with status {{rc}} without producing any findings Dorc could read, so its checks contributed nothing here -- run it directly to see its own report.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -578,7 +578,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R §2 item-2, the gradual-enhancement nag - silence licenses nothing, so a wall is disclosed with the cost it imposes. The downstream count is APPROXIMATE (all downstream commands, not only the modeled ones) - seam-unmodeled-degradation-count.",
         params: &["wall_count", "wall_word", "downstream"],
         example: "this book carries 2 unmodeled walls -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~3 command site(s) after it fall back to runtime guards instead of full elision.",
-        message: Some(ProseTier::Authored("this book carries {{wall_count}} unmodeled {{wall_word}} -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~{{downstream}} command site(s) after it fall back to runtime guards instead of full elision.")),
+        message: Some(ProseTier::Slop("this book carries {{wall_count}} unmodeled {{wall_word}} -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~{{downstream}} command site(s) after it fall back to runtime guards instead of full elision.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -587,7 +587,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "rul-rc-partition - a verdict function's exit status reads one fixed table, so a tail stage's status flattens `1 = complement` and `>=2 = cannot-say` into whatever the tail produced. FALSIFICATION-FIRST (rul-unprovable-rides-the-vouch): the check may under-report, never gate.",
         params: &[],
         example: "this __is_converged body answers with a pipeline, so the status Dorc reads is the final stage's, not the described tool's own -- the difference between `does not hold` (status 1) and `cannot say` (2 and up) flattens into whatever the tail exits; prefer a shape where the tool's own status is the body's answer.",
-        message: Some(ProseTier::Authored("this __is_converged body answers with a pipeline, so the status Dorc reads is the final stage's, not the described tool's own -- the difference between `does not hold` (status 1) and `cannot say` (2 and up) flattens into whatever the tail exits; prefer a shape where the tool's own status is the body's answer.")),
+        message: Some(ProseTier::Slop("this __is_converged body answers with a pipeline, so the status Dorc reads is the final stage's, not the described tool's own -- the difference between `does not hold` (status 1) and `cannot say` (2 and up) flattens into whatever the tail exits; prefer a shape where the tool's own status is the body's answer.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -596,7 +596,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar: one of THREE sibling codes over io::ErrorKind - a missing file, an unreadable one, and an unclassed OS failure are different world-states with different repairs. Never the platforms raw phrasing.",
         params: &["kind", "path"],
         example: "Dorc cannot find the book at `webhost.sh`.",
-        message: Some(ProseTier::Authored("Dorc cannot find the {{kind}} at `{{path}}`.")),
+        message: Some(ProseTier::Slop("Dorc cannot find the {{kind}} at `{{path}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -605,7 +605,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "the read-error trichotomys second arm: the file is there, so the repair is permissions, not the path - a distinction the raw OS string buries.",
         params: &["kind", "path"],
         example: "Dorc found the oracle at `/etc/dorc/nginx.oracle.sh`, but is not allowed to read it.",
-        message: Some(ProseTier::Authored("Dorc found the {{kind}} at `{{path}}`, but is not allowed to read it.")),
+        message: Some(ProseTier::Slop("Dorc found the {{kind}} at `{{path}}`, but is not allowed to read it.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -623,7 +623,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar: ONE code for the whole family - the flags differ, the failure does not, so this is grammar-fit and takes a hole rather than a sibling per flag.",
         params: &["flag", "wants"],
         example: "The `--book` flag needs a path, and none was given.",
-        message: Some(ProseTier::Authored("The `{{flag}}` flag needs {{wants}}, and none was given.")),
+        message: Some(ProseTier::Slop("The `{{flag}}` flag needs {{wants}}, and none was given.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -632,7 +632,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "the flag surface is per-invocation, so accepting it elsewhere would imply a capability that mode does not have. tc-whylog-default-off: the spike opt-in siting is the disclosed cut here.",
         params: &["flag", "mode"],
         example: "The `--whylog` flag is only valid with dorc why.",
-        message: Some(ProseTier::Authored("The `{{flag}}` flag is only valid with {{mode}}.")),
+        message: Some(ProseTier::Slop("The `{{flag}}` flag is only valid with {{mode}}.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -641,7 +641,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R section 8b: --expect-files is a CI scope assertion, so a malformed count is refused rather than coerced - a silently-zero expectation would pass vacuously.",
         params: &["flag", "got"],
         example: "The `--expect-files` flag takes a non-negative integer, not `many`.",
-        message: Some(ProseTier::Authored("The `{{flag}}` flag takes a non-negative integer, not `{{got}}`.")),
+        message: Some(ProseTier::Slop("The `{{flag}}` flag takes a non-negative integer, not `{{got}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -650,7 +650,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27C axis-1 and 27R section 5: these vocabularies are engine-owned and closed, so naming the whole accepted set is both possible and the fastest repair.",
         params: &["flag", "got", "expected"],
         example: "The `--probe-capability` flag does not accept `wat`; the choices are root|nopasswd|degraded.",
-        message: Some(ProseTier::Authored("The `{{flag}}` flag does not accept `{{got}}`; the choices are {{expected}}.")),
+        message: Some(ProseTier::Slop("The `{{flag}}` flag does not accept `{{got}}`; the choices are {{expected}}.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -659,7 +659,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "declarations-genuinely-contradict: a pre-network fail-fast rather than a precedence rule, because either silent winner would be a guess at intent.",
         params: &["first", "second"],
         example: "The `--whylog` and `--whylog-dir` flags cannot both be given.",
-        message: Some(ProseTier::Authored("The `{{first}}` and `{{second}}` flags cannot both be given.")),
+        message: Some(ProseTier::Slop("The `{{first}}` and `{{second}}` flags cannot both be given.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -668,7 +668,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "there is nothing to analyze and no safe default: guessing a book would be a plan the admin never asked for. dorc why --last is the one exemption, since it reconstructs its book from the durable.",
         params: &[],
         example: "Dorc was given no book to work on; name one as a positional path or with `--book=PATH`.",
-        message: Some(ProseTier::Authored("Dorc was given no book to work on; name one as a positional path or with `--book=PATH`.")),
+        message: Some(ProseTier::Slop("Dorc was given no book to work on; name one as a positional path or with `--book=PATH`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -686,7 +686,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar: the SIBLING of cli-strip-needs-path - an argument WAS given, so the user asked for a surface strip does not have, and the remediation differs.",
         params: &["got"],
         example: "`dorc strip` takes only a file path, but was given the flag `--book=webhost.sh`.",
-        message: Some(ProseTier::Authored("`dorc strip` takes only a file path, but was given the flag `{{got}}`.")),
+        message: Some(ProseTier::Slop("`dorc strip` takes only a file path, but was given the flag `{{got}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -695,7 +695,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "288 rul-dorc-strip-is-the-offramp: strip takes exactly one positional, so an empty one is unambiguous rather than a guess at intent.",
         params: &[],
         example: "`dorc strip` needs a file path, and none was given.",
-        message: Some(ProseTier::Authored("`dorc strip` needs a file path, and none was given.")),
+        message: Some(ProseTier::Slop("`dorc strip` needs a file path, and none was given.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -704,7 +704,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "inv-top-reject in the small: an unmodeled flag is refused loudly rather than ignored, because a silently-dropped flag is a plan the admin did not ask for.",
         params: &["flag"],
         example: "Dorc does not recognize the flag `--boook=webhost.sh`.",
-        message: Some(ProseTier::Authored("Dorc does not recognize the flag `{{flag}}`.")),
+        message: Some(ProseTier::Slop("Dorc does not recognize the flag `{{flag}}`.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -713,7 +713,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar: the sibling of cli-unknown-flag, split by a WORLD-STATE (the flag table has a near neighbour) with its own remediation.",
         params: &["flag", "suggestion"],
         example: "Dorc does not recognize the flag `--wat`; did you mean `--last`?",
-        message: Some(ProseTier::Authored("Dorc does not recognize the flag `{{flag}}`; did you mean `{{suggestion}}`?")),
+        message: Some(ProseTier::Slop("Dorc does not recognize the flag `{{flag}}`; did you mean `{{suggestion}}`?")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -722,7 +722,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27S did-you-mean: a near-miss is a typo, and naming the intended mode costs one line and saves a round-trip. A wholly-different word is a positional book instead, never a wrong guess.",
         params: &["mode", "suggestion"],
         example: "Dorc does not recognize the mode `pln`; did you mean `plan`?",
-        message: Some(ProseTier::Authored("Dorc does not recognize the mode `{{mode}}`; did you mean `{{suggestion}}`?")),
+        message: Some(ProseTier::Slop("Dorc does not recognize the mode `{{mode}}`; did you mean `{{suggestion}}`?")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -749,7 +749,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "288 rul-dorc-sh-not-carved-out: dorc-sh joins the registry like every other surface - slugs, canonical looms, auditable - with only its terse print framing as a surface selection.",
         params: &[],
         example: "usage: dorc-sh <script> [args...]",
-        message: Some(ProseTier::Authored("usage: dorc-sh <script> [args...]")),
+        message: Some(ProseTier::Slop("usage: dorc-sh <script> [args...]")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -758,7 +758,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R section 8b: the count is a scope assertion, so drift means the glob silently stopped covering what CI thought it covered - clean-because-empty is the failure it catches.",
         params: &["expected", "found"],
         example: "`--expect-files` declared 12 lintable files, but Dorc saw 9; the lint's scope has drifted.",
-        message: Some(ProseTier::Authored("`--expect-files` declared {{expected}} lintable files, but Dorc saw {{found}}; the lint's scope has drifted.")),
+        message: Some(ProseTier::Slop("`--expect-files` declared {{expected}} lintable files, but Dorc saw {{found}}; the lint's scope has drifted.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -767,7 +767,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R section 8b: zero files is OPERATIONAL, never clean - a vacuous pass is the CI failure mode the exit trichotomy exists to prevent.",
         params: &[],
         example: "Dorc was given no files to lint; an empty lint counts as a failure, not a clean pass.",
-        message: Some(ProseTier::Authored("Dorc was given no files to lint; an empty lint counts as a failure, not a clean pass.")),
+        message: Some(ProseTier::Slop("Dorc was given no files to lint; an empty lint counts as a failure, not a clean pass.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -776,7 +776,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "27R section 4 dir-absent-is-info, inverted by explicit request: absence is advisory by default, and --require-tools is how CI says a partial lint must not read as a pass.",
         params: &["tools"],
         example: "`--require-tools` was given, but these lint tools are missing from PATH: checkbashisms, shellcheck.",
-        message: Some(ProseTier::Authored("`--require-tools` was given, but these lint tools are missing from PATH: {{tools}}.")),
+        message: Some(ProseTier::Slop("`--require-tools` was given, but these lint tools are missing from PATH: {{tools}}.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -785,7 +785,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "28D:must-default-durable-lands-with-its-hardening bills a durable for VISIBLE persistence failure; this write path previously answered all five of its failure modes with a bare return, which 28D names among the whylog's each-looked-local decisions. Error-floor rather than advisory (28F:rul-write-failure-is-error-floor) because the advisory plane is suppressed under `apply`, and an apply whose receipt silently vanished is exactly the run an admin later comes back asking about. The artifact on stdout is unaffected - a postmortem aid failing is loud, never fatal. Remediation register (help) wanted: name what to check for the reported reason, and note that the run itself completed and its artifact is unaffected.",
         params: &["dir", "reason"],
         example: "This run completed and its artifact is unaffected, but the why-log did not land in /var/lib/dorc/whylog (reason: directory), so `dorc why --last` will have nothing to read for it.",
-        message: Some(ProseTier::Authored("This run completed and its artifact is unaffected, but the why-log did not land in {{dir}} (reason: {{reason}}), so `dorc why --last` will have nothing to read for it.")),
+        message: Some(ProseTier::Slop("This run completed and its artifact is unaffected, but the why-log did not land in {{dir}} (reason: {{reason}}), so `dorc why --last` will have nothing to read for it.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -794,7 +794,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "26G:haz-silence-is-the-common-cause - three of the four r26 analyzer findings were one defect class, a safety-correct degrade that nothing announced, and each was found by a human diffing declared against lifted by hand. Cause-AGNOSTIC on purpose: it reports the LOSS and never a reason, so it also catches roles whose own give-up diagnostics reach no surface (`__lend_map`, `__enter`, `__resolve` and the rest) and drop paths nobody has hit yet. Warn-tier, never a refusal: the constructs that void a body are legal POSIX and stay accepted (parse-permissively/trace-conservatively), and an unlifted funcdef vouches for nothing - it only stops helping. Fires alongside a cause-bearing error rather than deferring to one: `predict-out-of-dialect` names the offending LINE, this names the FUNCTION that line took down, and the r26 authors read the first without drawing the second. Remediation register (help) wanted: point at the funcdef, say its binds and marks are not in effect, and note that the file parsing clean is not evidence it lifted.",
         params: &["funcname"],
         example: "Dorc recognized `wombat__predict` as a role function but could not lift it: its binds and marks are not in effect, and it vouches for nothing. The file parsing clean is not evidence the function lifted; a companion diagnostic usually names the exact line that took it down.",
-        message: Some(ProseTier::Authored("Dorc recognized `{{funcname}}` as a role function but could not lift it: its binds and marks are not in effect, and it vouches for nothing. The file parsing clean is not evidence the function lifted; a companion diagnostic usually names the exact line that took it down.")),
+        message: Some(ProseTier::Slop("Dorc recognized `{{funcname}}` as a role function but could not lift it: its binds and marks are not in effect, and it vouches for nothing. The file parsing clean is not evidence the function lifted; a companion diagnostic usually names the exact line that took it down.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -803,7 +803,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "26G:fnd-shared-auto-cell-collides - a verdict-only oracle's sites all key one synthesized per-provider cell, so a book that copies six files with one `cp` puts all six on one coordinate. One unreadable destination then de-licenses the other five, and a sibling that merely failed to report does it as readily as one that disagreed, because cant-tell is the default for any site the probe could not answer. The collapse is safety-correct (every site runs) and was entirely silent: the merge minted a decision-inert narrative that no surface consumed. Cell-keyed, ONE line however many sites disagree - the collapse is a property of the cell, and per-pair lines read as N unrelated problems. Spanless: a cell is a cross-site coordinate, and pointing the caret at any one line would blame it for a shared collapse. Remediation register (help) wanted: name the sibling sites, and point at authoring a verdict coordinate as what splits the cell.",
         params: &["sites", "cell"],
         example: "2 probe sites all measure one shared coordinate (dorc-auto:cp@converged) and their reports did not agree, so Dorc holds it unknown and every site on it runs -- the cleanly-reporting ones included (an authored verdict coordinate would split them apart).",
-        message: Some(ProseTier::Authored("{{sites}} probe sites all measure one shared coordinate ({{cell}}) and their reports did not agree, so Dorc holds it unknown and every site on it runs -- the cleanly-reporting ones included (an authored verdict coordinate would split them apart).")),
+        message: Some(ProseTier::Slop("{{sites}} probe sites all measure one shared coordinate ({{cell}}) and their reports did not agree, so Dorc holds it unknown and every site on it runs -- the cleanly-reporting ones included (an authored verdict coordinate would split them apart).")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -812,7 +812,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "a verdict mark claims THIS command's rc establishes the property, but an and-or list answers with the LIST's rc, so the claim has no owner. In `probe : k:e@sel || return 2` the marked cell's complement sense can never be spoken - rc 1 is unreachable, the `||` having routed every failure to 2 - and in `probe : k:e@sel || true` the rc is forged 0 on every host whatever the world says, which is the errexit-masked rc R2-ORTRUE forbids as a verdict and the always-skip guard shape (23H 9.4). `281` 7's one-verdict-per-line rc-arity reaches the same place from the grammar side. Refusing is the loud half of a fix, not a new restriction: before and-or lists were lexed at all, a `&&` list's mark was honored off a command whose right-hand statements no tracer could see. Warn-tier, never a refusal - the cell is simply unminted, so the site runs, which is the safe direction; but an author who wrote an annotation that does nothing must hear it (the silent-inert authored-construct class). Remediation register (help) wanted: the mark belongs on the command whose rc it reads, on its own line, with the gate above it.",
         params: &[],
         example: "This mark trails an item of an `&&`/`||` list, whose exit code belongs to the list as a whole, so the mark reads nothing and mints no cell; the list itself ships untouched. Give the marked probe its own line, with the gate above it, so the mark reads that one command's own exit code.",
-        message: Some(ProseTier::Authored("This mark trails an item of an `&&`/`||` list, whose exit code belongs to the list as a whole, so the mark reads nothing and mints no cell; the list itself ships untouched. Give the marked probe its own line, with the gate above it, so the mark reads that one command's own exit code.")),
+        message: Some(ProseTier::Slop("This mark trails an item of an `&&`/`||` list, whose exit code belongs to the list as a whole, so the mark reads nothing and mints no cell; the list itself ships untouched. Give the marked probe its own line, with the gate above it, so the mark reads that one command's own exit code.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -821,7 +821,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "law-lane-discipline. The third world state in the transport family and the only KNOWN one: it ran, it finished, it exited non-zero. The status is reproduced, never interpreted. A zero is equally not a health claim - plans/252 section 8 - which is what a verify re-probe is for.",
         params: &["host", "status"],
         example: "The apply artifact on web1.example.net ran to completion and exited 2; the status is the artifact's own, and a fresh `dorc plan` measures what actually converged.",
-        message: Some(ProseTier::Authored("The apply artifact on {{host}} ran to completion and exited {{status}}; the status is the artifact's own, and a fresh `dorc plan` measures what actually converged.")),
+        message: Some(ProseTier::Slop("The apply artifact on {{host}} ran to completion and exited {{status}}; the status is the artifact's own, and a fresh `dorc plan` measures what actually converged.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -830,7 +830,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "260 dec-26-crlf. A CRLF shebang is an exec failure the remote kernel raises before any shell of ours exists, so nothing we ship can catch it there - it can only be refused on the controller. Refuses rather than repairs: silently rewriting bytes someone is about to run on a server trades a one-line fix for an invisible edit.",
         params: &["which", "line"],
         example: "Dorc refuses to ship webhost.dorc-plan.sh: it carries a carriage return (first on line 1), and CRLF bytes fail on the remote host before any shell can run -- convert the line endings to LF and re-plan.",
-        message: Some(ProseTier::Authored("Dorc refuses to ship {{which}}: it carries a carriage return (first on line {{line}}), and CRLF bytes fail on the remote host before any shell can run -- convert the line endings to LF and re-plan.")),
+        message: Some(ProseTier::Slop("Dorc refuses to ship {{which}}: it carries a carriage return (first on line {{line}}), and CRLF bytes fail on the remote host before any shell can run -- convert the line endings to LF and re-plan.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -839,7 +839,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "26A stop-2 plus rul-integrity-failure-withholds-mutation. Absence of output cannot prove absence of execution, so this is neither clean nor failed. Sibling of transport-spawn-refused by WORLD STATE, not grammar: there nothing ran and the repair is the invocation, here something may have run and the repair is to re-probe.",
         params: &["host", "diagnosis", "attempts"],
         example: "The session to web1.example.net ended without its completion marker (the session ended without a status; attempts: 3), so Dorc cannot tell whether the shipped artifact ran -- re-run `dorc plan` to measure what actually happened.",
-        message: Some(ProseTier::Authored("The session to {{host}} ended without its completion marker ({{diagnosis}}; attempts: {{attempts}}), so Dorc cannot tell whether the shipped artifact ran -- re-run `dorc plan` to measure what actually happened.")),
+        message: Some(ProseTier::Slop("The session to {{host}} ended without its completion marker ({{diagnosis}}; attempts: {{attempts}}), so Dorc cannot tell whether the shipped artifact ran -- re-run `dorc plan` to measure what actually happened.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -848,7 +848,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar. The sibling of transport-spawn-refused: the same untouched-host claim in a different world. Nothing outside the controller participated, so there is nothing to relay and the whole sentence is ours; the remedy is the invocation, where the spawn-refused remedy is the environment.",
         params: &["host"],
         example: "Dorc could not turn this run's nonce into a session marker, so nothing was shipped and web1.example.net was never contacted.",
-        message: Some(ProseTier::Authored("Dorc could not turn this run's nonce into a session marker, so nothing was shipped and {{host}} was never contacted.")),
+        message: Some(ProseTier::Slop("Dorc could not turn this run's nonce into a session marker, so nothing was shipped and {{host}} was never contacted.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -857,7 +857,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "AID-NEEDS:law-codes-vary-by-world-not-grammar. One of the two outcomes licensed to claim the host was untouched, because the failure is local and provable. Its sibling transport-marker-unusable is the same claim in a different world: there nothing outside the controller participated, so nothing is relayed and the remedy is the invocation rather than the environment.",
         params: &["host"],
         example: "Dorc could not start the session process for web1.example.net, so nothing was shipped and the host was never contacted.",
-        message: Some(ProseTier::Authored("Dorc could not start the session process for {{host}}, so nothing was shipped and the host was never contacted.")),
+        message: Some(ProseTier::Slop("Dorc could not start the session process for {{host}}, so nothing was shipped and the host was never contacted.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -866,7 +866,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "`28K` §2a rul-marked-file-is-load-inert — a marked file must be provably no-op to LOAD, and two things rest on it. `28K` §2's function-environment domain models a `.`-source as \"apply this file's definitions here\", which is a total model only for a file that cannot also run something the domain would have to interpret; and `28K` §3's regional-preference idiom re-sources a file for real, inside a subshell, at apply time, so a top-level command there is a mutation nobody licensed. Error-tier rather than a degrade because a partial load is not a conservative load — the environment would be wrong, not merely narrow (inv-top-reject; this crate's standing declarations-only-files law, unimplemented until now). Conservative first per `271:rul-posix-in-spirit-defaults`: `export`/`readonly` and the operator forms of parameter expansion are refused rather than special-cased, and relaxing any of them later is cheap where re-tightening would not be.",
         params: &[],
         example: "A `# dorc-lang/v0.2`-marked oracle file must be inert to load -- nothing but function definitions and static assignments at top level -- and this is the first item that does more. Move top-level work into a role function or into the book; an oracle file is loaded for its definitions, never run.",
-        message: Some(ProseTier::Authored("A `# dorc-lang/v0.2`-marked oracle file must be inert to load -- nothing but function definitions and static assignments at top level -- and this is the first item that does more. Move top-level work into a role function or into the book; an oracle file is loaded for its definitions, never run.")),
+        message: Some(ProseTier::Slop("A `# dorc-lang/v0.2`-marked oracle file must be inert to load -- nothing but function definitions and static assignments at top level -- and this is the first item that does more. Move top-level work into a role function or into the book; an oracle file is loaded for its definitions, never run.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -875,7 +875,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "`28K` §1 rul-silent-shadowing-refuses. sh silently lets the last definition win; a book or a second library can therefore reassign whose judgment governs a tool by appending one `.`-source line, and the admin would never see it (`28K` §6 rej-load-order-as-trust-adjudicator). Dorc changes no runtime behaviour here — it declines to LICENSE off a definition whose selection nobody spelled, which is the only lever that keeps trust exposure for a family at or below the max of the single-provider worlds (`28K` §8). WARNING, not error: the refusal only ever withholds, the book still applies, and one `unset -f` line between the definitions retires it. Evaluated over the abstract function environment, never by guard-shape pattern recognition (`28K` §2 rul-conflict-pass-is-semantic; `271:rul-net-quality-u-curve`), and only on a PROVABLE shadow — a ⊤ prior binding complains not, and licenses not either, which is what makes shipping ahead of the decidable-condition fold sound (`28O:res-polyfill-binding-tops-pending-fold`). A same-FILE redefinition is a different world-state with a different remediation and keeps its own pre-existing refusal (`216` e-1).",
         params: &["name", "prior", "family"],
         example: "This `yum__is_converged` overrides the definition at vendor/yum.oracle.sh:4 with nothing spelling the choice, so Dorc withholds every license from the `yum` family and its sites run -- an `unset -f yum__is_converged` between the two spells the override as chosen.",
-        message: Some(ProseTier::Authored("This `{{name}}` overrides the definition at {{prior}} with nothing spelling the choice, so Dorc withholds every license from the `{{family}}` family and its sites run -- an `unset -f {{name}}` between the two spells the override as chosen.")),
+        message: Some(ProseTier::Slop("This `{{name}}` overrides the definition at {{prior}} with nothing spelling the choice, so Dorc withholds every license from the `{{family}}` family and its sites run -- an `unset -f {{name}}` between the two spells the override as chosen.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -884,7 +884,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "`28M` §5.3 obl-in-book-vocabulary-role-notice. The vocabulary tier is the ONE ambient exception to the full-positional regime: kind-owner members canonicalize entities and type emissions for OTHER authors' sites, so they must be single-occupancy and load \"before line 1\" rather than answering differently at different lines of somebody's book (`28M` §3 wall-kind-owner-single-occupancy — single occupancy in an owned namespace is what converts multi-author danger into single-author trust). A book cannot supply that: its definitions are positional by construction. So the definition does not load, and the notice exists because silence here reads as \"my resolver is broken\" rather than \"this belongs in a loaded file\". The remediation is to move it into a marked oracle file and name that file on the command line. WARNING, not note: unlike the move-it-up hint, something the author wrote genuinely has no effect.",
         params: &["name", "role"],
         example: "`sm_dorc_Package__resolve` has no effect here: a kind-owner function (`__resolve`) answers for every author's sites, so it loads only from a marked oracle file named on the invocation -- move it into one.",
-        message: Some(ProseTier::Authored("`{{name}}` has no effect here: a kind-owner function (`{{role}}`) answers for every author's sites, so it loads only from a marked oracle file named on the invocation -- move it into one.")),
+        message: Some(ProseTier::Slop("`{{name}}` has no effect here: a kind-owner function (`{{role}}`) answers for every author's sites, so it loads only from a marked oracle file named on the invocation -- move it into one.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -893,7 +893,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "`28K` §2 rul-visibility-is-full-positional (ACKED spike-tier, human-typed 2026-07-31). Every site-keyed act reads the function environment AS OF THE SITE'S POSITION, so a definition a shell executing top-to-bottom has not reached yet licenses NOTHING above itself — no elision, no guard, no vouch. That is the design's named, accepted consequence, chosen because expectation-matching beats maximal ergonomics: the naive model of Dorc as a stupid guard-inserter, whose inserted text cannot see a definition loaded below it, now holds uniformly. The cost lands on the stage-3 bottom-appender (`28M` §6, rent-climbed), and this note is their recovery — the remediation is to move the definition above its sites, which costs one cut-and-paste and is a change the engine is uniquely positioned to notice. NOTE severity, never warning: the book is correct sh, applies unchanged, and nothing is wrong; the aid plane is naming value the admin could have (`two-plane-aid-law`).",
         params: &["name", "sites"],
         example: "`yum__is_converged` is defined below 2 of its family's sites, and a definition licenses nothing above itself, so those sites run as if it were absent -- moving it above them is one cut-and-paste.",
-        message: Some(ProseTier::Authored("`{{name}}` is defined below {{sites}} of its family's sites, and a definition licenses nothing above itself, so those sites run as if it were absent -- moving it above them is one cut-and-paste.")),
+        message: Some(ProseTier::Slop("`{{name}}` is defined below {{sites}} of its family's sites, and a definition licenses nothing above itself, so those sites run as if it were absent -- moving it above them is one cut-and-paste.")),
         help: HelpRegister::Absent,
     },
     CatalogEntry {
@@ -902,7 +902,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         why: "`28K` §4 rul-pin-by-definition-bytes, with `28M` §8's diamond rider. What the apply artifact and the shipped probe carry is the analysis-resolved definition PLUS its closure — the helpers and file-level constants the funcdef span does not carry — so the closure has to resolve one body per name. sh itself would resolve it by last-definition-wins, which silently rebinds one author's helper to another author's body: the committee-speech hazard `28M` §2 fences, and unlike the role lane there is no admin spelling that selects between two helpers of the same name. So version-skewed copies REFUSE rather than dedup, the pin is withheld, and the affected sites run (`inv-kfail`: every ambiguity resolves toward run). WARNING rather than error, on `role-family-contested`'s footing: the refusal only withholds, and failing the run would punish an admin for a collision two upstream authors caused. The remediation is theirs to spell — load one of the two, or take custody of a merged copy (`28K` §3's vendoring-with-custody).",
         params: &["name", "prior"],
         example: "Two differing declarations of `_yum_installed` are loaded (the earlier at vendor/yum.oracle.sh:4), and nothing can choose between same-named helpers, so Dorc withholds them all and the sites needing `_yum_installed` run -- load a single source, or take custody of a merged copy.",
-        message: Some(ProseTier::Authored("Two differing declarations of `{{name}}` are loaded (the earlier at {{prior}}), and nothing can choose between same-named helpers, so Dorc withholds them all and the sites needing `{{name}}` run -- load a single source, or take custody of a merged copy.")),
+        message: Some(ProseTier::Slop("Two differing declarations of `{{name}}` are loaded (the earlier at {{prior}}), and nothing can choose between same-named helpers, so Dorc withholds them all and the sites needing `{{name}}` run -- load a single source, or take custody of a merged copy.")),
         help: HelpRegister::Absent,
     },
 ];
