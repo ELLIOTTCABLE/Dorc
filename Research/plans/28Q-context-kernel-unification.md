@@ -554,7 +554,8 @@ the loom Windows stack-overflow (separate small fix).
    committee-corner sitting, parallel, unscheduled. (The license-tier half,
    `tc-split-family-elides-on-two-authors`, is RESOLVED by §4's verdict-primacy ruling.)
 6. `28M` §11's keep/lift + registration verdicts — parallel, human's.
-7. The ANALYZER-NEEDS flat-domain reconciliation paragraph — conductor, at stage-i fold.
+7. The ANALYZER-NEEDS flat-domain reconciliation paragraph — DISCHARGED (conductor,
+   2026-08-13 catch-up pass; `an-flat-domain`/`an-context-key` now carry the §1 text).
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
    unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
    it.
