@@ -1,0 +1,5 @@
+import SparingAlgebra.Coordinate
+import SparingAlgebra.Dialect
+import SparingAlgebra.Compare
+import SparingAlgebra.Sparing
+import SparingAlgebra.Laws

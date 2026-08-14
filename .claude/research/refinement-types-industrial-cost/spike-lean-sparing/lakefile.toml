@@ -1,0 +1,5 @@
+name = "SparingAlgebra"
+defaultTargets = ["SparingAlgebra"]
+
+[[lean_lib]]
+name = "SparingAlgebra"
