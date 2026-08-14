@@ -12,6 +12,7 @@ mod coverage;
 mod hook_selftest;
 mod livetest;
 mod posix_script;
+mod prose_census;
 mod step_globs;
 
 fn main() -> ExitCode {
@@ -21,6 +22,7 @@ fn main() -> ExitCode {
         // other cannot see, so stopping at the first would hide the second's answer.
         Some("hook-selftest") => ExitCode::from(hook_selftest::run().max(step_globs::run())),
         Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
+        Some("prose-census") => prose_census::run(),
         Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
         Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
         Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
@@ -29,7 +31,7 @@ fn main() -> ExitCode {
                 "internal-tooling: unknown task {:?}",
                 other.unwrap_or("<none>")
             );
-            eprintln!("tasks: hook-selftest, coverage, bless, livetest, baselines");
+            eprintln!("tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines");
             ExitCode::from(2)
         }
     }

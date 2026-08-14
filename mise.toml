@@ -401,6 +401,11 @@ description = "Print the closed frontmatter-key vocabulary a case may declare, a
 dir = "spike"
 run = "cargo run --quiet -p dorc-loom -- keys"
 
+[tasks."prose:census"]
+description = "INSTRUMENT, never a gate: per-tier register counts across both generated locks, plus every register marked as written by a person. The burn-down view — migrated text awaits a rewrite, slop is whatever the loom loop minted, and the human column only grows under `dorc-loom promote --human`."
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- prose-census"
+
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table, or a book plus its oracles for a one-off."
 dir = "spike"
