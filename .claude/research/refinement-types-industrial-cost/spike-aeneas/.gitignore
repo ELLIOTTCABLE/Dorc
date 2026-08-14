@@ -1,0 +1,7 @@
+# Charon's serialized AST — a multi-megabyte JSON regenerable in seconds from the
+# pinned toolchain. The Lean under */lean/ is the evidence and IS committed.
+*.llbc
+
+# lake's dependency store: a mathlib checkout plus gigabytes of oleans, fetched
+# from the pins in lakefile.toml + lean-toolchain.
+.lake/

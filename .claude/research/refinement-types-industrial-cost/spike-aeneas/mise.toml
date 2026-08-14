@@ -1,0 +1,114 @@
+# Toolchain for the Aeneas rewrite-distance probe (Rust -> LLBC -> Lean).
+#
+# NESTED, not the repo root, and that placement is load-bearing: the `rust` pin
+# below is a *shadowing* pin. Charon is a rustc driver, so it only runs under the
+# exact nightly it was linked against, and a root-level `rust = "nightly-..."`
+# would silently swap the compiler the whole spike workspace builds with. mise
+# merges configs cwd-upward, so this file adds to the root's toolbelt for anything
+# under this directory and is inert everywhere else. (The sibling Lean spike's
+# elan pin lives at the root because elan is purely *additive*; this one is not.)
+#
+# LINUX/macOS ONLY. Upstream publishes no Windows release asset, so the native
+# Windows leg is gated out rather than left to fail at install time — run this
+# probe's tasks from WSL.
+
+[tools]
+# ONE pin buys the whole frontend: the aeneas release tarball ships `aeneas`
+# alongside the exact `charon`/`charon-driver` named by aeneas's own `charon-pin`
+# file, so the two halves cannot drift apart the way separate pins would. The
+# default asset match picks the Lean *library* build, hence the explicit pattern.
+"github:AeneasVerif/aeneas" = { version = "nightly-2026.08.13-daa85d7", asset_pattern = "aeneas-linux-x86_64.tar.gz", extract_all = true, os = ["linux"] }
+
+# Dictated, not chosen: this is verbatim the `rust-toolchain` file inside the
+# charon tarball. charon-driver links against this nightly's librustc_driver, and
+# `rustc-dev` is what supplies it. Bump only in lockstep with the pin above.
+rust = { version = "nightly-2026-06-01", profile = "minimal", components = "rustc-dev,llvm-tools-preview,rust-src,miri", os = ["linux"] }
+
+# Lean, to typecheck what aeneas emits — a translation that does not compile is
+# not a measurement. Same shape the sibling Lean spike uses at the repo root:
+# the registry has no lean/elan entry, so this pulls elan (the ecosystem's
+# rustup-alike) from the official releases and `lean:bootstrap` runs it once. The
+# LEAN version is NOT pinned here: it is dictated by `backends/lean/lean-toolchain`
+# inside the aeneas release, which elan reads from the generated project.
+"github:leanprover/elan" = { version = "4.2.3", asset_pattern = "elan-x86_64-unknown-linux-gnu.tar.gz", exe = "elan-init", os = ["linux"] }
+
+[env]
+# Keep build output off drvfs and out of the synced tree; also stops this probe
+# from clobbering the spike workspace's shared `spike/target/`.
+CARGO_TARGET_DIR = "{{xdg_cache_home}}/dorc-aeneas-probe-target"
+
+# elan's toolchain store: user-local, deliberately OUTSIDE the repo/Sync tree
+# (Lean toolchains plus a mathlib cache are gigabytes of churn no sync should see).
+ELAN_HOME = "{{xdg_data_home}}/elan"
+_.path = ["{{xdg_data_home}}/elan/bin"]
+
+# ── Tasks ───────────────────────────────────────────────────────────────────
+# Same portability contract as the root config: no shell syntax in a `run`
+# string. These are WSL/*nix-only by construction (the tools above are).
+#
+# `charon rustc` rather than `charon cargo`: every extract here is one dependency
+# -free .rs file, so going through cargo would buy nothing and cost a manifest.
+
+[tasks.translate]
+description = "Run the whole pipeline over one extract: `mise run translate lattice` reads <name>/src/lib.rs and writes <name>/out.llbc plus the Lean under <name>/lean/. Charon's first run of the day also builds a full-MIR sysroot (~1 min); later runs reuse it."
+dir = "{{config_root}}"
+usage = 'arg "name" help="the extract subdirectory, e.g. `hello` or `lattice`"'
+# `--error-on-warnings` is deliberate: charon warns rather than fails on the
+# constructs it cannot model, and a silently-degraded .llbc would make the Lean
+# output look better than the rewrite distance actually is.
+run = [
+   "charon rustc --preset=aeneas --dest-file {{ usage.name }}/{{ usage.name }}.llbc --error-on-warnings -- --crate-name {{ usage.name }} --crate-type=lib --edition=2021 {{ usage.name }}/src/lib.rs",
+   "aeneas -backend lean -no-progress-bar -dest {{ usage.name }}/lean -split-files -abort-on-error {{ usage.name }}/{{ usage.name }}.llbc",
+]
+
+[tasks."translate:lenient"]
+description = "translate, minus the two fail-fast flags — charon downgrades unmodellable constructs to warnings and aeneas keeps going past the first error. Use it to see how MUCH is unsupported in one pass instead of one item at a time; never to judge whether an extract translated."
+dir = "{{config_root}}"
+usage = 'arg "name" help="the extract subdirectory"'
+run = [
+   "charon rustc --preset=aeneas --dest-file {{ usage.name }}/{{ usage.name }}.llbc -- --crate-name {{ usage.name }} --crate-type=lib --edition=2021 {{ usage.name }}/src/lib.rs",
+   "aeneas -backend lean -no-progress-bar -dest {{ usage.name }}/lean -split-files {{ usage.name }}/{{ usage.name }}.llbc",
+]
+
+[tasks.check]
+description = "rustc-only sanity pass over an extract — proves a butchered copy still compiles before blaming charon for rejecting it."
+dir = "{{config_root}}"
+usage = 'arg "name" help="the extract subdirectory"'
+run = "rustc --crate-name {{ usage.name }} --crate-type=lib --edition=2021 --emit=metadata --out-dir /tmp/dorc-aeneas-check {{ usage.name }}/src/lib.rs"
+
+# ── Lean leg ────────────────────────────────────────────────────────────────
+# `translate` answers "did aeneas emit?"; only these answer "does the emission
+# typecheck?", which is the claim worth making. Scoped to the `lattice` extract:
+# a second lake project would cost another mathlib build for no new information.
+
+[tasks."lean:bootstrap"]
+description = "One-time, idempotent: run the elan installer mise fetched, populating ELAN_HOME with elan and its lean/lake proxies. No toolchain is pulled here — `lean:build` triggers that from the project's lean-toolchain file."
+run = "elan-init -y --no-modify-path --default-toolchain none"
+
+[tasks."lean:emit"]
+description = "Re-emit the lattice extract as a self-contained lake package (entry point, default lakefile, `Lattice.` import prefix) instead of the bare Types/Funs pair `translate` writes. Overwrites everything under lattice/lean-proj EXCEPT the hand-filled FunsExternal.lean and the pinned lakefile."
+dir = "{{config_root}}"
+# Three steps because aeneas writes the entry file into `-dest` alongside the
+# modules it imports, while lake wants `Lattice.lean` one level ABOVE `Lattice/`.
+# The `cp` accepts the template's holes as axioms verbatim — that is the honest
+# reading of an unmodelled std function, and it is what makes the count of holes
+# a measurement rather than a chore.
+run = [
+   "aeneas -backend lean -no-progress-bar -dest lattice/lean-proj/Lattice -split-files -gen-lib-entry -abort-on-error lattice/lattice.llbc",
+   "mv lattice/lean-proj/Lattice/Lattice.lean lattice/lean-proj/Lattice.lean",
+   "cp lattice/lean-proj/Lattice/FunsExternal_Template.lean lattice/lean-proj/Lattice/FunsExternal.lean",
+]
+
+[tasks."lean:stage"]
+description = "Copy the emitted package to a WSL-local build root. Lake's dependency store is a mathlib clone plus gigabytes of oleans; unpacking that onto drvfs (/mnt/c) is minutes-to-hours slower than ext4, and none of it belongs in the tree anyway. Sources stay committed here; only the build moves."
+dir = "{{config_root}}/lattice/lean-proj"
+run = [
+   "mkdir -p {{xdg_cache_home}}/dorc-aeneas-leanproj",
+   "cp -r Lattice Lattice.lean Laws.lean lakefile.toml lean-toolchain {{xdg_cache_home}}/dorc-aeneas-leanproj/",
+]
+
+[tasks."lean:build"]
+description = "Typecheck the emitted Lean. First run downloads a Lean toolchain and clones mathlib for its olean cache (gigabytes, tens of minutes); later runs are incremental."
+depends = ["lean:stage"]
+dir = "{{xdg_cache_home}}/dorc-aeneas-leanproj"
+run = ["lake exe cache get", "lake build"]
