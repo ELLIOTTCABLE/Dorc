@@ -19,6 +19,19 @@ struct Case {
     /// Session markers set for this case, on top of the neutralised baseline.
     env: &'static [(&'static str, &'static str)],
     message: &'static str,
+    /// A throwaway repository to run the hook in, when the case is about what the hook READS.
+    census: Option<Census>,
+}
+
+/// How many human-written registers a fixture repository's lock carries at HEAD and staged.
+///
+/// A real repository rather than a stubbed `git`, because the fail-OPEN half of this gate is the
+/// READ: a mis-spelled revision or path answers empty, both counts land on zero, and a growing
+/// census sails through green. Only real plumbing over a real index can catch that.
+struct Census {
+    /// `None` puts the lock in the index alone — the absent-from-HEAD arm, counted as zero.
+    head: Option<usize>,
+    staged: usize,
 }
 
 /// An agent session, which is what makes the `AI` label mandatory.
@@ -33,12 +46,14 @@ const CASES: &[Case] = &[
         want_pass: true,
         env: AGENT,
         message: "(AI fix) Move the index onto the hot path\n",
+        census: None,
     },
     Case {
         name: "refuses-the-claude-coauthor-trailer",
         want_pass: false,
         env: AGENT,
         message: "(AI fix) Move it\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\n",
+        census: None,
     },
     // Isolates the IDENTITY matcher: a foreign-harness trailer the anthropic-footer
     // matcher does not also catch. Without it, sabotaging either matcher alone left the
@@ -48,80 +63,200 @@ const CASES: &[Case] = &[
         want_pass: false,
         env: AGENT,
         message: "(AI fix) Move it\n\nCo-Authored-By: Codex <codex@example.com>\n",
+        census: None,
     },
     Case {
         name: "refuses-the-session-trailer",
         want_pass: false,
         env: AGENT,
         message: "(AI fix) Move it\n\nClaude-Session: https://claude.ai/code/session_01\n",
+        census: None,
     },
     Case {
         name: "refuses-the-generation-footer",
         want_pass: false,
         env: AGENT,
         message: "(AI new) Add the thing\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n",
+        census: None,
     },
     Case {
         name: "leaves-a-human-coauthor-alone",
         want_pass: true,
         env: AGENT,
         message: "(AI fix) Move it\n\nCo-Authored-By: Jane Doe <jane@example.com>\n",
+        census: None,
     },
     Case {
         name: "refuses-a-subject-with-no-labels",
         want_pass: false,
         env: AGENT,
         message: "Fix the thing\n",
+        census: None,
     },
     Case {
         name: "exempts-a-generated-merge",
         want_pass: true,
         env: AGENT,
         message: "Merge branch 'ai/r28-unify' into ai/main\n",
+        census: None,
     },
     Case {
         name: "exempts-a-generated-revert",
         want_pass: true,
         env: AGENT,
         message: "Revert \"(AI test) Prove the transcript-driven loop\"\n",
+        census: None,
     },
     Case {
         name: "refuses-an-agent-commit-without-ai",
         want_pass: false,
         env: AGENT,
         message: "(fix) Move the index onto the hot path\n",
+        census: None,
     },
     Case {
         name: "honours-the-human-escape-hatch",
         want_pass: true,
         env: &[("CLAUDECODE", "1"), ("DORC_HUMAN_COMMIT", "1")],
         message: "(fix) Move the index onto the hot path\n",
+        census: None,
     },
     Case {
         name: "leaves-a-non-agent-commit-alone",
         want_pass: true,
         env: &[],
         message: "(fix) Move the index onto the hot path\n",
+        census: None,
     },
     Case {
         name: "warns-but-admits-an-unknown-label",
         want_pass: true,
         env: AGENT,
         message: "(AI fix loom) Reword the catalog register\n",
+        census: None,
     },
     Case {
         name: "accepts-the-purpose-labels",
         want_pass: true,
         env: AGENT,
         message: "(AI fix aid cli) Reword a register and the usage line\n",
+        census: None,
     },
     Case {
         name: "strips-the-editor-comment-block",
         want_pass: true,
         env: AGENT,
         message: "(AI doc) Explain the seam\n\n# Please enter the commit message for your changes.\n# Lines starting with '#' will be ignored.\n",
+        census: None,
+    },
+    // The prose ratchet, both directions. Growth is the only refused shape, and it is refused on
+    // the LABEL rather than on the session, so the last case is what says the gate is about the
+    // claim a commit makes and not about who typed it.
+    Case {
+        name: "refuses-a-growing-human-census",
+        want_pass: false,
+        env: AGENT,
+        message: "(AI aid) Reword a register\n",
+        census: Some(Census {
+            head: Some(1),
+            staged: 2,
+        }),
+    },
+    Case {
+        name: "refuses-a-first-human-register",
+        want_pass: false,
+        env: AGENT,
+        message: "(AI aid) Reword a register\n",
+        census: Some(Census {
+            head: None,
+            staged: 1,
+        }),
+    },
+    Case {
+        name: "admits-a-steady-human-census",
+        want_pass: true,
+        env: AGENT,
+        message: "(AI aid) Reword a register\n",
+        census: Some(Census {
+            head: Some(2),
+            staged: 2,
+        }),
+    },
+    Case {
+        name: "admits-a-shrinking-human-census",
+        want_pass: true,
+        env: AGENT,
+        message: "(AI aid) Rework a register the loom re-marked\n",
+        census: Some(Census {
+            head: Some(2),
+            staged: 1,
+        }),
+    },
+    Case {
+        name: "leaves-a-human-labelled-commit-alone",
+        want_pass: true,
+        env: &[],
+        message: "(new aid) Write the register\n",
+        census: Some(Census {
+            head: Some(1),
+            staged: 2,
+        }),
     },
 ];
+
+/// The lock the ratchet reads, spelled exactly as the hook spells it.
+const LOCK: &str = "spike/crates/aid/src/catalog_lock.rs";
+
+/// A throwaway repository whose lock carries `census`'s counts at HEAD and in the index.
+///
+/// Nothing here is signed or hooked: a fixture commit that waited on a passphrase, or fired the
+/// developer's own global hooks, would make this gate hang on somebody else's configuration.
+fn fixture_repo(census: &Census, at: &std::path::Path) -> Result<(), String> {
+    let git = |args: &[&str]| -> Result<(), String> {
+        let status = Command::new("git")
+            .args([
+                "-c",
+                "user.name=dorc-selftest",
+                "-c",
+                "user.email=selftest@example.invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "-c",
+                "core.hooksPath=no-such-hooks",
+            ])
+            .args(args)
+            .current_dir(at)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map_err(|e| format!("could not run git: {e}"))?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format!("git {args:?} failed in {}", at.display()))
+        }
+    };
+    let lock = at.join(LOCK);
+    let write = |count: usize| -> Result<(), String> {
+        let rows =
+            "        message: Some(ProseTier::WrittenByHumanOnly(\"words\")),\n".repeat(count);
+        std::fs::create_dir_all(lock.parent().unwrap_or(at))
+            .and_then(|()| std::fs::write(&lock, format!("// @generated\n{rows}")))
+            .map_err(|e| format!("cannot write {}: {e}", lock.display()))
+    };
+
+    git(&["init", "-q"])?;
+    match census.head {
+        Some(count) => write(count)?,
+        // HEAD must exist for `HEAD:<lock>` to be the ABSENT-blob case rather than a broken repo.
+        None => std::fs::write(at.join("seed"), "seed\n")
+            .map_err(|e| format!("cannot seed {}: {e}", at.display()))?,
+    }
+    git(&["add", "-A"])?;
+    git(&["commit", "-q", "-m", "seed"])?;
+    write(census.staged)?;
+    git(&["add", "-A"])
+}
 
 /// The session markers the hook gates on, neutralised before each case so an inherited
 /// value cannot decide the verdict. The sh version leaked these from its caller.
@@ -150,9 +285,28 @@ fn run_case(
     for (key, value) in case.env {
         child.env(key, value);
     }
-    let status = child
-        .status()
-        .map_err(|e| format!("could not run {}: {e}", shell.display()));
+    // The hook reads the repository it is invoked IN, which is the whole point of a fixture one.
+    let fixture = case.census.as_ref().map(|census| {
+        let at = std::env::temp_dir().join(format!(
+            "dorc-hook-census-{}-{}",
+            std::process::id(),
+            case.name
+        ));
+        let _ = std::fs::remove_dir_all(&at);
+        std::fs::create_dir_all(&at)
+            .map_err(|e| format!("cannot make {}: {e}", at.display()))
+            .and_then(|()| fixture_repo(census, &at))
+            .map(|()| at)
+    });
+    let status = match fixture.transpose()? {
+        Some(at) => {
+            let status = child.current_dir(&at).status();
+            let _ = std::fs::remove_dir_all(&at);
+            status
+        }
+        None => child.status(),
+    }
+    .map_err(|e| format!("could not run {}: {e}", shell.display()));
     let _ = std::fs::remove_file(msg_file);
     status.map(|status| status.success())
 }

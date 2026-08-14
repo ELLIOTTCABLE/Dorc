@@ -82,6 +82,38 @@ if [ -n "${CLAUDECODE:-}${CLAUDE_CODE_ENTRYPOINT:-}" ] && [ -z "${DORC_HUMAN_COM
    esac
 fi
 
+# ── the human-prose ratchet ──────────────────────────────────────────────────
+# An AI-labelled commit may not GROW the count of registers marked as written by a person.
+# Nothing but `dorc-loom promote --human` mints that mark, and that flag already refuses from an
+# agent session — so a growth here is a hand-edited lock, and a hand-edited lock is a claim about
+# authorship that nobody made.
+#
+# A COUNT, not a diff grep, and the locks are why that is honest rather than lazy: they are
+# generated whole by one serializer, one register per line, so an occurrence is a register.
+# Reading the two blobs rather than the worktree is what makes it a check on the commit — the
+# index holds every tracked file, so `:<path>` answers for an unstaged one too.
+#
+# Fails OPEN by construction: no git, no repository, or an unborn HEAD leaves both counts 0. This
+# is a habit-keeper for an idiom agents cannot self-police, not a security boundary.
+human_registers() {
+   git show "$1" 2>/dev/null | grep -o 'WrittenByHumanOnly(' | wc -l
+}
+
+case " $claimed " in
+   *" AI "*|*" AIa "*)
+      for lock in spike/crates/aid/src/catalog_lock.rs spike/crates/aid/src/arrangement_lock.rs; do
+         staged=$(human_registers ":$lock")
+         committed=$(human_registers "HEAD:$lock")
+         [ "$((staged))" -gt "$((committed))" ] || continue
+         die "an AI-labelled commit grows the human-written prose census." \
+            "$lock: $committed registers marked human-written at HEAD, $staged staged." \
+            "Only \`dorc-loom promote --human\` mints that mark, and it refuses from an agent" \
+            "session. If a person really wrote these words, they commit them: DORC_HUMAN_COMMIT=1" \
+            "git commit ... with a label block that does not claim AI."
+      done
+      ;;
+esac
+
 # ── the vocabulary ───────────────────────────────────────────────────────────
 # ADVISORY, deliberately: a slice of live history still carries crate-named strays, so
 # refusing them outright would block the project's own idiom. Promote to `die` once the
