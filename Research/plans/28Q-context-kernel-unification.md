@@ -243,7 +243,12 @@ never. Probe-time entry is availability at position zero. The domain statement,
 sharpened at review (`28R`): those statuses are consumed MUST/MAY-split — entry
 consumes only MUST-available (a conditionally-reached begin never licenses entry; a
 MAY-run end conservatively distrusts — the wall machinery's existing direction); CFG
-joins and loops land on unknown ⇒ guard/run; and a window is a position-SET (an
+joins and loops land on unknown ⇒ guard/run — as the v0 FLOOR, not the model
+[human, 2026-08-13]: the fact-lattice is EXPECTED to grow richer divergence-tracking
+(per-branch world-states, rather than collapse-to-unknown at every conditional
+creator); nothing may build a dependant or expectation on the collapse being
+permanent; the richer resolution is a reserved seat, deliberately un-designed here.
+And a window is a position-SET (an
 interval LIST with gaps — the re-creation gap is structural), never a (start, end)
 pair (`28R:vd-window-is-point-set`). A converged (elided) lifecycle command mints NO
 event: no boundary, no fresh incarnation. Everything else derives:
@@ -291,9 +296,14 @@ be assessable as continuous; the subtleties belong to a later sitting.
   re-parse — this bullet and `27C`'s only-entry-shape ruling genuinely conflict; an
   owed ruling (§9), and the re-parse is `24T`'s payload-decomposition problem in
   network clothing. Probing hosts named IN books also widens the probe's network
-  footprint onto the plan critical path — the side-host entry policy
-  (lazy / opt-in / timeout budget) is stage-iii brief material, and
-  `27C:render-authority-disclosure` grows a host coordinate.
+  footprint onto the plan critical path — RULED [TYPED substance, 2026-08-13]:
+  book-mentioned hosts require additional explicit consent, a `--fan-out`-shaped flag
+  (name STRAWMAN). The line is CLI-authorization, not host-count: every CLI-named
+  target is fair game (multiple targets, each its own plan); any host one hop further
+  — denoted only inside a book — is not entered without the flag (honest walls
+  otherwise). Residual policy under the flag (lazy entry / timeout budgets) stays
+  stage-iii brief material, and `27C:render-authority-disclosure` grows a host
+  coordinate.
 - **Lifecycle events are not a reach-mode** — they are world-mutations that move
   contexts' availability, and there are exactly two primitives: a context **begins**
   (`useradd`, `mount`, `doctl compute droplet create`) or **ends** (`userdel`, `umount`,
@@ -483,7 +493,13 @@ byte-identity gate.
   `28R:§snapshot` residue) — the byte-identity gate is VACUOUS on today's
   single-definition corpus exactly where the new machinery decides, so the fixtures
   land BEFORE the conversion, never as unblocks (the lane's own measure-first
-  precedent: bitem6, item0). Then: DefinitionId keying of derived rows; the frame
+  precedent: bitem6, item0). These are GROUND-TRUTH manifests, not behavior pins: the
+  committed expectations are the real shells' own answers, measured once, never
+  churned; the engine-agreement half of each cell activates when stage-i lands.
+  Ordinary golden corpus cells for the plural idioms arrive AFTER the behavior lands
+  (the human's lean, 2026-08-13: pin the future, never pin the hole) — the one
+  deliberate exception is the case-bodied wrapped EXPECTED-TO-FLIP cell, kept as the
+  diagnostic on §1's asserted cause. Then: DefinitionId keying of derived rows; the frame
   indirection at every resolution seat; retire the agreement veto, `live_source`, and
   `never_live` as separate mechanisms; unify the wrapped-vouch and whyworld/survival
   seats (priced per `28P` — a re-lift dispatch, not a rename); helper closures take
