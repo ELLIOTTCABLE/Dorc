@@ -79,6 +79,7 @@ files:
   the analyzer kernel needs, across the product)
 - AID-NEEDS.md (ditto, but for the why/explain/hint/warn/error layer, which
   threads through everything)
+- FORFEITS.md (any time 'value' is passed up in favour of velocity; wherever we punt on a decision that is plausibly tractable, but requires additional engine effort)
 
 ## Git hygiene
 
