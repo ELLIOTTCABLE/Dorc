@@ -340,5 +340,5 @@ Two adjacent entries, graded in `28H` but absent from the list above:
 EXECUTES on the host — a new probe-time execution surface inheriting the read-only
 contract, the report-lane rules and the encoding obligation — or is read statically from
 source, which is nearly free. Decide that before minting the role, not after.
-`292:inv-claim-blast-radius` MUST scope to the current invocation's loaded oracles; a
+`28Vc:inv-claim-blast-radius` MUST scope to the current invocation's loaded oracles; a
 controller-wide index of which books rest on which claim is the cross-run case above.

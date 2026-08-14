@@ -1,4 +1,4 @@
-# 292 — why-output strawmen (imagination-tier, written UNPOISONED)
+# 28Vc (née 292) — why-output strawmen (imagination-tier, written UNPOISONED)
 
 AI-authored (Fable conductor, 2026-07-25, at human direction) BEFORE reading the
 whystrawmen lane's captured output — deliberately unpoisoned by the as-built renders.

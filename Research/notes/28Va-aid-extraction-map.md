@@ -1,4 +1,4 @@
-# 290 — the aid-crate extraction MAP (mechanical spec for `288:phase-aid-crate-extraction`)
+# 28Va (née 290) — the aid-crate extraction MAP (mechanical spec for `288:phase-aid-crate-extraction`)
 
 MAP-tier under `27U:map-then-execute-split`. This document is the EXECUTION SPEC: a fresh
 executor runs it with ZERO re-derivation. Every claim below was re-verified in-tree at base

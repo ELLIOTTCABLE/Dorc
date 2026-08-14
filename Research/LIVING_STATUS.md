@@ -131,7 +131,7 @@ entry naming who ran it (`27Xf` §4) · naming discipline (`270` §1, HIGH): hyp
 full-word slugs; `docID:slug` cross-refs; subscript old labels once ("nee P5") ·
 the deferred-work ledger lives in `23O` §5; residue in `24C` · note-ID discipline:
 r28 notes are LETTER-suffixed (`28A`…); never mint another `29x` numeric ID — it reads
-as the quarantined r29 (`290`–`296` are stranded legacy of the `289`→`290` rollover).
+as the quarantined r29 (the `289`→`290` rollover is the trap).
 
 ---
 
@@ -140,7 +140,7 @@ as the quarantined r29 (`290`–`296` are stranded legacy of the `289`→`290` r
 Six sub-arcs, all BUILT: **the `280` charter** (errorloom standalone · `281` mark-grammar v0.2 ·
 the `282` generation flip) — ledger `notes/28A`; **errorloom phase-three** — ledger `notes/287`;
 **the aid/loom unification** (`plans/288`: `crates/aid` extracted · flat test tree + central
-runners · the arrangement registry) — ledger `notes/289` (+ maps `290`/`291`); **the
+runners · the arrangement registry) — ledger `notes/289` (+ maps `28Va`/`28Vb`); **the
 why-surface sitting + W1→W4 build** (`notes/28E` rulings · `plans/28G` · ledgers `notes/28F`
 and `notes/28H`, red-lines `28I`, W5 worklist `28J` — re-audit caveat above); **THE LOOM-FINAL
 ARC** (2026-07-29→31: the stamped-provenance boundary weld · placeholder-overtype as the

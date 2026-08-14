@@ -241,7 +241,7 @@ and carries the license-contamination map.
   taint work). Deferred (human-owned, `28A`): the `sm `-prose Fable pass · catalog
   canonicalization · glued-param seam · errorloom LICENSE/publish. The post-charter
   arcs, each with its own durable: errorloom phase-three `notes/287` · the aid/loom
-  unification `plans/288` → `notes/289` (+ maps `290`/`291`) · the why-surface
+  unification `plans/288` → `notes/289` (+ maps `28Va`/`28Vb`) · the why-surface
   sitting + W1→W4 build `notes/28E`/`plans/28G` → ledgers `notes/28F`/`28H`
   (red-lines `28I`, W5 worklist `28J`) · THE LOOM-FINAL ARC (stamped provenance;
   the ~176-case loom corpus) — conduct `notes/28L`, prose accounting `notes/28N` ·

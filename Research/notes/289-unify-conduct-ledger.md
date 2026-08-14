@@ -51,7 +51,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   (builder must check + report which is as-built). Named escalation seam, build
   NOTHING now: if the census gate ever leaks a real under-narration,
   value-carriage-in-the-join is the priced next rung. Rides phase-1-exec or the
-  2–4 lane, whichever `notes/290` says is cheapest.
+  2–4 lane, whichever `notes/28Va` says is cheapest.
 
 ## §2b — Phase-0 landing (conductor, 2026-07-24)
 
@@ -70,7 +70,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   phase 6: the lint-case loom conversion adds a CLEAN-run case (transcript pin,
   re-blesses freely) alongside the findings cases.
 
-## §2c — Phase-1 MAP checkpoint rulings (conductor, 2026-07-24; on `notes/290`'s flags)
+## §2c — Phase-1 MAP checkpoint rulings (conductor, 2026-07-24; on `notes/28Va`'s flags)
 
 - Map LANDED @ `00155aaf` on `ai/r28-unify-p1` (notes-only; folded to the stack). The
   §3a rename decisions are ACCEPTED WHOLESALE — specifically dec-collapse-kind-kept +
@@ -116,9 +116,9 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 | lane | branch | shape | state |
 |---|---|---|---|
 | phase 0: lint-tally-pluralization | `ai/r28-unify-p0` | single dispatch, worktree | LANDED+FOLDED 2026-07-24 @ `2bf13785` → merge `c45be8b8` |
-| phase 1 map: aid-crate extraction spec (`notes/290`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | LANDED+FOLDED 2026-07-24 @ `00155aaf` |
-| phase 1 exec: the extraction cutover | `ai/r28-unify-p1x` | fresh executor per `290` + `289` §2c | LANDED+FOLDED @ `2ac85127` (§2e) |
-| phases 2–4: mint/lint/cli-errors (map `notes/291`) | `ai/r28-unify-p24` + `-p24x` | map-then-execute, mid-lane checkpoint | LANDED+FOLDED @ `7948a0cb` (§2i/§2j) |
+| phase 1 map: aid-crate extraction spec (`notes/28Va`) | `ai/r28-unify-p1` | map half (map-then-execute), no engine edits | LANDED+FOLDED 2026-07-24 @ `00155aaf` |
+| phase 1 exec: the extraction cutover | `ai/r28-unify-p1x` | fresh executor per `28Va` + `289` §2c | LANDED+FOLDED @ `2ac85127` (§2e) |
+| phases 2–4: mint/lint/cli-errors (map `notes/28Vb`) | `ai/r28-unify-p24` + `-p24x` | map-then-execute, mid-lane checkpoint | LANDED+FOLDED @ `7948a0cb` (§2i/§2j) |
 | touches-fix: disturbs-family name pin | `ai/r28-unify-touches` | parallel small lane | LANDED+FOLDED @ `d9ff7b81` (§2h) |
 | phase 5: flat tree + central runners + run.sh retirement | `ai/r28-unify-p5` | two-stop | LANDED+FOLDED @ `e3a74744` (§2k/§2l) |
 | phase 6: e2e→loom conversion + riders | `ai/r28-unify-p6` | single stop + follow-up | LANDED+FOLDED @ `950ffe7e` (§2n) |
@@ -144,7 +144,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - 2026-07-24: phase-0 (Opus, fresh worktree, bg) — lint tally pluralization + golden
   hand-edits.
 - 2026-07-24: phase-1 MAP (Opus, fresh worktree, bg) — mechanical extraction spec →
-  `notes/290` on `ai/r28-unify-p1`; no engine edits.
+  `notes/28Va` on `ai/r28-unify-p1`; no engine edits.
 - 2026-07-24: phase-1 EXECUTOR (Opus, fresh worktree, bg) — the 290 cutover as amended by 289 §2c, on `ai/r28-unify-p1x` off `c1cab82a`.
 
 ## §2d — r29 evidence-types fence (HUMAN-TYPED 2026-07-24)
@@ -152,7 +152,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 - The in-flight r29 work mints NEW `*Evidence*` types that are NOT narration-related
   (correctness/license-plane — the exact future use `288:rul-narrative-layer-naming`
   reserved the word for). The Narrative rename must never stomp them: explicit-file-list
-  rewrites only, no blind grep (the `290` §4 design already complies; the human also
+  rewrites only, no blind grep (the `28Va` §4 design already complies; the human also
   briefed the executor directly). Standing for the whole arc and any successor: the
   word "evidence" BELONGS to the correctness plane now — never rename toward it, never
   sweep it.
@@ -163,7 +163,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   prelude · THE atomic cutover · steering-sync+reslug). Folded @ `35954157`. Builder
   gates cold-green at parity (1163 unit / 97 e2e; full `cargo clean`); goldens and
   `.loom` cases byte-identical throughout; ratchet skip-once fired and re-arms;
-  rewrite counts exact-parity with `290` §4a; hostsim/sweep/errorloom took NO aid dep;
+  rewrite counts exact-parity with `28Va` §4a; hostsim/sweep/errorloom took NO aid dep;
   the r29 evidence fence verified two ways (identifier-allowlist rename; every
   surviving `*Evidence` identifier untouched). Conductor own-hand cold verification
   at the fold: full clean + build + clippy + `DRY=1 conduct-bless`.
@@ -182,16 +182,16 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
 
 ## §2f — Phases 2–4 lane (one checkpointed lane per the acked lean)
 
-- Shape: map-then-execute. MAP claims `notes/291`; riders attached: the hardening
+- Shape: map-then-execute. MAP claims `notes/28Vb`; riders attached: the hardening
   package (`289:rul-mint-hardening-package`, phase-2 seat) · `289:rider-diag-tidy-scan-set`
   (phase 3) · `289:rider-dead-diagcode-link` · `289:rider-narrative-prose-sweep` ·
   the `covered()⊆case-owned` drift guard (`28A` §2u) · the `touches`→`disturbs`
   fixture residue (`28A:finding-touches-rename-half-done`; verify-in-other-cells
   first, drop if it resists).
-- 2026-07-24: phases-2–4 MAP (Opus, fresh worktree, bg) — `notes/291` on `ai/r28-unify-p24` off `35954157` (fold-tip; conductor cold-verify in flight in parallel; exec half gated on both).
+- 2026-07-24: phases-2–4 MAP (Opus, fresh worktree, bg) — `notes/28Vb` on `ai/r28-unify-p24` off `35954157` (fold-tip; conductor cold-verify in flight in parallel; exec half gated on both).
 - 2026-07-24: conductor cold verification of the extraction fold PASSED (full clean; build ok | unit 1163 | e2e 97 | gates ok). `35954157` is verified base for the 2–4 exec.
 
-## §2g — Phases-2–4 MAP checkpoint rulings (conductor, 2026-07-24; on `notes/291`'s flags)
+## §2g — Phases-2–4 MAP checkpoint rulings (conductor, 2026-07-24; on `notes/28Vb`'s flags)
 
 - Map LANDED @ `83e93632` (notes-only; folded). Executor: ONE fresh builder, ONE
   mid-lane checkpoint after the phase-3 close (before phase-4's lib extraction +
@@ -279,7 +279,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   correction · lint unification (7 codes, all `sm `-migrated; framed/compact split
   named a policy; SCANNED_CRATES widened).
 - **`289:finding-census-caught-renderrefusal-unminted`** — the h1/h2 census went red
-  on its FIRST run: `RenderRefusal` collapses were never minted (the `291` nine-site
+  on its FIRST run: `RenderRefusal` collapses were never minted (the `28Vb` nine-site
   table omitted it). Builder minted it (decision-inert, zero output change, paired by
   a shared predicate). The hardening package paid for itself same-day; the
   value-carriage escalation rung correctly NOT taken (missing mint ≠ census leak).
@@ -786,7 +786,7 @@ strawman-formats-never-compat-targets (no mapping layers pre-user) · cold-clipp
   they were named by relative path).
 - The comparison corpus is COMPLETE: as-built truth committed in the five
   gallery looms; the conductor's unpoisoned aspirations in
-  `notes/292-why-output-strawmen/` (written+committed BEFORE this landing was
+  `notes/28Vc-why-output-strawmen/` (written+committed BEFORE this landing was
   read, `7ab5e497`); the human's editing round is next — in-place uncommitted
   edits (harvested as diff) or 292-style copies, their choice.
 

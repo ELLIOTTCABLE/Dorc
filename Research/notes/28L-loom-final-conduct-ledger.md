@@ -663,7 +663,7 @@ lanes thread by fresh census, never by the map's count.
   reads a hole's class off the TYPE). Bounded deviation accepted: weft's own
   `Run::foreign` stays stringly (weft-deps-nothing); the seal binds at
   `aid::weave::foreign`, the only Dorc-side route in. Census durable at
-  `notes/296`: 23 sites (not the hand-off's 18), and the name-heuristic itself
+  `notes/28W`: 23 sites (not the hand-off's 18), and the name-heuristic itself
   missed a genuine foreign relay — (a) 5 foreign / (b) 17 ours (6 carrying ~55
   N-sentence details) / (c) 2 mixed; the "syntax-*/predict-* relay foreign bytes"
   claim is FALSE (our own format!ed sentences). Ten codes de-passthrough'd
@@ -674,7 +674,7 @@ lanes thread by fresh census, never by the map's count.
   EMPTY (measured — no adapter, no machinery, the human's no-cruft ack satisfied
   by absence).
 - **rul-reason-enums-not-sibling-codes** (conductor; settles
-  `296:tc-many-sentences-one-slug`) — for the 6 codes carrying ~55
+  `28W:tc-many-sentences-one-slug`) — for the 6 codes carrying ~55
   genuinely-different reason-sentences in one `detail`, the sibling-code remedy is
   REJECTED (structurally blocked by defining-case-catalog × the shrink-only
   ratchet, and disproportionate: the catalog rows would differ only in sentence).
@@ -686,7 +686,7 @@ lanes thread by fresh census, never by the map's count.
   precedent TopCause + remediation_hint set; components, not codes. BUILD: lane
   x2f. EXCEPTION: `transport-not-attempted` IS two worlds (two producers:
   platform spawn-error vs our marker) — it gets the genuine sibling PAIR
-  (`296:tc-transport-not-attempted-is-two-worlds` settled the world-variant way);
+  (`28W:tc-transport-not-attempted-is-two-worlds` settled the world-variant way);
   x2f mints it with defining cases.
 - **fnd-registry-words-escape-the-ascii-law** (x2c) — `⊤` in
   `unmodeled-wall-inventory`'s message register reaches output raw (registry

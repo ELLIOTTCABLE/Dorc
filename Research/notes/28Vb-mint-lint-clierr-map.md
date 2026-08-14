@@ -1,4 +1,4 @@
-# 291 — the mint-seam / lint-unification / CLI-error MAP (phases 2–4, one checkpointed lane)
+# 28Vb (née 291) — the mint-seam / lint-unification / CLI-error MAP (phases 2–4, one checkpointed lane)
 
 MAP-tier under `27U:map-then-execute-split`, claimed by `289` §2f. This document is the
 EXECUTION SPEC: a fresh executor runs it with ZERO re-derivation. Every claim was

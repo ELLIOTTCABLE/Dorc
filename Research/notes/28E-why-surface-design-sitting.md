@@ -11,7 +11,7 @@ Companions: `plans/288` (the unification arc) · `289` §2t–§2z (conduct trai
 hint-homing · gallery · strawmen · fold verifies · findings) · the corpus this
 sitting stares at — five `spike/crates/cli/tests/whygallery-*.loom` (as-built
 committed truth, incl. per-line and zero-arg `dorc why` transcripts) +
-`notes/292-why-output-strawmen/` (conductor aspirations, written unpoisoned) + the
+`notes/28Vc-why-output-strawmen/` (conductor aspirations, written unpoisoned) + the
 human's in-progress hand-edits of 292 · `plans/286` (the explain/teaching tier this
 sitting leans on) · `plans/282` (loom transport) · root `AID-NEEDS.md` (surface law).
 
@@ -210,7 +210,7 @@ narratives + a span-aware transport).
   narrative plane holds (and nags against an author's `unsound` ruling — two
   design-intent inversions at once); `--last` has no replayed voice; the elided
   chain is a single line.
-- ASPIRATION: `notes/292-why-output-strawmen/` (unpoisoned; invented-capability
+- ASPIRATION: `notes/28Vc-why-output-strawmen/` (unpoisoned; invented-capability
   index in its README) — now under the human's hand-editing.
 - The human's markup round over both corpora is the sitting's next input; the
   deltas between the three versions of one case are the requirements extractor.
@@ -244,7 +244,7 @@ narratives + a span-aware transport).
   grammar-typed quoting; DESCRIPTIVE's non-runnable marking is load-bearing) ·
   `must-encode-per-surface` (no universal sanitize; machine envelopes are sinks
   too) · `must-not-acquire-cross-run-state-incidentally` (fleet/trend views =
-  retained receipts diffed by an EXTERNAL tool, never engine state; the `292`
+  retained receipts diffed by an EXTERNAL tool, never engine state; the `28Vc`
   blast-radius capability SCOPES to the current invocation's loaded oracles) ·
   `must-split-the-bundled-entries` (per-line stdout capture and on-disk artifact
   retention never default on, never described as scrubbed) ·

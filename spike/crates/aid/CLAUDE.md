@@ -143,7 +143,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   back to `ParamValue` — the remedy for those is per-fragment owners, priced and declined
   (`28N` §3). The reason maps answer with the component, never a bare String, so the slug is
   never thrown away.
-- **passthrough-is-type-gated** (`282:rul-passthrough-type-gated`; `296` is the census) — a hole is
+- **passthrough-is-type-gated** (`282:rul-passthrough-type-gated`; `28W` (née 296) is the census) — a hole is
   foreign because its VALUE is, never because the param is named `detail`. `aid::foreign` seals it:
   `ForeignBytes` is minted only at an I/O edge (`from_os_error`, or the loudly-named and lexically
   fenced `from_io_edge`) and has no raw accessor; `ForeignText` is what comes back through the

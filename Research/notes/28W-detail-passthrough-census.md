@@ -1,4 +1,4 @@
-# 296 — the `detail`-passthrough census (x2c)
+# 28W (née 296) — the `detail`-passthrough census (x2c)
 
 AI-authored (Opus builder, lane x2c, 2026-07-30; worktree `.claude/worktrees/loom-x2c`, branch
 `ai/r28-loom-x2c`). The audit `282` §8 and `28L:fnd-284-landed-state` asked for: every payload
@@ -94,7 +94,7 @@ now holds zero user-facing strings).
 
 RESIDUE, with its reason:
 
-- **`296:tc-many-sentences-one-slug`** — the six N-sentence codes (~55 sentences) are NOT split.
+- **`28W:tc-many-sentences-one-slug`** — the six N-sentence codes (~55 sentences) are NOT split.
   The brief's remedy is world-variant sibling codes, and that remedy is structurally blocked at
   this scale: `defining-case-catalog` gives every code exactly one defining case and the
   `DEFINING_CASE_RATCHET` is SHRINK-ONLY, so ~55 new codes demand ~55 new defining cases and the
@@ -103,10 +103,10 @@ RESIDUE, with its reason:
   arrangement prose-component per reason — zero new codes, zero ratchet movement, and every
   sentence lands in a registry. Choosing between the two is a conductor ruling, so it is flagged
   rather than settled (`inv-superposition`).
-- **`296:tc-transport-not-attempted-is-two-worlds`** — splitting it is a sibling pair, not a hole
+- **`28W:tc-transport-not-attempted-is-two-worlds`** — splitting it is a sibling pair, not a hole
   rename, and its register is `[unwritten:]` today so nothing renders either sentence. Left alone
   rather than silently dropping the platform's spawn error.
-- **`296:fnd-registry-words-escape-the-ascii-law`** — reclassifying a hole from foreign to ours
+- **`28W:fnd-registry-words-escape-the-ascii-law`** — reclassifying a hole from foreign to ours
   changed its encoding (the measured sink escapes; the plain one blanks), which surfaced `⊤` inside
   two `cfg.rs` details and `⊄` inside `survival.rs`'s footprint detail. All three are respelled and
   their three `ASCII_SWEEP_ALLOWLIST` rows deleted — the sweep's shrink-only ratchet moved in the
