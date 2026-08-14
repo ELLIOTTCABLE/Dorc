@@ -16,10 +16,11 @@
   for keeps, at least for the remaining duration of the current codebase. Enough is known to
   make useful decisions and run with them.
 - **post-error-tier-ladder** — three failure tiers: (1) compile-time prevention, (2)
-  plan-time pre-network fail-fast, (3) runtime fallback-and-continue — and tier 3 costs
-  ~two orders of magnitude more (deep Narrative integration). Compile-time value is inflated
-  accordingly; runtime nets deflated; a mechanism whose failure lands in tier 1/2 is
-  categorically preferred.
+  pre-probe/pre-network fail-fast (~<1s after user invocation), (3) runtime
+  fallback-and-continue — and tier 3 costs ~two orders of magnitude more (deep
+  Narrative integration). Compile-time value is inflated accordingly; runtime
+  nets deflated; a mechanism whose failure lands in tier 1/2 is categorically
+  preferred.
 - **post-narrative-thirty** — narrative coherence is a first-class engine output, as tracked
   and provable as produced-actions (prose itself excluded). Expected real-world output mix
   ≈ 20% elisions / 80% exhaustively-correct reporting on why-only-20%. Order-instability and
