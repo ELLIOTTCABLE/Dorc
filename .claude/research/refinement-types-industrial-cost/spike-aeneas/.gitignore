@@ -1,0 +1,3 @@
+# Charon's serialized AST — a multi-megabyte JSON regenerable in seconds from the
+# pinned toolchain. The Lean under */lean/ is the evidence and IS committed.
+*.llbc

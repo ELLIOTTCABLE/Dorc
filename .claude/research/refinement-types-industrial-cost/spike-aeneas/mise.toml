@@ -1,0 +1,64 @@
+# Toolchain for the Aeneas rewrite-distance probe (Rust -> LLBC -> Lean).
+#
+# NESTED, not the repo root, and that placement is load-bearing: the `rust` pin
+# below is a *shadowing* pin. Charon is a rustc driver, so it only runs under the
+# exact nightly it was linked against, and a root-level `rust = "nightly-..."`
+# would silently swap the compiler the whole spike workspace builds with. mise
+# merges configs cwd-upward, so this file adds to the root's toolbelt for anything
+# under this directory and is inert everywhere else. (The sibling Lean spike's
+# elan pin lives at the root because elan is purely *additive*; this one is not.)
+#
+# LINUX/macOS ONLY. Upstream publishes no Windows release asset, so the native
+# Windows leg is gated out rather than left to fail at install time — run this
+# probe's tasks from WSL.
+
+[tools]
+# ONE pin buys the whole frontend: the aeneas release tarball ships `aeneas`
+# alongside the exact `charon`/`charon-driver` named by aeneas's own `charon-pin`
+# file, so the two halves cannot drift apart the way separate pins would. The
+# default asset match picks the Lean *library* build, hence the explicit pattern.
+"github:AeneasVerif/aeneas" = { version = "nightly-2026.08.13-daa85d7", asset_pattern = "aeneas-linux-x86_64.tar.gz", extract_all = true, os = ["linux"] }
+
+# Dictated, not chosen: this is verbatim the `rust-toolchain` file inside the
+# charon tarball. charon-driver links against this nightly's librustc_driver, and
+# `rustc-dev` is what supplies it. Bump only in lockstep with the pin above.
+rust = { version = "nightly-2026-06-01", profile = "minimal", components = "rustc-dev,llvm-tools-preview,rust-src,miri", os = ["linux"] }
+
+[env]
+# Keep build output off drvfs and out of the synced tree; also stops this probe
+# from clobbering the spike workspace's shared `spike/target/`.
+CARGO_TARGET_DIR = "{{xdg_cache_home}}/dorc-aeneas-probe-target"
+
+# ── Tasks ───────────────────────────────────────────────────────────────────
+# Same portability contract as the root config: no shell syntax in a `run`
+# string. These are WSL/*nix-only by construction (the tools above are).
+#
+# `charon rustc` rather than `charon cargo`: every extract here is one dependency
+# -free .rs file, so going through cargo would buy nothing and cost a manifest.
+
+[tasks.translate]
+description = "Run the whole pipeline over one extract: `mise run translate lattice` reads <name>/src/lib.rs and writes <name>/out.llbc plus the Lean under <name>/lean/. Charon's first run of the day also builds a full-MIR sysroot (~1 min); later runs reuse it."
+dir = "{{config_root}}"
+usage = 'arg "name" help="the extract subdirectory, e.g. `hello` or `lattice`"'
+# `--error-on-warnings` is deliberate: charon warns rather than fails on the
+# constructs it cannot model, and a silently-degraded .llbc would make the Lean
+# output look better than the rewrite distance actually is.
+run = [
+   "charon rustc --preset=aeneas --dest-file {{ usage.name }}/{{ usage.name }}.llbc --error-on-warnings -- --crate-name {{ usage.name }} --crate-type=lib --edition=2021 {{ usage.name }}/src/lib.rs",
+   "aeneas -backend lean -no-progress-bar -dest {{ usage.name }}/lean -split-files -abort-on-error {{ usage.name }}/{{ usage.name }}.llbc",
+]
+
+[tasks."translate:lenient"]
+description = "translate, minus the two fail-fast flags — charon downgrades unmodellable constructs to warnings and aeneas keeps going past the first error. Use it to see how MUCH is unsupported in one pass instead of one item at a time; never to judge whether an extract translated."
+dir = "{{config_root}}"
+usage = 'arg "name" help="the extract subdirectory"'
+run = [
+   "charon rustc --preset=aeneas --dest-file {{ usage.name }}/{{ usage.name }}.llbc -- --crate-name {{ usage.name }} --crate-type=lib --edition=2021 {{ usage.name }}/src/lib.rs",
+   "aeneas -backend lean -no-progress-bar -dest {{ usage.name }}/lean -split-files {{ usage.name }}/{{ usage.name }}.llbc",
+]
+
+[tasks.check]
+description = "rustc-only sanity pass over an extract — proves a butchered copy still compiles before blaming charon for rejecting it."
+dir = "{{config_root}}"
+usage = 'arg "name" help="the extract subdirectory"'
+run = "rustc --crate-name {{ usage.name }} --crate-type=lib --edition=2021 --emit=metadata --out-dir /tmp/dorc-aeneas-check {{ usage.name }}/src/lib.rs"
