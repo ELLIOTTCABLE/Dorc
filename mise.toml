@@ -352,9 +352,13 @@ raw = true
 # The case list is TEMPLATED rather than left to mise's trailing-args passthrough, which only
 # reaches the LAST command of a `run` array — so `-- <cases>` scoped the git diff and left promote
 # running over the whole corpus, silently unscoped (the exact opposite of what was typed).
-usage = 'arg "[cases]" var=#true help="case paths; MUST match the list loom:compile was given"'
+usage = '''
+flag "--human" help="mark every published register as written by a person; refuses in an agent-marked session (DORC_HUMAN_COMMIT=1 is the escape)"
+flag "--slop" help="yes, re-mark a human-written register as slop; unflagged that refuses for a person and proceeds with a note for an agent"
+arg "[cases]" var=#true help="case paths; MUST match the list loom:compile was given"
+'''
 run = [
-  "cargo run --quiet -p dorc-loom -- promote --quiet {{ usage.cases | join(sep=' ') }}",
+  "cargo run --quiet -p dorc-loom -- promote --quiet {% if usage.human %}--human{% endif %}{% if usage.slop %}--slop{% endif %} {{ usage.cases | join(sep=' ') }}",
   "git --no-pager diff --word-diff",
 ]
 

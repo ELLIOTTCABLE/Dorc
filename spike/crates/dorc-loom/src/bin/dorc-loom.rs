@@ -4,6 +4,7 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use dorc_aid::prose::Mint;
 #[cfg(test)]
 use dorc_loom::TemplateVariableName;
 use dorc_loom::{
@@ -20,7 +21,7 @@ use errorloom::{
     RunError, execute_generic, read_case, read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
+const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
 
 /// Each verb's own page — what it does, what its flags mean, and the command that follows it.
 ///
@@ -62,7 +63,7 @@ const COMPILE_USAGE: &str =
   --path=D    prepend a directory to the replay PATH (repeatable)
   next: dorc-loom promote <the same CASE list> -- the receipt refuses a different one";
 
-const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metadata] [--shell=PATH] [--path=DIR]... [CASE...]
+const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]
   Verify against the compile receipt, then publish: both generated locks
   (crates/aid/src/catalog_lock.rs and arrangement_lock.rs) plus every affected case. In-process
   renders only -- no binary is run and no fixture is executed. Every byte and both fixpoints are
@@ -70,6 +71,11 @@ const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metada
   is staged or committed; the diff is yours.
   --accept-metadata  acknowledge that a case's when-fires / when-used / why REPLACES the committed
                      registry entry; without it a metadata change refuses before any write
+  --human     mark every register this publishes as written by a person. Refuses in a session that
+              announces itself as an agent; DORC_HUMAN_COMMIT=1 says a person is at the keyboard.
+              Unflagged, a register is marked slop, whoever is driving.
+  --slop      yes, re-mark a human-written register as slop. Unflagged, that refuses for a person
+              (the forgotten --human) and proceeds with a note for an agent.
   the other flags are compile's, and the CASE list must be the one compile saw
   next: mise run test -- a promote republishes shared locks, so its blast radius is wider than the
         case in front of you";
@@ -152,6 +158,7 @@ enum Command {
         env: RunEnv,
         quiet: bool,
         accept_metadata: bool,
+        provenance: Provenance,
     },
     Vars {
         used: bool,
@@ -172,6 +179,27 @@ enum Command {
     Help {
         verb: Option<String>,
     },
+}
+
+/// What the author said about provenance on this promote — the `--human` / `--slop` pair.
+///
+/// [`Default`](Self::Default) and [`Slop`](Self::Slop) mint the same tier and differ only in what
+/// happens when the edit lands on a human-written register: unsaid, that is worth a word; said, it
+/// is the point.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Provenance {
+    Default,
+    Human,
+    Slop,
+}
+
+impl Provenance {
+    fn mint(self) -> Mint {
+        match self {
+            Provenance::Human => Mint::Human,
+            Provenance::Default | Provenance::Slop => Mint::Slop,
+        }
+    }
 }
 
 type SelectedCase = (String, PathBuf);
@@ -204,7 +232,8 @@ fn run() -> Result<ExitCode, String> {
             env,
             quiet,
             accept_metadata,
-        } => promote_cases(&cases, &env, quiet, accept_metadata, &mut out),
+            provenance,
+        } => promote_cases(&cases, &env, quiet, accept_metadata, provenance, &mut out),
         Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
         Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
@@ -287,22 +316,33 @@ fn parse_argv(argv: Vec<String>) -> Result<Command, String> {
     let mut argv = argv.into_iter();
     match argv.next().as_deref() {
         Some("compile") => {
-            let (cases, env, quiet, accept_metadata) = collect_compile_args("compile", argv)?;
-            if accept_metadata {
+            let shared = collect_compile_args("compile", argv)?;
+            if shared.accept_metadata {
                 return Err(format!(
                     "{ACCEPT_METADATA} is a promote-time acknowledgement; compile writes nothing \
                      to acknowledge\n{COMPILE_USAGE}"
                 ));
             }
-            Ok(Command::Compile { cases, env, quiet })
+            if shared.provenance != Provenance::Default {
+                return Err(format!(
+                    "{HUMAN}/{SLOP} decide how a published register is MARKED; compile publishes \
+                     nothing, so it marks nothing. Pass it to the promote instead\n{COMPILE_USAGE}"
+                ));
+            }
+            Ok(Command::Compile {
+                cases: shared.cases,
+                env: shared.env,
+                quiet: shared.quiet,
+            })
         }
         Some("promote") => {
-            let (cases, env, quiet, accept_metadata) = collect_compile_args("promote", argv)?;
+            let shared = collect_compile_args("promote", argv)?;
             Ok(Command::Promote {
-                cases,
-                env,
-                quiet,
-                accept_metadata,
+                cases: shared.cases,
+                env: shared.env,
+                quiet: shared.quiet,
+                accept_metadata: shared.accept_metadata,
+                provenance: shared.provenance,
             })
         }
         Some("vars") => {
@@ -474,14 +514,24 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
     Ok(ExitCode::SUCCESS)
 }
 
+/// What `compile` and `promote` share: the same options, parsed once.
+struct CompileArgs {
+    cases: Vec<PathBuf>,
+    env: RunEnv,
+    quiet: bool,
+    accept_metadata: bool,
+    provenance: Provenance,
+}
+
 fn collect_compile_args(
     verb: &str,
     mut argv: impl Iterator<Item = String>,
-) -> Result<(Vec<PathBuf>, RunEnv, bool, bool), String> {
+) -> Result<CompileArgs, String> {
     let mut env = RunEnv::new().path_dir(binary_dir()?);
     let mut cases = Vec::new();
     let mut quiet = false;
     let mut accept_metadata = false;
+    let mut provenance = Provenance::Default;
     while let Some(arg) = argv.next() {
         if let Some(shell) = arg.strip_prefix("--shell=") {
             env = env.shell(shell);
@@ -495,20 +545,71 @@ fn collect_compile_args(
             quiet = true;
         } else if arg == ACCEPT_METADATA {
             accept_metadata = true;
+        } else if arg == HUMAN || arg == SLOP {
+            let asked = if arg == HUMAN {
+                Provenance::Human
+            } else {
+                Provenance::Slop
+            };
+            if provenance != Provenance::Default && provenance != asked {
+                return Err(format!(
+                    "{HUMAN} and {SLOP} say opposite things about the same registers; pass one\n{}",
+                    usage_for(verb)
+                ));
+            }
+            provenance = asked;
         } else if arg.starts_with('-') {
             return Err(format!("unknown option {arg:?}\n{}", usage_for(verb)));
         } else {
             cases.push(resolve_case(&arg)?);
         }
     }
-    if cases.is_empty() {
-        return Ok((corpus_cases()?, env, quiet, accept_metadata));
-    }
-    Ok((cases, env, quiet, accept_metadata))
+    Ok(CompileArgs {
+        cases: if cases.is_empty() {
+            corpus_cases()?
+        } else {
+            cases
+        },
+        env,
+        quiet,
+        accept_metadata,
+        provenance,
+    })
 }
 
 /// The one acknowledgement `promote` takes: yes, replace the committed metadata.
 const ACCEPT_METADATA: &str = "--accept-metadata";
+
+/// Mint the edited registers as a human's words, rather than as the default slop.
+const HUMAN: &str = "--human";
+
+/// Yes, re-mark that human-written register as slop — the deliberate half of the demotion pair.
+const SLOP: &str = "--slop";
+
+/// Environment variables an agent harness announces itself with. One line to extend.
+const AGENT_MARKERS: [&str; 2] = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT"];
+
+/// The human-at-the-keyboard escape, shared verbatim with `.githooks/commit-msg`.
+const HUMAN_ESCAPE: &str = "DORC_HUMAN_COMMIT";
+
+/// Whether this invocation looks like an agent's rather than a person's.
+///
+/// The lookup is a parameter because the answer is the one non-hermetic input this tool's
+/// provenance decisions read, and a test may not set a process environment variable under
+/// `forbid(unsafe_code)`.
+fn looks_like_an_agent(var: &impl Fn(&str) -> Option<String>) -> bool {
+    if var(HUMAN_ESCAPE).is_some_and(|value| value == "1") {
+        return false;
+    }
+    AGENT_MARKERS
+        .iter()
+        .any(|marker| var(marker).is_some_and(|value| !value.is_empty()))
+}
+
+/// The production lookup: the real process environment.
+fn process_env(name: &str) -> Option<String> {
+    std::env::var(name).ok()
+}
 
 /// Refuse a promote that would rewrite committed `when-fires`/`when-used`/`why` unless the caller
 /// said so (`28L:fnd-case-frontmatter-overwrites-lock-metadata`).
@@ -617,7 +718,7 @@ fn compile_cases(
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
     let total = gated.paths.len();
-    let (inspection, _consumer) = match inspect_cases(&gated, env, quiet, out)? {
+    let (inspection, _consumer) = match inspect_cases(&gated, env, quiet, Mint::Slop, out)? {
         Inspected::Ready(inspection, consumer) => (inspection, consumer),
         Inspected::Refused { cases } => {
             status(err, &format!("{total} cases, {cases} refused"))?;
@@ -659,20 +760,72 @@ fn promote_cases(
     env: &RunEnv,
     quiet: bool,
     accept_metadata: bool,
+    provenance: Provenance,
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
+    let agent = looks_like_an_agent(&process_env);
+    refuse_human_mint_from_an_agent(provenance, agent)?;
     refuse_metadata_drift(accept_metadata, out)?;
     let gated = gate_touched_set(cases)?;
-    let Inspected::Ready(inspection, consumer) = inspect_cases(&gated, env, quiet, out)? else {
+    let Inspected::Ready(inspection, consumer) =
+        inspect_cases(&gated, env, quiet, provenance.mint(), out)?
+    else {
         return Ok(ExitCode::from(1));
     };
+    report_demotions(consumer.demoted(), provenance, agent, out)?;
     promote_receipt(&receipt_store()?, &inspection)?;
     let affected = touched_cases(&gated)?;
     let before = staged_bytes(&gated)?;
     publish(&consumer, &affected, out)?;
     note_staged_cases(&gated.staged, &rewritten_staged(&gated, &before)?, out)?;
     Ok(ExitCode::SUCCESS)
+}
+
+/// `--human` is a claim about who typed the words, so the one environment that can falsify it
+/// wins: an agent harness announcing itself.
+fn refuse_human_mint_from_an_agent(provenance: Provenance, agent: bool) -> Result<(), String> {
+    if provenance != Provenance::Human || !agent {
+        return Ok(());
+    }
+    Err(format!(
+        "{HUMAN} marks a register as written by a person, and this session announces itself as an \
+         agent ({}). A person at this keyboard says so with {HUMAN_ESCAPE}=1; an agent's edits are \
+         published without the flag, which is the ordinary path and needs nothing else.",
+        AGENT_MARKERS.join(" / ")
+    ))
+}
+
+/// What to say when this promote re-marks a human-written register as slop.
+///
+/// An AGENT reading this is being told the truth about a consequence of its own prose work, not
+/// asked to do anything: reworking words IS what re-marks them. A PERSON is instead most likely to
+/// have forgotten `--human` mid-sprint, and losing their own mark to a missing flag is the failure
+/// worth a stop — so there the same state refuses and names both ways forward.
+fn report_demotions(
+    demoted: &[String],
+    provenance: Provenance,
+    agent: bool,
+    out: &mut impl Write,
+) -> Result<(), String> {
+    if demoted.is_empty() {
+        return Ok(());
+    }
+    let listed = demoted.join(", ");
+    let count = demoted.len();
+    if provenance == Provenance::Slop || agent {
+        return writeln!(
+            out,
+            "note: this promote re-marks {count} register(s) as slop that were marked \
+             human-written: {listed}\n      Reworking prose through the loom is what re-marks it, \
+             so this is the expected outcome of the edit.\n      No action is necessary."
+        )
+        .map_err(|error| error.to_string());
+    }
+    Err(format!(
+        "this promote would re-mark {count} human-written register(s) as slop: {listed}\nRe-run \
+         with {HUMAN} to keep them marked as yours, or with {SLOP} to re-mark them deliberately."
+    ))
 }
 
 /// The touched defining cases (dirty on-disk bytes) keyed by their `code` slug — the only cases a
@@ -949,9 +1102,11 @@ fn inspect_cases(
     gated: &GatedCases,
     env: &RunEnv,
     quiet: bool,
+    mint: Mint,
     out: &mut impl Write,
 ) -> Result<Inspected, String> {
-    let (mut consumer, mut refused, mut selected) = (DorcConsumer::new(), 0usize, Vec::new());
+    let (mut consumer, mut refused, mut selected) =
+        (DorcConsumer::new().minting(mint), 0usize, Vec::new());
     let ownership = corpus_ownership(&cases_dir())?;
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in &gated.paths {
@@ -1365,6 +1520,127 @@ mod tests {
             parse_argv(argv(&["help"])),
             Ok(Command::Help { verb: None })
         ));
+    }
+
+    fn env_of(pairs: &[(&'static str, &'static str)]) -> impl Fn(&str) -> Option<String> {
+        let pairs: Vec<(String, String)> = pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+            .collect();
+        move |name| {
+            pairs
+                .iter()
+                .find(|(key, _)| key == name)
+                .map(|(_, value)| value.clone())
+        }
+    }
+
+    /// Both markers answer, an empty one does not (the hook neutralises by emptying rather than
+    /// unsetting, and this reads the same variables), and the escape outranks every marker.
+    #[test]
+    fn an_agent_session_is_recognized_by_its_markers_and_overridden_by_the_escape() {
+        assert!(!looks_like_an_agent(&env_of(&[])));
+        assert!(!looks_like_an_agent(&env_of(&[("CLAUDECODE", "")])));
+        for marker in AGENT_MARKERS {
+            assert!(looks_like_an_agent(&env_of(&[(marker, "1")])), "{marker}");
+        }
+        assert!(!looks_like_an_agent(&env_of(&[
+            ("CLAUDECODE", "1"),
+            ("DORC_HUMAN_COMMIT", "1"),
+        ])));
+        assert!(looks_like_an_agent(&env_of(&[
+            ("CLAUDECODE", "1"),
+            ("DORC_HUMAN_COMMIT", "0"),
+        ])));
+    }
+
+    /// `--human` is the ONE claim this tool takes on trust, so the environment that contradicts it
+    /// wins; every other combination proceeds. The refusal names the escape, because a person
+    /// hitting it in a session has no other way past.
+    #[test]
+    fn the_human_mint_refuses_only_from_an_agent_session() {
+        let refusal = refuse_human_mint_from_an_agent(Provenance::Human, true)
+            .expect_err("an agent session may not claim a human mint");
+        assert!(refusal.contains(HUMAN_ESCAPE), "{refusal}");
+        assert!(refuse_human_mint_from_an_agent(Provenance::Human, false).is_ok());
+        assert!(refuse_human_mint_from_an_agent(Provenance::Default, true).is_ok());
+        assert!(refuse_human_mint_from_an_agent(Provenance::Slop, true).is_ok());
+    }
+
+    /// The two demotion branches, and the wording law over the agent one: it is a NOTICE about a
+    /// consequence, so it may not read as a failure and must say that nothing is owed.
+    #[test]
+    fn a_demotion_notifies_an_agent_and_stops_a_person() {
+        let demoted = vec!["site-unresolvable".to_owned()];
+        let mut out = Vec::new();
+        report_demotions(&demoted, Provenance::Default, true, &mut out).expect("an agent proceeds");
+        let note = String::from_utf8(out).expect("utf-8");
+        assert!(note.contains("site-unresolvable"), "{note}");
+        assert!(note.contains("No action is necessary."), "{note}");
+        assert!(note.contains("expected outcome"), "{note}");
+        for forbidden in ["error", "refus", "fail"] {
+            assert!(
+                !note.to_lowercase().contains(forbidden),
+                "the agent notice must not read as a failure ({forbidden}): {note}"
+            );
+        }
+
+        let refusal = report_demotions(&demoted, Provenance::Default, false, &mut Vec::new())
+            .expect_err("a person is stopped");
+        assert!(refusal.contains(HUMAN), "{refusal}");
+        assert!(refusal.contains(SLOP), "{refusal}");
+
+        let mut out = Vec::new();
+        report_demotions(&demoted, Provenance::Slop, false, &mut out)
+            .expect("a deliberate demotion proceeds");
+        assert!(
+            !out.is_empty(),
+            "a deliberate demotion still says what moved"
+        );
+        report_demotions(&[], Provenance::Default, false, &mut Vec::new())
+            .expect("no demotion, nothing to say");
+    }
+
+    /// The flags are a promote-time MARKING decision, so compile — which publishes nothing — takes
+    /// neither, and the two of them together are a contradiction rather than a last-one-wins.
+    #[test]
+    fn the_provenance_flags_belong_to_promote_and_exclude_each_other() {
+        let argv = |args: &[&str]| args.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/cmdsub-command.loom")
+            .to_str()
+            .expect("the fixture path is UTF-8")
+            .to_owned();
+
+        assert!(matches!(
+            parse_argv(argv(&["promote", &fixture, HUMAN])),
+            Ok(Command::Promote {
+                provenance: Provenance::Human,
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_argv(argv(&["promote", &fixture, SLOP])),
+            Ok(Command::Promote {
+                provenance: Provenance::Slop,
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_argv(argv(&["promote", &fixture])),
+            Ok(Command::Promote {
+                provenance: Provenance::Default,
+                ..
+            })
+        ));
+        assert!(
+            parse_argv(argv(&["promote", &fixture, HUMAN, SLOP]))
+                .is_err_and(|error| error.contains("opposite things"))
+        );
+        assert!(
+            parse_argv(argv(&["compile", &fixture, HUMAN]))
+                .is_err_and(|error| error.contains("marks nothing"))
+        );
     }
 
     /// Under-naming is the failure that matters: a rewritten case's staged bytes are the author's

@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
 use dorc_aid::diag::render_staged_cli_parts;
-use dorc_aid::prose::ProseTier;
+use dorc_aid::prose::{Mint, ProseTier};
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
     replay_case_with_inputs,
@@ -292,6 +292,55 @@ fn lint_driver_claims_exactly_two_shapes() {
             "dorc lint oracle.sh --no-tools --no-tools",
             "dorc lint ../oracle.sh --no-tools",
         ]
+    );
+}
+
+/// The tier an edit MINTS, and the demotion it records on the way past.
+///
+/// Stated over the mirror rather than through the CLI, because this is where the mark is actually
+/// made: the flag only chooses a `Mint`, and everything downstream — the notice, the refusal, the
+/// commit-msg census — reads what this seat wrote. Both directions are staged on one register, so
+/// the test also says the thing that makes the ratchet worth having: the human mark survives only
+/// while nobody re-mints over it.
+#[test]
+fn an_edit_mints_its_tier_and_names_what_it_re_marked() {
+    const BEFORE: &str = "a sentence somebody typed";
+    const AFTER: &str = "a sentence somebody reworked";
+    let case = whylog_absent_case();
+    let overtyped = |mint: Mint, start: ProseTier<String>| {
+        let mut consumer = DorcConsumer::new().minting(mint);
+        consumer.set_message("whylog-absent", Some(start));
+        let baseline = consumer
+            .editable_baseline(&case)
+            .expect("editable baseline");
+        let edited = baseline.render().text().replace(BEFORE, AFTER);
+        let edit = compile_section_edit(&baseline, &edited).expect("the overtype compiles");
+        consumer
+            .apply_section_edit(&edit)
+            .expect("the mirror takes");
+        let tier = consumer
+            .mirror()
+            .iter()
+            .find(|entry| entry.slug == "whylog-absent")
+            .and_then(|entry| entry.message.clone())
+            .expect("the mirror carries the register");
+        (tier, consumer.demoted().to_vec())
+    };
+    let human = || ProseTier::WrittenByHumanOnly(BEFORE.to_owned());
+
+    let (tier, demoted) = overtyped(Mint::Slop, human());
+    assert_eq!(tier, ProseTier::Slop(AFTER.to_owned()));
+    assert_eq!(demoted, ["whylog-absent"]);
+
+    let (tier, demoted) = overtyped(Mint::Human, human());
+    assert_eq!(tier, ProseTier::WrittenByHumanOnly(AFTER.to_owned()));
+    assert!(demoted.is_empty(), "`--human` re-marks nothing");
+
+    let (tier, demoted) = overtyped(Mint::Slop, ProseTier::Migrated(BEFORE.to_owned()));
+    assert_eq!(tier, ProseTier::Slop(AFTER.to_owned()));
+    assert!(
+        demoted.is_empty(),
+        "only a HUMAN register is worth naming — migrated and slop words are re-marked in silence"
     );
 }
 
