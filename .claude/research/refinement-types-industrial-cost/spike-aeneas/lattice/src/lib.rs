@@ -26,7 +26,7 @@ pub mod lattice {
     //! analysis. All use *ordered* collections (`BTreeSet`/`BTreeMap`), never hashed,
     //! so any iteration over a lattice value is deterministic (`inv-determinism`).
 
-    use std::collections::{BTreeMap, BTreeSet};
+    // REWRITE 2/3: `use std::collections::{BTreeMap, BTreeSet};` removed entirely.
 
     /// A lattice of finite height: ⊥, ⊔ (`join`), and ⊓ (`meet`).
     ///
@@ -75,38 +75,82 @@ pub mod lattice {
     /// set), so deliberately NOT a [`BoundedLattice`] — a *must* analysis needing a ⊤
     /// seed must use an explicit-top domain instead (note 165's predicted asymmetry).
     /// Typically a *may* domain (over-approximate, started at ⊥).
+    // REWRITE 2 (structural): `BTreeSet<T>` -> a `Vec<T>` held sorted-and-deduped
+    // by hand, and `union`/`intersection`/`collect` -> explicit index-walked merge
+    // loops. Aeneas models Vec/Slice/Array and nothing else; the ordered-collection
+    // invariant that the type system used to carry (`inv-determinism` relies on it)
+    // now rides on a comment.
     #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct Powerset<T: Ord + Clone>(pub BTreeSet<T>);
+    pub struct Powerset<T: Ord + Clone>(pub Vec<T>);
 
     impl<T: Ord + Clone> Default for Powerset<T> {
         fn default() -> Self {
-            Powerset(BTreeSet::new())
+            Powerset(Vec::new())
         }
     }
 
     impl<T: Ord + Clone> Powerset<T> {
         #[must_use]
         pub fn singleton(x: T) -> Self {
-            let mut s = BTreeSet::new();
-            s.insert(x);
+            let mut s = Vec::new();
+            s.push(x);
             Powerset(s)
         }
 
         #[must_use]
         pub fn contains(&self, x: &T) -> bool {
-            self.0.contains(x)
+            let mut i = 0usize;
+            while i < self.0.len() {
+                if self.0[i] == *x {
+                    return true;
+                }
+                i += 1;
+            }
+            false
         }
     }
 
     impl<T: Ord + Clone> Lattice for Powerset<T> {
         fn bottom() -> Self {
-            Powerset(BTreeSet::new())
+            Powerset(Vec::new())
         }
         fn join(&self, other: &Self) -> Self {
-            Powerset(self.0.union(&other.0).cloned().collect())
+            let mut out: Vec<T> = Vec::new();
+            let mut i = 0usize;
+            let mut j = 0usize;
+            while i < self.0.len() {
+                while j < other.0.len() && other.0[j] < self.0[i] {
+                    out.push(other.0[j].clone());
+                    j += 1;
+                }
+                if j < other.0.len() && other.0[j] == self.0[i] {
+                    j += 1;
+                }
+                out.push(self.0[i].clone());
+                i += 1;
+            }
+            while j < other.0.len() {
+                out.push(other.0[j].clone());
+                j += 1;
+            }
+            Powerset(out)
         }
         fn meet(&self, other: &Self) -> Self {
-            Powerset(self.0.intersection(&other.0).cloned().collect())
+            let mut out: Vec<T> = Vec::new();
+            let mut i = 0usize;
+            let mut j = 0usize;
+            while i < self.0.len() && j < other.0.len() {
+                if self.0[i] < other.0[j] {
+                    i += 1;
+                } else if other.0[j] < self.0[i] {
+                    j += 1;
+                } else {
+                    out.push(self.0[i].clone());
+                    i += 1;
+                    j += 1;
+                }
+            }
+            Powerset(out)
         }
     }
 
@@ -191,12 +235,17 @@ pub mod lattice {
     /// with semantic equality, which the fixed-point loop relies on to detect
     /// convergence — so the field is private and only the methods below may mutate
     /// it.
+    // REWRITE 3 (structural): `BTreeMap<K, V>` -> a key-sorted `Vec<(K, V)>`.
+    // `get`/`insert`/`remove` become linear index walks; the `for (k, v) in &map`
+    // loops become index loops. `Option`-returning lookup survives (Aeneas models
+    // `Option`), but `.cloned().unwrap_or_else(V::bottom)` does not — the closure
+    // and the combinator both go.
     #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct MapL<K: Ord + Clone, V: Lattice>(BTreeMap<K, V>);
+    pub struct MapL<K: Ord + Clone, V: Lattice>(Vec<(K, V)>);
 
     impl<K: Ord + Clone, V: Lattice> Default for MapL<K, V> {
         fn default() -> Self {
-            MapL(BTreeMap::new())
+            MapL(Vec::new())
         }
     }
 
@@ -204,33 +253,59 @@ pub mod lattice {
         /// Value at `k`, or `V::bottom()` if absent (the semantic view).
         #[must_use]
         pub fn get(&self, k: &K) -> V {
-            self.0.get(k).cloned().unwrap_or_else(V::bottom)
+            let mut i = 0usize;
+            while i < self.0.len() {
+                if self.0[i].0 == *k {
+                    return self.0[i].1.clone();
+                }
+                i += 1;
+            }
+            V::bottom()
         }
 
         /// Set `k ↦ v`, preserving the no-⊥ canonical form.
         pub fn insert(&mut self, k: K, v: V) {
-            if v == V::bottom() {
-                self.0.remove(&k);
-            } else {
-                self.0.insert(k, v);
+            let mut i = 0usize;
+            while i < self.0.len() {
+                if self.0[i].0 == k {
+                    if v == V::bottom() {
+                        self.0.remove(i);
+                    } else {
+                        self.0[i].1 = v;
+                    }
+                    return;
+                }
+                if k < self.0[i].0 {
+                    if v != V::bottom() {
+                        self.0.insert(i, (k, v));
+                    }
+                    return;
+                }
+                i += 1;
+            }
+            if v != V::bottom() {
+                self.0.push((k, v));
             }
         }
 
-        /// Iterate the (canonical, non-⊥) bindings in deterministic key order.
-        pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
-            self.0.iter()
-        }
+        // REWRITE 1 (structural): `pub fn iter(&self) -> impl Iterator<Item = (&K, &V)>`
+        // deleted. Charon does not merely decline `BTreeMap::iter` — it dies
+        // typechecking std's own `impl Iterator for btree::map::Iter`, with a
+        // trait-clause mismatch inside alloc. Nothing downstream of that runs.
     }
 
     impl<K: Ord + Clone, V: Lattice> Lattice for MapL<K, V> {
         fn bottom() -> Self {
-            MapL(BTreeMap::new())
+            MapL(Vec::new())
         }
         fn join(&self, other: &Self) -> Self {
             let mut out = self.clone();
-            for (k, v) in &other.0 {
-                let joined = out.get(k).join(v);
-                out.insert(k.clone(), joined);
+            let mut i = 0usize;
+            while i < other.0.len() {
+                let k = other.0[i].0.clone();
+                let joined = out.get(&k).join(&other.0[i].1);
+                out.insert(k, joined);
+                i += 1;
             }
             out
         }
@@ -240,12 +315,33 @@ pub mod lattice {
             // even then only if their value-meet is non-⊥ (`insert` drops ⊥, keeping
             // the form canonical so `Eq` stays semantic).
             let mut out = MapL::default();
-            for (k, v) in &self.0 {
-                if let Some(v2) = other.0.get(k) {
-                    out.insert(k.clone(), v.meet(v2));
+            let mut i = 0usize;
+            while i < self.0.len() {
+                let k = self.0[i].0.clone();
+                if other.has_key(&k) {
+                    let m = self.0[i].1.meet(&other.get(&k));
+                    out.insert(k, m);
                 }
+                i += 1;
             }
             out
+        }
+    }
+
+    impl<K: Ord + Clone, V: Lattice> MapL<K, V> {
+        // REWRITE 3b (structural): `other.0.get(k)` returned `Option<&V>` and the
+        // `if let Some(v2)` bound a BORROW into `other` while `out` was being built.
+        // Split into a presence test plus a by-value `get`, because the borrow-shape
+        // is what Aeneas's translation is actually sensitive to.
+        fn has_key(&self, k: &K) -> bool {
+            let mut i = 0usize;
+            while i < self.0.len() {
+                if self.0[i].0 == *k {
+                    return true;
+                }
+                i += 1;
+            }
+            false
         }
     }
 
@@ -329,7 +425,7 @@ pub mod solve {
     //! note 164). A correctness-critical caller MUST check `converged`.
 
     use crate::lattice::Lattice;
-    use std::collections::VecDeque;
+    // REWRITE 7: `use std::collections::VecDeque;` removed.
 
     /// A directed graph over nodes `0..node_count()`. The CFG implements this; the
     /// solver stays decoupled so it can be validated on toy graphs and reused by
@@ -390,18 +486,38 @@ pub mod solve {
         transfer: impl Fn(usize, &L) -> L,
     ) -> Solution<L> {
         let n = graph.node_count();
-        // A node's output flows to its successors (forward) or predecessors
-        // (backward) — its consumer set, where we propagate-and-join.
-        let flows_to = |v: usize| -> &[usize] {
-            match direction {
-                Direction::Forward => graph.succ(v),
-                Direction::Backward => graph.pred(v),
-            }
-        };
 
-        let mut state: Vec<L> = vec![L::bottom(); n];
-        let mut queued: Vec<bool> = vec![true; n];
-        let mut work: VecDeque<usize> = (0..n).collect();
+        // REWRITE 5 (mechanical-local): the `flows_to` closure was a
+        // slice-returning `impl Fn` capturing `graph` by reference; Aeneas's
+        // symbolic interpreter aborts on it ("Can't end abstraction N as it is set
+        // as non-endable") because the region it borrows outlives the closure's own
+        // abstraction. Lifting it to a free function with an explicit lifetime says
+        // the same thing in a shape the borrow translation can follow.
+
+        // REWRITE 6 (mechanical-local): `vec![L::bottom(); n]` and `vec![true; n]`
+        // -> push loops. The macro expands through `alloc::vec::from_elem` +
+        // `Clone`, which Aeneas has no model for.
+        let mut state: Vec<L> = Vec::new();
+        let mut queued: Vec<bool> = Vec::new();
+        let mut init = 0usize;
+        while init < n {
+            state.push(L::bottom());
+            queued.push(true);
+            init += 1;
+        }
+
+        // REWRITE 7 (structural): `VecDeque` -> a `Vec` plus a read cursor. There is
+        // no deque in Aeneas's model, and the FIFO discipline is what makes `solve`
+        // deterministic (`inv-determinism`), so it cannot be swapped for a stack.
+        // The cursor never rewinds, so the queue grows without bound across a run —
+        // fine for a translation probe, NOT the shape the real solver would ship.
+        let mut work: Vec<usize> = Vec::new();
+        let mut head = 0usize;
+        let mut seed = 0usize;
+        while seed < n {
+            work.push(seed);
+            seed += 1;
+        }
 
         // Backstop: a well-behaved (monotone + finite-height) problem settles in far
         // fewer visits than this. Hitting it means a precondition was violated; we
@@ -410,7 +526,9 @@ pub mod solve {
         let mut rounds = 0usize;
         let mut converged = true;
 
-        while let Some(v) = work.pop_front() {
+        while head < work.len() {
+            let v = work[head];
+            head += 1;
             if rounds >= cap {
                 converged = false;
                 break;
@@ -418,20 +536,24 @@ pub mod solve {
             rounds += 1;
             queued[v] = false;
             let out = transfer(v, &state[v]);
-            for &w in flows_to(v) {
-                debug_assert!(
-                    w < n,
-                    "Graph edge endpoint {w} out of range (node_count {n})"
-                );
+            // REWRITE 8 (mechanical-local): `for &w in flows_to(v)` -> an indexed
+            // walk. `debug_assert!` is gone too: the format-string machinery it
+            // expands to is unmodellable, and it is a no-op in the release build
+            // charon compiles anyway — so this loses a real diagnostic, not just
+            // syntax.
+            let mut e = 0usize;
+            while e < flows_to(graph, direction, v).len() {
+                let w = flows_to(graph, direction, v)[e];
+                e += 1;
                 if w >= n {
                     continue; // release-mode defensive skip — never panic (inv-no-throw)
                 }
                 let joined = state[w].join(&out);
                 if joined != state[w] {
-                    state[w] = joined;
+                    state[w] = joined.clone();
                     if !queued[w] {
                         queued[w] = true;
-                        work.push_back(w);
+                        work.push(w);
                     }
                 }
             }
@@ -440,6 +562,13 @@ pub mod solve {
             states: state,
             converged,
             rounds,
+        }
+    }
+
+    fn flows_to<G: Graph>(graph: &G, direction: Direction, v: usize) -> &[usize] {
+        match direction {
+            Direction::Forward => graph.succ(v),
+            Direction::Backward => graph.pred(v),
         }
     }
 
