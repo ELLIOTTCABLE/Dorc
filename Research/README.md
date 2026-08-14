@@ -67,8 +67,17 @@ and carries the license-contamination map.
   the grammar `278` §6 deferred) · the one-page reference `notes/278` (DRAFT —
   assembles, never rules).
 - **What's actually BUILT, and its residue** — `LIVING_STATUS.md` + the arc ledgers
-  (`notes/28F` · `289` · `287` · `28A` · `27U` · `27D`; the r24-era per-landing ledger is
-  `notes/24C`); spike-1 history in `plans/16P`/`16Q`.
+  (`notes/28S` · `28P` · `28L`/`28N` · `28F` · `289` · `287` · `28A` · `27U` · `27D`; the
+  r24-era per-landing ledger is `notes/24C`); spike-1 history in `plans/16P`/`16Q`.
+- **The context/kernel unification (frames · entry-closure · context-availability)** —
+  **`plans/28Q`** (THE live kernel plan; §9 is its pin ledger) + `notes/28R` (the six-lane
+  review round, folded into the plan 2026-08-13).
+- **Oracle loading & name-resolution (custody, committee speech, one-name-two-definitions)** —
+  `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`; the
+  same-role-name collision deferral is `notes/293` §5 (registered in root `TODO-ADDTL.md`).
+- **Correctness-tooling (checker triad · Lean mini-model · Aeneas)** — **`notes/28T`** (the
+  adoption plan); evidence base `.claude/research/refinement-types-industrial-cost/`; the two
+  proof spikes live on `ai/research-{lean-sparing,aeneas}-spike` (disposition pending).
 - **The first real-machine field trial** — `plans/252` (THE protocol — SUPERSEDED as
   ceremony 2026-07-27, see `notes/26D`; the tooling survives at `Research/trial/`) +
   `notes/254` (adjudication + retrospective ledger) + `notes/255-*` (book + dry-run +
@@ -198,7 +207,7 @@ and carries the license-contamination map.
   direction + capture-fold deferral bank; minted out-of-order 2026-07-17, mid-r27)
   · `notes/26C` (same-day deep pass: fixpoint semantics + conflict carve, the
   quiet-welding audit vs the r27 tip, the R0–R4 revival implementation ladder).
-- **r27 the consolidation round** (current; branch `ai/spike3-r23`) — rest-of-round-24 +
+- **r27 the consolidation round** (CLOSED 2026-07-18; branch `ai/spike3-r23`) — rest-of-round-24 +
   the wrapper/payload work, authored-once discipline. → **`plans/270` (charter: block
   arc · adjudication ledger · naming discipline)**; predecessor accounting `notes/24U`.
   Block-settle CLOSED 2026-07-12 → **`plans/271` (rulings ledger + task map)** + the arc
@@ -213,7 +222,8 @@ and carries the license-contamination map.
   `CLAUDE.md`s) rewritten current-truth 2026-07-16. The user-aid design sitting
   (2026-07-18) minted root `AID-NEEDS.md` + `notes/27V` (build phase: whylog ·
   evidence plane · one-catalog) + USER_STORY's "Recovery" section; the
-  `dorc lint` lane landed as `notes/27R`/`27S`.
+  `dorc lint` lane landed as `notes/27R`/`27S`. Build ledgers: block-rebuild `notes/27D`
+  (+`27E`–`27I`) · block-context `notes/27K`/`27L`/`27N`–`27P` · the aid as-built `notes/27U`.
 
 - **r28 (BUILD COMPLETE 2026-07-20; branch `ai/r28-impl`)** — the syntax v0.2
   unification + the errorloom prose pipeline, both built. Specs: **`plans/280`**
@@ -229,21 +239,30 @@ and carries the license-contamination map.
   docs/steering re-synthesis. De-passthrough KILLED (opaque sibling lane owns the
   taint work). Deferred (human-owned, `28A`): the `sm `-prose Fable pass · catalog
   canonicalization · glued-param seam · errorloom LICENSE/publish. The post-charter
-  arcs (errorloom phase-three `notes/287` · the aid/loom unification `plans/288` →
-  `notes/289` · the why-surface design `notes/28E`/`plans/28G` + its W1→W4 build
-  `notes/28F`/`28H` · the `weft` formatting crate) are compressed in
-  `LIVING_STATUS.md`'s R28 section; their human queues ride `28F`/`28H`.
+  arcs, each with its own durable: errorloom phase-three `notes/287` · the aid/loom
+  unification `plans/288` → `notes/289` (+ maps `290`/`291`) · the why-surface
+  sitting + W1→W4 build `notes/28E`/`plans/28G` → ledgers `notes/28F`/`28H`
+  (red-lines `28I`, W5 worklist `28J`) · THE LOOM-FINAL ARC (stamped provenance;
+  the ~176-case loom corpus) — conduct `notes/28L`, prose accounting `notes/28N` ·
+  the name-resolution sitting `plans/28K`/`28M` → ledgers `notes/28O`/`28P` (+ the
+  input-surface/role-collision note `293`) · the error-message-authorship close
+  `notes/28S` (71 codes prose-authored; the ProseTier ratchet) · the kernel arc
+  **`plans/28Q`** (LIVE) + its review `notes/28R` · the correctness-tooling
+  synthesis **`notes/28T`**. Human queues ride `28F`/`28H`/`28Q` §9.
 
 - **r29** — a quarantined lane (`Research/quarantine-DO-NOT-READ/`); off-limits.
 
-- **r26 (MINTED 2026-07-27; planning pending)** — live execution: the ssh executor
-  (pipe-completeness — `dorc apply host <plan.sh` does its own ssh'ing), the
-  gate/bless-tier live-acceptance loop (real ssh / real apt, never hot-loop), the
-  Vultr experimentation kit; skeleton-tier by remit. THE seed: **`notes/26D`**
-  (settled law `142:Resolution` + `260` §5 at N=1 · as-built gaps incl. the
-  never-closed probe→results→apply chain · `Research/trial/` salvage · first-run
-  sharp edges · open human decisions). Stdlib, multi-host, and the why/loom prose
-  tails are gently held — `LIVING_STATUS.md`.
+- **r26-revival — live execution (MINTED 2026-07-27; CLOSED 2026-07-31)** — Dorc ran
+  against a real machine and the numbers held: the ssh executor (pipe-completeness —
+  `dorc apply host <plan.sh` does its own ssh'ing), the gate/bless-tier
+  live-acceptance loop (real ssh / real apt, never hot-loop), the Vultr
+  experimentation kit. THE seed: **`notes/26D`**; close-out: conduct `notes/26F` ·
+  the kernel arc `notes/26G`+`26H` (26G only WITH its three appended corrections) ·
+  the adversarial kernel review `notes/26I` (maximum-skepticism law) · builtin-deny
+  `notes/26J` · the ops-glue-residue round: `KNOBS.md:kBOOT` + root `SIBLINGS.md` +
+  **`plans/26K`** (§0 is the actionable head). Stdlib, multi-host, and the why/loom
+  prose tails stay gently held — `LIVING_STATUS.md`. (Same round-id as the tabled
+  multi-host r26 above — branch lineage, not chronology; this entry is its revival.)
 
 ## Vendor/ (full-history clones)
 
