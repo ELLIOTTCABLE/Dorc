@@ -542,7 +542,7 @@ byte-identity gate.
   mechanics build against §3's domain statement; the authored begin/end surface is
   §10-gated; the correlation door stays its own sitting. Named dependency: ssh-as-entry
   needs the ssh oracle, which rides the stdlib revival (itself gated on the
-  dialect-reach decision — §9 pin 3). Gate: a book with no lifecycle events, no
+  dialect-reach decision — the stdlib `command`-oracle pin, §9). Gate: a book with no lifecycle events, no
   host-denoting lines, and no local-exec is byte-identical (the stage's own
   ssh/local-exec behavior is deliberately outside the byte gate); the pivot strawman
   book renders honestly in both world-states.
@@ -576,10 +576,10 @@ the loom Windows stack-overflow (separate small fix).
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
    unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
    it.
-9. The oracle-side load-inert `.` amendment (a marked file sourcing a proven-load-inert
+9. `pin-oracle-side-sourcing-amendment` — the oracle-side load-inert `.` amendment (a marked file sourcing a proven-load-inert
    file) — without it P2's closures stay singletons; a dialect-surface widening,
    human's (§2).
-10. Closure MEMBERSHIP + overlap/diamond identity — the §2 open cells; owed before
+10. `pin-closure-membership-and-diamond` — closure MEMBERSHIP + overlap/diamond identity — the §2 open cells; owed before
     stage-ii's policy half. The diamond half is MECHANICALLY ACKED [human, 2026-08-13,
     skepticism recorded]: no single global rule is built — which inferred traits of
     sourced-ness propagate along `.`-edges, and where composing such speech is proper,
@@ -591,14 +591,17 @@ the loom Windows stack-overflow (separate small fix).
     NOT settled — the human is explicitly suspicious they close everything; revisit at
     the membership sitting; nothing builds on the reframe beyond the no-global-rule
     floor.
-11. The ssh entry-shape ruling — `"$@"`-verbatim-only vs a carved ssh shape (`27C`'s
+11. `pin-ssh-entry-shape` — `"$@"`-verbatim-only vs a carved ssh shape (`27C`'s
     punted in-guest-preamble decision reopened, or ssh carved out; `24T` is the
     prior) — rides the §10 dig's agenda (§3).
-12. The two-position sparing rule — which position's closure/dialect governs the
+12. `pin-two-position-sparing` — which position's closure/dialect governs the
     claim@p × backing@q meet once liveness goes frame-relative. PROPOSED conservative
     line on file (`28R`): collide unless both positions agree on the backing family's
-    closure and dialect. Lands first in `28T`'s sparing mini-model; ack owed.
-13. `rul-blessing-flows-from-best-caller` × the `28M` §11 keep-verdict — the
+    closure and dialect. ACKED [extremely soft, human 2026-08-13] as the build FLOOR —
+    a deliberate value-forfeit, logged
+    (`FORFEITS.md:forfeit-two-position-sparing-collide`); the capture path stays live
+    and the wariness is the point. Lands first in `28T`'s sparing mini-model.
+13. `pin-blessing-reach-elevation` — `rul-blessing-flows-from-best-caller` × the `28M` §11 keep-verdict: the
     reachability-elevation tension (`28R:adj-blessing-vs-keep-verdict`: enrollment
     becomes refactor-sensitive call-graph topology; the reverse-flow cell sits inside
     one closure); one typed line owed (re-affirm knowingly · fold into the spike-end

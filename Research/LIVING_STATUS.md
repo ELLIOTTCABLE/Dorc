@@ -54,8 +54,13 @@ exception + winner-shifting rider, §2's closure-rooting rule, the gate rebuild
 (fixtures-first differential cells; stage-0's retroactive records-diff audit), §3's
 availability-domain statement + host carves, and the new
 **stage-emission-snapshot-transplant** between i and ii (the `28R:§snapshot` rulings).
-§9 grew pins 9–13; open for the human: pin 12 (two-position sparing — PROPOSED line on
-file) and pin 13 (blessing × keep-verdict), both parkable to stage-ii. The plan is
+§9 grew five slugged pins: `pin-two-position-sparing` is ACKED extremely-soft (the
+collide floor; forfeit-logged) · `pin-blessing-reach-elevation` is under active sitting
+(the reach-keyed-enrollment exploration) · `pin-closure-membership-and-diamond`'s
+diamond half is mechanically acked (no global infectiousness rule, human skepticism
+recorded). Root **`FORFEITS.md`** minted 2026-08-13 (human-directed): the register of
+deliberately-forfeited capturable value (⊤-narrowing TODOs) — add a row whenever a
+conservative collapse is chosen for tractability. The plan is
 ACKED; stage-0 landed; stage-i dispatchable AFTER its fixtures-first commissioning.
 
 **The `28K` oracle-loading lane is EXECUTED, CLOSED, and FOLDED** (resume
