@@ -407,6 +407,24 @@ mod kani_support {
         }
     }
 
+    impl<K: Ord + kani::Arbitrary, V> SortedMap<K, V> {
+        /// EXACTLY `LEN` key-canonical bindings whose VALUES come from `value` — what a NESTED
+        /// collection needs, since drawing the value through `kani::Arbitrary` would give it a
+        /// symbolic length inside an already-concrete outer one, which is the combination the
+        /// module docs above measure as unaffordable.
+        pub fn any_canonical_at_capacity_with<const LEN: usize>(
+            mut value: impl FnMut() -> V,
+        ) -> Self {
+            let mut entries: Vec<(K, V)> = Vec::with_capacity(LEN);
+            for key in kani::vec::exact_vec::<K, LEN>() {
+                entries.push((key, value()));
+            }
+            let out = Self { entries };
+            kani::assume(out.keys_are_strictly_ascending());
+            out
+        }
+    }
+
     impl<K: Ord + kani::Arbitrary, V: kani::Arbitrary> kani::Arbitrary for SortedMap<K, V> {
         fn any() -> Self {
             Self::any_canonical::<DEFAULT_BOUND>()

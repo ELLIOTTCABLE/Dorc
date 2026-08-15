@@ -348,13 +348,26 @@ pub fn compare(
 
 /// Harness support for the Kani lane (`300` §2a / `301` §3), homed beside the chokepoints.
 ///
-/// [`Dialect`] is generated through its own [`mint`](Dialect::mint) — deliberately, and unlike
-/// the facade generators. `mint` is not what these harnesses are about, and a dialect is
-/// DEFINED as what minting produced: an arbitrary `SortedMap` would include dialects no run can
-/// reach, so the assumption would be weaker AND less faithful at once.
+/// # Two [`Dialect`] generators, and why both exist
+///
+/// [`any_minted`](Dialect::any_minted) builds through the real [`mint`](Dialect::mint): faithful
+/// by CONSTRUCTION, since a dialect is defined as what minting produced. It is also the lane's
+/// worst-behaved generator — `mint` goes `SortedSet::singleton` (capacity one, FULL) then
+/// `insert`, which is precisely the reallocate-at-a-symbolic-size shape `crate::sorted`'s
+/// generator docs measure, and it took every `compare_*` harness over the address-space cap.
+///
+/// [`any_canonical`](Dialect::any_canonical) is the affordable cousin: arbitrary canonical
+/// backing at concrete sizes, plus an assumed invariant. Faithful by PROOF rather than by
+/// construction — [`every_key_has_a_token`](Dialect::every_key_has_a_token) is exactly the
+/// invariant `mint` maintains, and the harness `mint_maintains_the_dialect_invariant` closes the
+/// loop by proving it. That is the same pattern the facade generators use (arbitrary backing +
+/// `kani::assume(canonical)`), one type up.
 #[cfg(kani)]
 mod kani_support {
-    use super::{Context, ContextKey, Coord, Dialect, EntityResolution, Relation};
+    use super::{
+        Context, ContextKey, Coord, Dialect, EntityResolution, KindId, ProviderId, Relation,
+        SelectorId, SortedMap, SortedSet,
+    };
 
     impl kani::Arbitrary for ContextKey {
         fn any() -> Self {
@@ -415,6 +428,51 @@ mod kani_support {
                 out.mint(kani::any(), kani::any(), kani::any());
                 i = i.saturating_add(1);
             }
+            out
+        }
+
+        /// THE dialect invariant, over and above the two facades' own canonical forms: no
+        /// `(family, kind)` key maps to an EMPTY token set.
+        ///
+        /// Read straight off [`mint`](Dialect::mint), which is the only writer: an entry is
+        /// created by `SortedSet::singleton` and grown by `SortedSet::insert`, and nothing ever
+        /// removes a token or an entry. So a reachable dialect's every entry has at least one
+        /// token — and, in the other direction, every canonical map of non-empty canonical token
+        /// sets IS reachable (mint each `(key, token)` triple in turn), which is what makes the
+        /// assumption below EXACT rather than merely safe. Only the first direction is proved
+        /// here; the second is the argument for why the generator admits no dialect a run cannot.
+        pub fn every_key_has_a_token(&self) -> bool {
+            let mut index = 0usize;
+            while let Some((_, tokens)) = self.minted.get_at(index) {
+                if tokens.is_empty() {
+                    return false;
+                }
+                index = index.saturating_add(1);
+            }
+            true
+        }
+
+        /// An arbitrary canonical dialect of EXACTLY `KEYS` `(family, kind)` entries, each
+        /// carrying EXACTLY `TOKENS` selectors — the concrete-size cousin of
+        /// [`any_minted`](Dialect::any_minted).
+        ///
+        /// `KEYS × TOKENS` enumerates mint-counts the way concrete lengths enumerate collection
+        /// sizes: at most two mints reach exactly the empty dialect, one key with one or two
+        /// tokens, and two keys with one token each.
+        pub fn any_canonical<const KEYS: usize, const TOKENS: usize>() -> Self {
+            // Not decoration: `TOKENS == 0` with `KEYS > 0` would make the assumption below
+            // unsatisfiable, and an unsatisfiable precondition makes every harness over the
+            // value VACUOUSLY green — a pin on nothing that reads exactly like a pin.
+            assert!(
+                KEYS == 0 || TOKENS > 0,
+                "a minted key always carries a token"
+            );
+            let minted = SortedMap::<(ProviderId, KindId), SortedSet<SelectorId>>::
+                any_canonical_at_capacity_with::<KEYS>(
+                    SortedSet::<SelectorId>::any_canonical_at_capacity::<TOKENS>,
+                );
+            let out = Self { minted };
+            kani::assume(out.every_key_has_a_token());
             out
         }
     }

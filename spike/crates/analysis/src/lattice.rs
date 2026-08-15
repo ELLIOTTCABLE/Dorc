@@ -385,6 +385,30 @@ mod kani_support {
         }
     }
 
+    impl<T: Ord + Clone + kani::Arbitrary> Powerset<T> {
+        /// EXACTLY `LEN` members. The concrete-size generator: `join`/`meet` here are
+        /// `SortedSet::union`/`intersection`, which insert per element, and a growing mutation at
+        /// a SYMBOLIC length is what `dorc_core::sorted`'s generator docs measure as
+        /// unaffordable.
+        pub fn any_at_length<const LEN: usize>() -> Self {
+            Powerset(SortedSet::any_canonical_at_capacity::<LEN>())
+        }
+    }
+
+    impl<K, V> MapL<K, V>
+    where
+        K: Ord + Clone + kani::Arbitrary,
+        V: Lattice + kani::Arbitrary,
+    {
+        /// EXACTLY `LEN` bindings, in the no-⊥ canonical form. Same reason as
+        /// [`Powerset::any_at_length`]: both merges insert per key.
+        pub fn any_at_length<const LEN: usize>() -> Self {
+            let out = MapL(SortedMap::any_canonical_at_capacity::<LEN>());
+            kani::assume(out.no_key_maps_to_bottom());
+            out
+        }
+    }
+
     impl<K: Ord + Clone, V: Lattice> MapL<K, V> {
         /// THE `MapL` canonical form: absent ≡ ⊥, so no key may be BOUND to ⊥.
         pub fn no_key_maps_to_bottom(&self) -> bool {
