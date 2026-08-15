@@ -295,6 +295,16 @@ certifier runs full-Fable or in-conductor-implementation.
 
 ## §4 — wave-one-close (the handoff gate)
 
+[TYPED 2026-08-15] CLOSE DELIVERABLE, chat-tier: a brief **human-QA list** that
+EXERCISES the arc's work — tests to break (and in what way), subtle incorrectness
+to inject that must trip the new safeguards, specific CLI invocations
+demonstrating the new tooling — optimized for minimal human effort × maximal
+chance of surfacing unexpected choices, holes, mistakes, or underspecifications.
+(Prior arcs smuggled sharp edges under flashy acceptance criteria via the human's
+own limited exercise time; this is the counter.) The list itself is conversation
+output at close, never a durable; THIS obligation note is what survives
+compression. Conductor collects candidates per fold.
+
 All lanes folded to `ai/main` · `mise run both gate:full-quiet` green + `bless:dry`
 clean · certifier + re-derivation live in the DEFAULT suite · the Kani lane opt-in and
 documented · minispec standing (skeleton; the remit claims at their earned badge-sets;
