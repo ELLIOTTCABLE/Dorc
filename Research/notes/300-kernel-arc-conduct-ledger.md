@@ -76,6 +76,21 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   `ApplyLine` records `leaf: u32` only, collapsing in-loop member sites — a real
   product feature, its own dispatch, prerequisite to `demonstrated` bindings;
   (c) `spike/CLAUDE.md` Build/test/run grows the `verify:*` rows at discipline-close.
+- **lane-facade-reshape** — **FOLDED 2026-08-15 @ `b9d91fec`** (three commits,
+  rebased; conductor-verified both legs green + `verify:check`). The five `match`
+  respells landed; the pipeline is end-to-end +SURE (translates AND typechecks);
+  the fence is the permanent EXITS class only — `SortedSet::insert`, the
+  canonical-form seat, now carries a real Lean body (the collateral cost
+  discharged; set-insertion laws are stateable). Census 40→26 as published.
+  Banked for law-authoring seat-picks: `alloc.vec.Vec.{remove,is_empty}` and the
+  derived pair-`PartialEq` instance remain trusted-base axioms UNDER now-open
+  bodies — remove-family and Eq-derived laws prove modulo those;
+  insert/get/get_at/position/union/intersection are axiom-free below. Riders
+  routed out: `304:fnd-axiom-census-double-counts` (Template files double the
+  count; real unique = 13) → the kani lane; the
+  keep-borrows-out-of-closure-returns discipline needs its durable home in
+  `core`/`analysis` CLAUDE.mds → discipline-close (currently stated only in the
+  aeneas Cargo.toml, where a facade editor will never look).
 - **lane-kani-harnesses** (after facade) — opt-in mise lane, real-tools-lane shape,
   expected Linux/WSL-only; harness home is `spike/verify/` (`301` §3). Targets: the
   lattice laws per combinator · `MapL` canonical-form · backing-set universal meet +
