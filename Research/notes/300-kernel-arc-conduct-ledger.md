@@ -304,6 +304,32 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   accepted; the builder's spot-check of the conductor's own ledger claims before
   landing them endorsed as the litmus's two-way form.
 
+**The post-close debt-paying pass** [human-directed 2026-08-15, while the rewind
+waits on their design-review thread]: "get the builds SAFE against RAM and
+disk-space so these failures stop happening; pre-gate the build-scripts with
+bounds-checking against expected usages and complain loudly before spending time
+and resources" + general mess-cleanup; disk usage is "usually worktrees piling up".
+Three lanes, conduct-branch-based:
+- **lane-resource-safety** (dispatched): the preflight bounds-check seat in
+  `internal-tooling` (per-profile expected disk/RAM vs actual, LOUD pre-spend
+  refusal, per-leg, wired into the heavy tasks; hot-loop stays unburdened) ·
+  `work-both-task-wsl-target` (fix `mise run both`'s missing WSL-local target +
+  `clippy:clean`'s shared-dir wipe) · a worktree/cache doctor inventory · reap of
+  verified-contained-and-clean dead agent worktrees + OUR stale
+  `dorc-wsl-target-*` caches (regenerable build artifacts; the vhdx compaction
+  stays the human's) · unremovable branch refs listed for the human, never
+  force-deleted.
+- **lane-floor-transcript-tooling** (dispatched): `work-bless-emitted-manifests` —
+  bless LOUDLY REFUSES an `expected.emitted` case by default, plus an explicit
+  opt-in re-measure-and-write path (floor shells set + a dedicated flag) so
+  minting/amending floor transcripts stops being a hand-bless; measure-once stays
+  the doctrine, the default path never writes.
+- **lane-kani-battery-reshape** (queued behind the two above; WSL-heavy,
+  serialized): the 18 over-budget harnesses to concrete lengths per `300a` §1's
+  measured shaping rule · the `any_minted` assumed-canonical generator paired with
+  a mint-satisfies-the-invariant closing harness (the adjudicated direction) · the
+  toolchain-less `cargo check` of the detached harness crate in the lane task.
+
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 
 Invariant seats (seat · invariant · pinning test; all tests in the default suite):
