@@ -27,8 +27,7 @@
 //! resolver-bearing kind — the caller canonicalizes through `Resolutions` before it can call
 //! `compare`.
 
-use std::collections::{BTreeMap, BTreeSet};
-
+use crate::sorted::{SortedMap, SortedSet};
 use crate::{EntityRef, KindId, ProviderId, SelectorId};
 
 /// A **wrapped-context key** (`27C` §3; `plans/27C:mech-context-entry`) — the opaque, order-
@@ -189,7 +188,7 @@ pub enum Relation {
 /// sets + the backing's minting family carried into [`compare`].
 #[derive(Debug, Clone, Default)]
 pub struct Dialect {
-    minted: BTreeMap<(ProviderId, KindId), BTreeSet<SelectorId>>,
+    minted: SortedMap<(ProviderId, KindId), SortedSet<SelectorId>>,
 }
 
 impl Dialect {
@@ -205,17 +204,22 @@ impl Dialect {
     /// minting). Idempotent; the set grows only by authored marks parsed at oracle-read
     /// (`fence-divergent-meaning` — a host can never mint a selector at runtime).
     pub fn mint(&mut self, family: ProviderId, kind: KindId, selector: SelectorId) {
-        self.minted
-            .entry((family, kind))
-            .or_default()
-            .insert(selector);
+        match self.minted.get_mut(&(family, kind)) {
+            Some(tokens) => {
+                tokens.insert(selector);
+            }
+            None => {
+                self.minted
+                    .insert((family, kind), SortedSet::singleton(selector));
+            }
+        }
     }
 
     /// `dialect(family, kind)` — the minted tokens for one `(family, kind)`; empty when the family
     /// minted nothing for the kind. The set [`compare`] hands [`selector_covers`].
     #[must_use]
-    pub fn tokens(&self, family: Option<ProviderId>, kind: KindId) -> &BTreeSet<SelectorId> {
-        static EMPTY: BTreeSet<SelectorId> = BTreeSet::new();
+    pub fn tokens(&self, family: Option<ProviderId>, kind: KindId) -> &SortedSet<SelectorId> {
+        static EMPTY: SortedSet<SelectorId> = SortedSet::new();
         family
             .and_then(|f| self.minted.get(&(f, kind)))
             .unwrap_or(&EMPTY)
@@ -263,7 +267,7 @@ impl Dialect {
 pub fn selector_covers(
     claim: Option<SelectorId>,
     backing: Option<SelectorId>,
-    dialect: &BTreeSet<SelectorId>,
+    dialect: &SortedSet<SelectorId>,
 ) -> bool {
     match (claim, backing) {
         // SPARE iff both minted (∈ dialect) and distinct; else COLLIDE.
@@ -368,7 +372,7 @@ mod tests {
         let mut i = Interner::default();
         let enabled = sel(&mut i, "enabled");
         let active = sel(&mut i, "active");
-        let d: BTreeSet<SelectorId> = [enabled, active].into_iter().collect();
+        let d: SortedSet<SelectorId> = [enabled, active].into_iter().collect();
         // Both minted, distinct ⇒ SPARES (covers == false).
         assert!(!selector_covers(Some(active), Some(enabled), &d));
         // Same token ⇒ COLLIDES (the same cell — no self-sparing).
@@ -383,7 +387,7 @@ mod tests {
         let mut i = Interner::default();
         let enabled = sel(&mut i, "enabled");
         let active = sel(&mut i, "active");
-        let d: BTreeSet<SelectorId> = [enabled, active].into_iter().collect();
+        let d: SortedSet<SelectorId> = [enabled, active].into_iter().collect();
         assert!(selector_covers(None, Some(enabled), &d), "⊤ claim collides");
         assert!(
             selector_covers(Some(active), None, &d),
@@ -400,7 +404,7 @@ mod tests {
         let enabled = sel(&mut i, "enabled");
         let active = sel(&mut i, "active");
         let ghost = sel(&mut i, "ghost"); // never minted
-        let d: BTreeSet<SelectorId> = [enabled, active].into_iter().collect();
+        let d: SortedSet<SelectorId> = [enabled, active].into_iter().collect();
         assert!(
             selector_covers(Some(ghost), Some(enabled), &d),
             "unminted claim collides"
@@ -417,7 +421,7 @@ mod tests {
         let mut i = Interner::default();
         let enabled = sel(&mut i, "enabled");
         let active = sel(&mut i, "active");
-        let empty = BTreeSet::new();
+        let empty: SortedSet<SelectorId> = SortedSet::new();
         assert!(selector_covers(Some(active), Some(enabled), &empty));
     }
 
