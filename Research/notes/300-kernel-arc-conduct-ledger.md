@@ -245,6 +245,13 @@ per `28Q` §8.
   `302` §3 refusal-loudness [HUMAN?] flag is dropped as pending — it resolves inside
   the human's sitting. This conductor's `302` is superseded-in-place by whatever the
   sitting produces; re-read before any certifier act.
+- 2026-08-14, phase-1 LANDED under the hold → **`notes/303`** (census · the four
+  existing Refused-floors · eleven spec findings, several of which correct `302` as
+  written — the sitting's input). Kani-lane list grows one row from it:
+  `303:fnd-reach-equality-excludes-its-cause` (`Reach::eq` is trusted by the
+  certifier with nothing pinning it). Lane branch `ai/r30-lane-certifier` exists,
+  clean, zero commits — the phase-1 agent's context resumes for phase-2 if this
+  session survives the hold; else redispatch fresh against settled-`302` + `303`.
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 
