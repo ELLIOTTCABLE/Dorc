@@ -355,10 +355,12 @@ pass.
 
 ## §8 — Gate evidence (exactly what was run)
 
-- **`mise run gate:full-quiet`, Windows leg, foreground, GREEN.** `1950 tests run: 1950 passed
-  (1 slow), 1 skipped`, plus the four lint gates, `clippy:clean` from a wiped target dir, a
-  fresh `cargo build --workspace`, and all doctests. This is the load-bearing one: it proves the
-  DEFAULT suite is green with NO Kani present, which is the lane's opt-in claim.
+- **`mise run gate:full-quiet`, Windows leg, foreground, GREEN — re-run at the FINAL commit.**
+  `1951 tests run: 1951 passed (1 slow), 1 skipped`, plus the four lint gates, `clippy:clean`
+  from a wiped target dir, a fresh `cargo build --workspace`, and all doctests. This is the
+  load-bearing one: it proves the DEFAULT suite is green with NO Kani present, which is the
+  lane's opt-in claim. (An earlier green run at 1950 tests predated the last two commits; this
+  is the one that covers the whole branch.)
 - **`mise run check`** run before every commit; the pre-commit hook (check-only, `HK_FIX=0`)
   ran on all of them and refused nothing.
 - **The WSL leg of `gate:full-quiet` was NOT run**, under the conductor's explicit allowance.
