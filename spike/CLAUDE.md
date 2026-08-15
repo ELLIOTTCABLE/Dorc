@@ -853,20 +853,31 @@ no task covers, and consider adding the task instead.
   (cheap tier: catalogue coherence, unit/slug contracts, the hole censuses — no
   external toolchain). `verify:translate` / `verify:lean` / `verify:report --
   --with-lean` are opt-in Linux/WSL lanes (the derived-definitions pipeline, the lake
-  build, the badge recompute). `minispec/` is SPEC SURFACE under its own CLAUDE.md's
+  build, the badge recompute). `verify:kani` — the bounded-verification lane over the
+  algebra tier, plus its one-time `verify:kani-setup` — is that same opt-in tier, and
+  on Windows both refuse in one polite line. It drives ONE harness at a time under a
+  per-harness wall-clock budget and address-space cap, reaping CBMC between each;
+  never a bare `cargo kani` battery, which has taken a whole WSL VM down. An
+  over-budget harness is a FINDING (the formula needs a shape the checker can afford),
+  never something to wait out. `minispec/` is SPEC SURFACE under its own CLAUDE.md's
   access laws — builders never edit content there; the catalogue lock's promote is a
   spec-side act whose review is the git diff.
-- **fmt-under-agent-env** — `mise run fmt` wraps `hk fix --all`, which the agent
-  session's `HK_FIX=0` turns into refuse-without-rewriting; the working agent
-  spelling is `mise exec -- cargo fmt --all --manifest-path spike/Cargo.toml`.
+- **fmt-is-a-task-in-every-session** — `mise run fmt` formats, agent session included:
+  the task re-enables hk's fix mode for itself, because the session-wide `HK_FIX=0`
+  that keeps the pre-commit hook check-only otherwise turns every fixer into its
+  CHECK command — a run that prints the diff and rewrites nothing. That override is
+  load-bearing; do not tidy it away, and never hand-derive a `cargo fmt` invocation.
 - **wsl-trust-per-worktree** — WSL keeps its own mise trust store; a fresh worktree
   needs a WSL-side `mise trust` before its first `mise run both`.
 - **background-wsl-children-outlive-taskstop** (post-mortem 2026-08-15) — stopping a
   backgrounded harness task does NOT kill its WSL-side children: an orphaned CBMC
   once climbed to ~15GB and OOM'd the whole WSL VM (which killed the harness and the
   human's terminals). Reap explicitly with exact-name `pkill -9 -x <name>` — never
-  `-f`, which once matched the killer's own wrapper shell. Heavy WSL solver/build
-  work runs with per-item timeouts + reaping, and SERIALIZED across concurrent lanes
+  `-f`, which once matched the killer's own wrapper shell. The name that survives is
+  `cbmc`: it is a GRANDCHILD of `cargo kani`, so killing the driver leaves it running.
+  (`verify:kani` already reaps it between harnesses — this bullet is for anything
+  driving a solver outside that lane.) Heavy WSL solver/build work runs with
+  per-item timeouts + reaping, and SERIALIZED across concurrent lanes
   (the VM's ~15GiB default cap is the binding constraint, not host RAM).
 - **never-filter-a-task** — if a task is too loud, run its `-quiet` variant; if it has
   none, ADD one. Do NOT filter at the call site: `head`/`tail`/`grep`, and their
