@@ -37,7 +37,7 @@ the no-subagent clamp, naming discipline (`270` §1), the `verified-core-discipl
 skill pointer, and flag-don't-resolve on every judgment call. No lane carries
 pilot/measure/kill staging [TYPED — velocity; the human inserts kills if needed].
 Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify standup} and
-{kani, certifier} in parallel → rederivation integration → flux → discipline-close.
+{kani, certifier} in parallel → rederivation integration → discipline-close.
 
 - **lane-facade-std-dropping** (first, solo) — evict BTreeMap/BTreeSet from the
   algebra tier — `analysis/src/lattice.rs` (`Powerset` → sorted-dedup `Vec<T>`;
@@ -49,7 +49,11 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   verify, never bless) · `mise run both gate:full-quiet` · zero new deps (core stays
   dependency-free) · no crate split (a split urge is a flag) · each facade invariant
   gets ONE named seat + tests now, and the builder REPORTS the invariant-seat list
-  (feeds lane-kani; the honour-system counterweight said out loud).
+  (feeds lane-kani; the honour-system counterweight said out loud). Rider [TYPED]:
+  this lane is the Aeneas-prep seat, and any typesystem/architecture change REQUIRED
+  to make the deferred Flux lane possible belongs here — signature shapes and
+  named-seat invariant homes stay refinement-annotatable; genuine structural needs
+  get flagged and built now, never deferred with the lane.
 - **lane-derived-definitions-pipeline** (after facade) — stand up Aeneas-translate +
   lake-build of the facade'd algebra as a MAINTAINED opt-in lane feeding
   `minispec/Generated/` (WSL leg; pinned per the nested-mise pattern in-repo,
@@ -91,14 +95,16 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   verdict before a plan ships; disagreement ⇒ demote to guard/run + narrative record;
   the demote-only structure recorded explicitly (the `271:rul-net-quality-u-curve`
   pass condition).
-- **lane-flux-engine-hardening** — [CONDUCTOR recommendation, presented 2026-08-14,
-  awaiting reaction] in, scoped, ENGINE-tier (the intake byte-budget, span/interval
-  arithmetic — the churny tier no other instrument reaches at compile time; per the
-  [TYPED] error-tier ladder, compile-time value is inflated ~two orders), LAST
-  priority in the wave, cut-is-defensible (nothing downstream depends on it).
-  Explicitly NOT part of the verification core — Kani+Lean+binder own the algebra;
-  triple-covering it was rejected. Nightly pin nested; the meta-process learnings are
-  a first-class deliverable.
+- **lane-flux-engine-hardening** — [TYPED 2026-08-14: DEFERRED, penciled] not in
+  Wave-1 (scoping it in would bloat; enough is on the table). Penciled MID-r30: after
+  everything Lean-related is stood up (wave-one-close), before the proper kernel
+  rewrite (28Q stage-i). Intent stands: another defense-in-depth instrument —
+  ENGINE-tier (intake byte-budget, span/interval arithmetic; the churny tier no other
+  instrument reaches at compile time), explicitly NOT part of the verification core
+  (Kani+Lean+binder own the algebra; triple-covering rejected); nightly pin nested;
+  meta-process learnings a deliverable. EXCEPTION [TYPED]: any typesystem or
+  architecture change REQUIRED for Flux to be possible at all belongs in the
+  Aeneas-prep work — the facade lane's scope, not the deferred lane's.
 - **lane-discipline-close** (conductor) — the verified-core CLAUDE.md sections for
   `core`/`analysis` (incl. the `inv-determinism` sharpening: facade sortedness =
   named-seat + Kani-pin, the honour-system move stated in law text) · FORFEITS rows if
@@ -169,6 +175,9 @@ per `28Q` §8.
   markers-only; `plans/302` = the certifier spec (renumbered under the routing).
   The 301-interior rulings (access laws, remit, badges, bindings, naming, byte
   tripwire, local-homing default) live in `301` and are not duplicated here.
+- 2026-08-14, session close: Flux DEFERRED [TYPED] — penciled mid-r30 (post-Lean
+  standup, pre-stage-i), defense-in-depth intent standing, with the
+  required-changes-ride-Aeneas-prep exception (§2's facade rider).
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 

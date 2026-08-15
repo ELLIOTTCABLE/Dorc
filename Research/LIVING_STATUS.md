@@ -26,7 +26,7 @@ independent badge-set, bound PRODUCT looms as demonstrations with seat-reach +
 seat-scoped mutant-kill certification, the whylog decision record as the assertion
 substrate) — and **`notes/300` §2**, the reshaped lane plan (facade → derived-defs
 pipeline + minispec standup + Kani + certifier (spec at `plans/302`) → sparing
-re-derivation → Flux (conductor-recommended, awaiting reaction) → close), with §6
+re-derivation → close; Flux DEFERRED-penciled mid-r30, between the halves), with §6
 banking the settled-rules census (the enrichment item's TABLED menu). The Lean-vehicle
 question is RESOLVED in substance (`300` §3: Aeneas must/of-course; minispec is the
 maintained artifact; the spike models are quarry). `notes/28T` is the historical

@@ -277,6 +277,9 @@ The Aeneas-lane facts below remain accurate and load-bearing. */ -->
   minispec (notes/301). */ -->
 - [LEAN] Flux add-early-scoped; the human's parenthetical this-arc: nothing heard so far
   disliked.
+  <!-- /* superceded 2026-08-14: ruled DEFERRED [TYPED] — penciled mid-r30, after the
+  Lean/minispec standup, before 28Q stage-i; any typesystem/architecture change Flux
+  REQUIRES rides the facade (Aeneas-prep) lane instead. notes/300 §2. */ -->
 - [OPEN] the w2-lean-tier-governance residual (post-review Aeneas confirmation + the
   multi-vehicle budget); the `KNOBS:kSURVIVAL` status-line edit; branch/worktree
   disposition (`ai/research-lean-sparing-spike`, `ai/research-aeneas-spike` — both
