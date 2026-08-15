@@ -1,3 +1,5 @@
+> (née `.claude/reports/r30-certifier-review/report.md`; re-homed 2026-08-15 per `300` §5 no-parallel-durable-dirs.)
+
 ## Findings
 
 1. `finding-missing-states-certify-clean` — Severity: Critical

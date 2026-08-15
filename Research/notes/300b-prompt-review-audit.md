@@ -1,3 +1,5 @@
+> (née `.claude/reports/r30-prompt-review-audit.md`; re-homed 2026-08-15 per `300` §5 no-parallel-durable-dirs.)
+
 # Prompt-review audit — the r30 arc's steering additions
 
 **Report-only.** Nothing was applied; no file outside this report was written, no

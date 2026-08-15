@@ -1,3 +1,5 @@
+> (née `.claude/reports/r30-speechact-gapcheck.md`; re-homed 2026-08-15 per `300` §5 no-parallel-durable-dirs.)
+
 # Gap-check: does the survival why-chain distinguish resolver-claimed disjointness from name-floor disjointness?
 
 Scoped question (`notes/300` §5, `rul-reference-entity-name-floor`'s discipline-close check item, ~line 178): when a survival elision's why-chain renders, does the machinery distinguish the two sources of entity-disjointness — (a) a kind-resolver's claim (`kind__resolve()` canonicalization) vs (b) the resolver-less name-comparison floor (plain string inequality) — with DIFFERENT typed `SpeechAct` provenance, or do both collapse into one undifferentiated verdict?

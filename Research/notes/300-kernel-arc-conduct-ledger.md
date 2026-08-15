@@ -139,7 +139,7 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   `Inconsistency<Reach>` holds `ProvId` (resolve-or-drop at any future durable edge —
   spine boundary (1) doing its job). Open: `302:pin-blast-radius-escalation`
   [HUMAN?]. The post-land cross-lineage review RAN (Sol, read-only; raw report
-  committed at `.claude/reports/r30-certifier-review/report.md`) and RETURNED FIVE
+  committed at `notes/303a-certifier-crosslineage-review.md`) and RETURNED FIVE
   FINDINGS, every one conductor-verified in the code before crediting (provenance:
   OpenAI lineage, adjudicated under maximum skepticism): (1) missing-states
   fail-open — `certify_solution`'s `let-else continue` lets a truncated/empty states
@@ -368,7 +368,7 @@ the SUCCESSOR's:
    banked in §2's row. Historical handoff detail below stands as written:)
    — the lane was COMPLETE and awaiting fold only
    (branch tip `bddead65`, base `5e6d6788`, 12 commits; its own durable report at
-   `.claude/reports/r30-kani-lane-report.md` IN-BRANCH, written cold). Landing
+   `notes/300a-kani-lane-report.md` IN-BRANCH, written cold). Landing
    facts: 19/37 harnesses verify green at bounds, 18 OVER-BUDGET (unjudged, not
    broken — recorded per the memory-gate discipline), ZERO counterexamples — green
    covers the ternary consumer-map + universal-meet law-set, the selector
@@ -394,7 +394,7 @@ the SUCCESSOR's:
    Fable-tier harness-statement review (law · bounds · what is NOT pinned) remain
    the successor's, per the staffing split.
 2. **Adjudicate the prompt-review audit** — LANDED (report committed at
-   `.claude/reports/r30-prompt-review-audit.md`; twelve priority-ordered proposals +
+   `notes/300b-prompt-review-audit.md`; twelve priority-ordered proposals +
    seven reasoned rejections; criteria AGING at 103 days). The minting conductor
    applied ONLY the two factual path fixes (F1: the stale `Minispec/TrustedBase`
    paths in minispec/CLAUDE.md + the three unit docstrings, post-Vocabulary-move;
@@ -414,7 +414,7 @@ the SUCCESSOR's:
    Lean home, not `minispec/` — high-value, since that skill orients core-adjacent
    agents.
 3. ~~The speech-act gap-check~~ — LANDED and LEDGERED (report committed at
-   `.claude/reports/r30-speechact-gapcheck.md`): the resolver-claimed vs
+   `notes/300c-speechact-gapcheck.md`): the resolver-claimed vs
    name-floor disjointness distinction is NOT rendered. It dies TWICE: structurally
    at `core::coord::Relation::ProvablyDisjoint` (a bare unit variant — the
    kind-fence, entity-inequality, and dialect-sparing generators merge with zero

@@ -1,3 +1,5 @@
+> (née `.claude/reports/r30-kani-lane-report.md`; re-homed 2026-08-15 per `300` §5 no-parallel-durable-dirs.)
+
 # r30 `lane-kani-harnesses` — builder report
 
 Branch `ai/r30-lane-kani`, based on `5e6d6788`. Written to be read cold by a successor with
