@@ -11,14 +11,14 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 ### JoinIsAssociative
 
 - seat: `dorc_analysis::lattice::Lattice::join`
-- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsAssociative.lean` (3766 bytes)
+- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsAssociative.lean` (3726 bytes)
 - proof: none claimed
 - bindings: 0
 
 | badge | promoted | evidence |
 |---|---|---|
-| elaborated | todo | not-recomputed-here |
-| interrogated | todo | not-recomputed-here |
+| elaborated | earned | not-recomputed-here |
+| interrogated | earned | not-recomputed-here |
 | pinned | todo | absent(seam-kani-pairing-unbuilt: no paired harness) |
 | proved | todo | absent(no proof claimed) |
 | demonstrated | todo | absent(no accepted binding) |
@@ -27,14 +27,14 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 ### JoinIsCommutative
 
 - seat: `dorc_analysis::lattice::Lattice::join`
-- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsCommutative.lean` (3248 bytes)
+- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsCommutative.lean` (3178 bytes)
 - proof: none claimed
 - bindings: 0
 
 | badge | promoted | evidence |
 |---|---|---|
-| elaborated | todo | not-recomputed-here |
-| interrogated | todo | not-recomputed-here |
+| elaborated | earned | not-recomputed-here |
+| interrogated | earned | not-recomputed-here |
 | pinned | todo | absent(seam-kani-pairing-unbuilt: no paired harness) |
 | proved | todo | absent(no proof claimed) |
 | demonstrated | todo | absent(no accepted binding) |
@@ -43,14 +43,14 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 ### JoinIsIdempotent
 
 - seat: `dorc_analysis::lattice::Lattice::join`
-- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsIdempotent.lean` (2202 bytes)
+- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsIdempotent.lean` (2172 bytes)
 - proof: none claimed
 - bindings: 0
 
 | badge | promoted | evidence |
 |---|---|---|
-| elaborated | todo | not-recomputed-here |
-| interrogated | todo | not-recomputed-here |
+| elaborated | earned | not-recomputed-here |
+| interrogated | earned | not-recomputed-here |
 | pinned | todo | absent(seam-kani-pairing-unbuilt: no paired harness) |
 | proved | todo | absent(no proof claimed) |
 | demonstrated | todo | absent(no accepted binding) |

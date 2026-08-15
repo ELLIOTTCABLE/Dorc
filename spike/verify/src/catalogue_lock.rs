@@ -19,8 +19,8 @@ pub const LAWS: [LawRow; 3] = [
         harness: None,
         bindings: &[],
         expected: [
-            Expectation::Todo,
-            Expectation::Todo,
+            Expectation::Earned,
+            Expectation::Earned,
             Expectation::Todo,
             Expectation::Todo,
             Expectation::Todo,
@@ -34,8 +34,8 @@ pub const LAWS: [LawRow; 3] = [
         harness: None,
         bindings: &[],
         expected: [
-            Expectation::Todo,
-            Expectation::Todo,
+            Expectation::Earned,
+            Expectation::Earned,
             Expectation::Todo,
             Expectation::Todo,
             Expectation::Todo,
@@ -49,8 +49,8 @@ pub const LAWS: [LawRow; 3] = [
         harness: None,
         bindings: &[],
         expected: [
-            Expectation::Todo,
-            Expectation::Todo,
+            Expectation::Earned,
+            Expectation::Earned,
             Expectation::Todo,
             Expectation::Todo,
             Expectation::Todo,

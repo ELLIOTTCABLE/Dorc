@@ -43,32 +43,32 @@ theorem JoinIsCommutative_nonvacuous :
     ∧ lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
         (lattice.Flat.Elem 2#u32) (lattice.Flat.Elem 1#u32)
       = ok lattice.Flat.Top := by
-  constructor <;> native_decide
+  constructor <;> rfl
 
 /- Boundary battery: every shape pair, both orders, exact answers. -/
 example :
     lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
       lattice.Flat.Bottom (lattice.Flat.Elem 1#u32)
-    = ok (lattice.Flat.Elem 1#u32) := by native_decide
+    = ok (lattice.Flat.Elem 1#u32) := by rfl
 example :
     lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
       (lattice.Flat.Elem 1#u32) lattice.Flat.Bottom
-    = ok (lattice.Flat.Elem 1#u32) := by native_decide
+    = ok (lattice.Flat.Elem 1#u32) := by rfl
 example :
     lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
       lattice.Flat.Bottom lattice.Flat.Top
-    = ok (lattice.Flat.Top : lattice.Flat Aeneas.Std.U32) := by native_decide
+    = ok (lattice.Flat.Top : lattice.Flat Aeneas.Std.U32) := by rfl
 example :
     lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
       lattice.Flat.Top lattice.Flat.Bottom
-    = ok (lattice.Flat.Top : lattice.Flat Aeneas.Std.U32) := by native_decide
+    = ok (lattice.Flat.Top : lattice.Flat Aeneas.Std.U32) := by rfl
 example :
     lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
       (lattice.Flat.Elem 1#u32) lattice.Flat.Top
-    = ok lattice.Flat.Top := by native_decide
+    = ok lattice.Flat.Top := by rfl
 example :
     lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
       lattice.Flat.Top (lattice.Flat.Elem 1#u32)
-    = ok lattice.Flat.Top := by native_decide
+    = ok lattice.Flat.Top := by rfl
 
 end Minispec

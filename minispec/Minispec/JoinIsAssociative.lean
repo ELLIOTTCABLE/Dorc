@@ -57,7 +57,7 @@ theorem JoinIsAssociative_nonvacuous :
       lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
         (lattice.Flat.Elem 1#u32) y)
     = ok lattice.Flat.Top := by
-  constructor <;> native_decide
+  constructor <;> rfl
 
 /- Boundary battery: ⊥ neutral in any slot; ⊤ absorbing in any slot; distinct-element
    escalation stable under both groupings. -/
@@ -67,20 +67,20 @@ example :
         lattice.Flat.Bottom (lattice.Flat.Elem 3#u32)
       lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
         x lattice.Flat.Bottom)
-    = ok (lattice.Flat.Elem 3#u32) := by native_decide
+    = ok (lattice.Flat.Elem 3#u32) := by rfl
 example :
     (do
       let x ← lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
         lattice.Flat.Top (lattice.Flat.Elem 3#u32)
       lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
         x (lattice.Flat.Elem 3#u32))
-    = ok lattice.Flat.Top := by native_decide
+    = ok lattice.Flat.Top := by rfl
 example :
     (do
       let x ← lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
         (lattice.Flat.Elem 1#u32) (lattice.Flat.Elem 2#u32)
       lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
         x (lattice.Flat.Elem 3#u32))
-    = ok lattice.Flat.Top := by native_decide
+    = ok lattice.Flat.Top := by rfl
 
 end Minispec
