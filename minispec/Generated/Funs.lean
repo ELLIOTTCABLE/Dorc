@@ -39,7 +39,7 @@ def Pair.Insts.CoreCmpPartialEqPair {U : Type} {T : Type} (cmpPartialEqInst :
 }
 
 /-- [generated::lattice::Lattice::leq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 49:4-51:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 49:4-51:5
     Visibility: public -/
 @[trait_default]
 def lattice.Lattice.leq.default
@@ -52,7 +52,7 @@ def lattice.Lattice.leq.default
     other
 
 /-- [generated::sorted::{impl core::fmt::Debug for generated::sorted::SortedSet<T>}::fmt]:
-    Source: '../../crates/core/src/sorted.rs', lines 42:9-42:14
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:9-42:14
     Visibility: public -/
 def sorted.SortedSet.Insts.CoreFmtDebug.fmt
   {T : Type} (corefmtDebugInst : core.fmt.Debug T) (self : sorted.SortedSet T)
@@ -66,7 +66,7 @@ def sorted.SortedSet.Insts.CoreFmtDebug.fmt
     "items") dyn
 
 /-- Trait implementation: [generated::sorted::{impl core::fmt::Debug for generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 42:9-42:14 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:9-42:14 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreFmtDebug {T : Type} (corefmtDebugInst :
   core.fmt.Debug T) : core.fmt.Debug (sorted.SortedSet T) := {
@@ -74,7 +74,7 @@ def sorted.SortedSet.Insts.CoreFmtDebug {T : Type} (corefmtDebugInst :
 }
 
 /-- [generated::lattice::{impl core::fmt::Debug for generated::lattice::Powerset<T>}::fmt]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:9-73:14
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:9-73:14
     Visibility: public -/
 def lattice.Powerset.Insts.CoreFmtDebug.fmt
   {T : Type} (corefmtDebugInst : core.fmt.Debug T) (corecmpOrdInst :
@@ -88,7 +88,7 @@ def lattice.Powerset.Insts.CoreFmtDebug.fmt
   core.fmt.Formatter.debug_tuple_field1_finish f (toStr "Powerset") dyn
 
 /-- Trait implementation: [generated::lattice::{impl core::fmt::Debug for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:9-73:14 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:9-73:14 -/
 @[reducible]
 def lattice.Powerset.Insts.CoreFmtDebug {T : Type} (corefmtDebugInst :
   core.fmt.Debug T) (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -98,7 +98,7 @@ def lattice.Powerset.Insts.CoreFmtDebug {T : Type} (corefmtDebugInst :
 }
 
 /-- [generated::sorted::{impl core::clone::Clone for generated::sorted::SortedSet<T>}::clone]:
-    Source: '../../crates/core/src/sorted.rs', lines 42:16-42:21
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:16-42:21
     Visibility: public -/
 def sorted.SortedSet.Insts.CoreCloneClone.clone
   {T : Type} (corecloneCloneInst : core.clone.Clone T)
@@ -109,7 +109,7 @@ def sorted.SortedSet.Insts.CoreCloneClone.clone
   ok { items := v }
 
 /-- [generated::lattice::{impl core::clone::Clone for generated::lattice::Powerset<T>}::clone]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:16-73:21
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:16-73:21
     Visibility: public -/
 def lattice.Powerset.Insts.CoreCloneClone.clone
   {T : Type} (corecloneCloneInst : core.clone.Clone T) (corecmpOrdInst :
@@ -122,7 +122,7 @@ def lattice.Powerset.Insts.CoreCloneClone.clone
   ok ss
 
 /-- Trait implementation: [generated::lattice::{impl core::clone::Clone for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:16-73:21 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:16-73:21 -/
 @[reducible]
 def lattice.Powerset.Insts.CoreCloneClone {T : Type} (corecloneCloneInst :
   core.clone.Clone T) (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst1 :
@@ -132,7 +132,7 @@ def lattice.Powerset.Insts.CoreCloneClone {T : Type} (corecloneCloneInst :
 }
 
 /-- Trait implementation: [generated::lattice::{impl core::marker::StructuralPartialEq for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:23-73:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:23-73:32 -/
 @[reducible]
 def lattice.Powerset.Insts.CoreMarkerStructuralPartialEq {T : Type}
   (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst : core.clone.Clone T) :
@@ -140,7 +140,7 @@ def lattice.Powerset.Insts.CoreMarkerStructuralPartialEq {T : Type}
 }
 
 /-- [generated::sorted::{impl core::cmp::PartialEq<generated::sorted::SortedSet<T>> for generated::sorted::SortedSet<T>}::eq]:
-    Source: '../../crates/core/src/sorted.rs', lines 42:23-42:32
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:23-42:32
     Visibility: public -/
 def sorted.SortedSet.Insts.CoreCmpPartialEqSortedSet.eq
   {T : Type} (corecmpPartialEqInst : core.cmp.PartialEq T T)
@@ -151,7 +151,7 @@ def sorted.SortedSet.Insts.CoreCmpPartialEqSortedSet.eq
     other.items
 
 /-- [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Powerset<T>> for generated::lattice::Powerset<T>}::eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:23-73:32
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:23-73:32
     Visibility: public -/
 def lattice.Powerset.Insts.CoreCmpPartialEqPowerset.eq
   {T : Type} (corecmpPartialEqInst : core.cmp.PartialEq T T) (corecmpOrdInst :
@@ -163,7 +163,7 @@ def lattice.Powerset.Insts.CoreCmpPartialEqPowerset.eq
     other
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Powerset<T>> for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:23-73:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:23-73:32 -/
 @[reducible]
 def lattice.Powerset.Insts.CoreCmpPartialEqPowerset {T : Type}
   (corecmpPartialEqInst : core.cmp.PartialEq T T) (corecmpOrdInst :
@@ -174,7 +174,7 @@ def lattice.Powerset.Insts.CoreCmpPartialEqPowerset {T : Type}
 }
 
 /-- [generated::lattice::{impl core::cmp::Eq for generated::lattice::Powerset<T>}::assert_fields_are_eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:34-73:36
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:34-73:36
     Visibility: public -/
 def lattice.Powerset.Insts.CoreCmpEq.assert_fields_are_eq
   {T : Type} (corecmpEqInst : core.cmp.Eq T) (corecmpOrdInst : core.cmp.Ord T)
@@ -184,7 +184,7 @@ def lattice.Powerset.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::Eq for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 73:34-73:36 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 73:34-73:36 -/
 @[reducible]
 def lattice.Powerset.Insts.CoreCmpEq {T : Type} (corecmpEqInst : core.cmp.Eq T)
   (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst : core.clone.Clone T) :
@@ -196,13 +196,13 @@ def lattice.Powerset.Insts.CoreCmpEq {T : Type} (corecmpEqInst : core.cmp.Eq T)
 }
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::new]:
-    Source: '../../crates/core/src/sorted.rs', lines 50:4-52:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 50:4-52:5
     Visibility: public -/
 def sorted.SortedSet.new (T : Type) : Result (sorted.SortedSet T) := do
   ok { items := (alloc.vec.Vec.new T) }
 
 /-- [generated::lattice::{impl core::default::Default for generated::lattice::Powerset<T>}::default]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 77:4-79:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 77:4-79:5
     Visibility: public -/
 def lattice.Powerset.Insts.CoreDefaultDefault.default
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -213,7 +213,7 @@ def lattice.Powerset.Insts.CoreDefaultDefault.default
   ok ss
 
 /-- Trait implementation: [generated::lattice::{impl core::default::Default for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 76:0-80:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 76:0-80:1 -/
 @[reducible]
 def lattice.Powerset.Insts.CoreDefaultDefault {T : Type} (corecmpOrdInst :
   core.cmp.Ord T) (corecloneCloneInst : core.clone.Clone T) :
@@ -223,7 +223,7 @@ def lattice.Powerset.Insts.CoreDefaultDefault {T : Type} (corecmpOrdInst :
 }
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::singleton]:
-    Source: '../../crates/core/src/sorted.rs', lines 109:4-111:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 109:4-111:5
     Visibility: public -/
 def sorted.SortedSet.singleton
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (value : T) :
@@ -235,7 +235,7 @@ def sorted.SortedSet.singleton
   ok { items := ret }
 
 /-- [generated::lattice::{generated::lattice::Powerset<T>}::singleton]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 84:4-86:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 84:4-86:5
     Visibility: public -/
 def lattice.Powerset.singleton
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -246,7 +246,7 @@ def lattice.Powerset.singleton
   ok ss
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::position]: loop body 0:
-    Source: '../../crates/core/src/sorted.rs', lines 97:8-105:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 97:8-105:5 -/
 @[rust_loop_body]
 def sorted.SortedSet.position_loop.body
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
@@ -270,7 +270,7 @@ def sorted.SortedSet.position_loop.body
       ok (cont index1)
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::position]: loop 0:
-    Source: '../../crates/core/src/sorted.rs', lines 97:8-105:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 97:8-105:5 -/
 @[rust_loop]
 def sorted.SortedSet.position_loop
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
@@ -283,7 +283,7 @@ def sorted.SortedSet.position_loop
     index
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::position]:
-    Source: '../../crates/core/src/sorted.rs', lines 95:4-105:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 95:4-105:5 -/
 @[reducible]
 def sorted.SortedSet.position
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
@@ -293,7 +293,7 @@ def sorted.SortedSet.position
   sorted.SortedSet.position_loop corecmpOrdInst self probe 0#usize
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::contains]:
-    Source: '../../crates/core/src/sorted.rs', lines 138:4-140:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 138:4-140:5
     Visibility: public -/
 def sorted.SortedSet.contains
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
@@ -306,7 +306,7 @@ def sorted.SortedSet.contains
   | sorted.Slot.Before _ => ok false
 
 /-- [generated::lattice::{generated::lattice::Powerset<T>}::contains]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 89:4-91:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 89:4-91:5
     Visibility: public -/
 def lattice.Powerset.contains
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -315,23 +315,8 @@ def lattice.Powerset.contains
   := do
   sorted.SortedSet.contains corecmpOrdInst self x
 
-/-- [generated::sorted::{generated::sorted::SortedSet<T>}::insert]:
-    Source: '../../crates/core/src/sorted.rs', lines 115:4-123:5
-    Visibility: public -/
-def sorted.SortedSet.insert
-  {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
-  (value : T) :
-  Result (Bool × (sorted.SortedSet T))
-  := do
-  let s ← sorted.SortedSet.position corecmpOrdInst self value
-  match s with
-  | sorted.Slot.At _ => ok (false, self)
-  | sorted.Slot.Before at1 =>
-    let v ← alloc.vec.Vec.insert self.items at1 value
-    ok (true, { items := v })
-
 /-- [generated::lattice::{generated::lattice::Powerset<T>}::insert]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 94:4-96:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 94:4-96:5
     Visibility: public -/
 def lattice.Powerset.insert
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -342,14 +327,14 @@ def lattice.Powerset.insert
   ok (b, ss)
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::len]:
-    Source: '../../crates/core/src/sorted.rs', lines 56:4-58:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 56:4-58:5
     Visibility: public -/
 def sorted.SortedSet.len
   {T : Type} (self : sorted.SortedSet T) : Result Std.Usize := do
   ok (alloc.vec.Vec.len self.items)
 
 /-- [generated::lattice::{generated::lattice::Powerset<T>}::len]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 99:4-101:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 99:4-101:5
     Visibility: public -/
 def lattice.Powerset.len
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -359,14 +344,14 @@ def lattice.Powerset.len
   sorted.SortedSet.len self
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::is_empty]:
-    Source: '../../crates/core/src/sorted.rs', lines 62:4-64:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 62:4-64:5
     Visibility: public -/
 def sorted.SortedSet.is_empty
   {T : Type} (self : sorted.SortedSet T) : Result Bool := do
   alloc.vec.Vec.is_empty Global self.items
 
 /-- [generated::lattice::{generated::lattice::Powerset<T>}::is_empty]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 104:4-106:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 104:4-106:5
     Visibility: public -/
 def lattice.Powerset.is_empty
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -376,7 +361,7 @@ def lattice.Powerset.is_empty
   sorted.SortedSet.is_empty self
 
 /-- Trait implementation: [generated::lattice::{impl core::iter::traits::collect::FromIterator<T> for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 114:0-118:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 114:0-118:1 -/
 @[reducible]
 def lattice.Powerset.Insts.CoreIterTraitsCollectFromIterator {T : Type}
   (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst : core.clone.Clone T) :
@@ -389,7 +374,7 @@ def lattice.Powerset.Insts.CoreIterTraitsCollectFromIterator {T : Type}
 }
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::intersection]: loop body 0:
-    Source: '../../crates/core/src/sorted.rs', lines 162:8-167:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 162:8-167:9
     Visibility: public -/
 @[rust_loop_body]
 def sorted.SortedSet.intersection_loop.body
@@ -417,7 +402,7 @@ def sorted.SortedSet.intersection_loop.body
     ok (cont (out1, index1))
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::intersection]: loop 0:
-    Source: '../../crates/core/src/sorted.rs', lines 162:8-167:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 162:8-167:9
     Visibility: public -/
 @[rust_loop]
 def sorted.SortedSet.intersection_loop
@@ -432,7 +417,7 @@ def sorted.SortedSet.intersection_loop
     (out, index)
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::intersection]:
-    Source: '../../crates/core/src/sorted.rs', lines 159:4-169:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 159:4-169:5
     Visibility: public -/
 def sorted.SortedSet.intersection
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -445,7 +430,7 @@ def sorted.SortedSet.intersection
     other out 0#usize
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Powerset<T>}::meet]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 127:4-129:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 127:4-129:5
     Visibility: public -/
 def lattice.Powerset.Insts.GeneratedLatticeLattice.meet
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -458,7 +443,7 @@ def lattice.Powerset.Insts.GeneratedLatticeLattice.meet
   ok ss
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::union]: loop body 0:
-    Source: '../../crates/core/src/sorted.rs', lines 149:8-152:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 149:8-152:9
     Visibility: public -/
 @[rust_loop_body]
 def sorted.SortedSet.union_loop.body
@@ -479,7 +464,7 @@ def sorted.SortedSet.union_loop.body
     ok (cont (out1, index1))
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::union]: loop 0:
-    Source: '../../crates/core/src/sorted.rs', lines 149:8-152:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 149:8-152:9
     Visibility: public -/
 @[rust_loop]
 def sorted.SortedSet.union_loop
@@ -494,7 +479,7 @@ def sorted.SortedSet.union_loop
     (out, index)
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::union]:
-    Source: '../../crates/core/src/sorted.rs', lines 146:4-154:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 146:4-154:5
     Visibility: public -/
 def sorted.SortedSet.union
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -508,7 +493,7 @@ def sorted.SortedSet.union
     0#usize
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Powerset<T>}::join]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 124:4-126:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 124:4-126:5
     Visibility: public -/
 def lattice.Powerset.Insts.GeneratedLatticeLattice.join
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -521,7 +506,7 @@ def lattice.Powerset.Insts.GeneratedLatticeLattice.join
   ok ss
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Powerset<T>}::bottom]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 121:4-123:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 121:4-123:5
     Visibility: public -/
 def lattice.Powerset.Insts.GeneratedLatticeLattice.bottom
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -532,7 +517,7 @@ def lattice.Powerset.Insts.GeneratedLatticeLattice.bottom
   ok ss
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Powerset<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 120:0-130:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 120:0-130:1 -/
 @[reducible]
 impl_def lattice.Powerset.Insts.GeneratedLatticeLattice {T : Type}
   (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst1 : core.clone.Clone T)
@@ -553,7 +538,7 @@ impl_def lattice.Powerset.Insts.GeneratedLatticeLattice {T : Type}
 }
 
 /-- [generated::lattice::{impl core::fmt::Debug for generated::lattice::Flat<T>}::fmt]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:9-136:14
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:9-136:14
     Visibility: public -/
 def lattice.Flat.Insts.CoreFmtDebug.fmt
   {T : Type} (corefmtDebugInst : core.fmt.Debug T) (corecloneCloneInst :
@@ -569,7 +554,7 @@ def lattice.Flat.Insts.CoreFmtDebug.fmt
   | lattice.Flat.Top => core.fmt.Formatter.write_str f (toStr "Top")
 
 /-- Trait implementation: [generated::lattice::{impl core::fmt::Debug for generated::lattice::Flat<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:9-136:14 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:9-136:14 -/
 @[reducible]
 def lattice.Flat.Insts.CoreFmtDebug {T : Type} (corefmtDebugInst :
   core.fmt.Debug T) (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst :
@@ -579,7 +564,7 @@ def lattice.Flat.Insts.CoreFmtDebug {T : Type} (corefmtDebugInst :
 }
 
 /-- [generated::lattice::{impl core::clone::Clone for generated::lattice::Flat<T>}::clone]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:16-136:21
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:16-136:21
     Visibility: public -/
 def lattice.Flat.Insts.CoreCloneClone.clone
   {T : Type} (corecloneCloneInst : core.clone.Clone T) (corecloneCloneInst1 :
@@ -594,7 +579,7 @@ def lattice.Flat.Insts.CoreCloneClone.clone
   | lattice.Flat.Top => ok lattice.Flat.Top
 
 /-- Trait implementation: [generated::lattice::{impl core::clone::Clone for generated::lattice::Flat<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:16-136:21 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:16-136:21 -/
 @[reducible]
 def lattice.Flat.Insts.CoreCloneClone {T : Type} (corecloneCloneInst :
   core.clone.Clone T) (corecloneCloneInst1 : core.clone.Clone T) (corecmpEqInst
@@ -604,7 +589,7 @@ def lattice.Flat.Insts.CoreCloneClone {T : Type} (corecloneCloneInst :
 }
 
 /-- Trait implementation: [generated::lattice::{impl core::marker::StructuralPartialEq for generated::lattice::Flat<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:23-136:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:23-136:32 -/
 @[reducible]
 def lattice.Flat.Insts.CoreMarkerStructuralPartialEq {T : Type}
   (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst : core.cmp.Eq T) :
@@ -612,7 +597,7 @@ def lattice.Flat.Insts.CoreMarkerStructuralPartialEq {T : Type}
 }
 
 /-- [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Flat<T>> for generated::lattice::Flat<T>}::eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:23-136:32
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:23-136:32
     Visibility: public -/
 def lattice.Flat.Insts.CoreCmpPartialEqFlat.eq
   {T : Type} (corecmpPartialEqInst : core.cmp.PartialEq T T)
@@ -637,7 +622,7 @@ def lattice.Flat.Insts.CoreCmpPartialEqFlat.eq
   else ok false
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Flat<T>> for generated::lattice::Flat<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:23-136:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:23-136:32 -/
 @[reducible]
 def lattice.Flat.Insts.CoreCmpPartialEqFlat {T : Type} (corecmpPartialEqInst :
   core.cmp.PartialEq T T) (corecloneCloneInst : core.clone.Clone T)
@@ -648,7 +633,7 @@ def lattice.Flat.Insts.CoreCmpPartialEqFlat {T : Type} (corecmpPartialEqInst :
 }
 
 /-- [generated::lattice::{impl core::cmp::Eq for generated::lattice::Flat<T>}::assert_fields_are_eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:34-136:36
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:34-136:36
     Visibility: public -/
 def lattice.Flat.Insts.CoreCmpEq.assert_fields_are_eq
   {T : Type} (corecmpEqInst : core.cmp.Eq T) (corecloneCloneInst :
@@ -659,7 +644,7 @@ def lattice.Flat.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::Eq for generated::lattice::Flat<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 136:34-136:36 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 136:34-136:36 -/
 @[reducible]
 def lattice.Flat.Insts.CoreCmpEq {T : Type} (corecmpEqInst : core.cmp.Eq T)
   (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst1 : core.cmp.Eq T) :
@@ -671,7 +656,7 @@ def lattice.Flat.Insts.CoreCmpEq {T : Type} (corecmpEqInst : core.cmp.Eq T)
 }
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Flat<T>}::meet]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 160:4-172:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 160:4-172:5
     Visibility: public -/
 def lattice.Flat.Insts.GeneratedLatticeLattice.meet
   {T : Type} (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst :
@@ -704,7 +689,7 @@ def lattice.Flat.Insts.GeneratedLatticeLattice.meet
       corecloneCloneInst corecmpEqInst other
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Flat<T>}::join]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 147:4-159:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 147:4-159:5
     Visibility: public -/
 def lattice.Flat.Insts.GeneratedLatticeLattice.join
   {T : Type} (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst :
@@ -737,7 +722,7 @@ def lattice.Flat.Insts.GeneratedLatticeLattice.join
     | lattice.Flat.Top => ok lattice.Flat.Top
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Flat<T>}::bottom]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 144:4-146:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 144:4-146:5
     Visibility: public -/
 def lattice.Flat.Insts.GeneratedLatticeLattice.bottom
   {T : Type} (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst :
@@ -747,7 +732,7 @@ def lattice.Flat.Insts.GeneratedLatticeLattice.bottom
   ok lattice.Flat.Bottom
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Flat<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 143:0-173:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 143:0-173:1 -/
 @[reducible]
 impl_def lattice.Flat.Insts.GeneratedLatticeLattice {T : Type}
   (corecloneCloneInst1 : core.clone.Clone T) (corecmpEqInst1 : core.cmp.Eq T) :
@@ -768,7 +753,7 @@ impl_def lattice.Flat.Insts.GeneratedLatticeLattice {T : Type}
 }
 
 /-- [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::Flat<T>}::top]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 176:4-178:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 176:4-178:5
     Visibility: public -/
 def lattice.Flat.Insts.GeneratedLatticeBoundedLattice.top
   {T : Type} (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst :
@@ -778,7 +763,7 @@ def lattice.Flat.Insts.GeneratedLatticeBoundedLattice.top
   ok lattice.Flat.Top
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::Flat<T>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 175:0-179:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 175:0-179:1 -/
 @[reducible]
 def lattice.Flat.Insts.GeneratedLatticeBoundedLattice {T : Type}
   (corecloneCloneInst : core.clone.Clone T) (corecmpEqInst : core.cmp.Eq T) :
@@ -790,7 +775,7 @@ def lattice.Flat.Insts.GeneratedLatticeBoundedLattice {T : Type}
 }
 
 /-- [generated::lattice::{impl core::fmt::Debug for generated::lattice::Product<A, B>}::fmt]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:9-183:14
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:9-183:14
     Visibility: public -/
 def lattice.Product.Insts.CoreFmtDebug.fmt
   {A : Type} {B : Type} (corefmtDebugInst : core.fmt.Debug A)
@@ -804,7 +789,7 @@ def lattice.Product.Insts.CoreFmtDebug.fmt
   core.fmt.Formatter.debug_tuple_field2_finish f (toStr "Product") dyn dyn1
 
 /-- Trait implementation: [generated::lattice::{impl core::fmt::Debug for generated::lattice::Product<A, B>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:9-183:14 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:9-183:14 -/
 @[reducible]
 def lattice.Product.Insts.CoreFmtDebug {A : Type} {B : Type} (corefmtDebugInst
   : core.fmt.Debug A) (corefmtDebugInst1 : core.fmt.Debug B) : core.fmt.Debug
@@ -814,7 +799,7 @@ def lattice.Product.Insts.CoreFmtDebug {A : Type} {B : Type} (corefmtDebugInst
 }
 
 /-- [generated::lattice::{impl core::clone::Clone for generated::lattice::Product<A, B>}::clone]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:16-183:21
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:16-183:21
     Visibility: public -/
 def lattice.Product.Insts.CoreCloneClone.clone
   {A : Type} {B : Type} (corecloneCloneInst : core.clone.Clone A)
@@ -827,7 +812,7 @@ def lattice.Product.Insts.CoreCloneClone.clone
   ok (t2, t3)
 
 /-- Trait implementation: [generated::lattice::{impl core::clone::Clone for generated::lattice::Product<A, B>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:16-183:21 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:16-183:21 -/
 @[reducible]
 def lattice.Product.Insts.CoreCloneClone {A : Type} {B : Type}
   (corecloneCloneInst : core.clone.Clone A) (corecloneCloneInst1 :
@@ -837,14 +822,14 @@ def lattice.Product.Insts.CoreCloneClone {A : Type} {B : Type}
 }
 
 /-- Trait implementation: [generated::lattice::{impl core::marker::StructuralPartialEq for generated::lattice::Product<A, B>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:23-183:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:23-183:32 -/
 @[reducible]
 def lattice.Product.Insts.CoreMarkerStructuralPartialEq (A : Type) (B : Type) :
   core.marker.StructuralPartialEq (lattice.Product A B) := {
 }
 
 /-- [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Product<A, B>> for generated::lattice::Product<A, B>}::eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:23-183:32
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:23-183:32
     Visibility: public -/
 def lattice.Product.Insts.CoreCmpPartialEqProduct.eq
   {A : Type} {B : Type} (corecmpPartialEqInst : core.cmp.PartialEq A A)
@@ -860,7 +845,7 @@ def lattice.Product.Insts.CoreCmpPartialEqProduct.eq
   else ok false
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Product<A, B>> for generated::lattice::Product<A, B>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:23-183:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:23-183:32 -/
 @[reducible]
 def lattice.Product.Insts.CoreCmpPartialEqProduct {A : Type} {B : Type}
   (corecmpPartialEqInst : core.cmp.PartialEq A A) (corecmpPartialEqInst1 :
@@ -871,7 +856,7 @@ def lattice.Product.Insts.CoreCmpPartialEqProduct {A : Type} {B : Type}
 }
 
 /-- [generated::lattice::{impl core::cmp::Eq for generated::lattice::Product<A, B>}::assert_fields_are_eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:34-183:36
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:34-183:36
     Visibility: public -/
 def lattice.Product.Insts.CoreCmpEq.assert_fields_are_eq
   {A : Type} {B : Type} (corecmpEqInst : core.cmp.Eq A) (corecmpEqInst1 :
@@ -881,7 +866,7 @@ def lattice.Product.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::Eq for generated::lattice::Product<A, B>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 183:34-183:36 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 183:34-183:36 -/
 @[reducible]
 def lattice.Product.Insts.CoreCmpEq {A : Type} {B : Type} (corecmpEqInst :
   core.cmp.Eq A) (corecmpEqInst1 : core.cmp.Eq B) : core.cmp.Eq
@@ -893,7 +878,7 @@ def lattice.Product.Insts.CoreCmpEq {A : Type} {B : Type} (corecmpEqInst :
 }
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Product<A, B>}::meet]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 193:4-195:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 193:4-195:5
     Visibility: public -/
 def lattice.Product.Insts.GeneratedLatticeLattice.meet
   {A : Type} {B : Type} (LatticeInst : lattice.Lattice A) (LatticeInst1 :
@@ -908,7 +893,7 @@ def lattice.Product.Insts.GeneratedLatticeLattice.meet
   ok (t4, t5)
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Product<A, B>}::join]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 190:4-192:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 190:4-192:5
     Visibility: public -/
 def lattice.Product.Insts.GeneratedLatticeLattice.join
   {A : Type} {B : Type} (LatticeInst : lattice.Lattice A) (LatticeInst1 :
@@ -923,7 +908,7 @@ def lattice.Product.Insts.GeneratedLatticeLattice.join
   ok (t4, t5)
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Product<A, B>}::bottom]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 187:4-189:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 187:4-189:5
     Visibility: public -/
 def lattice.Product.Insts.GeneratedLatticeLattice.bottom
   {A : Type} {B : Type} (LatticeInst : lattice.Lattice A) (LatticeInst1 :
@@ -935,7 +920,7 @@ def lattice.Product.Insts.GeneratedLatticeLattice.bottom
   ok (t, t1)
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Product<A, B>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 186:0-196:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 186:0-196:1 -/
 @[reducible]
 impl_def lattice.Product.Insts.GeneratedLatticeLattice {A : Type} {B : Type}
   (LatticeInst : lattice.Lattice A) (LatticeInst1 : lattice.Lattice B) :
@@ -955,7 +940,7 @@ impl_def lattice.Product.Insts.GeneratedLatticeLattice {A : Type} {B : Type}
 }
 
 /-- [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::Product<A, B>}::top]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 202:4-204:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 202:4-204:5
     Visibility: public -/
 def lattice.Product.Insts.GeneratedLatticeBoundedLattice.top
   {A : Type} {B : Type} (BoundedLatticeInst : lattice.BoundedLattice A)
@@ -967,7 +952,7 @@ def lattice.Product.Insts.GeneratedLatticeBoundedLattice.top
   ok (t, t1)
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::Product<A, B>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 201:0-205:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 201:0-205:1 -/
 @[reducible]
 def lattice.Product.Insts.GeneratedLatticeBoundedLattice {A : Type} {B : Type}
   (BoundedLatticeInst : lattice.BoundedLattice A) (BoundedLatticeInst1 :
@@ -979,7 +964,7 @@ def lattice.Product.Insts.GeneratedLatticeBoundedLattice {A : Type} {B : Type}
 }
 
 /-- [generated::sorted::{impl core::fmt::Debug for generated::sorted::SortedMap<K, V>}::fmt]:
-    Source: '../../crates/core/src/sorted.rs', lines 184:9-184:14
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:9-184:14
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreFmtDebug.fmt
   {K : Type} {V : Type} (corefmtDebugInst : core.fmt.Debug K)
@@ -994,7 +979,7 @@ def sorted.SortedMap.Insts.CoreFmtDebug.fmt
     "entries") dyn
 
 /-- Trait implementation: [generated::sorted::{impl core::fmt::Debug for generated::sorted::SortedMap<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 184:9-184:14 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:9-184:14 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreFmtDebug {K : Type} {V : Type} (corefmtDebugInst
   : core.fmt.Debug K) (corefmtDebugInst1 : core.fmt.Debug V) : core.fmt.Debug
@@ -1004,7 +989,7 @@ def sorted.SortedMap.Insts.CoreFmtDebug {K : Type} {V : Type} (corefmtDebugInst
 }
 
 /-- [generated::lattice::{impl core::fmt::Debug for generated::lattice::MapL<K, V>}::fmt]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:9-213:14
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:9-213:14
     Visibility: public -/
 def lattice.MapL.Insts.CoreFmtDebug.fmt
   {K : Type} {V : Type} (corefmtDebugInst : core.fmt.Debug K) (corecmpOrdInst :
@@ -1019,7 +1004,7 @@ def lattice.MapL.Insts.CoreFmtDebug.fmt
   core.fmt.Formatter.debug_tuple_field1_finish f (toStr "MapL") dyn
 
 /-- Trait implementation: [generated::lattice::{impl core::fmt::Debug for generated::lattice::MapL<K, V>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:9-213:14 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:9-213:14 -/
 @[reducible]
 def lattice.MapL.Insts.CoreFmtDebug {K : Type} {V : Type} (corefmtDebugInst :
   core.fmt.Debug K) (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -1030,7 +1015,7 @@ def lattice.MapL.Insts.CoreFmtDebug {K : Type} {V : Type} (corefmtDebugInst :
 }
 
 /-- [generated::sorted::{impl core::clone::Clone for generated::sorted::SortedMap<K, V>}::clone]:
-    Source: '../../crates/core/src/sorted.rs', lines 184:16-184:21
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:16-184:21
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreCloneClone.clone
   {K : Type} {V : Type} (corecloneCloneInst : core.clone.Clone K)
@@ -1041,7 +1026,7 @@ def sorted.SortedMap.Insts.CoreCloneClone.clone
   ok { entries := v }
 
 /-- [generated::lattice::{impl core::clone::Clone for generated::lattice::MapL<K, V>}::clone]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:16-213:21
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:16-213:21
     Visibility: public -/
 def lattice.MapL.Insts.CoreCloneClone.clone
   {K : Type} {V : Type} (corecloneCloneInst : core.clone.Clone K)
@@ -1056,7 +1041,7 @@ def lattice.MapL.Insts.CoreCloneClone.clone
   ok sm
 
 /-- Trait implementation: [generated::lattice::{impl core::clone::Clone for generated::lattice::MapL<K, V>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:16-213:21 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:16-213:21 -/
 @[reducible]
 def lattice.MapL.Insts.CoreCloneClone {K : Type} {V : Type} (corecloneCloneInst
   : core.clone.Clone K) (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst1
@@ -1067,7 +1052,7 @@ def lattice.MapL.Insts.CoreCloneClone {K : Type} {V : Type} (corecloneCloneInst
 }
 
 /-- Trait implementation: [generated::lattice::{impl core::marker::StructuralPartialEq for generated::lattice::MapL<K, V>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:23-213:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:23-213:32 -/
 @[reducible]
 def lattice.MapL.Insts.CoreMarkerStructuralPartialEq {K : Type} {V : Type}
   (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst : core.clone.Clone K)
@@ -1076,7 +1061,7 @@ def lattice.MapL.Insts.CoreMarkerStructuralPartialEq {K : Type} {V : Type}
 }
 
 /-- [generated::sorted::{impl core::cmp::PartialEq<generated::sorted::SortedMap<K, V>> for generated::sorted::SortedMap<K, V>}::eq]:
-    Source: '../../crates/core/src/sorted.rs', lines 184:23-184:32
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:23-184:32
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreCmpPartialEqSortedMap.eq
   {K : Type} {V : Type} (corecmpPartialEqInst : core.cmp.PartialEq K K)
@@ -1088,7 +1073,7 @@ def sorted.SortedMap.Insts.CoreCmpPartialEqSortedMap.eq
     corecmpPartialEqInst corecmpPartialEqInst1) self.entries other.entries
 
 /-- [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::MapL<K, V>> for generated::lattice::MapL<K, V>}::eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:23-213:32
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:23-213:32
     Visibility: public -/
 def lattice.MapL.Insts.CoreCmpPartialEqMapL.eq
   {K : Type} {V : Type} (corecmpPartialEqInst : core.cmp.PartialEq K K)
@@ -1101,7 +1086,7 @@ def lattice.MapL.Insts.CoreCmpPartialEqMapL.eq
     corecmpPartialEqInst1 self other
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::MapL<K, V>> for generated::lattice::MapL<K, V>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:23-213:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:23-213:32 -/
 @[reducible]
 def lattice.MapL.Insts.CoreCmpPartialEqMapL {K : Type} {V : Type}
   (corecmpPartialEqInst : core.cmp.PartialEq K K) (corecmpOrdInst :
@@ -1114,7 +1099,7 @@ def lattice.MapL.Insts.CoreCmpPartialEqMapL {K : Type} {V : Type}
 }
 
 /-- [generated::lattice::{impl core::cmp::Eq for generated::lattice::MapL<K, V>}::assert_fields_are_eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:34-213:36
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:34-213:36
     Visibility: public -/
 def lattice.MapL.Insts.CoreCmpEq.assert_fields_are_eq
   {K : Type} {V : Type} (corecmpEqInst : core.cmp.Eq K) (corecmpOrdInst :
@@ -1125,7 +1110,7 @@ def lattice.MapL.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::Eq for generated::lattice::MapL<K, V>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 213:34-213:36 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 213:34-213:36 -/
 @[reducible]
 def lattice.MapL.Insts.CoreCmpEq {K : Type} {V : Type} (corecmpEqInst :
   core.cmp.Eq K) (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -1139,14 +1124,14 @@ def lattice.MapL.Insts.CoreCmpEq {K : Type} {V : Type} (corecmpEqInst :
 }
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::new]:
-    Source: '../../crates/core/src/sorted.rs', lines 192:4-196:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 192:4-196:5
     Visibility: public -/
 def sorted.SortedMap.new
   (K : Type) (V : Type) : Result (sorted.SortedMap K V) := do
   ok { entries := (alloc.vec.Vec.new (K × V)) }
 
 /-- [generated::lattice::{impl core::default::Default for generated::lattice::MapL<K, V>}::default]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 217:4-219:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 217:4-219:5
     Visibility: public -/
 def lattice.MapL.Insts.CoreDefaultDefault.default
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -1157,7 +1142,7 @@ def lattice.MapL.Insts.CoreDefaultDefault.default
   ok sm
 
 /-- Trait implementation: [generated::lattice::{impl core::default::Default for generated::lattice::MapL<K, V>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 216:0-220:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 216:0-220:1 -/
 @[reducible]
 def lattice.MapL.Insts.CoreDefaultDefault {K : Type} {V : Type} (corecmpOrdInst
   : core.cmp.Ord K) (corecloneCloneInst : core.clone.Clone K) (LatticeInst :
@@ -1167,7 +1152,7 @@ def lattice.MapL.Insts.CoreDefaultDefault {K : Type} {V : Type} (corecmpOrdInst
 }
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::position]: loop body 0:
-    Source: '../../crates/core/src/sorted.rs', lines 232:8-240:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 232:8-240:5 -/
 @[rust_loop_body]
 def sorted.SortedMap.position_loop.body
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1193,7 +1178,7 @@ def sorted.SortedMap.position_loop.body
       ok (cont index1)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::position]: loop 0:
-    Source: '../../crates/core/src/sorted.rs', lines 232:8-240:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 232:8-240:5 -/
 @[rust_loop]
 def sorted.SortedMap.position_loop
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1206,7 +1191,7 @@ def sorted.SortedMap.position_loop
     index
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::position]:
-    Source: '../../crates/core/src/sorted.rs', lines 230:4-240:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 230:4-240:5 -/
 @[reducible]
 def sorted.SortedMap.position
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1216,7 +1201,7 @@ def sorted.SortedMap.position
   sorted.SortedMap.position_loop corecmpOrdInst self probe 0#usize
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::remove]:
-    Source: '../../crates/core/src/sorted.rs', lines 274:4-279:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 274:4-279:5
     Visibility: public -/
 def sorted.SortedMap.remove
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1230,58 +1215,8 @@ def sorted.SortedMap.remove
     ok (some t, { entries := v })
   | sorted.Slot.Before _ => ok (none, self)
 
-/-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::insert::{impl core::ops::function::FnOnce<(&'_ mut (K, V),), V> for generated::sorted::{generated::sorted::SortedMap<K, V>}::insert::closure<K, V>}::call_once]:
-    Source: '../../crates/core/src/sorted.rs', lines 265:21-265:67 -/
-def
-  sorted.SortedMap.insert.closure.Insts.CoreOpsFunctionFnOnceTupleMutPairV.call_once
-  {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
-  (c : sorted.SortedMap.insert.closure K V) (tupled_args : (K × V)) :
-  Result (V × (K × V))
-  := do
-  let (t, t1) := tupled_args
-  let (t2, t3) := core.mem.replace t1 c
-  ok (t2, (t, t3))
-
-/-- Trait implementation: [generated::sorted::{generated::sorted::SortedMap<K, V>}::insert::{impl core::ops::function::FnOnce<(&'_ mut (K, V),), V> for generated::sorted::{generated::sorted::SortedMap<K, V>}::insert::closure<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 265:21-265:67 -/
-@[reducible]
-def sorted.SortedMap.insert.closure.Insts.CoreOpsFunctionFnOnceTupleMutPairV {K
-  : Type} (V : Type) (corecmpOrdInst : core.cmp.Ord K) :
-  core.ops.function.FnOnce (sorted.SortedMap.insert.closure K V) (K × V) V
-  := {
-  call_once :=
-    sorted.SortedMap.insert.closure.Insts.CoreOpsFunctionFnOnceTupleMutPairV.call_once
-    corecmpOrdInst
-}
-
-/-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::insert]:
-    Source: '../../crates/core/src/sorted.rs', lines 260:4-271:5
-    Visibility: public -/
-def sorted.SortedMap.insert
-  {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
-  (self : sorted.SortedMap K V) (key : K) (value : V) :
-  Result ((Option V) × (sorted.SortedMap K V))
-  := do
-  let s ← sorted.SortedMap.position corecmpOrdInst self key
-  match s with
-  | sorted.Slot.At at1 =>
-    let (s1, deref_mut_back) ← lift (alloc.vec.Vec.deref_mut self.entries)
-    let (o, get_mut_back) ←
-      core.slice.Slice.get_mut (core.slice.index.SliceIndexUsizeSlice (K × V))
-        s1 at1
-    let (o1, o2) ←
-      core.option.Option.map
-        (sorted.SortedMap.insert.closure.Insts.CoreOpsFunctionFnOnceTupleMutPairV
-        V corecmpOrdInst) o value
-    let s2 := get_mut_back o2
-    let v := deref_mut_back s2
-    ok (o1, { entries := v })
-  | sorted.Slot.Before at1 =>
-    let v ← alloc.vec.Vec.insert self.entries at1 (key, value)
-    ok (none, { entries := v })
-
 /-- [generated::lattice::{generated::lattice::MapL<K, V>}::insert]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 230:4-236:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 230:4-236:5
     Visibility: public -/
 def lattice.MapL.insert
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -1298,7 +1233,7 @@ def lattice.MapL.insert
        ok sm
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}::meet]: loop body 0:
-    Source: '../../crates/analysis/src/lattice.rs', lines 265:8-270:9
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 265:8-270:9
     Visibility: public -/
 @[rust_loop_body]
 def lattice.MapL.Insts.GeneratedLatticeLattice.meet_loop.body
@@ -1328,7 +1263,7 @@ def lattice.MapL.Insts.GeneratedLatticeLattice.meet_loop.body
     ok (cont (index1, self, other, out1))
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}::meet]: loop 0:
-    Source: '../../crates/analysis/src/lattice.rs', lines 265:8-270:9
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 265:8-270:9
     Visibility: public -/
 @[rust_loop]
 def lattice.MapL.Insts.GeneratedLatticeLattice.meet_loop
@@ -1345,7 +1280,7 @@ def lattice.MapL.Insts.GeneratedLatticeLattice.meet_loop
     (index, self, other, out)
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}::meet]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 258:4-272:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 258:4-272:5
     Visibility: public -/
 def lattice.MapL.Insts.GeneratedLatticeLattice.meet
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -1360,7 +1295,7 @@ def lattice.MapL.Insts.GeneratedLatticeLattice.meet
     corecloneCloneInst LatticeInst 0#usize self other out
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}::join]: loop body 0:
-    Source: '../../crates/analysis/src/lattice.rs', lines 251:8-255:9
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 251:8-255:9
     Visibility: public -/
 @[rust_loop_body]
 def lattice.MapL.Insts.GeneratedLatticeLattice.join_loop.body
@@ -1386,7 +1321,7 @@ def lattice.MapL.Insts.GeneratedLatticeLattice.join_loop.body
     ok (cont (index1, other, out1))
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}::join]: loop 0:
-    Source: '../../crates/analysis/src/lattice.rs', lines 251:8-255:9
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 251:8-255:9
     Visibility: public -/
 @[rust_loop]
 def lattice.MapL.Insts.GeneratedLatticeLattice.join_loop
@@ -1402,7 +1337,7 @@ def lattice.MapL.Insts.GeneratedLatticeLattice.join_loop
     (index, other, out)
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}::join]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 248:4-257:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 248:4-257:5
     Visibility: public -/
 def lattice.MapL.Insts.GeneratedLatticeLattice.join
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -1417,7 +1352,7 @@ def lattice.MapL.Insts.GeneratedLatticeLattice.join
     corecloneCloneInst LatticeInst 0#usize other out
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}::bottom]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 245:4-247:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 245:4-247:5
     Visibility: public -/
 def lattice.MapL.Insts.GeneratedLatticeLattice.bottom
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -1428,7 +1363,7 @@ def lattice.MapL.Insts.GeneratedLatticeLattice.bottom
   ok sm
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::MapL<K, V>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 244:0-273:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 244:0-273:1 -/
 @[reducible]
 impl_def lattice.MapL.Insts.GeneratedLatticeLattice {K : Type} {V : Type}
   (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst1 : core.clone.Clone K)
@@ -1450,7 +1385,7 @@ impl_def lattice.MapL.Insts.GeneratedLatticeLattice {K : Type} {V : Type}
 }
 
 /-- [generated::lattice::{impl core::fmt::Debug for generated::lattice::May<L>}::fmt]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:9-279:14
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:9-279:14
     Visibility: public -/
 def lattice.May.Insts.CoreFmtDebug.fmt
   {L : Type} (corefmtDebugInst : core.fmt.Debug L) (self : lattice.May L)
@@ -1461,7 +1396,7 @@ def lattice.May.Insts.CoreFmtDebug.fmt
   core.fmt.Formatter.debug_tuple_field1_finish f (toStr "May") dyn
 
 /-- Trait implementation: [generated::lattice::{impl core::fmt::Debug for generated::lattice::May<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:9-279:14 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:9-279:14 -/
 @[reducible]
 def lattice.May.Insts.CoreFmtDebug {L : Type} (corefmtDebugInst :
   core.fmt.Debug L) : core.fmt.Debug (lattice.May L) := {
@@ -1469,7 +1404,7 @@ def lattice.May.Insts.CoreFmtDebug {L : Type} (corefmtDebugInst :
 }
 
 /-- [generated::lattice::{impl core::clone::Clone for generated::lattice::May<L>}::clone]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:16-279:21
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:16-279:21
     Visibility: public -/
 def lattice.May.Insts.CoreCloneClone.clone
   {L : Type} (corecloneCloneInst : core.clone.Clone L) (self : lattice.May L) :
@@ -1479,7 +1414,7 @@ def lattice.May.Insts.CoreCloneClone.clone
   ok t
 
 /-- Trait implementation: [generated::lattice::{impl core::clone::Clone for generated::lattice::May<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:16-279:21 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:16-279:21 -/
 @[reducible]
 def lattice.May.Insts.CoreCloneClone {L : Type} (corecloneCloneInst :
   core.clone.Clone L) : core.clone.Clone (lattice.May L) := {
@@ -1487,14 +1422,14 @@ def lattice.May.Insts.CoreCloneClone {L : Type} (corecloneCloneInst :
 }
 
 /-- Trait implementation: [generated::lattice::{impl core::marker::StructuralPartialEq for generated::lattice::May<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:23-279:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:23-279:32 -/
 @[reducible]
 def lattice.May.Insts.CoreMarkerStructuralPartialEq (L : Type) :
   core.marker.StructuralPartialEq (lattice.May L) := {
 }
 
 /-- [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::May<L>> for generated::lattice::May<L>}::eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:23-279:32
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:23-279:32
     Visibility: public -/
 def lattice.May.Insts.CoreCmpPartialEqMay.eq
   {L : Type} (corecmpPartialEqInst : core.cmp.PartialEq L L)
@@ -1504,7 +1439,7 @@ def lattice.May.Insts.CoreCmpPartialEqMay.eq
   corecmpPartialEqInst.eq self other
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::May<L>> for generated::lattice::May<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:23-279:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:23-279:32 -/
 @[reducible]
 def lattice.May.Insts.CoreCmpPartialEqMay {L : Type} (corecmpPartialEqInst :
   core.cmp.PartialEq L L) : core.cmp.PartialEq (lattice.May L) (lattice.May L)
@@ -1513,7 +1448,7 @@ def lattice.May.Insts.CoreCmpPartialEqMay {L : Type} (corecmpPartialEqInst :
 }
 
 /-- [generated::lattice::{impl core::cmp::Eq for generated::lattice::May<L>}::assert_fields_are_eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:34-279:36
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:34-279:36
     Visibility: public -/
 def lattice.May.Insts.CoreCmpEq.assert_fields_are_eq
   {L : Type} (corecmpEqInst : core.cmp.Eq L) (self : lattice.May L) :
@@ -1522,7 +1457,7 @@ def lattice.May.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::Eq for generated::lattice::May<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 279:34-279:36 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 279:34-279:36 -/
 @[reducible]
 def lattice.May.Insts.CoreCmpEq {L : Type} (corecmpEqInst : core.cmp.Eq L) :
   core.cmp.Eq (lattice.May L) := {
@@ -1533,7 +1468,7 @@ def lattice.May.Insts.CoreCmpEq {L : Type} (corecmpEqInst : core.cmp.Eq L) :
 }
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::May<L>}::meet]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 289:4-291:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 289:4-291:5
     Visibility: public -/
 def lattice.May.Insts.GeneratedLatticeLattice.meet
   {L : Type} (LatticeInst : lattice.Lattice L) (self : lattice.May L)
@@ -1544,7 +1479,7 @@ def lattice.May.Insts.GeneratedLatticeLattice.meet
   ok t
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::May<L>}::join]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 286:4-288:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 286:4-288:5
     Visibility: public -/
 def lattice.May.Insts.GeneratedLatticeLattice.join
   {L : Type} (LatticeInst : lattice.Lattice L) (self : lattice.May L)
@@ -1555,7 +1490,7 @@ def lattice.May.Insts.GeneratedLatticeLattice.join
   ok t
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::May<L>}::bottom]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 283:4-285:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 283:4-285:5
     Visibility: public -/
 def lattice.May.Insts.GeneratedLatticeLattice.bottom
   {L : Type} (LatticeInst : lattice.Lattice L) : Result (lattice.May L) := do
@@ -1563,7 +1498,7 @@ def lattice.May.Insts.GeneratedLatticeLattice.bottom
   ok t
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::May<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 282:0-292:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 282:0-292:1 -/
 @[reducible]
 impl_def lattice.May.Insts.GeneratedLatticeLattice {L : Type} (LatticeInst :
   lattice.Lattice L) : lattice.Lattice (lattice.May L) := {
@@ -1578,7 +1513,7 @@ impl_def lattice.May.Insts.GeneratedLatticeLattice {L : Type} (LatticeInst :
 }
 
 /-- [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::May<L>}::top]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 295:4-297:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 295:4-297:5
     Visibility: public -/
 def lattice.May.Insts.GeneratedLatticeBoundedLattice.top
   {L : Type} (BoundedLatticeInst : lattice.BoundedLattice L) :
@@ -1588,7 +1523,7 @@ def lattice.May.Insts.GeneratedLatticeBoundedLattice.top
   ok t
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::May<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 294:0-298:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 294:0-298:1 -/
 @[reducible]
 def lattice.May.Insts.GeneratedLatticeBoundedLattice {L : Type}
   (BoundedLatticeInst : lattice.BoundedLattice L) : lattice.BoundedLattice
@@ -1600,7 +1535,7 @@ def lattice.May.Insts.GeneratedLatticeBoundedLattice {L : Type}
 }
 
 /-- [generated::lattice::{impl core::fmt::Debug for generated::lattice::Must<L>}::fmt]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:9-316:14
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:9-316:14
     Visibility: public -/
 def lattice.Must.Insts.CoreFmtDebug.fmt
   {L : Type} (corefmtDebugInst : core.fmt.Debug L) (self : lattice.Must L)
@@ -1611,7 +1546,7 @@ def lattice.Must.Insts.CoreFmtDebug.fmt
   core.fmt.Formatter.debug_tuple_field1_finish f (toStr "Must") dyn
 
 /-- Trait implementation: [generated::lattice::{impl core::fmt::Debug for generated::lattice::Must<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:9-316:14 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:9-316:14 -/
 @[reducible]
 def lattice.Must.Insts.CoreFmtDebug {L : Type} (corefmtDebugInst :
   core.fmt.Debug L) : core.fmt.Debug (lattice.Must L) := {
@@ -1619,7 +1554,7 @@ def lattice.Must.Insts.CoreFmtDebug {L : Type} (corefmtDebugInst :
 }
 
 /-- [generated::lattice::{impl core::clone::Clone for generated::lattice::Must<L>}::clone]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:16-316:21
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:16-316:21
     Visibility: public -/
 def lattice.Must.Insts.CoreCloneClone.clone
   {L : Type} (corecloneCloneInst : core.clone.Clone L) (self : lattice.Must L)
@@ -1630,7 +1565,7 @@ def lattice.Must.Insts.CoreCloneClone.clone
   ok t
 
 /-- Trait implementation: [generated::lattice::{impl core::clone::Clone for generated::lattice::Must<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:16-316:21 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:16-316:21 -/
 @[reducible]
 def lattice.Must.Insts.CoreCloneClone {L : Type} (corecloneCloneInst :
   core.clone.Clone L) : core.clone.Clone (lattice.Must L) := {
@@ -1638,14 +1573,14 @@ def lattice.Must.Insts.CoreCloneClone {L : Type} (corecloneCloneInst :
 }
 
 /-- Trait implementation: [generated::lattice::{impl core::marker::StructuralPartialEq for generated::lattice::Must<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:23-316:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:23-316:32 -/
 @[reducible]
 def lattice.Must.Insts.CoreMarkerStructuralPartialEq (L : Type) :
   core.marker.StructuralPartialEq (lattice.Must L) := {
 }
 
 /-- [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Must<L>> for generated::lattice::Must<L>}::eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:23-316:32
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:23-316:32
     Visibility: public -/
 def lattice.Must.Insts.CoreCmpPartialEqMust.eq
   {L : Type} (corecmpPartialEqInst : core.cmp.PartialEq L L)
@@ -1655,7 +1590,7 @@ def lattice.Must.Insts.CoreCmpPartialEqMust.eq
   corecmpPartialEqInst.eq self other
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::PartialEq<generated::lattice::Must<L>> for generated::lattice::Must<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:23-316:32 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:23-316:32 -/
 @[reducible]
 def lattice.Must.Insts.CoreCmpPartialEqMust {L : Type} (corecmpPartialEqInst :
   core.cmp.PartialEq L L) : core.cmp.PartialEq (lattice.Must L) (lattice.Must
@@ -1664,7 +1599,7 @@ def lattice.Must.Insts.CoreCmpPartialEqMust {L : Type} (corecmpPartialEqInst :
 }
 
 /-- [generated::lattice::{impl core::cmp::Eq for generated::lattice::Must<L>}::assert_fields_are_eq]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:34-316:36
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:34-316:36
     Visibility: public -/
 def lattice.Must.Insts.CoreCmpEq.assert_fields_are_eq
   {L : Type} (corecmpEqInst : core.cmp.Eq L) (self : lattice.Must L) :
@@ -1673,7 +1608,7 @@ def lattice.Must.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::lattice::{impl core::cmp::Eq for generated::lattice::Must<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 316:34-316:36 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 316:34-316:36 -/
 @[reducible]
 def lattice.Must.Insts.CoreCmpEq {L : Type} (corecmpEqInst : core.cmp.Eq L) :
   core.cmp.Eq (lattice.Must L) := {
@@ -1684,7 +1619,7 @@ def lattice.Must.Insts.CoreCmpEq {L : Type} (corecmpEqInst : core.cmp.Eq L) :
 }
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Must<L>}::meet]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 326:4-328:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 326:4-328:5
     Visibility: public -/
 def lattice.Must.Insts.GeneratedLatticeLattice.meet
   {L : Type} (BoundedLatticeInst : lattice.BoundedLattice L)
@@ -1695,7 +1630,7 @@ def lattice.Must.Insts.GeneratedLatticeLattice.meet
   ok t
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Must<L>}::join]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 323:4-325:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 323:4-325:5
     Visibility: public -/
 def lattice.Must.Insts.GeneratedLatticeLattice.join
   {L : Type} (BoundedLatticeInst : lattice.BoundedLattice L)
@@ -1706,7 +1641,7 @@ def lattice.Must.Insts.GeneratedLatticeLattice.join
   ok t
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Must<L>}::bottom]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 320:4-322:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 320:4-322:5
     Visibility: public -/
 def lattice.Must.Insts.GeneratedLatticeLattice.bottom
   {L : Type} (BoundedLatticeInst : lattice.BoundedLattice L) :
@@ -1716,7 +1651,7 @@ def lattice.Must.Insts.GeneratedLatticeLattice.bottom
   ok t
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Must<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 319:0-329:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 319:0-329:1 -/
 @[reducible]
 impl_def lattice.Must.Insts.GeneratedLatticeLattice {L : Type}
   (BoundedLatticeInst : lattice.BoundedLattice L) : lattice.Lattice
@@ -1734,7 +1669,7 @@ impl_def lattice.Must.Insts.GeneratedLatticeLattice {L : Type}
 }
 
 /-- [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::Must<L>}::top]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 332:4-334:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 332:4-334:5
     Visibility: public -/
 def lattice.Must.Insts.GeneratedLatticeBoundedLattice.top
   {L : Type} (BoundedLatticeInst : lattice.BoundedLattice L) :
@@ -1744,7 +1679,7 @@ def lattice.Must.Insts.GeneratedLatticeBoundedLattice.top
   ok t
 
 /-- Trait implementation: [generated::lattice::{impl generated::lattice::BoundedLattice for generated::lattice::Must<L>}]
-    Source: '../../crates/analysis/src/lattice.rs', lines 331:0-335:1 -/
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 331:0-335:1 -/
 @[reducible]
 def lattice.Must.Insts.GeneratedLatticeBoundedLattice {L : Type}
   (BoundedLatticeInst : lattice.BoundedLattice L) : lattice.BoundedLattice
@@ -1755,7 +1690,7 @@ def lattice.Must.Insts.GeneratedLatticeBoundedLattice {L : Type}
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::clone::Clone for generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 42:16-42:21 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:16-42:21 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreCloneClone {T : Type} (corecloneCloneInst :
   core.clone.Clone T) : core.clone.Clone (sorted.SortedSet T) := {
@@ -1763,14 +1698,14 @@ def sorted.SortedSet.Insts.CoreCloneClone {T : Type} (corecloneCloneInst :
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::marker::StructuralPartialEq for generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 42:23-42:32 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:23-42:32 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreMarkerStructuralPartialEq (T : Type) :
   core.marker.StructuralPartialEq (sorted.SortedSet T) := {
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::cmp::PartialEq<generated::sorted::SortedSet<T>> for generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 42:23-42:32 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:23-42:32 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreCmpPartialEqSortedSet {T : Type}
   (corecmpPartialEqInst : core.cmp.PartialEq T T) : core.cmp.PartialEq
@@ -1780,7 +1715,7 @@ def sorted.SortedSet.Insts.CoreCmpPartialEqSortedSet {T : Type}
 }
 
 /-- [generated::sorted::{impl core::cmp::Eq for generated::sorted::SortedSet<T>}::assert_fields_are_eq]:
-    Source: '../../crates/core/src/sorted.rs', lines 42:34-42:36
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:34-42:36
     Visibility: public -/
 def sorted.SortedSet.Insts.CoreCmpEq.assert_fields_are_eq
   {T : Type} (corecmpEqInst : core.cmp.Eq T) (self : sorted.SortedSet T) :
@@ -1789,7 +1724,7 @@ def sorted.SortedSet.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::sorted::{impl core::cmp::Eq for generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 42:34-42:36 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 42:34-42:36 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreCmpEq {T : Type} (corecmpEqInst : core.cmp.Eq T)
   : core.cmp.Eq (sorted.SortedSet T) := {
@@ -1800,14 +1735,14 @@ def sorted.SortedSet.Insts.CoreCmpEq {T : Type} (corecmpEqInst : core.cmp.Eq T)
 }
 
 /-- [generated::sorted::{impl core::default::Default for generated::sorted::SortedSet<T>}::default]:
-    Source: '../../crates/core/src/sorted.rs', lines 79:4-81:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 79:4-81:5
     Visibility: public -/
 def sorted.SortedSet.Insts.CoreDefaultDefault.default
   (T : Type) : Result (sorted.SortedSet T) := do
   sorted.SortedSet.new T
 
 /-- Trait implementation: [generated::sorted::{impl core::default::Default for generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 78:0-82:1 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 78:0-82:1 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreDefaultDefault (T : Type) : core.default.Default
   (sorted.SortedSet T) := {
@@ -1815,7 +1750,7 @@ def sorted.SortedSet.Insts.CoreDefaultDefault (T : Type) : core.default.Default
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::iter::traits::collect::IntoIterator<&'a T, core::slice::iter::Iter<'a, T>> for &'a generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 84:0-90:1 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 84:0-90:1 -/
 @[reducible]
 def SharedASortedSet.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter (T :
   Type) : core.iter.traits.collect.IntoIterator (sorted.SortedSet T) T
@@ -1826,7 +1761,7 @@ def SharedASortedSet.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter (T :
 }
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::remove]:
-    Source: '../../crates/core/src/sorted.rs', lines 126:4-134:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 126:4-134:5
     Visibility: public -/
 def sorted.SortedSet.remove
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
@@ -1841,7 +1776,7 @@ def sorted.SortedSet.remove
   | sorted.Slot.Before _ => ok (false, self)
 
 /-- Trait implementation: [generated::sorted::{impl core::iter::traits::collect::FromIterator<T> for generated::sorted::SortedSet<T>}]
-    Source: '../../crates/core/src/sorted.rs', lines 172:0-180:1 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 172:0-180:1 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator {T : Type}
   (corecmpOrdInst : core.cmp.Ord T) : core.iter.traits.collect.FromIterator
@@ -1854,7 +1789,7 @@ def sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator {T : Type}
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::clone::Clone for generated::sorted::SortedMap<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 184:16-184:21 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:16-184:21 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreCloneClone {K : Type} {V : Type}
   (corecloneCloneInst : core.clone.Clone K) (corecloneCloneInst1 :
@@ -1864,14 +1799,14 @@ def sorted.SortedMap.Insts.CoreCloneClone {K : Type} {V : Type}
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::marker::StructuralPartialEq for generated::sorted::SortedMap<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 184:23-184:32 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:23-184:32 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreMarkerStructuralPartialEq (K : Type) (V : Type)
   : core.marker.StructuralPartialEq (sorted.SortedMap K V) := {
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::cmp::PartialEq<generated::sorted::SortedMap<K, V>> for generated::sorted::SortedMap<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 184:23-184:32 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:23-184:32 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreCmpPartialEqSortedMap {K : Type} {V : Type}
   (corecmpPartialEqInst : core.cmp.PartialEq K K) (corecmpPartialEqInst1 :
@@ -1882,7 +1817,7 @@ def sorted.SortedMap.Insts.CoreCmpPartialEqSortedMap {K : Type} {V : Type}
 }
 
 /-- [generated::sorted::{impl core::cmp::Eq for generated::sorted::SortedMap<K, V>}::assert_fields_are_eq]:
-    Source: '../../crates/core/src/sorted.rs', lines 184:34-184:36
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:34-184:36
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreCmpEq.assert_fields_are_eq
   {K : Type} {V : Type} (corecmpEqInst : core.cmp.Eq K) (corecmpEqInst1 :
@@ -1892,7 +1827,7 @@ def sorted.SortedMap.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::sorted::{impl core::cmp::Eq for generated::sorted::SortedMap<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 184:34-184:36 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:34-184:36 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreCmpEq {K : Type} {V : Type} (corecmpEqInst :
   core.cmp.Eq K) (corecmpEqInst1 : core.cmp.Eq V) : core.cmp.Eq
@@ -1904,21 +1839,21 @@ def sorted.SortedMap.Insts.CoreCmpEq {K : Type} {V : Type} (corecmpEqInst :
 }
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::len]:
-    Source: '../../crates/core/src/sorted.rs', lines 200:4-202:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 200:4-202:5
     Visibility: public -/
 def sorted.SortedMap.len
   {K : Type} {V : Type} (self : sorted.SortedMap K V) : Result Std.Usize := do
   ok (alloc.vec.Vec.len self.entries)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::is_empty]:
-    Source: '../../crates/core/src/sorted.rs', lines 206:4-208:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 206:4-208:5
     Visibility: public -/
 def sorted.SortedMap.is_empty
   {K : Type} {V : Type} (self : sorted.SortedMap K V) : Result Bool := do
   alloc.vec.Vec.is_empty Global self.entries
 
 /-- Trait implementation: [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnOnce<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
 @[reducible]
 def
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnOnceTupleSharedPairPairSharedKSharedV
@@ -1929,7 +1864,7 @@ def
 }
 
 /-- Trait implementation: [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnMut<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
 @[reducible]
 def
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnMutTupleSharedPairPairSharedKSharedV
@@ -1943,14 +1878,14 @@ def
 }
 
 /-- [generated::sorted::{impl core::default::Default for generated::sorted::SortedMap<K, V>}::default]:
-    Source: '../../crates/core/src/sorted.rs', lines 223:4-225:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 223:4-225:5
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreDefaultDefault.default
   (K : Type) (V : Type) : Result (sorted.SortedMap K V) := do
   sorted.SortedMap.new K V
 
 /-- Trait implementation: [generated::sorted::{impl core::default::Default for generated::sorted::SortedMap<K, V>}]
-    Source: '../../crates/core/src/sorted.rs', lines 222:0-226:1 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 222:0-226:1 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreDefaultDefault (K : Type) (V : Type) :
   core.default.Default (sorted.SortedMap K V) := {

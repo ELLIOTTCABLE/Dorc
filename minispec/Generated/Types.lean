@@ -16,7 +16,7 @@ set_option maxRecDepth 2048
 namespace generated
 
 /-- Trait declaration: [generated::lattice::Lattice]
-    Source: '../../crates/analysis/src/lattice.rs', lines 32:0-52:1
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 32:0-52:1
     Visibility: public -/
 structure lattice.Lattice (Self : Type) where
   corecloneCloneInst : core.clone.Clone Self
@@ -27,33 +27,33 @@ structure lattice.Lattice (Self : Type) where
   leq : Self → Self → Result Bool
 
 /-- Trait declaration: [generated::lattice::BoundedLattice]
-    Source: '../../crates/analysis/src/lattice.rs', lines 60:0-63:1
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 60:0-63:1
     Visibility: public -/
 structure lattice.BoundedLattice (Self : Type) where
   LatticeInst : lattice.Lattice Self
   top : Result Self
 
 /-- [generated::sorted::SortedSet]
-    Source: '../../crates/core/src/sorted.rs', lines 43:0-45:1
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 43:0-45:1
     Visibility: public -/
 structure sorted.SortedSet (T : Type) where
   items : alloc.vec.Vec T
 
 /-- [generated::lattice::Powerset]
-    Source: '../../crates/analysis/src/lattice.rs', lines 74:0-74:50
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 74:0-74:50
     Visibility: public -/
 @[reducible]
 def lattice.Powerset (T : Type) := sorted.SortedSet T
 
 /-- [generated::sorted::Slot]
-    Source: '../../crates/core/src/sorted.rs', lines 31:0-36:1 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 31:0-36:1 -/
 @[discriminant isize]
 inductive sorted.Slot where
 | At : Std.Usize → sorted.Slot
 | Before : Std.Usize → sorted.Slot
 
 /-- [generated::lattice::Flat]
-    Source: '../../crates/analysis/src/lattice.rs', lines 137:0-141:1
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 137:0-141:1
     Visibility: public -/
 @[discriminant isize]
 inductive lattice.Flat (T : Type) where
@@ -62,35 +62,30 @@ inductive lattice.Flat (T : Type) where
 | Top : lattice.Flat T
 
 /-- [generated::lattice::Product]
-    Source: '../../crates/analysis/src/lattice.rs', lines 184:0-184:39
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 184:0-184:39
     Visibility: public -/
 def lattice.Product (A : Type) (B : Type) := A × B
 
 /-- [generated::sorted::SortedMap]
-    Source: '../../crates/core/src/sorted.rs', lines 185:0-187:1
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 185:0-187:1
     Visibility: public -/
 structure sorted.SortedMap (K : Type) (V : Type) where
   entries : alloc.vec.Vec (K × V)
 
 /-- [generated::lattice::MapL]
-    Source: '../../crates/analysis/src/lattice.rs', lines 214:0-214:61
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 214:0-214:61
     Visibility: public -/
 @[reducible]
 def lattice.MapL (K : Type) (V : Type) := sorted.SortedMap K V
 
-/-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::insert::closure]
-    Source: '../../crates/core/src/sorted.rs', lines 265:21-265:67 -/
-@[reducible]
-def sorted.SortedMap.insert.closure (K : Type) (V : Type) := V
-
 /-- [generated::lattice::May]
-    Source: '../../crates/analysis/src/lattice.rs', lines 280:0-280:25
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 280:0-280:25
     Visibility: public -/
 @[reducible]
 def lattice.May (L : Type) := L
 
 /-- [generated::lattice::Must]
-    Source: '../../crates/analysis/src/lattice.rs', lines 317:0-317:26
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 317:0-317:26
     Visibility: public -/
 @[reducible]
 def lattice.Must (L : Type) := L

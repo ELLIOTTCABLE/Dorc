@@ -1,3 +1,5 @@
+import Generated.Funs
+
 /-!
 # LeqIsReflexive — UNWRITTEN
 
@@ -23,9 +25,10 @@ When written, this file carries exactly:
 and nothing else: no metadata (that is dislocated to the catalogue) and no churny material,
 so every diff in this file is a meaningful, adjudicable event. Its proof, when there is one,
 lives at `Minispec/Proofs/LeqIsReflexive.lean`.
--/
 
-import Generated.Funs
+(`import` leads the file because Lean requires it to: an import after any other command,
+a module docstring included, is a parse error.)
+-/
 
 namespace Minispec
 

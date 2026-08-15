@@ -37,16 +37,6 @@ axiom Pair.Insts.CoreFmtDebug.fmt
   (U × T) → core.fmt.Formatter → Result ((core.result.Result Unit
     core.fmt.Error) × core.fmt.Formatter)
 
-/-- [core::option::{core::option::Option<T>}::map]:
-    Source: '/rustc/library/core/src/option.rs', lines 1157:4-1159:53
-    Name pattern: [core::option::{core::option::Option<@T>}::map]
-    Visibility: public -/
-@[rust_fun "core::option::{core::option::Option<@T>}::map"]
-axiom core.option.Option.map
-  {T : Type} {U : Type} {F : Type} (opsfunctionFnOnceFTupleTUInst :
-  core.ops.function.FnOnce F T U) :
-  Option T → F → Result (Option U)
-
 /-- [core::tuple::{impl core::cmp::PartialEq<(U, T)> for (U, T)}::eq]:
     Source: '/rustc/library/core/src/tuple.rs', lines 30:16-30:55
     Name pattern: [core::tuple::{core::cmp::PartialEq<(@U, @T), (@U, @T)>}::eq]
@@ -74,8 +64,15 @@ axiom alloc.vec.Vec.remove
 axiom alloc.vec.Vec.is_empty
   {T : Type} (A : Type) : alloc.vec.Vec T → Result Bool
 
+/-- [generated::sorted::{generated::sorted::SortedSet<T>}::insert]:
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 115:4-123:5
+    Visibility: public -/
+axiom sorted.SortedSet.insert
+  {T : Type} (corecmpOrdInst : core.cmp.Ord T) :
+  sorted.SortedSet T → T → Result (Bool × (sorted.SortedSet T))
+
 /-- [generated::lattice::{generated::lattice::Powerset<T>}::iter]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 109:4-111:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 109:4-111:5
     Visibility: public -/
 axiom lattice.Powerset.iter
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -83,7 +80,7 @@ axiom lattice.Powerset.iter
   lattice.Powerset T → Result (core.slice.iter.Iter T)
 
 /-- [generated::lattice::{impl core::iter::traits::collect::FromIterator<T> for generated::lattice::Powerset<T>}::from_iter]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 115:4-117:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 115:4-117:5
     Visibility: public -/
 axiom lattice.Powerset.Insts.CoreIterTraitsCollectFromIterator.from_iter
   {T : Type} {I : Type} {Clause2_IntoIter : Type} (corecmpOrdInst :
@@ -93,15 +90,23 @@ axiom lattice.Powerset.Insts.CoreIterTraitsCollectFromIterator.from_iter
   I → Result (lattice.Powerset T)
 
 /-- [generated::lattice::{generated::lattice::MapL<K, V>}::get]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 225:4-227:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 225:4-227:5
     Visibility: public -/
 axiom lattice.MapL.get
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
   core.clone.Clone K) (LatticeInst : lattice.Lattice V) :
   lattice.MapL K V → K → Result V
 
+/-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::insert]:
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 260:4-271:5
+    Visibility: public -/
+axiom sorted.SortedMap.insert
+  {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) :
+  sorted.SortedMap K V → K → V → Result ((Option V) × (sorted.SortedMap
+    K V))
+
 /-- [generated::lattice::{generated::lattice::MapL<K, V>}::iter]:
-    Source: '../../crates/analysis/src/lattice.rs', lines 239:4-241:5
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 239:4-241:5
     Visibility: public -/
 axiom lattice.MapL.iter
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) (corecloneCloneInst :
@@ -110,40 +115,40 @@ axiom lattice.MapL.iter
     (K × V)) (sorted.SortedMap.iter.closure K V))
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::get]:
-    Source: '../../crates/core/src/sorted.rs', lines 244:4-249:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 244:4-249:5
     Visibility: public -/
 axiom sorted.SortedMap.get
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) :
   sorted.SortedMap K V → K → Result (Option V)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::get_at]:
-    Source: '../../crates/core/src/sorted.rs', lines 212:4-214:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 212:4-214:5
     Visibility: public -/
 axiom sorted.SortedMap.get_at
   {K : Type} {V : Type} :
   sorted.SortedMap K V → Std.Usize → Result (Option (K × V))
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::get_at]:
-    Source: '../../crates/core/src/sorted.rs', lines 68:4-70:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 68:4-70:5
     Visibility: public -/
 axiom sorted.SortedSet.get_at
   {T : Type} : sorted.SortedSet T → Std.Usize → Result (Option T)
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::iter]:
-    Source: '../../crates/core/src/sorted.rs', lines 73:4-75:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 73:4-75:5
     Visibility: public -/
 axiom sorted.SortedSet.iter
   {T : Type} : sorted.SortedSet T → Result (core.slice.iter.Iter T)
 
 /-- [generated::sorted::{impl core::iter::traits::collect::IntoIterator<&'a T, core::slice::iter::Iter<'a, T>> for &'a generated::sorted::SortedSet<T>}::into_iter]:
-    Source: '../../crates/core/src/sorted.rs', lines 87:4-89:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 87:4-89:5
     Visibility: public -/
 axiom
   SharedASortedSet.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter
   {T : Type} : sorted.SortedSet T → Result (core.slice.iter.Iter T)
 
 /-- [generated::sorted::{impl core::iter::traits::collect::FromIterator<T> for generated::sorted::SortedSet<T>}::from_iter]:
-    Source: '../../crates/core/src/sorted.rs', lines 173:4-179:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 173:4-179:5
     Visibility: public -/
 axiom sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator.from_iter
   {T : Type} {I : Type} {Clause1_IntoIter : Type} (corecmpOrdInst :
@@ -152,7 +157,7 @@ axiom sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator.from_iter
   I → Result (sorted.SortedSet T)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter]:
-    Source: '../../crates/core/src/sorted.rs', lines 217:4-219:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 217:4-219:5
     Visibility: public -/
 axiom sorted.SortedMap.iter
   {K : Type} {V : Type} :
@@ -160,14 +165,14 @@ axiom sorted.SortedMap.iter
     (core.slice.iter.Iter (K × V)) (sorted.SortedMap.iter.closure K V))
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnOnce<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}::call_once]:
-    Source: '../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
 axiom
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnOnceTupleSharedPairPairSharedKSharedV.call_once
   {K : Type} {V : Type} :
   sorted.SortedMap.iter.closure K V → (K × V) → Result (K × V)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnMut<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}::call_mut]:
-    Source: '../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
 axiom
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnMutTupleSharedPairPairSharedKSharedV.call_mut
   {K : Type} {V : Type} :
@@ -175,7 +180,7 @@ axiom
     (sorted.SortedMap.iter.closure K V))
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::get_mut]:
-    Source: '../../crates/core/src/sorted.rs', lines 252:4-257:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 252:4-257:5
     Visibility: public -/
 axiom sorted.SortedMap.get_mut
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K) :

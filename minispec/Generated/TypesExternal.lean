@@ -21,6 +21,6 @@ set_option maxRecDepth 2048
 axiom core.mem.maybe_uninit.MaybeUninit (T : Type) : Type
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure]
-    Source: '../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 218:32-218:47 -/
 axiom sorted.SortedMap.iter.closure (K : Type) (V : Type) : Type
 
