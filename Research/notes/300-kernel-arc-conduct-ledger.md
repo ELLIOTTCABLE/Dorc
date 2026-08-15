@@ -434,6 +434,15 @@ per `28Q` §8.
   TaskStop-does-not-kill-remote-children hazard + the exact-name-pkill rule belong
   in `spike/CLAUDE.md`'s build/run section. The blow-up fix itself is already in
   the lane's tree and measured (capacity-headroom generator: 21min/3.6GB → 2.2s).
+  Forensics sharpening (scout, +SURE on kernel-log evidence): the fatal CBMC grew
+  to ~15.16GB RSS — the ENTIRE WSL VM budget — and was the OOM-killer's sole
+  victim (single-process blow-up, not a swarm); the terminals actually closed
+  ~90s LATER via a `wsl --shutdown`-shaped teardown of the session tree, issuer
+  unrecorded (~SUSPECT a reaction to the thrashed VM; Windows logs don't capture
+  `wsl.exe` invocations). The box has NO `.wslconfig`, so the VM defaults to
+  ~15GiB of the 31.7GiB host. OPTIONAL human hardening item: a `.wslconfig`
+  memory raise buys headroom, but the lane disciplines are the real fix (a
+  runaway solver eats any cap).
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 
