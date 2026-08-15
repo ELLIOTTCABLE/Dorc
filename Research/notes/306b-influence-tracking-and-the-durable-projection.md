@@ -358,7 +358,57 @@ close marker," and "the header's identity fields do not match this invocation" p
 last especially, since it means the engine may not be addressing the target it believes it is.
 
 Collapsing them into one code with an internal reason enum destroys the reader's ability to
-discriminate without buying anything. [rationale withheld for the fuller argument.]
+discriminate without buying anything: the conditions still occur, and still occur at the same
+rates — the reader simply loses the material with which to tell them apart, and with it the
+ability to reach the right repair. [rationale withheld for the fuller argument.]
+
+### §6e — The nine record-lane codes: RULED, keep them [FIRM — closes a standing question]
+
+The engine's catalog carries nine `records-*` codes describing distinct conditions of the
+structured record stream. Eight of them have no defining case and no production emitter, and
+have stood as the catalog census's only long-term exception. **The question of what to do with
+them is closed here: keep all nine.**
+
+Reasoning, in order of weight:
+
+1. **They pass the catalog law's own test.** Applied honestly, each names a different
+   world-state with a different repair: material truncating mid-write (channel, buffering,
+   host memory pressure) · two writes interleaved (concurrency on the channel) · material that
+   is not ours, or is from a previous attempt (concurrent runs, retry hygiene) · material after
+   the close marker (a wrong `wait`, an inherited descriptor) · framing that never began
+   (transport or artifact shipping) · identity fields that do not match this invocation
+   (**the engine may not be addressing the target it believes it is** — categorically unlike
+   the others). These are siblings by the law's definition, not by grammar-fit.
+2. **Deletion buys nothing.** The conditions are not made rarer by having one name; only the
+   reader is made poorer. §6d.
+3. **The developer-experience evidence points the same way.** An effective false positive is a
+   finding the reader does not understand and does not act on (§7); nine conditions each naming
+   a distinct physical event with a distinct repair are more actionable, not less, than one
+   code with the discrimination hidden inside it.
+
+**Where they are computed, however, changes.** The forgiving parser that originally produced
+them returns partially-parsed material, and that behaviour is a property of *where its output
+went* — a path that could reach a plan step — not of its vocabulary. So:
+
+- **The strict admission path computes the discrimination.** It already classifies; this is a
+  refinement of an existing classification, and it inherits refuse-the-whole-attempt unchanged.
+- **The forgiving parser is re-homed, not deleted.** A report-only consumer (§4b) is a
+  legitimate destination for forgiving parsing. Its output type must be one the plan-producing
+  path cannot consume, and — because no type can privilege one crate over another here — the
+  remaining half is a lexical gate asserting a non-empty walk, in the manner of the gates that
+  already exist for comparable seats. Adding an entry to such a gate's allow-list is a governed
+  act, not a local edit.
+- **The nine carry §6a's and §6b's disciplines**: each names its observation and not an inferred
+  cause, and none of their counts may gate engine control flow.
+- **They remain diagnostics attached to an outcome, never outcomes themselves.** The closed
+  admission outcome set does not grow, and no per-code behavioural branch may appear.
+
+**Still open, and the human's:** which of the nine route to refusal (§4) and which to ordinary
+conservative planning. That is a posture question rather than a correctness one. My reading, for
+what it is worth: the identity-mismatch condition belongs on the refusal side most clearly, since
+proceeding means emitting authority against a target we cannot confirm; the truncated-fact-count
+condition is defensibly ordinary, since the unseen sites already fold to unknown on their own;
+the remainder are genuine judgement calls.
 
 ## §7 — What the DX evidence supports
 

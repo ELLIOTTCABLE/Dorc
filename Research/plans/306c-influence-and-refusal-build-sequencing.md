@@ -11,18 +11,21 @@
 
 ## §1 — Scope, and what this is not
 
-**Nothing here is blocking.** No lane currently in flight is wrong without it, and a conductor
-who defers the whole arc breaks nothing today.
+**One item is owed and closes a standing open question — §3b, the record-lane codes.** That
+decision has been open long enough to become the catalog census's only long-term exception, it
+is what this design round was convened to resolve, and it is now RULED at `306b` §6e. It should
+land.
 
-The arc is admitted on the second criterion only: **it is cheaper now than later, and one item
-is a design prerequisite for a kernel stage that has not started yet.** Everything that failed
-both criteria is in §5.
+The rest of the arc is admitted on a weaker criterion: **it is cheaper now than later, and one
+item is a design prerequisite for a kernel stage that has not started yet.** No lane currently
+in flight is wrong without that remainder. Everything that failed both criteria is in §5.
 
-**Honest value statement, because a conductor is deciding whether to spend a builder:** v0 buys
-*structure*, not behaviour. At the end of this arc the engine does not do anything observably
-different. What it has is a type that cannot be un-widened, one named seat where the property is
-minted, and an output variant that later work extends instead of retrofits. If that trade is not
-worth a builder right now, the honest answer is to take §2 alone and drop the rest.
+**Honest value statement, because a conductor is deciding how much builder to spend:** apart
+from §3b, v0 buys *structure*, not behaviour — a type that cannot be un-widened, one named seat
+where the property is minted, and an output variant that later work extends instead of
+retrofits. The engine does nothing observably different at the end of it. If that trade is not
+worth a builder right now, the honest minimum is **§3 (both halves) alone**; §2 and §4 can wait
+for the stage that needs them.
 
 ## §2 — `item-influence-grade` — the type and its one seat
 
@@ -60,7 +63,13 @@ design*, not this week.
 Sizing guess: small. A type, a seal, one mint, and carriage through structures that already
 thread provenance.
 
-## §3 — `item-report-only-output` — extend the demotion machinery that exists
+## §3 — The report-only output, and the consumer that closes a standing question
+
+Two halves, and they are one piece of work: the type, and the thing that has been waiting for
+it. **§3b is the owed item; §3a is what makes §3b cheap rather than a rewrite.** A conductor
+short on budget should take this section and skip the rest of the arc.
+
+### §3a — `item-report-only-output` — extend the demotion machinery that exists
 
 Build `306b:rul-report-only-output-cannot-plan`: an analysis output that is structurally
 incapable of yielding a plan step, so that a target whose intake integrity is lost still gets a
@@ -89,6 +98,37 @@ required behaviour rather than a tolerated one.
 
 Sizing guess: medium, dominated by finding the right seat rather than by the code.
 
+### §3b — `item-record-lane-codes` — the owed decision, now ruled
+
+This is the item the round was convened for. The catalog's nine `records-*` codes are **kept**
+(`306b` §6e — read it, the reasoning is short and the conclusion reverses an earlier lean that
+may still be in circulation). What changes is where they are computed and what may reach them.
+
+The work, in dependency order:
+
+1. **Move the discrimination into the strict admission path.** It already classifies; this is a
+   refinement of an existing classification, not new machinery, and it keeps
+   refuse-the-whole-attempt unchanged. This is what gives the nine a production emitter and
+   retires the census exception.
+2. **Re-home the forgiving parser rather than deleting it**, onto §3a's report-only output.
+   Its defect was that partially-parsed material could reach a plan-producing path — a property
+   of its destination, not its vocabulary — and §3a removes that destination.
+3. **Fence it.** No type can privilege one crate over another at this seat, so the remaining
+   half is a lexical gate asserting a non-empty walk, matching the gates that already exist for
+   comparable seats. Note for the builder: adding an entry to such an allow-list is a governed
+   act requiring review, never a local edit — including the entry this work itself adds.
+4. **Give the eight their defining cases**, which is what actually closes the census exception,
+   and apply `306b` §6a/§6b to them: each names its observation rather than an inferred cause,
+   and none of their counts may gate engine control flow. Prose is authored at the conductor or
+   human tier as usual — builders mint the structure with the prose explicitly empty.
+
+**Blocked on one human ruling, and only for part 4's disposition:** which of the nine route to
+refusal and which to ordinary conservative planning (`306b` §6e's closing paragraph). Parts 1–3
+do not wait on it; part 4's cases will need re-blessing if the routing lands differently, which
+is cheap.
+
+Sizing guess: small-to-medium, and mostly mechanical once §3a exists.
+
 ## §4 — Optional rider: reserve the probing-mode seam
 
 `306b:rul-authority-free-probing-mode` wants a probing mode that structurally deploys no
@@ -114,10 +154,8 @@ work rather than a programme.
   dualistic-render direction is deferred by the human. This is also the churniest surface here
   and the least suited to a seam-focused arc.
 - **Multi-round machinery** (`306b` §8) — trips §6, and there is prior ruling to reconcile first.
-- **Re-homing the legacy record parser** — standing residue, not kernel-adjacent. Worth noting
-  only because §3's output type is what makes it cheap: once a report-only consumer exists, a
-  forgiving parser has a legitimate destination and the work becomes re-pointing rather than
-  deletion.
+(The legacy record parser is **not** in this list — it moved into the arc at §3b, where it
+belongs, since §3a is what makes re-homing it cheap.)
 
 ## §6 — The two standing tripwires
 
@@ -131,7 +169,8 @@ asks for anything to be built.
 
 ## §7 — What a reviewer should decide
 
-- Whether the arc is worth a builder at all, given §1's honest value statement.
+- How much of the arc is worth a builder, given §1's honest value statement. §3 is the part
+  that is owed; §2 and §4 are the part that is merely well-timed.
 - Where the grade physically lives — a field on existing provenance types, or its own carrier.
   Best decided against the real code; I have no view worth acting on.
 - Whether §3 genuinely extends the certifier's floors or only resembles them. If it is a
