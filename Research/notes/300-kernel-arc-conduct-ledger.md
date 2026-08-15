@@ -278,6 +278,47 @@ may live at root.
 at fold); Opus authors bodies, tests, and toolchain wiring. Neither Kani nor the
 certifier runs full-Fable or in-conductor-implementation.
 
+### §2b — Late-wave folds (2026-08-15)
+
+- **lane-sparing-rederivation (b) — FOLDED @ `0c1cefcd`** (four commits; builder gates
+  green both legs 2008/2004 + bless:dry, zero drift; conductor gate over the combined
+  tip at fold). As-built: the three model amendments landed with flags retired and the
+  epistemic rider applied (the "proves" wording in the model's own variant doc
+  sharpened too); `plan::rederive` (adapter: canonicalized entities, typed refusal on
+  unresolvables, ∅-footprint = named differential failure; kind-fence pairing leaves
+  entities unread — a real adapter bug the differential caught at seed 3);
+  `recheck_survival` seated INSIDE `wall_walk_survival`'s Survived arm (a post-pass
+  demote would un-wall downstream sites — the lane's one genuine correctness trap,
+  correctly dodged), by-value witness in / Confirmed-or-Demoted out, demote-only
+  pinned three ways; 8000-seed differential (two tests + non-vacuity censuses + a
+  mutant control): ZERO production↔model disagreements. FLAG ADJUDICATIONS
+  (conductor): `flag-backing-mintedness-is-translated` ACCEPTED (the backing-side
+  dialect-membership conjunct is adapter-computed — the differential's one disclosed
+  coverage limit; documented in the test header; revisit if the model ever grows a
+  dialect-lookup of its own) · `flag-plan-gains-a-dependency` ACKED (dorc-sparing-
+  reference production + dorc-hostsim dev; both in-workspace zero-dep) ·
+  `flag-diag-not-in-identity-diags` ACCEPTED (the demotion rides the decision digest;
+  double-count avoided). The proposed plan/CLAUDE.md bullets ride discipline-close.
+- **THE MINISPEC REMIT IS REAL (conductor-authored, 2026-08-15)** — `TrustedBase`
+  vocabulary (LawfulClone/LawfulEq as named trusted-base entries + the lawful-by-
+  construction U32 battery ground) + the three law units (JoinIsCommutative ·
+  JoinIsIdempotent · JoinIsAssociative — the third renamed from the LeqIsReflexive
+  placeholder; derived-leq reflexivity is idempotence in disguise), stated over the
+  DERIVED `Flat` join with hypotheses in the statements, batteries + non-vacuity
+  proven by reduction (`rfl`), lake green (the 4 dependency-closure holes are the
+  known aeneas-own trusted base, unchanged). Badges: elaborated + interrogated EARNED
+  ×3, claimed through the promote ceremony (silent-ambition refusal observed working,
+  then satisfied); the verified boundary renders its first real seat
+  (`dorc_analysis::lattice::Lattice::join`). TWO CHAFE FINDS from authoring (the
+  harness's first real user): `fnd-vocabulary-home-was-unrepresentable` — the binder
+  had no governed-vocabulary concept and demanded a law of TrustedBase; FIXED
+  properly (`Minispec/Vocabulary/` walk: unit-contract-exempt, hole-censused — a
+  vocabulary hole vacates every importing unit; fixtures + two tests) ·
+  `fnd-promote-subcommand-missing` — `catalogue_lock.rs`'s header names a
+  `dorc-verify promote` generator that DOES NOT EXIST; the promote act is currently a
+  sanctioned hand-edit (the header's own review-is-the-git-diff rule); the generator
+  is residue for the harness's next builder.
+
 ## §3 — The Lean-tier vehicle (RESOLVED in substance, 2026-08-14)
 
 - [TYPED] Aeneas is a must/of-course, if the tier exists at all: machine-correlation
