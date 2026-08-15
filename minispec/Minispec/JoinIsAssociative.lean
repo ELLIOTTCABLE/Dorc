@@ -1,5 +1,5 @@
 import Generated.Funs
-import Minispec.TrustedBase
+import Minispec.Vocabulary.TrustedBase
 
 /-!
 # JoinIsAssociative

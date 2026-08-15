@@ -8,60 +8,59 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 
 ## Laws
 
-### JoinIsCommutative
+### JoinIsAssociative
 
 - seat: `dorc_analysis::lattice::Lattice::join`
-- statement: UNWRITTEN STUB — asserts nothing
+- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsAssociative.lean` (3766 bytes)
 - proof: none claimed
 - bindings: 0
 
 | badge | promoted | evidence |
 |---|---|---|
-| elaborated | todo | absent(unit is an unwritten stub) |
-| interrogated | todo | absent(unit is an unwritten stub) |
-| pinned | todo | absent(unit is an unwritten stub) |
-| proved | todo | absent(unit is an unwritten stub) |
-| demonstrated | todo | absent(unit is an unwritten stub) |
-| kill-tested | todo | absent(unit is an unwritten stub) |
+| elaborated | todo | not-recomputed-here |
+| interrogated | todo | not-recomputed-here |
+| pinned | todo | absent(seam-kani-pairing-unbuilt: no paired harness) |
+| proved | todo | absent(no proof claimed) |
+| demonstrated | todo | absent(no accepted binding) |
+| kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
+
+### JoinIsCommutative
+
+- seat: `dorc_analysis::lattice::Lattice::join`
+- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsCommutative.lean` (3248 bytes)
+- proof: none claimed
+- bindings: 0
+
+| badge | promoted | evidence |
+|---|---|---|
+| elaborated | todo | not-recomputed-here |
+| interrogated | todo | not-recomputed-here |
+| pinned | todo | absent(seam-kani-pairing-unbuilt: no paired harness) |
+| proved | todo | absent(no proof claimed) |
+| demonstrated | todo | absent(no accepted binding) |
+| kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
 
 ### JoinIsIdempotent
 
 - seat: `dorc_analysis::lattice::Lattice::join`
-- statement: UNWRITTEN STUB — asserts nothing
+- statement: `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\r30-conduct\minispec\Minispec\JoinIsIdempotent.lean` (2202 bytes)
 - proof: none claimed
 - bindings: 0
 
 | badge | promoted | evidence |
 |---|---|---|
-| elaborated | todo | absent(unit is an unwritten stub) |
-| interrogated | todo | absent(unit is an unwritten stub) |
-| pinned | todo | absent(unit is an unwritten stub) |
-| proved | todo | absent(unit is an unwritten stub) |
-| demonstrated | todo | absent(unit is an unwritten stub) |
-| kill-tested | todo | absent(unit is an unwritten stub) |
-
-### LeqIsReflexive
-
-- seat: `dorc_analysis::lattice::Lattice::leq`
-- statement: UNWRITTEN STUB — asserts nothing
-- proof: none claimed
-- bindings: 0
-
-| badge | promoted | evidence |
-|---|---|---|
-| elaborated | todo | absent(unit is an unwritten stub) |
-| interrogated | todo | absent(unit is an unwritten stub) |
-| pinned | todo | absent(unit is an unwritten stub) |
-| proved | todo | absent(unit is an unwritten stub) |
-| demonstrated | todo | absent(unit is an unwritten stub) |
-| kill-tested | todo | absent(unit is an unwritten stub) |
+| elaborated | todo | not-recomputed-here |
+| interrogated | todo | not-recomputed-here |
+| pinned | todo | absent(seam-kani-pairing-unbuilt: no paired harness) |
+| proved | todo | absent(no proof claimed) |
+| demonstrated | todo | absent(no accepted binding) |
+| kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
 
 ## The verified boundary
 
 The subsets of the analysis engine opted into Lean verification, as the census of cited seats. Everything not listed is outside the boundary, whatever else guards it.
 
 - `dorc_analysis::lattice::Lattice::join`
-- `dorc_analysis::lattice::Lattice::leq`
 
 ## The trusted base
 

@@ -13,6 +13,21 @@ use crate::catalogue::LawRow;
 /// Every catalogued law, sorted by slug.
 pub const LAWS: [LawRow; 3] = [
     LawRow {
+        slug: "JoinIsAssociative",
+        seat: "dorc_analysis::lattice::Lattice::join",
+        proof: None,
+        harness: None,
+        bindings: &[],
+        expected: [
+            Expectation::Todo,
+            Expectation::Todo,
+            Expectation::Todo,
+            Expectation::Todo,
+            Expectation::Todo,
+            Expectation::Todo,
+        ],
+    },
+    LawRow {
         slug: "JoinIsCommutative",
         seat: "dorc_analysis::lattice::Lattice::join",
         proof: None,
@@ -30,21 +45,6 @@ pub const LAWS: [LawRow; 3] = [
     LawRow {
         slug: "JoinIsIdempotent",
         seat: "dorc_analysis::lattice::Lattice::join",
-        proof: None,
-        harness: None,
-        bindings: &[],
-        expected: [
-            Expectation::Todo,
-            Expectation::Todo,
-            Expectation::Todo,
-            Expectation::Todo,
-            Expectation::Todo,
-            Expectation::Todo,
-        ],
-    },
-    LawRow {
-        slug: "LeqIsReflexive",
-        seat: "dorc_analysis::lattice::Lattice::leq",
         proof: None,
         harness: None,
         bindings: &[],
