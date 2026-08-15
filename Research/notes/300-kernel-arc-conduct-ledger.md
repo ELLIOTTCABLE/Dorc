@@ -233,6 +233,44 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   named-seat + Kani-pin, the honour-system move stated in law text) · FORFEITS rows if
   any arise · prompt-review pass on all CLAUDE.md edits · ledger/LIVING_STATUS
   currency · the wave-one-close gate run (§4).
+- **lane-definition-fixtures — FOLDED 2026-08-15 (close batch)** — five `floor30-*`
+  differential manifests + the `pin30` EXPECTED-TO-FLIP engine golden
+  (`spike/crates/cli/tests/`). dash∩posh agreed on every cell (the plural-definition
+  idioms are INSIDE the base dialect — the load-bearing null result); every manifest is
+  the shells' own answer, hand-predicted then confirmed; gate-9 falsified both
+  directions (live under opt-in, inert by default). Ground truths banked for the
+  conversion: an in-subshell `unset -f` dies at the paren like a definition; deep-stack
+  helper binding follows the frame at the CALL. Deviation adjudications
+  (deviation-litmus, each re-derived): scoped-bless ENDORSED, conductor mistake named —
+  no sanctioned builder path exists for new-case transcript minting; comment-budget
+  REVERSED against the conductor's own brief-rule for never-churned calibration records
+  (rationale re-widened this batch); the subshell-cell widening, the sibling-frames
+  munge reading (the delivered cell IS the hash-munge activation shape; the alpha-rename
+  premise is engine territory, banked for the snapshot-emission brief), and mocks-log
+  byte-identity ENDORSED; `pin30`'s EMPTY probe-results ENDORSED — gate-1 itself is the
+  flip alarm, and the conversion lane must AUTHOR the record, never bless past (rider
+  carried to that brief). BANKED `work-bless-emitted-manifests` (post-close tooling):
+  bless silently discards a floor cell's measured `expected.emitted` (scratch-written,
+  never folded back) — loud-refusal lean; plus a sanctioned builder path for new-case
+  transcript minting.
+- **lane-audit-application — FOLDED 2026-08-15 (close batch)** — D1/B1/B2-B3/B6 applied
+  per `300b`: solve docs read trusted()=CERTIFIED with `converged` advisory
+  (`solve-is-certified-only` minted in analysis/CLAUDE.md); the `fmt` task itself
+  repaired (task-env `HK_FIX = "1"`, load-bearing comment) and the taught-workaround
+  bullet replaced; step-zero carries pwd-first + `git -C`-every-command with no named
+  lineage branch; the verify:kani rows landed with the evidence-grounded cbmc-only
+  reaper name (the audit's guessed extra process names REFUSED — fidelity, not
+  deviation). B1 SHAPE deviation adjudicated ENDORSED with the conductor mistake named:
+  the brief paraphrased the ruling ("add a task") instead of quoting it ("fix the fmt
+  task"); prevention: briefs quote rulings verbatim. CORRECTION banked: F10's "HK_FIX=0
+  refuses" was a misdiagnosis — `hk fix` under `HK_FIX=0` silently substitutes each
+  step's CHECK command (exit-0 no-op on a clean tree), and hk's own error text taught
+  the hand-derived invocation. B5/C1/D2/E1 adjudicated APPLY-with-amendments, landed
+  this batch (B5 two-part lock restored · C1 scoped to the translated algebra tier
+  pointing at `spike/verify/aeneas/src/lib.rs` · D2 = the analysis-half of the reshape
+  rider, homed in the dangers section · E1 folded per registry discipline). The
+  converged-wording sweep (5 sites) + the nine-crate-files count landed this batch.
+  A1–A3 remain human-owned.
 
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 
@@ -393,7 +431,10 @@ the SUCCESSOR's:
    the earlier-ruled kani-setup exception — same ruling extends. THE FOLD +
    Fable-tier harness-statement review (law · bounds · what is NOT pinned) remain
    the successor's, per the staffing split.
-2. **Adjudicate the prompt-review audit** — LANDED (report committed at
+2. ~~Adjudicate the prompt-review audit~~ — **DONE 2026-08-15 (close batch)**; the
+   adjudications and what landed are in §2's `lane-audit-application` row (A1–A3 stay
+   human-owned). Historical detail below stands as written: the audit itself
+   LANDED (report committed at
    `notes/300b-prompt-review-audit.md`; twelve priority-ordered proposals +
    seven reasoned rejections; criteria AGING at 103 days). The minting conductor
    applied ONLY the two factual path fixes (F1: the stale `Minispec/TrustedBase`
@@ -430,11 +471,14 @@ the SUCCESSOR's:
    coarseness can MISLABEL a fence/dialect disjoint as resolver-claimed
    (pope-sin-adjacent). Open sub-adjudication: whether the uncatalogued stderr
    attribution line violates `one-catalog-no-legacy`.
-4. **LIVING_STATUS refresh** (the top block is stale: says stage one in flight;
-   reality = everything folded but Kani).
-5. **The wave-one-close gate** (§4) + the human-QA list (§4's [TYPED] deliverable —
-   judgment-tier items only; mechanical checks run by the successor or an
-   idiot-review lane which is DEFERRED to end-of-r30).
+4. ~~LIVING_STATUS refresh~~ — **DONE 2026-08-15 (close batch)**: the top block is
+   rewritten to the wave-one-close-stamped state; see §2's `lane-audit-application`
+   row for the batch it rode.
+5. ~~The wave-one-close gate~~ (§4) — **DONE 2026-08-15 (close batch)**: gates run and
+   green over the folded tip; the stamp is ledgered in §5. STILL OPEN: the human-QA
+   list (§4's [TYPED] deliverable — judgment-tier items only, REASSIGNED to the sibling
+   conductor + human; mechanical checks run by the successor or an idiot-review lane
+   which is DEFERRED to end-of-r30).
 6. Open human items unchanged: `302:pin-blast-radius-escalation` · records-8 ·
    kSURVIVAL status-line · the `.wslconfig` hardening option · the codex
    self-commit ACL allowlist.
@@ -671,6 +715,18 @@ per `28Q` §8.
 - 2026-08-15, [TYPED] QA of the wave-1 instruments REASSIGNED to the sibling
   conductor + human; the candidate bank rides §4; this conductor stays on forward
   progress.
+- 2026-08-15, [TYPED] **the deviation-litmus** — conductors are mildly skeptical of
+  builders' REASONING about their own deviations, never of their factual claims:
+  builder reports are prompts (bottom-up sycophancy is real); the litmus is "would the
+  human, un-prompted, have asked for this?"; every endorsement is an APOLOGY whose
+  conductor-mistake must be nameable (a scouting gap, or a missing pause-and-ask seam)
+  — else the builder was probably wrong: reverse. Praxis misses count even when the
+  product call was right. Pre-prompting deliberately NOT tightened. Encoded in the
+  conductor skill ("Reviewing builder judgment", `8b01167d`); memory updated.
+- 2026-08-15, **wave-one-close STAMPED** — contingent on this batch's gates: both-legs
+  `gate:full-quiet` + both-legs `test:floor` + `bless:dry` green over the folded tip;
+  the §4 gate is discharged on the conduct branch; `ai/main` promotion remains the
+  human's act.
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance; now riding the sibling's queue); silence ≠ ack; only typed text
   counts.
