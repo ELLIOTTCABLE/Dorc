@@ -107,16 +107,26 @@ fn worktrees() -> Result<Vec<Tree>, String> {
     if !out.status.success() {
         return Err(String::from_utf8_lossy(&out.stderr).trim().to_owned());
     }
+    let mut trees = parse_worktree_list(&String::from_utf8_lossy(&out.stdout));
+    for tree in &mut trees {
+        tree.state = tree_state(&tree.path);
+    }
+    Ok(trees)
+}
 
+/// Split from its `git` call so the format can be pinned without one: shelling out per
+/// worktree is both slow and non-hermetic, and neither belongs in the unit tier.
+///
+/// Porcelain shape: one `worktree <path>` line opens a record, and `branch`/`locked` are
+/// attributes of the record still open.
+fn parse_worktree_list(porcelain: &str) -> Vec<Tree> {
     let mut trees: Vec<Tree> = Vec::new();
-    for line in String::from_utf8_lossy(&out.stdout).lines() {
+    for line in porcelain.lines() {
         if let Some(path) = line.strip_prefix("worktree ") {
-            let path = PathBuf::from(path);
-            let state = tree_state(&path);
             trees.push(Tree {
-                path,
+                path: PathBuf::from(path),
                 branch: "detached".to_owned(),
-                state,
+                state: "unknown".to_owned(),
                 locked: false,
             });
         } else if let Some(branch) = line.strip_prefix("branch ")
@@ -131,7 +141,7 @@ fn worktrees() -> Result<Vec<Tree>, String> {
             tree.locked = true;
         }
     }
-    Ok(trees)
+    trees
 }
 
 /// Clean or dirty, by git's own answer — untracked files included, because they are exactly
@@ -230,20 +240,59 @@ fn short(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{children_with_sizes, short, tree_size, worktrees};
+    use super::{children_with_sizes, parse_worktree_list, short, tree_size, tree_size_excluding};
+    use std::path::Path;
+
+    /// Real `git worktree list --porcelain` output, trimmed to the shapes that matter: a
+    /// detached checkout, a branch, and a lock.
+    const PORCELAIN: &str = "\
+worktree C:/repo
+HEAD abc123
+branch refs/heads/ai/main
+
+worktree C:/repo/.claude/worktrees/agent-one
+HEAD def456
+detached
+
+worktree C:/repo/.claude/worktrees/agent-two
+HEAD 789abc
+branch refs/heads/ai/lane
+locked
+";
 
     #[test]
-    fn the_inventory_finds_at_least_this_checkout() {
-        // A worktree walk that silently answers zero is the failure mode worth pinning:
-        // an empty inventory reads as "nothing at risk" rather than "the walk broke".
-        let found = worktrees().expect("git knows about this checkout");
-        assert!(!found.is_empty(), "the running checkout must appear");
+    fn the_porcelain_attributes_land_on_the_record_they_belong_to() {
+        // The parse is positional — attributes follow the `worktree` line that opens their
+        // record — so a lock read onto the wrong tree is exactly how a reap kills live work.
+        let trees = parse_worktree_list(PORCELAIN);
+        assert_eq!(trees.len(), 3);
+        assert_eq!(trees[0].branch, "ai/main");
+        assert!(!trees[0].locked);
+        assert_eq!(trees[1].branch, "detached");
+        assert!(!trees[1].locked);
+        assert_eq!(trees[2].branch, "ai/lane");
+        assert!(trees[2].locked, "the lock belongs to the tree above it");
+    }
+
+    #[test]
+    fn a_nested_worktree_is_not_billed_to_the_tree_containing_it() {
+        // The fleet lives INSIDE the primary checkout, so without a pruning boundary every
+        // lane's target dir is counted twice and the total is nonsense.
+        let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let whole = tree_size(&src);
+        let pruned = tree_size_excluding(&src, &[src.join("doctor.rs")]);
+        assert!(pruned < whole, "an excluded path must stop being counted");
+        assert_eq!(
+            tree_size_excluding(&src, std::slice::from_ref(&src)),
+            whole,
+            "the root itself is never its own boundary"
+        );
     }
 
     #[test]
     fn a_size_walk_counts_a_known_tree() {
         // This crate's own sources: small, always present, and non-zero.
-        let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         assert!(tree_size(&src) > 0, "a tree of sources cannot measure zero");
     }
 
@@ -256,6 +305,6 @@ mod tests {
 
     #[test]
     fn paths_shorten_to_their_tail() {
-        assert_eq!(short(std::path::Path::new("/a/b/c/d")), "c/d");
+        assert_eq!(short(Path::new("/a/b/c/d")), "c/d");
     }
 }
