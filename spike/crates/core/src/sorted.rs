@@ -210,7 +210,10 @@ impl<K, V> SortedMap<K, V> {
     /// The binding at `index` in key order — the algebra tier's walk primitive.
     #[must_use]
     pub fn get_at(&self, index: usize) -> Option<(&K, &V)> {
-        self.entries.get(index).map(|(k, v)| (k, v))
+        match self.entries.get(index) {
+            Some((k, v)) => Some((k, v)),
+            None => None,
+        }
     }
 
     /// Iterate bindings in key order — the ergonomic exit.
@@ -243,7 +246,10 @@ impl<K: Ord, V> SortedMap<K, V> {
     #[must_use]
     pub fn get(&self, key: &K) -> Option<&V> {
         match self.position(key) {
-            Slot::At(at) => self.entries.get(at).map(|(_, v)| v),
+            Slot::At(at) => match self.entries.get(at) {
+                Some((_, v)) => Some(v),
+                None => None,
+            },
             Slot::Before(_) => None,
         }
     }
@@ -251,7 +257,10 @@ impl<K: Ord, V> SortedMap<K, V> {
     /// Mutable access to the value bound to `key`, if any.
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         match self.position(key) {
-            Slot::At(at) => self.entries.get_mut(at).map(|(_, v)| v),
+            Slot::At(at) => match self.entries.get_mut(at) {
+                Some((_, v)) => Some(v),
+                None => None,
+            },
             Slot::Before(_) => None,
         }
     }
@@ -259,10 +268,10 @@ impl<K: Ord, V> SortedMap<K, V> {
     /// Bind `key ↦ value`, returning any prior value. **The canonical-form seat.**
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         match self.position(&key) {
-            Slot::At(at) => self
-                .entries
-                .get_mut(at)
-                .map(|entry| std::mem::replace(&mut entry.1, value)),
+            Slot::At(at) => match self.entries.get_mut(at) {
+                Some(entry) => Some(std::mem::replace(&mut entry.1, value)),
+                None => None,
+            },
             Slot::Before(at) => {
                 self.entries.insert(at, (key, value));
                 None

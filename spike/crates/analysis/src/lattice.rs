@@ -223,7 +223,10 @@ impl<K: Ord + Clone, V: Lattice> MapL<K, V> {
     /// Value at `k`, or `V::bottom()` if absent (the semantic view).
     #[must_use]
     pub fn get(&self, k: &K) -> V {
-        self.0.get(k).cloned().unwrap_or_else(V::bottom)
+        match self.0.get(k) {
+            Some(v) => v.clone(),
+            None => V::bottom(),
+        }
     }
 
     /// Set `k ↦ v`, preserving the no-⊥ canonical form.
