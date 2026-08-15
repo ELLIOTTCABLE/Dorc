@@ -861,6 +861,11 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 dorc_oracle::reserved::role_family(name).map(|(base, _)| base.to_owned())
             }),
     );
+    // `302` §4 — the two pre-network solve seats, reported the moment they give up: both run
+    // before the probe is compiled, so this is fail-fast in the project's sense (loud, on human
+    // timescales), and the plan that follows is the honest floor rather than nothing.
+    let (consistency_diags, consistency_narrative) = solve_consistency_reports(&value, &env);
+    report_at(advisory, "solve", book_source, &consistency_diags);
     let shadow_narrative = shadow_narratives(&shadows, &definitions);
     for (file, diags) in shadow_diagnostics(&shadows, &definitions, &source_paths, &source_refs) {
         let source = source_paths
@@ -1597,6 +1602,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .chain(paired_declines)
         .chain(entry_narrative.iter().cloned())
         .chain(shadow_narrative.iter().cloned())
+        .chain(consistency_narrative.iter().cloned())
         .chain(merge_narrative.iter().cloned())
         .chain(plan.survival_report.collapse_narrative().iter().cloned())
         .chain(plan.render_refusal_narratives(&parsed.value))
@@ -2256,6 +2262,89 @@ fn never_live_withdrawals(
 
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier
 /// `Derived`: this is the engine's own reading of the environment, not anybody's claim.
+/// The consistency-failure account for the two PRE-NETWORK kernel seats (`302` §4).
+///
+/// `analysis::value` and `analysis::funcenv` record the failure as DATA and mint nothing of their
+/// own (the `funcenv::unresolvable_loads` precedent); this driver is where it becomes a diagnostic
+/// and a narrative. Both seats run before the probe is compiled and before any host byte is read,
+/// so the posture is tier-2 fail-fast: loud, on human timescales, with the honest floor still
+/// producing a valid plan.
+///
+/// Scalars only cross (`operands-are-pure-and-capped`): the failing check INDICES and the counts.
+/// The lattice values that failed stay in the in-memory `SolveConsistency`.
+fn solve_consistency_reports(
+    value: &dorc_analysis::value::ValueFlow,
+    env: &dorc_analysis::funcenv::FuncEnv,
+) -> (Vec<Diag>, Vec<CollapseNarrative>) {
+    use dorc_aid::diag::{SolvePass, SolverConsistencyFailure};
+    use dorc_analysis::certify::SolveConsistency;
+    use dorc_analysis::funcenv::EnvFloor;
+
+    let mut diags = Vec::new();
+    let mut narratives = Vec::new();
+    if let SolveConsistency::Inconsistent(report) = value.consistency() {
+        diags.push(Diag::new_spanless_site(DiagCode::SolverConsistencyFailure(
+            SolverConsistencyFailure {
+                pass: SolvePass::ValueFlow,
+                failing: report.total().to_string(),
+            },
+        )));
+        narratives.push(consistency_narrative(SolvePass::ValueFlow, report));
+    }
+    // Only a failure of the ENVIRONMENT's own solve is reported here. A `ValuePlaneUntrusted`
+    // floor is the CASCADE of the value failure above, and reporting it too would present one
+    // defect as two (`271:rul-sin-ordering`: only root-cause is reported).
+    if let Some(EnvFloor::SolverInconsistent(consistency)) = env.floor()
+        && let SolveConsistency::Inconsistent(report) = consistency.as_ref()
+    {
+        diags.push(Diag::new_spanless_site(DiagCode::SolverConsistencyFailure(
+            SolverConsistencyFailure {
+                pass: SolvePass::FunctionEnvironment,
+                failing: report.total().to_string(),
+            },
+        )));
+        narratives.push(consistency_narrative(
+            SolvePass::FunctionEnvironment,
+            report,
+        ));
+    }
+    (diags, narratives)
+}
+
+/// The scalar narrative for one failing solve — the cli's copy of the `analysis::effect` mint,
+/// over its own lattice type.
+fn consistency_narrative<L>(
+    pass: dorc_aid::diag::SolvePass,
+    report: &dorc_analysis::certify::FailedChecks<L>,
+) -> CollapseNarrative {
+    use dorc_aid::narrative::{FailedCheck, Operands};
+
+    let mut checks: Vec<FailedCheck> = Vec::new();
+    for &node in report.failing().boundary() {
+        checks.push(FailedCheck::Boundary {
+            node: u32::try_from(node).unwrap_or(u32::MAX),
+        });
+    }
+    for &(from, to) in report.failing().edges() {
+        checks.push(FailedCheck::Edge {
+            from: u32::try_from(from).unwrap_or(u32::MAX),
+            to: u32::try_from(to).unwrap_or(u32::MAX),
+        });
+    }
+    let advisory = report.advisory();
+    CollapseNarrative::new(
+        SpeechAct::Derived,
+        CollapseKind::SolverConsistencyFailure {
+            pass,
+            operands: Operands::capped(checks),
+            shown: u32::try_from(report.shown()).unwrap_or(u32::MAX),
+            total: u32::try_from(report.total()).unwrap_or(u32::MAX),
+            converged: advisory.converged,
+            rounds: u32::try_from(advisory.rounds).unwrap_or(u32::MAX),
+        },
+    )
+}
+
 fn shadow_narratives(
     shadows: &[dorc_analysis::funcenv::Contest],
     definitions: &dorc_analysis::funcenv::DefinitionTable,
