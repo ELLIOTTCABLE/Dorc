@@ -436,6 +436,56 @@ description = "INSTRUMENT, never a gate: the strawman24 elision-frequency table.
 dir = "spike"
 run = "sh e2e/yardstick.sh"
 
+# ── verify (the minispec law corpus and its binder) ──────────────────────────────────────────
+# `verify:check` is CHEAP and rides the ordinary gate on both platform legs with zero external
+# toolchains — a box with no Lean and no aeneas gates green, because those are opt-in lanes that
+# are loud only when explicitly asked for.
+#
+# Everything below `verify:check` is that opt-in lane, and it is LINUX/WSL ONLY: upstream ships
+# no Windows aeneas asset. The translator half lives in a NESTED config
+# (`spike/verify/aeneas/mise.toml`) because its `rust` pin SHADOWS the workspace compiler; these
+# wrappers exist so the nested tasks are reachable from anywhere and so every stable-toolchain
+# step stays outside that shadow. Composing by `dir` + a nested `mise run` is the sanctioned
+# cross-config idiom (`task-bodies-are-shell-free`).
+
+[tasks."verify:check"]
+description = "The binder's CHEAP gate: unit parse, slug discipline, seat-citation resolution, catalogue coherence, the binding two-way agreement, the Generated/ hole census, and the byte-budget tripwire. No Lean, no Kani, no mutants — rides `gate:full-quiet` on both legs."
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- check"
+
+[tasks."verify:report"]
+description = "Print the generated coverage report and REFUSE if minispec/REPORT.md is stale. Cheap tier by default; `-- --with-lean` recomputes the Lean-derived badges (Linux/WSL, slow), `-- --write` republishes the committed copy."
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- report"
+
+[tasks."verify:translate"]
+description = "OPT-IN, Linux/WSL only: regenerate minispec/Generated/ from the real algebra sources through charon+aeneas, then materialize the externals and run the sorry census. STRICT — a construct the translator cannot model is a refusal, never a silent `sorry`. The output is committed, so the diff IS the drift alarm."
+run = ["mise run verify:translate-impl", "mise run verify:materialize"]
+
+[tasks."verify:translate-impl"]
+description = "The charon+aeneas half alone, under the nested shadowing toolchain pin. Prefer `verify:translate`, which also materializes and censuses."
+dir = "spike/verify/aeneas"
+run = "mise run aeneas:translate"
+
+[tasks."verify:translate-lenient"]
+description = "OPT-IN, Linux/WSL only: enumerate every construct the translator cannot model, in ONE pass, into a scratch dir. This is how the fence list in the nested config is derived and re-derived. Never a judgement of whether the algebra translated — lenient mode emits SILENT holes."
+dir = "spike/verify/aeneas"
+run = "mise run aeneas:translate-lenient"
+
+[tasks."verify:materialize"]
+description = "Turn a raw aeneas emission into the committed tree (move the lib entry, accept the external templates verbatim as axioms) and census it. Fails loud on any proof hole. Runs on the stable toolchain, deliberately outside the nested pin."
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- materialize"
+
+[tasks."verify:lean-bootstrap"]
+description = "One-time, idempotent: run the elan installer mise fetched, populating ELAN_HOME with elan and its lean/lake proxies. Pulls no toolchain — `verify:lean` triggers that from minispec/lean-toolchain."
+run = "elan-init -y --no-modify-path --default-toolchain none"
+
+[tasks."verify:lean"]
+description = "OPT-IN, Linux/WSL only: stage minispec/ to an ext4 build root and typecheck it with lake. First run fetches a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental. Staging is load-bearing — lake on drvfs is unusably slow for a dependency store this size."
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- lean-build"
+
 # ── livetest ─────────────────────────────────────────────────────────────────────────────────
 # NEVER a gate. These four are the only way to reach `spike/e2e/livetest.sh`, and nothing in
 # `gate:*`, `bless` or pre-commit reaches them: the lane needs a container runtime, a network, and
