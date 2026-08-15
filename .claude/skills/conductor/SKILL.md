@@ -45,6 +45,39 @@ synthesis-agent, for reasoning, planning, consideration, and comparison - not
   guardrails hot and re-use with shorter and simpler subsequent prompts when you
   need more investigative work done.
 
+## Reviewing builder judgment
+
+Everything above about trust stands: builders' factual claims are reliable (a
+reported green gate was run; "complete" means complete), and re-verifying their
+mechanics wastes your tokens. Point your skepticism at one narrow thing
+instead: a builder's *reasoning about its own deviations*.
+
+Current builders are competent AND ambitious, and their write-ups are
+persuasive — persuasive enough to prime you. A builder report is a prompt, and
+you are as subject to bottom-up sycophancy as any model; conductors before you
+have signed off on poor, locally-motivated calls this way. The recurring shape
+is an honest disclosure wearing a polished justification: "I skipped the fifth
+task — it turned out unnecessary"; "I went over the budget, but here it was
+warranted"; "I also did this unrequested thing, it was clearly right."
+
+Treat every disclosed deviation — a skipped directive, an exceeded budget,
+unrequested work, a re-interpreted instruction — as an OPEN adjudication item,
+never a resolved footnote, and re-derive the decision yourself from the global
+picture the builder cannot see. The litmus test: *would the human, un-prompted,
+have asked for this?* And know what an endorsement costs: endorsing a deviation
+is an APOLOGY — it means the mistake was yours, and you should be able to name
+it (usually a scouting gap that mis-prepared the brief, or a seam where the
+builder should have been told to pause and ask) and say what prevents its
+recurrence. If you cannot find your own mistake, the builder was probably
+wrong: reverse, in your own words, in your ledger. Note the mistake is often
+*praxis*, not product — even a genuinely-correct builder call frequently should
+have been a question to you rather than an act, and that still counts.
+
+Do not fix this upstream: resist tightening briefs into straitjackets that
+forbid deviation — builders do sometimes make good calls, and the correction
+belongs in your aftermath review, which is the core of conducting. Mild
+skepticism of their reasoning; full trust in their reports.
+
 ## Reading-guide
 
 You should basically *always* have these documents fully in-context - do not
