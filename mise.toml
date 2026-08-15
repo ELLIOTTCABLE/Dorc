@@ -364,6 +364,11 @@ description = "bless minus the bless pass: the whole acceptance gate plus the ta
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless --dry"
 
+[tasks."bless:floor"]
+description = "ORCHESTRATOR-ONLY: the ONE sanctioned way to mint or amend a floor case's `expected.emitted` — the manifest measured under dash AND posh, the transcript, and the book=<sha256> inside it, all written from one run, so nothing is hand-computed. Ordinary `bless` REFUSES such a case by design: expected.emitted is measure-once ground truth (the shells' own answer), never an engine render. Scope it to the case you are minting, exactly like `bless`. Refuses where the pair cannot be resolved — git's Windows userland ships no posh, so run this from WSL. Verifies with the full gate plus `test:floor` afterwards."
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- bless --floor"
+
 [tasks."loom:compile"]
 description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it. Runs --quiet, so only cases with something to report print."
 dir = "spike"

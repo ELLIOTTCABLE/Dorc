@@ -14,15 +14,38 @@
 use std::path::Path;
 use std::process::{Command, ExitCode, Stdio};
 
-/// `internal-tooling bless [--dry] [<case substring>...]`.
+/// The floor binaries a mint measures under — the pair `276:rul-spec-two-binary-floor` names.
+const FLOOR_SHELLS: [&str; 2] = ["dash", "posh"];
+
+/// `internal-tooling bless [--dry] [--floor] [<case substring>...]`.
 pub(crate) fn run(args: &[String]) -> ExitCode {
     let dry = args.iter().any(|a| a == "--dry");
+    let floor = args.iter().any(|a| a == "--floor");
     let cases: Vec<String> = args
         .iter()
         .filter(|arg| !arg.starts_with('-'))
         .cloned()
         .collect();
     let spike = internal_tooling::repo_root().join("spike");
+
+    // The mint's pre-flight. `expected.emitted` is what the floor binaries AGREED on, so a mint
+    // that can only ask one of them has nothing to commit — and finding that out after a ten-minute
+    // green gate is the failure mode this refusal exists to spare. Windows is the live case:
+    // git's userland ships no `posh`, so the mint belongs to the WSL leg there.
+    if floor {
+        let absent: Vec<String> = FLOOR_SHELLS
+            .iter()
+            .filter(|name| internal_tooling::Posix::floor(name).is_err())
+            .map(|name| (*name).to_owned())
+            .collect();
+        if !absent.is_empty() {
+            eprintln!(
+                "bless: REFUSING the floor mint — {} not resolvable here, so the differential cannot be measured. Run it from WSL/*nix.",
+                absent.join(" and ")
+            );
+            return ExitCode::from(2);
+        }
+    }
 
     // Both of these have bitten under WSL, and both bite EXPENSIVELY without a pre-flight:
     // `mise` is absent from a non-login shell, and a git older than this repo's
@@ -46,7 +69,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     let scoped = !cases.is_empty();
     let mut blessed = None;
     if scoped && !dry {
-        let Some(out) = bless_pass(&spike, &cases) else {
+        let Some(out) = bless_pass(&spike, &cases, floor) else {
             return ExitCode::FAILURE;
         };
         blessed = Some(out);
@@ -59,10 +82,23 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         return ExitCode::FAILURE;
     };
     if !scoped && !dry {
-        let Some(out) = bless_pass(&spike, &cases) else {
+        let Some(out) = bless_pass(&spike, &cases, floor) else {
             return ExitCode::FAILURE;
         };
         blessed = Some(out);
+    }
+    // A freshly-minted manifest has been committed but not yet CHECKED: `gate:full-quiet` names no
+    // floor shell, so gate-9 stays inert there. Re-running the differential over the whole corpus
+    // is what turns the mint into a measured claim rather than a write.
+    if floor
+        && step(
+            &spike,
+            "test:floor",
+            Command::new("mise").args(["run", "test:floor"]),
+        )
+        .is_none()
+    {
+        return ExitCode::FAILURE;
     }
 
     let suite = passed(&gate).unwrap_or_else(|| "?".to_owned());
@@ -92,7 +128,9 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
 ///
 /// The filter is the RUNNER's ordinary trial filter, so a scoped pass leaves every other golden
 /// byte-identical — which is how one sanctioned drift stops carrying an unrelated one in with it.
-fn bless_pass(spike: &Path, cases: &[String]) -> Option<String> {
+/// That scoping is what makes `floor` safe to spell at all: the mint re-measures ONE named case's
+/// manifest rather than re-opening every committed measurement in the corpus.
+fn bless_pass(spike: &Path, cases: &[String], floor: bool) -> Option<String> {
     let mut command = Command::new("mise");
     command.args([
         "exec", "--", "cargo", "test", "-p", "dorc-cli", "--test", "e2e",
@@ -102,6 +140,11 @@ fn bless_pass(spike: &Path, cases: &[String]) -> Option<String> {
         command.args(cases);
     }
     command.env("BLESS", "1").env("DORC_E2E_QUIET", "1");
+    if floor {
+        command
+            .env("BLESS_FLOOR", "1")
+            .env("DORC_E2E_FLOOR_SHELLS", FLOOR_SHELLS.join(","));
+    }
     step(spike, "e2e --bless", &mut command)
 }
 
