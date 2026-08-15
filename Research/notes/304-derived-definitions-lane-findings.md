@@ -1,4 +1,4 @@
-# 303 — the derived-definitions lane, as built: what translates, what does not, and why
+# 304 (née 303-at-mint, renumbered at fold — the ID collided with the certifier census) — the derived-definitions lane, as built: what translates, what does not, and why
 
 > Tier: LLM-authored builder note (Opus, round-30 wave-1, `lane-derived-definitions-pipeline`
 > + `lane-minispec-verify-standup`). Subordinate to root docs, `spike/CLAUDE.md`, `notes/301`

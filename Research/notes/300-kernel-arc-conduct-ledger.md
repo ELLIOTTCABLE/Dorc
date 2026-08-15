@@ -51,18 +51,31 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   `selector_covers` moved onto them; `solve.rs` production code untouched (its
   BTreeSets were test-only — census delta); VecDeque stays per lean-vecdeque-stays.
   §2a below banks the seat list + findings the later lanes consume.
-- **lane-derived-definitions-pipeline** (after facade) — stand up Aeneas-translate +
-  lake-build of the facade'd algebra as a MAINTAINED opt-in lane feeding
-  `minispec/Generated/` (WSL leg; pinned per the nested-mise pattern in-repo,
-  ratification below). Simply built, per no-pilots: regeneration breakage is the
-  drift-alarm working, and translation/proof churn data falls out incidentally,
-  gating nothing.
-- **lane-minispec-verify-standup** — the `notes/301` build: the `minispec/` skeleton +
-  the 2–3 remit claims + the dorc-verify binder v0 + the first bound demonstration
-  loom + `minispec/CLAUDE.md`. Staffing split per `301` §0's access laws: builders
-  build ALL harness/tooling; the spec content (units, claims, prose) is
-  frontier-authored under explicit human authorization — in practice the conductor,
-  with the human's ack, at dispatch.
+- **lane-derived-definitions-pipeline + lane-minispec-verify-standup** — **FOLDED
+  2026-08-14 (combined lane, 13 commits; conductor-verified)**. As-built: the
+  translation unit + fence (`spike/verify/aeneas/`; strict-translate 0 holes/40
+  axioms; lake green 1707 jobs; byte-idempotent regeneration; hole+axiom census
+  wired — a green translate proves nothing without a green lake build AND a census,
+  the `304:fnd-mut-closure-emits-ill-typed-lean` law); `minispec/` skeleton (three
+  unwritten unit stubs, Proofs/, committed `Generated/`, CLAUDE.md conductor-stub);
+  the `dorc-verify` crate + nine `verify:*` tasks + the hk `minispec` step;
+  `tests-critical-law` frontmatter key + two-way agreement, both directions. Badges
+  REAL: proved · elaborated · interrogated · report/catalogue/mismatch-refusal;
+  NAMED SEAMS (structural `needs_external_engine` tier split): `seam-kani-pairing-
+  unbuilt` · `seam-decision-record-read-mode` · `seam-statement-mutation-unbuilt`.
+  Verso NOT adopted (fallback: module docstrings; three costs in `304`; re-open at
+  the first binding). Tripwire 8KB. Tools-built-general: NONE of the imported family
+  stood up (would have been minispec-scoped at budget — the law's named-seam path
+  taken, correctly). FINDINGS + the reshape table: **`notes/304`** (née 303-at-mint).
+  OWED OUT OF THE FOLD: (a) the FIVE one-line `match` respells in the verified core
+  (Option-combinator idioms choke Aeneas; proved cousins; `SortedSet::insert` — the
+  canonical-form seat — is currently fenced as COLLATERAL of charon's
+  inherent-impl-naming limitation, so no Lean law about set insertion until the
+  reshape lands; remit-over-`Flat` unaffected) → the reshape rider below; (b) a
+  plan-route decision dump emitting `(SiteId, decision)` pairs — the whylog's
+  `ApplyLine` records `leaf: u32` only, collapsing in-loop member sites — a real
+  product feature, its own dispatch, prerequisite to `demonstrated` bindings;
+  (c) `spike/CLAUDE.md` Build/test/run grows the `verify:*` rows at discipline-close.
 - **lane-kani-harnesses** (after facade) — opt-in mise lane, real-tools-lane shape,
   expected Linux/WSL-only; harness home is `spike/verify/` (`301` §3). Targets: the
   lattice laws per combinator · `MapL` canonical-form · backing-set universal meet +
