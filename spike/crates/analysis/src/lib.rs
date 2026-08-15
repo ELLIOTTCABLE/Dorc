@@ -23,6 +23,7 @@
     reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
 )]
 
+pub mod certify;
 pub mod cfg;
 pub mod effect;
 pub mod erase;

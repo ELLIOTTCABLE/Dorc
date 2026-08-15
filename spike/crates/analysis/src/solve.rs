@@ -68,10 +68,39 @@ pub struct Solution<L> {
 /// Violating 1/2/3 is caught as `Solution::converged == false` (never a hang —
 /// the iteration cap). Violating 4 is a `debug_assert` (release: skipped edge).
 #[must_use]
-pub fn solve<G: Graph, L: Lattice>(
+pub(crate) fn solve<G: Graph, L: Lattice>(
     graph: &G,
     direction: Direction,
     transfer: impl Fn(usize, &L) -> L,
+) -> Solution<L> {
+    run(graph, direction, transfer, &mut Unobserved)
+}
+
+/// A witness to the solver's state changes, for the aid plane ONLY
+/// (`302:rul-rerun-is-the-self-report-engine`): it RECEIVES and never returns, so it has
+/// structurally zero influence on control flow and cannot perturb the trajectory it exists to
+/// witness. Production solves pass [`Unobserved`], a ZST whose calls compile away.
+pub(crate) trait SolveObserver<L> {
+    /// A join changed `to`'s state, propagating `from`'s output at visit `round`.
+    fn observe_update(&mut self, round: usize, from: usize, to: usize, old: &L, new: &L);
+}
+
+/// The production observer: sees everything, does nothing, costs nothing.
+pub(crate) struct Unobserved;
+
+impl<L> SolveObserver<L> for Unobserved {
+    fn observe_update(&mut self, _round: usize, _from: usize, _to: usize, _old: &L, _new: &L) {}
+}
+
+/// The worklist itself, written ONCE (`302` §5, conductor-ratified). [`solve`] and the certifier's
+/// instrumented re-run differ only in the observer they pass, so an instrumented replay reproduces
+/// the production trajectory BY CONSTRUCTION rather than by test.
+#[must_use]
+pub(crate) fn run<G: Graph, L: Lattice, O: SolveObserver<L>>(
+    graph: &G,
+    direction: Direction,
+    transfer: impl Fn(usize, &L) -> L,
+    observer: &mut O,
 ) -> Solution<L> {
     let n = graph.node_count();
     // A node's output flows to its successors (forward) or predecessors
@@ -112,6 +141,7 @@ pub fn solve<G: Graph, L: Lattice>(
             }
             let joined = state[w].join(&out);
             if joined != state[w] {
+                observer.observe_update(rounds, v, w, &state[w], &joined);
                 state[w] = joined;
                 if !queued[w] {
                     queued[w] = true;
