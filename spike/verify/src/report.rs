@@ -31,7 +31,7 @@ pub struct Row<'a> {
 
 /// Render the whole report.
 #[must_use]
-pub fn render(rows: &[Row<'_>], tier: Tier, census: Census) -> String {
+pub fn render(rows: &[Row<'_>], tier: Tier<'_>, census: Census) -> String {
     let mut out = String::new();
     out.push_str("# minispec coverage report\n\n");
     out.push_str(
@@ -41,16 +41,7 @@ pub fn render(rows: &[Row<'_>], tier: Tier, census: Census) -> String {
          evidence; the catalogue's expectation is compared against it and a mismatch in either \
          direction is a refusal.\n\n",
     );
-    let _ = writeln!(
-        out,
-        "Tier: {}\n",
-        match tier {
-            Tier::Cheap =>
-                "cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recomputed here)",
-            Tier::WithLean { lean_built: true } => "with-lean (lake build GREEN)",
-            Tier::WithLean { lean_built: false } => "with-lean (lake build FAILED)",
-        }
-    );
+    let _ = writeln!(out, "Tier: {}\n", tier_line(tier));
 
     let _ = writeln!(out, "## Laws\n");
     for row in rows {
@@ -110,6 +101,33 @@ pub fn render(rows: &[Row<'_>], tier: Tier, census: Census) -> String {
     );
     out.push('\n');
     out
+}
+
+/// Which engines this render's numbers came from. Named per engine rather than as one label,
+/// because the lanes are independently opt-in and a reader has to be able to tell a `pinned`
+/// that was not looked at from one that was looked at and found absent.
+fn tier_line(tier: Tier<'_>) -> String {
+    match tier {
+        Tier::Cheap => {
+            "cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recomputed here)"
+                .to_owned()
+        }
+        Tier::WithEngines { lean_built, kani } => {
+            let lean = match lean_built {
+                None => "Lean not run",
+                Some(true) => "lake build GREEN",
+                Some(false) => "lake build FAILED",
+            };
+            let kani = match kani {
+                None => "Kani not run".to_owned(),
+                Some(report) if report.failed.is_empty() => {
+                    format!("Kani GREEN ({} harnesses)", report.green.len())
+                }
+                Some(report) => format!("Kani FAILED ({} harnesses)", report.failed.len()),
+            };
+            format!("with-engines ({lean}; {kani})")
+        }
+    }
 }
 
 /// The trusted-base numbers a report carries.

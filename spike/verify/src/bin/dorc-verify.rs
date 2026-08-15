@@ -11,7 +11,7 @@ use std::process::ExitCode;
 use dorc_verify::badge::Badge;
 use dorc_verify::catalogue_lock::LAWS;
 use dorc_verify::evidence::Tier;
-use dorc_verify::{check, evidence, pipeline, repo_root, report, unit};
+use dorc_verify::{check, evidence, kani, pipeline, repo_root, report, unit};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -21,9 +21,13 @@ fn main() -> ExitCode {
         Some("report") => run_report(&rest),
         Some("materialize") => run_materialize(),
         Some("lean-build") => run_lean_build(),
+        Some("kani") => run_kani(rest.first().copied()),
         other => {
             eprintln!("dorc-verify: unknown task {:?}", other.unwrap_or("<none>"));
-            eprintln!("tasks: check, report [--write] [--with-lean], materialize, lean-build");
+            eprintln!(
+                "tasks: check, report [--write] [--with-lean] [--with-kani], materialize, \
+                 lean-build, kani [<harness>]"
+            );
             ExitCode::from(2)
         }
     }
@@ -68,11 +72,21 @@ fn run_report(args: &[&str]) -> ExitCode {
     let built = args
         .contains(&"--with-lean")
         .then(|| pipeline::lean_build(root, &dorc_verify::lean_build_root()));
-    let tier = match &built {
-        None => Tier::Cheap,
-        Some(result) => Tier::WithLean {
-            lean_built: result.is_ok(),
-        },
+    let pinned = match args.contains(&"--with-kani").then(|| kani::run(root, None)) {
+        None => None,
+        Some(Ok(report)) => Some(report),
+        Some(Err(why)) => {
+            eprintln!("dorc-verify report: {why}");
+            return ExitCode::from(2);
+        }
+    };
+    let tier = if built.is_none() && pinned.is_none() {
+        Tier::Cheap
+    } else {
+        Tier::WithEngines {
+            lean_built: built.as_ref().map(Result::is_ok),
+            kani: pinned.as_ref(),
+        }
     };
     if let Some(Ok(built)) = &built
         && built.dependency_holes > 0
@@ -115,34 +129,10 @@ fn run_report(args: &[&str]) -> ExitCode {
     }
     print!("{text}");
 
-    // At the with-lean tier there is no committed copy to compare against — that render is
+    // At an engine tier there is no committed copy to compare against — those renders are
     // deliberately never published — so the gate is the badge comparison itself.
-    if built.is_some() {
-        let mismatches: Vec<String> = rows
-            .iter()
-            .flat_map(|row| {
-                row.evidence
-                    .iter()
-                    .zip(Badge::ALL)
-                    .filter(|(found, badge)| !found.agrees_with(row.law.expectation(*badge)))
-                    .map(|(found, badge)| {
-                        format!(
-                            "{}: `{badge}` promoted as {}, evidence says {}",
-                            row.law.slug,
-                            row.law.expectation(badge).render(),
-                            found.render()
-                        )
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-        if mismatches.is_empty() {
-            return ExitCode::SUCCESS;
-        }
-        for line in &mismatches {
-            eprintln!("FAIL  {line}");
-        }
-        return ExitCode::from(1);
+    if built.is_some() || pinned.is_some() {
+        return report_mismatches(&rows);
     }
 
     // Bare, the report is the drift alarm: a committed copy that no longer matches what the
@@ -185,6 +175,87 @@ fn run_materialize() -> ExitCode {
                 return ExitCode::from(1);
             }
             ExitCode::SUCCESS
+        }
+    }
+}
+
+/// Compare every computed badge against what the catalogue promoted, and refuse a disagreement
+/// in EITHER direction — rot (promoted earned, evidence gone) and ambition (promoted todo,
+/// evidence present) are both a lie about coverage.
+fn report_mismatches(rows: &[report::Row<'_>]) -> ExitCode {
+    let mismatches: Vec<String> = rows
+        .iter()
+        .flat_map(|row| {
+            row.evidence
+                .iter()
+                .zip(Badge::ALL)
+                .filter(|(found, badge)| !found.agrees_with(row.law.expectation(*badge)))
+                .map(|(found, badge)| {
+                    format!(
+                        "{}: `{badge}` promoted as {}, evidence says {}",
+                        row.law.slug,
+                        row.law.expectation(badge).render(),
+                        found.render()
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    if mismatches.is_empty() {
+        return ExitCode::SUCCESS;
+    }
+    for line in &mismatches {
+        eprintln!("FAIL  {line}");
+    }
+    ExitCode::from(1)
+}
+
+/// The Kani lane. Exit codes are a trichotomy on purpose: 0 every harness green, 1 a real
+/// finding (a counterexample, or a harness that blew past its budget), 2 the lane could not run
+/// at all. Collapsing the last two would let an absent toolchain read as a passing lane.
+fn run_kani(arg: Option<&str>) -> ExitCode {
+    if arg == Some("--setup") {
+        return match kani::setup() {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(why) => {
+                eprintln!("dorc-verify kani: {why}");
+                ExitCode::from(2)
+            }
+        };
+    }
+    match kani::run(repo_root(), arg) {
+        Err(why) => {
+            eprintln!("dorc-verify kani: {why}");
+            ExitCode::from(2)
+        }
+        Ok(report) => {
+            for (name, elapsed) in &report.timings {
+                println!("{:>8.2}s  {name}", elapsed.as_secs_f64());
+            }
+            println!(
+                "kani: {} green, {} failed, {} over budget, of {} harness(es)",
+                report.green.len(),
+                report.failed.len(),
+                report.over_budget.len(),
+                report.harnesses.len()
+            );
+            for name in &report.failed {
+                eprintln!(
+                    "FAIL  {name}: a counterexample is a finding about the code or the law — \
+                     capture it, never re-tune the harness"
+                );
+            }
+            for name in &report.over_budget {
+                eprintln!(
+                    "FAIL  {name}: killed at the per-harness budget, so the law is UNJUDGED. \
+                     The formula needs a shape the checker can afford, not a longer wait"
+                );
+            }
+            if report.all_green() {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::from(1)
+            }
         }
     }
 }

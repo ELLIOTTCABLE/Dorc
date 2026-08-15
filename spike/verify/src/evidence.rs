@@ -14,27 +14,44 @@ use crate::catalogue::LawRow;
 use crate::unit::{self, Statement, Unit};
 
 /// Which engines the caller is prepared to run.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Tier {
+///
+/// The engine slots are `Option` because the lanes are independently opt-in: a run with Lean
+/// and no Kani must answer [`Evidence::NotAtThisTier`] for `pinned` rather than `absent`, or a
+/// cheap-plus-Lean run would report every law's Kani pin as missing.
+#[derive(Clone, Copy, Debug)]
+pub enum Tier<'a> {
     /// The ordinary gate: filesystem and parsing only. No Lean, no Kani, no mutants.
     Cheap,
-    /// The opt-in verify lane, with the Lean build's verdict in hand.
-    WithLean {
-        /// Whether `lake build` over `minispec` succeeded.
-        lean_built: bool,
+    /// The opt-in verify lane, with whichever engine verdicts the caller has in hand.
+    WithEngines {
+        /// Whether `lake build` over `minispec` succeeded; `None` if Lean was not run.
+        lean_built: Option<bool>,
+        /// What the Kani lane found; `None` if it was not run.
+        kani: Option<&'a crate::kani::Report>,
     },
 }
 
 /// Every badge's evidence for one law, in [`Badge::ALL`] order.
 #[must_use]
-pub fn compute(row: &LawRow, unit: Option<&Unit>, repo_root: &Path, tier: Tier) -> Vec<Evidence> {
+pub fn compute(
+    row: &LawRow,
+    unit: Option<&Unit>,
+    repo_root: &Path,
+    tier: Tier<'_>,
+) -> Vec<Evidence> {
     Badge::ALL
         .iter()
         .map(|badge| one(*badge, row, unit, repo_root, tier))
         .collect()
 }
 
-fn one(badge: Badge, row: &LawRow, unit: Option<&Unit>, repo_root: &Path, tier: Tier) -> Evidence {
+fn one(
+    badge: Badge,
+    row: &LawRow,
+    unit: Option<&Unit>,
+    repo_root: &Path,
+    tier: Tier<'_>,
+) -> Evidence {
     let Some(unit) = unit else {
         return Evidence::Absent(format!("no unit file for {}", row.slug));
     };
@@ -47,9 +64,9 @@ fn one(badge: Badge, row: &LawRow, unit: Option<&Unit>, repo_root: &Path, tier: 
         // narrower question "is there a claimed, hole-free proof at all", which is exactly
         // what a reader wants distinguished from "the whole package builds".
         Badge::Proved => proved(row, repo_root),
-        Badge::Elaborated => match tier {
-            Tier::Cheap => Evidence::NotAtThisTier,
-            Tier::WithLean { lean_built } => {
+        Badge::Elaborated => match lean_verdict(tier) {
+            None => Evidence::NotAtThisTier,
+            Some(lean_built) => {
                 if unit.statement != Statement::Stated {
                     Evidence::Absent(format!("no `def {} : Prop`", row.slug))
                 } else if lean_built {
@@ -59,18 +76,55 @@ fn one(badge: Badge, row: &LawRow, unit: Option<&Unit>, repo_root: &Path, tier: 
                 }
             }
         },
-        Badge::Interrogated => match tier {
-            Tier::Cheap => Evidence::NotAtThisTier,
-            Tier::WithLean { lean_built } => interrogated(unit, lean_built),
+        Badge::Interrogated => match lean_verdict(tier) {
+            None => Evidence::NotAtThisTier,
+            Some(lean_built) => interrogated(unit, lean_built),
         },
-        // Named seams. Each renders a real "absent" with the reason, so the report nags
+        Badge::Pinned => match kani_verdict(tier) {
+            None => Evidence::NotAtThisTier,
+            Some(report) => pinned(row, report),
+        },
+        // A named seam. It renders a real "absent" with the reason, so the report nags
         // structurally and forgetting is impossible (`301` §5's gentle-must).
-        Badge::Pinned => Evidence::Absent(match row.harness {
-            Some(name) => format!("seam-kani-pairing-unbuilt: harness {name} not resolved"),
-            None => "seam-kani-pairing-unbuilt: no paired harness".to_owned(),
-        }),
         Badge::Demonstrated => demonstrated(row),
         Badge::KillTested => Evidence::Absent("seam-statement-mutation-unbuilt".to_owned()),
+    }
+}
+
+fn lean_verdict(tier: Tier<'_>) -> Option<bool> {
+    match tier {
+        Tier::Cheap => None,
+        Tier::WithEngines { lean_built, .. } => lean_built,
+    }
+}
+
+fn kani_verdict(tier: Tier<'_>) -> Option<&crate::kani::Report> {
+    match tier {
+        Tier::Cheap => None,
+        Tier::WithEngines { kani, .. } => kani,
+    }
+}
+
+/// `pinned`: the paired harness resolves against the toolchain's OWN harness list, and it
+/// verified at its declared bounds.
+///
+/// Resolution before verdict, and the two refusals say different things on purpose. A harness
+/// that does not resolve is a citation pointing at nothing — a rename or a deletion, the class
+/// of rot the binder exists to catch — while one that resolved and failed is a finding about
+/// the code. Collapsing them would make a deleted harness read exactly like a broken law.
+fn pinned(row: &LawRow, report: &crate::kani::Report) -> Evidence {
+    let Some(name) = row.harness else {
+        return Evidence::Absent("no paired harness".to_owned());
+    };
+    if !report.resolves(name) {
+        return Evidence::Absent(format!(
+            "harness `{name}` is not in the toolchain's harness list"
+        ));
+    }
+    if report.is_green(name) {
+        Evidence::Earned
+    } else {
+        Evidence::Absent(format!("harness `{name}` did not verify"))
     }
 }
 
