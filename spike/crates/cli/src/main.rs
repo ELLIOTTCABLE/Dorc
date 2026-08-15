@@ -1679,6 +1679,17 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", book_source, &refusals);
 
+    // `300:lane-sparing-rederivation`: a survival the wall walk minted that the independent
+    // reference model would not confirm. Empty in a healthy engine; non-empty means OUR two
+    // implementations of one algebra disagreed, and the site took the guard/run floor. Reported,
+    // never folded into `identity_diags`: the demotion is already a plan-shape change the decision
+    // digest covers, so adding the diagnostic would double-count one event.
+    report(
+        "rederive",
+        book_source,
+        &plan.rederivation_diagnostics(&parsed.value),
+    );
+
     let identity_diags: Vec<Diag> = round_diags
         .iter()
         .cloned()

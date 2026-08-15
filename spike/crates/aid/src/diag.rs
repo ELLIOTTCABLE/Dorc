@@ -132,6 +132,11 @@ pub enum DiagCode {
     /// demoted to its floor (`302:rul-whole-window-demotion`). OUR defect, never the book's.
     SolverConsistencyFailure(SolverConsistencyFailure),
 
+    // ── the sparing re-derivation (`300:lane-sparing-rederivation`): plan/rederive.rs ──────
+    /// A survival the wall walk had already minted was not confirmed by the independent reference
+    /// model, so the site demoted to the guard/run tier. OUR defect, never the book's.
+    SurvivalRederivationDisagreement(SurvivalRederivationDisagreement),
+
     // ── B4 mechanical sweep: oracle/predict/parser.rs ─────────────────────────
     /// A check function body contains a construct outside the check dialect (the check
     /// dialect is a strict subset of sh; out-of-dialect input is a lift failure).
@@ -407,6 +412,7 @@ impl DiagCode {
             DiagCode::CfgBuiltinShadowed(_) => "cfg-builtin-shadowed",
             DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
             DiagCode::SolverConsistencyFailure(_) => "solver-consistency-failure",
+            DiagCode::SurvivalRederivationDisagreement(_) => "survival-rederivation-disagreement",
             DiagCode::PredictOutOfDialect(_) => "predict-out-of-dialect",
             DiagCode::PredictUnterminated(_) => "predict-unterminated",
             DiagCode::OracleRoleFnUnlifted(_) => "oracle-role-fn-unlifted",
@@ -926,6 +932,24 @@ pub struct SolverConsistencyFailure {
     pub pass: SolvePass,
     /// How many post-fixpoint checks failed, in total (`{failing}`).
     pub failing: String,
+}
+
+/// Payload of [`DiagCode::SurvivalRederivationDisagreement`]: a survival the wall walk minted was
+/// not confirmed when re-derived through the independent reference model
+/// (`300:lane-sparing-rederivation`), so the site took the guard/run floor.
+///
+/// SITED, unlike its solver cousin: a survival verdict is about one line, and naming that line is
+/// what lets the reader see which elision they did not get. The plan is still valid and still safe
+/// — it is only poorer, and the site runs exactly as it would have without the flag.
+///
+/// One hole. Which wall the re-derivation stopped at is an ordinal into the crossed-wall list, not
+/// a leaf the reader can point at; the full crossing chain is pull-tier (`rul-chain-is-pull-only`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SurvivalRederivationDisagreement {
+    /// The demoted site.
+    pub site: SiteId,
+    /// Which crossed wall the model declined to confirm, by ordinal (`{wall}`).
+    pub wall: String,
 }
 
 /// Which dataflow pass's answer failed its post-fixpoint check.
@@ -1981,6 +2005,7 @@ impl DiagCode {
             DiagCode::CmdsubOperandTop(p) => Some(p.site),
             DiagCode::SiteUnresolvable(p) => Some(p.site),
             DiagCode::RenderHeredocRefused(p) => Some(p.site),
+            DiagCode::SurvivalRederivationDisagreement(p) => Some(p.site),
             DiagCode::CmdsubInnerNonleaf(p) => Some(p.site),
             DiagCode::RedirTargetTop(p) => Some(p.site),
             DiagCode::Depth2PositionalUnthreaded(p) => Some(p.site),
@@ -2264,6 +2289,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         DiagCode::SolverConsistencyFailure(_) => CodeSpec {
             severity: Severity::Error,
             // The engine's own answer failed its own check: silenceable to Warning, never below.
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
+        DiagCode::SurvivalRederivationDisagreement(_) => CodeSpec {
+            severity: Severity::Error,
+            // Our two implementations of one algebra disagreed. The outcome is SAFE (the site runs),
+            // but a checker firing is never silenceable below a warning.
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
@@ -2909,6 +2941,10 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             component("pass", solve_pass_text(ctx, *pass)),
             ours("failing", failing.clone()),
         ],
+        DiagCode::SurvivalRederivationDisagreement(SurvivalRederivationDisagreement {
+            site: _,
+            wall,
+        }) => vec![ours("wall", wall.clone())],
         DiagCode::PredictOutOfDialect(PredictOutOfDialect { reason }) => {
             vec![component(
                 "reason",

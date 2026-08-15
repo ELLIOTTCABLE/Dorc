@@ -31,10 +31,10 @@ use crate::diag::{
     MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
     RecordsFactTruncated, RenderHeredocRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
     SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass, SolverConsistencyFailure,
-    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
-    TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
-    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten,
-    WhylogVersionRefused, WrapperPeelIncoherent,
+    SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
+    ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportMarkerUnusable,
+    TransportSessionLost, TransportSpawnRefused, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
+    WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -188,6 +188,15 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::SolverConsistencyFailure(SolverConsistencyFailure {
                 pass: SolvePass::ReachingDefs,
                 failing: "3".to_owned(),
+            }),
+        ),
+        // Likewise defect-shaped: the re-derivation fires only when our own two implementations of
+        // one algebra disagree, which no book can arrange either.
+        (
+            "survival-rederivation-disagreement",
+            DiagCode::SurvivalRederivationDisagreement(SurvivalRederivationDisagreement {
+                site: SiteId::leaf(LeafId(4)),
+                wall: "1".to_owned(),
             }),
         ),
         // The external-linter trio: a replay never runs a foreign tool (`tools_enabled: false`).

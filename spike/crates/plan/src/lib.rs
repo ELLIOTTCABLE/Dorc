@@ -4393,6 +4393,41 @@ impl Plan {
         )
     }
 
+    /// The sparing re-derivation diagnostics (`300:lane-sparing-rederivation`): one `error` per
+    /// site whose SURVIVAL the wall walk minted and the independent reference model then declined
+    /// to confirm, so the site demoted to the guard/run tier.
+    ///
+    /// Empty is the healthy state, and the whole corpus is expected to keep it empty. A non-empty
+    /// result is a finding about OUR engine — our two implementations of one algebra answered
+    /// differently — never about the book's text; the plan is still valid and still safe, only
+    /// poorer. Sited, because a survival verdict is about one line and the reader deserves to see
+    /// which elision they did not get. The cli `report()`s these on stderr.
+    #[must_use]
+    pub fn rederivation_diagnostics(&self, ast: &Ast) -> Vec<Diag> {
+        use dorc_aid::diag::{DiagCode, SiteId, SurvivalRederivationDisagreement};
+        let spans: BTreeMap<LeafId, dorc_core::Span> = self
+            .steps
+            .iter()
+            .map(|s| (s.leaf, ast.node(s.ast).span))
+            .collect();
+        self.survival_report
+            .rederivation_demotions()
+            .filter_map(|(leaf, wall)| {
+                spans.get(&leaf).map(|span| {
+                    Diag::new(
+                        DiagCode::SurvivalRederivationDisagreement(
+                            SurvivalRederivationDisagreement {
+                                site: SiteId::leaf(leaf),
+                                wall: wall.to_string(),
+                            },
+                        ),
+                        *span,
+                    )
+                })
+            })
+            .collect()
+    }
+
     /// The render-capability refusal diagnostics (arch-1 d-6): one `error` per leaf that the
     /// disposition layer LICENSED to elide (a `Replace`, or a fold-dead `Omit` whose
     /// controller is neutralised) but the leaf-exact render must REFUSE because its span

@@ -72,6 +72,8 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     // analysis/effect.rs
     "EffectKindDisagreement",
     "SolverConsistencyFailure",
+    // plan/lib.rs (the sparing re-derivation seat)
+    "SurvivalRederivationDisagreement",
     // oracle/predict.rs
     "PredictOutOfDialect",
     "PredictUnterminated",
@@ -179,6 +181,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cfg-builtin-shadowed",
     "effect-kind-disagreement",
     "solver-consistency-failure",
+    "survival-rederivation-disagreement",
     "predict-out-of-dialect",
     "predict-unterminated",
     "oracle-role-fn-unlifted",
