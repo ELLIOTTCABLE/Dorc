@@ -142,8 +142,44 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   Inconsistent (edge-guard mirror stays) · R2 fence gains the `run(` needle ·
   R3 origin-round diags surface pre-network · R4 honest-or-typed-absent account ·
   R5 assert deleted · plus the F9 end-to-end floor drive folded in. Human
-  push-notified 2026-08-15.
-- **lane-sparing-rederivation** — (a) the naive reference model of the
+  push-notified 2026-08-15. **REPAIRS FOLDED 2026-08-15** (four commits; builder
+  gates green both legs 1974/1970, zero drift, fences falsified both directions;
+  conductor gate over the combined tip at fold). Execution found TWO findings worse
+  than reviewed: the fence's `production_half` cut each file at its first
+  `#[cfg(test)]`, blinding it to production items after a test module (both fences
+  now scan whole files — simpler AND stronger); and the origin round's consistency
+  diags were DROPPED entirely (`origin.diags` discarded for `round.diags`), never
+  merely late. R1's landed shape separates graph-fact (solver-mirror stays) from
+  solution-defect (missing state/seed ⇒ `failing.boundary`; `inconsistencies()` may
+  be legitimately empty while `total > 0`). R4 gave the record real
+  failing-check/solve counts + a measured `SolverRounds` advisory. F9's ×4 is
+  complete (`a_real_reach_inconsistency` — genuine perturbation, genuine checker,
+  `ProvId`-bearing — drives both floors; non-vacuity controls included). No de-dup
+  between origin- and fixpoint-round failures: different solves, different events
+  (builder call, endorsed).
+- **lane-sparing-rederivation (a) — FOLDED 2026-08-15** (codex/Sol-authored,
+  foreign lineage, shim-backstop-committed; three commits; conductor law-review
+  passed; gate over the combined tip at fold). `dorc-sparing-reference`: 614 lines,
+  zero deps, own opaque token vocabulary, `BackingSet` non-empty by construction,
+  22 law-named tests; authored blind to production code as briefed. THE THREE
+  MODEL-AMENDMENT RULINGS (conductor, from the fold review — two flagged by the
+  model's author, one a bundle omission of MINE; all are additions to the ruled
+  English, and lane-(b) applies them to the model with citations):
+  `rul-reference-entity-name-floor` — within-kind unequal entities answer
+  ProvablyDisjoint under the name-comparison floor (`canonical-coord-continuity`'s
+  no-resolver floor; USER_STORY stage-6); the model stays resolver-blind and the
+  (b)-adapter feeds canonicalized entities where a resolver exists ·
+  `rul-reference-kind-fence-disjoint` — cross-kind pairs short-circuit
+  ProvablyDisjoint (the v1 kind fence, `kind-fence-movable`; my bundle stated only
+  no-cross-kind-same, so the model answers Unknown and would demote every real
+  cross-kind meet) · `rul-reference-empty-footprint-assert` — the model KEEPS its
+  conservative empty-footprint collide; the (b)-adapter asserts production never
+  feeds ∅ to the meet, and a violation is a differential FINDING, not a
+  normalization. Shim anomalies logged: the Windows codex self-commit ACL grant was
+  blocked by the permission classifier (backstop path used; a settings-allowlist
+  question for the human someday); a sibling-codex-in-same-worktree observation
+  (~SUSPECT process-ancestry misread; no corruption; logged only).
+  Original (a) charter, for the record: the naive reference model of the
   sparing/composition algebra, authored FROM the ratified English law-set under
   structural-simplicity constraints: the checker's value is STRUCTURAL difference —
   written under different constraints, from the machinery-free description of the
