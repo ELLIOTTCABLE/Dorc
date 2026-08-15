@@ -678,8 +678,13 @@ per `28Q` §8.
   items stay in-memory/pull-tier, F8); (2) `law-whylog-is-sensitive` stands —
   enrichment adds engine-derived rows only, host-sourced material stays in its typed
   intake lane within the file, the secrets-round re-grade before real estates still
-  binds; (3) rec-5 stands — consumers read the whylog OF THEIR OWN RUN, never a
-  stored one; the spine never becomes the kSTATE cache by accretion. Consequences
+  binds; (3) rec-5 stands — no whylog ever feeds the LICENSE plane of any run, its
+  own included; re-ingestion is aid-plane only, and the spine never becomes the
+  kSTATE cache by accretion. (Wording narrowed 2026-08-15: the earlier "consumers
+  read the whylog OF THEIR OWN RUN, never a stored one" collapsed the CONCEPTUAL
+  whylog — the engine's single output structure, of which every product including
+  the `.whylog` durable is a projection — with that durable itself, and as written
+  outlawed `dorc why --last`, which reads a stored durable by design.) Consequences
   banked: the records-8 pending decision leans WIRE (a spine wants its emitters);
   renderer-consumes-whylog is a banked refactor direction, opportunistic, never a
   big-bang; enrichment work stays demand-driven per sketch-until-demanded (the
