@@ -37,7 +37,7 @@ use std::path::{Path, PathBuf};
 use dorc_aid::diag::SolvePass;
 use dorc_aid::narrative::{
     ChannelCoverage, CollapseKind, DeclineGate, DefinitionSite, DemoteTag, EntryDegradeTag,
-    EntryFailureTag, FailedCheck, MintSpan, Operands, ValueOperand,
+    EntryFailureTag, FailedCheck, MintSpan, Operands, SolverRounds, ValueOperand,
 };
 use dorc_core::{BytePos, Channel, LeafId, SiteId, SourceFileId, Span};
 
@@ -125,8 +125,11 @@ fn constructible_classes() -> Vec<CollapseKind> {
             operands: Operands::<FailedCheck>::default(),
             shown: 0,
             total: 1,
-            converged: true,
-            rounds: 4,
+            solves: 1,
+            advisory: SolverRounds {
+                converged: true,
+                rounds: 4,
+            },
         },
     ]
 }

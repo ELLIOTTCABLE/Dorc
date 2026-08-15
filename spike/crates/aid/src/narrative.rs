@@ -497,12 +497,31 @@ pub enum CollapseKind {
         pass: SolvePass,
         operands: Operands<FailedCheck>,
         shown: u32,
+        /// Failing CHECKS — the same quantity for every pass. A pass that runs many solves
+        /// reports the SUM, never a solve count wearing a check count's name.
         total: u32,
-        converged: bool,
-        rounds: u32,
+        /// How many SOLVES of this pass failed. One for the whole-unit passes; a self-reach pass
+        /// re-solves per Members site, so this is where that plurality is stated instead of being
+        /// smuggled into `total`.
+        solves: u32,
+        /// The solver's own report from a failing solve. Real, always — never a stand-in. Where a
+        /// pass failed several solves this is the FIRST one's, and `solves` says how many there
+        /// were; an account that cannot be had honestly is not manufactured.
+        advisory: SolverRounds,
     },
     /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
+}
+
+/// The solver's advisory self-report, as pure scalars — the narrative-plane view of an
+/// `analysis::certify::SolverAdvisory`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SolverRounds {
+    /// Whether the solver believed it had settled. Advisory only: a cap-tripped answer that still
+    /// certifies is the least fixpoint and is used regardless.
+    pub converged: bool,
+    /// How many node-visits the solver performed.
+    pub rounds: u32,
 }
 
 /// One failed post-fixpoint check as a pure scalar — the narrative-plane view of an
