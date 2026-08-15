@@ -42,9 +42,10 @@ use dorc_core::{AstId, Interner, Symbol, TopCause, ValueGrade};
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget, WordPart};
 use dorc_syntax::sem::{self, FragClass};
 
+use crate::certify::{SolveConsistency, solve_certified};
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::{Flat, Lattice, MapL};
-use crate::solve::{Direction, solve};
+use crate::solve::{Direction, Graph as _};
 
 /// One resolved word: a statically-known literal string, or `⊤` (unknown).
 ///
@@ -127,7 +128,11 @@ pub struct ValueFlow {
     /// for richer grades when a capture/register fragment lands. NOTHING consumes it yet
     /// (`270:block-rebuild`: represent + derive, do not consume). `BTreeMap` for `inv-determinism`.
     argv_word_grades: BTreeMap<CfgNodeId, Vec<ValueGrade>>,
-    converged: bool,
+    /// The solve's certification (`302`). The ONE gate every query above is folded through —
+    /// there is no second `converged` flag a consumer could read instead and get a different
+    /// answer. Kept whole (not reduced to a bool) so the failing evidence stays reachable
+    /// in-memory for the pull surfaces; only scalars ever cross into the aid plane.
+    consistency: SolveConsistency<ValueEnv>,
 }
 
 impl ValueFlow {
@@ -197,13 +202,20 @@ impl ValueFlow {
     /// answer that still certifies is the least fixpoint and stays usable.
     #[must_use]
     pub fn trusted(&self) -> bool {
-        self.converged
+        self.consistency.is_consistent()
+    }
+
+    /// The solve's certification, whole — the failing evidence for a pull surface, and the
+    /// scalars a consumer's degrade record is built from (`302` §5).
+    #[must_use]
+    pub fn consistency(&self) -> &SolveConsistency<ValueEnv> {
+        &self.consistency
     }
 }
 
 /// The dataflow lattice element: shell variable name ↦ abstract string value (owned text, so
 /// concatenation is interner-free; interned only at the public boundary).
-type ValueEnv = MapL<String, Flat<String>>;
+pub type ValueEnv = MapL<String, Flat<String>>;
 
 /// arch-2 (`i-2`): bounded iterations of the inline positional-binding pass — depth ≤ 2 ⇒ at
 /// most 3 passes for an inner-of-inner positional (`outer() { inner "$1"; }`) to settle once the
@@ -240,42 +252,79 @@ pub fn analyze(cfg: &Cfg, ast: &Ast, interner: &mut Interner) -> ValueFlow {
     // domain (keys ⊆ the script's assigned-variable set, values height-2 `Flat`), so the
     // worklist converges (`inv-monotonicity`); the entry seed is the only non-pass-through
     // boundary (see the module doc).
-    let solution = solve(cfg, Direction::Forward, |i, incoming: &ValueEnv| {
-        prep.transfer(CfgNodeId(u32::try_from(i).unwrap_or(u32::MAX)), incoming)
-    });
+    let (solution, consistency) =
+        solve_certified(cfg, Direction::Forward, |i, incoming: &ValueEnv| {
+            prep.transfer(CfgNodeId(u32::try_from(i).unwrap_or(u32::MAX)), incoming)
+        });
 
-    // `16P` DP-9 / `inv-probe-sourced-values`: a non-converged solve is an under-
-    // approximation; fold every site to all-`⊤` rather than trust a partial fixed point.
+    if !consistency.is_consistent() {
+        return value_floor(cfg, ast, consistency, interner);
+    }
+    resolve_passes(&prep, cfg, &solution.states, true, consistency, interner)
+}
+
+/// The VALUE-PLANE FLOOR (`302` §3.1) — the one seat an un-certified value solve lands on.
+///
+/// Every pass answers all-⊤, so every command classifies `Opaque` ⇒ `MustRun`; and
+/// [`ValueFlow::trusted`] goes false, which takes `funcenv::SourceLiteralPlane` with it and
+/// cascades the function environment to ITS floor along the real dependency (`302` §3.1). This is
+/// the same degrade path non-convergence has always taken (`16P` DP-9) — the certifier reuses it
+/// and invents no new posture.
+///
+/// The solved states are deliberately NOT passed in: an inconsistent answer is exactly the thing
+/// we may not read, and a floor that took them could only be wrong in a way nothing would notice.
+#[must_use]
+pub fn value_floor(
+    cfg: &Cfg,
+    ast: &Ast,
+    consistency: SolveConsistency<ValueEnv>,
+    interner: &mut Interner,
+) -> ValueFlow {
+    let prep = Prep::new(cfg, ast);
+    let unread = vec![ValueEnv::bottom(); cfg.node_count()];
+    resolve_passes(&prep, cfg, &unread, false, consistency, interner)
+}
+
+/// The five resolution passes, run against one solution under one trust gate — shared by the
+/// trusted path and [`value_floor`] so the two cannot drift.
+fn resolve_passes(
+    prep: &Prep<'_>,
+    cfg: &Cfg,
+    states: &[ValueEnv],
+    trusted: bool,
+    consistency: SolveConsistency<ValueEnv>,
+    interner: &mut Interner,
+) -> ValueFlow {
     let mut argv = BTreeMap::new();
     for (id, node) in cfg.iter() {
         if node.kind != CfgNodeKind::Command {
             continue;
         }
-        let words = prep.site_argv(id, &solution.states, solution.converged);
+        let words = prep.site_argv(id, states, trusted);
         argv.insert(id, intern_argv(words, interner));
     }
 
     // task-L2 item-1/2: the per-member argvs for in-loop Members sites — a SEPARATE pass
-    // off the same converged solution (the Members value never rode the lattice, item-1).
-    let member_argv = prep.members_pass(&solution.states, solution.converged, interner);
+    // off the same solution (the Members value never rode the lattice, item-1).
+    let member_argv = prep.members_pass(states, trusted, interner);
 
     // arch-2 (`i-2`): the positional-bound argvs for spliced funcdef-body sites — a SEPARATE
-    // pass off the same converged solution (positionals never ride the lattice either, the
+    // pass off the same solution (positionals never ride the lattice either, the
     // 20S Members precedent). For each inlined call, bind `$1`..`$9`/`$#` from the call's
     // resolved argv and re-resolve each body site's words.
-    let positional_argv = prep.inline_pass(&argv, &solution.states, solution.converged, interner);
+    let positional_argv = prep.inline_pass(&argv, states, trusted, interner);
 
     // y-1 (redirect-effects): the resolved write-redirect TARGETS — a SEPARATE pass off the
-    // same converged solution. A redirect target is an ordinary expansion (`>> "$logfile"`),
+    // same solution. A redirect target is an ordinary expansion (`>> "$logfile"`),
     // so it resolves against the `Redir` node's incoming env state exactly as a command word
     // does; the effect classifier gens a per-path `file` cell from a resolved target.
-    let redir_target = prep.redir_pass(&solution.states, solution.converged, interner);
+    let redir_target = prep.redir_pass(states, trusted, interner);
 
     // The value-prediction species' provenance field (`275` §2 · value-recipe-reshape): the
     // weakest-fragment grade of each command-site source word, derived from its recipe. A pure
     // structural pass off the AST — grade is a property of the recipe shape, not the resolved
     // value, so it needs no lattice state (`inv-determinism`, no consumer at this stage).
-    let argv_word_grades = prep.provenance_pass(&solution.states, solution.converged);
+    let argv_word_grades = prep.provenance_pass(states, trusted);
 
     ValueFlow {
         argv,
@@ -283,7 +332,7 @@ pub fn analyze(cfg: &Cfg, ast: &Ast, interner: &mut Interner) -> ValueFlow {
         positional_argv,
         redir_target,
         argv_word_grades,
-        converged: solution.converged,
+        consistency,
     }
 }
 

@@ -190,6 +190,18 @@ impl<L> SolveReplay<L> {
     }
 }
 
+/// The solver's own ADVISORY report about the run that produced the failing answer (`302` §5:
+/// these are narrative operands, never a gate). Carried here so a consumer that has kept only the
+/// verdict can still narrate the run, and so nothing has to thread a second value alongside it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SolverAdvisory {
+    /// Whether the solver believed it had settled. Advisory: a cap-tripped answer that satisfies
+    /// the checks is the least fixpoint and is used regardless (`302` §1).
+    pub converged: bool,
+    /// How many node-visits the solver performed.
+    pub rounds: usize,
+}
+
 /// The evidence behind a passing verdict: counts for the narrative plane, nothing more.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ConsistentChecks {
@@ -213,6 +225,7 @@ pub struct FailedChecks<L> {
     total: usize,
     first_break_edges: SortedSet<(usize, usize)>,
     unstable_components: Vec<SortedSet<usize>>,
+    advisory: SolverAdvisory,
     replay: SolveReplay<L>,
 }
 
@@ -262,6 +275,12 @@ impl<L> FailedChecks<L> {
     #[must_use]
     pub fn replay(&self) -> &SolveReplay<L> {
         &self.replay
+    }
+
+    /// What the solver itself reported about the run — advisory narrative operands only.
+    #[must_use]
+    pub fn advisory(&self) -> SolverAdvisory {
+        self.advisory
     }
 
     /// Attach the replay [`solve_certified`] gathered. Private: the checker mints the slot empty
@@ -392,6 +411,10 @@ pub fn certify_solution<G: Graph, L: Lattice>(
         total,
         first_break_edges,
         unstable_components,
+        advisory: SolverAdvisory {
+            converged: solution.converged,
+            rounds: solution.rounds,
+        },
         replay: SolveReplay::empty(),
     })
 }
