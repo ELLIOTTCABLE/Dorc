@@ -1,47 +1,58 @@
 ---
 name: verified-core-discipline
-description: The theory and praxis of this project's multi-tier correctness architecture — the verified core (algebra, checkers, Lean model) and the check-ladder around it (types, Kani, property tests, DST, runtime certification, proofs). Exists chiefly for agents whose MAIN task is something else — it tells you when you have wandered near something correctness-critical, what the thing in your way actually guarantees, and how to proceed without weakening it. The one law above all: never weaken the question to pass a check.
-when_to_use: Load BEFORE proceeding when any of these holds, even (especially) if your task is unrelated and the obstacle feels incidental — you are editing files in the verified core (lattice/solver/domain code, comparison or claim chokepoints, checker or reference implementations, the Lean model, Kani harnesses, DST pins); a mechanical check failed or flaked under you (a Kani harness, a certification `Refused`, a property or DST seed, a Lean build, a lexical-fence test); you are adding a dependency, collection, panic path, or public constructor to a core crate; a signature change ripples into proofs or harnesses elsewhere; you must decide where a new invariant gets enforced; or you notice an urge to edit a test, harness, cap, spec, or theorem statement to get unblocked. Skip for prose/docs-only work and for code wholly outside the core with all checks green.
+description: The theory and praxis of this project's multi-tier correctness architecture — the verified core (the sorted facades, the lattice/solver algebra, the compare and claim chokepoints, the solve-certifier, the sparing reference model, the minispec law corpus) and the check-ladder around it (types, Kani, property tests, DST, runtime certification, Lean-over-derived-definitions). Exists chiefly for agents whose MAIN task is something else — it tells you when you have wandered near something correctness-critical, what the thing in your way actually guarantees, which instrument owns which kind of correctness, and how to proceed without weakening anything. The one law above all: never weaken the question to pass a check.
+when_to_use: Load BEFORE proceeding when any of these holds, even (especially) if your task is unrelated and the obstacle feels incidental — you are editing files in the verified core (core::sorted, coord/claim chokepoints, analysis lattice/solve/certify, the sparing-reference crate, plan::rederive, anything under minispec/ or spike/verify/); a mechanical check failed or flaked under you (a Kani harness, a SolveConsistency Inconsistent, a re-derivation demotion, a property or DST seed, a lake build, the dorc-verify gate, a lexical fence); you are adding a dependency, collection, panic path, or public constructor to a core crate; a signature change ripples into harnesses, the derived Lean definitions, or the catalogue lock; you must decide where a NEW invariant gets enforced (the which-instrument section is the map); or you notice an urge to edit a test, harness, bound, fence, catalogue expectation, spec, or theorem statement to get unblocked. Skip for prose/docs-only work and for code wholly outside the core with all checks green.
 ---
 
 # Working near the verified core
 
-This project runs a layered correctness architecture. A small **verified core**
-(the abstract-domain algebra: lattices and their laws, the fixpoint solver, the
-coordinate-comparison and claim/license chokepoints, the sparing/composition
-algebra) is surrounded by a **check-ladder** of increasingly strong instruments,
-and the big, churny engine above it is deliberately *untrusted* — its answers
-are checked, not believed. If your task brushes any of this, the rules below
-apply to you, whatever you were originally asked to do.
+This project runs a layered correctness architecture. A small **verified core** —
+the owned sorted facades (`core::sorted`), the abstract-domain algebra (lattices,
+the fixpoint solver), the coordinate-comparison and claim/license chokepoints, the
+sparing/composition algebra and its naive reference model, the solve-certifier —
+is surrounded by a **check-ladder** of increasingly strong instruments, and the
+big, churny engine above it is deliberately *untrusted*: its answers are checked,
+not believed. A separate literate spec corpus (**minispec/**) states the few laws
+the project opts to verify, over machine-derived Lean definitions of the shipping
+code. If your task brushes any of this, the rules below apply to you, whatever you
+were originally asked to do.
 
 Two facts orient everything:
 
 - **The checks are product surfaces, not chores.** A silently-wrong analysis
   under-executes a user's command — this codebase's cardinal sin — and a
-  wrongly-attributed failure is worse than the failure. Explanation output is
-  held to the same bar as decision output: the two planes (license and
-  narrative/aid) carry separate gates, and *either* can veto a kernel change.
-- **Every instrument is deliberately placed.** A five-line harness or a
-  one-line `⊑` check may be load-bearing for thousands of lines of untrusted
-  engine. Small ≠ incidental. If something tiny and strict is in your way, it
-  is in your way on purpose.
+  wrongly-attributed failure is worse than the failure. Explanation output is held
+  to the same bar as decision output: the license and narrative/aid planes carry
+  separate gates, and *either* can veto a kernel change.
+- **Every instrument is deliberately placed, and they compose upward.** The
+  certifier trusts `⊑`; `⊑` rests on the facade canonicality seats; the seats are
+  pinned by Kani; the minispec laws are stated over Lean definitions derived from
+  these exact files. A five-line harness or a one-line expectation in the
+  catalogue lock may be load-bearing for thousands of lines of untrusted engine.
+  Small ≠ incidental. If something tiny and strict is in your way, it is in your
+  way on purpose.
 
 ## Am I near it? (recognition, for the unrelated-task agent)
 
 You are near the verified core if any of these is true:
 
-- Your edit touches lattice/solver/domain definitions, a `*_covers`/`compare`/
-  `classify_*`-style chokepoint, a claim/license type, a checker or reference
-  implementation, an owned-collection facade, `.lean` files, `#[kani::proof]`
-  harnesses, or DST pin/seed machinery.
-- A check failed that you did not write: a Kani counterexample, a certification
-  `Refused(witness)`, a property-test or DST seed failure, a broken Lean build,
-  a lexical-fence test naming a function you touched.
-- You are about to add to a core crate: a dependency, a std collection, an
+- Your edit touches: `core::sorted` or the `coord`/`claim` chokepoints;
+  `analysis`'s `lattice.rs`/`solve.rs`/`certify.rs`; `dorc-sparing-reference` or
+  `plan::rederive`; anything under `minispec/` (spec surface — see the access
+  laws) or `spike/verify/` (the binder, the Kani harnesses, the Aeneas pipeline);
+  a `*_covers`/`compare`/`classify_*`-style chokepoint; a checker or reference
+  implementation; `#[kani::proof]` harnesses; DST pin/seed machinery; the
+  catalogue lock.
+- A check failed that you did not write: a Kani counterexample, a
+  `SolveConsistency::Inconsistent`, a re-derivation demotion, a failing property
+  or DST seed, a broken lake build, a `dorc-verify` refusal, a lexical-fence test
+  naming a function you touched.
+- You are about to add to a core crate: a dependency, a raw std collection, an
   `unwrap`/`panic!`, a generic that crosses the verification boundary, or a
   constructor that bypasses a smart-constructor.
 - Your rename/signature change breaks something in a directory you have never
-  visited (harnesses and proofs reference core signatures by construction).
+  visited (harnesses, derived Lean, and the catalogue reference core signatures
+  by construction).
 
 When in doubt, assume you are near it: the cost of loading this discipline is
 minutes; the cost of routing around a load-bearing check is a silent
@@ -52,121 +63,157 @@ wrong-elision.
 An agent under pressure to finish an unrelated task will be tempted to make a
 failing check pass by changing *the check*. Every form of this is forbidden:
 
-- No `sorry`/`assume`/`admit` added to make a proof or harness green.
-- No editing a theorem STATEMENT, a spec, a harness's bounds, or an
-  `Arbitrary` instance to dodge the failing case.
-- No converting, re-wrapping, or laundering a value to satisfy a
-  stricter-typed signature (if a signature demands an authority you do not
-  hold, you have the wrong value, not the wrong type).
-- No raising iteration caps, loosening tolerances, or narrowing a
-  quantified pin's input space.
-- No `--no-verify`, no deleting-and-regoldening a check you do not understand.
+- No `sorry`/`assume`/`admit` to green a proof or harness; no editing a theorem
+  STATEMENT, a law unit, a harness's bounds, or an `Arbitrary` instance to dodge
+  the failing case.
+- No editing a catalogue-lock expectation outside the promote ceremony (the gate
+  refuses computed-vs-committed mismatch in EITHER direction — silent demotion
+  and silent ambition are both loud, on purpose).
+- No converting, re-wrapping, or laundering a value to satisfy a stricter-typed
+  signature (if a signature demands an authority you do not hold, you hold the
+  wrong value, not the wrong type).
+- No raising iteration caps, loosening tolerances, widening a fence's allow-list,
+  or narrowing a quantified pin's input space.
+- No `--no-verify`, no deleting-and-regoldening a check you do not understand,
+  and no re-blessing golden drift under a pure refactor (drift there is a
+  finding: behavior changed).
 
-A check you cannot satisfy is a finding. The correct moves are exactly two:
-*fix the code* (your change genuinely broke a guaranteed property), or
-*escalate with the failure in hand* (the check may be wrong or the spec may be
-moving — that call belongs to the conductor/human, never to a task-focused
-agent). Checks here are chosen for deterministic failure signals precisely so
-this law is cheap to follow: a counterexample or witness names its operands.
+A check you cannot satisfy is a finding. The correct moves are exactly two: *fix
+the code*, or *escalate with the failure in hand* (the check may be wrong or the
+spec may be moving — that call belongs to the conductor/human, never to a
+task-focused agent).
 
-**Flaky vs broken:** deterministic tiers (types, Kani, property seeds, DST,
-certification) cannot flake — a failure is real, reproduce it from its seed or
-witness. Solver-backed tiers (refinement annotations, some proof automation)
-can be timing/heuristic-sensitive: re-run once to classify; if unstable,
-escalate it *as instability* — never iterate until green, which launders a
-real signal into noise.
+**Flaky vs broken vs over-budget:** deterministic tiers (types, Kani at bounds,
+property seeds, DST, certification) cannot flake — a failure is real; reproduce
+it from its seed or witness. Solver-backed tiers can be resource-sensitive, and
+there is a named trap: **CBMC prints `VERIFICATION:- FAILED` after its own
+out-of-memory**, so a "failed" harness under memory pressure is NOT a
+counterexample until reproduced under headroom — the harness driver gates verdict
+on the memory result (keep it gated; a regression test pins it), and an
+over-budget harness is *recorded as over-budget*, never reported refuted and
+never waited out. Heavy solver work runs memory-gated (`timeout` + `ulimit -v` +
+exact-name reaping, serialized across lanes — `spike/CLAUDE.md`
+background-wsl-children-outlive-taskstop).
 
-## The ladder (theory): who does the universal quantifier
+## Which instrument, when (the decision map)
 
-Every instrument answers "for all inputs, does P hold?" — they differ in who
-does the *for all*, and each has a distinct failure signal:
+Every instrument answers "for all inputs, does P hold?" — they differ in who does
+the *for all*, what they can reach, and what they cost. Pick the LOWEST tier that
+fully expresses the property; escalate only for reach, never for prestige.
 
-| Tier | The ∀ is done by | Guarantees | Cannot do | Failure signal |
-|---|---|---|---|---|
-| Types / smart constructors | the compiler, forever | possession proves the check ran; no unchecked path exists | validate data that arrives at runtime beyond the boundary check | compile error (best signal there is) |
-| Kani harnesses | exhaustive enumeration at small bounds | real ∀ over the bounded universe; laws hold for EVERY small case | unbounded claims; generic (un-monomorphized) code | concrete counterexample |
-| Property tests | randomized generation | large-universe confidence, structural cases | exhaustiveness; rare-corner certainty | failing seed (replayable) |
-| DST | seeded whole-system simulation | ordering, fault, and permutation coverage incl. output-multiset stability | model-level wrongness it shares with the code | failing seed (replayable) |
-| Runtime certification | a per-answer check in production | THIS answer is safe, however it was computed | quality/precision; model bugs it shares with transfers | `Refused(witness)` naming the exact edge/operands |
-| Lean proofs | a constructed argument, kernel-checked | unbounded ∀ over the modeled algebra | truth of the STATEMENTS; anything outside the model | broken build / unprovable goal |
+| You have… | Reach for | Not |
+|---|---|---|
+| a data-shape rule at an intake boundary | a smart constructor (possession proves the check ran) | a runtime assert |
+| an equational/∀-law over small algebra values (lattice laws, facade canonicality, meet/compare) | a **Kani harness**, added in the SAME change as the operation; a property-test twin if the universe is large | a hand-picked example test |
+| an algebra-SEMANTICS statement other components lean on (what compare/join/sparing MEAN) | a **minispec law unit** — the expensive, human-gated lane; see below | a comment, or a Kani harness pretending to be a spec |
+| a churny engine-tier numeric/structural invariant (byte budgets, span arithmetic, weft numerics) | today: checked arithmetic + ONE named seat + a property test; **Flux** is the penciled mid-r30 future here — keep the invariant at one seat so refinement lands mechanically | Kani or Lean (the algebra instruments do not reach the churny tier, by design — triple-covering was rejected) |
+| "is this computed production answer safe?" | the EXISTING certification instruments only: the solve-certifier (every solver answer) and the sparing re-derivation (every survival). Adding a NEW runtime checker requires the admission tests: T1 a large find/check asymmetry in the producer (only fixpoints qualify), or T2 maximal severity × invisibility (only the survival lane qualified) | a checker added by symmetry — N-version programming with correlated blind spots |
+| ordering/permutation/fault/whole-system behavior, incl. narrative-record multisets | **DST pins** (seeds are replay handles; permutation pins protect explanation stability, which convergence checks cannot see) | unit tests with hand-ordered inputs |
+| product behavior — renders, plans, CLI contracts, oracle corpora | ordinary integration/e2e/goldens (the e2e runner is the SOLE fixture executor); goldens re-bless freely on arrangement churn, NEVER under pure refactors | any of the above; this is where traditional testing rules |
 
-Placement guidance for a NEW invariant: data-shape at an intake boundary →
-smart constructor. Equational/∀-law over small values (lattice laws, meet/
-compare algebra) → Kani harness, plus a property test if the universe is
-large. Ordering/concurrency/whole-system → DST pin. "Is this computed answer
-safe" → the certification layer. Algebra meta-theory → a Lean statement.
-Prefer the *lowest* tier that fully expresses the property — lower tiers have
-better failure signals and lower churn cost — and note that tiers compose: the
-certifier leans on `⊑`, so the lattice laws it trusts are exactly what the
-Kani tier pins.
+**The minispec lane, priced honestly.** minispec is the project's reviewable
+statement of the few laws it opts to verify: English-authoritative prose + a
+`Prop` over `minispec/Generated/` (Lean definitions machine-derived from the
+shipping Rust — zero transcription drift) + a concretely-evaluated instance
+battery, badge-tracked by `dorc-verify`. It is deliberately expensive:
+
+- **Content is frontier+human only** (`minispec/CLAUDE.md` access laws). A
+  builder NEVER edits a unit, the Vocabulary, or the catalogue expectations —
+  builders build tooling, surface chafe, and stop. This is what makes it an
+  acceptance surface the worker cannot game.
+- **Spec leads the build.** When a design change moves algebra semantics
+  (compare/dialect/backing/join — anything a law unit states), the spec changes
+  FIRST, through the authorized lane, and code builds to spec-green. If your
+  build looks right and the spec disagrees: STOP and report; that disagreement
+  is the system working.
+- **When does a law EARN a unit?** By deliberate human increment (the enrichment
+  item), never as a side-effect of a lane. The trigger worth escalating: you find
+  a semantic property that multiple components silently assume. Report it; do
+  not mint it.
+- **A green translate proves nothing alone.** The pipeline's truth is
+  translate-STRICT + lake build + the hole/axiom census (lenient translation
+  emits SILENT `sorry`s; one emission was silently ill-typed until lake caught
+  it). Regeneration diffs of `Generated/` are the drift alarm — a breakage there
+  after your refactor is the alarm working, not an obstacle.
+- **Trusted-base hypotheses live IN the statements** (`Minispec/Vocabulary/
+  TrustedBase.lean`): the derived generic dictionaries are lawless, so every
+  generic law says what it assumes (`LawfulClone`/`LawfulEq`); concrete battery
+  dictionaries prove them outright. The translated-code discipline that keeps the
+  pipeline alive: keep borrows out of closure returns and Option-combinators off
+  the algebra path — spell the `match` cousin (`core/CLAUDE.md`).
 
 ## Praxis per tier
 
-**Core code-shape** (binds all code in the verified core, today): no `unsafe`,
-no interior mutability, no concurrency, no panic paths on any input; total
-functions with closed outcome types. Monomorphic at the verification boundary
-— generics live outside or are instantiated concretely at the seam. Std
-collections never appear raw inside the core: state lives behind the project's
-owned facades (small total APIs over sorted vecs), which is what keeps the
-core translatable, checkable, and provable. An invariant lives at exactly ONE
-named seat (a constructor or chokepoint function) and is never re-derived
-inline at use-sites. Newtypes validate in private-field smart constructors;
-harness access is granted by hand-written `#[cfg(kani)] Arbitrary` impls,
-never by widening constructor visibility. New dependencies in core crates
-require conductor ack, always.
+**Core code-shape** (binds all verified-core code): no `unsafe`, no interior
+mutability, no concurrency, no panic paths on any input; total functions with
+closed outcome types. Raw std collections never appear — ordered state lives
+behind `core::sorted::{SortedSet, SortedMap}` (canonical form is honour-system:
+ONE named seat per invariant + seat tests now, Kani pins as the closing net).
+Monomorphic at the Kani boundary (generics are fine for Aeneas; harnesses
+instantiate concretely). An invariant lives at exactly ONE named seat and is
+never re-derived inline. Newtypes validate in private-field smart constructors;
+harness access via hand-written `#[cfg(kani)] Arbitrary` impls homed beside the
+type — constructed via arbitrary backing + `kani::assume(canonical)`, NEVER via
+repeated `insert` (that makes the insert harnesses circular). New dependencies in
+core crates require conductor ack, always.
 
-**Kani**: a harness is ordinary Rust in the harness lane — `kani::any()`
-inputs, assert the law, exhaustive at the declared bounds. Keep bounds honest
-and small; a counterexample is a real bug in code or law — never harness
-noise. When you add a lattice/domain/compare operation, you add its law
-harnesses in the same change.
+**Kani**: `kani::any()` inputs, assert the law, exhaustive at declared, honest,
+small bounds; the harness home is `spike/verify/`; the lane is opt-in
+(`verify:kani`, Linux/WSL). A counterexample is a real bug in code or law — but
+apply the over-budget/OOM discipline above before believing a FAILED. When you
+add a lattice/domain/compare/facade operation, you add its law harnesses in the
+same change.
 
-**Property tests / DST**: seeds are replay handles — a failure replays
-deterministically; debug from the seed, never shrug at it. Permutation pins
-assert order-independence of results *including narrative/output multisets*
-(explanation stability is product correctness — convergence checks are blind
-to it by construction, so only these pins protect it). Never hand-inject a
-value a check is supposed to produce (anti-masking). Kernel code stays pure:
-clock, randomness, filesystem, network only through injected seams.
+**Runtime certification**: the solver's every production answer passes the
+post-fixpoint check (`solve_certified`; raw `solve`/`run` are `pub(crate)` and
+lexically fenced); every survival verdict re-derives through the independent
+reference model (demote-only — agreement licenses nothing new). Outcomes are
+closed types; consumers take NAMED floors; `trusted()` means *certified* — the
+`converged` flag is advisory (consistent-at-cap is the least fixpoint and is
+used). An `Inconsistent` demotes the ENTIRE analysis window; summaries explain,
+never scope; there is no recovery mode and none may be added (`302` §9: recovery
+failures correlate with the trigger's causes). If refusals appear after your
+change, your change is implicated — the witness names the edge and both values;
+start there. And never gate a graceful-degrade path behind a `debug_assert`: DST
+runs debug, and an assert that fires before the floor leaves the real path
+tested only in release (a landed bug of exactly this shape was repaired).
 
-**Runtime certification**: the solver's every answer passes a per-edge
-post-fixpoint check; every sparing verdict is re-derived through an
-independent reference implementation. Outcomes are closed types —
-`Certified | Refused(witness)` — and consuming code handles `Refused` as
-degrade-to-the-safe-floor plus an operand-carrying narrative record. Never
-read certification as a boolean, never bypass it, never special-case "just
-this once". If refusals appear after your change, your change is implicated:
-the witness names the edge and both values — start there. The certifier's
-refusal direction is pessimistic by design (capped or partial work degrades
-toward the floor, never toward trust).
+**Property tests / DST**: seeds replay deterministically — debug from the seed,
+never shrug. Permutation pins assert order-independence *including
+narrative/output multisets*. Never hand-inject a value a check should produce
+(anti-masking). Kernel code stays pure: clock, randomness, filesystem, network
+only through injected seams.
 
-**The Lean model**: a small model of the core algebra lives beside the code;
-its theorem STATEMENTS are the human-review surface, its proofs are
-machine-checked (nobody reviews proofs; everybody may review statements). When
-a core change breaks the model or its proofs, that is the system working —
-re-align the model, re-prove, and if a *statement* must change to re-prove,
-stop: that is a spec change and belongs to the conductor/human. `sorry` is a
-loud, counted TODO ledger — legal mid-work, never silently merged. The model
-also runs as a differential oracle inside DST, so keeping it aligned is not
-optional polish.
+**minispec/dorc-verify mechanics** (tooling side, builder-legal): the cheap gate
+(`verify:check`) rides the ordinary suite — catalogue coherence, unit contracts,
+slug law, hole censuses (the Vocabulary is unit-contract-exempt but NEVER
+hole-exempt); Lean-derived badges recompute at the opt-in tier
+(`verify:report -- --with-lean`). Badge expectations move ONLY through the
+promote ceremony (currently a hand-edit of the catalogue lock whose review is the
+git diff; the `dorc-verify promote` generator is owed). Proofs live in
+`Minispec/Proofs/` — the tactic-churn zone, structurally unable to touch a
+statement; `sorry` there is a loud counted TODO, never silently merged.
 
 ## Escalation
 
 Blocked by any of this? Say so, with the artifact in hand (the witness, the
-counterexample, the seed, the failing goal). Flag judgment calls upward rather
-than resolving them locally — especially anything that would move an invariant
-between tiers, change a statement, or widen what a check accepts. The person
-who owns the spec decides spec questions; you carry them the evidence.
+counterexample, the seed, the failing goal, the refusing gate line). Flag
+judgment calls upward rather than resolving them locally — especially anything
+that would move an invariant between tiers, change a statement or expectation, or
+widen what a check accepts. Spec questions route to the human through the
+conductor; minispec chafe is a report-and-stop, never a workaround.
 
 ## In this repository
 
-Binding local law outranks this skill's generic phrasing: `spike/CLAUDE.md`
-and the per-crate `CLAUDE.md` files (notably `spike/crates/core/` and
-`spike/crates/analysis/`) carry the project-specific invariants and always
-win on conflict. The verified core lives in those two crates; the
-sparing-algebra model and its report live under
-`.claude/research/refinement-types-industrial-cost/spike-lean-sparing/`.
-Deep background — the evidence base, tradeoff pricing, and design rulings
-behind this architecture: `.claude/research/refinement-types-industrial-cost/`
-(start at the latest `turnNN` synthesis note), with kernel-currency context in
-`Research/notes/28Q` / `28R`.
+Binding local law outranks this skill's generic phrasing: `spike/CLAUDE.md` and
+the per-crate `CLAUDE.md` files (notably `core`, `analysis`, `plan`) plus
+`minispec/CLAUDE.md` carry the project-specific invariants and always win on
+conflict. The verified core spans `core`/`analysis` plus the checker/reference
+surfaces (`analysis/src/certify.rs`, `crates/sparing-reference`,
+`plan/src/rederive.rs`); the spec corpus is `minispec/` (the Lean model's home —
+the research-spike models under `.claude/research/…` are QUARRY, superseded);
+the harness/binder home is `spike/verify/`. Deep background: `Research/notes/300`
+(the r30 conduct ledger: as-built state, post-mortems, adjudications),
+`notes/301` (THE minispec/dorc-verify spec), `plans/302` (the solve-certifier
+spec), with the evidence base in
+`.claude/research/refinement-types-industrial-cost/`.
