@@ -4,8 +4,9 @@ Branch `ai/r30-lane-kani`, based on `5e6d6788`. Written to be read cold by a suc
 no context from the lane's session. Two environment deaths happened during this lane; §7
 is the honest account of what caused them and what now prevents a third.
 
-Status: **RESULTS PENDING** in §1 — the battery's final table is filled in at the end of the
-run. Everything else is final.
+**Headline: 19 of 37 harnesses verify green; 18 are over-budget; ZERO counterexamples.** Nothing
+in the algebra was refuted. The over-budget 18 are unjudged, not broken, and §1's shaping rule
+says precisely what shape would judge them.
 
 ---
 
@@ -15,7 +16,72 @@ Home: `spike/verify/kani/`, a DETACHED crate (`[workspace]` empty, no `rust-vers
 `src/lib.rs` `#[path]`-includes `crates/core/src/lib.rs` and `crates/analysis/src/lattice.rs`.
 Harnesses in `src/harness/{facade,lattice_laws,coordinate}.rs`.
 
-<!-- BATTERY-TABLE -->
+Run under the mandated gates: 25 s wall-clock and 6 GiB address space per harness, reaped
+between each. **OVER-BUDGET means UNJUDGED** — the harness proved nothing and refuted nothing.
+Two gates can trip it, and they are not equivalent: a wall-clock trip might pass with a longer
+budget, whereas an ADDRESS-SPACE trip is budget-independent (the three `compare_*` rows are
+confirmed address-space trips — CBMC reported `Out of memory` / `CBMC failed with status 6`
+inside 21 s, so no amount of waiting helps them).
+
+### Green (19)
+
+| harness | law · seat | bounds | time |
+|---|---|---|---|
+| `selector_covers_never_spares_a_top_or_a_self` | `sparing-algebra` + the `279f:fix-spare-top-backing` regression · `coord::selector_covers` | dialects ≤3 tokens, 2-identity symbols | 3.50 s |
+| `selector_covers_needs_both_tokens_minted` | unminted ⇒ collide; empty dialect ⇒ never spares (`empty-world-byte-identical`) | dialects ≤3 | 4.25 s |
+| `selector_identifies_only_two_concrete_equal_tokens` | `top-identifies-with-nothing` · `coord::selector_identifies` | 2-identity symbols | 0.75 s |
+| `the_consumer_map_is_exhaustive_and_exclusive` | `ternary-compare-consumer-map` — no verdict feeds both consumers; `Unknown` feeds neither | whole `Relation` domain × both identity answers | 0.50 s |
+| `the_universal_meet_is_order_independent` | `pin-set-meet-order-independence` + `pin-no-outcome-as-generator` | all 27 member-triples, all 6 orders | 0.50 s |
+| `an_empty_backing_set_would_spare_vacuously` | `inv-backing-set-nonempty-by-construction` · `inv-top-never-encoded-as-empty` | ∅ and all singletons | 0.50 s |
+| `set_membership_agrees_with_the_walk` | `position`'s sole scan agrees with a naive walk · `SortedSet::position` | `SortedSet<u8>` ≤3 | 3.25 s |
+| `set_remove_preserves_canonical_form` | strict ascent survives removal; removal reported iff it happened | `SortedSet<u8>` ≤3 | 5.26 s |
+| `set_insert_preserves_canonical_form_when_the_backing_moves` | THE canonical-form seat, across a reallocation · `SortedSet::insert` | `SortedSet<u8>` exactly 2, full backing | 2.00 s |
+| `map_get_at_walks_key_order` | the walk and the lookup see one map · `SortedMap::get_at` | `SortedMap<u8,u8>` ≤3 | 3.25 s |
+| `map_remove_keeps_key_order` | key order survives removal; the unbound value returns | `SortedMap<u8,u8>` ≤3 | 6.00 s |
+| `flat_obeys_the_binary_laws` | ⊥/idempotence/commutativity/absorption/both ⊑ readings · `Lattice` | `Flat<u8>`, WHOLE domain | 1.00 s |
+| `flat_is_associative` | ⊔ and ⊓ associative | `Flat<u8>`, whole domain | 1.00 s |
+| `flat_obeys_the_top_laws` | ⊤ identity of ⊓, absorbing for ⊔ · `BoundedLattice::top` | `Flat<u8>`, whole domain | 0.75 s |
+| `product_obeys_the_binary_laws` | componentwise — both components' laws survive pairing | `Product<Flat<u8>,Flat<u8>>`, whole domain | 2.25 s |
+| `product_obeys_the_top_laws` | bounded only when BOTH components are | `Product<Flat<u8>,Flat<u8>>`, whole domain | 1.00 s |
+| `may_obeys_the_binary_and_top_laws` | `May<L>` is the identity wrapper | `May<Flat<u8>>`, whole domain | 5.51 s |
+| `must_obeys_the_binary_and_top_laws` | `Must<L>` is a lawful lattice — **this passing IS the proof the dual is right** | `Must<Flat<u8>>`, whole domain | 5.00 s |
+| `must_is_the_order_dual_of_its_inner_lattice` | ⊔≡⊓, ⊥≡⊤ at the operation level (`inv-must-may`'s substrate) | `Flat<u8>`, whole domain | 1.00 s |
+
+The `Must`/`May` pair is the one I would flag to a reviewer as most worth its cost: the whole
+one-engine-both-orientations design rests on `Must<L>` being the order-dual, nothing else picks
+the merge, and a silent mis-choice there is a wrong-elision under the opposite phase.
+
+### Over-budget (18) — unjudged, grouped by which clause of the shaping rule they trip
+
+| harness | trip |
+|---|---|
+| `compare_answers_unknown_across_a_context_gap` | ADDRESS SPACE (`Dialect::any_minted` mints via real `insert`) |
+| `compare_answers_unknown_on_a_resolver_gap` | ADDRESS SPACE, same generator |
+| `compare_derives_separation_only_from_its_three_sources` | ADDRESS SPACE, same generator |
+| `selector_covers_is_monotone_in_the_dialect` | growing `insert` at symbolic length |
+| `set_insert_preserves_canonical_form` | growing `insert`, symbolic ≤3 |
+| `set_insert_touches_only_its_own_member` | growing `insert` + clone, symbolic ≤3 |
+| `set_union_is_canonical_and_semantic` | `union` inserts per element, two collections |
+| `set_intersection_is_canonical_and_semantic` | `intersection` inserts per element, two collections |
+| `set_structural_eq_is_set_eq` | TWO symbolic-length collections, cross-lookups |
+| `map_insert_keeps_keys_ascending_and_rebinds` | growing `insert`, symbolic ≤3 |
+| `map_structural_eq_is_binding_eq` | TWO symbolic-length collections, cross-lookups |
+| `powerset_obeys_the_binary_laws` | `Powerset` ⊔/⊓ insert per element |
+| `powerset_is_associative` | as above, three values |
+| `mixed_product_is_a_lattice_without_a_top` | `Powerset` component, as above |
+| `maplattice_obeys_the_binary_laws` | `MapL` ⊔/⊓ insert per key |
+| `maplattice_is_associative` | as above, three values |
+| `maplattice_keeps_its_canonical_form` | `MapL::insert` + two maps |
+| `maplattice_merges_pointwise` | two maps, per-key equations |
+
+Every one of the 18 draws either a growing mutation at symbolic length or two symbolic-length
+collections — the two clauses measured below. None is a statement about the algebra being wrong.
+
+**What this leaves genuinely unverified at this tier**, stated plainly rather than buried: the
+canonical-form seat under a symbolic-length backing, both set operators, both structural-equality
+laws, and every lattice law over the two collection-shaped combinators (`Powerset`, `MapL`).
+Those all keep their existing seat tests (`300` §2a's bank), which is what they had before this
+lane; the Kani tier adds nothing to them yet.
 
 ## §2 — Placements flagged (what did NOT go to Kani, and why)
 
@@ -95,9 +161,37 @@ re-baseline went through the sanctioned cheap-tier path, `mise run verify:report
 it is a one-line diff and the only deliberate golden change in this lane. Pinned by
 `pipeline::tests::the_census_counts_the_materialized_tree_and_not_its_templates`.
 
-## §5 — Counterexamples
+## §5 — Counterexamples: NONE — and the near-miss that would have invented three
 
-<!-- COUNTEREXAMPLES -->
+**No harness produced a counterexample.** Nothing in `core::sorted`, `core::coord` or
+`analysis::lattice` was refuted at any bound that finished.
+
+That sentence was nearly wrong, and how it was nearly wrong is the most useful thing in this
+report. The first full battery reported **three FAILED harnesses** — the three `compare_*` rows
+— and I was one step from writing them up as findings against the coordinate algebra. They are
+not. Running one by hand with full output showed:
+
+```
+Runtime Convert SSA: 4.6953s
+Out of memory
+
+CBMC failed with status 6
+VERIFICATION:- FAILED
+```
+
+**CBMC prints `VERIFICATION:- FAILED` on its own way down after exhausting the address-space
+cap.** My driver read the verdict string before checking the gates, so every memory trip was
+being classified as a refuted law. Fixed (`49dd1bca`): the gate check now runs FIRST, because an
+out-of-memory run has no verdict whatever it printed; `CBMC failed with status` joined the
+recognized vocabulary; and a regression test carries the real bytes above so the ordering cannot
+silently invert again. Re-running the three under the fixed driver reclassifies all three to
+OVER-BUDGET, which is why the headline reads 0 failed.
+
+Worth stating as a lesson rather than a fix: a verification lane whose failure classifier is
+wrong in the pessimistic direction is not "conservative" — it manufactures findings, and a
+manufactured counterexample against a correctness-critical algebra is exactly the kind of thing
+that gets acted on. The law is `law-never-weaken-the-question`; the symmetric obligation is
+never to *invent* the question either.
 
 ## §6 — Toolchain shape, and every global-state disclosure
 
@@ -188,6 +282,38 @@ contents — so which generator a harness draws from cannot change the answer to
 asked here; it changes only whether `alloc` moves the buffer on the way. That reasoning is
 written into `core::sorted`'s `kani_support` doc so the next person does not re-derive it.
 
+### The shaping rule the battery then measured — read this before writing another harness
+
+The battery's own results sharpen the finding into a rule, and the cleanest evidence is a
+matched pair of harnesses over the SAME law:
+
+| harness | value shape | result |
+|---|---|---|
+| `set_insert_preserves_canonical_form` | symbolic length ≤ **3**, spare capacity | **over-budget** |
+| `set_insert_preserves_canonical_form_when_the_backing_moves` | **concrete** length 2, full backing | **green, 2.0 s** |
+
+Symbolic length is what costs — but NOT uniformly, and the battery's spread says exactly where.
+Sorting §1's results by shape gives a two-clause rule, and both clauses have clean counter-
+examples on the other side:
+
+- **A GROWING mutation at symbolic length is unaffordable.** `insert` blows the budget on both
+  facades at bound 3; `remove` at the same bound and the same symbolic length is green
+  (`set_remove_preserves_canonical_form` 5.3 s, `map_remove_keeps_key_order` 6.0 s). Shrinking
+  memmoves down over a known-smaller range and never reallocates; growing does neither.
+- **TWO symbolic-length collections in one harness is unaffordable, even read-only.**
+  `set_structural_eq_is_set_eq` and `map_structural_eq_is_binding_eq` mutate nothing and still
+  blow the budget, because each cross-lookup walks one symbolic-length backing per element of
+  another. One symbolic-length collection, read-only, is comfortable at bound 3
+  (`set_membership_agrees_with_the_walk` 3.3 s).
+
+Everything green is on the affordable side of both clauses; everything over-budget trips at
+least one. So the shaping a successor should apply is **concrete lengths, one harness per
+length (or per length-pair)** — not a bigger budget, and not a smaller element domain (measured:
+a four-value element domain moved nothing). Concrete-length harnesses are also a HONESTER
+statement — each declares the exact size it verifies rather than a bound — at the cost of N+1
+harnesses per unary law and more for binary ones. That trade is real and belongs to whoever
+picks it up; this lane records the measurement rather than pre-empting the choice.
+
 ## §7 — Two environment deaths, and the gates that now prevent a third
 
 Both were the same failure: an unattended CBMC eating the WSL VM. The first was measured at
@@ -229,11 +355,48 @@ pass.
 
 ## §8 — Gate evidence (exactly what was run)
 
-<!-- GATE-EVIDENCE -->
+- **`mise run gate:full-quiet`, Windows leg, foreground, GREEN.** `1950 tests run: 1950 passed
+  (1 slow), 1 skipped`, plus the four lint gates, `clippy:clean` from a wiped target dir, a
+  fresh `cargo build --workspace`, and all doctests. This is the load-bearing one: it proves the
+  DEFAULT suite is green with NO Kani present, which is the lane's opt-in claim.
+- **`mise run check`** run before every commit; the pre-commit hook (check-only, `HK_FIX=0`)
+  ran on all of them and refused nothing.
+- **The WSL leg of `gate:full-quiet` was NOT run**, under the conductor's explicit allowance.
+  Justification, stated so it can be checked: everything this lane adds to compiled product
+  code is either `#[cfg(kani)]` (invisible to any ordinary build on either platform), test-only
+  (`analysis::effect`, `plan`), or inside `dorc-verify`, whose only platform-conditional code is
+  a `cfg!(windows)` refusal — and the Linux side of that refusal is exercised every time the
+  lane runs, which it did, repeatedly. No `#[cfg(unix)]`/`#[cfg(windows)]` region was added,
+  so `one-platform-green-is-not-cross-platform-green`'s specific hazard does not apply here.
+- **`mise run verify:kani` on Windows**: refuses in one line — `the Kani lane is Linux/WSL only
+  (upstream publishes no Windows asset); run it from the WSL leg` — exit 2. Verified by running
+  it, not by reading the code.
+- **`mise run bless:dry` was NOT run.** The one golden this lane touches is
+  `minispec/REPORT.md`, which is not a bless-path artifact at all: it is republished by
+  `verify:report -- --write` and gate-checked by `verify:check`, both of which ran green inside
+  `gate:full-quiet` (the hk `minispec` step and the `corpus_is_coherent` tests). No
+  `crates/*/tests/` golden changed, so there is nothing for a bless to re-derive.
 
 ## §9 — Commits, in order
 
-<!-- COMMITS -->
+Branch `ai/r30-lane-kani`, based on `5e6d6788`. Left as-based — the conductor rebases at fold.
+
+```
+d2fc198b (AI fix) Count the trusted base once, not once per emitted copy
+b9d66002 (AI new ana) Give the algebra tier hand-written harness generators
+505860bc (AI new tool) Stand up the bounded-verification lane and its harness battery
+9b86e7c4 (AI new tool) Close the harness-pairing seam with real toolchain evidence
+a7630500 (AI fix tool) Drive Kani by its own fully-qualified harness names
+a915cf11 (AI new tool) Gate every harness on address space and wall-clock, in the driver
+237c9f23 (AI new test ana) Pin the cause-excluding Reach equality and its lattice laws
+8a952dcf (AI new test) Pin span-edit survivors as sorted and byte-disjoint
+60b4b33f (AI doc) Bank the kani-lane report against another harness death
+56fa8d44 (AI new tool) Print each harness verdict as it lands, not at the end
+49dd1bca (AI fix tool) Read an out-of-memory kill as a gate trip, never as a counterexample
+```
+
+The last two are worth a reviewer's eye: `56fa8d44` exists because a battery killed partway
+through used to lose every verdict it had already earned, and `49dd1bca` is §5's near-miss.
 
 ## §10 — For the successor: what is NOT done
 
@@ -248,3 +411,19 @@ pass.
   would still be Linux-only.
 - **`spike/CLAUDE.md`'s Build/test/run block does not list `verify:kani*`.** `300` §2 already
   owes it the `verify:*` rows at discipline-close; these two join that list.
+- **18 of 37 harnesses are unjudged.** §1 says which and why, and the shaping rule says what to
+  do (concrete lengths, one harness per length or length-pair). This is the largest single piece
+  of remaining work, and it is mechanical rather than design-shaped.
+- **`Dialect::any_minted` is the worst-behaved generator in the lane.** It builds through real
+  `mint` calls — deliberately, because a dialect IS what minting produced, and an arbitrary
+  `SortedMap` would admit dialects no run can reach. But `mint` goes `SortedSet::singleton`
+  (capacity 1, FULL) then `insert`, which is exactly the pathological shape, and it takes all
+  three `compare_*` harnesses down with it. Whoever reshapes should weigh the faithfulness the
+  current generator buys against a hand-built canonical dialect with an assumed shape; I would
+  not trade it away silently, which is why it is here rather than already changed.
+- **The 25 s budget used for the recorded run is not the code's default.** `DEFAULT_BUDGET_SECS`
+  is 120; the run set `DORC_KANI_HARNESS_BUDGET_SECS=25` because every harness that verifies at
+  all does so inside 6 s, so 25 s is four times the slowest green. That is a resource gate, not
+  a proof bound — lowering it can only move a harness from judged to unjudged, never the
+  reverse — but a successor re-running at 120 s may find a wall-clock trip or two flip green.
+  The three address-space trips will not.
