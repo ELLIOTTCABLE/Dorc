@@ -1015,7 +1015,15 @@ no task covers, and consider adding the task instead.
 - **worktree-file-access-law** (`27U` §2 — two incidents, one root cause) — a
   worktree agent's every Read/Grep/Edit/cite lives under its OWN worktree; the
   primary checkout is radioactive for ANY access, read-only included; re-verify
-  `pwd` + branch before every commit.
+  `pwd` + branch before every MUTATING git command, not merely before commits.
+  Spell mutating git as `git -C <own absolute worktree path> …`, never behind a
+  `cd` prefix: a vanished worktree does not error — the shell silently relocates
+  into a SIBLING tree, and a cd-relative `reset`/`switch`/`clean` then targets
+  someone else's work (near-miss 2026-08-15: a reaped builder worktree dropped
+  its shell into the conductor's tree with a `reset --hard` queued; only an
+  `&&`-short-circuit stopped it). Harness-reaped worktrees are a live hazard for
+  long lanes; a builder that finds its tree gone STOPS and reports, never
+  re-creates or re-aims by hand without conductor direction.
 - **map-then-execute-split** (`27U` §4) — big-bang dispatches split map-and-rule
   (proposal + conductor rulings + a mechanical spec) from execution (fresh
   budget, zero re-derivation); the checkpoint between them is where conductor

@@ -280,6 +280,32 @@ per `28Q` §8.
   certifier with nothing pinning it). Lane branch `ai/r30-lane-certifier` exists,
   clean, zero commits — the phase-1 agent's context resumes for phase-2 if this
   session survives the hold; else redispatch fresh against settled-`302` + `303`.
+- 2026-08-15, **rul-whylog-is-the-spine** [TYPED substance]: the whylog is the CORE
+  PRODUCT — every engine decision passes through it, and every other surface (the
+  plan render first among them) is a filtered VIEW over whylog × input-files. The
+  standalone "decision-dump" DISSOLVES into whylog enrichment: full `SiteId` keying
+  of the decision digest (the `leaf: u32` member-collapse fixed), phase-growth
+  minting (a plan invocation mints the decision half; apply appends its report), and
+  a read surface reachable from test/loom contexts. Conductor-stated boundaries,
+  accepted as refinements not nacks: (1) the spine records DECISIONS and their
+  scalar/interned accounts — never arena handles or working lattice state
+  (`operands-are-pure-and-capped` generalizes to the file; the certifier's by-value
+  items stay in-memory/pull-tier, F8); (2) `law-whylog-is-sensitive` stands —
+  enrichment adds engine-derived rows only, host-sourced material stays in its typed
+  intake lane within the file, the secrets-round re-grade before real estates still
+  binds; (3) rec-5 stands — consumers read the whylog OF THEIR OWN RUN, never a
+  stored one; the spine never becomes the kSTATE cache by accretion. Consequences
+  banked: the records-8 pending decision leans WIRE (a spine wants its emitters);
+  renderer-consumes-whylog is a banked refactor direction, opportunistic, never a
+  big-bang; enrichment work stays demand-driven per sketch-until-demanded (the
+  first product-behavior law binding is the natural trigger).
+- 2026-08-15, certifier-lane worktree incident: the phase-2 builder's UNLOCKED
+  harness worktree was reaped mid-task (the locked reshape worktree survived);
+  zero commits lost, nothing mutated; the builder's near-miss (silent cwd
+  fallback into the conductor tree with a `reset --hard` queued) is now law —
+  `spike/CLAUDE.md` worktree-file-access-law sharpened (git -C absolute paths;
+  verify before every mutating git command; stop-don't-improvise on a vanished
+  tree). Builder resumed with a conductor-directed self-minted worktree.
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 
