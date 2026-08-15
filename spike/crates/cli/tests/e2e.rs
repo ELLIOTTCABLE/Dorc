@@ -178,6 +178,11 @@ struct Harness {
     checker_name: String,
     /// `BLESS=1` — regenerate goldens from the current engine output.
     bless: bool,
+    /// `BLESS_FLOOR=1` — the floor lane's own write authority (see [`FLOOR_BLESS_ENV`]).
+    bless_floor: bool,
+    /// The floor binaries gate-9 measures under, in the order named
+    /// (`DORC_E2E_FLOOR_SHELLS`); empty ⇒ the lane does not fire.
+    floor_shells: Vec<String>,
     /// The throwaway per-user state root every invocation is pointed at, so default-on receipts
     /// land here instead of in the developer's real profile directory.
     state_root: PathBuf,
@@ -221,12 +226,37 @@ impl Harness {
         let state_root =
             std::env::temp_dir().join(format!("dorc-e2e-state-{}", std::process::id()));
         std::fs::create_dir_all(&state_root).expect("create the harness state root");
+        let bless = std::env::var("BLESS").as_deref() == Ok("1");
+        let bless_floor = std::env::var(FLOOR_BLESS_ENV).as_deref() == Ok("1");
+        let floor_shells: Vec<String> = std::env::var(FLOOR_SHELLS_ENV)
+            .unwrap_or_default()
+            .split(',')
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_owned)
+            .collect();
+        // The mint's double opt-in, checked HERE so a half-spelled one refuses before any case
+        // runs rather than reading as an ordinary green run that wrote nothing.
+        if bless_floor && !bless {
+            eprintln!(
+                "e2e: {FLOOR_BLESS_ENV}=1 without BLESS=1 — the floor mint is a bless, and this run writes nothing."
+            );
+            std::process::exit(2);
+        }
+        if bless_floor && floor_shells.is_empty() {
+            eprintln!(
+                "e2e: {FLOOR_BLESS_ENV}=1 without {FLOOR_SHELLS_ENV} — `expected.emitted` is the shells' own answer, and no shell was named to ask."
+            );
+            std::process::exit(2);
+        }
         Self {
             dorc: PathBuf::from(env!("CARGO_BIN_EXE_dorc")),
             dorc_sh: PathBuf::from(env!("CARGO_BIN_EXE_dorc-sh")),
             checker,
             checker_name,
-            bless: std::env::var("BLESS").as_deref() == Ok("1"),
+            bless,
+            bless_floor,
+            floor_shells,
             state_root,
         }
     }
@@ -1308,6 +1338,21 @@ fn round_trip_command(dir: &Path) -> String {
 /// Drive one loom-form case: materialize, run the dir-form battery, then fold any blessed
 /// bytes back into the `.loom` (the loom, not the scratch dir, is what is committed).
 fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
+    // Before materialization, so a refused floor cell leaves the committed `.loom` untouched:
+    // `bless_loom` below writes the whole file back, gates or no gates.
+    let carries_manifest = spec
+        .case
+        .sections()
+        .iter()
+        .any(|section| section.name() == "expected.emitted");
+    if let Some(line) = floor_bless_refusal(
+        harness.bless,
+        harness.bless_floor,
+        carries_manifest,
+        &spec.name,
+    ) {
+        return Err(line.into());
+    }
     let scratch = Scratch::new("loom");
     let dir = scratch.path.join(&spec.name);
     std::fs::create_dir_all(&dir).expect("create loom case dir");
@@ -1339,7 +1384,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     };
     let (extra, extra_failures) = drive_extra_replays(harness, spec, &dir);
     if harness.bless {
-        bless_loom(spec, &dir, &extra)?;
+        bless_loom(spec, &dir, &extra, harness.bless_floor)?;
     }
     match (outcome, extra_failures.is_empty()) {
         (Ok(()), true) => Ok(()),
@@ -1508,11 +1553,23 @@ fn run_replay_block(
     }
 }
 
-/// Fold the freshly-blessed `expected.out` / `expected.ran` back into the committed `.loom`.
+/// Fold the freshly-blessed `expected.out` / `expected.ran` — and, under the floor mint, the
+/// re-measured `expected.emitted` — back into the committed `.loom`.
+///
 /// `extra` carries blocks 1..N's captured outputs; empty means either a single-block case or a
 /// failed drive, and `set_replay_outputs` then leaves those blocks' committed bytes untouched
 /// rather than overwriting them with broken output.
-fn bless_loom(spec: &LoomCaseSpec, dir: &Path, extra: &[String]) -> Result<(), Failed> {
+///
+/// `mint_manifest` is [`Harness::bless_floor`]. Folding the manifest HERE, in the same write that
+/// commits the transcript, is what makes the mint one coherent act: the `book=<sha256>` a reader
+/// sees in the transcript and the manifest bytes beside it come from the same materialized book,
+/// so neither can be hand-computed and neither can drift from the other.
+fn bless_loom(
+    spec: &LoomCaseSpec,
+    dir: &Path,
+    extra: &[String],
+    mint_manifest: bool,
+) -> Result<(), Failed> {
     let mut case = spec.case.clone();
     let mut outputs = vec![read_or_empty(&dir.join("expected.out"))];
     outputs.extend_from_slice(extra);
@@ -1521,6 +1578,17 @@ fn bless_loom(spec: &LoomCaseSpec, dir: &Path, extra: &[String]) -> Result<(), F
     if ran.is_file() && !case.set_section_content("expected.ran", &read_or_empty(&ran)) {
         return Err(format!(
             "FAIL  {}  [bless: the case runs under mocks but has no `expected.ran` section to bless into]",
+            spec.name
+        )
+        .into());
+    }
+    let emitted = dir.join("expected.emitted");
+    if mint_manifest
+        && emitted.is_file()
+        && !case.set_section_content("expected.emitted", &read_or_empty(&emitted))
+    {
+        return Err(format!(
+            "FAIL  {}  [bless:floor: the floor lane measured a manifest but the case has no `expected.emitted` section to mint into]",
             spec.name
         )
         .into());
@@ -1573,6 +1641,17 @@ fn shared_args(dir: &Path) -> Result<Vec<String>, String> {
 fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
     let dir = &case.dir;
     let name = &case.name;
+    // The dir-form seat of the same refusal `run_loom` makes on sections. Loom cases never reach
+    // it (they are refused before materializing); a dir-form case carrying the manifest as a FILE
+    // would otherwise walk straight into the discard this whole lane exists to close.
+    if let Some(line) = floor_bless_refusal(
+        harness.bless,
+        harness.bless_floor,
+        dir.join("expected.emitted").is_file(),
+        name,
+    ) {
+        return Err(line.into());
+    }
     let mut run = CaseRun {
         failures: Vec::new(),
         guard_shape_bad: false,
@@ -2168,6 +2247,31 @@ fn debug_argv(harness: &Harness, dir: &Path, args: &[String], framed: &Path) -> 
 /// the operator asked for is a differential that measured something else.
 const FLOOR_SHELLS_ENV: &str = "DORC_E2E_FLOOR_SHELLS";
 
+/// The floor lane's own WRITE authority — the second half of the mint's double opt-in, alongside
+/// [`FLOOR_SHELLS_ENV`] (`mise run bless:floor`; `spike/CLAUDE.md`
+/// emitted-is-measure-once-ground-truth).
+///
+/// `expected.emitted` is what the floor BINARIES said, so an ordinary `BLESS=1` has no authority
+/// over it and [`floor_bless_refusal`] says so. This flag is the one path that may write it, and
+/// therefore the one way to mint or amend a floor case at all.
+const FLOOR_BLESS_ENV: &str = "BLESS_FLOOR";
+
+/// Why a bless run refuses this case, or `None` when it may proceed. Pure: the policy is three
+/// booleans, and this seat has now bitten three lanes, so it is worth stating exhaustively
+/// (`floor_bless_selftest`).
+fn floor_bless_refusal(
+    bless: bool,
+    bless_floor: bool,
+    emitted: bool,
+    name: &str,
+) -> Option<String> {
+    (bless && !bless_floor && emitted).then(|| {
+        format!(
+            "FAIL  {name}  [bless: this case carries `expected.emitted`, which is MEASURED ground truth (the floor shells' own answer) and never an engine render — a default bless would rewrite its transcript around a manifest it did not re-measure. Mint or amend it with `mise run bless:floor -- {name}` ({FLOOR_BLESS_ENV}=1 + {FLOOR_SHELLS_ENV}), which re-measures and writes both in one act]"
+        )
+    })
+}
+
 /// gate-9: the two-binary-floor DIFFERENTIAL (`28K` §5 model-calibration; `276:rul-spec-two-binary-
 /// floor`'s own prescription — strip-then-run-under-both IS the executable off-ramp test).
 ///
@@ -2190,12 +2294,9 @@ fn floor_differential(
     failures: &mut Vec<String>,
 ) {
     let want_path = dir.join("expected.emitted");
-    if !want_path.is_file() {
+    if !want_path.is_file() || harness.floor_shells.is_empty() {
         return;
     }
-    let Ok(list) = std::env::var(FLOOR_SHELLS_ENV) else {
-        return;
-    };
     let stripped = capture(
         harness
             .dorc()
@@ -2206,10 +2307,10 @@ fn floor_differential(
     )
     .stdout;
     let mut emitted: Vec<(String, String)> = Vec::new();
-    for shell_name in list.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+    for shell_name in &harness.floor_shells {
         match Posix::floor(shell_name) {
             Ok(shell) => emitted.push((
-                shell_name.to_owned(),
+                shell_name.clone(),
                 capture_floor_stdout(&shell, &stripped, dir, mocks),
             )),
             Err(why) => failures.push(format!(
@@ -2232,7 +2333,17 @@ fn floor_differential(
         return;
     }
     let got = &emitted[0].1;
-    if harness.bless {
+    if harness.bless_floor {
+        // A mint answered by ONE binary never asks the differential's question, and the answer to
+        // that question is the whole point of the section being committed. Windows has no `posh`
+        // in git's userland, so this is where a Windows mint stops and the WSL leg takes over.
+        if emitted.len() < 2 {
+            failures.push(format!(
+                "FAIL  {name}  [bless:floor: minting `expected.emitted` from ONE binary ({}) would commit ground truth no differential ever agreed to — name two floor shells; on Windows that means running the mint from WSL]",
+                emitted[0].0
+            ));
+            return;
+        }
         std::fs::write(&want_path, format!("{got}\n")).expect("bless expected.emitted");
         return;
     }
@@ -2852,6 +2963,76 @@ fn selection_floor_selftest() -> Vec<String> {
     fails
 }
 
+/// Drive the floor-transcript WRITE policy on a throwaway case: the refusal in both directions,
+/// and the mint's fold plus its byte-stability. No committed golden and no floor binary take part
+/// — gate-9 owns the measurement; what is proven here is who may commit it. Both directions are
+/// load-bearing: a refusal that also caught ordinary cases would just be a broken bless.
+fn floor_bless_selftest() -> Vec<String> {
+    let mut fails = Vec::new();
+    for (bless, mint, manifest, want) in [
+        (true, false, true, true),
+        (true, true, true, false),
+        (true, false, false, false),
+        (false, false, true, false),
+        (false, true, true, false),
+    ] {
+        let got = floor_bless_refusal(bless, mint, manifest, "specimen").is_some();
+        if got != want {
+            fails.push(format!(
+                "fb-refusal (bless={bless} mint={mint} manifest={manifest}: want refuse={want}, got {got})"
+            ));
+        }
+    }
+
+    let scratch = Scratch::new("floorbless");
+    let dir = scratch.path.join("case");
+    std::fs::create_dir_all(&dir).expect("create specimen dir");
+    std::fs::write(dir.join("expected.out"), "fresh transcript\n").expect("write transcript");
+    std::fs::write(dir.join("expected.emitted"), "live\n").expect("write manifest");
+    std::fs::write(dir.join("expected.ran"), "").expect("write run-set");
+    let source = "---\nrun: round-trip\nfixpoint: executed\n---\n-- book.sh --\n#!/bin/sh\nprintf 'live\\n'\n\n-- expected.emitted --\nstale\n\n-- expected.ran --\n\n-- replay --\n$ dorc --book=book.sh\nstale transcript\n";
+    let loom = scratch.path.join("specimen.loom");
+    let spec = |text: &str| LoomCaseSpec {
+        name: "specimen".to_owned(),
+        path: loom.clone(),
+        case: errorloom::Case::parse(text).expect("parse specimen"),
+        run: LoomRun::RoundTrip,
+    };
+
+    if bless_loom(&spec(source), &dir, &[], false).is_err() {
+        fails
+            .push("fb-default (the default fold refused a case it should have blessed)".to_owned());
+    }
+    let defaulted = read_or_empty(&loom);
+    if !defaulted.contains("-- expected.emitted --\nstale\n") {
+        fails.push("fb-measure-once (a default bless rewrote the measured manifest)".to_owned());
+    }
+    if !defaulted.contains("fresh transcript") {
+        fails.push(
+            "fb-transcript (the default fold did not commit the fresh transcript)".to_owned(),
+        );
+    }
+
+    if bless_loom(&spec(source), &dir, &[], true).is_err() {
+        fails.push("fb-mint (the mint fold refused a well-formed case)".to_owned());
+    }
+    let minted = read_or_empty(&loom);
+    if !minted.contains("-- expected.emitted --\nlive\n") {
+        fails.push(
+            "fb-fold (the mint did not fold the re-measured manifest into the case)".to_owned(),
+        );
+    }
+    // Idempotence: minting an already-correct case must move no byte, or every mint of one drifted
+    // cell would carry its neighbours' whitespace along for the ride.
+    if bless_loom(&spec(&minted), &dir, &[], true).is_err() {
+        fails.push("fb-remint (a second mint over its own output refused)".to_owned());
+    }
+    if read_or_empty(&loom) != minted {
+        fails.push("fb-stable (minting an already-correct case is not byte-stable)".to_owned());
+    }
+    fails
+}
+
 /// The `DORC_FLAGS` plumbing confound: run the flagship with and without
 /// `--risk-faultless-skips` and assert the elision count DIFFERS. If it matches, the flag is
 /// inert and a flagged survival case's gate-6 attribution would lie.
@@ -3075,6 +3256,13 @@ fn preflight(harness: &Harness, discovered: usize) {
         fatal.push(format!(
             "FATAL  selection_floor_selftest FAILED — path selection does not sort real paths from absent ones:\n  {}",
             selection.join("\n  ")
+        ));
+    }
+    let floor_bless = floor_bless_selftest();
+    if !floor_bless.is_empty() {
+        fatal.push(format!(
+            "FATAL  floor_bless_selftest FAILED — the floor-transcript write policy does not hold:\n  {}",
+            floor_bless.join("\n  ")
         ));
     }
     if let Some(message) = dorc_flags_selftest(harness) {
