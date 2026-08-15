@@ -544,7 +544,7 @@ description = "One-time, idempotent: run the elan installer mise fetched, popula
 run = "elan-init -y --no-modify-path --default-toolchain none"
 
 [tasks."verify:kani"]
-description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. On Windows it refuses in one line. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
+description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Opens with a toolchain-less `cargo check` of the detached harness crate, which nothing else in the repo compiles — so a core/analysis signature the harnesses did not follow rots loudly and first. Then drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. On Windows it refuses in one line. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
 dir = "spike"
 run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
 

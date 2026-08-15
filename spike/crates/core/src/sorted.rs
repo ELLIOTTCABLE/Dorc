@@ -316,6 +316,23 @@ impl<K: Ord, V> SortedMap<K, V> {
 /// Capacity is invisible through this facade — no accessor exposes it, equality compares
 /// contents — so which of the two a harness draws from cannot change the answer to any question
 /// asked here; it changes only whether `alloc` moves the buffer on the way.
+///
+/// # The same shape arises INSIDE the operators, which caps what they can be asked
+///
+/// [`union`](SortedSet::union) clones the left side and then [`insert`](SortedSet::insert)s the
+/// right side element by element. The first insert lands on a concrete length; the SECOND lands
+/// on a length that has already become symbolic (the first either grew the set or did not), with
+/// a full backing — the pathological combination again, arrived at from the inside, where no
+/// choice of INPUT length can prevent it. Measured: green with one element on the right,
+/// over-budget with two, at every left-hand length tried. [`intersection`](SortedSet::intersection)
+/// is the mirror image, since it inserts survivors of the LEFT side into a fresh set.
+///
+/// So the Kani battery judges `union` only with at most one element on the right and
+/// `intersection` only with at most one on the left, and `analysis::lattice`'s two
+/// collection-shaped combinators — whose merges ARE these operators — only at zero or one member.
+/// The lever that would lift this is reserving the result's capacity up front rather than growing
+/// it one insert at a time; that is a change to shipped algebra to suit a checker, so it is
+/// recorded here rather than taken.
 #[cfg(kani)]
 mod kani_support {
     use super::{SortedMap, SortedSet};

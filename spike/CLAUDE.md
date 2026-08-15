@@ -819,6 +819,12 @@ mise run loom:compile     # dorc-loom compile CASE...
 mise run loom:promote     # dorc-loom promote CASE... (publishes the two locks)
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
 mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
+mise run verify:check     # the binder's CHEAP gate (rides gate:full-quiet; no external toolchain)
+mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (one harness at a
+                          #   time, memory-gated, CBMC reaped between each; trailing arg = one
+                          #   harness). Opens with a toolchain-less `cargo check` of the detached
+                          #   harness crate, which nothing else compiles.
+mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
 ```
 
 `mise tasks` lists them with the full caveat text; trailing args after `--` append
@@ -863,7 +869,23 @@ no task covers, and consider adding the task instead.
   per-harness wall-clock budget and address-space cap, reaping CBMC between each;
   never a bare `cargo kani` battery, which has taken a whole WSL VM down. An
   over-budget harness is a FINDING (the formula needs a shape the checker can afford),
-  never something to wait out. `minispec/` is SPEC SURFACE under its own CLAUDE.md's
+  never something to wait out. The lane opens with a toolchain-less `cargo check` of the
+  DETACHED harness crate — nothing in `mise run check` or `cargo build --workspace`
+  compiles it, so that check is the only thing standing between a `core`/`analysis`
+  signature change and a silently-rotted battery.
+- **kani-harnesses-state-concrete-sizes** (r30, measured) — every harness over a
+  `core::sorted` facade or a collection-shaped lattice combinator declares EXACT sizes,
+  one harness per length or length-pair, because a `Vec` whose length is symbolic and
+  whose backing is full reallocates at a symbolic size and CBMC cannot afford that. The
+  measurement's sting is that the shape also arises INSIDE an operation: `SortedSet::union`
+  clones the left side and `insert`s the right element by element, so its SECOND insert
+  reallocates at an already-symbolic length whatever the input sizes were. Measured green
+  with one element on the right, over-budget with two. Consequences that must not be
+  quietly "fixed" by widening a bound: `union` is judged only with ≤1 element on the right,
+  `intersection` only with ≤1 on the left, `Powerset`/`MapL`/`Product<Powerset,_>` lattice
+  laws only at 0 or 1 member, and absorption, the ⊔/⊓-are-bounds clauses, and associativity
+  over a collection-shaped combinator are UNJUDGED at this tier at any size (each composes
+  one merge's result into another). Their seat tests are what they have. `minispec/` is SPEC SURFACE under its own CLAUDE.md's
   access laws — content is touched ONLY by a frontier-class model AND only with
   explicit human authorization (`minispec/CLAUDE.md`
   `law-spec-touch-frontier-human-only`, a two-part lock; conductors are not exempt,
