@@ -14,20 +14,28 @@
 
 ---
 
-## CURRENT STATE (measured 2026-08-15, at the r30 first-half conductor's wind-down)
+## CURRENT STATE (measured 2026-08-15, r30 second-half conductor active)
 
-**Wave-1 (the correctness-tooling standup) is FOLDED on `ai/main` except ONE lane in
-flight**: facade/std-dropping · the derived-defs pipeline + minispec skeleton + the
-dorc-verify binder · the facade reshape (full algebra translates AND typechecks) ·
-the solve-certifier + its five cross-lineage-review repairs · the sparing reference
-model (codex-authored) + the plan-time re-derivation (demote-only; 8000-seed
-differential, zero disagreements) · THE MINISPEC REMIT TRIO (JoinIs{Commutative,
-Idempotent,Associative} over the DERIVED Flat join; lake green; elaborated +
-interrogated EARNED and claimed through the promote ceremony). LANDED, AWAITING SUCCESSOR FOLD: **lane-kani-harnesses** (tip `bddead65`; 19/37 green, 18 over-budget, ZERO counterexamples; its report in-branch; the CBMC-OOM-reads-as-FAILED save is the fold-review item). **The successor conductor's
-complete on-ramp is `notes/300` §3b** (the handoff list: the kani fold + Fable-tier
-harness-statement review, the prompt-review-audit adjudication, wave-one-close (§4),
-the human-QA list). The conductor cycle is IMMINENT by human direction; distrust any
-conversation memory — this file + `notes/300` + `git log` are ground truth.
+**Wave-1 is FULLY FOLDED — on `ai/r30-conduct` @ `3563584c`, NOT on `ai/main`, which
+is FROZEN at `b4ab65d5` as the human's stable QA touching-point [TYPED 2026-08-15]**
+(every fold lands on the conduct branch until the human directs promotion). The kani
+lane landed: 19/37 harnesses green at bounds · 18 over-budget/unjudged · ZERO
+counterexamples; conductor statement-review PASSED; adjudications + the banked
+`work-kani-battery-reshape` in `300` §2; Windows-leg `gate:full-quiet` GREEN
+2020/2020 over the folded tip; WSL leg deferred to the close batch (zero
+platform-cfg additions, verified by inspection; WSL serialized behind the running
+fixtures lane). REMAINING to `300:wave-one-close`: the WSL-leg gate batch +
+`bless:dry` + the prompt-audit's builder-facing adjudications. QA of the wave-1
+instruments is REASSIGNED to the sibling conductor + human (candidate bank: `300`
+§4). THE KERNEL REWRITE IS IN MOTION: the definition-fixtures commissioning lane
+(ground-truth differential cells for the plural-definition idioms,
+fixtures-before-conversion per `28Q` §8) is DISPATCHED; a `.claude/reports/` →
+subscripted-docID cleanup lane is DISPATCHED ([TYPED]: no parallel durable dirs —
+`300` §5 carries the ruling + mapping); a SIBLING conductor concurrently runs the
+closure-custody sittings, the human-items queue, and QA. The flat-domain/k-CFA line
+is DEMOTED to an early prospective weld ([TYPED], `300` §5); the honest
+`an-flat-domain` paragraph rides this conductor's ANALYZER-NEEDS read. Ground truth:
+`notes/300` + this file + `git log ai/r30-conduct`.
 
 ## STATE 2026-08-14 (superseded above where they overlap)
 

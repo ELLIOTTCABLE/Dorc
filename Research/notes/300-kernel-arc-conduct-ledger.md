@@ -91,15 +91,33 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   keep-borrows-out-of-closure-returns discipline needs its durable home in
   `core`/`analysis` CLAUDE.mds → discipline-close (currently stated only in the
   aeneas Cargo.toml, where a facade editor will never look).
-- **lane-kani-harnesses** (after facade) — opt-in mise lane, real-tools-lane shape,
-  expected Linux/WSL-only; harness home is `spike/verify/` (`301` §3). Targets: the
-  lattice laws per combinator · `MapL` canonical-form · backing-set universal meet +
-  non-empty-by-construction + ⊤-never-∅ · ternary consumer-map exhaustiveness ·
-  span-edit non-overlap · the facade sortedness/canonicality seats. Tier placement per
-  the `verified-core-discipline` ladder (the narrative-fold permutation pins may land
-  property/DST-tier — placement flagged, never silently decided). Hand-written
-  `#[cfg(kani)] Arbitrary`; checked code stays stable-toolchain, zero annotations.
-  Conductor reviews the harness STATEMENTS (law, bounds, what is NOT pinned) at fold.
+- **lane-kani-harnesses — FOLDED 2026-08-15 @ `3563584c`** (13 commits rebased onto
+  the conduct branch — NOT `ai/main`, frozen as the human's QA point; conductor
+  Windows-leg `gate:full-quiet` GREEN over the folded tip, 2020/2020 incl.
+  clippy-from-clean; WSL leg DEFERRED to the close batch, justified by inspection:
+  ZERO `cfg(unix)`/`cfg(windows)` additions in the lane diff, and WSL serialization
+  behind the running definition-fixtures lane). Landed: the 37-harness battery
+  (19 green at bounds · 18 over-budget/UNJUDGED · ZERO counterexamples); the
+  `pinned`-badge machinery (`seam-kani-pairing-unbuilt` CLOSED — toolchain-resolved
+  by-name pairing, three outcomes kept apart); the census double-count fix (REPORT
+  axioms 26→13); the memory-gated driver with GATE-CHECK-BEFORE-VERDICT (the
+  CBMC-prints-FAILED-after-its-own-OOM save, regression-pinned with the real bytes;
+  no-verdict-no-gate = broken run, a third thing, never rounded either way).
+  Conductor statement-review PASSED: laws faithful, bounds declared honestly per
+  harness, the Arbitrary law held (arbitrary backing + assume-canonical, never
+  build-by-insert), independent-walk second opinions share no code with the judged
+  scans, all support `cfg(kani)`-gated (no production widening). Lane report:
+  `notes/300a-kani-lane-report.md` (its §1 carries the over-budget shaping rule).
+  ADJUDICATIONS at fold: root mise pin ENDORSED (additive `cargo:kani-verifier`,
+  os-gated — the elan precedent) · the implicit rustup-nightly install CONFIRMED
+  within the ruled kani-setup exception · `Dialect::any_minted` KEPT faithful; any
+  reshape may add an assumed-canonical dialect generator ONLY paired with a
+  mint-satisfies-the-invariant closing harness (the Arbitrary-law pattern; never a
+  silent trade). BANKED `work-kani-battery-reshape` (mechanical, non-blocking,
+  post-close): reshape the 18 over-budget harnesses to concrete lengths per the
+  measured shaping rule (one harness per length/length-pair) · add a toolchain-less
+  `cargo check` of the detached harness crate to the lane task (rot-visibility) ·
+  the `verify:kani*` rows still owed to `spike/CLAUDE.md` Build/test/run at close.
 - **lane-solve-certifier** — **FOLDED 2026-08-15 @ `a1535601`** (8 commits;
   conductor-verified both legs 1967/1963 green, zero golden drift). As-built per the
   settled `302` + the checkpoint rulings: `certify.rs` (~700 lines incl. tests;
@@ -345,7 +363,10 @@ being resumed with durability-first + memory-guard riders (per-harness `timeout`
 remaining job is COLLATION ONLY: land their reports as durables. Everything below is
 the SUCCESSOR's:
 
-1. **Fold `ai/r30-lane-kani`** — the lane is COMPLETE and awaiting fold only
+1. ~~Fold `ai/r30-lane-kani`~~ — **DONE 2026-08-15** (folded @ `3563584c`, conduct
+   branch; statement-review passed; adjudications + `work-kani-battery-reshape`
+   banked in §2's row. Historical handoff detail below stands as written:)
+   — the lane was COMPLETE and awaiting fold only
    (branch tip `bddead65`, base `5e6d6788`, 12 commits; its own durable report at
    `.claude/reports/r30-kani-lane-report.md` IN-BRANCH, written cold). Landing
    facts: 19/37 harnesses verify green at bounds, 18 OVER-BUDGET (unjudged, not
@@ -438,7 +459,35 @@ genuinely needs a human: judgment, taste, fuzzy-seam poking. The list itself is
 conversation output at close, never a durable; THIS obligation note is what
 survives compression. Conductor collects candidates per fold.
 
-All lanes folded to `ai/main` · `mise run both gate:full-quiet` green + `bless:dry`
+**QA-candidate bank** (collected per fold; HANDLING REASSIGNED 2026-08-15 to the
+sibling conductor + human — this conductor stays on forward progress). Judgment-tier
+exercises against the wave-1 instruments, each = the poke · what must happen · the
+judgment sought:
+- qa-certifier-trip-reads-right — locally perturb `solve` (e.g. skip the final
+  worklist round); must: whole-window demotion + `solver-consistency-failure`
+  surfacing PRE-network with real counts (the R4-repair area); judge: is the
+  disclosure intelligible, non-fabricated, root-cause-only?
+- qa-rederivation-demotes-only — flip the reference model's kind-fence arm; must:
+  every survival demotes to guard/run + a narrative record, agreement never licenses;
+  judge: rendered demotion quality.
+- qa-promote-ceremony-refuses-both-ways — hand-claim an unearned badge in the
+  catalogue lock (silent ambition), separately delete a proof file (silent demotion);
+  must: `verify:check` refuses BOTH directions; judge: do refusals route the reader
+  to the promote ceremony?
+- qa-remit-units-review-surface — read the three `minispec/Minispec/JoinIs*.lean`
+  units as the intended non-proof-literate review surface; judge: genuinely
+  reviewable? do the TrustedBase hypotheses read as honest assumptions, not fine
+  print?
+- qa-kani-trichotomy-feel — WSL: `mise run verify:kani` (optionally
+  `DORC_KANI_HARNESS_BUDGET_SECS=5` to watch over-budget classification); Windows:
+  the one-line refusal; judge: does green/over-budget/failed read honestly?
+- qa-why-chain-taste — plan + `dorc why` over a scratch book of the human's own;
+  judge: survival-chain feel, knowing the ledgered speech-act gap
+  (resolver-claimed vs name-floor disjointness renders undifferentiated — what ELSE
+  chafes?).
+
+All lanes folded to the conduct branch (`ai/main` promotion is a separate human-directed
+act while the QA freeze holds) · `mise run both gate:full-quiet` green + `bless:dry`
 clean · certifier + re-derivation live in the DEFAULT suite · the Kani lane opt-in and
 documented · minispec standing (skeleton; the remit claims at their earned badge-sets;
 binder v0 + the generated report; the first bound demonstration; `minispec/CLAUDE.md`)
@@ -603,6 +652,19 @@ per `28Q` §8.
   ordered, and always beside a name. (Memory-persisted; the 28Q stage names to use:
   the definition-factoring stage · the snapshot-emission stage · closure-custody ·
   world-scopes.)
+- 2026-08-15, [TYPED] **no parallel durable dirs**: the accreted `.claude/reports/`
+  is a divergence — every durable lives in the single Research docID system.
+  Sub-reports that logically parallel an existing doc and aren't worth a full docID
+  get SUBSCRIPTED docIDs (the `notes/303a-foo-bar.md` shape); otherwise they are
+  deleted. Sole exception: `.claude/research/` (deep per-topic research, summarized
+  into a docID at completion, durable only for reference from that summary doc).
+  Cleanup lane dispatched (Sonnet); the ruled mapping: kani lane report → `300a` ·
+  prompt-review audit → `300b` · speech-act gap-check → `300c` · certifier
+  cross-lineage review → `303a` (beside the certifier census note). Future briefs
+  site reports at subscripted docIDs directly, never under `.claude/reports/`.
+- 2026-08-15, [TYPED] QA of the wave-1 instruments REASSIGNED to the sibling
+  conductor + human; the candidate bank rides §4; this conductor stays on forward
+  progress.
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance; now riding the sibling's queue); silence ≠ ack; only typed text
   counts.
