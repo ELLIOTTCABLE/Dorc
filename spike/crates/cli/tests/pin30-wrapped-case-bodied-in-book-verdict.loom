@@ -1,0 +1,109 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# dorc-lang/v0.2
+# EXPECTED-TO-FLIP at stage-i: the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there today.
+hork__is_converged() {
+   : safe-across user
+   case "$1" in
+   install) hork query -- "$2" ;;
+   *) return 2 ;;
+   esac
+}
+sudo hork install wombat
+
+-- sudo.oracle.sh --
+# dorc-lang/v0.2
+# The coherent sudo wrapper of pin28-wrapped-vouch-answers-at-a-live-site, byte-for-byte: only the verdict body differs between the two cases.
+sudo__predict() {
+   while [ "${1#-}" != "$1" ]; do case "$1" in -u) shift 2 ;; *) shift ;; esac; done
+   env -i HOME=/root "$@"
+}
+sudo__lend_map() {
+   target=root
+   while [ "${1#-}" != "$1" ]; do case "$1" in -u) target="$2"; shift 2 ;; *) shift ;; esac; done
+   printf '%s\n' "$target" : lends user
+   : lends fs-view
+   : lends netns
+   "$@"
+}
+sudo__enter() {
+   sudo -n "$@"
+}
+
+-- probe-results.txt --
+# EMPTY, and that emptiness IS the flip signal: the day this site ships a check, gate-1 goes red
+# because the probe produced a record this file does not carry.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/sudo --
+#!/bin/sh
+# INERT mock: logs its argv and exits 0; the guest of a `sudo -n` entry here is a shell function, so nothing is exec'd.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: sudo hork install wombat
+
+-- replay --
+$ dorc --book=book.sh -o sudo.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=dc18a026c464f2d92faf68808030fc508298d35e730584680f6a9cbe62dd1351 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# dorc-lang/v0.2
+# EXPECTED-TO-FLIP at stage-i: the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there today.
+hork__is_converged() {
+   : safe-across user
+   case "$1" in
+   install) hork query -- "$2" ;;
+   *) return 2 ;;
+   esac
+}
+sudo hork install wombat
