@@ -125,7 +125,10 @@ keeps loom churn in builder-space, cleanly outside `law-spec-touch-frontier-huma
   to any consumer, never testing scaffolding. The reach and kill riders (§5
   `demonstrated`) are certifications ABOUT this check, not part of the format. The
   errorloom transport is deliberately NOT the substrate — it is render-plane and
-  churny, which is exactly what a binding must not couple to.
+  churny, which is exactly what a binding must not couple to. The framing underneath
+  all of this [TYPED]: huge amounts of Dorc are modelable — in the literal sense used
+  here — as a deterministic mapping from source code, through the probe-result-set, to
+  the whylog result; a binding checks one point of that mapping.
 - **the loom-side key** — a bound loom declares its duty in frontmatter with a
   deliberately alarming name: `tests-critical-law: UnknownMemberCollides` (STRAWMAN
   spelling; kebab key style per the existing vocabulary; joins `FRONTMATTER_KEYS` in
