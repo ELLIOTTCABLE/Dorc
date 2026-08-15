@@ -351,9 +351,26 @@ the SUCCESSOR's:
    list; `§2a` the seat bank). Its lane carries the census-fix rider and the
    `pinned`-badge seam closure. Expect a rebase over the moved tree (its base is
    `5e6d6788`; report.rs-area conflicts possible with the reshape's census fix).
-2. **Adjudicate the prompt-review audit** (report expected at
-   `.claude/reports/r30-prompt-review-audit.md`; apply-or-decline each proposed
-   edit).
+2. **Adjudicate the prompt-review audit** — LANDED (report committed at
+   `.claude/reports/r30-prompt-review-audit.md`; twelve priority-ordered proposals +
+   seven reasoned rejections; criteria AGING at 103 days). The minting conductor
+   applied ONLY the two factual path fixes (F1: the stale `Minispec/TrustedBase`
+   paths in minispec/CLAUDE.md + the three unit docstrings, post-Vocabulary-move;
+   B4: the spike/CLAUDE.md quarantine path corrected to
+   `Research/quarantine-DO-NOT-READ/`). EVERYTHING ELSE awaits the successor's
+   judgment — headline items: D1 (the analysis/CLAUDE.md + solve.rs
+   "MUST check `converged`" lines now CONTRADICT the certifier law — the new law is
+   verified true; reword the old) · B1 (the fmt-under-agent-env bullet teaches a
+   hand-derived invocation against the never-hand-derive law — better outcome is
+   fixing the `fmt` task and deleting the bullet) · B2/B3 (step-zero lacks
+   `git -C`, names a seven-rounds-stale lineage branch) · B5/C1/D2/E1 (scope and
+   placement of the new law bullets) · A1–A3 (conductor-skill wording; A2 — the
+   AFK rule's unclear-trigger default — WIDENS human-authored text and wants a
+   cheap explicit human ack; A3 — the skill's frontmatter description has ended
+   mid-sentence forever) · B6 (rides the kani close-out) · and the out-of-remit
+   catch: `verified-core-discipline/SKILL.md` still points at the research-spike
+   Lean home, not `minispec/` — high-value, since that skill orients core-adjacent
+   agents.
 3. ~~The speech-act gap-check~~ — LANDED and LEDGERED (report committed at
    `.claude/reports/r30-speechact-gapcheck.md`): the resolver-claimed vs
    name-floor disjointness distinction is NOT rendered. It dies TWICE: structurally

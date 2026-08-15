@@ -13,7 +13,7 @@ whether a join CHANGED anything, and idempotence is what makes "nothing changed"
 stable answer rather than an accident of representation. It is stated over the DERIVED
 definitions — the translated bodies of the shipping Rust.
 
-The hypotheses are the named trusted-base entries (`Minispec/TrustedBase.lean`); the
+The hypotheses are the named trusted-base entries (`Minispec/Vocabulary/TrustedBase.lean`); the
 element case genuinely needs both (the translated body consults equality, then clones).
 The battery evaluates every boundary shape's self-join on concrete lawful dictionaries.
 -/

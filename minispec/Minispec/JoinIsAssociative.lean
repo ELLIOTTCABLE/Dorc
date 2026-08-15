@@ -17,7 +17,7 @@ assumed away.
 
 Associativity is what lets a solver fold many incoming edges in any grouping and land on
 one answer. Stated over the DERIVED definitions; hypotheses are the named trusted-base
-entries (`Minispec/TrustedBase.lean`). The battery below drives the one genuinely
+entries (`Minispec/Vocabulary/TrustedBase.lean`). The battery below drives the one genuinely
 subtle grouping family — element values under partial equality — plus the absorbing and
 neutral shapes.
 -/

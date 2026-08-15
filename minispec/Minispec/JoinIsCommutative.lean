@@ -14,7 +14,7 @@ combinator, and `join` is the solver's merge for it. Commutativity is stated ove
 DERIVED definitions — the translated bodies of the shipping Rust — so the claim is about
 the code that runs, not a transcription of it.
 
-The hypotheses are the named trusted-base entries (`Minispec/TrustedBase.lean`): the
+The hypotheses are the named trusted-base entries (`Minispec/Vocabulary/TrustedBase.lean`): the
 translation's generic dictionaries are lawless records, so the statement says what it
 assumes of them. The instance battery below evaluates the law on concrete lawful
 dictionaries at every boundary shape (⊥ · element · ⊤), both orders.

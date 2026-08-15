@@ -999,7 +999,7 @@ no task covers, and consider adding the task instead.
   in-place human review (the human deletes what they disagree with); keep them
   living, task-focused, and free of session chronology ("updated by X during Y"
   never appears in them — conductor-tier edits only, not casual subagent edits).
-- **Never read** `Research/notes/quarantine-DO-NOT-READ/` (including spike2 code)
+- **Never read** `Research/quarantine-DO-NOT-READ/` (and the spike2 code under `Research/notes/quarantine-DO-NOT-READ/`)
   or `Research/corpora/` unless the orchestrator explicitly hands you a pointer.
 - Spike design notes (what strained, where, confidence-marked) go in
   `Research/notes/` as numbered notes: append-only, new note per chunk, never edit

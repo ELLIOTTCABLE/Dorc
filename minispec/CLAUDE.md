@@ -39,7 +39,7 @@ concretely evaluated). Proofs live at `Minispec/Proofs/<Slug>.lean` as
 `theorem <Slug>_holds : Minispec.<Slug>`, importing the unit — the tactic-churn zone,
 structurally unable to touch a statement. Generic-dictionary hypotheses
 (`LawfulClone`/`LawfulEq`) are NAMED TRUSTED-BASE entries in
-`Minispec/TrustedBase.lean` — governed shared vocabulary; changing what "lawful"
+`Minispec/Vocabulary/TrustedBase.lean` — governed shared vocabulary; changing what "lawful"
 means changes every unit's claim, so edits are ceremony. Unit files stay hard-minimal
 and diff-quiet: no metadata (the catalogue's), no churny material, byte-budget
 advisory 8KB.

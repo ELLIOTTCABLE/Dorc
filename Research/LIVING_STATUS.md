@@ -14,7 +14,24 @@
 
 ---
 
-## CURRENT STATE (measured 2026-08-14)
+## CURRENT STATE (measured 2026-08-15, at the r30 first-half conductor's wind-down)
+
+**Wave-1 (the correctness-tooling standup) is FOLDED on `ai/main` except ONE lane in
+flight**: facade/std-dropping · the derived-defs pipeline + minispec skeleton + the
+dorc-verify binder · the facade reshape (full algebra translates AND typechecks) ·
+the solve-certifier + its five cross-lineage-review repairs · the sparing reference
+model (codex-authored) + the plan-time re-derivation (demote-only; 8000-seed
+differential, zero disagreements) · THE MINISPEC REMIT TRIO (JoinIs{Commutative,
+Idempotent,Associative} over the DERIVED Flat join; lake green; elaborated +
+interrogated EARNED and claimed through the promote ceremony). In flight:
+**lane-kani-harnesses** (resumed under hard memory gates after TWO WSL/OOM
+environment deaths — post-mortems in `notes/300` §5). **The successor conductor's
+complete on-ramp is `notes/300` §3b** (the handoff list: the kani fold + Fable-tier
+harness-statement review, the prompt-review-audit adjudication, wave-one-close (§4),
+the human-QA list). The conductor cycle is IMMINENT by human direction; distrust any
+conversation memory — this file + `notes/300` + `git log` are ground truth.
+
+## STATE 2026-08-14 (superseded above where they overlap)
 
 **ROUND 30 OPEN — the 28Q-arc implementation; conduct ledger `notes/300`** (conductor
 branch `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct`). The r30 FIRST HALF
