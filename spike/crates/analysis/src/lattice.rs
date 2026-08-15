@@ -337,6 +337,81 @@ impl<L: BoundedLattice> BoundedLattice for Must<L> {
     }
 }
 
+/// Harness support for the Kani lane, homed beside the combinators for the same reason
+/// `dorc_core::sorted`'s is (`300` §2a): a generator that must reach a private backing belongs
+/// where the backing lives. Every item is `#[cfg(kani)]`.
+///
+/// Each generator produces a value in its combinator's CANONICAL form and no other — for
+/// `MapL` that means no key mapped to `V::bottom()`, which is the invariant making structural
+/// `Eq` semantic here. Generating non-canonical values would be verifying a domain the
+/// constructors cannot produce.
+#[cfg(kani)]
+mod kani_support {
+    use super::{BoundedLattice, Flat, Lattice, MapL, May, Must, Powerset, Product};
+    use dorc_core::sorted::{SortedMap, SortedSet};
+
+    impl<T: Ord + Clone + kani::Arbitrary> kani::Arbitrary for Powerset<T> {
+        fn any() -> Self {
+            Powerset(kani::any::<SortedSet<T>>())
+        }
+    }
+
+    impl<T: Clone + Eq + kani::Arbitrary> kani::Arbitrary for Flat<T> {
+        fn any() -> Self {
+            match kani::any::<u8>() % 3 {
+                0 => Flat::Bottom,
+                1 => Flat::Elem(kani::any()),
+                _ => Flat::Top,
+            }
+        }
+    }
+
+    impl<A: kani::Arbitrary, B: kani::Arbitrary> kani::Arbitrary for Product<A, B> {
+        fn any() -> Self {
+            Product(kani::any(), kani::any())
+        }
+    }
+
+    impl<K, V> kani::Arbitrary for MapL<K, V>
+    where
+        K: Ord + Clone + kani::Arbitrary,
+        V: Lattice + kani::Arbitrary,
+    {
+        fn any() -> Self {
+            let entries = kani::any::<SortedMap<K, V>>();
+            let out = MapL(entries);
+            kani::assume(out.no_key_maps_to_bottom());
+            out
+        }
+    }
+
+    impl<K: Ord + Clone, V: Lattice> MapL<K, V> {
+        /// THE `MapL` canonical form: absent ≡ ⊥, so no key may be BOUND to ⊥.
+        pub fn no_key_maps_to_bottom(&self) -> bool {
+            let mut i = 0usize;
+            while let Some((_, v)) = self.0.get_at(i) {
+                if *v == V::bottom() {
+                    return false;
+                }
+                i = i.saturating_add(1);
+            }
+            true
+        }
+    }
+
+    impl<L: kani::Arbitrary> kani::Arbitrary for May<L> {
+        fn any() -> Self {
+            May(kani::any())
+        }
+    }
+
+    impl<L: BoundedLattice + kani::Arbitrary> kani::Arbitrary for Must<L> {
+        fn any() -> Self {
+            Must(kani::any())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

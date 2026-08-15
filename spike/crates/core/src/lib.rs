@@ -777,6 +777,73 @@ pub fn is_auto_kind(interner: &Interner, kind: KindId) -> bool {
     interner.resolve(kind.0).starts_with(AUTO_KIND_PREFIX)
 }
 
+/// Harness support for the Kani lane, homed beside the types (`300` §2a / `301` §3). Every item
+/// is `#[cfg(kani)]`, so no ordinary build sees any of it and no constructor widens.
+///
+/// # Why a bounded symbol domain is the whole statement, not a shortcut
+///
+/// [`Symbol`] is an opaque identity: `inv-referent-agnostic` says the engine may compare two of
+/// them and may resolve one for display, and may never decode one to infer meaning. So every
+/// behaviour reachable from a set of symbols depends only on WHICH of them are equal — the
+/// values are interchangeable up to renaming. A harness over `N` distinct identities therefore
+/// covers every equality pattern its arity can express, and the `u32` width buys nothing. The
+/// harness names its `N`.
+#[cfg(kani)]
+mod kani_support {
+    use super::{EntityRef, KindId, OpaqueToken, ProviderId, SelectorId, Symbol};
+
+    impl Symbol {
+        /// An arbitrary symbol out of `N` distinct identities.
+        pub fn any_of<const N: u32>() -> Self {
+            let raw: u32 = kani::any();
+            kani::assume(raw < N);
+            Symbol(raw)
+        }
+    }
+
+    /// Two identities: enough for same-vs-different, the only distinction a referent-agnostic
+    /// engine can draw from one pair.
+    impl kani::Arbitrary for Symbol {
+        fn any() -> Self {
+            Self::any_of::<2>()
+        }
+    }
+
+    impl kani::Arbitrary for OpaqueToken {
+        fn any() -> Self {
+            OpaqueToken(kani::any())
+        }
+    }
+
+    impl kani::Arbitrary for KindId {
+        fn any() -> Self {
+            KindId(kani::any())
+        }
+    }
+
+    impl kani::Arbitrary for ProviderId {
+        fn any() -> Self {
+            ProviderId(kani::any())
+        }
+    }
+
+    impl kani::Arbitrary for SelectorId {
+        fn any() -> Self {
+            SelectorId(kani::any())
+        }
+    }
+
+    impl kani::Arbitrary for EntityRef {
+        fn any() -> Self {
+            if kani::any() {
+                EntityRef::Operand(kani::any())
+            } else {
+                EntityRef::Singleton
+            }
+        }
+    }
+}
+
 // ===========================================================================
 // Tests
 // ===========================================================================

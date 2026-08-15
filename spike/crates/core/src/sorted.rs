@@ -288,6 +288,132 @@ impl<K: Ord, V> SortedMap<K, V> {
     }
 }
 
+/// Harness support for the Kani lane (`300` §2a, the Arbitrary law). Homed here, beside the
+/// types, because that is what lets it reach the private backings with no production widening:
+/// every item below is `#[cfg(kani)]`, so no ordinary build can see any of it.
+///
+/// # Why generation must NOT go through `insert`
+///
+/// Building a value by repeated `insert` would make every harness ABOUT `insert` circular — it
+/// would assume the very property it exists to prove. So a value is drawn as an arbitrary `Vec`
+/// and *assumed* canonical instead: the assumption is the harness's precondition, and it is
+/// stated in the facade's own walk vocabulary rather than by peeking at the backing.
+///
+/// The predicate is STRICT ASCENT, which says sorted and deduplicated in one quantifier — and
+/// which is exactly the property that makes the derived `PartialEq` semantic, hence exactly the
+/// property the fixpoint's `!=` convergence test rests on.
+///
+/// # The one tractability finding, because it shapes every generator below
+///
+/// A `Vec` whose LENGTH is symbolic and whose backing is FULL makes `insert` reallocate at a
+/// symbolic size, and reading the result back afterwards is what a bounded model checker cannot
+/// do: measured, that single combination takes a `SortedSet<u8>` of at most two members from
+/// under a second to twenty-one minutes and 3.6 GB, ending in "CBMC ran out of memory". Either
+/// half alone is fine.
+///
+/// So the workhorse generator leaves spare capacity, and the growth path is covered separately
+/// at a CONCRETE length by [`any_canonical_at_capacity`](SortedSet::any_canonical_at_capacity).
+/// Capacity is invisible through this facade — no accessor exposes it, equality compares
+/// contents — so which of the two a harness draws from cannot change the answer to any question
+/// asked here; it changes only whether `alloc` moves the buffer on the way.
+#[cfg(kani)]
+mod kani_support {
+    use super::{SortedMap, SortedSet};
+
+    /// The bound `kani::Arbitrary` uses. Named so a harness reading `kani::any::<SortedSet<_>>()`
+    /// can find out what "any" covered without guessing; a harness that needs another bound calls
+    /// `any_canonical` directly rather than moving this.
+    pub const DEFAULT_BOUND: usize = 3;
+
+    impl<T: Ord> SortedSet<T> {
+        /// `∀i: get_at(i) < get_at(i+1)` — the canonical form, in walk vocabulary.
+        pub fn is_strictly_ascending(&self) -> bool {
+            let mut i = 1usize;
+            while i < self.len() {
+                match (self.get_at(i.saturating_sub(1)), self.get_at(i)) {
+                    (Some(a), Some(b)) if a < b => i = i.saturating_add(1),
+                    _ => return false,
+                }
+            }
+            true
+        }
+    }
+
+    impl<T: Ord + kani::Arbitrary> SortedSet<T> {
+        /// An arbitrary canonical set of at most `N` elements, in a backing with room to grow.
+        pub fn any_canonical<const N: usize>() -> Self {
+            let mut items: Vec<T> = Vec::with_capacity(N.saturating_add(1));
+            for value in kani::vec::any_vec::<T, N>() {
+                items.push(value);
+            }
+            kani::assume(items.capacity() > items.len());
+            let out = Self { items };
+            kani::assume(out.is_strictly_ascending());
+            out
+        }
+
+        /// An arbitrary canonical set of EXACTLY `LEN` elements in a FULL backing — the value a
+        /// growing mutation has to reallocate away from.
+        pub fn any_canonical_at_capacity<const LEN: usize>() -> Self {
+            let out = Self {
+                items: kani::vec::exact_vec::<T, LEN>(),
+            };
+            kani::assume(out.is_strictly_ascending());
+            out
+        }
+    }
+
+    impl<T: Ord + kani::Arbitrary> kani::Arbitrary for SortedSet<T> {
+        fn any() -> Self {
+            Self::any_canonical::<DEFAULT_BOUND>()
+        }
+    }
+
+    impl<K: Ord, V> SortedMap<K, V> {
+        /// `∀i: get_at(i).0 < get_at(i+1).0` — the same predicate, one axis over. Values are
+        /// unconstrained: only the KEY order is canonical.
+        pub fn keys_are_strictly_ascending(&self) -> bool {
+            let mut i = 1usize;
+            while i < self.len() {
+                match (self.get_at(i.saturating_sub(1)), self.get_at(i)) {
+                    (Some((a, _)), Some((b, _))) if a < b => i = i.saturating_add(1),
+                    _ => return false,
+                }
+            }
+            true
+        }
+    }
+
+    impl<K: Ord + kani::Arbitrary, V: kani::Arbitrary> SortedMap<K, V> {
+        /// An arbitrary key-canonical map of at most `N` bindings, with room to grow.
+        pub fn any_canonical<const N: usize>() -> Self {
+            let mut entries: Vec<(K, V)> = Vec::with_capacity(N.saturating_add(1));
+            for entry in kani::vec::any_vec::<(K, V), N>() {
+                entries.push(entry);
+            }
+            kani::assume(entries.capacity() > entries.len());
+            let out = Self { entries };
+            kani::assume(out.keys_are_strictly_ascending());
+            out
+        }
+
+        /// An arbitrary key-canonical map of EXACTLY `LEN` bindings in a FULL backing.
+        pub fn any_canonical_at_capacity<const LEN: usize>() -> Self {
+            let out = Self {
+                entries: kani::vec::exact_vec::<(K, V), LEN>(),
+            };
+            kani::assume(out.keys_are_strictly_ascending());
+            out
+        }
+    }
+
+    impl<K: Ord + kani::Arbitrary, V: kani::Arbitrary> kani::Arbitrary for SortedMap<K, V> {
+        fn any() -> Self {
+            Self::any_canonical::<DEFAULT_BOUND>()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

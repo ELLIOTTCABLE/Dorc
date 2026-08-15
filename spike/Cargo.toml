@@ -23,6 +23,11 @@ publish = false
 # never break on a toolchain bump while commits stay clean.
 [workspace.lints.rust]
 unsafe_code = "forbid"
+# `cfg(kani)` is set by the Kani lane's compiler, never by cargo, so cargo cannot infer it and
+# would otherwise warn at every `#[cfg(kani)]` harness-support item. Declaring it here is what
+# lets those items live beside the types they generate (`301` §3 crate-local homing) without
+# `-D warnings` refusing the ordinary build.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 unreachable_pub = "warn"
 missing_debug_implementations = "warn"
 missing_docs = "warn"

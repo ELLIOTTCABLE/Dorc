@@ -346,6 +346,80 @@ pub fn compare(
     }
 }
 
+/// Harness support for the Kani lane (`300` §2a / `301` §3), homed beside the chokepoints.
+///
+/// [`Dialect`] is generated through its own [`mint`](Dialect::mint) — deliberately, and unlike
+/// the facade generators. `mint` is not what these harnesses are about, and a dialect is
+/// DEFINED as what minting produced: an arbitrary `SortedMap` would include dialects no run can
+/// reach, so the assumption would be weaker AND less faithful at once.
+#[cfg(kani)]
+mod kani_support {
+    use super::{Context, ContextKey, Coord, Dialect, EntityResolution, Relation};
+
+    impl kani::Arbitrary for ContextKey {
+        fn any() -> Self {
+            ContextKey(kani::any())
+        }
+    }
+
+    impl kani::Arbitrary for Context {
+        fn any() -> Self {
+            if kani::any() {
+                Context::HostDefault
+            } else {
+                Context::Wrapped(kani::any())
+            }
+        }
+    }
+
+    impl kani::Arbitrary for Coord {
+        fn any() -> Self {
+            Self {
+                kind: kani::any(),
+                entity: kani::any(),
+                selector: kani::any(),
+                context: kani::any(),
+            }
+        }
+    }
+
+    impl kani::Arbitrary for EntityResolution {
+        fn any() -> Self {
+            if kani::any() {
+                EntityResolution::Canonical(kani::any())
+            } else {
+                EntityResolution::Unresolvable
+            }
+        }
+    }
+
+    impl kani::Arbitrary for Relation {
+        fn any() -> Self {
+            match kani::any::<u8>() % 3 {
+                0 => Relation::Overlaps,
+                1 => Relation::ProvablyDisjoint,
+                _ => Relation::Unknown,
+            }
+        }
+    }
+
+    impl Dialect {
+        /// A dialect built by at most `N` arbitrary mints — every dialect a run can reach with
+        /// that many authored marks, and no other.
+        pub fn any_minted<const N: usize>() -> Self {
+            let mints: usize = kani::any();
+            kani::assume(mints <= N);
+            let mut out = Self::empty();
+            let mut i = 0usize;
+            while i < mints {
+                out.mint(kani::any(), kani::any(), kani::any());
+                i = i.saturating_add(1);
+            }
+            out
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
