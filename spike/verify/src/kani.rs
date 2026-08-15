@@ -319,14 +319,19 @@ fn verify_one(unit: &Path, name: &str, budget: Duration) -> Result<Outcome, Refu
     text.push_str(&String::from_utf8_lossy(&out.stderr));
     let elapsed = started.elapsed();
 
+    // THE GATE CHECK COMES FIRST, and the order is load-bearing. CBMC prints
+    // `VERIFICATION:- FAILED` after running out of memory, so a verdict-first reading turns
+    // every gate trip into a counterexample — announcing a bug nobody found, in the one report
+    // whose entire value is that it does not do that. An OOM'd run has no verdict, whatever it
+    // printed on the way down.
+    if tripped_a_gate(out.status.code(), &text) {
+        return Ok(Outcome::OverBudget);
+    }
     if text.contains("VERIFICATION:- SUCCESSFUL") {
         return Ok(Outcome::Green(elapsed));
     }
     if text.contains("VERIFICATION:- FAILED") {
         return Ok(Outcome::Failed(elapsed));
-    }
-    if tripped_a_gate(out.status.code(), &text) {
-        return Ok(Outcome::OverBudget);
     }
     // No verdict and no gate trip is a BROKEN RUN, not a failing law. Rounding it up to
     // "failed" would report a counterexample nobody found; rounding it to over-budget would
@@ -347,9 +352,10 @@ fn tripped_a_gate(code: Option<i32>, text: &str) -> bool {
     matches!(code, Some(124 | 137)) || OUT_OF_MEMORY.iter().any(|marker| text.contains(marker))
 }
 
-const OUT_OF_MEMORY: [&str; 5] = [
+const OUT_OF_MEMORY: [&str; 6] = [
     "out of memory",
     "Out of memory",
+    "CBMC failed with status",
     "bad_alloc",
     "Cannot allocate memory",
     "memory allocation of",
@@ -473,6 +479,30 @@ Standard Harnesses (#[kani::proof]):
             "set_structural_eq_is_set_eq"
         );
         assert_eq!(bare_name("bare_already"), "bare_already");
+    }
+
+    #[test]
+    fn a_memory_gate_trip_is_not_read_as_a_counterexample() {
+        // MEASURED, not imagined: CBMC prints `VERIFICATION:- FAILED` on its own way down after
+        // exhausting the address-space cap. Reading the verdict first turned every gate trip in
+        // the first full battery into a "counterexample" — three laws reported broken that
+        // nothing had refuted. The gate check runs first for exactly this.
+        let ooms = "\
+Runtime Convert SSA: 4.6953s
+Out of memory
+
+CBMC failed with status 6
+VERIFICATION:- FAILED
+";
+        assert!(
+            tripped_a_gate(Some(1), ooms),
+            "an out-of-memory run is a gate trip, not a verdict"
+        );
+        assert!(tripped_a_gate(Some(124), ""), "the timeout's own exit code");
+        assert!(
+            !tripped_a_gate(Some(1), "VERIFICATION:- FAILED\n"),
+            "a plain failure is still a real finding about the law"
+        );
     }
 
     #[test]
