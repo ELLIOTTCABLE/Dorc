@@ -14,7 +14,21 @@
 
 ---
 
-## CURRENT STATE (measured 2026-08-15, r30 second-half conductor active)
+## CURRENT STATE (measured 2026-08-15, wave-one-close stamped)
+
+**WAVE-ONE-CLOSE IS STAMPED on `ai/r30-conduct`** (gates at the close batch: both-legs
+`gate:full-quiet` + both-legs `test:floor` + `bless:dry`, all green); **`ai/main` stays
+FROZEN at `b4ab65d5`** for the human's QA — promotion is the human's act. All Wave-1
+lanes are folded; the definition-fixtures ground truth is committed (`floor30-*` +
+`pin30`, dash∩posh agreeing everywhere); the prompt-audit is applied (A1–A3 = the
+human-owned residue); the deviation-litmus is conductor-skill law. NEXT: the
+definition-factoring CONVERSION lane (`28Q` §8 stage-i's second half; brief riders
+already banked: pin30's gate-1-is-the-flip-alarm — author the record, never bless past;
+touch-count sizing first; the withhold floor). In flight elsewhere: the sibling
+conductor (closure-custody sittings · human-items · QA). Ground truth: `notes/300` +
+this file + `git log ai/r30-conduct`.
+
+## STATE 2026-08-15 (earlier same day; superseded above)
 
 **Wave-1 is FULLY FOLDED — on `ai/r30-conduct` @ `3563584c`, NOT on `ai/main`, which
 is FROZEN at `b4ab65d5` as the human's stable QA touching-point [TYPED 2026-08-15]**
