@@ -26,4 +26,10 @@ publish = false
 name = "dorc_kani"
 path = "src/lib.rs"
 
+# The included sources are dense with `#[cfg(kani)]`; without this the toolchain-less rot check
+# (`dorc_verify::kani::rot_check`) drowns its own errors in unexpected-cfg warnings. The
+# workspace lint table cannot reach here — this crate is deliberately not a member.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [workspace]

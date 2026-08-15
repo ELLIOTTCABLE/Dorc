@@ -59,6 +59,10 @@ pub enum Refusal {
     UnsupportedPlatform,
     /// The toolchain is not installed. Carries the task that installs it.
     ToolAbsent(String),
+    /// The harness crate does not COMPILE — rot, not a verdict. Kept apart from
+    /// [`ToolFailed`](Refusal::ToolFailed) because it is the one refusal that is a finding about
+    /// this repository rather than about the machine.
+    UnitDoesNotCompile(String),
     /// Kani ran and something went wrong that is not a verification verdict.
     ToolFailed(String),
 }
@@ -71,6 +75,11 @@ impl std::fmt::Display for Refusal {
                  run it from the WSL leg",
             ),
             Self::ToolAbsent(remedy) => write!(f, "cargo-kani is not on PATH — run `{remedy}`"),
+            Self::UnitDoesNotCompile(output) => write!(
+                f,
+                "the harness crate does not compile, so no harness can be judged — a `core` or \
+                 `analysis` signature moved and the harnesses did not follow:\n{output}"
+            ),
             Self::ToolFailed(why) => write!(f, "{why}"),
         }
     }
@@ -183,6 +192,7 @@ pub fn run(
         return Err(Refusal::UnsupportedPlatform);
     }
     let unit = unit_dir(repo_root);
+    rot_check(&unit)?;
     // Kani's `--exact` filter matches only a FULLY-QUALIFIED name, while a catalogue cites the
     // harness function. Both live here: the qualified spellings drive invocation, the bare ones
     // are the citation universe.
@@ -258,6 +268,32 @@ enum Outcome {
     Green(Duration),
     Failed(Duration),
     OverBudget,
+}
+
+/// Compile the harness crate with the ORDINARY toolchain, before spending anything on Kani.
+///
+/// The crate is deliberately not a workspace member (its manifest carries the MSRV argument), so
+/// nothing in `mise run check` or `cargo build --workspace` sees it: a `core` or `analysis`
+/// signature change that the harnesses did not follow rots here invisibly until somebody runs
+/// this lane. This check makes that failure arrive FIRST and in compiler diagnostics, rather
+/// than dressed as a Kani problem tens of minutes later — and it needs no engine bundle, no
+/// nightly, and no `~/.kani`, so it still answers on a machine where the lane itself cannot run.
+///
+/// It does not compile the `#[cfg(kani)]` harness bodies (nothing but Kani's own compiler
+/// supplies the `kani` crate), so it catches rot in the INCLUDE arrangement and in the algebra
+/// sources, not in a harness body. The full lane below is what catches the rest.
+fn rot_check(unit: &Path) -> Result<(), Refusal> {
+    let out = Command::new("cargo")
+        .args(["check", "--quiet"])
+        .current_dir(unit)
+        .output()
+        .map_err(|e| Refusal::ToolFailed(format!("cargo check (harness crate): {e}")))?;
+    if out.status.success() {
+        return Ok(());
+    }
+    let mut text = String::from_utf8_lossy(&out.stdout).into_owned();
+    text.push_str(&String::from_utf8_lossy(&out.stderr));
+    Err(Refusal::UnitDoesNotCompile(text))
 }
 
 /// Verify one harness behind BOTH memory gates.

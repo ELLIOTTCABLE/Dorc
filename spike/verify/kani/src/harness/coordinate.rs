@@ -69,18 +69,14 @@ fn selector_covers_needs_both_tokens_minted() {
     );
 }
 
-/// Growing a dialect can only ever create sparing, never destroy it. Bounds: dialects of at
-/// most 2 tokens, one added token.
+/// Growing a dialect can only ever create sparing, never destroy it.
 ///
 /// This is what makes loading another oracle monotone at this seat: an authored mark may widen
 /// what the algebra can separate, and may never silently re-collide something it already
 /// spared, which would be an unexplained verdict change on an unrelated line.
-#[kani::proof]
-#[kani::unwind(6)]
-fn selector_covers_is_monotone_in_the_dialect() {
+fn covers_is_monotone_in_the_dialect(smaller: SortedSet<SelectorId>) {
     let claim: Option<SelectorId> = kani::any();
     let backing: Option<SelectorId> = kani::any();
-    let smaller = SortedSet::<SelectorId>::any_canonical::<2>();
     let mut larger = smaller.clone();
     larger.insert(kani::any());
 
@@ -90,6 +86,28 @@ fn selector_covers_is_monotone_in_the_dialect() {
             "a spare survives a dialect that grew"
         );
     }
+}
+
+/// LAW: growing a dialect can create sparing and never destroy it. BOUNDS: a dialect of EXACTLY
+/// 0 tokens over a two-identity symbol domain, one added token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn selector_covers_is_monotone_in_the_dialect_at_length_0() {
+    covers_is_monotone_in_the_dialect(SortedSet::any_canonical_at_capacity::<0>());
+}
+
+/// LAW: as above. BOUNDS: a dialect of EXACTLY 1 token, one added token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn selector_covers_is_monotone_in_the_dialect_at_length_1() {
+    covers_is_monotone_in_the_dialect(SortedSet::any_canonical_at_capacity::<1>());
+}
+
+/// LAW: as above. BOUNDS: a dialect of EXACTLY 2 tokens, one added token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn selector_covers_is_monotone_in_the_dialect_at_length_2() {
+    covers_is_monotone_in_the_dialect(SortedSet::any_canonical_at_capacity::<2>());
 }
 
 /// ⊤ identifies with nothing, including itself; identity is otherwise exactly token equality.
@@ -109,32 +127,34 @@ fn selector_identifies_only_two_concrete_equal_tokens() {
     }
 }
 
-/// `compare` never manufactures separation. Bounds: arbitrary coordinates over a two-identity
-/// symbol domain, dialects of at most 2 mints.
+// ── `compare`, over hand-built dialects ──────────────────────────────────────────────────────
+//
+// The dialect these three draw is `Dialect::any_canonical<KEYS, TOKENS>`: an arbitrary canonical
+// backing at concrete sizes, with `mint`'s own invariant ASSUMED. The generator that builds
+// through real `mint` calls (`any_minted`) is faithful by construction but takes every harness
+// here over the address-space cap — `mint` reaches `SortedSet::singleton` (capacity one, FULL)
+// then `insert`, which is the reallocate-at-a-symbolic-size shape `core::sorted`'s generator docs
+// measure. Assuming the invariant instead trades construction-faithfulness for PROOF-faithfulness,
+// and `mint_maintains_the_dialect_invariant` below is that proof.
+//
+// The four shapes below exhaust the dialects at most two mints can reach: none at all, one key
+// with one token, one key with two, and two keys with one each. `KEYS_TOKENS` names the shape.
+
+/// `compare` never manufactures separation.
 ///
 /// `never-derive-separation` is the law: address-inequality is not referent-inequality, so
 /// `ProvablyDisjoint` may come only from ground truth (a different kind), the resolve generator
 /// (distinct canonical entities), or an authored dialect spare — and from nothing else, ever.
 /// A resolver gap or an unminted selector must land on `Unknown`/`Overlaps`, which are the safe
 /// bottom for both consumers.
-#[kani::proof]
-#[kani::unwind(6)]
-fn compare_derives_separation_only_from_its_three_sources() {
+fn separation_has_only_its_three_sources(dialect: &Dialect) {
     let claim: Coord = kani::any();
     let backing: Coord = kani::any();
     let claim_canon: EntityResolution = kani::any();
     let backing_canon: EntityResolution = kani::any();
-    let dialect = Dialect::any_minted::<2>();
     let family: Option<ProviderId> = kani::any();
 
-    let relation = compare(
-        claim,
-        backing,
-        claim_canon,
-        backing_canon,
-        &dialect,
-        family,
-    );
+    let relation = compare(claim, backing, claim_canon, backing_canon, dialect, family);
 
     if relation == Relation::ProvablyDisjoint {
         let different_kind = claim.kind != backing.kind;
@@ -158,18 +178,44 @@ fn compare_derives_separation_only_from_its_three_sources() {
     }
 }
 
+/// LAW: `ProvablyDisjoint` has exactly three sources and none crosses a context gap. BOUNDS:
+/// arbitrary coordinates over a two-identity symbol domain, the EMPTY dialect.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_derives_separation_only_from_its_three_sources_at_dialect_0_0() {
+    separation_has_only_its_three_sources(&Dialect::any_canonical::<0, 0>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 1 key carrying EXACTLY 1 token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_derives_separation_only_from_its_three_sources_at_dialect_1_1() {
+    separation_has_only_its_three_sources(&Dialect::any_canonical::<1, 1>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 1 key carrying EXACTLY 2 tokens.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_derives_separation_only_from_its_three_sources_at_dialect_1_2() {
+    separation_has_only_its_three_sources(&Dialect::any_canonical::<1, 2>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 2 keys each carrying EXACTLY 1 token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_derives_separation_only_from_its_three_sources_at_dialect_2_1() {
+    separation_has_only_its_three_sources(&Dialect::any_canonical::<2, 1>());
+}
+
 /// A context gap is the safe bottom for both consumers, checked before any short-circuit.
-/// Bounds: as above.
 ///
 /// `27C` §3's non-negotiable requirement: a fact born in a wrapper-denoted world neither
 /// transports to the ambient world nor spares a disturbance there. The ordering inside
 /// `compare` is what makes transport-by-collision unrepresentable rather than merely unlikely,
 /// so it is pinned as an implication over EVERY input rather than as two example worlds.
-#[kani::proof]
-#[kani::unwind(6)]
-fn compare_answers_unknown_across_a_context_gap() {
+fn a_context_gap_answers_unknown(dialect: &Dialect) {
     let claim: Coord = kani::any();
-    let mut backing: Coord = kani::any();
+    let backing: Coord = kani::any();
     kani::assume(claim.context != backing.context);
 
     let relation = compare(
@@ -177,17 +223,44 @@ fn compare_answers_unknown_across_a_context_gap() {
         backing,
         kani::any(),
         kani::any(),
-        &Dialect::any_minted::<2>(),
+        dialect,
         kani::any(),
     );
 
     assert_eq!(relation, Relation::Unknown, "different worlds, no verdict");
 }
 
-/// A resolver gap on either side, within one kind, is `Unknown`. Bounds: as above.
+/// LAW: a context gap answers `Unknown`, whatever else the pair says. BOUNDS: arbitrary
+/// coordinates over a two-identity symbol domain, the EMPTY dialect.
 #[kani::proof]
 #[kani::unwind(6)]
-fn compare_answers_unknown_on_a_resolver_gap() {
+fn compare_answers_unknown_across_a_context_gap_at_dialect_0_0() {
+    a_context_gap_answers_unknown(&Dialect::any_canonical::<0, 0>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 1 key carrying EXACTLY 1 token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_answers_unknown_across_a_context_gap_at_dialect_1_1() {
+    a_context_gap_answers_unknown(&Dialect::any_canonical::<1, 1>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 1 key carrying EXACTLY 2 tokens.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_answers_unknown_across_a_context_gap_at_dialect_1_2() {
+    a_context_gap_answers_unknown(&Dialect::any_canonical::<1, 2>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 2 keys each carrying EXACTLY 1 token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_answers_unknown_across_a_context_gap_at_dialect_2_1() {
+    a_context_gap_answers_unknown(&Dialect::any_canonical::<2, 1>());
+}
+
+/// A resolver gap on either side, within one kind, is `Unknown` — fail toward run.
+fn a_resolver_gap_answers_unknown(dialect: &Dialect) {
     let claim: Coord = kani::any();
     let mut backing: Coord = kani::any();
     backing.kind = claim.kind;
@@ -204,11 +277,66 @@ fn compare_answers_unknown_on_a_resolver_gap() {
         backing,
         claim_canon,
         backing_canon,
-        &Dialect::any_minted::<2>(),
+        dialect,
         kani::any(),
     );
 
     assert_eq!(relation, Relation::Unknown, "fail toward run");
+}
+
+/// LAW: a resolver gap on either side, within one kind, answers `Unknown`. BOUNDS: arbitrary
+/// coordinates over a two-identity symbol domain, the EMPTY dialect.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_answers_unknown_on_a_resolver_gap_at_dialect_0_0() {
+    a_resolver_gap_answers_unknown(&Dialect::any_canonical::<0, 0>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 1 key carrying EXACTLY 1 token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_answers_unknown_on_a_resolver_gap_at_dialect_1_1() {
+    a_resolver_gap_answers_unknown(&Dialect::any_canonical::<1, 1>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 1 key carrying EXACTLY 2 tokens.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_answers_unknown_on_a_resolver_gap_at_dialect_1_2() {
+    a_resolver_gap_answers_unknown(&Dialect::any_canonical::<1, 2>());
+}
+
+/// LAW: as above. BOUNDS: as above, a dialect of EXACTLY 2 keys each carrying EXACTLY 1 token.
+#[kani::proof]
+#[kani::unwind(6)]
+fn compare_answers_unknown_on_a_resolver_gap_at_dialect_2_1() {
+    a_resolver_gap_answers_unknown(&Dialect::any_canonical::<2, 1>());
+}
+
+/// LAW: `mint` maintains exactly the invariant the three families above ASSUME — every key it
+/// leaves behind carries at least one token. BOUNDS: a dialect of EXACTLY 2 keys each carrying
+/// EXACTLY 1 token, plus one arbitrary mint over a two-identity symbol domain.
+///
+/// This is what makes the assumption honest. The generator is an induction hypothesis; this
+/// harness is its step, and `Dialect::empty()`'s vacuous case is its base — so every dialect a
+/// run can reach satisfies what the harnesses above assume, by proof rather than by
+/// construction. The converse (that the generator admits no dialect a run cannot reach) is the
+/// argument written on `Dialect::every_key_has_a_token`, not a claim of this harness.
+#[kani::proof]
+#[kani::unwind(6)]
+fn mint_maintains_the_dialect_invariant() {
+    let mut dialect = Dialect::any_canonical::<2, 1>();
+    assert!(
+        Dialect::empty().every_key_has_a_token(),
+        "the empty dialect is the induction's base"
+    );
+
+    dialect.mint(kani::any(), kani::any(), kani::any());
+
+    assert!(
+        dialect.every_key_has_a_token(),
+        "and minting is its step — no key is left with an empty token set"
+    );
 }
 
 // ── The welded consumer map (`ternary-compare-consumer-map`) ────────────────────────────────
