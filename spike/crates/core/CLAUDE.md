@@ -124,9 +124,12 @@ new entries to the matching section.
 
 - **sorted-facade-law** — the algebra tier's ordered storage is
   `core::sorted::{SortedSet, SortedMap}` (private-backed sorted `Vec`s); raw
-  `BTreeMap`/`BTreeSet` never appear in verified-core code (checker and reference
-  implementations included — the `verified-core-discipline` skill's code-shape rule).
-  Canonical form (strict ascent: `∀i: get_at(i) < get_at(i+1)`) is HONOUR-SYSTEM, not
+  `BTreeMap`/`BTreeSet` never appear in the TRANSLATED algebra tier (`core::sorted`,
+  `analysis::lattice` — exactly the set `spike/verify/aeneas/src/lib.rs` includes,
+  which is the moving authority; read it rather than any prose list), nor in checker
+  and reference implementations (the `verified-core-discipline` skill's code-shape
+  rule). Elsewhere in these crates the ordinary `inv-determinism` rule stands: raw
+  `BTree*` is fine where order is observable. Canonical form (strict ascent: `∀i: get_at(i) < get_at(i+1)`) is HONOUR-SYSTEM, not
   type-carried: each invariant has ONE named seat (the private `position` scan feeding
   `insert`/`remove`) plus its seat tests, and the Kani lane's exhaustive pins are the
   closing net. `#[cfg(kani)] Arbitrary` impls home in this module and construct via an
