@@ -85,13 +85,17 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   property/DST-tier — placement flagged, never silently decided). Hand-written
   `#[cfg(kani)] Arbitrary`; checked code stays stable-toolchain, zero annotations.
   Conductor reviews the harness STATEMENTS (law, bounds, what is NOT pinned) at fold.
-- **lane-solve-certifier** (after facade AND `plans/302`) — Opus implements against
-  the conductor-authored mechanical spec; the spec carries the five crosscheck brief
-  obligations verbatim + `28R:fnd-pessimistic-pass-shape` + the fresh-ack pedigree
-  note. Shape: `Certified | Refused(EdgeWitness)`; `Refused` ⇒ degrade to the
-  ⊤/stage-0 floor (license plane) + an operand-carrying narrative record (aid plane;
-  `collapse-mints-narrative`); cap-trip certifies the PARTIAL solution; `Must<L>`
-  duality, one checker; ships in the DEFAULT suite. Post-land: a cross-lineage review
+- **lane-solve-certifier** (after facade; spec SETTLED at `plans/302`, recut through
+  the certifier duck-sitting; census `notes/303`) — Opus phase-2 dispatches fresh
+  against the spec + census. Shape: `SolveConsistency` — `Consistent | Inconsistent`
+  (complete failing-index set · capped by-value `Inconsistency` items ·
+  first-break/unstable-component summaries); `Inconsistent` ⇒ whole-window demotion to
+  the four existing consumer floors (license plane; the funcenv floor's
+  grant-shifting rider is hard [SPEC]) + a scalar-operand narrative record (aid plane)
+  + the engine-side instrumented replay (aid-leads); consistent-at-cap answers are the
+  lfp and are used; inconsistent-at-cap localizes for narrative only — no recovery,
+  ever (`302` §9); `Must<L>` duality, one checker; ships in the DEFAULT suite.
+  Open: `302:pin-blast-radius-escalation` [HUMAN?]. Post-land: a cross-lineage review
   pass (codex-reviewer; cheap).
 - **lane-sparing-rederivation** — (a) the naive reference model of the
   sparing/composition algebra, authored FROM the ratified English law-set under
@@ -247,6 +251,17 @@ per `28Q` §8.
   imported tools built general, never minispec-scoped
   (`301:law-imported-tools-built-general`) · proceed GREENLIT, conductor discretion
   ("I am here to work with you").
+- 2026-08-14/15, the certifier duck-sitting (sibling-conductor context; product =
+  the `plans/302` recut): NO RECOVERY [TYPED — "nothing here to salvage; it doesn't
+  get a row": no FORFEITS entry; rationale distilled in `302` §9, the one recorded
+  direction-not-taken] · aid-leads-the-engine [TYPED, standing, product-wide: aid is
+  part of the correct output; the certifier triggers, the engine self-reports] ·
+  "whole-window demotion" is the term (the conversational "kill" retired, never used
+  in durables) · the naming set RULED: `SolveConsistency`/`Consistent | Inconsistent`
+  · component stays "solve-certifier" · `Inconsistency{Boundary,Edge}` items ·
+  `SolvePass` reason enum · `solver-consistency-failure` DiagCode ·
+  first-break/unstable-component summaries · replay vocabulary · floors unchanged ·
+  old notes left un-annotated by choice (rot endemic; r30 made current instead).
 - 2026-08-14, the builder-prerequisite dictum [TYPED]: landed as durable law in the
   conductor skill itself (its quarantine section; human commit). §2 carries the
   pointer; successor conductors get it from the skill at boot.
