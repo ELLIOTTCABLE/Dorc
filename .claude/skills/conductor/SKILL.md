@@ -158,6 +158,15 @@ your final turn, *after* all work is merged. (The human not scrolling up is a
 repeated failure-mode in this project, and their attention is often split
 between avenues of work.)
 
+**AFK glossing rule** (human-directed, 2026-08-15): whenever it's clear the
+human is AFK — reading only your chat output, not the output-files, ledgers, or
+documents you're citing — every finding, bullet, or slug you report from content
+they can't see carries a ~one-line idiot's-summary in plain language. Just
+enough for them to smell whether it could contain a buried landmine decision or
+inaccuracy, and so decide whether to go read the source. Applies to any
+subagent's results and to the final outcomes of work-arcs; a bare slug or
+finding-name with no gloss is a report they cannot triage.
+
 ### Cleanup
 
 Enedeavour to leave the worktree-list empty and the branch-list tight / focused
