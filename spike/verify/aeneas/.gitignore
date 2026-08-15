@@ -1,0 +1,6 @@
+# Charon's serialized AST — multi-megabyte JSON, regenerable in seconds from the pins.
+# The Lean under minispec/Generated/ is the evidence, and it IS committed.
+*.llbc
+
+# Where `aeneas:translate-lenient` dumps its partial output while deriving the fence.
+lenient-scratch/

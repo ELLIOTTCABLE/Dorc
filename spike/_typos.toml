@@ -35,4 +35,8 @@ extend-ignore-re = [
    # crate cites as the shape its measure/emit split is converging on. A surname,
    # not a misspelt "open".
    "\\bOppen\\b",
+   # The aeneas release tag pinned by the verify lane: a dated nightly plus the upstream
+   # commit's short SHA, whose hex runs accidentally spell typo-triggers (`daa`->`data`).
+   # A machine identifier that must match upstream byte-for-byte, not prose.
+   "nightly-[0-9.]+-[0-9a-f]+",
 ]
