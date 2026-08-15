@@ -252,7 +252,8 @@ state, and the license plane consumes only the closed outcome.
   sliced to the failing region ([BUILDER] picks the cheapest honest slice; the full
   replay stays available at maximum verbosity). Against the replay, a first-break edge
   becomes a genuine observable-level account ("this node last moved in round 3 via
-  that edge; the kill-transfer landed in round 5; no re-queue followed"). The replay
+  that edge; the wall's erasing transfer landed in round 5; no re-queue followed").
+  The replay
   is evidence of what happened, never a trusted computation — the checker remains the
   judge — and it is pull-tier (`rul-chain-is-pull-only`): the push surface carries the
   compact record above. In-lane and required, priced at the checkpoint ([BUILDER]); it
@@ -275,7 +276,7 @@ state, and the license plane consumes only the closed outcome.
    unstable components name the region; and the landed-on-fixpoint-at-cap case ⇒
    `Consistent` despite `converged: false` (fixture hand-writes the ADVISORY FLAG
    only; states come from a real solve — `303` §4).
-4. **first-break localization**: a single-defect fixture where exactly one edge fails
+4. **first-break summaries**: a single-defect fixture where exactly one edge fails
    ⇒ the first-break set names it; a two-stage staleness where it excludes the
    downstream casualty.
 5. **duality**: one system certified under `L` and under `Must<L>`, one checker, no
