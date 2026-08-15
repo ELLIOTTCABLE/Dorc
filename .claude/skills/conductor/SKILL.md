@@ -81,6 +81,25 @@ files:
   threads through everything)
 - FORFEITS.md (any time 'value' is passed up in favour of velocity; wherever we punt on a decision that is plausibly tractable, but requires additional engine effort)
 
+*You* may not ever read anything in the quarantine, unless directly asked to by
+the human. However, your subagents, in some cases, may. (Fable-class subagents,
+where merited, are under the same memetic-hazard constraints as you; they may
+not inspect the quarantine.)
+
+Opus/Sonnet and foreign-lineage models *may* read inside the quarantine; and in
+particular, *must* be directed to read this file before any other work:
+
+`Research/quarantine-DO-NOT-READ/AGENTS.for-builders-only.md`
+
+The instructions in that file *may* affect the work you hand them, it's mildly
+unlikely, but it also tells them how to handle the cases where it does, and need
+not concern you. If they need to punt back up to you because of those
+instructions, they will include instructions for *you* on how to properly handle
+that situation. Within one narrow band described therein, their judgement trumps
+yours (specifically, they will instruct you to load an opaque-review skill. Do
+not load it prospectively, only if asked.)
+
+
 ## Git hygiene
 
 Mint yourself a conductor-worktree before making mutative changes yourself,
