@@ -310,7 +310,7 @@ disk-space so these failures stop happening; pre-gate the build-scripts with
 bounds-checking against expected usages and complain loudly before spending time
 and resources" + general mess-cleanup; disk usage is "usually worktrees piling up".
 Three lanes, conduct-branch-based:
-- **lane-resource-safety** (dispatched): the preflight bounds-check seat in
+- **lane-resource-safety** (FOLDED, this batch): the preflight bounds-check seat in
   `internal-tooling` (per-profile expected disk/RAM vs actual, LOUD pre-spend
   refusal, per-leg, wired into the heavy tasks; hot-loop stays unburdened) ·
   `work-both-task-wsl-target` (fix `mise run both`'s missing WSL-local target +
@@ -319,7 +319,7 @@ Three lanes, conduct-branch-based:
   `dorc-wsl-target-*` caches (regenerable build artifacts; the vhdx compaction
   stays the human's) · unremovable branch refs listed for the human, never
   force-deleted.
-- **lane-floor-transcript-tooling** (dispatched): `work-bless-emitted-manifests` —
+- **lane-floor-transcript-tooling** (FOLDED, this batch): `work-bless-emitted-manifests` —
   bless LOUDLY REFUSES an `expected.emitted` case by default, plus an explicit
   opt-in re-measure-and-write path (floor shells set + a dedicated flag) so
   minting/amending floor transcripts stops being a hand-bless; measure-once stays
@@ -329,6 +329,50 @@ Three lanes, conduct-branch-based:
   measured shaping rule · the `any_minted` assumed-canonical generator paired with
   a mint-satisfies-the-invariant closing harness (the adjudicated direction) · the
   toolchain-less `cargo check` of the detached harness crate in the lane task.
+- **lane-floor-transcript-tooling — FOLDED 2026-08-15** (5 commits; both legs green,
+  zero drift at its tip). Landed: bless LOUDLY REFUSES an `expected.emitted` case
+  (naming `mise run bless:floor`); the double-opt-in mint (`BLESS_FLOOR=1` ∧ the floor
+  shells) re-measures and writes manifest + transcript + `book=` digest in ONE act;
+  between-binaries disagreement still refuses; a single-binary mint refuses (the
+  manifest is the two-binary agreement record — so Windows never mints a half floor);
+  `bless-folds-only-on-pass` landed after a full failure-site enumeration proved no
+  workflow depends on partial folding (every golden-compare is bless-aware; XFAIL's
+  blindness intact; XPASS folds nothing); landmine docs landed (empty-`expected.ran`
+  two-spellings; posh-`echo` agrees with dash — no real dash∩posh divergence found for
+  gate-9's disagreement branch, the test substitutes `dash,bash`). ADJUDICATIONS
+  (deviation-litmus): the single-binary refusal and the appended `test:floor`
+  verification are beyond-brief and ENDORSED, conductor gaps named — the mint's quorum
+  and its post-write verification were doctrine-implied but unstated (prevention: state
+  doctrine-implied invariants when building a new writer for an artifact class); the
+  flagged-not-fixed handling of the partial-bless bug is the deviation-praxis MODEL CASE
+  — question asked, conductor answered with a required dependency analysis, the analysis
+  cleared it, the fix landed pinned.
+- **lane-resource-safety — FOLDED 2026-08-15; ~67 GiB recovered.** Landed: `preflight`
+  (per-profile disk/RAM bounds vs actual, per-leg, loud pre-spend refusal,
+  `DORC_PREFLIGHT=skip` hatch, measured-with-provenance bounds; the kani RAM bound
+  pinned above the driver's address-space cap BY A TEST) + `doctor` (read-only pile-up
+  inventory) in `internal-tooling`, wired into the heavy tasks, hot loop untouched; the
+  `both` task's WSL leg auto-gets a per-worktree ext4 target (the drvfs-clobber fixed,
+  canary-proven) and `clippy:clean` composes onto it. Dep: `fs4` minimal — the builder
+  REJECTED the brief-pre-authorized `sysinfo` on measurement (~150 MiB rlib in a
+  disk-guarding tool) and hand-rolled RAM dep-free (`/proc/meminfo`; `wmic`→CIM fallback;
+  understatement errs toward refusal; unmeasurable ⇒ warn-and-pass): ENDORSED, conductor
+  mistake named — a dep pre-authorized by name, unsized (prevention: size before
+  pre-authorizing). Reap: 3 verified-contained worktrees + 18 stale caches (~67 GiB;
+  `df`-exact); the CONCURRENT floor lane's cache correctly excluded — the flag-not-delete
+  posture validated, and a conductor sequencing rule minted: REAP LANES RUN SOLO or with
+  an explicit exclusion list. Comment-density deviation (22%/17% vs the ~10% budget)
+  ENDORSED — the brief mandated per-bound provenance while carrying the numeric budget,
+  the SECOND budget-vs-mandate collision (prevention: a brief that mandates comment
+  content adjusts the budget in the same breath). RULED conductor-side [human veto
+  welcome]: lanes DELETE their own `dorc-wsl-target-<worktree>` cache at fold-complete —
+  the banked reap-at-fold question resolved as self-cleanup of regenerable artifacts.
+  HUMAN-ATTENTION list: the vhdx compaction; the `-D`-only branch refs
+  (`ai/r30-lane-definition-fixtures` @1bb304bc · `ai/r30-lane-audit-application`
+  @bd56ef68 · `ai/r30-lane-reports-cleanup` @d1097791 · `ai/r30-lane-kani` @bddead65 ·
+  post-fold, the two debt-lane refs); the SyncThing conflict-file cleanup in the resource
+  lane's worktree (three untracked `Cargo.sync-conflict-*` files — human-owned per
+  standing law; that worktree reads dirty until cleared, so its reap waits on them).
 
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 

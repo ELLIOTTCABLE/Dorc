@@ -26,7 +26,10 @@ definition-factoring CONVERSION lane (`28Q` §8 stage-i's second half; brief rid
 already banked: pin30's gate-1-is-the-flip-alarm — author the record, never bless past;
 touch-count sizing first; the withhold floor). In flight elsewhere: the sibling
 conductor (closure-custody sittings · human-items · QA). Ground truth: `notes/300` +
-this file + `git log ai/r30-conduct`.
+this file + `git log ai/r30-conduct`. The post-close debt pass is FOLDED
+(preflight/doctor guard the heavy tasks; the both-task WSL target fixed; bless
+refuses-or-mints floor manifests sanctioned-ly; ~67+ GiB reclaimed); the kani-battery
+reshape dispatches next; the human-attention list rides `300` §2's resource-safety row.
 
 ## STATE 2026-08-15 (earlier same day; superseded above)
 
