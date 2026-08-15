@@ -10,7 +10,14 @@
 //! solver fails *loud, not silent*: a precondition violation trips a generous
 //! iteration cap and returns [`Solution::converged`]` == false` rather than
 //! hanging (this was an empirically-real infinite loop, not a theoretical one —
-//! note 164). A correctness-critical caller MUST check `converged`.
+//! note 164).
+//!
+//! That flag is ADVISORY, and this module is not the production entry point.
+//! What a caller acts on is the CERTIFICATION of the returned states
+//! ([`crate::certify`], `302` §1/§3): a cap-tripped answer that still certifies
+//! is the least fixpoint and is used. Both entry points here are `pub(crate)`
+//! and lexically fenced so every production answer comes from
+//! [`solve_certified`](crate::certify::solve_certified).
 
 use crate::lattice::Lattice;
 use std::collections::VecDeque;
@@ -46,7 +53,11 @@ pub enum Direction {
 /// is `transfer(v, &states[v])`. `converged` is `false` iff the iteration cap was
 /// hit before a fixed point — which happens ONLY when a [`solve`] precondition
 /// was violated; a well-formed analysis always converges. `rounds` is the number
-/// of node-visits performed (diagnostic).
+/// of node-visits performed.
+///
+/// `converged` and `rounds` are both ADVISORY narrative operands, never gates
+/// (`302` §1): the STATES are what certify, and a cap-tripped answer that passes
+/// [`certify_solution`](crate::certify::certify_solution) is the least fixpoint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Solution<L> {
     pub states: Vec<L>,
@@ -67,6 +78,10 @@ pub struct Solution<L> {
 ///
 /// Violating 1/2/3 is caught as `Solution::converged == false` (never a hang —
 /// the iteration cap). Violating 4 is a `debug_assert` (release: skipped edge).
+///
+/// `pub(crate)`, and not the seat a production caller uses: reach the solver
+/// through [`solve_certified`](crate::certify::solve_certified), which checks
+/// the answer rather than believing it.
 #[must_use]
 pub(crate) fn solve<G: Graph, L: Lattice>(
     graph: &G,

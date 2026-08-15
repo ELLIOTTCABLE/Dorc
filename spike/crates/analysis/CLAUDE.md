@@ -11,10 +11,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 - **solve-termination-unenforceable** — the worklist's preconditions (monotone
   transfer · finite-height domain · semantic `Eq`) are caller-upheld and
-  un-type-enforceable; a violation HANGS (empirically hundreds of CPU-seconds).
-  `solve` carries an iteration cap and returns `converged == false` instead —
-  every correctness-critical caller MUST check it (`trust_reach` is a
-  per-consumer obligation, never ambient).
+  un-type-enforceable; a violation would HANG (empirically hundreds of
+  CPU-seconds), so the worklist carries an iteration cap and stops instead. The
+  cap flag (`Solution::converged`) is ADVISORY and is NOT the trust gate: a
+  cap-tripped answer that still certifies is the least fixpoint and is USED.
+  The gate is CERTIFICATION — every production answer comes from
+  `solve_certified`, and `trusted()` throughout this crate means CERTIFIED, not
+  converged (`solve-is-certified-only`). A consumer takes its named floor on
+  `Inconsistent` (`trust_reach` is a per-consumer obligation, never ambient).
 - **vacuous-entry-fold** — a detached/unreachable function body has a vacuous-⊥
   in-state; reading it as ambient is a wrong-elision. Fold to `MustRun`
   (`reachable_from_entry`).
