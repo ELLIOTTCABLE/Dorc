@@ -237,6 +237,14 @@ per `28Q` §8.
 - 2026-08-14, the builder-prerequisite dictum [TYPED]: landed as durable law in the
   conductor skill itself (its quarantine section; human commit). §2 carries the
   pointer; successor conductors get it from the skill at boot.
+- 2026-08-14, certifier-spec HOLD [TYPED]: the human is reworking `plans/302` with a
+  sibling conductor. Everything certifier-shaped HOLDS until it settles: the phase-1
+  proposal agent completes as read-only recon (its census/floor-table halves are
+  spec-independent; its type-shape half will be re-cut against the settled spec), but
+  NO phase-2 greenlight, and lane-sparing-rederivation stays queued behind it. The
+  `302` §3 refusal-loudness [HUMAN?] flag is dropped as pending — it resolves inside
+  the human's sitting. This conductor's `302` is superseded-in-place by whatever the
+  sitting produces; re-read before any certifier act.
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 
