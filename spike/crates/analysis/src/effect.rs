@@ -870,8 +870,8 @@ impl Reach {
 pub enum SkipClass {
     /// Not an elidable establish — opaque, pure, kill, unrecognized, OR an
     /// establish whose reaching-context cannot be trusted: unreachable from entry
-    /// (e.g. a function body with no modeled call-edge), or produced under a
-    /// non-converged solve ⇒ run.
+    /// (e.g. a function body with no modeled call-edge), or produced under an
+    /// un-certified solve (`SolveConsistency::is_consistent`) ⇒ run.
     MustRun,
     /// Establishes `fact`, ambient here (no upstream mutation) ⇒ probe the host.
     EstablishAmbient(FactKey),
@@ -1163,7 +1163,7 @@ fn narrow_cmdsub_spans_to_operand(
 /// the reaching-defs with `site`'s own gen suppressed and check the site's in-state is
 /// pristine (the empty fact-set, NOT ⊤). With the self-establish removed, the in-state is
 /// exactly the cells written by OTHER reaching paths (pre-loop, in-loop sibling, or an
-/// Opaque ⇒ ⊤); pristine ⟺ ONLY this leaf's own establishes reach it. A non-converged
+/// Opaque ⇒ ⊤); pristine ⟺ ONLY this leaf's own establishes reach it. An un-certified
 /// suppressed solve ⇒ `false` (conservative refuse — the safe direction). This is a small
 /// extra solve per Members site (≤ a handful per book; perf is network-dominated anyway).
 fn self_reach_holds(
@@ -1581,7 +1581,8 @@ fn resolve_node_effects(
 /// `check()`), then a forward reaching-defs pass tells us, per establishing command,
 /// whether its fact is ambient. An establish is only offered as `EstablishAmbient`
 /// when its reaching-context is *trustworthy* — reachable from entry AND under a
-/// converged solve; otherwise it folds to the safe `MustRun` (find-A/find-B).
+/// CERTIFIED solve (`SolveConsistency::is_consistent`, never the advisory `converged`
+/// flag); otherwise it folds to the safe `MustRun` (find-A/find-B).
 ///
 /// `value` is the book-side value-flow (`analysis::value::analyze`, the caller
 /// threads it); `checks` are the per-oracle-file `PredictSet`s (the engine parses no

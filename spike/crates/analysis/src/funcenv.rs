@@ -19,11 +19,12 @@
 //! which walls. This mirrors [`value`](crate::value)'s entry ⊤-seed and exists for the same
 //! reason.
 //!
-//! **Non-convergence folds to ⊤ everywhere.** [`solve`](crate::solve)'s termination preconditions
-//! are caller-upheld and un-type-enforceable; a capped solve is an under-approximation, and an
-//! under-approximated function environment is precisely a set of confident wrong answers about
-//! whose body runs. `converged == false` ⇒ every query answers ⊤ (`16P` DP-9, the same bargain
-//! `value` strikes).
+//! **An untrusted solve folds to ⊤ everywhere.** [`solve`](crate::solve)'s termination
+//! preconditions are caller-upheld and un-type-enforceable, and an under-approximated function
+//! environment is precisely a set of confident wrong answers about whose body runs. The gate is
+//! the solve's CERTIFICATION, never the advisory `converged` flag (`302` §1): a cap-tripped
+//! answer that still certifies is the least fixpoint and is used, while an uncertified one ⇒
+//! every query answers ⊤ (`16P` DP-9, the same bargain `value` strikes).
 //!
 //! # What this module may NOT see
 //!
@@ -101,8 +102,9 @@ impl<'a> SourceLiteralPlane<'a> {
         self.value.argv_values(node).len()
     }
 
-    /// Whether the underlying value analysis converged; a capped value solve makes every word ⊤,
-    /// and this domain must not read confident answers off it.
+    /// Whether the underlying value analysis may be trusted; an untrusted value solve makes every
+    /// word ⊤, and this domain must not read confident answers off it. The gate is that solve's
+    /// CERTIFICATION, never the advisory `converged` flag (`302` §1).
     #[must_use]
     pub fn trusted(&self) -> bool {
         self.value.trusted()
