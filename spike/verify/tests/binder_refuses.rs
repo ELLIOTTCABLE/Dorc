@@ -114,3 +114,24 @@ fn the_binding_key_is_in_the_closed_loom_vocabulary() {
         "a bound loom is a whole-product case; a non-run-lane key would refuse there"
     );
 }
+
+#[test]
+fn the_vocabulary_home_is_not_walked_as_units() {
+    // The governed vocabulary (`301` §1) is spec surface but not a law unit: no slug law, no
+    // Prop contract, no catalogue row. A walk that swept it up would demand a law of a file
+    // that deliberately is not one.
+    let root = fixture("vocab-corpus");
+    let units = unit::load_all(&root).expect("fixture corpus readable");
+    assert_eq!(units.len(), 1, "only the top-level unit is a unit");
+    assert_eq!(units[0].slug, "StubLawIsUnwritten");
+}
+
+#[test]
+fn a_vocabulary_hole_is_seen() {
+    // The one check vocabulary DOES owe: a hole in shared vocabulary vacates every importing
+    // unit at once — a worse halo than a holed unit.
+    let root = fixture("vocab-corpus");
+    let vocab = unit::load_vocabulary(&root).expect("fixture vocabulary readable");
+    assert_eq!(vocab.len(), 1);
+    assert!(vocab[0].has_hole, "the planted hole must be seen");
+}

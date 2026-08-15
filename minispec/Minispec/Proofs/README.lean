@@ -4,8 +4,8 @@
 The tactic-churn zone. A proof file imports its unit and proves that unit's `Prop`:
 
 ```
-import Minispec.LeqIsReflexive
-theorem LeqIsReflexive_holds : Minispec.LeqIsReflexive := by …
+import Minispec.JoinIsIdempotent
+theorem JoinIsIdempotent_holds : Minispec.JoinIsIdempotent := by …
 ```
 
 The split is the point, and it is idiomatic Lean: a proof file is structurally unable to

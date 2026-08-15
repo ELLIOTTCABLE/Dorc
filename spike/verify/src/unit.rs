@@ -106,6 +106,38 @@ pub fn load_all(repo_root: &Path) -> Result<Vec<Unit>, String> {
     Ok(units)
 }
 
+/// Read every file in the governed shared-vocabulary home, `minispec/Minispec/Vocabulary/`.
+///
+/// Vocabulary files (`301` §1: shared predicates like the trusted-base lawfulness
+/// hypotheses) are SPEC SURFACE — the access laws bind them, and edits are ceremony — but
+/// they are not law units: no slug law, no `def <Slug> : Prop` contract, no catalogue row.
+/// The one check they DO owe is the hole census: a `sorry` in shared vocabulary silently
+/// vacates every unit that imports it, which is a worse halo than a holed unit. An absent
+/// directory is an empty vocabulary, not an error.
+///
+/// # Errors
+/// When a present directory cannot be listed or a file cannot be read.
+pub fn load_vocabulary(repo_root: &Path) -> Result<Vec<Unit>, String> {
+    let dir = repo_root
+        .join("minispec")
+        .join("Minispec")
+        .join("Vocabulary");
+    let mut files = Vec::new();
+    if !dir.is_dir() {
+        return Ok(files);
+    }
+    let entries = std::fs::read_dir(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("{}: {e}", dir.display()))?;
+        let path = entry.path();
+        if path.extension().is_some_and(|e| e == "lean") {
+            files.push(read(&path)?);
+        }
+    }
+    files.sort_by(|a, b| a.slug.cmp(&b.slug));
+    Ok(files)
+}
+
 /// Read one unit file.
 ///
 /// # Errors

@@ -1,35 +1,74 @@
 import Generated.Funs
+import Minispec.TrustedBase
 
 /-!
-# JoinIsCommutative — UNWRITTEN
+# JoinIsCommutative
 
-This unit is a STUB. It asserts nothing, and the binder reports every badge as `todo`
-accordingly.
+**The law, in English (authoritative):** joining two flat-lattice values gives the same
+answer in either order. For every type `T` with lawful clone and equality dictionaries,
+and any two values `a b : Flat T`, `a ⊔ b = b ⊔ a` — including the error behaviour:
+neither order can fail where the other succeeds.
 
-Unit content — the English-authoritative law text, the `Prop` over the derived definitions,
-and the instance battery — is authored through the authorized spec lane only
-(`301:law-spec-touch-frontier-human-only`: frontier-class models, explicit human
-authorization, no hot-loop edits, ever). A builder who finds this unit wrong or missing
-something SURFACES it and stops; the change routes through the human.
+`Flat T` (⊥ · a single element · ⊤) is the translation of the engine's simplest lattice
+combinator, and `join` is the solver's merge for it. Commutativity is stated over the
+DERIVED definitions — the translated bodies of the shipping Rust — so the claim is about
+the code that runs, not a transcription of it.
 
-The slug is a placeholder from `301` §4's candidate list, pending the human's pick.
-
-When written, this file carries exactly:
-
-* `def JoinIsCommutative : Prop := …` — the law, over `Generated.` definitions.
-* `theorem JoinIsCommutative_nonvacuous : …` — the anti-vacuity probe: one positive witness
-  whose precondition genuinely holds. Without it the battery is green vacuously.
-* `example` / `#guard` battery entries — the boundary cases and the worked examples that are
-  the review surface for readers who are not proof-literate.
-
-and nothing else: no metadata (that is dislocated to the catalogue) and no churny material,
-so every diff in this file is a meaningful, adjudicable event. Its proof, when there is one,
-lives at `Minispec/Proofs/JoinIsCommutative.lean`.
-
-(`import` leads the file because Lean requires it to: an import after any other command,
-a module docstring included, is a parse error.)
+The hypotheses are the named trusted-base entries (`Minispec/TrustedBase.lean`): the
+translation's generic dictionaries are lawless records, so the statement says what it
+assumes of them. The instance battery below evaluates the law on concrete lawful
+dictionaries at every boundary shape (⊥ · element · ⊤), both orders.
 -/
 
 namespace Minispec
+
+open generated
+open Aeneas.Std Result
+
+/-- Joining flat-lattice values commutes, for every lawful dictionary pair. -/
+def JoinIsCommutative : Prop :=
+  ∀ (T : Type) [DecidableEq T]
+    (cl : core.clone.Clone T) (eqi : core.cmp.Eq T),
+    LawfulClone cl → LawfulEq eqi →
+    ∀ a b : lattice.Flat T,
+      lattice.Flat.Insts.GeneratedLatticeLattice.join cl eqi a b
+        = lattice.Flat.Insts.GeneratedLatticeLattice.join cl eqi b a
+
+/-- Anti-vacuity: the law does non-trivial work — two DIFFERENT elements join to ⊤ in
+    both orders (not merely the degenerate self-join). -/
+theorem JoinIsCommutative_nonvacuous :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+        (lattice.Flat.Elem 1#u32) (lattice.Flat.Elem 2#u32)
+      = ok lattice.Flat.Top
+    ∧ lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+        (lattice.Flat.Elem 2#u32) (lattice.Flat.Elem 1#u32)
+      = ok lattice.Flat.Top := by
+  constructor <;> native_decide
+
+/- Boundary battery: every shape pair, both orders, exact answers. -/
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      lattice.Flat.Bottom (lattice.Flat.Elem 1#u32)
+    = ok (lattice.Flat.Elem 1#u32) := by native_decide
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      (lattice.Flat.Elem 1#u32) lattice.Flat.Bottom
+    = ok (lattice.Flat.Elem 1#u32) := by native_decide
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      lattice.Flat.Bottom lattice.Flat.Top
+    = ok (lattice.Flat.Top : lattice.Flat Aeneas.Std.U32) := by native_decide
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      lattice.Flat.Top lattice.Flat.Bottom
+    = ok (lattice.Flat.Top : lattice.Flat Aeneas.Std.U32) := by native_decide
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      (lattice.Flat.Elem 1#u32) lattice.Flat.Top
+    = ok lattice.Flat.Top := by native_decide
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      lattice.Flat.Top (lattice.Flat.Elem 1#u32)
+    = ok lattice.Flat.Top := by native_decide
 
 end Minispec

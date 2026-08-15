@@ -1,35 +1,52 @@
 import Generated.Funs
+import Minispec.TrustedBase
 
 /-!
-# JoinIsIdempotent — UNWRITTEN
+# JoinIsIdempotent
 
-This unit is a STUB. It asserts nothing, and the binder reports every badge as `todo`
-accordingly.
+**The law, in English (authoritative):** joining a flat-lattice value with itself gives
+back exactly that value, successfully. For every type `T` with lawful clone and
+equality dictionaries and any `a : Flat T`, `a ⊔ a = a`.
 
-Unit content — the English-authoritative law text, the `Prop` over the derived definitions,
-and the instance battery — is authored through the authorized spec lane only
-(`301:law-spec-touch-frontier-human-only`: frontier-class models, explicit human
-authorization, no hot-loop edits, ever). A builder who finds this unit wrong or missing
-something SURFACES it and stops; the change routes through the human.
+This is the law the solver's convergence detection rests on: the fixpoint test asks
+whether a join CHANGED anything, and idempotence is what makes "nothing changed" a
+stable answer rather than an accident of representation. It is stated over the DERIVED
+definitions — the translated bodies of the shipping Rust.
 
-The slug is a placeholder from `301` §4's candidate list, pending the human's pick.
-
-When written, this file carries exactly:
-
-* `def JoinIsIdempotent : Prop := …` — the law, over `Generated.` definitions.
-* `theorem JoinIsIdempotent_nonvacuous : …` — the anti-vacuity probe: one positive witness
-  whose precondition genuinely holds. Without it the battery is green vacuously.
-* `example` / `#guard` battery entries — the boundary cases and the worked examples that are
-  the review surface for readers who are not proof-literate.
-
-and nothing else: no metadata (that is dislocated to the catalogue) and no churny material,
-so every diff in this file is a meaningful, adjudicable event. Its proof, when there is one,
-lives at `Minispec/Proofs/JoinIsIdempotent.lean`.
-
-(`import` leads the file because Lean requires it to: an import after any other command,
-a module docstring included, is a parse error.)
+The hypotheses are the named trusted-base entries (`Minispec/TrustedBase.lean`); the
+element case genuinely needs both (the translated body consults equality, then clones).
+The battery evaluates every boundary shape's self-join on concrete lawful dictionaries.
 -/
 
 namespace Minispec
+
+open generated
+open Aeneas.Std Result
+
+/-- Self-join is the identity, for every lawful dictionary pair. -/
+def JoinIsIdempotent : Prop :=
+  ∀ (T : Type) [DecidableEq T]
+    (cl : core.clone.Clone T) (eqi : core.cmp.Eq T),
+    LawfulClone cl → LawfulEq eqi →
+    ∀ a : lattice.Flat T,
+      lattice.Flat.Insts.GeneratedLatticeLattice.join cl eqi a a = ok a
+
+/-- Anti-vacuity: the element case is the non-trivial one — the translated body
+    genuinely consults the equality dictionary and the clone (it is not a
+    constructor-shape short-circuit), and still returns its argument. -/
+theorem JoinIsIdempotent_nonvacuous :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      (lattice.Flat.Elem 7#u32) (lattice.Flat.Elem 7#u32)
+    = ok (lattice.Flat.Elem 7#u32) := by native_decide
+
+/- Boundary battery: the two remaining shapes' self-joins. -/
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      lattice.Flat.Bottom lattice.Flat.Bottom
+    = ok (lattice.Flat.Bottom : lattice.Flat Aeneas.Std.U32) := by native_decide
+example :
+    lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq
+      lattice.Flat.Top lattice.Flat.Top
+    = ok (lattice.Flat.Top : lattice.Flat Aeneas.Std.U32) := by native_decide
 
 end Minispec

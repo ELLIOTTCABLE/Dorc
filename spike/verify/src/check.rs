@@ -54,6 +54,18 @@ pub fn run(repo_root: &Path) -> Result<Findings, String> {
         findings.failures.push(binding::describe(&d));
     }
 
+    // The governed vocabulary is unit-contract-exempt but never hole-exempt: a hole there
+    // vacates every importing unit at once.
+    for vocab in &unit::load_vocabulary(repo_root)? {
+        if vocab.has_hole {
+            findings.failures.push(format!(
+                "{}: shared vocabulary may never carry a proof hole — every unit importing it \
+                 becomes vacuous",
+                vocab.path.display()
+            ));
+        }
+    }
+
     let generated = repo_root.join("minispec").join("Generated");
     if generated.is_dir() {
         let (holes, _axioms) = crate::pipeline::census(&generated)?;
