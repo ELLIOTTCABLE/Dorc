@@ -1,177 +1,343 @@
-# 302 — The solve-certifier: mechanical spec
+# 302 — The solve-certifier: rationale, mechanics, build spec
 
-> Tier: LLM-authored mechanical spec (Fable conductor, 2026-08-14; the `notes/300` §2
-> staffing split routes this spec to the conductor and the implementation to an Opus
-> builder). Subordinate to root docs, `spike/CLAUDE.md`, and the crate CLAUDE.mds.
-> Grades: [SPEC] binding on the build · [BUILDER] confirmed/priced during the build ·
-> [HUMAN?] a point the human may overrule at fold. Names STRAWMAN per
-> `rul-strawman-formats-no-compat`. Naming note: "solve-certifier" always — bare
-> "certifier" collides with round-16's per-leaf inertness certifier (`17O`).
+> Tier: LLM-authored mechanical spec (Fable conductor, from the 2026-08-14/15 certifier
+> design sittings with the human; census input `notes/303`). Subordinate to root docs,
+> `spike/CLAUDE.md`, and the crate CLAUDE.mds; `notes/300` §2 carries staffing (spec →
+> conductor; implementation → an Opus builder, map-then-execute). Grades: [SPEC] binding
+> on the build · [BUILDER] confirmed/priced during the build · [HUMAN?] the human may
+> overrule at fold · [TYPED] the human typed it. Names STRAWMAN per
+> `rul-strawman-formats-no-compat`. Naming: "solve-certifier" always — bare "certifier"
+> collides with round-16's per-leaf inertness certifier (`17O`) — and [TYPED] `Certified`
+> itself overclaims (§0's meaning statement is the truth; the outcome names mislead
+> agents); the dedicated end-of-arc naming pass owns every rename here.
 >
-> Standing obligations honored herein, cited once: the five crosscheck brief
-> obligations (turn07 `adj-certifier-spike-brief-obligations`) · the fresh-ack
-> pedigree note (`28T` §1 w1-solve-certifier — this build rests on the 28T checker-triad
-> [TYPED] ack, never on `plans/021`/`055` pedigree) · `28R:fnd-pessimistic-pass-shape`.
+> Standing obligations honored herein, cited once: the five crosscheck brief obligations
+> (turn07 `adj-certifier-spike-brief-obligations`) · the fresh-ack pedigree note (this
+> build rests on the `28T` checker-triad [TYPED] ack, never on `plans/021`/`055`
+> pedigree) · `28R:fnd-pessimistic-pass-shape` · the aid-leads direction ([TYPED]: aid is
+> part of the correct output — the deterministic source → probe-results → whylog mapping
+> includes refusal behavior, and a refusal's aid quality is a correctness property).
 
 ## §0 — What it is, and the exact guarantee
 
 A per-answer, post-fixpoint validator at the solve seam: after every production
 `solve()` call, one flat pass re-checks that the returned states actually ARE a
 post-fixpoint of the transfer system the solver was given. The solver stays untrusted;
-its every answer is checked, not believed.
+its every answer is checked, not believed. The admission argument is the find/check
+asymmetry (`28T` §4 T1): the worklist iteration is where an implementation bug — a
+dropped re-queue, a mis-scheduled update, a premature convergence claim — yields a
+silently STALE answer that goldens can bless right past, and downstream a stale answer
+is a wrong elision; the finished answer, by contrast, has a purely local
+characterization checkable in one sweep.
 
-[SPEC] The guarantee, stated with its hypothesis (the domino-lemma obligation,
-settled): **given the transfer function is monotone** — already `solve()`'s
-documented caller-upheld precondition, so this leans on nothing new — a `Certified`
-answer is a valid post-fixpoint of the seeded system, and therefore over-approximates
-every abstract path from the seeded boundary. Concrete (γ-soundness) coverage is
-EXPLICITLY out of scope: the certifier shares the transfer model with the solver and
-is not foreign ground truth (`28T` §4) — it catches solver bugs (worklist, ordering,
-convergence-detection, state-management), never model bugs. If the caller's transfer
-is in fact non-monotone, `Certified` claims only the post-fixpoint inequalities
-themselves; the certifier does not detect non-monotonicity.
+- **rul-certifier-value-is-stupidity** [TYPED substance] — the instrument is admissible
+  because it is strictly simpler than what it checks: small (the checker body is ~60
+  lines; `303` §3), total, panic-free, single-sweep, reviewable in one sitting.
+  Minimalness, robustness, correctness, and reviewability are paramount. Every pressure
+  toward cleverness resolves by routing it elsewhere (aid → the engine, §5) or refusing
+  it (recovery, §9).
+- [SPEC] The guarantee, stated with its hypothesis (the domino-lemma obligation,
+  settled): **given the transfer function is monotone** — already `solve()`'s
+  documented caller-upheld precondition, so this leans on nothing new — a passing
+  answer is a valid post-fixpoint of the system and therefore over-approximates every
+  abstract path from the boundary. Concrete (γ-soundness) coverage is EXPLICITLY out of
+  scope: the certifier shares the transfer model with the solver and is not foreign
+  ground truth — it catches solver bugs (worklist, ordering, convergence-detection,
+  state-management), never model bugs. Non-monotone transfers are not detected; a pass
+  then claims only the inequalities themselves. [Rider, ACKED: if the domino lemma is
+  ever authored as a minispec statement, the monotonicity hypothesis is settled FIRST,
+  in the statement.]
+- Trust chain (tiers compose): the checker's `⊑` is join + structural equality, so its
+  soundness leans on the facade canonicality seats and the Kani-pinned lattice laws —
+  pinned independently, at compile time, exhaustively at bounds. Known shared-substrate
+  limit, accepted with eyes open: a broken `Eq`/canonical form can blind this
+  instrument. Census-found instance routed to the Kani lane: `Reach`'s hand-written
+  `PartialEq` excludes its `Top(ProvId)` cause and nothing else pins it
+  (`303:fnd-reach-equality-excludes-its-cause`).
 
 ## §1 — The checked property
 
 [SPEC] Two families of inequalities, checked over exactly the inputs the solver
-consumed (same graph, same `Direction`-oriented edge view, same transfer closure, same
-initial/seed values) plus its output states:
+consumed (same graph, same `Direction`-oriented edge view, same transfer closure) plus
+its output states:
 
-1. **boundary, all nodes**: `∀ n: init[n] ⊑ state[n]`. Checking every node — not only
-   entries — is deliberate: it is strictly stronger, it is what makes the check
-   NON-VACUOUS for must-oriented boundary seeding (entry nodes have no in-edges, so a
-   pure per-edge walk never sees the seed; this clause does), and for bottom-seeded
-   non-entry nodes it degenerates to a trivially-true, still-executed case. This
-   discharges the must-boundary-vacuity obligation structurally.
+1. **boundary, all nodes**: `∀ n: init[n] ⊑ state[n]`. `certify_solution` takes
+   `init: &[L]` even though `solve` today seeds nothing (all-⊥ unconditionally, both
+   production seeders seeding INSIDE their Entry transfers, which the per-edge family
+   checks — `303:fnd-solver-takes-no-seed-at-all`); the wrapper passes all-⊥, the
+   clause executes as the trivially-true-still-executed case, and the day the solver
+   grows real seeding the check is already live. Checking every node — not only
+   entries — is deliberate: entry nodes have no in-edges, so a pure per-edge walk never
+   sees a seed; this clause does, in both orientations (`Must::bottom()` is the dual's
+   ⊥). This discharges the must-boundary-vacuity obligation structurally.
 2. **per-edge**: `∀ solver-oriented edges (v → w): transfer(v, state[v]) ⊑ state[w]`.
 
-`⊑` is the `Lattice`-derived order (`x ⊑ y ⟺ x ⊔ y = y`), which rests on semantic
-`Eq` — the same precondition `solve()` already imposes, and precisely the invariant
-the facade lane seats and the Kani lane pins (`MapL` canonical-form: structural Eq ==
-semantic Eq). The certifier deliberately trusts the lattice laws; the Kani tier is
-what earns that trust (`verified-core-discipline`: tiers compose).
+`⊑` is the `Lattice`-derived order (`x ⊑ y ⟺ x ⊔ y = y`), resting on semantic `Eq` —
+the same precondition `solve()` already imposes, and precisely what the facade seats
+and the Kani lane pin.
 
 [SPEC] **`Must<L>` duality costs zero branches**: the dual order is carried by the
 `Must` lattice instance itself, so the same two inequality families cover both
-orientations. The certifier is generic over `L: Lattice` and NEVER inspects
-orientation, phase, or domain semantics — one checker, no orientation parameter
-(`inv-superposition` friendly).
+orientations. The checker is generic over `L: Lattice` (`SolveCertification<L>` —
+witnesses hold values by value), never inspects orientation, phase, or domain
+semantics — one checker, no orientation parameter. Coverage honesty
+(`303:fnd-no-production-must-or-backward-caller`): no production `Must` or `Backward`
+caller exists today; the duality is exercised on synthetic domains in §6.
 
 [SPEC] **Walk order is canonical and worklist-free**: a flat pass in (node index ×
-successor index) order. Consequence: the witness set is DETERMINISTIC — turn07's
-"first failing edge is traversal-order-dependent" hazard is dissolved by construction,
-not mitigated. There is no early-exit on first failure (see §2).
+successor index) order, transfer evaluated once per node, no early exit. The solver's
+release-mode out-of-range guard is mirrored verbatim — mirror the solver, never
+validate the graph (`303:fnd-mirror-the-out-of-range-skip`).
 
-[SPEC] **The `converged` flag is advisory, the states are what certify**: a cap-tripped
-(`converged: false`) answer that happens to satisfy §1 is legitimately `Certified` —
-the solver stopped without noticing it had landed; certification rescues it. A
-converged-claiming answer with a failing edge is `Refused` — the bug class this whole
-instrument exists to catch.
+[SPEC] **The `converged` flag is advisory; the states are what certify.** A
+cap-tripped (`converged: false`) answer that satisfies §1 is legitimately certified —
+and under monotone ascent from ⊥ it is exactly the least fixpoint (an ascent state is
+always ⊑ lfp; a post-fixpoint that is ⊑ lfp equals it), so nothing is lost: the solver
+merely stopped without noticing it had landed. The advisory mismatch mints a
+curiosity-tier narrative note, and `effect.rs:1615`'s `reach.converged` debug-assert
+re-cuts to ask certification instead
+(`303:fnd-converged-debug-assert-is-now-the-wrong-question`). The reverse mismatch —
+`converged: true` with a failing check — is the defect class this instrument exists to
+catch, and is simply a `Refused`. A cap-trip whose states do NOT certify is the
+oscillation case: the refusal's localization (§2) names the un-stabilized region, for
+the narrative plane only.
 
 ## §2 — Outcome type and witness discipline
 
-[SPEC] Closed outcome, never a bool, no `is_ok()`-shaped accessor:
+[SPEC] Closed outcome, never a bool, no `is_ok()`-shaped accessor, non-empty by
+private mint:
 
-- `Certified` — carries nothing beyond (optionally) counts for the narrative plane.
-- `Refused(witnesses)` — a NON-EMPTY, k-capped, canonically-ordered list of
-  `EdgeWitness`es. An `EdgeWitness` names the failing clause: either
-  `Boundary { node, init, state }` or `Edge { from, to, transferred, state }` —
-  operands included by value (they are lattice values; the narrative plane needs
-  them). The k-cap is a disclosed selection: the refusal records "first k of N
-  failing checks in canonical order" with both k and N — deterministic + disclosed,
-  matching the `28T` w1-kani narrative-pin discipline. On a cap-tripped solve, the
-  full witness set IS the oscillation localization — collecting all (to k) rather
-  than first-only is what makes the refusal diagnostic.
+- `Certified { checks }` — counts for the narrative plane, nothing more.
+- `Refused { refused: <complete index data>, witnesses, shown, total, localization }`:
+  - **the complete refused-check INDEX set** (boundary nodes; edge (from, to) pairs) is
+    always carried whole — scalars, cheap, canonical, and the substrate every
+    downstream computation reads;
+  - **by-value witnesses** — `EdgeWitness<L>{ Boundary{node, init, state} |
+    Edge{from, to, transferred, state} }` — are the first `WITNESS_CAP`(=8) in
+    canonical order, with `shown`/`total` disclosed (deterministic + disclosed k-cap,
+    the house discipline);
+  - **localization**, computed from the COMPLETE index set before any cap
+    (**rul-frontier-and-scc-localization**): the upstream FRONTIER — failing checks
+    whose source node is itself fully clean (every incoming edge passes, boundary
+    holds) — names where consistency first breaks along the flow; where no frontier
+    exists (every node in a cycle refused — the oscillation shape), the refused
+    strongly-connected components name the un-stabilized region. Localization is
+    narrative input only; it never scopes the kill (§3).
 - [SPEC] **witness ≠ root cause**, priced into every rendering: a witness is evidence
-  of non-certifiability at a named check, never a cause verdict. No narrative
-  fragment may render a witness as "caused by"; the honest verb is "failed its
-  post-fixpoint check at". (Turn07 obligation 3.)
+  of non-certifiability at a named check, and the frontier is the earliest OBSERVABLE
+  inconsistency — the actual cause is a code defect no runtime artifact can name. The
+  honest verbs are "failed its post-fixpoint check at" and "first breaks at"; never
+  "caused by".
 
-[SPEC] **The certifier itself is pessimistic-shaped** (`28R:fnd-pessimistic-pass-shape`):
-it has NO budget cap of its own at v0 (one flat pass, trivially cheap next to the
-fixpoint it checks — O(E) transfer+join evaluations); if any future pressure ever caps
-it, the unexamined region refuses, never certifies. Partial certification of the
-SOLUTION exists (cap-tripped solve, §1); partial execution of the CERTIFIER does not.
+[SPEC] **The certifier itself is refusal-shaped under any interruption**
+(`28R:fnd-pessimistic-pass-shape` applied to the checker): it has no budget cap of its
+own at v0 (one flat pass, O(E) transfer+join evaluations — `303` §3 prices the
+production total at roughly one extra solver sweep per seat, noise under
+perf-doctrine); if any future pressure caps it, the unexamined region refuses, never
+certifies. Partial execution of the certifier never certifies anything.
 
-## §3 — The seam and the consumer obligation
+[SPEC] **Certifiability and interruption-safety are different properties** — never
+conflate the instruments: this checker detects INCONSISTENCY (implementation bugs);
+safety-under-interruption of a capped SOLVE comes from pass shape (a pessimistic pass
+starts at walls and proves survival, so every stopping point is safe-side by
+construction, no certificate involved — and its mid-descent states may honestly fail
+edge checks while being perfectly safe). Cappable passes owe the pessimistic shape as
+standing doctrine; the certifier licenses no partial result in either shape.
 
-[SPEC] One seat: `certify_solution(...)` beside the solver
-(`spike/crates/analysis/src/certify.rs` or in-module with `solve.rs` — [BUILDER]
-taste, crate-local homing either way), plus a `solve_certified(...)` wrapper that
-returns `(Solution<L>, SolveCertification)` so no call-site can obtain an answer
-while forgetting to look at its certification.
+## §3 — The seam, the kill, and the consumer floors
 
-[SPEC] Every PRODUCTION caller of `solve()` routes through the certified seam. The
-builder enumerates the production call-sites in the build report, and for EACH
-records its **Refused-floor**: the degraded value that licenses NOTHING for that
-consumer — the ⊤/walls/stage-0 posture in that consumer's own domain terms. This
-explicit mapping is the resolution of the degrade-to-⊤-is-unspellable-generically
-obligation: `Lattice` has no `top()` and `Powerset`/`MapL` are deliberately not
-`BoundedLattice`, so the FLOOR BELONGS TO THE CONSUMER, and the closed
-`Refused` shape is what forces each consumer to supply one. No generic fallback
-exists, on purpose. Raw `solve()` stays available to tests/DST only; [BUILDER] a
-cheap lexical or review fence that production code does not call it bare.
+[SPEC] One seat: `certify_solution(graph, direction, init, transfer, solution)`
+beside the solver, plus a `solve_certified(...)` wrapper returning
+`(Solution<L>, SolveCertification<L>)` so no call-site can obtain an answer while
+forgetting its certification. Raw `solve` demotes to `pub(crate)` with an in-crate
+lexical fence (non-empty assertion) so production code cannot call it bare; tests and
+DST may (`303` §3).
 
-[SPEC] A `Refused` is handled degrade-and-continue, never abort: the consumer takes
-its floor (maximally conservative analysis ⇒ everything guards/runs; fail-toward-run
-preserved), the plan still emits, and the failure lands tier-2 (pre-network, at plan
-construction). [HUMAN?] It surfaces LOUDLY — a catalog `DiagCode` (structured, per
-`one-catalog-no-legacy`; prose per `error-authorship-tier`: builder mints the code
-with explicitly-empty prose) — because a Refused in the field means OUR solver has a
-bug and the warning is how it routes home. kWARN-rich era: never silent.
+[SPEC, TYPED substance] **The kill is general, whole-window, and never partial**: a
+`Refused` kills the ENTIRE product of that solve's analysis window — every consumer of
+that answer takes its floor, every license fed by it lapses. No per-node trust, no
+region carve, no cone; the localization exists to explain, never to scope. (The one
+recorded direction-not-taken and its reasons: §9.)
 
-## §4 — Two-plane integration
+[SPEC] "Degrade to ⊤" is unspellable generically — `Lattice` has no `top()`, and
+`Powerset`/`MapL` are deliberately not `BoundedLattice` (`must-lattice-by-type`) — so
+**the floor belongs to the consumer**, and the closed `Refused` shape is what forces
+each consumer to supply one. All four production floors already exist as the named,
+exercised non-convergence degrade paths (the `16P` DP-9 bargain); the certifier reuses
+them, inventing no new posture (`303` §1/§2, binding here):
+
+1. **value** (`value.rs:241`) — `converged=false` ⇒ the five converged-gated passes
+   answer all-⊤ ⇒ every command `Opaque` ⇒ `MustRun`; `SourceLiteralPlane::converged()`
+   goes false, cascading funcenv to its own floor (dependency-ordered flooring falls
+   out of the existing gates).
+2. **funcenv** (`funcenv.rs:557`, ≤9 solves across the fold rounds) — the
+   `funcenv.rs:544–550` floor value: all-Top states, `converged=false`, **and
+   `folded_edges=∅`, with the fold loop BREAKING to the floor at the refusing round**.
+   This is a hard [SPEC] rider, not an implementation detail: `never_live` subtracts
+   exactly and SHIFTS WINNERS (`28P:adj-never-live-exactness-accepted`), so a refused
+   solution that still feeds subtraction or folding GRANTS on refused states —
+   the one place a sloppy floor converts a refusal into a license
+   (`303:fnd-never-live-is-the-grant-shifting-consumer`).
+3. **self_reach** (`effect.rs:1174`, per Members site) — the answer is `false` (the
+   existing conservative refuse); the `sol.converged && …` gate becomes the
+   certification gate. Its closure seat has no diagnostic channel, so per-site answers
+   hoist into a pre-pass ([BUILDER], priced; reshapes a `too_many_lines` function —
+   `303:fnd-self-reach-has-no-diagnostic-channel`).
+4. **reach** (`effect.rs:1612`) — `trust_reach=false` ⇒ every site `SkipClass::MustRun`
+   — the stage-0/⊤ posture, safe under both phases.
+
+Each floor is a NAMED function, so §6's consumer tests can exercise it without
+violating anti-masking. Guards everywhere stay fail-safe under any floor by
+construction: `( check ) || original` falls through to the authored bytes.
+
+- **pin-blast-radius-escalation** [HUMAN?] — per-refused-solve flooring is what this
+  spec builds (refusals are engine defects, expected vanishingly rare; uniform
+  per-solve demotion is predictable, honest, and the value floor already cascades
+  funcenv along the real dependency). Whether any single refusal should further
+  escalate to a whole-plan stage-0 posture (one detected inconsistency taints the
+  shared machinery) is an open human call; if ruled, it lands as a thin policy above
+  the per-solve floors, not a reshape.
+
+## §4 — Posture by seat (the fail-fast ↔ best-effort calibration)
+
+[SPEC] The certifier fires wherever `solve` fires, and the failure posture is the
+WINDOW's, not the certifier's. [BUILDER] classifies every driver from `303` §1's list
+(cli `main`/`world`/`survival`, the loom consumer) into these rows and records the
+mapping in the build report:
+
+- **Pre-network solves** (analysis before any probe ships; the user present, waiting):
+  tier-2 fail-fast — loud, on human timescales. The product is still a plan (the
+  honest floor is a valid plan, never worse than no-Dorc) with the diagnostic
+  front-and-center.
+- **Post-probe solves** (folding probe results; mid-window, possibly unattended):
+  best-effort — batch the demotion, keep extracting UNRELATED value, surface
+  everything at the single approval moment. No new interaction moments.
+- **Apply-time**: vacuous as-built (the plan is frozen at consent; no solve runs
+  during apply) — stated so the posture is pre-committed: any future recompute whose
+  refusal touches in-flight mutation authority is the second fail-fast regime, the
+  `rul-integrity-failure-withholds-mutation` cousin — not world-uncertainty (⇒ run),
+  but lost trust in our own computation (⇒ withhold further mutation).
+
+## §5 — Two-plane integration and the aid surface (aid leads)
 
 [SPEC] The certifier is license-plane-adjacent pure computation; it reads no aid
-state. The DEGRADE act at each consumer is a safety-narrowing and therefore mints the
-narrative record (`collapse-mints-narrative`), carrying the witness operands, the
-disclosed k-cap facts, and the advisory `converged`/`rounds` context. The record is
-decision-inert (sealed, aid-plane); the license plane consumes only the closed
-outcome. Per `28Q` §7: once 28Q stages land, a certification `Refused` on the new
-frame/closure shapes is a FINDING, never churn — that posture starts now.
+state, and the license plane consumes only the closed outcome.
 
-## §5 — Test obligations (all in the default suite; anti-masking honored)
+- **rul-certifier-never-reports** — the checker's entire output is the verdict and its
+  data (indices, witnesses, localization). It renders nothing, authors no prose, and
+  never re-enters the engine. Its aid contract, whole: "rerun and do extra work — you
+  are now a self-report engine."
+- **Narrative records carry scalars only** — the DEGRADE act at each consumer is the
+  safety-narrowing and mints the record (`collapse-mints-narrative`):
+  `CollapseKind::SolveCertificationRefused`, `SpeechAct::Derived`, operands per
+  `aid/CLAUDE.md:operands-are-pure-and-capped` — stage, indices, shown/total, advisory
+  `converged`/`rounds` — never lattice values, never `ProvId`-bearing types
+  (`303:fnd-witness-operands-cannot-enter-narrative`); full-value witnesses live in
+  the in-memory `SolveCertification` and reach people through pull surfaces,
+  display-rendered at the edge. ONE catalog code, `solve-certification-refused`, with
+  a `SolveStage{ValueFlow, FunctionEnvironment, ReachingDefs, SelfReach}` reason enum
+  (`28L:rul-reason-enums-not-sibling-codes`); spanless; prose explicitly empty at mint
+  (`error-authorship-tier`), authored through the standard pipeline; the defining loom
+  case is fixture-routed (`303:fnd-refusal-has-no-honest-trigger` —
+  `289:rul-worldless-route-honest-trigger`). Mint seats follow the
+  `funcenv::unresolvable_loads` precedent: kernels record refusal as data, cli drivers
+  mint via `report_at`, `effect.rs` mints in place.
+- **rul-rerun-is-the-self-report-engine** — on refusal, the ENGINE re-runs the
+  identical solve with instrumentation on. `inv-determinism` is what makes this sound:
+  a pure kernel replays the IDENTICAL trajectory, defect included, now narrated — a
+  per-update trace (node, old value, new value, causing edge, round) sliced to the
+  refused region ([BUILDER] picks the cheapest honest slice; the full trace stays
+  available at maximum verbosity). Against the trace, the frontier becomes a genuine
+  observable-level account ("this node last moved in round 3 via that edge; the kill
+  landed in round 5; no re-queue followed"). The trace is evidence of what happened,
+  never a trusted computation — the checker remains the judge — and it is pull-tier
+  (`rul-chain-is-pull-only`): the push surface carries the compact record above.
+  In-lane and required, priced at the checkpoint ([BUILDER]); it may land as the
+  lane's second commit-series but never falls out of the lane.
+- **Admin-facing honesty**, rendered plainly: this is OUR defect, not the book's; the
+  plan is safe but poorer (N sites demoted); and — the kernel being pure — the whylog
+  IS a deterministic reproducer bundle for the report home.
+
+## §6 — Test obligations (default suite; anti-masking honored throughout)
 
 [SPEC, all]:
 1. **fault-injection, solver-side**: perturb a correct solution (one state raised /
-   lowered / swapped) ⇒ `Refused` with the exact expected witness(es), canonical
-   order verified.
-2. **boundary non-vacuity**: a violated seed (init ⋢ state at an entry AND at a
-   non-entry seeded node), both orientations — the `Must`-wrapped case included, so
-   the dual-order boundary check is demonstrably exercised (turn07 obligation 2
-   witnessed by a test, not an argument).
-3. **cap-trip localization**: a deliberately oscillating system under a round-cap ⇒
-   `Refused` whose witness set covers the oscillating edge(s); plus the
-   landed-on-fixpoint-at-cap case ⇒ `Certified` despite `converged: false`.
-4. **duality**: one system certified under `L` and its `Must<L>` dual, one checker,
-   no orientation flag anywhere in the call.
-5. **determinism**: witness lists byte-identical across repeated runs and (DST)
-   across input-permutation where the graph is permutation-invariant.
-6. **anti-masking**: no test hand-injects a certification outcome; outcomes come from
-   the real checker over real solutions (`anti-masking-tests`).
-7. **narrative**: the consumer-side degrade mints the record; the record carries
-   operands; goldens for any surfaced diagnostic follow `render-form-unwelded`.
+   lowered / swapped) ⇒ `Refused` with the exact expected witnesses, canonical order
+   verified.
+2. **boundary non-vacuity**: violated seeds at an entry AND at a non-entry node, both
+   orientations, the `Must<Flat<u8>>`-style dual included — the dual-order boundary
+   check demonstrably exercised, witnessed by a test rather than an argument.
+3. **cap-trip both ways**: a deliberately oscillating system under a round-cap ⇒
+   `Refused` whose complete index set covers the oscillating edges and whose
+   localization names the refused SCC; and the landed-on-fixpoint-at-cap case ⇒
+   certified despite `converged: false` (fixture hand-writes the ADVISORY FLAG only;
+   states come from a real solve — `303` §4).
+4. **frontier localization**: a single-defect fixture where exactly one edge fails ⇒
+   the frontier names it; a two-stage staleness where the frontier excludes the
+   downstream casualty.
+5. **duality**: one system certified under `L` and under `Must<L>`, one checker, no
+   orientation flag anywhere in the call.
+6. **determinism**: repeat-run byte-identity of the whole outcome; under
+   edge-insertion permutation, verdict + witness SET + localization compare equal
+   (canonical order legitimately reorders the list —
+   `303:fnd-permutation-pin-is-set-not-sequence`).
+7. **anti-masking**: no test hand-injects a certification outcome; outcomes come from
+   the real checker over real solutions; a lexical gate pins that no production code
+   constructs the outcome type by hand.
+8. **floor-and-narrate, ×4 consumers**: each named floor function reached via a real
+   `Refused`, the funcenv fold demonstrably BREAKING at the refusing round with
+   `folded_edges=∅`, the record minted with scalar operands, and the value→funcenv
+   cascade observed.
+9. **rerun trace pins**: the instrumented re-run replays the identical trajectory
+   (state-sequence equality against the original), the slice covers the refused
+   region, and the trace surface honors the disclosed cap.
 
-## §6 — Explicitly not (scope fences)
+## §7 — Explicitly not (scope fences)
 
 - Not foreign ground truth; catches solver bugs only, never transfer-model bugs.
 - No quality/precision claim: an everywhere-⊤ answer certifies.
 - No per-phase-product results-checkers beyond this seat; no whole-chain elision
-  re-walk; no runtime aid-plane checker (`28T` §4 checker-expansion rejection stands;
-  the admission tests T1/T2 bind any future proposal).
+  re-walk; no runtime aid-plane checker (`28T` §4's admission tests T1/T2 bind any
+  future proposal).
 - No caching of certifications, no persistence (rec-5 posture; recompute per run).
 - The sparing reference re-derivation is a SEPARATE instrument (its own lane).
 
-## §7 — Build notes
+## §8 — Build notes
 
-- [SPEC] **Reprice before building** (turn07 obligation 4): the folk "~50 lines /
-  ~1 agent-day" estimate predates the closed-outcome shape, witness discipline,
-  consumer enumeration + floors, narrative minting, and §5's battery. The builder
-  re-estimates in its plan-first checkpoint and reports the delta; the checkpoint is
-  map-then-execute (`27U` §4) — proposal to the conductor BEFORE the build half.
-- Placement: `analysis` crate (crate-local homing). The generic checker takes the
-  same type parameters as `solve` (`G: Graph`, `L: Lattice`, the transfer closure);
-  monomorphic-boundary concerns are Kani-lane territory, not this seat's.
-- Kani/property follow-ups belong to lane-kani (the checker's own inequality-walk is
-  a candidate harness target once landed); minispec/`dorc-verify` badge wiring for
-  this instrument is deferred to the enrichment era — nothing here blocks on it.
+- [SPEC] **The reprice is real and stands** (turn07 obligation 4, discharged with
+  numbers): ≈800–900 lines across ~10 files + one loom case + lock regen, 8–13
+  agent-hours — ~16× the folk "~50 lines", dominated by aid-plane registration and
+  §6's battery; the checker body itself is ~60 lines (`303` §3). §5's rerun
+  instrumentation prices separately at the checkpoint. Map-then-execute stands:
+  phase-2 dispatches fresh against THIS spec + `notes/303`; proposal to the conductor
+  before the build half.
+- Placement: `analysis` crate, `certify.rs` beside `solve.rs` (crate-local homing);
+  generic over the same parameters as `solve`; monomorphic-boundary concerns are
+  Kani-lane territory, not this seat's.
+- Comment budget: ≤45 non-doc comment lines across changed files (counting command:
+  `rg -n '^\s*//' <changed files>`); public-item doc-comments billed separately per
+  `spike/CLAUDE.md` code style.
+- Kani/property follow-ups route to lane-kani (the checker's own inequality walk, and
+  `Reach::eq`'s cause-exclusion, join its target list once landed); minispec/
+  `dorc-verify` badge wiring is deferred to the enrichment era — nothing here blocks
+  on it.
+
+## §9 — Why there is no recovery
+
+The certifier deliberately ships with no value-recovery mode, and none is planned: a
+refusal is a general — approaching global — kill of everything that fed the
+certifier's analysis window, never a piecemeal elision-recovery mechanism to buy value
+back from. The economics are against it twice over: what recovery would buy back is
+priority-three value (unnecessary execution avoided), while every recovery mechanism's
+own failure lands in priority-one territory (silent under-execution) — and those
+failures are CORRELATED with the trigger, not independent of it: the defect classes
+that fire refusals in practice (broken canonical forms and `Eq`, non-monotone
+transfers — increasingly dominant as ordinary QA extinguishes the benign scheduling
+class) are the same classes that void a recovery mechanism's own premises, so a
+"screened" recovery could only ever license on absence-of-detected-wrongness — a
+silence-shaped license, which this project categorically refuses
+(`silence-licenses-nothing`). Minimalness, robustness, correctness, and reviewability
+are paramount here, and the checker's admissibility rests on being strictly simpler
+than what it checks — every recovery design erodes exactly that. For the same reasons
+the aid machinery stays in the engine: the certifier says "rerun and do extra work —
+you're now a self-report engine"; the certifier does not do the reporting.
