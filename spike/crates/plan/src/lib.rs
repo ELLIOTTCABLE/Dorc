@@ -8084,6 +8084,111 @@ apt_get__is_converged() {
         assert!(!comment_safe("cat <<EOF"), "heredoc operator ⇒ refuse");
     }
 
+    // ── Span-edit non-overlap, exhaustively over a small interval universe ────────────────
+    //
+    // PLACEMENT, flagged: a ∀-law over small values is Kani-tier by shape. It is HERE because
+    // `SpanEdit` lives inside `dorc-plan`, and the Kani verification unit
+    // (`spike/verify/kani`) is a dependency-free `#[path]`-include of the algebra sources —
+    // this crate's closure cannot enter it, and `String`-carrying values are the shape a
+    // bounded model checker pays most for anyway. So the quantifier is a loop over every
+    // interval collection a five-byte source can express, which is exhaustive over that
+    // universe rather than over a bound.
+
+    /// An edit's identity for these assertions. The strings are payload; the law is about the
+    /// intervals and about which of them survive.
+    fn span_of(edit: &SpanEdit) -> (usize, usize) {
+        (edit.lo, edit.hi)
+    }
+
+    /// Disjoint-or-nested is `normalise_edits`'s PRECONDITION, guaranteed by the leaf seam
+    /// (two leaf command spans never cross). Feeding it a partial overlap is a `debug_assert`
+    /// by design, so the enumeration excludes those rather than asserting on them.
+    fn disjoint_or_nested(a: (usize, usize), b: (usize, usize)) -> bool {
+        let disjoint = a.1 <= b.0 || b.1 <= a.0;
+        let nested = (a.0 <= b.0 && b.1 <= a.1) || (b.0 <= a.0 && a.1 <= b.1);
+        disjoint || nested
+    }
+
+    fn edit_at(lo: usize, hi: usize) -> SpanEdit {
+        SpanEdit {
+            lo,
+            hi,
+            replacement: "true".into(),
+            original: "cmd".into(),
+            self_commented: false,
+            comment_out: false,
+        }
+    }
+
+    #[test]
+    fn normalise_edits_yields_a_sorted_pairwise_disjoint_set() {
+        // THE property `emit_span_edits` rests on. It splices a group right-to-left so that an
+        // earlier edit's byte offsets stay valid as later ones land, and that is only sound if
+        // the kept edits are sorted and share no byte. An overlapping survivor would splice
+        // into bytes another edit had already rewritten — a corrupt artifact, and one that
+        // `dash -n` would not necessarily catch.
+        let universe: Vec<(usize, usize)> = (0..5)
+            .flat_map(|lo| (lo + 1..=5).map(move |hi| (lo, hi)))
+            .collect();
+
+        let mut collections_checked = 0usize;
+        for a in &universe {
+            for b in &universe {
+                for c in &universe {
+                    let raw = [*a, *b, *c];
+                    let legal = disjoint_or_nested(*a, *b)
+                        && disjoint_or_nested(*a, *c)
+                        && disjoint_or_nested(*b, *c);
+                    if !legal {
+                        continue;
+                    }
+                    collections_checked += 1;
+
+                    let kept =
+                        normalise_edits(raw.iter().map(|(lo, hi)| edit_at(*lo, *hi)).collect());
+
+                    for pair in kept.windows(2) {
+                        let (left, right) = (span_of(&pair[0]), span_of(&pair[1]));
+                        assert!(left.0 <= right.0, "sorted by lo: {raw:?} kept {kept:?}");
+                        assert!(
+                            right.0 >= left.1,
+                            "survivors share no byte: {raw:?} kept {kept:?}"
+                        );
+                    }
+                    for edit in &kept {
+                        assert!(
+                            raw.contains(&span_of(edit)),
+                            "a survivor is always an input: {raw:?} kept {kept:?}"
+                        );
+                    }
+                    assert!(
+                        !kept.is_empty(),
+                        "a non-empty legal input never normalises to nothing: {raw:?}"
+                    );
+                }
+            }
+        }
+        assert!(
+            collections_checked > 100,
+            "the enumeration must actually cover a universe, not fall through its filter"
+        );
+    }
+
+    #[test]
+    fn normalise_edits_keeps_the_outer_edit_of_a_nested_pair() {
+        // The containment rule, and the direction matters: a folded construct's edit SUBSUMES
+        // its interior leaves', so the outer wins and the inner is dropped. Keeping the inner
+        // instead would splice a leaf's replacement into a region the construct's own edit was
+        // about to rewrite wholesale.
+        let kept = normalise_edits(vec![edit_at(2, 4), edit_at(0, 8)]);
+        assert_eq!(kept.len(), 1, "one survivor: {kept:?}");
+        assert_eq!(span_of(&kept[0]), (0, 8), "and it is the OUTER edit");
+
+        // Equal spans are the degenerate containment: exactly one survives, never both.
+        let identical = normalise_edits(vec![edit_at(1, 5), edit_at(1, 5)]);
+        assert_eq!(identical.len(), 1, "duplicates collapse: {identical:?}");
+    }
+
     #[test]
     fn group_edits_merges_abutting_multiline_edits() {
         // f-1: two edits whose line ranges ABUT (edit B starts on edit A's end line) must
