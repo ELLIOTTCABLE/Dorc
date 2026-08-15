@@ -334,6 +334,40 @@ certifier runs full-Fable or in-conductor-implementation.
 - The churn-measurement question dissolved with no-pilots: the derived-defs pipeline
   is simply maintained; there is no vehicle decision left to gate on it.
 
+### §3b — SUCCESSOR HANDOFF (written 2026-08-15, second environment death; the
+minting conductor is at token wind-down and the human is asleep — no adjudication
+until they wake)
+
+A SECOND harness death (same WSL/memory failure mode; the harness now runs OUTSIDE
+WSL — cap slightly relaxed, problem unsolved) killed three in-flight agents. They are
+being resumed with durability-first + memory-guard riders (per-harness `timeout` +
+`ulimit -v` + exact-name reaping; commit-early-commit-often). The minting conductor's
+remaining job is COLLATION ONLY: land their reports as durables. Everything below is
+the SUCCESSOR's:
+
+1. **Fold `ai/r30-lane-kani`** (worktree `agent-a7e3dadb6449b686d`, locked) + the
+   conductor-tier HARNESS-STATEMENT REVIEW (law · bounds · what is NOT pinned — the
+   staffing split reserves this for Fable; `300` §2's kani bullet has the target
+   list; `§2a` the seat bank). Its lane carries the census-fix rider and the
+   `pinned`-badge seam closure. Expect a rebase over the moved tree (its base is
+   `5e6d6788`; report.rs-area conflicts possible with the reshape's census fix).
+2. **Adjudicate the prompt-review audit** (report expected at
+   `.claude/reports/r30-prompt-review-audit.md`; apply-or-decline each proposed
+   edit).
+3. **Ledger the speech-act gap-check** (report expected at
+   `.claude/reports/r30-speechact-gapcheck.md`; per the §5 epistemic-sharpening
+   entry: a gap is an aid-plane FINDING to ledger, never to silently build).
+4. **LIVING_STATUS refresh** (the top block is stale: says stage one in flight;
+   reality = everything folded but Kani).
+5. **The wave-one-close gate** (§4) + the human-QA list (§4's [TYPED] deliverable —
+   judgment-tier items only; mechanical checks run by the successor or an
+   idiot-review lane which is DEFERRED to end-of-r30).
+6. Open human items unchanged: `302:pin-blast-radius-escalation` · records-8 ·
+   kSURVIVAL status-line · the `.wslconfig` hardening option · the codex
+   self-commit ACL allowlist.
+7. NOT yet done, deliberately deferred by the wind-down: nothing else — every other
+   Wave-1 item is folded and banked above.
+
 ## §4 — wave-one-close (the handoff gate)
 
 [TYPED 2026-08-15] CLOSE DELIVERABLE, chat-tier: a brief **human-QA list** that
