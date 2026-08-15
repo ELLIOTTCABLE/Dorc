@@ -9,8 +9,8 @@
 > are marked **[rationale withheld]**. The complete reasoning lives at
 > `Research/quarantine-DO-NOT-READ/306a` and is readable only by a reader authorized into
 > that quarantine. If you are not so authorized: **do not re-derive a withheld rationale, and
-> do not weaken a rule because its justification looks thin from here.** Ask, or route
-> through opaque review.
+> do not weaken a rule because its justification looks thin from here.** Ask the
+> human, or route through the /opaque-review SKILL if the human is unavailable.
 >
 > Confidence: the human's rulings below are firm. My own architectural suggestions are SOFT —
 > offered to be tuned by a reviewer with better judgment and less context than I had. I
@@ -41,6 +41,12 @@ other, and should never be used as a synonym for taint in general.
 
 **`influence`** — a dataflow property over values, tracking derivation from host-reported
 bytes.
+
+Notably, this taint-flow doesn't just thread the *analyzed unit*, it threads upwards from the
+analysis into the *analyzer* - when influenced, the analyzer itself must track,
+at the type-level, its own influence. This is critical for aid-reporting: the
+analyzer must always know what has influenced its decisions; influence is a
+one-way gate, across all program state, including the analyzer.
 
 Three grades at v0, with room reserved for refinement (§1c):
 
@@ -74,6 +80,9 @@ our own code takes, then everything computed inside that branch is influenced �
 values that never touch a coordinate, a fact, or a verdict. The property flows *upward* out
 of the analyzed picture and *into the analyzer*, and it propagates through our own types,
 our own control flow, and our own derived data structures.
+
+Motivating example: *discarding the entire analysis* is an influenced result;
+and is a perfect counter-exmpale to 'influence is within-dataflow.'
 
 Practical consequence, and the one to design against: a conclusion can be influenced without
 mentioning anything host-shaped. Scheduling decisions, iteration counts, which passes ran,
@@ -132,12 +141,19 @@ one that had nothing to omit.
 Freeform host output is **not** persisted. The engine is referentially agnostic: it cannot
 determine what any given byte-sequence means or whether it is sensitive, so no filtering rule
 of the form "detect the sensitive thing and omit it" is available to it, and none should be
-attempted. The resolution is structural rather than selective — host text stays on the host,
-and is pulled at debugging time if it is wanted then, accepting that it may be gone.
+attempted. The resolution is structural rather than selective — host text that
+*isn't* filtered through a contracted oracle stays on the host, and is pulled at
+debugging time if it is wanted then, accepting that it may be gone.
 
-The structured record stream the engine must accept is bounded by **contract only**. Nothing
-in construction, testing, or proof prevents an oracle body from emitting arbitrary content
-into it, and the engine must not claim otherwise anywhere in its documentation or output.
+However, that's a cold comfort - the structured record stream the engine must
+accept is bounded by **contract only**. Nothing in construction, testing, or
+proof prevents an oracle body from emitting arbitrary content into it, and the
+engine must not claim otherwise anywhere in its documentation or output. Our
+host-text-on-the-host rule is defense-in-depth, but not exhaustive; it *does
+not* prevent host-text from reaching the controller. It exists only as a
+backstop against imperfect oracle-authorship against admin debugging-needs,
+where the oracle-author made the wrong selection about what to report or return
+or filter-out, effectively.
 
 ### §2c — Content, as it stands [MIXED]
 
@@ -187,7 +203,9 @@ it guards is *temporal scope*, not derivation. A durable's uninfluenced content 
 describes a world-moment that has passed. Two rules, two distinct failures.
 
 (Both are modulo `KNOBS:kSTATE`, which remains the human's knob; this document is
-kSTATE-agnostic.)
+kSTATE-agnostic. Even if the kSTATE door were ever intentionally opened, it
+would be a *different* durable with *different* architecture and constraints;
+not the whylog, and must be designed with its own care and goals.)
 
 ### §3d — Replay shape [SOFT]
 
@@ -205,6 +223,10 @@ shape:
   version skew, and engine nondeterminism with one mechanism.
 - A cheap cryptographic hash over the durable is worth carrying as an independent integrity
   signal [human]. It competes with nothing above.
+
+> human: i need to look into equivocation literature & decentralized
+>        witness-cosigning; can untrusted hosts keep the controller honest about
+>        the whylog?
 
 ### §3e — Additional acts past re-ingestion [SOFT, human-framed]
 
@@ -282,7 +304,8 @@ another, and the escalation dial refuses it. [rationale withheld]
 
 Re-querying at explanation time is not covered by the plan/apply consent moment — the operator
 asked a question, they did not authorize a run — and it happens when no plan is on screen to
-disclose anything. It needs its own gate. Shape unsettled.
+disclose anything. It needs its own gate. Shape unsettled. (This is slightly
+covered in the re-probing-auth/consent discussion on dorc explain/why surfaces.)
 
 ## §6 — Diagnostics and rendering
 
