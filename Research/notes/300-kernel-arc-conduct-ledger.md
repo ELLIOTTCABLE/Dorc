@@ -178,6 +178,12 @@ per `28Q` §8.
 - 2026-08-14, session close: Flux DEFERRED [TYPED] — penciled mid-r30 (post-Lean
   standup, pre-stage-i), defense-in-depth intent standing, with the
   required-changes-ride-Aeneas-prep exception (§2's facade rider).
+- 2026-08-14, the greenlight sitting (post-rewind): certification machinery ruled
+  sketch-until-demanded (`301:post-certification-sketch-until-demanded` — architecture
+  + cheap tooling + named seams; upfront depth is conductor/builder latitude) ·
+  imported tools built general, never minispec-scoped
+  (`301:law-imported-tools-built-general`) · proceed GREENLIT, conductor discretion
+  ("I am here to work with you").
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 

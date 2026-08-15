@@ -52,6 +52,19 @@ who are not proof-literate; **neither is ever user-facing or marketed** [TYPED].
   involve type-system/runtime refinements to the engine itself so that a law's states
   become checkable at all. That is a feature of the process, not scope-creep; such
   refactors are priced and dispatched like any engine work.
+- **post-certification-sketch-until-demanded** [TYPED 2026-08-14, greenlight sitting] —
+  the certification machinery (non-vacuity batteries, assertion-subset
+  re-verification, reach instrumentation, mutant-kill recording) is
+  ARCHITECTURE-first: v0 builds the catalogue/badge/report skeleton plus whatever
+  certification tooling is CHEAP, and leaves NAMED SEAMS for the rest; the full
+  check-and-maintain mechanism for a law arrives when "I want certainty in this law"
+  demands it, per-law. Upfront depth is conductor/builder latitude — building the
+  whole underlying tooling family in one sitting is sanctioned, never demanded.
+- **law-imported-tools-built-general** [TYPED] — any tool whose maintenance burden the
+  repo imports (mutation-testing, coverage instrumentation, property-testing infra,
+  catalogue machinery) is built PROPERLY and GENERALLY: usable against anything in the
+  codebase, never minispec-scoped. Maximize the value extracted from any tooling work
+  undertaken. Binds the dorc-verify build and every later tooling lane.
 
 ## §1 — The law unit
 
