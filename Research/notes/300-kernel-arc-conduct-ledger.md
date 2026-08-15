@@ -168,7 +168,16 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   `rul-reference-entity-name-floor` — within-kind unequal entities answer
   ProvablyDisjoint under the name-comparison floor (`canonical-coord-continuity`'s
   no-resolver floor; USER_STORY stage-6); the model stays resolver-blind and the
-  (b)-adapter feeds canonicalized entities where a resolver exists ·
+  (b)-adapter feeds canonicalized entities where a resolver exists. EPISTEMIC
+  SHARPENING [human-corrected 2026-08-15]: "ProvablyDisjoint" is the algebra's
+  verdict vocabulary — disjoint GIVEN the claims — never machine-proof of
+  referent-inequality. Entity-disjointness rests on a SPEECH-ACT (the resolver
+  author's claim, or the disclosed-weak name-floor), must wear its tier
+  mechanically in every why-chain (`trust-tier-is-syntax`; a claim never renders
+  in measurement's clothing), and no aid surface may spell it "proven".
+  Discipline-close check item: verify the survival why-chain DISTINGUISHES
+  resolver-claimed disjointness from name-floor-derived disjointness; a gap there
+  is an aid-plane finding to ledger, never to silently build ·
   `rul-reference-kind-fence-disjoint` — cross-kind pairs short-circuit
   ProvablyDisjoint (the v1 kind fence, `kind-fence-movable`; my bundle stated only
   no-cross-kind-same, so the model answers Unknown and would demote every real
