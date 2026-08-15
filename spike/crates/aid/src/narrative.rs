@@ -403,6 +403,10 @@ pub enum DemoteTag {
     MayAlias,
     /// A resolver/reaches provider reclassification collision (`resolver-conflict`/`reaches-conflict`).
     Reclassified,
+    /// The independent reference model did not confirm the survival the wall walk had minted
+    /// (`300:lane-sparing-rederivation`). Our own two implementations of one algebra disagreed, so
+    /// the site takes the guard/run floor — never the book's fault, and never a widening.
+    RederivationDisagreement,
 }
 
 /// Why the leaf-exact render refused to elide/guard a licensed leaf (c8). `render-heredoc-refused`

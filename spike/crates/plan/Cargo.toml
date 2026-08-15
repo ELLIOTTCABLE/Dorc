@@ -19,6 +19,10 @@ dorc-syntax = { path = "../syntax", version = "0.0.0" }
 # oracle lift's `<provider>__predict` funcname mangling — one home for the
 # hyphen↔underscore convention (task-P). The e2e tests also build a kind-index.
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
+# The independent reference model of the sparing algebra (`300:lane-sparing-rederivation`). Zero
+# deps, one pass, authored blind to this crate: every survival verdict re-derives through it before
+# a plan ships, and the differential drives both implementations over the same inputs.
+dorc-sparing-reference = { path = "../sparing-reference", version = "0.1.0" }
 
 # TEST-ONLY, and deliberately so: the kernel gains no dependency. `render_corpus`'s
 # `dash -n` net needs a POSIX shell, and `internal-tooling` (std-only repo plumbing, not
@@ -26,6 +30,11 @@ dorc-oracle = { path = "../oracle", version = "0.0.0" }
 # the two cannot drift into disagreeing about it, as they silently had.
 [dev-dependencies]
 internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
+# TEST-ONLY: `hostsim::Lcg` is the spike's single home of seeded entropy (`inv-determinism`), and
+# the sparing differential draws its permuted inputs from it rather than minting a third LCG. The
+# edge is dev-only in both directions (hostsim's own tests dev-dep this crate), so no lib-graph
+# cycle exists.
+dorc-hostsim = { path = "../hostsim", version = "0.0.0" }
 
 [lints]
 workspace = true

@@ -105,6 +105,8 @@ pub mod render;
 /// is the cli/hostsim I/O edge and probe-shipping is task-14-gated; the corpus stays byte-stable.
 pub mod shim;
 
+pub mod rederive;
+
 pub mod survival;
 pub use survival::{
     Backing, CanonicalCoord, Crossing, DisjointOutcome, DisjointnessProof, EntityCoord, Footprint,
@@ -1796,6 +1798,12 @@ pub struct SurvivalReport {
     /// survival walk mints beside its dispositions (`two-plane-aid-law`; steers nothing). Mint-pass
     /// ordered (`inv-determinism`); threaded to the why-lens seam by the cli (d4 renders).
     collapse_narrative: Vec<CollapseNarrative>,
+    /// `300:lane-sparing-rederivation` — each `(demoted leaf, crossed-wall ordinal)` where the
+    /// reference model declined to confirm a survival the wall walk had already minted. EMPTY is
+    /// the healthy state and the corpus's standing expectation: a non-empty entry means our two
+    /// implementations of one algebra disagreed, which is a finding about OUR engine, never the
+    /// book's text. The cli renders it as `survival-rederivation-disagreement`.
+    rederivation_demotions: Vec<(LeafId, u32)>,
 }
 
 impl SurvivalReport {
@@ -1818,6 +1826,12 @@ impl SurvivalReport {
     #[must_use]
     pub fn collapse_narrative(&self) -> &[CollapseNarrative] {
         &self.collapse_narrative
+    }
+
+    /// The re-derivation demotions (`300:lane-sparing-rederivation`): `(demoted leaf, crossed-wall
+    /// ordinal)` per survival the reference model declined to confirm. Empty is the healthy state.
+    pub fn rederivation_demotions(&self) -> impl Iterator<Item = (LeafId, u32)> + '_ {
+        self.rederivation_demotions.iter().copied()
     }
 }
 
@@ -3720,14 +3734,42 @@ fn wall_walk_survival(
                 // Crossed no wall — an ordinary pre-wall elision; leave it exactly as the
                 // flag-off world would (no witness, `Replace` untouched).
                 survival::WallVerdict::SurvivedClean => {}
-                // Crossed ≥1 running wall, all disjoint — survives WITH attribution. Rebind the
-                // disposition to carry the witness (pure output provenance, post-mint).
+                // Crossed ≥1 running wall, all disjoint — survives WITH attribution, ONCE the
+                // independent reference model re-derives the same answer
+                // (`300:lane-sparing-rederivation`). The re-check consumes the minted witness and
+                // can only hand it back or refuse it, so this seat can remove a survival and never
+                // add one; a refusal demotes here, INSIDE the walk, so the now-running site
+                // contributes its wall to everything downstream exactly as any other run does.
                 survival::WallVerdict::Survived(witness) => {
-                    if let Disposition::Replace(license, stand_in) =
-                        std::mem::replace(&mut step.disposition, Disposition::Run)
-                    {
-                        step.disposition =
-                            Disposition::Replace(license.with_survival(witness), stand_in);
+                    match rederive::recheck_survival(
+                        witness,
+                        &backing,
+                        &accumulated,
+                        resolutions,
+                        dialect,
+                    ) {
+                        rederive::Recheck::Confirmed(witness) => {
+                            if let Disposition::Replace(license, stand_in) =
+                                std::mem::replace(&mut step.disposition, Disposition::Run)
+                            {
+                                step.disposition =
+                                    Disposition::Replace(license.with_survival(witness), stand_in);
+                            }
+                        }
+                        rederive::Recheck::Demoted(disagreement) => {
+                            report.rederivation_demotions.push((
+                                step.leaf,
+                                u32::try_from(disagreement.wall).unwrap_or(u32::MAX),
+                            ));
+                            report.collapse_narrative.push(CollapseNarrative::new(
+                                SpeechAct::Derived,
+                                CollapseKind::Demotion {
+                                    site: dorc_aid::diag::SiteId::leaf(step.leaf),
+                                    reason: DemoteTag::RederivationDisagreement,
+                                },
+                            ));
+                            step.disposition = Disposition::Run;
+                        }
                     }
                 }
                 // A total wall stands, the backing hit a footprint, or a same-kind pair could not be

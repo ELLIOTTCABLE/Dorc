@@ -375,7 +375,7 @@ impl Footprint {
     /// The disturbs-emission selector for a footprint coordinate, or `None` (whole-entity ⊤). The
     /// `claim` side of [`selector_covers`](dorc_core::selector_covers).
     #[must_use]
-    fn selector_of(&self, coord: EntityCoord) -> Option<SelectorId> {
+    pub(crate) fn selector_of(&self, coord: EntityCoord) -> Option<SelectorId> {
         self.selectors.get(&coord).copied()
     }
 
@@ -441,7 +441,7 @@ impl Footprint {
     /// then the novel own) for `inv-determinism`. Union coords are ordinary hit-surface: they
     /// canonicalize and intersect identically to an authored coord, and only ever ADD surface, never
     /// remove (`inv-kfail`, apply — the union can demote a survival, never license one).
-    fn hit_surface(&self) -> impl Iterator<Item = EntityCoord> + '_ {
+    pub(crate) fn hit_surface(&self) -> impl Iterator<Item = EntityCoord> + '_ {
         self.coords
             .iter()
             .copied()
@@ -539,8 +539,16 @@ impl Backing {
     /// The backing's member SELECTORS (`277` §5): the fact's own cell first, then each
     /// observe-widened sibling (deterministic — `widen` is a `BTreeSet`). The universal meet
     /// ([`disjoint`]) quantifies over these.
-    fn member_selectors(&self) -> impl Iterator<Item = Option<SelectorId>> + '_ {
+    pub(crate) fn member_selectors(&self) -> impl Iterator<Item = Option<SelectorId>> + '_ {
         std::iter::once(self.selector).chain(self.widen.iter().map(|s| Some(*s)))
+    }
+
+    /// The THREADED minting family (`277` §3 backing provenance), or `None` where provenance must
+    /// be recovered per member through the `sole_family` reverse-lookup floor. Crate-internal: the
+    /// re-derivation adapter needs the same provenance input [`disjoint`] uses.
+    #[must_use]
+    pub(crate) fn family(&self) -> Option<ProviderId> {
+        self.family
     }
 
     /// The backed coordinate (attribution render — the fact's own `(kind, entity)` anchor).
