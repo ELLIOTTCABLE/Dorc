@@ -214,6 +214,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dorc-sparing-reference"
+version = "0.1.0"
+
+[[package]]
 name = "dorc-sweep"
 version = "0.0.0"
 dependencies = [
