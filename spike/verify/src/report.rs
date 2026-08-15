@@ -104,9 +104,8 @@ pub fn render(rows: &[Row<'_>], tier: Tier, census: Census) -> String {
         out,
         "- external axioms in `Generated/`: **{}**. Each is a std or fenced function the \
          translator does not model, standing in for a body nothing checks. The fence — which \
-         items are axiomatized and why — is `spike/verify/aeneas/Cargo.toml`, where each entry \
-         is classed as a permanent translation boundary, a recorded finding, or that finding's \
-         collateral.",
+         items are axiomatized and why — is `spike/verify/aeneas/Cargo.toml`, where every entry \
+         carries its class and its reason.",
         census.axioms
     );
     out.push('\n');
