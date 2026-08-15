@@ -1012,9 +1012,12 @@ no task covers, and consider adding the task instead.
 
 - Every subagent prompt begins with the **Safety block** (verbatim, above), then:
   - **step-zero** (worktree agents only — `isolation: worktree` bases agents on a
-    possibly-stale `main`): `git switch -C <task-branch> <current-lineage-branch>`
-    (today: `ai/spike3-r23`), verify the tip hash matches what the conductor
-    stated, verify `pwd`; **step-0.5**: `mise trust`.
+    possibly-stale `main`): verify `pwd` FIRST, then `git -C <that absolute path>
+    switch -C <task-branch> <the lineage branch the conductor named>`, then verify
+    the tip hash matches what the conductor stated. EVERY git command in the lane
+    carries `-C <own worktree>`, never a bare `cd` (`worktree-file-access-law`).
+    Name no branch here — the brief carries it. **step-0.5**: `mise trust`, and
+    again inside WSL before the first `mise run both` (`wsl-trust-per-worktree`).
   - **step-one**: an EXPLICIT read of root `README.md` + `DESIGN.md`, this
     `spike/CLAUDE.md`, and the crate's `CLAUDE.md` — before any task material.
     Then exactly the note-slugs the orchestrator hands it. Pass absolute paths.
