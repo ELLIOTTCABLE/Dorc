@@ -208,7 +208,9 @@ dependencies = [
  "dorc-aid",
  "dorc-analysis",
  "dorc-core",
+ "dorc-hostsim",
  "dorc-oracle",
+ "dorc-sparing-reference",
  "dorc-syntax",
  "internal-tooling",
 ]
