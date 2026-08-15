@@ -41,7 +41,7 @@ use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use crate::certify::{SolveConsistency, solve_certified};
 use crate::cfg::{Branch, Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::{Flat, Lattice, MapL};
-use crate::solve::{Direction, Graph};
+use crate::solve::{Direction, Graph, Solution};
 use crate::value::{ValueFlow, ValueOf};
 
 // ── The value-plane seam: funcenv-reads-source-literal-plane-only ──
@@ -576,36 +576,59 @@ pub fn analyze(
         })
     };
 
-    let mut folded_edges = BTreeSet::new();
-    let (mut solution, mut consistency) = solve_pruned(&folded_edges);
+    match fold_to_environment(solve_pruned, |states| {
+        dead_edges(ast, cfg, defs, literals, states, true)
+    }) {
+        Ok((states, folded_edges)) => FuncEnv {
+            states,
+            floor: None,
+            unresolvable_loads,
+            sourced_paths,
+            folded_edges,
+        },
+        Err(consistency) => funcenv_floor(cfg, EnvFloor::SolverInconsistent(consistency)),
+    }
+}
+
+/// The decidable-condition fold's round loop, over a caller-supplied round-solver.
+///
+/// Parameterized so `302` §6.8's obligation is OBSERVABLE: a test can hand it a solver whose
+/// answer really does fail the REAL certifier and watch the fold break, without any way for a
+/// production path to reach a faked verdict.
+///
+/// `Err` is the grant-shifting guard (`302` §3.2, `303:fnd-never-live-is-the-grant-shifting-
+/// consumer`): `never_live` subtracts EXACTLY and so SHIFTS WINNERS, which means a round whose
+/// states did not certify must reach neither `dead` nor the next fold. Breaking out is not the
+/// same as stopping — stopping would keep both the unchecked states AND the edges already folded
+/// from them, and those edges are precisely what would grant.
+fn fold_to_environment(
+    solve_round: impl Fn(&FoldedEdges) -> (Solution<EnvStack>, SolveConsistency<EnvStack>),
+    dead: impl Fn(&[EnvStack]) -> FoldedEdges,
+) -> Result<SettledFold, Box<SolveConsistency<EnvStack>>> {
+    let mut folded_edges = FoldedEdges::new();
+    let (mut solution, mut consistency) = solve_round(&folded_edges);
     for _ in 0..FOLD_ROUNDS_CAP {
-        // THE GRANT-SHIFTING GUARD (`302` §3.2, `303:fnd-never-live-is-the-grant-shifting-
-        // consumer`). `never_live` subtracts EXACTLY and so SHIFTS WINNERS; a round whose states
-        // did not certify must therefore reach neither `dead_edges` nor the next fold, or an
-        // un-checked state grants a license. BREAK to the floor — do not merely stop folding,
-        // which would keep the bad states and the edges already folded from them.
         if !consistency.is_consistent() {
-            return funcenv_floor(cfg, EnvFloor::SolverInconsistent(Box::new(consistency)));
+            return Err(Box::new(consistency));
         }
-        let found = dead_edges(ast, cfg, defs, literals, &solution.states, true);
+        let found = dead(&solution.states);
         if found.is_subset(&folded_edges) {
             break;
         }
         folded_edges.extend(found);
-        (solution, consistency) = solve_pruned(&folded_edges);
+        (solution, consistency) = solve_round(&folded_edges);
     }
     if !consistency.is_consistent() {
-        return funcenv_floor(cfg, EnvFloor::SolverInconsistent(Box::new(consistency)));
+        return Err(Box::new(consistency));
     }
-
-    FuncEnv {
-        states: solution.states,
-        floor: None,
-        unresolvable_loads,
-        sourced_paths,
-        folded_edges,
-    }
+    Ok((solution.states, folded_edges))
 }
+
+/// The control-flow edges the decidable-condition fold has masked.
+type FoldedEdges = BTreeSet<(CfgNodeId, CfgNodeId)>;
+
+/// A fold that settled: the solved states, plus the edges it masked to get there.
+type SettledFold = (Vec<EnvStack>, FoldedEdges);
 
 /// The FUNCTION-ENVIRONMENT FLOOR (`302` §3.2) — the one seat every un-trusted environment lands
 /// on, and the sharpest floor in the lane.
@@ -617,9 +640,9 @@ pub fn analyze(
 /// into a LICENSE. Everything the environment can say is withheld: `before` ⇒ ⊤,
 /// `unprovable` names every role, `never_live` ⇒ ∅, `contests` ⇒ ∅.
 #[must_use]
-pub fn funcenv_floor(cfg: &Cfg, floor: EnvFloor) -> FuncEnv {
+pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
     FuncEnv {
-        states: vec![EnvStack::Top; cfg.node_count()],
+        states: vec![EnvStack::Top; graph.node_count()],
         floor: Some(floor),
         unresolvable_loads: BTreeSet::new(),
         sourced_paths: BTreeMap::new(),
@@ -1359,6 +1382,78 @@ mod tests {
         assert_eq!(solved.before(CfgNodeId(0)), EnvStack::Top);
         assert_eq!(solved.binding_before(CfgNodeId(0), "f"), Flat::Top);
         assert_eq!(solved.binding_before(CfgNodeId(99), "f"), Flat::Top);
+    }
+
+    /// `302` §6.8 — the FOLD BREAKS at the failing round, and the floor it lands on carries
+    /// **`folded_edges = ∅`**.
+    ///
+    /// This is the lane's sharpest correctness obligation. `never_live` subtracts EXACTLY and so
+    /// SHIFTS WINNERS, which means edges folded from states that never certified would GRANT on
+    /// unchecked evidence — a detected engine defect converted into a license. Merely stopping the
+    /// fold would leave exactly those edges behind, so the test asserts the break, not the stop.
+    ///
+    /// The certifier is REAL and unmocked (anti-masking): the round-solver hands back a genuinely
+    /// perturbed solution and `certify_solution` is what judges it. Only the SOLVER is faulted —
+    /// which is precisely `302` §6.1's fault-injection shape, applied one layer up.
+    #[test]
+    fn the_fold_breaks_to_its_floor_at_the_failing_round() {
+        use super::{EnvFloor, fold_to_environment, funcenv_floor};
+        use crate::certify::certify_solution;
+        use crate::solve::{Direction, Graph, Solution};
+
+        struct OneNode;
+        impl Graph for OneNode {
+            fn node_count(&self) -> usize {
+                1
+            }
+            fn succ(&self, _: usize) -> &[usize] {
+                &[0]
+            }
+            fn pred(&self, _: usize) -> &[usize] {
+                &[0]
+            }
+        }
+        let rounds = std::cell::Cell::new(0usize);
+        let solve_round = |_: &BTreeSet<(CfgNodeId, CfgNodeId)>| {
+            rounds.set(rounds.get().saturating_add(1));
+            let mut solution = Solution {
+                states: vec![EnvStack::Bottom],
+                converged: true,
+                rounds: 1,
+            };
+            // Raise the state above what the transfer can justify: `transfer(0, ⊥) = ⊥`, and
+            // `⊥ ⊑ Top` holds, so we instead lower the STATE below its own transferred output by
+            // seeding Top and transferring Top — the edge check then compares Top ⊑ Bottom.
+            solution.states = vec![EnvStack::Bottom];
+            let perturbed_transfer = |_: usize, _: &EnvStack| EnvStack::Top;
+            let consistency = certify_solution(
+                &OneNode,
+                Direction::Forward,
+                &[EnvStack::Bottom],
+                perturbed_transfer,
+                &solution,
+            );
+            (solution, consistency)
+        };
+
+        let outcome = fold_to_environment(solve_round, |_| BTreeSet::new());
+        let consistency = outcome.expect_err("a non-certifying round must break the fold");
+        assert!(!consistency.is_consistent());
+        assert_eq!(rounds.get(), 1, "the fold broke at the FIRST failing round");
+
+        let floored = funcenv_floor(&OneNode, EnvFloor::SolverInconsistent(consistency));
+        assert!(!floored.trusted(), "the floor withholds every answer");
+        assert!(
+            floored.folded_edges().is_empty(),
+            "THE RIDER: a floor carrying folded edges would grant on unchecked states"
+        );
+        assert_eq!(floored.before(CfgNodeId(0)), EnvStack::Top);
+        // What the environment can say is exactly nothing.
+        assert!(floored.unresolvable_loads().is_empty());
+        assert!(matches!(
+            floored.floor(),
+            Some(EnvFloor::SolverInconsistent(_))
+        ));
     }
 
     /// A converged environment with an out-of-range node still answers ⊤ — the same reasoning,

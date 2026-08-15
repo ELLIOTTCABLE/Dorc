@@ -1813,6 +1813,114 @@ mod tests {
     use super::*;
     use crate::cfg::build;
 
+    /// A REAL `Inconsistent` verdict over a synthetic system — built by perturbing a genuine solve
+    /// and letting the genuine checker judge it. Nothing here fakes a verdict (anti-masking); only
+    /// the solver's answer is faulted, which is `302` §6.1's shape.
+    fn a_real_inconsistency() -> SolveConsistency<ValueEnv> {
+        use crate::certify::certify_solution;
+        use crate::solve::Solution;
+
+        struct SelfLoop;
+        impl crate::solve::Graph for SelfLoop {
+            fn node_count(&self) -> usize {
+                1
+            }
+            fn succ(&self, _: usize) -> &[usize] {
+                &[0]
+            }
+            fn pred(&self, _: usize) -> &[usize] {
+                &[0]
+            }
+        }
+        let mut raised = ValueEnv::default();
+        raised.insert("PKG".to_owned(), Flat::Elem("nginx".to_owned()));
+        let solution = Solution {
+            states: vec![ValueEnv::default()],
+            converged: true,
+            rounds: 1,
+        };
+        let outcome = certify_solution(
+            &SelfLoop,
+            Direction::Forward,
+            &[ValueEnv::default()],
+            move |_, _| raised.clone(),
+            &solution,
+        );
+        assert!(!outcome.is_consistent(), "the fixture must really fail");
+        outcome
+    }
+
+    /// `302` §6.8 — the VALUE-PLANE FLOOR, reached with a real `Inconsistent`: every command-site
+    /// argv answers ⊤, so every command classifies `Opaque` ⇒ `MustRun`, and `trusted()` is false.
+    #[test]
+    fn the_value_floor_answers_top_everywhere() {
+        let src = "PKG=nginx\napt-get install -y \"$PKG\"\n";
+        let parsed = dorc_syntax::parse(src);
+        let cfg = build(&parsed.value);
+        let mut interner = Interner::default();
+
+        let floored = value_floor(
+            &cfg.value,
+            &parsed.value,
+            a_real_inconsistency(),
+            &mut interner,
+        );
+        assert!(
+            !floored.trusted(),
+            "an un-certified solve is not trustworthy"
+        );
+
+        let mut sites = 0usize;
+        for (id, node) in cfg.value.iter() {
+            if node.kind != CfgNodeKind::Command {
+                continue;
+            }
+            sites += 1;
+            let words = floored.argv_values(id);
+            assert!(
+                words.iter().all(|w| matches!(w, ValueOf::Top(_))),
+                "every word of every site must be ⊤ at the floor; site {id:?} was {words:?}"
+            );
+        }
+        assert!(sites > 0, "the fixture must actually carry command sites");
+    }
+
+    /// `302` §6.8 — the value→funcenv CASCADE, observed rather than argued: a floored value plane
+    /// makes `SourceLiteralPlane::trusted()` false, and the function environment then takes ITS
+    /// floor along the real dependency, `folded_edges` empty.
+    #[test]
+    fn a_floored_value_plane_cascades_the_function_environment_to_its_floor() {
+        let src = "f() { :; }\nf\n";
+        let parsed = dorc_syntax::parse(src);
+        let cfg = build(&parsed.value);
+        let mut interner = Interner::default();
+
+        let floored = value_floor(
+            &cfg.value,
+            &parsed.value,
+            a_real_inconsistency(),
+            &mut interner,
+        );
+        let plane = crate::funcenv::SourceLiteralPlane::new(&floored, &interner);
+        assert!(!plane.trusted(), "the cascade's first link");
+
+        let env = crate::funcenv::analyze(
+            &parsed.value,
+            &cfg.value,
+            &crate::funcenv::DefinitionTable::default(),
+            &plane,
+        );
+        assert!(
+            !env.trusted(),
+            "the environment follows the value plane down"
+        );
+        assert!(env.folded_edges().is_empty(), "a floor folds nothing");
+        assert!(matches!(
+            env.floor(),
+            Some(crate::funcenv::EnvFloor::ValuePlaneUntrusted)
+        ));
+    }
+
     /// One resolved word, lowered to a tiny comparison-friendly value for ergonomic asserts
     /// (`Lit(text)` = literal, `Top` = ⊤). The analysis derives every value end-to-end from
     /// parsed sh — no test constructs an [`Abstract`]/`ValueOf` by fiat

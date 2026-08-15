@@ -1129,4 +1129,128 @@ mod tests {
         let (_, outcome) = solve_certified(&g, Direction::Forward, gen_xfer);
         assert!(outcome.is_consistent());
     }
+
+    fn analysis_src() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src")
+    }
+
+    fn rust_sources(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+        let mut out = Vec::new();
+        let mut stack = vec![dir.to_path_buf()];
+        while let Some(next) = stack.pop() {
+            let Ok(entries) = std::fs::read_dir(&next) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    stack.push(path);
+                } else if path.extension().is_some_and(|ext| ext == "rs") {
+                    out.push(path);
+                }
+            }
+        }
+        out.sort();
+        out
+    }
+
+    /// The production half of a source file — everything before its `#[cfg(test)]` module, so a
+    /// fence measures shipped code and never its own tests.
+    fn production_half(text: &str) -> &str {
+        text.split("#[cfg(test)]").next().unwrap_or_default()
+    }
+
+    /// Count calls to `<name>(` at an IDENTIFIER BOUNDARY. A bare substring search cannot do this
+    /// job: `interner.resolve(` ends in the very bytes `solve(`, and `re|solve(` reads as a
+    /// raw-solve call to a naive scan (it did, on the first run of the fence below).
+    fn boundary_calls(body: &str, name: &str) -> usize {
+        let needle = format!("{name}(");
+        let bytes = body.as_bytes();
+        let mut count = 0usize;
+        let mut from = 0usize;
+        while let Some(hit) = body.get(from..).and_then(|rest| rest.find(&needle)) {
+            let at = from.saturating_add(hit);
+            let preceded_by_ident = at
+                .checked_sub(1)
+                .and_then(|i| bytes.get(i))
+                .is_some_and(|&b| b.is_ascii_alphanumeric() || b == b'_');
+            if !preceded_by_ident {
+                count = count.saturating_add(1);
+            }
+            from = at.saturating_add(needle.len());
+        }
+        count
+    }
+
+    /// §6.7 — the OUTCOME may not be forged. Both payloads carry private fields, so the type
+    /// system already fences every other crate; this pins the remaining hole — a SECOND mint
+    /// inside this crate, which would be a route to a verdict no walk produced.
+    #[test]
+    fn the_outcome_has_exactly_one_mint() {
+        let sources = rust_sources(&analysis_src());
+        assert!(
+            !sources.is_empty(),
+            "the source walk found nothing — fix the walk"
+        );
+
+        let mut consistent = 0usize;
+        let mut inconsistent = 0usize;
+        for path in &sources {
+            let text = std::fs::read_to_string(path).unwrap_or_default();
+            let body = production_half(&text);
+            consistent += body
+                .matches("SolveConsistency::Consistent(ConsistentChecks {")
+                .count();
+            inconsistent += body
+                .matches("SolveConsistency::Inconsistent(FailedChecks {")
+                .count();
+        }
+        assert_eq!(consistent, 1, "exactly one `Consistent` mint");
+        assert_eq!(inconsistent, 1, "exactly one `Inconsistent` mint");
+    }
+
+    /// The RAW-SOLVE FENCE (`302` §3). `solve` is `pub(crate)`, so no other crate can reach it;
+    /// within this crate the fence is lexical. A production module calling the raw solver would
+    /// be taking an UNCERTIFIED answer — the exact thing `solve_certified` exists to prevent.
+    ///
+    /// Two-way and non-vacuous: the walk must find files, the needle must be found where it IS
+    /// allowed (so a rotted needle reddens rather than passing silently), and nowhere else.
+    #[test]
+    fn only_the_certifier_calls_the_raw_solver() {
+        let sources = rust_sources(&analysis_src());
+        assert!(
+            !sources.is_empty(),
+            "the source walk found nothing — fix the walk"
+        );
+
+        let allowed = ["solve.rs", "certify.rs"];
+        let mut found_in_allowed = 0usize;
+        let mut offenders: Vec<String> = Vec::new();
+        for path in &sources {
+            let text = std::fs::read_to_string(path).unwrap_or_default();
+            let name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default()
+                .to_owned();
+            let body = production_half(&text);
+            let calls = boundary_calls(body, "solve");
+            if calls == 0 {
+                continue;
+            }
+            if allowed.contains(&name.as_str()) {
+                found_in_allowed = found_in_allowed.saturating_add(calls);
+            } else {
+                offenders.push(name);
+            }
+        }
+        assert!(
+            found_in_allowed > 0,
+            "the fence found no raw-solve call at all — the needle rotted, fix the scan"
+        );
+        assert!(
+            offenders.is_empty(),
+            "production modules must call `solve_certified`, not the raw solver: {offenders:?}"
+        );
+    }
 }
