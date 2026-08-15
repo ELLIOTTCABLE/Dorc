@@ -31,6 +31,16 @@ must recover the gate without exposing that report to an ordinary conductor.
 > attribution wrapper; legacy/raw surfaces surviving beside the new admission route) are
 > recorded as fenced, not blocking. The four immediate ledger rows are ACCEPTED. Read the
 > paragraph above as the historical state of a broken relay, not as an outstanding gate.
+
+<!-- /* superceded in part by quarantine/305 (2026-08-15): "recorded as FENCED" overstates the
+legacy/raw residue. `29A` §3's own wording is the accurate one — "remains reachable in
+principle" — and the tree agrees with `29A`, not with this paragraph: `records::deframe` and
+`LegacyPolicy::Tolerate` are `pub` in `dorc-plan` with no lexical gate, where
+`sinv-production-fences` demands one for exactly this class. The three gates that exist
+(`fixture_intake_is_unreachable_from_production`, `fixture_payloads_are_unreachable_from_production`,
+`foreign_edge_constructor_is_fenced`) do not name them; the parser is UNCALLED, not fenced.
+Phase-five legacy-parser fencing (`29A` §8 item 3) is therefore still owed, and a successor
+reading "fenced" here would wrongly conclude there is nothing to schedule. */ -->
 >
 > Standing correction to the instruction below: **running an opaque accrual review over
 > this material was a misfire, and no opaque review is necessary or wanted for round-29
