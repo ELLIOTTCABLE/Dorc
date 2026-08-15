@@ -990,6 +990,17 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let classes = origin.classes.clone();
     let kills = origin.kills.clone();
 
+    // `302` §4 — the ORIGIN round is PRE-NETWORK, so its consistency failures are reported HERE,
+    // not with the rest of the classify diags far below (R3, cross-lineage review). That later
+    // seat sits past the `Mode::Probe` return AND past `ship_probe`, so a reaching-defs or
+    // self-reach give-up known before any host was touched would have been disclosed late in a
+    // host-backed run and not at all in `probe` mode — the floor stayed conservative, but the
+    // posture this lane specified was not kept. The fixpoint rounds keep the batched post-probe
+    // surface; only the pre-network round moves.
+    let origin_consistency_diags = consistency_diags_of(&origin.diags);
+    report_at(advisory, "solve", book_source, &origin_consistency_diags);
+    let origin_consistency_narrative = consistency_narratives_of(&origin.classify_narrative);
+
     // The per-site guard VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c) —
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
@@ -1603,6 +1614,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .chain(entry_narrative.iter().cloned())
         .chain(shadow_narrative.iter().cloned())
         .chain(consistency_narrative.iter().cloned())
+        .chain(origin_consistency_narrative.iter().cloned())
         .chain(merge_narrative.iter().cloned())
         .chain(plan.survival_report.collapse_narrative().iter().cloned())
         .chain(plan.render_refusal_narratives(&parsed.value))
@@ -2311,6 +2323,39 @@ fn solve_consistency_reports(
     (diags, narratives)
 }
 
+/// The consistency-failure diagnostics out of a classify round, split from the rest so the
+/// PRE-NETWORK round can report them at a pre-network seat (R3).
+///
+/// Matched on the TYPED payload rather than on rendered words, per `prose-pins-live-where-the-
+/// prose-does`: the wording is unwelded and a text match here would silently stop selecting the
+/// moment anyone edits the register.
+fn consistency_diags_of(diags: &[Diag]) -> Vec<Diag> {
+    diags
+        .iter()
+        .filter(|diag| matches!(diag.code, DiagCode::SolverConsistencyFailure(_)))
+        .cloned()
+        .collect()
+}
+
+/// The consistency-failure narratives out of a classify round — the origin round's share, which
+/// otherwise never reached the confluence at all (its whole narrative slice is dropped in favour
+/// of the fixpoint round's).
+///
+/// The fixpoint rounds keep reporting their OWN failures at the batched surface: a later round is
+/// a different solve, so its failure is a second event rather than an echo of this one.
+fn consistency_narratives_of(narratives: &[CollapseNarrative]) -> Vec<CollapseNarrative> {
+    narratives
+        .iter()
+        .filter(|narrative| {
+            matches!(
+                narrative.kind(),
+                CollapseKind::SolverConsistencyFailure { .. }
+            )
+        })
+        .cloned()
+        .collect()
+}
+
 /// The scalar narrative for one failing solve — the cli's copy of the `analysis::effect` mint,
 /// over its own lattice type.
 fn consistency_narrative<L>(
@@ -2339,8 +2384,11 @@ fn consistency_narrative<L>(
             operands: Operands::capped(checks),
             shown: u32::try_from(report.shown()).unwrap_or(u32::MAX),
             total: u32::try_from(report.total()).unwrap_or(u32::MAX),
-            converged: advisory.converged,
-            rounds: u32::try_from(advisory.rounds).unwrap_or(u32::MAX),
+            solves: 1,
+            advisory: dorc_aid::narrative::SolverRounds {
+                converged: advisory.converged,
+                rounds: u32::try_from(advisory.rounds).unwrap_or(u32::MAX),
+            },
         },
     )
 }
