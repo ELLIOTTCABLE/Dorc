@@ -301,9 +301,15 @@ to inject that must trip the new safeguards, specific CLI invocations
 demonstrating the new tooling — optimized for minimal human effort × maximal
 chance of surfacing unexpected choices, holes, mistakes, or underspecifications.
 (Prior arcs smuggled sharp edges under flashy acceptance criteria via the human's
-own limited exercise time; this is the counter.) The list itself is conversation
-output at close, never a durable; THIS obligation note is what survives
-compression. Conductor collects candidates per fold.
+own limited exercise time; this is the counter.) Refined [human, 2026-08-15]:
+items need NOT be single commands — fuzzier exercises are expected; anything
+mechanically checkable the conductor runs itself pre-close, or routes through an
+IDIOT-REVIEW lane (an unprompted agent, FORBIDDEN the docs, given only a goal,
+recording what chafes — the loom blind-reviewer precedent generalized; plan one
+over the dorc-verify/minispec flows at close). The human's list keeps only what
+genuinely needs a human: judgment, taste, fuzzy-seam poking. The list itself is
+conversation output at close, never a durable; THIS obligation note is what
+survives compression. Conductor collects candidates per fold.
 
 All lanes folded to `ai/main` · `mise run both gate:full-quiet` green + `bless:dry`
 clean · certifier + re-derivation live in the DEFAULT suite · the Kani lane opt-in and
