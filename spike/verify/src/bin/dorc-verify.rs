@@ -8,6 +8,7 @@
 
 use std::process::ExitCode;
 
+use dorc_verify::badge::Badge;
 use dorc_verify::catalogue_lock::LAWS;
 use dorc_verify::evidence::Tier;
 use dorc_verify::{check, evidence, pipeline, repo_root, report, unit};
@@ -53,6 +54,17 @@ fn run_check() -> ExitCode {
 
 fn run_report(args: &[&str]) -> ExitCode {
     let root = repo_root();
+    // The COMMITTED report is the cheap tier's render, because the cheap gate is what verifies
+    // it is current. Writing a with-lean render would commit evidence the ordinary gate cannot
+    // recompute, which is the cached-verdict shape this whole design refuses.
+    if args.contains(&"--write") && args.contains(&"--with-lean") {
+        eprintln!(
+            "dorc-verify report: --write publishes the CHEAP-tier render, so --with-lean cannot \
+             ride it. Run them separately: --with-lean to recompute and compare, --write to \
+             republish."
+        );
+        return ExitCode::from(2);
+    }
     let built = args
         .contains(&"--with-lean")
         .then(|| pipeline::lean_build(root, &dorc_verify::lean_build_root()));
@@ -101,9 +113,40 @@ fn run_report(args: &[&str]) -> ExitCode {
         println!("wrote {}", report::path(root).display());
         return ExitCode::SUCCESS;
     }
-    // Unwritten, the report is still the drift alarm: a committed copy that no longer matches
-    // what the evidence says is exactly the stale-coverage claim this system exists to catch.
     print!("{text}");
+
+    // At the with-lean tier there is no committed copy to compare against — that render is
+    // deliberately never published — so the gate is the badge comparison itself.
+    if built.is_some() {
+        let mismatches: Vec<String> = rows
+            .iter()
+            .flat_map(|row| {
+                row.evidence
+                    .iter()
+                    .zip(Badge::ALL)
+                    .filter(|(found, badge)| !found.agrees_with(row.law.expectation(*badge)))
+                    .map(|(found, badge)| {
+                        format!(
+                            "{}: `{badge}` promoted as {}, evidence says {}",
+                            row.law.slug,
+                            row.law.expectation(badge).render(),
+                            found.render()
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        if mismatches.is_empty() {
+            return ExitCode::SUCCESS;
+        }
+        for line in &mismatches {
+            eprintln!("FAIL  {line}");
+        }
+        return ExitCode::from(1);
+    }
+
+    // Bare, the report is the drift alarm: a committed copy that no longer matches what the
+    // evidence says is exactly the stale-coverage claim this system exists to catch.
     match std::fs::read_to_string(report::path(root)) {
         Ok(committed) if committed == text => ExitCode::SUCCESS,
         Ok(_) => {

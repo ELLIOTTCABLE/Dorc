@@ -33,13 +33,16 @@ pub const UNWRITTEN_MARKER: &str = "UNWRITTEN";
 /// Bytes, never lines: the enemy is how much an LLM must load to hold the whole law, and a
 /// wrapped 400-byte paragraph costs the same attention however many lines it occupies.
 ///
-/// Calibrated (`301` §7 item 4) against the only real evidence available at v0 — the
-/// hand-written Lean law units in the sparing-algebra research spike, whose largest law-bearing
-/// file is ~7.5 KB and whose median is ~3 KB — then set ABOVE the largest of them, because the
-/// tripwire must fire on decomposition-worthy growth and not on the first genuinely rich law.
-/// It is advisory: exceeding it prints one consider-decomposing line and nothing else.
-/// Readability and sanity trump the limit.
-pub const BYTE_BUDGET: usize = 12_288;
+/// Calibrated (`301` §7 item 4) against the only real evidence available at v0: the
+/// hand-written Lean in the sparing-algebra research spike. Its STATEMENT-bearing files measure
+/// 1.9 / 2.0 / 3.3 / 5.2 KB, and its one 17.5 KB file is `Laws.lean` — many theorems in one
+/// place, exactly the shape a unit must never become (proofs live outside the unit here). Our
+/// own stubs are ~1.5 KB of prose before a law is written at all.
+///
+/// 8 KB therefore sits above every statement-bearing comparator with real headroom for a
+/// genuinely rich law, and well below the many-things-in-one-file shape. Advisory: exceeding it
+/// prints one consider-decomposing line and nothing else. Readability and sanity trump it.
+pub const BYTE_BUDGET: usize = 8_192;
 
 /// What a unit file says, at the coarsest grain that matters: the three states are genuinely
 /// different, and collapsing any two of them loses the distinction between "not written yet"
