@@ -237,6 +237,9 @@ impl<L> FailedChecks<L> {
     }
 
     /// The retained by-value items, in canonical order, capped at [`INCONSISTENCY_CAP`].
+    ///
+    /// May legitimately be EMPTY while `total` is non-zero: a check that failed because its state
+    /// or seed was MISSING has no values to show. `failing` is the non-empty one, always.
     #[must_use]
     pub fn inconsistencies(&self) -> &[Inconsistency<L>] {
         &self.inconsistencies
@@ -333,8 +336,13 @@ impl<L> SolveConsistency<L> {
 /// validate the graph (`303:fnd-mirror-the-out-of-range-skip`).
 ///
 /// `init` is `&[L]`; `solve` seeds nothing today, so [`solve_certified`] passes all-⊥ and this
-/// clause executes as the trivially-true-still-executed case, live the day real seeding lands. An
-/// entry `init` does not cover reads as ⊥ (trivially true), never as a skipped check.
+/// clause executes as the trivially-true-still-executed case, live the day real seeding lands.
+///
+/// **Length mismatches FAIL.** `states` or `init` shorter than the graph is `Inconsistent`, with
+/// every uncovered node named in the failing set — never normalized to ⊥ and never skipped. The
+/// certifier degrades toward `Inconsistent` under anything it could not examine (`302` §2), and a
+/// truncated state vector is exactly the defect it is here to catch: reading it as "nothing to
+/// check" would return `Consistent` after zero checks.
 #[must_use]
 pub fn certify_solution<G: Graph, L: Lattice>(
     graph: &G,
@@ -344,16 +352,21 @@ pub fn certify_solution<G: Graph, L: Lattice>(
     solution: &Solution<L>,
 ) -> SolveConsistency<L> {
     let node_count = graph.node_count();
-    let bottom = L::bottom();
     let mut checks = 0usize;
     let mut failing = FailingChecks::default();
     let mut items: Vec<Inconsistency<L>> = Vec::new();
 
     for node in 0..node_count {
-        let Some(state) = solution.states.get(node) else {
+        // A MISSING obligation is a FAILED one, never a skipped one. An absent state or seed for
+        // an in-range node means the solution does not describe the system it was solved over —
+        // precisely the state-management defect class this instrument exists to catch — so it
+        // enters `failing` and no by-value item is mintable (there is nothing to show). Reading
+        // either absence as ⊥, or `continue`ing past it, would let an empty `states` vector
+        // certify clean with zero checks, against `302` §2's pessimistic rider.
+        let (Some(state), Some(seed)) = (solution.states.get(node), init.get(node)) else {
+            failing.boundary.insert(node);
             continue;
         };
-        let seed = init.get(node).unwrap_or(&bottom);
         checks = checks.saturating_add(1);
         if !seed.leq(state) {
             failing.boundary.insert(node);
@@ -369,7 +382,7 @@ pub fn certify_solution<G: Graph, L: Lattice>(
 
     for from in 0..node_count {
         let Some(state_from) = solution.states.get(from) else {
-            continue;
+            continue; // already recorded above; the boundary sweep owns the missing-state account
         };
         let transferred = transfer(from, state_from);
         for &to in flows_to(graph, direction, from) {
@@ -377,8 +390,11 @@ pub fn certify_solution<G: Graph, L: Lattice>(
                 to < node_count,
                 "Graph edge endpoint {to} out of range (node_count {node_count})"
             );
-            let Some(state_to) = solution.states.get(to) else {
+            if to >= node_count {
                 continue; // release-mode defensive skip, mirroring `solve` (inv-no-throw)
+            }
+            let Some(state_to) = solution.states.get(to) else {
+                continue; // an IN-RANGE node with no state: recorded by the boundary sweep
             };
             checks = checks.saturating_add(1);
             if !transferred.leq(state_to) {
@@ -847,6 +863,93 @@ mod tests {
         assert_eq!(report.shown(), INCONSISTENCY_CAP);
     }
 
+    /// R1 — an EMPTY state vector must never certify. This is the review's critical finding: the
+    /// walk used to `continue` past a missing state, so a solver that dropped or truncated its
+    /// states returned `Consistent` after ZERO checks — the exact state-management defect class
+    /// the instrument exists to catch, sailing through it.
+    #[test]
+    fn an_empty_state_vector_is_inconsistent_not_vacuously_clean() {
+        let g = chain4();
+        let solution: Solution<Powerset<usize>> = Solution {
+            states: Vec::new(),
+            converged: true,
+            rounds: 0,
+        };
+        let outcome = certify_solution(&g, Direction::Forward, &all_bottom(4), gen_xfer, &solution);
+        let report = failed(&outcome);
+        assert_eq!(
+            *report.failing().boundary(),
+            nodes_of(&[0, 1, 2, 3]),
+            "every node the solution fails to describe is named"
+        );
+        assert_eq!(report.total(), 4);
+        assert_eq!(
+            report.shown(),
+            0,
+            "a missing state has no values to show, and none are owed"
+        );
+    }
+
+    /// R1 — one node short is still `Inconsistent`, and the account NAMES the missing node rather
+    /// than reporting a vague whole-solution failure.
+    #[test]
+    fn a_truncated_state_vector_names_the_missing_node() {
+        let g = chain4();
+        let mut solution = solve(&g, Direction::Forward, gen_xfer);
+        solution.states.pop();
+
+        let outcome = certify_solution(&g, Direction::Forward, &all_bottom(4), gen_xfer, &solution);
+        let report = failed(&outcome);
+        assert_eq!(*report.failing().boundary(), nodes_of(&[3]));
+        assert!(
+            report.failing().edges().is_empty(),
+            "the surviving edges still check out; only the missing node failed"
+        );
+    }
+
+    /// R1 — a short `init` removes a boundary OBLIGATION, which is a failure rather than a
+    /// silently-normalized ⊥. The states here are perfectly good; only the seed slice is short.
+    #[test]
+    fn a_short_init_slice_is_inconsistent() {
+        let g = chain4();
+        let solution = solve(&g, Direction::Forward, gen_xfer);
+        let short = all_bottom(2);
+
+        let outcome = certify_solution(&g, Direction::Forward, &short, gen_xfer, &solution);
+        let report = failed(&outcome);
+        assert_eq!(
+            *report.failing().boundary(),
+            nodes_of(&[2, 3]),
+            "the uncovered nodes are named; ⊥ is not assumed on their behalf"
+        );
+    }
+
+    /// R1's other half — the out-of-range EDGE guard is about the GRAPH, not the solution, and is
+    /// a VERBATIM mirror of the solver's own: `debug_assert` then a release-mode skip. So a
+    /// dangling endpoint trips the same assertion here that it trips in `solve`, and this pins
+    /// exactly that. The release `continue` is deliberately unreachable from a debug test — which
+    /// is the point of mirroring rather than validating (`303:fnd-mirror-the-out-of-range-skip`):
+    /// the certifier never holds an opinion about the graph that the solver does not.
+    #[test]
+    #[should_panic(expected = "out of range")]
+    fn an_out_of_range_edge_trips_the_same_assert_the_solver_does() {
+        let mut dangling = TestGraph::from_edges(2, &[(0, 1)]);
+        dangling.succ[1].push(9);
+        let solution = solve(
+            &TestGraph::from_edges(2, &[(0, 1)]),
+            Direction::Forward,
+            gen_xfer,
+        );
+
+        let _ = certify_solution(
+            &dangling,
+            Direction::Forward,
+            &all_bottom(2),
+            gen_xfer,
+            &solution,
+        );
+    }
+
     /// §6.2 — the boundary family is NON-VACUOUS: a violated seed is caught at an ENTRY node (no
     /// in-edges, so no per-edge check could ever see it) and at an INTERIOR node.
     #[test]
@@ -1154,10 +1257,19 @@ mod tests {
         out
     }
 
-    /// The production half of a source file — everything before its `#[cfg(test)]` module, so a
-    /// fence measures shipped code and never its own tests.
-    fn production_half(text: &str) -> &str {
-        text.split("#[cfg(test)]").next().unwrap_or_default()
+    /// Both fences below scan WHOLE files, deliberately.
+    ///
+    /// The earlier form cut each file at its first `#[cfg(test)]` to measure "production only",
+    /// and that was unsound in the one direction that matters: an item written AFTER a test module
+    /// is ordinary production code and was invisible to the scan. A planted `run(` bypass appended
+    /// to `erase.rs` sailed straight through it. Since no non-allow-listed file reaches the
+    /// worklist from its tests either, the whole-file rule is both simpler and strictly stronger —
+    /// there is no production/test boundary left to get wrong.
+    ///
+    /// The cost is that a fence must not contain its own needle, which is why the mint needles
+    /// below are assembled from parts.
+    fn needle(head: &str, tail: &str) -> String {
+        format!("{head}{tail}")
     }
 
     /// Count calls to `<name>(` at an IDENTIFIER BOUNDARY. A bare substring search cannot do this
@@ -1193,30 +1305,34 @@ mod tests {
             "the source walk found nothing — fix the walk"
         );
 
+        let consistent_mint = needle("SolveConsistency::Consistent(", "ConsistentChecks {");
+        let inconsistent_mint = needle("SolveConsistency::Inconsistent(", "FailedChecks {");
         let mut consistent = 0usize;
         let mut inconsistent = 0usize;
         for path in &sources {
             let text = std::fs::read_to_string(path).unwrap_or_default();
-            let body = production_half(&text);
-            consistent += body
-                .matches("SolveConsistency::Consistent(ConsistentChecks {")
-                .count();
-            inconsistent += body
-                .matches("SolveConsistency::Inconsistent(FailedChecks {")
-                .count();
+            consistent += text.matches(consistent_mint.as_str()).count();
+            inconsistent += text.matches(inconsistent_mint.as_str()).count();
         }
         assert_eq!(consistent, 1, "exactly one `Consistent` mint");
         assert_eq!(inconsistent, 1, "exactly one `Inconsistent` mint");
     }
 
-    /// The RAW-SOLVE FENCE (`302` §3). `solve` is `pub(crate)`, so no other crate can reach it;
-    /// within this crate the fence is lexical. A production module calling the raw solver would
-    /// be taking an UNCERTIFIED answer — the exact thing `solve_certified` exists to prevent.
+    /// The RAW-WORKLIST FENCE (`302` §3). `solve` is `pub(crate)`, so no other crate can reach
+    /// it; within this crate the fence is lexical. A production module calling the raw solver
+    /// would be taking an UNCERTIFIED answer — the exact thing `solve_certified` prevents.
     ///
-    /// Two-way and non-vacuous: the walk must find files, the needle must be found where it IS
-    /// allowed (so a rotted needle reddens rather than passing silently), and nowhere else.
+    /// TWO needles, because there are two doors (R2, cross-lineage review): `solve` is the front
+    /// one, and `run` — the actual worklist, crate-visible so the replay observer can drive it —
+    /// is the back one. `run(graph, direction, transfer, &mut Unobserved)` returns exactly the
+    /// uncertified `Solution` the fence exists to stop, and a needle that only knew the word
+    /// "solve" would have watched it go past.
+    ///
+    /// Two-way and non-vacuous per needle: the walk must find files, each needle must be found
+    /// where it IS allowed (so a rotted needle reddens rather than passing silently), and nowhere
+    /// else.
     #[test]
-    fn only_the_certifier_calls_the_raw_solver() {
+    fn only_the_certifier_reaches_the_raw_worklist() {
         let sources = rust_sources(&analysis_src());
         assert!(
             !sources.is_empty(),
@@ -1224,33 +1340,35 @@ mod tests {
         );
 
         let allowed = ["solve.rs", "certify.rs"];
-        let mut found_in_allowed = 0usize;
-        let mut offenders: Vec<String> = Vec::new();
-        for path in &sources {
-            let text = std::fs::read_to_string(path).unwrap_or_default();
-            let name = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or_default()
-                .to_owned();
-            let body = production_half(&text);
-            let calls = boundary_calls(body, "solve");
-            if calls == 0 {
-                continue;
+        for needle in ["solve", "run"] {
+            let mut found_in_allowed = 0usize;
+            let mut offenders: Vec<String> = Vec::new();
+            for path in &sources {
+                let text = std::fs::read_to_string(path).unwrap_or_default();
+                let name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or_default()
+                    .to_owned();
+                let calls = boundary_calls(&text, needle);
+                if calls == 0 {
+                    continue;
+                }
+                if allowed.contains(&name.as_str()) {
+                    found_in_allowed = found_in_allowed.saturating_add(calls);
+                } else {
+                    offenders.push(name);
+                }
             }
-            if allowed.contains(&name.as_str()) {
-                found_in_allowed = found_in_allowed.saturating_add(calls);
-            } else {
-                offenders.push(name);
-            }
+            assert!(
+                found_in_allowed > 0,
+                "the fence found no `{needle}(` call at all — the needle rotted, fix the scan"
+            );
+            assert!(
+                offenders.is_empty(),
+                "production modules must go through `solve_certified`, never `{needle}(`: \
+                 {offenders:?}"
+            );
         }
-        assert!(
-            found_in_allowed > 0,
-            "the fence found no raw-solve call at all — the needle rotted, fix the scan"
-        );
-        assert!(
-            offenders.is_empty(),
-            "production modules must call `solve_certified`, not the raw solver: {offenders:?}"
-        );
     }
 }
