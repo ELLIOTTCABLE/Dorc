@@ -1,3 +1,5 @@
+> (née `.claude/reports/r30-sparing-reference-bundle.md`; re-homed 2026-08-15 per `300` §5 — kept as the independence RECEIPT: this brief is the evidence the reference model was authored blind to production code.)
+
 # Dispatch bundle — r30 lane-sparing-rederivation (a): the reference model
 
 Conductor: Fable, r30-conduct. One lane. Human standing ack: codex "use as you see fit"
@@ -70,7 +72,7 @@ Deliverable:
    resolve it silently (silent resolution is unratified design laundered through a
    checker). Implement the conservative reading (collide), mark the site with a
    `// FLAGGED:` comment, and list every such point prominently in your report.
-6. A report at `.claude/reports/r30-sparing-reference/report.md` inside your worktree,
+6. A report at `notes/300d-sparing-reference-lane-report.md` (né `.claude/reports/r30-sparing-reference/report.md`) inside your worktree,
    committed: what you built, the per-law example coverage, every flagged ambiguity,
    and anything the first-read file directed you to route to the conductor.
 

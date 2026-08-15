@@ -658,9 +658,15 @@ per `28Q` §8.
   get SUBSCRIPTED docIDs (the `notes/303a-foo-bar.md` shape); otherwise they are
   deleted. Sole exception: `.claude/research/` (deep per-topic research, summarized
   into a docID at completion, durable only for reference from that summary doc).
-  Cleanup lane dispatched (Sonnet); the ruled mapping: kani lane report → `300a` ·
-  prompt-review audit → `300b` · speech-act gap-check → `300c` · certifier
-  cross-lineage review → `303a` (beside the certifier census note). Future briefs
+  Cleanup EXECUTED + FOLDED (Sonnet lane + conductor extras-pass, 2026-08-15); the
+  landed mapping: kani lane report → `300a` · prompt-review audit → `300b` ·
+  speech-act gap-check → `300c` · certifier cross-lineage review → `303a` (beside
+  the certifier census note) · sparing-reference lane report → `300d` ·
+  sparing-reference dispatch bundle → `300e` (KEPT deliberately: it is the
+  independence RECEIPT — the evidence the reference model was authored blind to
+  production code, which the checker's structural-difference value rests on) · the
+  certifier review's dispatch bundle DELETED (a spent prompt; the review's remit
+  self-describes in `303a`; git holds the bytes). The dir is gone. Future briefs
   site reports at subscripted docIDs directly, never under `.claude/reports/`.
 - 2026-08-15, [TYPED] QA of the wave-1 instruments REASSIGNED to the sibling
   conductor + human; the candidate bank rides §4; this conductor stays on forward

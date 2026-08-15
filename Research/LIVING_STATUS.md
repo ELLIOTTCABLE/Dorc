@@ -29,9 +29,10 @@ fixtures lane). REMAINING to `300:wave-one-close`: the WSL-leg gate batch +
 instruments is REASSIGNED to the sibling conductor + human (candidate bank: `300`
 §4). THE KERNEL REWRITE IS IN MOTION: the definition-fixtures commissioning lane
 (ground-truth differential cells for the plural-definition idioms,
-fixtures-before-conversion per `28Q` §8) is DISPATCHED; a `.claude/reports/` →
-subscripted-docID cleanup lane is DISPATCHED ([TYPED]: no parallel durable dirs —
-`300` §5 carries the ruling + mapping); a SIBLING conductor concurrently runs the
+fixtures-before-conversion per `28Q` §8) is DISPATCHED; the `.claude/reports/` →
+subscripted-docID cleanup is FOLDED ([TYPED]: no parallel durable dirs — `300` §5
+carries the ruling, mapping `300a`–`300e`/`303a`, and the extras adjudication; the
+dir is gone); a SIBLING conductor concurrently runs the
 closure-custody sittings, the human-items queue, and QA. The flat-domain/k-CFA line
 is DEMOTED to an early prospective weld ([TYPED], `300` §5); the honest
 `an-flat-domain` paragraph rides this conductor's ANALYZER-NEEDS read. Ground truth:

@@ -1,3 +1,5 @@
+> (née `.claude/reports/r30-sparing-reference/report.md`; re-homed 2026-08-15 per `300` §5 no-parallel-durable-dirs.)
+
 # R30 sparing reference report
 
 ## Built reference model
