@@ -177,6 +177,11 @@ uncomitted in builder-branches.
 
 ## Planning
 
+If the work touches correctness/kernel material, load `verified-core-discipline`
+(the instrument map). A spec-touching pass (minispec) is NOT autonomous-friendly —
+clear it with the human first, and where predictable, schedule the failing
+spec-change/spec-XFAIL BEFORE the Opus builders.
+
 Your judgement and the human's direct requests reign; but gently, avoid
 multi-stop, phased work, except where there's a clear technical benefit. (Again,
 Opus builders are competent and can carry through long-running lanes.)
