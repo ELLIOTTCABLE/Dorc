@@ -120,10 +120,15 @@ private mint:
     (**rul-first-break-and-unstable-components**): the FIRST-BREAK edges — failing
     checks whose source node is itself fully clean (every incoming edge passes,
     boundary holds) — name where consistency first breaks along the flow; where none
-    exist (every node in a cycle failing — the oscillation shape), the UNSTABLE
-    COMPONENTS (strongly-connected components containing failing checks) name the
-    un-stabilized region. Summaries are narrative input only; they never scope the
-    demotion (§3).
+    exist (every node in a cycle failing — the runaway shape), the UNSTABLE
+    COMPONENTS (non-trivial strongly-connected components containing failing checks;
+    a singleton without a self-loop names no region) name the un-stabilized region.
+    Summaries are narrative input only; they never scope the demotion (§3);
+  - **the replay slot** ([BUILDER]-flagged F1, conductor-ratified): `Inconsistent`
+    carries the §5 replay record — minted EMPTY by `certify_solution` (the checker
+    stays strictly simpler than what it checks and never re-runs anything) and
+    filled by `solve_certified` on the inconsistent path, so no call-site can hold
+    an inconsistency verdict while losing its account.
 - [SPEC] **an inconsistency is not a cause**, priced into every rendering: an
   `Inconsistency` is evidence that a named check failed, and the first-break edges are
   the earliest OBSERVABLE inconsistency — the actual cause is a code defect no runtime
@@ -271,11 +276,13 @@ state, and the license plane consumes only the closed outcome.
 2. **boundary non-vacuity**: violated seeds at an entry AND at a non-entry node, both
    orientations, the `Must<Flat<u8>>`-style dual included — the dual-order boundary
    check demonstrably exercised, witnessed by a test rather than an argument.
-3. **cap-trip both ways**: a deliberately oscillating system under a round-cap ⇒
-   `Inconsistent` whose complete failing set covers the oscillating edges and whose
-   unstable components name the region; and the landed-on-fixpoint-at-cap case ⇒
-   `Consistent` despite `converged: false` (fixture hand-writes the ADVISORY FLAG
-   only; states come from a real solve — `303` §4).
+3. **cap-trip both ways**: a runaway-climb system under a round-cap (true
+   oscillation is unrepresentable in an ascending join-accumulate solver — the
+   update is `state ⊔ out`, so states only climb; builder-flagged, wording
+   corrected) ⇒ `Inconsistent` whose complete failing set covers the runaway edges
+   and whose unstable components name the region; and the landed-on-fixpoint-at-cap
+   case ⇒ `Consistent` despite `converged: false` (fixture hand-writes the ADVISORY
+   FLAG only; states come from a real solve — `303` §4).
 4. **first-break summaries**: a single-defect fixture where exactly one edge fails
    ⇒ the first-break set names it; a two-stage staleness where it excludes the
    downstream casualty.
