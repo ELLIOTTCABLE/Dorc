@@ -4,7 +4,19 @@ fixpoint: executed
 ---
 -- book.sh --
 #!/bin/sh
-# Ground truth: which body a real shell has live above and below a sourced override, and around its later `unset -f`.
+# floor30-blessed-override-above-and-below — the definition-fixtures battery's positional shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# `28K` §2 visibility-is-full-positional makes every site-keyed act answer from the definition live
+# AT the site, and `28K` §1 reads an outer-frame rebind as a blessing rather than a conflict. Both
+# rest on shell behaviour this file measures rather than assumes: a later redefinition needs no
+# ceremony — it simply wins from its own line down — `unset -f` removes the binding outright, and a
+# re-source restores it.
+#
+# Four measurements: the base body above the override, the override's body below it, the name after
+# `unset -f` (absent, so the `||` tail speaks), and the base body again after a re-source. Engine
+# agreement over these cells activates at the definition-factoring conversion; the answers committed
+# here are the shells' own.
 . ./base.sh
 hork__is_converged
 . ./override.sh
@@ -37,7 +49,7 @@ $ dorc --book=book.sh
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7f1fb4083c527cd02e2528104ba66151dc5b053d299f03d25f39b3a2f5ed8807 sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=b8be6ac9c4198cac27836e732b2ddc5858fca2b590d46795c1193d17f94df3d7 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
@@ -52,7 +64,19 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# Ground truth: which body a real shell has live above and below a sourced override, and around its later `unset -f`.
+# floor30-blessed-override-above-and-below — the definition-fixtures battery's positional shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# `28K` §2 visibility-is-full-positional makes every site-keyed act answer from the definition live
+# AT the site, and `28K` §1 reads an outer-frame rebind as a blessing rather than a conflict. Both
+# rest on shell behaviour this file measures rather than assumes: a later redefinition needs no
+# ceremony — it simply wins from its own line down — `unset -f` removes the binding outright, and a
+# re-source restores it.
+#
+# Four measurements: the base body above the override, the override's body below it, the name after
+# `unset -f` (absent, so the `||` tail speaks), and the base body again after a re-source. Engine
+# agreement over these cells activates at the definition-factoring conversion; the answers committed
+# here are the shells' own.
 . ./base.sh
 hork__is_converged
 . ./override.sh

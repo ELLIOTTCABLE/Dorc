@@ -4,7 +4,19 @@ fixpoint: executed
 ---
 -- book.sh --
 #!/bin/sh
-# Ground truth: a subshell's re-source AND its `unset -f` both die at the `)`, while a nested subshell inherits both.
+# floor30-subshell-nesting-and-removal-scope — the definition-fixtures battery's nesting shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# `28K` §1 rul-scope-by-subshell-resource sells sh's own scoping as Dorc's whole answer to "I want a
+# different oracle for this region", and the frame model the conversion builds has to get two
+# less-obvious halves right: a NESTED subshell inherits its parent subshell's re-source (frames
+# stack, they do not reset), and an in-subshell `unset -f` dies at the `)` exactly like a definition
+# does — removal is frame-local, never a global erasure.
+#
+# Four measurements: the variant body inside the region, the same body one level deeper, the name
+# after an in-subshell `unset -f` (absent there, so the `||` tail speaks), and the base body once
+# both regions have closed. Engine agreement over these cells activates at the definition-factoring
+# conversion; the answers committed here are the shells' own.
 . ./base.sh
 ( . ./variant.sh; hork__is_converged; ( hork__is_converged ) )
 ( unset -f hork__is_converged; hork__is_converged 2>/dev/null || printf 'gone\n' )
@@ -33,7 +45,7 @@ $ dorc --book=book.sh
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=606ff7d0f8777f24aef0df7ab82988b7c4efdf3d8309808880479200c4f800ba sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9045c0daba03ff4652abcc72b0aa0ae87e1ab8cb2c535d60422427f839a39706 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
@@ -47,7 +59,19 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# Ground truth: a subshell's re-source AND its `unset -f` both die at the `)`, while a nested subshell inherits both.
+# floor30-subshell-nesting-and-removal-scope — the definition-fixtures battery's nesting shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# `28K` §1 rul-scope-by-subshell-resource sells sh's own scoping as Dorc's whole answer to "I want a
+# different oracle for this region", and the frame model the conversion builds has to get two
+# less-obvious halves right: a NESTED subshell inherits its parent subshell's re-source (frames
+# stack, they do not reset), and an in-subshell `unset -f` dies at the `)` exactly like a definition
+# does — removal is frame-local, never a global erasure.
+#
+# Four measurements: the variant body inside the region, the same body one level deeper, the name
+# after an in-subshell `unset -f` (absent there, so the `||` tail speaks), and the base body once
+# both regions have closed. Engine agreement over these cells activates at the definition-factoring
+# conversion; the answers committed here are the shells' own.
 . ./base.sh
 ( . ./variant.sh; hork__is_converged; ( hork__is_converged ) )
 ( unset -f hork__is_converged; hork__is_converged 2>/dev/null || printf 'gone\n' )

@@ -4,7 +4,19 @@ fixpoint: executed
 ---
 -- book.sh --
 #!/bin/sh
-# Ground truth: which helper body a role function reaches when one helper NAME is plural across frames.
+# floor30-helper-collision-across-frames — the definition-fixtures battery's helper shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# `28K` §4 one-helper-index-two-lanes ships a role body together with the helpers it reaches, which
+# presumes a helper NAME resolves to one body. It does not: one name holds different live bodies in
+# different frames, and the collision is reached INDIRECTLY — the role body's own text never
+# changes, so nothing at the call site shows which helper it will run. That is precisely the shape a
+# helper index keyed by name alone answers wrongly, and silently.
+#
+# Three measurements: the role reaching the base helper, the same role inside a region that
+# re-sourced a different helper, and the base helper again once the region closed. Engine agreement
+# over these cells activates at the definition-factoring conversion; the answers committed here are
+# the shells' own.
 . ./role.sh
 . ./helper-base.sh
 hork__is_converged
@@ -36,7 +48,7 @@ $ dorc --book=book.sh
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=325b1159296309459fe9cb511db7026110c4f082ff92c94770075f4fc2cc890a sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=10e7776a4e87c2babaaa80683a909b787bb350eb91761c1d48d6821fdd49f6ea sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
@@ -48,7 +60,19 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# Ground truth: which helper body a role function reaches when one helper NAME is plural across frames.
+# floor30-helper-collision-across-frames — the definition-fixtures battery's helper shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# `28K` §4 one-helper-index-two-lanes ships a role body together with the helpers it reaches, which
+# presumes a helper NAME resolves to one body. It does not: one name holds different live bodies in
+# different frames, and the collision is reached INDIRECTLY — the role body's own text never
+# changes, so nothing at the call site shows which helper it will run. That is precisely the shape a
+# helper index keyed by name alone answers wrongly, and silently.
+#
+# Three measurements: the role reaching the base helper, the same role inside a region that
+# re-sourced a different helper, and the base helper again once the region closed. Engine agreement
+# over these cells activates at the definition-factoring conversion; the answers committed here are
+# the shells' own.
 . ./role.sh
 . ./helper-base.sh
 hork__is_converged

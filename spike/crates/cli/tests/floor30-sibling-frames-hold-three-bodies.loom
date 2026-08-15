@@ -4,7 +4,18 @@ fixpoint: executed
 ---
 -- book.sh --
 #!/bin/sh
-# Ground truth: three sibling frames hold three live bodies for ONE name in one run -- the separation a single flat file cannot spell.
+# floor30-sibling-frames-hold-three-bodies — the definition-fixtures battery's activation shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# This is the cell the hash-munge activation exists for: three MUTUALLY UNREACHABLE frames hold
+# three live bodies for ONE name inside a single run, which no flat per-name definition table can
+# spell — the winner has to become per-frame. `28K` §2 visibility-is-full-positional withholds here
+# today rather than answering, and the conversion's job is to answer instead of withholding.
+#
+# Three measurements: variant-a inside the first region, variant-b inside the second (which is what
+# proves the first region's binding did not leak sideways), and the base body once both closed.
+# Engine agreement over these cells activates at the definition-factoring conversion; the answers
+# committed here are the shells' own.
 . ./base.sh
 ( . ./variant-a.sh; hork__is_converged )
 ( . ./variant-b.sh; hork__is_converged )
@@ -35,7 +46,7 @@ $ dorc --book=book.sh
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=cb6caa57289c9821b090d461c6cff355dbb2c901f7c39904b13ad6b083c36673 sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=dc0dad5070924bc62bc56c9ab9d1361da87e929e431729f177af0bfb68e781c1 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
@@ -47,7 +58,18 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# Ground truth: three sibling frames hold three live bodies for ONE name in one run -- the separation a single flat file cannot spell.
+# floor30-sibling-frames-hold-three-bodies — the definition-fixtures battery's activation shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# This is the cell the hash-munge activation exists for: three MUTUALLY UNREACHABLE frames hold
+# three live bodies for ONE name inside a single run, which no flat per-name definition table can
+# spell — the winner has to become per-frame. `28K` §2 visibility-is-full-positional withholds here
+# today rather than answering, and the conversion's job is to answer instead of withholding.
+#
+# Three measurements: variant-a inside the first region, variant-b inside the second (which is what
+# proves the first region's binding did not leak sideways), and the base body once both closed.
+# Engine agreement over these cells activates at the definition-factoring conversion; the answers
+# committed here are the shells' own.
 . ./base.sh
 ( . ./variant-a.sh; hork__is_converged )
 ( . ./variant-b.sh; hork__is_converged )

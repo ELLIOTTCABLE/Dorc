@@ -4,7 +4,19 @@ fixpoint: executed
 ---
 -- book.sh --
 #!/bin/sh
-# Ground truth: through a three-level chain, the body reached is the one live at the CALL, never the one live where the chain was defined.
+# floor30-deep-stack-binds-at-invocation — the definition-fixtures battery's late-binding shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# sh binds a function name at the CALL, never at the frame where the calling body was defined, and a
+# chain three levels deep is where that stops being obvious: `chain.sh` is sourced ONCE, above every
+# override, yet what its innermost link runs keeps changing underneath it. A conversion that
+# resolved a body at definition time — or cached the chain's answer after the first call — would
+# elide against the wrong author's text, and no golden of the chain's own bytes would show it.
+#
+# Four measurements: the chain reaching the base leaf, reaching the override after a re-source, the
+# base leaf again inside a region that re-sourced it, and the override once more once that region
+# closed. Engine agreement over these cells activates at the definition-factoring conversion; the
+# answers committed here are the shells' own.
 . ./chain.sh
 . ./inner-base.sh
 hork__is_converged
@@ -40,7 +52,7 @@ $ dorc --book=book.sh
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=d1278b6f8f68e54dd3dd33f5dfc0a7100f3eabdf6f67eeae52f5498fd637e667 sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9ffd79c1a0ec31fe5a84faf973f78cb66098c56a275315d56b89244ea6e3441d sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
@@ -54,7 +66,19 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# Ground truth: through a three-level chain, the body reached is the one live at the CALL, never the one live where the chain was defined.
+# floor30-deep-stack-binds-at-invocation — the definition-fixtures battery's late-binding shape
+# (`28Q` §8 stage-i: ground truth minted before the conversion that will consume it).
+#
+# sh binds a function name at the CALL, never at the frame where the calling body was defined, and a
+# chain three levels deep is where that stops being obvious: `chain.sh` is sourced ONCE, above every
+# override, yet what its innermost link runs keeps changing underneath it. A conversion that
+# resolved a body at definition time — or cached the chain's answer after the first call — would
+# elide against the wrong author's text, and no golden of the chain's own bytes would show it.
+#
+# Four measurements: the chain reaching the base leaf, reaching the override after a re-source, the
+# base leaf again inside a region that re-sourced it, and the override once more once that region
+# closed. Engine agreement over these cells activates at the definition-factoring conversion; the
+# answers committed here are the shells' own.
 . ./chain.sh
 . ./inner-base.sh
 hork__is_converged
