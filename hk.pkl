@@ -76,6 +76,14 @@ local corpora = new Mapping<String, Step> {
         check = "cargo test -q -p dorc-cli --test looms --manifest-path spike/Cargo.toml"
         output_summary = "combined"
     }
+    ["minispec"] {
+        // The one corpus outside `spike/**`, so no `linters` step reaches it: a commit touching
+        // only a law unit would otherwise draw no check at all. The binder's cheap tier is
+        // filesystem-and-parsing only, so this stays inside the budget.
+        glob = List("minispec/**", "spike/verify/**")
+        check = "cargo run -q -p dorc-verify --manifest-path spike/Cargo.toml -- check"
+        output_summary = "combined"
+    }
     ["e2e"] {
         // Both shapes a whole-product case comes in: a case DIR, and a single-file `.loom`
         // carrying `run:`. The loom half is load-bearing and its absence was SILENT — hk prints
@@ -110,6 +118,7 @@ hooks {
         stash = "git"
         steps = (linters) {
             ["loom-hygiene"] = corpora["loom-hygiene"]
+            ["minispec"] = corpora["minispec"]
             ["e2e"] = corpora["e2e"]
         }
     }
