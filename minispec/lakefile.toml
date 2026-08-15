@@ -1,0 +1,22 @@
+name = "minispec"
+defaultTargets = ["Generated", "Minispec"]
+
+# The SAME aeneas release the `charon`/`aeneas` binaries came from
+# (`spike/verify/aeneas/mise.toml`) — one revision, two consumers, so the generated code and
+# the Lean library it imports cannot drift apart.
+[[require]]
+name = "aeneas"
+git = "https://github.com/AeneasVerif/aeneas.git"
+rev = "nightly-2026.08.13-daa85d7"
+subDir = "backends/lean"
+
+# The derived definitions: @generated, regenerated only by the pipeline, committed so that a
+# regeneration diff is a reviewable drift alarm.
+[[lean_lib]]
+name = "Generated"
+
+# The law units and their proofs. `Minispec.+` takes the root and every submodule, so a new
+# unit needs no edit here — one less thing between an author and a law.
+[[lean_lib]]
+name = "Minispec"
+globs = ["Minispec.+"]

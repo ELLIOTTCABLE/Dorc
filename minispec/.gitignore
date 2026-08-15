@@ -1,0 +1,4 @@
+# lake's dependency store: a mathlib checkout plus gigabytes of oleans, fetched from the
+# pins in lakefile.toml + lean-toolchain. The staged build root under $XDG_CACHE_HOME is
+# where it actually lands (drvfs is unusably slow for it); this entry is belt and braces.
+.lake/
