@@ -100,18 +100,29 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   property/DST-tier — placement flagged, never silently decided). Hand-written
   `#[cfg(kani)] Arbitrary`; checked code stays stable-toolchain, zero annotations.
   Conductor reviews the harness STATEMENTS (law, bounds, what is NOT pinned) at fold.
-- **lane-solve-certifier** (after facade; spec SETTLED at `plans/302`, recut through
-  the certifier duck-sitting; census `notes/303`) — Opus phase-2 dispatches fresh
-  against the spec + census. Shape: `SolveConsistency` — `Consistent | Inconsistent`
-  (complete failing-index set · capped by-value `Inconsistency` items ·
-  first-break/unstable-component summaries); `Inconsistent` ⇒ whole-window demotion to
-  the four existing consumer floors (license plane; the funcenv floor's
-  grant-shifting rider is hard [SPEC]) + a scalar-operand narrative record (aid plane)
-  + the engine-side instrumented replay (aid-leads); consistent-at-cap answers are the
-  lfp and are used; inconsistent-at-cap localizes for narrative only — no recovery,
-  ever (`302` §9); `Must<L>` duality, one checker; ships in the DEFAULT suite.
-  Open: `302:pin-blast-radius-escalation` [HUMAN?]. Post-land: a cross-lineage review
-  pass (codex-reviewer; cheap).
+- **lane-solve-certifier** — **FOLDED 2026-08-15 @ `a1535601`** (8 commits;
+  conductor-verified both legs 1967/1963 green, zero golden drift). As-built per the
+  settled `302` + the checkpoint rulings: `certify.rs` (~700 lines incl. tests;
+  `SolveConsistency` private-mint; `core::sorted` throughout, no facade extension
+  needed); the observer seam in `solve` (`run` + `Unobserved` ZST; loop extracted
+  once); `trusted()` = certified at all nine call sites (the lane's ONE widening,
+  spec-settled: consistent-at-cap is the lfp and is used); four named consumer floors
+  (funcenv fold-BREAK with `folded_edges=∅` pinned); aid plane registered
+  (`solver-consistency-failure` + `SolvePass` + `CollapseKind::SolverConsistencyFailure`,
+  prose `[unwritten:]`); cli reports root-cause-only pre-network. Adjudications at
+  fold: **F9 accepted-as-disclosed** — the reach/self-reach floors are gate-level
+  (boolean, cardinal-sin-safe direction), end-to-end drive priced 1–2h, natural home
+  = the classify rework 28Q stage-iii forces · F10 (`mise run fmt` refuses under
+  agent env; working spelling `mise exec -- cargo fmt --all --manifest-path
+  spike/Cargo.toml`) + F11 (WSL keeps a separate mise trust store; new worktrees need
+  a WSL-side `mise trust`) → discipline-close Build/test/run lines · whylog-spine
+  chafes banked for enrichment: `FailedCheck` carries run-scoped CFG node indices
+  (partial node→`SiteId` mapping OR a distinct run-scoped row species — undecided) +
+  `Inconsistency<Reach>` holds `ProvId` (resolve-or-drop at any future durable edge —
+  spine boundary (1) doing its job). Open: `302:pin-blast-radius-escalation`
+  [HUMAN?]. The post-land cross-lineage review is DISPATCHED (codex-reviewer,
+  read-only, vantage-worktree @ `a1535601`; report to conductor scratch, committed at
+  adjudication).
 - **lane-sparing-rederivation** — (a) the naive reference model of the
   sparing/composition algebra, authored FROM the ratified English law-set under
   structural-simplicity constraints: the checker's value is STRUCTURAL difference —
