@@ -468,7 +468,7 @@ dir = "spike/verify/aeneas"
 run = "mise run aeneas:translate"
 
 [tasks."verify:translate-lenient"]
-description = "OPT-IN, Linux/WSL only: enumerate every construct the translator cannot model, in ONE pass, into a scratch dir. This is how the fence list in the nested config is derived and re-derived. Never a judgement of whether the algebra translated — lenient mode emits SILENT holes."
+description = "OPT-IN, Linux/WSL only: enumerate every construct the translator cannot model, in ONE pass, into a scratch dir. This is how the fence in spike/verify/aeneas/Cargo.toml is derived and re-derived. Never a judgement of whether the algebra translated — lenient mode emits SILENT holes."
 dir = "spike/verify/aeneas"
 run = "mise run aeneas:translate-lenient"
 
