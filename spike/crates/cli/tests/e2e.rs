@@ -1383,7 +1383,16 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         LoomRun::Lint => run_lint(harness, &case),
     };
     let (extra, extra_failures) = drive_extra_replays(harness, spec, &dir);
-    if harness.bless {
+    // A FAILING case folds nothing. Safe because no bless workflow depends on partial folding:
+    // every gate that compares against a bless-WRITTEN golden is already bless-aware and cannot
+    // fail on staleness — the content diff and the extra-replay compare are `!bless`-guarded,
+    // `exec_check`/`run_lint`/gate-9 write-and-return before theirs. What remains reachable under
+    // bless is structural (`-n`, crash/empty, guard-shape, redirects), authored-fixture (gate-1's
+    // `probe-results.txt`, the needle declarations), or environmental — none of it healable by a
+    // write, and gate-1 says so in its own message. Ungated, `exec_check`'s early `expected.ran`
+    // write would fold into a case whose transcript a later gate had just failed. XFAIL is
+    // untouched: the lens returns `Ok` above, so its deliberate golden-text-blindness survives.
+    if harness.bless && outcome.is_ok() {
         bless_loom(spec, &dir, &extra, harness.bless_floor)?;
     }
     match (outcome, extra_failures.is_empty()) {
@@ -3033,6 +3042,73 @@ fn floor_bless_selftest() -> Vec<String> {
     fails
 }
 
+/// Drive the FOLD-ONLY-ON-PASS rule on two throwaway cases under a synthetic bless harness: a
+/// case whose gates fail must leave its committed bytes exactly as authored, and a passing one
+/// must still fold. Both looms are written NON-canonically (no blank line before a header), which
+/// `Case::to_text` normalizes — so "was it written at all" is a byte question, not a content one.
+///
+/// Ungated, `exec_check` writes `expected.ran` and returns before the later gates, so a case that
+/// failed one of THOSE still had its run-set folded while its transcript stayed stale.
+fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
+    let mut fails = Vec::new();
+    let scratch = Scratch::new("foldpass");
+    // Its own state root: `Harness::drop` removes that dir, and sharing the real one would take
+    // the live harness's receipts down with this specimen.
+    let bless = Harness {
+        dorc: harness.dorc.clone(),
+        dorc_sh: harness.dorc_sh.clone(),
+        checker: harness.checker.clone(),
+        checker_name: harness.checker_name.clone(),
+        bless: true,
+        bless_floor: false,
+        floor_shells: Vec::new(),
+        state_root: scratch.path.join("state"),
+    };
+    std::fs::create_dir_all(&bless.state_root).expect("create specimen state root");
+
+    // `if true` with no `fi` is a parse error, so dorc exits non-zero and the crash/empty guard
+    // fails the case before any golden is consulted.
+    for (tag, book, want_written) in [
+        ("fold-pass-failing", "#!/bin/sh\nif true", false),
+        ("fold-pass-passing", "#!/bin/sh\nhork tune", true),
+    ] {
+        let path = scratch.path.join(format!("{tag}.loom"));
+        let source = format!(
+            "---\nrun: round-trip\nfixpoint: executed\n---\n-- book.sh --\n{book}\n-- expected.ran --\n-- replay --\n$ dorc --book=book.sh\nplaceholder\n"
+        );
+        std::fs::write(&path, &source).expect("write specimen loom");
+        let spec = LoomCaseSpec {
+            name: tag.to_owned(),
+            path: path.clone(),
+            case: errorloom::Case::parse(&source).expect("parse specimen"),
+            run: LoomRun::RoundTrip,
+        };
+        let passed = run_loom(&bless, &spec).is_ok();
+        if passed != want_written {
+            fails.push(format!(
+                "bf-{tag} (want the case to {}, but it did not)",
+                if want_written {
+                    "pass"
+                } else {
+                    "fail its gates"
+                }
+            ));
+        }
+        if (read_or_empty(&path) != source) != want_written {
+            fails.push(format!(
+                "bf-{tag}-fold (a {} case {} its committed bytes)",
+                if want_written { "passing" } else { "failing" },
+                if want_written {
+                    "did not fold"
+                } else {
+                    "folded into"
+                }
+            ));
+        }
+    }
+    fails
+}
+
 /// The `DORC_FLAGS` plumbing confound: run the flagship with and without
 /// `--risk-faultless-skips` and assert the elision count DIFFERS. If it matches, the flag is
 /// inert and a flagged survival case's gate-6 attribution would lie.
@@ -3263,6 +3339,13 @@ fn preflight(harness: &Harness, discovered: usize) {
         fatal.push(format!(
             "FATAL  floor_bless_selftest FAILED — the floor-transcript write policy does not hold:\n  {}",
             floor_bless.join("\n  ")
+        ));
+    }
+    let fold_pass = bless_folds_only_on_pass_selftest(harness);
+    if !fold_pass.is_empty() {
+        fatal.push(format!(
+            "FATAL  bless_folds_only_on_pass_selftest FAILED — bless folds a case its own gates rejected:\n  {}",
+            fold_pass.join("\n  ")
         ));
     }
     if let Some(message) = dorc_flags_selftest(harness) {
