@@ -9,9 +9,11 @@ use std::process::ExitCode;
 
 mod bless;
 mod coverage;
+mod doctor;
 mod hook_selftest;
 mod livetest;
 mod posix_script;
+mod preflight;
 mod prose_census;
 mod step_globs;
 
@@ -26,12 +28,17 @@ fn main() -> ExitCode {
         Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
         Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
         Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
+        Some("preflight") => preflight::run(args.get(1..).unwrap_or_default()),
+        Some("doctor") => doctor::run(),
         other => {
             eprintln!(
                 "internal-tooling: unknown task {:?}",
                 other.unwrap_or("<none>")
             );
-            eprintln!("tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines");
+            eprintln!(
+                "tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines, \
+                 preflight, doctor"
+            );
             ExitCode::from(2)
         }
     }

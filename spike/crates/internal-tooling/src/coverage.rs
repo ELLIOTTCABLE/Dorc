@@ -85,7 +85,7 @@ fn locate() -> Option<PathBuf> {
         let path = PathBuf::from(explicit);
         return path.is_file().then_some(path);
     }
-    let target = internal_tooling::repo_root().join("spike/target");
+    let target = internal_tooling::target_dir();
     ["debug", "release"]
         .iter()
         .flat_map(|profile| {

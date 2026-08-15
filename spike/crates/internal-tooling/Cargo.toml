@@ -10,9 +10,10 @@ publish = false
 # links it; it exists so `mise run gate` needs no POSIX shell on the developer's PATH.
 #
 # It is the `cargo-xtask` pattern: automation that bootstraps from cargo and rustc alone,
-# and that is cross-platform BECAUSE it does not go through a shell. Deliberately
-# dependency-free — a dep here would be re-importing the assumptions this crate exists to
-# delete.
+# and that is cross-platform BECAUSE it does not go through a shell. The dependency bar is
+# correspondingly high: a dep here must DELETE a platform assumption, never re-import one,
+# and must not cost real disk (`sysinfo` was measured at ~150 MiB of rlib per target dir,
+# `libwindows.rlib` alone 62 — self-defeating in a crate whose job includes guarding disk).
 [[bin]]
 name = "internal-tooling"
 path = "src/main.rs"
@@ -23,3 +24,10 @@ path = "src/lib.rs"
 
 [lints]
 workspace = true
+
+[dependencies]
+# Free-space-on-this-volume, which std does not offer and `unsafe_code = "forbid"` bars us
+# from asking the OS for directly. Chosen for costing nothing: on Windows it reaches
+# `windows-sys`, already in the lockfile, so it adds one crate; on Linux it reaches `rustix`
+# (~14 MiB of rlib). File locking is default-off — only the `statvfs` half is used.
+fs4 = { version = "1.1.0", default-features = false }
