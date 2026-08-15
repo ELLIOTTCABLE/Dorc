@@ -151,8 +151,9 @@ AI branches) · merges from `main` batch at round-close · silence ≠ ack (only
 the human TYPED counts; keep an ack-ledger) · crosscheck adjudication under maximum
 skepticism; adversarial framing = exclusions-not-inclusions · never AskUserQuestion
 (ask in prose); dump the numbered task list on changes · Fable conducts, Opus
-codes · conductor: verify merges by own hand (never-vouch); `sh e2e/conduct-bless.sh`
-is the verify entrypoint · a promised clean-room re-derivation gets a slugged ledger
+codes · conductor: verify merges by own hand (never-vouch); the verify entrypoint is
+`mise run both gate:full-quiet` foreground (the old `e2e/conduct-bless.sh` is retired
+with the flat-tree move) · a promised clean-room re-derivation gets a slugged ledger
 entry naming who ran it (`27Xf` §4) · naming discipline (`270` §1, HIGH): hyphenated
 full-word slugs; `docID:slug` cross-refs; subscript old labels once ("nee P5") ·
 the deferred-work ledger lives in `23O` §5; residue in `24C` · note-ID discipline:

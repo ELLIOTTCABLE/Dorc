@@ -42,21 +42,15 @@ pilot/measure/kill staging [TYPED — velocity; the human inserts kills if neede
 Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify standup} and
 {kani, certifier} in parallel → rederivation integration → discipline-close.
 
-- **lane-facade-std-dropping** (first, solo) — evict BTreeMap/BTreeSet from the
-  algebra tier — `analysis/src/lattice.rs` (`Powerset` → sorted-dedup `Vec<T>`;
-  `MapL` → key-sorted `Vec<(K,V)>`), `core/src/coord.rs` (compare/backing-set
-  machinery), `analysis/src/solve.rs`'s BTreeSets — behind small owned total-API
-  facades; `core/src/unord.rs` is the API-taste precedent. The `solve.rs` VecDeque
-  worklist STAYS [ACKED lean-vecdeque-stays]: the known translation-door residue, not
-  invented under a pure-refactor gate. Gates: byte-identical goldens (`bless:dry`
-  verify, never bless) · `mise run both gate:full-quiet` · zero new deps (core stays
-  dependency-free) · no crate split (a split urge is a flag) · each facade invariant
-  gets ONE named seat + tests now, and the builder REPORTS the invariant-seat list
-  (feeds lane-kani; the honour-system counterweight said out loud). Rider [TYPED]:
-  this lane is the Aeneas-prep seat, and any typesystem/architecture change REQUIRED
-  to make the deferred Flux lane possible belongs here — signature shapes and
-  named-seat invariant homes stay refinement-annotatable; genuine structural needs
-  get flagged and built now, never deferred with the lane.
+- **lane-facade-std-dropping** — **FOLDED 2026-08-14 @ `601364f7`** (four commits;
+  conductor-verified both legs green, zero golden drift, zero new deps, no split).
+  What exists now: `core::sorted::{SortedSet, SortedMap}` (private-backed, one
+  private `position`→`Slot` scan each; total, panic-free, index-walk bodies);
+  `Powerset`/`MapL` re-seated on them (`Powerset`'s backing SEALED — the pub field
+  died as the Aeneas-prep/refinement-enabling structural change); `Dialect`/
+  `selector_covers` moved onto them; `solve.rs` production code untouched (its
+  BTreeSets were test-only — census delta); VecDeque stays per lean-vecdeque-stays.
+  §2a below banks the seat list + findings the later lanes consume.
 - **lane-derived-definitions-pipeline** (after facade) — stand up Aeneas-translate +
   lake-build of the facade'd algebra as a MAINTAINED opt-in lane feeding
   `minispec/Generated/` (WSL leg; pinned per the nested-mise pattern in-repo,
@@ -113,6 +107,59 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   named-seat + Kani-pin, the honour-system move stated in law text) · FORFEITS rows if
   any arise · prompt-review pass on all CLAUDE.md edits · ledger/LIVING_STATUS
   currency · the wave-one-close gate run (§4).
+
+### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
+
+Invariant seats (seat · invariant · pinning test; all tests in the default suite):
+- `core::sorted::SortedSet::insert` — strictly-ascending, duplicate-free backing —
+  `set_insert_sorts_and_dedups`; and structural `PartialEq` == semantic set equality
+  (what `solve`'s `joined != state[w]` fixpoint test rests on) —
+  `set_structural_eq_is_semantic_eq`.
+- `core::sorted::SortedSet::position` — membership agrees with backing at every
+  boundary — `set_contains_and_remove_agree_with_membership`.
+- `SortedSet::union`/`intersection` — canonical results; ∪/∩ commute; ∅ identity/
+  absorbing — `set_union_and_intersection_stay_canonical`.
+- `core::sorted::SortedMap::insert` — ascending unique keys; rebind replaces+returns —
+  `map_insert_sorts_keys_and_replaces_values`; structural==semantic Eq —
+  `map_structural_eq_is_semantic_eq`.
+- `SortedMap::remove`/`get_at` — order survives removal; `get_at` walks key order —
+  `map_remove_and_get_at_keep_key_order`.
+- `analysis::lattice::MapL::insert` (pre-existing) — no key maps to `V::bottom()` —
+  `maplattice_is_pointwise_and_canonical`; plus insertion-order-independence of
+  `Powerset`/`MapL` equality — `collection_domains_are_insertion_order_independent`.
+
+Kani-lane guidance (builder-supplied, conductor-endorsed): the canonical predicate is
+strict ascent — `∀i: get_at(i) < get_at(i+1)` (sortedness+dedup in one; maps over
+`get_at(i).0`); NO `pub is_canonical()` was added (harnesses express it; add in the
+Kani lane only if needed). `#[cfg(kani)] Arbitrary` homes in `core::sorted` (reaches
+the private field, no widening) and must construct via arbitrary `Vec` +
+`kani::assume(canonical)` — building via repeated `insert` would make the `insert`
+harnesses circular. The asymmetric risk the harnesses exist to close: a bug making two
+semantically-DIFFERENT values compare equal stops the solver's climb early
+(under-approximated may-set ⇒ potential wrong elision, invisible to goldens); the
+opposite bug only trips `converged: false`. Until Kani lands, the seat tests are the
+whole net.
+
+Findings + conductor adjudications:
+- `fnd-reach-lattice-outside-scope` — `analysis::effect::Reach` (a `Lattice` impl in
+  engine-tier `effect.rs`) still holds a raw `BTreeSet<FactKey>` + a hand-written
+  cause-excluding `Eq`; the algebra tier is NOT BTree-free. ADJUDICATED: eviction
+  deferred (not this wave; careful territory — the cause-excluding Eq is
+  correctness-critical); the derived-defs lane EXCLUDES `Reach` from translation scope
+  at v0 and says so in its config; revisit when a Lean statement first needs
+  reaching-defs.
+- `fnd-generic-ord-blocks-refinement` — facades stay generic over `T: Ord`; Flux needs
+  concrete decidable orders, so the Flux lane (mid-r30) prices harness-side
+  monomorphic instantiations (`SortedSet<SelectorId>` etc.), never product-code
+  monomorphization.
+- `fnd-iterator-exits-may-not-translate` — `iter()`/`IntoIterator`/`FromIterator` are
+  grouped+commented as the translation boundary; the algebra proper avoids them. If
+  the Aeneas pipeline chokes on the ALGEBRA (not the exits), the `while let
+  Some(x) = v.get(i)` shape is unusable and the facade needs re-shaping — report,
+  don't patch.
+- `dec-shared-facade-home-in-core` — RATIFIED: one shared facade in `core` (both
+  crates consume; core stays dependency-free) is the justified dislocation from
+  `301` §3's crate-local default; dividend: one Kani harness set covers both crates.
 
 [CONDUCTOR ratification, 2026-08-14] Nested-vs-root mise configs: toolchain-SHADOWING
 pins live in nested configs (the in-repo Aeneas precedent); additive-only pins (elan)
