@@ -4154,4 +4154,141 @@ apt_get__predict() {
             "an annotation-vs-effect-map kind mismatch must disclose effect-kind-disagreement: {diags:?}"
         );
     }
+
+    // ── `Reach`'s cause-excluding equality (`303:fnd-reach-equality-excludes-its-cause`) ─────
+    //
+    // PLACEMENT, flagged: these belong at the Kani tier by shape — they are ∀-laws over small
+    // values, exactly what an exhaustive checker is for. They are HERE because `Reach` is still
+    // raw-`BTreeSet`-backed, and a `BTreeSet` is out of that tier's reach (`300`
+    // fnd-reach-lattice-outside-scope defers the eviction; the facade lane's `SortedSet` is
+    // what made the rest of the algebra checkable). So the domain below is enumerated by hand
+    // and the quantifier is a loop: exhaustive over a small domain rather than over a bounded
+    // one, which is a weaker claim honestly made. When `Reach` moves onto the facade, these
+    // move to `spike/verify/kani` unchanged in statement.
+
+    /// The sample domain: both `Top` causes, and the four fact-sets over two cells. Distinct
+    /// causes are the whole point — the equality must not be able to see them.
+    fn reach_samples(i: &mut Interner) -> (Vec<Reach>, dorc_core::ProvId, dorc_core::ProvId) {
+        let mut arena = dorc_core::ProvArena::new();
+        let one = arena.leaf(dorc_core::OriginKind::TopCause, None);
+        let two = arena.leaf(
+            dorc_core::OriginKind::TopCause,
+            Some(Span::new(dorc_core::BytePos(7), dorc_core::BytePos(9))),
+        );
+        assert_ne!(one, two, "the two causes must really differ");
+
+        let kind = KindId(i.intern("com.example.Widget"));
+        let cell = |selector: &str, i: &mut Interner| {
+            FactKey::cell(kind, EntityRef::Singleton, SelectorId(i.intern(selector)))
+        };
+        let a = cell("installed", i);
+        let b = cell("running", i);
+        let facts = |members: &[FactKey]| Reach::Facts(members.iter().copied().collect());
+        (
+            vec![
+                facts(&[]),
+                facts(&[a]),
+                facts(&[b]),
+                facts(&[a, b]),
+                Reach::Top(one),
+                Reach::Top(two),
+            ],
+            one,
+            two,
+        )
+    }
+
+    #[test]
+    fn reach_equality_is_an_equivalence_relation_that_cannot_see_a_cause() {
+        // Reflexive, symmetric, transitive — and blind to the cause on purpose. `solve`'s
+        // fixpoint test is `joined != state[w]`, so an equality that DID see the cause would
+        // make a ⊤ re-derived at a fresh give-up point look changed forever and the worklist
+        // would never terminate. The receipt still has to survive for the why-lens, which is
+        // the last assertion: excluded from equality, readable through `top_cause`.
+        let mut i = Interner::default();
+        let (samples, one, two) = reach_samples(&mut i);
+
+        for a in &samples {
+            assert_eq!(a, a, "reflexive");
+            for b in &samples {
+                assert_eq!(a == b, b == a, "symmetric");
+                for c in &samples {
+                    if a == b && b == c {
+                        assert_eq!(a, c, "transitive");
+                    }
+                }
+            }
+        }
+
+        assert_eq!(
+            Reach::Top(one),
+            Reach::Top(two),
+            "two ⊤s are equal however they were caused"
+        );
+        assert_eq!(
+            Reach::Top(one).top_cause(),
+            Some(one),
+            "…and the receipt still reads back, unperturbed by that"
+        );
+        assert_eq!(Reach::Top(two).top_cause(), Some(two));
+        assert_eq!(Reach::Facts(BTreeSet::new()).top_cause(), None);
+    }
+
+    #[test]
+    fn reach_merges_respect_that_equality() {
+        // The congruence property, and the one that actually makes the fixpoint terminate:
+        // equal-modulo-cause inputs must produce equal-modulo-cause outputs. If `join` could
+        // turn two equal values into two unequal ones, the solver would oscillate between them
+        // forever — and every arm of `join`/`meet` that carries a cause is a place to get this
+        // wrong (first-cause-wins is what makes it hold).
+        let mut i = Interner::default();
+        let (samples, _, _) = reach_samples(&mut i);
+
+        for a in &samples {
+            for a2 in &samples {
+                if a != a2 {
+                    continue;
+                }
+                for b in &samples {
+                    for b2 in &samples {
+                        if b != b2 {
+                            continue;
+                        }
+                        assert_eq!(a.join(b), a2.join(b2), "⊔ respects the equality");
+                        assert_eq!(a.meet(b), a2.meet(b2), "⊓ respects the equality");
+                        assert_eq!(a.leq(b), a2.leq(b2), "⊑ respects the equality");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn reach_is_a_lattice_over_that_equality() {
+        // The lattice laws the solver assumes, read through the cause-excluding equality —
+        // because that equality is the only one the solver ever uses. `Reach` is not in the
+        // Kani battery's reach, so this is where its laws are checked at all.
+        let mut i = Interner::default();
+        let (samples, _, _) = reach_samples(&mut i);
+        let bottom = Reach::bottom();
+
+        for a in &samples {
+            assert_eq!(bottom.join(a), *a, "⊥ ⊔ a = a");
+            assert_eq!(a.join(&bottom), *a, "a ⊔ ⊥ = a");
+            assert_eq!(bottom.meet(a), bottom, "⊥ ⊓ a = ⊥");
+            assert_eq!(a.join(a), *a, "⊔ idempotent");
+            assert_eq!(a.meet(a), *a, "⊓ idempotent");
+            assert!(a.leq(a), "⊑ reflexive");
+            for b in &samples {
+                assert_eq!(a.join(b), b.join(a), "⊔ commutative");
+                assert_eq!(a.meet(b), b.meet(a), "⊓ commutative");
+                assert_eq!(a.join(&a.meet(b)), *a, "a ⊔ (a ⊓ b) = a");
+                assert_eq!(a.meet(&a.join(b)), *a, "a ⊓ (a ⊔ b) = a");
+                for c in &samples {
+                    assert_eq!(a.join(&b.join(c)), a.join(b).join(c), "⊔ associative");
+                    assert_eq!(a.meet(&b.meet(c)), a.meet(b).meet(c), "⊓ associative");
+                }
+            }
+        }
+    }
 }
