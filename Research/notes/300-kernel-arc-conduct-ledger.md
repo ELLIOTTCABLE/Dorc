@@ -354,9 +354,23 @@ the SUCCESSOR's:
 2. **Adjudicate the prompt-review audit** (report expected at
    `.claude/reports/r30-prompt-review-audit.md`; apply-or-decline each proposed
    edit).
-3. **Ledger the speech-act gap-check** (report expected at
-   `.claude/reports/r30-speechact-gapcheck.md`; per the §5 epistemic-sharpening
-   entry: a gap is an aid-plane FINDING to ledger, never to silently build).
+3. ~~The speech-act gap-check~~ — LANDED and LEDGERED (report committed at
+   `.claude/reports/r30-speechact-gapcheck.md`): the resolver-claimed vs
+   name-floor disjointness distinction is NOT rendered. It dies TWICE: structurally
+   at `core::coord::Relation::ProvablyDisjoint` (a bare unit variant — the
+   kind-fence, entity-inequality, and dialect-sparing generators merge with zero
+   provenance; `EntityResolution::Canonical` likewise covers resolver-produced and
+   identity-fallback in one shape), and as a wiring gap (`survival::Crossing::
+   via_resolver` — itself only a coarse kind-HAS-a-resolver proxy — feeds one
+   uncatalogued `format!` stderr line and is NEVER read by `why.rs::survival_chain`,
+   whose derives link renders one undifferentiated `SpeechAct::Derived` template).
+   FINDING ONLY, per the epistemic-sharpening ruling — nothing built. Successor
+   notes: the structural fix is a provenance-carrying disjoint verdict (a `Relation`
+   signature change — license-review-tier, `compare` being THE chokepoint;
+   enrichment-era); the cheap wiring half alone is NOT safe first — the proxy's
+   coarseness can MISLABEL a fence/dialect disjoint as resolver-claimed
+   (pope-sin-adjacent). Open sub-adjudication: whether the uncatalogued stderr
+   attribution line violates `one-catalog-no-legacy`.
 4. **LIVING_STATUS refresh** (the top block is stale: says stage one in flight;
    reality = everything folded but Kani).
 5. **The wave-one-close gate** (§4) + the human-QA list (§4's [TYPED] deliverable —
