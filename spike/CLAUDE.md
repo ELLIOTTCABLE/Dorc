@@ -811,6 +811,8 @@ mise run check            # all four lint gates, check-only
 mise run gate             # check + a fresh build + the whole suite (the pre-commit set)
 mise run bless            # ORCHESTRATOR-ONLY golden re-bless (see below)
 mise run bless:dry        # ... build + suite + tally, zero golden writes
+mise run bless:floor      # ORCHESTRATOR-ONLY: the one path that may write an `expected.emitted`
+                          #   (*nix/WSL only — it needs BOTH floor binaries)
 mise run loom:compile     # dorc-loom compile CASE...
 mise run loom:promote     # dorc-loom promote CASE... (publishes the two locks)
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
@@ -914,7 +916,9 @@ no task covers, and consider adding the task instead.
   share one `target/`. Never run BLESS while any build-agent is in flight;
   orchestrator-only, on a freshly-verified binary, resulting diff inspected
   case-by-case. Bless cannot prove an elision RIGHT — review by eye.
-- **two-bless-paths-split-by-directory** — there are TWO blessing authorities and they do not
+- **two-bless-paths-split-by-directory** — there are TWO blessing authorities (three, counting
+  `bless:floor`, which is the e2e one under an explicit opt-in — `emitted-is-measure-once-ground-truth`)
+  and they do not
   overlap. `dorc-loom compile`/`promote CASE...` publishes the two generated locks
   (`crates/aid/src/{catalog,arrangement}_lock.rs`) plus the affected cases under
   `crates/aid/tests/` — in-process renders, no binary, no execution. `BLESS=1 … --test e2e`
@@ -927,7 +931,9 @@ no task covers, and consider adding the task instead.
   re-blesses only the matching trials and leaves every other golden byte-identical
   (verified against a deliberately-drifted neighbour, 2026-07-26). Scoping a bless this way
   is how an unrelated drift stops riding in silently; the exclusivity rule above is about
-  the shared `target/`, not about breadth.
+  the shared `target/`, not about breadth. The floor mint (`bless:floor`) rides the same filter,
+  and there scoping is load-bearing rather than merely tidy: unscoped, it would re-open every
+  committed measurement in the corpus at once.
 - **wsl-unix-leg-at-fold** (conductor practice made durable, 2026-07-26; first run
   caught a real Linux-only panic — `28F:finding-wsl-leg-first-blood`) — this box
   carries a full mise-in-WSL namespace, so the unix half of the previous bullet is
@@ -991,6 +997,22 @@ no task covers, and consider adding the task instead.
   ordinary mocks-only PATH a posh body emits NOTHING, so this lane alone joins the floor binary's own
   userland to the mocks. The corpus's inert-mocks rail is therefore dash-shaped, and no oracle body's
   `printf` emissions have ever been exercised under posh.
+- **emitted-is-measure-once-ground-truth** (r30, closing a gap that bit three lanes) — an
+  `expected.emitted` section is what the floor BINARIES said, not what the engine renders, so the
+  ordinary bless has no authority over it and now says so: `BLESS=1` REFUSES any case carrying the
+  section, in one line naming the mint below, before materializing anything. (It used to write the
+  fresh measurement into the throwaway materialization dir while `bless_loom` folded back only
+  `expected.out`/`expected.ran` — a green-looking run that discarded exactly what it had measured,
+  after which two lanes hand-edited committed transcripts and hand-computed their `book=<sha256>`.)
+  The ONE write path is `mise run bless:floor -- <case>`: an explicit double opt-in (`BLESS_FLOOR=1`
+  AND `DORC_E2E_FLOOR_SHELLS`, half-spelled ⇒ refuse before any case runs) under which the lane
+  re-measures the manifest and commits it together with the transcript and the digest inside it, from
+  one run, so nothing is hand-computed and the three cannot drift apart. Two refusals survive the
+  opt-in: disagreement BETWEEN the binaries (that verdict is the floor's, never blessed away) and a
+  mint answered by fewer than two of them — which is why the mint is a WSL/*nix act, git's Windows
+  userland having no `posh` to ask. Minting rides the ordinary trial filter, so it re-opens the named
+  case's measurement and no other; it is byte-stable over an already-correct case (verified over all
+  eleven committed floor cases, 2026-08-15).
 
 ## Code style
 

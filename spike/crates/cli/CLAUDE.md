@@ -156,6 +156,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
   but bless cannot prove an elision RIGHT: fresh verified binary,
   orchestrator-only, diff inspected case-by-case (BLESS exclusivity —
   `spike/CLAUDE.md`).
+- **bless-writes-renders-not-measurements** (r30; `spike/CLAUDE.md`
+  emitted-is-measure-once-ground-truth) — bless has authority over what the ENGINE produced
+  (`expected.out`, `expected.ran`, transcripts) and none at all over what the floor BINARIES
+  produced. A case carrying `expected.emitted` is therefore REFUSED by `BLESS=1` — in
+  `run_loom` before materialization and in `run_round_trip` for the dir form, both through the
+  one pure `floor_bless_refusal` seat — and is writable only under the `BLESS_FLOOR=1` +
+  `DORC_E2E_FLOOR_SHELLS` mint, where gate-9 re-measures and `bless_loom` folds the manifest in
+  the same write that commits the transcript. Never widen `bless_loom` to fold a section no gate
+  just re-derived: the discarded-measurement shape this closes looked green for three lanes.
 - **loom-form-is-the-same-battery** (`288:phase-e2e-loom-conversion`) — a whole-product case may be
   a single-file `.loom`: frontmatter instead of `NAME=value` markers, txtar sections instead of a
   fixture dir (`mocks/` included, dotfiles included, `expected.ran` as a byte section), and the
