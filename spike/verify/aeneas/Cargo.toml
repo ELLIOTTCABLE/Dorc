@@ -26,50 +26,30 @@ path = "src/lib.rs"
 # ── The fence ───────────────────────────────────────────────────────────────
 # Every `opaque` entry hides ONE body and keeps its signature, so callers still translate and
 # the hidden item lands as a named axiom in `Generated/FunsExternal.lean` — a trusted-base
-# entry the report counts, never a silent gap. Three categories, meaning three different
-# things:
+# entry the report counts, never a silent gap. One category remains, and it is permanent:
 #
-# (a) EXITS — the sanctioned translation boundary (`300:fnd-iterator-exits-may-not-translate`).
-#     The algebra proper never calls them and no law is stated over them. Permanent.
+# EXITS — the sanctioned translation boundary (`300:fnd-iterator-exits-may-not-translate`).
+# The algebra proper never calls them and no law is stated over them.
 #
-# (b) BLOCKED — algebra proper that aeneas cannot translate. Each is a FINDING, not a design
-#     choice, and each has a proved-translating `match`-spelled cousin; reshaping the source is
-#     the human's act, not the pipeline's. Deleting these entries is what closing the findings
-#     looks like. Two distinct causes:
-#       * `Option::map` where the closure's RETURN borrows its own argument — aeneas aborts
-#         ("Can't end abstraction N as it is set as non-endable"). Hits `SortedMap::{get,
-#         get_mut, get_at}`.
-#       * `Option::map` where the closure takes a `&mut` and the lens-back-channel widens its
-#         return — aeneas emits ILL-TYPED Lean without erroring at all, so only the lake build
-#         catches it. Hits `SortedMap::insert`.
-#       * `Option::unwrap_or_else` with a TRAIT-METHOD fn item — aeneas reports
-#         "Unimplemented". Hits `MapL::get`.
+# The algebra proper is entirely INSIDE the fence's reach: every accessor and every mutation
+# seat translates and typechecks. Keep it that way by keeping borrows out of closure returns
+# and `Option` holds out of the algebra path (`304` §3) — the `Option`-combinator spellings
+# those five seats once carried each defeated aeneas in a different way, one of them SILENTLY.
 #
-# (c) COLLATERAL — `SortedSet::{get_at, insert}`, which translate perfectly. charon 0.1.232's
-#     name-matcher CANNOT address an inherent impl block: `{impl Type<_, _>}`, `{Type<_,_>}`,
-#     `{impl Type}` and the `@`-typevar forms all parse and match nothing, and only `_` matches
-#     an impl. `SortedSet` and `SortedMap` share the `sorted` module, so fencing the map's
-#     accessor fences the set's too. It leaves when (b) leaves.
+# A widening here is not free: charon 0.1.232's name-matcher cannot address an inherent impl
+# block (`{impl Type<_, _>}`, `{Type<_,_>}`, `{impl Type}` and the `@`-typevar forms all parse
+# and match nothing; only `_` matches an impl), so `SortedSet` and `SortedMap` share every
+# `generated::sorted::_::<name>` pattern. Fencing one facade's method fences the other's.
 #
 # `analysis::effect::Reach` is absent rather than fenced: it is not in `src/lib.rs` at all
 # (`300:fnd-reach-lattice-outside-scope`).
 [package.metadata.charon]
 opaque = [
-  # (a) exits
   "generated::sorted::_::iter",
   "generated::sorted::_::into_iter",
   "generated::sorted::_::from_iter",
   "generated::lattice::_::iter",
   "generated::lattice::_::from_iter",
-  # (b) blocked: closure-return-borrows-its-argument. `SortedSet` has neither `get` nor
-  # `get_mut`, so those two cost nothing; `get_at` takes (c) with it.
-  "generated::sorted::_::get",
-  "generated::sorted::_::get_mut",
-  "generated::sorted::_::get_at",
-  # (b) blocked: a `&mut` closure through `Option::map` emits ill-typed Lean. Takes (c) with it.
-  "generated::sorted::_::insert",
-  # (b) blocked: unwrap_or_else with a trait-method fn item. `Powerset` has no `get`.
-  "generated::lattice::_::get",
 ]
 
 # `--preset=aeneas` and `--error-on-warnings` stay CLI flags in `mise.toml`: they carry no

@@ -79,13 +79,13 @@ structure sorted.SortedMap (K : Type) (V : Type) where
 def lattice.MapL (K : Type) (V : Type) := sorted.SortedMap K V
 
 /-- [generated::lattice::May]
-    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 280:0-280:25
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 283:0-283:25
     Visibility: public -/
 @[reducible]
 def lattice.May (L : Type) := L
 
 /-- [generated::lattice::Must]
-    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 317:0-317:26
+    Source: 'src/../../../crates/analysis/src/lattice.rs', lines 320:0-320:26
     Visibility: public -/
 @[reducible]
 def lattice.Must (L : Type) := L
