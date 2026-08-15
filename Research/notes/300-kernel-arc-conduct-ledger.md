@@ -120,9 +120,29 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   (partial node→`SiteId` mapping OR a distinct run-scoped row species — undecided) +
   `Inconsistency<Reach>` holds `ProvId` (resolve-or-drop at any future durable edge —
   spine boundary (1) doing its job). Open: `302:pin-blast-radius-escalation`
-  [HUMAN?]. The post-land cross-lineage review is DISPATCHED (codex-reviewer,
-  read-only, vantage-worktree @ `a1535601`; report to conductor scratch, committed at
-  adjudication).
+  [HUMAN?]. The post-land cross-lineage review RAN (Sol, read-only; raw report
+  committed at `.claude/reports/r30-certifier-review/report.md`) and RETURNED FIVE
+  FINDINGS, every one conductor-verified in the code before crediting (provenance:
+  OpenAI lineage, adjudicated under maximum skepticism): (1) missing-states
+  fail-open — `certify_solution`'s `let-else continue` lets a truncated/empty states
+  vector certify clean with zero checks, contradicting `302` §2's pessimistic rider
+  (production-latent only while `solve` is correct — which is the exact assumption
+  the instrument exists to drop); (2) the `run`/`Unobserved` `pub(crate)` seam
+  bypasses the `solve(`-needle lexical fence; (3) the origin-round reach/self-reach
+  consistency diags surface AFTER the probe-mode return and probe shipping,
+  violating the §4 pre-network posture (floors held; disclosure late/lost);
+  (4) the SelfReach account is materially false (solve-count reported in the
+  failing-checks field; fabricated advisory) — mis-attribution-adjacent under
+  `271:rul-sin-ordering`; (5) the `effect.rs` debug_assert fires BEFORE
+  demote-and-report, so debug builds (and DST) panic instead of exercising the
+  machinery. The review also independently VERIFIED the funcenv grant-seal from the
+  code, and REFUTED "raw solve unreachable" as an enforcement claim (true today,
+  unenforced tomorrow). REPAIR LANE dispatched (the certifier builder resumed;
+  branch `ai/r30-lane-certifier-repair` @ `da66a918`): R1 length-mismatch ⇒
+  Inconsistent (edge-guard mirror stays) · R2 fence gains the `run(` needle ·
+  R3 origin-round diags surface pre-network · R4 honest-or-typed-absent account ·
+  R5 assert deleted · plus the F9 end-to-end floor drive folded in. Human
+  push-notified 2026-08-15.
 - **lane-sparing-rederivation** — (a) the naive reference model of the
   sparing/composition algebra, authored FROM the ratified English law-set under
   structural-simplicity constraints: the checker's value is STRUCTURAL difference —
