@@ -61,6 +61,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     }
+    vacate_own_image();
 
     // ORDER. Unscoped, the gate comes first: never re-bless from a tree you have not verified.
     // SCOPED, it cannot — a named case is being re-blessed precisely because it is red on
@@ -122,6 +123,45 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         ])
         .status();
     ExitCode::SUCCESS
+}
+
+/// Move this process's own executable aside, so the build it is about to drive can replace it.
+///
+/// `bless` drives `gate:full-quiet`, whose `cargo build --workspace` re-uplifts every workspace
+/// binary — this one included. Windows refuses to REMOVE a running image (`os error 5`), and
+/// removing the old artifact is cargo's first step in an uplift, so the gate died before it began
+/// (`300:finding-bless-driver-self-lock-on-windows`). Windows does permit RENAMING one: the
+/// directory entry moves, this process keeps the image it already mapped, and the real path is
+/// free for cargo to create fresh.
+///
+/// Copying and then re-execing the copy — the obvious shape — does NOT work: whoever waits for
+/// the child is still the parent, still running from the real path, still the lock. The process
+/// that drives the gate has to be the one that is no longer at the real path, and a rename is how
+/// a running process gets there without a second process or a lost exit status.
+///
+/// Unconditional rather than `cfg(windows)`: gating it would leave the one platform that needs it
+/// as the one platform that never exercises it — `one-platform-green-is-not-cross-platform-green`.
+/// A failure here is a warning, not a refusal: it restores exactly today's behaviour rather than
+/// blocking the conductor's only blessing path over a step that is a no-op on *nix anyway.
+fn vacate_own_image() {
+    let Ok(current) = std::env::current_exe() else {
+        eprintln!(
+            "bless: cannot locate this executable; a workspace build may refuse to replace it"
+        );
+        return;
+    };
+    let name = current.file_name().unwrap_or_default().to_string_lossy();
+    let mut aside = current.clone();
+    aside.set_file_name(format!("{name}.driver-image"));
+    // Last run's image is not running now, so it can go; the extension it lands under is
+    // irrelevant, because nothing ever executes this file — it only holds the inode open.
+    let _ = std::fs::remove_file(&aside);
+    if let Err(why) = std::fs::rename(&current, &aside) {
+        eprintln!(
+            "bless: could not move {} aside ({why}); a workspace build may refuse to replace it",
+            current.display()
+        );
+    }
 }
 
 /// The `BLESS=1` e2e pass, over every case or only the ones whose names match `cases`.
