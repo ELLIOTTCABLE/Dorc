@@ -23,9 +23,7 @@ the solve-certifier + its five cross-lineage-review repairs · the sparing refer
 model (codex-authored) + the plan-time re-derivation (demote-only; 8000-seed
 differential, zero disagreements) · THE MINISPEC REMIT TRIO (JoinIs{Commutative,
 Idempotent,Associative} over the DERIVED Flat join; lake green; elaborated +
-interrogated EARNED and claimed through the promote ceremony). In flight:
-**lane-kani-harnesses** (resumed under hard memory gates after TWO WSL/OOM
-environment deaths — post-mortems in `notes/300` §5). **The successor conductor's
+interrogated EARNED and claimed through the promote ceremony). LANDED, AWAITING SUCCESSOR FOLD: **lane-kani-harnesses** (tip `bddead65`; 19/37 green, 18 over-budget, ZERO counterexamples; its report in-branch; the CBMC-OOM-reads-as-FAILED save is the fold-review item). **The successor conductor's
 complete on-ramp is `notes/300` §3b** (the handoff list: the kani fold + Fable-tier
 harness-statement review, the prompt-review-audit adjudication, wave-one-close (§4),
 the human-QA list). The conductor cycle is IMMINENT by human direction; distrust any

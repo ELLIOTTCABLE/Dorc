@@ -345,12 +345,33 @@ being resumed with durability-first + memory-guard riders (per-harness `timeout`
 remaining job is COLLATION ONLY: land their reports as durables. Everything below is
 the SUCCESSOR's:
 
-1. **Fold `ai/r30-lane-kani`** (worktree `agent-a7e3dadb6449b686d`, locked) + the
-   conductor-tier HARNESS-STATEMENT REVIEW (law · bounds · what is NOT pinned — the
-   staffing split reserves this for Fable; `300` §2's kani bullet has the target
-   list; `§2a` the seat bank). Its lane carries the census-fix rider and the
-   `pinned`-badge seam closure. Expect a rebase over the moved tree (its base is
-   `5e6d6788`; report.rs-area conflicts possible with the reshape's census fix).
+1. **Fold `ai/r30-lane-kani`** — the lane is COMPLETE and awaiting fold only
+   (branch tip `bddead65`, base `5e6d6788`, 12 commits; its own durable report at
+   `.claude/reports/r30-kani-lane-report.md` IN-BRANCH, written cold). Landing
+   facts: 19/37 harnesses verify green at bounds, 18 OVER-BUDGET (unjudged, not
+   broken — recorded per the memory-gate discipline), ZERO counterexamples — green
+   covers the ternary consumer-map + universal-meet law-set, the selector
+   chokepoints, facade canonicality incl. across reallocation, and every lattice
+   law over Flat/Product/May/Must (the Must pass IS the order-dual proof).
+   `seam-kani-pairing-unbuilt` CLOSED (toolchain-resolved by-name pairing; three
+   outcomes distinct). Census fix landed: REPORT axioms 26 → 13 as `304`
+   predicted. CRITICAL process save, verify at fold: CBMC prints
+   `VERIFICATION:- FAILED` after its OWN out-of-memory, and the first battery
+   therefore reported THREE FALSE counterexamples against the coordinate algebra —
+   fixed in `49dd1bca` with a regression test carrying the real bytes; the
+   successor's statement review should re-confirm that gate ordering. Placements
+   flagged (successor reviews): `Reach::eq` → exhaustive-small in effect.rs
+   (BTree-backed, Kani-unreachable; migrates when Reach hits the facade) ·
+   `normalise_edits` → exhaustive-small in plan · narrative-fold permutation pins
+   NOT built (DST-shaped). Windows gate green 1951/1951 at final commit; WSL leg
+   skipped under a stated allowance-read the successor should verify at fold
+   (no cfg-gated additions claimed). Second-opinion asks the lane itself raised:
+   the root-vs-nested Kani pin placement, and `Dialect::any_minted` building
+   through real `mint` calls (faithful, but what pushes the three `compare_*`
+   harnesses over the address-space gate). The rustup-nightly disclosure repeats
+   the earlier-ruled kani-setup exception — same ruling extends. THE FOLD +
+   Fable-tier harness-statement review (law · bounds · what is NOT pinned) remain
+   the successor's, per the staffing split.
 2. **Adjudicate the prompt-review audit** — LANDED (report committed at
    `.claude/reports/r30-prompt-review-audit.md`; twelve priority-ordered proposals +
    seven reasoned rejections; criteria AGING at 103 days). The minting conductor
