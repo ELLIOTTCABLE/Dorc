@@ -122,6 +122,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   seat resolves over one population. This one is EXACT, not conservative: removal SHIFTS the
   winner rather than withholding, so it must be right — and it is, because a definition no
   program point binds is one no execution can call. Never widen it to "probably dead".
+- **translation-fence-binds-lattice-too** (`304`) — `lattice.rs` is inside the TRANSLATED
+  algebra tier (`spike/verify/aeneas/src/lib.rs` `#[path]`-includes this very file), so
+  `core/CLAUDE.md`'s `keep-borrows-out-of-closure-returns` binds it verbatim: no
+  Option-combinator whose closure RETURNS a borrow of its argument, no `mem::replace`
+  inside `.map`, no `unwrap_or_else(<trait method>)` — spell the `match` cousin. A
+  reintroduction breaks Aeneas translation SILENTLY (an ill-typed emission only
+  `lake build` catches); nothing on the ordinary gate sees it, and only `verify:lean`
+  does. The fence's own classes live in `spike/verify/aeneas/Cargo.toml`.
 
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 
