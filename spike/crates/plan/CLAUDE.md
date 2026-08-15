@@ -173,3 +173,16 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   Never elide a delta-gated effect via a *state*-probe; never synthesize the
   cross-kind `file:`→`service:` edge. Encode the precision test; don't add
   effect-map dimensions.
+
+## Law — the survival re-derivation (r30; `notes/300` §2b)
+
+- **rederivation-is-demote-only** — before a plan ships, every survival re-derives
+  through the naive reference model (`dorc-sparing-reference`) via `plan::rederive`,
+  seated INSIDE `wall_walk_survival`'s Survived arm (a post-pass demote would let a
+  now-running site cast no wall downstream). The minted `SurvivalWitness` goes in BY
+  VALUE and comes back `Confirmed(witness) | Demoted(..)` — the re-check cannot
+  fabricate a witness, agreement licenses nothing new, and the adapter never touches
+  the production compare path (zero shared helpers; lexically fenced both ways). The
+  differential's one disclosed coverage limit: the backing-side dialect-membership
+  conjunct is adapter-computed, not model-re-derived (`sparing_differential.rs`
+  header).

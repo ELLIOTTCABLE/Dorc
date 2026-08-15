@@ -187,3 +187,19 @@ discipline: one rule per bullet, slugged; append to the matching section.
   coincide: why-trees heavily weighted ∧ structured lattice domain needed ∧ DST
   tolerates `default-features=false` (Ascent has no provenance — the exact lever
   it would be wanted for).
+
+## Law — the solve-certifier (r30; spec `plans/302`)
+
+- **solve-is-certified-only** — `solve` and the observer-bearing `run` are
+  `pub(crate)`; every production answer routes through `solve_certified`, whose
+  `SolveConsistency` is consumed at a NAMED floor (value · funcenv · reach ·
+  self-reach). The whole-file lexical fence covers BOTH needles (`solve(`, `run(`)
+  with a non-empty-walk assertion. `trusted()` means CERTIFIED — never re-read the
+  advisory `converged` flag as a trust gate (consistent-at-cap is the lfp and is
+  used).
+- **floors-are-whole-window-and-demote-only** — an `Inconsistent` demotes the ENTIRE
+  analysis window; summaries (first-break, unstable components) explain, never scope.
+  The funcenv floor BREAKS the fold at the failing round with `folded_edges = ∅` —
+  `never_live` subtracts exactly and would GRANT on unchecked states otherwise
+  (`303:fnd-never-live-is-the-grant-shifting-consumer`). No recovery mechanism, ever
+  (`302` §9: recovery failures correlate with the trigger's own causes).

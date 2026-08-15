@@ -849,6 +849,25 @@ no task covers, and consider adding the task instead.
   is a HARD dependency of this corpus — Dorc's product is sh and these gates execute what
   they render — so the fix is to resolve one explicitly, never to drop the requirement.
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
+- **verify-lane-family** (r30) — `verify:check` rides the ordinary gates on both legs
+  (cheap tier: catalogue coherence, unit/slug contracts, the hole censuses — no
+  external toolchain). `verify:translate` / `verify:lean` / `verify:report --
+  --with-lean` are opt-in Linux/WSL lanes (the derived-definitions pipeline, the lake
+  build, the badge recompute). `minispec/` is SPEC SURFACE under its own CLAUDE.md's
+  access laws — builders never edit content there; the catalogue lock's promote is a
+  spec-side act whose review is the git diff.
+- **fmt-under-agent-env** — `mise run fmt` wraps `hk fix --all`, which the agent
+  session's `HK_FIX=0` turns into refuse-without-rewriting; the working agent
+  spelling is `mise exec -- cargo fmt --all --manifest-path spike/Cargo.toml`.
+- **wsl-trust-per-worktree** — WSL keeps its own mise trust store; a fresh worktree
+  needs a WSL-side `mise trust` before its first `mise run both`.
+- **background-wsl-children-outlive-taskstop** (post-mortem 2026-08-15) — stopping a
+  backgrounded harness task does NOT kill its WSL-side children: an orphaned CBMC
+  once climbed to ~15GB and OOM'd the whole WSL VM (which killed the harness and the
+  human's terminals). Reap explicitly with exact-name `pkill -9 -x <name>` — never
+  `-f`, which once matched the killer's own wrapper shell. Heavy WSL solver/build
+  work runs with per-item timeouts + reaping, and SERIALIZED across concurrent lanes
+  (the VM's ~15GiB default cap is the binding constraint, not host RAM).
 - **never-filter-a-task** — if a task is too loud, run its `-quiet` variant; if it has
   none, ADD one. Do NOT filter at the call site: `head`/`tail`/`grep`, and their
   PowerShell spellings `Select-Object -First/-Last` and `Select-String`, truncate the

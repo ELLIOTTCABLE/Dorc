@@ -119,3 +119,23 @@ new entries to the matching section.
   sites must not collapse across (`inv-site-keyed-results`), shared by the probe-records
   lane, the apply plan's steps, and every diagnostic. `aid` re-exports it; it is never
   re-minted.
+
+## Law — the verified-core substrate (r30; `notes/300` §2/§2a, `28T` heritage)
+
+- **sorted-facade-law** — the algebra tier's ordered storage is
+  `core::sorted::{SortedSet, SortedMap}` (private-backed sorted `Vec`s); raw
+  `BTreeMap`/`BTreeSet` never appear in verified-core code (checker and reference
+  implementations included — the `verified-core-discipline` skill's code-shape rule).
+  Canonical form (strict ascent: `∀i: get_at(i) < get_at(i+1)`) is HONOUR-SYSTEM, not
+  type-carried: each invariant has ONE named seat (the private `position` scan feeding
+  `insert`/`remove`) plus its seat tests, and the Kani lane's exhaustive pins are the
+  closing net. `#[cfg(kani)] Arbitrary` impls home in this module and construct via an
+  arbitrary `Vec` + `kani::assume(canonical)` — NEVER via repeated `insert`, which
+  makes the insert harnesses circular.
+- **keep-borrows-out-of-closure-returns** (`304`; the reshape) — in the TRANSLATED
+  algebra tier (`core::sorted`, `analysis::lattice`): no Option-combinator whose
+  closure RETURNS a borrow of its argument, no `mem::replace` inside `.map`, no
+  `unwrap_or_else(<trait method>)` — spell the `match` cousin. The Aeneas pipeline
+  breaks on these, once SILENTLY (an ill-typed emission only `lake build` catches).
+  The fence and its classes live in `spike/verify/aeneas/Cargo.toml`; a `.map`
+  reintroduction re-breaks translation invisibly unless `verify:lean` runs.
