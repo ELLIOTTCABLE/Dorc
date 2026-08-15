@@ -394,6 +394,31 @@ Three lanes, conduct-branch-based:
   keep the crate dep-free and get free-space another way); it is tooling-only and touches no
   product code. Windows `gate:full-quiet` and `test:floor` are unaffected (nothing holds the
   image open); the cost there is one redundant internal-tooling rebuild per gate.
+  **FIXED 2026-08-15, both halves, conductor-directed.** (1) The permanent guard: the driver
+  RENAMES its own image aside before driving the gate, so the real path is free whatever a
+  future dependency does. The directed copy-and-re-exec shape was NOT buildable as specified —
+  whoever waits on the copy is still the parent, still running from the real path, still the
+  lock — so the same intent is met by the one move a running process can make on itself.
+  Rename-of-a-live-image and cargo's re-creation of the vacated path were BOTH verified
+  empirically on Windows before the fix was trusted. Unconditional, not `cfg(windows)`:
+  gating it would leave the one platform that needs it as the one platform that never
+  exercises it. (2) The dep bar restored: `fs4` is now `[target.'cfg(unix)'.dependencies]` and
+  Windows answers free disk through the same wmic→CIM family as the RAM probe, so
+  `cargo tree -p internal-tooling` is bare on Windows again and the scope-thrash is GONE
+  (mtime now stable across the `-p`/`--workspace` alternation that used to flip it). Native
+  reading agrees with the crate's to within run-to-run churn (115.4 vs 115.7 GiB). Gates:
+  Windows `bless:dry` GREEN (`suite 2042`) — the reproduction case — plus `check` and
+  `gate:quick-quiet` (1233/1233); WSL `bless:dry` GREEN (`suite 2038`), no regression.
+- **finding-workspace-preflight-never-reads-cold** (found while verifying the above,
+  2026-08-15; UNFIXED, conductor-owned, LOW severity): the `gate`/`bless` profiles can never
+  take their cold branch. `Cache::Workspace`'s witness is `<target>/debug`, but reaching
+  preflight at all runs `cargo run -q -p internal-tooling`, which CREATES `<target>/debug`
+  before preflight's own code executes — so the probe always finds itself warm. Observed
+  directly: the WSL cache was deleted, and the very next `bless:dry` still reported `warm`.
+  Consequence is under-protection only (4 GiB demanded where 14 was intended), never a
+  spurious refusal. No witness inside the target dir can fix it, since the probe's own build
+  populates that dir; a witness a `-p internal-tooling` build does not produce (a product
+  binary such as `debug/dorc`) would, but choosing one is a design call, not a local edit.
 
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 
