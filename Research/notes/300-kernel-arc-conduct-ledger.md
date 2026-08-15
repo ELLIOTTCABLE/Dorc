@@ -570,8 +570,42 @@ per `28Q` §8.
   ~15GiB of the 31.7GiB host. OPTIONAL human hardening item: a `.wslconfig`
   memory raise buys headroom, but the lane disciplines are the real fix (a
   runaway solver eats any cap).
+- 2026-08-15, the wave-2 ack sitting (successor conductor): the kernel-rewrite plan
+  ACKED as explained; proceed on genuinely-INDEPENDENT work only (the
+  definition-fixtures commissioning · the kani fold + statement review · the
+  prompt-audit's builder-facing items · the ANALYZER-NEEDS read + owed paragraph ·
+  wave-one-close + the QA list); never pre-do work that the human's concurrent input
+  may change. **`ai/main` is FROZEN as the human's QA touching-point** — every fold
+  lands on `ai/r30-conduct` until the human directs promotion. A SIBLING conductor
+  concurrently runs the closure-custody sittings (née stage-ii) and the human-items
+  queue (`302:pin-blast-radius-escalation` · records-8 · kSURVIVAL status-line ·
+  `.wslconfig` · codex ACL — REASSIGNED off this conductor); this conductor stops
+  wherever that sitting's feedback becomes load-bearing. Git-siting law: the
+  conductor uses `git -C <path>` on every git command; builders are born in harness
+  worktrees; never stomp sibling worktrees.
+- 2026-08-15, [TYPED substance] **the flat-domain/k-CFA line DEMOTED**: it was a very
+  early, prospective, pre-code feasibility weld — academic-research-based, predating
+  the ruling performance posture (network + multi-host dominate hard; performance is
+  USER-ATTENTION SCHEDULING first, wallclock second; once the user has stood up from
+  the keyboard, the constraint is concurrency, pre-optimization/work-dropping, and
+  user-tuning — not algorithmic complexity). The owed ANALYZER-NEEDS `an-flat-domain`
+  paragraph must HONESTLY assess whether frames breach the old line — the human
+  suspects the frame design does breach it and doubts they care; never contort to
+  claim non-breach (the plan's "this is NOT context-sensitivity in the k-CFA sense"
+  framing is suspect sycophancy-of-the-spec). BANKED, low-priority: a
+  performance-choices analysis work-item under the attention-scheduling framing
+  (`work-performance-posture-analysis`; human wants it eventually, explicitly not
+  now). KNOBS `kCONTEXT`'s redline status-line is a candidate edit for the
+  human/sibling sitting, deliberately not touched by this conductor.
+- 2026-08-15, naming law (standing; propagate to every brief and durable): semantic,
+  constant, descriptive name-slugs for stages/lanes/concepts — never bare
+  "phase-N"/"pillar-N"/"stage-ii" as a primary handle; numerals only where genuinely
+  ordered, and always beside a name. (Memory-persisted; the 28Q stage names to use:
+  the definition-factoring stage · the snapshot-emission stage · closure-custody ·
+  world-scopes.)
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
-  (28T inheritance); silence ≠ ack; only typed text counts.
+  (28T inheritance; now riding the sibling's queue); silence ≠ ack; only typed text
+  counts.
 
 ## §6 — The settled-rules census (BANKED; the enrichment item's tabled menu)
 
