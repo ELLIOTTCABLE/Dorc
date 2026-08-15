@@ -166,36 +166,46 @@ pub fn run(repo_root: &Path, filter: Option<&str>) -> Result<Report, Refusal> {
         return Err(Refusal::UnsupportedPlatform);
     }
     let unit = unit_dir(repo_root);
-    let mut report = Report {
-        harnesses: parse_harness_list(&invoke_capturing(&unit, &["list".to_owned()])?),
-        ..Report::default()
-    };
-    if report.harnesses.is_empty() {
+    // Kani's `--exact` filter matches only a FULLY-QUALIFIED name, while a catalogue cites the
+    // harness function. Both live here: the qualified spellings drive invocation, the bare ones
+    // are the citation universe.
+    let qualified = parse_harness_list(&invoke_capturing(&unit, &["list".to_owned()])?);
+    if qualified.is_empty() {
         return Err(Refusal::ToolFailed(
             "cargo-kani list named no harnesses — either the unit has none, or this Kani's \
              list format no longer matches `dorc_verify::kani::parse_harness_list`"
                 .to_owned(),
         ));
     }
+    let mut report = Report {
+        harnesses: qualified.iter().map(|q| bare_name(q)).collect(),
+        ..Report::default()
+    };
 
     let selected: Vec<String> = match filter {
-        None => report.harnesses.iter().cloned().collect(),
+        None => qualified.iter().cloned().collect(),
         Some(name) => {
             let bare = bare_name(name);
-            if !report.harnesses.contains(&bare) {
+            let matched: Vec<String> = qualified
+                .iter()
+                .filter(|q| bare_name(q) == bare)
+                .cloned()
+                .collect();
+            if matched.is_empty() {
                 return Err(Refusal::ToolFailed(format!(
                     "no harness named `{bare}` — the toolchain lists {}",
-                    report.harnesses.len()
+                    qualified.len()
                 )));
             }
-            vec![bare]
+            matched
         }
     };
 
     let budget = budget();
-    for name in selected {
-        let outcome = verify_one(&unit, &name, budget);
+    for path in selected {
+        let outcome = verify_one(&unit, &path, budget);
         reap();
+        let name = bare_name(&path);
         match outcome {
             Ok(Outcome::Green(elapsed)) => {
                 report.timings.push((name.clone(), elapsed));
@@ -308,7 +318,9 @@ fn map_spawn_error(e: &std::io::Error) -> Refusal {
     }
 }
 
-/// Pull harness names out of `cargo kani list`'s report.
+/// Pull FULLY-QUALIFIED harness names out of `cargo kani list`'s report. Qualified because
+/// that is the only spelling Kani's `--exact` filter accepts; [`bare_name`] projects them down
+/// to the citation vocabulary afterwards.
 ///
 /// The report renders a three-column table — a blank marker column, the crate, and the
 /// fully-qualified harness path — bracketed by `+---+` rules. Rows are recognized structurally
@@ -328,7 +340,7 @@ fn parse_harness_list(text: &str) -> BTreeSet<String> {
         };
         let path = path.trim();
         if path.contains("::") {
-            out.insert(bare_name(path));
+            out.insert(path.to_owned());
         }
     }
     out
@@ -372,8 +384,8 @@ Standard Harnesses (#[kani::proof]):
 +-------+-----------+------------------------------------------------------+
 ";
         let found = parse_harness_list(rendered);
-        assert!(found.contains("set_insert_preserves_canonical_form"));
-        assert!(found.contains("flat_obeys_the_binary_laws"));
+        assert!(found.contains("harness::facade::set_insert_preserves_canonical_form"));
+        assert!(found.contains("harness::lattice_laws::flat_obeys_the_binary_laws"));
         assert_eq!(found.len(), 2, "the footer and the rules are not harnesses");
     }
 
