@@ -215,6 +215,9 @@ pub use prov::{
     Variation, Witness,
 };
 
+pub mod sorted;
+pub use sorted::{SortedMap, SortedSet};
+
 pub mod unord;
 pub use unord::IterSuppressedMap;
 
