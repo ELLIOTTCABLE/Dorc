@@ -997,6 +997,10 @@ no task covers, and consider adding the task instead.
   ordinary mocks-only PATH a posh body emits NOTHING, so this lane alone joins the floor binary's own
   userland to the mocks. The corpus's inert-mocks rail is therefore dash-shaped, and no oracle body's
   `printf` emissions have ever been exercised under posh.
+  Measured alongside (2026-08-15): posh's `echo` DOES process backslash escapes and DOES honour
+  `-n`, agreeing with dash on both — so no real dash∩posh divergence has yet been found to exercise
+  gate-9's disagreement branch, and the test that pins it substitutes `dash,bash` (bash's `echo`
+  processes neither). The dialect's `echo` ban is a quality ruling, not a floor disagreement.
 - **emitted-is-measure-once-ground-truth** (r30, closing a gap that bit three lanes) — an
   `expected.emitted` section is what the floor BINARIES said, not what the engine renders, so the
   ordinary bless has no authority over it and now says so: `BLESS=1` REFUSES any case carrying the

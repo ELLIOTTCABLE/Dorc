@@ -165,6 +165,25 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `DORC_E2E_FLOOR_SHELLS` mint, where gate-9 re-measures and `bless_loom` folds the manifest in
   the same write that commits the transcript. Never widen `bless_loom` to fold a section no gate
   just re-derived: the discarded-measurement shape this closes looked green for three lanes.
+- **bless-folds-only-on-pass** (r30) — `bless_loom` runs only when the case's own gates PASSED.
+  Safe because nothing depends on partial folding: every gate comparing against a bless-WRITTEN
+  golden is bless-aware and cannot fail on staleness (the content diff and the extra-replay
+  compare are `!bless`-guarded; `exec_check`, `run_lint`, and gate-9 write-and-return before
+  theirs), so what stays reachable under bless is structural, authored-fixture, or environmental
+  — unhealable by a write, which gate-1 already says in its own words. Ungated, `exec_check`'s
+  early `expected.ran` write folded into cases a LATER gate had just failed, leaving a fresh
+  run-set beside a stale transcript. XFAIL is unaffected (its lens returns `Ok`, keeping its
+  deliberate golden-text-blindness); XPASS now folds nothing, which is right — a case still
+  wearing its marker has no asserted transcript to commit. Pinned falsifiably by
+  `bless_folds_only_on_pass_selftest` (verified red with the gate removed).
+- **empty-ran-has-two-stable-spellings** (r30 landmine) — an empty `expected.ran` section exists
+  in the corpus as ONE blank line (content `""`) and as TWO (content `"\n"`), and both are
+  fixpoints, so neither is drift. The fork is `exec_check`: it writes `format!("{got_ran}\n")`
+  — `"\n"` for an empty run-set — but ONLY for a case carrying `mocks/`; a case without mocks
+  never reaches it and folds the materialized empty file straight back. That is exactly why the
+  floor mint is byte-stable across all eleven floor cases despite the asymmetry. Making that
+  write unconditional, or "normalizing" either spelling, churns six goldens for nothing — the
+  gate compares under `strip_trailing_newlines` and cannot tell them apart.
 - **loom-form-is-the-same-battery** (`288:phase-e2e-loom-conversion`) — a whole-product case may be
   a single-file `.loom`: frontmatter instead of `NAME=value` markers, txtar sections instead of a
   fixture dir (`mocks/` included, dotfiles included, `expected.ran` as a byte section), and the
