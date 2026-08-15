@@ -21,7 +21,7 @@ gates) → this file → `spike/crates/<c>/CLAUDE.md` for the crate you touch. R
 tension under a new name); root `AGENTS.md` = repo-wide agent law (terminology
 firming, exclusion-check discipline).
 
-**Registry discipline** (this file and all eight crate files): one rule per bullet,
+**Registry discipline** (this file and all nine crate files): one rule per bullet,
 each with a greppable slug; grouped under standing section headers; APPEND new
 entries to the matching section rather than restructuring; cite outside sources as
 `docID:slug` (e.g. `271:rul-lend-map`). Dense beats prose.
