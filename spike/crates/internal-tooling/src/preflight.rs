@@ -13,7 +13,12 @@
 //! which is noise against a gate and a tax against `gate:quick`.
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode};
+use std::process::ExitCode;
+// Only the Windows RAM probe spawns anything; Linux reads a file. Gated at the import
+// because an ungated one is a `-D warnings` failure on the leg that does not use it, and
+// that leg is not the one most work is done from (`one-platform-green-is-not-cross-platform-green`).
+#[cfg(windows)]
+use std::process::Command;
 
 const GIB: u64 = 1024 * 1024 * 1024;
 
