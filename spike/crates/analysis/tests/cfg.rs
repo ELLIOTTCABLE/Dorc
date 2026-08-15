@@ -1060,11 +1060,7 @@ fn consumed_of(src: &str, lit: &str) -> Powerset<Channel> {
 #[test]
 fn consumed_lone_command_is_quiet() {
     // No pipe, no redirect, no enclosing capture ⇒ provably quiet (empty set).
-    assert!(
-        consumed_of("apt-get install -y nginx\n", "apt-get")
-            .0
-            .is_empty()
-    );
+    assert!(consumed_of("apt-get install -y nginx\n", "apt-get").is_empty());
 }
 
 #[test]
@@ -1086,11 +1082,7 @@ fn consumed_own_stderr_redirect() {
 #[test]
 fn consumed_devnull_is_quiet() {
     // The `/dev/null` discard sink is exempt (the precision scalpel) ⇒ still quiet.
-    assert!(
-        consumed_of("apt-get install -y nginx > /dev/null\n", "apt-get")
-            .0
-            .is_empty()
-    );
+    assert!(consumed_of("apt-get install -y nginx > /dev/null\n", "apt-get").is_empty());
 }
 
 #[test]
@@ -1133,11 +1125,7 @@ fn consumed_enclosing_subshell_pipe_marks_inner_leaf() {
 fn consumed_enclosing_subshell_devnull_stays_quiet() {
     // The scalpel survives the enclosing case too: `( … ) > /dev/null` discards ⇒
     // the inner leaf stays quiet (the range-mark must keep /dev/null exempt).
-    assert!(
-        consumed_of("( apt-get install -y nginx ) > /dev/null\n", "apt-get")
-            .0
-            .is_empty()
-    );
+    assert!(consumed_of("( apt-get install -y nginx ) > /dev/null\n", "apt-get").is_empty());
 }
 
 // --- branch-status (round-19 `notes/195`; arch-1 note 214): an `if`/`elif` guard's

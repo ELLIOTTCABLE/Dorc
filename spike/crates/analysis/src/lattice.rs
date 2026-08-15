@@ -13,10 +13,12 @@
 //!
 //! Domains are built compositionally from the combinators below
 //! ([`Powerset`]/[`Flat`]/[`Product`]/[`MapL`]) rather than hand-rolled per
-//! analysis. All use *ordered* collections (`BTreeSet`/`BTreeMap`), never hashed,
-//! so any iteration over a lattice value is deterministic (`inv-determinism`).
+//! analysis. The two collection-shaped ones sit on [`SortedSet`]/[`SortedMap`],
+//! never on hashed or `BTree*` storage: iteration over a lattice value is
+//! deterministic (`inv-determinism`), and the `Vec` backing is what lets this
+//! tier translate for the Lean law statements (see `dorc_core::sorted`).
 
-use std::collections::{BTreeMap, BTreeSet};
+use dorc_core::sorted::{SortedMap, SortedSet};
 
 /// A lattice of finite height: ⊥, ⊔ (`join`), and ⊓ (`meet`).
 ///
@@ -65,38 +67,65 @@ pub trait BoundedLattice: Lattice {
 /// set), so deliberately NOT a [`BoundedLattice`] — a *must* analysis needing a ⊤
 /// seed must use an explicit-top domain instead (note 165's predicted asymmetry).
 /// Typically a *may* domain (over-approximate, started at ⊥).
+///
+/// The backing is private: the sorted-dedup canonical form is what makes `Eq`
+/// semantic, and [`SortedSet::insert`] is its one seat.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Powerset<T: Ord + Clone>(pub BTreeSet<T>);
+pub struct Powerset<T: Ord + Clone>(SortedSet<T>);
 
 impl<T: Ord + Clone> Default for Powerset<T> {
     fn default() -> Self {
-        Powerset(BTreeSet::new())
+        Powerset(SortedSet::new())
     }
 }
 
 impl<T: Ord + Clone> Powerset<T> {
     #[must_use]
     pub fn singleton(x: T) -> Self {
-        let mut s = BTreeSet::new();
-        s.insert(x);
-        Powerset(s)
+        Powerset(SortedSet::singleton(x))
     }
 
     #[must_use]
     pub fn contains(&self, x: &T) -> bool {
         self.0.contains(x)
     }
+
+    /// Add `x`; `false` if it was already a member.
+    pub fn insert(&mut self, x: T) -> bool {
+        self.0.insert(x)
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Iterate the members in element order (`inv-determinism`).
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.0.iter()
+    }
+}
+
+impl<T: Ord + Clone> FromIterator<T> for Powerset<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Powerset(iter.into_iter().collect())
+    }
 }
 
 impl<T: Ord + Clone> Lattice for Powerset<T> {
     fn bottom() -> Self {
-        Powerset(BTreeSet::new())
+        Powerset(SortedSet::new())
     }
     fn join(&self, other: &Self) -> Self {
-        Powerset(self.0.union(&other.0).cloned().collect())
+        Powerset(self.0.union(&other.0))
     }
     fn meet(&self, other: &Self) -> Self {
-        Powerset(self.0.intersection(&other.0).cloned().collect())
+        Powerset(self.0.intersection(&other.0))
     }
 }
 
@@ -182,11 +211,11 @@ impl<A: BoundedLattice, B: BoundedLattice> BoundedLattice for Product<A, B> {
 /// convergence — so the field is private and only the methods below may mutate
 /// it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MapL<K: Ord + Clone, V: Lattice>(BTreeMap<K, V>);
+pub struct MapL<K: Ord + Clone, V: Lattice>(SortedMap<K, V>);
 
 impl<K: Ord + Clone, V: Lattice> Default for MapL<K, V> {
     fn default() -> Self {
-        MapL(BTreeMap::new())
+        MapL(SortedMap::new())
     }
 }
 
@@ -214,13 +243,15 @@ impl<K: Ord + Clone, V: Lattice> MapL<K, V> {
 
 impl<K: Ord + Clone, V: Lattice> Lattice for MapL<K, V> {
     fn bottom() -> Self {
-        MapL(BTreeMap::new())
+        MapL(SortedMap::new())
     }
     fn join(&self, other: &Self) -> Self {
         let mut out = self.clone();
-        for (k, v) in &other.0 {
+        let mut index = 0usize;
+        while let Some((k, v)) = other.0.get_at(index) {
             let joined = out.get(k).join(v);
             out.insert(k.clone(), joined);
+            index = index.saturating_add(1);
         }
         out
     }
@@ -230,10 +261,12 @@ impl<K: Ord + Clone, V: Lattice> Lattice for MapL<K, V> {
         // even then only if their value-meet is non-⊥ (`insert` drops ⊥, keeping
         // the form canonical so `Eq` stays semantic).
         let mut out = MapL::default();
-        for (k, v) in &self.0 {
+        let mut index = 0usize;
+        while let Some((k, v)) = self.0.get_at(index) {
             if let Some(v2) = other.0.get(k) {
                 out.insert(k.clone(), v.meet(v2));
             }
+            index = index.saturating_add(1);
         }
         out
     }
@@ -353,12 +386,35 @@ mod tests {
 
     #[test]
     fn powerset_is_a_lattice() {
-        let p = |xs: &[u8]| Powerset(xs.iter().copied().collect::<BTreeSet<_>>());
+        let p = |xs: &[u8]| xs.iter().copied().collect::<Powerset<u8>>();
         assert_laws(&[p(&[]), p(&[1]), p(&[2]), p(&[1, 2]), p(&[1, 2, 3])]);
         assert_eq!(p(&[1]).join(&p(&[2])), p(&[1, 2]));
         assert_eq!(p(&[1, 2]).meet(&p(&[2, 3])), p(&[2]), "⊓ = ∩");
         assert!(p(&[1]).leq(&p(&[1, 2])));
         assert!(!p(&[1, 2]).leq(&p(&[1])));
+    }
+
+    #[test]
+    fn collection_domains_are_insertion_order_independent() {
+        // Since the backings became sorted `Vec`s, "structural Eq = semantic Eq" is upheld by
+        // `SortedSet`/`SortedMap`'s canonical form rather than by the collection type. `solve`
+        // detects its fixed point with `!=`, so a wrapper that let insertion order leak would
+        // stop the climb at the wrong state — a wrong elision, not a cosmetic diff.
+        type M = MapL<&'static str, Flat<u8>>;
+
+        let ascending: Powerset<u8> = [1u8, 2, 3].into_iter().collect();
+        let descending: Powerset<u8> = [3u8, 2, 1].into_iter().collect();
+        assert_eq!(ascending, descending);
+
+        let mut forward = M::default();
+        let mut backward = M::default();
+        for (k, v) in [("a", 1u8), ("b", 2), ("c", 3)] {
+            forward.insert(k, Flat::Elem(v));
+        }
+        for (k, v) in [("c", 3u8), ("b", 2), ("a", 1)] {
+            backward.insert(k, Flat::Elem(v));
+        }
+        assert_eq!(forward, backward);
     }
 
     #[test]
@@ -377,7 +433,7 @@ mod tests {
     fn product_is_componentwise() {
         type P = Product<Powerset<u8>, Flat<u8>>;
         type FF = Product<Flat<u8>, Flat<u8>>;
-        let mk = |s: &[u8], f: Flat<u8>| Product(Powerset(s.iter().copied().collect()), f);
+        let mk = |s: &[u8], f: Flat<u8>| Product(s.iter().copied().collect::<Powerset<u8>>(), f);
         assert_laws::<P>(&[
             P::bottom(),
             mk(&[1], Flat::Elem(9)),
@@ -387,7 +443,7 @@ mod tests {
         // join distinct flat components → ⊤ in that component only.
         let j = mk(&[1], Flat::Elem(9)).join(&mk(&[2], Flat::Elem(8)));
         assert_eq!(j.1, Flat::Top);
-        assert_eq!(j.0, Powerset([1, 2].into_iter().collect()));
+        assert_eq!(j.0, [1u8, 2].into_iter().collect::<Powerset<u8>>());
 
         // A product is BoundedLattice only when BOTH components are: Flat×Flat is,
         // but the Powerset×Flat above is NOT (Powerset has no ⊤) — the type-level
@@ -412,7 +468,7 @@ mod tests {
         let joined = lhs.join(&rhs);
         assert_eq!(
             joined.get(&"pkg"),
-            Powerset([1, 2].into_iter().collect()),
+            [1u8, 2].into_iter().collect::<Powerset<u8>>(),
             "pointwise join"
         );
         assert_eq!(
@@ -434,9 +490,9 @@ mod tests {
 
         // meet: pointwise ∩; only keys present in BOTH and non-⊥ survive.
         let mut d = M::default();
-        d.insert("pkg", Powerset([1, 2].into_iter().collect()));
+        d.insert("pkg", [1u8, 2].into_iter().collect());
         let mut e = M::default();
-        e.insert("pkg", Powerset([2, 3].into_iter().collect()));
+        e.insert("pkg", [2u8, 3].into_iter().collect());
         e.insert("svc", Powerset::singleton(7));
         let m = d.meet(&e);
         assert_eq!(

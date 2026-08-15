@@ -131,7 +131,6 @@ pub fn solve<G: Graph, L: Lattice>(
 mod tests {
     use super::*;
     use crate::lattice::Powerset;
-    use std::collections::BTreeSet;
 
     struct TestGraph {
         succ: Vec<Vec<usize>>,
@@ -163,13 +162,13 @@ mod tests {
     }
 
     fn set(xs: &[usize]) -> Powerset<usize> {
-        Powerset(xs.iter().copied().collect::<BTreeSet<_>>())
+        xs.iter().copied().collect()
     }
 
     /// Forward-may "gen" transfer: out = in ∪ {node-id}. Monotone + bounded.
     fn gen_xfer(v: usize, inp: &Powerset<usize>) -> Powerset<usize> {
         let mut s = inp.clone();
-        s.0.insert(v);
+        s.insert(v);
         s
     }
 
@@ -248,7 +247,7 @@ mod tests {
         let g = TestGraph::from_edges(1, &[(0, 0)]); // self-loop
         let r = solve(&g, Direction::Forward, |_, s: &Powerset<u64>| {
             let mut t = s.clone();
-            t.0.insert(u64::try_from(s.0.len()).unwrap_or(u64::MAX)); // always a new element
+            t.insert(u64::try_from(s.len()).unwrap_or(u64::MAX)); // always a new element
             t
         });
         assert!(

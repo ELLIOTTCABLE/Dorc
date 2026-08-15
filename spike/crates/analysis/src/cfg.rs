@@ -1606,7 +1606,7 @@ impl<'a> Builder<'a> {
             // vouched). Redir failure-edges abort too, but a `Redir` is never a plan leaf
             // consulted for consumption, so only `Command` nodes are marked.
             if self.nodes[v].kind == CfgNodeKind::Command {
-                self.consumed[v].0.insert(Channel::StatusRelaxable);
+                self.consumed[v].insert(Channel::StatusRelaxable);
             }
         }
         if saw_top {
@@ -1658,7 +1658,7 @@ impl<'a> Builder<'a> {
                     continue;
                 }
                 if self.nodes[p].kind == CfgNodeKind::Command {
-                    self.consumed[p].0.insert(Channel::StatusRelaxable);
+                    self.consumed[p].insert(Channel::StatusRelaxable);
                 } else {
                     // A `while`/`until` exit `merge`: also reach the body-exit (item-6a),
                     // so the post-loop `$?` marks the body's last command, not only the
@@ -1975,13 +1975,13 @@ impl<'a> Builder<'a> {
     /// marks nested / already-captured leaves, but over-marking ⇒ over-run ⇒ sound
     /// (`kFAIL` / `kPRECISION`). Empty `obs` is a no-op (a `> /dev/null` discard).
     fn mark_consumed_range(&mut self, from: usize, to: usize, obs: &Powerset<Channel>) {
-        if obs.0.is_empty() {
+        if obs.is_empty() {
             return;
         }
         for v in from..to {
             if self.nodes[v].kind == CfgNodeKind::Command {
-                for &o in &obs.0 {
-                    self.consumed[v].0.insert(o);
+                for &o in obs.iter() {
+                    self.consumed[v].insert(o);
                 }
             }
         }
@@ -2051,7 +2051,7 @@ impl<'a> Builder<'a> {
 /// 16G). fd-dups (`2>&1`, `>&3`) are deliberately NOT resolved (a deferred
 /// refinement — 16G); the structural floor already runs any file-redirected leaf.
 fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Channel> {
-    let mut out = BTreeSet::new();
+    let mut out = Powerset::default();
     for &r in redirs {
         let NodeKind::Redir { op, fd, target } = &ast.node(r).kind else {
             continue;
@@ -2075,7 +2075,7 @@ fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Channel> {
             _ => {}
         }
     }
-    Powerset(out)
+    out
 }
 
 /// The single-literal text of a word node, if it is exactly one literal fragment
