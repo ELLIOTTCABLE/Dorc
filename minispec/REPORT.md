@@ -63,7 +63,8 @@ The subsets of the analysis engine opted into Lean verification, as the census o
 - `dorc_analysis::lattice::Lattice::join`
 - `dorc_analysis::lattice::Lattice::leq`
 
-## Hole census
+## The trusted base
 
-`minispec/Generated/` proof holes: **0**. A lenient translation emits SILENT holes and a hole typechecks, so a green build proves nothing without this number.
+- `minispec/Generated/` proof holes: **0**. A lenient translation emits SILENT holes and a hole typechecks, so a green build proves nothing without this number.
+- external axioms in `Generated/`: **40**. Each is a std or fenced function the translator does not model, standing in for a body nothing checks. The fence — which items are axiomatized and why — is `spike/verify/aeneas/Cargo.toml`, where each entry is classed as a permanent translation boundary, a recorded finding, or that finding's collateral.
 

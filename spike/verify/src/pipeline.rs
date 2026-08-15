@@ -127,7 +127,7 @@ pub fn lean_files(dir: &Path) -> Result<Vec<PathBuf>, String> {
 /// # Errors
 /// When staging fails, lake is absent, or the build does not succeed. Absence is reported as
 /// absence rather than as a failure the caller might read as a broken proof.
-pub fn lean_build(repo_root: &Path, build_root: &Path) -> Result<(), String> {
+pub fn lean_build(repo_root: &Path, build_root: &Path) -> Result<Built, String> {
     if cfg!(windows) {
         return Err(
             "the Lean leg is Linux/WSL only (upstream publishes no Windows aeneas asset); \
@@ -139,7 +139,52 @@ pub fn lean_build(repo_root: &Path, build_root: &Path) -> Result<(), String> {
     // mathlib's olean cache first: without it lake compiles mathlib from source, which is
     // hours rather than minutes and looks like a hang.
     run(build_root, "lake", &["exe", "cache", "get"])?;
-    run(build_root, "lake", &["build"])
+    let output = capture(build_root, "lake", &["build"])?;
+    if !output.ok {
+        return Err(format!("lake build failed:\n{}", output.text));
+    }
+    Ok(Built {
+        dependency_holes: output
+            .text
+            .lines()
+            .filter(|line| line.contains("declaration uses"))
+            .count(),
+    })
+}
+
+/// What a green lake build reports beyond "it built".
+#[derive(Debug)]
+pub struct Built {
+    /// `declaration uses 'sorry'` warnings across the WHOLE build, dependencies included.
+    ///
+    /// The `Generated/` census cannot see these: aeneas's own Lean library ships holes
+    /// (`Aeneas/Std/Slice.lean`, `StringIter.lean` — recorded upstream), and anything proved
+    /// through a holed declaration is not proved. Lean says so in one line of a 1700-job
+    /// build, which is exactly how a trusted-base entry becomes invisible, so the number is
+    /// lifted into the report rather than left in scrollback.
+    pub dependency_holes: usize,
+}
+
+/// A command's combined output plus whether it succeeded.
+struct Captured {
+    ok: bool,
+    text: String,
+}
+
+fn capture(cwd: &Path, program: &str, args: &[&str]) -> Result<Captured, String> {
+    let out = Command::new(program)
+        .args(args)
+        .current_dir(cwd)
+        .output()
+        .map_err(|e| {
+            format!("{program}: {e} (is elan on PATH? `mise run verify:lean-bootstrap`)")
+        })?;
+    let mut text = String::from_utf8_lossy(&out.stdout).into_owned();
+    text.push_str(&String::from_utf8_lossy(&out.stderr));
+    Ok(Captured {
+        ok: out.status.success(),
+        text,
+    })
 }
 
 fn stage(repo_root: &Path, build_root: &Path) -> Result<(), String> {

@@ -53,13 +53,24 @@ fn run_check() -> ExitCode {
 
 fn run_report(args: &[&str]) -> ExitCode {
     let root = repo_root();
-    let tier = if args.contains(&"--with-lean") {
-        Tier::WithLean {
-            lean_built: pipeline::lean_build(root, &dorc_verify::lean_build_root()).is_ok(),
-        }
-    } else {
-        Tier::Cheap
+    let built = args
+        .contains(&"--with-lean")
+        .then(|| pipeline::lean_build(root, &dorc_verify::lean_build_root()));
+    let tier = match &built {
+        None => Tier::Cheap,
+        Some(result) => Tier::WithLean {
+            lean_built: result.is_ok(),
+        },
     };
+    if let Some(Ok(built)) = &built
+        && built.dependency_holes > 0
+    {
+        println!(
+            "note: {} holed declaration(s) in the dependency closure — anything proved \
+             through one is not proved",
+            built.dependency_holes
+        );
+    }
     let units = match unit::load_all(root) {
         Ok(units) => units,
         Err(why) => {
@@ -68,7 +79,7 @@ fn run_report(args: &[&str]) -> ExitCode {
         }
     };
     let generated = root.join("minispec").join("Generated");
-    let holes = pipeline::census(&generated).map_or(0, |(holes, _)| holes);
+    let (holes, axioms) = pipeline::census(&generated).unwrap_or((0, 0));
     let rows: Vec<report::Row<'_>> = LAWS
         .iter()
         .map(|law| {
@@ -80,7 +91,7 @@ fn run_report(args: &[&str]) -> ExitCode {
             }
         })
         .collect();
-    let text = report::render(&rows, tier, holes);
+    let text = report::render(&rows, tier, report::Census { holes, axioms });
 
     if args.contains(&"--write") {
         if let Err(e) = std::fs::write(report::path(root), &text) {
@@ -137,8 +148,11 @@ fn run_materialize() -> ExitCode {
 
 fn run_lean_build() -> ExitCode {
     match pipeline::lean_build(repo_root(), &dorc_verify::lean_build_root()) {
-        Ok(()) => {
-            println!("lake build: green");
+        Ok(built) => {
+            println!(
+                "lake build: green ({} holed declaration(s) across the dependency closure)",
+                built.dependency_holes
+            );
             ExitCode::SUCCESS
         }
         Err(why) => {

@@ -31,7 +31,7 @@ pub struct Row<'a> {
 
 /// Render the whole report.
 #[must_use]
-pub fn render(rows: &[Row<'_>], tier: Tier, generated_holes: usize) -> String {
+pub fn render(rows: &[Row<'_>], tier: Tier, census: Census) -> String {
     let mut out = String::new();
     out.push_str("# minispec coverage report\n\n");
     out.push_str(
@@ -93,14 +93,33 @@ pub fn render(rows: &[Row<'_>], tier: Tier, generated_holes: usize) -> String {
         let _ = writeln!(out, "- `{seat}`");
     }
 
-    let _ = writeln!(out, "\n## Hole census\n");
+    let _ = writeln!(out, "\n## The trusted base\n");
     let _ = writeln!(
         out,
-        "`minispec/Generated/` proof holes: **{generated_holes}**. A lenient translation emits \
-         SILENT holes and a hole typechecks, so a green build proves nothing without this \
-         number.\n"
+        "- `minispec/Generated/` proof holes: **{}**. A lenient translation emits SILENT holes \
+         and a hole typechecks, so a green build proves nothing without this number.",
+        census.holes
     );
+    let _ = writeln!(
+        out,
+        "- external axioms in `Generated/`: **{}**. Each is a std or fenced function the \
+         translator does not model, standing in for a body nothing checks. The fence — which \
+         items are axiomatized and why — is `spike/verify/aeneas/Cargo.toml`, where each entry \
+         is classed as a permanent translation boundary, a recorded finding, or that finding's \
+         collateral.",
+        census.axioms
+    );
+    out.push('\n');
     out
+}
+
+/// The trusted-base numbers a report carries.
+#[derive(Clone, Copy, Debug)]
+pub struct Census {
+    /// Proof holes in the generated tree.
+    pub holes: usize,
+    /// External axioms in the generated tree.
+    pub axioms: usize,
 }
 
 /// Where the committed report lives.
