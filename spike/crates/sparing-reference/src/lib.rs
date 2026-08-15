@@ -2,6 +2,14 @@
 //!
 //! Authored solely from the ratified English law-set and deliberately blind to
 //! the production implementation.
+//!
+//! # Reading [`CompareVerdict::ProvablyDisjoint`]
+//!
+//! The variant names the algebra's internal verdict — disjoint GIVEN the contracted claims —
+//! never machine-established referent-inequality. Every generator behind it (the kind fence, the
+//! entity name-floor, the selector dialect) is a speech-act by contract, and the aid plane tracks
+//! that epistemic tier separately (`trust-tier-is-syntax`). The name mirrors production vocabulary
+//! (`300:rul-reference-entity-name-floor`, epistemic-sharpening note).
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 /// Opaque kind identity.
@@ -123,7 +131,8 @@ impl<'a> BackingSet<'a> {
 pub enum CompareVerdict {
     /// The coordinates identify the same cell.
     Same,
-    /// A ratified generator proves the cells disjoint.
+    /// A ratified generator answers the cells disjoint GIVEN the contracted claims (see the
+    /// module header on how this variant's name reads).
     ProvablyDisjoint,
     /// The relation cannot license either consumer.
     Unknown,
@@ -153,13 +162,19 @@ pub fn compare(claim: Claim, backing: Backing, dialects: &[Dialect<'_>]) -> Comp
     let claim = claim.0;
     let backing = backing.0;
 
+    // `300:rul-reference-kind-fence-disjoint` — the v1 kind fence: a cross-kind pair short-circuits
+    // disjoint before any other axis. Disjoint GIVEN the contracted claims, not machine-established.
+    // Composes with the no-cross-kind-`Same` law: cross-kind is disjoint, never same, never unknown.
     if claim.kind != backing.kind {
-        return CompareVerdict::Unknown;
+        return CompareVerdict::ProvablyDisjoint;
     }
 
+    // `300:rul-reference-entity-name-floor` — the no-resolver name-comparison floor: unequal
+    // entities within one kind answer disjoint on the strength of their names alone. Disjoint GIVEN
+    // the contracted claims (the kind owner's naming), not machine-established referent-inequality;
+    // this model is resolver-blind, so a caller with a resolver feeds canonicalized entities here.
     if claim.entity != backing.entity {
-        // FLAGGED: the assigned law-set gives no unequal-entity disjointness generator.
-        return CompareVerdict::Unknown;
+        return CompareVerdict::ProvablyDisjoint;
     }
 
     let (
@@ -210,8 +225,12 @@ pub fn spare_set(
     backing_set: BackingSet<'_>,
     dialects: &[Dialect<'_>],
 ) -> SetSparingVerdict {
+    // `300:rul-reference-empty-footprint-assert` — the law makes backing sets non-empty by
+    // construction and says nothing about footprints, so the model keeps the conservative answer:
+    // an empty footprint collides rather than vacuously spares. A caller whose own footprints are
+    // non-empty by construction asserts that on its side; ∅ reaching here is that caller's finding,
+    // never something this model normalizes away.
     if footprint.is_empty() {
-        // FLAGGED: the assigned law-set requires non-empty backings, but is silent on footprints.
         return SetSparingVerdict::Collides;
     }
 
@@ -417,11 +436,31 @@ mod tests {
     }
 
     #[test]
-    fn cross_kind_same_does_not_exist() {
+    fn the_kind_fence_answers_disjoint_and_never_same() {
+        // `300:rul-reference-kind-fence-disjoint` composed with no-cross-kind-`Same`: identical
+        // entity and selector under different kinds is disjoint, never same, never unknown.
         let claim = Claim(minted_coordinate(KIND_A, ENTITY_A, SELECTOR_A, FAMILY_A));
         let backing = Backing(minted_coordinate(KIND_B, ENTITY_A, SELECTOR_A, FAMILY_A));
 
-        assert_eq!(compare(claim, backing, &[]), CompareVerdict::Unknown);
+        assert_eq!(
+            compare(claim, backing, &[]),
+            CompareVerdict::ProvablyDisjoint
+        );
+        assert_ne!(compare(claim, backing, &[]), CompareVerdict::Same);
+        assert_eq!(spare_pair(claim, backing, &[]), PairSparingVerdict::Spares);
+    }
+
+    #[test]
+    fn the_kind_fence_precedes_every_other_axis() {
+        // The fence short-circuits before the selector state is even read: a selector-less
+        // coordinate that would otherwise collide is still cross-kind disjoint.
+        let claim = Claim(top_coordinate(KIND_A, ENTITY_A));
+        let backing = Backing(top_coordinate(KIND_B, ENTITY_A));
+
+        assert_eq!(
+            compare(claim, backing, &[]),
+            CompareVerdict::ProvablyDisjoint
+        );
     }
 
     #[test]
@@ -586,24 +625,41 @@ mod tests {
     }
 
     #[test]
-    fn different_entities_collide_without_a_ratified_generator() {
+    fn unequal_entities_within_a_kind_answer_disjoint_under_the_name_floor() {
+        // `300:rul-reference-entity-name-floor`: unequal entity names inside one kind answer
+        // disjoint with no dialect evidence at all, and the answer feeds sparing.
         let claim = Claim(minted_coordinate(KIND_A, ENTITY_B, SELECTOR_B, FAMILY_B));
         let backing = Backing(minted_coordinate(KIND_A, ENTITY_A, SELECTOR_A, FAMILY_A));
-        let dialect = Dialect {
-            family: FAMILY_A,
-            kind: KIND_A,
-            selectors: &[SELECTOR_B],
-        };
 
-        assert_eq!(compare(claim, backing, &[dialect]), CompareVerdict::Unknown);
         assert_eq!(
-            spare_pair(claim, backing, &[dialect]),
+            compare(claim, backing, &[]),
+            CompareVerdict::ProvablyDisjoint
+        );
+        assert_eq!(spare_pair(claim, backing, &[]), PairSparingVerdict::Spares);
+    }
+
+    #[test]
+    fn the_name_floor_does_not_reach_across_selector_states() {
+        // The floor is an ENTITY-axis generator: it fires whatever the selectors say, and a
+        // selector-less pair on ONE entity still collides (the floor never widens into ⊤ sparing).
+        let other_entity = Claim(top_coordinate(KIND_A, ENTITY_B));
+        let backing = Backing(top_coordinate(KIND_A, ENTITY_A));
+        let same_entity = Claim(top_coordinate(KIND_A, ENTITY_A));
+
+        assert_eq!(
+            spare_pair(other_entity, backing, &[]),
+            PairSparingVerdict::Spares
+        );
+        assert_eq!(
+            spare_pair(same_entity, backing, &[]),
             PairSparingVerdict::Collides
         );
     }
 
     #[test]
     fn an_empty_footprint_collides_conservatively() {
+        // `300:rul-reference-empty-footprint-assert`: the model KEEPS the conservative answer
+        // rather than the vacuous ∀-over-∅ spare. Callers assert non-emptiness on their own side.
         let backing = Backing(minted_coordinate(KIND_A, ENTITY_A, SELECTOR_A, FAMILY_A));
 
         assert_eq!(
