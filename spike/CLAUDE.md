@@ -860,7 +860,10 @@ no task covers, and consider adding the task instead.
   never a bare `cargo kani` battery, which has taken a whole WSL VM down. An
   over-budget harness is a FINDING (the formula needs a shape the checker can afford),
   never something to wait out. `minispec/` is SPEC SURFACE under its own CLAUDE.md's
-  access laws — builders never edit content there; the catalogue lock's promote is a
+  access laws — content is touched ONLY by a frontier-class model AND only with
+  explicit human authorization (`minispec/CLAUDE.md`
+  `law-spec-touch-frontier-human-only`, a two-part lock; conductors are not exempt,
+  and builders never edit content there at all); the catalogue lock's promote is a
   spec-side act whose review is the git diff.
 - **fmt-is-a-task-in-every-session** — `mise run fmt` formats, agent session included:
   the task re-enables hk's fix mode for itself, because the session-wide `HK_FIX=0`
