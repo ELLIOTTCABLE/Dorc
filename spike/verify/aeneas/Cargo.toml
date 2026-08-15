@@ -1,0 +1,76 @@
+# The translation unit charon compiles, and — in `[package.metadata.charon]` — THE FENCE.
+#
+# DELIBERATELY NOT A WORKSPACE MEMBER. The empty `[workspace]` table below detaches it, so
+# `cargo build --workspace` never sees it and the ordinary gate never compiles it under the
+# nightly this directory's mise config pins. Its only consumer is `charon cargo`.
+#
+# Why `charon cargo` rather than the shorter `charon rustc`: the fence's precise patterns
+# carry `<`, `>`, `@` and spaces, and a mise task body may carry no shell syntax
+# (`task-bodies-are-shell-free`). Upstream reads options from this section, so the fence lives
+# in committed TOML — quoted by nobody, commented per entry, and reviewable as a diff.
+[package]
+name = "generated"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# The crate NAME is load-bearing twice over: charon carries it into the LLBC, and aeneas
+# derives the Lean module prefix from it — so `generated` is what makes the emission import as
+# `Generated.Types` / `Generated.Funs` and land in `minispec/Generated/`.
+[lib]
+name = "generated"
+path = "src/lib.rs"
+
+[workspace]
+
+# ── The fence ───────────────────────────────────────────────────────────────
+# Every `opaque` entry hides ONE body and keeps its signature, so callers still translate and
+# the hidden item lands as a named axiom in `Generated/FunsExternal.lean` — a trusted-base
+# entry the report counts, never a silent gap. Three categories, meaning three different
+# things:
+#
+# (a) EXITS — the sanctioned translation boundary (`300:fnd-iterator-exits-may-not-translate`).
+#     The algebra proper never calls them and no law is stated over them. Permanent.
+#
+# (b) BLOCKED — algebra proper that aeneas cannot translate. Each is a FINDING, not a design
+#     choice, and each has a proved-translating `match`-spelled cousin; reshaping the source is
+#     the human's act, not the pipeline's. Deleting these entries is what closing the findings
+#     looks like. Two distinct causes:
+#       * `Option::map` where the closure's RETURN borrows its own argument — aeneas aborts
+#         ("Can't end abstraction N as it is set as non-endable"). Hits `SortedMap::{get,
+#         get_mut, get_at}`.
+#       * `Option::map` where the closure takes a `&mut` and the lens-back-channel widens its
+#         return — aeneas emits ILL-TYPED Lean without erroring at all, so only the lake build
+#         catches it. Hits `SortedMap::insert`.
+#       * `Option::unwrap_or_else` with a TRAIT-METHOD fn item — aeneas reports
+#         "Unimplemented". Hits `MapL::get`.
+#
+# (c) COLLATERAL — `SortedSet::{get_at, insert}`, which translate perfectly. charon 0.1.232's
+#     name-matcher CANNOT address an inherent impl block: `{impl Type<_, _>}`, `{Type<_,_>}`,
+#     `{impl Type}` and the `@`-typevar forms all parse and match nothing, and only `_` matches
+#     an impl. `SortedSet` and `SortedMap` share the `sorted` module, so fencing the map's
+#     accessor fences the set's too. It leaves when (b) leaves.
+#
+# `analysis::effect::Reach` is absent rather than fenced: it is not in `src/lib.rs` at all
+# (`300:fnd-reach-lattice-outside-scope`).
+[package.metadata.charon]
+opaque = [
+  # (a) exits
+  "generated::sorted::_::iter",
+  "generated::sorted::_::into_iter",
+  "generated::sorted::_::from_iter",
+  "generated::lattice::_::iter",
+  "generated::lattice::_::from_iter",
+  # (b) blocked: closure-return-borrows-its-argument. `SortedSet` has neither `get` nor
+  # `get_mut`, so those two cost nothing; `get_at` takes (c) with it.
+  "generated::sorted::_::get",
+  "generated::sorted::_::get_mut",
+  "generated::sorted::_::get_at",
+  # (b) blocked: a `&mut` closure through `Option::map` emits ill-typed Lean. Takes (c) with it.
+  "generated::sorted::_::insert",
+  # (b) blocked: unwrap_or_else with a trait-method fn item. `Powerset` has no `get`.
+  "generated::lattice::_::get",
+]
+
+# `--preset=aeneas` and `--error-on-warnings` stay CLI flags in `mise.toml`: they carry no
+# metacharacters, and (measured) charon does not honour them from this section.

@@ -12,8 +12,13 @@
 # nothing in `mise run gate:*` reaches it, and a box with none of this installed gates
 # green.
 #
-# Reach these through the root config's `verify:*` wrappers — they supply the cwd this
-# file needs and keep the stable-toolchain steps out from under the shadowing pin.
+# The FENCE — which items are translated, which are axiomatized, and why — lives in this
+# directory's `Cargo.toml`, not here: charon reads options from `[package.metadata.charon]`,
+# and that is what keeps the fence's patterns out of a shell and in reviewable commented TOML
+# (`task-bodies-are-shell-free`).
+#
+# Reach these through the root config's `verify:*` wrappers, which supply the cwd this file
+# needs and keep the stable-toolchain steps out from under the shadowing pin.
 
 [tools]
 # ONE pin buys the whole frontend: the aeneas release tarball ships `charon`/
@@ -34,57 +39,27 @@ rust = { version = "nightly-2026-06-01", profile = "minimal", components = "rust
 # workspace's shared `spike/target/`.
 CARGO_TARGET_DIR = "{{xdg_cache_home}}/dorc-verify-aeneas-target"
 
-# ── The fence ───────────────────────────────────────────────────────────────
-# Every `--opaque` below hides ONE body and leaves its signature, so callers still
-# translate and the hidden item lands as a named axiom in `Generated/FunsExternal.lean`
-# — a trusted-base entry the report counts, never a silent gap. There are three
-# categories and they mean different things:
-#
-# (a) EXITS — `iter` / `into_iter` / `from_iter`, the sanctioned translation boundary
-#     (`300:fnd-iterator-exits-may-not-translate`). The algebra proper never calls them;
-#     no law is stated over them. Permanent.
-#
-# (b) BLOCKED — `SortedMap::{get, get_mut, get_at}` and `MapL::get`. These are ALGEBRA
-#     PROPER and their fencing is a FINDING, not a design choice
-#     (`301:fnd-option-map-closure-borrow-blocks-translation` and
-#     `fnd-unwrap-or-else-trait-fn-item-unimplemented`). Two aeneas limitations, both
-#     with a proved-translating `match`-spelled cousin; the reshape is the human's act,
-#     not the pipeline's. Removing these four lines is what closing the finding looks
-#     like.
-#
-# (c) COLLATERAL — `SortedSet::get_at`, which translates perfectly. charon's name-matcher
-#     cannot address an inherent impl block (only `_` matches one), so `_::get_at` catches
-#     both facades. It leaves with (b).
-#
-# `analysis::effect::Reach` is not fenced here because it is not in `algebra.rs` at all
-# (`300:fnd-reach-lattice-outside-scope`).
-#
 # ── Tasks ───────────────────────────────────────────────────────────────────
-# Same portability contract as the root config: no shell syntax in a `run` string — the
-# fence patterns above are deliberately spelled without spaces, braces or angle brackets
-# so they need no quoting. These tasks are *nix-only by construction (the tools are).
-#
-# `charon rustc` rather than `charon cargo`: the translation unit is one dependency-free
-# .rs file that `#[path]`-includes the real sources, so going through cargo would buy
-# nothing and cost a manifest.
+# No shell syntax in a `run` string, same as the root config. These are *nix-only by
+# construction (the tools above are).
 
 [tasks."aeneas:translate"]
 description = "Regenerate minispec/Generated/ from the real algebra sources. STRICT: charon fails on any construct it cannot model and aeneas aborts on the first error, because a silently-degraded translation makes the Lean look better than the code is. Root wrapper: `mise run verify:translate`, which also materializes the externals and runs the sorry census."
 dir = "{{config_root}}"
 run = [
-   "charon rustc --preset=aeneas --dest-file generated.llbc --error-on-warnings --opaque generated::sorted::_::iter --opaque generated::sorted::_::into_iter --opaque generated::sorted::_::from_iter --opaque generated::lattice::_::iter --opaque generated::lattice::_::from_iter --opaque generated::sorted::_::get --opaque generated::sorted::_::get_mut --opaque generated::sorted::_::get_at --opaque generated::lattice::_::get -- --crate-name generated --crate-type=lib --edition=2024 algebra.rs",
+   "charon cargo --preset=aeneas --error-on-warnings --dest-file generated.llbc",
    "aeneas -backend lean -no-progress-bar -dest {{config_root}}/../../../minispec/Generated -split-files -gen-lib-entry -abort-on-error generated.llbc",
 ]
 
 [tasks."aeneas:translate-lenient"]
-description = "translate, minus the fence and the two fail-fast flags — charon downgrades unmodellable constructs to warnings and aeneas keeps going past the first error, emitting a SILENT `sorry` where it gave up. This is how the fence list above was derived and how it is re-derived: it enumerates every blocked item in ONE pass. Never a judgement of whether the algebra translated. Writes to a scratch dir, never to minispec/Generated/."
+description = "translate with the fence and the fail-fast flags OFF — charon downgrades unmodellable constructs to warnings and aeneas keeps going past the first error, emitting a SILENT `sorry` where it gave up. This is how the fence in Cargo.toml is derived and re-derived: it enumerates every blocked item in ONE pass. Never a judgement of whether the algebra translated. Writes to a scratch dir, never to minispec/Generated/."
 dir = "{{config_root}}"
 run = [
-   "charon rustc --preset=aeneas --dest-file lenient.llbc -- --crate-name generated --crate-type=lib --edition=2024 algebra.rs",
+   "charon rustc --preset=aeneas --dest-file lenient.llbc -- --crate-name generated --crate-type=lib --edition=2024 src/lib.rs",
    "aeneas -backend lean -no-progress-bar -dest {{config_root}}/lenient-scratch -split-files lenient.llbc",
 ]
 
 [tasks."aeneas:check"]
 description = "rustc-only sanity pass over the translation unit — proves the sources still compile standalone before blaming charon for rejecting them."
 dir = "{{config_root}}"
-run = "rustc --crate-name generated --crate-type=lib --edition=2024 --emit=metadata --out-dir {{xdg_cache_home}}/dorc-verify-aeneas-check algebra.rs"
+run = "cargo check --quiet"

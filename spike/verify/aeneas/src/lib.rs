@@ -18,8 +18,8 @@
 
 extern crate self as dorc_core;
 
-#[path = "../../crates/core/src/sorted.rs"]
+#[path = "../../../crates/core/src/sorted.rs"]
 pub mod sorted;
 
-#[path = "../../crates/analysis/src/lattice.rs"]
+#[path = "../../../crates/analysis/src/lattice.rs"]
 pub mod lattice;
