@@ -373,6 +373,27 @@ Three lanes, conduct-branch-based:
   post-fold, the two debt-lane refs); the SyncThing conflict-file cleanup in the resource
   lane's worktree (three untracked `Cargo.sync-conflict-*` files — human-owned per
   standing law; that worktree reads dirty until cleared, so its reap waits on them).
+- **finding-bless-driver-self-lock-on-windows** (found at the debt-batch fold, 2026-08-15;
+  UNFIXED, conductor-owned): `mise run bless` and `bless:dry` now FAIL on Windows —
+  `cargo build --workspace` inside the driven gate cannot replace
+  `target/debug/internal-tooling.exe`, because that is the running bless driver and Windows
+  denies replacing a live image (`os error 5`). Both are GREEN on WSL, where a running
+  binary can be unlinked and replaced; `bless:dry` there reports `gates ok | suite 2038 |
+  e2e not blessed (dry)`, so there is ZERO golden drift and the fold itself is sound.
+  MECHANISM (measured, not inferred): the driver is built at `-p internal-tooling` scope and
+  the gate rebuilds it at `--workspace` scope; the two scopes resolve dependency features
+  differently, so each re-uplifts the binary the other just wrote (mtime thrash reproduced
+  directly, and reproduced on the pre-existing `dorc-loom` binary too — the thrash is
+  ordinary cargo behaviour, not this dep's doing). What IS this batch's doing is that
+  `internal-tooling` STOPPED BEING DEPENDENCY-FREE: a crate with no deps cannot differ
+  between the two scopes, so `fs4` → `windows-sys` (shared with other members, hence
+  feature-unified workspace-wide) is what made the previously-latent hazard reachable. The
+  crate's own dependency bar — "a dep here must DELETE a platform assumption, never
+  re-import one" — is exactly what got crossed. The fix is a design choice left to the
+  conductor (build the driver at workspace scope · drive the gate from a copied binary ·
+  keep the crate dep-free and get free-space another way); it is tooling-only and touches no
+  product code. Windows `gate:full-quiet` and `test:floor` are unaffected (nothing holds the
+  image open); the cost there is one redundant internal-tooling rebuild per gate.
 
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 
