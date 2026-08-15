@@ -2,167 +2,226 @@
 
 > Tier: LLM-authored conductor working-ledger (Fable; minted 2026-08-14 at round-30 open,
 > human-directed). AUTHORITY ORDER: root human docs > `plans/28Q` (THE kernel plan) +
-> `notes/28T` (THE tooling plan) + `spike/CLAUDE.md` > this ledger. This file NEVER
-> duplicates 28Q/28T content — it carries arc STATE only: staffing, dispatch, ack-grades,
-> gates, and the conductor-handoff protocol. Grades: [TYPED] the human typed it ·
-> [ACKED] substance confirmed in dialogue · [CONDUCTOR] conductor adjudication,
+> `notes/301` (THE minispec/dorc-verify spec) + `spike/CLAUDE.md` > this ledger. This file
+> never duplicates those — it carries arc STATE: staffing, dispatch, ack-grades, gates,
+> the census bank, and the conductor-handoff protocol. Grades: [TYPED] the human typed
+> it · [ACKED] substance confirmed in dialogue · [CONDUCTOR] conductor adjudication,
 > unratified unless a human reaction is recorded. Maintenance: compression-resistant;
 > folded lanes collapse to a line; newest state at the top of §2.
 
 ## §1 — Arc shape and the handoff protocol
 
-- The arc = `28Q` stages i–iii (stage-0 landed pre-arc), OPENED by the `28T` Wave-1
-  tooling stage — ordering forced by `28Q` §8: every stage inherits the checker gates
-  (certifier + sparing re-derivation green, both planes voting), so the checkers must
-  exist first.
+- Round 30 splits in two: the FIRST HALF is the correctness-tooling standup (this
+  file's §2 + `notes/301`; it reshapes and supersedes the execution-plan half of
+  `notes/28T`, which stays the evidence digest, marker-annotated); the SECOND HALF is
+  `28Q` stages i–iii (stage-0 landed pre-arc). Ordering forced by `28Q` §8: every
+  stage inherits the checker gates (certifier + sparing re-derivation green, both
+  planes voting), so the checkers must exist first.
 - [TYPED 2026-08-14] Conductor-context management: the arc expects sequential
   conductors and/or rewinds. THE NAMED STOPPING POINT is **wave-one-close** (§4). The
   human's rewind anchor is the 2026-08-14 plan-ack sitting (pre-dispatch, this ledger
   committed, zero subagents in flight). A post-rewind or successor conductor MUST
   distrust conversation memory of anything after that sitting — ground truth is this
-  ledger + `LIVING_STATUS.md` + `git log` (conductor branch: `ai/r30-conduct`,
-  worktree `.claude/worktrees/r30-conduct`).
-- [TYPED] Round-30 numbering minted for this arc: this file is notes/300; `plans/301`
-  is RESERVED for the solve-certifier mechanical spec (conductor-authored, pre-build).
-  Never mint a 29x ID (quarantined round).
+  ledger + `notes/301` + `LIVING_STATUS.md` + `git log` (conductor branch:
+  `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct`).
+- [TYPED] Round-30 numbering: notes/300 = this ledger; notes/301 = the minispec/verify
+  spec; `plans/302` is RESERVED for the solve-certifier mechanical spec
+  (conductor-authored, pre-build). Never mint a 29x ID (quarantined round).
 
-## §2 — The Wave-1 stage (28T tooling onboarding): lanes, staffing, gates
+## §2 — The Wave-1 stage (the correctness-tooling standup): lanes, staffing, gates
 
-[ACKED 2026-08-14, plan-ack] Six lanes + one evidence rider. Opus builders in isolated
+[ACKED, as reshaped through the 2026-08-14 design sittings] Opus builders in isolated
 worktrees; every brief carries the `spike/CLAUDE.md` safety block verbatim, step-zero
 (reset to the conductor-stated `ai/main` tip + hash verify), step-one root-doc reads,
 the no-subagent clamp, naming discipline (`270` §1), the `verified-core-discipline`
-skill pointer, and flag-don't-resolve on every `tc-*`-shaped judgment.
-Sequencing: facade solo FIRST → {kani, certifier, flux} parallel (+ rederivation-(a)
-anytime) → rederivation-(b) → discipline-close.
+skill pointer, and flag-don't-resolve on every judgment call. No lane carries
+pilot/measure/kill staging [TYPED — velocity; the human inserts kills if needed].
+Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify standup} and
+{kani, certifier} in parallel → rederivation integration → flux → discipline-close.
 
-- **lane-facade-std-dropping** (first, solo) — `28T:w1-latticemap-facade`. Evict
-  BTreeMap/BTreeSet from the algebra tier — `analysis/src/lattice.rs` (`Powerset` →
-  sorted-dedup `Vec<T>`; `MapL` → key-sorted `Vec<(K,V)>`), `core/src/coord.rs`
-  (compare/backing-set machinery), `analysis/src/solve.rs`'s BTreeSets — behind small
-  owned total-API facades; `core/src/unord.rs` is the API-taste precedent. The
-  `solve.rs` VecDeque worklist STAYS [ACKED lean-vecdeque-stays]: the Aeneas-door
-  residue (`turn08`: "the one rewrite that would need genuine design work"), not
+- **lane-facade-std-dropping** (first, solo) — evict BTreeMap/BTreeSet from the
+  algebra tier — `analysis/src/lattice.rs` (`Powerset` → sorted-dedup `Vec<T>`;
+  `MapL` → key-sorted `Vec<(K,V)>`), `core/src/coord.rs` (compare/backing-set
+  machinery), `analysis/src/solve.rs`'s BTreeSets — behind small owned total-API
+  facades; `core/src/unord.rs` is the API-taste precedent. The `solve.rs` VecDeque
+  worklist STAYS [ACKED lean-vecdeque-stays]: the known translation-door residue, not
   invented under a pure-refactor gate. Gates: byte-identical goldens (`bless:dry`
   verify, never bless) · `mise run both gate:full-quiet` · zero new deps (core stays
-  dependency-free) · no crate split (a split urge is a tc-flag) · each facade
-  invariant gets ONE named seat + tests now, and the builder REPORTS the
-  invariant-seat list (feeds lane-kani; the honour-system counterweight said out loud).
-- **lane-aeneas-churn-remeasure** (after facade; bounded; non-blocking) — re-run the
-  pinned Aeneas pipeline (`spike-aeneas/mise.toml` tasks; WSL leg) over the
-  post-facade algebra and re-prove the three lattice laws; measure translation/proof
-  breakage. This IS `28T:w3-churn-axis-remeasure` taken at its cheapest moment (the
-  facade is exactly the real-refactor the trigger wanted); evidence for §3's vehicle
-  ruling. Abort-on-budget is a legal outcome; report, never force.
-- **lane-kani-harnesses** (after facade) — `28T:w1-kani-lane`. Opt-in mise lane in
-  real-tools-lane shape (off by default; requested-but-absent fails LOUD); expected
-  Linux/WSL-only. Targets: the `28T` list + the facade sortedness/canonicality seats.
-  Tier placement per the `verified-core-discipline` ladder — the narrative-fold
-  permutation pins may land property/DST-tier; placement is FLAGGED, never silently
-  decided. Harnesses outside the kernel; hand-written `#[cfg(kani)] Arbitrary`;
-  checked code stays stable-toolchain, zero annotations. Conductor reviews the harness
-  STATEMENTS (law, bounds, what is NOT pinned) at fold.
-- **lane-solve-certifier** (after facade AND `plans/301`) — `28T:w1-solve-certifier`.
-  Opus implements against the conductor-authored mechanical spec; the spec carries the
-  five turn07 brief obligations verbatim + `28R:fnd-pessimistic-pass-shape` + the
-  fresh-ack pedigree note. Shape: `Certified | Refused(EdgeWitness)`; `Refused` ⇒
-  degrade to the ⊤/stage-0 floor (license plane) + an operand-carrying narrative
-  record (aid plane; `collapse-mints-narrative`); cap-trip certifies the PARTIAL
-  solution; `Must<L>` duality, one checker; ships in the DEFAULT suite. Post-land: a
-  codex-reviewer cross-lineage pass (`28T:law-independent-guard`).
-- **lane-sparing-rederivation** — `28T:w1-sparing-reference-rederivation`.
-  (a) [TYPED: codex acked 2026-08-14] a codex-worker (foreign lineage, per the turn07
-  implementation-diversity condition; `22W:fb-same-model`) authors the naive reference
-  model FROM the Lean theorem statements
-  (`.claude/research/refinement-types-industrial-cost/spike-lean-sparing/SparingAlgebra/Laws.lean`
-  + its defs); statement-vs-`277`-spec disagreements are FLAGGED to the conductor,
-  never resolved by the worker; zero shared helpers with `core/src/coord.rs`.
-  (b) Opus integrates: DST-permutation internal differential + plan-time re-derivation
-  of every survival verdict before a plan ships; disagreement ⇒ demote to guard/run +
-  narrative record; the demote-only structure recorded explicitly (the
-  `271:rul-net-quality-u-curve` pass condition; engage
-  `271:struck-falsifiability-license-leg` as the nearest prior art).
-- **lane-flux-pilot** (after facade; independent) — `28T:w2-flux-adopt-early-scoped`,
-  pulled early per the human's stage naming. MEASURE-FIRST: the install-cost claims
-  are quarantine-contaminated and UNVERIFIED (turn07 adj-quarantine-claims-stamped-
-  verified) — bounded stand-up budget, abort-and-report is a legal outcome. First
-  surface: the facade signatures (RVec-style). Nightly pin NESTED per the ratification
-  below; the meta-process learnings (CLAUDE.md riders, churn budget, complaint
-  reflexes) are a first-class deliverable.
-- **lane-discipline-close** (conductor) — the owed `28T:w1-discipline-artifacts`
-  halves: verified-core sections appended to `spike/crates/{core,analysis}/CLAUDE.md`
-  (incl. the `inv-determinism` sharpening: facade sortedness = named-seat + Kani-pin,
-  the honour-system move stated in law text) · the three stale `turn07`→`turn08`
-  references (`28T` lines ~262/299/302; `turn06-amendments-ledger` ~137/173-175) ·
-  LIVING_STATUS / `28T` §3 / FORFEITS updates · prompt-review pass on the CLAUDE.md
-  edits · wave-one-close gate run.
+  dependency-free) · no crate split (a split urge is a flag) · each facade invariant
+  gets ONE named seat + tests now, and the builder REPORTS the invariant-seat list
+  (feeds lane-kani; the honour-system counterweight said out loud).
+- **lane-derived-definitions-pipeline** (after facade) — stand up Aeneas-translate +
+  lake-build of the facade'd algebra as a MAINTAINED opt-in lane feeding
+  `minispec/Generated/` (WSL leg; pinned per the nested-mise pattern in-repo,
+  ratification below). Simply built, per no-pilots: regeneration breakage is the
+  drift-alarm working, and translation/proof churn data falls out incidentally,
+  gating nothing.
+- **lane-minispec-verify-standup** — the `notes/301` build: the `minispec/` skeleton +
+  the 2–3 remit claims + the dorc-verify binder v0 + the first bound demonstration
+  loom + `minispec/CLAUDE.md`. Staffing split per `301` §0's access laws: builders
+  build ALL harness/tooling; the spec content (units, claims, prose) is
+  frontier-authored under explicit human authorization — in practice the conductor,
+  with the human's ack, at dispatch.
+- **lane-kani-harnesses** (after facade) — opt-in mise lane, real-tools-lane shape,
+  expected Linux/WSL-only; harness home is `spike/verify/` (`301` §3). Targets: the
+  lattice laws per combinator · `MapL` canonical-form · backing-set universal meet +
+  non-empty-by-construction + ⊤-never-∅ · ternary consumer-map exhaustiveness ·
+  span-edit non-overlap · the facade sortedness/canonicality seats. Tier placement per
+  the `verified-core-discipline` ladder (the narrative-fold permutation pins may land
+  property/DST-tier — placement flagged, never silently decided). Hand-written
+  `#[cfg(kani)] Arbitrary`; checked code stays stable-toolchain, zero annotations.
+  Conductor reviews the harness STATEMENTS (law, bounds, what is NOT pinned) at fold.
+- **lane-solve-certifier** (after facade AND `plans/302`) — Opus implements against
+  the conductor-authored mechanical spec; the spec carries the five crosscheck brief
+  obligations verbatim + `28R:fnd-pessimistic-pass-shape` + the fresh-ack pedigree
+  note. Shape: `Certified | Refused(EdgeWitness)`; `Refused` ⇒ degrade to the
+  ⊤/stage-0 floor (license plane) + an operand-carrying narrative record (aid plane;
+  `collapse-mints-narrative`); cap-trip certifies the PARTIAL solution; `Must<L>`
+  duality, one checker; ships in the DEFAULT suite. Post-land: a cross-lineage review
+  pass (codex-reviewer; cheap).
+- **lane-sparing-rederivation** — (a) the naive reference model of the
+  sparing/composition algebra, authored FROM the ratified English law-set under
+  structural-simplicity constraints: the checker's value is STRUCTURAL difference —
+  written under different constraints, from the machinery-free description of the
+  goal, one pass, no worklist — never authorial lineage [TYPED — the
+  independent-voices framing was deweighted; a foreign-model author (codex, ACKED
+  available) is incidental, not load-bearing]. Zero shared code with `coord.rs`;
+  statement-vs-spec disagreements FLAGGED, never resolved. (b) Opus integrates:
+  DST-permutation internal differential + plan-time re-derivation of every survival
+  verdict before a plan ships; disagreement ⇒ demote to guard/run + narrative record;
+  the demote-only structure recorded explicitly (the `271:rul-net-quality-u-curve`
+  pass condition).
+- **lane-flux-engine-hardening** — [CONDUCTOR recommendation, presented 2026-08-14,
+  awaiting reaction] in, scoped, ENGINE-tier (the intake byte-budget, span/interval
+  arithmetic — the churny tier no other instrument reaches at compile time; per the
+  [TYPED] error-tier ladder, compile-time value is inflated ~two orders), LAST
+  priority in the wave, cut-is-defensible (nothing downstream depends on it).
+  Explicitly NOT part of the verification core — Kani+Lean+binder own the algebra;
+  triple-covering it was rejected. Nightly pin nested; the meta-process learnings are
+  a first-class deliverable.
+- **lane-discipline-close** (conductor) — the verified-core CLAUDE.md sections for
+  `core`/`analysis` (incl. the `inv-determinism` sharpening: facade sortedness =
+  named-seat + Kani-pin, the honour-system move stated in law text) · FORFEITS rows if
+  any arise · prompt-review pass on all CLAUDE.md edits · ledger/LIVING_STATUS
+  currency · the wave-one-close gate run (§4).
 
-[CONDUCTOR ratification, 2026-08-14] `turn08:tc-nested-mise-config-vs-root` →
-toolchain-SHADOWING pins live in nested mise configs (the Aeneas precedent);
-additive-only pins (elan) may live at root.
+[CONDUCTOR ratification, 2026-08-14] Nested-vs-root mise configs: toolchain-SHADOWING
+pins live in nested configs (the in-repo Aeneas precedent); additive-only pins (elan)
+may live at root.
 
-[CONDUCTOR staffing, presented 2026-08-14, awaiting human reaction] The Fable/Opus
-split for lanes kani+certifier: Fable authors SPECS and reviews STATEMENTS
-(`plans/301`; harness-statement review at fold); Opus authors bodies, tests, and
-toolchain wiring. Neither lane runs full-Fable or in-conductor-implementation.
+[CONDUCTOR staffing, standing] Fable authors SPECS and reviews STATEMENTS
+(`plans/302`; minispec content under the `301` access laws; harness-statement review
+at fold); Opus authors bodies, tests, and toolchain wiring. Neither Kani nor the
+certifier runs full-Fable or in-conductor-implementation.
 
-## §3 — The Lean-tier vehicle question (OPEN; human-flagged important)
+## §3 — The Lean-tier vehicle (RESOLVED in substance, 2026-08-14)
 
-[TYPED 2026-08-14] Aeneas vs hand-maintained model vs combination is OPEN; the
-conductor MAY make the call but it is important and must be made correctly. Human
-concern recorded verbatim-in-substance: "Aeneas apparently can't handle types, which
-sounds nearly absurd and drops its value-prop to near zero — unless I misunderstand."
-
-[CONDUCTOR answer, banked for the ruling] What fails to cross the translation is
-compile-time-only DISCIPLINE — sealed tiers, smart-constructor privacy, phantom
-`Must`/`May` distinctions — not types structurally (generics/traits/closures/`solve`
-translated whole, `turn08`). This is expected of ANY extraction tool: those guarantees
-live in the type CHECKER, not in the data or bodies. They also do not NEED to cross:
-rustc enforces them continuously over the real code at zero marginal cost, and the
-compile_fail tripwires + Kani pin them. Lean's job is equational law over the BODIES,
-which translate faithfully — so Aeneas's value-prop is ZERO-TRANSCRIPTION-DRIFT
-definitions (theorems about the shipped bytes), and drift is a live threat, not
-hypothetical: the crosscheck found divergences in our days-old hand model beyond its
-declared gaps. Aeneas's REAL costs sit elsewhere: zero documentation value
-(machine-shaped definitions); toolchain fragility; lawless `Clone`/`Eq` hypotheses
-(named trusted-base entries); silent-`sorry` policing; churn cost unmeasured.
-Candidate synthesis: hand-written STATEMENTS (the readable review/spec surface) proved
-over Aeneas-DERIVED definitions (the drift-free substrate) — the spike's three lattice
-laws are a small existence proof of the shape.
-
-[CONDUCTOR lean, held loosely] The hand model stays the statement/spec surface (it
-exists, is proved, and is lane-rederivation's diversity source); Aeneas demotes to a
-periodic DRIFT-CHECK INSTRUMENT rather than a maintained vehicle — UNLESS
-lane-aeneas-churn-remeasure comes back surprisingly cheap. The ruling lands at
-wave-one-close (or with the successor conductor) with two numbers in hand: the Aeneas
-churn measurement, and the hand model's first real maintenance bill
-(`pin-two-position-sparing` lands in the sparing mini-model first, this arc). The
-human's "early to lean into documentation/spec" cuts against hand-model EXPANSION,
-not against keeping the existing small one aligned.
+- [TYPED] Aeneas is a must/of-course, if the tier exists at all: machine-correlation
+  is the entire point where correlation is available, and the seam's brittleness under
+  regeneration is the drift-alarm working, not a cost to engineer away.
+- The maintained artifact is **minispec** (`notes/301`): hand-written statements +
+  instances over Aeneas-DERIVED definitions, proofs where cheap. The earlier
+  hand-model and Aeneas research spikes are QUARRY, never seed [TYPED].
+- The recorded translation limits (sealed tiers, phantom `Must`/`May`,
+  smart-constructor privacy do not cross) are compile-time discipline that rustc keeps
+  enforcing over the real code — they never needed to cross; the Lean tier's job is
+  equational law over the bodies, which translate faithfully.
+- The churn-measurement question dissolved with no-pilots: the derived-defs pipeline
+  is simply maintained; there is no vehicle decision left to gate on it.
 
 ## §4 — wave-one-close (the handoff gate)
 
 All lanes folded to `ai/main` · `mise run both gate:full-quiet` green + `bless:dry`
-clean · certifier + re-derivation live in the DEFAULT suite · Kani/Flux lanes opt-in
-and documented · ledgers current (this file, LIVING_STATUS, `28T` §3, FORFEITS) ·
-CLAUDE.md discipline sections landed + prompt-reviewed · conductor worktree/branch
-cleaned or handed over deliberately. Successor boot order: LIVING_STATUS → this file →
-`plans/28Q` → `notes/28T` → `spike/CLAUDE.md`. The NEXT stage's first acts: a full
-root `ANALYZER-NEEDS.md` read (it owes the `an-flat-domain` reconciliation paragraph,
-`28Q` §7), then 28Q stage-i's fixtures-first commissioning per `28Q` §8 — the
-differential cells land BEFORE the conversion.
+clean · certifier + re-derivation live in the DEFAULT suite · the Kani lane opt-in and
+documented · minispec standing (skeleton; the remit claims at their earned badge-sets;
+binder v0 + the generated report; the first bound demonstration; `minispec/CLAUDE.md`)
+· the derived-defs lane green · CLAUDE.md discipline sections landed + prompt-reviewed
+· ledgers current (this file, `notes/301` if amended, LIVING_STATUS, FORFEITS) ·
+conductor worktree/branch cleaned or handed over deliberately. Successor boot order:
+LIVING_STATUS → this file → `notes/301` → `plans/28Q` → `spike/CLAUDE.md`. The NEXT
+stage's first acts: a full root `ANALYZER-NEEDS.md` read (it owes the `an-flat-domain`
+reconciliation paragraph, `28Q` §7), then 28Q stage-i's fixtures-first commissioning
+per `28Q` §8.
 
 ## §5 — Ack-ledger (what the human has TYPED this arc; silence is never ack)
 
-- 2026-08-14, the plan-ack sitting: the six-lane Wave-1 plan ACKED (including the
-  stated leans: rederivation-in-scope · vecdeque-stays · needs-ledgers-deferred) ·
-  codex-worker dispatch ACKED ("use it as you see fit") · the two research branches
-  deleted by the human's own hand (post-fold; worktrees gone with them) · round-30
-  minted, notes/300 assigned, 28Q remains live-and-authoritative · the
-  sequential-conductor/rewind protocol directed (§1) · the Lean-vehicle question
-  flagged open-and-important (§3) · "do lanes 2/3 deserve Fable tokens?" answered by
-  conductor (§2 staffing block), reaction pending.
-- Standing inheritances: `28T` §0 postures all [TYPED]; the `28T` §3 checker-triad,
-  mini-model, and Vec-facade acks all [TYPED]; Aeneas [PROVISIONAL] with §3 now the
-  live venue; Flux [LEAN → stage-ratified by the human's stage naming, scope still
-  pilot-tier].
+- 2026-08-14, the plan-ack sitting: the six-lane Wave-1 plan ACKED (with the stated
+  leans: rederivation-in-scope · vecdeque-stays · needs-ledgers-deferred) · codex
+  dispatch ACKED ("use as you see fit") · the research branches deleted by the human ·
+  round-30 minted, notes/300 assigned · the sequential-conductor/rewind protocol
+  directed (§1).
+- 2026-08-14, the design sittings (the reshape this §2 reflects): Aeneas
+  must/of-course · the small reviewable surface is a core product (literate
+  colocation; the rationale is LLM attention-forcing, per the errorloom precedent) ·
+  model-writing is design-work — the spike models are quarry; minispec's remit is the
+  2–3-claim minimum; enrichment is a standalone human-led item · the runtime checkers
+  and formalization-as-question-generator hard-ACKED · no pilots / no measure-kill
+  stages, velocity · the independent-voices/lineage framing deweighted — a checker's
+  value is structural asymmetry (finder/checker under different constraints) ·
+  out-of-scope is a human judgment, never machinery (taxonomy/strength-axis repairs
+  nacked) · mutation-testing is a gentle-must (badge defined day-one, `301` §5);
+  property-testing stays the general check-ladder, never a spec badge · an automated
+  performance-regression lane (CI graphs + hard gates) is banked for someday, out of
+  scope · the whylog decision record is the assertion substrate, under the [TYPED]
+  framing that huge amounts of Dorc are modelable as a deterministic mapping from
+  source through probe-results to whylog result · doc routing: notes/301 minted as THE
+  minispec/verify spec; this file carries the rest; `plans/28Q` edits minimal; `28T`
+  markers-only; `plans/302` = the certifier spec (renumbered under the routing).
+  The 301-interior rulings (access laws, remit, badges, bindings, naming, byte
+  tripwire, local-homing default) live in `301` and are not duplicated here.
+- Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
+  (28T inheritance); silence ≠ ack; only typed text counts.
+
+## §6 — The settled-rules census (BANKED; the enrichment item's tabled menu)
+
+Gathered 2026-08-14 by a criteria-driven scout over KNOBS · `spike/CLAUDE.md` ·
+`crates/{core,analysis}/CLAUDE.md` · FORFEITS · `277` · `271` · `28Q`;
+conductor-adjudicated. The MENU IS TABLED [TYPED] — selection happens at the
+enrichment item, never before. Criteria: explicit ratification evidence ∧ statable as
+value-algebra ∧ off 28Q's moving edge.
+
+Passing (evidence as found):
+- `ternary-compare-consumer-map` — acked (`271` task-12 closing sweep 2026-07-12;
+  `277` §9). Caveat: the relation shape + consumer map only; the fuller generator
+  registry is still conductor-proposed. Named in `28Q` §6's preserved wall.
+- `set-lifting-universal-meet` · `pin-set-meet-order-independence` ·
+  `pin-no-outcome-as-generator` — ACKED, typed, 2026-07-16 (`277` §5 / the `279f`
+  ack batch). The first is named in `28Q` §6; the third is not individually
+  (~SUSPECT rider).
+- `inv-backing-set-nonempty-by-construction` · `inv-top-never-encoded-as-empty` —
+  acked 2026-07-17 (`27Xf:cr-set-lifting-vacuous-at-empty`); the measured
+  vacuous-∀ design-bug class.
+- `never-derive-separation` — acked "spike-tier-because-foundational" (`271`,
+  2026-07-12); named in `28Q` §6.
+- `top-identifies-with-nothing` — WEAKEST evidence in the set: "unchanged" across
+  three rounds, NO dated typed marker found anywhere. Candidate calibration probe for
+  the enrichment item's question-router (it should ask for confirmation).
+- `rul-coordinate-shape-flat-three-place` — typed (`271`, 2026-07-10); light moving
+  edge only (`28Q` §3 extends the context slot; the flat shape itself unchanged).
+- `silence-licenses-nothing` · `inv-top-reject` — named unchanged in `28Q` §6.
+- Settled but STRONG moving-edge (excluded from near-term proving): `rul-family`
+  (typed, but `28Q` §1/§2 reshape membership frame/closure-relative) ·
+  `pure-predicate-carry` (human-opted 2026-07-17, but `28Q` §3 grows its axis
+  vocabulary).
+- Settled but not value-algebra: `empty-world-byte-identical` (whole-system
+  differential property; its evidence stays the corpus differential).
+
+Conductor adjudication deltas:
+- `inv-must-may` SPLITS: the coercion ban is compiler-tier (evidence = the
+  `compile_fail` seals); the `Must`-as-order-dual SEMANTICS is genuine value-algebra
+  and underlies the certifier's one-checker duality.
+- MapL canonical-form (structural-Eq = semantic-Eq) fails the scout's
+  settledness-marker criterion but enters anyway via the facade lane as its
+  honour-system invariant.
+- `rul-rc-partition`'s ≥2-flat-sink ("flat FOREVER") is borderline algebra-content;
+  benched.
+
+Excluded as not-settled (soft/forfeit/refused): the sparing dialect-resolution core
+(typed-spike-provisional + acked-SOFT + `pin-two-position-sparing` extremely-soft +
+its FORFEITS row) · `forfeit-committee-fence-sparing-inert` (UNRATIFIED) ·
+`kind-fence-movable` (a reserved seam, not a ruling) · the `275` transport
+ratifications (REFUSED, `279f` §3).
+
+Doc-coherence note, repaired in `28Q` §6 this arc: "the sparing algebra" in the
+preserved wall means the set-meet SUBSTRATE (hard-acked, above); the
+dialect-resolution rule is `28Q` §9 `pin-two-position-sparing` territory (soft).
