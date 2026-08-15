@@ -38,9 +38,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use dorc_core::{AstId, Interner, Span, Symbol, ValueGrade};
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 
+use crate::certify::{SolveConsistency, solve_certified};
 use crate::cfg::{Branch, Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::{Flat, Lattice, MapL};
-use crate::solve::{Direction, Graph, solve};
+use crate::solve::{Direction, Graph};
 use crate::value::{ValueFlow, ValueOf};
 
 // ── The value-plane seam: funcenv-reads-source-literal-plane-only ──
@@ -342,11 +343,24 @@ impl Lattice for EnvStack {
 
 // ── The analysis ──
 
+/// Why an environment is floored, when it is (`302` §3) — one gate, and it NAMES its cause
+/// rather than leaving two independent flags a consumer could read apart.
+#[derive(Debug, Clone)]
+pub enum EnvFloor {
+    /// The value plane is untrusted, so no word could be read: the cascade along the real
+    /// dependency (`302` §3.1). No environment solve was attempted.
+    ValuePlaneUntrusted,
+    /// A round's solve failed its own post-fixpoint check (`302` §3.2). Carries the verdict.
+    SolverInconsistent(Box<SolveConsistency<EnvStack>>),
+}
+
 /// The solved function environment: per program point, which definition each name is bound to.
 #[derive(Debug, Clone)]
 pub struct FuncEnv {
     states: Vec<EnvStack>,
-    converged: bool,
+    /// `Some` ⇒ every answer is ⊤ and every license is withheld. The ONE gate: `trusted()` is
+    /// its absence, so no second flag can disagree with it.
+    floor: Option<EnvFloor>,
     /// Nodes whose transfer havoc'd the environment because a load could not be resolved
     /// (`28K` §1 rul-unloadable-is-unlicensed). Reported by the caller; recorded here as data so
     /// the kernel mints no diagnostics of its own.
@@ -365,10 +379,10 @@ impl FuncEnv {
     /// The environment IMMEDIATELY BEFORE `node` — the positional regime's query (`28K` §2:
     /// anything standing in for text in the execution stream reads sh execution order).
     ///
-    /// Answers ⊤ for everything when the solve did not converge.
+    /// Answers ⊤ for everything when the environment is floored.
     #[must_use]
     pub fn before(&self, node: CfgNodeId) -> EnvStack {
-        if !self.converged {
+        if !self.trusted() {
             return EnvStack::Top;
         }
         self.states
@@ -380,14 +394,21 @@ impl FuncEnv {
     /// The binding `name` has immediately before `node`.
     #[must_use]
     pub fn binding_before(&self, node: CfgNodeId, name: &str) -> Flat<Binding> {
-        binding_in(&self.states, self.converged, node, name)
+        binding_in(&self.states, self.trusted(), node, name)
     }
 
     /// May this environment's answers be trusted? Named for what consumers ASK rather than for
     /// the solver flag that used to answer it (`302` §1; see [`crate::value::ValueFlow::trusted`]).
     #[must_use]
     pub fn trusted(&self) -> bool {
-        self.converged
+        self.floor.is_none()
+    }
+
+    /// Why this environment is floored, if it is — the scalars a consumer's degrade record is
+    /// built from (`302` §5), and the failing evidence for a pull surface.
+    #[must_use]
+    pub fn floor(&self) -> Option<&EnvFloor> {
+        self.floor.as_ref()
     }
 
     /// The sites whose load could not be resolved, for the caller to disclose.
@@ -543,48 +564,66 @@ pub fn analyze(
     let universe = defs.names();
     // A capped VALUE solve makes every word ⊤, so nothing could be read: refuse wholesale.
     if !literals.trusted() {
-        return FuncEnv {
-            states: vec![EnvStack::Top; cfg.node_count()],
-            converged: false,
-            unresolvable_loads: BTreeSet::new(),
-            sourced_paths: BTreeMap::new(),
-            folded_edges: BTreeSet::new(),
-        };
+        return funcenv_floor(cfg, EnvFloor::ValuePlaneUntrusted);
     }
     // Its own pass: independent of the environment, so threading it would buy only interior
     // mutability in a kernel.
     let (unresolvable_loads, sourced_paths) = load_sites(cfg, defs, literals);
     let solve_pruned = |folded: &BTreeSet<(CfgNodeId, CfgNodeId)>| {
         let graph = PrunedCfg::new(cfg, folded);
-        solve(&graph, Direction::Forward, |node, incoming: &EnvStack| {
+        solve_certified(&graph, Direction::Forward, |node, incoming: &EnvStack| {
             transfer(ast, cfg, defs, literals, &universe, node, incoming)
         })
     };
 
     let mut folded_edges = BTreeSet::new();
-    let mut solution = solve_pruned(&folded_edges);
+    let (mut solution, mut consistency) = solve_pruned(&folded_edges);
     for _ in 0..FOLD_ROUNDS_CAP {
-        let found = dead_edges(
-            ast,
-            cfg,
-            defs,
-            literals,
-            &solution.states,
-            solution.converged,
-        );
+        // THE GRANT-SHIFTING GUARD (`302` §3.2, `303:fnd-never-live-is-the-grant-shifting-
+        // consumer`). `never_live` subtracts EXACTLY and so SHIFTS WINNERS; a round whose states
+        // did not certify must therefore reach neither `dead_edges` nor the next fold, or an
+        // un-checked state grants a license. BREAK to the floor — do not merely stop folding,
+        // which would keep the bad states and the edges already folded from them.
+        if !consistency.is_consistent() {
+            return funcenv_floor(cfg, EnvFloor::SolverInconsistent(Box::new(consistency)));
+        }
+        let found = dead_edges(ast, cfg, defs, literals, &solution.states, true);
         if found.is_subset(&folded_edges) {
             break;
         }
         folded_edges.extend(found);
-        solution = solve_pruned(&folded_edges);
+        (solution, consistency) = solve_pruned(&folded_edges);
+    }
+    if !consistency.is_consistent() {
+        return funcenv_floor(cfg, EnvFloor::SolverInconsistent(Box::new(consistency)));
     }
 
     FuncEnv {
         states: solution.states,
-        converged: solution.converged,
+        floor: None,
         unresolvable_loads,
         sourced_paths,
         folded_edges,
+    }
+}
+
+/// The FUNCTION-ENVIRONMENT FLOOR (`302` §3.2) — the one seat every un-trusted environment lands
+/// on, and the sharpest floor in the lane.
+///
+/// All-⊤ states, `trusted()` false, and — the hard rider — **`folded_edges` EMPTY**. The fold
+/// must arrive here by BREAKING at the failing round rather than by stopping: `never_live`
+/// subtracts exactly and shifts winners (`28P:adj-never-live-exactness-accepted`), so a floor
+/// that still carried edges folded from unchecked states would convert a detected engine defect
+/// into a LICENSE. Everything the environment can say is withheld: `before` ⇒ ⊤,
+/// `unprovable` names every role, `never_live` ⇒ ∅, `contests` ⇒ ∅.
+#[must_use]
+pub fn funcenv_floor(cfg: &Cfg, floor: EnvFloor) -> FuncEnv {
+    FuncEnv {
+        states: vec![EnvStack::Top; cfg.node_count()],
+        floor: Some(floor),
+        unresolvable_loads: BTreeSet::new(),
+        sourced_paths: BTreeMap::new(),
+        folded_edges: BTreeSet::new(),
     }
 }
 
@@ -1312,7 +1351,7 @@ mod tests {
         frame.insert("f".to_owned(), Flat::Elem(Binding::Defined(DefId(7))));
         let solved = FuncEnv {
             states: vec![EnvStack::Frames(vec![frame])],
-            converged: false,
+            floor: Some(super::EnvFloor::ValuePlaneUntrusted),
             unresolvable_loads: BTreeSet::new(),
             sourced_paths: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
