@@ -107,8 +107,8 @@ Poles: `kPRECISION-precise ↔ kPRECISION-cheap`
 ### `kCONTEXT`
 Poles: `kCONTEXT-sensitive ↔ kCONTEXT-insensitive`
 
-**Tension:** precision on cross-call / per-host facts **vs** staying polynomial. A safety boundary, not a tuning dial: k-CFA (k≥1) is EXPTIME unless the abstract domain stays flat (k-CFA paradox; `Q-FLAT`).
-**Status:** open, redline — default `kCONTEXT-insensitive`; add context only where flat-domain is confirmed. **Owner:** corpus. **Lock-in:** high (baking in global context-sensitivity is fatal).
+**Tension:** precision on cross-call / per-host facts **vs** implementation cost. (The classical framing was a safety boundary — k-CFA (k≥1) is EXPTIME unless the abstract domain stays flat (the k-CFA paradox; `Q-FLAT`) — since demoted; see Status.)
+**Status:** open — the former redline DEMOTED (typed 2026-08-15, `300` §5): it was a pre-code academic feasibility weld, predating the ruled perf posture (attention-scheduling first; network and remote commands dominate controller-local asymptotics). Frames are program-point indexing, not call-strings; the snapshot-emission stage's per-frame helper-closure instantiation is a real, deliberate, polynomial context-dependence step, withhold-floored. The live constraint is engineering cost — size the resolution-seat touch-count first (`28Q` §7); any future context axis re-prices at `an-flat-domain` before building — not decidability. **Owner:** user + corpus. **Lock-in:** med (was "high/fatal" under the complexity-class framing; a wrong context axis is now priced work, not EXPTIME).
 
 ### `kUNIT`
 Poles: `kUNIT-fine ↔ kUNIT-coarse`
@@ -153,7 +153,7 @@ Poles: `kSCOPE-asked ↔ kSCOPE-whole-book`
 Poles: `kSURVIVAL-trusted ↔ kSURVIVAL-honest-walls`
 
 **Tension:** keep proven-converged elisions *past a command that really runs*, on the strength of authors' at-most footprint claims — attention preserved on drifted days, the whole stage-5–7 product (USER_STORY "the bought unsoundness") **vs** honest walls — a running un-footprinted command demotes everything downstream to guard/run, nothing ever rests on traveled human claims, and the check-tax plus the attention-lines come back. The trusted pole is the design's one *naked* trust: a wrong at-most claim silently under-executes *someone else's* line with no runtime net, which is why it takes a double opt-in (the author's clean claim AND the admin's explicit flag) and full per-elision attribution.
-**Status:** mode at the admin level (the explicit flag — never a default, short enough not to alias away, honestly "marketing at best, theatre at worst" and demanded anyway; rul24-mode-gate, `Research/notes/24A` §1a). The design-level posture it sits atop is `kHALVES` (welded); whether this outermost tier earns its keep at all is the field-trial's decomposed question, fires-often × bites-rarely vs the felt magic (`Research/plans/252` B4). **Owner:** user (the admin per-invocation; the author per-claim). **Lock-in:** low mechanically (a flag), med socially (published at-most claims accrete against whatever the gate promises).
+**Status:** mode at the admin level (the explicit flag — never a default, short enough not to alias away, honestly "marketing at best, theatre at worst" and demanded anyway; rul24-mode-gate, `Research/notes/24A` §1a). The design-level posture it sits atop is `kHALVES` (welded); whether the tier ships is SETTLED (`28T:post-survival-is-the-product`, typed 2026-08-13: elision is the core product, never unshipped short of product death); the field-trial's fires-often × bites-rarely measurement (`Research/plans/252` B4) now decides tuning and marketing only — how loudly the flag warns, how it is pitched — never existence. **Owner:** user (the admin per-invocation; the author per-claim). **Lock-in:** low mechanically (a flag), med socially (published at-most claims accrete against whatever the gate promises).
 
 ### `kOBJECTIVE`
 Poles: `kOBJECTIVE-latency ↔ kOBJECTIVE-throughput`
