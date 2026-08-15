@@ -413,6 +413,27 @@ per `28Q` §8.
   `spike/CLAUDE.md` worktree-file-access-law sharpened (git -C absolute paths;
   verify before every mutating git command; stop-don't-improvise on a vanished
   tree). Builder resumed with a conductor-directed self-minted worktree.
+- 2026-08-15, THE WSL-DEATH INCIDENT (post-mortem, cause settled): the harness
+  process (claude.exe, child of a WSL-zsh) died with the human's terminals when the
+  WSL2 VM OOM'd under the Kani lane's CBMC solver load — a measured 3.6GB/21min CBMC
+  earlier in its window; SIX further runs stopped mid-climb; and the demonstrated
+  hazard that **TaskStop does not kill WSL-side CBMC** (orphaned multi-GB solvers
+  accumulate; reap explicitly with `pkill -9 -x cbmc` — exact-name, never `-f`,
+  which once matched the lane's own wrapper shell). At death, an unmeasured
+  37-harness battery was running into exactly the blow-up shape. No shutdown
+  command was ever issued by any lane; the rederivation lane is exculpated (zero
+  WSL contact; full clean ledger). RULINGS: the implicit
+  `rustup toolchain install nightly-2025-11-21` into `~/.rustup` (fired by kani's
+  own first-time setup, undisclosed-until-after by the tool) is WITHIN the
+  pre-authorized kani-setup exception — disclosed properly, additive, reversible;
+  keep it, document it in the lane's toolchain notes. Standing discipline from
+  here: WSL-heavy lanes run SERIALIZED (one lane's WSL work at a time; conductor
+  sequences); the Kani battery resumes only under a hard per-harness timeout + an
+  explicit CBMC reaper (the lane's own proposal, made mandatory); its three probe
+  cache dirs get deleted at resume. Discipline-close item: the
+  TaskStop-does-not-kill-remote-children hazard + the exact-name-pkill rule belong
+  in `spike/CLAUDE.md`'s build/run section. The blow-up fix itself is already in
+  the lane's tree and measured (capacity-headroom generator: 21min/3.6GB → 2.2s).
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 
