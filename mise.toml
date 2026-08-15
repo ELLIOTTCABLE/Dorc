@@ -308,8 +308,17 @@ description = "All four lint gates (fmt-check, clippy -D warnings, cargo-deny li
 run = "hk check --all"
 
 [tasks.fmt]
-description = "Apply the fixers to the spike via hk (cargo fmt, and typos --write-changes)."
+description = "Apply the fixers to the spike via hk (cargo fmt, and typos --write-changes). Works in an agent session too: the task re-enables hk's fix mode for itself, since a session-wide HK_FIX=0 would otherwise degrade this to a check that only PRINTS the diff."
 run = "hk fix --all"
+
+# LOAD-BEARING, do not tidy away. Agent sessions export `HK_FIX=0` so the pre-commit HOOK cannot
+# rewrite the tree out from under a running harness — but that also silently turned every step of
+# this task into its `check` command, so `mise run fmt` reported a diff and formatted nothing, and
+# the standing advice became a hand-derived `cargo fmt` invocation against never-hand-derive.
+# Scoping the override to this task keeps the hook check-only while letting an explicit,
+# deliberate fix request actually fix.
+[tasks.fmt.env]
+HK_FIX = "1"
 
 [tasks."gate:full"]
 alias = "gate"
