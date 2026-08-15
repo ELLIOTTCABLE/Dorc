@@ -40,6 +40,17 @@ const DEFAULT_BUDGET_SECS: u64 = 120;
 /// How often the driver checks whether a harness has finished.
 const POLL: Duration = Duration::from_millis(250);
 
+/// How long past its own deadline a harness may linger before this process kills it outright.
+const GRACE: Duration = Duration::from_secs(30);
+
+/// The per-harness address-space cap, in KiB (~6 GiB) — `ulimit -v`, inherited by CBMC.
+///
+/// Sized well under the VM it runs in, because the failure being prevented is not a slow
+/// harness: it is one CBMC taking the whole machine down, which has now happened twice. A
+/// harness that wants more address space than this is over-budget by definition — the finding
+/// is that its formula needs a different shape.
+const ADDRESS_SPACE_CAP_KB: u64 = 6_000_000;
+
 /// Why the lane could not produce evidence. Distinct from a harness FAILING, which is a real
 /// finding about the code and is reported as one.
 #[derive(Debug)]
@@ -231,11 +242,33 @@ enum Outcome {
     OverBudget,
 }
 
-/// Verify one harness, killing it at the budget.
+/// Verify one harness behind BOTH memory gates.
+///
+/// The gates are `ulimit -v` and `timeout`, applied by a shell wrapper rather than by this
+/// process, and that is deliberate: an address-space cap has to be set on the process that
+/// allocates, and CBMC is a grandchild — Kani's driver spawns it. Capping here would cap the
+/// wrong process; capping the shell that becomes `cargo-kani` is inherited all the way down.
+///
+/// Both gates are the lane's own, not a habit anyone has to remember at the call site. Twice
+/// now an unattended battery run has taken a whole VM down, and the second time was after the
+/// discipline was already known.
 fn verify_one(unit: &Path, name: &str, budget: Duration) -> Result<Outcome, Refusal> {
+    if name.contains('\'') {
+        return Err(Refusal::ToolFailed(format!(
+            "harness name `{name}` carries a quote and cannot be passed through the gate shell"
+        )));
+    }
     let started = Instant::now();
-    let mut child = Command::new("cargo-kani")
-        .args(["--harness", name, "--exact", "--output-format", "terse"])
+    // `exec` so the timeout signals cargo-kani itself rather than an intervening shell; `-k 10`
+    // follows an ignored TERM with a KILL ten seconds later.
+    let gated = format!(
+        "ulimit -v {ADDRESS_SPACE_CAP_KB}; exec timeout -k 10 {} \
+         cargo-kani --harness '{name}' --exact --output-format terse",
+        budget.as_secs()
+    );
+    let mut child = Command::new("sh")
+        .arg("-c")
+        .arg(&gated)
         .current_dir(unit)
         .env("CARGO_TARGET_DIR", build_root())
         .stdout(Stdio::piped())
@@ -243,14 +276,15 @@ fn verify_one(unit: &Path, name: &str, budget: Duration) -> Result<Outcome, Refu
         .spawn()
         .map_err(|e| map_spawn_error(&e))?;
 
+    // A belt-and-braces poll past the shell's own deadline: if `timeout` itself were missing or
+    // wedged, this still ends the harness rather than the machine.
+    let hard_stop = budget.saturating_add(GRACE);
     loop {
         match child.try_wait() {
             Err(e) => return Err(Refusal::ToolFailed(format!("cargo-kani {name}: {e}"))),
             Ok(Some(_)) => break,
             Ok(None) => {
-                if started.elapsed() >= budget {
-                    // The child is `cargo-kani`; CBMC is its grandchild and outlives it. The
-                    // caller's reap is what actually frees the memory.
+                if started.elapsed() >= hard_stop {
                     let _ = child.kill();
                     let _ = child.wait();
                     return Ok(Outcome::OverBudget);
@@ -273,13 +307,35 @@ fn verify_one(unit: &Path, name: &str, budget: Duration) -> Result<Outcome, Refu
     if text.contains("VERIFICATION:- FAILED") {
         return Ok(Outcome::Failed(elapsed));
     }
-    // No verdict at all is not a failing law — it is a broken run, and rounding it up to
-    // "failed" would report a counterexample that does not exist.
+    if tripped_a_gate(out.status.code(), &text) {
+        return Ok(Outcome::OverBudget);
+    }
+    // No verdict and no gate trip is a BROKEN RUN, not a failing law. Rounding it up to
+    // "failed" would report a counterexample nobody found; rounding it to over-budget would
+    // hide a real breakage behind a resource excuse.
     Err(Refusal::ToolFailed(format!(
         "cargo-kani --harness {name} exited {} with no verdict:\n{text}",
         out.status
     )))
 }
+
+/// Did the harness die on one of the two gates rather than answer?
+///
+/// `timeout` reports 124 for the deadline and 137 for its own follow-up KILL. An address-space
+/// refusal surfaces as whatever allocation failure the component noticed first, and CBMC, the
+/// allocator, and Kani's driver each word it differently — so the memory case is matched on the
+/// vocabulary rather than on an exit code none of them agree about.
+fn tripped_a_gate(code: Option<i32>, text: &str) -> bool {
+    matches!(code, Some(124 | 137)) || OUT_OF_MEMORY.iter().any(|marker| text.contains(marker))
+}
+
+const OUT_OF_MEMORY: [&str; 5] = [
+    "out of memory",
+    "Out of memory",
+    "bad_alloc",
+    "Cannot allocate memory",
+    "memory allocation of",
+];
 
 /// Kill any surviving CBMC. Exact-name only: `pkill -f cbmc` matches every command line
 /// carrying the string, including this driver's own.
