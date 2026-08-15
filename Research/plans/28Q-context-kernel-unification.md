@@ -431,7 +431,9 @@ eventual hook; nothing more).
 All license-plane law: `silence-licenses-nothing` · `inv-top-reject` · the
 monologue/custody discipline (`28P` bitem3's types are consumed, not altered — until the
 fence sitting rules the two-author composite) · `kFAIL` phase-keying · the sparing
-algebra, ternary compare, set-lifting-universal-meet · `never-derive-separation` ·
+algebra (its set-meet SUBSTRATE — universal meet, non-emptiness, ⊤-discipline; the
+dialect-resolution rule is §9 `pin-two-position-sparing` territory, deliberately
+soft), ternary compare, set-lifting-universal-meet · `never-derive-separation` ·
 `rul-only-oracle-bytes-ship` / `rul-argv-flows-bytes-do-not` · the `27C` consent
 machinery (dial, vouches, entry-siting, composition algebra) · `two-plane-aid-law` ·
 hermeticity-precondition · `rul-strawman-formats-no-compat` (every identity type minted
@@ -459,21 +461,22 @@ available-expressions/PRE — piecewise truth over program points with kill even
   corpus's common case is one frame. Size this first in the stage-i brief.
 - `AID:law-lineno-identity` · `law-whylog-is-sensitive`: untouched by all three pillars;
   any stage that persists availability or frame state violates rec-5 and is out.
-- `notes/28T` (the correctness-tooling plan) rides every stage: solver answers pass the
-  post-fixpoint certifier and survival verdicts the reference re-derivation, with the
-  aid-plane's own gates voting separately (the two-plane firewall — either plane kills a
-  kernel change). Frame-plural fact-sets (stage-i) and closure-keyed compares (stage-ii)
-  are certified/re-derived exactly as single-frame ones; a certification `Refused` on the
-  new shapes is a finding, never churn. New core state structures follow the owned-facade
-  law (`28T` w1-latticemap-facade) so the strict core stays checkable and translatable;
-  the verified mini-model of the sparing algebra tracks any stage that moves
-  compare/dialect/backing semantics (the two-position rule lands there first).
+- The correctness-tooling standup (`notes/300` §2 stage plan; `notes/301` the
+  minispec/dorc-verify spec; `notes/28T` the evidence digest) rides every stage: solver
+  answers pass the post-fixpoint certifier and survival verdicts the reference
+  re-derivation, with the aid-plane's own gates voting separately (the two-plane
+  firewall — either plane kills a kernel change). Frame-plural fact-sets (stage-i) and
+  closure-keyed compares (stage-ii) are certified/re-derived exactly as single-frame
+  ones; a certification `Refused` on the new shapes is a finding, never churn. New core
+  state structures follow the owned-facade law (the `300` facade lane) so the strict
+  core stays checkable and translatable; minispec (`notes/301`) tracks any stage that
+  moves compare/dialect/backing semantics (the two-position rule lands there first).
 
 ## §8 — Staging (each stage independently green; gates named)
 
-Every stage additionally inherits `28T`'s checker gates — certifier + sparing
-re-derivation green over the full corpus, both planes' votes — alongside its own
-byte-identity gate.
+Every stage additionally inherits the checker gates (`notes/300` §2) — certifier +
+sparing re-derivation green over the full corpus, both planes' votes — alongside its
+own byte-identity gate.
 
 - **stage-0-ship-seam** (the verdict-primacy re-cut; a deliberate behavior change,
   deliberately OUTSIDE stage-i's byte-identity gate): invert the ship-seat preference —
@@ -549,7 +552,8 @@ byte-identity gate.
 
 Builder on-ramp (read in order): this document → `28M` §§7–11 → `28K` (executed lane
 record; §10's as-built bitem ledger `28P`) → `27C` → the `spike/CLAUDE.md` invariant
-sections cited in §6/§7 → `notes/28T` §1 (the checker/facade riders) + the
+sections cited in §6/§7 → `notes/300` §2 + `notes/301` (the checker/facade/minispec
+riders) + the
 `verified-core-discipline` skill (loads itself when a builder nears the strict core). Unchanged pending work lives where it lived: `26K` §0a fruit
 arc + §5 sittings queue · the three parked rulings (guard-tier classed-decline ·
 records-8 · D9) in LIVING_STATUS · `tc-inert-mocks-rail-is-dash-shaped` (separate lane) ·
