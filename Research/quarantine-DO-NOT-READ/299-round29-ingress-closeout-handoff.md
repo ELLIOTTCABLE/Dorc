@@ -32,7 +32,7 @@ must recover the gate without exposing that report to an ordinary conductor.
 > recorded as fenced, not blocking. The four immediate ledger rows are ACCEPTED. Read the
 > paragraph above as the historical state of a broken relay, not as an outstanding gate.
 
-<!-- /* superceded in part by quarantine/305 (2026-08-15): "recorded as FENCED" overstates the
+<!-- /* superceded in part by quarantine/306 (2026-08-15): "recorded as FENCED" overstates the
 legacy/raw residue. `29A` §3's own wording is the accurate one — "remains reachable in
 principle" — and the tree agrees with `29A`, not with this paragraph: `records::deframe` and
 `LegacyPolicy::Tolerate` are `pub` in `dorc-plan` with no lexical gate, where
