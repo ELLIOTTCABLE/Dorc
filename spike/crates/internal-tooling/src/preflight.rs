@@ -14,9 +14,9 @@
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-// Only the Windows RAM probe spawns anything; Linux reads a file. Gated at the import
-// because an ungated one is a `-D warnings` failure on the leg that does not use it, and
-// that leg is not the one most work is done from (`one-platform-green-is-not-cross-platform-green`).
+// Only the Windows probes spawn anything; Linux reads `/proc` and asks `statvfs` through a
+// crate. Gated at the import because an ungated one is a `-D warnings` failure on the leg that
+// does not use it (`one-platform-green-is-not-cross-platform-green`).
 #[cfg(windows)]
 use std::process::Command;
 
@@ -225,7 +225,86 @@ fn free_disk(path: &Path) -> Result<u64, String> {
         .ancestors()
         .find(|p| p.exists())
         .ok_or_else(|| format!("no existing ancestor of {}", path.display()))?;
-    fs4::available_space(probe).map_err(|e| format!("{}: {e}", probe.display()))
+    #[cfg(unix)]
+    {
+        fs4::available_space(probe).map_err(|e| format!("{}: {e}", probe.display()))
+    }
+    #[cfg(windows)]
+    {
+        windows_free_disk(probe)
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        Err("no disk probe for this platform".to_owned())
+    }
+}
+
+/// Windows keeps this crate dependency-free (see `Cargo.toml`: a dep there re-imports the
+/// feature-unification hazard that self-locks a bless run), so the volume reading comes from the
+/// same native-query family as the RAM one rather than from a crate.
+///
+/// `Win32_LogicalDisk.FreeSpace` is the volume's free bytes. Where a per-user quota is in force it
+/// OVERSTATES what this user may claim — no quota is in force on a developer box, and a bound that
+/// fires spuriously is the failure mode these numbers are tuned against.
+#[cfg(windows)]
+fn windows_free_disk(path: &Path) -> Result<u64, String> {
+    let drive = drive_of(path)?;
+    wmic_free_bytes(&drive).or_else(|_| powershell_free_bytes(&drive))
+}
+
+/// `C:` out of `C:\Users\…`. A UNC path carries no drive letter and is reported unmeasurable
+/// rather than guessed at — an invented volume would measure the wrong disk silently.
+#[cfg(windows)]
+fn drive_of(path: &Path) -> Result<String, String> {
+    let text = path.to_string_lossy();
+    let mut chars = text.chars();
+    match (chars.next(), chars.next()) {
+        (Some(letter), Some(':')) if letter.is_ascii_alphabetic() => Ok(format!("{letter}:")),
+        _ => Err(format!("no drive letter in {}", path.display())),
+    }
+}
+
+/// The fast path, deprecated by Microsoft exactly as the RAM probe's is — hence the fallback.
+#[cfg(windows)]
+fn wmic_free_bytes(drive: &str) -> Result<u64, String> {
+    let root = std::env::var("SystemRoot").map_err(|e| format!("SystemRoot: {e}"))?;
+    let exe = PathBuf::from(root).join("System32/wbem/wmic.exe");
+    let out = Command::new(exe)
+        .args([
+            "LogicalDisk",
+            "where",
+            &format!("DeviceID='{drive}'"),
+            "get",
+            "FreeSpace",
+            "/format:list",
+        ])
+        .output()
+        .map_err(|e| format!("wmic: {e}"))?;
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("FreeSpace="))
+        .and_then(|bytes| bytes.trim().parse::<u64>().ok())
+        .ok_or_else(|| format!("wmic answered no FreeSpace for {drive}"))
+}
+
+/// ~1s, which is why the fast path is tried first.
+#[cfg(windows)]
+fn powershell_free_bytes(drive: &str) -> Result<u64, String> {
+    let out = Command::new("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            &format!(
+                "(Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='{drive}'\").FreeSpace"
+            ),
+        ])
+        .output()
+        .map_err(|e| format!("powershell: {e}"))?;
+    String::from_utf8_lossy(&out.stdout)
+        .trim()
+        .parse::<u64>()
+        .map_err(|e| format!("powershell answered no number: {e}"))
 }
 
 /// Available RAM in bytes, or why we could not say.

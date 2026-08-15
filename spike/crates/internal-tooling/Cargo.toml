@@ -25,9 +25,15 @@ path = "src/lib.rs"
 [lints]
 workspace = true
 
-[dependencies]
-# Free-space-on-this-volume, which std does not offer and `unsafe_code = "forbid"` bars us
-# from asking the OS for directly. Chosen for costing nothing: on Windows it reaches
-# `windows-sys`, already in the lockfile, so it adds one crate; on Linux it reaches `rustix`
-# (~14 MiB of rlib). File locking is default-off — only the `statvfs` half is used.
+# UNIX ONLY, deliberately. Free-space-on-this-volume, which std does not offer and
+# `unsafe_code = "forbid"` bars us from asking the OS for directly; on Linux it reaches `rustix`
+# (~14 MiB of rlib) and file locking is default-off, so only the `statvfs` half is used.
+#
+# Windows answers the same question through the native-query family the RAM probe already uses,
+# because a dep THERE is not free: `windows-sys` is shared with other workspace members, so its
+# features unify differently for `-p internal-tooling` than for `--workspace`, this crate's
+# fingerprint diverges between the two, and every workspace build re-uplifts a binary that a
+# bless run is executing (`300:finding-bless-driver-self-lock-on-windows`). Dependency-freedom
+# here is load-bearing, not aesthetic — keep this table empty on Windows.
+[target.'cfg(unix)'.dependencies]
 fs4 = { version = "1.1.0", default-features = false }
