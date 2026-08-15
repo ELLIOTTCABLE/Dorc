@@ -95,6 +95,19 @@ _.path = ["{{xdg_data_home}}/elan/bin"]
 # for a contributor who has never activated mise in their shell).
 HK_MISE = "1"
 
+# Cargo's target dir, spelled ONCE and resolved per-leg. On Windows and on a real *nix host
+# this is exactly cargo's own default, so nothing moves. Inside WSL it moves off drvfs, which
+# is `wsl-unix-leg-at-fold`'s standing requirement made automatic: a native-Linux cargo and a
+# Windows cargo sharing one `spike/target/` clobber each other's artifacts, and the WSL leg of
+# `mise run both` had no such redirect until now — the whole reason folds were being run as two
+# hand-spelled legs. Per-WORKTREE-suffixed because concurrent lanes must not share one either.
+#
+# `{{config_root}}` is the worktree root (this file's directory), so the suffix names the lane
+# without anyone having to invent one; `spike/` is the cargo workspace root, hence the default's
+# shape. Anything reading build output must honour this var rather than re-deriving
+# `spike/target` — `internal_tooling::target_dir()` is that seat.
+CARGO_TARGET_DIR = "{% if env.WSL_DISTRO_NAME %}{{ xdg_cache_home }}/dorc-wsl-target-{{ config_root | split(pat='/') | last }}{% else %}{{ config_root }}/spike/target{% endif %}"
+
 # ── Tasks ───────────────────────────────────────────────────────────────────
 # `mise run <name>` works from ANYWHERE in the tree: `dir` resolves against this
 # file, not your cwd. `mise tasks` lists them. Trailing args after `--` are
@@ -154,8 +167,9 @@ run = [
 # passthrough, on Windows it runs the task natively and then again under WSL, in series.
 # This is what makes a `#[cfg(windows)]`/`#[cfg(unix)]` change trustworthy — each side
 # compiles only its own arms, so one platform's green says nothing about the other's.
-# The WSL leg shares spike/target/ (safe: units are host-hashed, and each platform's test
-# binary bakes its own CARGO_BIN_EXE_* path) but pays a full Linux rebuild the first time.
+# Neither leg needs anything spelled here about build output: the root `[env]` block resolves
+# CARGO_TARGET_DIR per-leg, so the WSL half lands in its own ext4 cache rather than clobbering
+# the Windows half's `spike/target/` over drvfs. It pays a full Linux rebuild the first time.
 [tasks.both]
 description = "Run a task on BOTH sides, in series — `mise run both test`. Symmetric: from Windows it adds a WSL leg, from inside WSL it adds a Windows leg, and on a real *nix host it just runs the task. Either leg failing fails the run. Each side needs the repo trusted once (`mise trust` there)."
 usage = 'arg "<task>" var=#true help="the task, plus any of its own args, to run on both platforms"'
@@ -230,6 +244,7 @@ dir = "spike"
 # paying for it every agent gate buys nothing. `gate:full` still runs it, and an hk.pkl edit
 # calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
 run = [
+  "mise run preflight gate",
   "mise run check -- --quiet",
   "mise run clippy:clean",
   "cargo build --workspace --quiet",
@@ -300,8 +315,13 @@ dir = "spike"
 # unabridged/quiet split does not need two copies of this task.
 run = ["cargo clean", "cargo clippy --workspace --all-targets --quiet -- -D warnings"]
 
+# COMPOSED with the ambient root, never a bare relative path. A relative CARGO_TARGET_DIR
+# resolves against the task's cwd, so `target/clippy-clean` always meant `spike/target/…` —
+# which on the WSL leg is drvfs, and which `cargo clean` then WIPES on a directory the Windows
+# leg is also using. Hanging it off the resolved root keeps each leg's lint dir on its own
+# filesystem, and keeps the `cargo clean` inside the dir this task owns.
 [tasks."clippy:clean".env]
-CARGO_TARGET_DIR = "target/clippy-clean"
+CARGO_TARGET_DIR = "{{ env.CARGO_TARGET_DIR }}/clippy-clean"
 
 [tasks.check]
 description = "All four lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — the same steps the pre-commit hook runs, from the same hk.pkl."
@@ -326,6 +346,7 @@ description = "ACCEPTANCE, human-facing: everything due before a commit, in orde
 # REMIT: a human reading a terminal. Never quieten this to save an agent tokens; that is
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
 run = [
+  "mise run preflight gate",
   "mise run check",
   "mise run clippy:clean",
   "mise run test:hooks",
@@ -337,6 +358,17 @@ run = [
 description = "Self-tests for the hooks hk runs: the commit-msg gate's matchers, and whether pre-commit's `e2e` step still SEES each shape a whole-product case comes in. Cheap; rides `gate` because both checks fail OPEN — a broken matcher stops refusing, and a glob that matches nothing is skipped in silence. The commit-msg hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- hook-selftest"
+
+[tasks.preflight]
+description = "Bounds-check this machine against a profile's expected disk and RAM usage BEFORE spending either: `mise run preflight gate|bless|kani|lean`. One line on pass, one LOUD line and a nonzero exit on refusal. Rides the heavy tasks automatically (gate:full*, bless*, verify:kani, verify:lean, verify:translate); the hot loop is deliberately unburdened. Each leg checks its OWN environment, so `mise run both preflight gate` is what covers the WSL VM's separate memory cap. DORC_PREFLIGHT=skip bypasses it — emergencies only, and it says so in the output."
+dir = "spike"
+usage = 'arg "<profile>" help="gate, bless, kani, or lean"'
+run = "cargo run -q -p internal-tooling -- preflight {{ usage.profile }}"
+
+[tasks.doctor]
+description = "READ-ONLY inventory of what is eating the disk: every registered worktree with its size and clean/dirty/locked state, this leg's target dir broken down, and the lane caches. Deletes nothing. ~10s, because the sizes are real directory walks. Each leg sees only its own filesystem — `mise run both doctor` is what shows the WSL lane caches alongside the Windows worktrees."
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- doctor"
 
 [tasks.clean]
 description = "cargo clean over the spike workspace — build artifacts only. Deliberately touches NOTHING in the working tree: no `git clean`, no untracked sweep. Dirty and untracked paths here are routinely a human's in-flight work, and a task that eats them is worth more than it saves."
@@ -357,12 +389,12 @@ run = "hk install --mise"
 [tasks.bless]
 description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. A trailing case substring SCOPES it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. SEVERAL cases at once are spelled as PATHS (`crates/aid/tests/a.loom crates/cli/tests/b.loom`), which the runner resolves to exact trial names; the bare-substring form is libtest's own filter and takes exactly one. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- bless"
+run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless"]
 
 [tasks."bless:dry"]
 description = "bless minus the bless pass: the whole acceptance gate plus the tally, zero golden writes. The only mode a builder may run."
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- bless --dry"
+run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]
 
 [tasks."bless:floor"]
 description = "ORCHESTRATOR-ONLY: the ONE sanctioned way to mint or amend a floor case's `expected.emitted` — the manifest measured under dash AND posh, the transcript, and the book=<sha256> inside it, all written from one run, so nothing is hand-computed. Ordinary `bless` REFUSES such a case by design: expected.emitted is measure-once ground truth (the shells' own answer), never an engine render. Scope it to the case you are minting, exactly like `bless`. Refuses where the pair cannot be resolved — git's Windows userland ships no posh, so run this from WSL. Verifies with the full gate plus `test:floor` afterwards."
@@ -486,7 +518,11 @@ run = "cargo run -q -p dorc-verify -- report"
 
 [tasks."verify:translate"]
 description = "OPT-IN, Linux/WSL only: regenerate minispec/Generated/ from the real algebra sources through charon+aeneas, then materialize the externals and run the sorry census. STRICT — a construct the translator cannot model is a refusal, never a silent `sorry`. The output is committed, so the diff IS the drift alarm."
-run = ["mise run verify:translate-impl", "mise run verify:materialize"]
+run = [
+   "mise run preflight lean",
+   "mise run verify:translate-impl",
+   "mise run verify:materialize",
+]
 
 [tasks."verify:translate-impl"]
 description = "The charon+aeneas half alone, under the nested shadowing toolchain pin. Prefer `verify:translate`, which also materializes and censuses."
@@ -510,7 +546,7 @@ run = "elan-init -y --no-modify-path --default-toolchain none"
 [tasks."verify:kani"]
 description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. On Windows it refuses in one line. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
 dir = "spike"
-run = "cargo run -q -p dorc-verify -- kani"
+run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
 
 [tasks."verify:kani-setup"]
 description = "One-time, idempotent, Linux/WSL only: fetch Kani's engine bundle (CBMC + the kani-compiler, ~1GB into ~/.kani) and the nightly it was linked against (via rustup). Both are Kani's own homes; it offers no env redirect for either. `mise install` provides only the small `cargo-kani` shim — without this, `verify:kani` refuses and names this task."
@@ -520,7 +556,7 @@ run = "cargo run -q -p dorc-verify -- kani --setup"
 [tasks."verify:lean"]
 description = "OPT-IN, Linux/WSL only: stage minispec/ to an ext4 build root and typecheck it with lake. First run fetches a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental. Staging is load-bearing — lake on drvfs is unusably slow for a dependency store this size."
 dir = "spike"
-run = "cargo run -q -p dorc-verify -- lean-build"
+run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
 
 # ── livetest ─────────────────────────────────────────────────────────────────────────────────
 # NEVER a gate. These four are the only way to reach `spike/e2e/livetest.sh`, and nothing in
