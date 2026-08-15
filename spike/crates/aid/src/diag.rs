@@ -127,6 +127,11 @@ pub enum DiagCode {
     /// the annotation (declared identity) wins (204 §6 open seam).
     EffectKindDisagreement(EffectKindDisagreement),
 
+    // ── the solve-certifier (`plans/302`): analysis/{value,funcenv,effect}.rs + cli ──────
+    /// A dataflow answer failed its own post-fixpoint check, so the whole analysis window was
+    /// demoted to its floor (`302:rul-whole-window-demotion`). OUR defect, never the book's.
+    SolverConsistencyFailure(SolverConsistencyFailure),
+
     // ── B4 mechanical sweep: oracle/predict/parser.rs ─────────────────────────
     /// A check function body contains a construct outside the check dialect (the check
     /// dialect is a strict subset of sh; out-of-dialect input is a lift failure).
@@ -401,6 +406,7 @@ impl DiagCode {
             DiagCode::CfgInlineRefused(_) => "cfg-inline-refused",
             DiagCode::CfgBuiltinShadowed(_) => "cfg-builtin-shadowed",
             DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
+            DiagCode::SolverConsistencyFailure(_) => "solver-consistency-failure",
             DiagCode::PredictOutOfDialect(_) => "predict-out-of-dialect",
             DiagCode::PredictUnterminated(_) => "predict-unterminated",
             DiagCode::OracleRoleFnUnlifted(_) => "oracle-role-fn-unlifted",
@@ -900,6 +906,43 @@ pub struct EffectKindDisagreement {
     pub annotated: String,
     /// The kind the effect map holds for the verb (`{effect_map}`).
     pub effect_map: String,
+}
+
+/// Payload of [`DiagCode::SolverConsistencyFailure`]: a dataflow answer failed its own
+/// post-fixpoint check (`plans/302`), so every license that answer fed has lapsed and the whole
+/// analysis window sits at its floor.
+///
+/// SPANLESS by construction: the failure is a property of a whole solve, not of any book line, and
+/// pointing a caret at one would blame the admin's text for OUR defect — mis-attribution is the
+/// worst aid failure there is (`271:rul-sin-ordering`). The plan that results is still valid and
+/// still safe; it is only poorer.
+///
+/// Deliberately TWO holes. The failing indices, the first-break edges, the un-stabilized
+/// components, and the instrumented replay are all pull-tier (`rul-chain-is-pull-only`): the push
+/// surface says which pass gave up and how much of it did, and nothing more.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SolverConsistencyFailure {
+    /// Which analysis pass produced the answer that failed.
+    pub pass: SolvePass,
+    /// How many post-fixpoint checks failed, in total (`{failing}`).
+    pub failing: String,
+}
+
+/// Which dataflow pass's answer failed its post-fixpoint check.
+///
+/// A typed REASON enum rather than four sibling codes (`28L:rul-reason-enums-not-sibling-codes`):
+/// the WORLD is identical in all four — the engine's own answer did not certify — and only the
+/// pass differs, so each gets its own editable prose-component under one code.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SolvePass {
+    /// Book-side constant/variable propagation (`analysis::value`).
+    ValueFlow,
+    /// The function environment (`analysis::funcenv`), including its decidable-condition fold.
+    FunctionEnvironment,
+    /// The main reaching-definitions solve (`analysis::effect`).
+    ReachingDefs,
+    /// The per-Members-site self-reach re-solve (`analysis::effect`).
+    SelfReach,
 }
 
 /// Payload of [`DiagCode::PredictOutOfDialect`]: a check function body uses a construct outside
@@ -2218,6 +2261,12 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        DiagCode::SolverConsistencyFailure(_) => CodeSpec {
+            severity: Severity::Error,
+            // The engine's own answer failed its own check: silenceable to Warning, never below.
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
         // ── B4 sweep: oracle/predict/parser.rs ─────────────────────────────────
         DiagCode::PredictOutOfDialect(_) => CodeSpec {
             severity: Severity::Error,
@@ -2855,6 +2904,10 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }) => vec![
             ours("annotated", annotated.clone()),
             ours("effect_map", effect_map.clone()),
+        ],
+        DiagCode::SolverConsistencyFailure(SolverConsistencyFailure { pass, failing }) => vec![
+            component("pass", solve_pass_text(ctx, *pass)),
+            ours("failing", failing.clone()),
         ],
         DiagCode::PredictOutOfDialect(PredictOutOfDialect { reason }) => {
             vec![component(
@@ -3745,6 +3798,17 @@ fn remediation_hint_slug(class: RemediationClass) -> &'static str {
 // decides what the new world says.
 // They answer with the resolved COMPONENT rather than its bytes, which is what lets a whole-hole
 // register wear the component's face (`28L:rul-empty-registers-for-pure-holes`).
+
+/// The registry sentence for one [`SolvePass`].
+fn solve_pass_text(ctx: &RenderCtx<'_>, pass: SolvePass) -> ComponentText {
+    let slug = match pass {
+        SolvePass::ValueFlow => "solver-consistency-failure-value-flow",
+        SolvePass::FunctionEnvironment => "solver-consistency-failure-function-environment",
+        SolvePass::ReachingDefs => "solver-consistency-failure-reaching-defs",
+        SolvePass::SelfReach => "solver-consistency-failure-self-reach",
+    };
+    component_text(ctx.arrangements(), slug, None, &[])
+}
 
 /// The registry sentence for one [`CfgTopNodeReason`].
 fn cfg_top_node_text(ctx: &RenderCtx<'_>, reason: CfgTopNodeReason) -> ComponentText {

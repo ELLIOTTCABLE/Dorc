@@ -34,9 +34,10 @@
 
 use std::path::{Path, PathBuf};
 
+use dorc_aid::diag::SolvePass;
 use dorc_aid::narrative::{
     ChannelCoverage, CollapseKind, DeclineGate, DefinitionSite, DemoteTag, EntryDegradeTag,
-    EntryFailureTag, MintSpan, Operands, ValueOperand,
+    EntryFailureTag, FailedCheck, MintSpan, Operands, ValueOperand,
 };
 use dorc_core::{BytePos, Channel, LeafId, SiteId, SourceFileId, Span};
 
@@ -58,6 +59,7 @@ fn census_marker(kind: &CollapseKind) -> &'static str {
         CollapseKind::RenderRefusal { .. } => "CollapseKind::RenderRefusal",
         CollapseKind::FixpointCapDegrade { .. } => "CollapseKind::FixpointCapDegrade",
         CollapseKind::RoleFamilyShadowed { .. } => "CollapseKind::RoleFamilyShadowed",
+        CollapseKind::SolverConsistencyFailure { .. } => "CollapseKind::SolverConsistencyFailure",
         CollapseKind::Cancellation(reserved) => match *reserved {},
     }
 }
@@ -117,6 +119,14 @@ fn constructible_classes() -> Vec<CollapseKind> {
         CollapseKind::RoleFamilyShadowed {
             prior: definition(0),
             shadowing: definition(1),
+        },
+        CollapseKind::SolverConsistencyFailure {
+            pass: SolvePass::ValueFlow,
+            operands: Operands::<FailedCheck>::default(),
+            shown: 0,
+            total: 1,
+            converged: true,
+            rounds: 4,
         },
     ]
 }

@@ -71,6 +71,7 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CfgBuiltinShadowed",
     // analysis/effect.rs
     "EffectKindDisagreement",
+    "SolverConsistencyFailure",
     // oracle/predict.rs
     "PredictOutOfDialect",
     "PredictUnterminated",
@@ -177,6 +178,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cfg-inline-refused",
     "cfg-builtin-shadowed",
     "effect-kind-disagreement",
+    "solver-consistency-failure",
     "predict-out-of-dialect",
     "predict-unterminated",
     "oracle-role-fn-unlifted",
@@ -291,8 +293,9 @@ const RETIRED_SLUGS: &[&str] = &[
 /// * an `X` here that no longer appears at a production `new_spanless_site` site ⇒ FAIL (the entry
 ///   is stale — the code stopped minting spanless; remove it). Self-cleaning.
 const SPANLESS_SITE_PAYLOADS: &[&str] = &[
-    "CfgErexitUnknown",       // cfg-errexit-unknown      (analysis/cfg.rs)
-    "EffectKindDisagreement", // effect-kind-disagreement (analysis/effect.rs)
+    "CfgErexitUnknown",         // cfg-errexit-unknown      (analysis/cfg.rs)
+    "EffectKindDisagreement",   // effect-kind-disagreement (analysis/effect.rs)
+    "SolverConsistencyFailure", // solver-consistency-failure (analysis + cli; `plans/302`)
     // plan/records.rs — every framed-deframer fault/integrity code is spanless.
     "RecordsHeaderlessRefused",
     "RecordsGluedLine",

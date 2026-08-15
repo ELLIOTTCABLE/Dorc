@@ -49,6 +49,7 @@
 //! so a narrative-sensitive lattice `Eq` would re-derive-as-changed forever and never terminate.
 //! Nothing in THIS module iterates a fixpoint, so its own `Eq` is free.
 
+use crate::diag::SolvePass;
 use dorc_core::SiteId;
 use dorc_core::{Channel, JOIN_PARENT_CAP, LeafId, OutBytes, SourceFileId, Span};
 
@@ -483,8 +484,35 @@ pub enum CollapseKind {
         prior: DefinitionSite,
         shadowing: DefinitionSite,
     },
+    /// A dataflow answer failed its own post-fixpoint check (`plans/302`), so the whole analysis
+    /// window was demoted to its floor (`302:rul-whole-window-demotion`) — every license that
+    /// answer fed has lapsed.
+    ///
+    /// SCALARS ONLY, and that is load-bearing rather than incidental
+    /// (`303:fnd-witness-operands-cannot-enter-narrative`): the certifier's by-value items hold
+    /// LATTICE VALUES, and `Reach::Top` carries a `ProvId`, which `operands-are-pure-and-capped`
+    /// forbids here. The values stay in the in-memory `SolveConsistency` and reach people through
+    /// pull surfaces; what crosses into this plane is the account, never the evidence.
+    SolverConsistencyFailure {
+        pass: SolvePass,
+        operands: Operands<FailedCheck>,
+        shown: u32,
+        total: u32,
+        converged: bool,
+        rounds: u32,
+    },
     /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
+}
+
+/// One failed post-fixpoint check as a pure scalar — the narrative-plane view of an
+/// `analysis::certify::Inconsistency` with its lattice values left behind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FailedCheck {
+    /// `init[node] ⊑ state[node]` failed.
+    Boundary { node: u32 },
+    /// `transfer(from, state[from]) ⊑ state[to]` failed.
+    Edge { from: u32, to: u32 },
 }
 
 impl CollapseKind {
@@ -516,6 +544,7 @@ impl CollapseKind {
             CollapseKind::RenderRefusal { .. } => "RenderRefusal",
             CollapseKind::FixpointCapDegrade { .. } => "FixpointCapDegrade",
             CollapseKind::RoleFamilyShadowed { .. } => "RoleFamilyShadowed",
+            CollapseKind::SolverConsistencyFailure { .. } => "SolverConsistencyFailure",
             CollapseKind::Cancellation(_) => "Cancellation",
         }
     }

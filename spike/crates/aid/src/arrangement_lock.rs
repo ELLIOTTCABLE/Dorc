@@ -1657,4 +1657,32 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "As footprint-incoherent-emitting-body-died-mid-survey, one lane over: the stream was whole and self-consistent and it is the arm body that stopped.",
         words: None,
     },
+    ArrangementEntry {
+        slug: "solver-consistency-failure-value-flow",
+        occurrence: None,
+        when_used: "Fills the `{pass}` hole of solver-consistency-failure when the book-side value-flow solve failed its post-fixpoint check.",
+        why: "302 rul-reason-enums-not-sibling-codes: the four solve seats share one world -- the engine's own answer did not certify -- and differ only in which pass gave up, so each is a SolvePass variant with its own prose-component rather than a sibling code.",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "solver-consistency-failure-function-environment",
+        occurrence: None,
+        when_used: "Fills the `{pass}` hole of solver-consistency-failure when a function-environment solve, or one of its decidable-condition fold rounds, failed its post-fixpoint check.",
+        why: "As solver-consistency-failure-value-flow.",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "solver-consistency-failure-reaching-defs",
+        occurrence: None,
+        when_used: "Fills the `{pass}` hole of solver-consistency-failure when the main reaching-definitions solve failed its post-fixpoint check.",
+        why: "As solver-consistency-failure-value-flow.",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "solver-consistency-failure-self-reach",
+        occurrence: None,
+        when_used: "Fills the `{pass}` hole of solver-consistency-failure when a per-Members-site self-reach re-solve failed its post-fixpoint check.",
+        why: "As solver-consistency-failure-value-flow.",
+        words: None,
+    },
 ];

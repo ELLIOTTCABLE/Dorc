@@ -30,11 +30,11 @@ use crate::diag::{
     MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
     MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
     RecordsFactTruncated, RenderHeredocRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
-    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SyntaxUnsupported,
-    SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
-    TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
-    WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
-    WrapperPeelIncoherent,
+    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass, SolverConsistencyFailure,
+    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
+    TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
+    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten,
+    WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -179,6 +179,15 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree {
                 cell: "dorc-auto:cp@converged".to_owned(),
                 sites: 2,
+            }),
+        ),
+        // An ENGINE DEFECT has no honest book trigger: the certifier refuses only when the solver
+        // itself is broken, which no input can arrange (`303:fnd-refusal-has-no-honest-trigger`).
+        (
+            "solver-consistency-failure",
+            DiagCode::SolverConsistencyFailure(SolverConsistencyFailure {
+                pass: SolvePass::ReachingDefs,
+                failing: "3".to_owned(),
             }),
         ),
         // The external-linter trio: a replay never runs a foreign tool (`tools_enabled: false`).
