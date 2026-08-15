@@ -103,8 +103,8 @@ impl<'a> SourceLiteralPlane<'a> {
     /// Whether the underlying value analysis converged; a capped value solve makes every word ⊤,
     /// and this domain must not read confident answers off it.
     #[must_use]
-    pub fn converged(&self) -> bool {
-        self.value.converged()
+    pub fn trusted(&self) -> bool {
+        self.value.trusted()
     }
 }
 
@@ -383,8 +383,10 @@ impl FuncEnv {
         binding_in(&self.states, self.converged, node, name)
     }
 
+    /// May this environment's answers be trusted? Named for what consumers ASK rather than for
+    /// the solver flag that used to answer it (`302` §1; see [`crate::value::ValueFlow::trusted`]).
     #[must_use]
-    pub fn converged(&self) -> bool {
+    pub fn trusted(&self) -> bool {
         self.converged
     }
 
@@ -540,7 +542,7 @@ pub fn analyze(
 ) -> FuncEnv {
     let universe = defs.names();
     // A capped VALUE solve makes every word ⊤, so nothing could be read: refuse wholesale.
-    if !literals.converged() {
+    if !literals.trusted() {
         return FuncEnv {
             states: vec![EnvStack::Top; cfg.node_count()],
             converged: false,
@@ -895,7 +897,7 @@ pub fn never_live(
     env: &FuncEnv,
 ) -> BTreeSet<(String, dorc_core::SourceFileId)> {
     let mut out = BTreeSet::new();
-    if !env.converged() {
+    if !env.trusted() {
         return out;
     }
     let mut live: BTreeSet<DefId> = BTreeSet::new();
@@ -938,7 +940,7 @@ pub fn never_live(
 #[must_use]
 pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> Vec<Contest> {
     let mut out = Vec::new();
-    if !env.converged() {
+    if !env.trusted() {
         return out;
     }
     // PROVABILITY, read-side: only a shadow whose winner the environment can name at the unit's
@@ -1325,7 +1327,7 @@ mod tests {
     #[test]
     fn an_out_of_range_node_answers_top_even_when_converged() {
         let (solved, _) = solve_book("true\n", &DefinitionTable::default());
-        assert!(solved.converged());
+        assert!(solved.trusted());
         assert_eq!(solved.before(CfgNodeId(9999)), EnvStack::Top);
     }
 
@@ -1426,7 +1428,7 @@ mod tests {
         let _ = add_def(&mut table, 0, "\u{4e2d}foo");
         let (solved, exit) = solve_book(book, &table);
         assert!(
-            solved.converged(),
+            solved.trusted(),
             "the phantom scope pair is well-nested, so the solve still reaches a fixed point"
         );
         assert_eq!(
@@ -1895,10 +1897,7 @@ mod tests {
     /// "the lattice was read" from "the answer came out right for some other reason".
     fn folded(book: &str, table: &DefinitionTable) -> (Flat<Binding>, usize) {
         let (solved, exit) = solve_book(book, table);
-        assert!(
-            solved.converged(),
-            "the fold must still reach a fixed point"
-        );
+        assert!(solved.trusted(), "the fold must still reach a fixed point");
         (
             solved.binding_before(exit, ROLE),
             solved.folded_edges().len(),

@@ -191,10 +191,12 @@ impl ValueFlow {
         self.argv_word_grades.get(&node).map_or(&[], Vec::as_slice)
     }
 
-    /// Did the underlying worklist reach a fixed point? `false` ⇒ all queries are all-`⊤`
-    /// (the non-convergence fold, `16P` DP-9).
+    /// May this analysis's answers be trusted? `false` ⇒ all queries are all-`⊤` (the degrade
+    /// fold, `16P` DP-9). Named for what consumers ASK rather than for the solver flag that used
+    /// to answer it: `302` §1 makes the gate the solve's CERTIFICATION, under which a cap-tripped
+    /// answer that still certifies is the least fixpoint and stays usable.
     #[must_use]
-    pub fn converged(&self) -> bool {
+    pub fn trusted(&self) -> bool {
         self.converged
     }
 }
@@ -1842,7 +1844,7 @@ mod tests {
             .into_iter()
             .map(|v| word_of(v, &interner))
             .collect();
-        (words, flow.converged())
+        (words, flow.trusted())
     }
 
     /// The first `Command` CFG node whose source `Simple`'s command word is exactly `cmd`.
@@ -2809,7 +2811,7 @@ mod tests {
             let cfg = build(&parsed.value).value;
             let mut interner = Interner::default();
             let flow = analyze(&cfg, &parsed.value, &mut interner);
-            assert!(flow.converged(), "finite-height ⇒ converges on {src:?}");
+            assert!(flow.trusted(), "finite-height ⇒ converges on {src:?}");
         }
     }
 
