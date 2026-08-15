@@ -34,7 +34,10 @@
 worktrees; every brief carries the `spike/CLAUDE.md` safety block verbatim, step-zero
 (reset to the conductor-stated `ai/main` tip + hash verify), step-one root-doc reads,
 the no-subagent clamp, naming discipline (`270` §1), the `verified-core-discipline`
-skill pointer, and flag-don't-resolve on every judgment call. No lane carries
+skill pointer, and flag-don't-resolve on every judgment call. PLUS the quarantined
+builder-prerequisite read, per the conductor skill's quarantine section (durable,
+human-committed 2026-08-14): Opus/Sonnet builders and foreign-lineage reviewers,
+before any other work; never Fable-class subagents; the conductor never reads it. No lane carries
 pilot/measure/kill staging [TYPED — velocity; the human inserts kills if needed].
 Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify standup} and
 {kani, certifier} in parallel → rederivation integration → discipline-close.
@@ -184,6 +187,9 @@ per `28Q` §8.
   imported tools built general, never minispec-scoped
   (`301:law-imported-tools-built-general`) · proceed GREENLIT, conductor discretion
   ("I am here to work with you").
+- 2026-08-14, the builder-prerequisite dictum [TYPED]: landed as durable law in the
+  conductor skill itself (its quarantine section; human commit). §2 carries the
+  pointer; successor conductors get it from the skill at boot.
 - Standing carry-overs: the `KNOBS:kSURVIVAL` status-line edit remains the human's
   (28T inheritance); silence ≠ ack; only typed text counts.
 
