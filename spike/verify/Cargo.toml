@@ -1,0 +1,38 @@
+[package]
+name = "dorc-verify"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The BINDER (`Research/notes/301` §5): it computes each minispec law's earned coverage
+# badges from machine-checkable evidence and emits the one generated report. It is an
+# internal instrument for wrangling LLM maintainers and for reviewers who are not
+# proof-literate — never user-facing, never part of the product.
+#
+# It also drives the derived-definitions pipeline's non-charon halves (materializing the
+# aeneas output, the sorry census, staging and building the Lean), because those are the
+# same lane and the `task-bodies-are-shell-free` contract wants them in Rust rather than
+# in a task body.
+#
+# Sited at `spike/verify/` per `301` §3, which also makes this the Kani harness home.
+# Ordinary lint posture; ordinary workspace member. The generic-core / Dorc-consumer split
+# stays an INTERNAL seam — extraction is deferred until the tool earns it.
+[[bin]]
+name = "dorc-verify"
+path = "src/bin/dorc-verify.rs"
+
+[lib]
+name = "dorc_verify"
+path = "src/lib.rs"
+
+# Workspace-only, like every other crate here. `errorloom` supplies the loom container
+# parser, so the binding check reads a case's frontmatter through the SAME parser the
+# runners use rather than re-deriving a second one; `dorc-loom` supplies the closed
+# frontmatter vocabulary the `tests-critical-law:` key joins.
+[dependencies]
+errorloom = { path = "../crates/errorloom", version = "0.0.0" }
+dorc-loom = { path = "../crates/dorc-loom", version = "0.0.0" }
+
+[lints]
+workspace = true
