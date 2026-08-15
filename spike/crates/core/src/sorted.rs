@@ -21,6 +21,9 @@
 //!
 //! [`iter`](SortedSet::iter) is the ergonomic ordered exit for code *outside* the algebra tier;
 //! [`get_at`](SortedSet::get_at) is the walk primitive inside it.
+//!
+//! Not to be confused with [`crate::unord`], the other owned-collection facade: that one hides a
+//! `HashMap`'s iteration order from the receipts plane. This one is ordered *by construction*.
 
 use std::cmp::Ordering;
 
