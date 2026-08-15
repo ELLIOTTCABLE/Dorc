@@ -72,7 +72,10 @@ fn run_report(args: &[&str]) -> ExitCode {
     let built = args
         .contains(&"--with-lean")
         .then(|| pipeline::lean_build(root, &dorc_verify::lean_build_root()));
-    let pinned = match args.contains(&"--with-kani").then(|| kani::run(root, None)) {
+    let pinned = match args
+        .contains(&"--with-kani")
+        .then(|| kani::run(root, None, &mut |line| println!("{line}")))
+    {
         None => None,
         Some(Ok(report)) => Some(report),
         Some(Err(why)) => {
@@ -223,15 +226,15 @@ fn run_kani(arg: Option<&str>) -> ExitCode {
             }
         };
     }
-    match kani::run(repo_root(), arg) {
+    // Per-harness lines are printed AS THEY LAND, not collected and dumped at the end. A full
+    // battery is tens of minutes, and a run killed partway through used to lose every verdict
+    // it had already earned — which is how a lane becomes hostage to its slowest harness.
+    match kani::run(repo_root(), arg, &mut |line| println!("{line}")) {
         Err(why) => {
             eprintln!("dorc-verify kani: {why}");
             ExitCode::from(2)
         }
         Ok(report) => {
-            for (name, elapsed) in &report.timings {
-                println!("{:>8.2}s  {name}", elapsed.as_secs_f64());
-            }
             println!(
                 "kani: {} green, {} failed, {} over budget, of {} harness(es)",
                 report.green.len(),

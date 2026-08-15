@@ -168,11 +168,17 @@ pub fn setup() -> Result<(), Refusal> {
 }
 
 /// Run the lane: enumerate the harnesses, then verify them one at a time under a budget,
-/// reaping between each.
+/// reaping between each. `progress` receives one line per harness AS IT LANDS — a full battery
+/// is tens of minutes, and a run interrupted partway through must not lose the verdicts it has
+/// already earned.
 ///
 /// # Errors
 /// [`Refusal`], for anything that is not a verification verdict.
-pub fn run(repo_root: &Path, filter: Option<&str>) -> Result<Report, Refusal> {
+pub fn run(
+    repo_root: &Path,
+    filter: Option<&str>,
+    progress: &mut dyn FnMut(&str),
+) -> Result<Report, Refusal> {
     if cfg!(windows) {
         return Err(Refusal::UnsupportedPlatform);
     }
@@ -219,14 +225,26 @@ pub fn run(repo_root: &Path, filter: Option<&str>) -> Result<Report, Refusal> {
         let name = bare_name(&path);
         match outcome {
             Ok(Outcome::Green(elapsed)) => {
+                progress(&format!(
+                    "{:>8.2}s  green        {name}",
+                    elapsed.as_secs_f64()
+                ));
                 report.timings.push((name.clone(), elapsed));
                 report.green.insert(name);
             }
             Ok(Outcome::Failed(elapsed)) => {
+                progress(&format!(
+                    "{:>8.2}s  FAILED       {name}",
+                    elapsed.as_secs_f64()
+                ));
                 report.timings.push((name.clone(), elapsed));
                 report.failed.insert(name);
             }
             Ok(Outcome::OverBudget) => {
+                progress(&format!(
+                    "{:>8.2}s  OVER-BUDGET  {name}",
+                    budget.as_secs_f64()
+                ));
                 report.timings.push((name.clone(), budget));
                 report.over_budget.insert(name);
             }
