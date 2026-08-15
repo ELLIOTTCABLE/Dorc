@@ -70,6 +70,18 @@ shellcheck = "0.11.0"
 # native-Windows bin-path detection; see the spike's REPORT.md.)
 "ubi:leanprover/elan" = { version = "4.2.3", exe = "elan-init" }
 
+# Kani, the bounded model checker behind the `verify:kani` lane. LINUX/WSL ONLY (upstream
+# publishes no Windows asset), so `os` gates it rather than letting a Windows `mise install`
+# fail. The pin is ADDITIVE — this crate is only the small downloader shim that provides
+# `cargo-kani`, and it shadows no toolchain — so it roots, like elan, rather than nesting the
+# way the aeneas lane's rustc-shadowing pin must.
+#
+# The shim alone verifies nothing: `mise run verify:kani-setup` fetches Kani's own engine
+# bundle (CBMC and the kani-compiler, ~1GB) into `~/.kani`, and installs the nightly that
+# compiler was linked against through rustup. Both are Kani's own homes; it offers no env
+# redirect for either. Absent that setup, `verify:kani` refuses loudly and names the task.
+"cargo:kani-verifier" = { version = "0.67.0", os = ["linux"] }
+
 [env]
 # elan's toolchain store: mise-adjacent user-local state, deliberately OUTSIDE the
 # repo/Sync tree (toolchains are ~1GB of churn no sync or backup should see).
@@ -454,7 +466,7 @@ dir = "spike"
 run = "cargo run -q -p dorc-verify -- check"
 
 [tasks."verify:report"]
-description = "Print the generated coverage report and REFUSE if minispec/REPORT.md is stale. Cheap tier by default; `-- --with-lean` recomputes the Lean-derived badges (Linux/WSL, slow), `-- --write` republishes the committed copy."
+description = "Print the generated coverage report and REFUSE if minispec/REPORT.md is stale. Cheap tier by default; `-- --with-lean` and `-- --with-kani` recompute those engines' badges (Linux/WSL, slow), `-- --write` republishes the committed copy."
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- report"
 
@@ -480,6 +492,16 @@ run = "cargo run -q -p dorc-verify -- materialize"
 [tasks."verify:lean-bootstrap"]
 description = "One-time, idempotent: run the elan installer mise fetched, populating ELAN_HOME with elan and its lean/lake proxies. Pulls no toolchain — `verify:lean` triggers that from minispec/lean-toolchain."
 run = "elan-init -y --no-modify-path --default-toolchain none"
+
+[tasks."verify:kani"]
+description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. On Windows it refuses in one line. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- kani"
+
+[tasks."verify:kani-setup"]
+description = "One-time, idempotent, Linux/WSL only: fetch Kani's engine bundle (CBMC + the kani-compiler, ~1GB into ~/.kani) and the nightly it was linked against (via rustup). Both are Kani's own homes; it offers no env redirect for either. `mise install` provides only the small `cargo-kani` shim — without this, `verify:kani` refuses and names this task."
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- kani --setup"
 
 [tasks."verify:lean"]
 description = "OPT-IN, Linux/WSL only: stage minispec/ to an ext4 build root and typecheck it with lake. First run fetches a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental. Staging is load-bearing — lake on drvfs is unusably slow for a dependency store this size."

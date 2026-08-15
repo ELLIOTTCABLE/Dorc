@@ -1,0 +1,29 @@
+[package]
+name = "dorc-kani"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# THE KANI HARNESS HOME (`301` §3: harnesses live outside the kernel), and — like
+# `../aeneas` — a VERIFICATION UNIT rather than a copy: `src/lib.rs` `#[path]`-includes the
+# real algebra sources, so the thing verified is the thing shipped.
+#
+# DELIBERATELY NOT A WORKSPACE MEMBER, and the reason is Kani's toolchain rather than taste.
+# Kani 0.67 compiles with rustc 1.93-nightly, the workspace declares `rust-version = "1.96"`,
+# and cargo refuses to build any package whose MSRV exceeds the active compiler. Every route
+# that keeps the algebra crates as DEPENDENCIES hits that wall (their `rust-version.workspace`
+# resolves against `spike/Cargo.toml` however this manifest is arranged), and the two ways
+# through it are lowering a product MSRV declaration to suit a tool, or having no package in
+# the graph but this one. The second is also the shape the derived-definitions lane already
+# arrived at for its own reasons, so the repo now has ONE verification-unit pattern rather
+# than two.
+#
+# The costs are real and worth stating: nothing in `mise run check` or `cargo build
+# --workspace` compiles this crate, so the opt-in lane is the only thing that can catch it
+# rotting against a signature change; and `verify:kani` builds the included modules a second
+# time rather than reusing `spike/target/`.
+[lib]
+name = "dorc_kani"
+path = "src/lib.rs"
+
+[workspace]
