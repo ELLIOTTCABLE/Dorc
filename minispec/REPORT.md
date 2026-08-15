@@ -65,5 +65,5 @@ The subsets of the analysis engine opted into Lean verification, as the census o
 ## The trusted base
 
 - `minispec/Generated/` proof holes: **0**. A lenient translation emits SILENT holes and a hole typechecks, so a green build proves nothing without this number.
-- external axioms in `Generated/`: **26**. Each is a std or fenced function the translator does not model, standing in for a body nothing checks. The fence — which items are axiomatized and why — is `spike/verify/aeneas/Cargo.toml`, where every entry carries its class and its reason.
+- external axioms in `Generated/`: **13**. Each is a std or fenced function the translator does not model, standing in for a body nothing checks. The fence — which items are axiomatized and why — is `spike/verify/aeneas/Cargo.toml`, where every entry carries its class and its reason.
 

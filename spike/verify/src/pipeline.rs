@@ -80,12 +80,19 @@ pub fn materialize(repo_root: &Path) -> Result<Materialized, String> {
 
 /// The sorry census plus the axiom count over a generated tree.
 ///
+/// Counts the MATERIALIZED tree only. Each `*External_Template.lean` is committed beside the
+/// byte-identical copy `materialize` made of it, and only the copy is imported — counting both
+/// reported every axiom twice, which reads as twice the trusted base there really is.
+///
 /// # Errors
 /// When the tree cannot be read.
 pub fn census(generated: &Path) -> Result<(usize, usize), String> {
     let mut holes = 0usize;
     let mut axioms = 0usize;
     for path in lean_files(generated)? {
+        if is_external_template(&path) {
+            continue;
+        }
         let text = read(&path)?;
         if unit::contains_hole(&text) {
             holes = holes.saturating_add(1);
@@ -97,6 +104,17 @@ pub fn census(generated: &Path) -> Result<(usize, usize), String> {
         );
     }
     Ok((holes, axioms))
+}
+
+/// Whether `path` is one of aeneas's raw external templates, keyed off the same table
+/// `materialize` copies from — so a renamed template stops being skipped and stops being
+/// copied in one edit, never one without the other.
+fn is_external_template(path: &Path) -> bool {
+    path.file_name().is_some_and(|name| {
+        EXTERNAL_TEMPLATES
+            .iter()
+            .any(|(template, _)| name == *template)
+    })
 }
 
 /// Every `.lean` file directly under `dir`, sorted.
@@ -233,4 +251,26 @@ fn read(path: &Path) -> Result<String, String> {
 
 fn write(path: &Path, text: &str) -> Result<(), String> {
     std::fs::write(path, text).map_err(|e| format!("{}: {e}", path.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_census_counts_the_materialized_tree_and_not_its_templates() {
+        // The trusted base is what the Lean build IMPORTS, and it imports the materialized
+        // copy alone. Counting the template beside it reported a trusted base twice the size
+        // of the real one — the numbers in a coverage report are the whole product here, so a
+        // doubled one is a wrong answer, not a cosmetic one.
+        let dir = std::env::temp_dir().join("dorc-verify-census-pin");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let one_axiom = "axiom core_fmt_write : Unit\n";
+        std::fs::write(dir.join("FunsExternal_Template.lean"), one_axiom).unwrap();
+        std::fs::write(dir.join("FunsExternal.lean"), one_axiom).unwrap();
+
+        assert_eq!(census(&dir).unwrap(), (0, 1), "the pair counts once");
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 }
