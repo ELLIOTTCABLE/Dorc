@@ -1,0 +1,54 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# Ground truth: a subshell's re-source AND its `unset -f` both die at the `)`, while a nested subshell inherits both.
+. ./base.sh
+( . ./variant.sh; hork__is_converged; ( hork__is_converged ) )
+( unset -f hork__is_converged; hork__is_converged 2>/dev/null || printf 'gone\n' )
+hork__is_converged
+
+-- base.sh --
+hork__is_converged() { printf 'base\n' ;}
+
+-- variant.sh --
+hork__is_converged() { printf 'variant\n' ;}
+
+-- expected.emitted --
+variant
+variant
+gone
+base
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=606ff7d0f8777f24aef0df7ab82988b7c4efdf3d8309808880479200c4f800ba sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+# site:7 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# Ground truth: a subshell's re-source AND its `unset -f` both die at the `)`, while a nested subshell inherits both.
+. ./base.sh
+( . ./variant.sh; hork__is_converged; ( hork__is_converged ) )
+( unset -f hork__is_converged; hork__is_converged 2>/dev/null || printf 'gone\n' )
+hork__is_converged
