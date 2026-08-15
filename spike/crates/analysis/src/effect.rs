@@ -1172,15 +1172,49 @@ fn self_reach_holds(
     top_causes: &[Option<dorc_core::ProvId>],
     fallback_cause: dorc_core::ProvId,
     site: usize,
-) -> (bool, bool) {
+) -> (bool, SolveConsistency<Reach>) {
     let (sol, consistency) = solve_certified(cfg, Direction::Forward, |i, incoming: &Reach| {
         reach_transfer(effects, top_causes, fallback_cause, incoming, i, Some(site))
     });
-    // THE SELF-REACH FLOOR (`302` §3.3): an un-certified re-solve answers `false` — the existing
-    // conservative refuse, which costs an `EstablishMembers` license and never grants one.
-    let certified = consistency.is_consistent();
-    let holds = certified && sol.states.get(site).is_some_and(Reach::is_pristine);
-    (holds, certified)
+    let holds = self_reach_answer(&consistency, sol.states.get(site));
+    (holds, consistency)
+}
+
+/// THE SELF-REACH FLOOR (`302` §3.3): an un-certified re-solve answers `false` — the existing
+/// conservative refuse, which costs an `EstablishMembers` license and never grants one.
+///
+/// A named seat so `302` §6.8 can exercise it with a REAL `Inconsistent`: the load-bearing half is
+/// that a PRISTINE state does not rescue an uncertified solve, and only a test that holds both can
+/// say so.
+fn self_reach_answer(consistency: &SolveConsistency<Reach>, state: Option<&Reach>) -> bool {
+    consistency.is_consistent() && state.is_some_and(Reach::is_pristine)
+}
+
+/// What the self-reach pass really saw, kept as scalars for the aid plane (R4, cross-lineage
+/// review): the failing-CHECK total across every uncertified solve, how many SOLVES failed, the
+/// first failing solve's real advisory, and the failing indices.
+///
+/// The account it replaces reported a SOLVE count under a failing-CHECK name and hard-coded the
+/// advisory. That is the aid plane asserting things it did not observe, which is the one failure
+/// mode this plane exists to prevent (`271:rul-sin-ordering`: a mis-attributed account is worse
+/// than a missing one). Everything here is measured or absent.
+#[derive(Debug, Default)]
+struct SelfReachAccount {
+    solves: usize,
+    failing_checks: usize,
+    advisory: Option<crate::certify::SolverAdvisory>,
+    checks: Vec<dorc_aid::narrative::FailedCheck>,
+}
+
+impl SelfReachAccount {
+    fn record(&mut self, report: &crate::certify::FailedChecks<Reach>) {
+        self.solves = self.solves.saturating_add(1);
+        self.failing_checks = self.failing_checks.saturating_add(report.total());
+        if self.advisory.is_none() {
+            self.advisory = Some(report.advisory());
+        }
+        self.checks.extend(failing_check_indices(report));
+    }
 }
 
 /// The decision-inert record a consistency failure mints at its degrade
@@ -1188,10 +1222,9 @@ fn self_reach_holds(
 /// the counts and the solver's advisory report. The lattice values that failed stay behind in the
 /// in-memory `SolveConsistency`: `Reach::Top` carries a `ProvId`, which this plane forbids
 /// (`303:fnd-witness-operands-cannot-enter-narrative`).
-fn consistency_narrative(
-    pass: SolvePass,
+fn failing_check_indices(
     report: &crate::certify::FailedChecks<Reach>,
-) -> dorc_aid::CollapseNarrative {
+) -> Vec<dorc_aid::narrative::FailedCheck> {
     let mut checks: Vec<dorc_aid::narrative::FailedCheck> = Vec::new();
     for &node in report.failing().boundary() {
         checks.push(dorc_aid::narrative::FailedCheck::Boundary {
@@ -1204,6 +1237,14 @@ fn consistency_narrative(
             to: u32::try_from(to).unwrap_or(u32::MAX),
         });
     }
+    checks
+}
+
+fn consistency_narrative(
+    pass: SolvePass,
+    report: &crate::certify::FailedChecks<Reach>,
+) -> dorc_aid::CollapseNarrative {
+    let checks = failing_check_indices(report);
     let advisory = report.advisory();
     dorc_aid::CollapseNarrative::new(
         dorc_aid::narrative::SpeechAct::Derived,
@@ -1212,10 +1253,62 @@ fn consistency_narrative(
             operands: dorc_aid::narrative::Operands::capped(checks),
             shown: u32::try_from(report.shown()).unwrap_or(u32::MAX),
             total: u32::try_from(report.total()).unwrap_or(u32::MAX),
-            converged: advisory.converged,
-            rounds: u32::try_from(advisory.rounds).unwrap_or(u32::MAX),
+            solves: 1,
+            advisory: dorc_aid::narrative::SolverRounds {
+                converged: advisory.converged,
+                rounds: u32::try_from(advisory.rounds).unwrap_or(u32::MAX),
+            },
         },
     )
+}
+
+/// The per-site classification, over already-computed state (`302` §3.4's floor lives here).
+///
+/// `trust_reach` false — which is what an un-certified reaching-defs answer produces — sends
+/// EVERY shape to `SkipClass::MustRun`: the stage-0/⊤ posture, safe under both phases. Extracted
+/// from the closure it used to be so `302` §6.8 can drive that floor with a real `Inconsistent`
+/// rather than argue it; the closure remains, delegating.
+fn classify_one_site(
+    i: usize,
+    effects: &[Vec<CommandEffect>],
+    member_families: &[Option<Vec<FactKey>>],
+    reach: &[Reach],
+    trust_reach: bool,
+    reachable: &[bool],
+    self_reached: &BTreeMap<usize, bool>,
+) -> SkipClass {
+    let (Some(cells), Some(state), Some(&site_reachable)) =
+        (effects.get(i), reach.get(i), reachable.get(i))
+    else {
+        return SkipClass::MustRun;
+    };
+    // task-L2: a resolved in-loop Members site (reachable + certified) ⇒ EstablishMembers.
+    if let Some(Some(family)) = member_families.get(i)
+        && trust_reach
+        && site_reachable
+    {
+        return SkipClass::EstablishMembers {
+            members: family.clone(),
+            // Answered by `self_reach_pass` above; absent ⇒ the conservative `false`.
+            self_reached: self_reached.get(&i).copied().unwrap_or(false),
+        };
+    }
+    match cells.as_slice() {
+        [CommandEffect::Establishes(f)] if trust_reach && site_reachable => {
+            if state.mutated(f) {
+                SkipClass::EstablishWritten(*f)
+            } else {
+                SkipClass::EstablishAmbient(*f)
+            }
+        }
+        [CommandEffect::Queries(f)] if trust_reach && site_reachable => {
+            SkipClass::QueryResolvable {
+                fact: *f,
+                valid: state.is_pristine(),
+            }
+        }
+        _ => SkipClass::MustRun,
+    }
 }
 
 /// Answer self-reach for every eligible Members site AHEAD of the per-site classifier
@@ -1230,17 +1323,17 @@ fn self_reach_pass(
     top_causes: &[Option<dorc_core::ProvId>],
     fallback_cause: dorc_core::ProvId,
     eligible: &[usize],
-) -> (BTreeMap<usize, bool>, usize) {
+) -> (BTreeMap<usize, bool>, SelfReachAccount) {
     let mut answers = BTreeMap::new();
-    let mut uncertified = 0usize;
+    let mut account = SelfReachAccount::default();
     for &site in eligible {
-        let (holds, certified) = self_reach_holds(cfg, effects, top_causes, fallback_cause, site);
+        let (holds, consistency) = self_reach_holds(cfg, effects, top_causes, fallback_cause, site);
         answers.insert(site, holds);
-        if !certified {
-            uncertified = uncertified.saturating_add(1);
+        if let SolveConsistency::Inconsistent(report) = &consistency {
+            account.record(report);
         }
     }
-    (answers, uncertified)
+    (answers, account)
 }
 
 /// Mint the arch-1 `Top(cause)` receipts: a per-node give-up origin for every Opaque-bearing
@@ -1679,21 +1772,16 @@ pub fn classify_with_why_diags(
         solve_certified(cfg, Direction::Forward, |i, incoming: &Reach| {
             reach_transfer(&effects, &top_causes, fallback_cause, incoming, i, None)
         });
-    // The honest dev assertion is CERTIFICATION, not convergence
-    // (`303:fnd-converged-debug-assert-is-now-the-wrong-question`): landing on the fixpoint at the
-    // cap is legitimate, while a converged-but-inconsistent answer is the real defect.
-    debug_assert!(
-        reach_consistency.is_consistent(),
-        "reaching-defs must certify (finite fact set, monotone transfer)"
-    );
-
+    // NO ASSERTION HERE, deliberately (R5, cross-lineage review). An assert would fire BEFORE the
+    // floor and the report, so a debug build — which is what DST and every integration test run —
+    // would panic exactly where the machinery is supposed to demote and explain, leaving the real
+    // path exercised only in release. The diagnostic minted below IS the loud signal, and it is
+    // the same one in both profiles.
+    //
     // Two reasons the reaching in-state cannot be trusted to mean "nothing
     // upstream mutated this fact", both folding the safe way (→ MustRun):
-    //   * non-convergence (find-B): a capped solve returns a partial
-    //     under-approximation — a real upstream kill may not have propagated. The
-    //     `Reach` lattice is monotone + finite-height so this never trips here (the
-    //     `debug_assert` catches a regression loudly), but trusting a non-converged
-    //     state in *release* would be a silent wrong-skip, so guard it explicitly.
+    //   * an un-certified answer: the solver's states are not a post-fixpoint of its own system,
+    //     so a real upstream kill may not have propagated.
     //   * unreachability (find-A): an establish unreachable from entry has a vacuous
     //     ⊥ in-state; its true call context is unmodeled (cfg find-7).
     // THE REACH FLOOR (`302` §3.4): an un-certified reaching-defs answer sends every site to
@@ -1705,7 +1793,7 @@ pub fn classify_with_why_diags(
     let members_sites: Vec<usize> = (0..effects.len())
         .filter(|&i| member_families[i].is_some() && trust_reach && reachable[i])
         .collect();
-    let (self_reached, uncertified_self_reach) =
+    let (self_reached, self_reach) =
         self_reach_pass(cfg, &effects, &top_causes, fallback_cause, &members_sites);
 
     if let SolveConsistency::Inconsistent(report) = &reach_consistency {
@@ -1717,25 +1805,28 @@ pub fn classify_with_why_diags(
         )));
         collapse_narrative.push(consistency_narrative(SolvePass::ReachingDefs, report));
     }
-    if uncertified_self_reach > 0 {
+    // `failing` is the failing-CHECK total here exactly as it is for every other pass; the plural
+    // SOLVE count rides the narrative's own field. Reporting one under the other's name is the
+    // fabricated account R4 removed.
+    if let Some(advisory) = self_reach.advisory {
         diags.push(Diag::new_spanless_site(Code::SolverConsistencyFailure(
             SolverConsistencyFailure {
                 pass: SolvePass::SelfReach,
-                failing: uncertified_self_reach.to_string(),
+                failing: self_reach.failing_checks.to_string(),
             },
         )));
-        // Operands stay empty: the per-site re-solves are answered in a pass that keeps only the
-        // COUNT, and a narrative must never carry the lattice values themselves anyway
-        // (`operands-are-pure-and-capped`).
         collapse_narrative.push(dorc_aid::CollapseNarrative::new(
             dorc_aid::narrative::SpeechAct::Derived,
             dorc_aid::CollapseKind::SolverConsistencyFailure {
                 pass: SolvePass::SelfReach,
-                operands: dorc_aid::narrative::Operands::default(),
-                shown: 0,
-                total: u32::try_from(uncertified_self_reach).unwrap_or(u32::MAX),
-                converged: true,
-                rounds: 0,
+                operands: dorc_aid::narrative::Operands::capped(self_reach.checks.clone()),
+                shown: u32::try_from(self_reach.checks.len()).unwrap_or(u32::MAX),
+                total: u32::try_from(self_reach.failing_checks).unwrap_or(u32::MAX),
+                solves: u32::try_from(self_reach.solves).unwrap_or(u32::MAX),
+                advisory: dorc_aid::narrative::SolverRounds {
+                    converged: advisory.converged,
+                    rounds: u32::try_from(advisory.rounds).unwrap_or(u32::MAX),
+                },
             },
         ));
     }
@@ -1745,33 +1836,15 @@ pub fn classify_with_why_diags(
     // already-computed state (`effects`, `member_families`, `reach`, `trust_reach`,
     // `reachable`), so it is a pure closure.
     let classify_site = |i: usize| -> SkipClass {
-        // task-L2: a resolved in-loop Members site (reachable + converged) ⇒ EstablishMembers.
-        if let Some(family) = &member_families[i]
-            && trust_reach
-            && reachable[i]
-        {
-            return SkipClass::EstablishMembers {
-                members: family.clone(),
-                // Answered by `self_reach_pass` above; absent ⇒ the conservative `false`.
-                self_reached: self_reached.get(&i).copied().unwrap_or(false),
-            };
-        }
-        match effects[i].as_slice() {
-            [CommandEffect::Establishes(f)] if trust_reach && reachable[i] => {
-                if reach.states[i].mutated(f) {
-                    SkipClass::EstablishWritten(*f)
-                } else {
-                    SkipClass::EstablishAmbient(*f)
-                }
-            }
-            [CommandEffect::Queries(f)] if trust_reach && reachable[i] => {
-                SkipClass::QueryResolvable {
-                    fact: *f,
-                    valid: reach.states[i].is_pristine(),
-                }
-            }
-            _ => SkipClass::MustRun,
-        }
+        classify_one_site(
+            i,
+            &effects,
+            &member_families,
+            &reach.states,
+            trust_reach,
+            &reachable,
+            &self_reached,
+        )
     };
 
     let mut out = Vec::new();
@@ -1900,6 +1973,162 @@ mod tests {
     use dorc_core::{KindId, SelectorId};
     use dorc_oracle::predict::lift_predicts;
 
+    /// A REAL `Inconsistent` over `Reach`, and a pristine state to go with it. The perturbation is
+    /// genuine and `certify_solution` is the judge — only the SOLVER's answer is faulted
+    /// (`302` §6.1's shape). The failing value deliberately carries a `ProvId`, so anything that
+    /// tried to move it into the aid plane would be caught by the type system.
+    fn a_real_reach_inconsistency(
+        arena: &mut dorc_core::ProvArena,
+    ) -> (SolveConsistency<Reach>, Reach) {
+        use crate::certify::certify_solution;
+        use crate::solve::{Direction, Graph, Solution};
+
+        struct SelfLoop;
+        impl Graph for SelfLoop {
+            fn node_count(&self) -> usize {
+                1
+            }
+            fn succ(&self, _: usize) -> &[usize] {
+                &[0]
+            }
+            fn pred(&self, _: usize) -> &[usize] {
+                &[0]
+            }
+        }
+        let cause = arena.leaf(dorc_core::OriginKind::TopCause, None);
+        let pristine = Reach::Facts(BTreeSet::new());
+        let solution = Solution {
+            states: vec![pristine.clone()],
+            converged: true,
+            rounds: 1,
+        };
+        let outcome = certify_solution(
+            &SelfLoop,
+            Direction::Forward,
+            std::slice::from_ref(&pristine),
+            |_, _| Reach::Top(cause),
+            &solution,
+        );
+        assert!(!outcome.is_consistent(), "the fixture must really fail");
+        (outcome, pristine)
+    }
+
+    /// `302` §6.8 — THE REACH FLOOR, driven end-to-end by a real `Inconsistent` (the F9
+    /// completion). Every shape the classifier can answer — a Members site, an establish, a query
+    /// — falls to `MustRun` when the reaching-defs answer did not certify, whatever the states
+    /// say. The states handed in are the FAVOURABLE ones (pristine, reachable, a resolved member
+    /// family): if certification were merely advisory here, each of these would classify as
+    /// something licensable, so the assertions below can only pass because the floor holds.
+    #[test]
+    fn an_uncertified_reach_floors_every_site_to_must_run() {
+        let mut arena = dorc_core::ProvArena::new();
+        let (consistency, pristine) = a_real_reach_inconsistency(&mut arena);
+        let trust_reach = consistency.is_consistent();
+        assert!(!trust_reach);
+
+        let mut interner = Interner::default();
+        let fact = FactKey::cell(
+            KindId(interner.intern("sm.dorc.Package")),
+            EntityRef::Operand(OpaqueToken(interner.intern("nginx"))),
+            SelectorId(interner.intern("installed")),
+        );
+        let effects = vec![
+            vec![CommandEffect::Establishes(fact)],
+            vec![CommandEffect::Queries(fact)],
+            vec![CommandEffect::Establishes(fact)],
+        ];
+        let member_families = vec![None, None, Some(vec![fact])];
+        let reach = vec![pristine.clone(), pristine.clone(), pristine];
+        let reachable = vec![true, true, true];
+        let mut self_reached = BTreeMap::new();
+        self_reached.insert(2usize, true);
+
+        for site in 0..3 {
+            assert_eq!(
+                classify_one_site(
+                    site,
+                    &effects,
+                    &member_families,
+                    &reach,
+                    trust_reach,
+                    &reachable,
+                    &self_reached,
+                ),
+                SkipClass::MustRun,
+                "site {site} must floor: an un-certified reach licenses nothing"
+            );
+        }
+
+        // The control: the SAME favourable inputs under a trusted answer really would license,
+        // so the floor above is doing the work rather than the fixture being inert.
+        assert_ne!(
+            classify_one_site(
+                0,
+                &effects,
+                &member_families,
+                &reach,
+                true,
+                &reachable,
+                &self_reached,
+            ),
+            SkipClass::MustRun,
+            "with certification the same site licenses — the assertions above are not vacuous"
+        );
+    }
+
+    /// `302` §6.8 — THE SELF-REACH FLOOR, driven by a real `Inconsistent`. The load-bearing half
+    /// is that a PRISTINE state does NOT rescue an uncertified solve: pristine-ness is exactly the
+    /// condition that would otherwise say "yes", so this is the assertion that distinguishes a
+    /// real floor from a coincidence.
+    #[test]
+    fn an_uncertified_self_reach_answers_false_even_when_pristine() {
+        let mut arena = dorc_core::ProvArena::new();
+        let (consistency, pristine) = a_real_reach_inconsistency(&mut arena);
+
+        assert!(
+            pristine.is_pristine(),
+            "the state itself would have said yes"
+        );
+        assert!(
+            !self_reach_answer(&consistency, Some(&pristine)),
+            "an un-certified re-solve refuses however good its state looks"
+        );
+    }
+
+    /// `302` §6.8 — the SELF-REACH ACCOUNT is measured, never manufactured (R4). Two failing
+    /// solves contribute their real failing-CHECK totals and their real indices, the solve count
+    /// is its own quantity rather than being smuggled in as a check count, and the advisory is a
+    /// solver's own report rather than a hard-coded pair.
+    #[test]
+    fn the_self_reach_account_sums_real_checks_and_keeps_a_real_advisory() {
+        let mut arena = dorc_core::ProvArena::new();
+        let mut account = SelfReachAccount::default();
+        for _ in 0..2 {
+            let (consistency, _) = a_real_reach_inconsistency(&mut arena);
+            let SolveConsistency::Inconsistent(report) = &consistency else {
+                panic!("the fixture must really fail");
+            };
+            account.record(report);
+        }
+
+        assert_eq!(account.solves, 2, "two SOLVES failed");
+        assert_eq!(
+            account.failing_checks, 2,
+            "and their failing CHECKS are summed, not conflated with the solve count"
+        );
+        assert_eq!(
+            account.checks,
+            vec![
+                dorc_aid::narrative::FailedCheck::Edge { from: 0, to: 0 },
+                dorc_aid::narrative::FailedCheck::Edge { from: 0, to: 0 },
+            ],
+            "the real indices are retained"
+        );
+        let advisory = account.advisory.expect("a real advisory was retained");
+        assert!(advisory.converged);
+        assert_eq!(advisory.rounds, 1, "measured from the solve, not invented");
+    }
+
     /// `302` §6.8 — the DEGRADE RECORD carries SCALARS ONLY.
     ///
     /// The load-bearing assertion is the negative one: `Reach` values hold a `ProvId` on their
@@ -1950,8 +2179,8 @@ mod tests {
             operands,
             shown,
             total,
-            converged,
-            ..
+            solves,
+            advisory,
         } = narrative.kind()
         else {
             panic!("the narrative must carry the consistency-failure class");
@@ -1959,7 +2188,12 @@ mod tests {
         assert_eq!(*pass, SolvePass::ReachingDefs);
         assert_eq!(*total, 1);
         assert_eq!(*shown, 1);
-        assert!(*converged, "the advisory flag rides through unchanged");
+        assert_eq!(*solves, 1, "a whole-unit pass is one solve");
+        assert!(
+            advisory.converged,
+            "the advisory rides through MEASURED, never manufactured"
+        );
+        assert_eq!(advisory.rounds, 1);
         assert_eq!(
             operands.kept(),
             &[dorc_aid::narrative::FailedCheck::Edge { from: 0, to: 0 }],
