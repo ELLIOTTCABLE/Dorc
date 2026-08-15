@@ -800,6 +800,8 @@ ordering that are easy to get subtly wrong, and they run from anywhere in the tr
 (`dir` resolves against the root `mise.toml`, not your cwd):
 
 ```
+mise run preflight <p>    # bounds-check disk + RAM before spending them (gate|bless|kani|lean)
+mise run doctor           # READ-ONLY inventory: worktrees, target dirs, lane caches
 mise run build            # cargo build --workspace
 mise run test             # unit + the e2e corpus + the loom corpus
 mise run test:e2e         # the e2e corpus alone: dash -n gate + exec-under-mocks
@@ -938,11 +940,43 @@ no task covers, and consider adding the task instead.
   caught a real Linux-only panic — `28F:finding-wsl-leg-first-blood`) — this box
   carries a full mise-in-WSL namespace, so the unix half of the previous bullet is
   SELF-SERVE: at any fold touching `cfg`-gated or path-handling code, run
-  `wsl.exe -e sh -c 'export PATH="$HOME/.local/bin:$PATH"; cd /mnt/c/<worktree>/spike
-  && CARGO_TARGET_DIR="$HOME/.cache/dorc-wsl-target[-lane]" mise exec -- cargo test
-  --workspace'`. Keep `CARGO_TARGET_DIR` WSL-local (native Linux and Windows builds
-  clobber a shared `target/`) and per-lane-suffixed for concurrent agents; note
+  `mise run both <task>` and nothing else. The hand-spelled two-leg invocation this
+  bullet used to carry is RETIRED, and so is the workaround it forced (the close batch
+  ran its legs separately because `both` set no WSL-local `CARGO_TARGET_DIR`): the root
+  `mise.toml` `[env]` now resolves the target dir per leg — cargo's own default on
+  Windows and on a real *nix host, `$XDG_CACHE_HOME/dorc-wsl-target-<worktree>` inside
+  WSL. Native-Linux and Windows builds therefore cannot clobber one shared `target/`,
+  and concurrent lanes cannot clobber each other, without anyone spelling it. Riders:
+  `clippy:clean`'s target dir COMPOSES onto that root rather than being a bare relative
+  path (a relative one resolved to drvfs, where its `cargo clean` wiped the other leg's
+  lint dir); anything reading build output goes through
+  `internal_tooling::target_dir()`, never a re-derived `spike/target`; and
   perms-asserting tests exercise `/tmp` (real Linux fs), not drvfs `/mnt/c`.
+- **preflight-bounds-before-spend** (r30, after two incidents: a WSL VM OOM'd twice
+  under solver load and `C:` hit zero bytes free mid-gate) — every heavy lane now
+  bounds-checks the machine BEFORE spending it: `gate:full*`, `bless`, `bless:dry`,
+  `verify:kani`, `verify:lean` and `verify:translate` open with `mise run preflight
+  <profile>`, which prints one line and exits nonzero when free disk (on the volume
+  holding the profile's build cache) or available RAM is under the bound. The hot loop
+  (`gate:quick*`, `test`) is deliberately unburdened, and pre-commit MUST NOT gain it.
+  Bounds live in one table in `internal-tooling`'s `preflight.rs`, each carrying its
+  measurement's provenance in a comment — conservative round numbers, because a bound
+  that fires spuriously is a bound people learn to skip. Two disk figures per profile
+  (cold cache vs warm) selected by an O(1) existence check, never a directory walk.
+  Each leg checks its OWN environment — the WSL VM's ~15 GiB cap is invisible to a
+  Windows-side reading — so `mise run both preflight <p>` is the paired form. The
+  `kani` RAM bound is pinned ABOVE `verify/src/kani.rs`'s own per-harness
+  `ADDRESS_SPACE_CAP_KB`, by a test, because a bound under the cap passes a machine the
+  first harness cannot fit on. `DORC_PREFLIGHT=skip` is the escape hatch and says so in
+  its own output: emergencies only.
+- **doctor-inventories-never-reaps** — `mise run doctor` is the read-only answer to
+  "what is eating the disk": every registered worktree with size and clean/dirty/locked
+  state, this leg's target dir broken down, and the `dorc-*` lane caches. It DELETES
+  NOTHING — a reap needs a containment proof the tool has no business making. ~10s,
+  because the sizes are real walks. Each leg sees only its own filesystem, so
+  `mise run both doctor` is what puts the WSL lane caches beside the Windows worktrees.
+  Nested worktrees are pruned from their container's total (the fleet lives INSIDE the
+  primary checkout, so a naive walk doubles every lane).
 - **one-platform-green-is-not-cross-platform-green** (two live bugs, 2026-07-24) —
   `#[cfg(windows)]` / `#[cfg(unix)]` code is COMPILED ONLY on its own platform, so the
   gates never see the other side and it rots silently. Both landed bugs were invisible
