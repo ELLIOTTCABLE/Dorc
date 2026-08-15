@@ -27,6 +27,15 @@
 - [TYPED] Round-30 numbering: notes/300 = this ledger; notes/301 = the minispec/verify
   spec; `plans/302` is RESERVED for the solve-certifier mechanical spec
   (conductor-authored, pre-build). Never mint a 29x ID (quarantined round).
+- [ACKED 2026-08-15] **REWIND ANCHOR #2: the wave-one-close stamp** — `8889618f`
+  folded, `notes/305` (the definition-factoring conversion work order) committed,
+  zero subagents in flight. A post-rewind conductor dispatches the conversion lane
+  FROM `305` verbatim (no re-derivation), conducts its checkpoint-1 → conversion →
+  fold, then the snapshot-emission stage. THE NEXT NAMED STOPPING POINT: **the
+  stage-i fold** (conversion landed · the differential cells' engine-agreement half
+  green · `pin30` flipped with an AUTHORED record · both planes' checker gates
+  green) — sited there because closure-custody's policy half waits on the
+  human+sibling rulings anyway, so a conductor cycle at that boundary costs nothing.
 
 ## §2 — The Wave-1 stage (the correctness-tooling standup): lanes, staffing, gates
 
@@ -271,6 +280,29 @@ Sequencing: facade solo FIRST → {derived-defs pipeline + minispec/verify stand
   rider, homed in the dangers section · E1 folded per registry discipline). The
   converged-wording sweep (5 sites) + the nine-crate-files count landed this batch.
   A1–A3 remain human-owned.
+
+- **the close batch — FOLDED 2026-08-15 @ `8889618f`** (ff'd to conduct; all gates
+  green: both-legs full gate 2032/2028 + both-legs floor 140/140 + `bless:dry`;
+  zero drift). **WAVE-ONE-CLOSE IS STAMPED.** Flag adjudications (deviation-litmus):
+  the five hand-edited floor30 transcripts (rationale re-widening changes committed
+  transcript bytes + the `book=<sha256>` digest; bless was brief-forbidden)
+  ACCEPTED-AS-VERIFIED — the e2e production-bytes gate proves them — with a DOUBLE
+  praxis miss logged: the builder should have paused-and-asked before a functional
+  hand-bless, AND the conductor's brief ordered golden-touching work while
+  forbidding the only write authority (prevention: briefs name the sanctioned write
+  path or pre-authorize scoped bless — done in `305`); THIRD instance of the
+  floor-transcript tooling gap ⇒ `work-bless-emitted-manifests` priority raised.
+  both-legs-run-separately ENDORSED — the TOOLING is wrong, not the builder
+  (`mise run both` sets no WSL-local `CARGO_TARGET_DIR`, violating
+  wsl-unix-leg-at-fold; `clippy:clean`'s task-level target-dir override wipes the
+  shared lint dir over drvfs) ⇒ BANKED `work-both-task-wsl-target`. Disk exhaustion
+  mid-gate: environmental, not Dorc-caused, self-cleared; HUMAN-attention items:
+  NINETEEN stale `~/.cache/dorc-wsl-target-*` lane caches inside an 87.9GB
+  ext4.vhdx (deletion + vhdx compaction are human acts; banked policy question:
+  reap lane caches at fold?). The self-caught never-filter-a-task violation noted
+  (re-run unfiltered; no result rests on a filtered run); placement latitude
+  accepted; the builder's spot-check of the conductor's own ledger claims before
+  landing them endorsed as the litmus's two-way form.
 
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 
