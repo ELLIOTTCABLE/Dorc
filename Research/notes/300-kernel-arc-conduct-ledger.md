@@ -420,6 +420,37 @@ Three lanes, conduct-branch-based:
   populates that dir; a witness a `-p internal-tooling` build does not produce (a product
   binary such as `debug/dorc`) would, but choosing one is a design call, not a local edit.
 
+- **the debt fold + Windows-bless repair — FOLDED @ `0460f70f`** (15 commits; ff'd;
+  Windows `bless:dry` GREEN — the finding's own reproduction case; WSL
+  no-regression; zero drift; the pre-authorized union never fired, hunks disjoint).
+  The repair DEVIATED from the directed copy-and-re-exec shape, REFUSED on the
+  merits: Windows has no true exec — a waiting parent keeps its own image mapped
+  (the lock stays), an exiting parent loses the gate's status; landed RENAME-ASIDE
+  (a live image's directory entry may move; cargo re-creates the vacated path; both
+  assumptions verified empirically), unconditional per the
+  one-platform-green-is-not-cross-platform-green rot logic. ADJUDICATION: deviation
+  ENDORSED on re-derivation; conductor mistake named — a mechanism directed at a
+  specificity beyond verified platform knowledge (the directive should have been
+  the PROPERTY: "the driver's running image must never occupy the path the gate
+  rebuilds"; prevention: direct fixes by property + acceptance, mechanism only when
+  platform-verified). Praxis note, logged not punished: a pre-question would have
+  been cleaner than a disclosed refusal; within tolerance where intent-acceptance
+  was explicit. `fs4` cfg-gated to unix (the Windows dep-tree is BARE again; the
+  scope-thrash measurably gone — which ALONE fixes today's bless, honestly flagged,
+  so the guard was validated separately: anti-masking done right). Reaps this
+  resume: two folded lanes' caches ~7.1 GiB + own cache; debt-pass session total
+  ~15.5 GiB; only the reserved `dorc-wsl-target-kani` remains. BANKED
+  `finding-workspace-preflight-never-reads-cold` (LOW; under-protects only — 4 GiB
+  demanded where 14 intended): the gate/bless cold-witness `<target>/debug` is
+  self-defeating (the probe's own `cargo run -p internal-tooling` creates it before
+  preflight executes); DECIDED DIRECTION for the next tooling touch: the witness
+  becomes a PRODUCT binary (`debug/dorc`), which a `-p internal-tooling` build
+  never produces. Minor, accepted: one bounded `.driver-image` stray per bless run;
+  the vacate-seat's high comment density is deliberate warn-the-reviewer rationale
+  (it explains why copy-and-re-exec is the WRONG fix, to stop a future "repair"
+  back into the broken shape); `doctor` v2 nit — ~45 unregistered zero-byte husk
+  dirs under `.claude/worktrees/` are invisible to it.
+
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 
 Invariant seats (seat · invariant · pinning test; all tests in the default suite):
