@@ -206,6 +206,33 @@
   DST honesty ENDORSED (no solver fault-injection seam — a second forgeable
   route to "broken solver" refused). Registry bullets landed
   (analysis + plan CLAUDE.md). Report: `notes/307b`.
+- **lane-definition-factoring-conversion — BUILD IN PROGRESS under a ROTATING
+  executor** (the durable spec: `notes/305` + `notes/305a` + the `307c` DRAFT
+  in-branch; branch `ai/r30-lane-definition-factoring`, rebased onto conduct,
+  11 commits, seats 1–6 converted byte-identical, the agreement veto DELETED
+  with zero callers, `live_source` reduced to the one `dialect_minting_source`
+  fold, the three law edits landed). Mid-lane rulings since the checkpoint (all
+  in `305a` §1 + the transcripts): dialect keeps a whole-unit fold [sparing-
+  liberalization ground] · plurality census allow-list-shaped ·
+  `Unkeyed` for the authored/munged join-miss · the withhold repin adjudicated
+  ON RECORD (plan moved before the pin; the replacement asserts order-SYMMETRY,
+  strictly stronger) + the sole-definition sibling · lift-diags widening
+  endorsed. Executor rotation praxis: executor-1 declined the atomic chunk at
+  deep context (ENDORSED; conductor mistake = resuming a spent context into a
+  known-atomic chunk; prevention = rotate at atomic boundaries + durable-ize
+  accrued rulings, hence `305a`) · executor-2 landed the chunk + closed with a
+  draft-307c handoff · executor-3 dispatched for §3 with two riders (the
+  seat-9 × contested-withdrawal intersection = STOP on any golden movement; the
+  `cli/CLAUDE.md` withdrawal-edge wording ruled BEFORE its edit lands).
+  §3's live-bug target: `fnd-survival-footprint-lane-scans-forward` + the new
+  `fnd-sweep-duplicates-the-footprint-resolution`.
+- **HUMAN-MORNING QUEUE (accrued overnight)**: stage-0 scheduling (before/after
+  the crosscheck) · `fnd-reserved-name-error-does-not-refuse` (should
+  reserved-name Errors join pre-network fast-fail?) ·
+  `finding-git-deny-hook-blind-to-midrebase` (the hook patch + the builder's
+  `rebaseBranch()` diff, in `307c`) · the 308a kit glance · the four Migrated
+  registers · `plans/309` ack · NINE fresh SyncThing conflict copies on disk in
+  the exec worktree (untouched, human-owned).
 - **lane-stage-zero-ship-seam** — QUEUED (new; the drift discovery above): the
   actual verdict-primacy re-cut per `28Q` §8 stage-0 as written, incl. its
   retroactive records-diff audit and the four 19A comment rips. Slot: after the
@@ -397,6 +424,29 @@ only with the specific work-product it wrongly blocked in hand.
   `work-edit-loop-line-eviction` — respec the vars/teaching surface (the
   underspecified half, human-input wanted), then a mechanical corpus strip;
   rides the later loom sitting with `work-loom-interior-hole-authoring`.
+- **the git-deny hook, mid-rebase** · blocked `rebase --continue` AND `--abort`
+  on an `ai/*` lane (autonomy predicate reads `branch --show-current`, empty at
+  detached HEAD — measured `branch=[]`; unrecoverable from inside the lane) ·
+  **unproductive-sharp-edge — the arc's first confirmed specimen**: the check
+  was wrong, not the work (the operation sat inside the human's typed surgery
+  carve) · action: conductor drove the continue from a legitimately-autonomous
+  session (satisfying the policy for the true reason, not dodging the
+  predicate); the hook PATCH is human-owned, the builder's `rebaseBranch()`
+  fallback diff queued (`307c`).
+- the harness worktree auto-reaper at turn boundaries · vanished executor-3's
+  fork mid-lane and silently relocated its shell into the CONDUCT worktree (the
+  `worktree-file-access-law` scenario, live) · **mixed** — the law held
+  perfectly (builder froze read-only), the harness behavior is hostile to
+  multi-turn lanes · action: conductor-created, non-agent-prefixed worktrees
+  for rotating lanes (praxis candidate for the spawning law at a steering fold).
+- cargo test-target autodiscovery in `crates/plan` (no `autotests = false`) ·
+  sync-conflict copies became invalid test targets, blocking EVERY commit
+  tree-wide; separately a `src/`-located copy rode a DIRECTORY pathspec into a
+  gate-green commit (4295 lines, self-caught + amended) · **productive-and-
+  gap**: the hook caught the loud half; the quiet half needed the pathspec law
+  sharpened (FILE-level specs only; pre-commit `ls-files | grep sync-conflict`
+  check) · action: `autotests = false` + explicit targets landed (the cli
+  precedent), pathspec riders in every subsequent brief.
 - flat-test-tree ownership scoping (`is_case_owned` = `crates/aid/tests` only) +
   the loom `code:`-hygiene/stdout-contract gates · BLOCKED the checkpoint-ruled
   e2e route for the eight records defining cases (a jointly-unsatisfiable pincer,
