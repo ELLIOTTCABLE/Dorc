@@ -132,6 +132,35 @@
   still registered (human-attention; the resource-safety one holds SyncThing
   conflict files, human-owned).
 
+## §2b — The spine×influence unification (design-bank; human-led, in-flow)
+
+[TYPED 2026-08-15] The human NACKED routing the §3a re-plan away ("in-flow and
+important; address it here") and posed the intuition: whylog-spine and influence
+taint-tracking are a SINGLE task. Conductor read, presented in-chat: MATCHES, and
+`306b` §2a already states the unified object — "a complete in-memory structure —
+every decision, its inputs, **its grade**, its narration" IS `rul-whylog-is-the-spine`'s
+conceptual whylog with the grade column drawn in. `306b` §1b (influence reaches the
+analyzer; the discard-the-whole-analysis counterexample) is implementable ONLY over
+reified decisions — i.e. the spine is the grade's carriage. Consequence: the
+report-only output re-plans as a SPINE state whose plan-PROJECTION is absent
+(`tc-report-substrate-is-the-plan` was an as-built accident — `WhyReport` holds
+`&Plan` because the spine is not yet reified — not an architectural truth). One
+architecture, three staged increments: (a) the grade type + mint + phase marker =
+the seams lane's (b-ii)-minimal, in flight, unchanged; (b) spine reification
+(SiteId-keyed decision records, grade-stamped at mint; report-only =
+spine-without-plan-projection; `306c`'s stopped remainder re-plans here) — needs a
+HUMAN-LED design sitting, in this channel; (c) the durable projection of grades +
+rehydration + render frontier — behind the durable tripwire
+(`rul-durable-contents-reviewed-before-design`) and `306b` §4c/§1c open pins.
+Sequencing constraints banked: design sitting near-term (parallel to stage-i's
+build); build after the stage-i crosscheck/burndown; MUST settle before
+world-scopes design (stage-iii availability is influenced-by-construction);
+plausibly parallel with closure-custody's infrastructure half (plan/cli/aid-side
+vs oracle/analysis-side — merge-risk flag). Fences that survive unification
+untouched: rec-5 (never a cache; re-ingestion aid-plane only) · two-plane law ·
+`law-whylog-is-sensitive` · `306b` §6b (influenced values never gate engine
+control flow — its enforcement mechanism stays an OPEN pin, not this design).
+
 ## §3 — Chafe register (the process deliverable)
 
 Format, one row per instrument-trip or wall-contact:
@@ -184,6 +213,14 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   long as it comes alongside a surprisingly important question." Propagated
   verbatim-in-substance into every wave-two brief; binds the conductor's own
   checkpoint adjudications equally.
+- 2026-08-15, the checkpoint-ack sitting [TYPED, itemized]: the conductor is
+  AUTHORIZED to mint LLM-written prose for the FOUR new reason components (narrow,
+  single-case; the human hasn't started the prose burn-down; Slop-tier mint via the
+  loom flow, whole-loom read first, at fold) · `rul-all-nine-refuse-on-the-strict-path`
+  GENTLY accepted — not hard law, explicitly may need walking back later; accepted
+  to stop re-adjudication churn · the §3a re-plan's sibling-routing NACKED — it is
+  in-flow and important, addressed here (→ §2b) · the spine×influence single-task
+  intuition posed (conductor read: matches; §2b).
 - 2026-08-15, the adversarial-analysis sitting [TYPED, itemized]: the
   check-ladder red-team ("construct a gate-passing wrong change") is ORTHOGONAL —
   good/needed/known, completely parallel, NOT this conductor's to run or spend on ·
