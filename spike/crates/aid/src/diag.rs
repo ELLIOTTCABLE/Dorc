@@ -1303,10 +1303,28 @@ pub struct RecordsFactTruncated {
 
 /// Payload of [`DiagCode::RecordsIntegrityRefused`] (TEMPLATIZED): which integrity key mismatched.
 /// Spanless.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RecordsIntegrityRefused {
-    /// The mismatched key's description (`{which}`).
-    pub which: String,
+    /// The mismatched key (`{which}`).
+    pub which: RecordsHeaderMismatch,
+}
+
+/// Which controller-minted identity key a records header failed to match (`306b` §6d: four
+/// conditions with four repairs, so the reason is TYPED rather than a folded string).
+///
+/// Routing is identical for all four — every mismatch refuses the whole attempt — so this is a
+/// reason enum beside the payload, never four sibling codes
+/// (`28L:rul-reason-enums-not-sibling-codes`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecordsHeaderMismatch {
+    /// The stream declared a different run nonce.
+    Nonce,
+    /// The stream declared a different attempt number.
+    Attempt,
+    /// The stream declared a different host.
+    Host,
+    /// The stream declared a different book digest.
+    Book,
 }
 
 /// Payload of [`DiagCode::RecordsTornLine`] (TEMPLATIZED): the discarded-line count. Spanless.
@@ -3183,7 +3201,10 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("unseen", unseen.to_string()),
         ],
         DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused { which }) => {
-            vec![ours("which", which.clone())]
+            vec![component(
+                "which",
+                records_header_mismatch_text(ctx, *which),
+            )]
         }
         DiagCode::RecordsTornLine(RecordsTornLine { count }) => {
             vec![ours("count", count.to_string())]
@@ -4038,6 +4059,20 @@ fn footprint_incoherent_text(
         ),
     };
     component_text(ctx.arrangements(), slug, None, &borrowed(&values))
+}
+
+/// The registry sentence for one [`RecordsHeaderMismatch`].
+fn records_header_mismatch_text(
+    ctx: &RenderCtx<'_>,
+    which: RecordsHeaderMismatch,
+) -> ComponentText {
+    let slug = match which {
+        RecordsHeaderMismatch::Nonce => "records-integrity-refused-nonce",
+        RecordsHeaderMismatch::Attempt => "records-integrity-refused-attempt",
+        RecordsHeaderMismatch::Host => "records-integrity-refused-host",
+        RecordsHeaderMismatch::Book => "records-integrity-refused-book",
+    };
+    component_text(ctx.arrangements(), slug, None, &[])
 }
 
 /// The registry sentence for one [`PredictOutOfDialectReason`].

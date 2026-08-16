@@ -29,8 +29,9 @@
 
 use dorc_aid::diag::{
     Diag, DiagCode, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, RecordsAlienLine,
-    RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing, RecordsHeaderlessRefused,
-    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
+    RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing,
+    RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
+    RecordsTornLine,
 };
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -518,19 +519,19 @@ fn read_header(rest: &str, expect: &Expect, out: &mut Deframed) -> Option<usize>
     for tok in rest.split_whitespace() {
         if let Some(v) = tok.strip_prefix("nonce=") {
             if v != expect.nonce.0 {
-                mismatch = Some("nonce (wrong attempt/session)");
+                mismatch = Some(RecordsHeaderMismatch::Nonce);
             }
         } else if let Some(v) = tok.strip_prefix("attempt=") {
             if v != expect.attempt.to_string() {
-                mismatch = Some("attempt (a stale/retried attempt's records)");
+                mismatch = Some(RecordsHeaderMismatch::Attempt);
             }
         } else if let Some(v) = tok.strip_prefix("host=") {
             if v != expect.host {
-                mismatch = Some("host (a mis-plumbed peer host's stream)");
+                mismatch = Some(RecordsHeaderMismatch::Host);
             }
         } else if let Some(v) = tok.strip_prefix("book=") {
             if v != expect.book_digest {
-                mismatch = Some("book (the stream does not match the analyzed book bytes)");
+                mismatch = Some(RecordsHeaderMismatch::Book);
             }
         } else if let Some(v) = tok.strip_prefix("sites=") {
             sites = v.parse::<usize>().ok();
@@ -540,9 +541,7 @@ fn read_header(rest: &str, expect: &Expect, out: &mut Deframed) -> Option<usize>
         out.refused = true;
         out.diagnostics
             .push(Diag::new_spanless_site(DiagCode::RecordsIntegrityRefused(
-                RecordsIntegrityRefused {
-                    which: which.to_owned(),
-                },
+                RecordsIntegrityRefused { which },
             )));
     }
     sites

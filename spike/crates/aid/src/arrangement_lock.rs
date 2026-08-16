@@ -1685,4 +1685,32 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "As solver-consistency-failure-value-flow.",
         words: None,
     },
+    ArrangementEntry {
+        slug: "records-integrity-refused-nonce",
+        occurrence: None,
+        when_used: "Fills the `{which}` hole of records-integrity-refused when the header declared a run nonce that is not this attempt's.",
+        why: "28L rul-reason-enums-not-sibling-codes: the four header-identity mismatches route identically (all refuse), so they are RecordsHeaderMismatch variants with their own prose-components rather than sibling codes.",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "records-integrity-refused-attempt",
+        occurrence: None,
+        when_used: "Fills the `{which}` hole of records-integrity-refused when the header declared a different attempt number.",
+        why: "As records-integrity-refused-nonce.",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "records-integrity-refused-host",
+        occurrence: None,
+        when_used: "Fills the `{which}` hole of records-integrity-refused when the header declared a different host.",
+        why: "As records-integrity-refused-nonce.",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "records-integrity-refused-book",
+        occurrence: None,
+        when_used: "Fills the `{which}` hole of records-integrity-refused when the header declared a book digest that is not the analyzed book's.",
+        why: "As records-integrity-refused-nonce.",
+        words: None,
+    },
 ];
