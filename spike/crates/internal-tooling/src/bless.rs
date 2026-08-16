@@ -195,15 +195,19 @@ fn bless_pass(spike: &Path, cases: &[String], floor: bool) -> Option<String> {
 }
 
 /// Run a labelled step, capturing combined output. On failure print the label and the
-/// captured tail — fail loud, swallow nothing. The text comes back either way, because a
-/// caller may have something to say about WHY the step failed.
+/// captured tail — fail loud, swallow nothing. Either way the caller gets what the step said,
+/// because a caller may have something to add about WHY it failed; a step that could not be
+/// spawned at all said nothing, and reports itself here rather than through that channel.
 fn step(dir: &Path, label: &str, command: &mut Command) -> Result<String, String> {
     let out = command
         .current_dir(dir)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
-        .map_err(|why| format!("bless: could not run [{label}]: {why}"))?;
+        .map_err(|why| {
+            eprintln!("bless: could not run [{label}] ({why})");
+            String::new()
+        })?;
     let mut text = String::from_utf8_lossy(&out.stdout).into_owned();
     text.push_str(&String::from_utf8_lossy(&out.stderr));
     if out.status.success() {
