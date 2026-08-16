@@ -615,6 +615,7 @@ pub fn build_wrapped_analysis(
     oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    wrapper_sets: &WrapperSets,
     ast: &dorc_syntax::ast::Ast,
     cfg: &dorc_analysis::cfg::Cfg,
     value: &dorc_analysis::value::ValueFlow,
@@ -626,14 +627,13 @@ pub fn build_wrapped_analysis(
     use dorc_aid::narrative::EntryDegradeTag;
     use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
     use dorc_analysis::value::ValueOf;
-    use dorc_oracle::entry::{EntryDecision, EntryDegrade, decide_entry, peel_book_chain};
+    use dorc_oracle::entry::{
+        EntryDecision, EntryDegrade, decide_entry, lift_tolerance, peel_book_chain,
+    };
     use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::verdict::VERDICT_SUFFIX;
 
-    let WrapperIndexBundle {
-        wrappers,
-        enter_defs,
-        tolerance,
-    } = build_wrapper_index(oracle_refs, verdict_sets, interner);
+    let candidates = wrapper_candidates(checks, interner);
     // Built from the SAME slice the inner bodies come from, so the two cannot disagree.
     let helper_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
     let helpers = dorc_oracle::closure::HelperIndex::build(&helper_refs);
@@ -645,7 +645,7 @@ pub fn build_wrapped_analysis(
         carried: BTreeMap::new(),
         collapse_narrative: Vec::new(),
     };
-    if wrappers.is_empty() {
+    if candidates.is_empty() {
         return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
     }
 
@@ -679,6 +679,27 @@ pub fn build_wrapped_analysis(
             }
         }
         let argv_refs: Vec<&str> = argv_strs.iter().map(String::as_str).collect();
+        // A head no file describes as a wrapper is an ordinary site: skip before resolving anything,
+        // so the per-site resolution (and its narrative) is scoped to sites a wrapper really heads.
+        if !argv_refs
+            .first()
+            .is_some_and(|w| candidates.contains_key(*w))
+        {
+            continue;
+        }
+        // Resolved AT this site, over the driver's already-withdrawn vectors: peel model, lend map,
+        // and entry-form bytes all answer from the definition the frame names here
+        // (`308:rul-wrapper-lane-joins-the-conversion`).
+        let (wrappers, enter_defs, pair_narrative) = site_wrapper_index(
+            node,
+            live,
+            oracle_srcs,
+            checks,
+            wrapper_sets,
+            &candidates,
+            interner,
+        );
+        out.collapse_narrative.extend(pair_narrative);
         let Some(chain) = peel_book_chain(&argv_refs, &wrappers) else {
             continue; // not a wrapped site (or a wrapper that cannot peel ⇒ walls)
         };
@@ -726,15 +747,27 @@ pub fn build_wrapped_analysis(
             inner_sh,
             inner_argv: inner_operands,
         };
+        // ONE resolution of the inner verdict, consumed by BOTH acts that read a verdict body here:
+        // the `safe-across` consent vouch and pure-predicate carry's read-set-closure proof
+        // (`308:rul-carry-proof-is-same-definition`). `try_carry` takes the body by reference and
+        // cannot reach a second definition — the proof and the measured body are one definition by
+        // construction, not by a checked coincidence.
+        let inner_verdict =
+            crate::world::verdict_answering_at(verdict_sets, interner, inner_provider, node, live)
+                .map(|(_, v)| v);
         // An identity chain (HostDefault) needs NO entry — it ships the plain inner check in the
         // ambient world. A shifted chain runs the two-axis consent decision (`27C` §1).
         let decision = if context == dorc_core::Context::HostDefault {
             EntryDecision::Enter
         } else {
             let has_entry_form = chain.links.iter().all(|l| l.entry.is_some());
-            let tolerated = tolerance
-                .get(&inner_provider)
-                .map(|t| t.tolerated_on_path(inner_rest.first().map(String::as_str)))
+            let tolerated = inner_verdict
+                .as_ref()
+                .map(|v| {
+                    lift_tolerance(v)
+                        .0
+                        .tolerated_on_path(inner_rest.first().map(String::as_str))
+                })
                 .unwrap_or_default();
             decide_entry(
                 has_entry_form,
@@ -759,8 +792,10 @@ pub fn build_wrapped_analysis(
                 // Try pure-predicate carry (`27C` §4(a)) before defaulting to run. Gated on the
                 // shipped inner check BEING the verdict body (auto-cell) — the closed body must be
                 // the measured body; the predict-inner carry path is deferred (disclosed, `27O`).
-                let carried = if composed.inner_fn.ends_with("__is_converged") {
-                    try_carry(&chain, inner_provider, verdict_sets, &invariance)
+                let carried = if composed.inner_fn.ends_with(VERDICT_SUFFIX) {
+                    inner_verdict
+                        .as_ref()
+                        .and_then(|v| try_carry(&chain, v, &invariance))
                 } else {
                     None
                 };
@@ -853,18 +888,22 @@ pub fn build_wrapped_analysis(
 /// entry DEGRADED: does the inner verdict body's read-set close (B) across a SUBSTRATE boundary
 /// whose backing kinds are authored-invariant (A)? Runs [`dorc_oracle::carry::read_set_closed`] over
 /// the inner verdict body and [`dorc_oracle::carry::decide_carry`] over the chain's crossed
-/// dimensions. `Some(read_kinds)` (the (A) attribution inputs) on carry; `None` when there is no
-/// inner verdict body, or (A)/(B)/substrate-scope fails — the site then runs (fail safe: a missed
-/// carry loses an elision, never carries a hidden read).
+/// dimensions. `Some(read_kinds)` (the (A) attribution inputs) on carry; `None` when
+/// (A)/(B)/substrate-scope fails — the site then runs (fail safe: a missed carry loses an elision,
+/// never carries a hidden read).
+///
+/// `verdict` is the body the CALLER already resolved for this site and is about to ship
+/// (`308:rul-carry-proof-is-same-definition`). It arrives by reference and the verdict VECTOR is not
+/// a parameter, deliberately: this seat used to scan `verdict_sets` for the first matching provider
+/// in load order, so an earlier author's read-set-closed body could license ambient measurement of a
+/// later, frame-live body carrying an unmarked context-sensitive read — a positive ambient answer
+/// then eliding a wrapped mutation, the one cardinal sin, on the unflagged carry path. With no vector
+/// in scope the wrong definition is unreachable rather than merely unchosen.
 fn try_carry(
     chain: &dorc_oracle::entry::PeeledChain,
-    inner_provider: Symbol,
-    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    verdict: &dorc_oracle::predict::Predict,
     invariance: &dorc_oracle::carry::InvarianceIndex,
 ) -> Option<BTreeSet<String>> {
-    let verdict = verdict_sets
-        .iter()
-        .find_map(|set| set.get(inner_provider))?;
     let closure = dorc_oracle::carry::read_set_closed(verdict);
     match dorc_oracle::carry::decide_carry(&chain.composed.crossed(), &closure, invariance) {
         dorc_oracle::carry::CarryDecision::Carry { read_kinds } => Some(read_kinds),
@@ -914,77 +953,222 @@ fn carry_attribution_values(
     (axes, kinds)
 }
 
-/// The lifted wrapper models, per-provider stripped `__enter` defs, and `tolerates:` vouches — the
-/// wrapper-side inputs [`build_wrapped_analysis`] peels book sites against (`27N`).
-struct WrapperIndexBundle {
-    wrappers: dorc_oracle::entry::WrapperIndex,
-    enter_defs: BTreeMap<Symbol, (String, String)>,
-    tolerance: BTreeMap<Symbol, dorc_oracle::entry::ToleranceVouch>,
+/// The wrapper lane's per-FILE lifted vectors for the two members `checks` does not carry:
+/// `__lend_map` and `__enter` (`308:rul-wrapper-lane-joins-the-conversion`).
+///
+/// Minted at the DRIVER EDGE beside `checks`/`verdict_sets`, and withdrawn there in the same call —
+/// so a contested wrapper family is gone from every wrapper-lane vector before any site is
+/// considered, exactly as `withdrawal-is-applied-once-never-consulted` requires. The constructor
+/// takes the contested fact rather than exposing an un-withdrawn value, because a lane that CAN hold
+/// the raw lift is a lane that will: `build_wrapper_index` used to re-lift raw source here, and that
+/// left a withheld family still peeling, still supplied with entry-form bytes, and still able to
+/// reach `EntryDecision::Enter`.
+#[derive(Debug)]
+pub struct WrapperSets {
+    lend_maps: Vec<dorc_oracle::predict::PredictSet>,
+    entries: Vec<dorc_oracle::predict::PredictSet>,
 }
 
-/// Build the [`WrapperIndexBundle`] from the loaded oracle sources (`27N`): every peeling `__predict`
-/// (with its ρ, `__lend_map`, `__enter`) keyed by book word, the stripped `__enter` funcdefs, and
-/// the per-provider `tolerates:` vouches (off the already-lifted verdict bodies, `27C` §2).
-fn build_wrapper_index(
-    oracle_refs: &[&str],
-    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
-    interner: &mut Interner,
-) -> WrapperIndexBundle {
-    use dorc_oracle::entry::{
-        WrapperIndex, WrapperModel, detect_entry_form, lift_entry_set, lift_tolerance,
-    };
-    use dorc_oracle::predict::{lift_predicts, map_provider_name};
-    use dorc_oracle::wrapper::{derive_lend_map, detect_peel, lift_lend_map_set};
+impl WrapperSets {
+    /// Lift and withdraw the two wrapper members over the SOURCE-wide vector, in load order
+    /// (`the-book-is-a-definition-source`: a book's `sudo__enter` is an ordinary definition).
+    #[must_use]
+    pub fn lift(
+        source_refs: &[&str],
+        interner: &mut Interner,
+        contested: &dorc_core::ContestedFamilies,
+    ) -> Self {
+        let mut lend_maps = Vec::with_capacity(source_refs.len());
+        let mut entries = Vec::with_capacity(source_refs.len());
+        for src in source_refs {
+            let lend = dorc_oracle::wrapper::lift_lend_map_set(interner, src).value;
+            let enter = dorc_oracle::entry::lift_entry_set(interner, src).value;
+            lend_maps.push(lend.withdrawing(contested, interner));
+            entries.push(enter.withdrawing(contested, interner));
+        }
+        Self { lend_maps, entries }
+    }
+
+    /// The per-file `__enter` sets, for the one WHOLE-UNIT reader that legitimately has no frame to
+    /// ask from (`308:rul-escalation-policy-consumes-withdrawn-stays-whole-unit`).
+    ///
+    /// "Which entry-capable wrappers are LOADED" is a question about the load set, not about any
+    /// site, so frame-converting it would invent a site that does not exist. It stays whole-unit and
+    /// stays a POLICY disclosure — aid-plane, licenses nothing (`two-plane-aid-law`). What it does
+    /// owe the run is honest INPUTS, which is why the accessor hands out the WITHDRAWN vector: a
+    /// contested wrapper family peels nothing and enters nothing, so it must not narrate as
+    /// entry-capable either.
+    #[must_use]
+    pub fn entries(&self) -> &[dorc_oracle::predict::PredictSet] {
+        &self.entries
+    }
+}
+
+/// Every book word some loaded file describes as a PEELING wrapper, mapped to its provider symbol.
+///
+/// A whole-unit pre-filter, and only that: the resolved definition decides whether the word is a
+/// wrapper AT a site ([`site_wrapper_index`]), and a definition that peels is necessarily in some
+/// file's set, so this set can never hide an answer. Empty ⇒ no wrapper is described anywhere ⇒ the
+/// lane returns untouched (`empty-world-byte-identical`).
+fn wrapper_candidates(
+    checks: &[dorc_oracle::predict::PredictSet],
+    interner: &Interner,
+) -> BTreeMap<String, Symbol> {
+    let mut out = BTreeMap::new();
+    for set in checks {
+        for p in set.providers() {
+            if set
+                .get(p)
+                .is_some_and(|c| dorc_oracle::wrapper::detect_peel(c).is_some())
+            {
+                out.insert(interner.resolve(p).to_owned(), p);
+            }
+        }
+    }
+    out
+}
+
+/// The wrapper models live AT one site, and the entry-form bytes that go with them.
+///
+/// Each of the three wrapper members resolves its OWN frame answer, because sh binds names
+/// independently: the peel model, the lend map, and the entry form are three questions asked at one
+/// site, not one file's package deal. `detect_peel` then runs on the RESOLVED predict, so a
+/// frame-live body that declines makes the word no wrapper here — the regional decline an engineer
+/// spelled inside a subshell is honoured instead of bypassed.
+///
+/// `308:rul-resolved-pair-coherence-walls`: independent resolution can pair one file's predict with
+/// another file's `lend_map` or entry form — a composition no author wrote and no per-file check ever
+/// saw, and one that can understate the crossed dimensions and so under-consent entry. Where a
+/// CROSS-FILE resolved pair disagrees, the word walls rather than peels. Same-file pairs are left to
+/// `oracle::validate`'s whole-unit fail-fast, which has already refused the whole run.
+fn site_wrapper_index(
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+    srcs: &[String],
+    checks: &[dorc_oracle::predict::PredictSet],
+    sets: &WrapperSets,
+    candidates: &BTreeMap<String, Symbol>,
+    interner: &Interner,
+) -> (
+    dorc_oracle::entry::WrapperIndex,
+    BTreeMap<Symbol, (String, String)>,
+    Vec<CollapseNarrative>,
+) {
+    use dorc_oracle::entry::{ENTER_SUFFIX, WrapperIndex, WrapperModel, detect_entry_form};
+    use dorc_oracle::predict::PREDICT_SUFFIX;
+    use dorc_oracle::wrapper::{LEND_MAP_SUFFIX, derive_lend_map, detect_peel};
 
     let mut wrappers: WrapperIndex = WrapperIndex::new();
     let mut enter_defs: BTreeMap<Symbol, (String, String)> = BTreeMap::new();
-    let mut tolerance: BTreeMap<Symbol, dorc_oracle::entry::ToleranceVouch> = BTreeMap::new();
-    for src in oracle_refs {
-        let ps = lift_predicts(interner, src).value;
-        let ls = lift_lend_map_set(interner, src).value;
-        let es = lift_entry_set(interner, src).value;
-        for p in ps.providers() {
-            let Some(predict) = ps.get(p) else { continue };
-            let Some(peel) = detect_peel(predict) else {
-                continue; // not a peeling wrapper
-            };
-            let word = interner.resolve(p).to_owned();
-            let lend_map = ls.get(p).cloned();
-            let lend = lend_map
-                .as_ref()
-                .map_or_else(Default::default, |lm| derive_lend_map(lm).0);
-            let enter = es.get(p).and_then(detect_entry_form);
-            if let Some(form) = es.get(p) {
-                let stripped = dorc_oracle::predict::strip_enter(src, form, interner);
-                let fname = format!(
-                    "{}__enter",
-                    dorc_oracle::to_funcname_segment(&map_provider_name(&word))
-                );
-                enter_defs.entry(p).or_insert((fname, stripped));
-            }
-            wrappers.entry(word).or_insert(WrapperModel {
-                predict: predict.clone(),
+    let mut narrative = Vec::new();
+    for (word, provider) in candidates {
+        let Some((predict_file, predict)) = crate::world::member_answering_at(
+            checks,
+            interner,
+            *provider,
+            PREDICT_SUFFIX,
+            node,
+            live,
+        ) else {
+            continue; // no definition answers here (withheld, contested, or defined below)
+        };
+        let Some(peel) = detect_peel(&predict) else {
+            continue; // the definition live HERE does not peel ⇒ not a wrapper at this site
+        };
+        let lend_answer = crate::world::member_answering_at(
+            &sets.lend_maps,
+            interner,
+            *provider,
+            LEND_MAP_SUFFIX,
+            node,
+            live,
+        );
+        let enter_answer = crate::world::member_answering_at(
+            &sets.entries,
+            interner,
+            *provider,
+            ENTER_SUFFIX,
+            node,
+            live,
+        );
+        if let Some(tag) = resolved_pair_incoherence(
+            predict_file,
+            &predict,
+            lend_answer.as_ref(),
+            enter_answer.as_ref(),
+        ) {
+            narrative.push(CollapseNarrative::new(
+                SpeechAct::Declined,
+                CollapseKind::WrapperPairIncoherent { class: tag },
+            ));
+            continue;
+        }
+        let lend_map = lend_answer.map(|(_, lm)| lm);
+        let lend = lend_map
+            .as_ref()
+            .map_or_else(Default::default, |lm| derive_lend_map(lm).0);
+        let enter = enter_answer
+            .as_ref()
+            .and_then(|(_, e)| detect_entry_form(e));
+        if let Some((file, form)) = &enter_answer
+            && let Some(src) = srcs.get(*file)
+        {
+            let stripped = dorc_oracle::predict::strip_enter(src, form, interner);
+            let fname = format!(
+                "{}{ENTER_SUFFIX}",
+                dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(word))
+            );
+            enter_defs.insert(*provider, (fname, stripped));
+        }
+        wrappers.insert(
+            word.clone(),
+            WrapperModel {
+                predict,
                 rho: peel.rho,
                 lend,
                 lend_map,
                 enter,
-                provider: p,
-            });
-        }
+                provider: *provider,
+            },
+        );
     }
-    for vs in verdict_sets {
-        for p in vs.providers() {
-            if let Some(v) = vs.get(p) {
-                let (vouch, _) = lift_tolerance(v);
-                tolerance.entry(p).or_insert(vouch);
-            }
-        }
+    (wrappers, enter_defs, narrative)
+}
+
+/// Whether a site's RESOLVED wrapper members contradict ACROSS FILES
+/// (`308:rul-resolved-pair-coherence-walls`), and which pair did.
+///
+/// Two checks, both `oracle`'s existing ones re-asked of the resolved triple rather than of one
+/// file's own declarations: the dual-peel tail position (`273` §5 — the guest must start at the same
+/// token whichever member dispatches, or the lend map argparses the wrong argv and can report FULL
+/// where the truth is MAPPED, understating `crossed()`), and the fold-entry shift agreement
+/// (`27C:rul-fold-entry-coherence-failfast`). A same-file pair is skipped: `oracle::validate` has
+/// already failed the whole run fast on it, and re-reporting here would double-narrate.
+fn resolved_pair_incoherence(
+    predict_file: usize,
+    predict: &dorc_oracle::predict::Predict,
+    lend: Option<&(usize, dorc_oracle::predict::Predict)>,
+    enter: Option<&(usize, dorc_oracle::predict::Predict)>,
+) -> Option<dorc_aid::narrative::WrapperPairTag> {
+    use dorc_aid::narrative::WrapperPairTag;
+    // The same canonical argvs `oracle::validate` probes the per-file pair with: bare guest, one
+    // flag, two flags plus an operand.
+    const CANON: [&[&str]; 3] = [&["g"], &["-a", "g"], &["-a", "-b", "g", "x"]];
+    let (lend_file, lend_map) = lend?;
+    if *lend_file != predict_file
+        && CANON.iter().any(|argv| {
+            dorc_oracle::wrapper::check_peel_coherence(predict, lend_map, argv).is_some()
+        })
+    {
+        return Some(WrapperPairTag::PeelDepth);
     }
-    WrapperIndexBundle {
-        wrappers,
-        enter_defs,
-        tolerance,
+    if let Some((enter_file, enter_form)) = enter
+        && *enter_file != *lend_file
+        && dorc_oracle::entry::check_entry_coherence(enter_form, lend_map).is_some()
+    {
+        return Some(WrapperPairTag::EntryShifts);
     }
+    None
 }
 
 /// Resolve the inner oracle's check for a wrapped site's entry-composed probe (`27N`): the `__predict`
@@ -1085,12 +1269,20 @@ pub fn survival_diagnostics(
     let cfg = dorc_analysis::cfg::build(&parsed.value);
     let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
 
+    // The HINT lane solves no environment, so it has no proven contest to withdraw either — the
+    // same honest posture its two `unsolved()` calls take (`dis-hint-lane-has-no-contest-to-withdraw`).
+    let wrapper_sets = WrapperSets::lift(
+        &oracle_refs,
+        &mut interner,
+        &dorc_core::ContestedFamilies::none(),
+    );
     let wrapped = build_wrapped_analysis(
         oracle_srcs,
         &oracle_refs,
         oracle_paths,
         &checks,
         &verdict_sets,
+        &wrapper_sets,
         &parsed.value,
         &cfg.value,
         &value,

@@ -78,10 +78,10 @@ use dorc_cli::fixpoint::{
 use dorc_cli::kinds::{KindReaches, KindResolvers, build_kind_reaches, build_kind_resolvers};
 use dorc_cli::results::{ReportRecord, RunClock, SiteResults, probe_origins};
 use dorc_cli::survival::{
-    build_resolutions, build_survival_footprints, build_wrapped_analysis, collect_coord_kinds,
-    collect_resolver_coords, dangling_diagnostics, entity_text_of, expand_footprints_via_reaches,
-    lift_touches_sets, merge_derived_footprints, pair_touches_sets, resolve_touches_footprint,
-    ship_touches_body,
+    WrapperSets, build_resolutions, build_survival_footprints, build_wrapped_analysis,
+    collect_coord_kinds, collect_resolver_coords, dangling_diagnostics, entity_text_of,
+    expand_footprints_via_reaches, lift_touches_sets, merge_derived_footprints, pair_touches_sets,
+    resolve_touches_footprint, ship_touches_body,
 };
 use dorc_cli::world::{
     definition_table, demote_on_certifier_trip, never_live_predict_rows, record_pre_network_trip,
@@ -758,16 +758,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
         .collect();
 
-    // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
-    // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
-    // loaded. Consent legibility — the admin sees, once, what authority the probe re-uses.
-    report_at(
-        advisory,
-        "escalation",
-        None,
-        &escalation_policy_diagnostics(&mut interner, &oracle_refs, args.dial, args.capability),
-    );
-
     // Parse + analyze the book (shared interner, so symbols match the oracles). Multiple books
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
@@ -942,12 +932,28 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // so the survival tier builds each fact's backing SET (a widened backing GROWS kill-surface).
     // `27N` — peel wrapped BOOK sites into (inner command, composed context) + decide entry. Empty
     // for a wrapper-free run ⇒ the whole pipeline is byte-identical (`empty-world-byte-identical`).
+    // THE EDGE, for the wrapper lane's own two members: lifted and withdrawn in one call, so a
+    // contested wrapper family is gone from the peel model, the lend map, and the entry-form bytes
+    // before any site is considered (`withdrawal-is-applied-once-never-consulted`).
+    let wrapper_sets = WrapperSets::lift(&source_refs, &mut interner, &contested);
+    // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
+    // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
+    // loaded. Consent legibility — the admin sees, once, what authority the probe re-uses. It sits
+    // BELOW the withdrawal because it reads the withdrawn vectors: a family whose sites now wall must
+    // not narrate as entry-capable.
+    report_at(
+        advisory,
+        "escalation",
+        None,
+        &escalation_policy_diagnostics(&checks, &wrapper_sets, args.dial, args.capability),
+    );
     let wrapped_analysis = build_wrapped_analysis(
         &source_srcs,
         &source_refs,
         &source_paths,
         &checks,
         &verdict_sets,
+        &wrapper_sets,
         &parsed.value,
         &cfg.value,
         &value,
@@ -3857,25 +3863,26 @@ fn unloaded_sibling_oracle_diagnostics(books: &[String], oracle_paths: &[String]
 /// tally — the book-side entry-composed probe emission (which would count sites per entered context)
 /// is the deferred integration (`27K` §9 / this lane's report). The dial × capability × the loaded
 /// entry forms are all real; what is missing is the per-site consumption in the probe pipeline.
+///
+/// WHOLE-UNIT, deliberately (`308:rul-escalation-policy-consumes-withdrawn-stays-whole-unit`): this
+/// answers a LOAD-SET question with no site to ask it from, so unlike the wrapper lane's consuming
+/// acts it is not frame-converted. It consumes the driver's WITHDRAWN vectors all the same, so a
+/// contested wrapper family — whose sites now wall — stops narrating as entry-capable.
 fn escalation_policy_diagnostics(
-    interner: &mut Interner,
-    oracle_refs: &[&str],
+    checks: &[dorc_oracle::predict::PredictSet],
+    wrapper_sets: &WrapperSets,
     dial: dorc_core::EscalationDial,
     capability: dorc_core::Capability,
 ) -> Vec<Diag> {
-    use dorc_oracle::entry::{detect_entry_form, lift_entry_set};
-    use dorc_oracle::predict::lift_predicts;
+    use dorc_oracle::entry::detect_entry_form;
 
     // Entry-capable wrappers: a provider authoring an `__enter` form (whose predict also peels).
     let mut heads: BTreeMap<Symbol, String> = BTreeMap::new();
-    for src in oracle_refs {
-        let peels: BTreeSet<Symbol> = {
-            let ps = lift_predicts(interner, src).value;
-            ps.providers()
-                .filter(|p| ps.get(*p).is_some_and(detect_peel_present))
-                .collect()
-        };
-        let es = lift_entry_set(interner, src).value;
+    for (ps, es) in checks.iter().zip(wrapper_sets.entries()) {
+        let peels: BTreeSet<Symbol> = ps
+            .providers()
+            .filter(|p| ps.get(*p).is_some_and(detect_peel_present))
+            .collect();
         for p in es.providers() {
             if peels.contains(&p)
                 && let Some(form) = es.get(p).and_then(detect_entry_form)
@@ -4761,12 +4768,15 @@ mod tests {
             let parsed = dorc_syntax::parse("sudo hork install frob\n");
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
+            let wrapper_sets =
+                WrapperSets::lift(&refs, &mut interner, &dorc_core::ContestedFamilies::none());
             build_wrapped_analysis(
                 &srcs,
                 &refs,
                 &paths,
                 &checks,
                 &verdict_sets,
+                &wrapper_sets,
                 &parsed.value,
                 &cfg,
                 &value,
