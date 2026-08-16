@@ -805,3 +805,113 @@ fn a_contested_helper_closure_withholds_the_role_body() {
          role; the battery was minted with two"
     );
 }
+
+// ---------------------------------------------------------------------------
+// `task-verify-definition-vector-walls` (`28R:§snapshot` residue).
+
+/// An oracle describing `hork tune` well enough to make its site an ELIDABLE establish, so the
+/// confirmation below has something to lose when the book shadows the name.
+const HORK_ORACLE: &str = "# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   widget : sm.dorc.Widget = \"$1\"
+   case $verb in
+      tune) hork status -- \"$widget\"   : sm.dorc.Widget:\"$widget\"@tuned ;;
+   esac
+}
+";
+
+/// The classes a book's sites take under `HORK_ORACLE`, in CFG node order.
+fn classes_of(book_src: &str) -> Vec<dorc_analysis::effect::SkipClass> {
+    let mut interner = dorc_core::Interner::default();
+    let mut arena = dorc_core::ProvArena::new();
+    let oracle_refs = [HORK_ORACLE];
+    let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
+    let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
+        .iter()
+        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+        .collect();
+    let verdicts = dorc_oracle::verdict::VerdictIndex::of(&mut interner, &oracle_refs);
+
+    let parsed = dorc_syntax::parse(book_src).value;
+    let cfg = dorc_analysis::cfg::build(&parsed).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
+    let paths = vec!["hork.oracle.sh".to_owned()];
+    let refs = [HORK_ORACLE, book_src];
+    let defs = dorc_cli::world::definition_table(
+        &paths,
+        &refs,
+        dorc_analysis::funcenv::source_file_of_index(1),
+        &parsed,
+    );
+    let env = {
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)
+    };
+    let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+
+    let (classified, ..) = dorc_analysis::effect::classify_with_why_diags(
+        &cfg,
+        &value,
+        &parsed,
+        &idx,
+        &checks,
+        &verdicts,
+        &std::collections::BTreeMap::new(),
+        &dorc_analysis::erase::ErasedSites::none(),
+        &mut interner,
+        &mut arena,
+        &mut std::collections::BTreeMap::new(),
+        &mut BTreeSet::new(),
+        &mut dorc_analysis::certify::CertifierTrip::default(),
+        live,
+    );
+    classified
+        .value
+        .into_iter()
+        .map(|(_, class)| class)
+        .collect()
+}
+
+/// `task-verify-definition-vector-walls` (`28R:§snapshot` residue) — a book-level DEFINITION VECTOR
+/// walls its own call site: where the book defines a function under an oracle-described tool's
+/// name, the engine must not elide against the oracle's model of the tool.
+///
+/// This is a CONFIRMATION of as-built behaviour, not a mechanism this lane builds. The rule it
+/// confirms is `28R:rul-contested-name-never-resolved` [TYPED]: at a command-position name a book
+/// definition collides with, the engine NEVER chooses the referent. Honouring the definition would
+/// run unvouched, possibly-mutating code inside a read-only check; bypassing it would model a tool
+/// the shell will not call. Both are the engine picking between two humans' meanings, and each is
+/// unsound in a real cell, so the sole sound act is to decline: no license, the original bytes run.
+///
+/// The control half is what makes it a statement about the VECTOR rather than about the oracle: the
+/// same book without the definition takes the elidable establish class, so the shadowed world is
+/// losing a license it demonstrably had.
+#[test]
+fn a_book_definition_vector_walls_its_own_call_site() {
+    use dorc_analysis::effect::SkipClass;
+
+    let plain = classes_of("hork tune web\n");
+    assert!(
+        plain
+            .iter()
+            .any(|class| matches!(class, SkipClass::EstablishAmbient(_))),
+        "control: an unshadowed `hork tune` must be an elidable establish, else this proves \
+         nothing — got {plain:?}"
+    );
+
+    // Both a mutating and an inert body, because a wall that only held for the mutating one would
+    // be the SPLICED BODY's own opacity rather than the vector's, and would evaporate the moment
+    // somebody shadowed a tool with something harmless-looking.
+    for body in ["rm -rf /nowhere", "true"] {
+        let shadowed = classes_of(&format!("hork() {{ {body} ;}}\nhork tune web\n"));
+        assert!(
+            !shadowed
+                .iter()
+                .any(|class| matches!(class, SkipClass::EstablishAmbient(_))),
+            "a book definition vector must wall its call site, whatever the body ({body:?}): the \
+             engine modelled the TOOL at a name the shell binds to the BOOK's function — got \
+             {shadowed:?}"
+        );
+    }
+}
