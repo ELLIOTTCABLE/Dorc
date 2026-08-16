@@ -249,11 +249,16 @@ fn teach_the_scoped_route(spike: &Path, gate_output: &str) {
 /// Both corpus runners spell a per-case failure `FAIL  <name>  [<what>]`, and that shape — not
 /// the ~45 individual gate labels — is what this reads: a label list would silently stop
 /// matching the day one gate reworded itself, and silence is this advice's failure mode.
+///
+/// Matched MID-LINE, never anchored: by the time these bytes arrive they have been through the
+/// nested task's own line prefixing and nextest's failure-section indent, so the marker is not at
+/// the start of anything. Anchoring it is what made the first cut of this advice never fire.
+/// nextest's own `FAIL [   1.4s] <trial>` line carries a single space and cannot be confused.
 fn failed_cases(gate_output: &str) -> Vec<&str> {
     let mut cases: Vec<&str> = gate_output
         .lines()
-        .filter_map(|line| line.trim_start().strip_prefix("FAIL  "))
-        .filter_map(|rest| rest.split_once("  ["))
+        .filter_map(|line| line.split_once("FAIL  "))
+        .filter_map(|(_, rest)| rest.split_once("  ["))
         .map(|(name, _)| name)
         .collect();
     cases.sort_unstable();
@@ -331,15 +336,19 @@ mod tests {
 
     #[test]
     fn the_captured_gate_output_yields_each_failing_case_once() {
+        // Verbatim shape, captured 2026-08-16 from an unfiltered `bless:dry` over a planted
+        // drift: the nested task's line prefix and nextest's failure-section indent both sit
+        // to the LEFT of the marker, which is why nothing here may be anchored.
         let captured = "\
-     Summary [ 214.301s] 2113 tests run: 2111 passed, 2 failed
-        FAIL [   0.221s] dorc-cli::e2e top-eval
-FAIL  top-eval  [content diff]
-      15 committed lines, 15 fresh
-        - \"apt-get install -y curl-PLANTED-DRIFT\"
-    FAIL  whygallery-webhost-whole  [replay 1: `dorc why` no longer reproduces its committed transcript]
-FAIL  top-eval  [content diff]
-error: test failed, to rerun pass `-p dorc-cli --test e2e`
+[gate:full-quiet]      Summary [ 146.445s] 2139 tests run: 2138 passed, 1 failed, 1 skipped
+[gate:full-quiet]         FAIL [   1.460s] dorc-cli::e2e top-eval
+[gate:full-quiet]   stdout ───
+[gate:full-quiet]     FAIL  top-eval  [content diff]
+[gate:full-quiet]           15 committed lines, 15 fresh
+[gate:full-quiet]             - \"apt-get install -y curl-PLANTED-DRIFT\"
+[gate:full-quiet]     FAIL  whygallery-webhost-whole  [replay 1: `dorc why` no longer reproduces its committed transcript]
+[gate:full-quiet]     FAIL  top-eval  [content diff]
+[gate:full-quiet] error: test run failed
 ";
         assert_eq!(
             failed_cases(captured),
