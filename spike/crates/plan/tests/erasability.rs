@@ -458,6 +458,7 @@ fn empty_probe_plan_default_is_inert() {
     let plan = dorc_plan::Plan {
         steps: vec![],
         survival_report: dorc_plan::SurvivalReport::default(),
+        defensive_emission: false,
     };
     let canon = canonical_decision(&plan, &probe, "", &ast, &i, &[]);
     assert!(canon.contains("== plan =="), "well-formed empty canonical");

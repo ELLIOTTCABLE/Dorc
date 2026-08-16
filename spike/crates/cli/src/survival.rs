@@ -613,6 +613,7 @@ pub fn build_wrapped_analysis(
     oracle_srcs: &[String],
     oracle_refs: &[&str],
     oracle_paths: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     wrapper_sets: &WrapperSets,
@@ -632,9 +633,6 @@ pub fn build_wrapped_analysis(
     use dorc_oracle::verdict::VERDICT_SUFFIX;
 
     let candidates = wrapper_candidates(checks, interner);
-    // Built from the SAME slice the inner bodies come from, so the two cannot disagree.
-    let helper_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
-    let helpers = dorc_oracle::closure::HelperIndex::build(&helper_refs);
 
     let mut out = WrappedAnalysis {
         peeled: BTreeMap::new(),
@@ -722,7 +720,7 @@ pub fn build_wrapped_analysis(
         // markless verdict body — the entry-composed mirror of the ambient ship seam.
         let Some((inner_fn, inner_sh)) = resolve_inner_check(
             oracle_srcs,
-            &helpers,
+            helpers,
             checks,
             inner_verdict.as_ref(),
             inner_word,
@@ -1323,6 +1321,7 @@ pub fn survival_diagnostics(
         oracle_srcs,
         &oracle_refs,
         oracle_paths,
+        &dorc_oracle::closure::HelperIndex::build(&oracle_refs, None),
         &checks,
         &verdict_sets,
         &wrapper_sets,
@@ -1877,7 +1876,7 @@ mod tests {
         let mut interner = Interner::default();
         let srcs = vec![BOTH_MEMBERS.to_owned()];
         let refs: Vec<&str> = srcs.iter().map(String::as_str).collect();
-        let helpers = dorc_oracle::closure::HelperIndex::build(&refs);
+        let helpers = dorc_oracle::closure::HelperIndex::build(&refs, None);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut interner, BOTH_MEMBERS).value];
         let verdict_sets =
             vec![dorc_oracle::verdict::VerdictSet::lift(&mut interner, BOTH_MEMBERS).value];

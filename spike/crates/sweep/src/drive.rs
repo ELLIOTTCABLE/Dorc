@@ -162,7 +162,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // them via the shared `dorc_plan::build_vouches` (the SAME composition the cli drives), or
     // every `install` victim would run and the net's elision coverage would vanish. Always-on
     // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped.
-    let helpers = dorc_oracle::closure::HelperIndex::build(&[ORACLE_SH]);
+    let helpers = dorc_oracle::closure::HelperIndex::build(&[ORACLE_SH], None);
     let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &helpers, &classes, &value, i, ambient)
         .0
         .value;

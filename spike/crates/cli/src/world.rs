@@ -164,8 +164,13 @@ impl WhyWorld {
         };
         let never_live = dorc_analysis::funcenv::never_live(&definitions, &env);
 
-        // One non-role-declaration index per unit, shared by the ship seams and the vouch lift.
-        let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs);
+        // One non-role-declaration index per unit, shared by the ship seams and the vouch lift. The
+        // book is the LAST source here too (`one-definition-table-two-drivers`), so the why driver's
+        // custody predicate sees the same census the run's does.
+        let helpers = dorc_oracle::closure::HelperIndex::build(
+            &source_refs,
+            source_refs.len().checked_sub(1),
+        );
         let checks: Vec<dorc_oracle::predict::PredictSet> = source_refs
             .iter()
             .map(|src| {
@@ -852,7 +857,7 @@ pub fn ship_predict_body(
     let body = strip_predict(src, &check, interner);
     let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::ShippedCheck::predict(
-        format!("{}{body}", closure.sh),
+        format!("{}{body}", closure.sh()),
         Some((check.name_span, source_file_id(idx))),
     ))
 }
@@ -893,7 +898,7 @@ pub fn ship_resolved_verdict(
     let body = strip_verdict(src, verdict, interner);
     let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::ShippedCheck::verdict(
-        format!("{}{body}", closure.sh),
+        format!("{}{body}", closure.sh()),
         Some((verdict.name_span, source_file_id(idx))),
         emits_report,
     ))
@@ -989,6 +994,7 @@ mod tests {
                 ),
             }],
             survival_report: SurvivalReport::default(),
+            defensive_emission: false,
         }
     }
 

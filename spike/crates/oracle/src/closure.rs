@@ -19,13 +19,18 @@
 //!
 //! # Two rules worth defending
 //!
-//! **Conflicting definitions REFUSE rather than resolve** ([`ClosureRefusal`]). sh itself would take
-//! the last-loaded definition of a helper name and rebind an author's helper out from under them
-//! silently. `28M` §8's diamond rider says unit-identity keys to the DEFINING file, so
-//! version-skewed vendored copies must refuse rather than dedup; byte-IDENTICAL copies are the
-//! common vendoring case and dedup to one emission. The refusal withholds the pin, which withholds
-//! the vouch and the ship, which runs the site — the safe direction, and loud
-//! (`inv-top-reject`).
+//! **Resolution is sh's own late binding; the LICENSE is what custody gates**
+//! (`28R:rul-resolution-matches-shell-loading` · `rul-emission-custody-composite`). A name with
+//! several declarations resolves to the LAST one in load order, because that is the body a shell
+//! would actually run — an engine that answered differently would ship a body no execution binds.
+//! What the engine refuses is not the resolution but the LICENSE over a composition its voucher
+//! never wrote: the vouch suspends when the resolved definition sits in another custody AND either
+//! the book redefines the name or the name is plural-with-differing-bytes, so load order never
+//! silently adjudicates whose body serves whose vouch. A singular cross-file reach — one
+//! declaration, anywhere in the loaded set — stays licensed, which is what keeps `28M` §7's
+//! helpers-file + thin-entrypoints package shape working. Byte-identical plurality counts as
+//! singular (there is nothing to adjudicate). Suspension withholds the pin, which withholds the
+//! vouch and the ship, which runs the site — the safe direction, and attributed.
 //!
 //! **Constants ride per CONTRIBUTING FILE, not per reference.** The lexer collapses every
 //! parameter-expansion operator form to one opaque `ParamComplex` and discards the name
@@ -53,11 +58,46 @@ struct Declaration {
     bytes: String,
 }
 
+/// One declaration the emission carries, with the identity that dedups it across bodies.
+///
+/// The key is the DECLARATION SITE, not the name: a constants item binds several names and a
+/// name-keyed dedup could not spell it. Two bodies whose snapshots resolved to the same
+/// declaration therefore emit it once (`28R:rul-instantiation-hash-dedup`'s dedup, computed
+/// eagerly — the resolved identity IS the key, so equality here is structural rather than a hash
+/// that would need confirming).
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ClosureDecl {
+    /// The loaded source that spells it, and its offset there — the dedup key and the emission
+    /// order (load order, then source order).
+    key: (usize, u32),
+    /// The authored text, verbatim.
+    bytes: String,
+}
+
+impl ClosureDecl {
+    /// The declaration's authored bytes — what an emission seat writes.
+    #[must_use]
+    pub fn bytes(&self) -> &str {
+        &self.bytes
+    }
+
+    /// The `(source index, offset)` identity two snapshots dedup on.
+    #[must_use]
+    pub fn key(&self) -> (usize, u32) {
+        self.key
+    }
+}
+
 /// What a pinned definition carries besides itself.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Closure {
-    /// The declarations to emit immediately BEFORE the definition; empty when it needs nothing.
-    pub sh: String,
+    /// The declarations to emit BEFORE the definition, in emission order; empty when it needs
+    /// nothing. Kept as declarations rather than one blob because the apply artifact hoists ONE
+    /// shared preamble above the whole book, so two guards that reach one helper must emit it once
+    /// — two same-named funcdefs in the emitted preamble is the shape
+    /// `plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding` forbids. The probe lane, which
+    /// re-emits per site immediately before each invocation, just joins them ([`Closure::sh`]).
+    decls: Vec<ClosureDecl>,
     /// The external command words the closure's own bodies reach, in name order.
     ///
     /// The guard's dual-rail attribution (`24D`'s `guardcmd` ledger) allowlists the commands a
@@ -68,9 +108,68 @@ pub struct Closure {
     pub commands: Vec<String>,
 }
 
-/// Why a closure could not be pinned. One world-state with one remediation ("make the loaded
-/// sources agree, or load only one of them"), so it is one reason rather than sibling classes
-/// (`28L:rul-reason-enums-not-sibling-codes`).
+impl Closure {
+    /// The declarations joined, each on its own line — the per-site emission the probe lane uses.
+    #[must_use]
+    pub fn sh(&self) -> String {
+        let mut out = String::new();
+        for decl in &self.decls {
+            push_block(&mut out, &decl.bytes);
+        }
+        out
+    }
+
+    /// The declarations, in emission order — for a seat that dedups across bodies.
+    #[must_use]
+    pub fn decls(&self) -> &[ClosureDecl] {
+        &self.decls
+    }
+}
+
+/// Why a shipped body's composition carries no license (`28R:rul-mixed-custody-suspends-vouch` ·
+/// `rul-contested-name-never-resolved` · the permanent WITHHELD tier).
+///
+/// One census answers all of it — which names the book defines, and which names the loaded sources
+/// declare more than once — so these are REASON VARIANTS of one world (a composition the voucher
+/// did not write, or one the engine cannot enumerate), never sibling classes
+/// (`28L:rul-reason-enums-not-sibling-codes`). Every variant lands the same place: no elide, no
+/// guard, the site runs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClosureDenial {
+    /// The name whose resolution carries no license.
+    pub name: String,
+    /// Which of the four worlds this is.
+    pub reason: DenialReason,
+    /// Where the loaded sources declare the name, in load order — empty when only the book does.
+    pub sites: Vec<(usize, Span)>,
+}
+
+/// The four worlds [`ClosureDenial`] distinguishes for AID; the license outcome is identical.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DenialReason {
+    /// The book defines a function under a name the shipped body calls, and the loaded sources
+    /// declare it too: at apply the book's rebinding wins below its own definition, so the
+    /// engineer's vouch would cover a body the admin replaced.
+    BookRedefinesHelper,
+    /// The book defines a function under a name the shipped body calls as an external UTILITY. The
+    /// engine never chooses between the documented tool and the admin's function
+    /// (`28R:rul-contested-name-never-resolved`): honoring runs unvouched book code inside a check,
+    /// bypassing under-executes in wrapper books, and both are engine referent-choices between two
+    /// humans' meanings.
+    BookShadowsCommand,
+    /// Two loaded sources declare the name with DIFFERING bytes and the resolved one lies outside
+    /// the voucher's custody: sh's last-wins would decide whose body serves this vouch, and load
+    /// order is not an adjudicator of authorship (`28K` §6).
+    PluralAcrossCustody,
+    /// The body reaches a call the engine cannot enumerate (a non-literal command word, or `eval`),
+    /// so its snapshot cannot be closed. The permanent bottom rung — never scaffolding
+    /// (`28R:rul-instantiation-hash-dedup` tier 3).
+    UnenumerableCall,
+}
+
+/// Why two loaded sources cannot both speak for one non-role name — the LOAD-EDGE report, which is
+/// a different question from whether any body's license survives ([`ClosureDenial`]). One
+/// world-state with one remediation ("make the loaded sources agree, or load only one of them").
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClosureRefusal {
     /// The name the loaded sources disagree about.
@@ -96,6 +195,11 @@ pub struct HelperIndex {
     /// Per source index, its top-level constant declarations in source order — the emission unit
     /// (see the module doc: constants ride per contributing file).
     constants_by_file: BTreeMap<usize, Vec<Declaration>>,
+    /// Every function name the BOOK defines, at any depth — the census both custody arms read
+    /// (`rul-emission-custody-composite`). The book is never an index CONTRIBUTOR (its top level is
+    /// not load-inert), but what it defines still decides whether somebody else's vouch survives at
+    /// apply, so it is carried separately rather than not at all.
+    book_defines: BTreeSet<String>,
 }
 
 impl HelperIndex {
@@ -108,11 +212,26 @@ impl HelperIndex {
     /// book, and it is also what keeps the BOOK out of the index without threading its id here: a
     /// runbook has commands at top level, so its helpers stay where its author put them, in the
     /// artifact's own text, and are never copied above it.
+    ///
+    /// `book` names which source index is the BOOK, when the caller has one. It is threaded
+    /// explicitly rather than inferred from load-inertness, because "not inert" and "the admin's
+    /// file" are different facts and attributing a suspension to the book when a malformed ORACLE
+    /// caused it would be mis-attribution (`271:rul-sin-ordering`, pope-sin tier). The oracle-only
+    /// lanes pass `None` and see no book census, which is correct: they answer questions about the
+    /// loaded package set.
     #[must_use]
-    pub fn build(srcs: &[&str]) -> Self {
+    pub fn build(srcs: &[&str], book: Option<usize>) -> Self {
         let mut index = Self::default();
         for (file, src) in srcs.iter().enumerate() {
             let ast = dorc_syntax::parse(src).value;
+            if book == Some(file) {
+                for (_, node) in ast.iter() {
+                    if let NodeKind::FuncDef { name, .. } = &node.kind {
+                        index.book_defines.insert(name.clone());
+                    }
+                }
+                continue;
+            }
             let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
                 continue;
             };
@@ -198,44 +317,46 @@ impl HelperIndex {
             .collect()
     }
 
-    /// The closure PREFIX for a role definition authored in source `file` with body text `body`.
+    /// The SNAPSHOT a role definition authored in source `file` ships with, given body text `body`.
     ///
     /// `body` is the definition's own text (stripped or authored alike — the walk reads command
     /// positions and recurses through substitutions, and a dialect mark carries no command
-    /// position). The returned string is emitted immediately BEFORE the definition; it is empty
-    /// whenever the definition needs nothing, which keeps the single-file no-helper case
-    /// byte-identical to the definition alone.
+    /// position). The snapshot is emitted BEFORE the definition; it is empty whenever the definition
+    /// needs nothing, which keeps the single-file no-helper case byte-identical to the definition
+    /// alone. Every reached name resolves to the declaration a shell would bind — the LAST in load
+    /// order (`28R:rul-resolution-matches-shell-loading`) — and the whole reached set is one
+    /// transplanted unit, so a body and its helpers are the environment one program point holds.
     ///
     /// # Errors
     ///
-    /// [`ClosureRefusal`] when the loaded sources declare one needed name with differing bytes —
-    /// the diamond rider (`28M` §8): version-skewed vendored copies refuse rather than dedup.
-    pub fn closure_for(&self, file: usize, body: &str) -> Result<Closure, ClosureRefusal> {
-        if self.is_empty() {
+    /// [`ClosureDenial`] when the composition carries no license: the book redefines a reached name,
+    /// the resolution crossed custody on a plural-with-differing-bytes name, or a call cannot be
+    /// enumerated. Each withholds the pin, hence the vouch, hence the ship — the site runs.
+    pub fn closure_for(&self, file: usize, body: &str) -> Result<Closure, ClosureDenial> {
+        if self.is_empty() && self.book_defines.is_empty() {
             return Ok(Closure::default());
         }
         let mut contributing: BTreeSet<usize> = BTreeSet::new();
         contributing.insert(file);
-        let mut helpers: BTreeMap<(usize, u32), String> = BTreeMap::new();
+        let mut decls: BTreeMap<(usize, u32), String> = BTreeMap::new();
         let mut reached: BTreeSet<String> = BTreeSet::new();
-        let mut pending: Vec<String> = called_names(body);
+        let mut pending: Vec<String> = Self::enumerable_calls(body)?;
         let mut visited: BTreeSet<String> = BTreeSet::new();
         while let Some(name) = pending.pop() {
             if !visited.insert(name.clone()) {
                 continue;
             }
-            let Some(declarations) = self.helpers.get(&name) else {
+            let declarations = self.helpers.get(&name).map_or(&[][..], Vec::as_slice);
+            let Some(chosen) = self.resolve(&name, declarations, file)? else {
                 continue; // An external tool, not a helper — the ordinary case.
             };
-            let chosen = agree(&name, declarations)?;
             contributing.insert(chosen.file);
-            helpers.insert((chosen.file, chosen.span.lo.0), chosen.bytes.clone());
-            let inner = called_names(&chosen.bytes);
+            decls.insert((chosen.file, chosen.span.lo.0), chosen.bytes.clone());
+            let inner = Self::enumerable_calls(&chosen.bytes)?;
             reached.extend(inner.iter().cloned());
             pending.extend(inner);
         }
-        // Load then source order, constants first: definition order is free, determinism is not.
-        let mut out = String::new();
+        let mut constants: BTreeMap<(usize, u32), String> = BTreeMap::new();
         for &contributor in &contributing {
             for declaration in self
                 .constants_by_file
@@ -243,24 +364,87 @@ impl HelperIndex {
                 .map_or(&[][..], Vec::as_slice)
             {
                 for name in self.names_declared_by(declaration) {
-                    agree(
-                        &name,
-                        self.constants.get(&name).map_or(&[][..], Vec::as_slice),
-                    )?;
+                    let declarations = self.constants.get(&name).map_or(&[][..], Vec::as_slice);
+                    self.resolve(&name, declarations, file)?;
                 }
-                push_block(&mut out, &declaration.bytes);
+                constants.insert(
+                    (declaration.file, declaration.span.lo.0),
+                    declaration.bytes.clone(),
+                );
             }
         }
-        for bytes in helpers.values() {
-            push_block(&mut out, bytes);
-        }
+        // Constants precede helpers: a helper body may read one, and neither order is a choice.
+        let decls = constants
+            .into_iter()
+            .chain(decls)
+            .map(|(key, bytes)| ClosureDecl { key, bytes })
+            .collect();
         Ok(Closure {
-            sh: out,
+            decls,
             commands: reached
                 .into_iter()
                 .filter(|name| !self.helpers.contains_key(name))
                 .collect(),
         })
+    }
+
+    /// The declaration a shell would bind for `name`, or `None` when nothing loaded declares it (an
+    /// external utility — the ordinary case).
+    ///
+    /// THE COMPOSITE PREDICATE (`rul-emission-custody-composite`): resolution is always sh's
+    /// last-wins, and the license suspends iff the resolved custody differs from the voucher's
+    /// (`asker`) AND either the book redefines the name or the declarations disagree on bytes. A
+    /// singular cross-file reach is licensed — one declaration is not an adjudication — which is
+    /// what keeps the sanctioned helpers-file package shape working. Byte-identical plurality
+    /// counts as singular.
+    fn resolve<'a>(
+        &self,
+        name: &str,
+        declarations: &'a [Declaration],
+        asker: usize,
+    ) -> Result<Option<&'a Declaration>, ClosureDenial> {
+        let sites =
+            || -> Vec<(usize, Span)> { declarations.iter().map(|d| (d.file, d.span)).collect() };
+        let deny = |reason| ClosureDenial {
+            name: name.to_owned(),
+            reason,
+            sites: sites(),
+        };
+        if self.book_defines.contains(name) {
+            return Err(deny(if declarations.is_empty() {
+                DenialReason::BookShadowsCommand
+            } else {
+                DenialReason::BookRedefinesHelper
+            }));
+        }
+        let Some(chosen) = declarations.last() else {
+            return Ok(None);
+        };
+        let differs = declarations.iter().any(|other| other.bytes != chosen.bytes);
+        if differs && chosen.file != asker {
+            return Err(deny(DenialReason::PluralAcrossCustody));
+        }
+        Ok(Some(chosen))
+    }
+
+    /// Every literal command-position word in `body`, or a denial when the body carries a definition
+    /// vector the walk cannot follow through.
+    ///
+    /// A dynamic command NAME needs no arm here: the parser ⊤-rejects one upstream
+    /// (`syntax/CLAUDE.md syntactic-top-triggers`), so a lifted oracle body cannot hold one. What
+    /// remains is a literal vector — `eval` or `alias` — which can bind or invoke a name this walk
+    /// will never see, so the snapshot cannot be closed and the tier is WITHHELD (permanent, per
+    /// `28R:rul-instantiation-hash-dedup`).
+    fn enumerable_calls(body: &str) -> Result<Vec<String>, ClosureDenial> {
+        let calls = scan_calls(body);
+        if let Some(vector) = calls.definition_vector() {
+            return Err(ClosureDenial {
+                name: vector,
+                reason: DenialReason::UnenumerableCall,
+                sites: Vec::new(),
+            });
+        }
+        Ok(calls.names)
     }
 
     /// Which constant names one emitted declaration binds — the `A=1 B=2` item binds two.
@@ -273,13 +457,56 @@ impl HelperIndex {
     }
 }
 
-/// The one declaration a name resolves to, or a refusal.
+/// What one walk over a body found: the literal command words, and whether any construct can bind or
+/// invoke a name the walk cannot see.
+struct Calls {
+    names: Vec<String>,
+    /// A `NodeKind::Unsupported { reason: DynamicExecution }` — `eval`, a `.`/`source` of a computed
+    /// target, or a dynamic command name. The parser has already classified all three, so this reads
+    /// its classification rather than re-deriving one from byte shapes.
+    dynamic_execution: bool,
+}
+
+impl Calls {
+    /// The in-process DEFINITION VECTOR this body carries, if any
+    /// (`28R:rul-defensive-mode-definition-vectors`).
+    ///
+    /// Deliberately NOT any-⊤: an unmodeled command is an external binary and cannot define a
+    /// function in the executing shell, so `hork` must never qualify — only a construct that binds a
+    /// NAME here does. Two shapes qualify, and the parser supplies the harder one: `DynamicExecution`
+    /// (which is exactly `eval` · a computed `.` · a dynamic command name) and a literal `alias`,
+    /// which parses as an ordinary command word.
+    fn definition_vector(&self) -> Option<String> {
+        if self.dynamic_execution {
+            return Some(DYNAMIC_EXECUTION.to_owned());
+        }
+        self.names.iter().find(|name| *name == "alias").cloned()
+    }
+}
+
+/// The name a `DynamicExecution` ⊤-reject travels under. Not a command word: the parser folds
+/// `eval`, a computed `.`, and a dynamic command name into ONE reason, and re-deriving which of the
+/// three it was from byte shapes is the re-detection layer `28L:rul-editability-is-stamped-never-re-derived`
+/// retired. The reason IS the answer.
+const DYNAMIC_EXECUTION: &str = "dynamic-execution";
+
+/// Every definition vector the given sources carry, in name order — the whole-artifact question
+/// behind DEFENSIVE emission. Empty is the overwhelming case, and empty means the artifact may ship
+/// bare names.
+#[must_use]
+pub fn definition_vectors(srcs: &[&str]) -> BTreeSet<String> {
+    srcs.iter()
+        .filter_map(|src| scan_calls(src).definition_vector())
+        .collect()
+}
+
+/// Whether the loaded sources agree about one name — the LOAD-EDGE report's question only.
 ///
-/// Byte-identical declarations across files are the common vendoring case and collapse to one
-/// (content-dedup, `28K` §4); differing ones refuse. Note what is NOT here: sh's own
-/// last-definition-wins. Taking the last would silently rebind one author's helper to another's
-/// body, which is the committee-speech hazard `28M` §2 exists to fence — and unlike the role lane,
-/// no admin spelling selects between two helpers of the same name.
+/// Byte-identical declarations across files are the common vendoring case and agree
+/// (content-dedup, `28K` §4); differing ones are reported, because loading both already rebound the
+/// name for every caller and the earlier author should hear about it. This is not the RESOLUTION
+/// rule ([`HelperIndex::resolve`] holds that, and it follows sh): a disagreement here is a warning
+/// plus, where it would decide whose body serves whose vouch, a suspended license.
 fn agree<'a>(
     name: &str,
     declarations: &'a [Declaration],
@@ -307,18 +534,32 @@ fn slice(src: &str, span: Span) -> String {
         .to_owned()
 }
 
-/// Every literal command-position word in a body — the helper CANDIDATES.
+/// One walk, both answers: every literal command-position word, and whether the body carries a
+/// definition vector.
 ///
-/// Over-collects on purpose: a candidate the index does not know is an external tool and is
+/// The names OVER-collect on purpose: a candidate the index does not know is an external tool and is
 /// dropped. Under-collecting is the dangerous direction (a missed helper ships a body that cannot
-/// run), so the walk descends through every construct that can hold a command, command
-/// substitutions included, and a dynamic command word contributes nothing here because the parser
-/// ⊤-rejects it upstream (`syntax/CLAUDE.md syntactic-top-triggers`).
-fn called_names(body: &str) -> Vec<String> {
+/// run), so the walk descends through every construct that can hold a command, command substitutions
+/// included. What a literal-word walk structurally cannot see — `eval`, a computed `.`, a dynamic
+/// command name — the PARSER has already classified as one `DynamicExecution` ⊤-reject, so the flag
+/// reads that classification instead of re-deriving one.
+fn scan_calls(body: &str) -> Calls {
     let ast = dorc_syntax::parse(body).value;
     let mut out = Vec::new();
     walk(&ast, ast.root(), &mut out);
-    out
+    let dynamic_execution = ast.iter().any(|(_, node)| {
+        matches!(
+            node.kind,
+            NodeKind::Unsupported {
+                reason: dorc_syntax::ast::UnsupportedReason::DynamicExecution,
+                ..
+            }
+        )
+    });
+    Calls {
+        names: out,
+        dynamic_execution,
+    }
 }
 
 fn walk(ast: &Ast, id: dorc_core::AstId, out: &mut Vec<String>) {
@@ -429,7 +670,7 @@ mod tests {
     const MARKER: &str = "# dorc-lang/v0.2\n";
 
     fn index(srcs: &[&str]) -> HelperIndex {
-        HelperIndex::build(srcs)
+        HelperIndex::build(srcs, None)
     }
 
     /// The corpus as it stands: no helpers, no constants. The pass must be invisible there, or
@@ -442,7 +683,7 @@ mod tests {
         assert_eq!(
             index
                 .closure_for(0, "wombat__is_converged() { wombat cmp -- \"$1\"; }")
-                .map(|c| c.sh),
+                .map(|c| c.sh()),
             Ok(String::new())
         );
     }
@@ -460,7 +701,7 @@ mod tests {
         let closure = index
             .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
             .expect("one source cannot disagree with itself")
-            .sh;
+            .sh();
         assert!(
             closure.contains("WOMBAT_ROOT=/etc/wombat"),
             "the file's constant rides with its code:\n{closure}"
@@ -482,7 +723,7 @@ mod tests {
         let closure = index
             .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
             .expect("the two sources agree")
-            .sh;
+            .sh();
         assert!(
             closure.contains("_wombat_check() {"),
             "a cross-file helper rides with the entrypoint (`28M` §8 overlay riders):\n{closure}"
@@ -501,7 +742,7 @@ mod tests {
         let closure = index(&[&src])
             .closure_for(0, "wombat__is_converged() {\n   _outer \"$1\"\n}")
             .expect("one source")
-            .sh;
+            .sh();
         assert!(closure.contains("_outer() {"), "{closure}");
         assert!(closure.contains("_inner() {"), "{closure}");
     }
@@ -519,7 +760,7 @@ mod tests {
                 "wombat__is_converged() {\n   wombat cmp -- \"$(_dest \"$1\")\"\n}",
             )
             .expect("one source")
-            .sh;
+            .sh();
         assert!(closure.contains("_dest() {"), "{closure}");
     }
 
@@ -533,7 +774,7 @@ mod tests {
         let closure = index(&[&a, &b])
             .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
             .expect("identical copies agree")
-            .sh;
+            .sh();
         assert_eq!(
             closure.matches("_wombat_check() {").count(),
             1,
@@ -541,23 +782,29 @@ mod tests {
         );
     }
 
-    /// The diamond rider (`28M` §8): version-skewed vendored copies REFUSE rather than dedup. sh
-    /// would take the last silently; here the pin is withheld and the site runs.
+    /// The CAPTURE half of `rul-emission-custody-composite`: version-skewed copies resolve by sh's
+    /// own last-wins, and when the winner sits in the VOUCHER's own file there is nothing for load
+    /// order to adjudicate — the snapshot ships. The load edge still reports the collision, because
+    /// the earlier author's helper really was rebound for every caller.
     #[test]
-    fn version_skewed_copies_refuse_the_pin() {
+    fn a_plural_helper_resolving_into_the_vouchers_file_still_ships() {
         let a = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
         let b = format!(
             "{MARKER}_wombat_check() {{\n   wombat cmp --strict -- \"$1\"\n}}\n\
              wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n"
         );
         let index = index(&[&a, &b]);
-        let refused = index
+        let closure = index
             .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
-            .expect_err("skewed copies are not one definition");
-        assert_eq!(refused.name, "_wombat_check");
-        assert_eq!(
-            refused.sites.iter().map(|(f, _)| *f).collect::<Vec<_>>(),
-            vec![0, 1]
+            .expect("last-wins lands in the voucher's own custody")
+            .sh();
+        assert!(
+            closure.contains("wombat cmp --strict"),
+            "the LAST declaration is the one a shell binds:\n{closure}"
+        );
+        assert!(
+            !closure.contains("wombat cmp -- \"$1\""),
+            "the shadowed earlier body must not travel:\n{closure}"
         );
         assert_eq!(
             index
@@ -567,6 +814,115 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["_wombat_check"],
             "the load edge reports the collision once, by name"
+        );
+    }
+
+    /// The SUSPEND half: the same plurality, resolved into a file that is NOT the voucher's. Here
+    /// load order would decide whose body serves this engineer's vouch, which is the one thing the
+    /// composite predicate refuses — no pin, no vouch, the site runs.
+    #[test]
+    fn a_plural_helper_resolving_outside_the_vouchers_custody_suspends() {
+        let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
+        let a = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let b = format!("{MARKER}_wombat_check() {{\n   wombat cmp --strict -- \"$1\"\n}}\n");
+        let denied = index(&[&entry, &a, &b])
+            .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .expect_err("cross-custody plurality is load order adjudicating authorship");
+        assert_eq!(denied.name, "_wombat_check");
+        assert_eq!(denied.reason, super::DenialReason::PluralAcrossCustody);
+        assert_eq!(
+            denied.sites.iter().map(|(f, _)| *f).collect::<Vec<_>>(),
+            vec![1, 2]
+        );
+    }
+
+    /// A SINGULAR cross-file reach stays licensed even though custody differs — the sanctioned
+    /// helpers-file + thin-entrypoints package shape (`28M` §7). One declaration is not an
+    /// adjudication, so the composite's second conjunct never fires.
+    #[test]
+    fn a_singular_cross_custody_reach_stays_licensed() {
+        let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
+        let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let closure = index(&[&entry, &helpers])
+            .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .expect("a lone declaration decides nothing")
+            .sh();
+        assert!(closure.contains("_wombat_check() {"), "{closure}");
+    }
+
+    /// The book redefining a helper the engineer's body reaches SUSPENDS: at apply the hoisted
+    /// preamble sits above the book, so the book's rebinding wins at every guard below it and the
+    /// vouch would cover a composition its author never wrote.
+    #[test]
+    fn a_book_redefinition_of_a_reached_helper_suspends() {
+        let oracle = format!(
+            "{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n\
+             wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n"
+        );
+        let book = "_wombat_check() {\n   printf 'always converged\\n'\n}\nwombat sync a\n";
+        let denied = HelperIndex::build(&[&oracle, book], Some(1))
+            .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .expect_err("the admin replaced the body the vouch rests on");
+        assert_eq!(denied.name, "_wombat_check");
+        assert_eq!(denied.reason, super::DenialReason::BookRedefinesHelper);
+    }
+
+    /// The contested TOOL name (`28R:rul-contested-name-never-resolved`): the book defines a function
+    /// under the name the shipped body calls as an external utility. Honoring it runs unvouched book
+    /// code inside a read-only check; bypassing it under-executes in wrapper books. Both are engine
+    /// referent-choices between two humans, so the engine declines instead.
+    #[test]
+    fn a_book_function_shadowing_a_called_tool_declines() {
+        let oracle = format!("{MARKER}wombat__is_converged() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let book = "wombat() {\n   hork tune\n}\nwombat sync a\n";
+        let denied = HelperIndex::build(&[&oracle, book], Some(1))
+            .closure_for(0, "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}")
+            .expect_err("the referent of `wombat` is now two humans' question");
+        assert_eq!(denied.name, "wombat");
+        assert_eq!(denied.reason, super::DenialReason::BookShadowsCommand);
+    }
+
+    /// The oracle-only lanes pass no book index and must see no census: they answer questions about
+    /// the loaded package set, and a book-shaped denial there would be attributed to a file the lane
+    /// was never asked about.
+    #[test]
+    fn without_a_book_index_the_census_is_empty() {
+        let oracle = format!("{MARKER}wombat__is_converged() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let book = "wombat() {\n   hork tune\n}\nwombat sync a\n";
+        assert!(
+            HelperIndex::build(&[&oracle, book], None)
+                .closure_for(0, "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}")
+                .is_ok()
+        );
+    }
+
+    /// The permanent WITHHELD tier: a body reaching `eval` can bind or invoke a name no walk sees,
+    /// so its snapshot cannot be closed. Not scaffolding — the bottom rung.
+    #[test]
+    fn an_unenumerable_call_withholds_permanently() {
+        let src = format!(
+            "{MARKER}_helper() {{\n   wombat cmp\n}}\n\
+             wombat__is_converged() {{\n   eval \"$1\"\n}}\n"
+        );
+        let denied = index(&[&src])
+            .closure_for(0, "wombat__is_converged() {\n   eval \"$1\"\n}")
+            .expect_err("an eval'd body has no enumerable call graph");
+        assert_eq!(denied.reason, super::DenialReason::UnenumerableCall);
+        assert_eq!(denied.name, super::DYNAMIC_EXECUTION);
+    }
+
+    /// Defensive emission keys on real in-process definition vectors ONLY: an unmodeled command is
+    /// an external binary and cannot bind a function in the executing shell, so `hork` must never
+    /// flip the mode (`28R:rul-defensive-mode-definition-vectors`).
+    #[test]
+    fn definition_vectors_ignore_unmodeled_commands() {
+        assert!(super::definition_vectors(&["hork tune web\nwombat sync a\n"]).is_empty());
+        assert_eq!(
+            super::definition_vectors(&["hork tune\n", "alias ls='ls -l'\n", "eval \"$x\"\n"])
+                .into_iter()
+                .collect::<Vec<_>>(),
+            vec!["alias".to_owned(), super::DYNAMIC_EXECUTION.to_owned()],
+            "both vectors are found, and the ⊤-reject travels under the parser's own reason"
         );
     }
 
@@ -582,7 +938,7 @@ mod tests {
         let closure = index(&[&src])
             .closure_for(0, "wombat__is_converged() {\n   other__predict \"$1\"\n}")
             .expect("one source")
-            .sh;
+            .sh();
         assert!(
             !closure.contains("other__predict() {"),
             "role members resolve through the role lane, never here:\n{closure}"
@@ -599,8 +955,8 @@ mod tests {
         );
         let index = index(&[&src]);
         let body = "wombat__is_converged() {\n   _b; _a\n}";
-        let once = index.closure_for(0, body).expect("one source").sh;
-        assert_eq!(once, index.closure_for(0, body).expect("one source").sh);
+        let once = index.closure_for(0, body).expect("one source").sh();
+        assert_eq!(once, index.closure_for(0, body).expect("one source").sh());
         assert!(
             once.find("_b() {") < once.find("_a() {"),
             "source order, not discovery order:\n{once}"

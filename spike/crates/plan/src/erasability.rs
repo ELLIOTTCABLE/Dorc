@@ -379,6 +379,7 @@ mod tests {
         let plan = Plan {
             steps: vec![],
             survival_report: crate::SurvivalReport::default(),
+            defensive_emission: false,
         };
         let probe = ProbePlan::default();
         let ast = dorc_syntax::parse("").value;

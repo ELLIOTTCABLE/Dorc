@@ -128,9 +128,6 @@ _wombat_dest() {
 _wombat_same() {
    wombat cmp -- "$1" "$(_wombat_dest "$1")"
 }
-wombat__is_converged() {
-   _wombat_same "$2"
-}
 
 #!/bin/sh
 # pin28-helper-package-entrypoints-discarded (`28M` §7/§8, the COMMISSIONED package shape) — half

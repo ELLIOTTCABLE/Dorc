@@ -350,6 +350,7 @@ apt_get__predict() {
                 guard_step(1, "ufw__is_converged"),
             ],
             survival_report: SurvivalReport::default(),
+            defensive_emission: false,
         };
 
         let cleanup = demote_on_trip(&mut plan, |fn_name| fn_name == "apt_get__is_converged");
@@ -373,6 +374,7 @@ apt_get__predict() {
         let mut plan = Plan {
             steps: vec![guard_step(0, "apt_get__is_converged")],
             survival_report: SurvivalReport::default(),
+            defensive_emission: false,
         };
 
         demote_on_trip(&mut plan, |_| false);

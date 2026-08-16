@@ -987,6 +987,15 @@ pub struct VerdictVouch {
     /// The oracle's own verdict body, shipped STRIP-ONLY (`dorc_oracle::predict::strip_verdict`) —
     /// the guard preamble def, the SAME authored bytes the probe lane self-vouches
     /// (rul-ternary-verdict: the `predict()` IS the oracle; no engine-synthesized sh).
+    body: String,
+    /// The SNAPSHOT the body needs beside it (helpers, file-level constants), as DECLARATIONS rather
+    /// than a blob: the apply artifact hoists one shared preamble above the whole book, so two guards
+    /// that reached the same helper must emit it once
+    /// (`plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding`).
+    closure: Vec<dorc_oracle::closure::ClosureDecl>,
+    /// `closure` and `body` concatenated — DERIVED at the one seat that can set either
+    /// ([`VerdictVouch::with_closure`]), never assignable on its own, so the two spellings of "what
+    /// this guard runs" cannot drift apart.
     preamble: String,
     /// The full check invocation the guard runs at position (`apt_get__is_converged install -y
     /// curl`) — the cli builds it (funcname + the site's resolved argv). Ships as the `||`-LEFT.
@@ -1029,7 +1038,7 @@ impl VerdictVouch {
     #[must_use]
     pub fn new(
         fn_name: String,
-        preamble: String,
+        body: String,
         invocation: String,
         kind_label: String,
         check_cmds: Vec<String>,
@@ -1037,13 +1046,40 @@ impl VerdictVouch {
     ) -> Self {
         Self {
             fn_name,
-            preamble,
+            preamble: body.clone(),
+            body,
+            closure: Vec::new(),
             invocation,
             kind_label,
             check_cmds,
             custody,
             defining_span: None,
         }
+    }
+
+    /// Attach the snapshot the body ships with (`28R:rul-snapshot-transplant-emission`).
+    ///
+    /// The ONE seat that may write `preamble`, which it re-derives here — a caller that
+    /// pre-concatenated its own prefix would leave the emission unable to dedup declarations across
+    /// guards, and two same-named funcdefs in the hoisted preamble is the shape
+    /// `pinned-definitions-are-the-artifact's-binding` forbids.
+    #[must_use]
+    pub fn with_closure(mut self, closure: &dorc_oracle::closure::Closure) -> Self {
+        self.preamble = format!("{}{}", closure.sh(), self.body);
+        self.closure = closure.decls().to_vec();
+        self
+    }
+
+    /// The definition's own bytes, without its snapshot — the emission unit the tiering renames.
+    #[must_use]
+    pub fn body(&self) -> &str {
+        &self.body
+    }
+
+    /// The snapshot declarations, in emission order.
+    #[must_use]
+    pub fn closure(&self) -> &[dorc_oracle::closure::ClosureDecl] {
+        &self.closure
     }
 
     /// WHOSE utterance this vouch is (`28M` §8). By construction the same custody the positional
@@ -1089,10 +1125,23 @@ impl GuardInsert {
         &self.vouch.fn_name
     }
 
-    /// The guard preamble def to ship (deduped per [`fn_name`](Self::fn_name)).
+    /// The guard preamble def to ship (deduped per [`fn_name`](Self::fn_name)) — the definition
+    /// PLUS its snapshot, which is what the probe lane and the erasability canon read.
     #[must_use]
     pub fn preamble(&self) -> &str {
         &self.vouch.preamble
+    }
+
+    /// The definition's own bytes, without its snapshot — the unit the apply hoist tiers and renames.
+    #[must_use]
+    pub fn body(&self) -> &str {
+        self.vouch.body()
+    }
+
+    /// The snapshot declarations this guard's body needs, in emission order.
+    #[must_use]
+    pub fn closure(&self) -> &[dorc_oracle::closure::ClosureDecl] {
+        self.vouch.closure()
     }
 
     /// The vouch's defining span + oracle-file id (C7 `file:line`), if the plan driver threaded it.
@@ -1219,6 +1268,24 @@ fn short_digest(body: &str) -> String {
         .get(..8)
         .unwrap_or_default()
         .to_owned()
+}
+
+/// Does the book's own text define `name` at top level at all, whatever the bytes?
+///
+/// Tier-2's collision rule (`28R:rul-instantiation-hash-dedup`): on a static collision with a book
+/// name the BOOK's name survives and ours munges, always — the admin's bytes are never rewritten and
+/// never copied, so the only thing left to move is our own emission. Deliberately TOP-LEVEL only: a
+/// regional book definition competes at its own scope and sh keeps the two apart, which is the
+/// emission `308:cr-artifact-two-funcdefs-letter` ratified. The custody DENIAL census reads the book
+/// at every depth instead, because there the question is whether the admin's body can reach somebody
+/// else's vouch, and a region can.
+fn book_defines_at_top_level(ast: &Ast, name: &str) -> bool {
+    let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
+        return false;
+    };
+    items
+        .iter()
+        .any(|&item| matches!(&ast.node(item).kind, NodeKind::FuncDef { name: n, .. } if n == name))
 }
 
 /// Does the book's own text already define `name` at top level with exactly `body`'s bytes?
@@ -1595,7 +1662,6 @@ pub fn build_vouches_from_sets(
         let Ok(closure) = helpers.closure_for(file_idx, &stripped) else {
             continue;
         };
-        let preamble = format!("{}{stripped}", closure.sh);
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
         } else {
@@ -1611,12 +1677,13 @@ pub fn build_vouches_from_sets(
         // The SAME index the agreement gate above admitted, so the two cannot disagree.
         let vouch = VerdictVouch::new(
             fn_name,
-            preamble,
+            stripped,
             invocation,
             kind_label,
             check_cmds,
             dorc_analysis::funcenv::custody_of_source_index(file_idx),
         )
+        .with_closure(&closure)
         .with_defining_span(defining, arm_file);
         vouches.insert(node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
@@ -1854,6 +1921,11 @@ pub struct Plan {
     pub steps: Vec<Step>,
     /// The survival-tier instrumentation (24F §3a). Empty on the flag-off / no-resolver path.
     pub survival_report: SurvivalReport,
+    /// DEFENSIVE emission (`28R:rul-defensive-mode-definition-vectors`): the unit carries an
+    /// unresolved in-process definition vector, so every emitted name munges rather than trusting
+    /// that a bare one still means what we emitted. Whole-artifact, hence a plan field rather than a
+    /// per-insert one; `false` is the overwhelming case and is what keeps the artifact bare.
+    pub defensive_emission: bool,
 }
 
 /// The per-disposition tally that backs the CLI plan-summary surface (plans/240 Stage-1
@@ -3641,6 +3713,7 @@ pub fn build_plan_walled(
     Plan {
         steps,
         survival_report,
+        defensive_emission: false,
     }
 }
 
@@ -4271,36 +4344,53 @@ impl Plan {
     ///
     /// Deterministic throughout (`inv-determinism`): the digest is over the definition BYTES, never
     /// a runtime source, and both the hoist order and the name assignment iterate sorted maps.
+    ///
+    /// The SNAPSHOT (`28R:rul-snapshot-transplant-emission`) precedes every body: each declaration
+    /// any pinned body reaches is emitted ONCE, keyed by the declaration site the resolution chose,
+    /// so two guards reaching one helper share it instead of each carrying a copy. Bodies own only
+    /// their own bytes, which is also what makes the munge rewrite a header-only edit by construction
+    /// rather than by a comment asking the reader to trust it.
     #[must_use]
     pub fn pinned_definitions(&self, src: &str, ast: &Ast) -> PinnedDefinitions {
+        let mut snapshot: BTreeMap<(usize, u32), &str> = BTreeMap::new();
         // Distinct bodies per funcname, first-seen order preserved within a name.
         let mut bodies: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
         for insert in self.rendered_guards(ast) {
+            for decl in insert.closure() {
+                snapshot.insert(decl.key(), decl.bytes());
+            }
             let under = bodies.entry(insert.fn_name()).or_default();
-            if !under.contains(&insert.preamble()) {
-                under.push(insert.preamble());
+            if !under.contains(&insert.body()) {
+                under.push(insert.body());
             }
         }
         let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
         let mut hoisted = String::new();
+        for bytes in snapshot.into_values() {
+            hoisted.push_str(bytes);
+            hoisted.push('\n');
+        }
         for (name, distinct) in &bodies {
-            let plural = distinct.len() > 1;
+            let book_claims = book_defines_at_top_level(ast, name);
             for body in distinct {
-                let emitted = if plural {
-                    format!("{name}_h{}", short_digest(body))
-                } else {
-                    (*name).to_owned()
-                };
-                if !(plural || book_already_defines(src, ast, name, body)) {
+                if book_already_defines(src, ast, name, body) {
+                    emitted_names.insert((name, body), (*name).to_owned());
+                    continue;
+                }
+                let plural = distinct.len() > 1;
+                if !(plural || book_claims || self.defensive_emission) {
                     hoisted.push_str(body);
                     hoisted.push('\n');
-                } else if plural {
-                    hoisted.push_str(&render::apply::pinned_provenance(name));
-                    // The HEADER only: the pinned string opens with somebody else's closure bytes.
-                    let header = format!("{name}()");
-                    hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
-                    hoisted.push('\n');
+                    emitted_names.insert((name, body), (*name).to_owned());
+                    continue;
                 }
+                let emitted = format!("{name}_h{}", short_digest(body));
+                if plural {
+                    hoisted.push_str(&render::apply::pinned_provenance(name));
+                }
+                let header = format!("{name}()");
+                hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
+                hoisted.push('\n');
                 emitted_names.insert((name, body), emitted);
             }
         }
@@ -4312,7 +4402,7 @@ impl Plan {
                     return None;
                 };
                 let insert = license.insert();
-                let emitted = emitted_names.get(&(insert.fn_name(), insert.preamble()))?;
+                let emitted = emitted_names.get(&(insert.fn_name(), insert.body()))?;
                 Some((step.ast, emitted.clone()))
             })
             .collect();
@@ -5457,6 +5547,7 @@ apt_get__is_converged() { return 0; }
         let plan = Plan {
             steps: vec![mk(0), mk(1)],
             survival_report: SurvivalReport::default(),
+            defensive_emission: false,
         };
         // A throwaway (empty) Ast: the synthetic `AstId`s index no real node, and the OOB-safe
         // check treats an out-of-arena id as not-refused (so both guards pin).
@@ -5511,6 +5602,7 @@ apt_get__is_converged() { return 0; }
         Plan {
             steps: vec![step(0, bodies[0]), step(1, bodies[1])],
             survival_report: SurvivalReport::default(),
+            defensive_emission: false,
         }
     }
 
@@ -5586,6 +5678,119 @@ apt_get__is_converged() { return 0; }
             "the book's own definition IS the pin — no second funcdef ships"
         );
         assert_eq!(pinned.invoked(AstId(0)), Some("apt_get__is_converged"));
+    }
+
+    /// The same law, with a SNAPSHOT riding along — the shape that was silently breaking it.
+    ///
+    /// Measured on this tree: while a vouch carried one blob of closure-plus-definition, the
+    /// already-in-place test compared the book's funcdef span against that blob, never matched, and
+    /// hoisted a COPY of the book's own body above the book. Two same-named top-level funcdefs in the
+    /// emitted artifact, which is exactly what `28K` §4 retires by any route, and it reached the
+    /// corpus (`pin28-helper-package-entrypoints-discarded`). Splitting the two makes the comparison
+    /// answerable: the snapshot hoists, the book's body stays where its author put it.
+    #[test]
+    fn a_book_carried_definition_with_a_closure_hoists_only_the_closure() {
+        use dorc_core::{ByVouch, Rung};
+        let helper = "_apt_dest() { printf '%s\\n' \"$1\" ; }";
+        let body = "apt_get__is_converged() { dpkg-query -W \"$(_apt_dest \"$1\")\" ; }";
+        let src = format!("{body}\napt-get install curl\n");
+        let ast = dorc_syntax::parse(&src).value;
+        let helpers = dorc_oracle::closure::HelperIndex::build(&[helper], None);
+        let closure = helpers
+            .closure_for(0, body)
+            .expect("one source declares one helper");
+        let vouch = VerdictVouch::new(
+            "apt_get__is_converged".to_string(),
+            body.to_string(),
+            "apt_get__is_converged install curl".to_string(),
+            "package".to_string(),
+            Vec::new(),
+            dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
+        )
+        .with_closure(&closure);
+        assert!(
+            vouch.preamble.starts_with("_apt_dest() {"),
+            "the probe lane still reads one concatenated unit: {}",
+            vouch.preamble
+        );
+        let plan = Plan {
+            steps: vec![Step {
+                leaf: LeafId(0),
+                ast: AstId(0),
+                sh: "apt-get install curl".to_string(),
+                disposition: Disposition::Guard(
+                    GuardLicense::mint(
+                        nginx_fact(),
+                        ByVouch::vouched(vouch, Rung::Both),
+                        Verdict::Converged,
+                    )
+                    .unwrap(),
+                ),
+            }],
+            survival_report: SurvivalReport::default(),
+            defensive_emission: false,
+        };
+        let pinned = plan.pinned_definitions(&src, &ast);
+        assert_eq!(
+            pinned.hoisted(),
+            format!("{helper}\n"),
+            "the snapshot ships; the book's own body does not travel"
+        );
+        assert_eq!(pinned.invoked(AstId(0)), Some("apt_get__is_converged"));
+    }
+
+    /// Two guards reaching ONE helper emit it once. The snapshot is hoisted above the whole book, so
+    /// a per-body copy would put two same-named funcdefs in the preamble — the same law, from the
+    /// other side.
+    #[test]
+    fn one_helper_reached_by_two_guards_is_emitted_once() {
+        use dorc_core::{ByVouch, Rung};
+        let helper = "_apt_dest() { printf '%s\\n' \"$1\" ; }";
+        let body = "apt_get__is_converged() { dpkg-query -W \"$(_apt_dest \"$1\")\" ; }";
+        let helpers = dorc_oracle::closure::HelperIndex::build(&[helper], None);
+        let closure = helpers.closure_for(0, body).expect("one source");
+        let step = |leaf: u32| Step {
+            leaf: LeafId(leaf),
+            ast: AstId(leaf),
+            sh: "apt-get install curl".to_string(),
+            disposition: Disposition::Guard(
+                GuardLicense::mint(
+                    nginx_fact(),
+                    ByVouch::vouched(
+                        VerdictVouch::new(
+                            "apt_get__is_converged".to_string(),
+                            body.to_string(),
+                            "apt_get__is_converged install curl".to_string(),
+                            "package".to_string(),
+                            Vec::new(),
+                            dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
+                        )
+                        .with_closure(&closure),
+                        Rung::Both,
+                    ),
+                    Verdict::Converged,
+                )
+                .unwrap(),
+            ),
+        };
+        let plan = Plan {
+            steps: vec![step(0), step(1)],
+            survival_report: SurvivalReport::default(),
+            defensive_emission: false,
+        };
+        let ast = dorc_syntax::parse("").value;
+        let pinned = plan.pinned_definitions("", &ast);
+        let hoisted = pinned.hoisted();
+        assert_eq!(
+            hoisted.matches("_apt_dest() {").count(),
+            1,
+            "one declaration, one emission:\n{hoisted}"
+        );
+        assert_eq!(
+            hoisted.matches("apt_get__is_converged()").count(),
+            1,
+            "and one body, since both guards resolved the same one:\n{hoisted}"
+        );
     }
 
     /// Run the real pipeline (parse → cfg → value-flow → classify → `compile_probe`) on
@@ -5774,6 +5979,7 @@ apt_get__is_converged() { return 0; }
                 step(3, Disposition::Run),
             ],
             survival_report: SurvivalReport::default(),
+            defensive_emission: false,
         };
         let c = plan.disposition_counts();
         assert_eq!(c.sites, 4, "four leaves");
@@ -5793,6 +5999,7 @@ apt_get__is_converged() { return 0; }
             Plan {
                 steps: vec![],
                 survival_report: SurvivalReport::default(),
+                defensive_emission: false,
             }
             .disposition_counts(),
             DispositionCounts::default()

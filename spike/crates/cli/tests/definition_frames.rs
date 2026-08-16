@@ -461,6 +461,7 @@ fn plural_role_names(world: &CaseWorld) -> BTreeSet<String> {
 const PLURAL_IDIOM_CASES: &[&str] = &[
     "contest28-polyfill-guard-defers-to-the-oracle.loom",
     "contest28-unset-f-blesses-elision.loom",
+    "emit30-two-live-verdicts-under-one-name.loom",
     "frame30-a-regional-decline-is-a-decline.loom",
     "frame30-nested-region-inherits-the-outer-body.loom",
     "frame30-subshell-body-answers-inside-only.loom",
@@ -798,7 +799,7 @@ fn a_contested_helper_closure_withholds_the_role_body() {
         helper_cells += 1;
 
         let refs: Vec<&str> = cell.inputs.iter().map(|(_, text)| text.as_str()).collect();
-        let helpers = dorc_oracle::closure::HelperIndex::build(&refs);
+        let helpers = dorc_oracle::closure::HelperIndex::build(&refs, None);
         assert!(
             !helpers.conflicts().is_empty(),
             "{}: the loaded set declares one helper name with differing bodies, so the load edge \

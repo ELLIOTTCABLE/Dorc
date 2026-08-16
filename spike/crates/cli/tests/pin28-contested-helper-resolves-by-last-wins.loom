@@ -1,0 +1,151 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - helper-declaration-contested
+---
+-- book.sh --
+#!/bin/sh
+# pin28-contested-helper-resolves-by-last-wins (`28R:rul-resolution-matches-shell-loading` ·
+# `rul-emission-custody-composite`) — two loaded sources, one helper name, two different bodies.
+#
+# This cell used to pin a WITHHOLD, and it is now the CAPTURE of
+# `FORFEITS:forfeit-helper-plurality-withhold`. The engine does not refuse to answer what a shell
+# answers plainly: `_wombat_dest` resolves to the LAST declaration in load order, because that is the
+# body the host would run. What the engine gates is the LICENSE, and here there is nothing to gate —
+# the winning declaration sits in `b-wombat`, the same custody as the `wombat__is_converged` that
+# vouches, so load order decided nothing about whose body serves whose vouch. The check ships, and
+# the site past the wall guards on it.
+#
+# The withhold survives in two shapes, neither of them this one: a resolution that lands in ANOTHER
+# custody while the declarations disagree (load order would be adjudicating authorship — see
+# `emit30-cross-custody-plural-helper-suspends`), and a closure the engine cannot enumerate at all.
+#
+# The collision is still reported. `_wombat_dest` really was rebound out from under `a-wombat`'s
+# author the moment both files loaded, and they are the party who cannot see it.
+#
+# What to read in the transcript: `sites=1`, the shipped check carrying the `--strict` helper (the
+# later body, never the earlier one), and an apply guard whose preamble carries that same helper.
+hork provision
+wombat sync a.conf
+
+-- a-wombat.oracle.sh --
+# dorc-lang/v0.2
+# The EARLIER declaration. Loaded first (the runner passes `-o` per `*.oracle.sh` in sorted order),
+# so it is the `{prior}` the warning names — and the body a shell would NOT bind.
+_wombat_dest() {
+   wombat cmp -- "$1" "/etc/wombat/$1"
+}
+
+-- b-wombat.oracle.sh --
+# dorc-lang/v0.2
+# The LATER declaration, and a role entrypoint that depends on it. The bodies differ by one flag —
+# a version skew, not a vendored copy — which is precisely the case content-dedup must NOT collapse.
+_wombat_dest() {
+   wombat cmp --strict -- "$1" "/etc/wombat/$1"
+}
+
+wombat__is_converged() {
+   _wombat_dest "$2"
+}
+
+-- probe-results.txt --
+# The walled site's own auto-cell: rc 0 ⇒ converged ⇒ its guard is minted.
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock for the unmodeled wall command.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock. The `wombat cmp --strict` line is the resolved helper running: its presence in the
+# run-log is how the last-wins resolution is observable, and the un-flagged `cmp` never appears.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: wombat cmp --strict -- a.conf /etc/wombat/a.conf
+
+-- replay --
+$ dorc --book=book.sh -o a-wombat.oracle.sh -o b-wombat.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=fdb8b964933ed599061209b468401ffe9b62c8c8fb5f9584f820e6e587b12df5 sites=1 @@dorc@@\n'
+# site 1: dorc-auto:wombat@converged
+_wombat_dest() {
+   wombat cmp --strict -- "$1" "/etc/wombat/$1"
+}
+wombat__is_converged() {
+   _wombat_dest "$2"
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+_wombat_dest() {
+   wombat cmp --strict -- "$1" "/etc/wombat/$1"
+}
+wombat__is_converged() {
+   _wombat_dest "$2"
+}
+
+#!/bin/sh
+# pin28-contested-helper-resolves-by-last-wins (`28R:rul-resolution-matches-shell-loading` ·
+# `rul-emission-custody-composite`) — two loaded sources, one helper name, two different bodies.
+#
+# This cell used to pin a WITHHOLD, and it is now the CAPTURE of
+# `FORFEITS:forfeit-helper-plurality-withhold`. The engine does not refuse to answer what a shell
+# answers plainly: `_wombat_dest` resolves to the LAST declaration in load order, because that is the
+# body the host would run. What the engine gates is the LICENSE, and here there is nothing to gate —
+# the winning declaration sits in `b-wombat`, the same custody as the `wombat__is_converged` that
+# vouches, so load order decided nothing about whose body serves whose vouch. The check ships, and
+# the site past the wall guards on it.
+#
+# The withhold survives in two shapes, neither of them this one: a resolution that lands in ANOTHER
+# custody while the declarations disagree (load order would be adjudicating authorship — see
+# `emit30-cross-custody-plural-helper-suspends`), and a closure the engine cannot enumerate at all.
+#
+# The collision is still reported. `_wombat_dest` really was rebound out from under `a-wombat`'s
+# author the moment both files loaded, and they are the party who cannot see it.
+#
+# What to read in the transcript: `sites=1`, the shipped check carrying the `--strict` helper (the
+# later body, never the earlier one), and an apply guard whose preamble carries that same helper.
+hork provision
+( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]

@@ -729,7 +729,10 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         source_table(&oracle_paths, &oracle_srcs, book_name, &book_src);
     let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
     // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
-    let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs);
+    // The book is the LAST source (`source_table`), and naming it is what lets the custody predicate
+    // see what the admin defines (`rul-emission-custody-composite`).
+    let helpers =
+        dorc_oracle::closure::HelperIndex::build(&source_refs, source_refs.len().checked_sub(1));
 
     // The book-free oracle-side lints, factored into one entry the lint rung-oracle-solo lane also
     // uses (`27S:seam-oracle-validate-factoring`); `wrapper_incoherent` is the pre-network fail-fast.
@@ -951,6 +954,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         &source_srcs,
         &source_refs,
         &source_paths,
+        &helpers,
         &checks,
         &verdict_sets,
         &wrapper_sets,
@@ -2564,7 +2568,7 @@ fn ship_predict_stage(
     let body = strip_predict(oracle_srcs.get(idx)?, &check, interner);
     let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::StageShip {
-        sh: format!("{}{body}", closure.sh),
+        sh: format!("{}{body}", closure.sh()),
         produces_real_stdout: predict_stage_stdout(&check, &arg_refs) == StageStdout::RealBytes,
     })
 }
@@ -4774,6 +4778,7 @@ mod tests {
                 &srcs,
                 &refs,
                 &paths,
+                &dorc_oracle::closure::HelperIndex::build(&refs, None),
                 &checks,
                 &verdict_sets,
                 &wrapper_sets,

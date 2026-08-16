@@ -118,10 +118,6 @@ foobar__is_converged_h7a664f5a() {
    *) return 2 ;;
    esac
 }
-# dorc: pinned definition of `foobar__is_converged` (disambiguated: two live bodies)
-foobar__is_converged_hed8e223c() {
-   foobar status --certs-current -- "$2"
-}
 
 #!/bin/sh
 # emit30-two-live-verdicts-under-one-name — the MEASUREMENT cell for whether the hash-munge
@@ -141,4 +137,4 @@ unset -f foobar__is_converged
 foobar__is_converged() {
    foobar status --certs-current -- "$2"
 }
-( foobar__is_converged_hed8e223c sync-certs /etc/other/certs ) || foobar sync-certs /etc/other/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]
+( foobar__is_converged sync-certs /etc/other/certs ) || foobar sync-certs /etc/other/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]
