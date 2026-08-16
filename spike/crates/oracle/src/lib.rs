@@ -489,6 +489,13 @@ pub fn lift_from_sets(
             // The dialect's whole-unit winner, and nothing else reads it (`28Q` §9). Scanned over
             // the definitions that BIND, so a dead polyfill body cannot mint tokens no execution
             // could have uttered.
+            //
+            // Keyed by `raw_provider` — the provider as the DECLARING file spells it — where
+            // `verdict::VerdictIndex::from_sets` normalizes through `map_provider_name` so two
+            // spellings of one provider contest for one slot. Behaviour-preserving against the
+            // retired `live_source` fold, which keyed the same way, and hard to author against for
+            // legal POSIX NAMEs; but the asymmetry is real and this is now a second place carrying
+            // it. Reconcile the two keyings when the dialect fold is next touched.
             let minting = live_source(per_source.len(), |i| {
                 per_source
                     .get(i)
