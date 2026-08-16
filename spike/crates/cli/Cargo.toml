@@ -92,5 +92,12 @@ harness = false
 name = "definition_frames"
 path = "tests/definition_frames.rs"
 
+# The sh-parity battery's pipeline tier (`30A`). Ordinary-harness, like `definition_frames`: it
+# drives whole worlds through the real pipeline to ask whether a linguistic behaviour cost a site
+# its LICENSE, which no single-crate assertion can answer.
+[[test]]
+name = "sh_parity"
+path = "tests/sh_parity.rs"
+
 [lints]
 workspace = true

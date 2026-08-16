@@ -1,0 +1,475 @@
+//! The sh-parity pin battery, pipeline tier (`30A` — the doctrine and its inventory).
+//!
+//! `rul-unsure-falls-toward-sh-parity` [human-typed 2026-08-16] says that where an engine choice is
+//! unsure, the answer is what sh does. These pins are that rule made executable for the linguistic
+//! behaviours that FORCE engine-implementation choices — load order, name binding, scoping,
+//! conditional definition — and they live at this tier because each needs the whole pipeline to
+//! answer: an assertion about `HelperIndex` alone cannot say whether a site kept its LICENSE.
+//!
+//! The oracle-tier half of the battery (resolution and closure custody, answerable from
+//! `dorc_oracle` alone) is `crates/oracle/tests/sh_parity.rs`; the differential half is the
+//! committed `floor28-*`/`floor30-*` manifests, measured once under `posh ∩ dash`
+//! (`emitted-is-measure-once-ground-truth`).
+
+#![expect(
+    clippy::print_stderr,
+    reason = "`support`'s selection reporter is compiled into every test binary that uses it; this one drives no trials and never calls it"
+)]
+
+mod support;
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use dorc_analysis::effect::SkipClass;
+
+/// One world, driven exactly as `cli::run` drives it, down to the per-site classes.
+///
+/// Copied in shape from `definition_frames.rs`'s `classes_of` rather than shared with it, because
+/// these cases need to vary the ORACLE set and that one pins a single oracle constant. Tests earn
+/// repetition (`spike/CLAUDE.md` Code style).
+fn classes_of(oracles: &[&str], book_src: &str) -> Vec<SkipClass> {
+    let mut interner = dorc_core::Interner::default();
+    let mut arena = dorc_core::ProvArena::new();
+    let idx = dorc_oracle::lift(&mut interner, oracles).value;
+    let checks: Vec<dorc_oracle::predict::PredictSet> = oracles
+        .iter()
+        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+        .collect();
+    let verdicts = dorc_oracle::verdict::VerdictIndex::of(&mut interner, oracles);
+
+    let parsed = dorc_syntax::parse(book_src).value;
+    let cfg = dorc_analysis::cfg::build(&parsed).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
+    let paths: Vec<String> = (0..oracles.len())
+        .map(|i| format!("o{i}.oracle.sh"))
+        .collect();
+    let mut refs: Vec<&str> = oracles.to_vec();
+    refs.push(book_src);
+    let defs = dorc_cli::world::definition_table(
+        &paths,
+        &refs,
+        dorc_analysis::funcenv::source_file_of_index(oracles.len()),
+        &parsed,
+    );
+    let env = {
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)
+    };
+    let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+
+    let (classified, ..) = dorc_analysis::effect::classify_with_why_diags(
+        &cfg,
+        &value,
+        &parsed,
+        &idx,
+        &checks,
+        &verdicts,
+        &BTreeMap::new(),
+        &dorc_analysis::erase::ErasedSites::none(),
+        &mut interner,
+        &mut arena,
+        &mut BTreeMap::new(),
+        &mut BTreeSet::new(),
+        &mut dorc_analysis::certify::CertifierTrip::default(),
+        live,
+    );
+    classified
+        .value
+        .into_iter()
+        .map(|(_, class)| class)
+        .collect()
+}
+
+/// An oracle that makes `hork tune` an ELIDABLE establish — the control every pin below needs, so
+/// that a pin asserting a LOSS is asserting the loss of something demonstrably present.
+const HORK_PLAIN: &str = "# dorc-lang/v0.2
+hork__predict() {
+   verb=$1; shift
+   widget : sm.dorc.Widget = \"$1\"
+   case $verb in
+      tune) hork status -- \"$widget\"   : sm.dorc.Widget:\"$widget\"@tuned ;;
+   esac
+}
+";
+
+/// The same description, defined ONLY IF the name is free — the polyfill idiom, at oracle top level.
+///
+/// This is the shape `oracle/CLAUDE.md only-load-inert-sources-contribute` names as it discusses
+/// inertness dying in literal: `command -v jq || jq() { … }`. As an oracle top level it is a
+/// COMMAND, so the file is not load-inert.
+const HORK_CONDITIONAL: &str = "# dorc-lang/v0.2
+command -v hork__predict >/dev/null 2>&1 || hork__predict() {
+   verb=$1; shift
+   widget : sm.dorc.Widget = \"$1\"
+   case $verb in
+      tune) hork status -- \"$widget\"   : sm.dorc.Widget:\"$widget\"@tuned ;;
+   esac
+}
+";
+
+fn is_elidable_establish(classes: &[SkipClass]) -> bool {
+    classes
+        .iter()
+        .any(|class| matches!(class, SkipClass::EstablishAmbient(_)))
+}
+
+/// The providers a dialect lift found in `src`, and the role headers it merely DETECTED.
+fn lifted_and_detected(src: &str) -> (Vec<String>, Vec<String>) {
+    let mut interner = dorc_core::Interner::default();
+    let predicts = dorc_oracle::predict::lift_predicts(&mut interner, src).value;
+    let lifted: Vec<String> = predicts
+        .providers()
+        .map(|provider| interner.resolve(provider).to_owned())
+        .collect();
+    let detected: Vec<String> = predicts
+        .unlifted()
+        .map(|found| found.name.clone())
+        .collect();
+    (lifted, detected)
+}
+
+/// `p-blessed-toplevel-conditional` (`30A` §2 P-green, its verify-first arm resolved by measurement)
+/// — a host-conditional definition at oracle top level licenses NOTHING, and this is the shape of
+/// today's refusal.
+///
+/// The sh fact underneath: `command -v X || X() { … }` binds `X` only on a host where `X` was not
+/// already resolvable, so WHETHER that definition exists is a property of the landing host, not of
+/// the text. That is measured, not argued — `floor28-funcdef-as-or-operand` ran this exact shape
+/// under `posh ∩ dash` and both agreed the definition lands only in a free slot.
+///
+/// WHAT `30A` EXPECTED, AND WHAT IS TRUE. The doctrine's guess was that the binding lands can't-say
+/// through the frame solver's conditional machinery. It does not: the frame solver models the BOOK's
+/// conditionals and holds no opinion about an oracle file's. What holds the line is two independent
+/// refusals, both pinned here, and neither is the May-binding the doctrine described — the
+/// load-inertness gate refuses the FILE, and the dialect lift never sees the funcdef at all, because
+/// `parse_file` recognizes a role header only as a TOP-LEVEL ITEM and a definition in the right
+/// operand of `||` is skipped whole. It is not even DETECTED, so the marks-lost backstop
+/// (`oracle::validate`) stays quiet about it too.
+///
+/// Why an engine choice depends on this: the blessing of read-only top-level commands
+/// (`oracle/CLAUDE.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL") makes
+/// this file legal oracle text and retires the first refusal. Whoever lands it must not make the lift
+/// see the funcdef WITHOUT also making the binding `May` — that combination is a wrong-elision route,
+/// and it is what `p-x-blessed-toplevel-conditional` pins.
+#[test]
+fn a_host_conditional_oracle_definition_licenses_nothing() {
+    let slugs: Vec<&str> = dorc_oracle::load_inert::lint_load_inert(HORK_CONDITIONAL)
+        .iter()
+        .map(|diag| diag.code.slug())
+        .collect();
+    assert_eq!(
+        slugs,
+        ["oracle-file-not-load-inert"],
+        "refusal one: the conditional definition is a top-level command, so the file makes no \
+         dialect claim"
+    );
+    assert!(
+        dorc_oracle::load_inert::lint_load_inert(HORK_PLAIN).is_empty(),
+        "control: the unconditional spelling of the same description is inert"
+    );
+
+    let (lifted, detected) = lifted_and_detected(HORK_CONDITIONAL);
+    assert!(
+        lifted.is_empty() && detected.is_empty(),
+        "refusal two: a role funcdef in a `||` operand is skipped as part of one top-level item, so \
+         it is neither lifted nor detected — lifted={lifted:?} detected={detected:?}"
+    );
+    let (plain_lifted, _) = lifted_and_detected(HORK_PLAIN);
+    assert_eq!(
+        plain_lifted,
+        vec!["hork".to_owned()],
+        "control: the unconditional spelling lifts a description"
+    );
+
+    let control = classes_of(&[HORK_PLAIN], "hork tune web\n");
+    assert!(
+        is_elidable_establish(&control),
+        "control: the unconditional description must license, else the loss below is not a loss — \
+         {control:?}"
+    );
+    let conditional = classes_of(&[HORK_CONDITIONAL], "hork tune web\n");
+    assert!(
+        !is_elidable_establish(&conditional),
+        "the outcome both refusals produce: the site licenses nothing — {conditional:?}"
+    );
+}
+
+/// `p-x-blessed-toplevel-conditional` — THE TARGET: once the construct is legal oracle text, the
+/// definition is DESCRIBED and its binding is `May`, so it still licenses nothing.
+///
+/// Two conjuncts, and the pin needs both, because each alone is satisfiable in a way that misses the
+/// point. "Licenses nothing" is already true (the pin above), but VACUOUSLY — the engine never read
+/// the file, so the author's polyfill description is discarded rather than modelled, and that is the
+/// value `rul-unsure-falls-toward-sh-parity` says to capture: sh binds this name conditionally, so
+/// parity is a conditional binding, not silence. "Is described" alone would be a wrong-elision route,
+/// because an unconditionally-read description licenses an elision against a body the host may never
+/// have bound.
+///
+/// FAILS TODAY on the described half (measured: zero lifted rows, zero detected headers). It greens
+/// only when a lane makes the lift see through the `||` AND the environment answer `May` at the same
+/// time — which is the coupling the trigger's ruling owes.
+#[test]
+fn a_described_host_conditional_definition_is_may_bound() {
+    // Setup outside the closure: a panic in there would read as the target still failing.
+    let (lifted, _) = lifted_and_detected(HORK_CONDITIONAL);
+    let conditional = classes_of(&[HORK_CONDITIONAL], "hork tune web\n");
+    internal_tooling::xfail::xfail_until("p-x-blessed-toplevel-conditional", || {
+        assert_eq!(
+            lifted,
+            vec!["hork".to_owned()],
+            "the author's conditional description must be READ, not skipped"
+        );
+        assert!(
+            !is_elidable_establish(&conditional),
+            "and read as May-bound, so it licenses nothing — {conditional:?}"
+        );
+    });
+}
+
+// ---------------------------------------------------------------------------
+// The intra-compound plurality measurement (`30A` §2 `p-x-intra-compound-plurality`, first half).
+
+/// Stage one of a composed pipe: `otelcol --version`, described by an oracle that factors part of its
+/// body into `_pat_of` — and DECLARES `_pat_of` itself.
+const COMPOUND_STAGE_A: &str = "# dorc-lang/v0.2
+_pat_of() {
+   printf '%s\\n' \"$1\"
+}
+otelcol__predict() {
+   case $1 in
+      --version)
+         collector : io.opentelemetry.Collector = \"otelcol\"
+         _pat_of \"$1\"
+         otelcol --version :? io.opentelemetry.Collector:\"otelcol\"@version
+         ;;
+   esac
+}
+";
+
+/// Stage two: `grep -q`, described by a DIFFERENT author who happens to have factored their own body
+/// into a helper of the SAME NAME with DIFFERENT bytes. Loaded second, so sh binds THIS `_pat_of` for
+/// every caller — including stage one's body.
+const COMPOUND_STAGE_B: &str = "# dorc-lang/v0.2
+_pat_of() {
+   printf '%s' \"$1\"
+}
+grep__predict() {
+   while [ \"${1#-}\" != \"$1\" ]; do shift; done
+   pat : sm.dorc.GrepMatch = \"$1\"
+   _pat_of \"$pat\"
+   grep -q -- \"$pat\" :? sm.dorc.GrepMatch:\"$pat\"@matched
+}
+";
+
+/// The composed book both stages come from.
+const COMPOUND_BOOK: &str = "otelcol --version | grep -q 0.155.0\n";
+
+/// Whether `provider`'s predict SHIPS at its pipe-stage site in this world.
+///
+/// Drives the production seat (`dorc_cli::world::ship_predict_body`), whose closure step is
+/// byte-identical to the composed-stage seat's — see
+/// [`the_composed_stage_seat_consults_the_closure`], which is what makes that identity a fact rather
+/// than a claim.
+fn stage_ships(oracles: &[&str], provider_word: &str) -> bool {
+    let mut interner = dorc_core::Interner::default();
+    let checks: Vec<dorc_oracle::predict::PredictSet> = oracles
+        .iter()
+        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+        .collect();
+    let parsed = dorc_syntax::parse(COMPOUND_BOOK).value;
+    let cfg = dorc_analysis::cfg::build(&parsed).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
+    let paths: Vec<String> = (0..oracles.len())
+        .map(|i| format!("o{i}.oracle.sh"))
+        .collect();
+    let srcs: Vec<String> = oracles.iter().map(|src| (*src).to_owned()).collect();
+    let mut refs: Vec<&str> = oracles.to_vec();
+    refs.push(COMPOUND_BOOK);
+    let defs = dorc_cli::world::definition_table(
+        &paths,
+        &refs,
+        dorc_analysis::funcenv::source_file_of_index(oracles.len()),
+        &parsed,
+    );
+    let env = {
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)
+    };
+    let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+    // The book is the last source, so the HELPER index sees the book census exactly as `main` builds
+    // it (`main.rs`'s `HelperIndex::build(&source_refs, source_refs.len() - 1)`).
+    let helpers = dorc_oracle::closure::HelperIndex::build(&refs, Some(oracles.len()));
+
+    let provider = interner.intern(provider_word);
+    let stage = cfg
+        .iter()
+        .filter(|(_, node)| node.kind == dorc_analysis::cfg::CfgNodeKind::Command)
+        .find_map(|(id, _)| {
+            let argv = value.argv_values(id);
+            let dorc_analysis::value::ValueOf::Literal(word0) = argv.first()? else {
+                return None;
+            };
+            (*word0 == provider).then(|| {
+                let operands: Vec<dorc_core::Symbol> = argv
+                    .get(1..)
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|value| match value {
+                        dorc_analysis::value::ValueOf::Literal(sym) => Some(*sym),
+                        dorc_analysis::value::ValueOf::Top(_) => None,
+                    })
+                    .collect();
+                (id, operands)
+            })
+        });
+    assert!(
+        stage.is_some(),
+        "{provider_word} has no pipe-stage command node in the composed book"
+    );
+    let Some((node, argv)) = stage else {
+        return false;
+    };
+
+    dorc_cli::world::ship_predict_body(
+        &srcs, &helpers, &checks, &interner, provider, &argv, node, live,
+    )
+    .is_some()
+}
+
+/// THE MEASUREMENT `30A` §2 ordered before `p-x-intra-compound-plurality` could be pinned: does a
+/// cross-custody plural helper LICENSE anything under a composed predict ship?
+///
+/// It does not, and the shape of the refusal is the interesting part. Two authors each factored their
+/// own predict body into a helper of the same name with different bytes. sh binds the LAST one for
+/// every caller (`28R:rul-resolution-matches-shell-loading`, measured under `posh ∩ dash` by
+/// `floor28-load-order-last-definition-wins`), so stage B's body resolves into its OWN custody and
+/// ships, while stage A's resolves into somebody else's with a real disagreement — the second conjunct
+/// of `307:rul-emission-custody-composite` — and ships nothing. An unshippable stage refuses the WHOLE
+/// compound (`connected_check_pipes`, pinned below), so the pipe runs. No license leaks.
+///
+/// Why an engine choice depends on it: this is the world `p-x-intra-compound-plurality` targets. The
+/// forfeit is real and named (`FORFEITS:forfeit-helper-plurality-withhold`, shape (a)) — two
+/// well-written oracle packages that merely picked the same private helper name cost the compound its
+/// probe. Capturing it needs PER-SEGMENT environments, which is the emission planner's job; what must
+/// never happen in the meantime is the other resolution, where the compound ships with one author's
+/// helper standing in for the other's.
+#[test]
+fn a_cross_custody_plural_helper_ships_no_composed_stage() {
+    assert!(
+        stage_ships(&[COMPOUND_STAGE_A], "otelcol"),
+        "control: stage A ships when it is the only author of its helper"
+    );
+    assert!(
+        stage_ships(&[COMPOUND_STAGE_B], "grep"),
+        "control: stage B ships alone too"
+    );
+
+    let both = [COMPOUND_STAGE_A, COMPOUND_STAGE_B];
+    assert!(
+        !stage_ships(&both, "otelcol"),
+        "stage A's helper now resolves, by sh's last-wins, into stage B's file with differing bytes: \
+         load order would be deciding whose body serves A's description, so A ships nothing"
+    );
+    assert!(
+        stage_ships(&both, "grep"),
+        "and the ASYMMETRY is the finding: B's resolution lands in its own custody, so B still ships \
+         — which is why the compound needs per-segment environments rather than one more refusal"
+    );
+}
+
+/// A composed compound whose participant cannot ship refuses WHOLE — every stage becomes an orphan and
+/// runs. The second half of the measurement above, at the seat that owns the decision.
+#[test]
+fn one_unshippable_stage_refuses_the_whole_compound() {
+    use dorc_analysis::effect::FactKey;
+    use dorc_core::{Context, EntityRef, KindId, OpaqueToken, SelectorId};
+
+    let mut interner = dorc_core::Interner::default();
+    let ast = dorc_syntax::parse(COMPOUND_BOOK).value;
+    let cfg = dorc_analysis::cfg::build(&ast).value;
+    let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+    let otelcol = interner.intern("otelcol");
+    let grep = interner.intern("grep");
+    let matched = SelectorId(interner.intern("matched"));
+    let kind = KindId(interner.intern("grepmatch"));
+    let mut stage_nodes = BTreeMap::new();
+    let mut classes = Vec::new();
+    for (id, node) in cfg.iter() {
+        if node.kind != dorc_analysis::cfg::CfgNodeKind::Command {
+            continue;
+        }
+        let argv = value.argv_values(id);
+        let Some(dorc_analysis::value::ValueOf::Literal(word0)) = argv.first() else {
+            continue;
+        };
+        let word0 = *word0;
+        if word0 != otelcol && word0 != grep {
+            continue;
+        }
+        stage_nodes.insert(word0, id);
+        classes.push((
+            id,
+            SkipClass::QueryResolvable {
+                fact: FactKey {
+                    kind,
+                    entity: EntityRef::Operand(OpaqueToken(word0)),
+                    selector: matched,
+                    context: Context::HostDefault,
+                },
+                valid: true,
+            },
+        ));
+    }
+    assert_eq!(stage_nodes.len(), 2, "both pipe stages were found");
+
+    // The ONE difference from a shippable world: stage A's ship is `None`, which is exactly what a
+    // `ClosureDenial` produces at the composed-stage seat.
+    let ship = |_node, provider, _argv: &[dorc_core::Symbol]| {
+        (provider != otelcol).then(|| dorc_plan::StageShip {
+            sh: "stub__predict() { :; }".to_owned(),
+            produces_real_stdout: true,
+        })
+    };
+    let pipes = dorc_plan::connected_check_pipes(&ast, &cfg, &value, &classes, ship);
+    let governor = *stage_nodes.get(&grep).expect("stage B is the governor");
+    let member = *stage_nodes.get(&otelcol).expect("stage A is the member");
+    assert!(
+        pipes.governing_composed(governor).is_none(),
+        "no composed probe ships when one participant cannot"
+    );
+    assert!(
+        pipes.is_orphan_stage(governor) && pipes.is_orphan_stage(member),
+        "both stages orphan ⇒ both run (can't-say ⇒ run), never a partial compound"
+    );
+}
+
+/// THE FENCE that joins the two halves above: the composed-stage ship seat really does consult the
+/// closure, so a `ClosureDenial` really does become the `None` that refuses a compound.
+///
+/// `ship_predict_stage` is private to the `dorc` binary, so no test can call it. Lexical, like this
+/// workspace's other cross-crate fences (`plan::erase`'s `licence_mint_has_exactly_one_caller`),
+/// because the property is "this seat asks that question", which no type bound expresses. If the seat
+/// is renamed or stops consulting the closure, the measurement above stops composing and this says so.
+#[test]
+fn the_composed_stage_seat_consults_the_closure() {
+    let main_rs = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("main.rs");
+    let text = std::fs::read_to_string(&main_rs).expect("the driver's source is readable");
+    let start = text
+        .find("fn ship_predict_stage(")
+        .expect("the composed-stage ship seat is named `ship_predict_stage`");
+    let body = text.get(start..).unwrap_or_default();
+    let end = body
+        .find("\n}\n")
+        .expect("a top-level fn closes at column zero under rustfmt");
+    let seat = body.get(..end).unwrap_or_default();
+    assert!(
+        seat.contains("helpers.closure_for("),
+        "the composed-stage seat must consult the closure, or a contested composition ships"
+    );
+    assert!(
+        seat.contains(".ok()?"),
+        "and a denial must become `None` — which is what refuses the compound"
+    );
+}

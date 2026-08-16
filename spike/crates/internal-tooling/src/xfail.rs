@@ -151,16 +151,30 @@ pub struct Pin {
 ///
 /// APPEND-ONLY in spirit: a pin leaves this list when its target behaviour lands and the pin
 /// becomes an ordinary test, which is a deliberate act with a diff, never a tidy-up.
-pub const PINS: &[Pin] = &[Pin {
-    name: "d-alpha-rename-equivalence",
-    trigger: "the first alpha-rename build (`30A` §2 P-diff, RESERVED)",
-    horizon: Horizon::Unscheduled {
-        marker: "end-of-r31",
-        why: "reserved by the doctrine and deliberately unbuilt; no alpha-rename mechanism is \
+pub const PINS: &[Pin] = &[
+    Pin {
+        name: "d-alpha-rename-equivalence",
+        trigger: "the first alpha-rename build (`30A` §2 P-diff, RESERVED)",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "reserved by the doctrine and deliberately unbuilt; no alpha-rename mechanism is \
                   scheduled, so the boundary is where the census should ask again",
+        },
+        state: PinState::Reserved,
     },
-    state: PinState::Reserved,
-}];
+    Pin {
+        name: "p-x-blessed-toplevel-conditional",
+        trigger: "the oracle-side blessing of read-only top-level commands \
+                  (`oracle/CLAUDE.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \
+                  LITERAL) — the same ruling that makes the file legal must make its binding May",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "the blessing is human-typed direction with no scheduled stage; this boundary is \
+                  where the census should force the question",
+        },
+        state: PinState::Live,
+    },
+];
 
 /// The pin registered under `name`.
 #[must_use]
