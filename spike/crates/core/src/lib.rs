@@ -227,6 +227,11 @@ pub use claim::{
     VouchAndRung, VouchTier,
 };
 
+pub mod influence;
+pub use influence::{
+    AuthoredBeforeContact, HostInfluenced, HostReported, InfluencePhase, Influenced,
+};
+
 pub mod coord;
 pub use coord::{
     Context, ContextKey, Coord, Dialect, EntityResolution, Relation, compare, selector_covers,
