@@ -24,7 +24,7 @@ use dorc_core::{Interner, Symbol};
 use crate::kinds::KindReaches;
 use crate::results::{ResolvOutcome, SiteResults};
 use crate::why::{oracle_locus, render_coord};
-use crate::world::{ship_predict_body, ship_verdict_body};
+use crate::world::ship_predict_body;
 
 /// Lift each oracle's `touches()` set for the authored survival lane, carrying the lift's
 /// diagnostics out as data rather than printing them from inside the lift (`io-at-edges-only`).
@@ -711,16 +711,26 @@ pub fn build_wrapped_analysis(
         let inner_operands: Vec<Symbol> = inner_rest.iter().map(|a| interner.intern(a)).collect();
         let mut peeled_argv = vec![ValueOf::Literal(inner_provider)];
         peeled_argv.extend(inner_operands.iter().map(|s| ValueOf::Literal(*s)));
-        // The inner check body (predict first, else the auto-cell verdict body) — mirrors the ambient
-        // shape `compile_probe` would ship, now composed inside the entry chain.
+        // ONE resolution of the inner verdict, consumed by every act here that reads a verdict body:
+        // the SHIPPED inner check (`28Q` §4 verdict primacy), the `safe-across` consent vouch, and
+        // pure-predicate carry's read-set-closure proof (`308:rul-carry-proof-is-same-definition`).
+        // `try_carry` takes the body by reference and cannot reach a second definition — the proof, the
+        // consent, and the measured body are one definition by construction, not by a checked
+        // coincidence.
+        let inner_verdict =
+            crate::world::verdict_answering_at(verdict_sets, interner, inner_provider, node, live);
+        let inner_operand_texts: Vec<&str> = inner_rest.iter().map(String::as_str).collect();
+        // The inner check body: a VOUCHING verdict measures, else the predict model, else the
+        // markless verdict body — the entry-composed mirror of the ambient ship seam.
         let Some((inner_fn, inner_sh)) = resolve_inner_check(
             oracle_srcs,
             &helpers,
             checks,
-            verdict_sets,
+            inner_verdict.as_ref(),
             inner_word,
             inner_provider,
             &inner_operands,
+            &inner_operand_texts,
             interner,
             node,
             live,
@@ -747,14 +757,7 @@ pub fn build_wrapped_analysis(
             inner_sh,
             inner_argv: inner_operands,
         };
-        // ONE resolution of the inner verdict, consumed by BOTH acts that read a verdict body here:
-        // the `safe-across` consent vouch and pure-predicate carry's read-set-closure proof
-        // (`308:rul-carry-proof-is-same-definition`). `try_carry` takes the body by reference and
-        // cannot reach a second definition — the proof and the measured body are one definition by
-        // construction, not by a checked coincidence.
-        let inner_verdict =
-            crate::world::verdict_answering_at(verdict_sets, interner, inner_provider, node, live)
-                .map(|(_, v)| v);
+        let inner_verdict = inner_verdict.map(|(_, v)| v);
         // An identity chain (HostDefault) needs NO entry — it ships the plain inner check in the
         // ambient world. A shifted chain runs the two-axis consent decision (`27C` §1).
         let decision = if context == dorc_core::Context::HostDefault {
@@ -1171,10 +1174,22 @@ fn resolved_pair_incoherence(
     None
 }
 
-/// Resolve the inner oracle's check for a wrapped site's entry-composed probe (`27N`): the `__predict`
-/// body if the inner is a modeled command, else the auto-cell `__is_converged` verdict body (the
-/// markless shape). `None` ⇒ no inner check ⇒ the site can't be probed ⇒ runs. Returns
-/// `(mangled funcname, stripped funcdef)` — the funcname matches the strip's mangled name byte-for-byte.
+/// Resolve the inner oracle's check for a wrapped site's entry-composed probe (`27N`). `None` ⇒ no
+/// inner check ⇒ the site can't be probed ⇒ runs. Returns `(mangled funcname, stripped funcdef)` —
+/// the funcname matches the strip's mangled name byte-for-byte.
+///
+/// `28Q` §4 `rul-verdict-primacy-at-the-ship-seat`, the wrapped seat: a VOUCHING inner verdict owns
+/// the measurement, so it ships ahead of any predict that also answers. Two consequences beyond the
+/// ambient seat's. The entry-tolerance mark rides the body that EXECUTES — as-built the `safe-across`
+/// consent was lifted from `__is_converged` while the predict could ship, a consent mark on a function
+/// that does not run. And `build_wrapped_vouches` mints its guard from THIS body
+/// (`composed.inner_fn`/`inner_sh`), so a predict body could reach apply-time guard position, which
+/// `plan/CLAUDE.md never-synthesized-never-mutating` refuses: the vouch traced the verdict while the
+/// guard ran the model.
+///
+/// Hence the deliberate asymmetry — when the verdict vouches but its body cannot ship (a contested
+/// closure), this returns `None` rather than falling back to the predict. The vouch would still mint
+/// for this site, and a guard carrying the model is worse than a site that runs (`inv-kfail`).
 #[expect(
     clippy::too_many_arguments,
     reason = "the entry-composed ship is a SITE-keyed act like every other (`28K` §2), so it takes \
@@ -1184,16 +1199,32 @@ fn resolve_inner_check(
     oracle_srcs: &[String],
     helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
-    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    inner_verdict: Option<&(usize, dorc_oracle::predict::Predict)>,
     inner_word: &str,
     inner_provider: Symbol,
     inner_operands: &[Symbol],
+    inner_operand_texts: &[&str],
     interner: &Interner,
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<(String, String)> {
     use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::verdict::{VerdictResolution, evaluate_verdict};
     let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
+    // Entry-composition is out of both the tier-3 drain scope and the span-threading scope this
+    // round: the composed body has no single defining funcdef to name, so its site stays span-less.
+    let verdict_ship = |file: usize, verdict: &dorc_oracle::predict::Predict| {
+        crate::world::ship_resolved_verdict(oracle_srcs, helpers, interner, file, verdict)
+            .map(|shipped| (format!("{seg}__is_converged"), shipped.sh))
+    };
+    if let Some((file, verdict)) = inner_verdict
+        && matches!(
+            evaluate_verdict(verdict, inner_operand_texts),
+            VerdictResolution::Vouched
+        )
+    {
+        return verdict_ship(*file, verdict);
+    }
     if let Some(shipped) = ship_predict_body(
         oracle_srcs,
         helpers,
@@ -1206,18 +1237,8 @@ fn resolve_inner_check(
     ) {
         return Some((format!("{seg}__predict"), shipped.sh));
     }
-    // Entry-composition is out of both the tier-3 drain scope and the span-threading scope this
-    // round: the composed body has no single defining funcdef to name, so its site stays span-less.
-    let shipped = ship_verdict_body(
-        oracle_srcs,
-        helpers,
-        verdict_sets,
-        interner,
-        inner_provider,
-        node,
-        live,
-    )?;
-    Some((format!("{seg}__is_converged"), shipped.sh))
+    let (file, verdict) = inner_verdict?;
+    verdict_ship(*file, verdict)
 }
 
 /// Every diagnostic the WRAPPED-SITE and SURVIVAL lanes raise for one world — the harness half of
@@ -1806,6 +1827,94 @@ mod tests {
         assert_eq!(
             resolved_kind([second.as_str(), first.as_str()]),
             "first.dorc.Package"
+        );
+    }
+
+    /// One file where `hork` authors BOTH members, so the wrapped ship seat has a real choice: the
+    /// predict models `tune` and `poke`, the verdict vouches `tune` alone.
+    const BOTH_MEMBERS: &str = "# dorc-lang/v0.2\n\
+         hork__predict() {\n\
+         \x20  verb=$1; shift\n\
+         \x20  thing : sm.dorc.Hork = \"$1\"\n\
+         \x20  case $verb in\n\
+         \x20  tune) hork model -- \"$thing\" : sm.dorc.Hork:\"$thing\"@tuned ;;\n\
+         \x20  poke) hork model -- \"$thing\" : sm.dorc.Hork:\"$thing\"@poked ;;\n\
+         \x20  esac\n\
+         }\n\
+         hork__is_converged() {\n\
+         \x20  verb=$1; shift\n\
+         \x20  case $verb in\n\
+         \x20  tune) hork query -- \"$1\" ;;\n\
+         \x20  *) return 2 ;;\n\
+         \x20  esac\n\
+         }\n";
+
+    /// Which body the wrapped seat ships for the peeled inner argv `hork <verb> wombat`, as the
+    /// mangled funcname the entry composition invokes.
+    fn inner_check_fn(verb: &str) -> String {
+        let mut interner = Interner::default();
+        let srcs = vec![BOTH_MEMBERS.to_owned()];
+        let refs: Vec<&str> = srcs.iter().map(String::as_str).collect();
+        let helpers = dorc_oracle::closure::HelperIndex::build(&refs);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut interner, BOTH_MEMBERS).value];
+        let verdict_sets =
+            vec![dorc_oracle::verdict::VerdictSet::lift(&mut interner, BOTH_MEMBERS).value];
+        let provider = interner.intern("hork");
+        // Anti-masking: without both members lifted the seat has no choice to make, and every
+        // assertion below would pass vacuously on whichever one survived.
+        assert!(
+            checks[0].get(provider).is_some(),
+            "the fixture must lift a predict"
+        );
+        assert!(
+            verdict_sets[0].get(provider).is_some(),
+            "the fixture must lift a verdict"
+        );
+        let operands = [interner.intern(verb), interner.intern("wombat")];
+        let texts = [verb, "wombat"];
+        // The hint-lane posture: no environment solved, so a SOLE declaration answers
+        // (`LiveDefinitions::unsolved`). The seat under test is the ship CHOICE, not the resolution.
+        let live = dorc_analysis::funcenv::LiveDefinitions::unsolved();
+        let node = dorc_analysis::cfg::CfgNodeId(0);
+        let inner_verdict =
+            crate::world::verdict_answering_at(&verdict_sets, &interner, provider, node, live);
+        let (fn_name, _) = super::resolve_inner_check(
+            &srcs,
+            &helpers,
+            &checks,
+            inner_verdict.as_ref(),
+            "hork",
+            provider,
+            &operands,
+            &texts,
+            &interner,
+            node,
+            live,
+        )
+        .expect("both members answer this fixture");
+        fn_name
+    }
+
+    /// `28Q` §4 `rul-verdict-primacy-at-the-ship-seat` at the WRAPPED seat: a vouching inner verdict
+    /// ships ahead of a predict that also answers.
+    ///
+    /// Both halves are load-bearing, and the second is why this is not merely a preference. The
+    /// declining verb must keep the predict, because `build_wrapped_vouches` mints NO vouch there —
+    /// while for the vouching verb it mints one FROM this very body, so a predict winning `tune`
+    /// would put the model in apply-time guard position and lift the `safe-across` consent off a
+    /// function that never runs.
+    #[test]
+    fn a_vouching_inner_verdict_ships_ahead_of_the_predict_at_a_wrapped_site() {
+        assert_eq!(
+            inner_check_fn("tune"),
+            "hork__is_converged",
+            "the vouching author's body measures, and is the body the wrapped vouch guards with"
+        );
+        assert_eq!(
+            inner_check_fn("poke"),
+            "hork__predict",
+            "the verdict declines this verb, so there is no elision for it to license and the \
+             model keeps feeding the site's concern topology"
         );
     }
 }

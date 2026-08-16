@@ -870,11 +870,27 @@ pub fn ship_verdict_body(
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
-    use dorc_oracle::predict::strip_verdict;
     let (idx, verdict) = verdict_answering_at(verdict_sets, interner, provider, node, live)?;
+    ship_resolved_verdict(oracle_srcs, helpers, interner, idx, &verdict)
+}
+
+/// The emit half of [`ship_verdict_body`], over a definition the caller ALREADY resolved.
+///
+/// The wrapped lane holds its inner verdict resolved (`308:rul-carry-proof-is-same-definition` — one
+/// definition feeds the shipped body, the entry tolerance, and the carry proof together), so it emits
+/// through here rather than resolving a second time.
+#[must_use]
+pub fn ship_resolved_verdict(
+    oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
+    interner: &Interner,
+    idx: usize,
+    verdict: &dorc_oracle::predict::Predict,
+) -> Option<dorc_plan::ShippedCheck> {
+    use dorc_oracle::predict::strip_verdict;
     let src = oracle_srcs.get(idx)?;
-    let emits_report = dorc_oracle::report::emits_report(&verdict);
-    let body = strip_verdict(src, &verdict, interner);
+    let emits_report = dorc_oracle::report::emits_report(verdict);
+    let body = strip_verdict(src, verdict, interner);
     let closure = helpers.closure_for(idx, &body).ok()?;
     Some(dorc_plan::ShippedCheck::verdict(
         format!("{}{body}", closure.sh),
