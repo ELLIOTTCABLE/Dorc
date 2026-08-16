@@ -897,39 +897,28 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     }
     // The withdrawal, applied ONCE to the lifted sets so no downstream consumer has to remember to
     // ask: a contested family becomes indistinguishable from one nobody described.
-    // TWO withdrawals ride this seat: the family-wide one above, and per file the roles whose
-    // definition THERE the environment proves binds nowhere — which is what keeps `live_source`'s
-    // whole-unit answer and the positional gate two readings of one environment (`28M` §9).
+    //
+    // It used to carry a SECOND withdrawal beside the contested one — per file, the roles whose
+    // definition there the environment proves binds nowhere. The frame conversion retired it
+    // (`28Q` §1): a never-live definition is live at no frame, so no resolution seat can select its
+    // rows, and subtracting them bought nothing a lookup was not already doing. The liveness itself
+    // is still owed to the one seat resolution does not cover — `build_dialect`'s whole-unit fold —
+    // and travels there as data (`binds_somewhere`) rather than as a missing row.
     let never_live = dorc_analysis::funcenv::never_live(&definitions, &env);
-    let dead_predicts = never_live_withdrawals(
-        &never_live,
-        source_refs.len(),
-        dorc_oracle::predict::PREDICT_SUFFIX,
-    );
-    let dead_verdicts = never_live_withdrawals(
-        &never_live,
-        source_refs.len(),
-        dorc_oracle::verdict::VERDICT_SUFFIX,
-    );
     let checks: Vec<dorc_oracle::predict::PredictSet> = checks
         .into_iter()
-        .zip(dead_predicts)
-        .map(|(set, dead)| {
-            set.withdrawing(&contested, &interner)
-                .withdrawing(&dead, &interner)
-        })
+        .map(|set| set.withdrawing(&contested, &interner))
         .collect();
     let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = verdict_sets
         .into_iter()
-        .zip(dead_verdicts)
-        .map(|(set, dead)| {
-            set.withdrawing(&contested, &interner)
-                .withdrawing(&dead, &interner)
-        })
+        .map(|set| set.withdrawing(&contested, &interner))
         .collect();
-    let idx = dorc_oracle::lift_from_sets(&mut interner, &checks)
-        .value
-        .withdrawing(&contested, &interner);
+    let dead_predicts = never_live_predict_rows(&never_live, &checks, &interner);
+    let idx = dorc_oracle::lift_from_sets(&mut interner, &checks, |file, provider| {
+        !dead_predicts.contains(&(file, provider))
+    })
+    .value
+    .withdrawing(&contested, &interner);
     // The `24L` §7 kernel seam, widened by `26H` §3: the kernel stays verdict-unaware, so the edge
     // keys the role by provider and threads it in as DATA. From the sets above ⇒ ONE lift.
     let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
@@ -2297,25 +2286,38 @@ fn positional_loading_notices(
     diags
 }
 
-/// Per source file, the role FAMILIES whose `suffix` member that file declares and the function
-/// environment proves is never live ([`dorc_analysis::funcenv::never_live`]).
+/// The `(file, provider)` predict rows whose defining funcdef the environment proves binds at NO
+/// program point ([`dorc_analysis::funcenv::never_live`]).
 ///
-/// Applied per FILE to a per-ROLE lifted vector, so it withdraws exactly one role of one family
-/// from one file: the family-wide reading the contest withdrawal uses would take a live sibling
+/// The ONE consumer is `build_dialect`'s whole-unit minting fold, reached through
+/// `lift_from_sets`' `binds_somewhere`. Every SITE-KEYED consumer already declines such a row by
+/// resolution — the frame names a definition and a dead one is named at no frame — so this exists
+/// solely because the dialect asks a question no frame answers: which tokens the unit's authors
+/// minted AT ALL. A dead polyfill body's tokens are not among them, and letting them in would
+/// enlarge or shift the sparing dialect, which spares MORE (`28Q` §9 `pin-two-position-sparing`).
+///
+/// Keyed by the PREDICT member specifically, not the family: the dialect mints from predict-derived
+/// cells alone, and the family-wide reading the contest withdrawal uses would take a live sibling
 /// member down with a dead one.
-fn never_live_withdrawals(
+fn never_live_predict_rows(
     never_live: &BTreeSet<(String, dorc_core::SourceFileId)>,
-    files: usize,
-    suffix: &str,
-) -> Vec<dorc_core::ContestedFamilies> {
-    (0..files)
-        .map(|i| {
-            dorc_core::ContestedFamilies::new(never_live.iter().filter_map(|(name, file)| {
-                let (base, role) = dorc_oracle::reserved::role_family(name)?;
-                (role == suffix && file.0 as usize == i).then(|| base.to_owned())
-            }))
-        })
-        .collect()
+    checks: &[dorc_oracle::predict::PredictSet],
+    interner: &Interner,
+) -> BTreeSet<(usize, Symbol)> {
+    let mut out = BTreeSet::new();
+    for (file, set) in checks.iter().enumerate() {
+        for provider in set.providers() {
+            let name = format!(
+                "{}{}",
+                dorc_oracle::to_funcname_segment(interner.resolve(provider)),
+                dorc_oracle::predict::PREDICT_SUFFIX
+            );
+            if never_live.contains(&(name, source_file_id(file))) {
+                out.insert((file, provider));
+            }
+        }
+    }
+    out
 }
 
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier

@@ -107,24 +107,27 @@ discipline: one rule per bullet, slugged; append to the matching section.
   by NAME only: `command -v <literal name the unit DEFINES>` (the universe restriction is what
   keeps an ordinary host PATH probe out) and `[ -f <path the controller resolved as loadable> ]`,
   which decides TRUE only. Keyed on condition DECIDABILITY, never guard SHAPE
-  (`28K:rul-conflict-pass-is-semantic`). Because `funcenv::never_live` subtracts EXACTLY
-  (a wrong subtraction SHIFTS a winner — grants, never merely loses), any widening of the
-  decidable set is a WINNER-SHIFTING licensure surface: license-review-tier, never a
-  convenience patch (`28P:adj-never-live-exactness-accepted`). Two riders carry the
+  (`28K:rul-conflict-pass-is-semantic`). Because every environment answer now SELECTS A WINNER —
+  each resolution seat directly, and `funcenv::never_live` for the dialect's minting scan — any
+  widening of the decidable set is a WINNER-SHIFTING licensure surface: license-review-tier, never a
+  convenience patch (`28P:adj-never-live-exactness-accepted`; `28Q` §1). Two riders carry the
   correctness: an UNREACHED node's
   transfer produces ⊥, not ⊤, or a masked-dead region still poisons the join it never reaches;
   and a decision, once taken, is stable under further masking (masking only removes paths, so a
   `Defined(d)` stays `d` or becomes unreached), which is what makes every intermediate state
   independently sound and running out of rounds a precision loss only.
-- **never-live-subtracts-from-the-whole-unit-answer** (`28M` §9) — the fold reaches the BINDING;
-  `funcenv::never_live` is what carries it to the LICENSE. `dorc_oracle::live_source` answers
-  the whole-unit winner by taking the last file that DECLARES the role, which counts text and
-  not bindings — so a guard the fold proved dead still won that answer by being last, and the
-  site-keyed agreement gate then withheld: the same silent wall, one seat along. The cli
-  subtracts these `(role name, file)` pairs per file, beside the contested withdrawal, so every
-  seat resolves over one population. This one is EXACT, not conservative: removal SHIFTS the
-  winner rather than withholding, so it must be right — and it is, because a definition no
-  program point binds is one no execution can call. Never widen it to "probably dead".
+- **never-live-feeds-the-dialect-fold-only** (`28M` §9, re-cut at `28Q` §1) — the fold reaches the
+  BINDING; `funcenv::never_live` is what carries it to the ONE seat resolution does not cover. Its
+  per-file WITHDRAWAL is RETIRED: every site-keyed act resolves through `LiveDefinitions`, and a
+  never-live definition is named at no frame, so subtracting its rows bought nothing the lookup was
+  not already doing. What survives is `dorc_oracle::build_dialect`'s whole-unit minting scan — which
+  selector tokens the unit's authors minted AT ALL — a question with no frame to ask from, and one a
+  dead define-if-absent body would otherwise answer by being last to DECLARE. The pairs travel to
+  `lift_from_sets` as `binds_somewhere` data rather than as missing rows. Still EXACT, not
+  conservative: it SHIFTS the minting winner rather than withholding, and a bigger or different
+  dialect SPARES MORE (`28Q` §9 `pin-two-position-sparing`), so it must be right — and it is,
+  because a definition no program point binds is one no execution can call. Never widen it to
+  "probably dead", and never let a seat read it for anything but the dialect.
 - **translation-fence-binds-lattice-too** (`304`) — `lattice.rs` is inside the TRANSLATED
   algebra tier (`spike/verify/aeneas/src/lib.rs` `#[path]`-includes this very file), so
   `core/CLAUDE.md`'s `keep-borrows-out-of-closure-returns` binds it verbatim: no
@@ -222,7 +225,9 @@ discipline: one rule per bullet, slugged; append to the matching section.
   the cross-window CLEANUP consumer is plan-crate law (`plan/CLAUDE.md`).
 - **floors-are-whole-window-and-demote-only** — an `Inconsistent` demotes the ENTIRE
   analysis window; summaries (first-break, unstable components) explain, never scope.
-  The funcenv floor BREAKS the fold at the failing round with `folded_edges = ∅` —
-  `never_live` subtracts exactly and would GRANT on unchecked states otherwise
-  (`303:fnd-never-live-is-the-grant-shifting-consumer`). No recovery mechanism, ever
+  The funcenv floor BREAKS the fold at the failing round with `folded_edges = ∅` — every
+  environment answer is winner-shifting under true resolution and `never_live` subtracts exactly
+  besides, so edges folded from uncertified states would GRANT
+  (`303:fnd-never-live-is-the-grant-shifting-consumer`, generalized at `28Q` §1; pinned
+  independently by `the_fold_breaks_to_its_floor_at_the_failing_round`). No recovery mechanism, ever
   (`302` §9: recovery failures correlate with the trigger's own causes).

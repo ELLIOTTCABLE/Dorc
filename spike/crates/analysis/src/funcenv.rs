@@ -1035,19 +1035,19 @@ pub fn unprovable(defs: &DefinitionTable, env: &FuncEnv, exit: CfgNodeId) -> BTr
 /// Every `(role name, source file)` whose definition the environment proves binds at NO program
 /// point — a definition no execution of this unit could call, however late it sits in load order.
 ///
-/// **Why the whole-unit resolution seat needs this.** `dorc_oracle::live_source` answers "which
-/// file's definition would a shell have live" by taking the LAST file that DECLARES the role.
-/// That reads text, not bindings — so a define-if-absent guard whose condition the fold proves
-/// false still won the whole-unit answer, and the site-keyed agreement gate
-/// (`28P:dec-the-gate-is-agreement-not-re-resolution`) then withheld: the same silent wall the
-/// fold exists to remove, one seat further along. Subtracting these pairs is what keeps the
-/// ambient winner and the positional read two answers off ONE environment (`28M` §9), rather
-/// than making the site-keyed seats re-resolve — which is the shape that ruling rejected.
+/// **Why anything still needs this.** Every SITE-KEYED act now resolves through
+/// [`LiveDefinitions::definition_before`], and a never-live definition is named at no frame, so no
+/// resolution seat can reach its rows: the withdrawal this used to drive retired with the
+/// conversion (`28Q` §1). What did NOT retire is the ONE whole-unit fold resolution does not cover
+/// — `dorc_oracle::build_dialect`'s minting scan, which asks which selector tokens the unit's
+/// authors minted AT ALL (`28Q` §9 `pin-two-position-sparing`). That question has no frame to ask
+/// from, and a define-if-absent body the fold proved dead would otherwise mint vocabulary no
+/// execution could have uttered — enlarging or shifting the sparing dialect, which spares MORE.
 ///
-/// The exactness matters, because removal SHIFTS the winner rather than merely withholding: this
-/// is not a conservative filter, it must be RIGHT. It is — a definition no program point binds
-/// is one no execution can call. Empty when the solve did not converge, since every binding is
-/// then ⊤ and [`unprovable`] withholds those families outright.
+/// The exactness matters, because removal SHIFTS the minting winner rather than merely
+/// withholding: this is not a conservative filter, it must be RIGHT. It is — a definition no
+/// program point binds is one no execution can call. Empty when the solve did not converge, since
+/// every binding is then ⊤ and [`unprovable`] withholds those families outright.
 ///
 /// Grouped per `(name, file)` because a file may hold two definitions of one name — the
 /// within-file redefinition the `216` e-1 refusal owns — and the pair is dead only when every one
@@ -1486,10 +1486,13 @@ mod tests {
     /// `302` §6.8 — the FOLD BREAKS at the failing round, and the floor it lands on carries
     /// **`folded_edges = ∅`**.
     ///
-    /// This is the lane's sharpest correctness obligation. `never_live` subtracts EXACTLY and so
-    /// SHIFTS WINNERS, which means edges folded from states that never certified would GRANT on
-    /// unchecked evidence — a detected engine defect converted into a license. Merely stopping the
-    /// fold would leave exactly those edges behind, so the test asserts the break, not the stop.
+    /// This is the lane's sharpest correctness obligation, and it stands INDEPENDENT of any one
+    /// consumer: under true resolution every environment answer SHIFTS WINNERS (`28Q` §1 — it
+    /// selects whose judgment governs a site, with no agreement veto behind it), and `never_live`
+    /// shifts the dialect's minting winner besides. Edges folded from states that never certified
+    /// would therefore GRANT on unchecked evidence — a detected engine defect converted into a
+    /// license. Merely stopping the fold would leave exactly those edges behind, so the test
+    /// asserts the break, not the stop.
     ///
     /// The certifier is REAL and unmocked (anti-masking): the round-solver hands back a genuinely
     /// perturbed solution and `certify_solution` is what judges it. Only the SOLVER is faulted —

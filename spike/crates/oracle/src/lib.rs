@@ -408,14 +408,6 @@ pub fn live_source(count: usize, defines: impl Fn(usize) -> bool) -> Option<usiz
     (0..count).rev().find(|&i| defines(i))
 }
 
-/// [`live_source`] over a slice of per-file [`PredictSet`](predict::PredictSet)s, keyed by the
-/// provider symbol as each set spells it.
-fn dorc_oracle_live_source(sets: &[predict::PredictSet], provider: Symbol) -> Option<usize> {
-    live_source(sets.len(), |i| {
-        sets.get(i).is_some_and(|s| s.get(provider).is_some())
-    })
-}
-
 /// Lift a set of oracle sh sources into the kind index, interning kind/provider/verb
 /// names through the shared `interner` (so they match the names the book analysis
 /// interns). The effect-map is DERIVED from each oracle's `<provider>__predict` bodies
@@ -436,7 +428,9 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
         .iter()
         .map(|src| predict::lift_predicts(interner, src).value)
         .collect();
-    lift_from_sets(interner, &per_source)
+    // No function environment reaches this entry point, so it holds no opinion about which
+    // definitions bind — the `LiveDefinitions::unsolved` posture, spelled here as "all of them".
+    lift_from_sets(interner, &per_source, |_, _| true)
 }
 
 /// [`lift`] over already-lifted per-file [`PredictSet`](predict::PredictSet)s, for a driver that
@@ -448,9 +442,20 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
 /// EVERY file's rows are kept (`28Q` §1.1): which of them answers is a question about the asking
 /// frame, and a lift that pre-selected a whole-unit winner could not answer two frames differently.
 /// The selection moved to the consumers, where [`dorc_core::answering_file`] holds the rule.
+///
+/// `binds_somewhere` answers, for one `(file, provider)`, whether that file's predict definition
+/// binds at ANY program point. It feeds the dialect fold and NOTHING else
+/// ([`KindIndex::dialect_minting_source`]). A definition no execution can call must not mint sparing
+/// vocabulary, and this is the seat that used to get that for free: the cli pre-withdrew never-live
+/// definitions from these sets, so the fold's text scan could not see them. That withdrawal retired
+/// with the frame conversion (`28Q` §1 — a never-live definition is live at no frame, so no
+/// RESOLUTION seat can reach it), and the whole-unit fold is the one seat resolution does not cover,
+/// so the liveness arrives here as data instead. A driver with no function environment passes
+/// "everything binds", the `LiveDefinitions::unsolved` posture.
 pub fn lift_from_sets(
     interner: &mut Interner,
     per_source: &[predict::PredictSet],
+    binds_somewhere: impl Fn(usize, Symbol) -> bool,
 ) -> Carrier<KindIndex> {
     let mut out = Carrier::pure(KindIndex::default());
     for (index, checks) in per_source.iter().enumerate() {
@@ -481,8 +486,16 @@ pub fn lift_from_sets(
             }
             let raw_provider = provider;
             let provider = ProviderId(provider);
-            // The dialect's whole-unit winner, and nothing else reads it (`28Q` §9).
-            if dorc_oracle_live_source(per_source, raw_provider) == Some(index) {
+            // The dialect's whole-unit winner, and nothing else reads it (`28Q` §9). Scanned over
+            // the definitions that BIND, so a dead polyfill body cannot mint tokens no execution
+            // could have uttered.
+            let minting = live_source(per_source.len(), |i| {
+                per_source
+                    .get(i)
+                    .is_some_and(|s| s.get(raw_provider).is_some())
+                    && binds_somewhere(i, raw_provider)
+            });
+            if minting == Some(index) {
                 out.value.set_dialect_minting_source(provider, index);
             }
             for (verb, cells) in by_verb {
@@ -776,6 +789,50 @@ mod tests {
             out.value.widening_of(0, dpkg, eps).is_empty(),
             "a standalone observe widens nothing"
         );
+    }
+
+    /// A definition the environment proves binds NOWHERE mints no sparing vocabulary, even when it
+    /// is the last file to declare the provider.
+    ///
+    /// This is what the retired never-live WITHDRAWAL used to buy for free: the cli subtracted such
+    /// a definition before the lift, so the minting scan could not see it. Every site-keyed seat now
+    /// declines it by resolution instead (`28Q` §1), but `build_dialect` asks a whole-unit question
+    /// no frame answers, so the liveness reaches it as `binds_somewhere`. Letting a dead body mint
+    /// would ENLARGE or SHIFT the dialect, and a larger dialect spares MORE — the naked-trust tier's
+    /// dangerous direction (`28Q` §9 `pin-two-position-sparing`).
+    ///
+    /// Both halves are asserted from one fixture: with the second file's definition dead the first
+    /// file's tokens mint, and with nothing dead the second file's do.
+    #[test]
+    fn a_never_live_definition_mints_no_dialect_tokens() {
+        const FIRST: &str = "# dorc-lang/v0.2\n\
+             hork__predict() {\n\
+             \x20  case ${1-} in tune) hork q \"$2\" : sm.dorc.Widget:\"$2\"@first ;; esac\n\
+             }\n";
+        const SECOND: &str = "# dorc-lang/v0.2\n\
+             hork__predict() {\n\
+             \x20  case ${1-} in tune) hork q \"$2\" : sm.dorc.Widget:\"$2\"@second ;; esac\n\
+             }\n";
+
+        let minted = |dead_second: bool| {
+            let mut i = Interner::default();
+            let sets: Vec<predict::PredictSet> = [FIRST, SECOND]
+                .iter()
+                .map(|src| predict::lift_predicts(&mut i, src).value)
+                .collect();
+            let idx = lift_from_sets(&mut i, &sets, |file, _| !(dead_second && file == 1)).value;
+            let dialect = build_dialect(&idx);
+            let hork = ProviderId(i.intern("hork"));
+            let widget = KindId(i.intern("sm.dorc.Widget"));
+            dialect
+                .tokens(Some(hork), widget)
+                .iter()
+                .map(|s| i.resolve(s.0).to_owned())
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(minted(true), vec!["first".to_owned()]);
+        assert_eq!(minted(false), vec!["second".to_owned()]);
     }
 
     #[test]
