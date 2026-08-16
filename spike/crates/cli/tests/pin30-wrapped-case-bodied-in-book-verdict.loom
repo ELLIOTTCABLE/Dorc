@@ -5,7 +5,8 @@ fixpoint: executed
 -- book.sh --
 #!/bin/sh
 # dorc-lang/v0.2
-# EXPECTED-TO-FLIP at stage-i: the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there today.
+# pin30-wrapped-case-bodied-in-book-verdict — the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there. MEASURED, not expected: this rode stage-i as an expected-to-flip diagnostic and did NOT flip, so `28Q` §1's asserted cause (oracle-only vectors at the wrapped seat) is REFUTED — `build_wrapped_analysis` already took the source-wide vectors before that lane began, and the wrapper-lane conversion did not move it either.
+# THE LEAD, from the corpus rather than from a hypothesis: pin28-wrapped-vouch-answers-at-a-live-site is the SAME world with the SAME sudo oracle and an in-book verdict at the same wrapped site, and it ships its check and elides. The only difference is the verdict body's SHAPE — straight-line there, case-with-decline-arm here — so the discriminator is body shape, not vector membership. The chase is banked; the behaviour is conservative (the site runs), so this is value-loss, never a license bug.
 hork__is_converged() {
    : safe-across user
    case "$1" in
@@ -35,8 +36,9 @@ sudo__enter() {
 }
 
 -- probe-results.txt --
-# EMPTY, and that emptiness IS the flip signal: the day this site ships a check, gate-1 goes red
-# because the probe produced a record this file does not carry.
+# EMPTY, and that emptiness is still the alarm: the day this site ships a check, gate-1 goes red
+# because the probe produced a record this file does not carry. That is what a diagnosis landing
+# looks like from here, so the cell stays exactly as it is until one does.
 
 -- mocks/.log --
 # newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
@@ -90,7 +92,7 @@ $ dorc --book=book.sh -o sudo.oracle.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=dc18a026c464f2d92faf68808030fc508298d35e730584680f6a9cbe62dd1351 sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=82fc34aa65157f038b32c78f1fed291764452633a7171a83e2f861e7af8aea7b sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
@@ -98,7 +100,8 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 
 #!/bin/sh
 # dorc-lang/v0.2
-# EXPECTED-TO-FLIP at stage-i: the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there today.
+# pin30-wrapped-case-bodied-in-book-verdict — the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there. MEASURED, not expected: this rode stage-i as an expected-to-flip diagnostic and did NOT flip, so `28Q` §1's asserted cause (oracle-only vectors at the wrapped seat) is REFUTED — `build_wrapped_analysis` already took the source-wide vectors before that lane began, and the wrapper-lane conversion did not move it either.
+# THE LEAD, from the corpus rather than from a hypothesis: pin28-wrapped-vouch-answers-at-a-live-site is the SAME world with the SAME sudo oracle and an in-book verdict at the same wrapped site, and it ships its check and elides. The only difference is the verdict body's SHAPE — straight-line there, case-with-decline-arm here — so the discriminator is body shape, not vector membership. The chase is banked; the behaviour is conservative (the site runs), so this is value-loss, never a license bug.
 hork__is_converged() {
    : safe-across user
    case "$1" in
