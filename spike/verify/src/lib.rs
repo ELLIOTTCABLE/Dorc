@@ -46,6 +46,13 @@ pub fn repo_root() -> &'static Path {
 }
 
 /// The staged Lean build root: user-local, ext4, deliberately outside the synced tree.
+///
+/// Per-WORKTREE, for the reason `mise.toml` gives `CARGO_TARGET_DIR` the same treatment: the
+/// fleet lives in `.claude/worktrees/*`, and one shared root means this worktree builds the UNION
+/// of its own corpus and whatever a sibling left behind — a channel that carried a real green
+/// build over a unit the repository had deleted (`30B:fnd-lean-staging-never-removes-stale-files`).
+/// The key is the worktree directory's own name, exactly as that file spells it.
+/// `internal-tooling`'s preflight re-derives this path by rule; the two move together.
 #[must_use]
 pub fn lean_build_root() -> PathBuf {
     std::env::var_os("DORC_MINISPEC_BUILD_ROOT").map_or_else(
@@ -54,8 +61,16 @@ pub fn lean_build_root() -> PathBuf {
                 .map(PathBuf::from)
                 .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))
                 .unwrap_or_else(std::env::temp_dir);
-            cache.join("dorc-minispec-lean")
+            cache.join(format!("dorc-minispec-lean-{}", worktree_key()))
         },
         PathBuf::from,
     )
+}
+
+/// This worktree's own name, the suffix that keeps one lane's caches out of another's.
+#[must_use]
+pub fn worktree_key() -> String {
+    repo_root()
+        .file_name()
+        .map_or_else(|| "root".to_owned(), |name| name.to_string_lossy().into())
 }

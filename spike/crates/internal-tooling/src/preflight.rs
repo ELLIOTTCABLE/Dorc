@@ -94,8 +94,9 @@ const PROFILES: [Profile; 4] = [
     Profile {
         name: "lean",
         cache: Cache::Lean,
-        // Measured: the staged build root `~/.cache/dorc-minispec-lean` at 7.7 GiB (mathlib's
-        // olean store dominates) plus elan's toolchain store at 2.8.
+        // Measured: the staged build root `~/.cache/dorc-minispec-lean-<worktree>` at
+        // 7.7 GiB (mathlib's olean store dominates) plus elan's toolchain store at 2.8.
+        // Per-worktree now, so a fresh lane pays the cold figure rather than a sibling's.
         disk_cold: 12 * GIB,
         disk_warm: 3 * GIB,
         ram: 4 * GIB,
@@ -195,7 +196,17 @@ impl Cache {
             // `lean_build_root`). Repo plumbing may not depend on product crates, so the
             // rule is copied; if either seat moves its cache, move this with it.
             Self::Kani => user_cache().map(|c| c.join("dorc-kani-target")),
-            Self::Lean => user_cache().map(|c| c.join("dorc-minispec-lean")),
+            // Per-worktree, matching `dorc_verify::lean_build_root`'s own key (a shared root let
+            // one lane's staged corpus answer another's imports).
+            Self::Lean => user_cache().map(|c| {
+                c.join(format!(
+                    "dorc-minispec-lean-{}",
+                    internal_tooling::repo_root().file_name().map_or_else(
+                        || "root".to_owned(),
+                        |name| name.to_string_lossy().into_owned()
+                    )
+                ))
+            }),
         }
     }
 

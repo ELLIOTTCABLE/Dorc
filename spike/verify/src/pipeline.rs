@@ -205,9 +205,28 @@ fn capture(cwd: &Path, program: &str, args: &[&str]) -> Result<Captured, String>
     })
 }
 
+/// The staged source subtrees, cleared before every copy (see [`stage`]).
+const STAGED_SOURCES: [&str; 2] = ["Minispec", "Generated"];
+
+/// Mirror `minispec/` into the build root — a MIRROR, which is why the sources are cleared first.
+///
+/// `copy_tree` only ever adds, so a unit deleted or renamed in the repo went on satisfying its
+/// stale import in the staged tree forever: that is how a root module naming a unit the
+/// repository does not contain survived a green `lake build`
+/// (`30B:fnd-lean-staging-never-removes-stale-files`).
+///
+/// Everything else in the root SURVIVES, and both survivors are load-bearing: `.lake` holds the
+/// olean store this whole staging exists to keep warm, and `lake-manifest.json` is untracked
+/// build-root state whose loss would send lake back to the network to re-resolve pins.
 fn stage(repo_root: &Path, build_root: &Path) -> Result<(), String> {
     let source = repo_root.join("minispec");
     std::fs::create_dir_all(build_root).map_err(|e| format!("{}: {e}", build_root.display()))?;
+    for subtree in STAGED_SOURCES {
+        let staged = build_root.join(subtree);
+        if staged.exists() {
+            std::fs::remove_dir_all(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
+        }
+    }
     copy_tree(&source, build_root)
 }
 
@@ -272,5 +291,37 @@ mod tests {
 
         assert_eq!(census(&dir).unwrap(), (0, 1), "the pair counts once");
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn staging_drops_a_unit_the_repository_no_longer_has_and_keeps_lakes_own_state() {
+        let root = std::env::temp_dir().join("dorc-verify-stage-pin");
+        let (repo, build) = (root.join("repo"), root.join("build"));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(repo.join("minispec").join("Minispec")).unwrap();
+        std::fs::write(repo.join("minispec").join("Minispec.lean"), "import X\n").unwrap();
+        std::fs::write(
+            repo.join("minispec").join("Minispec").join("Live.lean"),
+            "-- live\n",
+        )
+        .unwrap();
+        // The staged tree as a previous run left it: one unit since deleted from the repo, plus
+        // the two things a stage must never eat.
+        std::fs::create_dir_all(build.join("Minispec")).unwrap();
+        std::fs::create_dir_all(build.join(".lake").join("build")).unwrap();
+        std::fs::write(build.join("Minispec").join("Deleted.lean"), "-- stale\n").unwrap();
+        std::fs::write(build.join(".lake").join("build").join("olean"), "cached\n").unwrap();
+        std::fs::write(build.join("lake-manifest.json"), "{}\n").unwrap();
+
+        stage(&repo, &build).unwrap();
+
+        assert!(
+            !build.join("Minispec").join("Deleted.lean").exists(),
+            "a deleted unit that survives staging keeps satisfying its stale import"
+        );
+        assert!(build.join("Minispec").join("Live.lean").exists());
+        assert!(build.join(".lake").join("build").join("olean").exists());
+        assert!(build.join("lake-manifest.json").exists());
+        std::fs::remove_dir_all(&root).unwrap();
     }
 }
