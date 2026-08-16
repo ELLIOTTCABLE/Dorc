@@ -14,24 +14,27 @@
 
 ---
 
-## CURRENT STATE (2026-08-16 — crosscheck ADJUDICATED; burndown in flight; stamp pending)
+## CURRENT STATE (2026-08-16 — STAGE-I STAMPED; stage-0 dispatched)
 
-**The crosscheck is ADJUDICATED** (`notes/308`, conductor-5). The Sol-adversarial
-lane was RE-RUN clean (human-authorized; `notes/308f`) after the original
-returned a completion-marker-less null — and the re-run surfaced the arc's only
-CRITICAL: **the wrapper/entry/carry lane is an unconverted seat-family**
-(first-file-wins, frame-blind, partly raw-re-lifted: the consent chimera · a
-contested family still licensing probe-time context entry · the
-pure-predicate-carry closure proof decoupled from the frame-live shipped body, a
-constructible wrong-elision route). Cross-lineage convergence with
-Fable-neutral's F1/F2. **The BURNDOWN lane is DISPATCHED**
-(`ai/r30-lane-crosscheck-burndown`; scope `308` §1; checkpoint-1 = the batched
-claim-verification, hard pause). THE STAGE-I STAMP waits on the burndown fold +
-both-legs gates + the conductor's one steering-prose/plan editorial pass
-(`308` §6). **Stage-0's dispatch is HUMAN-AUTHORIZED** (arc-resume 2026-08-16)
-and queues after the stamp. pin30 did NOT flip — `28Q` §1's hypothesis REFUTED;
-the reviews' body-shape discriminator lead is banked (`308` §2). Details below
-stand where not superseded by this block.
+**STAGE-I IS STAMPED on `ai/r30-conduct`** (the conversion `307c` + the
+adversarial crosscheck `308b`–`308f` + the burndown; conductor own-hand
+`mise run both gate:full-quiet` W 2108/2108 · WSL 2104/2104 + `bless:dry`
+clean over the stamp tip). The crosscheck's product: **the wrapper/entry/carry
+lane was an unenumerated seat-family** — surfaced by the human-authorized
+Sol-adversarial CLEAN RE-RUN (`308f`; the original returned a
+completion-marker-less null) converging cross-lineage with Fable-neutral —
+now frame-converted (`WrapperSets` edge act; `try_carry` structurally unable to
+reach a second definition), with four red-first cells that each measured as a
+REAL pre-fix wrong elision (consent chimera · contested-family entry ·
+regional-decline bypass · split carry proof). `notes/308` is the adjudication
+record; law/plan records rewritten to truth (`28Q` §1/§8 · two FORFEITS rows ·
+four crate CLAUDE.mds); the silent-red `test:e2e`/`test:looms` output fixed.
+**stage-0 (the verdict-primacy re-cut) is DISPATCHED** (human-authorized at
+arc-resume; hard checkpoint before its corpus-wide re-bless — it is the one
+stage deliberately outside the byte gate). Then: snapshot-emission · the Spine
+census (`plans/309`, pre-ack) · closure-custody policy · world-scopes. pin30:
+hypothesis REFUTED, the body-shape lead banked, REVISIT rides stage-0. Details
+below stand where not superseded by this block.
 
 ## STATE 2026-08-16 earlier (crosscheck collected, unadjudicated; superseded above)
 

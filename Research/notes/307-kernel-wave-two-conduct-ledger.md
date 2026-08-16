@@ -49,7 +49,28 @@
   cross-lineage convergence. Conductor hand-verified the wrapper-fold code shape
   before crediting; all remaining concrete claims batch to the burndown
   checkpoint per the human's verify-batching steer.
-- **lane-crosscheck-burndown — CHECKPOINT-1 ADJUDICATED, BUILD ACKED 2026-08-16**
+- **lane-crosscheck-burndown — CLOSED + FOLDED 2026-08-16; STAGE-I STAMPED**
+  (11 commits rebased, ff'd @ `35311192`, + the conductor's editorial pass;
+  conductor own-hand gate over the stamp tip: W 2108/2108 · WSL 2104/2104 ·
+  `bless:dry` clean). The wrapper/entry/carry lane is frame-converted; the FOUR
+  red-first cells each measured as a REAL pre-fix elide (the crosscheck's
+  findings were live wrong-elision routes); the license-chain cell landed
+  byte-identical pre/post (coverage, not a bug — as adjudicated); the pin30
+  STOP never fired. Fold adjudications (deviation-litmus): the single-site
+  regional cell ENDORSED (a post-region control degrades to guard below a
+  walling site; conductor brief-scouting gap) · `probe-results: authored`
+  ENDORSED (inert mocks cannot produce conflicting facts; authored results are
+  the HOST's answer, not the check's) · the enter×lend coherence widening
+  ENDORSED (the ruling under-enumerated the property — property-not-mechanism
+  recurrence, conductor-side) · the no-DiagCode restraint CORRECT (the
+  `WrapperPairIncoherent` narrative rides `289:seam-narrative-render-unconsumed`) ·
+  the staging-sweep self-recovery ENDORSED (root cause = the banked hk staging
+  behavior). Tooling: `fnd-e2e-task-output-invisible-under-timed` FIXED
+  (task-env `MISE_TASK_OUTPUT=prefix` on `test:e2e`/`test:looms`,
+  smoke-verified). Banked: the survival_diagnostics ambient-hint watch (rides
+  with `308c:obs-loom-consumer-second-lift`). Comment budget 5.98% plain.
+  Checkpoint history below preserved for the arc record.
+- **lane-crosscheck-burndown checkpoint record (historical)**
   (Opus, harness worktree, branch `ai/r30-lane-crosscheck-burndown`; checkpoint =
   all thirteen claims verified, most VERIFIED as reviewed, with corrections:
   `308f`'s constructions respelled onto the book-inline regional idiom — the
@@ -305,18 +326,16 @@ ledger + `plans/309` + `notes/305`/`305a` + the 308a kit + the lane reports
 this file (whole) → `307c` → the four 308 reviews → `plans/28Q` §§0–1/§7/§8 →
 `spike/CLAUDE.md`.
 
-**REWIND ANCHOR #3 (2026-08-16, conductor-5 — supersedes #2's first-act
-instruction):** the batched adjudication is DONE — `notes/308` is the record
-(inputs `308b`–`308f`; `308f` = the human-authorized Sol-adversarial CLEAN RE-RUN,
-which surfaced the arc's only CRITICAL: the wrapper/entry/carry lane is an
-unconverted seat-family — `308` §1). The BURNDOWN lane is DISPATCHED (branch
-`ai/r30-lane-crosscheck-burndown`; scope = `308` §1 verbatim; checkpoint-1 = the
-batched claim-verification, hard pause for conductor ack). THE STAGE-I STAMP
-waits on: burndown folded → both-legs gates green → conductor fold-review, which
-includes the ONE steering-prose/plan editorial pass (`308` §6). Stage-0's
-dispatch is HUMAN-AUTHORIZED (typed, arc-resume 2026-08-16) and queues AFTER the
-stamp. A post-crash successor reads `308`, checks the burndown lane's state, and
-resumes at whichever edge is open.
+**REWIND ANCHOR #4 (2026-08-16, conductor-5 — STAGE-I IS STAMPED):** the
+crosscheck is adjudicated (`notes/308`), the burndown is folded, the editorial
+pass landed, and the conductor's own-hand gate is green both legs over the
+stamp tip. **stage-0 (`lane-stage-zero-ship-seam`) is DISPATCHED** — branch
+`ai/r30-lane-stage-zero-ship-seam`, per `28Q` §8 stage-0 with the riders in its
+§2 row (hard checkpoint before ANY bless: stage-0's golden churn is expected and
+must be CLASSIFIED first). After its fold: lane-snapshot-emission → the Spine
+census (`plans/309`, pre-ack) → closure-custody policy (sibling rulings) →
+world-scopes. A post-crash successor reads `308` + this ledger, checks the
+stage-0 lane's state, and resumes at whichever edge is open.
 
 **REWIND ANCHOR #2 (2026-08-16, the ACTUAL handoff point — supersedes the list
 below where they differ):** the seams, trip-policy, AND definition-factoring
