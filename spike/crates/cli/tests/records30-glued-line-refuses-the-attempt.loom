@@ -1,0 +1,36 @@
+---
+run: round-trip
+fixpoint: executed
+exit: 12
+expect-diagnostic:
+  - records-glued-line
+---
+-- book.sh --
+#!/bin/sh
+# records30-glued-line-refuses-the-attempt (`306b` §6e) — the REAL binary meeting a records
+# stream whose framing is broken, end to end. Two atomic writes land glued (a record body
+# carrying a second terminal token), the strict admission path names WHICH condition it saw,
+# and the attempt is refused: exit 12, no apply artifact, nothing folded.
+#
+# This is the honest-trigger half of the records lane's defining cases. The other eight are
+# world-as-payload looms under `crates/aid/tests/`, because the diagnostic prints on stderr
+# and a loom transcript records stdout — so a case cannot both declare `code:` and surface
+# its own slug. Here the assertion is structural instead: the declared exit code and the
+# declared slug, over a run that really happened.
+hork tune --profile web
+
+-- probe-results.txt --
+report glued @@dorc@@ tail
+
+-- replay --
+$ dorc --book=book.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=742e0712cc65f7202bd35ed7adcd219f214d78520be74101a8213acc804df656 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
