@@ -754,3 +754,189 @@ pub fn ship_verdict_body(
         emits_report,
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use dorc_analysis::certify::{CertifierTrip, certify_solution};
+    use dorc_analysis::lattice::Flat;
+    use dorc_analysis::solve::{Direction, Graph, Solution};
+    use dorc_core::{
+        AstId, ByVouch, EntityRef, FactKey, Interner, KindId, LeafId, OpaqueToken, Rung,
+        SelectorId, SourceFileId, Verdict,
+    };
+    use dorc_plan::{Disposition, GuardLicense, Plan, Step, SurvivalReport, VerdictVouch};
+
+    use super::{definition_table, demote_on_certifier_trip, source_file_id};
+
+    /// One node with a self-loop — the smallest system that has an edge to fail.
+    struct SelfLoop;
+    impl Graph for SelfLoop {
+        fn node_count(&self) -> usize {
+            1
+        }
+        fn succ(&self, _: usize) -> &[usize] {
+            &[0]
+        }
+        fn pred(&self, _: usize) -> &[usize] {
+            &[0]
+        }
+    }
+
+    /// A latch driven by a GENUINE perturbation judged by the GENUINE checker (`302` §6.1/§6.7):
+    /// the claimed solution says ⊥ while the transfer really produces `Elem(1)`, so the per-edge
+    /// inequality fails for real. `raise` picks whether the fixture perturbs at all, so the
+    /// control below is this same fixture with the defect taken out rather than a different one.
+    fn latch_from_a_real_certification(raise: bool) -> CertifierTrip {
+        let pristine: Flat<u8> = Flat::Bottom;
+        let solution = Solution {
+            states: vec![pristine.clone()],
+            converged: true,
+            rounds: 1,
+        };
+        let outcome = certify_solution(
+            &SelfLoop,
+            Direction::Forward,
+            std::slice::from_ref(&pristine),
+            |_, incoming: &Flat<u8>| {
+                if raise {
+                    Flat::Elem(1u8)
+                } else {
+                    incoming.clone()
+                }
+            },
+            &solution,
+        );
+        assert_eq!(
+            outcome.is_consistent(),
+            !raise,
+            "the fixture must really do what the case name says"
+        );
+        let mut trip = CertifierTrip::default();
+        trip.record(&outcome);
+        trip
+    }
+
+    fn guarded_plan(fn_name: &str) -> Plan {
+        let mut i = Interner::default();
+        let fact = FactKey::cell(
+            KindId(i.intern("package")),
+            EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+            SelectorId(i.intern("installed")),
+        );
+        let vouch = ByVouch::vouched(
+            VerdictVouch::new(
+                fn_name.to_string(),
+                format!("{fn_name}() {{ return 0; }}"),
+                format!("{fn_name} install -y nginx"),
+                "package".to_string(),
+                Vec::new(),
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
+            ),
+            Rung::Both,
+        );
+        Plan {
+            steps: vec![Step {
+                leaf: LeafId(0),
+                ast: AstId(0),
+                sh: "apt-get install -y nginx".to_string(),
+                disposition: Disposition::Guard(
+                    GuardLicense::mint(fact, vouch, Verdict::Converged)
+                        .expect("a converged probe verdict mints a guard"),
+                ),
+            }],
+            survival_report: SurvivalReport::default(),
+        }
+    }
+
+    /// Build the REAL census input the seat reads: a definition table over parsed sources.
+    fn table_over(oracles: &[&str]) -> dorc_analysis::funcenv::DefinitionTable {
+        let paths: Vec<String> = (0..oracles.len()).map(|n| format!("o{n}.sh")).collect();
+        let book = dorc_syntax::parse("apt-get install -y nginx\n").value;
+        definition_table(&paths, oracles, source_file_id(oracles.len()), &book)
+    }
+
+    const ONE_DECLARATION: &str = "apt_get__is_converged() { return 0; }\n";
+    const ANOTHER_DECLARATION: &str = "apt_get__is_converged() { return 1; }\n";
+
+    /// THE CENSUS FORK, over the real lookup. One oracle declaring the verdict family ⇒ occupancy
+    /// 1 ⇒ the guard stands, because no analysis ever chose which body its name resolves to. Two
+    /// oracles declaring it ⇒ the choice was analysis's, the trip disqualified the analysis, and
+    /// the guard goes with it.
+    #[test]
+    fn the_body_occupancy_census_decides_whether_a_guard_stands() {
+        let mut sole = guarded_plan("apt_get__is_converged");
+        demote_on_certifier_trip(
+            &mut sole,
+            latch_from_a_real_certification(true),
+            &table_over(&[ONE_DECLARATION]),
+        );
+        assert!(
+            matches!(sole.steps[0].disposition, Disposition::Guard(_)),
+            "a census-unique family keeps its runtime net"
+        );
+
+        let mut plural = guarded_plan("apt_get__is_converged");
+        demote_on_certifier_trip(
+            &mut plural,
+            latch_from_a_real_certification(true),
+            &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
+        );
+        assert!(
+            matches!(plural.steps[0].disposition, Disposition::Run),
+            "a plural family's guard could run somebody else's judgment — it demotes"
+        );
+    }
+
+    /// The BANNER's structure (`302` §5): one plan-prominent line per tripped run, spanless,
+    /// carrying the demoted count. Its prose is deliberately unwritten — the structure is the
+    /// builder's, the words are not (`error-authorship-tier`).
+    #[test]
+    fn a_trip_mints_one_spanless_banner_carrying_the_demoted_count() {
+        let mut plan = guarded_plan("apt_get__is_converged");
+
+        let (diags, narrative) = demote_on_certifier_trip(
+            &mut plan,
+            latch_from_a_real_certification(true),
+            &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
+        );
+
+        assert_eq!(diags.len(), 1, "ONE banner for the run, not one per pass");
+        assert_eq!(diags[0].code.slug(), "solver-consistency-plan-demoted");
+        assert!(
+            diags[0].primary.span().is_none(),
+            "spanless: a caret on a book line would blame the admin for our defect"
+        );
+        assert!(
+            matches!(
+                &diags[0].code,
+                dorc_aid::diag::DiagCode::SolverConsistencyPlanDemoted(p) if p.demoted == "1"
+            ),
+            "the count is measured from the walk, never announced ahead of it"
+        );
+        assert_eq!(
+            narrative.len(),
+            1,
+            "and one pull-tier demotion record beside it"
+        );
+    }
+
+    /// THE SEAT CONTROL. A run whose certification really passed reaches no walk at all: the plan
+    /// keeps every disposition it earned and no banner is minted. Same fixture, defect removed.
+    #[test]
+    fn an_untripped_run_is_left_entirely_alone() {
+        let mut plan = guarded_plan("apt_get__is_converged");
+
+        let (diags, narrative) = demote_on_certifier_trip(
+            &mut plan,
+            latch_from_a_real_certification(false),
+            &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
+        );
+
+        assert!(diags.is_empty(), "no trip, no banner");
+        assert!(narrative.is_empty());
+        assert!(
+            matches!(plan.steps[0].disposition, Disposition::Guard(_)),
+            "the plural census demotes NOTHING without a trip — the trip is the whole trigger"
+        );
+    }
+}
