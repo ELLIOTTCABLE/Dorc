@@ -386,8 +386,8 @@ fn merge_derived_footprints(
         .map(|src| TouchesSet::lift(interner, src).value)
         .collect();
     let derivations = {
-        let derive = |provider: Symbol, argv: &[Symbol]| {
-            ship_touches_escalation(&touches_sets, interner, provider, argv)
+        let derive = |node: CfgNodeId, provider: Symbol, argv: &[Symbol]| {
+            ship_touches_escalation(&touches_sets, interner, node, provider, argv)
         };
         compile_derivations(ast, cfg, value, classes, kills, derive)
     };
@@ -464,6 +464,7 @@ fn expand_reaches(footprints: &mut TrustedFootprints, reach_kinds: &BTreeSet<Sym
 fn ship_touches_escalation(
     touches_sets: &[TouchesSet],
     interner: &Interner,
+    node: CfgNodeId,
     provider: Symbol,
     argv: &[Symbol],
 ) -> Option<DerivationShip> {
@@ -474,19 +475,19 @@ fn ship_touches_escalation(
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    touches_sets.iter().find_map(|set| {
-        let p = set
-            .providers()
-            .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
-        let touches = set.get(p)?;
-        match evaluate_touches(touches, &arg_refs) {
-            TouchesResolution::Top(TouchesTop::NonPrintfCommand) => Some(DerivationShip {
-                sh: String::new(),
-                call: "apt_get__disturbs()".to_owned(),
-            }),
-            TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
-        }
-    })
+    let idx = touches_answering_source(touches_sets, interner, &want, node)?;
+    let set = touches_sets.get(idx)?;
+    let p = set
+        .providers()
+        .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
+    let touches = set.get(p)?;
+    match evaluate_touches(touches, &arg_refs) {
+        TouchesResolution::Top(TouchesTop::NonPrintfCommand) => Some(DerivationShip {
+            sh: String::new(),
+            call: "apt_get__disturbs()".to_owned(),
+        }),
+        TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
+    }
 }
 
 /// The establish fact a wall-candidate node establishes (the `Host::derive` key + coherence
@@ -501,6 +502,40 @@ fn establish_fact_of(classes: &[(CfgNodeId, SkipClass)], node: CfgNodeId) -> Opt
             _ => None,
         }
     })
+}
+
+/// Which source index's `<want>__disturbs` answers at this site — the sweep's use of the ONE
+/// resolution rule ([`dorc_core::answering_file`]), not a second copy of it
+/// (`307c:fnd-sweep-duplicates-the-footprint-resolution`; the failure
+/// `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` names).
+///
+/// The sweep loads exactly ONE oracle source and solves no function environment, so the honest
+/// posture is [`LiveDefinitions::unsolved`](dorc_analysis::funcenv::LiveDefinitions::unsolved) and
+/// the answer is today's: the sole candidate. The ceremony is what earns its keep — a second sweep
+/// oracle would make plural candidates WITHHOLD here rather than silently taking the first, which
+/// is the rule the cli edge obeys and the one this crate exists to mirror.
+fn touches_answering_source(
+    touches_sets: &[TouchesSet],
+    interner: &Interner,
+    want: &str,
+    node: CfgNodeId,
+) -> Option<usize> {
+    use dorc_oracle::predict::map_provider_name;
+    let live = dorc_analysis::funcenv::LiveDefinitions::unsolved();
+    let name = format!("{want}{}", dorc_oracle::touches::DISTURBS_SUFFIX);
+    dorc_core::answering_file(
+        live.definition_before(node, &name),
+        touches_sets.len(),
+        |i| {
+            touches_sets
+                .get(i)
+                .is_some_and(|set| {
+                    set.providers()
+                        .any(|p| map_provider_name(interner.resolve(p)) == want)
+                })
+                .then(|| live.provenance_of(i, &name))
+        },
+    )
 }
 
 /// Resolve one wall-candidate site's `touches()` footprint (mirror of the cli's
@@ -531,15 +566,16 @@ fn resolve_touches_footprint(
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
     let want = map_provider_name(interner.resolve(*provider));
-    let coords = touches_sets.iter().find_map(|set| {
-        set.providers()
-            .find(|p| map_provider_name(interner.resolve(*p)) == want)
-            .and_then(|p| set.get(p))
-            .and_then(|touches| match evaluate_touches(touches, &arg_refs) {
-                TouchesResolution::Emitted(coords) if !coords.is_empty() => Some(coords),
-                TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
-            })
-    })?;
+    let idx = touches_answering_source(touches_sets, interner, &want, node)?;
+    let set = touches_sets.get(idx)?;
+    let touches = set
+        .providers()
+        .find(|p| map_provider_name(interner.resolve(*p)) == want)
+        .and_then(|p| set.get(p))?;
+    let coords = match evaluate_touches(touches, &arg_refs) {
+        TouchesResolution::Emitted(coords) if !coords.is_empty() => coords,
+        TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => return None,
+    };
 
     let entity_coords = coords
         .iter()

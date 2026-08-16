@@ -58,7 +58,7 @@ pub fn lift_touches_sets(
 /// [`KindId`] a predict annotation minted — never a parallel string-typed universe (24A §1b).
 #[expect(
     clippy::too_many_arguments,
-    reason = "the cli-edge footprint lift threads the whole compiled context (touches-sets/classes/kills/kill-coords/value/cfg/ast/interner); each is a distinct pipeline output, not a bundle-able struct"
+    reason = "the cli-edge footprint lift threads the whole compiled context (touches-sets/classes/kills/kill-coords/value/cfg/ast/interner) plus the `28K` §2 positional pair; each is a distinct pipeline output, not a bundle-able struct"
 )]
 pub fn build_survival_footprints(
     touches_sets: &[dorc_oracle::touches::TouchesSet],
@@ -72,6 +72,7 @@ pub fn build_survival_footprints(
     cfg: &dorc_analysis::cfg::Cfg,
     ast: &dorc_syntax::ast::Ast,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Carrier<dorc_plan::TrustedFootprints> {
     use dorc_analysis::effect::SkipClass;
     let mut footprints = dorc_plan::TrustedFootprints::new();
@@ -87,7 +88,7 @@ pub fn build_survival_footprints(
             continue; // not a wall candidate (a pure builtin, a Query, an opaque)
         }
         let Some((provider, coords_with_selectors, arm_span)) =
-            resolve_touches_footprint(*node, value, touches_sets, interner)
+            resolve_touches_footprint(*node, value, touches_sets, interner, live)
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
         };
@@ -116,7 +117,8 @@ pub fn build_survival_footprints(
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
         // `tc-disturbs-span-threading`: the MATCHED ARM over the funcdef, still the honest floor.
-        let defining = arm_span.or_else(|| touches_defining_span(provider, touches_sets, interner));
+        let defining = arm_span
+            .or_else(|| touches_defining_span(provider, touches_sets, interner, *node, live));
         if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
             .map(|fp| fp.with_own(own).with_defining(defining))
         {
@@ -152,12 +154,58 @@ type ResolvedFootprint = (
     Option<(dorc_core::Span, dorc_core::SourceFileId)>,
 );
 
+/// Which source index's `<want>__disturbs` answers at this site — the survival lane's use of the one
+/// resolution seat, shared by all three of its scans so they cannot disagree about the winner.
+///
+/// `has` asks only "does file `i` DECLARE the role", never "does its body answer this argv": the
+/// second question is the retired decline-fallthrough cascade (`28K` §6). The candidate vector is
+/// oracle-only here, and the definition table sites the book one PAST it, so a site whose
+/// `__disturbs` a BOOK defines resolves to a definition this vector cannot hold and answers nowhere
+/// — no footprint, the site walls (`cli/CLAUDE.md the-book-is-a-definition-source` names the widening
+/// as its own dispatch; withholding is the safe half).
+fn touches_answering_source(
+    count: usize,
+    declares: impl Fn(usize) -> bool,
+    want: &str,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+) -> Option<usize> {
+    let name = format!("{want}{}", dorc_oracle::touches::DISTURBS_SUFFIX);
+    crate::world::shipping_source(count, node, live, &name, declares)
+}
+
+/// Does source index `i` of `sets` declare a `disturbs()` for the munged provider `want`?
+fn declares_touches(
+    sets: &[dorc_oracle::touches::TouchesSet],
+    interner: &Interner,
+    want: &str,
+    i: usize,
+) -> bool {
+    use dorc_oracle::predict::map_provider_name;
+    sets.get(i).is_some_and(|set| {
+        set.providers()
+            .any(|p| map_provider_name(interner.resolve(p)) == want)
+    })
+}
+
 /// Resolve one wall-candidate site's authored `disturbs()` footprint (see the type doc above).
+///
+/// Which file's `__disturbs` answers is the frame's question, asked through the one resolution seat
+/// (`28Q` §1.3; [`crate::world::shipping_source`]). The scan this replaces took the FIRST file that
+/// declared the provider and, worse, the first whose body RESOLVED — so a declining live body fell
+/// through into a shadowed one's arms (`28K` §6 `rej-decline-fallthrough-cascade`). Both were
+/// wrong-elision routes rather than precision losses: a footprint answered by the wrong body can
+/// NARROW an at-most claim, and a narrower claim SPARES MORE
+/// (`307c:fnd-survival-footprint-lane-scans-forward`).
+///
+/// **Winner-shifting** (`28Q` §1, permanent): with no agreement veto behind it, a frame-solver
+/// precision bug here selects whose judgment governs the site's footprint. License-review-tier.
 pub fn resolve_touches_footprint(
     node: dorc_analysis::cfg::CfgNodeId,
     value: &dorc_analysis::value::ValueFlow,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<ResolvedFootprint> {
     use dorc_analysis::value::ValueOf;
     use dorc_oracle::predict::map_provider_name;
@@ -178,26 +226,27 @@ pub fn resolve_touches_footprint(
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
     let want = map_provider_name(interner.resolve(*provider));
-    let (coords, arm) = touches_sets.iter().enumerate().find_map(|(index, set)| {
-        set.providers()
-            .find(|p| map_provider_name(interner.resolve(*p)) == want)
-            .and_then(|p| set.get(p))
-            .and_then(
-                |touches| match evaluate_touches_located(touches, &arg_refs) {
-                    (TouchesResolution::Emitted(coords), arm) if !coords.is_empty() => Some((
-                        coords,
-                        arm.map(|span| {
-                            (
-                                span,
-                                dorc_core::SourceFileId(u32::try_from(index).unwrap_or(u32::MAX)),
-                            )
-                        }),
-                    )),
-                    // Emitted(empty) = no claim = wall; Top = ⊤ = wall. Both ⇒ no footprint.
-                    (TouchesResolution::Emitted(_) | TouchesResolution::Top(_), _) => None,
-                },
-            )
-    })?;
+    let index = touches_answering_source(
+        touches_sets.len(),
+        |i| declares_touches(touches_sets, interner, &want, i),
+        &want,
+        node,
+        live,
+    )?;
+    let set = touches_sets.get(index)?;
+    let touches = set
+        .providers()
+        .find(|p| map_provider_name(interner.resolve(*p)) == want)
+        .and_then(|p| set.get(p))?;
+    let (coords, arm) = match evaluate_touches_located(touches, &arg_refs) {
+        (TouchesResolution::Emitted(coords), arm) if !coords.is_empty() => (
+            coords,
+            arm.map(|span| (span, dorc_analysis::funcenv::source_file_of_index(index))),
+        ),
+        // Emitted(empty) = no claim = wall; Top = ⊤ = wall. A DECLINE by the resolved definition
+        // is a decline: no neighbour is consulted (`28K` §6).
+        (TouchesResolution::Emitted(_) | TouchesResolution::Top(_), _) => return None,
+    };
 
     // Intern each opaque `kind:entity@selector` fragment into the shared vocabulary (the fence).
     // The selector rides alongside the entity-granular coord (`277` §3): absent ⇒ whole-entity ⊤.
@@ -225,25 +274,38 @@ pub fn resolve_touches_footprint(
 /// threading`; `27V:mech-minting-line-threading`) — a NAME-keyed lookup (no argv trace): the touches
 /// funcdef's `name_span` is the leverage point a survival's `claimed` link points at ("the line to
 /// widen"). The funcdef `name_span` is the honest coarsest-true span; per-arm precision is deferred.
-/// `None` when the provider has no touches funcdef in the loaded set.
+/// `None` when no definition of the provider's touches funcdef answers at this site.
+///
+/// It points the author at the body that ACTUALLY spoke, which is why it resolves by frame like its
+/// two siblings: a first-file-wins span would caret a definition the shell would never call, and a
+/// leverage link is only worth having if it names the line whose widening changes the answer
+/// (`271:rul-sin-ordering` — mis-attribution outranks silence).
 fn touches_defining_span(
     provider: Symbol,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &Interner,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<(dorc_core::Span, dorc_core::SourceFileId)> {
     use dorc_oracle::predict::map_provider_name;
     let want = map_provider_name(interner.resolve(provider));
-    touches_sets.iter().enumerate().find_map(|(idx, set)| {
-        set.providers()
-            .find(|p| map_provider_name(interner.resolve(*p)) == want)
-            .and_then(|p| set.get(p))
-            .map(|t| {
-                (
-                    t.name_span,
-                    dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
-                )
-            })
-    })
+    let idx = touches_answering_source(
+        touches_sets.len(),
+        |i| declares_touches(touches_sets, interner, &want, i),
+        &want,
+        node,
+        live,
+    )?;
+    let set = touches_sets.get(idx)?;
+    set.providers()
+        .find(|p| map_provider_name(interner.resolve(*p)) == want)
+        .and_then(|p| set.get(p))
+        .map(|t| {
+            (
+                t.name_span,
+                dorc_analysis::funcenv::source_file_of_index(idx),
+            )
+        })
 }
 
 /// The derivation-probe seam (24E §2/§3 — fork-4A: the SAME self-vouch tier as `predict`, no new
@@ -256,11 +318,17 @@ fn touches_defining_span(
 /// authored-footprint lane owns it), any OTHER ⊤ (degrade-to-wall, fork-4B — the site runs), an
 /// empty emission, or a provider with no touches funcdef. `inv-referent-agnostic`: the operands are
 /// resolved for the trace/invocation, never decoded.
+///
+/// The body that ships is the one the site's FRAME names (`28Q` §1.3), for the reason the ship lane
+/// already carries (`crate::world::shipping_source`): shipping a shadowed body would measure the
+/// world through an author the shell would never have called.
 pub fn ship_touches_body(
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::DerivationShip> {
     use dorc_oracle::predict::{map_provider_name, strip_touches};
     use dorc_oracle::touches::{TouchesResolution, TouchesTop, evaluate_touches};
@@ -270,26 +338,30 @@ pub fn ship_touches_body(
         .map(|s| interner.resolve(*s).to_owned())
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
-    touches_paired.iter().find_map(|(src, set)| {
-        let p = set
-            .providers()
-            .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
-        let touches = set.get(p)?;
-        match evaluate_touches(touches, &arg_refs) {
-            // The EXPECTED escalation (24E §4): the body reached a host query ⇒ ship it.
-            TouchesResolution::Top(TouchesTop::NonPrintfCommand) => {
-                Some(dorc_plan::DerivationShip {
-                    // Display the BOOK command word (`apt-get`), not the munged funcdef segment
-                    // (`apt_get`, the forward-munge key) — the why-lens reads better with the word
-                    // the admin wrote (`24C:rul24-totalistic-munge` keeps the segment internal).
-                    call: format!("{}.touches()", interner.resolve(provider)),
-                    sh: strip_touches(src, touches, interner),
-                })
-            }
-            // Static-resolvable, an OTHER ⊤ (degrade-to-wall), or empty ⇒ NOT a derivation.
-            TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
-        }
-    })
+    let declares = |i: usize| {
+        touches_paired.get(i).is_some_and(|(_, set)| {
+            set.providers()
+                .any(|p| map_provider_name(interner.resolve(p)) == want)
+        })
+    };
+    let idx = touches_answering_source(touches_paired.len(), declares, &want, node, live)?;
+    let (src, set) = touches_paired.get(idx)?;
+    let p = set
+        .providers()
+        .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
+    let touches = set.get(p)?;
+    match evaluate_touches(touches, &arg_refs) {
+        // The EXPECTED escalation (24E §4): the body reached a host query ⇒ ship it.
+        TouchesResolution::Top(TouchesTop::NonPrintfCommand) => Some(dorc_plan::DerivationShip {
+            // Display the BOOK command word (`apt-get`), not the munged funcdef segment
+            // (`apt_get`, the forward-munge key) — the why-lens reads better with the word
+            // the admin wrote (`24C:rul24-totalistic-munge` keeps the segment internal).
+            call: format!("{}.touches()", interner.resolve(provider)),
+            sh: strip_touches(src, touches, interner),
+        }),
+        // Static-resolvable, an OTHER ⊤ (degrade-to-wall), or empty ⇒ NOT a derivation.
+        TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
+    }
 }
 
 /// Read back the host-DERIVED footprints (24E §2 corr-§2) and merge them into the survival set.
@@ -1040,8 +1112,12 @@ pub fn survival_diagnostics(
             )
         })
         .collect();
+    // The HINT lane reads ambiently throughout (see the two `unsolved()` calls above): this seat
+    // solves no function environment, so its survival scans take the same no-environment posture.
+    let hint_live = dorc_analysis::funcenv::LiveDefinitions::unsolved();
     let derivations = {
-        let derive = |p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a);
+        let derive =
+            |n, p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a, n, hint_live);
         dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
     };
 
@@ -1056,6 +1132,7 @@ pub fn survival_diagnostics(
         &cfg.value,
         &parsed.value,
         &mut interner,
+        hint_live,
     );
     out.extend(lifted.diags);
     let mut footprints = lifted.value;
@@ -1092,6 +1169,7 @@ pub fn collect_resolver_coords(
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     resolver_kinds: &BTreeSet<Symbol>,
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> BTreeSet<dorc_plan::EntityCoord> {
     use dorc_analysis::effect::SkipClass;
     let mut coords = BTreeSet::new();
@@ -1115,7 +1193,7 @@ pub fn collect_resolver_coords(
         ) || kills.contains(node);
         if is_wall_candidate
             && let Some((_, fp_coords, _)) =
-                resolve_touches_footprint(*node, value, touches_sets, interner)
+                resolve_touches_footprint(*node, value, touches_sets, interner, live)
         {
             for (c, _selector) in fp_coords {
                 consider(c, &mut coords);
@@ -1334,6 +1412,7 @@ pub fn collect_coord_kinds(
     value: &dorc_analysis::value::ValueFlow,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> BTreeSet<Symbol> {
     use dorc_analysis::effect::SkipClass;
     let mut kinds = BTreeSet::new();
@@ -1350,7 +1429,7 @@ pub fn collect_coord_kinds(
         ) || kills.contains(node);
         if is_wall_candidate
             && let Some((_, fp_coords, _)) =
-                resolve_touches_footprint(*node, value, touches_sets, interner)
+                resolve_touches_footprint(*node, value, touches_sets, interner, live)
         {
             for (c, _selector) in fp_coords {
                 kinds.insert(c.kind().0);
@@ -1358,4 +1437,83 @@ pub fn collect_coord_kinds(
         }
     }
     kinds
+}
+
+#[cfg(test)]
+mod tests {
+    use dorc_core::Interner;
+
+    /// One `disturbs` body per file, each naming a DIFFERENT kind, so the resolved footprint's kind
+    /// says which definition spoke.
+    fn oracle(kind: &str) -> String {
+        format!(
+            "# dorc-lang/v0.2\n\
+             apt_get__disturbs() {{\n\
+             \x20  case ${{1-}} in install) printf '%s\n' \"$2\" : disturbs {kind} ;; esac\n\
+             }}\n"
+        )
+    }
+
+    /// The kind of the footprint `apt-get install nginx` resolves, with the two `disturbs`
+    /// definitions loaded in the given order.
+    fn resolved_kind(srcs: [&str; 2]) -> String {
+        let mut interner = Interner::default();
+        let book = dorc_syntax::parse("apt-get install nginx\n").value;
+        let cfg = dorc_analysis::cfg::build(&book).value;
+        let value = dorc_analysis::value::analyze(&cfg, &book, &mut interner);
+        let paths = vec!["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()];
+        let defs = crate::world::definition_table(
+            &paths,
+            &srcs,
+            dorc_analysis::funcenv::source_file_of_index(srcs.len()),
+            &book,
+        );
+        let env = {
+            let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+            dorc_analysis::funcenv::analyze(&book, &cfg, &defs, &plane)
+        };
+        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+        let sets: Vec<dorc_oracle::touches::TouchesSet> = srcs
+            .iter()
+            .map(|src| dorc_oracle::touches::TouchesSet::lift(&mut interner, src).value)
+            .collect();
+        let node = cfg
+            .iter()
+            .find(|(_, n)| n.kind == dorc_analysis::cfg::CfgNodeKind::Command)
+            .map(|(id, _)| id)
+            .expect("the one-command book lowers one Command node");
+        let (_, coords, _) =
+            super::resolve_touches_footprint(node, &value, &sets, &mut interner, live)
+                .expect("the live disturbs body emits one coordinate");
+        let (coord, _) = coords.first().expect("one emitted coordinate");
+        interner.resolve(coord.kind().0).to_owned()
+    }
+
+    /// The footprint answers from the definition the FRAME names, not the first file that happens to
+    /// declare one (`307c:fnd-survival-footprint-lane-scans-forward`).
+    ///
+    /// Asserted in BOTH load orders, which is what makes it a statement about resolution rather than
+    /// about a particular expedient: the retired scan answers `first` under both, so either order
+    /// alone could be passed by an accident of fixture layout.
+    ///
+    /// It is a live wrong-elision route and not a precision loss: a footprint is an AT-MOST claim, a
+    /// wrong body's emission can NARROW it, and a narrower claim SPARES MORE — the under-execute
+    /// direction (`inv-kfail`).
+    ///
+    /// This pins the SEAT. Whether a two-file world of this shape survives the cli's contested
+    /// withdrawal is that edge's separate question (`cli/CLAUDE.md
+    /// withdrawal-is-applied-once-never-consulted`).
+    #[test]
+    fn the_footprint_answers_from_the_definition_the_frame_names() {
+        let first = oracle("first.dorc.Package");
+        let second = oracle("second.dorc.Package");
+        assert_eq!(
+            resolved_kind([first.as_str(), second.as_str()]),
+            "second.dorc.Package"
+        );
+        assert_eq!(
+            resolved_kind([second.as_str(), first.as_str()]),
+            "first.dorc.Package"
+        );
+    }
 }

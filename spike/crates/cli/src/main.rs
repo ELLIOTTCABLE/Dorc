@@ -1140,7 +1140,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         Vec::new()
     };
     let derivations = if args.risk_faultless_skips {
-        let derive = |p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a);
+        let derive =
+            |n, p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a, n, live_defs);
         dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
     } else {
         dorc_plan::DerivationPlan::default()
@@ -1156,7 +1157,14 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // raw dotted kind, so the two are bridged here once).
     let coord_kinds = {
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
-        collect_coord_kinds(&classes, &kills, &value, &touches_sets, &mut interner)
+        collect_coord_kinds(
+            &classes,
+            &kills,
+            &value,
+            &touches_sets,
+            &mut interner,
+            live_defs,
+        )
     };
     let resolver_lift = build_kind_resolvers(
         &oracle_srcs,
@@ -1184,6 +1192,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &touches_sets,
             &resolver_kinds,
             &mut interner,
+            live_defs,
         )
     } else {
         BTreeSet::new()
@@ -1223,6 +1232,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &reach_kinds,
             &oracle_srcs,
             &mut interner,
+            live_defs,
         )
     } else {
         dorc_plan::ReachPlan::default()
@@ -1476,6 +1486,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &cfg.value,
             &parsed.value,
             &mut interner,
+            live_defs,
         );
         report_at(advisory, "footprint", None, &lifted.diags);
         let mut fps = lifted.value;
@@ -2651,7 +2662,7 @@ fn reach_arm_fn_name(kind_name: &str, arm_index: usize) -> String {
 /// text is resolved for the invocation, never decoded.
 #[expect(
     clippy::too_many_arguments,
-    reason = "the reach-probe compile threads the compiled context (classes/kills/value/touches/reaches/reach-kinds/oracle-srcs/interner); each is a distinct pipeline output, not a bundle-able struct"
+    reason = "the reach-probe compile threads the compiled context (classes/kills/value/touches/reaches/reach-kinds/oracle-srcs/interner) plus the `28K` §2 positional pair; each is a distinct pipeline output, not a bundle-able struct"
 )]
 fn collect_reach_probes(
     classes: &[(
@@ -2665,6 +2676,7 @@ fn collect_reach_probes(
     reach_kinds: &BTreeSet<Symbol>,
     oracle_srcs: &[String],
     interner: &mut Interner,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> dorc_plan::ReachPlan {
     use dorc_analysis::effect::SkipClass;
     use dorc_oracle::reaches::{ArmOutcome, evaluate_reaches};
@@ -2678,7 +2690,7 @@ fn collect_reach_probes(
             continue;
         }
         let Some((_, fp_coords, _)) =
-            resolve_touches_footprint(*node, value, touches_sets, interner)
+            resolve_touches_footprint(*node, value, touches_sets, interner, live)
         else {
             continue;
         };

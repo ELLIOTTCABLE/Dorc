@@ -2622,13 +2622,16 @@ impl DerivationPlan {
 /// The escalation decision + the strip live in the closure (the cli owns the oracle sources +
 /// `evaluate_touches`); `plan` stays oracle-free. Deterministic, non-mutating; the readback +
 /// footprint-build are the cli's ([`ProbeDerivation::site`] keys them).
+///
+/// The closure takes the site's [`CfgNodeId`] because WHICH `disturbs` body ships is a question
+/// about the asking frame (`28Q` §1.3), exactly as it is in [`compile_probe`]'s two ship closures.
 pub fn compile_derivations(
     ast: &Ast,
     cfg: &Cfg,
     value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
     kills: &BTreeSet<CfgNodeId>,
-    derive_body: impl Fn(Symbol, &[Symbol]) -> Option<DerivationShip>,
+    derive_body: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<DerivationShip>,
 ) -> DerivationPlan {
     let mut derivations = Vec::new();
     for (site, node, class) in site_order(ast, cfg, classes) {
@@ -2662,7 +2665,7 @@ pub fn compile_derivations(
         if !concrete {
             continue;
         }
-        let Some(ship) = derive_body(*provider, &operands) else {
+        let Some(ship) = derive_body(node, *provider, &operands) else {
             continue;
         };
         derivations.push(ProbeDerivation {
@@ -5953,7 +5956,7 @@ apt_get__is_converged() { return 0; }
             &value,
             &classes,
             &kills,
-            |provider, _argv| {
+            |_node, provider, _argv| {
                 // Escalate ONLY apt-get (the payload-bound install); everything else declines. The
                 // forward munge keys the book word `apt-get` on the segment `apt_get`.
                 (dorc_oracle::predict::map_provider_name(i.resolve(provider)) == "apt_get").then(

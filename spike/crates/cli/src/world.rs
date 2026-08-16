@@ -275,6 +275,7 @@ impl WhyWorld {
             &value,
             &touches_sets,
             &mut interner,
+            live,
         );
         let kind_resolvers = crate::kinds::build_kind_resolvers(
             oracle_srcs,
@@ -297,8 +298,8 @@ impl WhyWorld {
 
         let survival = consented.then(|| {
             let derivations = {
-                let derive = |p, a: &[Symbol]| {
-                    crate::survival::ship_touches_body(&touches_paired, &interner, p, a)
+                let derive = |n, p, a: &[Symbol]| {
+                    crate::survival::ship_touches_body(&touches_paired, &interner, p, a, n, live)
                 };
                 dorc_plan::compile_derivations(
                     &parsed.value,
@@ -318,6 +319,7 @@ impl WhyWorld {
                 &cfg.value,
                 &parsed.value,
                 &mut interner,
+                live,
             )
             .value;
             let derived_node_spans: BTreeMap<_, _> = derivations
@@ -360,6 +362,7 @@ impl WhyWorld {
                 &touches_sets,
                 &resolver_kinds,
                 &mut interner,
+                live,
             )
         } else {
             BTreeSet::new()
