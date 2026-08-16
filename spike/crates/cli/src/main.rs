@@ -84,7 +84,7 @@ use dorc_cli::survival::{
 };
 use dorc_cli::world::{
     definition_table, demote_on_certifier_trip, record_pre_network_trip, ship_predict_body,
-    ship_verdict_body, source_file_id,
+    ship_verdict_body, shipping_source, source_file_id,
 };
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
@@ -2563,9 +2563,16 @@ fn ship_predict_stage(
             .find(|cp| map_provider_name(interner.resolve(*cp)) == want)
             .and_then(|cp| cs.get(cp).cloned())
     };
-    // A composed stage is a SITE like any other (`28K` §2), resolved through the same seat.
-    let idx = dorc_oracle::live_source(checks.len(), |i| checks.get(i).and_then(named).is_some())
-        .filter(|&i| live.answers_at(node, &format!("{want}{PREDICT_SUFFIX}"), i))?;
+    // A composed stage is a SITE like any other (`28K` §2), through the SHARED seat rather than a
+    // second copy of it — the open-coded twin this replaces was the same rule spelled twice, which
+    // is the failure `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` records.
+    let idx = shipping_source(
+        checks.len(),
+        node,
+        live,
+        &format!("{want}{PREDICT_SUFFIX}"),
+        |i| checks.get(i).and_then(named).is_some(),
+    )?;
     let check = checks.get(idx).and_then(named)?;
     let arg_texts: Vec<String> = argv
         .iter()

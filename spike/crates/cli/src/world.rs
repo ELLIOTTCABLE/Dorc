@@ -641,23 +641,29 @@ pub fn definition_table(
     table
 }
 
-/// The ONE index a site's role body ships from: sh's live definition ([`dorc_oracle::live_source`],
-/// the single seat), narrowed to the one live AT this site (`28K` §2
-/// rul-visibility-is-full-positional).
+/// The ONE index a site's role body ships from: the file whose definition of this role is the one
+/// a shell would have live AT this site (`28Q` §1.3 — the frame lookup is the only resolution seat).
+///
+/// The whole-unit scan it replaces and the positional gate that narrowed the scan's answer are gone
+/// together, because they were two readings of one environment and could disagree
+/// (`28P:fnd-build-vouches-relifted-the-verdict-sets`). One question is asked once, and
+/// [`dorc_core::answering_file`] holds the rule.
 ///
 /// `has` asks only "does file `i` define this role for this provider" — never "does its body
-/// answer this argv". That distinction is the point: a backwards scan for the first file that
-/// RESOLVES falls through a declining live body into a shadowed one's arms, which is exactly
-/// `28K` §6 rej-decline-fallthrough-cascade, and `analysis::effect` retired it at stage D. A
-/// decline by the winner is a decline, in the ship lane too.
-fn shipping_source(
+/// answer this argv". That distinction is the point: a scan for the first file that RESOLVES falls
+/// through a declining live body into a shadowed one's arms, which is exactly `28K` §6
+/// rej-decline-fallthrough-cascade. A decline by the winner is a decline, in the ship lane too.
+#[must_use]
+pub fn shipping_source(
     count: usize,
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
     role_name: &str,
     has: impl Fn(usize) -> bool,
 ) -> Option<usize> {
-    dorc_oracle::live_source(count, has).filter(|&i| live.answers_at(node, role_name, i))
+    dorc_core::answering_file(live.definition_before(node, role_name), count, |i| {
+        has(i).then(|| live.provenance_of(source_file_id(i), role_name))
+    })
 }
 
 /// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships,
