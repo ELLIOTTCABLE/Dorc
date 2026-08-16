@@ -143,8 +143,13 @@ CARGO_TARGET_DIR = "{% if env.WSL_DISTRO_NAME %}{{ xdg_cache_home }}/dorc-wsl-ta
 # so mise's `{{env.PATH}}` — the only spelling in anyone's muscle memory — fails
 # outright. One more reason nothing here templates PATH.)
 #
-# FAILURE-VISIBILITY CONTRACT: a task whose diagnostics ride STDOUT carries
-# `raw = true`. `MISE_TASK_OUTPUT` configures mise ITSELF, so an exported value —
+# FAILURE-VISIBILITY CONTRACT: EVERY task here carries `raw = true`, and a new one
+# joins them. Uniform rather than decided per task, because the question that would
+# decide it — does this tool write its diagnostics to stdout or to stderr? — is
+# knowledge about somebody else's tool, and an author who guesses it wrong loses
+# their failures SILENTLY.
+#
+# `MISE_TASK_OUTPUT` configures mise ITSELF, so an exported value —
 # agent sessions carry `timed` — beats a `[tasks.*.env]` override and the root
 # `[env]` alike, and `timed` is a per-LINE DWELL filter: it discards every stdout
 # line another supersedes inside a second, the last one before exit included.
@@ -160,6 +165,7 @@ CARGO_TARGET_DIR = "{% if env.WSL_DISTRO_NAME %}{{ xdg_cache_home }}/dorc-wsl-ta
 
 [tasks.hello]
 description = "First run in a fresh clone: install the pinned toolchain, then configure this repo's git hooks. Idempotent — safe to re-run after a pull that moves a pin. Needs `mise trust` to have happened first, which is the one step a task cannot do for you."
+raw = true
 # `mise install` is spelled out rather than left implicit: mise installs on demand by default, but
 # that path is exactly what a `not_found_auto_install=false` / `MISE_NOT_FOUND_AUTO_INSTALL=0`
 # setting turns off, and a contributor carrying that in their own config would otherwise get a
@@ -186,6 +192,7 @@ run = [
 # the Windows half's `spike/target/` over drvfs. It pays a full Linux rebuild the first time.
 [tasks.both]
 description = "Run a task on BOTH sides, in series — `mise run both test`. Symmetric: from Windows it adds a WSL leg, from inside WSL it adds a Windows leg, and on a real *nix host it just runs the task. Either leg failing fails the run. Each side needs the repo trusted once (`mise trust` there)."
+raw = true
 usage = 'arg "<task>" var=#true help="the task, plus any of its own args, to run on both platforms"'
 run = [
    "mise run {{ usage.task | join(sep=' ') }}",
@@ -200,11 +207,13 @@ run_windows = [
 
 [tasks.build]
 description = "Build the spike workspace. Force this fresh before trusting any e2e result — the corpus runs whatever binary target/ happens to hold."
+raw = true
 dir = "spike"
 run = "cargo build --workspace"
 
 [tasks.dorc]
 description = "Run the product: `mise run dorc -- plan --book=book.sh -o pkg.oracle.sh`. Rebuilds first if stale, so the dev loop always exercises your edit rather than whatever target/ happened to hold. Exit codes are dorc's own (2 usage, 10 parse, the lint family), not cargo's."
+raw = true
 dir = "spike"
 # `-q` matters more than tidiness: dorc's stdout is a CONTRACT (exactly probe-then-apply), so a
 # run must be piping-safe. cargo writes progress to stderr and `-q` drops the rest, leaving stdout
@@ -222,6 +231,7 @@ run = "cargo run -q -p dorc-cli --bin dorc --"
 
 [tasks.test]
 description = "The WHOLE suite, HUMAN-facing: unit tier + the e2e corpus + the loom corpus (the latter two ride the run as harness=false targets). Full per-test output, progress, and context — the interactive mode; agents want `gate:full-quiet` instead. Args filter by trial name. DORC_E2E_QUIET=1 selects the terse per-case format."
+raw = true
 dir = "spike"
 # REMIT: this task optimizes for a human reading a terminal — legibility and context, never
 # brevity. Never add quiet flags here to save an agent tokens; that is the `-quiet` half's job,
@@ -247,6 +257,7 @@ run = [
 
 [tasks."gate:full-quiet"]
 description = "ACCEPTANCE, agent-facing: everything `gate:full` runs bar the hook self-test, at minimum token cost — ~95 lines against ~2000. Silent on success, LOUD and complete on failure. The one to run before calling work complete; `mise run both gate:full-quiet` covers the other platform too."
+raw = true
 dir = "spike"
 # REMIT: minimal token burn, and it MUST NOT swallow a failure. Every flag suppresses SUCCESS
 # chatter only — `--status-level fail` still prints failing trials, `--failure-output final`
@@ -268,6 +279,7 @@ run = [
 
 [tasks."gate:quick"]
 description = "HOT LOOP, human-facing: the four lint gates plus the unit tier (lib + bin tests), ~9s. NOT an acceptance suite — it skips the e2e corpus, the loom corpus, and the doctests, so a green run here never licenses calling work complete. Run `gate:full` before you do."
+raw = true
 dir = "spike"
 # `--lib --bins` is the whole skip: it selects cargo TARGETS, so the two harness=false corpora
 # and every doctest drop out by construction rather than by a name list that would silently rot
@@ -276,6 +288,7 @@ run = ["mise run check", "cargo nextest run --workspace --lib --bins"]
 
 [tasks."gate:quick-quiet"]
 description = "HOT LOOP, agent-facing: `gate:quick` at minimum token cost. NOT an acceptance suite — skips the e2e corpus, the loom corpus, and the doctests; `gate:full-quiet` is what licenses calling work complete."
+raw = true
 dir = "spike"
 # Same no-swallow remit as `gate:full-quiet`: success chatter only.
 run = [
@@ -330,23 +343,27 @@ run = "cargo test -p dorc-cli --test looms --"
 
 [tasks."test:real-tools"]
 description = "The opt-in real-external-linter lane — the one sanctioned real-invocation path, read-only tools over repo-local fixtures. Off in every default gate. checkbashisms is a perl script Command::new cannot spawn on Windows, so the tool list narrows there; the *nix half provisions it via e2e/lint-real-tools-setup.sh."
+raw = true
 dir = "spike"
 env = { DORC_E2E_REAL_TOOLS = "{% if os() == 'windows' %}shellcheck{% else %}shellcheck,checkbashisms{% endif %}" }
 run = "cargo test -p dorc-cli --test e2e"
 
 [tasks."test:floor"]
 description = "The opt-in two-binary-floor DIFFERENTIAL (gate-9): every case carrying an expected.emitted section has its STRIPPED book run as a sentinel manifest under each named floor binary, and they must agree with each other and with the committed bytes. Off in every default gate. posh is not in git's Windows userland, so there the lane is dash alone and measures a HALF floor — run it under WSL for the real posh-∩-dash answer."
+raw = true
 dir = "spike"
 env = { DORC_E2E_FLOOR_SHELLS = "{% if os() == 'windows' %}dash{% else %}dash,posh{% endif %}" }
 run = "cargo test -p dorc-cli --test e2e"
 
 [tasks.clippy]
 description = "Clippy over the workspace with warnings-as-errors — the inner-loop subset of `check`, minus fmt/deny/typos. The -D warnings gate lives in the task, never in the manifest, so mid-work builds don't break on a toolchain bump."
+raw = true
 dir = "spike"
 run = "cargo clippy --workspace --all-targets -- -D warnings"
 
 [tasks."clippy:clean"]
 description = "Clippy from a WIPED, dedicated target dir — ~7s cold, and unsatisfiable by anything another worktree, branch, or platform left in the shared cache. Rides the `gate:full*` pair; run it alone when you suspect a stale clean."
+raw = true
 dir = "spike"
 # Deliberately redundant with `check`'s clippy, and the redundancy is the point: that one is the
 # pre-commit gate (warm, fast, catches the common case), this one is the acceptance check, and it
@@ -368,14 +385,17 @@ CARGO_TARGET_DIR = "{{ env.CARGO_TARGET_DIR }}/clippy-clean"
 
 [tasks.check]
 description = "All four lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — the same steps the pre-commit hook runs, from the same hk.pkl."
+raw = true
 run = "hk check --all"
 
 [tasks."check-quiet"]
 description = "check, agent-facing: `-q` (never `-n` — measured 2026-08-15, --no-progress does not touch hk's per-step-transition text at all when piped, only `--quiet` does). Silent on success (0 bytes); on failure, every diagnostic hk would otherwise show survives — same ERROR block, same diff, same fix command, same exit code — with the step-transition churn (`files - Fetching...`, per-step `❯` pending lines) gone. Never used to swallow a failure, only to drop lines that carried no information a human or an agent transcript needed."
+raw = true
 run = "hk check --all --quiet"
 
 [tasks.fmt]
 description = "Apply the fixers to the spike via hk (cargo fmt, and typos --write-changes). Works in an agent session too: the task re-enables hk's fix mode for itself, since a session-wide HK_FIX=0 would otherwise degrade this to a check that only PRINTS the diff."
+raw = true
 run = "hk fix --all"
 
 # LOAD-BEARING, do not tidy away. Agent sessions export `HK_FIX=0` so the pre-commit HOOK cannot
@@ -390,6 +410,7 @@ HK_FIX = "1"
 [tasks."gate:full"]
 alias = "gate"
 description = "ACCEPTANCE, human-facing: everything due before a commit, in order — the four lint gates, the commit-msg hook's self-test, a fresh build, then the whole suite, all unabridged. Agents want `gate:full-quiet`."
+raw = true
 # REMIT: a human reading a terminal. Never quieten this to save an agent tokens; that is
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
 run = [
@@ -403,31 +424,37 @@ run = [
 
 [tasks."test:hooks"]
 description = "Self-tests for the hooks hk runs: the commit-msg gate's matchers, and whether pre-commit's `e2e` step still SEES each shape a whole-product case comes in. Cheap; rides `gate` because both checks fail OPEN — a broken matcher stops refusing, and a glob that matches nothing is skipped in silence. The commit-msg hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
+raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- hook-selftest"
 
 [tasks.preflight]
 description = "Bounds-check this machine against a profile's expected disk and RAM usage BEFORE spending either: `mise run preflight gate|bless|kani|lean`. One line on pass, one LOUD line and a nonzero exit on refusal. Rides the heavy tasks automatically (gate:full*, bless*, verify:kani, verify:lean, verify:translate); the hot loop is deliberately unburdened. Each leg checks its OWN environment, so `mise run both preflight gate` is what covers the WSL VM's separate memory cap. DORC_PREFLIGHT=skip bypasses it — emergencies only, and it says so in the output."
+raw = true
 dir = "spike"
 usage = 'arg "<profile>" help="gate, bless, kani, or lean"'
 run = "cargo run -q -p internal-tooling -- preflight {{ usage.profile }}"
 
 [tasks.doctor]
 description = "READ-ONLY inventory of what is eating the disk: every registered worktree with its size and clean/dirty/locked state, this leg's target dir broken down, and the lane caches. Deletes nothing. ~10s, because the sizes are real directory walks. Each leg sees only its own filesystem — `mise run both doctor` is what shows the WSL lane caches alongside the Windows worktrees."
+raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- doctor"
 
 [tasks.clean]
 description = "cargo clean over the spike workspace — build artifacts only. Deliberately touches NOTHING in the working tree: no `git clean`, no untracked sweep. Dirty and untracked paths here are routinely a human's in-flight work, and a task that eats them is worth more than it saves."
+raw = true
 dir = "spike"
 run = "cargo clean"
 
 [tasks.audit]
 description = "cargo-deny advisories (network: fetches the RustSec DB; not part of the offline pre-commit gates)."
+raw = true
 run = "cargo deny --manifest-path spike/Cargo.toml check advisories"
 
 [tasks.hk-install]
 description = "Install hk's git hooks: the pre-commit lint gate AND the commit-msg gitlabels gate (which refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config (affects main and every worktree) — human-gated; read the round-19 spike note first. Agent sessions run pre-commit check-only and stash-free (HK_FIX=0 + HK_STASH=none in .claude/settings.json) and get commit-msg in full."
+raw = true
 # `--mise` wraps the installed hook in `mise x`, which is what lets a contributor who has never
 # activated mise in their shell still get the pinned toolchain — and what carries HK_MISE into
 # the hook, without which every step's bare `cargo` would be unresolvable.
@@ -435,16 +462,19 @@ run = "hk install --mise"
 
 [tasks.bless]
 description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. A trailing case substring SCOPES it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. SEVERAL cases at once are spelled as PATHS (`crates/aid/tests/a.loom crates/cli/tests/b.loom`), which the runner resolves to exact trial names; the bare-substring form is libtest's own filter and takes exactly one. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
+raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless"]
 
 [tasks."bless:dry"]
 description = "bless minus the bless pass: the whole acceptance gate plus the tally, zero golden writes. The only mode a builder may run."
+raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]
 
 [tasks."bless:floor"]
 description = "ORCHESTRATOR-ONLY: the ONE sanctioned way to mint or amend a floor case's `expected.emitted` — the manifest measured under dash AND posh, the transcript, and the book=<sha256> inside it, all written from one run, so nothing is hand-computed. Ordinary `bless` REFUSES such a case by design: expected.emitted is measure-once ground truth (the shells' own answer), never an engine render. Scope it to the case you are minting, exactly like `bless`. Refuses where the pair cannot be resolved — git's Windows userland ships no posh, so run this from WSL. Verifies with the full gate plus `test:floor` afterwards."
+raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless --floor"
 
@@ -517,11 +547,13 @@ run = "cargo run --quiet -p dorc-loom -- sections {{ usage.cases | join(sep=' ')
 
 [tasks."loom:keys"]
 description = "Print the closed frontmatter-key vocabulary a case may declare, and which gate reads each key — including which of `code:` and `arrangement:` a case wants. Reads no case; the discoverable half of the refusal both runners raise for a key nothing reads."
+raw = true
 dir = "spike"
 run = "cargo run --quiet -p dorc-loom -- keys"
 
 [tasks."prose:census"]
 description = "INSTRUMENT, never a gate: per-tier register counts across both generated locks, plus every register marked as written by a person. The burn-down view — migrated text awaits a rewrite, slop is whatever the loom loop minted, and the human column only grows under `dorc-loom promote --human`."
+raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- prose-census"
 
@@ -532,6 +564,7 @@ run = "cargo run -q -p internal-tooling -- xfail-census"
 
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table, or a book plus its oracles for a one-off."
+raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- coverage"
 
@@ -543,6 +576,7 @@ run = "cargo run -q -p internal-tooling -- coverage"
 # that framing — or, better, moving the measurement into the runner that already has it.
 [tasks.yardstick]
 description = "INSTRUMENT, never a gate: the strawman24 elision-frequency table. KNOWN-BROKEN — reports NO-SUMMARY for every case (its invocation drifted from the records-lane framing); the failure is loud, not yours. A number here is meaningless unless test:e2e is green anyway."
+raw = true
 dir = "spike"
 run = "sh e2e/yardstick.sh"
 
@@ -560,16 +594,19 @@ run = "sh e2e/yardstick.sh"
 
 [tasks."verify:check"]
 description = "The binder's CHEAP gate: unit parse, slug discipline, seat-citation resolution, catalogue coherence, the binding two-way agreement, the Generated/ hole census, and the byte-budget tripwire. No Lean, no Kani, no mutants — rides `gate:full-quiet` on both legs."
+raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- check"
 
 [tasks."verify:report"]
 description = "Print the generated coverage report and REFUSE if minispec/REPORT.md is stale. Cheap tier by default; `-- --with-lean` and `-- --with-kani` recompute those engines' badges (Linux/WSL, slow), `-- --write` republishes the committed copy."
+raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- report"
 
 [tasks."verify:translate"]
 description = "OPT-IN, Linux/WSL only: regenerate minispec/Generated/ from the real algebra sources through charon+aeneas, then materialize the externals and run the sorry census. STRICT — a construct the translator cannot model is a refusal, never a silent `sorry`. The output is committed, so the diff IS the drift alarm."
+raw = true
 run = [
    "mise run preflight lean",
    "mise run verify:translate-impl",
@@ -578,35 +615,42 @@ run = [
 
 [tasks."verify:translate-impl"]
 description = "The charon+aeneas half alone, under the nested shadowing toolchain pin. Prefer `verify:translate`, which also materializes and censuses."
+raw = true
 dir = "spike/verify/aeneas"
 run = "mise run aeneas:translate"
 
 [tasks."verify:translate-lenient"]
 description = "OPT-IN, Linux/WSL only: enumerate every construct the translator cannot model, in ONE pass, into a scratch dir. This is how the fence in spike/verify/aeneas/Cargo.toml is derived and re-derived. Never a judgement of whether the algebra translated — lenient mode emits SILENT holes."
+raw = true
 dir = "spike/verify/aeneas"
 run = "mise run aeneas:translate-lenient"
 
 [tasks."verify:materialize"]
 description = "Turn a raw aeneas emission into the committed tree (move the lib entry, accept the external templates verbatim as axioms) and census it. Fails loud on any proof hole. Runs on the stable toolchain, deliberately outside the nested pin."
+raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- materialize"
 
 [tasks."verify:lean-bootstrap"]
 description = "One-time, idempotent: run the elan installer mise fetched, populating ELAN_HOME with elan and its lean/lake proxies. Pulls no toolchain — `verify:lean` triggers that from minispec/lean-toolchain."
+raw = true
 run = "elan-init -y --no-modify-path --default-toolchain none"
 
 [tasks."verify:kani"]
 description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Opens with a toolchain-less `cargo check` of the detached harness crate, which nothing else in the repo compiles — so a core/analysis signature the harnesses did not follow rots loudly and first. Then drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. On Windows it refuses in one line. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
+raw = true
 dir = "spike"
 run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
 
 [tasks."verify:kani-setup"]
 description = "One-time, idempotent, Linux/WSL only: fetch Kani's engine bundle (CBMC + the kani-compiler, ~1GB into ~/.kani) and the nightly it was linked against (via rustup). Both are Kani's own homes; it offers no env redirect for either. `mise install` provides only the small `cargo-kani` shim — without this, `verify:kani` refuses and names this task."
+raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- kani --setup"
 
 [tasks."verify:lean"]
 description = "OPT-IN, Linux/WSL only: stage minispec/ to an ext4 build root and typecheck it with lake. First run fetches a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental. Staging is load-bearing — lake on drvfs is unusably slow for a dependency store this size."
+raw = true
 dir = "spike"
 run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
 
@@ -618,29 +662,34 @@ run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
 
 [tasks.livetest]
 description = "LIVE ACCEPTANCE, never a gate: provisions a throwaway Debian container with sshd, drives dorc's real plan/apply/re-plan/re-apply loop over real ssh against it, asserts both plan summaries against the hermetic baselines in Research/trial/r26/renders/, and tears it down. ~35s, needs a container runtime (docker/podman/nerdctl/wslc; override with DORC_CONTAINER_CLI). LIVETEST_KEEP=1 leaves the container and the run directory up; a failed run keeps its artifacts either way."
+raw = true
 dir = "spike"
 depends = ["build"]
 run = "cargo run -q -p internal-tooling -- livetest run"
 
 [tasks."livetest:baselines"]
 description = "Re-derive Research/trial/r26/renders/ — the hermetic baselines `livetest` asserts its live plan summaries against — from the current engine, and print the resulting plan-summary lines. Runs `dorc probe`/`dorc plan` only; executes no book and no oracle bytes. A moved summary is a real engine change: register it in the kit's predictions.md rather than committing it bare."
+raw = true
 dir = "spike"
 depends = ["build"]
 run = "cargo run -q -p internal-tooling -- baselines"
 
 [tasks."livetest:target"]
 description = "Provision the same container livetest uses and LEAVE IT RUNNING, printing the ssh destination, the per-run key, and a ready-to-paste dorc invocation. The shortcut for poking at a real endpoint by hand; `livetest:clean` removes it."
+raw = true
 dir = "spike"
 depends = ["build"]
 run = "cargo run -q -p internal-tooling -- livetest target"
 
 [tasks."livetest:clean"]
 description = "Remove every container livetest created, and its run directories. Safe to run at any time; touches nothing it did not create."
+raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- livetest clean"
 
 [tasks."livetest:remote"]
 description = "Drive the livetest loop against a destination YOU supply -- `mise run livetest:remote -- root@host` (or `root@host:2222`). Provisions nothing and tears down nothing, so it will really mutate whatever you point it at. LIVETEST_SSH_KEY names an identity file if your ssh config does not already reach the host."
+raw = true
 dir = "spike"
 depends = ["build"]
 run = "cargo run -q -p internal-tooling -- livetest remote"
