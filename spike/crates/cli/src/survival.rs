@@ -28,9 +28,16 @@ use crate::world::{ship_predict_body, ship_verdict_body};
 
 /// Lift each oracle's `touches()` set for the authored survival lane, carrying the lift's
 /// diagnostics out as data rather than printing them from inside the lift (`io-at-edges-only`).
+///
+/// The lift WITHDRAWS `contested` on the way out, like every other lifted set
+/// (`cli/CLAUDE.md withdrawal-is-applied-once-never-consulted`): a two-author at-most claim is
+/// exactly the naked-trust input the survival tier must not read, and withdrawal removes claims,
+/// which is the over-execute direction. Taking the fact by parameter rather than consulting it
+/// per-seat is the point — no downstream footprint consumer has to remember to ask.
 pub fn lift_touches_sets(
     oracle_refs: &[&str],
     interner: &mut Interner,
+    contested: &dorc_core::ContestedFamilies,
 ) -> Carrier<Vec<dorc_oracle::touches::TouchesSet>> {
     let mut diags = Vec::new();
     let sets = oracle_refs
@@ -38,10 +45,28 @@ pub fn lift_touches_sets(
         .map(|src| {
             let lifted = dorc_oracle::touches::TouchesSet::lift(interner, src);
             diags.extend(lifted.diags);
-            lifted.value
+            lifted.value.withdrawing(contested, interner)
         })
         .collect();
     Carrier::new(sets, diags)
+}
+
+/// The `(source text, withdrawn `disturbs` set)` pairs the derivation lane ships bodies from —
+/// [`lift_touches_sets`]' twin for the seat that needs the source text alongside the set, withdrawn
+/// on the same terms and for the same reason.
+#[must_use]
+pub fn pair_touches_sets<'a>(
+    oracle_refs: &[&'a str],
+    interner: &mut Interner,
+    contested: &dorc_core::ContestedFamilies,
+) -> Vec<(&'a str, dorc_oracle::touches::TouchesSet)> {
+    oracle_refs
+        .iter()
+        .map(|src| {
+            let set = dorc_oracle::touches::TouchesSet::lift(interner, src).value;
+            (*src, set.withdrawing(contested, interner))
+        })
+        .collect()
 }
 
 /// Lift the survival footprints (Stage 2 / rul24-mode-gate) — called ONLY on the
@@ -1103,25 +1128,19 @@ pub fn survival_diagnostics(
         return out;
     }
 
-    let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = oracle_refs
-        .iter()
-        .map(|src| {
-            (
-                *src,
-                dorc_oracle::touches::TouchesSet::lift(&mut interner, src).value,
-            )
-        })
-        .collect();
     // The HINT lane reads ambiently throughout (see the two `unsolved()` calls above): this seat
-    // solves no function environment, so its survival scans take the same no-environment posture.
+    // solves no function environment, so its survival scans take the same no-environment posture,
+    // and with no environment there is no contest to withdraw either.
     let hint_live = dorc_analysis::funcenv::LiveDefinitions::unsolved();
+    let uncontested = dorc_core::ContestedFamilies::none();
+    let touches_paired = pair_touches_sets(&oracle_refs, &mut interner, &uncontested);
     let derivations = {
         let derive =
             |n, p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a, n, hint_live);
         dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
     };
 
-    let touches = lift_touches_sets(&oracle_refs, &mut interner);
+    let touches = lift_touches_sets(&oracle_refs, &mut interner, &uncontested);
     out.extend(touches.diags);
     let lifted = build_survival_footprints(
         &touches.value,

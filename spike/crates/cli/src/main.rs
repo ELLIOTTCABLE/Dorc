@@ -80,11 +80,12 @@ use dorc_cli::results::{ReportRecord, RunClock, SiteResults, probe_origins};
 use dorc_cli::survival::{
     build_resolutions, build_survival_footprints, build_wrapped_analysis, collect_coord_kinds,
     collect_resolver_coords, dangling_diagnostics, entity_text_of, expand_footprints_via_reaches,
-    lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
+    lift_touches_sets, merge_derived_footprints, pair_touches_sets, resolve_touches_footprint,
+    ship_touches_body,
 };
 use dorc_cli::world::{
-    definition_table, demote_on_certifier_trip, record_pre_network_trip, ship_predict_body,
-    ship_verdict_body, shipping_source, source_file_id,
+    definition_table, demote_on_certifier_trip, never_live_predict_rows, record_pre_network_trip,
+    ship_predict_body, ship_verdict_body, shipping_source, source_file_id,
 };
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
@@ -1116,15 +1117,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // extension — different site-set/body-source/readback, the convergence path left unperturbed).
     let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = if args.risk_faultless_skips
     {
-        oracle_refs
-            .iter()
-            .map(|src| {
-                (
-                    *src,
-                    dorc_oracle::touches::TouchesSet::lift(&mut interner, src).value,
-                )
-            })
-            .collect()
+        pair_touches_sets(&oracle_refs, &mut interner, &contested)
     } else {
         Vec::new()
     };
@@ -1464,7 +1457,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--risk-faultless-skips` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
     let survival = args.risk_faultless_skips.then(|| {
-        let touches = lift_touches_sets(&oracle_refs, &mut interner);
+        let touches = lift_touches_sets(&oracle_refs, &mut interner, &contested);
         report_at(advisory, "touches", None, &touches.diags);
         let lifted = build_survival_footprints(
             &touches.value,
@@ -2286,40 +2279,6 @@ fn positional_loading_notices(
     diags
 }
 
-/// The `(file, provider)` predict rows whose defining funcdef the environment proves binds at NO
-/// program point ([`dorc_analysis::funcenv::never_live`]).
-///
-/// The ONE consumer is `build_dialect`'s whole-unit minting fold, reached through
-/// `lift_from_sets`' `binds_somewhere`. Every SITE-KEYED consumer already declines such a row by
-/// resolution — the frame names a definition and a dead one is named at no frame — so this exists
-/// solely because the dialect asks a question no frame answers: which tokens the unit's authors
-/// minted AT ALL. A dead polyfill body's tokens are not among them, and letting them in would
-/// enlarge or shift the sparing dialect, which spares MORE (`28Q` §9 `pin-two-position-sparing`).
-///
-/// Keyed by the PREDICT member specifically, not the family: the dialect mints from predict-derived
-/// cells alone, and the family-wide reading the contest withdrawal uses would take a live sibling
-/// member down with a dead one.
-fn never_live_predict_rows(
-    never_live: &BTreeSet<(String, dorc_core::SourceFileId)>,
-    checks: &[dorc_oracle::predict::PredictSet],
-    interner: &Interner,
-) -> BTreeSet<(usize, Symbol)> {
-    let mut out = BTreeSet::new();
-    for (file, set) in checks.iter().enumerate() {
-        for provider in set.providers() {
-            let name = format!(
-                "{}{}",
-                dorc_oracle::to_funcname_segment(interner.resolve(provider)),
-                dorc_oracle::predict::PREDICT_SUFFIX
-            );
-            if never_live.contains(&(name, source_file_id(file))) {
-                out.insert((file, provider));
-            }
-        }
-    }
-    out
-}
-
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier
 /// `Derived`: this is the engine's own reading of the environment, not anybody's claim.
 /// The consistency-failure account for the two PRE-NETWORK kernel seats (`302` §4).
@@ -2579,7 +2538,7 @@ fn ship_predict_stage(
     };
     // A composed stage is a SITE like any other (`28K` §2), through the SHARED seat rather than a
     // second copy of it — the open-coded twin this replaces was the same rule spelled twice, which
-    // is the failure `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` records.
+    // is the failure `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` records.
     let idx = shipping_source(
         checks.len(),
         node,

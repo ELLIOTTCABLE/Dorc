@@ -112,19 +112,18 @@ impl WhyWorld {
         let mut interner = Interner::default();
         let mut arena = ProvArena::new();
         let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
-
-        // One non-role-declaration index per unit, shared by the ship seams and the vouch lift.
-        let helpers = dorc_oracle::closure::HelperIndex::build(&oracle_refs);
-        let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
-        let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
+        // SOURCE-WIDE, exactly as the binary's `source_table` builds it: the oracles in load order,
+        // then the book, which is an ordinary definition source
+        // (`the-book-is-a-definition-source`). This seat used to lift oracle-only vectors and site
+        // the book one PAST them, so a site a book definition owned withheld here while the run
+        // answered it — safe, but a why report that explains a different world than the run is a
+        // decoration, which is the failure `one-definition-table-two-drivers` exists to prevent.
+        let source_srcs: Vec<String> = oracle_srcs
             .iter()
-            .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
+            .cloned()
+            .chain(std::iter::once(book_src.to_owned()))
             .collect();
-        let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
-            .iter()
-            .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
-            .collect();
-        let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
+        let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
 
         let parsed = dorc_syntax::parse(book_src);
         let cfg = dorc_analysis::cfg::build(&parsed.value);
@@ -133,12 +132,10 @@ impl WhyWorld {
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeSet::new();
         let peeled = BTreeMap::new();
-        // The book's id sits ONE PAST the vector this seat lifts (it does not feed the book to the
-        // lifts — `28M` §7's rename rider names the gap), so a book-owned site withholds.
         let definitions = definition_table(
             oracle_paths,
-            &oracle_refs,
-            source_file_id(oracle_srcs.len()),
+            &source_refs,
+            source_file_id(source_refs.len().saturating_sub(1)),
             &parsed.value,
         );
         let env = {
@@ -146,6 +143,52 @@ impl WhyWorld {
             dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
         };
         let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
+        // THE EDGE, mirrored: the widening above is exactly what
+        // `withdrawal-is-applied-once-never-consulted` requires to route through here first, so the
+        // contested fact is minted from the same two calls in the same order the binary uses and
+        // applied ONCE to every lifted set below.
+        let contested = {
+            let shadows =
+                dorc_analysis::funcenv::contests(&parsed.value, &cfg.value, &definitions, &env);
+            let unprovable =
+                dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit());
+            dorc_core::ContestedFamilies::new(
+                shadows
+                    .iter()
+                    .map(|c| c.name.as_str())
+                    .chain(unprovable.iter().map(String::as_str))
+                    .filter_map(|name| {
+                        dorc_oracle::reserved::role_family(name).map(|(base, _)| base.to_owned())
+                    }),
+            )
+        };
+        let never_live = dorc_analysis::funcenv::never_live(&definitions, &env);
+
+        // One non-role-declaration index per unit, shared by the ship seams and the vouch lift.
+        let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs);
+        let checks: Vec<dorc_oracle::predict::PredictSet> = source_refs
+            .iter()
+            .map(|src| {
+                dorc_oracle::predict::lift_predicts(&mut interner, src)
+                    .value
+                    .withdrawing(&contested, &interner)
+            })
+            .collect();
+        let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = source_refs
+            .iter()
+            .map(|src| {
+                dorc_oracle::verdict::VerdictSet::lift(&mut interner, src)
+                    .value
+                    .withdrawing(&contested, &interner)
+            })
+            .collect();
+        let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
+        let dead_predicts = never_live_predict_rows(&never_live, &checks, &interner);
+        let idx = dorc_oracle::lift_from_sets(&mut interner, &checks, |file, provider| {
+            !dead_predicts.contains(&(file, provider))
+        })
+        .value
+        .withdrawing(&contested, &interner);
         // The run's own latch (`302:rul-certifier-trip-guard-only`), threaded through the same
         // rounds the binary threads it through: a why report built over an un-demoted plan would
         // explain elisions the run would never have emitted — a decoration, which is exactly what
@@ -174,7 +217,7 @@ impl WhyWorld {
         let classes = origin.classes.clone();
 
         let (vouch_lift, decline_narrative) = dorc_plan::build_vouches(
-            &oracle_refs,
+            &source_refs,
             &helpers,
             &classes,
             &value,
@@ -185,7 +228,7 @@ impl WhyWorld {
 
         let ship = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(
-                oracle_srcs,
+                &source_srcs,
                 &helpers,
                 &checks,
                 &interner,
@@ -200,7 +243,7 @@ impl WhyWorld {
                 .contains(&node)
                 .then(|| {
                     ship_verdict_body(
-                        oracle_srcs,
+                        &source_srcs,
                         &helpers,
                         &verdict_sets,
                         &interner,
@@ -259,15 +302,13 @@ impl WhyWorld {
 
         // The survival tier, flag-gated exactly as a run is (`rul24-mode-gate`, TC-1): unflagged,
         // the footprint data does not exist at all, so a running mutator walls totally.
-        let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = oracle_refs
-            .iter()
-            .map(|src| {
-                (
-                    *src,
-                    dorc_oracle::touches::TouchesSet::lift(&mut interner, src).value,
-                )
-            })
-            .collect();
+        // Withdrawn at the edge like every other lifted set. The VECTORS stay oracle-only here and
+        // in the binary alike — the kind-owner trio loads from the ambient prefix by design
+        // (`vocabulary-acts-stay-ambient`), and widening the survival lane's own reach is a
+        // separate dispatch (`one-helper-index-two-lanes`) — but oracle-only is a question about
+        // WHICH files, never about whether the contested fact applies to them.
+        let touches_paired =
+            crate::survival::pair_touches_sets(&oracle_refs, &mut interner, &contested);
         let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
         let coord_kinds = crate::survival::collect_coord_kinds(
             &classes,
@@ -644,6 +685,45 @@ pub fn definition_table(
         table.set_book_site(id, def);
     }
     table
+}
+
+/// The `(file, provider)` predict rows whose defining funcdef the environment proves binds at NO
+/// program point ([`dorc_analysis::funcenv::never_live`]).
+///
+/// The ONE consumer is `dorc_oracle::build_dialect`'s whole-unit minting fold, reached through
+/// `lift_from_sets`' `binds_somewhere`. Every SITE-KEYED consumer already declines such a row by
+/// resolution — the frame names a definition and a dead one is named at no frame — so this exists
+/// solely because the dialect asks a question no frame answers: which tokens the unit's authors
+/// minted AT ALL. A dead polyfill body's tokens are not among them, and letting them in would
+/// enlarge or shift the sparing dialect, which spares MORE (`28Q` §9 `pin-two-position-sparing`).
+/// That is why "finishing" the never-live retirement by deleting this is WRONG: the withdrawal it
+/// used to drive is gone, the liveness it computes is not.
+///
+/// Keyed by the PREDICT member specifically, not the family: the dialect mints from predict-derived
+/// cells alone, and the family-wide reading the contest withdrawal uses would take a live sibling
+/// member down with a dead one.
+///
+/// On the lib seam because both drivers must reach it (`one-definition-table-two-drivers`).
+#[must_use]
+pub fn never_live_predict_rows(
+    never_live: &BTreeSet<(String, dorc_core::SourceFileId)>,
+    checks: &[dorc_oracle::predict::PredictSet],
+    interner: &Interner,
+) -> BTreeSet<(usize, Symbol)> {
+    let mut out = BTreeSet::new();
+    for (file, set) in checks.iter().enumerate() {
+        for provider in set.providers() {
+            let name = format!(
+                "{}{}",
+                dorc_oracle::to_funcname_segment(interner.resolve(provider)),
+                dorc_oracle::predict::PREDICT_SUFFIX
+            );
+            if never_live.contains(&(name, source_file_id(file))) {
+                out.insert((file, provider));
+            }
+        }
+    }
+    out
 }
 
 /// The ONE index a site's role body ships from: the file whose definition of this role is the one
